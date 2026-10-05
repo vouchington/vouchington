@@ -29,4 +29,5 @@ _none_
 - `post_publication_identity_cleanup_progress_pkey`: `CREATE UNIQUE INDEX post_publication_identity_cleanup_progress_pkey ON public.post_publication_identity_cleanup_progress USING btree (singleton)`
 
 **Triggers:**
-_none_
+
+- `trg_post_publication_identity_cleanup_progress__updated_at`: `CREATE TRIGGER trg_post_publication_identity_cleanup_progress__updated_at BEFORE UPDATE ON public.post_publication_identity_cleanup_progress FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

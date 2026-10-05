@@ -18,7 +18,7 @@ CREATE TABLE copyright_claimant_misuse_events (
   copyright_restriction_id uuid UNIQUE REFERENCES copyright_restrictions(id) ON DELETE RESTRICT,
   recorded_at timestamptz NOT NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   CONSTRAINT copyright_claimant_misuse_event_shape CHECK (
     (outcome = 'notice_withdrawn'
       AND copyright_notice_submission_id IS NOT NULL
@@ -55,17 +55,14 @@ CREATE TABLE copyright_automatic_withholding_refusals (
     'non_post_target'
   )),
   refused_at timestamptz NOT NULL,
-  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_claimant_suspension_reversals (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_restriction_id uuid NOT NULL CONSTRAINT uq_copyright_claimant_suspension_reversals__restriction_id UNIQUE CONSTRAINT fk_copyright_claimant_suspension_reversals__restriction REFERENCES copyright_restrictions(id) ON DELETE RESTRICT,
   reversed_at timestamptz NOT NULL,
-  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL);
 
 CREATE TRIGGER trigger_copyright_claimant_misuse_events_immutable
   BEFORE UPDATE OR DELETE ON copyright_claimant_misuse_events

@@ -17,7 +17,6 @@ Not partitioned — growth: unbounded.
 | `assessed_by_id`                     | `uuid`                     | yes      |                              |          |           |           | Staff assessor; NULL denotes deterministic validation.                                                        |
 | `is_substantially_compliant`         | `boolean`                  | no       |                              |          |           |           | Whether this exact submission contains the required elements for its legal procedure.                         |
 | `created_at`                         | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                               |
-| `updated_at`                         | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                               |
 
 **Primary key:** `PRIMARY KEY (id)`
 

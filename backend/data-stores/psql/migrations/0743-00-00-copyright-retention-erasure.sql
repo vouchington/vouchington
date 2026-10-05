@@ -6,14 +6,13 @@
 -- fn_copyright_retention_erasable_columns. Rows are overwritten in place, never deleted, so every
 -- foreign key and immutability trigger keeps holding.
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_retention_erasures (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id UUID NOT NULL UNIQUE REFERENCES copyright_notices (id) ON DELETE RESTRICT,
   retention_days INTEGER NOT NULL CHECK (retention_days > 0),
   erased_object_count INTEGER NOT NULL CHECK (erased_object_count >= 0),
-  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL);
 
 CREATE TRIGGER trigger_copyright_retention_erasures_immutable BEFORE UPDATE OR DELETE ON copyright_notice_retention_erasures FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
 

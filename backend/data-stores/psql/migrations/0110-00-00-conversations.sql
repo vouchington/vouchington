@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS conversations (
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   created_by_id UUID REFERENCES users ON DELETE SET NULL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  last_activity_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_by_id UUID REFERENCES users ON DELETE SET NULL,
   deleted_at TIMESTAMPTZ,
   deleted_by_id UUID REFERENCES users ON DELETE SET NULL,
@@ -108,16 +109,16 @@ CREATE INDEX IF NOT EXISTS idx_conversations__rss_feed_item_id ON conversations 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_conversations__community_id ON conversations (community_id, id DESC) WHERE community_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_conversations__direct_message_updated
-  ON conversations (updated_at DESC, id DESC)
+CREATE INDEX IF NOT EXISTS idx_conversations__direct_message_activity
+  ON conversations (last_activity_at DESC, id DESC)
   WHERE channel_type = 'direct_message' AND deleted_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_conversations__modmail_community_updated
-  ON conversations (community_id, updated_at DESC, id DESC)
+CREATE INDEX IF NOT EXISTS idx_conversations__modmail_community_activity
+  ON conversations (community_id, last_activity_at DESC, id DESC)
   WHERE channel_type = 'modmail' AND deleted_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_conversations__modmail_subject_updated
-  ON conversations (subject_user_id, updated_at DESC, id DESC)
+CREATE INDEX IF NOT EXISTS idx_conversations__modmail_subject_activity
+  ON conversations (subject_user_id, last_activity_at DESC, id DESC)
   WHERE channel_type = 'modmail' AND subject_user_id IS NOT NULL AND deleted_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS uq_conversations__modmail_open_per_subject
@@ -148,6 +149,7 @@ ON conversations (id DESC) WHERE resolved_at IS NULL;
 COMMENT ON TABLE conversations IS 'Threaded conversations that can be associated with a post or RSS feed item.';
 COMMENT ON COLUMN conversations.channel_type IS 'Conversation channel: chat for user and agent chat, direct_message, modmail, or mod_internal.';
 COMMENT ON COLUMN conversations.title IS 'User-provided title for the conversation.';
+COMMENT ON COLUMN conversations.last_activity_at IS 'Database time of the latest message, participant or metadata activity; drives direct-message and modmail inbox pagination.';
 COMMENT ON COLUMN conversations.created_by_id IS 'The registered user who started the conversation. NULL if the creating user was hard-deleted (ON DELETE SET NULL).';
 COMMENT ON COLUMN conversations.resolved_at IS 'When set, the conversation is resolved. Derived status: open = NULL, resolved = set.';
 COMMENT ON COLUMN conversations.resolved_by_id IS 'The user who marked this conversation as resolved.';

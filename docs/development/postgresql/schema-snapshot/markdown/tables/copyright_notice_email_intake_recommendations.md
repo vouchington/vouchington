@@ -15,7 +15,6 @@ Not partitioned — growth: unbounded.
 | `model`                            | `text`                     | no       |                              |          |           |           | Model identifier recorded for recommendation provenance. |
 | `structured_output_ciphertext`     | `text`                     | no       |                              |          |           |           | Encrypted bounded agent extraction and recommendation.   |
 | `created_at`                       | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                          |
-| `updated_at`                       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                          |
 
 **Primary key:** `PRIMARY KEY (id)`
 

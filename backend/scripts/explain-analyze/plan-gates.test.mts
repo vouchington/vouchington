@@ -70,8 +70,8 @@ describe('required EXPLAIN plan shapes', () => {
   })
 
   it.each([
-    ['direct-message-inbox-page', 'idx_conversations__direct_message_updated'],
-    ['modmail-inbox-page', 'idx_conversations__modmail_community_updated'],
+    ['direct-message-inbox-page', 'idx_conversations__direct_message_activity'],
+    ['modmail-inbox-page', 'idx_conversations__modmail_community_activity'],
   ])('requires %s to use its ordered composite index', (scenarioId, indexName) => {
     const indexed = result(scenarioId, 'SELECT conversations', {
       Plan: { 'Node Type': 'Index Scan', 'Index Name': indexName },

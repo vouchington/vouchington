@@ -66,13 +66,21 @@ export async function getTimestampConventionViolations(): Promise<TimestampConve
 
       UNION ALL
 
-      SELECT public_tables.relname AS table_name, 'missing-updated-at' AS problem, NULL::text
+      SELECT public_tables.relname AS table_name, 'updated-at-trigger-mismatch' AS problem, NULL::text
       FROM public_tables
-      WHERE NOT EXISTS (
+      WHERE EXISTS (
         SELECT 1
         FROM columns
         WHERE columns.table_oid = public_tables.oid
           AND columns.column_name = 'updated_at'
+      )
+      IS DISTINCT FROM EXISTS (
+        SELECT 1 FROM pg_trigger
+        JOIN pg_proc ON pg_proc.oid = pg_trigger.tgfoid
+        WHERE pg_trigger.tgrelid = public_tables.oid
+          AND NOT pg_trigger.tgisinternal
+          AND pg_trigger.tgenabled <> 'D'
+          AND pg_proc.proname = 'fn_update_updated_at'
       )
 
       UNION ALL

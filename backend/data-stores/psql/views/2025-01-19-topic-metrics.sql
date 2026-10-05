@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE VIEW view_topic_metrics AS
   SELECT
     'topic_metrics' AS __entity_type,
@@ -93,3 +94,5 @@ CREATE OR REPLACE VIEW view_topic_metrics AS
     bookmarks__updated_at
   FROM topic_metrics
 ;
+
+COMMENT ON VIEW view_topic_metrics IS 'Topic activity metrics for current topic reads.';

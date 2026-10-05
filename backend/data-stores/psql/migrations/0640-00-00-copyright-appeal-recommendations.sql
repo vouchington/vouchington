@@ -8,7 +8,7 @@ CREATE TABLE copyright_notice_appeal_recommendations (
   recommendation copyright_notice_appeal_recommendation_outcomes NOT NULL CHECK (recommendation IN ('confirm', 'modify', 'reverse', 'uncertain')),
   rationale_ciphertext text NOT NULL CONSTRAINT chk_copyright_notice_appeal_recommendatio__rationale_ciphertext CHECK (char_length(rationale_ciphertext) BETWEEN 1 AND 1048576),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   CONSTRAINT uq_cop_not_app_rec__submission_id__input_sha256__prompt_version UNIQUE (copyright_notice_submission_id, input_sha256, prompt_version)
 );
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

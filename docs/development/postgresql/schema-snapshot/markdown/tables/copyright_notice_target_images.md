@@ -13,7 +13,6 @@ Not partitioned — growth: unbounded.
 | `image_id`                   | `uuid`                     | no       |                     |          |           |           | Image asset captured for the exact hosted placement revision.                                                 |
 | `binding_family`             | `image_binding_families`   | no       |                     |          |           |           | Retained post or surface placement binding family for this image.                                             |
 | `created_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                               |
-| `updated_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                               |
 
 **Primary key:** `PRIMARY KEY (copyright_notice_target_id)`
 

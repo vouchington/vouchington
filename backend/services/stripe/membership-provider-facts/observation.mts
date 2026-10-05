@@ -64,7 +64,7 @@ export async function insertStripeMembershipObservation(
       membership_product_id = ${snapshot.membershipProductId}, effective_at = ${snapshot.effectiveAt},
       expires_at = ${snapshot.expiresAt}, cancelled_at = ${snapshot.cancelledAt},
       expired_at = ${snapshot.expiredAt}, past_due_at = ${snapshot.pastDueAt},
-      paused_at = ${snapshot.pausedAt}, should_auto_renew = ${snapshot.autoRenews}, updated_at = CURRENT_TIMESTAMP
+      paused_at = ${snapshot.pausedAt}, should_auto_renew = ${snapshot.autoRenews}
     WHERE membership_source_id = ${fact.membership_source_id}
   `)
   return observation.id

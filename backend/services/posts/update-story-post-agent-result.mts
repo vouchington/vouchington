@@ -88,8 +88,7 @@ export async function updateStoryPostAgentResult(
     UPDATE posts
     SET ai_summary_markdown = ${aiSummaryMarkdown},
         bedrock_nova_multimodal_v1_content_sha256 = ${embeddingContentSha},
-        llm_moderation_content_sha256 = ${moderationContentSha},
-        updated_at = CURRENT_TIMESTAMP
+        llm_moderation_content_sha256 = ${moderationContentSha}
     WHERE id = ${postId} AND post_type = 'story'
     RETURNING updated_at`)
     const updatedPost = rows[0]

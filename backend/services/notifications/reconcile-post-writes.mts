@@ -48,8 +48,7 @@ export async function insertPostNotificationsForRecipients(
           title = $2,
           body = $3,
           actor_label = $4,
-          target_path = $5,
-          updated_at = CURRENT_TIMESTAMP
+          target_path = $5
       WHERE post_id = $6
         AND delivery_type = 'subscription'
         AND deleted_at IS NOT NULL

@@ -46,7 +46,7 @@ CREATE TABLE copyright_notice_targets (
   surface_owner_user_id uuid REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
   hosted_use_url text NOT NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   CONSTRAINT uq_copy_noti_targe__notice_id__placement_id__placement_revision UNIQUE (copyright_notice_id, placement_id, placement_revision),
   UNIQUE (id, placement_id),
   UNIQUE (copyright_notice_id, id)
@@ -59,7 +59,7 @@ CREATE TABLE copyright_notice_target_images (
   image_id uuid NOT NULL REFERENCES retained_image_identities(id) ON DELETE RESTRICT,
   binding_family image_binding_families NOT NULL CHECK (binding_family IN ('post', 'surface')),
   created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   CONSTRAINT fk_copyright_notice_target_images__target__placement FOREIGN KEY (copyright_notice_target_id, placement_id)
     REFERENCES copyright_notice_targets(id, placement_id) ON DELETE RESTRICT,
   CONSTRAINT fk_copyr_notice_target_images__placement__image__binding_family FOREIGN KEY (placement_id, image_id, binding_family)
@@ -113,7 +113,7 @@ CREATE TABLE copyright_notice_submissions (
   body_ciphertext text NOT NULL CHECK (char_length(body_ciphertext) BETWEEN 1 AND 1048576),
   copyright_notice_guest_capability_id uuid,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   CONSTRAINT copyright_submission_guest_capability_shape CHECK (
     copyright_notice_guest_capability_id IS NULL
     OR (source_kind = 'guest_form' AND kind IN ('supplement', 'withdrawal', 'court_or_ccb_hold'))
@@ -131,7 +131,7 @@ CREATE TABLE copyright_notice_evidence_artifacts (
   media_type_id bigint NOT NULL REFERENCES media_types(id) ON DELETE RESTRICT,
   byte_size integer NOT NULL CHECK (byte_size >= 0),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   CONSTRAINT uq_copyrig_notice_evidence_artifact__submission_id__storage_key UNIQUE (copyright_notice_submission_id, storage_key),
   CONSTRAINT fk_copyright_artifacts__parent_notice
     FOREIGN KEY (copyright_notice_id, copyright_notice_submission_id)
@@ -155,7 +155,7 @@ CREATE TABLE copyright_notice_submission_assessments (
   assessed_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
   is_substantially_compliant boolean NOT NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   CONSTRAINT fk_copyright_assessments__parent_notice
     FOREIGN KEY (copyright_notice_id, copyright_notice_submission_id)
     REFERENCES copyright_notice_submissions(copyright_notice_id, id) ON DELETE CASCADE,
@@ -177,7 +177,7 @@ CREATE TABLE copyright_notice_counter_notice_assessment_targets (
   copyright_notice_submission_assessment_id uuid NOT NULL,
   copyright_notice_target_id uuid NOT NULL,
   created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   PRIMARY KEY (copyright_notice_submission_assessment_id, copyright_notice_target_id),
   CONSTRAINT fk_copyright_counter_targets__parent_notice
     FOREIGN KEY (copyright_notice_id, copyright_notice_submission_assessment_id)
@@ -207,7 +207,7 @@ CREATE TABLE copyright_notice_legal_hold_assessments (
   is_same_material boolean NOT NULL,
   rationale_ciphertext text NOT NULL CONSTRAINT chk_copyright_notice_legal_hold_assessmen__rationale_ciphertext CHECK (char_length(rationale_ciphertext) BETWEEN 1 AND 65536),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   CHECK ((proceeding_kind IS NULL AND commenced_at IS NULL) OR (proceeding_kind IS NOT NULL AND commenced_at IS NOT NULL)),
   CHECK (
     (proceeding_kind = 'ccb' AND ccb_claim_kind IS NOT NULL)
@@ -233,7 +233,7 @@ CREATE TABLE copyright_notice_legal_hold_assessment_targets (
   copyright_notice_legal_hold_assessment_id uuid NOT NULL,
   copyright_notice_target_id uuid NOT NULL,
   created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   PRIMARY KEY (copyright_notice_legal_hold_assessment_id, copyright_notice_target_id),
   CONSTRAINT fk_copyright_hold_targets__parent_notice
     FOREIGN KEY (copyright_notice_id, copyright_notice_legal_hold_assessment_id)
@@ -258,7 +258,7 @@ CREATE TABLE copyright_notice_legal_hold_resolutions (
   resolution_kind copyright_notice_legal_hold_resolution_kinds NOT NULL CHECK (resolution_kind IN ('dismissed', 'proceeding_ended', 'superseded')),
   rationale_ciphertext text NOT NULL CONSTRAINT chk_copyright_notice_legal_hold_resolutio__rationale_ciphertext CHECK (char_length(rationale_ciphertext) BETWEEN 1 AND 65536),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   CONSTRAINT fk_copyright_hold_resolutions__parent_notice
     FOREIGN KEY (copyright_notice_id, copyright_notice_legal_hold_assessment_id)
     REFERENCES copyright_notice_legal_hold_assessments(copyright_notice_id, id) ON DELETE RESTRICT,
@@ -722,8 +722,7 @@ BEGIN
       OLD.source_kind,
       OLD.body_ciphertext,
       OLD.copyright_notice_guest_capability_id,
-      OLD.created_at,
-      OLD.updated_at
+      OLD.created_at
     ) IS NOT DISTINCT FROM ROW(
       NEW.id,
       NEW.copyright_notice_id,
@@ -732,8 +731,7 @@ BEGIN
       NEW.source_kind,
       NEW.body_ciphertext,
       NEW.copyright_notice_guest_capability_id,
-      NEW.created_at,
-      NEW.updated_at
+      NEW.created_at
     ) THEN
     RETURN NEW;
   END IF;

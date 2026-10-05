@@ -89,7 +89,7 @@ describe('PostgreSQL schema static analysis', () => {
     ).toEqual([])
   })
 
-  it('documents tables and non-standard columns', async () => {
+  it('documents tables, views and non-standard table columns', async () => {
     const violations = await getCommentViolations()
 
     expect(

@@ -22,6 +22,10 @@ best-effort basis and reports failures without failing the already-committed acc
 The nightly `dispatchFindYourFriends` scan re-derives every still-eligible provider account from
 PostgreSQL, so an initial Valkey outage cannot permanently lose friend recommendations.
 
+Friend rows record provider observations in `last_observed_at`, using the fixed sync-start time.
+Stale-row cleanup compares that named observation clock with the sync boundary, preserving the
+exact PostgreSQL microsecond marker. The trigger maintains `updated_at` independently.
+
 Each fetched provider page commits independently under a freshly acquired active-user mutation
 fence. After the provider pagination completes, stale relationship candidates are selected in
 bounded pages and each page is deleted in its own freshly fenced transaction; only an empty

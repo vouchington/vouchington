@@ -17,7 +17,6 @@ Not partitioned — growth: unbounded.
 | `byte_size`                        | `integer`                  | no       |                              |          |           |           | Decoded attachment byte size.                                                          |
 | `sha256`                           | `bytea`                    | no       |                              |          |           |           | SHA-256 digest computed while streaming the attachment.                                |
 | `created_at`                       | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                        |
-| `updated_at`                       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                        |
 
 **Primary key:** `PRIMARY KEY (id)`
 

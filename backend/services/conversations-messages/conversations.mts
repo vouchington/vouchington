@@ -100,8 +100,7 @@ export async function updateConversationTitle(
 ): Promise<void> {
   await write(sql`/* updateConversationTitle */
     UPDATE conversations
-    SET title = ${title},
-        updated_at = CURRENT_TIMESTAMP,
+    SET last_activity_at = CURRENT_TIMESTAMP, title = ${title},
         updated_by_id = ${updatedById}
     WHERE id = ${conversationId}
       AND deleted_at IS NULL
@@ -114,7 +113,7 @@ export async function softDeleteConversation(
 ): Promise<void> {
   await write(sql`/* softDeleteConversation */
     UPDATE conversations
-    SET deleted_at = CURRENT_TIMESTAMP,
+    SET last_activity_at = CURRENT_TIMESTAMP, deleted_at = CURRENT_TIMESTAMP,
         deleted_by_id = ${deletedById}
     WHERE id = ${conversationId}
       AND deleted_at IS NULL

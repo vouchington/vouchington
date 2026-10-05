@@ -762,6 +762,7 @@ CREATE TABLE IF NOT EXISTS facebook_friends (
   PRIMARY KEY (facebook_user_id, facebook_friend_id),
 
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  last_observed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -1226,3 +1227,5 @@ CREATE INDEX IF NOT EXISTS idx_user_permissions__permission_type_id
 CREATE INDEX IF NOT EXISTS idx_user_role_permissions__permission_type_id
   ON user_role_permissions (permission_type_id)
   WHERE permission_type_id IS NOT NULL;
+
+COMMENT ON COLUMN facebook_friends.last_observed_at IS 'Database timestamp of the latest provider friend-sync observation; stale observations are removed against the exact sync-start clock.';

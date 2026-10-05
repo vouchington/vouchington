@@ -43,4 +43,5 @@ Not partitioned — growth: unbounded.
 - `idx_copyright_notice_guest_capabilities__notice`: `CREATE INDEX idx_copyright_notice_guest_capabilities__notice ON public.copyright_notice_guest_capabilities USING btree (copyright_notice_id, id)`
 
 **Triggers:**
-_none_
+
+- `trg_copyright_notice_guest_capabilities__updated_at`: `CREATE TRIGGER trg_copyright_notice_guest_capabilities__updated_at BEFORE UPDATE ON public.copyright_notice_guest_capabilities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

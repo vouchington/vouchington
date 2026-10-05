@@ -311,6 +311,11 @@ CREATE TABLE IF NOT EXISTS membership_source_states (
   CONSTRAINT fk_membership_source_states__source_lineage FOREIGN KEY (membership_source_id, membership_provider_lineage_id) REFERENCES membership_sources(id, membership_provider_lineage_id) ON DELETE CASCADE,
   CONSTRAINT fk_membership_source_states__observation_lineage_product_kind FOREIGN KEY (membership_provider_observation_id, membership_provider_lineage_id, membership_product_id, source_kind) REFERENCES membership_provider_observations(id, membership_provider_lineage_id, membership_product_id, source_kind) ON DELETE RESTRICT
 );
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trg_membership_source_states__updated_at
+BEFORE UPDATE ON membership_source_states
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_source_states__product_id ON membership_source_states (membership_product_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

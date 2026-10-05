@@ -98,8 +98,7 @@ export async function setPostImages(
         () =>
           query(sql`/* setPostImages */
       UPDATE posts
-      SET llm_moderation_content_sha256 = ${moderationSha},
-          updated_at = CURRENT_TIMESTAMP
+      SET llm_moderation_content_sha256 = ${moderationSha}
       WHERE id = ${post.id}
         `),
         async () => {

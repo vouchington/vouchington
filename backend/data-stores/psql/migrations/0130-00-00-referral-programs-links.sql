@@ -223,7 +223,7 @@ CREATE TABLE IF NOT EXISTS referral_program_topic_link_validation_rule_sets (
   referral_program_topic_id UUID NOT NULL CONSTRAINT fk_referral_program_topic_link_validation_rule_sets__topic REFERENCES referral_program_topics ON DELETE CASCADE,
   referral_program_link_validation_rule_set_id UUID NOT NULL CONSTRAINT fk_refe_prog_topi_link_vali_rule_sets__link_validation_rule_set REFERENCES referral_program_link_validation_rule_sets ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   PRIMARY KEY (referral_program_topic_id, referral_program_link_validation_rule_set_id)
 );
 

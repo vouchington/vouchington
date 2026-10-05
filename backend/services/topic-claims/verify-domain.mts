@@ -84,8 +84,7 @@ export async function verifyTopicClaimDomain(
     UPDATE topic_claims
     SET verification_method = ${matchedMethod},
         domain_verified_at = NOW(),
-        verified_at = NOW(),
-        updated_at = CURRENT_TIMESTAMP
+        verified_at = NOW()
     WHERE id = ${claimId} AND claimant_user_id = ${currentUserId}
     RETURNING
       id, topic_id, claimant_user_id, verification_method,

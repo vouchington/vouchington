@@ -24,8 +24,7 @@ export async function adminVerifyTopicClaim(
     SET verification_method = 'manual_admin',
         submitted_at = COALESCE(submitted_at, NOW()),
         verified_at = NOW(),
-        verified_by_id = ${staffUserId},
-        updated_at = CURRENT_TIMESTAMP
+        verified_by_id = ${staffUserId}
     WHERE id = ${claimId}
       AND verified_at IS NULL
       AND rejected_at IS NULL
@@ -54,8 +53,7 @@ export async function rejectTopicClaim(
     UPDATE topic_claims
     SET rejected_at = NOW(),
         rejected_by_id = ${staffUserId},
-        rejection_reason = ${rejectionReason.trim()},
-        updated_at = CURRENT_TIMESTAMP
+        rejection_reason = ${rejectionReason.trim()}
     WHERE id = ${claimId}
       AND verified_at IS NULL
       AND rejected_at IS NULL

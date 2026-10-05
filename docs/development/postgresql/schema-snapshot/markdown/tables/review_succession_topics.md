@@ -11,7 +11,6 @@ Not partitioned — growth: unbounded.
 | `review_succession_id` | `uuid`                     | no       |                     |          |           |           | Automatic review-succession epoch that owns this immutable topic snapshot. |
 | `topic_id`             | `uuid`                     | no       |                     |          |           |           | Retained topic identity in the exact archive-time set.                     |
 | `created_at`           | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                            |
-| `updated_at`           | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                            |
 
 **Primary key:** `PRIMARY KEY (review_succession_id, topic_id)`
 
@@ -35,4 +34,3 @@ _none_
 
 - `trigger_review_succession_topics_immutable`: `CREATE TRIGGER trigger_review_succession_topics_immutable BEFORE DELETE OR UPDATE ON public.review_succession_topics FOR EACH ROW EXECUTE FUNCTION fn_reject_review_succession_topic_mutation()`
 - `trigger_review_succession_topics_nonempty`: `CREATE CONSTRAINT TRIGGER trigger_review_succession_topics_nonempty AFTER INSERT OR DELETE ON public.review_succession_topics DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_reject_review_succession_topics()`
-- `trigger_review_succession_topics_updated_at`: `CREATE TRIGGER trigger_review_succession_topics_updated_at BEFORE UPDATE ON public.review_succession_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

@@ -10,7 +10,7 @@ export async function closeActiveGrant(
   await query(sql`/* closeActiveGrant: source */
     UPDATE membership_source_states
     SET cancelled_at = ${revokedAt}, expired_at = NULL, past_due_at = NULL, paused_at = NULL,
-      should_auto_renew = false, updated_at = CURRENT_TIMESTAMP
+      should_auto_renew = false
     WHERE membership_source_id = ${membershipSourceId}`)
   await query(sql`/* closeActiveGrant: activation */
     UPDATE membership_grant_activation_periods SET ended_at = GREATEST(started_at, ${revokedAt})

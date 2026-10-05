@@ -12,7 +12,6 @@ Not partitioned — growth: unbounded.
 | `copyright_notice_delivery_intent_id` | `uuid`                     | no       |                              |          |           |           | Email delivery obligation that owns this recipient address. |
 | `email_ciphertext`                    | `text`                     | no       |                              |          |           |           | Intent-scoped encrypted recipient email address.            |
 | `created_at`                          | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                             |
-| `updated_at`                          | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                             |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -36,4 +35,3 @@ Not partitioned — growth: unbounded.
 **Triggers:**
 
 - `trigger_copyright_delivery_recipients_immutable`: `CREATE TRIGGER trigger_copyright_delivery_recipients_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_delivery_recipients FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()`
-- `trigger_copyright_delivery_recipients_updated_at`: `CREATE TRIGGER trigger_copyright_delivery_recipients_updated_at BEFORE UPDATE ON public.copyright_notice_delivery_recipients FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

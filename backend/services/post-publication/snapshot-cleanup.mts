@@ -57,7 +57,7 @@ export async function cleanupPostPublicationIdentitySnapshots(
       ? null
       : (processed.at(-1)?.id ?? cursor)
   await query(sql`/* checkpointPublicationSnapshotCleanupSweep */ UPDATE post_publication_identity_cleanup_progress
-      SET cursor_snapshot_id = ${nextCursor}, updated_at = CURRENT_TIMESTAMP WHERE singleton`)
+      SET cursor_snapshot_id = ${nextCursor} WHERE singleton`)
   await query.commit()
   return { keys: keys ?? 0, snapshots: snapshots ?? 0, scanned: candidates.length }
 }

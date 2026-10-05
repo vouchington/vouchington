@@ -54,4 +54,5 @@ _none_
 - `membership_source_states_pkey`: `CREATE UNIQUE INDEX membership_source_states_pkey ON public.membership_source_states USING btree (membership_source_id)`
 
 **Triggers:**
-_none_
+
+- `trg_membership_source_states__updated_at`: `CREATE TRIGGER trg_membership_source_states__updated_at BEFORE UPDATE ON public.membership_source_states FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

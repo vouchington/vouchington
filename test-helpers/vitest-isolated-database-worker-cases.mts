@@ -1,5 +1,19 @@
 /** Global worker sweeps must not consume or count another suite's fixtures. */
 export const workerSweepIsolatedCases = {
+  'images-abandoned-upload-cleanup': {
+    file: 'backend/workers/images/workers/images.test.mts',
+    fullName: 'images worker > cleans abandoned uploads from the worker job',
+  },
+  'topic-alias-standalone-drain': {
+    file: 'backend/services/rss-feeds/__tests__/topic-alias-category-mapping-reconciliation.test.mts',
+    fullName:
+      'topic alias category mapping reconciliation > clears every stale mapping after A to B to standalone before the durable drain',
+  },
+  'topic-alias-dirty-batch-boundary': {
+    file: 'backend/services/rss-feeds/__tests__/topic-alias-category-mapping-reconciliation.test.mts',
+    fullName: 'topic alias category mapping reconciliation > drains only 25 dirty rows per run',
+  },
+
   'partition-bootstrap-ddl': {
     file: 'backend/data-stores/psql/migration-runner/monthly-partitions.test.mts',
     fullName:

@@ -13,7 +13,7 @@ export async function getMyDirectConversations(
   const query = sql`/* getMyDirectConversations */
     SELECT c.id, c.channel_type, c.title, c.created_at, c.created_by_id, c.updated_at,
       c.participant_add_policy,
-      to_char(c.updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_timestamp,
+      to_char(c.last_activity_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_timestamp,
       ARRAY(
         SELECT u.username
         FROM conversation_participants cp2
@@ -33,10 +33,10 @@ export async function getMyDirectConversations(
   `
   if (options?.after) {
     query.append(
-      sql` AND (c.updated_at, c.id) < (${options.after.timestamp}::timestamptz, ${options.after.id})`,
+      sql` AND (c.last_activity_at, c.id) < (${options.after.timestamp}::timestamptz, ${options.after.id})`,
     )
   }
-  query.append(sql` ORDER BY c.updated_at DESC, c.id DESC LIMIT ${limit + 1}`)
+  query.append(sql` ORDER BY c.last_activity_at DESC, c.id DESC LIMIT ${limit + 1}`)
 
   const { rows } = await read(query)
   return rows as Array<DirectConversation & { cursor_timestamp: string }>

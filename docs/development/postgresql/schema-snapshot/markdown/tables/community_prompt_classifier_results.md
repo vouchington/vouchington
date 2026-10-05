@@ -22,7 +22,6 @@ RANGE partitioned on `batch_id` (children: default, no retention owner, access c
 | `scope_category`            | `classifier_scope_categories` | no       | `'community_ai'::classifier_scope_categories`    |          |           |           | Always community_ai, copied from the owning batch.                                                 |
 | `scope_community_id`        | `uuid`                        | no       |                                                  |          |           |           | Community provenance copied from the owning batch; deleting the community cascades to its results. |
 | `created_at`                | `timestamp with time zone`    | yes      | `uuid_extract_timestamp(id)`                     |          | virtual   |           |                                                                                                    |
-| `updated_at`                | `timestamp with time zone`    | no       | `CURRENT_TIMESTAMP`                              |          |           |           |                                                                                                    |
 
 **Primary key:** `PRIMARY KEY (batch_id, id)`
 

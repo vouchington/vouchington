@@ -13,7 +13,6 @@ Not partitioned — growth: unbounded.
 | `withdrawn_at`                              | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | When an operator withdrew the approval.                                 |
 | `withdrawn_by_id`                           | `uuid`                     | yes      |                              |          |           |           | Operator who withdrew the approval. Null after that account is deleted. |
 | `created_at`                                | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                         |
-| `updated_at`                                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                         |
 
 **Primary key:** `PRIMARY KEY (id)`
 

@@ -48,8 +48,7 @@ export async function upsertPodcastShow(
         cover_art_url = EXCLUDED.cover_art_url,
         is_explicit = EXCLUDED.is_explicit,
         itunes_type = EXCLUDED.itunes_type,
-        description = EXCLUDED.description,
-        updated_at = CURRENT_TIMESTAMP
+        description = EXCLUDED.description
     `,
   )
 }

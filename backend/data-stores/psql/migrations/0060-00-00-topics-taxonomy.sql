@@ -653,6 +653,11 @@ CREATE TABLE IF NOT EXISTS topic_alias_category_mapping_reconciliations (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trg_topic_alias_category_mapping_reconciliations__updated_at
+BEFORE UPDATE ON topic_alias_category_mapping_reconciliations
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topic_alias_category_mapping_reconciliations__updated_at
 ON topic_alias_category_mapping_reconciliations (updated_at, topic_alias_id);
 
@@ -687,8 +692,7 @@ BEGIN
   VALUES (dirty_alias_id, dirty_alias)
   ON CONFLICT (topic_alias_id) DO UPDATE
   SET alias = EXCLUDED.alias,
-      generation = topic_alias_category_mapping_reconciliations.generation + 1,
-      updated_at = CURRENT_TIMESTAMP;
+      generation = topic_alias_category_mapping_reconciliations.generation + 1;
 
   IF TG_OP = 'DELETE' THEN
     RETURN OLD;

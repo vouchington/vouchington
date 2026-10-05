@@ -30,8 +30,7 @@ export async function createTopicClaim(
     WHERE rejected_at IS NULL AND revoked_at IS NULL
     DO UPDATE SET
       claimed_role = EXCLUDED.claimed_role,
-      evidence = EXCLUDED.evidence,
-      updated_at = CURRENT_TIMESTAMP
+      evidence = EXCLUDED.evidence
     RETURNING
       (xmax = 0) AS inserted,
       id, topic_id, claimant_user_id, verification_method,

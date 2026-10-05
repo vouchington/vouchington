@@ -106,8 +106,7 @@ export async function claimContributionAdmission<T>(
     reservation_id: string
   }>(sql`/* claimContributionAdmission.claim */
       INSERT INTO post_admission_claims (reservation_id, lease_id, expires_at) VALUES (${reservationId}, ${leaseId}, NOW() + ${CONTRIBUTION_ADMISSION_CLAIM_SECONDS} * INTERVAL '1 second')
-      ON CONFLICT (reservation_id) DO UPDATE SET lease_id = EXCLUDED.lease_id, expires_at = EXCLUDED.expires_at,
-        updated_at = NOW()
+      ON CONFLICT (reservation_id) DO UPDATE SET lease_id = EXCLUDED.lease_id, expires_at = EXCLUDED.expires_at
       WHERE post_admission_claims.expires_at <= NOW() RETURNING reservation_id`)
   if (claim.rowCount !== 1) {
     const contendedClaim = await query<{ retry_after_seconds: string }>(
@@ -126,8 +125,7 @@ export async function claimContributionAdmission<T>(
   await query(sql`/* claimContributionAdmission.mark */
       UPDATE post_admission_reservations
       SET state = 'in_progress', route = ${audit.route}, scope = ${contributionAdmissionScopeCategory(audit.scope)}, source = ${audit.source},
-        post_type = ${audit.postType}, policy_revision = ${audit.policyRevision}, retryable_failure = NULL,
-        updated_at = NOW(), retention_expires_at = NOW() + INTERVAL '48 hours'
+        post_type = ${audit.postType}, policy_revision = ${audit.policyRevision}, retryable_failure = NULL, retention_expires_at = NOW() + INTERVAL '48 hours'
       WHERE id = ${reservationId}`)
   await query.commit()
   return { kind: 'claimed', reservationId, leaseId }

@@ -30,4 +30,5 @@ _none_
 - `retained_relation_identity_cleanup_progress_pkey`: `CREATE UNIQUE INDEX retained_relation_identity_cleanup_progress_pkey ON public.retained_relation_identity_cleanup_progress USING btree (entity_relation)`
 
 **Triggers:**
-_none_
+
+- `trg_retained_relation_identity_cleanup_progress__updated_at`: `CREATE TRIGGER trg_retained_relation_identity_cleanup_progress__updated_at BEFORE UPDATE ON public.retained_relation_identity_cleanup_progress FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

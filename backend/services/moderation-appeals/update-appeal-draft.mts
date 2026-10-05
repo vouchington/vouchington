@@ -49,8 +49,7 @@ export async function updateModerationAppealDraft(
           edited_by_id = ${staffUserId},
           approved_at = NULL,
           approved_by_id = NULL,
-          latest_lifecycle_change_id = (SELECT id FROM lifecycle_change_id),
-          updated_at = CURRENT_TIMESTAMP
+          latest_lifecycle_change_id = (SELECT id FROM lifecycle_change_id)
       WHERE id = (SELECT id FROM previous)
         AND sent_at IS NULL
         AND resolved_at IS NULL

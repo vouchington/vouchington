@@ -11,6 +11,13 @@ completed turns through the transcript API.
 | `conversations`         | Not partitioned                   | Chat sessions with title, creator, optional post/RSS item context |
 | `conversation_messages` | RANGE by UUIDv7 `conversation_id` | User and assistant messages with JSON content                     |
 
+### Activity and row timestamps
+
+`last_activity_at` records message, participant and conversation-metadata activity. Direct-message
+and modmail list ordering and cursor boundaries use this timestamp with `id` as the tie-breaker.
+The database owns `updated_at` through its row-update trigger; services do not assign it. Public
+DTOs retain their existing timestamp fields.
+
 ### Retention
 
 Conversations and messages are retained indefinitely and have no monthly retention partitions; see

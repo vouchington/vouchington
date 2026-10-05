@@ -12,7 +12,6 @@ Not partitioned — growth: unbounded.
 | `topic_id`                           | `uuid`                     | no       |                     |          |           |           | The topic suggested by the autotagger.                        |
 | `topic_order`                        | `integer`                  | no       |                     |          |           |           | Relevance order of this topic suggestion (0 = most relevant). |
 | `created_at`                         | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                               |
-| `updated_at`                         | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                               |
 
 **Primary key:** `PRIMARY KEY (rss_feed_item_autotagger_result_id, topic_id)`
 

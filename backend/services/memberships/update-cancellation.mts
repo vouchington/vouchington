@@ -21,8 +21,7 @@ async function setCancelAtPeriodEnd(
       RETURNING *
     ), updated_source AS (
       UPDATE membership_source_states state
-      SET should_auto_renew = false,
-          updated_at = CURRENT_TIMESTAMP
+      SET should_auto_renew = false
       FROM updated_membership membership
       WHERE state.membership_source_id = membership.membership_source_id
       RETURNING state.membership_source_id

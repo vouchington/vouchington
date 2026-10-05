@@ -94,8 +94,7 @@ async function upsertRssFeedCategoriesChunk(
         AND t_slug.merged_into_topic_id IS NULL
       ORDER BY rss_feed_id ASC NULLS LAST, input.category_text ASC NULLS LAST
       ON CONFLICT (rss_feed_id, category_text) DO UPDATE
-        SET topic_id = EXCLUDED.topic_id,
-            updated_at = CURRENT_TIMESTAMP
+        SET topic_id = EXCLUDED.topic_id
     `,
   )
 }
@@ -143,8 +142,7 @@ export async function backfillCategoriesForTopicAlias(topicId: string): Promise<
           FOR UPDATE SKIP LOCKED
         )
         UPDATE rss_feed_categories target
-        SET topic_id = ${topicId},
-            updated_at = CURRENT_TIMESTAMP
+        SET topic_id = ${topicId}
         FROM candidates
         WHERE target.rss_feed_id = candidates.rss_feed_id
           AND target.category_text = candidates.category_text

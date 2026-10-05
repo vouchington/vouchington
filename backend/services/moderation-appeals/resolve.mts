@@ -44,8 +44,7 @@ export async function resolveModerationAppealAccept(
       UPDATE moderation_appeals
       SET resolution_action = 'accept',
           resolved_at = ${now},
-          resolved_by_id = ${staffUserId},
-          updated_at = CURRENT_TIMESTAMP
+          resolved_by_id = ${staffUserId}
       WHERE id = ${appealId} AND sent_at IS NOT NULL AND resolved_at IS NULL
       RETURNING `.append(APPEAL_RETURNING),
   )

@@ -1,3 +1,4 @@
+import { insertCopyrightActionIntent } from './action-intent-insertion.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -52,18 +53,12 @@ export async function createCopyrightRestoreIntentForReversalInTransaction(
     query: transaction,
   })
   assert(placement, 409, 'Copyright placement is unavailable')
-  const { rows: intentRows } = await transaction<CopyrightActionIntentRecord>(sql`
-    /* createCopyrightRestoreIntentForReversalInTransaction */
-    INSERT INTO copyright_notice_action_intents (
-      copyright_restriction_id, copyright_notice_deadline_id, expected_placement_revision, action
-    ) VALUES (${restrictionId}, NULL, ${placement.revision}, 'restore')
-    ON CONFLICT (copyright_restriction_id, expected_placement_revision, action)
-    DO UPDATE SET updated_at = copyright_notice_action_intents.updated_at
-    RETURNING id, copyright_restriction_id, copyright_notice_deadline_id,
-      expected_placement_revision, action, completed_at
-  `)
-  const intent = intentRows[0]
-  assert(intent, 500, 'Copyright reversal restore intent was not recorded')
+  const intent = await insertCopyrightActionIntent(
+    transaction,
+    restrictionId,
+    placement.revision,
+    'restore',
+  )
   await transaction(sql`/* createCopyrightRestoreIntentForReversalInTransaction:event */
     INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, copyright_notice_action_intent_id)
     VALUES (${restriction.copyright_notice_id}, 'reversal_restoration_intent_created', ${intent.id})

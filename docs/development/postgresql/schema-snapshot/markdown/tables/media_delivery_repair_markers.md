@@ -31,4 +31,5 @@ _none_
 - `media_delivery_repair_markers_pkey`: `CREATE UNIQUE INDEX media_delivery_repair_markers_pkey ON public.media_delivery_repair_markers USING btree (delivery_key)`
 
 **Triggers:**
-_none_
+
+- `trg_media_delivery_repair_markers__updated_at`: `CREATE TRIGGER trg_media_delivery_repair_markers__updated_at BEFORE UPDATE ON public.media_delivery_repair_markers FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

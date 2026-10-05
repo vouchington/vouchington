@@ -57,8 +57,7 @@ export async function adminAssignItemToStory(
     UPDATE rss_feed_items
     SET
       story_id = ${storyId},
-      story_locked_at = CURRENT_TIMESTAMP,
-      updated_at = CURRENT_TIMESTAMP
+      story_locked_at = CURRENT_TIMESTAMP
     FROM old, locked
     WHERE rss_feed_items.id = old.id
     RETURNING rss_feed_items.id, old.story_id AS prior_story_id
@@ -158,8 +157,7 @@ export async function adminRemoveItemFromStory(
     UPDATE rss_feed_items
     SET
       story_id = NULL,
-      story_locked_at = CURRENT_TIMESTAMP,
-      updated_at = CURRENT_TIMESTAMP
+      story_locked_at = CURRENT_TIMESTAMP
     FROM old, locked
     WHERE rss_feed_items.id = old.id
     RETURNING rss_feed_items.id, old.story_id AS prior_story_id

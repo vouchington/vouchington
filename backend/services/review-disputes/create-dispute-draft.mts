@@ -26,8 +26,7 @@ export async function createReviewDisputeDraft(input: AiDraftInput): Promise<Rev
           ai_drafted_at = ${now},
           public_response = ${input.aiPublicResponse},
           drafted_at = COALESCE(drafted_at, ${now}),
-          latest_lifecycle_change_id = (SELECT id FROM lifecycle_change_id),
-          updated_at = CURRENT_TIMESTAMP
+          latest_lifecycle_change_id = (SELECT id FROM lifecycle_change_id)
       WHERE id = ${input.disputeId}
         AND approved_at IS NULL
         AND sent_at IS NULL

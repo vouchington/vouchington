@@ -16,7 +16,6 @@ Not partitioned — growth: unbounded.
 | `surface_owner_user_id`       | `uuid`                     | yes      |                              |          |           |           | Retained profile account identity captured at filing for legal holds after account or link erasure; never grants live response authority.                           |
 | `hosted_use_url`              | `text`                     | no       |                              |          |           |           | Immutable URL snapshot supplied or resolved for the identified hosted use.                                                                                          |
 | `created_at`                  | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                                     |
-| `updated_at`                  | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                                                     |
 
 **Primary key:** `PRIMARY KEY (id)`
 

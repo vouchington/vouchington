@@ -73,7 +73,7 @@ export async function cleanupRetainedMediaBindings(
     await query(
       `/* checkpointRetainedMediaBindingCleanup */
        UPDATE retained_identity_cleanup_progress
-       SET cursor_identity_id = $1, updated_at = CURRENT_TIMESTAMP
+       SET cursor_identity_id = $1
        WHERE family = 'image_placement_binding'`,
       [hasMore ? page.at(-1)!.placement_id : null],
     )

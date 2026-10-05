@@ -37,8 +37,7 @@ export async function markContributionAdmissionRetryableFailure(
 ): Promise<void> {
   await using transaction = await beginTransaction()
   await transaction(sql`/* markContributionAdmissionRetryableFailure.update */
-    UPDATE post_admission_reservations SET state = 'retryable_failed', retryable_failure = ${JSON.stringify(serializeContributionAdmissionFailure(error))}::jsonb,
-      updated_at = NOW(), retention_expires_at = NOW() + INTERVAL '48 hours'
+    UPDATE post_admission_reservations SET state = 'retryable_failed', retryable_failure = ${JSON.stringify(serializeContributionAdmissionFailure(error))}::jsonb, retention_expires_at = NOW() + INTERVAL '48 hours'
       WHERE id = ${reservationId} AND EXISTS (
         SELECT 1 FROM post_admission_claims WHERE reservation_id = ${reservationId} AND lease_id = ${leaseId}
       )`)

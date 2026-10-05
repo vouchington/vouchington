@@ -2,9 +2,7 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE open_graph_dependency_manifests (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE open_graph_dependency_manifest_placements (
@@ -13,7 +11,7 @@ CREATE TABLE open_graph_dependency_manifest_placements (
   image_id uuid NOT NULL,
   placement_revision integer NOT NULL CONSTRAINT chk_open_graph_dependenc_manifest_placement__placement_revision CHECK (placement_revision >= 0),
   ordinal integer NOT NULL CHECK (ordinal >= 0),
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   PRIMARY KEY (manifest_id, ordinal),
   CONSTRAINT uq_open_graph_depend_manifes_placeme__manifest_id__placement_id UNIQUE (manifest_id, placement_id)
 );

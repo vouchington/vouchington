@@ -94,6 +94,11 @@ CREATE TABLE IF NOT EXISTS post_publication_identity_bridge_cleanup_progress (
   cursor_identity_id UUID,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trg_post_publicati_identity_bridge_cleanup_progress__updated_at
+BEFORE UPDATE ON post_publication_identity_bridge_cleanup_progress
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 INSERT INTO post_publication_identity_bridge_cleanup_progress (singleton) VALUES (TRUE) ON CONFLICT DO NOTHING;
 COMMENT ON TABLE post_publication_identity_bridge_cleanup_progress IS 'Checked singleton rotates bounded identity bridge sweeps across concrete entity tables.';
 COMMENT ON COLUMN post_publication_identity_bridge_cleanup_progress.singleton IS 'One independent bridge cleanup cursor.';

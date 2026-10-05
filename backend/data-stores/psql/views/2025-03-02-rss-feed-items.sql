@@ -149,3 +149,5 @@ CREATE OR REPLACE VIEW view_rss_feed_items AS
   ) all_sources ON true
   WHERE rss_feed_items.deleted_at IS NULL
 ;
+
+COMMENT ON VIEW view_rss_feed_items IS 'RSS item response projection; callers enforce feed and item visibility.';

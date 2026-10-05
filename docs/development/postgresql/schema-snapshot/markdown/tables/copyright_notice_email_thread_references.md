@@ -13,7 +13,6 @@ Not partitioned — growth: unbounded.
 | `lookup_token`                     | `text`                                          | no       |                              |          |           |           | Keyed digest of a normalized RFC message reference.          |
 | `reference_kind`                   | `copyright_notice_email_thread_reference_kinds` | no       |                              |          |           |           | Whether the token names this message or a referenced parent. |
 | `created_at`                       | `timestamp with time zone`                      | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                              |
-| `updated_at`                       | `timestamp with time zone`                      | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                              |
 
 **Primary key:** `PRIMARY KEY (id)`
 

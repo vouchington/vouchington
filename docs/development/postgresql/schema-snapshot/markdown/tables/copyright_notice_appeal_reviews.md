@@ -18,7 +18,6 @@ Not partitioned — growth: unbounded.
 | `rationale_ciphertext`                      | `text`                     | no       |                              |          |           |           | Encrypted moderator rationale.                                    |
 | `manual_fallback_reason_ciphertext`         | `text`                     | yes      |                              |          |           |           | Encrypted reason staff proceeded without an agent recommendation. |
 | `created_at`                                | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                   |
-| `updated_at`                                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                   |
 
 **Primary key:** `PRIMARY KEY (id)`
 

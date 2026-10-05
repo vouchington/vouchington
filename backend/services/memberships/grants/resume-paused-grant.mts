@@ -37,15 +37,14 @@ export async function resumePausedGrantProjection(
     ), state AS (
       UPDATE membership_source_states source_state
       SET effective_at = activation.started_at,
-        expires_at = activation.started_at + candidate.remaining_duration,
-        updated_at = CURRENT_TIMESTAMP
+        expires_at = activation.started_at + candidate.remaining_duration
       FROM candidate
       INNER JOIN activation ON activation.membership_grant_id = candidate.membership_grant_id
       WHERE source_state.membership_source_id = candidate.membership_source_id
       RETURNING candidate.membership_id, source_state.effective_at, source_state.expires_at
     )
     UPDATE memberships membership
-    SET effective_at = state.effective_at, expires_at = state.expires_at, updated_at = CURRENT_TIMESTAMP
+    SET effective_at = state.effective_at, expires_at = state.expires_at
     FROM state
     WHERE membership.id = state.membership_id
     RETURNING membership.id`)

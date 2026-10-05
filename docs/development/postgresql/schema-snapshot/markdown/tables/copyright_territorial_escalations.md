@@ -15,7 +15,6 @@ Not partitioned — growth: unbounded.
 | `copyright_eu_supervised_complaint_id`           | `uuid`                     | yes      |                              |          |           |           | EU supervised complaint that caused this escalation. Exactly one source is set.   |
 | `escalated_at`                                   | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | When the escalation was recorded.                                                 |
 | `created_at`                                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                   |
-| `updated_at`                                     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                   |
 
 **Primary key:** `PRIMARY KEY (id)`
 

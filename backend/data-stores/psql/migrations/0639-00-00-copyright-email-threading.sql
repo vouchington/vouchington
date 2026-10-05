@@ -16,7 +16,7 @@ CREATE TABLE copyright_notice_email_thread_references (
   lookup_token text NOT NULL CHECK (char_length(lookup_token) = 64),
   reference_kind copyright_notice_email_thread_reference_kinds NOT NULL CHECK (reference_kind IN ('message_id', 'reply_reference')),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   CONSTRAINT uq_cop_not_ema_thr_ref__intake_id__lookup_token__reference_kind UNIQUE (copyright_notice_email_intake_id, lookup_token, reference_kind)
 );
 
@@ -29,7 +29,7 @@ CREATE TABLE copyright_notice_email_intake_notice_links (
   link_kind copyright_notice_email_intake_link_kinds NOT NULL CHECK (link_kind IN ('initial', 'thread')),
   matched_reference_lookup text CONSTRAINT chk_copy_noti_email_intak_notic_links__matched_reference_lookup CHECK (matched_reference_lookup IS NULL OR char_length(matched_reference_lookup) = 64),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   CONSTRAINT uq_copyr_notice_email_intake_notice_links__notice_id__intake_id UNIQUE (copyright_notice_id, copyright_notice_email_intake_id)
 );
 
@@ -56,7 +56,7 @@ CREATE TABLE copyright_notice_email_correspondence_reviews (
   rationale_ciphertext text,
   manual_fallback_reason_ciphertext text,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   CONSTRAINT uq_copyright_notice_email_correspond_reviews__intake_id__action UNIQUE (copyright_notice_email_intake_id, action),
   CHECK ((action = 'pending' AND reviewed_at IS NULL AND reviewed_by_id IS NULL AND kind IS NULL)
     OR (action IN ('admitted', 'rejected') AND reviewed_at IS NOT NULL AND reviewed_by_id IS NOT NULL AND kind IS NOT NULL)),

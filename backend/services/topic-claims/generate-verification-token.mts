@@ -68,8 +68,7 @@ export async function issueDomainVerificationToken(
     UPDATE topic_claims
     SET verification_token_hash = ${tokenHash},
         verification_token_issued_at = NOW(),
-        verification_hostname_id = ${claimRow.hostname_id ?? null},
-        updated_at = CURRENT_TIMESTAMP
+        verification_hostname_id = ${claimRow.hostname_id ?? null}
     WHERE id = ${claimId} AND claimant_user_id = ${currentUserId}
   `)
 

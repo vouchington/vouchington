@@ -48,7 +48,7 @@ async function assignItemsToStory(
   const { rows } = await query(
     sql`/* assignStoryClusteringItems */
     UPDATE rss_feed_items
-    SET story_id = ${storyId}, updated_at = CURRENT_TIMESTAMP
+    SET story_id = ${storyId}
     WHERE id = ANY(${[...itemIds]}::uuid[])
       AND deleted_at IS NULL AND story_id IS NULL AND story_locked_at IS NULL
     RETURNING id`,

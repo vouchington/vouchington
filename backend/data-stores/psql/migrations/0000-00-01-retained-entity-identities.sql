@@ -75,6 +75,11 @@ CREATE TABLE IF NOT EXISTS retained_identity_cleanup_progress (
   cursor_identity_id UUID,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trg_retained_identity_cleanup_progress__updated_at
+BEFORE UPDATE ON retained_identity_cleanup_progress
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 COMMENT ON TABLE retained_identity_cleanup_progress IS 'One operational keyset cursor per concrete retained root family.';
 COMMENT ON COLUMN retained_identity_cleanup_progress.family IS 'Concrete retained root family selected by the cleanup worker.';
 COMMENT ON COLUMN retained_identity_cleanup_progress.cursor_identity_id IS 'Last scanned identity, not a durable relationship to that identity.';

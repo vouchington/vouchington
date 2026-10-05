@@ -250,3 +250,5 @@ CREATE OR REPLACE VIEW view_posts AS
   ) pl ON true
   WHERE posts.deleted_at IS NULL
 ;
+
+COMMENT ON VIEW view_posts IS 'Current post response projection; callers enforce publication, deletion and audience access.';

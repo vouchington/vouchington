@@ -14,7 +14,6 @@ Not partitioned — growth: unbounded.
 | `lifted_by_id`             | `uuid`                     | yes      |                              |          |           |           | Administrator who made the decision; cleared only for account erasure. |
 | `rationale_ciphertext`     | `text`                     | no       |                              |          |           |           | Encrypted administrator rationale.                                     |
 | `created_at`               | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | Creation time derived from the UUIDv7 identity.                        |
-| `updated_at`               | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | Last erasure update time.                                              |
 
 **Primary key:** `PRIMARY KEY (id)`
 

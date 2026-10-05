@@ -16,7 +16,6 @@ Not partitioned — growth: unbounded.
 | `explanation_ciphertext` | `text`                     | no       |                              |          |           |           | Encrypted explanation of the supervised complaint.                                   |
 | `received_at`            | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | When Voucha stored this supervised complaint.                                        |
 | `created_at`             | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                      |
-| `updated_at`             | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                      |
 
 **Primary key:** `PRIMARY KEY (id)`
 

@@ -12,7 +12,6 @@ Not partitioned — growth: unbounded.
 | `copyright_notice_id`          | `uuid`                     | no       |                              |          |           |           | EU notice that matched one active designation at receipt time.                    |
 | `copyright_trusted_flagger_id` | `uuid`                     | no       |                              |          |           |           | Designation selected at receipt time, preferring intellectual-property expertise. |
 | `created_at`                   | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | Match time derived from the UUIDv7 identifier.                                    |
-| `updated_at`                   | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | Insert timestamp; immutable rows cannot be updated.                               |
 
 **Primary key:** `PRIMARY KEY (id)`
 

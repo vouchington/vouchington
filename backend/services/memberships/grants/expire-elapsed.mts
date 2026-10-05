@@ -70,7 +70,7 @@ export async function expireElapsedMemberships(
       await query(sql`/* expireElapsedMemberships: close source */
         UPDATE membership_source_states
         SET cancelled_at = NULL, expired_at = ${membership.expires_at},
-          past_due_at = NULL, paused_at = NULL, should_auto_renew = false, updated_at = CURRENT_TIMESTAMP
+          past_due_at = NULL, paused_at = NULL, should_auto_renew = false
         WHERE membership_source_id = ${membership.membership_source_id}`)
       // eslint-disable-next-line no-await-in-loop
       await query(sql`/* expireElapsedMemberships: close activation */

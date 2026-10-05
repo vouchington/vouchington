@@ -57,7 +57,7 @@ async function persistFacebookFriendBatch(
     `/* persistFacebookFriendBatch */ INSERT INTO facebook_friends (facebook_user_id, facebook_friend_id)
      SELECT $1, friend_id FROM UNNEST($2::text[]) AS friend_id
      ORDER BY $1, friend_id
-     ON CONFLICT (facebook_user_id, facebook_friend_id) DO UPDATE SET updated_at = CURRENT_TIMESTAMP`,
+     ON CONFLICT (facebook_user_id, facebook_friend_id) DO UPDATE SET last_observed_at = CURRENT_TIMESTAMP`,
     [facebookUserId, friendIds],
   )
   await transaction.commit()
@@ -72,7 +72,7 @@ async function getStaleFacebookFriendIds(
   const { rows } = await write(
     `/* getStaleFacebookFriendIds */ SELECT facebook_friend_id
      FROM facebook_friends
-     WHERE facebook_user_id = $1 AND updated_at <= $2::timestamptz
+     WHERE facebook_user_id = $1 AND last_observed_at <= $2::timestamptz
      ORDER BY facebook_friend_id
      LIMIT $3`,
     [facebookUserId, syncStartTime, batchSize],
@@ -95,7 +95,7 @@ async function deleteFacebookFriendBatch(
     `/* deleteFacebookFriendBatch */ DELETE FROM facebook_friends
      WHERE facebook_user_id = $1
        AND facebook_friend_id = ANY($2::text[])
-       AND updated_at <= $3::timestamptz`,
+       AND last_observed_at <= $3::timestamptz`,
     [facebookUserId, friendIds, syncStartTime],
   )
   await transaction.commit()

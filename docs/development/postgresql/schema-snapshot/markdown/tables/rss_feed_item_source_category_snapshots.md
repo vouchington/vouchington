@@ -32,4 +32,5 @@ _none_
 - `rss_feed_item_source_category_snapshots_pkey`: `CREATE UNIQUE INDEX rss_feed_item_source_category_snapshots_pkey ON public.rss_feed_item_source_category_snapshots USING btree (rss_feed_id, rss_feed_item_id)`
 
 **Triggers:**
-_none_
+
+- `trg_rss_feed_item_source_category_snapshots__updated_at`: `CREATE TRIGGER trg_rss_feed_item_source_category_snapshots__updated_at BEFORE UPDATE ON public.rss_feed_item_source_category_snapshots FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

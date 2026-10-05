@@ -18,7 +18,6 @@ Not partitioned — growth: unbounded.
 | `referred_by_id`                    | `uuid`                              | yes      |                                     |          |           |           | Party account if one exists; null for a guest or after account deletion. |
 | `recorded_by_id`                    | `uuid`                              | yes      |                                     |          |           |           | Staff account recording the referral; null after account deletion.       |
 | `created_at`                        | `timestamp with time zone`          | yes      | `uuid_extract_timestamp(id)`        |          | virtual   |           |                                                                          |
-| `updated_at`                        | `timestamp with time zone`          | no       | `CURRENT_TIMESTAMP`                 |          |           |           |                                                                          |
 
 **Primary key:** `PRIMARY KEY (id)`
 

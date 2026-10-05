@@ -30,8 +30,7 @@ export async function createDirectMessageNotification(
       id = uuidv7(),
       deleted_at = NULL,
       read_at = NULL,
-      pushed_at = NULL,
-      updated_at = CURRENT_TIMESTAMP
+      pushed_at = NULL
     RETURNING user_id, id
   `)
 

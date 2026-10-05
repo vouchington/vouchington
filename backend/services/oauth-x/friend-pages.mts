@@ -50,7 +50,7 @@ async function persistXFriendBatch(
     `/* persistXFriendBatch */ INSERT INTO x_friends (x_user_id, x_friend_id)
      SELECT $1, friend_id FROM UNNEST($2::text[]) AS friend_id
      ORDER BY $1, friend_id
-     ON CONFLICT (x_user_id, x_friend_id) DO UPDATE SET updated_at = CURRENT_TIMESTAMP`,
+     ON CONFLICT (x_user_id, x_friend_id) DO UPDATE SET last_observed_at = CURRENT_TIMESTAMP`,
     [xUserId, friendIds],
   )
   await transaction.commit()
@@ -65,7 +65,7 @@ async function getStaleXFriendIds(
   const { rows } = await write(
     `/* getStaleXFriendIds */ SELECT x_friend_id
      FROM x_friends
-     WHERE x_user_id = $1 AND updated_at <= $2::timestamptz
+     WHERE x_user_id = $1 AND last_observed_at <= $2::timestamptz
      ORDER BY x_friend_id
      LIMIT $3`,
     [xUserId, syncStartTime, batchSize],
@@ -87,7 +87,7 @@ async function deleteXFriendBatch(
     `/* deleteXFriendBatch */ DELETE FROM x_friends
      WHERE x_user_id = $1
        AND x_friend_id = ANY($2::text[])
-       AND updated_at <= $3::timestamptz`,
+       AND last_observed_at <= $3::timestamptz`,
     [xUserId, friendIds, syncStartTime],
   )
   await transaction.commit()

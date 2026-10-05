@@ -10,8 +10,7 @@ export async function renewContributionAdmissionLease(
   const result = await query<{ committed_at: Date }>(sql`/* renewContributionAdmissionLease */
     WITH observed_at AS (SELECT clock_timestamp() AS value)
     UPDATE post_admission_claims c
-    SET expires_at = observed_at.value + ${CONTRIBUTION_ADMISSION_CLAIM_SECONDS} * INTERVAL '1 second',
-      updated_at = observed_at.value
+    SET expires_at = observed_at.value + ${CONTRIBUTION_ADMISSION_CLAIM_SECONDS} * INTERVAL '1 second'
     FROM observed_at
     WHERE c.reservation_id = ${reservationId} AND c.lease_id = ${leaseId}
       AND c.expires_at > observed_at.value

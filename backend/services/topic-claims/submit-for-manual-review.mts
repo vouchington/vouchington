@@ -12,8 +12,7 @@ export async function submitTopicClaimForManualReview(
   const { rows } = await write(sql`/* submitTopicClaimForManualReview */
     UPDATE topic_claims
     SET submitted_at = NOW(),
-        evidence = ${evidence.trim()},
-        updated_at = CURRENT_TIMESTAMP
+        evidence = ${evidence.trim()}
     WHERE id = ${claimId}
       AND claimant_user_id = ${currentUserId}
       AND verified_at IS NULL

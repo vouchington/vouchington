@@ -49,8 +49,7 @@ export async function createEmailVerificationToken(
       ON CONFLICT (user_id, email_address) WHERE user_id IS NOT NULL
       DO UPDATE SET
         token = ${token},
-        logged_in_at = NULL,
-        updated_at = NOW()
+        logged_in_at = NULL
     `)
   await query.commit()
 

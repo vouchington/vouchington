@@ -55,7 +55,7 @@ async function persistGithubFriendBatch(
     `/* persistGithubFriendBatch */ INSERT INTO github_friends (github_user_id, github_friend_id)
      SELECT $1, friend_id FROM UNNEST($2::text[]) AS friend_id
      ORDER BY $1, friend_id
-     ON CONFLICT (github_user_id, github_friend_id) DO UPDATE SET updated_at = CURRENT_TIMESTAMP`,
+     ON CONFLICT (github_user_id, github_friend_id) DO UPDATE SET last_observed_at = CURRENT_TIMESTAMP`,
     [githubUserId, friendIds],
   )
   await transaction.commit()
@@ -70,7 +70,7 @@ async function getStaleGithubFriendIds(
   const { rows } = await write(
     `/* getStaleGithubFriendIds */ SELECT github_friend_id
      FROM github_friends
-     WHERE github_user_id = $1 AND updated_at <= $2::timestamptz
+     WHERE github_user_id = $1 AND last_observed_at <= $2::timestamptz
      ORDER BY github_friend_id
      LIMIT $3`,
     [githubUserId, syncStartTime, batchSize],
@@ -92,7 +92,7 @@ async function deleteGithubFriendBatch(
     `/* deleteGithubFriendBatch */ DELETE FROM github_friends
      WHERE github_user_id = $1
        AND github_friend_id = ANY($2::text[])
-       AND updated_at <= $3::timestamptz`,
+       AND last_observed_at <= $3::timestamptz`,
     [githubUserId, friendIds, syncStartTime],
   )
   await transaction.commit()

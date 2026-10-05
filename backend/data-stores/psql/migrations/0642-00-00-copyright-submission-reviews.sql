@@ -5,9 +5,7 @@ CREATE TABLE copyright_restriction_administrator_lifts (
   lifted_at timestamptz NOT NULL,
   lifted_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
   rationale_ciphertext text NOT NULL CONSTRAINT chk_copyright_restrictio_administra_lifts__rationale_ciphertext CHECK (char_length(rationale_ciphertext) BETWEEN 1 AND 1048576),
-  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_restriction_administrator_lifts__actor
@@ -28,7 +26,7 @@ COMMENT ON COLUMN copyright_restriction_administrator_lifts.lifted_at IS 'Time t
 COMMENT ON COLUMN copyright_restriction_administrator_lifts.lifted_by_id IS 'Administrator who made the decision; cleared only for account erasure.';
 COMMENT ON COLUMN copyright_restriction_administrator_lifts.rationale_ciphertext IS 'Encrypted administrator rationale.';
 COMMENT ON COLUMN copyright_restriction_administrator_lifts.created_at IS 'Creation time derived from the UUIDv7 identity.';
-COMMENT ON COLUMN copyright_restriction_administrator_lifts.updated_at IS 'Last erasure update time.';
+
 
 ALTER TABLE copyright_notice_appeal_recommendations
   -- squawk-ignore disallowed-unique-constraint, constraint-missing-not-valid -- Copyright intake is activation-gated and this stacked table is empty at deployment.
@@ -47,7 +45,7 @@ CREATE TABLE copyright_notice_appeal_reviews (
   rationale_ciphertext text NOT NULL CHECK (char_length(rationale_ciphertext) BETWEEN 1 AND 1048576),
   manual_fallback_reason_ciphertext text CONSTRAINT chk_copyr_notic_appea_review__manual_fallback_reason_ciphertext CHECK (manual_fallback_reason_ciphertext IS NULL OR char_length(manual_fallback_reason_ciphertext) BETWEEN 1 AND 1048576),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   CONSTRAINT uq_copyrig_notice_appeal_reviews__submission_id__restriction_id UNIQUE (copyright_notice_submission_id, copyright_restriction_id),
   CONSTRAINT fk_copyright_notice_appeal_reviews__recommendation__submission FOREIGN KEY (copyright_notice_appeal_recommendation_id, copyright_notice_submission_id)
     REFERENCES copyright_notice_appeal_recommendations(id, copyright_notice_submission_id) ON DELETE RESTRICT,
@@ -65,7 +63,7 @@ CREATE TABLE copyright_notice_counter_notice_reviews (
   is_accepted boolean NOT NULL,
   rationale_ciphertext text NOT NULL CONSTRAINT chk_copyrig_notice_counter_notice_reviews__rationale_ciphertext CHECK (char_length(rationale_ciphertext) BETWEEN 1 AND 1048576),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   CHECK (is_accepted = (copyright_notice_deadline_id IS NOT NULL))
 );
 

@@ -13,7 +13,6 @@ Not partitioned — growth: unbounded.
 | `retention_days`      | `integer`                  | no       |                              |          |           |           | Counsel-approved retention period, in days, that was in force when the case was erased.                                                           |
 | `erased_object_count` | `integer`                  | no       |                              |          |           |           | Count of stored evidence object keys the case referenced; every version of each was removed from the evidence bucket before this row was written. |
 | `created_at`          | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | Time the case was erased, derived from the UUIDv7 id; the row is append-only.                                                                     |
-| `updated_at`          | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                                   |
 
 **Primary key:** `PRIMARY KEY (id)`
 

@@ -84,3 +84,5 @@ CREATE OR REPLACE VIEW view_memberships AS
   ) stripe_mapping ON true
   WHERE m.projection_ended_at IS NULL
 ;
+
+COMMENT ON VIEW view_memberships IS 'Membership projection for authorized owner and staff account reads.';

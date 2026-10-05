@@ -24,7 +24,6 @@ RANGE partitioned on `topic_id` (children: default, no retention owner, access c
 | `scope_category`            | `classifier_scope_categories` | no       |                                       |          |           |           | Decision scope copied from the owning batch.                                                                              |
 | `scope_community_id`        | `uuid`                        | yes      |                                       |          |           |           | Immutable community provenance copied from the owning batch.                                                              |
 | `created_at`                | `timestamp with time zone`    | yes      | `uuid_extract_timestamp(id)`          |          | virtual   |           |                                                                                                                           |
-| `updated_at`                | `timestamp with time zone`    | no       | `CURRENT_TIMESTAMP`                   |          |           |           |                                                                                                                           |
 
 **Primary key:** `PRIMARY KEY (topic_id, id)`
 

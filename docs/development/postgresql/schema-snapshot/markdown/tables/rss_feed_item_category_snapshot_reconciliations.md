@@ -34,4 +34,5 @@ _none_
 - `rss_feed_item_category_snapshot_reconciliations_pkey`: `CREATE UNIQUE INDEX rss_feed_item_category_snapshot_reconciliations_pkey ON public.rss_feed_item_category_snapshot_reconciliations USING btree (rss_feed_item_id)`
 
 **Triggers:**
-_none_
+
+- `trg_rss_feed_item_category_snapshot_reconciliations__updated_at`: `CREATE TRIGGER trg_rss_feed_item_category_snapshot_reconciliations__updated_at BEFORE UPDATE ON public.rss_feed_item_category_snapshot_reconciliations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

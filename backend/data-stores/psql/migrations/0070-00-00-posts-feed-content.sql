@@ -783,6 +783,11 @@ CREATE TABLE IF NOT EXISTS agent_moderations (
   PRIMARY KEY (post_id, input_sha256, prompt_id)
 ) PARTITION BY RANGE (post_id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trg_agent_moderations__updated_at
+BEFORE UPDATE ON agent_moderations
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+
 -- unique index on (post_id, id) for vote table FK reference
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_agent_moderations__post_id__id ON agent_moderations (post_id, id);

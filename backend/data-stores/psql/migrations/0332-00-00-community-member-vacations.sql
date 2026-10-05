@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS community_member_vacations (
   community_id UUID        NOT NULL REFERENCES communities ON DELETE CASCADE,
   user_id      UUID        NOT NULL REFERENCES users ON DELETE CASCADE,
@@ -7,6 +8,11 @@ CREATE TABLE IF NOT EXISTS community_member_vacations (
   updated_at   TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (community_id, user_id)
 );
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trg_community_member_vacations__updated_at
+BEFORE UPDATE ON community_member_vacations
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 COMMENT ON TABLE community_member_vacations IS
   'Self-service vacation flag for community moderators. '

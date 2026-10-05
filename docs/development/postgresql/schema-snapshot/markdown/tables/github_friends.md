@@ -6,12 +6,13 @@ GitHub follower/following relationships for friend recommendations.
 
 Not partitioned — growth: unbounded.
 
-| Column             | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                   |
-| ------------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------- |
-| `github_user_id`   | `text`                     | no       |                     |          |           |           | The GitHub user whose friends list this entry belongs to. |
-| `github_friend_id` | `text`                     | no       |                     |          |           |           | The GitHub user ID of the friend.                         |
-| `created_at`       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                           |
-| `updated_at`       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                           |
+| Column             | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                                               |
+| ------------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `github_user_id`   | `text`                     | no       |                     |          |           |           | The GitHub user whose friends list this entry belongs to.                                                                             |
+| `github_friend_id` | `text`                     | no       |                     |          |           |           | The GitHub user ID of the friend.                                                                                                     |
+| `created_at`       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                                       |
+| `last_observed_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | Database timestamp of the latest provider friend-sync observation; stale observations are removed against the exact sync-start clock. |
+| `updated_at`       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                                       |
 
 **Primary key:** `PRIMARY KEY (github_user_id, github_friend_id)`
 

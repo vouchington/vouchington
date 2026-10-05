@@ -17,7 +17,6 @@ Not partitioned — growth: unbounded.
 | `rationale_ciphertext`            | `text`                                            | no       |                              |          |           |           | Encrypted bounded agent rationale.                                                                                                                                                            |
 | `guidance_ciphertext`             | `text`                                            | no       |                              |          |           |           | Encrypted strictly validated moderator guidance: summary, section 512(c)(3) element checklist, risk notes, and advisory suggested action. Staff-visible only; no workflow predicate reads it. |
 | `created_at`                      | `timestamp with time zone`                        | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                                                               |
-| `updated_at`                      | `timestamp with time zone`                        | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                                                                               |
 
 **Primary key:** `PRIMARY KEY (id)`
 

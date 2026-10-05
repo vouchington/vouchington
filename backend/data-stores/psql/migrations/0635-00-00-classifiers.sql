@@ -457,6 +457,7 @@ CREATE OR REPLACE TRIGGER trigger_classifier_decision_batches_updated_at
   BEFORE UPDATE ON classifier_decision_batches
   FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS classifier_decision_batch_candidates (
   batch_id UUID NOT NULL,
   classifier_id UUID NOT NULL,
@@ -466,7 +467,7 @@ CREATE TABLE IF NOT EXISTS classifier_decision_batch_candidates (
   effective_lower_threshold NUMERIC(5,4) NOT NULL,
   effective_upper_threshold NUMERIC(5,4) NOT NULL,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(batch_id)) VIRTUAL,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   PRIMARY KEY (batch_id, candidate_id),
   CONSTRAINT chk_classifier_decision_batch_candidates__effective_thresholds CHECK (
     effective_lower_threshold >= 0 AND effective_upper_threshold <= 1
@@ -564,12 +565,13 @@ CREATE OR REPLACE TRIGGER trigger_classifier_decision_batch_candidates_owner_del
   BEFORE DELETE ON classifier_decision_batch_candidates
   FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_batch_candidate_owner_delete();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS classifier_decision_calls (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   batch_id UUID NOT NULL REFERENCES classifier_decision_batches ON DELETE CASCADE,
   shard_ordinal INTEGER NOT NULL CHECK (shard_ordinal >= 0),
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   CONSTRAINT uq_classifier_decision_calls__batch_ordinal UNIQUE (batch_id, shard_ordinal),
   CONSTRAINT uq_classifier_decision_calls__id__batch UNIQUE (id, batch_id)
 );
@@ -597,7 +599,7 @@ CREATE TABLE IF NOT EXISTS topic_classifier_results (
   scope_category classifier_scope_categories NOT NULL,
   scope_community_id UUID,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   PRIMARY KEY (topic_id, id),
   CONSTRAINT chk_topic_classifier_results__scope CHECK (
     (scope_category = 'global' AND scope_community_id IS NULL)
@@ -718,7 +720,7 @@ CREATE TABLE IF NOT EXISTS story_classifier_results (
   scope_category classifier_scope_categories NOT NULL,
   scope_community_id UUID,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   PRIMARY KEY (batch_id, id),
   CONSTRAINT chk_story_classifier_results__one_entity CHECK (
     num_nonnulls(story_id, rss_feed_item_id) = 1
@@ -807,7 +809,7 @@ CREATE TABLE IF NOT EXISTS community_prompt_classifier_results (
     CHECK (scope_category = 'community_ai'),
   scope_community_id UUID NOT NULL,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   PRIMARY KEY (batch_id, id),
   CONSTRAINT chk_community_prompt_classifier_results__effective_thresholds CHECK (
     effective_lower_threshold >= 0 AND effective_upper_threshold <= 1

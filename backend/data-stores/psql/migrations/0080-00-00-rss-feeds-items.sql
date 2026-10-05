@@ -500,6 +500,11 @@ CREATE TABLE IF NOT EXISTS rss_feed_item_unmapped_category_counts (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trg_rss_feed_item_unmapped_category_counts__updated_at
+BEFORE UPDATE ON rss_feed_item_unmapped_category_counts
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_project_refresh_rss_feed_item_unmapped_category_count()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -516,8 +521,7 @@ BEGIN
       WHERE category_text = LOWER(OLD.category_text);
     ELSIF current_item_count > 1 THEN
       UPDATE rss_feed_item_unmapped_category_counts
-      SET item_count = item_count - 1,
-          updated_at = CURRENT_TIMESTAMP
+      SET item_count = item_count - 1
       WHERE category_text = LOWER(OLD.category_text);
     END IF;
   END IF;
@@ -526,8 +530,7 @@ BEGIN
     INSERT INTO rss_feed_item_unmapped_category_counts (category_text, item_count)
     VALUES (LOWER(NEW.category_text), 1)
     ON CONFLICT (category_text) DO UPDATE
-    SET item_count = rss_feed_item_unmapped_category_counts.item_count + 1,
-        updated_at = CURRENT_TIMESTAMP;
+    SET item_count = rss_feed_item_unmapped_category_counts.item_count + 1;
   END IF;
 
   RETURN NULL;
@@ -561,6 +564,11 @@ CREATE TABLE IF NOT EXISTS rss_feed_item_category_snapshot_reconciliations (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT chk_rss_feed_item_category_snapshot_reconciliations__categories CHECK (jsonb_typeof(categories) = 'array')
 );
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trg_rss_feed_item_category_snapshot_reconciliations__updated_at
+BEFORE UPDATE ON rss_feed_item_category_snapshot_reconciliations
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_item_category_snapshot_reconciliations__updated_at

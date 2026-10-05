@@ -8,7 +8,7 @@ RANGE partitioned on `entity_relation_id` (children: default, no retention owner
 
 | Column                 | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                   |
 | ---------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------- |
-| `user_id`              | `uuid`                     | no       |                              |          |           |           |                                                                                           |
+| `user_id`              | `uuid`                     | no       |                              |          |           |           | User who cast this concrete relation ballot event.                                        |
 | `subject_id`           | `uuid`                     | no       |                              |          |           |           | Authoritative subject paired with the concrete elected relation identifier.               |
 | `entity_relation_id`   | `uuid`                     | no       |                              |          |           |           | Concrete elected relation identifier and UUIDv7 partition key.                            |
 | `id`                   | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                           |

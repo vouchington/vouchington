@@ -62,3 +62,5 @@ CREATE OR REPLACE VIEW view_community_list_items AS
     created_at
   FROM community_list_urls
   WHERE removed_at IS NULL;
+
+COMMENT ON VIEW view_community_list_items IS 'Community list content projection; callers enforce list visibility and row access.';

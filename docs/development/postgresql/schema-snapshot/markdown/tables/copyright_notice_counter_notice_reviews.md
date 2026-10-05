@@ -17,7 +17,6 @@ Not partitioned — growth: unbounded.
 | `is_accepted`                               | `boolean`                  | no       |                              |          |           |           | Whether the counter-notice was formally compliant.        |
 | `rationale_ciphertext`                      | `text`                     | no       |                              |          |           |           | Encrypted moderator rationale.                            |
 | `created_at`                                | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                           |
-| `updated_at`                                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                           |
 
 **Primary key:** `PRIMARY KEY (id)`
 

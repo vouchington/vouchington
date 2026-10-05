@@ -16,7 +16,6 @@ Not partitioned — growth: unbounded.
 | `media_type_id`                  | `bigint`                   | no       |                              |          |           |           | Untrusted declared or detected media type used only for quarantined processing.                             |
 | `byte_size`                      | `integer`                  | no       |                              |          |           |           | Preserved artifact byte length for bounds and integrity checks.                                             |
 | `created_at`                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                             |
-| `updated_at`                     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                             |
 
 **Primary key:** `PRIMARY KEY (id)`
 

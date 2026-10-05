@@ -62,8 +62,7 @@ export async function finalizeDeliveredModerationAppeal(
       UPDATE moderation_appeals
       SET resolved_at = ${now},
           resolved_by_id = ${staffUserId},
-          resolution_action = ${resolution.resolutionAction},
-          updated_at = CURRENT_TIMESTAMP
+          resolution_action = ${resolution.resolutionAction}
       WHERE id = ${appealId} AND sent_at IS NOT NULL AND resolved_at IS NULL
       RETURNING `.append(APPEAL_RETURNING),
   )

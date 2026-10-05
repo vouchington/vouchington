@@ -32,7 +32,6 @@ export async function createModmailNotification(
       deleted_at = NULL,
       read_at = NULL,
       pushed_at = NULL,
-      updated_at = CURRENT_TIMESTAMP,
       target_path = EXCLUDED.target_path
     RETURNING user_id, id
   `)

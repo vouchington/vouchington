@@ -108,7 +108,7 @@ async function cleanupRelationFamily(
     await query(
       `/* checkpointRetainedRelationCleanup */
        UPDATE retained_relation_identity_cleanup_progress
-       SET cursor_subject_id = $2, cursor_relation_id = $3, updated_at = CURRENT_TIMESTAMP
+       SET cursor_subject_id = $2, cursor_relation_id = $3
        WHERE entity_relation = $1`,
       [relationTable, last?.subject_id ?? null, last?.id ?? null],
     )

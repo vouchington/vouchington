@@ -14,3 +14,5 @@ CREATE OR REPLACE VIEW view_url_hostnames AS
     url_hostnames.votes_count_down
   FROM url_hostnames
 ;
+
+COMMENT ON VIEW view_url_hostnames IS 'Hostname response projection; callers restrict moderation filters and private capabilities.';

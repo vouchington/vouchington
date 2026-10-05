@@ -74,4 +74,5 @@ _none_
 - `idx_crawls__url_id__pending_embeddings`: `CREATE INDEX idx_crawls__url_id__pending_embeddings ON ONLY public.crawls USING btree (url_id) WHERE (has_pending_embeddings = true)`
 
 **Triggers:**
-_none_
+
+- `trg_crawls__updated_at`: `CREATE TRIGGER trg_crawls__updated_at BEFORE UPDATE ON public.crawls FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

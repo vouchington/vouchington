@@ -133,8 +133,7 @@ export async function deleteImageByIdWhileStorageLocked(
           latest_clearance_change_id: string | null
         }>(sql`/* deleteImageById */
         UPDATE posts
-        SET llm_moderation_content_sha256 = ${content_sha256},
-            updated_at = CURRENT_TIMESTAMP
+        SET llm_moderation_content_sha256 = ${content_sha256}
         WHERE id = ${post_id}
         RETURNING latest_clearance_change_id
       `)

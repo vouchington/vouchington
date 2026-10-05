@@ -85,20 +85,19 @@ COMMENT ON COLUMN review_successions.successor_post_id IS 'Newer review that was
 COMMENT ON COLUMN review_successions.author_user_id IS 'Shared non-null author snapshot for the predecessor and successor reviews.';
 COMMENT ON COLUMN review_successions.predecessor_archived_at IS 'Exact posts.archived_at value written by this automatic archive epoch.';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS review_succession_topics (
   review_succession_id UUID NOT NULL REFERENCES review_successions (id) ON DELETE CASCADE,
   topic_id UUID NOT NULL REFERENCES retained_topic_identities (id) ON DELETE RESTRICT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   PRIMARY KEY (review_succession_id, topic_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_review_succession_topics__topic_id
   ON review_succession_topics (topic_id);
 
-CREATE OR REPLACE TRIGGER trigger_review_succession_topics_updated_at
-BEFORE UPDATE ON review_succession_topics
-FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+
 
 CREATE OR REPLACE FUNCTION fn_reject_review_succession_topic_mutation()
 RETURNS TRIGGER

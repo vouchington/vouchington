@@ -90,8 +90,7 @@ export async function upsertWebPushSubscription(input: PushSubscriptionInput) {
     ON CONFLICT (endpoint_digest) DO UPDATE
     SET endpoint = EXCLUDED.endpoint,
         user_id = EXCLUDED.user_id,
-        subscription_id = EXCLUDED.subscription_id,
-        updated_at = CURRENT_TIMESTAMP`)
+        subscription_id = EXCLUDED.subscription_id`)
   await transaction.commit()
   return mapWebPushSubscriptionRow(subscription)
 }

@@ -49,13 +49,12 @@ CREATE TRIGGER trigger_copyright_trusted_flagger_changes_immutable
   BEFORE UPDATE OR DELETE ON copyright_trusted_flagger_changes
   FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_trusted_flagger_matches (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL UNIQUE REFERENCES copyright_notices(id) ON DELETE RESTRICT,
   copyright_trusted_flagger_id uuid NOT NULL CONSTRAINT fk_copyright_trusted_flagger_matches__flagger REFERENCES copyright_trusted_flaggers(id) ON DELETE RESTRICT,
-  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL);
 
 CREATE INDEX idx_copyright_trusted_flagger_matches__entry_id
   ON copyright_trusted_flagger_matches (copyright_trusted_flagger_id);
@@ -90,7 +89,7 @@ COMMENT ON COLUMN copyright_trusted_flagger_matches.id IS 'UUIDv7 receipt-time m
 COMMENT ON COLUMN copyright_trusted_flagger_matches.copyright_notice_id IS 'EU notice that matched one active designation at receipt time.';
 COMMENT ON COLUMN copyright_trusted_flagger_matches.copyright_trusted_flagger_id IS 'Designation selected at receipt time, preferring intellectual-property expertise.';
 COMMENT ON COLUMN copyright_trusted_flagger_matches.created_at IS 'Match time derived from the UUIDv7 identifier.';
-COMMENT ON COLUMN copyright_trusted_flagger_matches.updated_at IS 'Insert timestamp; immutable rows cannot be updated.';
+
 
 CREATE TRIGGER trigger_ensure_copyright_trusted_flagger_changes_actor
   BEFORE INSERT ON copyright_trusted_flagger_changes

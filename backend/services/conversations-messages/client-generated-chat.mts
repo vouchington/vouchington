@@ -97,7 +97,7 @@ export async function createClientGeneratedChatTurn(
 
   await query(sql`/* touchClientGeneratedChatConversation */
     UPDATE conversations
-    SET updated_at = CURRENT_TIMESTAMP
+    SET last_activity_at = CURRENT_TIMESTAMP
     WHERE id = ${conversationId}
   `)
 

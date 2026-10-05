@@ -1,3 +1,4 @@
+import { insertCopyrightActionIntent } from './action-intent-insertion.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import {
@@ -86,17 +87,13 @@ export async function activateLateCopyrightLegalHoldRestrictions(
           { query: transaction },
         )
       }
-      const { rows: intentRows } = await transaction<{
-        id: string
-      }>(sql`/* activateLateCopyrightLegalHoldRestrictions:intent */
-        INSERT INTO copyright_notice_action_intents (
-          copyright_restriction_id, copyright_notice_deadline_id, expected_placement_revision, action
-        ) VALUES (${restriction.id}, NULL, ${placement.revision}, 'withhold')
-        ON CONFLICT (copyright_restriction_id, expected_placement_revision, action)
-        DO UPDATE SET updated_at = copyright_notice_action_intents.updated_at
-        RETURNING id
-      `)
-      return intentRows[0]?.id ?? null
+      const intent = await insertCopyrightActionIntent(
+        transaction,
+        restriction.id,
+        placement.revision,
+        'withhold',
+      )
+      return intent.id
     }),
   )
   return intentIds.filter((id): id is string => id !== null)

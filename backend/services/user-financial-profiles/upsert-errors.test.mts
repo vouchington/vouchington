@@ -5,6 +5,16 @@ import { getUserFinancialProfile } from './get.mts'
 import { upsertUserFinancialProfile } from './upsert.mts'
 
 describe('financial profile storage failures', () => {
+  it('accepts an empty patch while preserving the existing financial fields', async () => {
+    const user = await createTestUser()
+    const baseline = await upsertUserFinancialProfile(user.id, { hard_inquiries_12m: 2 })
+    expect(await upsertUserFinancialProfile(user.id, {})).toMatchObject({
+      hard_inquiries_12m: baseline.hard_inquiries_12m,
+      currency: baseline.currency,
+    })
+    expect(await getUserFinancialProfile(user.id)).toMatchObject({ hard_inquiries_12m: 2 })
+  })
+
   it('propagates the actual failed statement and preserves the previous profile', async () => {
     const user = await createTestUser()
     const baseline = await upsertUserFinancialProfile(user.id, { hard_inquiries_12m: 2 })

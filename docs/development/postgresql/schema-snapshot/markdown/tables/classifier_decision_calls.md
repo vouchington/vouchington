@@ -12,7 +12,6 @@ Not partitioned — growth: unbounded.
 | `batch_id`      | `uuid`                     | no       |                              |          |           |           | Logical decision batch containing this provider call.           |
 | `shard_ordinal` | `integer`                  | no       |                              |          |           |           | Zero-based order of this context-window shard within its batch. |
 | `created_at`    | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                 |
-| `updated_at`    | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                 |
 
 **Primary key:** `PRIMARY KEY (id)`
 

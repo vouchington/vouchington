@@ -22,7 +22,7 @@ export async function recordImageDeliveryRepairMarker(input: {
     ORDER BY delivery_key ASC NULLS LAST
     ON CONFLICT (delivery_key) DO UPDATE SET
       marker_token = nextval('media_delivery_registry_generation_sequence'),
-      created_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+      created_at = CURRENT_TIMESTAMP
   `)
 }
 

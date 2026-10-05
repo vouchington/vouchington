@@ -33,4 +33,5 @@ _none_
 - `activitypub_inbox_delivery_storage_counters_pkey`: `CREATE UNIQUE INDEX activitypub_inbox_delivery_storage_counters_pkey ON public.activitypub_inbox_delivery_storage_counters USING btree (singleton)`
 
 **Triggers:**
-_none_
+
+- `trg_activitypub_inbox_delivery_storage_counters__updated_at`: `CREATE TRIGGER trg_activitypub_inbox_delivery_storage_counters__updated_at BEFORE UPDATE ON public.activitypub_inbox_delivery_storage_counters FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

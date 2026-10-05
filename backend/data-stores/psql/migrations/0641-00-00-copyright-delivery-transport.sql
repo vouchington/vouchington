@@ -12,14 +12,13 @@ ALTER TABLE notifications
 CREATE INDEX idx_notifications__copyright_notice
   ON notifications (copyright_notice_id) WHERE copyright_notice_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_delivery_recipients (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_delivery_intent_id uuid NOT NULL CONSTRAINT uq_copyright_notice_delivery_recipients__intent_id UNIQUE
     CONSTRAINT fk_copyright_notice_delivery_recipients__intent REFERENCES copyright_notice_delivery_intents(id) ON DELETE RESTRICT,
   email_ciphertext text NOT NULL CHECK (char_length(email_ciphertext) BETWEEN 1 AND 1048576),
-  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL);
 
 -- Current automatic authority depends on the receipt and its retained recipient above.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -87,9 +86,7 @@ FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_automated_assessment_screening
 CREATE TRIGGER trigger_copyright_delivery_recipients_immutable
 BEFORE UPDATE OR DELETE ON copyright_notice_delivery_recipients
 FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
-CREATE TRIGGER trigger_copyright_delivery_recipients_updated_at
-BEFORE UPDATE ON copyright_notice_delivery_recipients
-FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+
 
 -- Email has no safe body outside the immutable correspondence record, or the immutable reply
 -- body of a declined email intake. Keep that relationship enforceable at the database boundary
