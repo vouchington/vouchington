@@ -24,7 +24,9 @@ export default defineConfig({
     testNamePattern: isolatedTestNamePattern(caseId),
     coverage: {
       ...coverageConfig(),
-      reportsDirectory: process.env.VITEST_ISOLATED_COVERAGE_DIR,
+      ...(process.env.VITEST_ISOLATED_COVERAGE_DIR
+        ? { reportsDirectory: process.env.VITEST_ISOLATED_COVERAGE_DIR }
+        : {}),
     },
     reporters: ['default', new IsolatedDatabaseCaseReporter()],
     setupFiles: [
