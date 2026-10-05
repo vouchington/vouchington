@@ -127,7 +127,7 @@ describe('concrete retained media identities', () => {
         '/* createRetainedImagesForMutation:uploader */ INSERT INTO retained_user_identities (id) VALUES (uuidv7()) RETURNING id',
       )
       await query(
-        '/* createRetainedImagesForMutation */ INSERT INTO retained_image_identities (id, created_by_user_id) VALUES ($1, $3), ($2, $3)',
+        '/* createRetainedImagesForMutation */ INSERT INTO retained_image_identities (id, created_by_id) VALUES ($1, $3), ($2, $3)',
         [imageId, otherImageId, uploaders[0]!.id],
       )
       await query(
