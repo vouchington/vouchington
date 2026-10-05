@@ -14,7 +14,7 @@ export const getTopicAliasRecords = async (
     filters.push(`alias > $${values.push(options.after)}`)
   }
 
-  const query = `/* getTopicAliases */
+  const query = `/* getTopicAliasRecords */
     SELECT id, alias, topic_id
     FROM topic_aliases
     WHERE ${filters.join(' AND ')}
@@ -26,14 +26,6 @@ export const getTopicAliasRecords = async (
   const hasNextPage = rows.length > limit
   const results = rows.slice(0, limit)
   return { results, hasNextPage }
-}
-
-export const getTopicAliases = async (
-  topicId: string,
-  options: { limit?: number; after?: string } = {},
-): Promise<{ results: string[]; hasNextPage: boolean }> => {
-  const { results, hasNextPage } = await getTopicAliasRecords(topicId, options)
-  return { results: results.map(result => result.alias), hasNextPage }
 }
 
 export async function getTopicAliasRecordByValue(

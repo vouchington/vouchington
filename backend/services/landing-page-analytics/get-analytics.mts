@@ -10,6 +10,10 @@ import type {
   UtmSourceStats,
 } from './types.mts'
 
+/**
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `backend/services/landing-page-analytics/README.md`.
+ */
 export async function getLandingPageAnalytics(
   currentUserId: string,
   landingPageId: string,

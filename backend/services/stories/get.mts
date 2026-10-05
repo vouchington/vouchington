@@ -3,6 +3,10 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import type { Story, StoryWithItemCount } from './types.mts'
 
+/**
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/stories/README.md`.
+ */
 export async function getStoryWithItemCount(
   id: string,
   options: QueryOptions = {},

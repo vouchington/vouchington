@@ -1,6 +1,6 @@
 import { it, expect, describe } from 'vitest'
 import { createTopicAliases } from '../aliases.mts'
-import { getTopicAliases } from '../get-topic-aliases.mts'
+import { getTopicAliasesForTest } from '@voucha/test-helpers/topic-aliases'
 import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
 import { getTopicByAny } from '../get.mts'
 import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
@@ -19,7 +19,7 @@ describe('createTopicAliases', () => {
       createdById: user!.id,
     })
     await createTopicAliases(topicId, `test-alias-${random}`)
-    const { results: aliases } = await getTopicAliases(topicId)
+    const { results: aliases } = await getTopicAliasesForTest(topicId)
 
     expect(aliases).toContain(`test-alias-${random}`)
   })
@@ -33,7 +33,7 @@ describe('createTopicAliases', () => {
       createdById: user!.id,
     })
     await createTopicAliases(topicId, [`alias1-${random}`, `alias2-${random}`, `alias3-${random}`])
-    const { results: aliases } = await getTopicAliases(topicId)
+    const { results: aliases } = await getTopicAliasesForTest(topicId)
 
     expect(aliases).toContain(`alias1-${random}`)
     expect(aliases).toContain(`alias2-${random}`)
@@ -49,7 +49,7 @@ describe('createTopicAliases', () => {
       createdById: user!.id,
     })
     await createTopicAliases(topicId, `alias1-${random}; alias2-${random}; alias3-${random}`)
-    const { results: aliases } = await getTopicAliases(topicId)
+    const { results: aliases } = await getTopicAliasesForTest(topicId)
 
     expect(aliases).toContain(`alias1-${random}`)
     expect(aliases).toContain(`alias2-${random}`)
@@ -65,7 +65,7 @@ describe('createTopicAliases', () => {
       createdById: user!.id,
     })
     await createTopicAliases(topicId, `alias1-${random}, alias2-${random}, alias3-${random}`)
-    const { results: aliases } = await getTopicAliases(topicId)
+    const { results: aliases } = await getTopicAliasesForTest(topicId)
 
     expect(aliases).toContain(`alias1-${random}`)
     expect(aliases).toContain(`alias2-${random}`)
@@ -97,7 +97,7 @@ describe('createTopicAliases', () => {
       createdById: user!.id,
     })
     await createTopicAliases(topicId, `TEST-ALIAS-${random}`)
-    const { results: aliases } = await getTopicAliases(topicId)
+    const { results: aliases } = await getTopicAliasesForTest(topicId)
 
     expect(aliases).toContain(`test-alias-${random}`)
     expect(aliases).not.toContain(`TEST-ALIAS-${random}`)
@@ -114,7 +114,7 @@ describe('createTopicAliases', () => {
 
     await createTopicAliases(topicId, `#Travel_${random}`)
 
-    await expect(getTopicAliases(topicId)).resolves.toMatchObject({
+    await expect(getTopicAliasesForTest(topicId)).resolves.toMatchObject({
       results: expect.arrayContaining([`travel-${random}`]),
     })
   })
@@ -128,7 +128,7 @@ describe('createTopicAliases', () => {
       createdById: user!.id,
     })
     await createTopicAliases(topicId, `  test-alias-${random}  `)
-    const { results: aliases } = await getTopicAliases(topicId)
+    const { results: aliases } = await getTopicAliasesForTest(topicId)
 
     expect(aliases).toContain(`test-alias-${random}`)
   })
@@ -142,7 +142,7 @@ describe('createTopicAliases', () => {
       createdById: user!.id,
     })
     await createTopicAliases(topicId, [`alias1-${random}`, `alias1-${random}`, `alias2-${random}`])
-    const { results: aliases } = await getTopicAliases(topicId)
+    const { results: aliases } = await getTopicAliasesForTest(topicId)
 
     expect(aliases.filter(a => a === `alias1-${random}`).length).toBe(1)
   })
@@ -284,6 +284,9 @@ describe('bloom filter', () => {
     await expect(createTopicAliases(sourceId, `orphaned-alias-${random}`)).rejects.toMatchObject({
       status: 409,
     })
-    await expect(getTopicAliases(sourceId)).resolves.toEqual({ results: [], hasNextPage: false })
+    await expect(getTopicAliasesForTest(sourceId)).resolves.toEqual({
+      results: [],
+      hasNextPage: false,
+    })
   })
 })

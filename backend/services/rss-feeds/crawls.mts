@@ -35,13 +35,6 @@ export async function insertRssFeedCrawl(params: {
   return rows[0]!.id
 }
 
-export async function getLatestRssFeedCrawlForFeed(rss_feed_id: string): Promise<{
-  feed_data: Record<string, unknown> | null
-  feed_data_sha256: Buffer | null
-} | null> {
-  return getLatestRssFeedCrawlForFeedWithOptions(rss_feed_id, { includeFeedData: true })
-}
-
 export async function getLatestRssFeedCrawlForFeedWithOptions(
   rss_feed_id: string,
   options: { includeFeedData: boolean },

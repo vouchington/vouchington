@@ -65,6 +65,10 @@ export function localizationGetResult(
   return { status: 200, etag: payload.etag, ttlSeconds: payload.ttlSeconds, body: payload.body }
 }
 
+/**
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/localization/README.md`.
+ */
 export function resolveEmailLocalizationBatch(
   locales: readonly string[],
   selectors: readonly string[],

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { validateScheduledJobManifests } from '@modules/scheduled-job-manifest'
+import { validateScheduledJobManifests } from '../../../modules/scheduled-job-manifest/validation.mts'
 import { policyManagedWorkerQueueNames } from '@modules/worker-queue-inventory'
 import { BLOOM_FILTER_REBUILD_INPUTS } from '@queues/bloom-filters/types'
 import { enqueueGlideMqStats } from '@queues/heartbeat/enqueues'

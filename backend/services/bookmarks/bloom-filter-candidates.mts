@@ -54,6 +54,10 @@ function createUnreadyBookmarkBloomCandidates(
   return output
 }
 
+/**
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/bookmarks/README.md`.
+ */
 export async function checkBookmarkBloomCandidates(
   userId: string,
   relationTableName: string,

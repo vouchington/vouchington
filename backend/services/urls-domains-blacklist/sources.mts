@@ -14,6 +14,10 @@ import {
 
 export type { DomainBlacklistType, DomainBlacklistSourceId } from './sources-constants.mts'
 
+/**
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/urls-domains-blacklist/README.md`.
+ */
 export const upsertBlacklistSources = async (options: QueryOptions = {}): Promise<void> => {
   if (BLACKLISTS.length === 0) return
 

@@ -58,11 +58,6 @@ export function currentUserCanPostInCommunity(
   return !!membership && !membership.removed_at
 }
 
-export function currentUserCanCreateCommunity(currentUser: PrivateUser): boolean {
-  if (currentUser.roles.includes('administrator')) return true
-  return !!currentUser.username
-}
-
 export function assertCanCreateCommunity(currentUser: PrivateUser): void {
   if (currentUser.roles.includes('administrator')) return
   if (!currentUser.username) {

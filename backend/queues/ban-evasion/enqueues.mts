@@ -67,6 +67,9 @@ export async function enqueueDetectBanEvasion(
 /**
  * Enqueue detection after a first community post's embedding is available.
  * Uses a post-specific dedup key so it cannot be swallowed by the initial first-post trigger.
+ *
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/overview/architecture/queues/ban-evasion/README.md`.
  */
 export async function enqueueDetectBanEvasionAfterPostEmbedding(
   communityId: string,

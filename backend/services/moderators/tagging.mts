@@ -3,6 +3,10 @@ import { tagPostWithTopics } from '@services/posts'
 import { recordModeratorAction } from '@services/moderator-actions'
 import type { PrivateUser } from '@services/users/types'
 
+/**
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/moderators/README.md`.
+ */
 export async function tagPostWithTopicForModerators(
   currentUser: PrivateUser,
   postId: string,

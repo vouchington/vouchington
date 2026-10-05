@@ -57,7 +57,7 @@ The bloom filter stores hex-encoded SHA-256 hashes of active keys. It is:
 - `checkApiKeyBloomFilter(keyHash)` — Valkey bloom probe
 - `addKeyHashToBloomFilter(keyHash)` — add to bloom filter
 - `rebuildApiKeyBloomFilter()` — full rebuild from DB
-- `deleteApiKeyBloomFilter()` — remove from bloom filter
+- `deleteApiKeyBloomFilter()` — delete the entire API-key bloom filter, its readiness marker, and any additional keys registered by the filter
 - `API_KEY_TYPES` — typed enum of valid key types
 - `ApiKey` — shared type (includes `type` field)
 - `ApiKeyType` — union type of valid key types

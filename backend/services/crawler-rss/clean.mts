@@ -1,4 +1,3 @@
-import { parseFeedDocument } from '@vouchington/rss-parser'
 import {
   matchEmbedProvider,
   peerTubeProvider,
@@ -54,13 +53,6 @@ export type RssFeedItemBuildStats = {
 export type BoundedRssFeedItems = {
   items: RssFeedItemToUpsert[]
   stats: RssFeedItemBuildStats
-}
-
-export function parseRssFeedItemsFromXml(feedXml: Buffer, feedUrl?: string): RssFeedItemToUpsert[] {
-  const { feed } = parseFeedDocument(feedXml)
-  return buildBoundedRssFeedItemsFromFeed(feed as ParsedFeed, feedUrl, {
-    maxItems: Number.POSITIVE_INFINITY,
-  }).items
 }
 
 export function buildBoundedRssFeedItemsFromFeed(

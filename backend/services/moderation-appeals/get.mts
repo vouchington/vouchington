@@ -93,6 +93,9 @@ export async function listModerationAppeals(
 /**
  * Retrieve the full moderation case trace for a given appeal, restoring the
  * appeal → originating report hop that was previously broken.
+ *
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/moderation-appeals/README.md`.
  */
 export async function getAppealCaseTrace(appealId: string): Promise<ModerationCaseTrace | null> {
   const { rows } = await read<{ case_id: string }>(sql`/* getAppealCaseTrace */

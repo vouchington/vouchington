@@ -3,7 +3,7 @@ import { createSourceWithRetry, generateSourceDetails } from '../create-source-h
 import { createRssFeedUrlId } from '../rss-feed-url-id.mts'
 import { upsertUrlHostnames } from '@services/urls-hostnames/upsert'
 import { createTopicAliases } from '@services/topics/aliases'
-import { getTopicAliases } from '@services/topics/get-topic-aliases'
+import { getTopicAliasRecords } from '@services/topics/get-topic-aliases'
 import { createTestUserDirect, insertTestTopic, WEB_PROVENANCE } from '@voucha/test-helpers'
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
@@ -71,8 +71,7 @@ describe('createSourceWithRetry', () => {
     expect(result).not.toBeNull()
     expect(result!.slug).not.toBe(claimedAlias)
     expect(result!.slug).toMatch(new RegExp(`^${claimedAlias}-[0-9a-f]{4}$`))
-    await expect(getTopicAliases(result!.topicId)).resolves.toMatchObject({
-      results: expect.arrayContaining([result!.slug]),
-    })
+    const { results } = await getTopicAliasRecords(result!.topicId)
+    expect(results.map(record => record.alias)).toContain(result!.slug)
   })
 })

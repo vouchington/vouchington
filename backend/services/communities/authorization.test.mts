@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
 import type { PrivateUser } from '@services/users/types'
-import { currentUserCanCreateCommunity, assertCanCreateCommunity } from './authorization.mts'
+import { assertCanCreateCommunity } from './authorization.mts'
 import { IDENTITY_REQUIRED } from '@modules/on-error/error-codes'
 
 function createMockUser(overrides: Partial<PrivateUser> = {}): PrivateUser {
@@ -35,23 +35,6 @@ function createMockUser(overrides: Partial<PrivateUser> = {}): PrivateUser {
     ...overrides,
   }
 }
-
-describe('currentUserCanCreateCommunity', () => {
-  it('returns true for any user with a username (no membership required)', () => {
-    const user = createMockUser()
-    expect(currentUserCanCreateCommunity(user)).toBe(true)
-  })
-
-  it('returns false for user without username', () => {
-    const user = createMockUser({ username: undefined })
-    expect(currentUserCanCreateCommunity(user)).toBe(false)
-  })
-
-  it('returns true for admin regardless of username', () => {
-    const user = createMockUser({ roles: ['administrator'], username: undefined })
-    expect(currentUserCanCreateCommunity(user)).toBe(true)
-  })
-})
 
 describe('assertCanCreateCommunity', () => {
   it('does not throw for user with username', () => {

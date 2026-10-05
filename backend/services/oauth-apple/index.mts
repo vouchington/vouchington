@@ -165,6 +165,10 @@ export async function upsertAppleAccount(
   return upsertOAuthAccount('apple', payload.sub, email, providerUserData)
 }
 
+/**
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/oauth-apple/README.md`.
+ */
 export function getAppleAccountByAppleUserId(appleUserId: string): Promise<OAuthAccount | null> {
   return getOAuthAccountByProviderUserId('apple', appleUserId)
 }

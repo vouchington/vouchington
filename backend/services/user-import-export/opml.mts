@@ -19,6 +19,10 @@ function parseOutlineAttributes(tag: string): Record<string, string> {
   return attrs
 }
 
+/**
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/user-import-export/README.md`.
+ */
 export function parseOpml(opmlText: string): OpmlOutline[] {
   const outlines: OpmlOutline[] = []
   let match: RegExpExecArray | null

@@ -52,6 +52,10 @@ export function parseFeatureFlagCookie(cookieValue: string): FeatureFlags {
   )
 }
 
+/**
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/feature-flags/README.md`.
+ */
 export function encodeFeatureFlagCookie(overrides: FeatureFlags): string {
   return encodeSharedFeatureFlagCookie(overrides, featureFlagCookieCodec)
 }

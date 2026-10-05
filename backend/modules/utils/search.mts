@@ -17,6 +17,10 @@ export const getIDsFromQuery = (query: string[] | string) => {
   return uuids
 }
 
+/**
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/overview/architecture/backend/modules/utils/README.md`.
+ */
 export const getTypesFromQuery = (query: string[] | string, typesMap: Record<string, boolean>) => {
   if (!query) return []
   let types = query
@@ -49,6 +53,10 @@ export const getIdFromQuery = (query: string) => {
   return query
 }
 
+/**
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/overview/architecture/backend/modules/utils/README.md`.
+ */
 export const createGetSearchParameters =
   ({ maxLimit = 100, defaultLimit = 25 }) =>
   (options: {

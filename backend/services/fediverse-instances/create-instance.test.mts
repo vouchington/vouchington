@@ -4,7 +4,7 @@ import { generateInstanceDetails, createInstanceInTransaction } from './create-i
 import { findExistingInstanceByHostnameId } from './find-existing-instance.mts'
 import { getFediverseInstanceAttributes } from './get-attributes.mts'
 import { getTopicByAny } from '@services/topics/get'
-import { getTopicAliases } from '@services/topics/get-topic-aliases'
+import { getTopicAliasesForTest } from '@voucha/test-helpers/topic-aliases'
 import { createTopicAliases } from '@services/topics/aliases'
 import { resolveHostname } from '@services/topics/hostname-link'
 import { getUrlHostnameById } from '@services/urls-hostnames/get'
@@ -82,7 +82,7 @@ describe('createInstanceFromHostname', () => {
     const hostname = `fedi-alias-${randomSuffix()}.example.com`
     const result = await createInstanceFromHostname(user, WEB_PROVENANCE, hostname)
 
-    await expect(getTopicAliases(result.topic_id)).resolves.toMatchObject({
+    await expect(getTopicAliasesForTest(result.topic_id)).resolves.toMatchObject({
       results: [result.topic_slug],
     })
   })
@@ -150,7 +150,7 @@ describe('createInstanceFromHostname', () => {
     expect(result.status).toBe('created')
     expect(result.topic_slug).not.toBe(claimedAlias)
     expect(result.topic_slug).toMatch(new RegExp(`^${claimedAlias}-[0-9a-f]{4}$`))
-    await expect(getTopicAliases(result.topic_id)).resolves.toMatchObject({
+    await expect(getTopicAliasesForTest(result.topic_id)).resolves.toMatchObject({
       results: expect.arrayContaining([result.topic_slug]),
     })
   })

@@ -8,7 +8,7 @@ Queue system for asynchronous ban-evasion detection on new community members.
 
 1. Entity listener fires `enqueueDetectBanEvasion(communityId, userId)` (fire-and-forget) on first post in a community
 2. Community join service fires `enqueueDetectBanEvasion(communityId, userId)` (fire-and-forget) on member join
-3. Post embedding completion fires `enqueueDetectBanEvasionAfterPostEmbedding(communityId, userId, postId)` when the embedded post is the user's first community post
+3. `enqueueDetectBanEvasionAfterPostEmbedding(communityId, userId, postId, inputSha256Hex)` is the available enqueue contract for detection after a first community post's embedding; the input digest fences duplicate enqueue attempts to the embedding content version, while a current production producer hookup is unconfirmed
 4. Worker picks up the job and calls `detectBanEvasionForMember(communityId, userId)`
 5. Detector runs embedding similarity, content-hash, and referral-link signals in parallel
 6. If the combined score exceeds the threshold, flags the `community_members` row and inserts a system moderation report

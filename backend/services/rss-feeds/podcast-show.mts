@@ -66,6 +66,9 @@ export async function deletePodcastShow(rssFeedId: string): Promise<void> {
 
 /**
  * Returns the podcast show metadata for a feed, or null if not found.
+ *
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/requirements/content/reference-podcasts-parsing.md`.
  */
 export async function getPodcastShow(rssFeedId: string): Promise<PodcastShowMetadata | null> {
   const { rows } = await read(
