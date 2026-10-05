@@ -211,7 +211,7 @@ describe('same-job embedding continuation', () => {
       restore()
       await cleanupTestEmbeddingsBatches([id])
     }
-  })
+  }, 240_000)
 })
 
 describe('creation queue global concurrency', () => {

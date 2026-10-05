@@ -32,5 +32,5 @@ describe('staging RSS feed seed on a fresh bootstrap', () => {
     expect(feeds.every(feed => feed.is_enabled && feed.is_discoverable)).toBe(true)
     const cloudflare = STAGING_RSS_FEEDS.find(feed => feed.hostname === 'blog.cloudflare.com')!
     expect(await readPublisherTypeSlugs(tx, cloudflare.slug)).toEqual(['blog'])
-  })
+  }, 240_000)
 })

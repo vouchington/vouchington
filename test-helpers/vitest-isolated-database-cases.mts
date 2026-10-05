@@ -1,5 +1,6 @@
 import { classifierPlanIsolatedCases } from './vitest-isolated-database-classifier-plan-cases.mts'
 import { copyrightReportIsolatedCases } from './vitest-isolated-database-copyright-report-cases.mts'
+import { generalIsolatedCases } from './vitest-isolated-database-general-cases.mts'
 import { workerSweepIsolatedCases } from './vitest-isolated-database-worker-cases.mts'
 type IsolatedDatabaseCaseDefinition = { file: string; fullName: `${string} > ${string}` }
 
@@ -7,37 +8,7 @@ const isolatedDatabaseCases = {
   ...copyrightReportIsolatedCases,
   ...workerSweepIsolatedCases,
   ...classifierPlanIsolatedCases,
-  'openai-moderation-reconciliation': {
-    file: 'backend/workers/openai-moderation/workers/__tests__/workers.test.mts',
-    fullName:
-      'openai moderation single worker > requeues due source work and moves deadline-exhausted posts to review',
-  },
-  'semantic-post-window-cap': {
-    file: 'backend/services/posts/search/__tests__/get-ids.semantic-window.test.mts',
-    fullName:
-      'semantic search candidate paging > ends pagination at the fixed window and counts the same candidates',
-  },
-  'semantic-post-window-selective': {
-    file: 'backend/services/posts/search/__tests__/get-ids.semantic-window.test.mts',
-    fullName:
-      'semantic search candidate paging > fills a selective page and preserves distance ranking for semantic and hybrid queries',
-  },
-
-  'retained-relation-cursors': {
-    file: 'backend/services/data-retention/__tests__/relation-cleanup-cursors.test.mts',
-    fullName:
-      'retained relation cleanup cursors > creates all missing cursors and reuses them on replay',
-  },
-  'media-replay': {
-    file: 'backend/api/v1/copyright-notices/copyright-notices.replay.isolated.test.mts',
-    fullName:
-      'isolated global media replay route > replays failed media registry records only for review staff and writes one audit event',
-  },
-  'activitypub-expiry': {
-    file: 'backend/services/ap-inbox-activities/durable-delivery-storage.test.mts',
-    fullName:
-      'ActivityPub inbox durable storage bounds > deletes expired rows in deterministic lease-aware locked batches',
-  },
+  ...generalIsolatedCases,
   'copyright-territorial-withdrawal': {
     file: 'backend/services/copyright-notices/territorial-withdrawal.isolated.test.mts',
     fullName:

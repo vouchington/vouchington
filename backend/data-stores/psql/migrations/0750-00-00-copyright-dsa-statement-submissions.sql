@@ -46,7 +46,6 @@ CREATE TABLE copyright_dsa_statement_submission_attempts (
   error_code text CHECK (error_code IS NULL OR char_length(error_code) BETWEEN 1 AND 128),
   replayed_by_id uuid REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (copyright_dsa_statement_submission_id, attempt_number),
   CHECK ((outcome = 'replayed') = (replayed_by_id IS NOT NULL))
 );
@@ -82,4 +81,3 @@ COMMENT ON COLUMN copyright_dsa_statement_submission_attempts.status_code IS 'HT
 COMMENT ON COLUMN copyright_dsa_statement_submission_attempts.error_code IS 'Small failure class or lease_expired marker, never a response body or token.';
 COMMENT ON COLUMN copyright_dsa_statement_submission_attempts.replayed_by_id IS 'Retained administrator identity, present only on a replay row and never an authorization source.';
 COMMENT ON COLUMN copyright_dsa_statement_submission_attempts.created_at IS 'Attempt time derived from the UUIDv7 identifier.';
-COMMENT ON COLUMN copyright_dsa_statement_submission_attempts.updated_at IS 'Required schema timestamp; attempt rows are otherwise immutable.';
