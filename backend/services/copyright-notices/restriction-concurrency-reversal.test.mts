@@ -87,12 +87,12 @@ describe('copyright restriction reversal concurrency', () => {
     if (!restoreIntent || !withholdIntent) throw new Error('reversal intents disappeared')
     const publish = vi.fn<typeof prepublishImagePlacementDenial>().mockResolvedValue(undefined)
     await expect(
-      processCopyrightActionIntent(restoreIntent.id, new Date('2026-07-01T12:04:00.000Z'), {
+      processCopyrightActionIntent(restoreIntent.id, new Date(), {
         ...createTestCopyrightDeliveryDependencies(publish),
       }),
     ).resolves.toBe('applied')
     await expect(
-      processCopyrightActionIntent(withholdIntent.id, new Date('2026-07-01T12:05:00.000Z'), {
+      processCopyrightActionIntent(withholdIntent.id, new Date(), {
         ...createTestCopyrightDeliveryDependencies(publish),
       }),
     ).resolves.toBe('stale')

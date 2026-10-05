@@ -150,15 +150,24 @@ DEFERRABLE INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION fn_reject_web_push_endpoint_owner_subscription();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE FUNCTION fn_project_retire_notification_push_intent() RETURNS TRIGGER AS $$
+BEGIN
+  -- Retire the prior effect before its foreign keys can cascade to the new generation.
+  DELETE FROM notification_push_intents
+  WHERE user_id = OLD.user_id AND notification_id = OLD.id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TRIGGER trigger_notifications_retire_push_intent
+BEFORE UPDATE OF id ON notifications
+FOR EACH ROW WHEN (OLD.id IS DISTINCT FROM NEW.id)
+EXECUTE FUNCTION fn_project_retire_notification_push_intent();
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_project_capture_notification_push_intent() RETURNS TRIGGER AS $$
 BEGIN
-  IF TG_OP = 'UPDATE' THEN
-    -- A new notification UUID is a new effect generation. Delete the old cascading
-    -- work and receipts rather than rewinding terminal facts on a surviving intent.
-    DELETE FROM notification_push_intents
-    WHERE user_id = NEW.user_id AND notification_id IN (OLD.id, NEW.id);
-  END IF;
-
   INSERT INTO notification_push_intents (user_id, notification_id)
   VALUES (NEW.user_id, NEW.id)
   ON CONFLICT (user_id, notification_id) DO NOTHING;

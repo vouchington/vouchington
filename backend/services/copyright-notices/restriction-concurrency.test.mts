@@ -109,7 +109,7 @@ describe('copyright restriction concurrency', () => {
     if (!withholdIntent) throw new Error('withhold intent disappeared')
     const publish = vi.fn<typeof prepublishImagePlacementDenial>().mockResolvedValue(undefined)
     await expect(
-      processCopyrightActionIntent(withholdIntent.id, new Date('2026-07-01T12:01:00.000Z'), {
+      processCopyrightActionIntent(withholdIntent.id, new Date(), {
         ...createTestCopyrightDeliveryDependencies(publish),
       }),
     ).resolves.toBe('applied')

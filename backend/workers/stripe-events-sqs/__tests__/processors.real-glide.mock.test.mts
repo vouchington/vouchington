@@ -103,7 +103,7 @@ describe('processStripeEventsSqsMessage', () => {
     expect(jobs[0]?.id).toBe(jobId)
     expect(jobs[0]?.data).toEqual({
       stripeEventRecordId: stored!.id,
-      processingAttemptId: stored!.lease_token,
+      leaseToken: stored!.lease_token,
       stripeSubscriptionId: subscriptionId,
       isLiveMode: true,
     })
