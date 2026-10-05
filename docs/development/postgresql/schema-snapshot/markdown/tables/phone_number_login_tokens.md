@@ -34,8 +34,8 @@ _none_
 
 **Indexes:**
 
+- `idx_phone_number_login_tokens__active`: `CREATE UNIQUE INDEX idx_phone_number_login_tokens__active ON public.phone_number_login_tokens USING btree (phone_number, token) WHERE (logged_in_at IS NULL)`
 - `idx_phone_number_login_tokens__created_at`: `CREATE INDEX idx_phone_number_login_tokens__created_at ON public.phone_number_login_tokens USING btree (created_at)`
-- `idx_phone_number_login_tokens_active`: `CREATE UNIQUE INDEX idx_phone_number_login_tokens_active ON public.phone_number_login_tokens USING btree (phone_number, token) WHERE (logged_in_at IS NULL)`
 - `phone_number_login_tokens_pkey`: `CREATE UNIQUE INDEX phone_number_login_tokens_pkey ON public.phone_number_login_tokens USING btree (phone_number, token)`
 - `phone_number_login_tokens_token_key`: `CREATE UNIQUE INDEX phone_number_login_tokens_token_key ON public.phone_number_login_tokens USING btree (token)`
 

@@ -32,7 +32,7 @@ export async function selectDirectTerminationReplacement(
           source_state.cancelled_at IS NULL AND source_state.expired_at IS NULL
           AND source_state.paused_at IS NULL
         ))
-        AND membership_grant_remaining_duration(grant_row.id) >= INTERVAL '1 millisecond'
+        AND fn_membership_grant_remaining_duration(grant_row.id) >= INTERVAL '1 millisecond'
         AND NOT EXISTS (
           SELECT 1 FROM membership_grant_activation_periods activation
           WHERE activation.membership_grant_id = grant_row.id AND activation.ended_at IS NULL

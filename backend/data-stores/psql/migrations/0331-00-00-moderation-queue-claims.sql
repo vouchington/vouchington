@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS moderation_queue_claims (
   id            uuid        PRIMARY KEY DEFAULT uuidv7(),
   created_at    timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -24,15 +25,18 @@ COMMENT ON COLUMN moderation_queue_claims.released_at IS 'When this claim was ex
 
 -- One live (un-released) claim per item. Lazy 15-minute expiry is evaluated at read time
 -- and in the upsert takeover predicate — NOT in the index predicate, since now() is not IMMUTABLE.
-CREATE UNIQUE INDEX IF NOT EXISTS uq_modq_claims__active_report
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE UNIQUE INDEX IF NOT EXISTS uq_moderation_queue_claims__active_report
   ON moderation_queue_claims (report_id)
   WHERE report_id IS NOT NULL AND released_at IS NULL;
 
-CREATE UNIQUE INDEX IF NOT EXISTS uq_modq_claims__active_post
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE UNIQUE INDEX IF NOT EXISTS uq_moderation_queue_claims__active_post
   ON moderation_queue_claims (post_id)
   WHERE post_id IS NOT NULL AND released_at IS NULL;
 
-CREATE INDEX IF NOT EXISTS idx_modq_claims__community
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_moderation_queue_claims__community
   ON moderation_queue_claims (community_id);
 
 -- FK for conversations.moderation_report_id (column defined in 0110-00-00 without FK due to
@@ -53,14 +57,17 @@ END $$;
 ALTER TABLE conversations VALIDATE CONSTRAINT fk_conversations_moderation_report_id;
 
 -- Current indexes for fresh schema bootstrap.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_queue_claims__claimed_by_id
   ON moderation_queue_claims (claimed_by_id)
   WHERE claimed_by_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_queue_claims__post_id
   ON moderation_queue_claims (post_id)
   WHERE post_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_queue_claims__report_id
   ON moderation_queue_claims (report_id)
   WHERE report_id IS NOT NULL;

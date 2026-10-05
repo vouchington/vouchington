@@ -1,3 +1,4 @@
+import { getElectionConstraintClause, getElectionIndexName } from './election-sql-identifiers.mts'
 import {
   getEntityRelationIntegrityTargetColumn,
   type EntityRelationMetadata,
@@ -10,8 +11,9 @@ export function createRetainedEntityRelationImpacts(
   const retainedOwners = electionRelations.map(metadata => {
     const retained = `retained_${metadata.table_name}`
     const root = `retained_${metadata.subject_type}_identities`
-    return `CREATE TABLE IF NOT EXISTS ${retained} (
-  subject_id UUID NOT NULL REFERENCES ${root} (id) ON DELETE RESTRICT,
+    return `-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS ${retained} (
+  subject_id UUID NOT NULL ${getElectionConstraintClause(retained, ['subject_id'], 'fk')}REFERENCES ${root} (id) ON DELETE RESTRICT,
   id UUID NOT NULL,
   PRIMARY KEY (subject_id, id)
 );
@@ -77,6 +79,10 @@ COMMENT ON COLUMN user_deletion_relation_impacts.recomputed_at IS 'Timestamp whe
     const column = getEntityRelationIntegrityTargetColumn(metadata)
     const short = metadata.table_name.replace(/^relation__/, '')
     const retained = `retained_${metadata.table_name}`
+    const indexSuffix =
+      short === 'rss_feed_item__category__topic_alias'
+        ? 'rss_feed_item__category__alias_target'
+        : `${short}_target`
     return [
       `COMMENT ON COLUMN user_deletion_relation_impacts.${column} IS 'Retained ${metadata.table_name} identity for this impact.';`,
       ...buildConstraintAddAndValidateSql(
@@ -85,7 +91,8 @@ COMMENT ON COLUMN user_deletion_relation_impacts.recomputed_at IS 'Timestamp whe
         `FOREIGN KEY (subject_id, ${column}) REFERENCES ${retained} (subject_id, id) ON DELETE RESTRICT`,
         retained,
       ),
-      `CREATE UNIQUE INDEX IF NOT EXISTS idx_udri__${short}_target
+      `-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE UNIQUE INDEX IF NOT EXISTS ${getElectionIndexName('user_deletion_relation_impacts', indexSuffix)}
 ON user_deletion_relation_impacts (subject_id, ${column}, request_id)
 WHERE ${column} IS NOT NULL;`,
     ]

@@ -23,7 +23,7 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `copyright_notice_form_screeni_copyright_notice_form_intake__key`: `UNIQUE (copyright_notice_form_intake_id, id)`
+- `uq_copyright_notice_form_screenings__intake_id__id`: `UNIQUE (copyright_notice_form_intake_id, id)`
 
 **Check constraints:**
 
@@ -36,12 +36,12 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `copyright_notice_form_screeni_copyright_notice_form_intake_fkey`: `FOREIGN KEY (copyright_notice_form_intake_id) REFERENCES copyright_notice_form_intakes(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_form_screenings__intake`: `FOREIGN KEY (copyright_notice_form_intake_id) REFERENCES copyright_notice_form_intakes(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `copyright_notice_form_screeni_copyright_notice_form_intake__key`: `CREATE UNIQUE INDEX copyright_notice_form_screeni_copyright_notice_form_intake__key ON public.copyright_notice_form_screenings USING btree (copyright_notice_form_intake_id, id)`
 - `copyright_notice_form_screenings_pkey`: `CREATE UNIQUE INDEX copyright_notice_form_screenings_pkey ON public.copyright_notice_form_screenings USING btree (id)`
+- `uq_copyright_notice_form_screenings__intake_id__id`: `CREATE UNIQUE INDEX uq_copyright_notice_form_screenings__intake_id__id ON public.copyright_notice_form_screenings USING btree (copyright_notice_form_intake_id, id)`
 
 **Triggers:**
 

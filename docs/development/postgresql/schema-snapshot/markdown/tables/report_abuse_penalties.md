@@ -37,7 +37,7 @@ _none_
 
 - `idx_report_abuse_penalties__active`: `CREATE INDEX idx_report_abuse_penalties__active ON public.report_abuse_penalties USING btree (user_id) WHERE (revoked_at IS NULL)`
 - `idx_report_abuse_penalties__flag`: `CREATE INDEX idx_report_abuse_penalties__flag ON public.report_abuse_penalties USING btree (source_flag_id) WHERE (source_flag_id IS NOT NULL)`
-- `idx_report_abuse_penalties__user_flag_uniq`: `CREATE UNIQUE INDEX idx_report_abuse_penalties__user_flag_uniq ON public.report_abuse_penalties USING btree (user_id, source_flag_id) WHERE ((source_flag_id IS NOT NULL) AND (revoked_at IS NULL))`
+- `idx_report_abuse_penalties__user_flag_unique`: `CREATE UNIQUE INDEX idx_report_abuse_penalties__user_flag_unique ON public.report_abuse_penalties USING btree (user_id, source_flag_id) WHERE ((source_flag_id IS NOT NULL) AND (revoked_at IS NULL))`
 - `idx_report_abuse_penalties__user_id`: `CREATE INDEX idx_report_abuse_penalties__user_id ON public.report_abuse_penalties USING btree (user_id) WHERE (user_id IS NOT NULL)`
 - `report_abuse_penalties_pkey`: `CREATE UNIQUE INDEX report_abuse_penalties_pkey ON public.report_abuse_penalties USING btree (id)`
 

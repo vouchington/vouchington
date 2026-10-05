@@ -38,10 +38,10 @@ _none_
 
 - `idx_user_lists__created_via_oauth_client_id`: `CREATE INDEX idx_user_lists__created_via_oauth_client_id ON public.user_lists USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)`
 - `idx_user_lists__owner_user_id`: `CREATE INDEX idx_user_lists__owner_user_id ON public.user_lists USING btree (owner_user_id, id DESC) WHERE (removed_at IS NULL)`
-- `idx_user_lists__owner_user_id__fk`: `CREATE INDEX idx_user_lists__owner_user_id__fk ON public.user_lists USING btree (owner_user_id) WHERE (owner_user_id IS NOT NULL)`
+- `idx_user_lists__owner_user_id__foreign_key`: `CREATE INDEX idx_user_lists__owner_user_id__foreign_key ON public.user_lists USING btree (owner_user_id) WHERE (owner_user_id IS NOT NULL)`
 - `user_lists_pkey`: `CREATE UNIQUE INDEX user_lists_pkey ON public.user_lists USING btree (id)`
 
 **Triggers:**
 
+- `trigger_user_lists_content_provenance_immutable`: `CREATE TRIGGER trigger_user_lists_content_provenance_immutable AFTER UPDATE ON public.user_lists FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()`
 - `trigger_user_lists_updated_at`: `CREATE TRIGGER trigger_user_lists_updated_at BEFORE UPDATE ON public.user_lists FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
-- `user_lists_content_provenance_immutable`: `CREATE TRIGGER user_lists_content_provenance_immutable AFTER UPDATE ON public.user_lists FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()`

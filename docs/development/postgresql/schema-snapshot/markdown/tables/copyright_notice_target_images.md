@@ -26,10 +26,10 @@ _none_
 
 **Foreign keys:**
 
-- `copyright_notice_target_image_copyright_notice_target_id_p_fkey`: `FOREIGN KEY (copyright_notice_target_id, placement_id) REFERENCES copyright_notice_targets(id, placement_id) ON DELETE RESTRICT`
-- `copyright_notice_target_image_placement_id_image_id_bindin_fkey`: `FOREIGN KEY (placement_id, image_id, binding_family) REFERENCES retained_image_placement_bindings(placement_id, image_id, binding_family) ON DELETE RESTRICT`
 - `copyright_notice_target_images_copyright_notice_target_id_fkey`: `FOREIGN KEY (copyright_notice_target_id) REFERENCES copyright_notice_targets(id) ON DELETE CASCADE`
 - `copyright_notice_target_images_image_id_fkey`: `FOREIGN KEY (image_id) REFERENCES retained_image_identities(id) ON DELETE RESTRICT`
+- `fk_copyr_notice_target_images__placement__image__binding_family`: `FOREIGN KEY (placement_id, image_id, binding_family) REFERENCES retained_image_placement_bindings(placement_id, image_id, binding_family) ON DELETE RESTRICT`
+- `fk_copyright_notice_target_images__target__placement`: `FOREIGN KEY (copyright_notice_target_id, placement_id) REFERENCES copyright_notice_targets(id, placement_id) ON DELETE RESTRICT`
 
 **Indexes:**
 

@@ -16,8 +16,8 @@ RANGE partitioned on `placement_id` (children: default, no retention owner, acce
 
 **Unique constraints:**
 
-- `retained_image_placement_bind_placement_id_image_id_binding_key`: `UNIQUE (placement_id, image_id, binding_family)`
 - `retained_image_placement_bindings_placement_id_image_id_key`: `UNIQUE (placement_id, image_id)`
+- `uq_reta_imag_plac_bindi__placement_id__image_id__binding_family`: `UNIQUE (placement_id, image_id, binding_family)`
 
 **Check constraints:**
 
@@ -30,9 +30,9 @@ RANGE partitioned on `placement_id` (children: default, no retention owner, acce
 **Indexes:**
 
 - `idx_retained_image_placement_bindings__image_id`: `CREATE INDEX idx_retained_image_placement_bindings__image_id ON ONLY public.retained_image_placement_bindings USING btree (image_id)`
-- `retained_image_placement_bind_placement_id_image_id_binding_key`: `CREATE UNIQUE INDEX retained_image_placement_bind_placement_id_image_id_binding_key ON ONLY public.retained_image_placement_bindings USING btree (placement_id, image_id, binding_family)`
 - `retained_image_placement_bindings_pkey`: `CREATE UNIQUE INDEX retained_image_placement_bindings_pkey ON ONLY public.retained_image_placement_bindings USING btree (placement_id)`
 - `retained_image_placement_bindings_placement_id_image_id_key`: `CREATE UNIQUE INDEX retained_image_placement_bindings_placement_id_image_id_key ON ONLY public.retained_image_placement_bindings USING btree (placement_id, image_id)`
+- `uq_reta_imag_plac_bindi__placement_id__image_id__binding_family`: `CREATE UNIQUE INDEX uq_reta_imag_plac_bindi__placement_id__image_id__binding_family ON ONLY public.retained_image_placement_bindings USING btree (placement_id, image_id, binding_family)`
 
 **Triggers:**
 

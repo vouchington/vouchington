@@ -22,7 +22,7 @@ export async function activateOldestQueuedGrant(
     ), candidate AS (
       SELECT grant_row.id, grant_row.membership_source_id, grant_row.membership_product_id,
         grant_row.created_at, grant_row.granted_by_id, grant_row.note,
-        membership_grant_remaining_duration(grant_row.id) AS remaining_duration
+        fn_membership_grant_remaining_duration(grant_row.id) AS remaining_duration
       FROM membership_grants grant_row
       INNER JOIN membership_source_states source_state
         ON source_state.membership_source_id = grant_row.membership_source_id
@@ -32,7 +32,7 @@ export async function activateOldestQueuedGrant(
           OR grant_row.membership_source_id = ${membershipSourceId ?? null}::uuid)
         AND source_state.cancelled_at IS NULL AND source_state.expired_at IS NULL
         AND source_state.paused_at IS NULL
-        AND membership_grant_remaining_duration(grant_row.id) >= INTERVAL '1 millisecond'
+        AND fn_membership_grant_remaining_duration(grant_row.id) >= INTERVAL '1 millisecond'
         AND NOT EXISTS (
           SELECT 1 FROM membership_grant_activation_periods activation
           WHERE activation.membership_grant_id = grant_row.id AND activation.ended_at IS NULL

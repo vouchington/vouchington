@@ -19,17 +19,17 @@ _none_
 
 **Check constraints:**
 
-- `copyright_notice_lifecycle_ch_review_rationale_ciphertext_check`: `CHECK (((char_length(review_rationale_ciphertext) >= 1) AND (char_length(review_rationale_ciphertext) <= 65536)))`
+- `chk_copyr_notic_lifec_chang_ration__review_rationale_ciphertext`: `CHECK (((char_length(review_rationale_ciphertext) >= 1) AND (char_length(review_rationale_ciphertext) <= 65536)))`
 
 **Foreign keys:**
 
-- `copyright_notice_lifecycle_change_r_copyright_notice_id_id_fkey`: `FOREIGN KEY (copyright_notice_id, id) REFERENCES copyright_notice_lifecycle_changes(copyright_notice_id, id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED`
 - `copyright_notice_lifecycle_change_rationales_id_fkey`: `FOREIGN KEY (id) REFERENCES copyright_notice_lifecycle_changes(id) ON DELETE CASCADE`
+- `fk_copyright_notice_lifecycle_change_rationales__notice__`: `FOREIGN KEY (copyright_notice_id, id) REFERENCES copyright_notice_lifecycle_changes(copyright_notice_id, id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED`
 
 **Indexes:**
 
 - `copyright_notice_lifecycle_change_rationales_pkey`: `CREATE UNIQUE INDEX copyright_notice_lifecycle_change_rationales_pkey ON public.copyright_notice_lifecycle_change_rationales USING btree (id)`
-- `idx_copyright_lifecycle_change_rationales__notice`: `CREATE INDEX idx_copyright_lifecycle_change_rationales__notice ON public.copyright_notice_lifecycle_change_rationales USING btree (copyright_notice_id)`
+- `idx_copyright_notice_lifecycle_change_rationales__notice`: `CREATE INDEX idx_copyright_notice_lifecycle_change_rationales__notice ON public.copyright_notice_lifecycle_change_rationales USING btree (copyright_notice_id)`
 
 **Triggers:**
 

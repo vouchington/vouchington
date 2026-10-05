@@ -23,8 +23,8 @@ _none_
 
 **Foreign keys:**
 
-- `relation__user__subscribe_rss_feed_items__to_created_by_id_fkey`: `FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE SET NULL`
-- `relation__user__subscribe_rss_feed_items__to_deleted_by_id_fkey`: `FOREIGN KEY (deleted_by_id) REFERENCES users(id) ON DELETE SET NULL`
+- `fk_relatio__user__subscrib_rss_feed_items__topic__created_by_id`: `FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE SET NULL`
+- `fk_relatio__user__subscrib_rss_feed_items__topic__deleted_by_id`: `FOREIGN KEY (deleted_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `relation__user__subscribe_rss_feed_items__topic_object_id_fkey`: `FOREIGN KEY (object_id) REFERENCES topics(id) ON DELETE CASCADE`
 - `relation__user__subscribe_rss_feed_items__topic_subject_id_fkey`: `FOREIGN KEY (subject_id) REFERENCES users(id) ON DELETE CASCADE`
 

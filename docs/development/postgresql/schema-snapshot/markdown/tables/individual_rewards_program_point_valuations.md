@@ -25,11 +25,11 @@ Not partitioned — growth: unbounded.
 
 **Check constraints:**
 
-- `individual_rewards_program_poi_value_microunits_per_point_check`: `CHECK (((value_microunits_per_point >= 0) AND (value_microunits_per_point <= '9999999999'::bigint)))`
+- `chk_indiv_rewar_progra_point_valuat__value_microunits_per_point`: `CHECK (((value_microunits_per_point >= 0) AND (value_microunits_per_point <= '9999999999'::bigint)))`
 
 **Foreign keys:**
 
-- `individual_rewards_program_point__rewards_program_topic_id_fkey`: `FOREIGN KEY (rewards_program_topic_id) REFERENCES rewards_program_topics(topic_id) ON DELETE CASCADE`
+- `fk_individ_rewards_program_point_valuati__rewards_program_topic`: `FOREIGN KEY (rewards_program_topic_id) REFERENCES rewards_program_topics(topic_id) ON DELETE CASCADE`
 - `individual_rewards_program_point_valuations_currency_code_fkey`: `FOREIGN KEY (currency_code) REFERENCES currencies(code) ON DELETE RESTRICT`
 - `individual_rewards_program_point_valuations_individual_id_fkey`: `FOREIGN KEY (individual_id) REFERENCES individuals(id) ON DELETE CASCADE`
 
@@ -37,7 +37,7 @@ Not partitioned — growth: unbounded.
 
 - `idx_ind_rewards_program_point_valuations__currency_code`: `CREATE INDEX idx_ind_rewards_program_point_valuations__currency_code ON public.individual_rewards_program_point_valuations USING btree (currency_code)`
 - `idx_ind_rewards_program_point_valuations__program_topic_id`: `CREATE INDEX idx_ind_rewards_program_point_valuations__program_topic_id ON public.individual_rewards_program_point_valuations USING btree (rewards_program_topic_id)`
-- `idx_ind_rp_point_valuations__individual_id_id`: `CREATE INDEX idx_ind_rp_point_valuations__individual_id_id ON public.individual_rewards_program_point_valuations USING btree (individual_id, id)`
+- `idx_individua_rewards_program_point_valuation__individual_id_id`: `CREATE INDEX idx_individua_rewards_program_point_valuation__individual_id_id ON public.individual_rewards_program_point_valuations USING btree (individual_id, id)`
 - `individual_rewards_program_point_valuations_pkey`: `CREATE UNIQUE INDEX individual_rewards_program_point_valuations_pkey ON public.individual_rewards_program_point_valuations USING btree (id)`
 - `uq_ind_rp_point_valuations__individual_rewards_program`: `CREATE UNIQUE INDEX uq_ind_rp_point_valuations__individual_rewards_program ON public.individual_rewards_program_point_valuations USING btree (individual_id, rewards_program_topic_id)`
 

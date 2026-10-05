@@ -35,6 +35,7 @@ EXCEPTION
 END
 $$;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS moderation_appeals (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   created_via content_creation_channels NOT NULL,
@@ -112,53 +113,66 @@ CREATE TABLE IF NOT EXISTS moderation_appeals (
 
 
 -- Queue pagination
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_appeals__status_created
   ON moderation_appeals (resolved_at, id DESC);
 
 -- One open appeal per (appellant, target) — partial unique indexes
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_moderation_appeals__one_open_warning
   ON moderation_appeals (appellant_id, user_warning_id)
   WHERE resolved_at IS NULL AND user_warning_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_moderation_appeals__one_open_ban
   ON moderation_appeals (appellant_id, community_ban_id)
   WHERE resolved_at IS NULL AND community_ban_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_moderation_appeals__one_open_post
   ON moderation_appeals (appellant_id, post_id, post_removal_kind)
   WHERE resolved_at IS NULL AND post_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_moderation_appeals__one_open_suspension
   ON moderation_appeals (appellant_id, user_suspension_id)
   WHERE resolved_at IS NULL AND user_suspension_id IS NOT NULL;
 
 -- FK-backing indexes
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_appeals__user_warning
   ON moderation_appeals (user_warning_id)
   WHERE user_warning_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_appeals__community_ban
   ON moderation_appeals (community_ban_id)
   WHERE community_ban_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_appeals__post_id
   ON moderation_appeals (post_id)
   WHERE post_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_appeals__user_suspension_id
   ON moderation_appeals (user_suspension_id)
   WHERE user_suspension_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_appeals__appellant
   ON moderation_appeals (appellant_id, id DESC);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_appeals__community_id
   ON moderation_appeals (community_id)
   WHERE community_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_appeals__case_id
   ON moderation_appeals (case_id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_moderation_appeals_updated_at
   BEFORE UPDATE ON moderation_appeals
   FOR EACH ROW
@@ -177,11 +191,13 @@ ALTER TABLE moderation_training_feedbacks
 ALTER TABLE moderation_training_feedbacks
   VALIDATE CONSTRAINT fk_moderation_training_feedbacks__moderation_appeal_id;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_training_feedbacks__moderation_appeal_id
   ON moderation_training_feedbacks (moderation_appeal_id, id DESC)
   WHERE moderation_appeal_id IS NOT NULL;
 
 -- Append-only audit/lifecycle log
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS moderation_appeal_lifecycle_changes (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   moderation_appeal_id uuid NOT NULL REFERENCES moderation_appeals (id) ON DELETE CASCADE,
@@ -192,7 +208,8 @@ CREATE TABLE IF NOT EXISTS moderation_appeal_lifecycle_changes (
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
 
-CREATE INDEX IF NOT EXISTS idx_moderation_appeal_lifecycle__appeal_created
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_moderation_appeal_lifecycle_changes__appeal_created
   ON moderation_appeal_lifecycle_changes (moderation_appeal_id, id DESC);
 
 DO $$
@@ -208,6 +225,7 @@ BEGIN
   END IF;
 END $$;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_appeals__latest_lifecycle_change_id
   ON moderation_appeals (latest_lifecycle_change_id)
   WHERE latest_lifecycle_change_id IS NOT NULL;
@@ -227,12 +245,14 @@ ALTER TABLE notifications
 ALTER TABLE notifications
   VALIDATE CONSTRAINT fk_notifications__moderation_appeal_id;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_notifications__user_id__moderation_appeal
   ON notifications (user_id, moderation_appeal_id)
   WHERE moderation_appeal_id IS NOT NULL
     AND deleted_at IS NULL
     AND delivery_type = 'subscription';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_notifications__moderation_appeal
   ON notifications (moderation_appeal_id)
   WHERE moderation_appeal_id IS NOT NULL AND deleted_at IS NULL;
@@ -251,12 +271,14 @@ ALTER TABLE notifications
 ALTER TABLE notifications
   VALIDATE CONSTRAINT fk_notifications__community_ban_id;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_notifications__user_id__community_ban
   ON notifications (user_id, community_ban_id)
   WHERE community_ban_id IS NOT NULL
     AND deleted_at IS NULL
     AND delivery_type = 'subscription';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_notifications__community_ban
   ON notifications (community_ban_id)
   WHERE community_ban_id IS NOT NULL AND deleted_at IS NULL;
@@ -276,6 +298,7 @@ ALTER TABLE moderator_actions
 ALTER TABLE moderator_actions
   VALIDATE CONSTRAINT fk_moderator_actions__moderation_appeal_id;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__moderation_appeal_id
   ON moderator_actions (moderation_appeal_id)
   WHERE moderation_appeal_id IS NOT NULL;
@@ -323,15 +346,21 @@ COMMENT ON COLUMN notifications.community_ban_id IS 'The community ban this noti
 COMMENT ON COLUMN user_warnings.revoked_at IS 'When this warning was revoked (e.g. via appeal acceptance). NULL means the warning is still active.';
 COMMENT ON COLUMN user_warnings.revoked_by_id IS 'The staff user who revoked this warning.';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_appeals__created_via_oauth_client_id
   ON moderation_appeals (created_via_oauth_client_id)
   WHERE created_via_oauth_client_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_ensure_moderation_appeal_lifecycle_changes_actor BEFORE INSERT ON moderation_appeal_lifecycle_changes FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id');
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_moderation_appeal_lifecycle_changes_append_only BEFORE UPDATE OR DELETE ON moderation_appeal_lifecycle_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_moderation_appeal_lifecycle_changes__changed_by_id ON moderation_appeal_lifecycle_changes(changed_by_id) WHERE changed_by_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_ensure_moderation_appeals_original_actor BEFORE INSERT ON moderation_appeals FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('original_decided_by_id');
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_moderation_appeals__original_decided_by_id ON moderation_appeals(original_decided_by_id) WHERE original_decided_by_id IS NOT NULL;
 COMMENT ON COLUMN moderation_appeals.original_decided_by_id IS 'Retained identity of the original decision actor captured when the appeal opens; never authorization.';
 COMMENT ON COLUMN moderation_appeals.original_decision_reason IS 'Original private decision reason captured when the appeal opens, independent of subsequent resolution.';

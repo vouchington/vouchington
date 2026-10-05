@@ -14,6 +14,7 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS follower_distributions (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   sender_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -44,39 +45,48 @@ CREATE TABLE IF NOT EXISTS follower_distributions (
     CHECK (completed_at IS NULL OR failed_at IS NULL)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_follower_distributions__sender_action_post
 ON follower_distributions (sender_user_id, action, post_id, id DESC)
 WHERE post_id IS NOT NULL AND failed_at IS NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_follower_distributions__sender_action_rss
 ON follower_distributions (sender_user_id, action, rss_feed_item_id, id DESC)
 WHERE rss_feed_item_id IS NOT NULL AND failed_at IS NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_follower_distributions__incomplete
 ON follower_distributions (id)
 WHERE completed_at IS NULL AND failed_at IS NULL;
 
 -- RI-usable indexes for FKs not led by any index above
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_follower_distributions__sender_user_id
 ON follower_distributions (sender_user_id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_follower_distributions__post_id
 ON follower_distributions (post_id)
 WHERE post_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_follower_distributions__rss_feed_item_id
 ON follower_distributions (rss_feed_item_id)
 WHERE rss_feed_item_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_follower_distributions__last_processed_recipient_user_id
 ON follower_distributions (last_processed_recipient_user_id)
 WHERE last_processed_recipient_user_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_follower_distributions_updated_at
 BEFORE UPDATE ON follower_distributions
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS follower_distribution_deliveries (
   distribution_id UUID NOT NULL REFERENCES follower_distributions(id) ON DELETE CASCADE,
   recipient_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -84,12 +94,14 @@ CREATE TABLE IF NOT EXISTS follower_distribution_deliveries (
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(delivery_id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (distribution_id, recipient_user_id),
-  UNIQUE (recipient_user_id, delivery_id)
+  CONSTRAINT uq_follower_distribut_deliverie__recipient_user_id__delivery_id UNIQUE (recipient_user_id, delivery_id)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_follower_distribution_deliveries__delivery
 ON follower_distribution_deliveries (delivery_id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_follower_distribution_deliveries_updated_at
 BEFORE UPDATE ON follower_distribution_deliveries
 FOR EACH ROW
@@ -110,6 +122,7 @@ COMMENT ON COLUMN follower_distribution_deliveries.distribution_id IS 'Distribut
 COMMENT ON COLUMN follower_distribution_deliveries.recipient_user_id IS 'Follower receiving the distribution delivery.';
 COMMENT ON COLUMN follower_distribution_deliveries.delivery_id IS 'Stable id reused for the final feed share or notification row.';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS follower_distribution_selected_recipients (
   distribution_id UUID NOT NULL,
   recipient_user_id UUID NOT NULL,
@@ -120,13 +133,15 @@ CREATE TABLE IF NOT EXISTS follower_distribution_selected_recipients (
     FOREIGN KEY (recipient_user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_fd_selected_recipients__recipient_user_id
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_follower_distributio_selected_recipients__recipient_user_id
 ON follower_distribution_selected_recipients (recipient_user_id);
 
 COMMENT ON TABLE follower_distribution_selected_recipients IS 'Distribution-owned selected recipient snapshot. Delivery identity stays on follower_distribution_deliveries.';
 COMMENT ON COLUMN follower_distribution_selected_recipients.distribution_id IS 'Selected-followers distribution that owns this recipient.';
 COMMENT ON COLUMN follower_distribution_selected_recipients.recipient_user_id IS 'User selected at acceptance. Later unfollows do not remove the row; hard deletion does.';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_follower_distribution_recipient_bounds()
 RETURNS TRIGGER
 LANGUAGE plpgsql

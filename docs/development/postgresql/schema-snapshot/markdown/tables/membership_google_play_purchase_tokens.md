@@ -25,9 +25,9 @@ _none_
 
 **Check constraints:**
 
-- `membership_google_play_purch_linked_purchase_token_lookup_check`: `CHECK (((linked_purchase_token_lookup_sha256 IS NULL) OR (linked_purchase_token_lookup_sha256 ~ '^[a-f0-9]{64}$'::text)))`
-- `membership_google_play_purch_purchase_token_lookup_sha256_check`: `CHECK ((purchase_token_lookup_sha256 ~ '^[a-f0-9]{64}$'::text))`
-- `membership_google_play_purchase__encrypted_purchase_token_check`: `CHECK (((octet_length(encrypted_purchase_token) >= 1) AND (octet_length(encrypted_purchase_token) <= 65536)))`
+- `chk_mem_goo_play_purc_toke__linked_purchase_token_lookup_sha256`: `CHECK (((linked_purchase_token_lookup_sha256 IS NULL) OR (linked_purchase_token_lookup_sha256 ~ '^[a-f0-9]{64}$'::text)))`
+- `chk_membe_googl_play_purch_tokens__purchase_token_lookup_sha256`: `CHECK ((purchase_token_lookup_sha256 ~ '^[a-f0-9]{64}$'::text))`
+- `chk_member_google_play_purchas_tokens__encrypted_purchase_token`: `CHECK (((octet_length(encrypted_purchase_token) >= 1) AND (octet_length(encrypted_purchase_token) <= 65536)))`
 - `membership_google_play_purchase_tokens_application_id_check`: `CHECK ((((char_length(application_id) >= 1) AND (char_length(application_id) <= 255)) AND (application_id = TRIM(BOTH FROM application_id))))`
 - `membership_google_play_purchase_tokens_check`: `CHECK (((linked_purchase_token_lookup_sha256 IS NULL) OR (linked_purchase_token_lookup_sha256 <> purchase_token_lookup_sha256)))`
 - `membership_google_play_purchase_tokens_provider_check`: `CHECK ((provider = 'google_play'::membership_provider_kinds))`

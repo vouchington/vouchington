@@ -1,4 +1,5 @@
 -- edited-in-place: pre-launch, never deployed to production
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_warnings (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   -- guardrails-disable-next-line uuid-must-be-key
@@ -19,16 +20,20 @@ CREATE TABLE IF NOT EXISTS user_warnings (
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
 
-CREATE INDEX IF NOT EXISTS user_warnings_user_id ON user_warnings (user_id, id DESC);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_user_warnings__user_id ON user_warnings (user_id, id DESC);
 
-CREATE INDEX IF NOT EXISTS user_warnings_community_id ON user_warnings (community_id, id DESC)
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_user_warnings__community_id ON user_warnings (community_id, id DESC)
 WHERE community_id IS NOT NULL;
 
 -- Prevent duplicate warnings for the same report (idempotency on retry when report resolution fails).
-CREATE UNIQUE INDEX IF NOT EXISTS user_warnings_report_id_unique ON user_warnings (report_id)
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_warnings__report_id_unique ON user_warnings (report_id)
 WHERE report_id IS NOT NULL;
 
-CREATE INDEX IF NOT EXISTS idx_user_warnings_case_id
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_user_warnings__case_id
   ON user_warnings (case_id);
 
 COMMENT ON TABLE user_warnings IS 'Records of formal warnings issued to users by moderators or admins.';

@@ -126,11 +126,11 @@ CREATE OR REPLACE TRIGGER trigger_individual_cards_fn_update_updated_at
 
 -- find a card's users
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS individual_cards__card_id
+CREATE INDEX IF NOT EXISTS idx_individual_cards__card_id
 ON individual_cards (card_id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS individual_cards__currency_code
+CREATE INDEX IF NOT EXISTS idx_individual_cards__currency_code
 ON individual_cards (currency_code)
 WHERE currency_code IS NOT NULL;
 
@@ -151,7 +151,7 @@ CREATE TABLE IF NOT EXISTS individual_rewards_program_statuses (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
 
   individual_id UUID NOT NULL REFERENCES individuals ON DELETE CASCADE,
-  rewards_program_status_id UUID NOT NULL REFERENCES rewards_program_status_topics ON DELETE CASCADE, -- e.g. Marriott Bonvoy Platinum Elite Status
+  rewards_program_status_id UUID NOT NULL CONSTRAINT fk_individual_rewards_program_statuses__rewards_program_status REFERENCES rewards_program_status_topics ON DELETE CASCADE, -- e.g. Marriott Bonvoy Platinum Elite Status
 
   since DATE,
   until DATE,
@@ -169,7 +169,7 @@ CREATE OR REPLACE TRIGGER trigger_individual_rewards_program_statuses_updated_at
 
 -- find a rewards program status's users
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS individual_rewards_program_statuses__rewards_program_status_id
+CREATE INDEX IF NOT EXISTS idx_individ_rewards_program_statuses__rewards_program_status_id
 ON individual_rewards_program_statuses (rewards_program_status_id);
 
 COMMENT ON TABLE individual_rewards_program_statuses IS 'Rewards program tier statuses held by individuals (e.g. Marriott Platinum Elite).';
@@ -204,7 +204,7 @@ CREATE TABLE IF NOT EXISTS spending_entries (
 
 -- calculate metrics for a spending category
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS spending_entries__spending_category_id
+CREATE INDEX IF NOT EXISTS idx_spending_entries__spending_category_id
 ON spending_entries (spending_category_id);
 
 -- Index for foreign key on currency
@@ -283,10 +283,10 @@ CREATE TABLE IF NOT EXISTS individual_rewards_program_point_valuations (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
 
   individual_id UUID NOT NULL REFERENCES individuals ON DELETE CASCADE,
-  rewards_program_topic_id UUID NOT NULL REFERENCES rewards_program_topics ON DELETE CASCADE,
+  rewards_program_topic_id UUID NOT NULL CONSTRAINT fk_individ_rewards_program_point_valuati__rewards_program_topic REFERENCES rewards_program_topics ON DELETE CASCADE,
 
   value_microunits_per_point BIGINT NOT NULL,
-  CHECK (value_microunits_per_point BETWEEN 0 AND 9999999999),
+  CONSTRAINT chk_indiv_rewar_progra_point_valuat__value_microunits_per_point CHECK (value_microunits_per_point BETWEEN 0 AND 9999999999),
   currency_code TEXT NOT NULL REFERENCES currencies(code) ON DELETE RESTRICT,
 
   note TEXT,
@@ -334,9 +334,9 @@ CREATE TABLE IF NOT EXISTS individual_financial_profiles (
   credit_score_range TEXT,
   -- Self-reported annual income range in the currency minor unit.
   stated_income_minimum_minor_units BIGINT,
-  CHECK (stated_income_minimum_minor_units BETWEEN 0 AND 9007199254740991),
+  CONSTRAINT chk_individ_financi_profiles__stated_income_minimum_minor_units CHECK (stated_income_minimum_minor_units BETWEEN 0 AND 9007199254740991),
   stated_income_maximum_minor_units BIGINT,
-  CHECK (stated_income_maximum_minor_units BETWEEN 0 AND 9007199254740991),
+  CONSTRAINT chk_individ_financi_profiles__stated_income_maximum_minor_units CHECK (stated_income_maximum_minor_units BETWEEN 0 AND 9007199254740991),
   CHECK (
     stated_income_maximum_minor_units IS NULL
     OR (
@@ -346,7 +346,7 @@ CREATE TABLE IF NOT EXISTS individual_financial_profiles (
   ),
   -- Total credit limit across all open cards in the currency minor unit.
   total_credit_limit_minor_units BIGINT,
-  CHECK (total_credit_limit_minor_units BETWEEN 0 AND 9007199254740991),
+  CONSTRAINT chk_individu_financial_profiles__total_credit_limit_minor_units CHECK (total_credit_limit_minor_units BETWEEN 0 AND 9007199254740991),
   currency_code TEXT NOT NULL REFERENCES currencies(code) ON DELETE RESTRICT,
   -- Years since oldest credit account was opened
   years_of_credit_history SMALLINT,
@@ -605,7 +605,7 @@ ON amazon_ses_bounce_events USING GIN (recipients);
 
 -- Index to correlate with sent emails by SES message ID
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_amazon_ses_bounce_events__ses_message_id
+CREATE INDEX IF NOT EXISTS idx_amazon_ses_bounce_events__amazon_ses_message_id
 ON amazon_ses_bounce_events (ses_message_id)
 WHERE ses_message_id IS NOT NULL;
 
@@ -701,11 +701,11 @@ CREATE INDEX IF NOT EXISTS idx_individual_cards__individual_id_id
   ON individual_cards (individual_id, id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_ind_rp_point_valuations__individual_id_id
+CREATE INDEX IF NOT EXISTS idx_individua_rewards_program_point_valuation__individual_id_id
   ON individual_rewards_program_point_valuations (individual_id, id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_ind_rp_statuses__individual_id_id
+CREATE INDEX IF NOT EXISTS idx_individual_rewards_program_statuses__individual_id_id
   ON individual_rewards_program_statuses (individual_id, id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

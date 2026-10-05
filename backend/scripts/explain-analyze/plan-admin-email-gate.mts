@@ -2,7 +2,7 @@ import type { ExplainResult } from '@data-stores/psql'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 import { collectPlanNodes } from './plan-nodes.mts'
 
-const EMAIL_INDEX = 'idx_user_email_addresses_email_primary'
+const EMAIL_INDEX = 'idx_user_email_addresses__email_primary'
 
 export function assertAdminEmailIndexPlan(result: ExplainResult): void {
   if (result.scenario_id !== 'search-admin-users-email') return

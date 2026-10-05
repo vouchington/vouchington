@@ -13,7 +13,8 @@ ALTER TABLE conversation_messages
 ALTER TABLE conversation_messages
   VALIDATE CONSTRAINT conversation_messages_created_via_oauth_client_id_fkey;
 
-CREATE OR REPLACE TRIGGER conversation_messages_content_provenance_immutable
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_conversation_messages_content_provenance_immutable
   AFTER UPDATE ON conversation_messages
   FOR EACH ROW
   WHEN (

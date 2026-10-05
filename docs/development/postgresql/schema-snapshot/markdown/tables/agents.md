@@ -46,6 +46,6 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `moderation_transparency_agents_lock`: `CREATE TRIGGER moderation_transparency_agents_lock BEFORE UPDATE OF deleted_at ON public.agents FOR EACH ROW EXECUTE FUNCTION fn_lock_agent_moderation_transparency_agent()`
 - `trigger_agents_system_account`: `CREATE TRIGGER trigger_agents_system_account BEFORE INSERT OR UPDATE OF system_user_id ON public.agents FOR EACH ROW EXECUTE FUNCTION fn_reject_agent_system_account()`
 - `trigger_agents_updated_at`: `CREATE TRIGGER trigger_agents_updated_at BEFORE UPDATE ON public.agents FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_moderation_transparency_agents_lock`: `CREATE TRIGGER trigger_moderation_transparency_agents_lock BEFORE UPDATE OF deleted_at ON public.agents FOR EACH ROW EXECUTE FUNCTION fn_lock_agent_moderation_transparency_agent()`

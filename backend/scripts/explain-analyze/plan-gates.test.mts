@@ -106,33 +106,26 @@ describe('required EXPLAIN plan shapes', () => {
   })
 
   it('requires point-valuation pages to use owner-scoped UUID index order', () => {
-    const indexed = result(
-      'point-valuations-page',
-      'SELECT id FROM individual_rewards_program_point_valuations',
-      {
-        Plan: {
-          'Node Type': 'Index Scan',
-          'Index Name': 'idx_ind_rp_point_valuations__individual_id_id',
-        },
+    const query = 'SELECT id FROM individual_rewards_program_point_valuations'
+    const indexed = result('point-valuations-page', query, {
+      Plan: {
+        'Node Type': 'Index Scan',
+        'Index Name': 'idx_individua_rewards_program_point_valuation__individual_id_id',
       },
-    )
+    })
     expect(() => assertRequiredPlanShape(indexed)).not.toThrow()
 
-    const sorted = result(
-      'point-valuations-page',
-      'SELECT id FROM individual_rewards_program_point_valuations',
-      {
-        Plan: {
-          'Node Type': 'Sort',
-          Plans: [
-            {
-              'Node Type': 'Seq Scan',
-              'Relation Name': 'individual_rewards_program_point_valuations',
-            },
-          ],
-        },
+    const sorted = result('point-valuations-page', query, {
+      Plan: {
+        'Node Type': 'Sort',
+        Plans: [
+          {
+            'Node Type': 'Seq Scan',
+            'Relation Name': 'individual_rewards_program_point_valuations',
+          },
+        ],
       },
-    )
+    })
     expect(() => assertRequiredPlanShape(sorted)).toThrow('without an explicit Sort')
   })
 
@@ -141,7 +134,10 @@ describe('required EXPLAIN plan shapes', () => {
       'rewards-program-statuses-page',
       'SELECT id FROM individual_rewards_program_statuses',
       {
-        Plan: { 'Node Type': 'Index Scan', 'Index Name': 'idx_ind_rp_statuses__individual_id_id' },
+        Plan: {
+          'Node Type': 'Index Scan',
+          'Index Name': 'idx_individual_rewards_program_statuses__individual_id_id',
+        },
       },
     )
     expect(() => assertRequiredPlanShape(indexed)).not.toThrow()

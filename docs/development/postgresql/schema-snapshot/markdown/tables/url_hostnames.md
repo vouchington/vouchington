@@ -78,7 +78,7 @@ Not partitioned — growth: unbounded.
 - `idx_url_hostnames__top_sort_by_topic`: `CREATE INDEX idx_url_hostnames__top_sort_by_topic ON public.url_hostnames USING btree (topic_id, votes_score_net DESC, id DESC) WHERE ((blocked IS NOT TRUE) AND (votes_count_up > 0) AND (topic_id IS NOT NULL))`
 - `idx_url_hostnames__topic_id`: `CREATE INDEX idx_url_hostnames__topic_id ON public.url_hostnames USING btree (topic_id) WHERE (topic_id IS NOT NULL)`
 - `idx_url_hostnames__votes_score_sort__id`: `CREATE INDEX idx_url_hostnames__votes_score_sort__id ON public.url_hostnames USING btree (votes_score_sort DESC, id)`
-- `idx_url_hostnames__votes_score_sort__pos__id`: `CREATE INDEX idx_url_hostnames__votes_score_sort__pos__id ON public.url_hostnames USING btree (votes_score_sort DESC, id) WHERE (votes_score_net > (0)::double precision)`
+- `idx_url_hostnames__votes_score_sort__positive__id`: `CREATE INDEX idx_url_hostnames__votes_score_sort__positive__id ON public.url_hostnames USING btree (votes_score_sort DESC, id) WHERE (votes_score_net > (0)::double precision)`
 - `url_hostnames_hostname_key`: `CREATE UNIQUE INDEX url_hostnames_hostname_key ON public.url_hostnames USING btree (hostname)`
 - `url_hostnames_pkey`: `CREATE UNIQUE INDEX url_hostnames_pkey ON public.url_hostnames USING btree (id)`
 

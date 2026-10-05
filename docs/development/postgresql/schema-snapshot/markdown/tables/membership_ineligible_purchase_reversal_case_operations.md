@@ -27,10 +27,10 @@ _none_
 
 **Indexes:**
 
-- `idx_mipr_case_ops__operation`: `CREATE UNIQUE INDEX idx_mipr_case_ops__operation ON public.membership_ineligible_purchase_reversal_case_operations USING btree (membership_operation_id)`
+- `idx_members_ineligib_purchase_reversal_case_operatio__operation`: `CREATE UNIQUE INDEX idx_members_ineligib_purchase_reversal_case_operatio__operation ON public.membership_ineligible_purchase_reversal_case_operations USING btree (membership_operation_id)`
 - `pk_mipr_case_ops`: `CREATE UNIQUE INDEX pk_mipr_case_ops ON public.membership_ineligible_purchase_reversal_case_operations USING btree (membership_ineligible_purchase_reversal_case_id, membership_operation_id)`
 
 **Triggers:**
 
-- `trigger_mipr_case_ops_context`: `CREATE TRIGGER trigger_mipr_case_ops_context BEFORE INSERT ON public.membership_ineligible_purchase_reversal_case_operations FOR EACH ROW EXECUTE FUNCTION fn_reject_mipr_case_op_context()`
-- `trigger_mipr_case_ops_immutable`: `CREATE TRIGGER trigger_mipr_case_ops_immutable BEFORE DELETE OR UPDATE ON public.membership_ineligible_purchase_reversal_case_operations FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_purchase_reversal_case_operation_context`: `CREATE TRIGGER trigger_purchase_reversal_case_operation_context BEFORE INSERT ON public.membership_ineligible_purchase_reversal_case_operations FOR EACH ROW EXECUTE FUNCTION fn_reject_purchase_reversal_case_operation_context()`
+- `trigger_purchase_reversal_case_operations_immutable`: `CREATE TRIGGER trigger_purchase_reversal_case_operations_immutable BEFORE DELETE OR UPDATE ON public.membership_ineligible_purchase_reversal_case_operations FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`

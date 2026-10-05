@@ -96,7 +96,7 @@ describe('writeResults', () => {
     }
 
     expect(() => collectAndGate(failing)).toThrow(
-      'membership-refunds-already-refunded-batch (membership-refunds-already-refunded-batch) must use index(es) idx_mrefunds__stripe_charge_id, idx_mrefunds__stripe_payment_intent_id',
+      'membership-refunds-already-refunded-batch (membership-refunds-already-refunded-batch) must use index(es) idx_membership_refunds__stripe_charge_id, idx_membership_refunds__stripe_payment_intent_id',
     )
 
     writeResults()

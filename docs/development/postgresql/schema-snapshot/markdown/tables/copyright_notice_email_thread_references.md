@@ -19,7 +19,7 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `copyright_notice_email_thread_copyright_notice_email_intake_key`: `UNIQUE (copyright_notice_email_intake_id, lookup_token, reference_kind)`
+- `uq_cop_not_ema_thr_ref__intake_id__lookup_token__reference_kind`: `UNIQUE (copyright_notice_email_intake_id, lookup_token, reference_kind)`
 
 **Check constraints:**
 
@@ -28,13 +28,13 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `copyright_notice_email_thread_copyright_notice_email_intak_fkey`: `FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_email_thread_references__intake`: `FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `copyright_notice_email_thread_copyright_notice_email_intake_key`: `CREATE UNIQUE INDEX copyright_notice_email_thread_copyright_notice_email_intake_key ON public.copyright_notice_email_thread_references USING btree (copyright_notice_email_intake_id, lookup_token, reference_kind)`
 - `copyright_notice_email_thread_references_pkey`: `CREATE UNIQUE INDEX copyright_notice_email_thread_references_pkey ON public.copyright_notice_email_thread_references USING btree (id)`
-- `idx_copyright_email_thread_references__lookup`: `CREATE INDEX idx_copyright_email_thread_references__lookup ON public.copyright_notice_email_thread_references USING btree (lookup_token, id)`
+- `idx_copyright_notice_email_thread_references__lookup`: `CREATE INDEX idx_copyright_notice_email_thread_references__lookup ON public.copyright_notice_email_thread_references USING btree (lookup_token, id)`
+- `uq_cop_not_ema_thr_ref__intake_id__lookup_token__reference_kind`: `CREATE UNIQUE INDEX uq_cop_not_ema_thr_ref__intake_id__lookup_token__reference_kind ON public.copyright_notice_email_thread_references USING btree (copyright_notice_email_intake_id, lookup_token, reference_kind)`
 
 **Triggers:**
 

@@ -33,7 +33,7 @@ function result(indexName: string, loops = 1): ExplainResult {
 describe('admin email EXPLAIN gate', () => {
   it('accepts the executing selective primary-email index', () => {
     expect(() =>
-      assertRequiredPlanShape(result('idx_user_email_addresses_email_primary')),
+      assertRequiredPlanShape(result('idx_user_email_addresses__email_primary')),
     ).not.toThrow()
   })
 
@@ -43,7 +43,7 @@ describe('admin email EXPLAIN gate', () => {
       'primary-email index',
     )
     expect(() =>
-      assertRequiredPlanShape(result('idx_user_email_addresses_email_primary', 0)),
+      assertRequiredPlanShape(result('idx_user_email_addresses__email_primary', 0)),
     ).toThrow('primary-email index')
   })
 })

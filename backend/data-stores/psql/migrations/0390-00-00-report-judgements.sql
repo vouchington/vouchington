@@ -10,6 +10,7 @@ $$;
 
 -- AI-generated judgements on reported entities. Exactly one entity FK is set per row.
 -- post_id covers both posts and comments (distinguished by posts.post_type).
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS moderation_report_judgements (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   post_id          uuid REFERENCES posts(id) ON DELETE CASCADE,
@@ -36,19 +37,24 @@ CREATE TABLE IF NOT EXISTS moderation_report_judgements (
 );
 
 -- Per-entity lookup (most-recent judgement per entity)
-CREATE INDEX IF NOT EXISTS idx_moderation_report_judgements_post_id
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_moderation_report_judgements__post_id
   ON moderation_report_judgements (post_id, id DESC) WHERE post_id IS NOT NULL;
 
-CREATE INDEX IF NOT EXISTS idx_moderation_report_judgements_user_id
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_moderation_report_judgements__user_id
   ON moderation_report_judgements (reported_user_id, id DESC) WHERE reported_user_id IS NOT NULL;
 
-CREATE INDEX IF NOT EXISTS idx_moderation_report_judgements_hostname_id
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_moderation_report_judgements__hostname_id
   ON moderation_report_judgements (hostname_id, id DESC) WHERE hostname_id IS NOT NULL;
 
-CREATE INDEX IF NOT EXISTS idx_moderation_report_judgements_rss_id
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_moderation_report_judgements__rss_id
   ON moderation_report_judgements (rss_feed_item_id, id DESC) WHERE rss_feed_item_id IS NOT NULL;
 
-CREATE INDEX IF NOT EXISTS idx_moderation_report_judgements_case_id
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_moderation_report_judgements__case_id
   ON moderation_report_judgements (case_id) WHERE case_id IS NOT NULL;
 
 COMMENT ON TABLE moderation_report_judgements IS 'AI-generated judgements on reported entities recommending a moderation action.';
@@ -71,11 +77,13 @@ COMMENT ON COLUMN moderation_report_judgements.dispatched_at IS 'Timestamp when 
 
 -- Partial index for the reconciler: find judgements not yet dispatched that need re-enqueueing.
 -- Indexes the real id column (created_at is a VIRTUAL generated column and cannot be indexed).
-CREATE INDEX IF NOT EXISTS idx_moderation_report_judgements_undispatched
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_moderation_report_judgements__undispatched
   ON moderation_report_judgements (id)
   WHERE dispatched_at IS NULL AND rerun_by_id IS NULL;
 
 -- Current indexes for fresh schema bootstrap.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_report_judgements__triggering_report_id
   ON moderation_report_judgements (triggering_report_id)
   WHERE triggering_report_id IS NOT NULL;

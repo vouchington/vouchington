@@ -176,6 +176,15 @@ CREATE OR REPLACE FUNCTION public.fn_lock_moderation_transparency_projection(p_d
  LANGUAGE sql
 ```
 
+## `fn_membership_grant_remaining_duration(grant_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_membership_grant_remaining_duration(grant_id uuid)
+ RETURNS interval
+ LANGUAGE sql
+ STABLE PARALLEL SAFE
+```
+
 ## `fn_notification_target_entity(notification_entity_type notification_entity_types, notification_community_id uuid)`
 
 ```sql
@@ -817,22 +826,6 @@ CREATE OR REPLACE FUNCTION public.fn_reject_membership_refund_operation_attempt_
  LANGUAGE plpgsql
 ```
 
-## `fn_reject_mipr_case_op_context`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_reject_mipr_case_op_context()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_reject_mipr_succeeded_refund_observation_context`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_reject_mipr_succeeded_refund_observation_context()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
 ## `fn_reject_moderation_appeal_resolution`
 
 ```sql
@@ -861,6 +854,22 @@ CREATE OR REPLACE FUNCTION public.fn_reject_ownerless_image_surface_retirement()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_reject_platform_account_kind_change()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_purchase_reversal_case_operation_context`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_purchase_reversal_case_operation_context()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_purchase_reversal_refund_observation_currency`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_purchase_reversal_refund_observation_currency()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -1122,13 +1131,4 @@ CREATE OR REPLACE FUNCTION public.fn_wilson_score_lower_bound(pos double precisi
  RETURNS double precision
  LANGUAGE sql
  IMMUTABLE
-```
-
-## `membership_grant_remaining_duration(grant_id uuid)`
-
-```sql
-CREATE OR REPLACE FUNCTION public.membership_grant_remaining_duration(grant_id uuid)
- RETURNS interval
- LANGUAGE sql
- STABLE PARALLEL SAFE
 ```

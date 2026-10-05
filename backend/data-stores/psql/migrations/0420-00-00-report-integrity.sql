@@ -22,6 +22,7 @@ END $$;
 -- Moderation review queue for suspected mass-report campaigns.
 -- Exactly one entity FK is set per row (enforced by CHECK constraint).
 -- post_id covers both posts and comments (distinguished by posts.post_type).
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS report_integrity_flags (
   id               uuid DEFAULT uuidv7() PRIMARY KEY,
   post_id          uuid REFERENCES posts ON DELETE CASCADE,
@@ -44,42 +45,52 @@ CREATE TABLE IF NOT EXISTS report_integrity_flags (
     CHECK (details -> 'reporter_user_ids' IS NULL)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_report_integrity_flags_updated_at
   BEFORE UPDATE ON report_integrity_flags FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 -- Pending queue scan
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_report_integrity_flags__pending
   ON report_integrity_flags (id)
   WHERE resolved_at IS NULL;
 
 -- Per-entity dedup: one unresolved flag per entity per flag_type
-CREATE UNIQUE INDEX IF NOT EXISTS idx_rif__post_flag_pending
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_report_integrity_flags__post_flag_pending
   ON report_integrity_flags (post_id, flag_type)
   WHERE resolved_at IS NULL AND post_id IS NOT NULL;
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_rif__user_flag_pending
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_report_integrity_flags__user_flag_pending
   ON report_integrity_flags (reported_user_id, flag_type)
   WHERE resolved_at IS NULL AND reported_user_id IS NOT NULL;
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_rif__hostname_flag_pending
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_report_integrity_flags__hostname_flag_pending
   ON report_integrity_flags (hostname_id, flag_type)
   WHERE resolved_at IS NULL AND hostname_id IS NOT NULL;
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_rif__rss_flag_pending
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_report_integrity_flags__rss_flag_pending
   ON report_integrity_flags (rss_feed_item_id, flag_type)
   WHERE resolved_at IS NULL AND rss_feed_item_id IS NOT NULL;
 
 -- Per-entity lookup indexes
-CREATE INDEX IF NOT EXISTS idx_rif__post_id
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_report_integrity_flags__post_id
   ON report_integrity_flags (post_id) WHERE post_id IS NOT NULL;
 
-CREATE INDEX IF NOT EXISTS idx_rif__reported_user_id
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_report_integrity_flags__reported_user_id
   ON report_integrity_flags (reported_user_id) WHERE reported_user_id IS NOT NULL;
 
-CREATE INDEX IF NOT EXISTS idx_rif__hostname_id
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_report_integrity_flags__hostname_id
   ON report_integrity_flags (hostname_id) WHERE hostname_id IS NOT NULL;
 
-CREATE INDEX IF NOT EXISTS idx_rif__rss_feed_item_id
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_report_integrity_flags__rss_feed_item_id
   ON report_integrity_flags (rss_feed_item_id) WHERE rss_feed_item_id IS NOT NULL;
 
 COMMENT ON TABLE report_integrity_flags IS 'Moderation review queue for suspected mass-report campaigns. Exactly one entity FK is set per row.';
@@ -98,12 +109,14 @@ COMMENT ON COLUMN report_integrity_flags.resolution IS 'Outcome: dismissed or pe
 -- Detection-time reporter set for each flag. Reporters are the users whose pending reports
 -- triggered the flag; apply-penalty penalizes exactly this set. A reporter whose account is
 -- deleted drops out of the set (CASCADE), matching the skip-deleted-reporters behavior.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS report_integrity_flag_reporters (
   flag_id uuid NOT NULL REFERENCES report_integrity_flags (id) ON DELETE CASCADE,
   user_id uuid NOT NULL REFERENCES users (id) ON DELETE CASCADE,
   PRIMARY KEY (flag_id, user_id)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_report_integrity_flag_reporters__user_id
   ON report_integrity_flag_reporters (user_id);
 
@@ -116,6 +129,7 @@ COMMENT ON COLUMN report_integrity_flag_reporters.user_id IS 'Reporter whose pen
 -- ============================================================================
 
 -- Per-reporter audit records created when a mass-report flag is actioned.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS report_abuse_penalties (
   id            uuid DEFAULT uuidv7() PRIMARY KEY,
   user_id       uuid NOT NULL REFERENCES users ON DELETE CASCADE,
@@ -131,17 +145,21 @@ CREATE TABLE IF NOT EXISTS report_abuse_penalties (
   updated_at    timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_report_abuse_penalties_updated_at
   BEFORE UPDATE ON report_abuse_penalties FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_report_abuse_penalties__active
   ON report_abuse_penalties (user_id)
   WHERE revoked_at IS NULL;
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_report_abuse_penalties__user_flag_uniq
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_report_abuse_penalties__user_flag_unique
   ON report_abuse_penalties (user_id, source_flag_id)
   WHERE source_flag_id IS NOT NULL AND revoked_at IS NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_report_abuse_penalties__flag
   ON report_abuse_penalties (source_flag_id)
   WHERE source_flag_id IS NOT NULL;
@@ -154,6 +172,7 @@ COMMENT ON COLUMN report_abuse_penalties.revoked_at IS 'When the penalty was rev
 COMMENT ON COLUMN report_abuse_penalties.revoked_by_id IS 'Moderator who revoked the penalty.';
 
 -- Current indexes for fresh schema bootstrap.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_report_abuse_penalties__user_id
   ON report_abuse_penalties (user_id)
   WHERE user_id IS NOT NULL;

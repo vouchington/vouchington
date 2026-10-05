@@ -49,9 +49,9 @@ _none_
 
 **Indexes:**
 
-- `ai_usage_records_community_id_id_idx`: `CREATE INDEX ai_usage_records_community_id_id_idx ON ONLY public.ai_usage_records USING btree (community_id, id DESC) WHERE (community_id IS NOT NULL)`
 - `ai_usage_records_pkey`: `CREATE UNIQUE INDEX ai_usage_records_pkey ON ONLY public.ai_usage_records USING btree (id)`
 - `idx_ai_usage_records__classifier_run_id`: `CREATE INDEX idx_ai_usage_records__classifier_run_id ON ONLY public.ai_usage_records USING btree (classifier_run_id) WHERE (classifier_run_id IS NOT NULL)`
+- `idx_ai_usage_records__community_id_id`: `CREATE INDEX idx_ai_usage_records__community_id_id ON ONLY public.ai_usage_records USING btree (community_id, id DESC) WHERE (community_id IS NOT NULL)`
 - `idx_ai_usage_records__currency_code`: `CREATE INDEX idx_ai_usage_records__currency_code ON ONLY public.ai_usage_records USING btree (currency_code) WHERE (currency_code IS NOT NULL)`
 - `idx_ai_usage_records__post_id`: `CREATE INDEX idx_ai_usage_records__post_id ON ONLY public.ai_usage_records USING btree (post_id) WHERE (post_id IS NOT NULL)`
 - `idx_ai_usage_records__service_tier`: `CREATE INDEX idx_ai_usage_records__service_tier ON ONLY public.ai_usage_records USING btree (service_tier)`

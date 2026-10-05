@@ -36,8 +36,8 @@ _none_
 **Indexes:**
 
 - `conversation_participants_pkey`: `CREATE UNIQUE INDEX conversation_participants_pkey ON public.conversation_participants USING btree (conversation_id, id)`
-- `idx_conv_participants__conversation_user`: `CREATE UNIQUE INDEX idx_conv_participants__conversation_user ON public.conversation_participants USING btree (conversation_id, user_id) WHERE ((user_id IS NOT NULL) AND (removed_at IS NULL))`
-- `idx_conv_participants__user_id`: `CREATE INDEX idx_conv_participants__user_id ON public.conversation_participants USING btree (user_id, conversation_id DESC) WHERE (user_id IS NOT NULL)`
+- `idx_conversation_participants__conversation_user`: `CREATE UNIQUE INDEX idx_conversation_participants__conversation_user ON public.conversation_participants USING btree (conversation_id, user_id) WHERE ((user_id IS NOT NULL) AND (removed_at IS NULL))`
+- `idx_conversation_participants__user_id`: `CREATE INDEX idx_conversation_participants__user_id ON public.conversation_participants USING btree (user_id, conversation_id DESC) WHERE (user_id IS NOT NULL)`
 
 **Triggers:**
 

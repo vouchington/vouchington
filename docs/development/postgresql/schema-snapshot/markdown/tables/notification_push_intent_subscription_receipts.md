@@ -34,7 +34,7 @@ _none_
 
 **Indexes:**
 
-- `idx_push_intent_subscription_receipts_user_subscription`: `CREATE INDEX idx_push_intent_subscription_receipts_user_subscription ON public.notification_push_intent_subscription_receipts USING btree (user_id, subscription_id)`
+- `idx_notifi_push_intent_subscr_receipt__user_id__subscription_id`: `CREATE INDEX idx_notifi_push_intent_subscr_receipt__user_id__subscription_id ON public.notification_push_intent_subscription_receipts USING btree (user_id, subscription_id)`
 - `notification_push_intent_subscription_receipts_pkey`: `CREATE UNIQUE INDEX notification_push_intent_subscription_receipts_pkey ON public.notification_push_intent_subscription_receipts USING btree (user_id, notification_id, subscription_id)`
 
 **Triggers:**

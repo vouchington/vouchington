@@ -48,13 +48,13 @@ _none_
 
 **Indexes:**
 
+- `idx_moderation_report_judgements__case_id`: `CREATE INDEX idx_moderation_report_judgements__case_id ON public.moderation_report_judgements USING btree (case_id) WHERE (case_id IS NOT NULL)`
+- `idx_moderation_report_judgements__hostname_id`: `CREATE INDEX idx_moderation_report_judgements__hostname_id ON public.moderation_report_judgements USING btree (hostname_id, id DESC) WHERE (hostname_id IS NOT NULL)`
+- `idx_moderation_report_judgements__post_id`: `CREATE INDEX idx_moderation_report_judgements__post_id ON public.moderation_report_judgements USING btree (post_id, id DESC) WHERE (post_id IS NOT NULL)`
+- `idx_moderation_report_judgements__rss_id`: `CREATE INDEX idx_moderation_report_judgements__rss_id ON public.moderation_report_judgements USING btree (rss_feed_item_id, id DESC) WHERE (rss_feed_item_id IS NOT NULL)`
 - `idx_moderation_report_judgements__triggering_report_id`: `CREATE INDEX idx_moderation_report_judgements__triggering_report_id ON public.moderation_report_judgements USING btree (triggering_report_id) WHERE (triggering_report_id IS NOT NULL)`
-- `idx_moderation_report_judgements_case_id`: `CREATE INDEX idx_moderation_report_judgements_case_id ON public.moderation_report_judgements USING btree (case_id) WHERE (case_id IS NOT NULL)`
-- `idx_moderation_report_judgements_hostname_id`: `CREATE INDEX idx_moderation_report_judgements_hostname_id ON public.moderation_report_judgements USING btree (hostname_id, id DESC) WHERE (hostname_id IS NOT NULL)`
-- `idx_moderation_report_judgements_post_id`: `CREATE INDEX idx_moderation_report_judgements_post_id ON public.moderation_report_judgements USING btree (post_id, id DESC) WHERE (post_id IS NOT NULL)`
-- `idx_moderation_report_judgements_rss_id`: `CREATE INDEX idx_moderation_report_judgements_rss_id ON public.moderation_report_judgements USING btree (rss_feed_item_id, id DESC) WHERE (rss_feed_item_id IS NOT NULL)`
-- `idx_moderation_report_judgements_undispatched`: `CREATE INDEX idx_moderation_report_judgements_undispatched ON public.moderation_report_judgements USING btree (id) WHERE ((dispatched_at IS NULL) AND (rerun_by_id IS NULL))`
-- `idx_moderation_report_judgements_user_id`: `CREATE INDEX idx_moderation_report_judgements_user_id ON public.moderation_report_judgements USING btree (reported_user_id, id DESC) WHERE (reported_user_id IS NOT NULL)`
+- `idx_moderation_report_judgements__undispatched`: `CREATE INDEX idx_moderation_report_judgements__undispatched ON public.moderation_report_judgements USING btree (id) WHERE ((dispatched_at IS NULL) AND (rerun_by_id IS NULL))`
+- `idx_moderation_report_judgements__user_id`: `CREATE INDEX idx_moderation_report_judgements__user_id ON public.moderation_report_judgements USING btree (reported_user_id, id DESC) WHERE (reported_user_id IS NOT NULL)`
 - `moderation_report_judgements_pkey`: `CREATE UNIQUE INDEX moderation_report_judgements_pkey ON public.moderation_report_judgements USING btree (id)`
 
 **Triggers:**

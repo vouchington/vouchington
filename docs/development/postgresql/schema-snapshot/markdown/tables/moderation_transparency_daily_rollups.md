@@ -31,9 +31,9 @@ _none_
 
 **Indexes:**
 
-- `moderation_transparency_daily_rollups__community_fk`: `CREATE INDEX moderation_transparency_daily_rollups__community_fk ON public.moderation_transparency_daily_rollups USING btree (community_id) WHERE (community_id IS NOT NULL)`
-- `moderation_transparency_daily_rollups__community_page`: `CREATE INDEX moderation_transparency_daily_rollups__community_page ON public.moderation_transparency_daily_rollups USING btree (community_id, day DESC, latest_occurred_at) WHERE ((community_id IS NOT NULL) AND (count >= 20))`
-- `moderation_transparency_daily_rollups__global_page`: `CREATE INDEX moderation_transparency_daily_rollups__global_page ON public.moderation_transparency_daily_rollups USING btree (day DESC, latest_occurred_at) WHERE ((community_id IS NULL) AND (count >= 20))`
+- `idx_moderation_transparenc_daily_rollups__community_foreign_key`: `CREATE INDEX idx_moderation_transparenc_daily_rollups__community_foreign_key ON public.moderation_transparency_daily_rollups USING btree (community_id) WHERE (community_id IS NOT NULL)`
+- `idx_moderation_transparency_daily_rollups__community_page`: `CREATE INDEX idx_moderation_transparency_daily_rollups__community_page ON public.moderation_transparency_daily_rollups USING btree (community_id, day DESC, latest_occurred_at) WHERE ((community_id IS NOT NULL) AND (count >= 20))`
+- `idx_moderation_transparency_daily_rollups__global_page`: `CREATE INDEX idx_moderation_transparency_daily_rollups__global_page ON public.moderation_transparency_daily_rollups USING btree (day DESC, latest_occurred_at) WHERE ((community_id IS NULL) AND (count >= 20))`
 - `moderation_transparency_daily_rollups_key`: `CREATE UNIQUE INDEX moderation_transparency_daily_rollups_key ON public.moderation_transparency_daily_rollups USING btree (day, community_id, metric, category) NULLS NOT DISTINCT`
 
 **Triggers:**

@@ -13,8 +13,8 @@ CREATE TABLE copyright_claimant_misuse_events (
     'restriction_reversed_by_counter_notice',
     'restriction_reversed_by_appeal'
   )),
-  copyright_notice_submission_id uuid UNIQUE REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
-  copyright_notice_submission_assessment_id uuid UNIQUE REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT,
+  copyright_notice_submission_id uuid CONSTRAINT uq_copyright_claimant_misuse_events__notice_submission_id UNIQUE CONSTRAINT fk_copyright_claimant_misuse_events__notice_submission REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
+  copyright_notice_submission_assessment_id uuid CONSTRAINT uq_copyri_claima_misuse_events__notice_submission_assessment_id UNIQUE CONSTRAINT fk_copyrig_claimant_misuse_events__notice_submission_assessment REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT,
   copyright_restriction_id uuid UNIQUE REFERENCES copyright_restrictions(id) ON DELETE RESTRICT,
   recorded_at timestamptz NOT NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -41,7 +41,7 @@ CREATE INDEX idx_copyright_claimant_misuse_events__notice
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_automatic_withholding_refusals (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_submission_id uuid NOT NULL UNIQUE REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
+  copyright_notice_submission_id uuid NOT NULL CONSTRAINT uq_copyright_automatic_withholdi_refusals__notice_submission_id UNIQUE CONSTRAINT fk_copyright_automatic_withholding_refusals__notice_submission REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
   reason copyright_automatic_withholding_refusal_reasons NOT NULL CHECK (reason IN (
     'thresholds_unset',
     'switch_on_unrecorded',
@@ -61,7 +61,7 @@ CREATE TABLE copyright_automatic_withholding_refusals (
 
 CREATE TABLE copyright_claimant_suspension_reversals (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_restriction_id uuid NOT NULL UNIQUE REFERENCES copyright_restrictions(id) ON DELETE RESTRICT,
+  copyright_restriction_id uuid NOT NULL CONSTRAINT uq_copyright_claimant_suspension_reversals__restriction_id UNIQUE CONSTRAINT fk_copyright_claimant_suspension_reversals__restriction REFERENCES copyright_restrictions(id) ON DELETE RESTRICT,
   reversed_at timestamptz NOT NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP

@@ -32,12 +32,12 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `membership_google_play_acknow_membership_provider_evidence__key`: `UNIQUE (membership_provider_evidence_id)`
+- `uq_membership_google_play_acknowledgement__provider_evidence_id`: `UNIQUE (membership_provider_evidence_id)`
 
 **Check constraints:**
 
-- `membership_google_play_ackno_purchase_token_lookup_sha256_check`: `CHECK ((purchase_token_lookup_sha256 ~ '^[a-f0-9]{64}$'::text))`
-- `membership_google_play_acknowled_encrypted_purchase_token_check`: `CHECK (((octet_length(encrypted_purchase_token) >= 1) AND (octet_length(encrypted_purchase_token) <= 65536)))`
+- `chk_membersh_google_play_acknowle__purchase_token_lookup_sha256`: `CHECK ((purchase_token_lookup_sha256 ~ '^[a-f0-9]{64}$'::text))`
+- `chk_membership_google_play_acknowledg__encrypted_purchase_token`: `CHECK (((octet_length(encrypted_purchase_token) >= 1) AND (octet_length(encrypted_purchase_token) <= 65536)))`
 - `membership_google_play_acknowledgements_application_id_check`: `CHECK ((((char_length(application_id) >= 1) AND (char_length(application_id) <= 255)) AND (application_id = TRIM(BOTH FROM application_id))))`
 - `membership_google_play_acknowledgements_attempt_count_check`: `CHECK ((attempt_count >= 0))`
 - `membership_google_play_acknowledgements_check`: `CHECK ((num_nonnulls(acknowledged_at, skipped_at) <= 1))`
@@ -60,8 +60,8 @@ Not partitioned — growth: unbounded.
 - `idx_membership_google_play_acknowledgements__lineage_context`: `CREATE INDEX idx_membership_google_play_acknowledgements__lineage_context ON public.membership_google_play_acknowledgements USING btree (membership_provider_lineage_id, provider, environment, application_id)`
 - `idx_membership_google_play_acknowledgements__pending_id`: `CREATE INDEX idx_membership_google_play_acknowledgements__pending_id ON public.membership_google_play_acknowledgements USING btree (id) WHERE ((acknowledged_at IS NULL) AND (skipped_at IS NULL))`
 - `idx_membership_google_play_acknowledgements__purchase`: `CREATE UNIQUE INDEX idx_membership_google_play_acknowledgements__purchase ON public.membership_google_play_acknowledgements USING btree (environment, application_id, purchase_token_lookup_sha256)`
-- `membership_google_play_acknow_membership_provider_evidence__key`: `CREATE UNIQUE INDEX membership_google_play_acknow_membership_provider_evidence__key ON public.membership_google_play_acknowledgements USING btree (membership_provider_evidence_id)`
 - `membership_google_play_acknowledgements_pkey`: `CREATE UNIQUE INDEX membership_google_play_acknowledgements_pkey ON public.membership_google_play_acknowledgements USING btree (id)`
+- `uq_membership_google_play_acknowledgement__provider_evidence_id`: `CREATE UNIQUE INDEX uq_membership_google_play_acknowledgement__provider_evidence_id ON public.membership_google_play_acknowledgements USING btree (membership_provider_evidence_id)`
 
 **Triggers:**
 

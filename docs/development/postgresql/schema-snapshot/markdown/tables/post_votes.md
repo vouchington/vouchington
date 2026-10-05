@@ -40,8 +40,8 @@ _none_
 **Indexes:**
 
 - `idx_post_votes__post_id__id`: `CREATE INDEX idx_post_votes__post_id__id ON ONLY public.post_votes USING btree (post_id, id)`
-- `idx_post_votes__post_id__uid__id`: `CREATE INDEX idx_post_votes__post_id__uid__id ON ONLY public.post_votes USING btree (post_id, user_id, id DESC)`
-- `idx_post_votes__uid__post_id__id`: `CREATE INDEX idx_post_votes__uid__post_id__id ON ONLY public.post_votes USING btree (user_id, post_id, id DESC)`
+- `idx_post_votes__post_id__user_id__id`: `CREATE INDEX idx_post_votes__post_id__user_id__id ON ONLY public.post_votes USING btree (post_id, user_id, id DESC)`
+- `idx_post_votes__user_id__post_id__id`: `CREATE INDEX idx_post_votes__user_id__post_id__id ON ONLY public.post_votes USING btree (user_id, post_id, id DESC)`
 - `post_votes_pkey`: `CREATE UNIQUE INDEX post_votes_pkey ON ONLY public.post_votes USING btree (post_id, id)`
 
 **Triggers:**

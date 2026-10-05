@@ -37,8 +37,8 @@ Not partitioned — growth: unbounded.
 
 **Indexes:**
 
-- `post_topic_alias_sources__contributor_id`: `CREATE INDEX post_topic_alias_sources__contributor_id ON public.post_topic_alias_sources USING btree (contributor_id)`
-- `post_topic_alias_sources__topic_alias_id`: `CREATE INDEX post_topic_alias_sources__topic_alias_id ON public.post_topic_alias_sources USING btree (topic_alias_id, post_id DESC)`
+- `idx_post_topic_alias_sources__contributor_id`: `CREATE INDEX idx_post_topic_alias_sources__contributor_id ON public.post_topic_alias_sources USING btree (contributor_id)`
+- `idx_post_topic_alias_sources__topic_alias_id`: `CREATE INDEX idx_post_topic_alias_sources__topic_alias_id ON public.post_topic_alias_sources USING btree (topic_alias_id, post_id DESC)`
 - `post_topic_alias_sources_pkey`: `CREATE UNIQUE INDEX post_topic_alias_sources_pkey ON public.post_topic_alias_sources USING btree (id)`
 - `post_topic_alias_sources_post_id_topic_alias_id_source_key`: `CREATE UNIQUE INDEX post_topic_alias_sources_post_id_topic_alias_id_source_key ON public.post_topic_alias_sources USING btree (post_id, topic_alias_id, source)`
 

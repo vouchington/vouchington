@@ -19,11 +19,11 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `open_graph_dependency_manifest_pla_manifest_id_placement_id_key`: `UNIQUE (manifest_id, placement_id)`
+- `uq_open_graph_depend_manifes_placeme__manifest_id__placement_id`: `UNIQUE (manifest_id, placement_id)`
 
 **Check constraints:**
 
-- `open_graph_dependency_manifest_placeme_placement_revision_check`: `CHECK ((placement_revision >= 0))`
+- `chk_open_graph_dependenc_manifest_placement__placement_revision`: `CHECK ((placement_revision >= 0))`
 - `open_graph_dependency_manifest_placements_ordinal_check`: `CHECK ((ordinal >= 0))`
 
 **Foreign keys:**
@@ -36,8 +36,8 @@ Not partitioned — growth: unbounded.
 
 - `idx_open_graph_dependency_manifest_placements__image`: `CREATE INDEX idx_open_graph_dependency_manifest_placements__image ON public.open_graph_dependency_manifest_placements USING btree (image_id)`
 - `idx_open_graph_dependency_manifest_placements__placement`: `CREATE INDEX idx_open_graph_dependency_manifest_placements__placement ON public.open_graph_dependency_manifest_placements USING btree (placement_id)`
-- `open_graph_dependency_manifest_pla_manifest_id_placement_id_key`: `CREATE UNIQUE INDEX open_graph_dependency_manifest_pla_manifest_id_placement_id_key ON public.open_graph_dependency_manifest_placements USING btree (manifest_id, placement_id)`
 - `open_graph_dependency_manifest_placements_pkey`: `CREATE UNIQUE INDEX open_graph_dependency_manifest_placements_pkey ON public.open_graph_dependency_manifest_placements USING btree (manifest_id, ordinal)`
+- `uq_open_graph_depend_manifes_placeme__manifest_id__placement_id`: `CREATE UNIQUE INDEX uq_open_graph_depend_manifes_placeme__manifest_id__placement_id ON public.open_graph_dependency_manifest_placements USING btree (manifest_id, placement_id)`
 
 **Triggers:**
 _none_

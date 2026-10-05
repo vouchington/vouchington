@@ -31,8 +31,8 @@ _none_
 **Indexes:**
 
 - `idx_user_list_posts__post_id`: `CREATE INDEX idx_user_list_posts__post_id ON public.user_list_posts USING btree (post_id) WHERE (removed_at IS NULL)`
-- `idx_user_list_posts__post_id__fk`: `CREATE INDEX idx_user_list_posts__post_id__fk ON public.user_list_posts USING btree (post_id) WHERE (post_id IS NOT NULL)`
-- `idx_user_list_posts__user_list_id__fk`: `CREATE INDEX idx_user_list_posts__user_list_id__fk ON public.user_list_posts USING btree (user_list_id) WHERE (user_list_id IS NOT NULL)`
+- `idx_user_list_posts__post_id__foreign_key`: `CREATE INDEX idx_user_list_posts__post_id__foreign_key ON public.user_list_posts USING btree (post_id) WHERE (post_id IS NOT NULL)`
+- `idx_user_list_posts__user_list_id__foreign_key`: `CREATE INDEX idx_user_list_posts__user_list_id__foreign_key ON public.user_list_posts USING btree (user_list_id) WHERE (user_list_id IS NOT NULL)`
 - `idx_user_list_posts__user_list_id__id`: `CREATE INDEX idx_user_list_posts__user_list_id__id ON public.user_list_posts USING btree (user_list_id, id DESC) WHERE (removed_at IS NULL)`
 - `idx_user_list_posts__user_list_id__post_id`: `CREATE UNIQUE INDEX idx_user_list_posts__user_list_id__post_id ON public.user_list_posts USING btree (user_list_id, post_id) WHERE (removed_at IS NULL)`
 - `user_list_posts_pkey`: `CREATE UNIQUE INDEX user_list_posts_pkey ON public.user_list_posts USING btree (id)`

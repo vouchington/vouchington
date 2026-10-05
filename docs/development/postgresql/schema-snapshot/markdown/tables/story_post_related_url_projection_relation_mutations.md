@@ -23,12 +23,12 @@ _none_
 
 **Foreign keys:**
 
-- `story_post_related_url_projection_relation_mutatio_post_id_fkey`: `FOREIGN KEY (post_id) REFERENCES story_post_related_url_projection_jobs(post_id) ON DELETE CASCADE`
+- `fk_story_post_related_url_projection_relation_mutations__post`: `FOREIGN KEY (post_id) REFERENCES story_post_related_url_projection_jobs(post_id) ON DELETE CASCADE`
 - `story_post_url_projection_mutations_relation_fkey`: `FOREIGN KEY (post_id, relation_id) REFERENCES relation__post__related__url(subject_id, id) ON DELETE CASCADE`
 
 **Indexes:**
 
-- `idx_story_post_url_projection_relation_mutations__relation`: `CREATE INDEX idx_story_post_url_projection_relation_mutations__relation ON public.story_post_related_url_projection_relation_mutations USING btree (post_id, relation_id)`
+- `idx_story_post_related_url_projecti_relation_mutation__relation`: `CREATE INDEX idx_story_post_related_url_projecti_relation_mutation__relation ON public.story_post_related_url_projection_relation_mutations USING btree (post_id, relation_id)`
 - `story_post_related_url_projection_relation_mutations_pkey`: `CREATE UNIQUE INDEX story_post_related_url_projection_relation_mutations_pkey ON public.story_post_related_url_projection_relation_mutations USING btree (post_id, generation, relation_id)`
 
 **Triggers:**

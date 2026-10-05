@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS moderator_actions (
   -- Note: no num_nonnulls >= 1 CHECK here — ON DELETE SET NULL on FK columns could
   -- null out the only target reference and cause the CHECK to block hard-deletes.
   CHECK (jsonb_typeof(metadata) = 'object'),
-  FOREIGN KEY (agent_moderation_post_id, agent_moderation_id)
+  CONSTRAINT fk_moderator_actions__agent_moderation_post__agent_moderation FOREIGN KEY (agent_moderation_post_id, agent_moderation_id)
     REFERENCES agent_moderations (post_id, id) ON DELETE SET NULL,
   CHECK ((agent_moderation_id IS NULL) = (agent_moderation_post_id IS NULL))
 );

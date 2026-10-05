@@ -23,29 +23,29 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `copyright_notice_counter_noti_copyright_notice_submission_a_key`: `UNIQUE (copyright_notice_submission_assessment_id)`
-- `copyright_notice_counter_noti_copyright_notice_submission_i_key`: `UNIQUE (copyright_notice_submission_id)`
-- `copyright_notice_counter_notic_copyright_notice_deadline_id_key`: `UNIQUE (copyright_notice_deadline_id)`
+- `uq_copyri_notice_counte_notice_review__submission_assessment_id`: `UNIQUE (copyright_notice_submission_assessment_id)`
+- `uq_copyright_notice_counter_notice_reviews__deadline_id`: `UNIQUE (copyright_notice_deadline_id)`
+- `uq_copyright_notice_counter_notice_reviews__submission_id`: `UNIQUE (copyright_notice_submission_id)`
 
 **Check constraints:**
 
-- `copyright_notice_counter_notice_revi_rationale_ciphertext_check`: `CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 1048576)))`
+- `chk_copyrig_notice_counter_notice_reviews__rationale_ciphertext`: `CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 1048576)))`
 - `copyright_notice_counter_notice_reviews_check`: `CHECK ((accepted = (copyright_notice_deadline_id IS NOT NULL)))`
 
 **Foreign keys:**
 
-- `copyright_notice_counter_not_copyright_notice_submission__fkey1`: `FOREIGN KEY (copyright_notice_submission_assessment_id) REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT`
-- `copyright_notice_counter_noti_copyright_notice_deadline_id_fkey`: `FOREIGN KEY (copyright_notice_deadline_id) REFERENCES copyright_notice_deadlines(id) ON DELETE RESTRICT`
-- `copyright_notice_counter_noti_copyright_notice_submission__fkey`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
 - `copyright_notice_counter_notice_reviews_reviewed_by_id_fkey`: `FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL`
+- `fk_copyrig_notice_counter_notice_reviews__submission_assessment`: `FOREIGN KEY (copyright_notice_submission_assessment_id) REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_counter_notice_reviews__deadline`: `FOREIGN KEY (copyright_notice_deadline_id) REFERENCES copyright_notice_deadlines(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_counter_notice_reviews__submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `copyright_notice_counter_noti_copyright_notice_submission_a_key`: `CREATE UNIQUE INDEX copyright_notice_counter_noti_copyright_notice_submission_a_key ON public.copyright_notice_counter_notice_reviews USING btree (copyright_notice_submission_assessment_id)`
-- `copyright_notice_counter_noti_copyright_notice_submission_i_key`: `CREATE UNIQUE INDEX copyright_notice_counter_noti_copyright_notice_submission_i_key ON public.copyright_notice_counter_notice_reviews USING btree (copyright_notice_submission_id)`
-- `copyright_notice_counter_notic_copyright_notice_deadline_id_key`: `CREATE UNIQUE INDEX copyright_notice_counter_notic_copyright_notice_deadline_id_key ON public.copyright_notice_counter_notice_reviews USING btree (copyright_notice_deadline_id)`
 - `copyright_notice_counter_notice_reviews_pkey`: `CREATE UNIQUE INDEX copyright_notice_counter_notice_reviews_pkey ON public.copyright_notice_counter_notice_reviews USING btree (id)`
-- `idx_copyright_counter_notice_reviews__reviewer`: `CREATE INDEX idx_copyright_counter_notice_reviews__reviewer ON public.copyright_notice_counter_notice_reviews USING btree (reviewed_by_id) WHERE (reviewed_by_id IS NOT NULL)`
+- `idx_copyright_notice_counter_notice_reviews__reviewer`: `CREATE INDEX idx_copyright_notice_counter_notice_reviews__reviewer ON public.copyright_notice_counter_notice_reviews USING btree (reviewed_by_id) WHERE (reviewed_by_id IS NOT NULL)`
+- `uq_copyri_notice_counte_notice_review__submission_assessment_id`: `CREATE UNIQUE INDEX uq_copyri_notice_counte_notice_review__submission_assessment_id ON public.copyright_notice_counter_notice_reviews USING btree (copyright_notice_submission_assessment_id)`
+- `uq_copyright_notice_counter_notice_reviews__deadline_id`: `CREATE UNIQUE INDEX uq_copyright_notice_counter_notice_reviews__deadline_id ON public.copyright_notice_counter_notice_reviews USING btree (copyright_notice_deadline_id)`
+- `uq_copyright_notice_counter_notice_reviews__submission_id`: `CREATE UNIQUE INDEX uq_copyright_notice_counter_notice_reviews__submission_id ON public.copyright_notice_counter_notice_reviews USING btree (copyright_notice_submission_id)`
 
 **Triggers:**
 

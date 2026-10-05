@@ -21,8 +21,8 @@ _none_
 
 **Foreign keys:**
 
-- `moderator_action_community_restri_community_restriction_id_fkey`: `FOREIGN KEY (community_restriction_id) REFERENCES community_restrictions(id) ON DELETE CASCADE`
-- `moderator_action_community_restriction_moderator_action_id_fkey`: `FOREIGN KEY (moderator_action_id) REFERENCES moderator_actions(id) ON DELETE CASCADE`
+- `fk_moderator_action_community_restrictio__community_restriction`: `FOREIGN KEY (community_restriction_id) REFERENCES community_restrictions(id) ON DELETE CASCADE`
+- `fk_moderator_action_community_restrictions__action`: `FOREIGN KEY (moderator_action_id) REFERENCES moderator_actions(id) ON DELETE CASCADE`
 
 **Indexes:**
 

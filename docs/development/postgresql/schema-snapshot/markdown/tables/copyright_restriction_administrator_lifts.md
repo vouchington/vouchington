@@ -20,22 +20,22 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `copyright_restriction_administrato_copyright_restriction_id_key`: `UNIQUE (copyright_restriction_id)`
+- `uq_copyright_restriction_administrator_lifts__restriction_id`: `UNIQUE (copyright_restriction_id)`
 
 **Check constraints:**
 
-- `copyright_restriction_administrator__rationale_ciphertext_check`: `CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 1048576)))`
+- `chk_copyright_restrictio_administra_lifts__rationale_ciphertext`: `CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 1048576)))`
 
 **Foreign keys:**
 
-- `copyright_restriction_administrat_copyright_restriction_id_fkey`: `FOREIGN KEY (copyright_restriction_id) REFERENCES copyright_restrictions(id) ON DELETE RESTRICT`
 - `copyright_restriction_administrator_lifts_lifted_by_id_fkey`: `FOREIGN KEY (lifted_by_id) REFERENCES users(id) ON DELETE SET NULL`
+- `fk_copyright_restriction_administrator_lifts__restriction`: `FOREIGN KEY (copyright_restriction_id) REFERENCES copyright_restrictions(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `copyright_restriction_administrato_copyright_restriction_id_key`: `CREATE UNIQUE INDEX copyright_restriction_administrato_copyright_restriction_id_key ON public.copyright_restriction_administrator_lifts USING btree (copyright_restriction_id)`
 - `copyright_restriction_administrator_lifts_pkey`: `CREATE UNIQUE INDEX copyright_restriction_administrator_lifts_pkey ON public.copyright_restriction_administrator_lifts USING btree (id)`
 - `idx_copyright_restriction_administrator_lifts__actor`: `CREATE INDEX idx_copyright_restriction_administrator_lifts__actor ON public.copyright_restriction_administrator_lifts USING btree (lifted_by_id) WHERE (lifted_by_id IS NOT NULL)`
+- `uq_copyright_restriction_administrator_lifts__restriction_id`: `CREATE UNIQUE INDEX uq_copyright_restriction_administrator_lifts__restriction_id ON public.copyright_restriction_administrator_lifts USING btree (copyright_restriction_id)`
 
 **Triggers:**
 

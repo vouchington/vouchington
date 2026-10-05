@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS ai_usage_records (
 -- Global uniqueness cannot be enforced on response_id inside the range-partitioned ledger because
 -- PostgreSQL requires every unique constraint on a partitioned parent to include its partition
 -- key. This non-partitioned map is the durable idempotency gate for provider-reported usage.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS ai_usage_provider_response_keys (
   response_id TEXT PRIMARY KEY,
   ai_usage_record_id UUID NOT NULL UNIQUE
@@ -59,20 +60,24 @@ CREATE TABLE IF NOT EXISTS ai_usage_provider_response_keys (
   CHECK (response_id = TRIM(response_id) AND char_length(response_id) BETWEEN 1 AND 100)
 );
 
-CREATE INDEX IF NOT EXISTS ai_usage_records_community_id_id_idx
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_ai_usage_records__community_id_id
   ON ai_usage_records (community_id, id DESC)
   WHERE community_id IS NOT NULL;
 
 -- RI-usable index for the post_id FK
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_ai_usage_records__post_id
   ON ai_usage_records (post_id)
   WHERE post_id IS NOT NULL;
 
 -- RI-usable index for the classifier_run_id FK, and the per-run usage join
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_ai_usage_records__classifier_run_id
   ON ai_usage_records (classifier_run_id)
   WHERE classifier_run_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_ai_usage_records__currency_code
   ON ai_usage_records (currency_code)
   WHERE currency_code IS NOT NULL;

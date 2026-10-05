@@ -43,11 +43,11 @@ _none_
 **Indexes:**
 
 - `amazon_ses_bounce_events_pkey`: `CREATE UNIQUE INDEX amazon_ses_bounce_events_pkey ON public.amazon_ses_bounce_events USING btree (id)`
+- `idx_amazon_ses_bounce_events__amazon_ses_message_id`: `CREATE INDEX idx_amazon_ses_bounce_events__amazon_ses_message_id ON public.amazon_ses_bounce_events USING btree (ses_message_id) WHERE (ses_message_id IS NOT NULL)`
 - `idx_amazon_ses_bounce_events__bounce_sub_type`: `CREATE INDEX idx_amazon_ses_bounce_events__bounce_sub_type ON public.amazon_ses_bounce_events USING btree (bounce_sub_type)`
 - `idx_amazon_ses_bounce_events__dedup_key`: `CREATE UNIQUE INDEX idx_amazon_ses_bounce_events__dedup_key ON public.amazon_ses_bounce_events USING btree (dedup_key) WHERE (dedup_key IS NOT NULL)`
 - `idx_amazon_ses_bounce_events__notification_type`: `CREATE INDEX idx_amazon_ses_bounce_events__notification_type ON public.amazon_ses_bounce_events USING btree (notification_type, id DESC)`
 - `idx_amazon_ses_bounce_events__recipients`: `CREATE INDEX idx_amazon_ses_bounce_events__recipients ON public.amazon_ses_bounce_events USING gin (recipients)`
-- `idx_amazon_ses_bounce_events__ses_message_id`: `CREATE INDEX idx_amazon_ses_bounce_events__ses_message_id ON public.amazon_ses_bounce_events USING btree (ses_message_id) WHERE (ses_message_id IS NOT NULL)`
 
 **Triggers:**
 _none_

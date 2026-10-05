@@ -6,7 +6,7 @@
 CREATE TABLE copyright_notice_delivery_intents (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid REFERENCES copyright_notices(id) ON DELETE RESTRICT,
-  copyright_notice_email_intake_id uuid REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT,
+  copyright_notice_email_intake_id uuid CONSTRAINT fk_copyright_notice_delivery_intents__email_intake REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT,
   copyright_notice_submission_id uuid,
   copyright_notice_correspondence_message_id uuid,
   recipient_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
@@ -31,10 +31,10 @@ CREATE TABLE copyright_notice_delivery_intents (
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (idempotency_key),
-  UNIQUE (copyright_notice_email_intake_id, delivery_kind),
-  FOREIGN KEY (copyright_notice_submission_id, copyright_notice_id)
+  CONSTRAINT uq_copyri_notice_delive_intents__email_intake_id__delivery_kind UNIQUE (copyright_notice_email_intake_id, delivery_kind),
+  CONSTRAINT fk_copyright_notice_delivery_intents__submission__notice FOREIGN KEY (copyright_notice_submission_id, copyright_notice_id)
     REFERENCES copyright_notice_submissions(id, copyright_notice_id) ON DELETE RESTRICT,
-  FOREIGN KEY (copyright_notice_correspondence_message_id, copyright_notice_id)
+  CONSTRAINT fk_copyri_notice_delive_intents__correspondence_message__notice FOREIGN KEY (copyright_notice_correspondence_message_id, copyright_notice_id)
     REFERENCES copyright_notice_correspondence_messages(id, copyright_notice_id) ON DELETE RESTRICT,
   CHECK (delivery_kind <> 'claimant_decision_notice' OR recipient_role = 'claimant'),
   CHECK (delivery_kind NOT IN ('poster_restriction_notice', 'poster_review_notice', 'poster_restoration_notice') OR recipient_role IN ('poster', 'informed_owner')),
@@ -68,20 +68,26 @@ ALTER TABLE copyright_notice_lifecycle_changes
 ALTER TABLE copyright_notice_lifecycle_changes
   VALIDATE CONSTRAINT copyright_lifecycle_event_delivery_intent_fk;
 
-CREATE INDEX idx_copyright_delivery_intents__notice
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_copyright_notice_delivery_intents__notice
   ON copyright_notice_delivery_intents (copyright_notice_id, id);
-CREATE INDEX idx_copyright_delivery_intents__submission
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_copyright_notice_delivery_intents__submission
   ON copyright_notice_delivery_intents (copyright_notice_submission_id, copyright_notice_id)
   WHERE copyright_notice_submission_id IS NOT NULL;
-CREATE INDEX idx_copyright_delivery_intents__correspondence
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_copyright_notice_delivery_intents__correspondence
   ON copyright_notice_delivery_intents (copyright_notice_correspondence_message_id, copyright_notice_id)
   WHERE copyright_notice_correspondence_message_id IS NOT NULL;
-CREATE INDEX idx_copyright_delivery_intents__recipient_user
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_copyright_notice_delivery_intents__recipient_user
   ON copyright_notice_delivery_intents (recipient_user_id)
   WHERE recipient_user_id IS NOT NULL;
-CREATE INDEX idx_copyright_delivery_intents__ses_message
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_copyright_notice_delivery_intents__amazon_ses_message
   ON copyright_notice_delivery_intents (ses_message_id) WHERE ses_message_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_copyright_delivery_intent_transition()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
@@ -115,9 +121,11 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_delivery_intent_transition
 BEFORE UPDATE OR DELETE ON copyright_notice_delivery_intents
 FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_delivery_intent_transition();
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_delivery_intents_updated_at
 BEFORE UPDATE ON copyright_notice_delivery_intents
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
@@ -147,7 +155,8 @@ COMMENT ON COLUMN copyright_notice_delivery_intents.ses_message_id IS 'SES provi
 COMMENT ON COLUMN copyright_notice_delivery_intents.failure_ciphertext IS 'Encrypted bounded transport failure visible to staff; retries retain the failure history through lifecycle events.';
 
 -- Current indexes for fresh schema bootstrap.
-CREATE INDEX IF NOT EXISTS idx_copyright_delivery_intents__recoverable
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_copyright_notice_delivery_intents__recoverable
   ON copyright_notice_delivery_intents (channel, id)
   WHERE state IN ('pending', 'claimed');
 

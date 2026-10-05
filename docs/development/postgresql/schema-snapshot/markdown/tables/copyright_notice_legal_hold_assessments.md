@@ -27,11 +27,11 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `copyright_notice_legal_hold_assessme_copyright_notice_id_id_key`: `UNIQUE (copyright_notice_id, id)`
+- `uq_copyright_notice_legal_hold_assessments__notice_id__id`: `UNIQUE (copyright_notice_id, id)`
 
 **Check constraints:**
 
-- `copyright_notice_legal_hold_assessme_rationale_ciphertext_check`: `CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 65536)))`
+- `chk_copyright_notice_legal_hold_assessmen__rationale_ciphertext`: `CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 65536)))`
 - `copyright_notice_legal_hold_assessments_ccb_claim_kind_check`: `CHECK ((ccb_claim_kind = ANY (ARRAY['claim'::copyright_notice_legal_hold_assessment_ccb_claim_kinds, 'counterclaim'::copyright_notice_legal_hold_assessment_ccb_claim_kinds])))`
 - `copyright_notice_legal_hold_assessments_check`: `CHECK ((((proceeding_kind IS NULL) AND (commenced_at IS NULL)) OR ((proceeding_kind IS NOT NULL) AND (commenced_at IS NOT NULL))))`
 - `copyright_notice_legal_hold_assessments_check1`: `CHECK ((((proceeding_kind = 'ccb'::copyright_notice_legal_hold_assessment_proceeding_kinds) AND (ccb_claim_kind IS NOT NULL)) OR ((proceeding_kind IS DISTINCT FROM 'ccb'::copyright_notice_legal_hold_assessment_proceeding_kinds) AND (ccb_claim_kind IS NULL))))`
@@ -44,10 +44,10 @@ Not partitioned — growth: unbounded.
 
 **Indexes:**
 
-- `copyright_notice_legal_hold_assessme_copyright_notice_id_id_key`: `CREATE UNIQUE INDEX copyright_notice_legal_hold_assessme_copyright_notice_id_id_key ON public.copyright_notice_legal_hold_assessments USING btree (copyright_notice_id, id)`
 - `copyright_notice_legal_hold_assessments_pkey`: `CREATE UNIQUE INDEX copyright_notice_legal_hold_assessments_pkey ON public.copyright_notice_legal_hold_assessments USING btree (id)`
-- `idx_copyright_notice_hold_assessments__assessed_by`: `CREATE INDEX idx_copyright_notice_hold_assessments__assessed_by ON public.copyright_notice_legal_hold_assessments USING btree (assessed_by_id, id DESC)`
-- `idx_copyright_notice_hold_assessments__submission`: `CREATE INDEX idx_copyright_notice_hold_assessments__submission ON public.copyright_notice_legal_hold_assessments USING btree (copyright_notice_submission_id, id DESC)`
+- `idx_copyright_notice_legal_hold_assessments__assessed_by`: `CREATE INDEX idx_copyright_notice_legal_hold_assessments__assessed_by ON public.copyright_notice_legal_hold_assessments USING btree (assessed_by_id, id DESC)`
+- `idx_copyright_notice_legal_hold_assessments__submission`: `CREATE INDEX idx_copyright_notice_legal_hold_assessments__submission ON public.copyright_notice_legal_hold_assessments USING btree (copyright_notice_submission_id, id DESC)`
+- `uq_copyright_notice_legal_hold_assessments__notice_id__id`: `CREATE UNIQUE INDEX uq_copyright_notice_legal_hold_assessments__notice_id__id ON public.copyright_notice_legal_hold_assessments USING btree (copyright_notice_id, id)`
 
 **Triggers:**
 

@@ -39,11 +39,11 @@ _none_
 
 **Check constraints:**
 
-- `membership_microsoft_store_c_collections_key_lookup_sha25_check`: `CHECK ((collections_key_lookup_sha256 ~ '^[a-f0-9]{64}$'::text))`
-- `membership_microsoft_store_cre_purchase_key_lookup_sha256_check`: `CHECK ((purchase_key_lookup_sha256 ~ '^[a-f0-9]{64}$'::text))`
-- `membership_microsoft_store_cred_encrypted_collections_key_check`: `CHECK (((octet_length(encrypted_collections_key) >= 1) AND (octet_length(encrypted_collections_key) <= 65536)))`
-- `membership_microsoft_store_credent_encrypted_purchase_key_check`: `CHECK (((octet_length(encrypted_purchase_key) >= 1) AND (octet_length(encrypted_purchase_key) <= 65536)))`
-- `membership_microsoft_store_credential_processing_attempts_check`: `CHECK ((processing_attempts >= 0))`
+- `chk_member_microso_store_credent__collections_key_lookup_sha256`: `CHECK ((collections_key_lookup_sha256 ~ '^[a-f0-9]{64}$'::text))`
+- `chk_members_microsof_store_credenti__purchase_key_lookup_sha256`: `CHECK ((purchase_key_lookup_sha256 ~ '^[a-f0-9]{64}$'::text))`
+- `chk_membersh_microsof_store_credenti__encrypted_collections_key`: `CHECK (((octet_length(encrypted_collections_key) >= 1) AND (octet_length(encrypted_collections_key) <= 65536)))`
+- `chk_membershi_microsoft_store_credentia__encrypted_purchase_key`: `CHECK (((octet_length(encrypted_purchase_key) >= 1) AND (octet_length(encrypted_purchase_key) <= 65536)))`
+- `chk_membership_microsoft_store_credentials__processing_attempts`: `CHECK ((processing_attempts >= 0))`
 - `membership_microsoft_store_credentials_application_id_check`: `CHECK ((((char_length(application_id) >= 1) AND (char_length(application_id) <= 255)) AND (application_id = TRIM(BOTH FROM application_id))))`
 - `membership_microsoft_store_credentials_check`: `CHECK ((publisher_user_id = (user_id)::text))`
 - `membership_microsoft_store_credentials_check1`: `CHECK (((processing_claim_token IS NULL) = (processing_claimed_at IS NULL)))`

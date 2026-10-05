@@ -36,12 +36,12 @@ _none_
 **Indexes:**
 
 - `idx_moderation_queue_claims__claimed_by_id`: `CREATE INDEX idx_moderation_queue_claims__claimed_by_id ON public.moderation_queue_claims USING btree (claimed_by_id) WHERE (claimed_by_id IS NOT NULL)`
+- `idx_moderation_queue_claims__community`: `CREATE INDEX idx_moderation_queue_claims__community ON public.moderation_queue_claims USING btree (community_id)`
 - `idx_moderation_queue_claims__post_id`: `CREATE INDEX idx_moderation_queue_claims__post_id ON public.moderation_queue_claims USING btree (post_id) WHERE (post_id IS NOT NULL)`
 - `idx_moderation_queue_claims__report_id`: `CREATE INDEX idx_moderation_queue_claims__report_id ON public.moderation_queue_claims USING btree (report_id) WHERE (report_id IS NOT NULL)`
-- `idx_modq_claims__community`: `CREATE INDEX idx_modq_claims__community ON public.moderation_queue_claims USING btree (community_id)`
 - `moderation_queue_claims_pkey`: `CREATE UNIQUE INDEX moderation_queue_claims_pkey ON public.moderation_queue_claims USING btree (id)`
-- `uq_modq_claims__active_post`: `CREATE UNIQUE INDEX uq_modq_claims__active_post ON public.moderation_queue_claims USING btree (post_id) WHERE ((post_id IS NOT NULL) AND (released_at IS NULL))`
-- `uq_modq_claims__active_report`: `CREATE UNIQUE INDEX uq_modq_claims__active_report ON public.moderation_queue_claims USING btree (report_id) WHERE ((report_id IS NOT NULL) AND (released_at IS NULL))`
+- `uq_moderation_queue_claims__active_post`: `CREATE UNIQUE INDEX uq_moderation_queue_claims__active_post ON public.moderation_queue_claims USING btree (post_id) WHERE ((post_id IS NOT NULL) AND (released_at IS NULL))`
+- `uq_moderation_queue_claims__active_report`: `CREATE UNIQUE INDEX uq_moderation_queue_claims__active_report ON public.moderation_queue_claims USING btree (report_id) WHERE ((report_id IS NOT NULL) AND (released_at IS NULL))`
 
 **Triggers:**
 _none_

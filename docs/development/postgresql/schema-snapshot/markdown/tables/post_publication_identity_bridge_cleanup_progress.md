@@ -20,7 +20,7 @@ _none_
 
 **Check constraints:**
 
-- `post_publication_identity_bridge_cleanup_progre_singleton_check`: `CHECK (singleton)`
+- `chk_post_publicatio_identity_bridge_cleanup_progress__singleton`: `CHECK (singleton)`
 - `post_publication_identity_bridge_cleanup_progress_family_check`: `CHECK ((family = ANY (ARRAY['post'::post_publication_identity_bridge_cleanup_families, 'community'::post_publication_identity_bridge_cleanup_families, 'rss_feed_item'::post_publication_identity_bridge_cleanup_families, 'author'::post_publication_identity_bridge_cleanup_families, 'rss_feed'::post_publication_identity_bridge_cleanup_families, 'topic_alias'::post_publication_identity_bridge_cleanup_families, 'story'::post_publication_identity_bridge_cleanup_families])))`
 
 **Foreign keys:**

@@ -23,8 +23,8 @@ _none_
 
 **Foreign keys:**
 
-- `referral_program_topic_link_v_referral_program_link_valida_fkey`: `FOREIGN KEY (referral_program_link_validation_rule_set_id) REFERENCES referral_program_link_validation_rule_sets(id) ON DELETE CASCADE`
-- `referral_program_topic_link_vali_referral_program_topic_id_fkey`: `FOREIGN KEY (referral_program_topic_id) REFERENCES referral_program_topics(topic_id) ON DELETE CASCADE`
+- `fk_refe_prog_topi_link_vali_rule_sets__link_validation_rule_set`: `FOREIGN KEY (referral_program_link_validation_rule_set_id) REFERENCES referral_program_link_validation_rule_sets(id) ON DELETE CASCADE`
+- `fk_referral_program_topic_link_validation_rule_sets__topic`: `FOREIGN KEY (referral_program_topic_id) REFERENCES referral_program_topics(topic_id) ON DELETE CASCADE`
 
 **Indexes:**
 

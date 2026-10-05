@@ -23,11 +23,11 @@ Not partitioned — growth: unbounded.
 **Unique constraints:**
 
 - `copyright_appeal_recommendations_id_submission_unique`: `UNIQUE (id, copyright_notice_submission_id)`
-- `copyright_notice_appeal_recom_copyright_notice_submission_i_key`: `UNIQUE (copyright_notice_submission_id, input_sha256, prompt_version)`
+- `uq_cop_not_app_rec__submission_id__input_sha256__prompt_version`: `UNIQUE (copyright_notice_submission_id, input_sha256, prompt_version)`
 
 **Check constraints:**
 
-- `copyright_notice_appeal_recommendati_rationale_ciphertext_check`: `CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 1048576)))`
+- `chk_copyright_notice_appeal_recommendatio__rationale_ciphertext`: `CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 1048576)))`
 - `copyright_notice_appeal_recommendations_input_sha256_check`: `CHECK ((octet_length(input_sha256) = 32))`
 - `copyright_notice_appeal_recommendations_model_check`: `CHECK (((char_length(model) >= 1) AND (char_length(model) <= 255)))`
 - `copyright_notice_appeal_recommendations_prompt_version_check`: `CHECK (((char_length(prompt_version) >= 1) AND (char_length(prompt_version) <= 100)))`
@@ -35,14 +35,14 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `copyright_notice_appeal_recom_copyright_notice_submission__fkey`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_appeal_recommendations__submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
 - `copyright_appeal_recommendations_id_submission_unique`: `CREATE UNIQUE INDEX copyright_appeal_recommendations_id_submission_unique ON public.copyright_notice_appeal_recommendations USING btree (id, copyright_notice_submission_id)`
-- `copyright_notice_appeal_recom_copyright_notice_submission_i_key`: `CREATE UNIQUE INDEX copyright_notice_appeal_recom_copyright_notice_submission_i_key ON public.copyright_notice_appeal_recommendations USING btree (copyright_notice_submission_id, input_sha256, prompt_version)`
 - `copyright_notice_appeal_recommendations_pkey`: `CREATE UNIQUE INDEX copyright_notice_appeal_recommendations_pkey ON public.copyright_notice_appeal_recommendations USING btree (id)`
-- `idx_copyright_appeal_recommendations__submission`: `CREATE INDEX idx_copyright_appeal_recommendations__submission ON public.copyright_notice_appeal_recommendations USING btree (copyright_notice_submission_id, id DESC)`
+- `idx_copyright_notice_appeal_recommendations__submission`: `CREATE INDEX idx_copyright_notice_appeal_recommendations__submission ON public.copyright_notice_appeal_recommendations USING btree (copyright_notice_submission_id, id DESC)`
+- `uq_cop_not_app_rec__submission_id__input_sha256__prompt_version`: `CREATE UNIQUE INDEX uq_cop_not_app_rec__submission_id__input_sha256__prompt_version ON public.copyright_notice_appeal_recommendations USING btree (copyright_notice_submission_id, input_sha256, prompt_version)`
 
 **Triggers:**
 

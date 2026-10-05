@@ -39,11 +39,11 @@ _none_
 
 **Indexes:**
 
-- `idx_membership_bindings__lineage_origin`: `CREATE INDEX idx_membership_bindings__lineage_origin ON public.membership_lineage_bindings USING btree (membership_provider_lineage_id, originating_invoice_id, id) WHERE (originating_invoice_id IS NOT NULL)`
 - `idx_membership_lineage_bindings__current_direct_lineage`: `CREATE UNIQUE INDEX idx_membership_lineage_bindings__current_direct_lineage ON public.membership_lineage_bindings USING btree (membership_provider_lineage_id) WHERE ((released_at IS NULL) AND (source_kind = 'direct'::membership_source_kinds))`
 - `idx_membership_lineage_bindings__current_family_lineage_user`: `CREATE UNIQUE INDEX idx_membership_lineage_bindings__current_family_lineage_user ON public.membership_lineage_bindings USING btree (membership_provider_lineage_id, user_id) WHERE ((released_at IS NULL) AND (source_kind = 'family'::membership_source_kinds))`
 - `idx_membership_lineage_bindings__id_lineage_id`: `CREATE UNIQUE INDEX idx_membership_lineage_bindings__id_lineage_id ON public.membership_lineage_bindings USING btree (id, membership_provider_lineage_id)`
 - `idx_membership_lineage_bindings__lineage_id`: `CREATE INDEX idx_membership_lineage_bindings__lineage_id ON public.membership_lineage_bindings USING btree (membership_provider_lineage_id, id DESC)`
+- `idx_membership_lineage_bindings__lineage_origin`: `CREATE INDEX idx_membership_lineage_bindings__lineage_origin ON public.membership_lineage_bindings USING btree (membership_provider_lineage_id, originating_invoice_id, id) WHERE (originating_invoice_id IS NOT NULL)`
 - `idx_membership_lineage_bindings__user_id`: `CREATE INDEX idx_membership_lineage_bindings__user_id ON public.membership_lineage_bindings USING btree (user_id, id DESC)`
 - `membership_lineage_bindings_pkey`: `CREATE UNIQUE INDEX membership_lineage_bindings_pkey ON public.membership_lineage_bindings USING btree (id)`
 

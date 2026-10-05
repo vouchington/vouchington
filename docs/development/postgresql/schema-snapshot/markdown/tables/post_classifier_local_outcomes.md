@@ -44,4 +44,4 @@ _none_
 
 **Triggers:**
 
-- `post_classifier_local_outcomes_append_only`: `CREATE TRIGGER post_classifier_local_outcomes_append_only BEFORE UPDATE ON public.post_classifier_local_outcomes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_post_classifier_local_outcomes_append_only`: `CREATE TRIGGER trigger_post_classifier_local_outcomes_append_only BEFORE UPDATE ON public.post_classifier_local_outcomes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`

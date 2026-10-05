@@ -22,9 +22,9 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `copyright_claimant_misuse_eve_copyright_notice_submission_a_key`: `UNIQUE (copyright_notice_submission_assessment_id)`
-- `copyright_claimant_misuse_eve_copyright_notice_submission_i_key`: `UNIQUE (copyright_notice_submission_id)`
 - `copyright_claimant_misuse_events_copyright_restriction_id_key`: `UNIQUE (copyright_restriction_id)`
+- `uq_copyri_claima_misuse_events__notice_submission_assessment_id`: `UNIQUE (copyright_notice_submission_assessment_id)`
+- `uq_copyright_claimant_misuse_events__notice_submission_id`: `UNIQUE (copyright_notice_submission_id)`
 
 **Check constraints:**
 
@@ -33,18 +33,18 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `copyright_claimant_misuse_ev_copyright_notice_submission__fkey1`: `FOREIGN KEY (copyright_notice_submission_assessment_id) REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT`
-- `copyright_claimant_misuse_eve_copyright_notice_submission__fkey`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
 - `copyright_claimant_misuse_events_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
 - `copyright_claimant_misuse_events_copyright_restriction_id_fkey`: `FOREIGN KEY (copyright_restriction_id) REFERENCES copyright_restrictions(id) ON DELETE RESTRICT`
+- `fk_copyrig_claimant_misuse_events__notice_submission_assessment`: `FOREIGN KEY (copyright_notice_submission_assessment_id) REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT`
+- `fk_copyright_claimant_misuse_events__notice_submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `copyright_claimant_misuse_eve_copyright_notice_submission_a_key`: `CREATE UNIQUE INDEX copyright_claimant_misuse_eve_copyright_notice_submission_a_key ON public.copyright_claimant_misuse_events USING btree (copyright_notice_submission_assessment_id)`
-- `copyright_claimant_misuse_eve_copyright_notice_submission_i_key`: `CREATE UNIQUE INDEX copyright_claimant_misuse_eve_copyright_notice_submission_i_key ON public.copyright_claimant_misuse_events USING btree (copyright_notice_submission_id)`
 - `copyright_claimant_misuse_events_copyright_restriction_id_key`: `CREATE UNIQUE INDEX copyright_claimant_misuse_events_copyright_restriction_id_key ON public.copyright_claimant_misuse_events USING btree (copyright_restriction_id)`
 - `copyright_claimant_misuse_events_pkey`: `CREATE UNIQUE INDEX copyright_claimant_misuse_events_pkey ON public.copyright_claimant_misuse_events USING btree (id)`
 - `idx_copyright_claimant_misuse_events__notice`: `CREATE INDEX idx_copyright_claimant_misuse_events__notice ON public.copyright_claimant_misuse_events USING btree (copyright_notice_id, id DESC)`
+- `uq_copyri_claima_misuse_events__notice_submission_assessment_id`: `CREATE UNIQUE INDEX uq_copyri_claima_misuse_events__notice_submission_assessment_id ON public.copyright_claimant_misuse_events USING btree (copyright_notice_submission_assessment_id)`
+- `uq_copyright_claimant_misuse_events__notice_submission_id`: `CREATE UNIQUE INDEX uq_copyright_claimant_misuse_events__notice_submission_id ON public.copyright_claimant_misuse_events USING btree (copyright_notice_submission_id)`
 
 **Triggers:**
 

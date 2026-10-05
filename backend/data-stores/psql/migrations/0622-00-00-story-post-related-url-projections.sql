@@ -1,5 +1,6 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Durable, generation-fenced exact projection of active story RSS URLs onto story posts.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS story_post_related_url_projection_jobs (
   post_id UUID PRIMARY KEY,
   story_id UUID NOT NULL,
@@ -26,13 +27,17 @@ CREATE TABLE IF NOT EXISTS story_post_related_url_projection_jobs (
   )
 );
 
-CREATE INDEX IF NOT EXISTS idx_story_post_url_proj_jobs__lease_expires_at_post_id
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_story_post_relate_url_projec_jobs__lease_expires_at_post_id
   ON story_post_related_url_projection_jobs (lease_expires_at, post_id);
-CREATE INDEX IF NOT EXISTS idx_story_post_url_proj_jobs__last_claimed_at_post_id
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_story_post_relate_url_project_jobs__last_claimed_at_post_id
   ON story_post_related_url_projection_jobs (last_claimed_at ASC NULLS FIRST, post_id);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_story_post_related_url_projection_jobs__story_id
   ON story_post_related_url_projection_jobs (story_id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS story_post_related_url_projection_receipts (
   post_id UUID NOT NULL,
   generation BIGINT NOT NULL,
@@ -51,14 +56,16 @@ CREATE TABLE IF NOT EXISTS story_post_related_url_projection_receipts (
     REFERENCES story_post_related_url_projection_jobs (post_id) ON DELETE CASCADE
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS story_post_related_url_projection_relation_mutations (
-  post_id UUID NOT NULL REFERENCES story_post_related_url_projection_jobs (post_id) ON DELETE CASCADE,
+  post_id UUID NOT NULL CONSTRAINT fk_story_post_related_url_projection_relation_mutations__post REFERENCES story_post_related_url_projection_jobs (post_id) ON DELETE CASCADE,
   generation BIGINT NOT NULL,
   relation_id UUID NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (post_id, generation, relation_id)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_project_story_post_related_url_relation_mutation()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
@@ -78,10 +85,13 @@ $$;
 
 -- Serves the composite foreign key to relation__post__related__url (subject_id, id), which is
 -- added by the config-driven entity-relation step because that table does not exist yet.
-CREATE INDEX IF NOT EXISTS idx_story_post_url_projection_relation_mutations__relation
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_story_post_related_url_projecti_relation_mutation__relation
   ON story_post_related_url_projection_relation_mutations (post_id, relation_id);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_story_post_related_url_projection_receipts__url_id
   ON story_post_related_url_projection_receipts (url_id);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_story_post_related_url_projection_receipts__source_item_id
   ON story_post_related_url_projection_receipts (source_item_id);
 
@@ -105,12 +115,15 @@ ALTER TABLE story_post_related_url_projection_receipts
   FOREIGN KEY (source_item_id) REFERENCES rss_feed_items(id) ON DELETE CASCADE NOT VALID;
 ALTER TABLE story_post_related_url_projection_receipts
   VALIDATE CONSTRAINT story_post_related_url_projection_receipts_source_item_id_fkey;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_story_post_related_url_projection_jobs_updated_at
 BEFORE UPDATE ON story_post_related_url_projection_jobs
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_story_post_related_url_projection_receipts_updated_at
 BEFORE UPDATE ON story_post_related_url_projection_receipts
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_story_post_relation_mutations_updated_at
 BEFORE UPDATE ON story_post_related_url_projection_relation_mutations
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();

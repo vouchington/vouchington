@@ -19,7 +19,7 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `copyright_automatic_withholdi_copyright_notice_submission_i_key`: `UNIQUE (copyright_notice_submission_id)`
+- `uq_copyright_automatic_withholdi_refusals__notice_submission_id`: `UNIQUE (copyright_notice_submission_id)`
 
 **Check constraints:**
 
@@ -27,12 +27,12 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `copyright_automatic_withholdi_copyright_notice_submission__fkey`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
+- `fk_copyright_automatic_withholding_refusals__notice_submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `copyright_automatic_withholdi_copyright_notice_submission_i_key`: `CREATE UNIQUE INDEX copyright_automatic_withholdi_copyright_notice_submission_i_key ON public.copyright_automatic_withholding_refusals USING btree (copyright_notice_submission_id)`
 - `copyright_automatic_withholding_refusals_pkey`: `CREATE UNIQUE INDEX copyright_automatic_withholding_refusals_pkey ON public.copyright_automatic_withholding_refusals USING btree (id)`
+- `uq_copyright_automatic_withholdi_refusals__notice_submission_id`: `CREATE UNIQUE INDEX uq_copyright_automatic_withholdi_refusals__notice_submission_id ON public.copyright_automatic_withholding_refusals USING btree (copyright_notice_submission_id)`
 
 **Triggers:**
 

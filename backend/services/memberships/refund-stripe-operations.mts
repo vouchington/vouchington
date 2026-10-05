@@ -84,8 +84,8 @@ export type RefundLookupType = 'charge' | 'payment_intent'
  * The batched query behind {@link getAlreadyRefundedMinorUnits}, extracted so its rendered
  * SQL can be snapshot-tested and EXPLAIN-scenario-gated per the Query → Index Impact recipe
  * (backend/data-stores/psql/AGENTS.md#querying-rules). `lookupTypes[i]`/`lookupIds[i]` pair
- * positionally; `type: 'charge'` matches `idx_mrefunds__stripe_charge_id`, `type:
- * 'payment_intent'` matches the partial `idx_mrefunds__stripe_payment_intent_id`.
+ * positionally; `type: 'charge'` matches `idx_membership_refunds__stripe_charge_id`, `type:
+ * 'payment_intent'` matches the partial `idx_membership_refunds__stripe_payment_intent_id`.
  */
 export function buildAlreadyRefundedMinorUnitsQuery(
   lookupTypes: readonly RefundLookupType[],

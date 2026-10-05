@@ -8,7 +8,7 @@ ALTER TABLE user_lists
   NOT VALID;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER user_lists_content_provenance_immutable
+CREATE OR REPLACE TRIGGER trigger_user_lists_content_provenance_immutable
   AFTER UPDATE ON user_lists
   FOR EACH ROW
   WHEN (

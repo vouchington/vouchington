@@ -30,6 +30,7 @@ EXCEPTION
   WHEN duplicate_object THEN null;
 END $$;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS conversations (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   channel_type conversation_channel_types NOT NULL DEFAULT 'chat',
@@ -89,44 +90,58 @@ CREATE TABLE IF NOT EXISTS conversations (
     CHECK (assigned_mod_id IS NULL OR assigned_at IS NOT NULL)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_conversations_updated_at
 BEFORE UPDATE ON conversations
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_conversations__created_by_id__id_desc
 ON conversations (created_by_id, id DESC)
 WHERE created_by_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_conversations__post_id ON conversations (post_id) WHERE post_id IS NOT NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_conversations__rss_feed_item_id ON conversations (rss_feed_item_id) WHERE rss_feed_item_id IS NOT NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_conversations__community_id ON conversations (community_id, id DESC) WHERE community_id IS NOT NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_conversations__direct_message_updated
   ON conversations (updated_at DESC, id DESC)
   WHERE channel_type = 'direct_message' AND deleted_at IS NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_conversations__modmail_community_updated
   ON conversations (community_id, updated_at DESC, id DESC)
   WHERE channel_type = 'modmail' AND deleted_at IS NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_conversations__modmail_subject_updated
   ON conversations (subject_user_id, updated_at DESC, id DESC)
   WHERE channel_type = 'modmail' AND subject_user_id IS NOT NULL AND deleted_at IS NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS uq_conversations__modmail_open_per_subject
   ON conversations (community_id, subject_user_id)
   WHERE channel_type = 'modmail' AND resolved_at IS NULL AND deleted_at IS NULL;
 -- One open internal mod-discussion thread per report / per pending post-review.
-CREATE UNIQUE INDEX IF NOT EXISTS uq_conversations__mod_internal_open_report
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE UNIQUE INDEX IF NOT EXISTS uq_conversations__moderator_internal_open_report
   ON conversations (moderation_report_id)
   WHERE channel_type = 'mod_internal' AND moderation_report_id IS NOT NULL
     AND resolved_at IS NULL AND deleted_at IS NULL;
-CREATE UNIQUE INDEX IF NOT EXISTS uq_conversations__mod_internal_open_post
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE UNIQUE INDEX IF NOT EXISTS uq_conversations__moderator_internal_open_post
   ON conversations (post_id)
   WHERE channel_type = 'mod_internal' AND post_id IS NOT NULL
     AND resolved_at IS NULL AND deleted_at IS NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_conversations__moderation_report_id
   ON conversations (moderation_report_id)
   WHERE moderation_report_id IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_conversations__assigned_mod_id ON conversations (assigned_mod_id) WHERE assigned_mod_id IS NOT NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_conversations__assigned_moderator_id ON conversations (assigned_mod_id) WHERE assigned_mod_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_conversations__unresolved
 ON conversations (id DESC) WHERE resolved_at IS NULL;
 
@@ -145,6 +160,7 @@ COMMENT ON COLUMN conversations.assigned_at IS 'When this modmail thread was ass
 COMMENT ON COLUMN conversations.moderation_report_id IS 'The moderation report this internal mod-discussion thread is about. Set when channel_type is mod_internal and the item is a report. Mutually exclusive with post_id for mod_internal threads.';
 COMMENT ON COLUMN conversations.participant_add_policy IS 'Governs who may add participants to a direct_message conversation. owner_only (default): only the creator may add. all_members: any active participant may add.';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS conversation_messages (
   id UUID NOT NULL DEFAULT uuidv7(),
   conversation_id UUID NOT NULL REFERENCES conversations ON DELETE CASCADE,
@@ -215,19 +231,23 @@ CREATE TABLE IF NOT EXISTS conversation_messages (
     CHECK (sent_at IS NULL OR discarded_at IS NULL)
 ) PARTITION BY RANGE (conversation_id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_conversation_messages_updated_at
 BEFORE UPDATE ON conversation_messages
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
-CREATE INDEX IF NOT EXISTS idx_conv_messages__created_by_id
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_conversation_messages__created_by_id
 ON conversation_messages (created_by_id)
 WHERE created_by_id IS NOT NULL;
 
-CREATE INDEX IF NOT EXISTS idx_conv_messages__email_message_id
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_conversation_messages__email_message_id
 ON conversation_messages (email_message_id)
 WHERE email_message_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_conversation_messages__created_via_oauth_client_id
 ON conversation_messages (created_via_oauth_client_id)
 WHERE created_via_oauth_client_id IS NOT NULL;
@@ -267,6 +287,7 @@ EXCEPTION
 END $$;
 
 -- Participants in a conversation are registered users.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS conversation_participants (
   conversation_id UUID NOT NULL REFERENCES conversations ON DELETE CASCADE,
   id UUID NOT NULL DEFAULT uuidv7(),
@@ -286,16 +307,19 @@ CREATE TABLE IF NOT EXISTS conversation_participants (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_conversation_participants_updated_at
 BEFORE UPDATE ON conversation_participants
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_conv_participants__conversation_user
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_conversation_participants__conversation_user
 ON conversation_participants (conversation_id, user_id)
 WHERE user_id IS NOT NULL AND removed_at IS NULL;
 
-CREATE INDEX IF NOT EXISTS idx_conv_participants__user_id
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_conversation_participants__user_id
 ON conversation_participants (user_id, conversation_id DESC)
 WHERE user_id IS NOT NULL;
 
@@ -307,18 +331,22 @@ COMMENT ON COLUMN conversation_participants.removed_at IS 'When set, this partic
 COMMENT ON COLUMN conversation_participants.removed_by_id IS 'The user who removed this participant. NULL if removed_at is not set, or if the actor was hard-deleted.';
 
 -- Current indexes for fresh schema bootstrap.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_conversations__deleted_by_id
   ON conversations (deleted_by_id)
   WHERE deleted_by_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_conversations__resolved_by_id
   ON conversations (resolved_by_id)
   WHERE resolved_by_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_conversations__subject_user_id
   ON conversations (subject_user_id)
   WHERE subject_user_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_conversations__updated_by_id
   ON conversations (updated_by_id)
   WHERE updated_by_id IS NOT NULL;

@@ -32,9 +32,9 @@ _none_
 **Indexes:**
 
 - `idx_user_email_addresses__email`: `CREATE INDEX idx_user_email_addresses__email ON public.user_email_addresses USING btree (email_address)`
+- `idx_user_email_addresses__email_primary`: `CREATE UNIQUE INDEX idx_user_email_addresses__email_primary ON public.user_email_addresses USING btree (email_address) WHERE (is_primary = true)`
+- `idx_user_email_addresses__user_primary`: `CREATE UNIQUE INDEX idx_user_email_addresses__user_primary ON public.user_email_addresses USING btree (user_id) WHERE (is_primary = true)`
 - `idx_user_email_addresses__user_primary_created_email`: `CREATE INDEX idx_user_email_addresses__user_primary_created_email ON public.user_email_addresses USING btree (user_id, ((is_primary)::integer) DESC, created_at, email_address)`
-- `idx_user_email_addresses_email_primary`: `CREATE UNIQUE INDEX idx_user_email_addresses_email_primary ON public.user_email_addresses USING btree (email_address) WHERE (is_primary = true)`
-- `idx_user_email_addresses_user_primary`: `CREATE UNIQUE INDEX idx_user_email_addresses_user_primary ON public.user_email_addresses USING btree (user_id) WHERE (is_primary = true)`
 - `user_email_addresses_pkey`: `CREATE UNIQUE INDEX user_email_addresses_pkey ON public.user_email_addresses USING btree (user_id, email_address)`
 
 **Triggers:**

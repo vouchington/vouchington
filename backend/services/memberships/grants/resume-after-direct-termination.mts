@@ -67,7 +67,7 @@ export async function resumeGrantAfterDirectAccessSuspensionInTransaction(
       WHERE grant_row.membership_source_id = source_state.membership_source_id
         AND grant_row.user_id = ${userId} AND grant_row.revoked_at IS NULL
         AND source_state.paused_at IS NOT NULL
-        AND membership_grant_remaining_duration(grant_row.id) < INTERVAL '1 millisecond'
+        AND fn_membership_grant_remaining_duration(grant_row.id) < INTERVAL '1 millisecond'
         AND NOT EXISTS (
           SELECT 1 FROM membership_grant_activation_periods activation
           WHERE activation.membership_grant_id = grant_row.id AND activation.ended_at IS NULL

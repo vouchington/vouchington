@@ -42,8 +42,8 @@ _none_
 
 **Indexes:**
 
-- `idx_post_pub_dirty_work_keys__impact_community_identity_id`: `CREATE INDEX idx_post_pub_dirty_work_keys__impact_community_identity_id ON ONLY public.post_publication_dirty_work_keys USING btree (impact_community_identity_id) WHERE (impact_community_identity_id IS NOT NULL)`
-- `idx_post_pub_dirty_work_keys__impact_rss_feed_item_identity_id`: `CREATE INDEX idx_post_pub_dirty_work_keys__impact_rss_feed_item_identity_id ON ONLY public.post_publication_dirty_work_keys USING btree (impact_rss_feed_item_identity_id) WHERE (impact_rss_feed_item_identity_id IS NOT NULL)`
+- `idx_post_publ_dirty_work_keys__impact_rss_feed_item_identity_id`: `CREATE INDEX idx_post_publ_dirty_work_keys__impact_rss_feed_item_identity_id ON ONLY public.post_publication_dirty_work_keys USING btree (impact_rss_feed_item_identity_id) WHERE (impact_rss_feed_item_identity_id IS NOT NULL)`
+- `idx_post_publicat_dirty_work_keys__impact_community_identity_id`: `CREATE INDEX idx_post_publicat_dirty_work_keys__impact_community_identity_id ON ONLY public.post_publication_dirty_work_keys USING btree (impact_community_identity_id) WHERE (impact_community_identity_id IS NOT NULL)`
 - `idx_post_publication_dirty_work_keys__impact_post_identity_id`: `CREATE INDEX idx_post_publication_dirty_work_keys__impact_post_identity_id ON ONLY public.post_publication_dirty_work_keys USING btree (impact_post_identity_id) WHERE (impact_post_identity_id IS NOT NULL)`
 - `idx_post_publication_dirty_work_keys__topic_key`: `CREATE INDEX idx_post_publication_dirty_work_keys__topic_key ON ONLY public.post_publication_dirty_work_keys USING btree (dirty_work_id, topic_key) WHERE (topic_key IS NOT NULL)`
 - `post_publication_dirty_work_keys_pkey`: `CREATE UNIQUE INDEX post_publication_dirty_work_keys_pkey ON ONLY public.post_publication_dirty_work_keys USING btree (dirty_work_id, id)`

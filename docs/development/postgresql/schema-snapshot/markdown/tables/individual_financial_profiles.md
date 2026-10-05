@@ -27,9 +27,9 @@ _none_
 
 **Check constraints:**
 
-- `individual_financial_profile_stated_income_maximum_minor__check`: `CHECK (((stated_income_maximum_minor_units >= 0) AND (stated_income_maximum_minor_units <= '9007199254740991'::bigint)))`
-- `individual_financial_profile_stated_income_minimum_minor__check`: `CHECK (((stated_income_minimum_minor_units >= 0) AND (stated_income_minimum_minor_units <= '9007199254740991'::bigint)))`
-- `individual_financial_profile_total_credit_limit_minor_uni_check`: `CHECK (((total_credit_limit_minor_units >= 0) AND (total_credit_limit_minor_units <= '9007199254740991'::bigint)))`
+- `chk_individ_financi_profiles__stated_income_maximum_minor_units`: `CHECK (((stated_income_maximum_minor_units >= 0) AND (stated_income_maximum_minor_units <= '9007199254740991'::bigint)))`
+- `chk_individ_financi_profiles__stated_income_minimum_minor_units`: `CHECK (((stated_income_minimum_minor_units >= 0) AND (stated_income_minimum_minor_units <= '9007199254740991'::bigint)))`
+- `chk_individu_financial_profiles__total_credit_limit_minor_units`: `CHECK (((total_credit_limit_minor_units >= 0) AND (total_credit_limit_minor_units <= '9007199254740991'::bigint)))`
 - `individual_financial_profiles_check`: `CHECK (((stated_income_maximum_minor_units IS NULL) OR ((stated_income_minimum_minor_units IS NOT NULL) AND (stated_income_maximum_minor_units > stated_income_minimum_minor_units))))`
 
 **Foreign keys:**

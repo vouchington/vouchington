@@ -1,5 +1,6 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Retained community provenance is captured from the owning post, not accepted from callers.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_update_classifier_run_scope()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
@@ -12,13 +13,15 @@ BEGIN
   RETURN NEW;
 END $$;
 
-CREATE OR REPLACE TRIGGER classifier_runs_scope_stamp
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_classifier_runs_scope_stamp
 BEFORE INSERT ON classifier_runs
 FOR EACH ROW EXECUTE FUNCTION fn_update_classifier_run_scope();
 
 -- A run's identity, attempt budget and terminal outcome only move forward. Its remote C3 batch is
 -- reserved with the run before provider execution. Phase stamps are durable proof of completed
 -- effects, not mutable progress flags.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_classifier_run()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
@@ -57,24 +60,29 @@ BEGIN
   RETURN NEW;
 END $$;
 
-CREATE OR REPLACE TRIGGER classifier_runs_guard
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_classifier_runs_guard
 BEFORE UPDATE ON classifier_runs
 FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_run();
 
-CREATE OR REPLACE TRIGGER classifier_runs_updated_at
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_classifier_runs_updated_at
 BEFORE UPDATE ON classifier_runs
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
-CREATE OR REPLACE TRIGGER classifier_run_requests_updated_at
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_classifier_run_requests_updated_at
 BEFORE UPDATE ON classifier_run_requests
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 -- The local detector outcome is written once and never revised.
-CREATE OR REPLACE TRIGGER post_classifier_local_outcomes_append_only
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_post_classifier_local_outcomes_append_only
 BEFORE UPDATE ON post_classifier_local_outcomes
 FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 
 -- The captured candidate set is written once with the run and never revised.
-CREATE OR REPLACE TRIGGER classifier_run_candidates_append_only
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_classifier_run_candidates_append_only
 BEFORE UPDATE ON classifier_run_candidates
 FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();

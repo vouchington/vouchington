@@ -155,7 +155,7 @@ CREATE INDEX IF NOT EXISTS idx_posts__creation_source_url_id
   WHERE creation_source_url_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TRIGGER posts_creation_source_url_id_immutable
+CREATE TRIGGER trigger_posts_creation_source_url_id_immutable
   BEFORE UPDATE OF creation_source_url_id ON posts
   FOR EACH ROW
   WHEN (ROW(OLD.creation_source_url_id) IS DISTINCT FROM ROW(NEW.creation_source_url_id)) EXECUTE FUNCTION fn_reject_mutation();
@@ -186,11 +186,11 @@ FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS post_topic_alias_sources__topic_alias_id
+CREATE INDEX IF NOT EXISTS idx_post_topic_alias_sources__topic_alias_id
 ON post_topic_alias_sources (topic_alias_id, post_id DESC);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS post_topic_alias_sources__contributor_id
+CREATE INDEX IF NOT EXISTS idx_post_topic_alias_sources__contributor_id
 ON post_topic_alias_sources (contributor_id);
 
 COMMENT ON TABLE post_topic_alias_sources IS 'Exact authored post hashtag tokens, keyed by canonical topic alias.';
@@ -361,7 +361,7 @@ WHERE bedrock_nova_multimodal_v1_embedding IS NOT NULL;
 
 -- find out of date embeddings
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS ids_posts__bedrock_nova_multimodal_v1_to_update
+CREATE INDEX IF NOT EXISTS idx_posts__bedrock_nova_multimodal_v1_to_update
 ON posts (id)
 WHERE (
   bedrock_nova_multimodal_v1_input_sha256 IS NULL
@@ -389,7 +389,7 @@ CREATE INDEX IF NOT EXISTS idx_posts__privacy_private ON posts (created_by_id, b
 
 -- find posts pending language detection
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS posts_lingua_rs_pending_idx
+CREATE INDEX IF NOT EXISTS idx_posts__lingua_rs_pending
   ON posts (id)
   WHERE lingua_rs_input_sha256 IS NULL;
 

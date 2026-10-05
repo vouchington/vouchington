@@ -42,7 +42,7 @@ _none_
 - `idx_spending_entries__currency_code`: `CREATE INDEX idx_spending_entries__currency_code ON public.spending_entries USING btree (currency_code)`
 - `idx_spending_entries__household_id_id`: `CREATE INDEX idx_spending_entries__household_id_id ON public.spending_entries USING btree (household_id, id) WHERE (household_id IS NOT NULL)`
 - `idx_spending_entries__individual_id_id`: `CREATE INDEX idx_spending_entries__individual_id_id ON public.spending_entries USING btree (individual_id, id) WHERE (individual_id IS NOT NULL)`
-- `spending_entries__spending_category_id`: `CREATE INDEX spending_entries__spending_category_id ON public.spending_entries USING btree (spending_category_id)`
+- `idx_spending_entries__spending_category_id`: `CREATE INDEX idx_spending_entries__spending_category_id ON public.spending_entries USING btree (spending_category_id)`
 - `spending_entries_pkey`: `CREATE UNIQUE INDEX spending_entries_pkey ON public.spending_entries USING btree (id)`
 
 **Triggers:**

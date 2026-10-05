@@ -48,7 +48,7 @@ _none_
 - `idx_community_members__departed`: `CREATE INDEX idx_community_members__departed ON public.community_members USING btree (community_id, removed_at) WHERE (removed_at IS NOT NULL)`
 - `idx_community_members__suspected_ban_evader_source_user_id`: `CREATE INDEX idx_community_members__suspected_ban_evader_source_user_id ON public.community_members USING btree (suspected_ban_evader_source_user_id) WHERE (suspected_ban_evader_source_user_id IS NOT NULL)`
 - `idx_community_members__suspected_evasion`: `CREATE INDEX idx_community_members__suspected_evasion ON public.community_members USING btree (community_id, suspected_ban_evader_at DESC) WHERE ((suspected_ban_evader_at IS NOT NULL) AND (suspected_ban_evader_dismissed_at IS NULL) AND (removed_at IS NULL))`
-- `idx_community_members__uniq`: `CREATE UNIQUE INDEX idx_community_members__uniq ON public.community_members USING btree (community_id, user_id) WHERE (removed_at IS NULL)`
+- `idx_community_members__unique`: `CREATE UNIQUE INDEX idx_community_members__unique ON public.community_members USING btree (community_id, user_id) WHERE (removed_at IS NULL)`
 - `idx_community_members__user_id_desc`: `CREATE INDEX idx_community_members__user_id_desc ON public.community_members USING btree (user_id, id DESC) WHERE (removed_at IS NULL)`
 - `idx_community_members__user_id_id`: `CREATE INDEX idx_community_members__user_id_id ON public.community_members USING btree (user_id, id)`
 

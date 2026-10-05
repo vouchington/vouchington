@@ -27,32 +27,32 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `membership_administrator_refund_ope_membership_operation_id_key`: `UNIQUE (membership_operation_id)`
 - `uq_maror__operation_key`: `UNIQUE (membership_operation_id, administrator_request_key)`
+- `uq_membershi_administra_refund_operation_requests__operation_id`: `UNIQUE (membership_operation_id)`
 
 **Check constraints:**
 
-- `membership_administrator_refun_provider_payment_reference_check`: `CHECK ((((char_length(provider_payment_reference) >= 1) AND (char_length(provider_payment_reference) <= 255)) AND (provider_payment_reference = TRIM(BOTH FROM provider_payment_reference))))`
-- `membership_administrator_refund_administrator_request_key_check`: `CHECK ((((char_length(administrator_request_key) >= 1) AND (char_length(administrator_request_key) <= 255)) AND (administrator_request_key = TRIM(BOTH FROM administrator_request_key))))`
-- `membership_administrator_refund_opera_request_fingerprint_check`: `CHECK ((char_length(request_fingerprint) = 64))`
-- `membership_administrator_refund_operat_amount_minor_units_check`: `CHECK (((amount_minor_units >= 1) AND (amount_minor_units <= '9007199254740991'::bigint)))`
+- `chk_membe_admin_refun_operat_reques__provider_payment_reference`: `CHECK ((((char_length(provider_payment_reference) >= 1) AND (char_length(provider_payment_reference) <= 255)) AND (provider_payment_reference = TRIM(BOTH FROM provider_payment_reference))))`
+- `chk_membe_admin_refund_operat_reques__administrator_request_key`: `CHECK ((((char_length(administrator_request_key) >= 1) AND (char_length(administrator_request_key) <= 255)) AND (administrator_request_key = TRIM(BOTH FROM administrator_request_key))))`
+- `chk_members_adminis_refund_operati_request__request_fingerprint`: `CHECK ((char_length(request_fingerprint) = 64))`
+- `chk_members_adminis_refund_operati_requests__amount_minor_units`: `CHECK (((amount_minor_units >= 1) AND (amount_minor_units <= '9007199254740991'::bigint)))`
 - `membership_administrator_refund_operation_requests_check`: `CHECK ((((cancel_requested = false) AND (provider_subscription_reference IS NULL)) OR ((cancel_requested = true) AND ((char_length(provider_subscription_reference) >= 1) AND (char_length(provider_subscription_reference) <= 255)) AND (provider_subscription_reference = TRIM(BOTH FROM provider_subscription_reference)))))`
 - `membership_administrator_refund_operation_requests_note_check`: `CHECK (((note IS NULL) OR ((char_length(note) >= 1) AND (char_length(note) <= 1000))))`
 
 **Foreign keys:**
 
-- `membership_administrator_refund_op_membership_operation_id_fkey`: `FOREIGN KEY (membership_operation_id) REFERENCES membership_operations(id) ON DELETE RESTRICT`
-- `membership_administrator_refund_operation_re_currency_code_fkey`: `FOREIGN KEY (currency_code) REFERENCES currencies(code) ON DELETE RESTRICT`
-- `membership_administrator_refund_operation_req_issued_by_id_fkey`: `FOREIGN KEY (issued_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
+- `fk_membershi_administr_refund_operation_requests__currency_code`: `FOREIGN KEY (currency_code) REFERENCES currencies(code) ON DELETE RESTRICT`
+- `fk_membership_administrato_refund_operation_requests__issued_by`: `FOREIGN KEY (issued_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
+- `fk_membership_administrato_refund_operation_requests__operation`: `FOREIGN KEY (membership_operation_id) REFERENCES membership_operations(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `idx_maror__currency_code`: `CREATE INDEX idx_maror__currency_code ON public.membership_administrator_refund_operation_requests USING btree (currency_code)`
-- `idx_maror__issued_by_id`: `CREATE INDEX idx_maror__issued_by_id ON public.membership_administrator_refund_operation_requests USING btree (issued_by_id, id DESC)`
-- `idx_maror__membership_id`: `CREATE INDEX idx_maror__membership_id ON public.membership_administrator_refund_operation_requests USING btree (membership_id, id DESC)`
-- `membership_administrator_refund_ope_membership_operation_id_key`: `CREATE UNIQUE INDEX membership_administrator_refund_ope_membership_operation_id_key ON public.membership_administrator_refund_operation_requests USING btree (membership_operation_id)`
+- `idx_membersh_administr_refund_operation_requests__currency_code`: `CREATE INDEX idx_membersh_administr_refund_operation_requests__currency_code ON public.membership_administrator_refund_operation_requests USING btree (currency_code)`
+- `idx_membersh_administr_refund_operation_requests__membership_id`: `CREATE INDEX idx_membersh_administr_refund_operation_requests__membership_id ON public.membership_administrator_refund_operation_requests USING btree (membership_id, id DESC)`
+- `idx_membershi_administr_refund_operation_requests__issued_by_id`: `CREATE INDEX idx_membershi_administr_refund_operation_requests__issued_by_id ON public.membership_administrator_refund_operation_requests USING btree (issued_by_id, id DESC)`
 - `membership_administrator_refund_operation_requests_pkey`: `CREATE UNIQUE INDEX membership_administrator_refund_operation_requests_pkey ON public.membership_administrator_refund_operation_requests USING btree (id)`
 - `uq_maror__operation_key`: `CREATE UNIQUE INDEX uq_maror__operation_key ON public.membership_administrator_refund_operation_requests USING btree (membership_operation_id, administrator_request_key)`
+- `uq_membershi_administra_refund_operation_requests__operation_id`: `CREATE UNIQUE INDEX uq_membershi_administra_refund_operation_requests__operation_id ON public.membership_administrator_refund_operation_requests USING btree (membership_operation_id)`
 
 **Triggers:**
 

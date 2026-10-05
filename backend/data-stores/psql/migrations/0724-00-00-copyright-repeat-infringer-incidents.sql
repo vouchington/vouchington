@@ -10,7 +10,7 @@ CREATE TABLE copyright_repeat_infringer_incidents (
   operative boolean NOT NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE (account_user_id, copyright_notice_id)
+  CONSTRAINT uq_copyrig_repeat_infringe_incident__account_user_id__notice_id UNIQUE (account_user_id, copyright_notice_id)
 );
 
 CREATE INDEX idx_copyright_repeat_infringer_incidents__operative_account
@@ -23,9 +23,9 @@ CREATE INDEX idx_copyright_repeat_infringer_incidents__notice
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_repeat_infringer_dispositions (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_repeat_infringer_incident_id uuid NOT NULL UNIQUE REFERENCES copyright_repeat_infringer_incidents(id) ON DELETE RESTRICT,
+  copyright_repeat_infringer_incident_id uuid NOT NULL CONSTRAINT uq_copyright_repeat_infringer_dispositions__incident_id UNIQUE CONSTRAINT fk_copyright_repeat_infringer_dispositions__incident REFERENCES copyright_repeat_infringer_incidents(id) ON DELETE RESTRICT,
   disposition copyright_repeat_infringer_disposition_kinds NOT NULL CHECK (disposition IN ('withdrawn', 'duplicate', 'abusive')),
-  rationale_ciphertext text NOT NULL CHECK (char_length(rationale_ciphertext) BETWEEN 1 AND 65536),
+  rationale_ciphertext text NOT NULL CONSTRAINT chk_copyright_repeat_infringer_dispositio__rationale_ciphertext CHECK (char_length(rationale_ciphertext) BETWEEN 1 AND 65536),
   recorded_at timestamptz NOT NULL,
   recorded_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,

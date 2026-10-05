@@ -27,14 +27,14 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `copyright_notice_email_corres_copyright_notice_corresponden_key`: `UNIQUE (copyright_notice_correspondence_id)`
-- `copyright_notice_email_corres_copyright_notice_email_intake_key`: `UNIQUE (copyright_notice_email_intake_id, action)`
-- `copyright_notice_email_corres_copyright_notice_submission_i_key`: `UNIQUE (copyright_notice_submission_id)`
+- `uq_copyright_notice_email_correspond_reviews__correspondence_id`: `UNIQUE (copyright_notice_correspondence_id)`
+- `uq_copyright_notice_email_correspond_reviews__intake_id__action`: `UNIQUE (copyright_notice_email_intake_id, action)`
+- `uq_copyright_notice_email_correspondence_reviews__submission_id`: `UNIQUE (copyright_notice_submission_id)`
 
 **Check constraints:**
 
-- `copyright_notice_email_corre_manual_fallback_reason_ciphe_check`: `CHECK (((manual_fallback_reason_ciphertext IS NULL) OR ((char_length(manual_fallback_reason_ciphertext) >= 1) AND (char_length(manual_fallback_reason_ciphertext) <= 65536))))`
-- `copyright_notice_email_correspondenc_rationale_ciphertext_check`: `CHECK (((rationale_ciphertext IS NULL) OR ((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 65536))))`
+- `chk_copy_noti_emai_corr_revi__manual_fallback_reason_ciphertext`: `CHECK (((manual_fallback_reason_ciphertext IS NULL) OR ((char_length(manual_fallback_reason_ciphertext) >= 1) AND (char_length(manual_fallback_reason_ciphertext) <= 65536))))`
+- `chk_copyrig_notice_email_correspo_reviews__rationale_ciphertext`: `CHECK (((rationale_ciphertext IS NULL) OR ((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 65536))))`
 - `copyright_notice_email_correspondence_reviews_action_check`: `CHECK ((action = ANY (ARRAY['pending'::copyright_notice_email_correspondence_review_actions, 'admitted'::copyright_notice_email_correspondence_review_actions, 'rejected'::copyright_notice_email_correspondence_review_actions])))`
 - `copyright_notice_email_correspondence_reviews_check`: `CHECK ((((action = 'pending'::copyright_notice_email_correspondence_review_actions) AND (reviewed_at IS NULL) AND (reviewed_by_id IS NULL) AND (kind IS NULL)) OR ((action = ANY (ARRAY['admitted'::copyright_notice_email_correspondence_review_actions, 'rejected'::copyright_notice_email_correspondence_review_actions])) AND (reviewed_at IS NOT NULL) AND (reviewed_by_id IS NOT NULL) AND (kind IS NOT NULL))))`
 - `copyright_notice_email_correspondence_reviews_check1`: `CHECK (((action = 'admitted'::copyright_notice_email_correspondence_review_actions) = ((copyright_notice_submission_id IS NOT NULL) AND (copyright_notice_correspondence_id IS NOT NULL))))`
@@ -43,23 +43,23 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `copyright_notice_email_corres_copyright_notice_corresponde_fkey`: `FOREIGN KEY (copyright_notice_correspondence_id) REFERENCES copyright_notice_correspondence_messages(id) ON DELETE RESTRICT`
-- `copyright_notice_email_corres_copyright_notice_email_intak_fkey`: `FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
-- `copyright_notice_email_corres_copyright_notice_submission__fkey`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
-- `copyright_notice_email_correspondence__copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
-- `copyright_notice_email_correspondence_revie_reviewed_by_id_fkey`: `FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `fk_copyright_email_corresp_reviews__recommendation_intake`: `FOREIGN KEY (copyright_notice_email_intake_id, copyright_notice_email_intake_recommendation_id) REFERENCES copyright_notice_email_intake_recommendations(copyright_notice_email_intake_id, id) ON DELETE RESTRICT`
+- `fk_copyright_notice_email_correspondenc_reviews__correspondence`: `FOREIGN KEY (copyright_notice_correspondence_id) REFERENCES copyright_notice_correspondence_messages(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_email_correspondence_reviews__intake`: `FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_email_correspondence_reviews__notice`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_email_correspondence_reviews__reviewed_by`: `FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL`
+- `fk_copyright_notice_email_correspondence_reviews__submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `copyright_notice_email_corres_copyright_notice_corresponden_key`: `CREATE UNIQUE INDEX copyright_notice_email_corres_copyright_notice_corresponden_key ON public.copyright_notice_email_correspondence_reviews USING btree (copyright_notice_correspondence_id)`
-- `copyright_notice_email_corres_copyright_notice_email_intake_key`: `CREATE UNIQUE INDEX copyright_notice_email_corres_copyright_notice_email_intake_key ON public.copyright_notice_email_correspondence_reviews USING btree (copyright_notice_email_intake_id, action)`
-- `copyright_notice_email_corres_copyright_notice_submission_i_key`: `CREATE UNIQUE INDEX copyright_notice_email_corres_copyright_notice_submission_i_key ON public.copyright_notice_email_correspondence_reviews USING btree (copyright_notice_submission_id)`
 - `copyright_notice_email_correspondence_reviews_pkey`: `CREATE UNIQUE INDEX copyright_notice_email_correspondence_reviews_pkey ON public.copyright_notice_email_correspondence_reviews USING btree (id)`
-- `idx_copyright_email_correspondence_reviews__notice`: `CREATE INDEX idx_copyright_email_correspondence_reviews__notice ON public.copyright_notice_email_correspondence_reviews USING btree (copyright_notice_id, id)`
-- `idx_copyright_email_correspondence_reviews__recommendation`: `CREATE INDEX idx_copyright_email_correspondence_reviews__recommendation ON public.copyright_notice_email_correspondence_reviews USING btree (copyright_notice_email_intake_recommendation_id) WHERE (copyright_notice_email_intake_recommendation_id IS NOT NULL)`
-- `idx_copyright_email_correspondence_reviews__reviewer`: `CREATE INDEX idx_copyright_email_correspondence_reviews__reviewer ON public.copyright_notice_email_correspondence_reviews USING btree (reviewed_by_id) WHERE (reviewed_by_id IS NOT NULL)`
-- `idx_copyright_email_correspondence_reviews__terminal`: `CREATE UNIQUE INDEX idx_copyright_email_correspondence_reviews__terminal ON public.copyright_notice_email_correspondence_reviews USING btree (copyright_notice_email_intake_id) WHERE (action = ANY (ARRAY['admitted'::copyright_notice_email_correspondence_review_actions, 'rejected'::copyright_notice_email_correspondence_review_actions]))`
+- `idx_copyright_notice_email_corresponden_reviews__recommendation`: `CREATE INDEX idx_copyright_notice_email_corresponden_reviews__recommendation ON public.copyright_notice_email_correspondence_reviews USING btree (copyright_notice_email_intake_recommendation_id) WHERE (copyright_notice_email_intake_recommendation_id IS NOT NULL)`
+- `idx_copyright_notice_email_correspondence_reviews__notice`: `CREATE INDEX idx_copyright_notice_email_correspondence_reviews__notice ON public.copyright_notice_email_correspondence_reviews USING btree (copyright_notice_id, id)`
+- `idx_copyright_notice_email_correspondence_reviews__reviewer`: `CREATE INDEX idx_copyright_notice_email_correspondence_reviews__reviewer ON public.copyright_notice_email_correspondence_reviews USING btree (reviewed_by_id) WHERE (reviewed_by_id IS NOT NULL)`
+- `idx_copyright_notice_email_correspondence_reviews__terminal`: `CREATE UNIQUE INDEX idx_copyright_notice_email_correspondence_reviews__terminal ON public.copyright_notice_email_correspondence_reviews USING btree (copyright_notice_email_intake_id) WHERE (action = ANY (ARRAY['admitted'::copyright_notice_email_correspondence_review_actions, 'rejected'::copyright_notice_email_correspondence_review_actions]))`
+- `uq_copyright_notice_email_correspond_reviews__correspondence_id`: `CREATE UNIQUE INDEX uq_copyright_notice_email_correspond_reviews__correspondence_id ON public.copyright_notice_email_correspondence_reviews USING btree (copyright_notice_correspondence_id)`
+- `uq_copyright_notice_email_correspond_reviews__intake_id__action`: `CREATE UNIQUE INDEX uq_copyright_notice_email_correspond_reviews__intake_id__action ON public.copyright_notice_email_correspondence_reviews USING btree (copyright_notice_email_intake_id, action)`
+- `uq_copyright_notice_email_correspondence_reviews__submission_id`: `CREATE UNIQUE INDEX uq_copyright_notice_email_correspondence_reviews__submission_id ON public.copyright_notice_email_correspondence_reviews USING btree (copyright_notice_submission_id)`
 
 **Triggers:**
 

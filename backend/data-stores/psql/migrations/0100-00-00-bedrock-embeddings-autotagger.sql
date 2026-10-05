@@ -272,7 +272,7 @@ CREATE TABLE IF NOT EXISTS rss_feed_item_autotagger_results (
   updated_by_id UUID REFERENCES users ON DELETE SET NULL,
   deleted_at TIMESTAMPTZ,
   deleted_by_id UUID REFERENCES users ON DELETE SET NULL,
-  UNIQUE(rss_feed_item_id, content_sha256, prompt_id)
+  CONSTRAINT uq_rss_feed_item_auto_resul__item_id__content_sha256__prompt_id UNIQUE(rss_feed_item_id, content_sha256, prompt_id)
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -282,7 +282,7 @@ CREATE INDEX IF NOT EXISTS idx_rss_feed_item_autotagger_results__prompt_id ON rs
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS rss_feed_item_autotagger_result_topics (
-  rss_feed_item_autotagger_result_id UUID NOT NULL REFERENCES rss_feed_item_autotagger_results(id) ON DELETE CASCADE,
+  rss_feed_item_autotagger_result_id UUID NOT NULL CONSTRAINT fk_rss_feed_item_autotagger_result_topics__result REFERENCES rss_feed_item_autotagger_results(id) ON DELETE CASCADE,
   topic_id UUID NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
   topic_order INT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,

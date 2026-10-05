@@ -10,7 +10,7 @@ export async function resumePausedGrantProjection(
   const { rows } = await query(sql`/* resumeGrantAfterDirectTermination: resume active grant */
     WITH candidate AS (
       SELECT grant_row.id AS membership_grant_id, grant_row.membership_source_id,
-        grant_row.created_at, membership_grant_remaining_duration(grant_row.id) AS remaining_duration,
+        grant_row.created_at, fn_membership_grant_remaining_duration(grant_row.id) AS remaining_duration,
         membership.id AS membership_id
       FROM membership_grants grant_row
       INNER JOIN memberships membership
@@ -23,7 +23,7 @@ export async function resumePausedGrantProjection(
         AND membership.expired_at IS NULL AND membership.paused_at IS NULL
         AND source_state.cancelled_at IS NULL AND source_state.expired_at IS NULL
         AND source_state.paused_at IS NULL
-        AND membership_grant_remaining_duration(grant_row.id) >= INTERVAL '1 millisecond'
+        AND fn_membership_grant_remaining_duration(grant_row.id) >= INTERVAL '1 millisecond'
         AND NOT EXISTS (
           SELECT 1 FROM membership_grant_activation_periods activation
           WHERE activation.membership_grant_id = grant_row.id AND activation.ended_at IS NULL

@@ -39,7 +39,7 @@ _none_
 
 - `idx_user_sessions__expires_at_active`: `CREATE INDEX idx_user_sessions__expires_at_active ON ONLY public.user_sessions USING btree (expires_at) WHERE (revoked_at IS NULL)`
 - `idx_user_sessions__user_agent_id`: `CREATE INDEX idx_user_sessions__user_agent_id ON ONLY public.user_sessions USING btree (user_agent_id) WHERE (user_agent_id IS NOT NULL)`
-- `idx_user_sessions__user_id__fk`: `CREATE INDEX idx_user_sessions__user_id__fk ON ONLY public.user_sessions USING btree (user_id) WHERE (user_id IS NOT NULL)`
+- `idx_user_sessions__user_id__foreign_key`: `CREATE INDEX idx_user_sessions__user_id__foreign_key ON ONLY public.user_sessions USING btree (user_id) WHERE (user_id IS NOT NULL)`
 - `idx_user_sessions__user_id_active_last_seen`: `CREATE INDEX idx_user_sessions__user_id_active_last_seen ON ONLY public.user_sessions USING btree (user_id, last_seen_at DESC, id DESC) WHERE (revoked_at IS NULL)`
 - `user_sessions_pkey`: `CREATE UNIQUE INDEX user_sessions_pkey ON ONLY public.user_sessions USING btree (id)`
 

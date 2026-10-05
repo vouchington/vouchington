@@ -23,8 +23,8 @@ _none_
 
 **Foreign keys:**
 
-- `relation__user__dismiss_recommendation__topi_created_by_id_fkey`: `FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE SET NULL`
-- `relation__user__dismiss_recommendation__topi_deleted_by_id_fkey`: `FOREIGN KEY (deleted_by_id) REFERENCES users(id) ON DELETE SET NULL`
+- `fk_relation__user__dismiss_recommendation__topic__created_by_id`: `FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE SET NULL`
+- `fk_relation__user__dismiss_recommendation__topic__deleted_by_id`: `FOREIGN KEY (deleted_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `relation__user__dismiss_recommendation__topic_object_id_fkey`: `FOREIGN KEY (object_id) REFERENCES topics(id) ON DELETE CASCADE`
 - `relation__user__dismiss_recommendation__topic_subject_id_fkey`: `FOREIGN KEY (subject_id) REFERENCES users(id) ON DELETE CASCADE`
 

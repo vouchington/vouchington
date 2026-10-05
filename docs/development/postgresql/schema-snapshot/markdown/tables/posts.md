@@ -120,13 +120,13 @@ _none_
 
 **Indexes:**
 
-- `ids_posts__bedrock_nova_multimodal_v1_to_update`: `CREATE INDEX ids_posts__bedrock_nova_multimodal_v1_to_update ON ONLY public.posts USING btree (id) WHERE ((bedrock_nova_multimodal_v1_input_sha256 IS NULL) OR (bedrock_nova_multimodal_v1_input_sha256 <> bedrock_nova_multimodal_v1_content_sha256))`
 - `idx_posts__approved`: `CREATE INDEX idx_posts__approved ON ONLY public.posts USING btree (id DESC) WHERE ((approved_at IS NOT NULL) AND (deleted_at IS NULL))`
 - `idx_posts__archived_at`: `CREATE INDEX idx_posts__archived_at ON ONLY public.posts USING btree (archived_at, id DESC) WHERE ((deleted_at IS NULL) AND (archived_at IS NOT NULL))`
 - `idx_posts__archived_by_id`: `CREATE INDEX idx_posts__archived_by_id ON ONLY public.posts USING btree (archived_by_id) WHERE (archived_by_id IS NOT NULL)`
 - `idx_posts__ban_evasion_post_embedding_pending`: `CREATE INDEX idx_posts__ban_evasion_post_embedding_pending ON ONLY public.posts USING btree (id) WHERE ((community_id IS NOT NULL) AND (created_by_id IS NOT NULL) AND (deleted_at IS NULL) AND (bedrock_nova_multimodal_v1_embedding IS NOT NULL) AND (bedrock_nova_multimodal_v1_embedding_created_at IS NOT NULL) AND (bedrock_nova_multimodal_v1_input_sha256 = bedrock_nova_multimodal_v1_content_sha256) AND ((ban_evasion_post_embedding_input_sha256 IS NULL) OR (ban_evasion_post_embedding_input_sha256 <> bedrock_nova_multimodal_v1_input_sha256)))`
 - `idx_posts__bedrock_nova_multimodal_v1_embedding`: `CREATE INDEX idx_posts__bedrock_nova_multimodal_v1_embedding ON ONLY public.posts USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops) WHERE (bedrock_nova_multimodal_v1_embedding IS NOT NULL)`
 - `idx_posts__bedrock_nova_multimodal_v1_input_sha256`: `CREATE INDEX idx_posts__bedrock_nova_multimodal_v1_input_sha256 ON ONLY public.posts USING btree (bedrock_nova_multimodal_v1_input_sha256) WHERE (bedrock_nova_multimodal_v1_input_sha256 IS NOT NULL)`
+- `idx_posts__bedrock_nova_multimodal_v1_to_update`: `CREATE INDEX idx_posts__bedrock_nova_multimodal_v1_to_update ON ONLY public.posts USING btree (id) WHERE ((bedrock_nova_multimodal_v1_input_sha256 IS NULL) OR (bedrock_nova_multimodal_v1_input_sha256 <> bedrock_nova_multimodal_v1_content_sha256))`
 - `idx_posts__broadcast__users`: `CREATE INDEX idx_posts__broadcast__users ON ONLY public.posts USING btree (id DESC) WHERE ((deleted_at IS NULL) AND (broadcast = 'users'::broadcast_types))`
 - `idx_posts__clearance_review_queue`: `CREATE INDEX idx_posts__clearance_review_queue ON ONLY public.posts USING btree (id DESC) WHERE ((deleted_at IS NULL) AND ((rejected_at IS NOT NULL) OR (in_review_at IS NOT NULL)))`
 - `idx_posts__community_id`: `CREATE INDEX idx_posts__community_id ON ONLY public.posts USING btree (community_id) WHERE (community_id IS NOT NULL)`
@@ -140,6 +140,7 @@ _none_
 - `idx_posts__deleted_by_id`: `CREATE INDEX idx_posts__deleted_by_id ON ONLY public.posts USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)`
 - `idx_posts__id__post_type`: `CREATE INDEX idx_posts__id__post_type ON ONLY public.posts USING btree (id DESC, post_type) WHERE (deleted_at IS NULL)`
 - `idx_posts__latest_clearance_change_id`: `CREATE INDEX idx_posts__latest_clearance_change_id ON ONLY public.posts USING btree (latest_clearance_change_id) WHERE (latest_clearance_change_id IS NOT NULL)`
+- `idx_posts__lingua_rs_pending`: `CREATE INDEX idx_posts__lingua_rs_pending ON ONLY public.posts USING btree (id) WHERE (lingua_rs_input_sha256 IS NULL)`
 - `idx_posts__parent_id__id`: `CREATE INDEX idx_posts__parent_id__id ON ONLY public.posts USING btree (parent_id, id) WHERE (parent_id IS NOT NULL)`
 - `idx_posts__privacy_private`: `CREATE INDEX idx_posts__privacy_private ON ONLY public.posts USING btree (created_by_id, broadcast) WHERE ((privacy = 'private'::privacy_types) AND (deleted_at IS NULL))`
 - `idx_posts__root_id__community_id__id`: `CREATE INDEX idx_posts__root_id__community_id__id ON ONLY public.posts USING btree (root_id, community_id, id) WHERE (root_id IS NOT NULL)`
@@ -153,14 +154,13 @@ _none_
 - `idx_posts__url_id`: `CREATE INDEX idx_posts__url_id ON ONLY public.posts USING btree (url_id) WHERE (url_id IS NOT NULL)`
 - `idx_posts__url_id__link`: `CREATE INDEX idx_posts__url_id__link ON ONLY public.posts USING btree (url_id, id DESC) WHERE ((post_type = 'link'::post_types) AND (deleted_at IS NULL))`
 - `idx_posts__votes_score_sort__id`: `CREATE INDEX idx_posts__votes_score_sort__id ON ONLY public.posts USING btree (votes_score_sort DESC, id DESC) WHERE (deleted_at IS NULL)`
-- `idx_posts__votes_score_sort__pos__id`: `CREATE INDEX idx_posts__votes_score_sort__pos__id ON ONLY public.posts USING btree (votes_score_sort DESC, id DESC) WHERE ((votes_score_net > (0)::double precision) AND (deleted_at IS NULL))`
-- `posts_lingua_rs_pending_idx`: `CREATE INDEX posts_lingua_rs_pending_idx ON ONLY public.posts USING btree (id) WHERE (lingua_rs_input_sha256 IS NULL)`
+- `idx_posts__votes_score_sort__positive__id`: `CREATE INDEX idx_posts__votes_score_sort__positive__id ON ONLY public.posts USING btree (votes_score_sort DESC, id DESC) WHERE ((votes_score_net > (0)::double precision) AND (deleted_at IS NULL))`
 - `posts_pkey`: `CREATE UNIQUE INDEX posts_pkey ON ONLY public.posts USING btree (id)`
 
 **Triggers:**
 
-- `posts_content_provenance_immutable`: `CREATE TRIGGER posts_content_provenance_immutable AFTER UPDATE ON public.posts FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()`
-- `posts_creation_source_url_id_immutable`: `CREATE TRIGGER posts_creation_source_url_id_immutable BEFORE UPDATE OF creation_source_url_id ON public.posts FOR EACH ROW WHEN ((old.creation_source_url_id IS DISTINCT FROM new.creation_source_url_id)) EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_posts_content_provenance_immutable`: `CREATE TRIGGER trigger_posts_content_provenance_immutable AFTER UPDATE ON public.posts FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_posts_creation_source_url_id_immutable`: `CREATE TRIGGER trigger_posts_creation_source_url_id_immutable BEFORE UPDATE OF creation_source_url_id ON public.posts FOR EACH ROW WHEN ((old.creation_source_url_id IS DISTINCT FROM new.creation_source_url_id)) EXECUTE FUNCTION fn_reject_mutation()`
 - `trigger_posts_updated_at`: `CREATE TRIGGER trigger_posts_updated_at BEFORE UPDATE OF post_type, title, markdown, ai_summary_markdown, parent_id, root_id, broadcast, privacy, is_anonymous, community_id, latest_clearance_change_id, approved_at, rejected_at, in_review_at, created_by_id, updated_by_id, deleted_at, deleted_by_id, archived_at, archived_by_id, data_point_vertical, structured_data, declared_language, bedrock_nova_multimodal_v1_input_sha256, bedrock_nova_multimodal_v1_embedding, bedrock_nova_multimodal_v1_embedding_created_at, bedrock_nova_multimodal_v1_input_token_count ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
 - `trigger_register_retained_post_identity`: `CREATE TRIGGER trigger_register_retained_post_identity BEFORE INSERT ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('post')`
 - `trigger_sync_posts_search_vector`: `CREATE TRIGGER trigger_sync_posts_search_vector BEFORE INSERT OR UPDATE OF title, markdown ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_update_posts_search_vector()`

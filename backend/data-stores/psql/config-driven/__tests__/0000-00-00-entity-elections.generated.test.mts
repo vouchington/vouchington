@@ -142,11 +142,11 @@ describe('0000-00-00-entity-elections', () => {
 
     for (const config of VOTE_SCHEMA_CONFIGS) {
       const { voteTable, entityIdColumn } = config
-      expect(sql).toContain(`idx_${voteTable}__${entityIdColumn}__uid__id`)
+      expect(sql).toContain(`idx_${voteTable}__${entityIdColumn}__user_id__id`)
       expect(sql).toContain(`(${entityIdColumn}, user_id, id DESC)`)
       expect(sql).toContain(`idx_${voteTable}__${entityIdColumn}__id`)
       expect(sql).toContain(`(${entityIdColumn}, id)`)
-      expect(sql).toContain(`idx_${voteTable}__uid__${entityIdColumn}__id`)
+      expect(sql).toContain(`idx_${voteTable}__user_id__${entityIdColumn}__id`)
       expect(sql).toContain(`(user_id, ${entityIdColumn}, id DESC)`)
     }
   })
@@ -171,7 +171,7 @@ describe('0000-00-00-entity-elections', () => {
         `CREATE INDEX IF NOT EXISTS idx_${table}__votes_score_sort__id\nON ${table} (votes_score_sort DESC, ${sortCols})${config.deletedAtFilter ? '\nWHERE deleted_at IS NULL' : ''};`,
       )
       expect(sql).toContain(
-        `CREATE INDEX IF NOT EXISTS idx_${table}__votes_score_sort__pos__id\nON ${table} (votes_score_sort DESC, ${sortCols})\nWHERE votes_score_net > 0${config.deletedAtFilter ? ' AND deleted_at IS NULL' : ''};`,
+        `CREATE INDEX IF NOT EXISTS idx_${table}__votes_score_sort__positive__id\nON ${table} (votes_score_sort DESC, ${sortCols})\nWHERE votes_score_net > 0${config.deletedAtFilter ? ' AND deleted_at IS NULL' : ''};`,
       )
     }
 
@@ -182,12 +182,12 @@ describe('0000-00-00-entity-elections', () => {
       'CREATE INDEX IF NOT EXISTS idx_users__votes_score_sort__id\nON users (votes_score_sort DESC, id)\nWHERE deleted_at IS NULL;',
     )
     expect(sql).toContain(
-      'CREATE INDEX IF NOT EXISTS idx_users__votes_score_sort__pos__id\nON users (votes_score_sort DESC, id)\nWHERE votes_score_net > 0 AND deleted_at IS NULL;',
+      'CREATE INDEX IF NOT EXISTS idx_users__votes_score_sort__positive__id\nON users (votes_score_sort DESC, id)\nWHERE votes_score_net > 0 AND deleted_at IS NULL;',
     )
 
     // url_hostnames has no deleted_at column and must not gain the filter.
     expect(sql).toContain(
-      'CREATE INDEX IF NOT EXISTS idx_url_hostnames__votes_score_sort__pos__id\nON url_hostnames (votes_score_sort DESC, id)\nWHERE votes_score_net > 0;',
+      'CREATE INDEX IF NOT EXISTS idx_url_hostnames__votes_score_sort__positive__id\nON url_hostnames (votes_score_sort DESC, id)\nWHERE votes_score_net > 0;',
     )
     expect(sql).not.toContain(
       'idx_url_hostnames__votes_score_sort__id\nON url_hostnames (votes_score_sort DESC, id)\nWHERE deleted_at IS NULL',

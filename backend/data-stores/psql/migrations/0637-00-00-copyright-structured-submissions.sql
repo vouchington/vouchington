@@ -2,6 +2,7 @@
 -- Structured declarations are retained independently from the free-text record so an automated
 -- recommendation cannot manufacture a statutory statement or broaden a requested target scope.
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_submission_targets (
   copyright_notice_id uuid NOT NULL,
   id uuid PRIMARY KEY DEFAULT uuidv7(),
@@ -9,7 +10,7 @@ CREATE TABLE copyright_notice_submission_targets (
   copyright_notice_target_id uuid NOT NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE (copyright_notice_submission_id, copyright_notice_target_id),
+  CONSTRAINT uq_copyright_notice_submissio_targets__submission_id__target_id UNIQUE (copyright_notice_submission_id, copyright_notice_target_id),
   CONSTRAINT fk_copyright_submission_targets__parent_notice
     FOREIGN KEY (copyright_notice_id, copyright_notice_submission_id)
     REFERENCES copyright_notice_submissions(copyright_notice_id, id) ON DELETE RESTRICT,
@@ -18,23 +19,26 @@ CREATE TABLE copyright_notice_submission_targets (
     FOREIGN KEY (copyright_notice_id, copyright_notice_target_id)
     REFERENCES copyright_notice_targets(copyright_notice_id, id) ON DELETE RESTRICT
 );
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_update_copyright_submission_targets_scope
   BEFORE INSERT ON copyright_notice_submission_targets FOR EACH ROW
   EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_submissions', 'copyright_notice_submission_id');
 COMMENT ON COLUMN copyright_notice_submission_targets.copyright_notice_id IS 'Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion.';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_submission_requests (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_submission_id uuid NOT NULL UNIQUE REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
+  copyright_notice_submission_id uuid NOT NULL CONSTRAINT uq_copyright_notice_submission_requests__submission_id UNIQUE CONSTRAINT fk_copyright_notice_submission_requests__submission REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
   requester_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
   idempotency_key uuid NOT NULL,
   request_sha256 bytea NOT NULL CHECK (octet_length(request_sha256) = 32),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE (requester_user_id, idempotency_key)
+  CONSTRAINT uq_copyr_notic_submi_reques__requester_user_id__idempotency_key UNIQUE (requester_user_id, idempotency_key)
 );
 
-CREATE INDEX idx_copyright_submission_targets__target ON copyright_notice_submission_targets(copyright_notice_target_id, copyright_notice_submission_id);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_copyright_notice_submission_targets__target ON copyright_notice_submission_targets(copyright_notice_target_id, copyright_notice_submission_id);
 
 ALTER TABLE copyright_restrictions
   ADD CONSTRAINT fk_copyright_restrictions__authorizing_assessment
@@ -54,9 +58,12 @@ ALTER TABLE copyright_notice_submission_assessments
 ALTER TABLE copyright_notice_submission_assessments
   VALIDATE CONSTRAINT fk_copyright_assessments__form_screening;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_restrictions__authorizing_assessment ON copyright_restrictions(authorizing_assessment_id);
-CREATE INDEX idx_copyright_assessments__form_screening ON copyright_notice_submission_assessments(copyright_notice_form_screening_id) WHERE copyright_notice_form_screening_id IS NOT NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_copyright_notice_submission_assessments__form_screening ON copyright_notice_submission_assessments(copyright_notice_form_screening_id) WHERE copyright_notice_form_screening_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_copyright_restriction_assessment_scope()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
@@ -95,11 +102,14 @@ BEGIN
 END;
 $$;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_restriction_assessment_scope
 BEFORE INSERT OR UPDATE OF authorizing_assessment_id ON copyright_restrictions
 FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_restriction_assessment_scope();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_submission_targets_immutable BEFORE UPDATE OR DELETE ON copyright_notice_submission_targets FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_submission_requests_immutable BEFORE UPDATE OR DELETE ON copyright_notice_submission_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('requester_user_id');
 
 COMMENT ON TABLE copyright_notice_submission_targets IS 'Exact case targets selected by an appellant or statutory counter-notice sender before compliance assessment.';

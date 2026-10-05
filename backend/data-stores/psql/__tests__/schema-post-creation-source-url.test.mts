@@ -14,7 +14,7 @@ describe('post creation source URL schema', () => {
         pg_get_functiondef(trigger_definition.tgfoid) AS function_definition
       FROM pg_trigger trigger_definition
       WHERE trigger_definition.tgrelid = 'posts'::regclass
-        AND trigger_definition.tgname = 'posts_creation_source_url_id_immutable'
+        AND trigger_definition.tgname = 'trigger_posts_creation_source_url_id_immutable'
         AND NOT trigger_definition.tgisinternal
     `)
 

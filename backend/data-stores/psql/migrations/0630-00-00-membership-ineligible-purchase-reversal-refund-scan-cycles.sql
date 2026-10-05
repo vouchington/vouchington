@@ -1,6 +1,7 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_ineligible_purchase_reversal_refund_scan_cycles (
   membership_ineligible_purchase_reversal_case_id UUID CONSTRAINT pk_mipr_refund_scan_cycles PRIMARY KEY,
-  generation BIGINT NOT NULL DEFAULT 1 CHECK (generation BETWEEN 1 AND 9007199254740991),
+  generation BIGINT NOT NULL DEFAULT 1 CONSTRAINT chk_member_inelig_purcha_reversa_refund_scan_cycles__generation CHECK (generation BETWEEN 1 AND 9007199254740991),
   completed_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -12,7 +13,8 @@ ALTER TABLE membership_ineligible_purchase_reversal_refund_scan_cycles
 ALTER TABLE membership_ineligible_purchase_reversal_refund_scan_cycles
   VALIDATE CONSTRAINT fk_mipr_refund_scan_cycles__case;
 
-CREATE TRIGGER trigger_mipr_refund_scan_cycles_updated_at
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TRIGGER trigger_membe_ineli_purcha_revers_refund_scan_cycles_updated_at
 BEFORE UPDATE ON membership_ineligible_purchase_reversal_refund_scan_cycles
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 

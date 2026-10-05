@@ -50,16 +50,16 @@ _none_
 
 **Indexes:**
 
-- `idx_mrefunds__issued_by_id`: `CREATE INDEX idx_mrefunds__issued_by_id ON public.membership_refunds USING btree (issued_by_id) WHERE (issued_by_id IS NOT NULL)`
-- `idx_mrefunds__membership_id`: `CREATE INDEX idx_mrefunds__membership_id ON public.membership_refunds USING btree (membership_id)`
-- `idx_mrefunds__operation_id`: `CREATE INDEX idx_mrefunds__operation_id ON public.membership_refunds USING btree (membership_operation_id, id DESC) WHERE (membership_operation_id IS NOT NULL)`
-- `idx_mrefunds__operation_receipt`: `CREATE UNIQUE INDEX idx_mrefunds__operation_receipt ON public.membership_refunds USING btree (membership_operation_id) WHERE (membership_operation_id IS NOT NULL)`
-- `idx_mrefunds__source_id`: `CREATE INDEX idx_mrefunds__source_id ON public.membership_refunds USING btree (membership_source_id)`
-- `idx_mrefunds__stripe_charge_id`: `CREATE INDEX idx_mrefunds__stripe_charge_id ON public.membership_refunds USING btree (stripe_charge_id)`
-- `idx_mrefunds__stripe_idempotency_key`: `CREATE UNIQUE INDEX idx_mrefunds__stripe_idempotency_key ON public.membership_refunds USING btree (stripe_idempotency_key) WHERE (stripe_idempotency_key IS NOT NULL)`
-- `idx_mrefunds__stripe_payment_intent_id`: `CREATE INDEX idx_mrefunds__stripe_payment_intent_id ON public.membership_refunds USING btree (stripe_payment_intent_id) WHERE (stripe_payment_intent_id IS NOT NULL)`
-- `idx_mrefunds__stripe_refund_id`: `CREATE UNIQUE INDEX idx_mrefunds__stripe_refund_id ON public.membership_refunds USING btree (stripe_refund_id)`
-- `idx_mrefunds__user_id`: `CREATE INDEX idx_mrefunds__user_id ON public.membership_refunds USING btree (user_id)`
+- `idx_membership_refunds__issued_by_id`: `CREATE INDEX idx_membership_refunds__issued_by_id ON public.membership_refunds USING btree (issued_by_id) WHERE (issued_by_id IS NOT NULL)`
+- `idx_membership_refunds__membership_id`: `CREATE INDEX idx_membership_refunds__membership_id ON public.membership_refunds USING btree (membership_id)`
+- `idx_membership_refunds__operation_id`: `CREATE INDEX idx_membership_refunds__operation_id ON public.membership_refunds USING btree (membership_operation_id, id DESC) WHERE (membership_operation_id IS NOT NULL)`
+- `idx_membership_refunds__operation_receipt`: `CREATE UNIQUE INDEX idx_membership_refunds__operation_receipt ON public.membership_refunds USING btree (membership_operation_id) WHERE (membership_operation_id IS NOT NULL)`
+- `idx_membership_refunds__source_id`: `CREATE INDEX idx_membership_refunds__source_id ON public.membership_refunds USING btree (membership_source_id)`
+- `idx_membership_refunds__stripe_charge_id`: `CREATE INDEX idx_membership_refunds__stripe_charge_id ON public.membership_refunds USING btree (stripe_charge_id)`
+- `idx_membership_refunds__stripe_idempotency_key`: `CREATE UNIQUE INDEX idx_membership_refunds__stripe_idempotency_key ON public.membership_refunds USING btree (stripe_idempotency_key) WHERE (stripe_idempotency_key IS NOT NULL)`
+- `idx_membership_refunds__stripe_payment_intent_id`: `CREATE INDEX idx_membership_refunds__stripe_payment_intent_id ON public.membership_refunds USING btree (stripe_payment_intent_id) WHERE (stripe_payment_intent_id IS NOT NULL)`
+- `idx_membership_refunds__stripe_refund_id`: `CREATE UNIQUE INDEX idx_membership_refunds__stripe_refund_id ON public.membership_refunds USING btree (stripe_refund_id)`
+- `idx_membership_refunds__user_id`: `CREATE INDEX idx_membership_refunds__user_id ON public.membership_refunds USING btree (user_id)`
 - `membership_refunds_pkey`: `CREATE UNIQUE INDEX membership_refunds_pkey ON public.membership_refunds USING btree (id)`
 
 **Triggers:**

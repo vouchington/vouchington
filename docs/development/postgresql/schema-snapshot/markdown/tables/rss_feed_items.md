@@ -54,6 +54,7 @@ _none_
 
 **Check constraints:**
 
+- `chk_rss_feed_item__bedrock_nova_multimodal_v1_input_token_count`: `CHECK (((bedrock_nova_multimodal_v1_input_token_count IS NULL) OR (bedrock_nova_multimodal_v1_input_token_count >= 0)))`
 - `chk_rss_feed_items_votes_count_down`: `CHECK ((votes_count_down >= 0))`
 - `chk_rss_feed_items_votes_count_none`: `CHECK ((votes_count_none >= 0))`
 - `chk_rss_feed_items_votes_count_up`: `CHECK ((votes_count_up >= 0))`
@@ -63,7 +64,6 @@ _none_
 - `chk_rss_feed_items_votes_snapshot_complete`: `CHECK ((((votes_snapshot_xmax IS NULL) AND (votes_snapshot_xip_count IS NULL)) OR ((votes_snapshot_xmax IS NOT NULL) AND (votes_snapshot_xip_count IS NOT NULL) AND (votes_snapshot_xip_count >= 0))))`
 - `rss_feed_items_bedrock_nova_multimodal_v1_content_sha256_check`: `CHECK ((octet_length(bedrock_nova_multimodal_v1_content_sha256) = 32))`
 - `rss_feed_items_bedrock_nova_multimodal_v1_input_sha256_check`: `CHECK (((bedrock_nova_multimodal_v1_input_sha256 IS NULL) OR (octet_length(bedrock_nova_multimodal_v1_input_sha256) = 32)))`
-- `rss_feed_items_bedrock_nova_multimodal_v1_input_token_cou_check`: `CHECK (((bedrock_nova_multimodal_v1_input_token_count IS NULL) OR (bedrock_nova_multimodal_v1_input_token_count >= 0)))`
 - `rss_feed_items_duration_seconds_check`: `CHECK (((duration_seconds IS NULL) OR (duration_seconds >= 0)))`
 - `rss_feed_items_enclosure_length_check`: `CHECK (((enclosure_length IS NULL) OR (enclosure_length >= 0)))`
 - `rss_feed_items_enclosure_url_check`: `CHECK (((enclosure_url IS NULL) OR (char_length(enclosure_url) <= 2048)))`
@@ -89,15 +89,15 @@ _none_
 - `idx_rss_feed_items__bedrock_nova_multimodal_v1_to_update`: `CREATE INDEX idx_rss_feed_items__bedrock_nova_multimodal_v1_to_update ON ONLY public.rss_feed_items USING btree (id) WHERE ((bedrock_nova_multimodal_v1_input_sha256 IS NULL) OR (bedrock_nova_multimodal_v1_input_sha256 <> bedrock_nova_multimodal_v1_content_sha256))`
 - `idx_rss_feed_items__embedding_candidates__published_at__id`: `CREATE INDEX idx_rss_feed_items__embedding_candidates__published_at__id ON ONLY public.rss_feed_items USING btree (published_at DESC, id DESC) WHERE ((deleted_at IS NULL) AND (bedrock_nova_multimodal_v1_embedding IS NOT NULL))`
 - `idx_rss_feed_items__enclosure_media_type_id`: `CREATE INDEX idx_rss_feed_items__enclosure_media_type_id ON ONLY public.rss_feed_items USING btree (enclosure_media_type_id)`
-- `idx_rss_feed_items__media_type__pub`: `CREATE INDEX idx_rss_feed_items__media_type__pub ON ONLY public.rss_feed_items USING btree (media_type, published_at DESC, id DESC) WHERE (deleted_at IS NULL)`
+- `idx_rss_feed_items__lingua_rs_pending`: `CREATE INDEX idx_rss_feed_items__lingua_rs_pending ON ONLY public.rss_feed_items USING btree (id) WHERE (lingua_rs_input_sha256 IS NULL)`
+- `idx_rss_feed_items__media_type__published`: `CREATE INDEX idx_rss_feed_items__media_type__published ON ONLY public.rss_feed_items USING btree (media_type, published_at DESC, id DESC) WHERE (deleted_at IS NULL)`
 - `idx_rss_feed_items__published_at__id`: `CREATE INDEX idx_rss_feed_items__published_at__id ON ONLY public.rss_feed_items USING btree (published_at DESC, id DESC) WHERE (deleted_at IS NULL)`
 - `idx_rss_feed_items__search_vector`: `CREATE INDEX idx_rss_feed_items__search_vector ON ONLY public.rss_feed_items USING gin (search_vector) WHERE (deleted_at IS NULL)`
 - `idx_rss_feed_items__story_id__deleted_at__id`: `CREATE INDEX idx_rss_feed_items__story_id__deleted_at__id ON ONLY public.rss_feed_items USING btree (story_id, deleted_at, id) WHERE (story_id IS NOT NULL)`
 - `idx_rss_feed_items__story_id__id__url_id`: `CREATE INDEX idx_rss_feed_items__story_id__id__url_id ON ONLY public.rss_feed_items USING btree (story_id, id) INCLUDE (url_id) WHERE ((story_id IS NOT NULL) AND (deleted_at IS NULL))`
 - `idx_rss_feed_items__url_id`: `CREATE INDEX idx_rss_feed_items__url_id ON ONLY public.rss_feed_items USING btree (url_id)`
 - `idx_rss_feed_items__votes_score_sort__id`: `CREATE INDEX idx_rss_feed_items__votes_score_sort__id ON ONLY public.rss_feed_items USING btree (votes_score_sort DESC, id DESC) WHERE (deleted_at IS NULL)`
-- `idx_rss_feed_items__votes_score_sort__pos__id`: `CREATE INDEX idx_rss_feed_items__votes_score_sort__pos__id ON ONLY public.rss_feed_items USING btree (votes_score_sort DESC, id DESC) WHERE ((votes_score_net > (0)::double precision) AND (deleted_at IS NULL))`
-- `rss_feed_items_lingua_rs_pending_idx`: `CREATE INDEX rss_feed_items_lingua_rs_pending_idx ON ONLY public.rss_feed_items USING btree (id) WHERE (lingua_rs_input_sha256 IS NULL)`
+- `idx_rss_feed_items__votes_score_sort__positive__id`: `CREATE INDEX idx_rss_feed_items__votes_score_sort__positive__id ON ONLY public.rss_feed_items USING btree (votes_score_sort DESC, id DESC) WHERE ((votes_score_net > (0)::double precision) AND (deleted_at IS NULL))`
 - `rss_feed_items_pkey`: `CREATE UNIQUE INDEX rss_feed_items_pkey ON ONLY public.rss_feed_items USING btree (id)`
 
 **Triggers:**

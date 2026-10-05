@@ -18,12 +18,12 @@ CREATE TABLE IF NOT EXISTS membership_ineligible_purchase_reversal_refund_scans 
   completed_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CHECK (char_length(invoice_id) BETWEEN 1 AND 255 AND invoice_id = TRIM(invoice_id)),
-  CHECK (char_length(currency_code) BETWEEN 1 AND 16 AND currency_code = TRIM(currency_code)),
-  CHECK (charge_id IS NULL OR (char_length(charge_id) BETWEEN 1 AND 255 AND charge_id = TRIM(charge_id))),
-  CHECK (payment_intent_id IS NULL OR (char_length(payment_intent_id) BETWEEN 1 AND 255 AND payment_intent_id = TRIM(payment_intent_id))),
-  CHECK (head_stripe_refund_id IS NULL OR (char_length(head_stripe_refund_id) BETWEEN 1 AND 255 AND head_stripe_refund_id = TRIM(head_stripe_refund_id))),
-  CHECK (cursor_stripe_refund_id IS NULL OR (char_length(cursor_stripe_refund_id) BETWEEN 1 AND 255 AND cursor_stripe_refund_id = TRIM(cursor_stripe_refund_id))),
+  CONSTRAINT chk_members_ineligib_purchase_reversal_refund_scans__invoice_id CHECK (char_length(invoice_id) BETWEEN 1 AND 255 AND invoice_id = TRIM(invoice_id)),
+  CONSTRAINT chk_members_ineligi_purchas_reversa_refund_scans__currency_code CHECK (char_length(currency_code) BETWEEN 1 AND 16 AND currency_code = TRIM(currency_code)),
+  CONSTRAINT chk_membersh_ineligib_purchase_reversal_refund_scans__charge_id CHECK (charge_id IS NULL OR (char_length(charge_id) BETWEEN 1 AND 255 AND charge_id = TRIM(charge_id))),
+  CONSTRAINT chk_member_inelig_purcha_revers_refund_scans__payment_intent_id CHECK (payment_intent_id IS NULL OR (char_length(payment_intent_id) BETWEEN 1 AND 255 AND payment_intent_id = TRIM(payment_intent_id))),
+  CONSTRAINT chk_membe_ineli_purch_rever_refund_scans__head_stripe_refund_id CHECK (head_stripe_refund_id IS NULL OR (char_length(head_stripe_refund_id) BETWEEN 1 AND 255 AND head_stripe_refund_id = TRIM(head_stripe_refund_id))),
+  CONSTRAINT chk_memb_ineli_purch_rever_refun_scans__cursor_stripe_refund_id CHECK (cursor_stripe_refund_id IS NULL OR (char_length(cursor_stripe_refund_id) BETWEEN 1 AND 255 AND cursor_stripe_refund_id = TRIM(cursor_stripe_refund_id))),
   CHECK (num_nonnulls(charge_id, payment_intent_id) = 1),
   CHECK (first_page_seen_at IS NOT NULL OR num_nonnulls(head_stripe_refund_id, cursor_stripe_refund_id, reached_end_at, nonterminal_refund_seen_at, completed_at) = 0),
   CHECK (cursor_stripe_refund_id IS NULL OR first_page_seen_at IS NOT NULL),
@@ -31,12 +31,14 @@ CREATE TABLE IF NOT EXISTS membership_ineligible_purchase_reversal_refund_scans 
   CHECK (completed_at IS NULL OR (reached_end_at IS NOT NULL AND nonterminal_refund_seen_at IS NULL))
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_mipr_refund_scans__target
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_membershi_ineligible_purchase_reversal_refund_scans__target
   ON membership_ineligible_purchase_reversal_refund_scans (
     membership_ineligible_purchase_reversal_case_id, invoice_id, currency_code,
     charge_id, payment_intent_id
   ) NULLS NOT DISTINCT;
-CREATE INDEX IF NOT EXISTS idx_mipr_refund_scans__currency
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_membersh_ineligibl_purchase_reversal_refund_scans__currency
   ON membership_ineligible_purchase_reversal_refund_scans (currency_code);
 ALTER TABLE membership_ineligible_purchase_reversal_refund_scans
   ADD CONSTRAINT fk_mipr_refund_scans__case FOREIGN KEY (membership_ineligible_purchase_reversal_case_id)
@@ -49,26 +51,29 @@ ALTER TABLE membership_ineligible_purchase_reversal_refund_scans
 ALTER TABLE membership_ineligible_purchase_reversal_refund_scans
   VALIDATE CONSTRAINT fk_mipr_refund_scans__currency;
 
-CREATE TRIGGER trigger_mipr_refund_scans_updated_at
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TRIGGER trigger_members_ineligi_purchas_reversa_refund_scans_updated_at
 BEFORE UPDATE ON membership_ineligible_purchase_reversal_refund_scans
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_ineligible_purchase_reversal_refund_observations (
   membership_ineligible_purchase_reversal_refund_scan_id UUID NOT NULL
     CONSTRAINT fk_mipr_succeeded_refund_observations__scan REFERENCES membership_ineligible_purchase_reversal_refund_scans(id) ON DELETE RESTRICT,
   stripe_refund_id TEXT NOT NULL,
-  amount_minor_units BIGINT NOT NULL CHECK (amount_minor_units BETWEEN 0 AND 9007199254740991),
+  amount_minor_units BIGINT NOT NULL CONSTRAINT chk_membe_ineli_purcha_revers_refund_observ__amount_minor_units CHECK (amount_minor_units BETWEEN 0 AND 9007199254740991),
   currency_code TEXT NOT NULL,
   observed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT pk_mipr_succeeded_refund_observations PRIMARY KEY (
     membership_ineligible_purchase_reversal_refund_scan_id, stripe_refund_id
   ),
-  CHECK (char_length(stripe_refund_id) BETWEEN 1 AND 255 AND stripe_refund_id = TRIM(stripe_refund_id)),
-  CHECK (char_length(currency_code) BETWEEN 1 AND 16 AND currency_code = TRIM(currency_code))
+  CONSTRAINT chk_member_inelig_purcha_revers_refund_observ__stripe_refund_id CHECK (char_length(stripe_refund_id) BETWEEN 1 AND 255 AND stripe_refund_id = TRIM(stripe_refund_id)),
+  CONSTRAINT chk_member_inelig_purchas_reversa_refund_observa__currency_code CHECK (char_length(currency_code) BETWEEN 1 AND 16 AND currency_code = TRIM(currency_code))
 );
 
-CREATE INDEX IF NOT EXISTS idx_mipr_refund_observations__currency
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_members_ineligi_purchase_reversal_refund_observat__currency
   ON membership_ineligible_purchase_reversal_refund_observations (currency_code);
 
 ALTER TABLE membership_ineligible_purchase_reversal_refund_observations
@@ -77,12 +82,14 @@ ALTER TABLE membership_ineligible_purchase_reversal_refund_observations
 ALTER TABLE membership_ineligible_purchase_reversal_refund_observations
   VALIDATE CONSTRAINT fk_mipr_succeeded_refund_observations__currency;
 
-CREATE OR REPLACE TRIGGER trigger_mipr_succeeded_refund_observations_immutable
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_purchase_reversal_refund_observations_immutable
 BEFORE UPDATE OR DELETE ON membership_ineligible_purchase_reversal_refund_observations
 FOR EACH ROW
 EXECUTE FUNCTION fn_reject_mutation();
 
-CREATE OR REPLACE FUNCTION fn_reject_mipr_succeeded_refund_observation_context()
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE FUNCTION fn_reject_purchase_reversal_refund_observation_currency()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
@@ -99,10 +106,11 @@ BEGIN
   RETURN NEW;
 END $$;
 
-CREATE OR REPLACE TRIGGER trigger_mipr_succeeded_refund_observations_context
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_purchase_reversal_refund_observation_currency
 BEFORE INSERT ON membership_ineligible_purchase_reversal_refund_observations
 FOR EACH ROW
-EXECUTE FUNCTION fn_reject_mipr_succeeded_refund_observation_context();
+EXECUTE FUNCTION fn_reject_purchase_reversal_refund_observation_currency();
 
 COMMENT ON TABLE membership_ineligible_purchase_reversal_refund_scans IS
   'Mutable fenced Stripe refund-pagination cursor for one immutable reversal case payment target.';

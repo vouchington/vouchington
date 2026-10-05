@@ -24,29 +24,29 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `copyright_notice_appeal_revie_copyright_notice_submission_i_key`: `UNIQUE (copyright_notice_submission_id, copyright_restriction_id)`
+- `uq_copyrig_notice_appeal_reviews__submission_id__restriction_id`: `UNIQUE (copyright_notice_submission_id, copyright_restriction_id)`
 
 **Check constraints:**
 
-- `copyright_notice_appeal_revi_manual_fallback_reason_ciphe_check`: `CHECK (((manual_fallback_reason_ciphertext IS NULL) OR ((char_length(manual_fallback_reason_ciphertext) >= 1) AND (char_length(manual_fallback_reason_ciphertext) <= 1048576))))`
+- `chk_copyr_notic_appea_review__manual_fallback_reason_ciphertext`: `CHECK (((manual_fallback_reason_ciphertext IS NULL) OR ((char_length(manual_fallback_reason_ciphertext) >= 1) AND (char_length(manual_fallback_reason_ciphertext) <= 1048576))))`
 - `copyright_notice_appeal_reviews_action_check`: `CHECK ((action = ANY (ARRAY['confirm'::copyright_review_actions, 'reverse'::copyright_review_actions])))`
 - `copyright_notice_appeal_reviews_check`: `CHECK (((copyright_notice_appeal_recommendation_id IS NULL) = (manual_fallback_reason_ciphertext IS NOT NULL)))`
 - `copyright_notice_appeal_reviews_rationale_ciphertext_check`: `CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 1048576)))`
 
 **Foreign keys:**
 
-- `copyright_notice_appeal_revie_copyright_notice_appeal_reco_fkey`: `FOREIGN KEY (copyright_notice_appeal_recommendation_id, copyright_notice_submission_id) REFERENCES copyright_notice_appeal_recommendations(id, copyright_notice_submission_id) ON DELETE RESTRICT`
-- `copyright_notice_appeal_revie_copyright_notice_submission__fkey`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
 - `copyright_notice_appeal_reviews_copyright_restriction_id_fkey`: `FOREIGN KEY (copyright_restriction_id) REFERENCES copyright_restrictions(id) ON DELETE RESTRICT`
 - `copyright_notice_appeal_reviews_reviewed_by_id_fkey`: `FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL`
+- `fk_copyright_notice_appeal_reviews__recommendation__submission`: `FOREIGN KEY (copyright_notice_appeal_recommendation_id, copyright_notice_submission_id) REFERENCES copyright_notice_appeal_recommendations(id, copyright_notice_submission_id) ON DELETE RESTRICT`
+- `fk_copyright_notice_appeal_reviews__submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `copyright_notice_appeal_revie_copyright_notice_submission_i_key`: `CREATE UNIQUE INDEX copyright_notice_appeal_revie_copyright_notice_submission_i_key ON public.copyright_notice_appeal_reviews USING btree (copyright_notice_submission_id, copyright_restriction_id)`
 - `copyright_notice_appeal_reviews_pkey`: `CREATE UNIQUE INDEX copyright_notice_appeal_reviews_pkey ON public.copyright_notice_appeal_reviews USING btree (id)`
-- `idx_copyright_appeal_reviews__recommendation`: `CREATE INDEX idx_copyright_appeal_reviews__recommendation ON public.copyright_notice_appeal_reviews USING btree (copyright_notice_appeal_recommendation_id) WHERE (copyright_notice_appeal_recommendation_id IS NOT NULL)`
-- `idx_copyright_appeal_reviews__restriction`: `CREATE INDEX idx_copyright_appeal_reviews__restriction ON public.copyright_notice_appeal_reviews USING btree (copyright_restriction_id)`
-- `idx_copyright_appeal_reviews__reviewer`: `CREATE INDEX idx_copyright_appeal_reviews__reviewer ON public.copyright_notice_appeal_reviews USING btree (reviewed_by_id) WHERE (reviewed_by_id IS NOT NULL)`
+- `idx_copyright_notice_appeal_reviews__recommendation`: `CREATE INDEX idx_copyright_notice_appeal_reviews__recommendation ON public.copyright_notice_appeal_reviews USING btree (copyright_notice_appeal_recommendation_id) WHERE (copyright_notice_appeal_recommendation_id IS NOT NULL)`
+- `idx_copyright_notice_appeal_reviews__restriction`: `CREATE INDEX idx_copyright_notice_appeal_reviews__restriction ON public.copyright_notice_appeal_reviews USING btree (copyright_restriction_id)`
+- `idx_copyright_notice_appeal_reviews__reviewer`: `CREATE INDEX idx_copyright_notice_appeal_reviews__reviewer ON public.copyright_notice_appeal_reviews USING btree (reviewed_by_id) WHERE (reviewed_by_id IS NOT NULL)`
+- `uq_copyrig_notice_appeal_reviews__submission_id__restriction_id`: `CREATE UNIQUE INDEX uq_copyrig_notice_appeal_reviews__submission_id__restriction_id ON public.copyright_notice_appeal_reviews USING btree (copyright_notice_submission_id, copyright_restriction_id)`
 
 **Triggers:**
 

@@ -221,7 +221,7 @@ CREATE TABLE IF NOT EXISTS rss_feed_items (
   bedrock_nova_multimodal_v1_embedding VECTOR(1024),
   bedrock_nova_multimodal_v1_embedding_created_at TIMESTAMPTZ,
   bedrock_nova_multimodal_v1_input_token_count INT,
-  CHECK (bedrock_nova_multimodal_v1_input_token_count IS NULL OR bedrock_nova_multimodal_v1_input_token_count >= 0),
+  CONSTRAINT chk_rss_feed_item__bedrock_nova_multimodal_v1_input_token_count CHECK (bedrock_nova_multimodal_v1_input_token_count IS NULL OR bedrock_nova_multimodal_v1_input_token_count >= 0),
 
   -- full text search vector; trigger-maintained by fn_update_rss_feed_items_search_vector so
   -- unrelated updates (embeddings, language detection) skip the tsvector rebuild
@@ -362,7 +362,7 @@ WHERE (
 
 -- for filtering by media type
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_rss_feed_items__media_type__pub
+CREATE INDEX IF NOT EXISTS idx_rss_feed_items__media_type__published
 ON rss_feed_items (media_type, published_at DESC, id DESC)
 WHERE deleted_at IS NULL;
 
@@ -379,7 +379,7 @@ WHERE story_id IS NOT NULL;
 
 -- find rss feed items pending language detection
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS rss_feed_items_lingua_rs_pending_idx
+CREATE INDEX IF NOT EXISTS idx_rss_feed_items__lingua_rs_pending
   ON rss_feed_items (id)
   WHERE lingua_rs_input_sha256 IS NULL;
 
@@ -554,12 +554,12 @@ COMMENT ON COLUMN rss_feed_item_unmapped_category_counts.updated_at IS 'When thi
 -- write, so a post-commit queue enqueue failure cannot strand category state indefinitely.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS rss_feed_item_category_snapshot_reconciliations (
-  rss_feed_item_id UUID PRIMARY KEY REFERENCES rss_feed_items ON DELETE CASCADE,
+  rss_feed_item_id UUID PRIMARY KEY CONSTRAINT fk_rss_feed_item_category_snapshot_reconciliations__item REFERENCES rss_feed_items ON DELETE CASCADE,
   categories JSONB NOT NULL,
-  generation BIGINT NOT NULL DEFAULT 1 CHECK (generation > 0),
+  generation BIGINT NOT NULL DEFAULT 1 CONSTRAINT chk_rss_feed_item_category_snapshot_reconciliations__generation CHECK (generation > 0),
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CHECK (jsonb_typeof(categories) = 'array')
+  CONSTRAINT chk_rss_feed_item_category_snapshot_reconciliations__categories CHECK (jsonb_typeof(categories) = 'array')
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

@@ -170,7 +170,7 @@ COMMENT ON COLUMN referral_program_link_validation_rule_sets.user_help_text IS '
 CREATE TABLE IF NOT EXISTS referral_program_link_validation_rules (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
 
-  referral_program_link_validation_rule_set_id UUID NOT NULL REFERENCES referral_program_link_validation_rule_sets ON DELETE CASCADE,
+  referral_program_link_validation_rule_set_id UUID NOT NULL CONSTRAINT fk_referral_program_link_validation_rules__rule_set REFERENCES referral_program_link_validation_rule_sets ON DELETE CASCADE,
 
   -- Pattern rules for hostname and pathname
   -- hostname supports wildcard patterns like *.example.com for subdomain matching
@@ -206,7 +206,7 @@ EXECUTE FUNCTION fn_update_updated_at();
 
 -- for searching rules by validation
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_referral_link_validations_rules__validation_id
+CREATE INDEX IF NOT EXISTS idx_referral_program_link_validation_rules__validation_id
 ON referral_program_link_validation_rules (referral_program_link_validation_rule_set_id);
 
 COMMENT ON TABLE referral_program_link_validation_rules IS 'Individual URL pattern rules within a validation rule set for matching referral link hostnames and pathnames.';
@@ -220,8 +220,8 @@ COMMENT ON COLUMN referral_program_link_validation_rules.example_urls IS 'Exampl
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS referral_program_topic_link_validation_rule_sets (
-  referral_program_topic_id UUID NOT NULL REFERENCES referral_program_topics ON DELETE CASCADE,
-  referral_program_link_validation_rule_set_id UUID NOT NULL REFERENCES referral_program_link_validation_rule_sets ON DELETE CASCADE,
+  referral_program_topic_id UUID NOT NULL CONSTRAINT fk_referral_program_topic_link_validation_rule_sets__topic REFERENCES referral_program_topics ON DELETE CASCADE,
+  referral_program_link_validation_rule_set_id UUID NOT NULL CONSTRAINT fk_refe_prog_topi_link_vali_rule_sets__link_validation_rule_set REFERENCES referral_program_link_validation_rule_sets ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (referral_program_topic_id, referral_program_link_validation_rule_set_id)
@@ -265,16 +265,16 @@ CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__created_via_oauth_cl
 
 -- Current indexes for fresh schema bootstrap.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__referral_program_topic_id__fk
+CREATE INDEX IF NOT EXISTS idx_user_refe_prog_link__referral_program_topic_id__foreign_key
   ON user_referral_program_links (referral_program_topic_id)
   WHERE referral_program_topic_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__url_id__fk
+CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__url_id__foreign_key
   ON user_referral_program_links (url_id)
   WHERE url_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__user_id__fk
+CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__user_id__foreign_key
   ON user_referral_program_links (user_id)
   WHERE user_id IS NOT NULL;

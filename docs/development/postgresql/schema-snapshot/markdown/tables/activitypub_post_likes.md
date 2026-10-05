@@ -32,7 +32,7 @@ _none_
 **Indexes:**
 
 - `activitypub_post_likes_pkey`: `CREATE UNIQUE INDEX activitypub_post_likes_pkey ON public.activitypub_post_likes USING btree (id)`
-- `idx_activitypub_post_likes__like_ap_id`: `CREATE UNIQUE INDEX idx_activitypub_post_likes__like_ap_id ON public.activitypub_post_likes USING btree (like_ap_id) WHERE (deleted_at IS NULL)`
+- `idx_activitypub_post_likes__like_activitypub_id`: `CREATE UNIQUE INDEX idx_activitypub_post_likes__like_activitypub_id ON public.activitypub_post_likes USING btree (like_ap_id) WHERE (deleted_at IS NULL)`
 - `idx_activitypub_post_likes__post_id`: `CREATE INDEX idx_activitypub_post_likes__post_id ON public.activitypub_post_likes USING btree (post_id)`
 - `idx_activitypub_post_likes__post_remote_actor`: `CREATE UNIQUE INDEX idx_activitypub_post_likes__post_remote_actor ON public.activitypub_post_likes USING btree (post_id, remote_actor_id) WHERE (deleted_at IS NULL)`
 - `idx_activitypub_post_likes__remote_actor_id`: `CREATE INDEX idx_activitypub_post_likes__remote_actor_id ON public.activitypub_post_likes USING btree (remote_actor_id)`

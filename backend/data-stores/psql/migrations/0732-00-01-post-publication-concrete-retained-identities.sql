@@ -1,4 +1,5 @@
 -- Concrete repair relationships retain immutable identity while live deletion clears only the FK.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_publication_post_identities (
   id UUID PRIMARY KEY REFERENCES retained_post_identities (id) ON DELETE RESTRICT,
   post_id UUID REFERENCES posts (id) ON DELETE SET NULL,
@@ -6,9 +7,11 @@ CREATE TABLE IF NOT EXISTS post_publication_post_identities (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CHECK (post_id IS NULL OR post_id = id)
 ) PARTITION BY RANGE (id);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_publication_post_identities__post_id ON post_publication_post_identities (post_id) WHERE post_id IS NOT NULL;
 COMMENT ON TABLE post_publication_post_identities IS 'Durable post identity referenced by accepted receipts and snapshots; UUIDv7 range partitions bound target-scoped access and bounded sweeps reclaim unreferenced rows.';
 COMMENT ON COLUMN post_publication_post_identities.post_id IS 'Live entity FK; deletion clears this link without deleting historical repair identity.';
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_publication_community_identities (
   id UUID PRIMARY KEY,
   community_id UUID UNIQUE REFERENCES communities (id) ON DELETE SET NULL,
@@ -18,6 +21,7 @@ CREATE TABLE IF NOT EXISTS post_publication_community_identities (
 );
 COMMENT ON TABLE post_publication_community_identities IS 'Repair-only identity bridge; unreferenced rows are reclaimed in bounded pages.';
 COMMENT ON COLUMN post_publication_community_identities.community_id IS 'Live entity FK; deletion clears this link without deleting historical repair identity.';
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_publication_rss_feed_item_identities (
   id UUID PRIMARY KEY REFERENCES retained_rss_feed_item_identities (id) ON DELETE RESTRICT,
   rss_feed_item_id UUID UNIQUE REFERENCES rss_feed_items (id) ON DELETE SET NULL,
@@ -27,6 +31,7 @@ CREATE TABLE IF NOT EXISTS post_publication_rss_feed_item_identities (
 );
 COMMENT ON TABLE post_publication_rss_feed_item_identities IS 'Repair-only identity bridge; unreferenced rows are reclaimed in bounded pages.';
 COMMENT ON COLUMN post_publication_rss_feed_item_identities.rss_feed_item_id IS 'Live entity FK; deletion clears this link without deleting historical repair identity.';
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_publication_author_identities (
   id UUID PRIMARY KEY REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
   user_id UUID UNIQUE REFERENCES users (id) ON DELETE SET NULL,
@@ -36,6 +41,7 @@ CREATE TABLE IF NOT EXISTS post_publication_author_identities (
 );
 COMMENT ON TABLE post_publication_author_identities IS 'Repair-only identity bridge; unreferenced rows are reclaimed in bounded pages.';
 COMMENT ON COLUMN post_publication_author_identities.user_id IS 'Live entity FK; deletion clears this link without deleting historical repair identity.';
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_publication_rss_feed_identities (
   id UUID PRIMARY KEY,
   rss_feed_id UUID UNIQUE REFERENCES rss_feeds (id) ON DELETE SET NULL,
@@ -45,6 +51,7 @@ CREATE TABLE IF NOT EXISTS post_publication_rss_feed_identities (
 );
 COMMENT ON TABLE post_publication_rss_feed_identities IS 'Repair-only identity bridge; unreferenced rows are reclaimed in bounded pages.';
 COMMENT ON COLUMN post_publication_rss_feed_identities.rss_feed_id IS 'Live entity FK; deletion clears this link without deleting historical repair identity.';
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_publication_topic_alias_identities (
   id UUID PRIMARY KEY,
   topic_alias_id UUID UNIQUE REFERENCES topic_aliases (id) ON DELETE SET NULL,
@@ -54,6 +61,7 @@ CREATE TABLE IF NOT EXISTS post_publication_topic_alias_identities (
 );
 COMMENT ON TABLE post_publication_topic_alias_identities IS 'Repair-only identity bridge; unreferenced rows are reclaimed in bounded pages.';
 COMMENT ON COLUMN post_publication_topic_alias_identities.topic_alias_id IS 'Live entity FK; deletion clears this link without deleting historical repair identity.';
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_publication_story_identities (
   id UUID PRIMARY KEY,
   story_id UUID UNIQUE REFERENCES stories (id) ON DELETE SET NULL,
@@ -64,17 +72,24 @@ CREATE TABLE IF NOT EXISTS post_publication_story_identities (
 COMMENT ON TABLE post_publication_story_identities IS 'Repair-only identity bridge; unreferenced rows are reclaimed in bounded pages.';
 COMMENT ON COLUMN post_publication_story_identities.story_id IS 'Live entity FK; deletion clears this link without deleting historical repair identity.';
 
-CREATE OR REPLACE TRIGGER trigger_pub_post_identities_updated_at BEFORE UPDATE ON post_publication_post_identities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
-CREATE OR REPLACE TRIGGER trigger_pub_community_identities_updated_at BEFORE UPDATE ON post_publication_community_identities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
-CREATE OR REPLACE TRIGGER trigger_pub_rss_feed_item_identities_updated_at BEFORE UPDATE ON post_publication_rss_feed_item_identities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
-CREATE OR REPLACE TRIGGER trigger_pub_author_identities_updated_at BEFORE UPDATE ON post_publication_author_identities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
-CREATE OR REPLACE TRIGGER trigger_pub_rss_feed_identities_updated_at BEFORE UPDATE ON post_publication_rss_feed_identities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
-CREATE OR REPLACE TRIGGER trigger_pub_topic_alias_identities_updated_at BEFORE UPDATE ON post_publication_topic_alias_identities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
-CREATE OR REPLACE TRIGGER trigger_pub_story_identities_updated_at BEFORE UPDATE ON post_publication_story_identities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_published_post_identities_updated_at BEFORE UPDATE ON post_publication_post_identities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_published_community_identities_updated_at BEFORE UPDATE ON post_publication_community_identities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_published_rss_feed_item_identities_updated_at BEFORE UPDATE ON post_publication_rss_feed_item_identities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_published_author_identities_updated_at BEFORE UPDATE ON post_publication_author_identities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_published_rss_feed_identities_updated_at BEFORE UPDATE ON post_publication_rss_feed_identities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_published_topic_alias_identities_updated_at BEFORE UPDATE ON post_publication_topic_alias_identities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_published_story_identities_updated_at BEFORE UPDATE ON post_publication_story_identities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_publication_identity_bridge_cleanup_progress (
-  singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (singleton),
+  singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CONSTRAINT chk_post_publicatio_identity_bridge_cleanup_progress__singleton CHECK (singleton),
   family post_publication_identity_bridge_cleanup_families NOT NULL DEFAULT 'post' CHECK (family IN ('post', 'community', 'rss_feed_item', 'author', 'rss_feed', 'topic_alias', 'story')),
   cursor_identity_id UUID,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -93,13 +108,16 @@ ALTER TABLE post_publication_identity_snapshots VALIDATE CONSTRAINT fk_post_publ
 
 ALTER TABLE post_publication_dirty_work_keys ADD CONSTRAINT fk_post_publication_dirty_work_keys__post_identity FOREIGN KEY (impact_post_identity_id) REFERENCES post_publication_post_identities (id) ON DELETE RESTRICT NOT VALID;
 ALTER TABLE post_publication_dirty_work_keys VALIDATE CONSTRAINT fk_post_publication_dirty_work_keys__post_identity;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_publication_dirty_work_keys__impact_post_identity_id ON post_publication_dirty_work_keys (impact_post_identity_id) WHERE impact_post_identity_id IS NOT NULL;
 ALTER TABLE post_publication_dirty_work_keys ADD CONSTRAINT fk_post_publication_dirty_work_keys__community_identity FOREIGN KEY (impact_community_identity_id) REFERENCES post_publication_community_identities (id) ON DELETE RESTRICT NOT VALID;
 ALTER TABLE post_publication_dirty_work_keys VALIDATE CONSTRAINT fk_post_publication_dirty_work_keys__community_identity;
-CREATE INDEX IF NOT EXISTS idx_post_pub_dirty_work_keys__impact_community_identity_id ON post_publication_dirty_work_keys (impact_community_identity_id) WHERE impact_community_identity_id IS NOT NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_post_publicat_dirty_work_keys__impact_community_identity_id ON post_publication_dirty_work_keys (impact_community_identity_id) WHERE impact_community_identity_id IS NOT NULL;
 ALTER TABLE post_publication_dirty_work_keys ADD CONSTRAINT fk_post_publication_dirty_work_keys__rss_feed_item_identity FOREIGN KEY (impact_rss_feed_item_identity_id) REFERENCES post_publication_rss_feed_item_identities (id) ON DELETE RESTRICT NOT VALID;
 ALTER TABLE post_publication_dirty_work_keys VALIDATE CONSTRAINT fk_post_publication_dirty_work_keys__rss_feed_item_identity;
-CREATE INDEX IF NOT EXISTS idx_post_pub_dirty_work_keys__impact_rss_feed_item_identity_id ON post_publication_dirty_work_keys (impact_rss_feed_item_identity_id) WHERE impact_rss_feed_item_identity_id IS NOT NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_post_publ_dirty_work_keys__impact_rss_feed_item_identity_id ON post_publication_dirty_work_keys (impact_rss_feed_item_identity_id) WHERE impact_rss_feed_item_identity_id IS NOT NULL;
 
 ALTER TABLE post_publication_dirty_work ADD CONSTRAINT fk_post_publication_dirty_work__post_identity FOREIGN KEY (post_id) REFERENCES post_publication_post_identities (id) ON DELETE RESTRICT NOT VALID;
 ALTER TABLE post_publication_dirty_work VALIDATE CONSTRAINT fk_post_publication_dirty_work__post_identity;

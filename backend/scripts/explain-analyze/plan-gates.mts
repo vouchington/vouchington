@@ -33,7 +33,10 @@ const SINGLE_PARTITION_SCENARIOS = new Map([
 const MEMBERSHIP_REFUND_INDEXES_BY_SCENARIO = new Map([
   [
     'membership-refunds-already-refunded-batch',
-    ['idx_mrefunds__stripe_charge_id', 'idx_mrefunds__stripe_payment_intent_id'],
+    [
+      'idx_membership_refunds__stripe_charge_id',
+      'idx_membership_refunds__stripe_payment_intent_id',
+    ],
   ],
 ])
 type PlanNode = Record<string, unknown>

@@ -20,8 +20,8 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `copyright_notice_submission_r_copyright_notice_submission_i_key`: `UNIQUE (copyright_notice_submission_id)`
-- `copyright_notice_submission_r_requester_user_id_idempotency_key`: `UNIQUE (requester_user_id, idempotency_key)`
+- `uq_copyr_notic_submi_reques__requester_user_id__idempotency_key`: `UNIQUE (requester_user_id, idempotency_key)`
+- `uq_copyright_notice_submission_requests__submission_id`: `UNIQUE (copyright_notice_submission_id)`
 
 **Check constraints:**
 
@@ -29,14 +29,14 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `copyright_notice_submission_r_copyright_notice_submission__fkey`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
 - `copyright_notice_submission_requests_requester_user_id_fkey`: `FOREIGN KEY (requester_user_id) REFERENCES users(id) ON DELETE SET NULL`
+- `fk_copyright_notice_submission_requests__submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `copyright_notice_submission_r_copyright_notice_submission_i_key`: `CREATE UNIQUE INDEX copyright_notice_submission_r_copyright_notice_submission_i_key ON public.copyright_notice_submission_requests USING btree (copyright_notice_submission_id)`
-- `copyright_notice_submission_r_requester_user_id_idempotency_key`: `CREATE UNIQUE INDEX copyright_notice_submission_r_requester_user_id_idempotency_key ON public.copyright_notice_submission_requests USING btree (requester_user_id, idempotency_key)`
 - `copyright_notice_submission_requests_pkey`: `CREATE UNIQUE INDEX copyright_notice_submission_requests_pkey ON public.copyright_notice_submission_requests USING btree (id)`
+- `uq_copyr_notic_submi_reques__requester_user_id__idempotency_key`: `CREATE UNIQUE INDEX uq_copyr_notic_submi_reques__requester_user_id__idempotency_key ON public.copyright_notice_submission_requests USING btree (requester_user_id, idempotency_key)`
+- `uq_copyright_notice_submission_requests__submission_id`: `CREATE UNIQUE INDEX uq_copyright_notice_submission_requests__submission_id ON public.copyright_notice_submission_requests USING btree (copyright_notice_submission_id)`
 
 **Triggers:**
 

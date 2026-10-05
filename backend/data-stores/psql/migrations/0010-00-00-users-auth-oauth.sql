@@ -264,7 +264,7 @@ CREATE INDEX IF NOT EXISTS idx_users__vote_weight_recalculation
 
 -- find users pending language detection (bio)
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS users_lingua_rs_pending_idx
+CREATE INDEX IF NOT EXISTS idx_users__lingua_rs_pending
   ON users (id)
   WHERE lingua_rs_input_sha256 IS NULL;
 
@@ -401,12 +401,12 @@ CREATE INDEX IF NOT EXISTS idx_user_email_addresses__user_primary_created_email
   );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_user_email_addresses_email_primary
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_email_addresses__email_primary
   ON user_email_addresses (email_address)
   WHERE is_primary = TRUE;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_user_email_addresses_user_primary
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_email_addresses__user_primary
   ON user_email_addresses (user_id)
   WHERE is_primary = TRUE;
 
@@ -448,7 +448,7 @@ EXECUTE FUNCTION fn_update_updated_at();
 
 -- looking up active login tokens by email address and token
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_email_address_login_tokens_active
+CREATE UNIQUE INDEX IF NOT EXISTS idx_email_address_login_tokens__active
 ON email_address_login_tokens (email_address, token)
 WHERE logged_in_at IS NULL;
 
@@ -498,12 +498,12 @@ CREATE TABLE IF NOT EXISTS user_phone_numbers (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_user_phone_numbers_phone_primary
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_phone_numbers__phone_primary
   ON user_phone_numbers (phone_number)
   WHERE is_primary = TRUE;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_user_phone_numbers_user_primary
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_phone_numbers__user_primary
   ON user_phone_numbers (user_id)
   WHERE is_primary = TRUE;
 
@@ -542,7 +542,7 @@ FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_phone_number_login_tokens_active
+CREATE UNIQUE INDEX IF NOT EXISTS idx_phone_number_login_tokens__active
   ON phone_number_login_tokens (phone_number, token)
   WHERE logged_in_at IS NULL;
 
@@ -1145,7 +1145,7 @@ CREATE TABLE IF NOT EXISTS curated_aside_items (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS uc_curated_aside_items__type_entity
+CREATE UNIQUE INDEX IF NOT EXISTS idx_curated_aside_items__type_entity
 ON curated_aside_items (aside_type, entity_id)
 WHERE (deleted_at IS NULL);
 
@@ -1213,7 +1213,7 @@ WHERE user_id IS NULL;
 
 -- Current indexes for fresh schema bootstrap.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_user_consents__user_id__fk
+CREATE INDEX IF NOT EXISTS idx_user_consents__user_id__foreign_key
   ON user_consents (user_id)
   WHERE user_id IS NOT NULL;
 

@@ -29,9 +29,9 @@ _none_
 
 **Check constraints:**
 
-- `membership_ineligible_purcha_qualifying_amount_minor_unit_check`: `CHECK (((qualifying_amount_minor_units >= 0) AND (qualifying_amount_minor_units <= '9007199254740991'::bigint)))`
-- `membership_ineligible_purchase_rev_refund_cap_minor_units_check`: `CHECK (((refund_cap_minor_units >= 0) AND (refund_cap_minor_units <= '9007199254740991'::bigint)))`
-- `membership_ineligible_purchase_reversal_c_stripe_price_id_check`: `CHECK ((((char_length(stripe_price_id) >= 1) AND (char_length(stripe_price_id) <= 255)) AND (stripe_price_id = TRIM(BOTH FROM stripe_price_id))))`
+- `chk_memb_ineli_purch_rever_cases__qualifying_amount_minor_units`: `CHECK (((qualifying_amount_minor_units >= 0) AND (qualifying_amount_minor_units <= '9007199254740991'::bigint)))`
+- `chk_member_inelig_purchas_reversa_cases__refund_cap_minor_units`: `CHECK (((refund_cap_minor_units >= 0) AND (refund_cap_minor_units <= '9007199254740991'::bigint)))`
+- `chk_membersh_ineligibl_purchase_reversal_cases__stripe_price_id`: `CHECK ((((char_length(stripe_price_id) >= 1) AND (char_length(stripe_price_id) <= 255)) AND (stripe_price_id = TRIM(BOTH FROM stripe_price_id))))`
 - `membership_ineligible_purchase_reversal_cases_check`: `CHECK ((refund_cap_minor_units <= qualifying_amount_minor_units))`
 - `membership_ineligible_purchase_reversal_cases_check1`: `CHECK ((period_ends_at >= period_started_at))`
 - `membership_ineligible_purchase_reversal_cases_check2`: `CHECK (((winning_source_kind <> 'family'::membership_source_kinds) OR (period_ends_at > period_started_at)))`
@@ -44,11 +44,11 @@ _none_
 
 **Indexes:**
 
-- `idx_mipr_cases__binding`: `CREATE UNIQUE INDEX idx_mipr_cases__binding ON public.membership_ineligible_purchase_reversal_cases USING btree (membership_lineage_binding_id)`
-- `idx_mipr_cases__currency`: `CREATE INDEX idx_mipr_cases__currency ON public.membership_ineligible_purchase_reversal_cases USING btree (currency_code)`
-- `idx_mipr_cases__source_lineage`: `CREATE INDEX idx_mipr_cases__source_lineage ON public.membership_ineligible_purchase_reversal_cases USING btree (membership_source_id, membership_provider_lineage_id)`
+- `idx_membershi_ineligibl_purchase_reversal_cases__source_lineage`: `CREATE INDEX idx_membershi_ineligibl_purchase_reversal_cases__source_lineage ON public.membership_ineligible_purchase_reversal_cases USING btree (membership_source_id, membership_provider_lineage_id)`
+- `idx_membership_ineligible_purchase_reversal_cases__binding`: `CREATE UNIQUE INDEX idx_membership_ineligible_purchase_reversal_cases__binding ON public.membership_ineligible_purchase_reversal_cases USING btree (membership_lineage_binding_id)`
+- `idx_membership_ineligible_purchase_reversal_cases__currency`: `CREATE INDEX idx_membership_ineligible_purchase_reversal_cases__currency ON public.membership_ineligible_purchase_reversal_cases USING btree (currency_code)`
 - `pk_mipr_cases`: `CREATE UNIQUE INDEX pk_mipr_cases ON public.membership_ineligible_purchase_reversal_cases USING btree (id)`
 
 **Triggers:**
 
-- `trigger_mipr_cases_immutable`: `CREATE TRIGGER trigger_mipr_cases_immutable BEFORE DELETE OR UPDATE ON public.membership_ineligible_purchase_reversal_cases FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_membership_ineligible_purchase_reversal_cases_immutable`: `CREATE TRIGGER trigger_membership_ineligible_purchase_reversal_cases_immutable BEFORE DELETE OR UPDATE ON public.membership_ineligible_purchase_reversal_cases FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`

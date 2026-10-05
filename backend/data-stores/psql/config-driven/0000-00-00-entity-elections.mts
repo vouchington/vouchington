@@ -29,7 +29,7 @@ function addEntityVoteColumnsSql(config: VoteSchemaConfig): string {
   return `CREATE INDEX IF NOT EXISTS idx_${table}__votes_score_sort__id
 ON ${table} (votes_score_sort DESC, ${sortCols})${config.deletedAtFilter ? '\nWHERE deleted_at IS NULL' : ''};
 
-CREATE INDEX IF NOT EXISTS idx_${table}__votes_score_sort__pos__id
+CREATE INDEX IF NOT EXISTS idx_${table}__votes_score_sort__positive__id
 ON ${table} (votes_score_sort DESC, ${sortCols})
 WHERE votes_score_net > 0${deletedAtClause};`
 }

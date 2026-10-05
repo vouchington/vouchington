@@ -23,7 +23,7 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `rss_feed_item_autotagger_resu_rss_feed_item_id_content_sha2_key`: `UNIQUE (rss_feed_item_id, content_sha256, prompt_id)`
+- `uq_rss_feed_item_auto_resul__item_id__content_sha256__prompt_id`: `UNIQUE (rss_feed_item_id, content_sha256, prompt_id)`
 
 **Check constraints:**
 
@@ -41,8 +41,8 @@ Not partitioned — growth: unbounded.
 
 - `idx_rss_feed_item_autotagger_results__lookup`: `CREATE INDEX idx_rss_feed_item_autotagger_results__lookup ON public.rss_feed_item_autotagger_results USING btree (rss_feed_item_id, prompt_id, content_sha256) WHERE (deleted_at IS NULL)`
 - `idx_rss_feed_item_autotagger_results__prompt_id`: `CREATE INDEX idx_rss_feed_item_autotagger_results__prompt_id ON public.rss_feed_item_autotagger_results USING btree (prompt_id)`
-- `rss_feed_item_autotagger_resu_rss_feed_item_id_content_sha2_key`: `CREATE UNIQUE INDEX rss_feed_item_autotagger_resu_rss_feed_item_id_content_sha2_key ON public.rss_feed_item_autotagger_results USING btree (rss_feed_item_id, content_sha256, prompt_id)`
 - `rss_feed_item_autotagger_results_pkey`: `CREATE UNIQUE INDEX rss_feed_item_autotagger_results_pkey ON public.rss_feed_item_autotagger_results USING btree (id)`
+- `uq_rss_feed_item_auto_resul__item_id__content_sha256__prompt_id`: `CREATE UNIQUE INDEX uq_rss_feed_item_auto_resul__item_id__content_sha256__prompt_id ON public.rss_feed_item_autotagger_results USING btree (rss_feed_item_id, content_sha256, prompt_id)`
 
 **Triggers:**
 

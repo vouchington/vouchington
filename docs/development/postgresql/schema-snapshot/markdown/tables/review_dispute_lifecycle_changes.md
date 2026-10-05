@@ -30,8 +30,8 @@ _none_
 
 **Indexes:**
 
-- `idx_review_dispute_lifecycle__dispute_created`: `CREATE INDEX idx_review_dispute_lifecycle__dispute_created ON public.review_dispute_lifecycle_changes USING btree (review_dispute_id, id DESC)`
 - `idx_review_dispute_lifecycle_changes__changed_by_id`: `CREATE INDEX idx_review_dispute_lifecycle_changes__changed_by_id ON public.review_dispute_lifecycle_changes USING btree (changed_by_id) WHERE (changed_by_id IS NOT NULL)`
+- `idx_review_dispute_lifecycle_changes__dispute_created`: `CREATE INDEX idx_review_dispute_lifecycle_changes__dispute_created ON public.review_dispute_lifecycle_changes USING btree (review_dispute_id, id DESC)`
 - `review_dispute_lifecycle_changes_pkey`: `CREATE UNIQUE INDEX review_dispute_lifecycle_changes_pkey ON public.review_dispute_lifecycle_changes USING btree (id)`
 
 **Triggers:**

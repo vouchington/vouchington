@@ -29,14 +29,14 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `copyright_notice_action_inten_copyright_restriction_id_expe_key`: `UNIQUE (copyright_restriction_id, expected_placement_revision, action)`
 - `copyright_notice_action_intents_copyright_notice_id_id_key`: `UNIQUE (copyright_notice_id, id)`
+- `uq_copyright_notice_action_intents__restriction_revision_action`: `UNIQUE (copyright_restriction_id, expected_placement_revision, action)`
 
 **Check constraints:**
 
+- `chk_copyrigh_notice_action_intents__expected_placement_revision`: `CHECK ((expected_placement_revision >= 0))`
 - `copyright_action_intents_delivery_state`: `CHECK ((((state = 'pending'::copyright_notice_action_intent_states) AND (completed_at IS NULL) AND (completed_at_reason IS NULL) AND (claimed_at IS NULL)) OR ((state = 'claimed'::copyright_notice_action_intent_states) AND (completed_at IS NULL) AND (completed_at_reason IS NULL) AND (claimed_at IS NOT NULL)) OR ((state = ANY (ARRAY['completed'::copyright_notice_action_intent_states, 'stale'::copyright_notice_action_intent_states, 'blocked'::copyright_notice_action_intent_states, 'failed'::copyright_notice_action_intent_states])) AND (completed_at IS NOT NULL) AND (completed_at_reason = state) AND (next_attempt_at IS NULL))))`
 - `copyright_action_intents_retry_schedule`: `CHECK (((((state = 'pending'::copyright_notice_action_intent_states) AND ((delivery_attempt_count = 0) OR (next_attempt_at IS NOT NULL))) OR (state <> 'pending'::copyright_notice_action_intent_states)) AND ((state <> 'claimed'::copyright_notice_action_intent_states) OR (next_attempt_at IS NULL))))`
-- `copyright_notice_action_inten_expected_placement_revision_check`: `CHECK ((expected_placement_revision >= 0))`
 - `copyright_notice_action_intents_action_check`: `CHECK ((action = ANY (ARRAY['withhold'::copyright_notice_action_intent_actions, 'restore'::copyright_notice_action_intent_actions])))`
 - `copyright_notice_action_intents_check`: `CHECK (((copyright_notice_deadline_id IS NULL) OR (action = 'restore'::copyright_notice_action_intent_actions)))`
 - `copyright_notice_action_intents_completed_at_reason_check`: `CHECK (((completed_at_reason IS NULL) OR (completed_at_reason = ANY (ARRAY['completed'::copyright_notice_action_intent_states, 'stale'::copyright_notice_action_intent_states, 'blocked'::copyright_notice_action_intent_states, 'failed'::copyright_notice_action_intent_states]))))`
@@ -46,16 +46,16 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `copyright_notice_action_inten_copyright_notice_deadline_id_fkey`: `FOREIGN KEY (copyright_notice_deadline_id) REFERENCES copyright_notice_deadlines(id) ON DELETE RESTRICT`
 - `fk_copyright_action_intents__parent_notice`: `FOREIGN KEY (copyright_notice_id, copyright_restriction_id) REFERENCES copyright_restrictions(copyright_notice_id, id) ON DELETE CASCADE`
+- `fk_copyright_notice_action_intents__deadline`: `FOREIGN KEY (copyright_notice_deadline_id) REFERENCES copyright_notice_deadlines(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `copyright_notice_action_inten_copyright_restriction_id_expe_key`: `CREATE UNIQUE INDEX copyright_notice_action_inten_copyright_restriction_id_expe_key ON public.copyright_notice_action_intents USING btree (copyright_restriction_id, expected_placement_revision, action)`
 - `copyright_notice_action_intents_copyright_notice_id_id_key`: `CREATE UNIQUE INDEX copyright_notice_action_intents_copyright_notice_id_id_key ON public.copyright_notice_action_intents USING btree (copyright_notice_id, id)`
 - `copyright_notice_action_intents_pkey`: `CREATE UNIQUE INDEX copyright_notice_action_intents_pkey ON public.copyright_notice_action_intents USING btree (id)`
-- `idx_copyright_notice_intents__deadline`: `CREATE INDEX idx_copyright_notice_intents__deadline ON public.copyright_notice_action_intents USING btree (copyright_notice_deadline_id) WHERE (copyright_notice_deadline_id IS NOT NULL)`
-- `idx_copyright_notice_intents__pending`: `CREATE INDEX idx_copyright_notice_intents__pending ON public.copyright_notice_action_intents USING btree (id) WHERE (completed_at IS NULL)`
+- `idx_copyright_notice_action_intents__deadline`: `CREATE INDEX idx_copyright_notice_action_intents__deadline ON public.copyright_notice_action_intents USING btree (copyright_notice_deadline_id) WHERE (copyright_notice_deadline_id IS NOT NULL)`
+- `idx_copyright_notice_action_intents__pending`: `CREATE INDEX idx_copyright_notice_action_intents__pending ON public.copyright_notice_action_intents USING btree (id) WHERE (completed_at IS NULL)`
+- `uq_copyright_notice_action_intents__restriction_revision_action`: `CREATE UNIQUE INDEX uq_copyright_notice_action_intents__restriction_revision_action ON public.copyright_notice_action_intents USING btree (copyright_restriction_id, expected_placement_revision, action)`
 
 **Triggers:**
 

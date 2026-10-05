@@ -25,7 +25,7 @@ _none_
 
 **Foreign keys:**
 
-- `copyright_territorial_notice__copyright_territorial_notice_fkey`: `FOREIGN KEY (copyright_territorial_notice_receipt_id) REFERENCES copyright_territorial_notice_receipts(id) ON DELETE RESTRICT`
+- `fk_copyright_territorial_notice_routings__receipt`: `FOREIGN KEY (copyright_territorial_notice_receipt_id) REFERENCES copyright_territorial_notice_receipts(id) ON DELETE RESTRICT`
 
 **Indexes:**
 

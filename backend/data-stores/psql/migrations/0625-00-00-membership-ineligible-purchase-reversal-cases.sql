@@ -6,29 +6,34 @@ CREATE TABLE IF NOT EXISTS membership_ineligible_purchase_reversal_cases (
   membership_lineage_binding_id UUID NOT NULL,
   stripe_price_id TEXT NOT NULL,
   winning_source_kind membership_source_kinds NOT NULL,
-  qualifying_amount_minor_units BIGINT NOT NULL CHECK (qualifying_amount_minor_units BETWEEN 0 AND 9007199254740991),
-  refund_cap_minor_units BIGINT NOT NULL CHECK (refund_cap_minor_units BETWEEN 0 AND 9007199254740991),
+  qualifying_amount_minor_units BIGINT NOT NULL CONSTRAINT chk_memb_ineli_purch_rever_cases__qualifying_amount_minor_units CHECK (qualifying_amount_minor_units BETWEEN 0 AND 9007199254740991),
+  refund_cap_minor_units BIGINT NOT NULL CONSTRAINT chk_member_inelig_purchas_reversa_cases__refund_cap_minor_units CHECK (refund_cap_minor_units BETWEEN 0 AND 9007199254740991),
   currency_code TEXT NOT NULL,
   period_started_at TIMESTAMPTZ NOT NULL,
   period_ends_at TIMESTAMPTZ NOT NULL,
   collision_at TIMESTAMPTZ NOT NULL,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  CHECK (char_length(stripe_price_id) BETWEEN 1 AND 255 AND stripe_price_id = TRIM(stripe_price_id)),
+  CONSTRAINT chk_membersh_ineligibl_purchase_reversal_cases__stripe_price_id CHECK (char_length(stripe_price_id) BETWEEN 1 AND 255 AND stripe_price_id = TRIM(stripe_price_id)),
   CHECK (refund_cap_minor_units <= qualifying_amount_minor_units),
   CHECK (period_ends_at >= period_started_at),
   CHECK (winning_source_kind <> 'family' OR period_ends_at > period_started_at)
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_mipr_cases__binding
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_ineligible_purchase_reversal_cases__binding
   ON membership_ineligible_purchase_reversal_cases (membership_lineage_binding_id);
-CREATE INDEX IF NOT EXISTS idx_mipr_cases__source_lineage
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_membershi_ineligibl_purchase_reversal_cases__source_lineage
   ON membership_ineligible_purchase_reversal_cases (membership_source_id, membership_provider_lineage_id);
-CREATE INDEX IF NOT EXISTS idx_mipr_cases__currency
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_membership_ineligible_purchase_reversal_cases__currency
   ON membership_ineligible_purchase_reversal_cases (currency_code);
-CREATE INDEX IF NOT EXISTS idx_membership_bindings__lineage_origin
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_membership_lineage_bindings__lineage_origin
   ON membership_lineage_bindings (membership_provider_lineage_id, originating_invoice_id, id)
   WHERE originating_invoice_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_ineligible_purchase_reversal_case_operations (
   membership_ineligible_purchase_reversal_case_id UUID NOT NULL
     CONSTRAINT fk_mipr_case_ops__case REFERENCES membership_ineligible_purchase_reversal_cases(id) ON DELETE RESTRICT,
@@ -39,7 +44,8 @@ CREATE TABLE IF NOT EXISTS membership_ineligible_purchase_reversal_case_operatio
   )
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_mipr_case_ops__operation
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_members_ineligib_purchase_reversal_case_operatio__operation
   ON membership_ineligible_purchase_reversal_case_operations (membership_operation_id);
 
 ALTER TABLE membership_ineligible_purchase_reversal_cases
@@ -65,7 +71,8 @@ ALTER TABLE membership_ineligible_purchase_reversal_case_operations
 ALTER TABLE membership_ineligible_purchase_reversal_case_operations
   VALIDATE CONSTRAINT fk_mipr_case_ops__operation;
 
-CREATE OR REPLACE FUNCTION fn_reject_mipr_case_op_context()
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE FUNCTION fn_reject_purchase_reversal_case_operation_context()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
@@ -89,17 +96,20 @@ BEGIN
   RETURN NEW;
 END $$;
 
-CREATE OR REPLACE TRIGGER trigger_mipr_case_ops_context
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_purchase_reversal_case_operation_context
 BEFORE INSERT ON membership_ineligible_purchase_reversal_case_operations
 FOR EACH ROW
-EXECUTE FUNCTION fn_reject_mipr_case_op_context();
+EXECUTE FUNCTION fn_reject_purchase_reversal_case_operation_context();
 
-CREATE OR REPLACE TRIGGER trigger_mipr_cases_immutable
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_membership_ineligible_purchase_reversal_cases_immutable
 BEFORE UPDATE OR DELETE ON membership_ineligible_purchase_reversal_cases
 FOR EACH ROW
 EXECUTE FUNCTION fn_reject_mutation();
 
-CREATE OR REPLACE TRIGGER trigger_mipr_case_ops_immutable
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_purchase_reversal_case_operations_immutable
 BEFORE UPDATE OR DELETE ON membership_ineligible_purchase_reversal_case_operations
 FOR EACH ROW
 EXECUTE FUNCTION fn_reject_mutation();

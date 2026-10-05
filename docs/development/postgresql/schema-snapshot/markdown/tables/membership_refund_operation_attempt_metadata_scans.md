@@ -23,14 +23,14 @@ _none_
 
 **Check constraints:**
 
-- `membership_refund_operation__stable_head_provider_refund__check`: `CHECK (((stable_head_provider_refund_id IS NULL) OR (((char_length(stable_head_provider_refund_id) >= 1) AND (char_length(stable_head_provider_refund_id) <= 255)) AND (stable_head_provider_refund_id = TRIM(BOTH FROM stable_head_provider_refund_id)))))`
-- `membership_refund_operation_attem_next_provider_refund_id_check`: `CHECK (((next_provider_refund_id IS NULL) OR (((char_length(next_provider_refund_id) >= 1) AND (char_length(next_provider_refund_id) <= 255)) AND (next_provider_refund_id = TRIM(BOTH FROM next_provider_refund_id)))))`
-- `membership_refund_operation_attempt_metadata__lease_token_check`: `CHECK ((((char_length(lease_token) >= 1) AND (char_length(lease_token) <= 255)) AND (lease_token = TRIM(BOTH FROM lease_token))))`
+- `chk_mem_ref_oper_atte_meta_scan__stable_head_provider_refund_id`: `CHECK (((stable_head_provider_refund_id IS NULL) OR (((char_length(stable_head_provider_refund_id) >= 1) AND (char_length(stable_head_provider_refund_id) <= 255)) AND (stable_head_provider_refund_id = TRIM(BOTH FROM stable_head_provider_refund_id)))))`
+- `chk_memb_refun_opera_attem_metad_scans__next_provider_refund_id`: `CHECK (((next_provider_refund_id IS NULL) OR (((char_length(next_provider_refund_id) >= 1) AND (char_length(next_provider_refund_id) <= 255)) AND (next_provider_refund_id = TRIM(BOTH FROM next_provider_refund_id)))))`
+- `chk_members_refund_operatio_attempt_metadata_scans__lease_token`: `CHECK ((((char_length(lease_token) >= 1) AND (char_length(lease_token) <= 255)) AND (lease_token = TRIM(BOTH FROM lease_token))))`
 - `membership_refund_operation_attempt_metadata_scans_check`: `CHECK (((completed_at IS NULL) OR (next_provider_refund_id IS NULL)))`
 
 **Foreign keys:**
 
-- `membership_refund_operation_a_membership_refund_operation__fkey`: `FOREIGN KEY (membership_refund_operation_attempt_id) REFERENCES membership_refund_operation_attempts(id) ON DELETE RESTRICT`
+- `fk_membership_refund_operation_attempt_metadata_scans__attempt`: `FOREIGN KEY (membership_refund_operation_attempt_id) REFERENCES membership_refund_operation_attempts(id) ON DELETE RESTRICT`
 
 **Indexes:**
 

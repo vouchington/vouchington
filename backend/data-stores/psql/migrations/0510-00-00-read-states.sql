@@ -1,6 +1,7 @@
 -- Read state tracking: per-user markers for rss_feed_items and posts.
 -- edited-in-place: pre-launch, never deployed to production
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS rss_feed_item_read_states (
   user_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
   rss_feed_item_id UUID NOT NULL REFERENCES rss_feed_items (id) ON DELETE CASCADE,
@@ -8,6 +9,7 @@ CREATE TABLE IF NOT EXISTS rss_feed_item_read_states (
   PRIMARY KEY (user_id, rss_feed_item_id)
 ) PARTITION BY RANGE (user_id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_read_states (
   user_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
   post_id UUID NOT NULL REFERENCES posts (id) ON DELETE CASCADE,
@@ -25,5 +27,7 @@ COMMENT ON COLUMN post_read_states.user_id IS 'The user who marked this post as 
 COMMENT ON COLUMN post_read_states.post_id IS 'The post marked as read.';
 COMMENT ON COLUMN post_read_states.read_at IS 'Timestamp when the post was marked as read.';
 
-CREATE INDEX IF NOT EXISTS rss_feed_item_read_states__rss_feed_item_id ON rss_feed_item_read_states (rss_feed_item_id);
-CREATE INDEX IF NOT EXISTS post_read_states__post_id ON post_read_states (post_id);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_rss_feed_item_read_states__rss_feed_item_id ON rss_feed_item_read_states (rss_feed_item_id);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_post_read_states__post_id ON post_read_states (post_id);

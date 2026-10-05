@@ -46,4 +46,4 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `moderation_transparency_community_prompts_lock`: `CREATE TRIGGER moderation_transparency_community_prompts_lock BEFORE INSERT OR DELETE OR UPDATE ON public.community_agent_prompts FOR EACH ROW EXECUTE FUNCTION fn_lock_agent_moderation_transparency_community_prompt()`
+- `trigger_moderation_transparency_community_prompts_lock`: `CREATE TRIGGER trigger_moderation_transparency_community_prompts_lock BEFORE INSERT OR DELETE OR UPDATE ON public.community_agent_prompts FOR EACH ROW EXECUTE FUNCTION fn_lock_agent_moderation_transparency_community_prompt()`

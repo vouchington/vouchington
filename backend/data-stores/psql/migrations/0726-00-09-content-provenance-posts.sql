@@ -7,7 +7,8 @@ ALTER TABLE posts
   FOREIGN KEY (created_via_oauth_client_id) REFERENCES oauth_clients(id) ON DELETE RESTRICT
   NOT VALID;
 
-CREATE OR REPLACE TRIGGER posts_content_provenance_immutable
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_posts_content_provenance_immutable
   AFTER UPDATE ON posts
   FOR EACH ROW
   WHEN (

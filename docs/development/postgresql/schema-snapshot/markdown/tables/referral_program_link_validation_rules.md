@@ -35,11 +35,11 @@ _none_
 
 **Foreign keys:**
 
-- `referral_program_link_validat_referral_program_link_valida_fkey`: `FOREIGN KEY (referral_program_link_validation_rule_set_id) REFERENCES referral_program_link_validation_rule_sets(id) ON DELETE CASCADE`
+- `fk_referral_program_link_validation_rules__rule_set`: `FOREIGN KEY (referral_program_link_validation_rule_set_id) REFERENCES referral_program_link_validation_rule_sets(id) ON DELETE CASCADE`
 
 **Indexes:**
 
-- `idx_referral_link_validations_rules__validation_id`: `CREATE INDEX idx_referral_link_validations_rules__validation_id ON public.referral_program_link_validation_rules USING btree (referral_program_link_validation_rule_set_id)`
+- `idx_referral_program_link_validation_rules__validation_id`: `CREATE INDEX idx_referral_program_link_validation_rules__validation_id ON public.referral_program_link_validation_rules USING btree (referral_program_link_validation_rule_set_id)`
 - `referral_program_link_validation_rules_pkey`: `CREATE UNIQUE INDEX referral_program_link_validation_rules_pkey ON public.referral_program_link_validation_rules USING btree (id)`
 
 **Triggers:**

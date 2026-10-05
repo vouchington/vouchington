@@ -50,4 +50,4 @@ _none_
 
 **Triggers:**
 
-- `classifier_run_requests_updated_at`: `CREATE TRIGGER classifier_run_requests_updated_at BEFORE UPDATE ON public.classifier_run_requests FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_classifier_run_requests_updated_at`: `CREATE TRIGGER trigger_classifier_run_requests_updated_at BEFORE UPDATE ON public.classifier_run_requests FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

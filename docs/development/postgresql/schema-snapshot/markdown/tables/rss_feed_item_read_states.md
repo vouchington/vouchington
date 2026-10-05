@@ -27,7 +27,7 @@ _none_
 
 **Indexes:**
 
-- `rss_feed_item_read_states__rss_feed_item_id`: `CREATE INDEX rss_feed_item_read_states__rss_feed_item_id ON ONLY public.rss_feed_item_read_states USING btree (rss_feed_item_id)`
+- `idx_rss_feed_item_read_states__rss_feed_item_id`: `CREATE INDEX idx_rss_feed_item_read_states__rss_feed_item_id ON ONLY public.rss_feed_item_read_states USING btree (rss_feed_item_id)`
 - `rss_feed_item_read_states_pkey`: `CREATE UNIQUE INDEX rss_feed_item_read_states_pkey ON ONLY public.rss_feed_item_read_states USING btree (user_id, rss_feed_item_id)`
 
 **Triggers:**

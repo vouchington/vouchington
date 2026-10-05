@@ -44,21 +44,21 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `copyright_notice_corresponden_copyright_notice_submission__fkey`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
-- `copyright_notice_correspondence_messag_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
 - `copyright_notice_correspondence_messages_approved_by_id_fkey`: `FOREIGN KEY (approved_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `copyright_notice_correspondence_messages_drafted_by_id_fkey`: `FOREIGN KEY (drafted_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `fk_copyright_correspondence__email_intake`: `FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_correspondence_messages__notice`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_correspondence_messages__submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
 - `copyright_notice_correspondence_id_notice_unique`: `CREATE UNIQUE INDEX copyright_notice_correspondence_id_notice_unique ON public.copyright_notice_correspondence_messages USING btree (id, copyright_notice_id)`
 - `copyright_notice_correspondence_messages_pkey`: `CREATE UNIQUE INDEX copyright_notice_correspondence_messages_pkey ON public.copyright_notice_correspondence_messages USING btree (id)`
-- `idx_copyright_correspondence__email_intake`: `CREATE INDEX idx_copyright_correspondence__email_intake ON public.copyright_notice_correspondence_messages USING btree (copyright_notice_email_intake_id) WHERE (copyright_notice_email_intake_id IS NOT NULL)`
-- `idx_copyright_notice_correspondence__approved_by`: `CREATE INDEX idx_copyright_notice_correspondence__approved_by ON public.copyright_notice_correspondence_messages USING btree (approved_by_id) WHERE (approved_by_id IS NOT NULL)`
-- `idx_copyright_notice_correspondence__drafted_by`: `CREATE INDEX idx_copyright_notice_correspondence__drafted_by ON public.copyright_notice_correspondence_messages USING btree (drafted_by_id) WHERE (drafted_by_id IS NOT NULL)`
-- `idx_copyright_notice_correspondence__notice`: `CREATE INDEX idx_copyright_notice_correspondence__notice ON public.copyright_notice_correspondence_messages USING btree (copyright_notice_id, id)`
-- `idx_copyright_notice_correspondence__submission`: `CREATE INDEX idx_copyright_notice_correspondence__submission ON public.copyright_notice_correspondence_messages USING btree (copyright_notice_submission_id) WHERE (copyright_notice_submission_id IS NOT NULL)`
+- `idx_copyright_notice_correspondence_messages__approved_by`: `CREATE INDEX idx_copyright_notice_correspondence_messages__approved_by ON public.copyright_notice_correspondence_messages USING btree (approved_by_id) WHERE (approved_by_id IS NOT NULL)`
+- `idx_copyright_notice_correspondence_messages__drafted_by`: `CREATE INDEX idx_copyright_notice_correspondence_messages__drafted_by ON public.copyright_notice_correspondence_messages USING btree (drafted_by_id) WHERE (drafted_by_id IS NOT NULL)`
+- `idx_copyright_notice_correspondence_messages__email_intake`: `CREATE INDEX idx_copyright_notice_correspondence_messages__email_intake ON public.copyright_notice_correspondence_messages USING btree (copyright_notice_email_intake_id) WHERE (copyright_notice_email_intake_id IS NOT NULL)`
+- `idx_copyright_notice_correspondence_messages__notice`: `CREATE INDEX idx_copyright_notice_correspondence_messages__notice ON public.copyright_notice_correspondence_messages USING btree (copyright_notice_id, id)`
+- `idx_copyright_notice_correspondence_messages__submission`: `CREATE INDEX idx_copyright_notice_correspondence_messages__submission ON public.copyright_notice_correspondence_messages USING btree (copyright_notice_submission_id) WHERE (copyright_notice_submission_id IS NOT NULL)`
 
 **Triggers:**
 

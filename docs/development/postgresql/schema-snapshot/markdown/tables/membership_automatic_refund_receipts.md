@@ -27,7 +27,7 @@ _none_
 
 **Check constraints:**
 
-- `membership_automatic_refund__remaining_refundable_minor_u_check`: `CHECK (((remaining_refundable_minor_units >= 0) AND (remaining_refundable_minor_units <= '9007199254740991'::bigint)))`
+- `chk_membe_autom_refund_receip__remaining_refundable_minor_units`: `CHECK (((remaining_refundable_minor_units >= 0) AND (remaining_refundable_minor_units <= '9007199254740991'::bigint)))`
 - `membership_automatic_refund_receipts_amount_minor_units_check`: `CHECK (((amount_minor_units >= 0) AND (amount_minor_units <= '9007199254740991'::bigint)))`
 - `membership_automatic_refund_receipts_application_id_check`: `CHECK ((((char_length(application_id) >= 1) AND (char_length(application_id) <= 255)) AND (application_id = TRIM(BOTH FROM application_id))))`
 - `membership_automatic_refund_receipts_check`: `CHECK (((amount_minor_units = 0) = (provider_refund_id IS NULL)))`
@@ -37,8 +37,8 @@ _none_
 
 **Foreign keys:**
 
+- `fk_membership_automatic_refund_receipts__operation`: `FOREIGN KEY (membership_operation_id) REFERENCES membership_operations(id) ON DELETE RESTRICT`
 - `fk_membership_automatic_refund_receipts__operation_snapshot`: `FOREIGN KEY (membership_operation_id, provider, environment, application_id, operation_kind, remaining_refundable_minor_units, currency_code) REFERENCES membership_operations(id, provider, environment, application_id, operation_kind, remaining_refundable_minor_units, currency_code) ON DELETE RESTRICT`
-- `membership_automatic_refund_receip_membership_operation_id_fkey`: `FOREIGN KEY (membership_operation_id) REFERENCES membership_operations(id) ON DELETE RESTRICT`
 - `membership_automatic_refund_receipts_currency_code_fkey`: `FOREIGN KEY (currency_code) REFERENCES currencies(code) ON DELETE RESTRICT`
 
 **Indexes:**

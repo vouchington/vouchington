@@ -69,7 +69,7 @@ async function revokeGrantInTransaction(
         SELECT 1 FROM membership_grant_activation_periods activation
         WHERE activation.membership_grant_id = grant_row.id AND activation.ended_at IS NULL
       ) AS active,
-      membership_grant_remaining_duration(grant_row.id) >= INTERVAL '1 millisecond' AS remaining
+      fn_membership_grant_remaining_duration(grant_row.id) >= INTERVAL '1 millisecond' AS remaining
     FROM membership_grants grant_row WHERE grant_row.id = ${grantId} FOR UPDATE`)
   const grant = rows[0] as
     | {

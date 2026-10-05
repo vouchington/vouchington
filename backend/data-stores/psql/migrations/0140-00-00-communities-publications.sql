@@ -49,6 +49,7 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 -- communities
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS communities (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
   created_via content_creation_channels NOT NULL,
@@ -95,27 +96,40 @@ CREATE TABLE IF NOT EXISTS communities (
   CHECK (slug ~ '^[a-z0-9-]+$')
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_communities_updated_at
   BEFORE UPDATE ON communities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_communities__slug ON communities (slug) WHERE deleted_at IS NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_communities__archived_at ON communities (archived_at) WHERE archived_at IS NOT NULL AND deleted_at IS NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_communities__created_by_id ON communities (created_by_id) WHERE deleted_at IS NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_communities__profile_image ON communities (profile_image_id) WHERE profile_image_id IS NOT NULL AND deleted_at IS NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_communities__banner_image ON communities (banner_image_id) WHERE banner_image_id IS NOT NULL AND deleted_at IS NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_communities__search ON communities USING GIN (search_vector) WHERE deleted_at IS NULL;
 
 -- RI-usable indexes for FKs whose existing indexes above carry additional predicates
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_communities__created_by_id_bare ON communities (created_by_id);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_communities__profile_image_id_bare ON communities (profile_image_id) WHERE profile_image_id IS NOT NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_communities__banner_image_id_bare ON communities (banner_image_id) WHERE banner_image_id IS NOT NULL;
 
 -- RI-usable indexes for the SET NULL audit-column FKs (communities is a large-audit table)
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_communities__deleted_by_id ON communities (deleted_by_id) WHERE deleted_by_id IS NOT NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_communities__archived_by_id ON communities (archived_by_id) WHERE archived_by_id IS NOT NULL;
 
 -- find communities pending language detection
-CREATE INDEX IF NOT EXISTS communities_lingua_rs_pending_idx
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_communities__lingua_rs_pending
   ON communities (id)
   WHERE lingua_rs_input_sha256 IS NULL;
 
@@ -144,12 +158,14 @@ ALTER TABLE notifications
   NOT VALID;
 ALTER TABLE notifications
   VALIDATE CONSTRAINT fk_notifications__community_id;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_notifications__community_id
   ON notifications (community_id)
   WHERE community_id IS NOT NULL;
 COMMENT ON COLUMN notifications.community_id IS 'Community associated with a community lifecycle notification.';
 
 -- community_members
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS community_members (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
   community_id UUID NOT NULL REFERENCES communities ON DELETE CASCADE,
@@ -168,24 +184,32 @@ CREATE TABLE IF NOT EXISTS community_members (
   suspected_ban_evader_dismissed_by_id UUID REFERENCES users(id) ON DELETE SET NULL
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_community_members_updated_at
   BEFORE UPDATE ON community_members FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_community_members__uniq ON community_members (community_id, user_id) WHERE removed_at IS NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_community_members__unique ON community_members (community_id, user_id) WHERE removed_at IS NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_members__user_id_desc
   ON community_members (user_id, id DESC)
   WHERE removed_at IS NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_members__suspected_evasion
   ON community_members (community_id, suspected_ban_evader_at DESC)
   WHERE suspected_ban_evader_at IS NOT NULL
     AND suspected_ban_evader_dismissed_at IS NULL
     AND removed_at IS NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_members__departed
   ON community_members (community_id, removed_at) WHERE removed_at IS NOT NULL;
 
 -- RI-usable indexes for FKs whose existing indexes above carry predicates on other columns
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_members__community_id ON community_members (community_id);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_members__user_id_id ON community_members (user_id, id);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_members__suspected_ban_evader_source_user_id
   ON community_members (suspected_ban_evader_source_user_id)
   WHERE suspected_ban_evader_source_user_id IS NOT NULL;
@@ -205,6 +229,7 @@ COMMENT ON COLUMN community_members.suspected_ban_evader_dismissed_at IS 'When s
 COMMENT ON COLUMN community_members.suspected_ban_evader_dismissed_by_id IS 'Moderator who dismissed the ban-evasion flag.';
 
 -- community_application_questions
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS community_application_questions (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
   community_id UUID NOT NULL REFERENCES communities ON DELETE CASCADE,
@@ -220,7 +245,8 @@ CREATE TABLE IF NOT EXISTS community_application_questions (
   CONSTRAINT community_application_questions_identity_key UNIQUE (community_id, id)
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_comm_app_q__comm_order ON community_application_questions (community_id, order_index) WHERE deleted_at IS NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_community_application_questions__comm_order ON community_application_questions (community_id, order_index) WHERE deleted_at IS NULL;
 
 COMMENT ON TABLE community_application_questions IS 'Configurable questions shown to users applying to join a community.';
 COMMENT ON COLUMN community_application_questions.community_id IS 'The community this question belongs to.';
@@ -231,6 +257,7 @@ COMMENT ON COLUMN community_application_questions.order_index IS 'Display order 
 COMMENT ON COLUMN community_application_questions.required IS 'Whether the applicant must answer this question.';
 
 -- community_applications
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS community_applications (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
   created_via content_creation_channels NOT NULL,
@@ -254,15 +281,18 @@ CREATE TABLE IF NOT EXISTS community_applications (
   CONSTRAINT community_applications_identity_key UNIQUE (community_id, id)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_community_applications_updated_at
   BEFORE UPDATE ON community_applications
   FOR EACH ROW
   EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_comm_apps__pending ON community_applications (community_id, user_id) WHERE approved_at IS NULL AND rejected_at IS NULL;
 
 -- RI-usable index for the user_id FK. community_applications_identity_key already leads with community_id;
 -- the pending unique index is partial, so it is not RI-usable.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_applications__user_id ON community_applications (user_id);
 
 COMMENT ON TABLE community_applications IS 'Membership applications submitted by users to join a community.';
@@ -276,6 +306,7 @@ COMMENT ON COLUMN community_applications.rejection_reason IS 'Optional reason pr
 COMMENT ON COLUMN community_applications.message IS 'Optional freeform message from the applicant when submitting an application.';
 
 -- community_application_answers
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS community_application_answers (
   application_id UUID NOT NULL,
   community_id UUID NOT NULL,
@@ -297,6 +328,7 @@ CREATE TABLE IF NOT EXISTS community_application_answers (
   )
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_comm_app_answers__question
   ON community_application_answers (community_id, question_id);
 
@@ -307,6 +339,7 @@ COMMENT ON COLUMN community_application_answers.question_id IS 'Question this an
 COMMENT ON COLUMN community_application_answers.value IS 'Submitted answer document: a JSON string, boolean, explicit null, or array of option-label strings in submitted order.';
 
 -- community_invites
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS community_invites (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
   community_id UUID NOT NULL REFERENCES communities ON DELETE CASCADE,
@@ -331,18 +364,25 @@ CREATE TABLE IF NOT EXISTS community_invites (
   CHECK (invited_email IS NULL OR char_length(invited_email) <= 320)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_community_invites_updated_at
   BEFORE UPDATE ON community_invites
   FOR EACH ROW
   EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_comm_invites__code ON community_invites (code) WHERE accepted_at IS NULL AND declined_at IS NULL AND revoked_at IS NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_comm_invites__user ON community_invites (community_id, invited_user_id) WHERE invited_user_id IS NOT NULL AND accepted_at IS NULL AND declined_at IS NULL AND revoked_at IS NULL;
 
 -- RI-usable indexes for FKs whose existing indexes above carry additional predicates or lead with a different column
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_invites__community_id ON community_invites (community_id);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_invites__invited_user_id ON community_invites (invited_user_id) WHERE invited_user_id IS NOT NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_invites__invited_by_id ON community_invites (invited_by_id);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_invites__accepted_by_user_id ON community_invites (accepted_by_user_id) WHERE accepted_by_user_id IS NOT NULL;
 
 COMMENT ON TABLE community_invites IS 'Invitations to join a community, sent to a specific user or email address.';
@@ -423,23 +463,29 @@ CREATE TABLE IF NOT EXISTS community_post_reviews (
   CHECK (platform_override_at IS NOT NULL OR platform_override_private_note IS NULL)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_post_reviews__platform_override_by_id
 ON community_post_reviews (platform_override_by_id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_comm_post_reviews__community ON community_post_reviews (community_id, post_id);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_comm_post_reviews__pending ON community_post_reviews (community_id) WHERE approved_at IS NULL AND rejected_at IS NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_comm_post_reviews__approved_visible
   ON community_post_reviews (community_id, approved_at DESC, post_id DESC)
   WHERE approved_at IS NOT NULL
     AND unpublished_at IS NULL
     AND rejected_at IS NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_comm_post_reviews__user_removed
   ON community_post_reviews (submitted_by_id, unpublished_at DESC, post_id DESC)
   WHERE unpublished_at IS NOT NULL;
 
 -- Keyset order of a community's open automod review queue (flagged, not dismissed).
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_comm_post_reviews__automod_open
   ON community_post_reviews (community_id, automod_flagged_at DESC, post_id DESC)
   WHERE automod_action = 'review_queue' AND automod_dismissed_at IS NULL;
@@ -483,10 +529,12 @@ END $$;
 ALTER TABLE posts VALIDATE CONSTRAINT fk_posts_community_id;
 
 -- RI-usable index for the community_id FK (existing composite indexes have community_id in a non-leading position)
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__community_id ON posts (community_id) WHERE community_id IS NOT NULL;
 
 
 -- community_pinned_posts
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS community_pinned_posts (
   community_id UUID NOT NULL REFERENCES communities ON DELETE CASCADE,
   post_id UUID NOT NULL REFERENCES posts ON DELETE CASCADE,
@@ -497,11 +545,14 @@ CREATE TABLE IF NOT EXISTS community_pinned_posts (
   CHECK (order_index >= 0 AND order_index < 3)
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_comm_pinned__order
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_community_pinned_posts__order
   ON community_pinned_posts (community_id, order_index);
 
 -- RI-usable indexes for the post_id/pinned_by_id FKs
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_pinned_posts__post_id ON community_pinned_posts (post_id);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_pinned_posts__pinned_by_id ON community_pinned_posts (pinned_by_id);
 
 COMMENT ON TABLE community_pinned_posts IS 'Tracks pinned posts per community with ordering. Maximum 3 pinned posts enforced by CHECK constraint.';
@@ -514,6 +565,7 @@ COMMENT ON COLUMN community_pinned_posts.pinned_by_id IS 'Moderator who pinned t
 -- 0210-00-00-community-agent-prompts.sql
 -- ============================================================================
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS community_agent_prompts (
   -- extension table: id IS an agent_prompts.id; timestamps come from agent_prompts
   id UUID NOT NULL PRIMARY KEY REFERENCES agent_prompts(id) ON DELETE CASCADE,
@@ -534,16 +586,19 @@ CREATE TABLE IF NOT EXISTS community_agent_prompts (
 );
 
 -- Lookup by community for listing
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_agent_prompts__community_id
   ON community_agent_prompts(community_id)
   WHERE deleted_at IS NULL;
 
 -- Lookup by creator for slot counting
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_agent_prompts__created_by_id__slot
   ON community_agent_prompts(created_by_id, slot_allocated)
   WHERE deleted_at IS NULL;
 
 -- Active prompts for dispatcher
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_agent_prompts__active
   ON community_agent_prompts(community_id)
   WHERE slot_allocated = true
@@ -552,8 +607,10 @@ CREATE INDEX IF NOT EXISTS idx_community_agent_prompts__active
     AND deleted_at IS NULL;
 
 -- RI-usable indexes for the community_id/created_by_id FKs (the indexes above carry predicates on other columns)
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_agent_prompts__community_id_bare
   ON community_agent_prompts(community_id);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_agent_prompts__created_by_id
   ON community_agent_prompts(created_by_id);
 
@@ -564,6 +621,7 @@ COMMENT ON COLUMN community_agent_prompts.activated_at IS 'When the prompt was a
 COMMENT ON COLUMN community_agent_prompts.deactivated_at IS 'When the prompt was deactivated. Mutually exclusive with activated_at.';
 
 -- community_auto_tagger_agents
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS community_auto_tagger_agents (
   community_id UUID NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
   agent_id UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
@@ -578,14 +636,17 @@ CREATE TABLE IF NOT EXISTS community_auto_tagger_agents (
   CHECK (disabled_at IS NULL OR disabled_at >= enabled_at)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_community_auto_tagger_agents_updated_at
   BEFORE UPDATE ON community_auto_tagger_agents FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_auto_tagger_agents__enabled
   ON community_auto_tagger_agents(community_id)
   WHERE disabled_at IS NULL;
 
 -- RI-usable index for the agent_id FK
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_auto_tagger_agents__agent_id
   ON community_auto_tagger_agents(agent_id);
 
@@ -602,6 +663,7 @@ COMMENT ON COLUMN community_auto_tagger_agents.updated_at IS 'Last modification 
 -- 0340-00-00-community-list-type.sql
 -- ============================================================================
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_communities__list_type
   ON communities (list_type) WHERE list_type IS NOT NULL AND deleted_at IS NULL;
 
@@ -623,6 +685,7 @@ ALTER TABLE conversations VALIDATE CONSTRAINT fk_conversations_community_id;
 
 
 -- community_saved_replies
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS community_saved_replies (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   community_id UUID NOT NULL REFERENCES communities ON DELETE CASCADE,
@@ -637,18 +700,22 @@ CREATE TABLE IF NOT EXISTS community_saved_replies (
   deleted_by_id UUID REFERENCES users ON DELETE SET NULL
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_community_saved_replies_updated_at
   BEFORE UPDATE ON community_saved_replies FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_community_saved_replies__community_order
 ON community_saved_replies (community_id, order_index)
 WHERE deleted_at IS NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_saved_replies__community_id
 ON community_saved_replies (community_id, id DESC)
 WHERE deleted_at IS NULL;
 
 -- RI-usable index for the community_id FK (the indexes above carry a predicate, so they aren't RI-usable)
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_saved_replies__community_id_bare
 ON community_saved_replies (community_id);
 
@@ -708,10 +775,12 @@ ALTER TABLE curated_aside_items
 ALTER TABLE curated_aside_items
   VALIDATE CONSTRAINT fk_curated_aside_items__community_id;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_communities__created_via_oauth_client_id
   ON communities (created_via_oauth_client_id)
   WHERE created_via_oauth_client_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_applications__created_via_oauth_client_id
   ON community_applications (created_via_oauth_client_id)
   WHERE created_via_oauth_client_id IS NOT NULL;

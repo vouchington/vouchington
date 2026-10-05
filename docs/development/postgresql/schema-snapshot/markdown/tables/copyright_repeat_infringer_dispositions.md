@@ -21,23 +21,23 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `copyright_repeat_infringer_di_copyright_repeat_infringer_in_key`: `UNIQUE (copyright_repeat_infringer_incident_id)`
+- `uq_copyright_repeat_infringer_dispositions__incident_id`: `UNIQUE (copyright_repeat_infringer_incident_id)`
 
 **Check constraints:**
 
-- `copyright_repeat_infringer_dispositi_rationale_ciphertext_check`: `CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 65536)))`
+- `chk_copyright_repeat_infringer_dispositio__rationale_ciphertext`: `CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 65536)))`
 - `copyright_repeat_infringer_dispositions_disposition_check`: `CHECK ((disposition = ANY (ARRAY['withdrawn'::copyright_repeat_infringer_disposition_kinds, 'duplicate'::copyright_repeat_infringer_disposition_kinds, 'abusive'::copyright_repeat_infringer_disposition_kinds])))`
 
 **Foreign keys:**
 
-- `copyright_repeat_infringer_di_copyright_repeat_infringer_i_fkey`: `FOREIGN KEY (copyright_repeat_infringer_incident_id) REFERENCES copyright_repeat_infringer_incidents(id) ON DELETE RESTRICT`
 - `copyright_repeat_infringer_dispositions_recorded_by_id_fkey`: `FOREIGN KEY (recorded_by_id) REFERENCES users(id) ON DELETE SET NULL`
+- `fk_copyright_repeat_infringer_dispositions__incident`: `FOREIGN KEY (copyright_repeat_infringer_incident_id) REFERENCES copyright_repeat_infringer_incidents(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `copyright_repeat_infringer_di_copyright_repeat_infringer_in_key`: `CREATE UNIQUE INDEX copyright_repeat_infringer_di_copyright_repeat_infringer_in_key ON public.copyright_repeat_infringer_dispositions USING btree (copyright_repeat_infringer_incident_id)`
 - `copyright_repeat_infringer_dispositions_pkey`: `CREATE UNIQUE INDEX copyright_repeat_infringer_dispositions_pkey ON public.copyright_repeat_infringer_dispositions USING btree (id)`
 - `idx_copyright_repeat_infringer_dispositions__recorded_by`: `CREATE INDEX idx_copyright_repeat_infringer_dispositions__recorded_by ON public.copyright_repeat_infringer_dispositions USING btree (recorded_by_id)`
+- `uq_copyright_repeat_infringer_dispositions__incident_id`: `CREATE UNIQUE INDEX uq_copyright_repeat_infringer_dispositions__incident_id ON public.copyright_repeat_infringer_dispositions USING btree (copyright_repeat_infringer_incident_id)`
 
 **Triggers:**
 

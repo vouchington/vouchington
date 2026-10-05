@@ -26,37 +26,37 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `relation__rss_feed_item__category__topic_alia_subject_id_id_key`: `UNIQUE (subject_id, id)`
+- `uq_relatio__rss_feed_item__category__topic_alias__subject_id_id`: `UNIQUE (subject_id, id)`
 
 **Check constraints:**
 
-- `relation__rss_feed_item__category__topi_votes_count_down_check1`: `CHECK ((votes_count_down >= 0))`
-- `relation__rss_feed_item__category__topi_votes_count_none_check1`: `CHECK ((votes_count_none >= 0))`
-- `relation__rss_feed_item__category__topi_votes_score_down_check1`: `CHECK ((votes_score_down >= (0)::double precision))`
-- `relation__rss_feed_item__category__topi_votes_score_none_check1`: `CHECK ((votes_score_none >= (0)::double precision))`
-- `relation__rss_feed_item__category__topic_a_votes_count_up_check`: `CHECK ((votes_count_up >= 0))`
-- `relation__rss_feed_item__category__topic_a_votes_score_up_check`: `CHECK ((votes_score_up >= (0)::double precision))`
+- `chk_relat__rss_feed_item__catego__topic_alias__votes_count_down`: `CHECK ((votes_count_down >= 0))`
+- `chk_relat__rss_feed_item__catego__topic_alias__votes_count_none`: `CHECK ((votes_count_none >= 0))`
+- `chk_relat__rss_feed_item__catego__topic_alias__votes_score_down`: `CHECK ((votes_score_down >= (0)::double precision))`
+- `chk_relat__rss_feed_item__catego__topic_alias__votes_score_none`: `CHECK ((votes_score_none >= (0)::double precision))`
+- `chk_relati__rss_feed_item__categor__topic_alias__votes_count_up`: `CHECK ((votes_count_up >= 0))`
+- `chk_relati__rss_feed_item__categor__topic_alias__votes_score_up`: `CHECK ((votes_score_up >= (0)::double precision))`
 - `relation__rss_feed_item__category__topic_alias_check`: `CHECK ((id > subject_id))`
 - `relation__rss_feed_item__category__topic_alias_check1`: `CHECK ((id > object_id))`
 
 **Foreign keys:**
 
-- `relation__rss_feed_item__category__topic_ali_created_by_id_fkey`: `FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE SET NULL`
-- `relation__rss_feed_item__category__topic_ali_deleted_by_id_fkey`: `FOREIGN KEY (deleted_by_id) REFERENCES users(id) ON DELETE SET NULL`
+- `fk_relatio__rss_feed_item__category__topic_alias__created_by_id`: `FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE SET NULL`
+- `fk_relatio__rss_feed_item__category__topic_alias__deleted_by_id`: `FOREIGN KEY (deleted_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `relation__rss_feed_item__category__topic_alias_object_id_fkey`: `FOREIGN KEY (object_id) REFERENCES topic_aliases(id) ON DELETE CASCADE`
 - `relation__rss_feed_item__category__topic_alias_subject_id_fkey`: `FOREIGN KEY (subject_id) REFERENCES rss_feed_items(id) ON DELETE CASCADE`
 
 **Indexes:**
 
-- `idx_rel__rss_fee_ite__cat__topi_alia__votes_score_sort__pos__id`: `CREATE INDEX idx_rel__rss_fee_ite__cat__topi_alia__votes_score_sort__pos__id ON public.relation__rss_feed_item__category__topic_alias USING btree (votes_score_sort DESC, id) WHERE (votes_score_net > (0)::double precision)`
 - `idx_rela__rss_feed_item__cate__topi_alias__votes_score_sort__id`: `CREATE INDEX idx_rela__rss_feed_item__cate__topi_alias__votes_score_sort__id ON public.relation__rss_feed_item__category__topic_alias USING btree (votes_score_sort DESC, id)`
+- `idx_rela__rss_feed_item__categ__topic_alias__positive_score__id`: `CREATE INDEX idx_rela__rss_feed_item__categ__topic_alias__positive_score__id ON public.relation__rss_feed_item__category__topic_alias USING btree (votes_score_sort DESC, id) WHERE (votes_score_net > (0)::double precision)`
 - `idx_relati__rss_feed_item__catego__topic_alias__subject__newest`: `CREATE INDEX idx_relati__rss_feed_item__catego__topic_alias__subject__newest ON public.relation__rss_feed_item__category__topic_alias USING btree (subject_id, created_at DESC, object_id DESC) WHERE (deleted_at IS NULL)`
 - `idx_relati__rss_feed_item__catego__topic_alias__trending_topics`: `CREATE INDEX idx_relati__rss_feed_item__catego__topic_alias__trending_topics ON public.relation__rss_feed_item__category__topic_alias USING btree (id, object_id) WHERE ((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))`
 - `idx_relatio__rss_feed_item__categor__topic_alias__reverse_index`: `CREATE INDEX idx_relatio__rss_feed_item__categor__topic_alias__reverse_index ON public.relation__rss_feed_item__category__topic_alias USING btree (object_id, subject_id)`
 - `idx_relatio__rss_feed_item__categor__topic_alias__subject__best`: `CREATE INDEX idx_relatio__rss_feed_item__categor__topic_alias__subject__best ON public.relation__rss_feed_item__category__topic_alias USING btree (subject_id, votes_score_sort DESC, created_at DESC, object_id DESC) WHERE (deleted_at IS NULL)`
 - `idx_relation__rss_feed_item__category__topic_alias__id`: `CREATE INDEX idx_relation__rss_feed_item__category__topic_alias__id ON public.relation__rss_feed_item__category__topic_alias USING btree (id)`
-- `relation__rss_feed_item__category__topic_alia_subject_id_id_key`: `CREATE UNIQUE INDEX relation__rss_feed_item__category__topic_alia_subject_id_id_key ON public.relation__rss_feed_item__category__topic_alias USING btree (subject_id, id)`
 - `relation__rss_feed_item__category__topic_alias_pkey`: `CREATE UNIQUE INDEX relation__rss_feed_item__category__topic_alias_pkey ON public.relation__rss_feed_item__category__topic_alias USING btree (subject_id, object_id)`
+- `uq_relatio__rss_feed_item__category__topic_alias__subject_id_id`: `CREATE UNIQUE INDEX uq_relatio__rss_feed_item__category__topic_alias__subject_id_id ON public.relation__rss_feed_item__category__topic_alias USING btree (subject_id, id)`
 
 **Triggers:**
 _none_

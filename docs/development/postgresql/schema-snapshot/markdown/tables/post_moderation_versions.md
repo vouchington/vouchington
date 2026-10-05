@@ -19,7 +19,7 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `post_moderation_versions_post_id_content_sha256_policy_revi_key`: `UNIQUE (post_id, content_sha256, policy_revision)`
+- `uq_post_modera_versio__post_id__content_sha256__policy_revision`: `UNIQUE (post_id, content_sha256, policy_revision)`
 
 **Check constraints:**
 
@@ -34,7 +34,7 @@ Not partitioned — growth: unbounded.
 
 - `idx_post_moderation_versions__post_id__id`: `CREATE INDEX idx_post_moderation_versions__post_id__id ON public.post_moderation_versions USING btree (post_id, id DESC)`
 - `post_moderation_versions_pkey`: `CREATE UNIQUE INDEX post_moderation_versions_pkey ON public.post_moderation_versions USING btree (id)`
-- `post_moderation_versions_post_id_content_sha256_policy_revi_key`: `CREATE UNIQUE INDEX post_moderation_versions_post_id_content_sha256_policy_revi_key ON public.post_moderation_versions USING btree (post_id, content_sha256, policy_revision)`
+- `uq_post_modera_versio__post_id__content_sha256__policy_revision`: `CREATE UNIQUE INDEX uq_post_modera_versio__post_id__content_sha256__policy_revision ON public.post_moderation_versions USING btree (post_id, content_sha256, policy_revision)`
 
 **Triggers:**
 _none_

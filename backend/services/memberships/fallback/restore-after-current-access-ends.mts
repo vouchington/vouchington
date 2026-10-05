@@ -190,7 +190,7 @@ async function getHighestPriorityFallbackSource(
           AND source_state.past_due_at IS NULL AND source_state.paused_at IS NULL
           AND (source_state.expires_at IS NULL OR source_state.expires_at > CURRENT_TIMESTAMP)
           AND grant_row.revoked_at IS NULL
-          AND membership_grant_remaining_duration(grant_row.id) >= INTERVAL '1 millisecond'
+          AND fn_membership_grant_remaining_duration(grant_row.id) >= INTERVAL '1 millisecond'
         )
       )
     FOR UPDATE OF source_state`)

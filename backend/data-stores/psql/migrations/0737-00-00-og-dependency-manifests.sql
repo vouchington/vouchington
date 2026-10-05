@@ -11,11 +11,11 @@ CREATE TABLE open_graph_dependency_manifest_placements (
   manifest_id uuid NOT NULL REFERENCES open_graph_dependency_manifests (id) ON DELETE RESTRICT,
   placement_id uuid NOT NULL,
   image_id uuid NOT NULL,
-  placement_revision integer NOT NULL CHECK (placement_revision >= 0),
+  placement_revision integer NOT NULL CONSTRAINT chk_open_graph_dependenc_manifest_placement__placement_revision CHECK (placement_revision >= 0),
   ordinal integer NOT NULL CHECK (ordinal >= 0),
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (manifest_id, ordinal),
-  UNIQUE (manifest_id, placement_id)
+  CONSTRAINT uq_open_graph_depend_manifes_placeme__manifest_id__placement_id UNIQUE (manifest_id, placement_id)
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

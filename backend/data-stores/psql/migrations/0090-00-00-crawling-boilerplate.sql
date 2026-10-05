@@ -31,7 +31,7 @@ COMMENT ON COLUMN hostname_path_boilerplate_removals.results IS 'JSONB containin
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS hostname_path_boilerplate_removal_urls (
-  hostname_path_boilerplate_removal_id UUID NOT NULL REFERENCES hostname_path_boilerplate_removals ON DELETE CASCADE,
+  hostname_path_boilerplate_removal_id UUID NOT NULL CONSTRAINT fk_hostname_path_boilerplate_removal_urls__removal REFERENCES hostname_path_boilerplate_removals ON DELETE CASCADE,
   url_id UUID NOT NULL REFERENCES urls ON DELETE CASCADE,
   PRIMARY KEY (hostname_path_boilerplate_removal_id, url_id)
 );

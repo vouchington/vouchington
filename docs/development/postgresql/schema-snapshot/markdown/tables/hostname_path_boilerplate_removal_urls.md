@@ -21,7 +21,7 @@ _none_
 
 **Foreign keys:**
 
-- `hostname_path_boilerplate_rem_hostname_path_boilerplate_re_fkey`: `FOREIGN KEY (hostname_path_boilerplate_removal_id) REFERENCES hostname_path_boilerplate_removals(id) ON DELETE CASCADE`
+- `fk_hostname_path_boilerplate_removal_urls__removal`: `FOREIGN KEY (hostname_path_boilerplate_removal_id) REFERENCES hostname_path_boilerplate_removals(id) ON DELETE CASCADE`
 - `hostname_path_boilerplate_removal_urls_url_id_fkey`: `FOREIGN KEY (url_id) REFERENCES urls(id) ON DELETE CASCADE`
 
 **Indexes:**

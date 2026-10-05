@@ -115,6 +115,7 @@ _none_
 
 - `idx_users__deleted_at`: `CREATE INDEX idx_users__deleted_at ON public.users USING btree (deleted_at) WHERE (deleted_at IS NOT NULL)`
 - `idx_users__individual_id`: `CREATE UNIQUE INDEX idx_users__individual_id ON public.users USING btree (individual_id) WHERE (individual_id IS NOT NULL)`
+- `idx_users__lingua_rs_pending`: `CREATE INDEX idx_users__lingua_rs_pending ON public.users USING btree (id) WHERE (lingua_rs_input_sha256 IS NULL)`
 - `idx_users__profile_image_id`: `CREATE INDEX idx_users__profile_image_id ON public.users USING btree (profile_image_id) WHERE (profile_image_id IS NOT NULL)`
 - `idx_users__referrer_id`: `CREATE INDEX idx_users__referrer_id ON public.users USING btree (referrer_id) WHERE (referrer_id IS NOT NULL)`
 - `idx_users__updated_at_id_active`: `CREATE INDEX idx_users__updated_at_id_active ON public.users USING btree (updated_at, id) WHERE (deleted_at IS NULL)`
@@ -122,8 +123,7 @@ _none_
 - `idx_users__username__text_pattern_ops`: `CREATE INDEX idx_users__username__text_pattern_ops ON public.users USING btree (lower(username) text_pattern_ops) WHERE (username IS NOT NULL)`
 - `idx_users__vote_weight_recalculation`: `CREATE INDEX idx_users__vote_weight_recalculation ON public.users USING btree (vote_weight_recalculated_at) WHERE ((deleted_at IS NULL) AND (vote_weight_admin_set_at IS NULL))`
 - `idx_users__votes_score_sort__id`: `CREATE INDEX idx_users__votes_score_sort__id ON public.users USING btree (votes_score_sort DESC, id) WHERE (deleted_at IS NULL)`
-- `idx_users__votes_score_sort__pos__id`: `CREATE INDEX idx_users__votes_score_sort__pos__id ON public.users USING btree (votes_score_sort DESC, id) WHERE ((votes_score_net > (0)::double precision) AND (deleted_at IS NULL))`
-- `users_lingua_rs_pending_idx`: `CREATE INDEX users_lingua_rs_pending_idx ON public.users USING btree (id) WHERE (lingua_rs_input_sha256 IS NULL)`
+- `idx_users__votes_score_sort__positive__id`: `CREATE INDEX idx_users__votes_score_sort__positive__id ON public.users USING btree (votes_score_sort DESC, id) WHERE ((votes_score_net > (0)::double precision) AND (deleted_at IS NULL))`
 - `users_pkey`: `CREATE UNIQUE INDEX users_pkey ON public.users USING btree (id)`
 
 **Triggers:**

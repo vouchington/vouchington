@@ -12,6 +12,7 @@
 -- Users can have multiple TOTP authenticators; any single one satisfies MFA.
 -- verified_at is NULL until the user enters a valid code during setup.
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_totp_authenticators (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -22,10 +23,12 @@ CREATE TABLE IF NOT EXISTS user_totp_authenticators (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_user_totp_authenticators_updated_at
   BEFORE UPDATE ON user_totp_authenticators
   FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_totp_authenticators__user_id
   ON user_totp_authenticators (user_id);
 
@@ -68,15 +71,21 @@ CREATE TABLE IF NOT EXISTS api_keys (
   CHECK (char_length(label) <= 100)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_register_retained_api_key_identity
   BEFORE INSERT ON api_keys FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('api_key');
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_api_keys_updated_at
   BEFORE UPDATE ON api_keys FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_api_keys__key_hash ON api_keys (key_hash) WHERE revoked_at IS NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_api_keys__user_id ON api_keys (user_id, id DESC) WHERE revoked_at IS NULL;
-CREATE INDEX IF NOT EXISTS idx_api_keys__replaced_by_api_key_id__fk ON api_keys (replaced_by_api_key_id) WHERE replaced_by_api_key_id IS NOT NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_api_keys__replaced_by_api_key_id__foreign_key ON api_keys (replaced_by_api_key_id) WHERE replaced_by_api_key_id IS NOT NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_api_keys__expiry_reminder ON api_keys (expires_at, id) WHERE revoked_at IS NULL AND replaced_by_api_key_id IS NULL AND expiry_reminder_sent_at IS NULL;
 
 COMMENT ON TABLE api_keys IS 'User-issued API keys for programmatic access (format: voucha_<type>_<32 hex random>_<16 hex checksum>), stored as SHA-256 hashes.';
@@ -93,6 +102,7 @@ COMMENT ON COLUMN api_keys.replaced_by_api_key_id IS 'Replacement key created by
 COMMENT ON COLUMN api_keys.expiry_reminder_sent_at IS 'Durable claim before expiry reminder delivery; retries never send twice.';
 
 -- Current indexes for fresh schema bootstrap.
-CREATE INDEX IF NOT EXISTS idx_api_keys__user_id__fk
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_api_keys__user_id__foreign_key
   ON api_keys (user_id)
   WHERE user_id IS NOT NULL;
