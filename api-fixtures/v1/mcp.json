@@ -36421,6 +36421,1414 @@
         },
         {
           "tool": {
+            "name": "review_copyright_form_intake",
+            "title": "Review copyright form intake",
+            "description": "Record the staff copyright decision review copyright form intake.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "is_accepted": {
+                  "type": "boolean"
+                },
+                "rationale": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S",
+                  "maxLength": 10000
+                }
+              },
+              "required": ["id", "is_accepted", "rationale"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "additionalProperties": false,
+              "properties": {
+                "copyright_notice": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["id"],
+                  "type": "object"
+                },
+                "copyright_submission": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["id"],
+                  "type": "object"
+                },
+                "is_accepted": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["copyright_notice", "copyright_submission", "is_accepted"],
+              "type": "object"
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": true,
+              "openWorldHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["copyright-notices:read", "copyright-notices:write"]
+            }
+          },
+          "roles": ["administrator"],
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/copyright-form-intakes/:id/reviews"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "approve_copyright_email_intake",
+            "title": "Approve copyright email intake",
+            "description": "Record the staff copyright decision approve copyright email intake.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "intake_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "rationale": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S",
+                  "maxLength": 10000
+                }
+              },
+              "required": ["intake_id", "rationale"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "additionalProperties": false,
+              "properties": {
+                "copyright_notice": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["id"],
+                  "type": "object"
+                },
+                "copyright_submission": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["id"],
+                  "type": "object"
+                }
+              },
+              "required": ["copyright_notice", "copyright_submission"],
+              "type": "object"
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": false,
+              "openWorldHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["copyright-notices:read", "copyright-notices:write"]
+            }
+          },
+          "roles": ["administrator"],
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/copyright-email-intakes/:id/approvals"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "reject_copyright_email_intake",
+            "title": "Reject copyright email intake",
+            "description": "Record the staff copyright decision reject copyright email intake.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "intake_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "rationale": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S",
+                  "maxLength": 10000
+                }
+              },
+              "required": ["intake_id", "rationale"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "additionalProperties": false,
+              "properties": {
+                "reply_queued": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["reply_queued"],
+              "type": "object"
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": false,
+              "openWorldHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["copyright-notices:read", "copyright-notices:write"]
+            }
+          },
+          "roles": ["administrator"],
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/copyright-email-intakes/:id/rejections"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "admit_copyright_email_correspondence",
+            "title": "Admit copyright email correspondence",
+            "description": "Record the staff copyright decision admit copyright email correspondence.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "intake_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "supplement",
+                    "appeal",
+                    "counter_notice",
+                    "withdrawal",
+                    "court_or_ccb_hold"
+                  ]
+                },
+                "target_ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "minItems": 1,
+                  "maxItems": 20
+                },
+                "rationale": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S",
+                  "maxLength": 10000
+                }
+              },
+              "required": ["intake_id", "kind", "rationale"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "additionalProperties": false,
+              "properties": {
+                "copyright_correspondence": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["id"],
+                  "type": "object"
+                },
+                "copyright_notice": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["id"],
+                  "type": "object"
+                },
+                "copyright_submission": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["id"],
+                  "type": "object"
+                },
+                "is_duplicate": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "copyright_correspondence",
+                "copyright_notice",
+                "copyright_submission",
+                "is_duplicate"
+              ],
+              "type": "object"
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": true,
+              "openWorldHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["copyright-notices:read", "copyright-notices:write"]
+            }
+          },
+          "roles": ["administrator"],
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/copyright-email-intakes/:id/correspondence"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "reject_copyright_email_correspondence",
+            "title": "Reject copyright email correspondence",
+            "description": "Record the staff copyright decision reject copyright email correspondence.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "intake_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "supplement",
+                    "appeal",
+                    "counter_notice",
+                    "withdrawal",
+                    "court_or_ccb_hold"
+                  ]
+                },
+                "rationale": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S",
+                  "maxLength": 10000
+                }
+              },
+              "required": ["intake_id", "kind", "rationale"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "additionalProperties": false,
+              "properties": {
+                "copyright_notice": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["id"],
+                  "type": "object"
+                },
+                "is_duplicate": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["copyright_notice", "is_duplicate"],
+              "type": "object"
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": true,
+              "openWorldHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["copyright-notices:read", "copyright-notices:write"]
+            }
+          },
+          "roles": ["administrator"],
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/copyright-email-intakes/:id/correspondence-rejections"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "replay_copyright_email_intake_reply",
+            "title": "Replay copyright email intake reply",
+            "description": "Record the staff copyright decision replay copyright email intake reply.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "intake_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "rationale": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S",
+                  "maxLength": 10000
+                }
+              },
+              "required": ["intake_id", "rationale"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "additionalProperties": false,
+              "properties": {
+                "replayed": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["replayed"],
+              "type": "object"
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": true,
+              "openWorldHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["copyright-notices:read", "copyright-notices:write"]
+            }
+          },
+          "roles": ["administrator"],
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/copyright-email-intakes/:id/reply/replays"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "review_copyright_restriction",
+            "title": "Review copyright restriction",
+            "description": "Record the staff copyright decision review copyright restriction.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "restrictionId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "action": {
+                  "type": "string",
+                  "enum": ["confirm", "reverse"]
+                },
+                "rationale": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S",
+                  "maxLength": 10000
+                }
+              },
+              "required": ["id", "restrictionId", "action", "rationale"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "additionalProperties": false,
+              "properties": {
+                "copyright_restriction": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "authorizing_assessment_id": {
+                      "type": "string"
+                    },
+                    "copyright_notice_target_id": {
+                      "type": "string"
+                    },
+                    "human_review_action": {
+                      "anyOf": [
+                        {
+                          "const": "confirm"
+                        },
+                        {
+                          "const": "modify"
+                        },
+                        {
+                          "const": "reverse"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "human_reviewed_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "human_reviewed_by_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "imposed_at": {
+                      "type": "string"
+                    },
+                    "imposed_by_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "lifted_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "lifted_by_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "authorizing_assessment_id",
+                    "copyright_notice_target_id",
+                    "human_review_action",
+                    "human_reviewed_at",
+                    "human_reviewed_by_id",
+                    "id",
+                    "imposed_at",
+                    "imposed_by_id",
+                    "lifted_at",
+                    "lifted_by_id"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": ["copyright_restriction"],
+              "type": "object"
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false,
+              "openWorldHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["copyright-notices:read", "copyright-notices:write"]
+            }
+          },
+          "roles": ["administrator"],
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/copyright-notices/:id/restrictions/:restrictionId/reviews"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "review_copyright_counter_notice",
+            "title": "Review copyright counter notice",
+            "description": "Record the staff copyright decision review copyright counter notice.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "is_accepted": {
+                  "type": "boolean"
+                },
+                "rationale": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S",
+                  "maxLength": 10000
+                }
+              },
+              "required": ["id", "is_accepted", "rationale"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "additionalProperties": false,
+              "properties": {
+                "assessment_id": {
+                  "type": "string"
+                },
+                "copyright_notice": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["id"],
+                  "type": "object"
+                },
+                "deadline_id": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "required": ["assessment_id", "copyright_notice", "deadline_id"],
+              "type": "object"
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": false,
+              "openWorldHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["copyright-notices:read", "copyright-notices:write"]
+            }
+          },
+          "roles": ["administrator"],
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/copyright-submissions/:id/counter-notice-reviews"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "review_copyright_appeal",
+            "title": "Review copyright appeal",
+            "description": "Record the staff copyright decision review copyright appeal.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "decisions": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 20,
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "restriction_id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "action": {
+                        "type": "string",
+                        "enum": ["confirm", "reverse"]
+                      }
+                    },
+                    "required": ["restriction_id", "action"],
+                    "additionalProperties": false
+                  }
+                },
+                "recommendation_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "manual_fallback_reason": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "pattern": "\\S",
+                      "maxLength": 10000
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "rationale": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S",
+                  "maxLength": 10000
+                }
+              },
+              "required": ["id", "decisions", "rationale"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "additionalProperties": false,
+              "properties": {
+                "copyright_notice": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["id"],
+                  "type": "object"
+                },
+                "review_ids": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "required": ["copyright_notice", "review_ids"],
+              "type": "object"
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false,
+              "openWorldHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["copyright-notices:read", "copyright-notices:write"]
+            }
+          },
+          "roles": ["administrator"],
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/copyright-submissions/:id/appeal-reviews"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "assess_copyright_legal_hold",
+            "title": "Assess copyright legal hold",
+            "description": "Record the staff copyright decision assess copyright legal hold.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "is_from_original_claimant": {
+                  "type": "boolean"
+                },
+                "is_same_material": {
+                  "type": "boolean"
+                },
+                "proceeding_kind": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": ["federal_court", "ccb"]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "ccb_claim_kind": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": ["claim", "counterclaim"]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "commenced_at": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "received_by_designated_agent_at": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "target_ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "minItems": 1,
+                  "maxItems": 20,
+                  "uniqueItems": true
+                },
+                "rationale": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S",
+                  "maxLength": 10000
+                }
+              },
+              "required": [
+                "id",
+                "is_from_original_claimant",
+                "is_same_material",
+                "target_ids",
+                "rationale"
+              ],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "additionalProperties": false,
+              "properties": {
+                "copyright_legal_hold_assessment": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "assessed_at": {
+                      "type": "string"
+                    },
+                    "assessed_by_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "ccb_claim_kind": {
+                      "anyOf": [
+                        {
+                          "const": "claim"
+                        },
+                        {
+                          "const": "counterclaim"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "commenced_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "copyright_notice_submission_id": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "is_from_original_claimant": {
+                      "type": "boolean"
+                    },
+                    "is_same_material": {
+                      "type": "boolean"
+                    },
+                    "proceeding_kind": {
+                      "anyOf": [
+                        {
+                          "const": "ccb"
+                        },
+                        {
+                          "const": "federal_court"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "rationale_ciphertext": {
+                      "type": "string"
+                    },
+                    "received_by_designated_agent_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "target_ids": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "assessed_at",
+                    "assessed_by_id",
+                    "ccb_claim_kind",
+                    "commenced_at",
+                    "copyright_notice_submission_id",
+                    "id",
+                    "is_from_original_claimant",
+                    "is_same_material",
+                    "proceeding_kind",
+                    "rationale_ciphertext",
+                    "received_by_designated_agent_at",
+                    "target_ids"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": ["copyright_legal_hold_assessment"],
+              "type": "object"
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false,
+              "openWorldHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["copyright-notices:read", "copyright-notices:write"]
+            }
+          },
+          "roles": ["administrator"],
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/copyright-submissions/:id/legal-hold-assessments"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "resolve_copyright_legal_hold",
+            "title": "Resolve copyright legal hold",
+            "description": "Record the staff copyright decision resolve copyright legal hold.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "resolution_kind": {
+                  "type": "string",
+                  "enum": ["dismissed", "proceeding_ended", "superseded"]
+                },
+                "rationale": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S",
+                  "maxLength": 10000
+                }
+              },
+              "required": ["id", "resolution_kind", "rationale"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "additionalProperties": false,
+              "properties": {
+                "copyright_legal_hold_resolution": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_notice_legal_hold_assessment_id": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "rationale_ciphertext": {
+                      "type": "string"
+                    },
+                    "resolution_kind": {
+                      "enum": ["dismissed", "proceeding_ended", "superseded"],
+                      "type": "string"
+                    },
+                    "resolved_at": {
+                      "type": "string"
+                    },
+                    "resolved_by_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "copyright_notice_legal_hold_assessment_id",
+                    "id",
+                    "rationale_ciphertext",
+                    "resolution_kind",
+                    "resolved_at",
+                    "resolved_by_id"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": ["copyright_legal_hold_resolution"],
+              "type": "object"
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false,
+              "openWorldHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["copyright-notices:read", "copyright-notices:write"]
+            }
+          },
+          "roles": ["administrator"],
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/copyright-legal-hold-assessments/:id/resolutions"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "record_copyright_repeat_infringer_disposition",
+            "title": "Record copyright repeat infringer disposition",
+            "description": "Record the staff copyright decision record copyright repeat infringer disposition.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "disposition": {
+                  "type": "string",
+                  "enum": ["abusive", "duplicate", "withdrawn"]
+                },
+                "rationale": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S",
+                  "maxLength": 10000
+                }
+              },
+              "required": ["id", "disposition", "rationale"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "additionalProperties": false,
+              "properties": {
+                "copyright_repeat_infringer_disposition": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "incident_id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["incident_id"],
+                  "type": "object"
+                }
+              },
+              "required": ["copyright_repeat_infringer_disposition"],
+              "type": "object"
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": false,
+              "openWorldHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["copyright-notices:read", "copyright-notices:write"]
+            }
+          },
+          "roles": ["administrator"],
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/copyright-repeat-infringer-incidents/:id/dispositions"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "record_copyright_repeat_infringer_outcome",
+            "title": "Record copyright repeat infringer outcome",
+            "description": "Record the staff copyright decision record copyright repeat infringer outcome.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "outcome": {
+                  "type": "string",
+                  "enum": ["no_action", "restrict", "terminate", "warning"]
+                },
+                "rationale": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S",
+                  "maxLength": 10000
+                }
+              },
+              "required": ["id", "outcome", "rationale"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "additionalProperties": false,
+              "properties": {
+                "copyright_repeat_infringer_review": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "account_user_id": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "outcome": {
+                      "enum": ["no_action", "restrict", "terminate", "warning"],
+                      "type": "string"
+                    }
+                  },
+                  "required": ["account_user_id", "id", "outcome"],
+                  "type": "object"
+                }
+              },
+              "required": ["copyright_repeat_infringer_review"],
+              "type": "object"
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false,
+              "openWorldHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["copyright-notices:read", "copyright-notices:write"]
+            }
+          },
+          "roles": ["administrator"],
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/copyright-repeat-infringer-reviews/:id/outcomes"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "reinstate_copyright_repeat_infringer",
+            "title": "Reinstate copyright repeat infringer",
+            "description": "Record the staff copyright decision reinstate copyright repeat infringer.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "accountUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "rationale": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S",
+                  "maxLength": 10000
+                }
+              },
+              "required": ["accountUserId", "rationale"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "additionalProperties": false,
+              "properties": {
+                "copyright_repeat_infringer_review": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "account_user_id": {
+                      "type": "string"
+                    },
+                    "outcome": {
+                      "const": "reinstatement"
+                    }
+                  },
+                  "required": ["account_user_id", "outcome"],
+                  "type": "object"
+                }
+              },
+              "required": ["copyright_repeat_infringer_review"],
+              "type": "object"
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": false,
+              "openWorldHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["copyright-notices:read", "copyright-notices:write"]
+            }
+          },
+          "roles": ["administrator"],
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/copyright-repeat-infringer-accounts/:accountUserId/reinstatements"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "replay_copyright_delivery_intent",
+            "title": "Replay copyright delivery intent",
+            "description": "Record the staff copyright decision replay copyright delivery intent.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "intentId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "rationale": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S",
+                  "maxLength": 10000
+                }
+              },
+              "required": ["id", "intentId", "rationale"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "additionalProperties": false,
+              "properties": {
+                "replayed": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["replayed"],
+              "type": "object"
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": true,
+              "openWorldHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["copyright-notices:read", "copyright-notices:write"]
+            }
+          },
+          "roles": ["administrator"],
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/copyright-notices/:id/delivery-intents/:intentId/replays"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "replay_copyright_action_intent",
+            "title": "Replay copyright action intent",
+            "description": "Record the staff copyright decision replay copyright action intent.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "intentId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "rationale": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S",
+                  "maxLength": 10000
+                }
+              },
+              "required": ["id", "intentId", "rationale"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "additionalProperties": false,
+              "properties": {
+                "replayed": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["replayed"],
+              "type": "object"
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": true,
+              "openWorldHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["copyright-notices:read", "copyright-notices:write"]
+            }
+          },
+          "roles": ["administrator"],
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/copyright-notices/:id/action-intents/:intentId/replays"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "revoke_copyright_guest_capability",
+            "title": "Revoke copyright guest capability",
+            "description": "Record the staff copyright decision revoke copyright guest capability.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "capabilityId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "rationale": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S",
+                  "maxLength": 10000
+                }
+              },
+              "required": ["id", "capabilityId", "rationale"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "additionalProperties": false,
+              "properties": {
+                "copyright_guest_capability": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "revoked_at": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["id", "revoked_at"],
+                  "type": "object"
+                }
+              },
+              "required": ["copyright_guest_capability"],
+              "type": "object"
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": true,
+              "openWorldHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["copyright-notices:read", "copyright-notices:write"]
+            }
+          },
+          "roles": ["administrator"],
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/copyright-notices/:id/guest-capabilities/:capabilityId/revocation"
+            }
+          ]
+        },
+        {
+          "tool": {
             "name": "get_growth_metrics",
             "title": "Get growth metrics",
             "description": "Read platform growth metrics. Range defaults to 30 days.",
