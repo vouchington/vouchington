@@ -124,6 +124,7 @@
     "@services/communities": "workspace:^",
     "@services/community-agent-prompts": "workspace:^",
     "@services/community-member-vacations": "workspace:^",
+    "@services/content-provenance": "workspace:^",
     "@services/contribution-gating": "workspace:^",
     "@services/conversations-messages": "workspace:^",
     "@services/copyright-notices": "workspace:^",

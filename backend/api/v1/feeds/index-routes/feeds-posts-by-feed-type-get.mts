@@ -11,7 +11,7 @@ import {
 } from '@services/entity-fetch'
 import { getPostFeedIds } from '@services/feeds'
 import { VALID_POST_FEED_TYPES, type PostFeedType } from '@services/feeds/types'
-import { maskAnonymousPosts } from '@services/posts'
+import { labelAndMaskPosts } from '@services/content-provenance'
 import { getPostCommunitiesRecord } from '@services/communities/post-communities-record'
 import { getUrlEmbedsByUrlIds } from '@services/rss-feed-items/get-url-embed'
 import { getPublicUsersByAnyBatch } from '@services/users/get-public-batch'
@@ -72,7 +72,7 @@ app.route('/api/v1/feeds/posts/:feed_type').get(async (ctx: Context) => {
   // Use streaming pattern: pass promises directly to allow independent streaming
   // Keep raw posts for internal lookups (bookmarks need unmasked created_by_id)
   const rawPostsPromise = getPostByAnyCachedBatch(postIds)
-  const postsPromise = rawPostsPromise.then(posts => maskAnonymousPosts(posts, currentUser))
+  const postsPromise = rawPostsPromise.then(posts => labelAndMaskPosts(posts, currentUser))
   const usersPromise =
     sharedByUserIds.length > 0 ? getPublicUsersByAnyBatch(sharedByUserIds) : Promise.resolve([])
   const electionsPromise = getPostElectionByIdCachedBatch(postIds).then(indexById)

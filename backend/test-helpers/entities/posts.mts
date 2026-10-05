@@ -3,6 +3,7 @@ import { insertTestCentralizedEmbeddingsBulk } from './_bedrock-embeddings-suppo
 import sql, { type SQLStatement } from 'sql-template-strings'
 import pgvector from 'pgvector/pg'
 import { v7 as uuidv7 } from 'uuid'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import { setTestPostClearanceStatus } from './post-clearance.mts'
 
 export async function updatePostEmbeddingData(data: {
@@ -78,6 +79,8 @@ export async function insertTestPost(data: {
   broadcast?: 'everyone' | 'users' | 'followers' | 'mutual_followers'
   privacy?: 'public' | 'private'
   isAnonymous?: boolean
+  /** The channel and OAuth client that wrote the row; test posts default to `system`. */
+  provenance?: ContentProvenance
   clearanceStatus?: 'pending' | 'approved' | 'rejected' | 'in_review'
   createdAt?: Date
 }): Promise<string> {
@@ -90,7 +93,7 @@ export async function insertTestPost(data: {
       root_post_id, parent_post_id, community_id, broadcast, privacy, is_anonymous,
       bedrock_nova_multimodal_v1_content_sha256,
       llm_moderation_content_sha256,
-      created_via
+      created_via, created_via_oauth_client_id
   `
   if (data.urlId) insertPostQuery.append(sql`, url_id`)
   if (data.creationSourceUrlId) insertPostQuery.append(sql`, creation_source_url_id`)
@@ -102,7 +105,8 @@ export async function insertTestPost(data: {
       ${data.parentId === undefined ? null : data.parentId},
       ${data.communityId === undefined ? null : data.communityId},
       ${data.broadcast ?? 'everyone'}, ${data.privacy ?? 'public'}, ${data.isAnonymous ?? false},
-      ${sha256}, ${sha256}, 'system'
+      ${sha256}, ${sha256}, ${data.provenance?.createdVia ?? 'system'},
+      ${data.provenance?.oauthClientId ?? null}
   `)
   if (data.urlId) insertPostQuery.append(sql`, ${data.urlId}`)
   if (data.creationSourceUrlId) insertPostQuery.append(sql`, ${data.creationSourceUrlId}`)

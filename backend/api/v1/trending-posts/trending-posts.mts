@@ -23,6 +23,7 @@ import { parseNumberParam } from '@ts-shared/utils/query'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 
 import { maybeSanitizeElections } from '@services/elections-votes/shared/sanitize-election'
+import { attachPostProvenance } from '@services/content-provenance'
 import { getPublicPostIds } from '@services/posts'
 import {
   VALID_TRENDING_POST_TYPES,
@@ -112,7 +113,9 @@ app.route('/api/v1/trending-posts').get(async ctx => {
   const output: Record<string, unknown> = {
     results: result.results,
     page_info: result.page_info,
-    posts: getPostByAnyCachedBatch(postIds).then(indexById),
+    posts: getPostByAnyCachedBatch(postIds)
+      .then(posts => attachPostProvenance(posts, currentUser))
+      .then(indexById),
     posts_metrics: getPostMetricsByAnyCachedBatch(postIds).then(indexById),
     post_elections: getPostElectionByIdCachedBatch(postIds)
       .then(indexById)

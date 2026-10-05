@@ -266,6 +266,29 @@ automod flag list. Native delivery is tracked by
 [vouchington-clients#199](https://github.com/vouchington/vouchington-clients/issues/199); this
 repository does not edit `vouchington-clients`.
 
+## Post provenance label handoff
+
+#706 exposes how a post was written. `Post` responses carry `provenance` (`{ "via": "api" | "mcp",
+"app_name": string | null }`) for posts created through the API or MCP, and nothing for web, Swift,
+.NET or system posts. `app_name` is the reviewed display name of an allowlisted Client ID Metadata
+Document client, the metadata hostname of any other such client, the `client_name` of a staff-verified
+dynamically registered client, or `null` for everyone else. The field is computed on each read, so a
+rename or an unverify shows on the next request. A post marked anonymous hides `app_name` from every
+viewer who cannot see its author. Administrators and moderators also receive `staff_provenance`
+(`created_via` and, when the post came through an OAuth client, `oauth_client` with `client_id`,
+`client_name`, `metadata_url` and `verified`); the client is omitted for anonymous posts they
+cannot attribute. The REST read routes and the MCP `get_post`, `get_post_ancestors`,
+`get_post_descendants`, `get_community_posts` and `get_community_pinned_posts` tools carry the
+public label. MCP never carries `staff_provenance`.
+
+Swift and .NET must decode both optional fields and render the badge where they render the post type
+badge, composing the text from their own localized copy. The structured shape is staged in
+`api-fixtures/v1/` as `native.users.profile.posts.provenance` and
+`native.users.profile.posts.staff-provenance`. Native delivery is tracked by
+[vouchington-clients#206](https://github.com/vouchington/vouchington-clients/issues/206); this
+repository does not edit `vouchington-clients`. Other entity types are follow-up
+[vouchington#2046](https://github.com/vouchington/vouchington/issues/2046).
+
 ## Retired agent flag action handoff
 
 #188 removes the last per-agent flag action. The seeded moderators are record-only, so

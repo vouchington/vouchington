@@ -11,6 +11,7 @@ import {
   getPostMetricsByAnyCachedBatch,
   getUserPublicByAnyCachedBatch,
 } from '@services/entity-fetch'
+import { attachPostProvenance } from '@services/content-provenance'
 import { getAdminUserIdsFromPosts } from '@services/markdown/admin-users'
 import { renderMarkdownBatch } from '@services/markdown/batch-render'
 import {
@@ -53,7 +54,9 @@ app.route('/api/v1/topic-recommendations').get(async (ctx: Context) => {
   })
 
   const postIds = result.results.map(item => item.id)
-  const postsPromise = getPostByAnyCachedBatch(postIds)
+  const postsPromise = getPostByAnyCachedBatch(postIds).then(posts =>
+    attachPostProvenance(posts, currentUser),
+  )
   const output: Record<string, unknown> = {
     results: result.results,
     page_info: result.page_info,

@@ -14,6 +14,7 @@ import {
 } from '@services/communities'
 import { attachPostClaims } from '@services/moderation-claims'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
+import { attachPostProvenance } from '@services/content-provenance'
 import { getPostByAnyCachedBatch, getPostMetricsByAnyCachedBatch } from '@services/entity-fetch'
 import { getUrlEmbedsByUrlIds } from '@services/rss-feed-items/get-url-embed'
 import { isAdminUser } from '@services/users'
@@ -81,7 +82,9 @@ app.route('/api/v1/communities/:idOrSlug/posts').get(async (ctx: Context) => {
     ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
   }
 
-  const rawPostsPromise = getPostByAnyCachedBatch(allPostIds)
+  const rawPostsPromise = getPostByAnyCachedBatch(allPostIds).then(posts =>
+    attachPostProvenance(posts, currentUser),
+  )
   const embedAccess = isAdminUser(currentUser) ? 'administrator' : 'public'
 
   const output: Record<string, unknown> = {
@@ -134,7 +137,9 @@ app.route('/api/v1/communities/:idOrSlug/posts/pending').get(async (ctx: Context
   )
 
   const searchResults = postIds.map(id => ({ __entity_type: 'post' as const, id }))
-  const pendingRawPostsPromise = getPostByAnyCachedBatch(postIds)
+  const pendingRawPostsPromise = getPostByAnyCachedBatch(postIds).then(posts =>
+    attachPostProvenance(posts, currentUser),
+  )
   const embedAccess = isAdminUser(currentUser) ? 'administrator' : 'public'
 
   const output: Record<string, unknown> = {

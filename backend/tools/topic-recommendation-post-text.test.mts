@@ -166,7 +166,11 @@ const TEXT_FIELDS = [
   'user.verified_display_name',
 ]
 
-/** Ids, timestamps, slugs, hostnames, URLs and enums: formats the service or the database validates. */
+/**
+ * Ids, timestamps, slugs, hostnames, URLs and enums: formats the service or the database validates.
+ * The provenance label is one: `app_name` is a reviewed name, a hostname or the name staff verified,
+ * because renaming a client drops its verification.
+ */
 const FORMAT_FIELDS = [
   'approved_at',
   'archived_at',
@@ -196,6 +200,8 @@ const FORMAT_FIELDS = [
   'post_related_topics[].slug',
   'post_related_topics[].topic_type',
   'privacy',
+  'provenance.app_name',
+  'provenance.via',
   'rejected_at',
   'review_topic_ratings[].category_slug',
   'review_topic_ratings[].topic.created_at',
@@ -232,6 +238,17 @@ const FORMAT_FIELDS = [
   'user.roles[]',
 ]
 
+/**
+ * Staff provenance is attached by REST read routes for moderation staff only. This tool maps a
+ * service post that never carries it, and no MCP result does, so none of it reaches an agent.
+ */
+const REST_ONLY_FIELDS = [
+  'staff_provenance.created_via',
+  'staff_provenance.oauth_client.client_id',
+  'staff_provenance.oauth_client.client_name',
+  'staff_provenance.oauth_client.metadata_url',
+]
+
 describe('the documented recommendation post', () => {
   it('has no string field that is neither sanitized text nor a validated format', () => {
     // A field the documented Post gains later is text until someone decides otherwise: this fails
@@ -240,6 +257,8 @@ describe('the documented recommendation post', () => {
       ...new Set(stringPaths(TOPIC_RECOMMENDATION_POST_SCHEMA as Schema).map(normalized)),
     ]
 
-    expect(declared.toSorted()).toEqual([...TEXT_FIELDS, ...FORMAT_FIELDS].toSorted())
+    expect(declared.toSorted()).toEqual(
+      [...TEXT_FIELDS, ...FORMAT_FIELDS, ...REST_ONLY_FIELDS].toSorted(),
+    )
   })
 })

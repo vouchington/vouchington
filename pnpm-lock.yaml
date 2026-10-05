@@ -918,6 +918,9 @@ importers:
       '@services/community-member-vacations':
         specifier: workspace:^
         version: link:../services/community-member-vacations
+      '@services/content-provenance':
+        specifier: workspace:^
+        version: link:../services/content-provenance
       '@services/contribution-gating':
         specifier: workspace:^
         version: link:../services/contribution-gating
@@ -4642,6 +4645,28 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+    devDependencies:
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
+
+  backend/services/content-provenance:
+    dependencies:
+      '@data-stores/psql':
+        specifier: workspace:^
+        version: link:../../data-stores/psql
+      '@services/oauth-authorization-server':
+        specifier: workspace:^
+        version: link:../oauth-authorization-server
+      '@services/posts':
+        specifier: workspace:^
+        version: link:../posts
+      '@services/users':
+        specifier: workspace:^
+        version: link:../users
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -9636,6 +9661,9 @@ importers:
       '@services/classifiers':
         specifier: workspace:^
         version: link:../classifiers
+      '@services/content-provenance':
+        specifier: workspace:^
+        version: link:../content-provenance
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../elections-votes
@@ -11204,6 +11232,9 @@ importers:
       '@services/communities':
         specifier: workspace:^
         version: link:../services/communities
+      '@services/content-provenance':
+        specifier: workspace:^
+        version: link:../services/content-provenance
       '@services/contribution-gating':
         specifier: workspace:^
         version: link:../services/contribution-gating

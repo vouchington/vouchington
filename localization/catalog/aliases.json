@@ -9035,5 +9035,12 @@
 {"alias":"shared.oauth.consent.resourceHeading","consumer":"web","copyId":"copy.oauth.consent.resourceHeading"},
 {"alias":"shared.oauth.consent.sensitivePermissionsHeading","consumer":"web","copyId":"copy.shared.oauth.consent.sensitivePermissionsHeading"},
 {"alias":"shared.oauth.consent.title","consumer":"web","copyId":"copy.oauth.consent.title"},
+{"alias":"shared.provenance.channel","consumer":"web","copyId":"copy.shared.provenance.channel"},
+{"alias":"shared.provenance.client","consumer":"web","copyId":"copy.shared.provenance.client"},
+{"alias":"shared.provenance.unverified","consumer":"web","copyId":"copy.shared.provenance.unverified"},
+{"alias":"shared.provenance.verified","consumer":"web","copyId":"copy.shared.provenance.verified"},
+{"alias":"shared.provenance.viaApi","consumer":"web","copyId":"copy.shared.provenance.viaApi"},
+{"alias":"shared.provenance.viaApp","consumer":"web","copyId":"copy.shared.provenance.viaApp"},
+{"alias":"shared.provenance.viaMcp","consumer":"web","copyId":"copy.shared.provenance.viaMcp"},
 {"alias":"shared.timeAgo.relativeDuration","consumer":"web","copyId":"copy.shared.timeAgo.relativeDuration"}
 ]

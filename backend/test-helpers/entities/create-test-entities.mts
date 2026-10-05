@@ -1,6 +1,7 @@
 import type { PrivateUser } from '@voucha/types/entities/user'
 import type { Post, PostBroadcast, PostPrivacy, PostType } from '@voucha/types/entities/post'
 import type { TopicTypes } from '@voucha/types/entities/topic'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { insertTestTopic } from './topics.mts'
@@ -35,6 +36,7 @@ export type CreateTestPostOptions = {
   privacy?: PostPrivacy
   community_id?: string
   is_anonymous?: boolean
+  provenance?: ContentProvenance
   data_point_vertical?: string
   structured_data?: unknown
 }
@@ -122,6 +124,7 @@ export async function createTestPost(options: CreateTestPostOptions = {}) {
     broadcast: options.broadcast,
     privacy: options.privacy,
     isAnonymous: options.is_anonymous,
+    provenance: options.provenance,
     // Test posts bypass the moderation pipeline — approve immediately so they are
     // visible to all users in search/feed queries (insertTestPost defaults to this).
   })

@@ -36,6 +36,7 @@
     "@services/bookmarks": "workspace:^",
     "@services/classifier-runs": "workspace:^",
     "@services/classifiers": "workspace:^",
+    "@services/content-provenance": "workspace:^",
     "@services/elections-votes": "workspace:^",
     "@services/entity-cache": "workspace:^",
     "@services/entity-fetch": "workspace:^",

@@ -9,6 +9,7 @@ import {
   getUserUrlsCollection,
 } from '@services/entity-fetch'
 import { getBookmarksForEntities } from '@services/bookmarks'
+import { attachPostProvenance } from '@services/content-provenance'
 import { getOptionalAuthAndRateLimit } from '../../response-helpers.mts'
 import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
 import {
@@ -52,7 +53,10 @@ app.route('/api/v1/users/:idOrSlug/posts/:listType').get(async (ctx: Context) =>
     { limit, after },
   )
 
-  ctx.json(collection)
+  ctx.json({
+    ...collection,
+    results: await attachPostProvenance(collection.results, resolved.currentUser),
+  })
 })
 
 app.route('/api/v1/users/:idOrSlug/users/:listType').get(async (ctx: Context) => {
