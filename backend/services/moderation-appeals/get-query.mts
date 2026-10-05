@@ -42,19 +42,8 @@ export const APPEAL_SELECT = sql`
       'title', p.title,
       'declared_language', p.declared_language,
       'lingua_rs_detected_language', p.lingua_rs_detected_language,
-      'decided_at', CASE
-        WHEN create_change.metadata ? 'original_decision'
-          THEN (create_change.metadata #>> '{original_decision,decided_at}')::timestamptz
-        WHEN ma.post_removal_kind = 'community' THEN cpr.unpublished_at
-        ELSE pcs.clearance_updated_at
-      END,
-      'public_reason', CASE
-        WHEN ma.post_removal_kind = 'community'
-          AND create_change.metadata ? 'original_decision'
-          THEN create_change.metadata #>> '{original_decision,reason}'
-        WHEN ma.post_removal_kind = 'community' THEN cpr.rejection_reason
-        ELSE NULL
-      END,
+      'decided_at', ma.original_decided_at,
+      'public_reason', CASE WHEN ma.post_removal_kind = 'community' THEN ma.original_decision_reason ELSE NULL END,
       'community', CASE WHEN pc.id IS NULL THEN NULL ELSE jsonb_build_object('id', pc.id, 'name', pc.name) END
     )
     ELSE NULL
@@ -67,18 +56,7 @@ export const APPEAL_SELECT = sql`
       'profile_image_id', appellant.profile_image_id
     ),
     'original_decision', jsonb_build_object(
-      'internal_reason', CASE
-        WHEN create_change.metadata ? 'original_decision'
-          THEN create_change.metadata #>> '{original_decision,reason}'
-        ELSE CASE
-          WHEN ma.user_warning_id IS NOT NULL THEN uw.reason
-          WHEN ma.community_ban_id IS NOT NULL THEN cb.reason
-          WHEN ma.user_suspension_id IS NOT NULL THEN us.reason
-          WHEN ma.post_removal_kind = 'community' THEN cpr.rejection_reason
-          WHEN ma.post_removal_kind = 'platform' THEN pcs.clearance_reason
-          ELSE NULL
-        END
-      END,
+      'internal_reason', ma.original_decision_reason,
       'actor', CASE
         WHEN decision_actor_ref.id IS NULL THEN NULL
         ELSE jsonb_build_object(
@@ -100,26 +78,7 @@ export const APPEAL_JOINS = sql`
   LEFT JOIN communities bc ON bc.id = cb.community_id
   LEFT JOIN user_suspensions us ON us.id = ma.user_suspension_id
   LEFT JOIN posts p ON p.id = ma.post_id
-  LEFT JOIN view_post_clearance_status pcs ON pcs.post_id = ma.post_id
-  LEFT JOIN post_clearance_changes pcc ON pcc.id = pcs.latest_clearance_change_id
-  LEFT JOIN community_post_reviews cpr
-    ON cpr.post_id = ma.post_id AND cpr.community_id = ma.community_id
   LEFT JOIN communities pc ON pc.id = ma.community_id
-  LEFT JOIN moderation_appeal_lifecycle_changes create_change
-    ON create_change.moderation_appeal_id = ma.id AND create_change.change_type = 'create'
-  LEFT JOIN LATERAL (
-    SELECT CASE
-      WHEN create_change.metadata ? 'original_decision'
-        THEN (create_change.metadata #>> '{original_decision,actor_id}')::uuid
-      ELSE CASE
-        WHEN ma.user_warning_id IS NOT NULL THEN uw.issued_by_id
-        WHEN ma.community_ban_id IS NOT NULL THEN cb.banned_by_id
-        WHEN ma.user_suspension_id IS NOT NULL THEN us.suspended_by_id
-        WHEN ma.post_removal_kind = 'community' THEN cpr.unpublished_by_id
-        WHEN ma.post_removal_kind = 'platform' THEN pcc.changed_by_id
-        ELSE NULL
-      END
-    END AS id
-  ) decision_actor_ref ON true
+  LEFT JOIN retained_user_identities decision_actor_ref ON decision_actor_ref.id = ma.original_decided_by_id
   LEFT JOIN view_users_public decision_actor ON decision_actor.id = decision_actor_ref.id
 `

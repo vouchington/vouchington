@@ -33,13 +33,7 @@ export async function dismissReviewDispute(
   const row = rows[0] as ReviewDisputeResolutionRow | undefined
   assert(row, 404, 'Dispute not found or already resolved')
 
-  const lifecycleId = await appendLifecycleChange(
-    disputeId,
-    'dismiss',
-    staffUserId,
-    { resolved_at: row.resolved_at, resolution_action: 'dismiss' },
-    { query },
-  )
+  const lifecycleId = await appendLifecycleChange(disputeId, 'dismiss', staffUserId, {}, { query })
   await Promise.all([
     query(sql`/* dismissReviewDispute:setLifecycle */
         UPDATE review_disputes SET latest_lifecycle_change_id = ${lifecycleId} WHERE id = ${disputeId}

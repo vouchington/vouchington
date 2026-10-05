@@ -25,9 +25,10 @@ export async function selectTestCopyrightScreeningResult(
   screeningId: string,
 ): Promise<void> {
   await write(sql`/* selectTestCopyrightScreeningResult */
-    UPDATE copyright_notice_form_screening_executions
-    SET copyright_notice_form_screening_id = ${screeningId}
-    WHERE copyright_notice_form_intake_id = ${intakeId}
+    INSERT INTO copyright_notice_form_screening_attempts(copyright_notice_form_intake_id, attempt_number,
+      copyright_notice_form_screening_id, started_at, completed_at)
+    SELECT ${intakeId}, MAX(attempt_number) + 1, ${screeningId}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+    FROM copyright_notice_form_screening_attempts WHERE copyright_notice_form_intake_id = ${intakeId}
   `)
 }
 
@@ -39,12 +40,12 @@ export async function readTestCopyrightScreeningExecution(intakeId: string) {
     started_at: Date
     claimed_at: Date | null
     completed_at: Date | null
-    updated_at: Date
+    failed_at: Date | null
   }>(sql`/* readTestCopyrightScreeningExecution */
     SELECT attempt_number, state, copyright_notice_form_screening_id,
-      started_at, claimed_at, completed_at, updated_at
-    FROM copyright_notice_form_screening_executions
-    WHERE copyright_notice_form_intake_id = ${intakeId}
+      started_at, claimed_at, completed_at, failed_at
+    FROM copyright_notice_form_screening_attempts
+    WHERE copyright_notice_form_intake_id = ${intakeId} ORDER BY attempt_number DESC LIMIT 1
   `)
   if (!rows[0]) throw new Error('Expected owned screening execution')
   return rows[0]
@@ -85,13 +86,14 @@ export async function readTestCopyrightStaffScreening(noticeId: string) {
   return result
 }
 
-export async function expireTestCopyrightScreeningClaim(intakeId: string): Promise<void> {
-  await write(sql`/* expireTestCopyrightScreeningClaim */
-    UPDATE copyright_notice_form_screening_executions
-    SET started_at = CURRENT_TIMESTAMP - INTERVAL '20 minutes',
-      claimed_at = CURRENT_TIMESTAMP - INTERVAL '16 minutes'
-    WHERE copyright_notice_form_intake_id = ${intakeId} AND state = 'pending'
+/** Move the retry cutoff forward without rewriting the immutable claim facts. */
+export async function getTestExpiredCopyrightScreeningClaimTime(intakeId: string): Promise<Date> {
+  const { rows } = await write<{ cutoff: Date }>(sql`/* getTestExpiredCopyrightScreeningClaimTime */
+    SELECT claimed_at + INTERVAL '16 minutes' AS cutoff
+    FROM copyright_notice_form_screening_attempts WHERE copyright_notice_form_intake_id = ${intakeId}
+    ORDER BY attempt_number DESC LIMIT 1
   `)
+  return rows[0]!.cutoff
 }
 
 /** Retains actual form authority until PostgreSQL confirms admission is waiting behind it. */

@@ -18,10 +18,10 @@ export async function recordCommunityAgentPromptChange(
   nextFields: Record<string, unknown>,
 ): Promise<void> {
   await write(sql`/* recordCommunityAgentPromptChange */
-    INSERT INTO community_agent_prompt_changes
-      (community_id, agent_prompt_id, changed_by_id, action, previous_fields, next_fields)
+    INSERT INTO community_agent_prompt_revisions
+      (community_id, community_agent_prompt_id, revised_by_id, revision_type, changes)
     VALUES
       (${communityId}, ${agentPromptId}, ${changedById}, ${action},
-       ${JSON.stringify(previousFields)}, ${JSON.stringify(nextFields)})
+       fn_field_changes(${JSON.stringify(previousFields)}::jsonb, ${JSON.stringify(nextFields)}::jsonb))
   `)
 }

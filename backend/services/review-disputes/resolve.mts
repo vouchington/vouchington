@@ -39,13 +39,7 @@ export async function resolveReviewDisputeRemove(
 
   const [, lifecycleId] = await Promise.all([
     setPostClearanceStatus(row.post_id, 'rejected', staffUserId, { query }),
-    appendLifecycleChange(
-      disputeId,
-      'resolve_remove',
-      staffUserId,
-      { resolved_at: row.resolved_at, resolution_action: 'remove' },
-      { query },
-    ),
+    appendLifecycleChange(disputeId, 'resolve_remove', staffUserId, {}, { query }),
   ])
   await query(sql`/* resolveReviewDisputeRemove:setLifecycle */
       UPDATE review_disputes SET latest_lifecycle_change_id = ${lifecycleId} WHERE id = ${disputeId}
@@ -105,13 +99,7 @@ export async function resolveReviewDisputeAnnotate(
   assert(row, 404, 'Dispute not found or already resolved')
 
   const [lifecycleId] = await Promise.all([
-    appendLifecycleChange(
-      disputeId,
-      'resolve_annotate',
-      staffUserId,
-      { resolved_at: row.resolved_at, resolution_action: 'annotate' },
-      { query },
-    ),
+    appendLifecycleChange(disputeId, 'resolve_annotate', staffUserId, {}, { query }),
     query(sql`/* resolveReviewDisputeAnnotate:annotation */
         INSERT INTO post_dispute_annotations (post_id, review_dispute_id, body_text, created_by_id)
         VALUES (${row.post_id}, ${disputeId}, ${trimmedBody}, ${staffUserId})

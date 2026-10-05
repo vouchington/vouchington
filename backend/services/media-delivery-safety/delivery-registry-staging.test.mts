@@ -5,6 +5,7 @@ import {
   createTestUserDirect,
   getTestImageSurfacePlacements,
   getTestMediaDeliveryRecordSnapshot,
+  getTestMediaDeliveryTransitionHistory,
   insertTestImage,
   insertTestPost,
   insertTestPostImage,
@@ -16,6 +17,27 @@ import { setTestMediaRecoveryState } from '@voucha/test-helpers/media-delivery-r
 import { stageImagePlacementDeliveryRecord } from './index.mts'
 
 describe('media registry staging state', () => {
+  it('retains earlier desired states and generations when authority changes or is republished', async () => {
+    const tuple = await createPlacement()
+    const first = await stageImagePlacementDeliveryRecord({ ...tuple, state: 'allow' })
+    const before = await getTestMediaDeliveryTransitionHistory(first.deliveryKey)
+    const changed = await stageImagePlacementDeliveryRecord({ ...tuple, state: 'withheld' })
+    const forced = await stageImagePlacementDeliveryRecord(
+      { ...tuple, state: 'withheld' },
+      { forceGeneration: true },
+    )
+    const after = await getTestMediaDeliveryTransitionHistory(first.deliveryKey)
+    expect(before.at(-1)?.desired_state).toBe('allow')
+    expect(after.slice(0, before.length)).toEqual(before)
+    expect(after.slice(before.length)).toEqual([
+      { generation: changed.generation, desired_state: 'withheld', change_type: 'pending' },
+      { generation: forced.generation, desired_state: 'withheld', change_type: 'pending' },
+    ])
+    expect(await getTestMediaDeliveryRecordSnapshot(first.deliveryKey)).toMatchObject({
+      desired_state: 'withheld',
+      state: 'pending',
+    })
+  })
   it('retains unchanged placement snapshots in every lifecycle state', async () => {
     const tuple = await createPlacement()
     const placement = await stageImagePlacementDeliveryRecord({ ...tuple, state: 'allow' })

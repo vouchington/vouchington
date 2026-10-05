@@ -245,7 +245,7 @@ describe('copyright delivery and correspondence persistence', () => {
     const { aggregate, notice } = await createFixture()
     expect(aggregate.notice.id).toBe(notice.id)
     expect(aggregate.targets).toHaveLength(1)
-    expect(aggregate.lifecycleEvents.map(event => event.event_type)).toContain('notice_received')
+    expect(aggregate.lifecycleEvents.map(event => event.change_type)).toContain('notice_received')
   })
 
   it('requires a reviewer for email and guest-form compliance assessments', async () => {
@@ -292,7 +292,7 @@ describe('copyright delivery and correspondence persistence', () => {
     const aggregate = await getCopyrightNoticePrivateAggregate(first.notice.id)
     expect(aggregate?.lifecycleEvents).toContainEqual(
       expect.objectContaining({
-        event_type: 'outbound_correspondence_created',
+        change_type: 'outbound_correspondence_created',
         copyright_notice_correspondence_id: draft.id,
       }),
     )

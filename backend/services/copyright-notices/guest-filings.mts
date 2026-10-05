@@ -81,8 +81,8 @@ export async function appendCopyrightGuestFiling(input: {
   const submission = rows[0]
   assert(submission, 500, 'Copyright guest filing was not created')
   await transaction(sql`/* appendCopyrightGuestFiling:event */
-    INSERT INTO copyright_notice_lifecycle_events (
-      copyright_notice_id, event_type, copyright_notice_submission_id
+    INSERT INTO copyright_notice_lifecycle_changes (
+      copyright_notice_id, change_type, copyright_notice_submission_id
     ) VALUES (${input.noticeId}, ${guestFilingEvent(input.kind)}, ${submission.id})
   `)
   if (input.kind === 'court_or_ccb_hold') {

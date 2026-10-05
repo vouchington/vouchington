@@ -287,9 +287,9 @@ examples describe the review baseline, rather than the current generated snapsho
   - **Rows keep returning to earlier states (no final state):** the table becomes a history table
     (R4). Each attempt or change is an append-only row with its own final lifecycle, and current
     state is the latest row.
-    - `copyright_notice_form_screening_executions` → `copyright_notice_form_screening_attempts`.
-      Today a restart overwrites the row: `attempt_number + 1`, and it clears the result and the
-      timestamps.
+    - `copyright_notice_form_screening_attempts` retains one row per attempt.
+      A restart appends the next attempt number and leaves the prior result and terminal facts
+      intact.
     - `media_delivery_registry_records`: each desired-state change or republish advances
       `generation` and puts a completed row back to `pending`. Instead, each change becomes an
       append-only `_changes` row that keeps its sequence-assigned `generation` and has its own
@@ -349,11 +349,9 @@ This extends the prelaunch relational-storage rule.
   - Pre-allocated ids (5), reserved before the row they name exists, plus the 2 outbound
     ActivityPub activity ids on generated tables.
   - Natural keys (2).
-  - `community_agent_prompt_changes.agent_prompt_id` (1). It has no FK because a prompt is
-    hard-deleted when its creator's account is deleted (`created_by_id` → users CASCADE); nothing
-    else hard-deletes prompts. Decision 15 makes `created_by_id` SET NULL, so the prompt lives as
-    long as its community, and the renamed `community_agent_prompt_revisions.community_agent_prompt_id`
-    gets an FK → `community_agent_prompts` ON DELETE CASCADE.
+  - Prompt revisions use `community_agent_prompt_id` → `community_agent_prompts` CASCADE.
+    Prompt creator deletion uses SET NULL, so deleting the live creator does not destroy the
+    community prompt or its history.
   - `curated_aside_items.entity_id`, a `STORED` `COALESCE` of concrete FKs (generated columns
     are skipped).
   - The former relation-vote parent needed two partition-only FK exceptions. The standalone
@@ -487,7 +485,7 @@ These go away: `_change_logs`, `_history`, `_audit_logs`, mutable `_events`, `_r
 `_events` stays only for append-only inbound or protocol logs that use `occurred_at`:
 `oauth_authorization_server_events`, `stripe_events` (append-only once its processing moves to
 `stripe_event_processing_work_items`) and `amazon_ses_bounce_events` (`ses_timestamp` →
-`occurred_at`). The mutable `copyright_notice_lifecycle_events` table is renamed
+`occurred_at`). The mutable `copyright_notice_lifecycle_changes` table is renamed
 `copyright_notice_lifecycle_changes` (the `_changes` shape).
 
 Queue details (decision 16):
@@ -519,11 +517,10 @@ History details (decision 15):
   - converting from users SET NULL: `community_post_review_changes`,
     `fediverse_instance_integration_changes`, `moderation_appeal_lifecycle_changes`,
     `review_dispute_lifecycle_changes`, `rss_feed_setting_changes` (merged from the 2 rss_feed
-    tables) and `copyright_notice_lifecycle_changes` (from `copyright_notice_lifecycle_events`,
-    decision 16).
+    tables) and `copyright_notice_lifecycle_changes`.
 
   Renames: `actor_user_id` and `created_by_id` → `changed_by_id`. A change made by the system has
-  `changed_by_id` NULL (the `media_delivery_registry_records` change rows always do).
+  `changed_by_id` NULL; operator-initiated media-delivery replay records the retained operator.
   A `_revisions` row records who edited content, so `revised_by_id` → users SET NULL, as
   `post_revisions` and `topic_revisions` do today.
 
@@ -535,8 +532,16 @@ History details (decision 15):
   `recommended_action`).
 - **Append-only means** no UPDATE except erasing listed actor columns to NULL, and no DELETE
   except a parent's `ON DELETE CASCADE` (`fn_reject_mutation`, R5).
-- `user_deletion_audit_logs` is deleted: `user_deletion_requests` records the same facts, and
-  `auditAndCreateUserDeletionRequest` (`backend/services/users/delete.mts`) writes both.
+- `user_deletion_requests` owns deletion-request facts; a second audit-copy table is unnecessary.
+- Copyright lifecycle rows remain immutable during privacy retention. Mandatory human-review
+  ciphertext lives in `copyright_notice_lifecycle_change_rationales`, a required companion sharing
+  the ledger row id and notice scope. Deferred foreign keys require both rows to commit together;
+  controlled retention can erase the private ciphertext without rewriting the ledger.
+- `copyright_notice_form_screening_attempts` retains one monotonic row per attempt. Retries and
+  re-screening append a new attempt; only the latest attempt can supply automatic authority.
+  `media_delivery_registry_changes` retains delivery transitions, while the current-record view
+  reads the latest transition in the authority generation. Workflow progress is not copied onto
+  `media_delivery_registry_records`.
 
 ## R5 — Helpers, not copies
 
@@ -611,7 +616,7 @@ t (parent_id, id)`, with a `UNIQUE (parent_id, id)` on the referenced table. The
   `CHECK (num_nonnulls(…) = 1)`, never a type/id pair.
   - `user_agent_strings` is the shared session/vote value lookup: no discriminator, because
     the same string is the same row; see [shared lookup tables](#shared-lookup-tables)
-  - `rss_feed_discoverability_changes` + `rss_feed_enablement_changes` → `rss_feed_setting_changes`
+  - `rss_feed_setting_changes` + `rss_feed_setting_changes` → `rss_feed_setting_changes`
   - `moderation_appeal_lifecycle_changes` and `review_dispute_lifecycle_changes` keep separate
     tables but take the R4 `_changes` shape
   - the 16 `copyright_eu_*`/`copyright_uk_*` tables become 7 shared `copyright_territorial_*`

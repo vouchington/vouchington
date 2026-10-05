@@ -13,7 +13,7 @@ import {
 } from '@services/post-clearance'
 import sql from 'sql-template-strings'
 import type { ImageDeleteResult } from './delete-rollback-types.mts'
-import { deleteImageDeletionPostRevision } from './delete-revisions.mts'
+import { compensatePostRevision } from '@services/post-revisions'
 import { restoreImagePlacementsAfterImageDeletion } from './placements.mts'
 import { lockImageAssetMutation } from '@services/media-delivery-safety'
 import { runSequentially } from '@modules/utils/run-sequentially'
@@ -125,9 +125,9 @@ export async function rollbackImageDeletion(
       // oxlint-disable-next-line no-await-in-loop -- a concurrent relationship change still needs durable work after the failed dispatch
       await ensureCurrentPostModerationVersion(postId, { query })
     }
-    if (rollback.revision_id !== null) {
-      // oxlint-disable-next-line no-await-in-loop -- remove only the revision paired with the state this iteration rolled back
-      await deleteImageDeletionPostRevision(rollback.revision_id, postId, { query })
+    if (deletionStateIsCurrent && rollback.revision_id !== null) {
+      // oxlint-disable-next-line no-await-in-loop -- append the reversal only when the original deletion state was restored
+      await compensatePostRevision(postId, rollback.revision_id, { query })
     }
   }
   await query.commit()

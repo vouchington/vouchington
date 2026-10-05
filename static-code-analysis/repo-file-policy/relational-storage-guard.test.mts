@@ -166,7 +166,7 @@ describe('relational storage guard', () => {
   it('accepts copyright lifecycle JSON', () => {
     expect(
       checkRelationalStorage(
-        snapshot('copyright_notice_lifecycle_events', { metadata: column('jsonb') }),
+        snapshot('copyright_notice_lifecycle_changes', { metadata: column('jsonb') }),
         { enforceCatalogFreshness: false },
       ),
     ).toEqual([])

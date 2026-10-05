@@ -176,7 +176,7 @@ export async function reviewCopyrightAppeal(input: {
     transaction,
   )
   await transaction(sql`/* reviewCopyrightAppeal:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id, copyright_notice_submission_id)
+    INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id, copyright_notice_submission_id)
     VALUES (${appeal.copyright_notice_id}, 'appeal_reviewed', ${input.currentUser.id}, ${input.submissionId})
   `)
   if (appeal.submitted_by_user_id)
@@ -334,7 +334,7 @@ export async function reviewCopyrightCounterNotice(input: {
       ${encryptSecret(input.rationale, `copyright-counter-review:${input.submissionId}`)})
   `)
   await transaction(sql`/* reviewCopyrightCounterNotice:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id,
+    INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
       copyright_notice_submission_id, counter_notice_accepted)
     VALUES (${submission.copyright_notice_id}, 'counter_notice_reviewed', ${input.currentUser.id},
       ${input.submissionId}, ${input.accepted})

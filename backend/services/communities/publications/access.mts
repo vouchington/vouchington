@@ -45,7 +45,8 @@ export async function getPublicationReviewChanges(
 ): Promise<CommunityPublicationReviewChange[]> {
   const { rows } = await read(
     sql`/* getPublicationReviewChanges */
-      SELECT *
+      SELECT id, community_id, post_id, changed_by_id AS actor_user_id, change_type AS action,
+        platform_override, reason_code, private_note, created_at
       FROM community_post_review_changes
       WHERE community_id = ${communityId}
         AND post_id = ${postId}

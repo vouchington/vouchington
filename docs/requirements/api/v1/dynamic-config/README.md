@@ -36,7 +36,7 @@ which return `400`. No-op updates return `changed: false` and do not create audi
 
 ## History
 
-History comes from `dynamic_config_change_logs` and includes previous values, next values,
+History comes from `dynamic_configuration_revisions` and includes previous values, next values,
 changed fields, who changed them, and when.
 
 ## Performance

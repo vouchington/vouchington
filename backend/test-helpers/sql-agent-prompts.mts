@@ -3,25 +3,23 @@ import sql from 'sql-template-strings'
 
 export async function getCommunityAgentPromptChangeRowsForTest(agentPromptId: string): Promise<
   Array<{
-    agent_prompt_id: string
+    community_agent_prompt_id: string
     community_id: string
-    changed_by_id: string | null
-    action: string
-    previous_fields: Record<string, unknown>
-    next_fields: Record<string, unknown>
+    revised_by_id: string | null
+    revision_type: string
+    changes: Record<string, { before: unknown; after: unknown }>
   }>
 > {
   const { rows } = await read<{
-    agent_prompt_id: string
+    community_agent_prompt_id: string
     community_id: string
-    changed_by_id: string | null
-    action: string
-    previous_fields: Record<string, unknown>
-    next_fields: Record<string, unknown>
+    revised_by_id: string | null
+    revision_type: string
+    changes: Record<string, { before: unknown; after: unknown }>
   }>(sql`/* getCommunityAgentPromptChangeRowsForTest */
-    SELECT agent_prompt_id, community_id, changed_by_id, action, previous_fields, next_fields
-    FROM community_agent_prompt_changes
-    WHERE agent_prompt_id = ${agentPromptId}
+    SELECT community_agent_prompt_id, community_id, revised_by_id, revision_type, changes
+    FROM community_agent_prompt_revisions
+    WHERE community_agent_prompt_id = ${agentPromptId}
     ORDER BY id DESC
   `)
   return rows

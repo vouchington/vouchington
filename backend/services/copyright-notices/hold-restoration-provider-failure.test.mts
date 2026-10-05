@@ -126,7 +126,7 @@ describe('automatic hold restoration preserves provider failures', () => {
         ),
       ).resolves.toEqual([])
       expect(
-        after?.lifecycleEvents.filter(event => event.event_type === 'copyright_action_replayed'),
+        after?.lifecycleEvents.filter(event => event.change_type === 'copyright_action_replayed'),
       ).toHaveLength(1)
     },
   )
@@ -153,10 +153,10 @@ describe('automatic hold restoration preserves provider failures', () => {
       delivery_attempt_count: 0,
     })
     expect(
-      after?.lifecycleEvents.filter(event => event.event_type === 'copyright_action_replayed'),
+      after?.lifecycleEvents.filter(event => event.change_type === 'copyright_action_replayed'),
     ).toEqual([
       expect.objectContaining({
-        actor_user_id: scene.moderator.id,
+        changed_by_id: scene.moderator.id,
         copyright_notice_action_intent_id: scene.restore.id,
         replay_reason: 'operator_replay',
       }),

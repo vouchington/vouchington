@@ -63,7 +63,7 @@ export async function insertTestFediverseInstanceIntegrationChange(data: {
   const changedById = data.changedById === undefined ? null : data.changedById
   const reason = data.reason === undefined ? null : data.reason
   const { rows } = await write(sql`/* insertTestFediverseInstanceIntegrationChange */
-    INSERT INTO fediverse_instance_integration_changes (id, topic_id, integration_status, changed_by_id, reason)
+    INSERT INTO fediverse_instance_integration_changes (id, topic_id, change_type, changed_by_id, reason)
     VALUES (
       COALESCE(${id}::uuid, uuidv7()),
       ${data.topicId},

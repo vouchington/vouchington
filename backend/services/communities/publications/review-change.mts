@@ -18,7 +18,7 @@ export function recordPublicationReviewChange(
   return write(
     sql`/* recordPublicationReviewChange */
       INSERT INTO community_post_review_changes (
-        community_id, post_id, actor_user_id, action, platform_override, reason_code, private_note
+        community_id, post_id, changed_by_id, change_type, platform_override, reason_code, private_note
       ) VALUES (
         ${input.communityId}, ${input.postId}, ${input.actorUserId}, ${input.action},
         ${input.platformOverride ?? false}, ${input.reasonCode ?? null}, ${input.privateNote ?? null}

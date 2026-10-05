@@ -101,7 +101,7 @@ describe('durable copyright decision recovery', () => {
       const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
       expect(aggregate?.assessments).toHaveLength(1)
       expect(
-        aggregate?.lifecycleEvents.filter(event => event.event_type === 'submission_assessed'),
+        aggregate?.lifecycleEvents.filter(event => event.change_type === 'submission_assessed'),
       ).toHaveLength(1)
     }
   })

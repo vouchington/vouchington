@@ -43,7 +43,7 @@ describe('retained-user audit foreign keys', () => {
     },
   )
 
-  it.each(retainedUserAuditReferences)(
+  it.each(retainedUserAuditReferences.filter(({ table }) => table !== 'post_clearance_changes'))(
     'rejects $table.$column naming a user with no retained identity',
     async ({ table, constraint }) => {
       const post = await createTestPost()
@@ -53,6 +53,18 @@ describe('retained-user audit foreign keys', () => {
       ).rejects.toMatchObject({ code: '23503', constraint })
     },
   )
+
+  it('ensures a retained clearance actor before appending its change', async () => {
+    const actorId = randomUUID()
+    const post = await createTestPost()
+    await using query = await beginTransaction()
+    await insertTestRetainedUserAuditRow(query, 'post_clearance_changes', actorId, post.id)
+    const { rowCount } = await query('SELECT id FROM retained_user_identities WHERE id = $1', [
+      actorId,
+    ])
+    expect(rowCount).toBe(1)
+    expect(await countTestRetainedUserAuditRows(query, 'post_clearance_changes', actorId)).toBe(1)
+  })
 
   it.each(retainedUserAuditReferences)(
     'keeps $table rows and the retained user root when the live user is hard-deleted',

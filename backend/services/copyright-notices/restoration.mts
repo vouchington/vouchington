@@ -188,7 +188,7 @@ export async function createEligibleCopyrightRestoreIntent(input: {
   const intent = intentRows[0]
   assert(intent, 409, 'A restore intent already exists for this placement revision')
   await transaction(sql`/* createEligibleCopyrightRestoreIntent:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, copyright_notice_action_intent_id)
+    INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, copyright_notice_action_intent_id)
     VALUES (${input.noticeId}, 'restoration_intent_created', ${intent.id})
   `)
   await recordCounterNoticeRestoration(transaction, input)

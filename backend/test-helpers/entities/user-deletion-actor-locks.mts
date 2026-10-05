@@ -106,10 +106,10 @@ export async function getTestUserDeletedById(userId: string): Promise<string | n
   return rows[0]?.deleted_by_id ?? null
 }
 
-export async function listTestUserDeletionAuditActorIds(userId: string): Promise<string[]> {
+export async function listTestUserDeletionRequestActorIds(userId: string): Promise<string[]> {
   const { rows } = await write<{ requested_by_id: string | null }>(sql`
-    /* listTestUserDeletionAuditActorIds */
-    SELECT requested_by_id FROM user_deletion_audit_logs WHERE user_id = ${userId} ORDER BY id
+    /* listTestUserDeletionRequestActorIds */
+    SELECT requested_by_id FROM user_deletion_requests WHERE user_id = ${userId} ORDER BY id
   `)
   return rows.flatMap(row => (row.requested_by_id ? [row.requested_by_id] : []))
 }

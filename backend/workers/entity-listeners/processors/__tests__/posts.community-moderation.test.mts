@@ -13,7 +13,6 @@ import { getClassifierRunRequestFacts } from '@voucha/test-helpers/data-stores/p
 import { COMMUNITY_MODERATION_CLASSIFIER_SLUG } from '@voucha/types/entities/community-moderation-classifier'
 import { createPostModerationContent } from '@services/posts/content'
 import { getPostByAny } from '@services/posts/get'
-import { createPostRevision } from '@services/post-revisions'
 import { setPostClearanceStatus } from '@services/post-clearance/update-status'
 import type { Post } from '@services/posts/types'
 import { processPostUpdated } from '../posts.mts'
@@ -73,18 +72,25 @@ describe('post entity listener community moderation request', () => {
     expect(await readCommunityModerationDispatchers(postId)).toEqual([])
   })
 
-  it('skips moderation for a pre-marker administrator creation', async () => {
+  it('skips moderation for an explicit administrator creation', async () => {
     const administrator = await createTestUser({ administrator: true })
     const postId = await insertTestPost({
-      title: `Pre-marker administrator creation ${randomUUID()}`,
-      slug: `pre-marker-administrator-creation-${randomUUID()}`,
+      title: `Explicit administrator creation ${randomUUID()}`,
+      slug: `administrator-creation-${randomUUID()}`,
       createdById: administrator.id,
       markdown: 'Trusted administrator community post.',
       clearanceStatus: 'pending',
-      createdAt: new Date(Date.now() + 1_000),
     })
-    await createPostRevision(postId, 'create', {}, administrator.id)
-    await setPostClearanceStatus(postId, 'approved', administrator.id)
+    await setPostClearanceStatus(
+      postId,
+      'approved',
+      administrator.id,
+      undefined,
+      {},
+      {
+        isCreationModerationBypass: true,
+      },
+    )
     const community = await insertTestCommunity({ createdById: administrator.id })
     await insertTestCommunityPostReview({
       communityId: community.id,

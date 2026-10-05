@@ -7,7 +7,7 @@ import sql from 'sql-template-strings'
 // views/2026-05-07-rss-feed-crawl-inputs.sql): a topic (for votes_score_net) and an rss_feeds row
 // with is_enabled = TRUE and deleted_at IS NULL. topics.created_by_id and rss_feeds' home-page URL
 // are both skipped — the materialized view never reads them. is_enabled is trigger-maintained from
-// rss_feed_enablement_changes (see rss_feeds.is_enabled in migrations/0080-00-00-rss-feeds-items.sql),
+// rss_feed_setting_changes (see rss_feeds.is_enabled in migrations/0080-00-00-rss-feeds-items.sql),
 // never written directly. bedrock_nova_multimodal_v1_content_sha256 is NOT NULL with no column
 // default (migrations/0060-00-00-topics-taxonomy.sql); test-helpers' insertTestTopic defaults it to
 // an all-zero 32-byte value when the caller has no real embedding — reused verbatim here.
@@ -41,8 +41,8 @@ export async function insertLocalTestRssFeed(): Promise<{ id: string }> {
   const feedId = feedRows[0]!.id
 
   await write(sql`
-    INSERT INTO rss_feed_enablement_changes (rss_feed_id, enabled, reason)
-    VALUES (${feedId}, TRUE, 'test helper initial state')
+    INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, enabled, reason)
+    VALUES ('enablement', ${feedId}, TRUE, 'test helper initial state')
   `)
 
   return { id: feedId }

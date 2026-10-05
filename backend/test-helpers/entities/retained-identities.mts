@@ -1,4 +1,4 @@
-import { beginTransaction, read, write, type TransactionQuery } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
 import {
   entityRelationMetadatum,
   getEntityRelationIntegrityTargetColumn,
@@ -97,18 +97,6 @@ export async function readTestRetainedIdentityTraversalBound(
     `/* readTestRetainedIdentityTraversalBound */ SELECT COUNT(*)::text AS count FROM ${ROOT_TABLES[family]}`,
   )
   return Math.ceil(Number(rows[0]!.count) / pageSize) + 2
-}
-
-export async function insertTestUserDeletionAudit(
-  userId: string,
-  requestedById: string | null,
-  query: TransactionQuery | null = null,
-): Promise<void> {
-  await (query ?? write)(
-    `/* insertTestUserDeletionAudit */
-    INSERT INTO user_deletion_audit_logs (user_id, requested_by_id) VALUES ($1, $2)`,
-    [userId, requestedById],
-  )
 }
 
 export async function insertTestRetainedIdentityRoot(

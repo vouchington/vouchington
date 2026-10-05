@@ -76,7 +76,7 @@
 - `choice`
 - `score`
 
-## `community_agent_prompt_change_action`
+## `community_agent_prompt_revision_types`
 
 - `created`
 - `updated`
@@ -124,6 +124,13 @@
 - `users`
 - `members`
 - `moderators`
+
+## `community_post_review_change_types`
+
+- `approve`
+- `reject`
+- `unpublish`
+- `restore`
 
 ## `community_restriction_types`
 
@@ -181,6 +188,48 @@
 - `owner`
 - `admin`
 - `member`
+
+## `copyright_notice_form_screening_attempt_states`
+
+- `pending`
+- `failed`
+- `completed`
+
+## `copyright_notice_lifecycle_change_types`
+
+- `notice_received`
+- `supplement_received`
+- `appeal_received`
+- `counter_notice_received`
+- `withdrawal_received`
+- `court_or_ccb_hold_received`
+- `submission_assessed`
+- `appeal_reviewed`
+- `counter_notice_reviewed`
+- `evidence_artifact_recorded`
+- `outbound_correspondence_created`
+- `agent_correspondence_approved`
+- `email_correspondence_admitted`
+- `email_correspondence_rejected`
+- `provisional_restriction_imposed`
+- `mandatory_human_review_completed`
+- `restriction_lifted_by_administrator`
+- `legal_hold_assessed`
+- `legal_hold_resolved`
+- `counter_notice_deadline_started`
+- `restoration_intent_created`
+- `reversal_restoration_intent_created`
+- `copyright_action_replayed`
+- `delivery_intent_replayed`
+- `media_delivery_registry_replayed`
+- `restoration_unavailable`
+- `restriction_lifted_placement_retained`
+- `restoration_authorized_pending_delivery`
+- `placement_withheld`
+- `placement_restored`
+- `guest_capability_issued`
+- `guest_capability_revoked`
+- `guest_capability_revoked_by_withdrawal`
 
 ## `copyright_trusted_flagger_change_types`
 
@@ -277,6 +326,13 @@
 - `private`
 - `unlisted`
 - `public`
+
+## `media_delivery_registry_change_types`
+
+- `pending`
+- `claimed`
+- `completed`
+- `failed`
 
 ## `membership_billing_intervals`
 
@@ -694,6 +750,11 @@
 - `article`
 - `audio`
 - `video`
+
+## `rss_feed_setting_change_types`
+
+- `enablement`
+- `discoverability`
 
 ## `ses_bounce_types`
 

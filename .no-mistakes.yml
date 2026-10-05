@@ -1712,7 +1712,7 @@ rules:
         - agents.created_by_id
         - agents.deleted_by_id
         - agents.updated_by_id
-        - community_agent_prompt_changes.changed_by_id
+        - community_agent_prompt_revisions.revised_by_id
         - community_agent_prompts.deleted_by_id
         - community_applications.reviewed_by_id
         - community_auto_tagger_agents.disabled_by_id
@@ -1749,10 +1749,8 @@ rules:
         - crawlers.deleted_by_id
         - crawlers.updated_by_id
         - curated_aside_items.created_by_id
-        - dynamic_config_change_logs.changed_by_id
-        - fediverse_instance_integration_changes.changed_by_id
+        - dynamic_configuration_revisions.revised_by_id
         - images.deleted_by_id
-        - moderation_appeal_lifecycle_changes.changed_by_id
         - moderation_appeals.approved_by_id
         - moderation_appeals.edited_by_id
         - moderation_appeals.resolved_by_id
@@ -1770,12 +1768,9 @@ rules:
         - report_abuse_penalties.created_by_id
         - report_abuse_penalties.revoked_by_id
         - report_integrity_flags.resolved_by_id
-        - review_dispute_lifecycle_changes.changed_by_id
         - review_disputes.approved_by_id
         - review_disputes.edited_by_id
         - review_disputes.resolved_by_id
-        - rss_feed_discoverability_changes.created_by_id
-        - rss_feed_enablement_changes.created_by_id
         - rss_feed_item_autotagger_results.created_by_id
         - rss_feed_item_autotagger_results.deleted_by_id
         - rss_feed_item_autotagger_results.updated_by_id

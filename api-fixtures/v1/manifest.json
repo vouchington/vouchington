@@ -3812,7 +3812,7 @@
     },
     "GET:/api/v1/appeals#staff": {
       "bodyKind": "content",
-      "hash": "d07ee46c4b78884ac52da4932f247da697852887b1594494814fb4b3e164206f",
+      "hash": "3a97975c1411b1647928e4869eefcd8bad07fd84898576d6e434a2f0029e2e42",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -4285,6 +4285,41 @@
               }
             },
             "type": "object"
+          },
+          "OriginalModerationDecision": {
+            "additionalProperties": false,
+            "properties": {
+              "actor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ModerationActorSummary",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "internal_reason": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
           }
         },
         "root": {
@@ -4314,39 +4349,8 @@
                               "original_decision": {
                                 "required": true,
                                 "schema": {
-                                  "additionalProperties": false,
-                                  "properties": {
-                                    "actor": {
-                                      "required": true,
-                                      "schema": {
-                                        "type": "union",
-                                        "variants": [
-                                          {
-                                            "name": "ModerationActorSummary",
-                                            "type": "ref"
-                                          },
-                                          {
-                                            "type": "null"
-                                          }
-                                        ]
-                                      }
-                                    },
-                                    "internal_reason": {
-                                      "required": true,
-                                      "schema": {
-                                        "type": "union",
-                                        "variants": [
-                                          {
-                                            "type": "null"
-                                          },
-                                          {
-                                            "type": "string"
-                                          }
-                                        ]
-                                      }
-                                    }
-                                  },
-                                  "type": "object"
+                                  "name": "OriginalModerationDecision",
+                                  "type": "ref"
                                 }
                               }
                             },
@@ -4735,7 +4739,7 @@
     },
     "GET:/api/v1/appeals/:id#staff": {
       "bodyKind": "content",
-      "hash": "54f90b6506e84506f3c428ea89922b6e0e911c36d7c9aba15859b99edad9ba64",
+      "hash": "944906b88d85efe163f69f9855a8e7f083c66a8f4141268a5e7f70a4ab349f94",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -5208,6 +5212,41 @@
               }
             },
             "type": "object"
+          },
+          "OriginalModerationDecision": {
+            "additionalProperties": false,
+            "properties": {
+              "actor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ModerationActorSummary",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "internal_reason": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
           }
         },
         "root": {
@@ -5236,39 +5275,8 @@
                             "original_decision": {
                               "required": true,
                               "schema": {
-                                "additionalProperties": false,
-                                "properties": {
-                                  "actor": {
-                                    "required": true,
-                                    "schema": {
-                                      "type": "union",
-                                      "variants": [
-                                        {
-                                          "name": "ModerationActorSummary",
-                                          "type": "ref"
-                                        },
-                                        {
-                                          "type": "null"
-                                        }
-                                      ]
-                                    }
-                                  },
-                                  "internal_reason": {
-                                    "required": true,
-                                    "schema": {
-                                      "type": "union",
-                                      "variants": [
-                                        {
-                                          "type": "null"
-                                        },
-                                        {
-                                          "type": "string"
-                                        }
-                                      ]
-                                    }
-                                  }
-                                },
-                                "type": "object"
+                                "name": "OriginalModerationDecision",
+                                "type": "ref"
                               }
                             }
                           },
@@ -6728,7 +6736,7 @@
     },
     "GET:/api/v1/communities/:communitySlug/agent-prompts": {
       "bodyKind": "content",
-      "hash": "602675510e7846f462969e1b7671fca0584f6c8ca61f13bcdb486e32ef26d7f4",
+      "hash": "cbe1b29b0f5193bbf5d80f82b9d31b5b971d08bb6ab7d649171b5075c2de99f9",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -6773,7 +6781,15 @@
               "created_by_id": {
                 "required": true,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "deactivated_at": {
@@ -65362,7 +65378,7 @@
     },
     "PATCH:/api/v1/appeals/:id#staff": {
       "bodyKind": "content",
-      "hash": "54f90b6506e84506f3c428ea89922b6e0e911c36d7c9aba15859b99edad9ba64",
+      "hash": "944906b88d85efe163f69f9855a8e7f083c66a8f4141268a5e7f70a4ab349f94",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "PATCH",
@@ -65835,6 +65851,41 @@
               }
             },
             "type": "object"
+          },
+          "OriginalModerationDecision": {
+            "additionalProperties": false,
+            "properties": {
+              "actor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ModerationActorSummary",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "internal_reason": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
           }
         },
         "root": {
@@ -65863,39 +65914,8 @@
                             "original_decision": {
                               "required": true,
                               "schema": {
-                                "additionalProperties": false,
-                                "properties": {
-                                  "actor": {
-                                    "required": true,
-                                    "schema": {
-                                      "type": "union",
-                                      "variants": [
-                                        {
-                                          "name": "ModerationActorSummary",
-                                          "type": "ref"
-                                        },
-                                        {
-                                          "type": "null"
-                                        }
-                                      ]
-                                    }
-                                  },
-                                  "internal_reason": {
-                                    "required": true,
-                                    "schema": {
-                                      "type": "union",
-                                      "variants": [
-                                        {
-                                          "type": "null"
-                                        },
-                                        {
-                                          "type": "string"
-                                        }
-                                      ]
-                                    }
-                                  }
-                                },
-                                "type": "object"
+                                "name": "OriginalModerationDecision",
+                                "type": "ref"
                               }
                             }
                           },
@@ -70273,7 +70293,7 @@
     },
     "POST:/api/v1/appeals/:id/approval#staff": {
       "bodyKind": "content",
-      "hash": "54f90b6506e84506f3c428ea89922b6e0e911c36d7c9aba15859b99edad9ba64",
+      "hash": "944906b88d85efe163f69f9855a8e7f083c66a8f4141268a5e7f70a4ab349f94",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
@@ -70746,6 +70766,41 @@
               }
             },
             "type": "object"
+          },
+          "OriginalModerationDecision": {
+            "additionalProperties": false,
+            "properties": {
+              "actor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ModerationActorSummary",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "internal_reason": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
           }
         },
         "root": {
@@ -70774,39 +70829,8 @@
                             "original_decision": {
                               "required": true,
                               "schema": {
-                                "additionalProperties": false,
-                                "properties": {
-                                  "actor": {
-                                    "required": true,
-                                    "schema": {
-                                      "type": "union",
-                                      "variants": [
-                                        {
-                                          "name": "ModerationActorSummary",
-                                          "type": "ref"
-                                        },
-                                        {
-                                          "type": "null"
-                                        }
-                                      ]
-                                    }
-                                  },
-                                  "internal_reason": {
-                                    "required": true,
-                                    "schema": {
-                                      "type": "union",
-                                      "variants": [
-                                        {
-                                          "type": "null"
-                                        },
-                                        {
-                                          "type": "string"
-                                        }
-                                      ]
-                                    }
-                                  }
-                                },
-                                "type": "object"
+                                "name": "OriginalModerationDecision",
+                                "type": "ref"
                               }
                             }
                           },
@@ -71151,7 +71175,7 @@
     },
     "POST:/api/v1/appeals/:id/delivery#staff": {
       "bodyKind": "content",
-      "hash": "54f90b6506e84506f3c428ea89922b6e0e911c36d7c9aba15859b99edad9ba64",
+      "hash": "944906b88d85efe163f69f9855a8e7f083c66a8f4141268a5e7f70a4ab349f94",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
@@ -71624,6 +71648,41 @@
               }
             },
             "type": "object"
+          },
+          "OriginalModerationDecision": {
+            "additionalProperties": false,
+            "properties": {
+              "actor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ModerationActorSummary",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "internal_reason": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
           }
         },
         "root": {
@@ -71652,39 +71711,8 @@
                             "original_decision": {
                               "required": true,
                               "schema": {
-                                "additionalProperties": false,
-                                "properties": {
-                                  "actor": {
-                                    "required": true,
-                                    "schema": {
-                                      "type": "union",
-                                      "variants": [
-                                        {
-                                          "name": "ModerationActorSummary",
-                                          "type": "ref"
-                                        },
-                                        {
-                                          "type": "null"
-                                        }
-                                      ]
-                                    }
-                                  },
-                                  "internal_reason": {
-                                    "required": true,
-                                    "schema": {
-                                      "type": "union",
-                                      "variants": [
-                                        {
-                                          "type": "null"
-                                        },
-                                        {
-                                          "type": "string"
-                                        }
-                                      ]
-                                    }
-                                  }
-                                },
-                                "type": "object"
+                                "name": "OriginalModerationDecision",
+                                "type": "ref"
                               }
                             }
                           },
@@ -72029,7 +72057,7 @@
     },
     "POST:/api/v1/appeals/:id/resolution#staff": {
       "bodyKind": "content",
-      "hash": "54f90b6506e84506f3c428ea89922b6e0e911c36d7c9aba15859b99edad9ba64",
+      "hash": "944906b88d85efe163f69f9855a8e7f083c66a8f4141268a5e7f70a4ab349f94",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
@@ -72502,6 +72530,41 @@
               }
             },
             "type": "object"
+          },
+          "OriginalModerationDecision": {
+            "additionalProperties": false,
+            "properties": {
+              "actor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ModerationActorSummary",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "internal_reason": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
           }
         },
         "root": {
@@ -72530,39 +72593,8 @@
                             "original_decision": {
                               "required": true,
                               "schema": {
-                                "additionalProperties": false,
-                                "properties": {
-                                  "actor": {
-                                    "required": true,
-                                    "schema": {
-                                      "type": "union",
-                                      "variants": [
-                                        {
-                                          "name": "ModerationActorSummary",
-                                          "type": "ref"
-                                        },
-                                        {
-                                          "type": "null"
-                                        }
-                                      ]
-                                    }
-                                  },
-                                  "internal_reason": {
-                                    "required": true,
-                                    "schema": {
-                                      "type": "union",
-                                      "variants": [
-                                        {
-                                          "type": "null"
-                                        },
-                                        {
-                                          "type": "string"
-                                        }
-                                      ]
-                                    }
-                                  }
-                                },
-                                "type": "object"
+                                "name": "OriginalModerationDecision",
+                                "type": "ref"
                               }
                             }
                           },

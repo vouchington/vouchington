@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Coalesced pre-launch domain baseline.
 -- edited-in-place: pre-launch, never deployed to production
 -- Merged from: 0400-00-00-post-clearance-history.sql
@@ -25,6 +26,7 @@ CREATE TABLE IF NOT EXISTS post_clearance_changes (
   private_note TEXT CHECK (private_note IS NULL OR char_length(private_note) <= 4000),
   platform_override BOOLEAN NOT NULL DEFAULT FALSE,
   metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  is_creation_moderation_bypass BOOLEAN NOT NULL DEFAULT FALSE,
   moderation_transparency_categories TEXT[] NOT NULL DEFAULT '{}',
   moderation_transparency_community_id UUID,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -96,3 +98,8 @@ COMMENT ON COLUMN post_clearance_changes.platform_override IS 'True when platfor
 COMMENT ON COLUMN post_clearance_changes.metadata IS 'Structured metadata about the clearance transition.';
 COMMENT ON COLUMN post_clearance_changes.moderation_transparency_categories IS 'Immutable automated-source categories stamped at rejection time for aggregate-only moderation transparency.';
 COMMENT ON COLUMN post_clearance_changes.moderation_transparency_community_id IS 'Immutable community scope stamped from the post for global-transparency exclusion.';
+
+COMMENT ON COLUMN post_clearance_changes.is_creation_moderation_bypass IS 'True only for an explicit administrator bypass decision at post creation; later clearance changes cannot erase this fact.';
+
+CREATE TRIGGER trigger_ensure_post_clearance_changes_actor BEFORE INSERT ON post_clearance_changes FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id');
+CREATE TRIGGER trigger_post_clearance_changes_append_only BEFORE UPDATE OR DELETE ON post_clearance_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();

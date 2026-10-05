@@ -34,4 +34,5 @@ _none_
 - `post_revisions_pkey`: `CREATE UNIQUE INDEX post_revisions_pkey ON ONLY public.post_revisions USING btree (id)`
 
 **Triggers:**
-_none_
+
+- `trigger_post_revisions_append_only`: `CREATE TRIGGER trigger_post_revisions_append_only BEFORE DELETE OR UPDATE ON public.post_revisions FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation('revised_by_id')`

@@ -1,5 +1,11 @@
 import type { ModerationAppeal } from './config.mts'
 
+/** Staff-only projection of the typed original-decision facts on moderation_appeals. */
+export type OriginalModerationDecision = {
+  internal_reason: string | null
+  actor: ModerationActorSummary | null
+}
+
 export type ModerationActorSummary = {
   id: string
   username: string | null
@@ -45,9 +51,6 @@ export type ModerationAppealResponse = ModerationAppeal & {
   target_context?: ModerationAppealTargetContext | null
   staff_context?: {
     appellant: ModerationActorSummary
-    original_decision: {
-      internal_reason: string | null
-      actor: ModerationActorSummary | null
-    }
+    original_decision: OriginalModerationDecision
   }
 }

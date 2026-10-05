@@ -12433,9 +12433,6 @@ importers:
       '@services/entity-fetch':
         specifier: workspace:^
         version: link:../../services/entity-fetch
-      '@services/post-revisions':
-        specifier: workspace:^
-        version: link:../../services/post-revisions
       '@services/referral-program-link-validations':
         specifier: workspace:^
         version: link:../../services/referral-program-link-validations

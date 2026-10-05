@@ -26,18 +26,7 @@ export async function stagePostImagePlacementDeliveryRecords(
       AND image.openai_omni_moderation_results IS NOT NULL
       AND image.openai_omni_moderation_created_at IS NOT NULL
     ON CONFLICT (delivery_key) DO UPDATE
-    SET desired_state = EXCLUDED.desired_state,
-        state = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
-          THEN 'pending' ELSE media_delivery_registry_records.state END,
-        claimed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
-          THEN NULL ELSE media_delivery_registry_records.claimed_at END,
-        completed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
-          THEN NULL ELSE media_delivery_registry_records.completed_at END,
-        projected_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
-          THEN NULL ELSE media_delivery_registry_records.projected_at END,
-        invalidated_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
-          THEN NULL ELSE media_delivery_registry_records.invalidated_at END,
-        delivery_attempt_count = 0, next_attempt_at = NULL, failure_message = NULL
+    SET desired_state = EXCLUDED.desired_state
     WHERE media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
   `)
 }
@@ -61,27 +50,8 @@ export async function stageImagePlacementDeliveryRecord(
       ${input.imageId}, ${input.state})
     ON CONFLICT (delivery_key) DO UPDATE
     SET desired_state = EXCLUDED.desired_state,
-      state = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
-        OR ${forceGeneration}
-        THEN 'pending' ELSE media_delivery_registry_records.state END,
-      claimed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
-        OR ${forceGeneration}
-        THEN NULL ELSE media_delivery_registry_records.claimed_at END,
-      completed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
-        OR ${forceGeneration}
-        THEN NULL ELSE media_delivery_registry_records.completed_at END,
-      projected_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
-        OR ${forceGeneration}
-        THEN NULL ELSE media_delivery_registry_records.projected_at END,
-      invalidated_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
-        OR ${forceGeneration}
-        THEN NULL ELSE media_delivery_registry_records.invalidated_at END,
-      delivery_attempt_count = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
-        OR ${forceGeneration}
-        THEN 0 ELSE media_delivery_registry_records.delivery_attempt_count END,
       generation = CASE WHEN ${forceGeneration} THEN media_delivery_registry_records.generation + 1
-        ELSE media_delivery_registry_records.generation END,
-      next_attempt_at = NULL, failure_message = NULL
+        ELSE media_delivery_registry_records.generation END
     WHERE media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
       OR ${forceGeneration}
     RETURNING generation

@@ -194,7 +194,7 @@ export async function admitCopyrightEmailCorrespondence(input: {
     )
   `)
   await transaction(sql`/* admitCopyrightEmailCorrespondence:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id,
+    INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
       copyright_notice_correspondence_id)
     VALUES (${pending.notice_id}, 'email_correspondence_admitted', ${input.currentUser.id}, ${correspondence.id})
   `)
@@ -275,7 +275,7 @@ export async function rejectCopyrightEmailCorrespondence(input: {
       ${input.manualFallbackReason ? encryptSecret(input.manualFallbackReason, copyrightEmailIntakePurpose(pending.ses_message_id)) : null})
   `)
   await transaction(sql`/* rejectCopyrightEmailCorrespondence:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id,
+    INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
       copyright_notice_email_intake_id)
     VALUES (${pending.notice_id}, 'email_correspondence_rejected', ${input.currentUser.id}, ${input.intakeId})
   `)

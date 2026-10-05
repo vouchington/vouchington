@@ -14,7 +14,7 @@ Admins can update feed metadata plus append state changes:
 }
 ```
 
-`enabled` writes `rss_feed_enablement_changes`; `discoverable` writes `rss_feed_discoverability_changes`.
+`enabled` writes `rss_feed_setting_changes`; `discoverable` writes `rss_feed_setting_changes`.
 
 Admins may also set operator-only fetch policy fields:
 

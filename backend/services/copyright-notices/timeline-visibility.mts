@@ -1,7 +1,7 @@
 /**
  * Audience decision record for the copyright case timeline.
  *
- * Every `copyright_notice_lifecycle_events.event_type` has exactly one entry: the audience allowed
+ * Every `copyright_notice_lifecycle_changes.change_type` has exactly one entry: the audience allowed
  * to see that event.
  *
  * - `member`: any signed-in account reading the case, including its claimant and affected
@@ -10,7 +10,7 @@
  *   delivery, replay, legal-hold, and guest-capability events stay here.
  *
  * Visibility is an allowlist: an event type with no entry here is invisible to members. A schema
- * test compares these keys with the database `event_type` CHECK, so a new event type cannot ship
+ * test compares these keys with the database `change_type` CHECK, so a new event type cannot ship
  * without an audience decision.
  */
 export type CopyrightTimelineAudience = 'member' | 'staff'

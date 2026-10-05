@@ -113,10 +113,10 @@ export async function readCopyrightGuestCapabilityState(
 
 export async function listCopyrightGuestCapabilityEvents(
   capabilityId: string,
-): Promise<Array<{ event_type: string; actor_user_id: string | null }>> {
-  const { rows } = await read<{ event_type: string; actor_user_id: string | null }>(
+): Promise<Array<{ change_type: string; changed_by_id: string | null }>> {
+  const { rows } = await read<{ change_type: string; changed_by_id: string | null }>(
     sql`/* listCopyrightGuestCapabilityEvents */
-      SELECT event_type, actor_user_id FROM copyright_notice_lifecycle_events
+      SELECT change_type, changed_by_id FROM copyright_notice_lifecycle_changes
       WHERE copyright_notice_guest_capability_id = ${capabilityId}
       ORDER BY id`,
   )

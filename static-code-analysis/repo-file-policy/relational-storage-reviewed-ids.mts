@@ -116,10 +116,6 @@ export const ALLOWED_AUDIT_SNAPSHOT_ID = new Map<string, string>([
     'topic_alias_category_mapping_reconciliations.topic_alias_id',
     'Alias id at transition time; the pending work is keyed by it and outlives the alias.',
   ],
-  [
-    'community_agent_prompt_changes.agent_prompt_id',
-    'Prompt id at change time; history survives prompt hard-deletes.',
-  ],
   ...reviewed('Session id recorded at vote time; sessions live outside PostgreSQL.', [
     'agent_moderation_votes.session_id',
     ...electedVoteTables.map(table => `${table}.session_id`),

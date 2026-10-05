@@ -36,8 +36,8 @@ export type CopyrightNoticeDeadlineRecord = {
 export type CopyrightLifecycleEventRecord = {
   id: string
   copyright_notice_id: string
-  event_type: string
-  actor_user_id: string | null
+  change_type: string
+  changed_by_id: string | null
   copyright_notice_submission_id: string | null
   copyright_notice_submission_assessment_id: string | null
   copyright_notice_evidence_artifact_id: string | null

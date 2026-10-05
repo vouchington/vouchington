@@ -62,4 +62,5 @@ _none_
 
 **Triggers:**
 
+- `trigger_ensure_membership_changes_actor`: `CREATE TRIGGER trigger_ensure_membership_changes_actor BEFORE INSERT ON public.membership_changes FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id')`
 - `trigger_membership_changes_append_only`: `CREATE TRIGGER trigger_membership_changes_append_only BEFORE DELETE OR UPDATE ON public.membership_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`

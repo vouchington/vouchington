@@ -98,8 +98,8 @@ export async function completeLocalTestImagePlacementDeliveryRecord(input: {
   const deliveryKey = `image-placement:${input.placementId}:${input.revision}:${input.imageId}`
   await write(sql`
     /* completeLocalTestImagePlacementDeliveryRecord */
-    UPDATE media_delivery_registry_records
-    SET state = 'completed', completed_at = CURRENT_TIMESTAMP
+    INSERT INTO media_delivery_registry_changes(delivery_key, generation, change_type, completed_at)
+    SELECT delivery_key, generation, 'completed', CURRENT_TIMESTAMP FROM media_delivery_registry_current_records
     WHERE delivery_key = ${deliveryKey}
       AND desired_state = 'allow'
   `)

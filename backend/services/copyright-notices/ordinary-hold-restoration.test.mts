@@ -71,7 +71,7 @@ describe('ordinary copyright hold restoration', () => {
     expect(resolved?.restrictions).toHaveLength(1)
     expect(resolved?.deadlines).toHaveLength(1)
     expect(
-      resolved?.lifecycleEvents.filter(event => event.event_type === 'copyright_action_replayed'),
+      resolved?.lifecycleEvents.filter(event => event.change_type === 'copyright_action_replayed'),
     ).toHaveLength(1)
     await expect(
       processCopyrightActionIntent(scene.restore.id, scene.restorationAt, deps),

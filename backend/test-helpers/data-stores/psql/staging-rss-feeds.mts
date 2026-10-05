@@ -116,9 +116,9 @@ export async function readSeededFeeds(
     SELECT u.url, f.title, t.name AS topic_name, t.slug, t.aliases, t.topic_type, th.hostname AS topic_hostname,
       h.hostname AS url_hostname, h.topic_id AS hostname_topic_id, ct.mime_type, u.search_params,
       f.is_enabled, f.is_discoverable, f.created_via, f.created_by_id, f.feed_type,
-      (SELECT cu.username FROM rss_feed_enablement_changes c
-         JOIN users cu ON cu.id = c.created_by_id
-        WHERE c.rss_feed_id = f.id ORDER BY c.id LIMIT 1) AS enablement_creator
+      (SELECT cu.username FROM rss_feed_setting_changes c
+         JOIN users cu ON cu.id = c.changed_by_id
+        WHERE c.change_type = 'enablement' AND c.rss_feed_id = f.id ORDER BY c.id LIMIT 1) AS enablement_creator
     FROM rss_feeds f
     JOIN urls u ON u.id = f.rss_feed_url_id
     JOIN url_hostnames h ON h.id = u.hostname_id
@@ -145,12 +145,12 @@ export async function countSeededRows(
       (SELECT count(*)::int FROM topic_aliases WHERE alias = ANY(${slugs})) AS "aliases",
       (SELECT count(*)::int FROM rss_feeds f JOIN urls u ON u.id = f.rss_feed_url_id
         WHERE u.url = ANY(${urls})) AS "feeds",
-      (SELECT count(*)::int FROM rss_feed_enablement_changes c
+      (SELECT count(*)::int FROM rss_feed_setting_changes c
         JOIN rss_feeds f ON f.id = c.rss_feed_id JOIN urls u ON u.id = f.rss_feed_url_id
-        WHERE u.url = ANY(${urls})) AS "enablementChanges",
-      (SELECT count(*)::int FROM rss_feed_discoverability_changes c
+        WHERE c.change_type = 'enablement' AND u.url = ANY(${urls})) AS "enablementChanges",
+      (SELECT count(*)::int FROM rss_feed_setting_changes c
         JOIN rss_feeds f ON f.id = c.rss_feed_id JOIN urls u ON u.id = f.rss_feed_url_id
-        WHERE u.url = ANY(${urls})) AS "discoverabilityChanges"`)
+        WHERE c.change_type = 'discoverability' AND u.url = ANY(${urls})) AS "discoverabilityChanges"`)
   return rows[0]!
 }
 
@@ -162,8 +162,8 @@ export async function appendEnablementChange(
   enabled: boolean,
 ): Promise<void> {
   await tx(sql`
-    INSERT INTO rss_feed_enablement_changes (rss_feed_id, enabled, reason)
-    SELECT f.id, ${enabled}, 'test'
+    INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, enabled, reason)
+    SELECT 'enablement'::rss_feed_setting_change_types, f.id, ${enabled}, 'test'
     FROM rss_feeds f JOIN urls u ON u.id = f.rss_feed_url_id
     WHERE u.url = ${url}`)
 }

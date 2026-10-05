@@ -5,7 +5,7 @@ import sql from 'sql-template-strings'
 export async function eraseCopyrightActorAndReadAuditLinks(): Promise<{
   assessedById: null
   draftedById: null
-  actorUserId: null
+  actorUserId: string
   recipientUserId: null
   recipientUserErasedAt: Date
 }> {
@@ -26,7 +26,7 @@ export async function eraseCopyrightActorAndReadAuditLinks(): Promise<{
         SELECT notice.id, 'outbound', 'staff', 'status_update', ${`message-${randomUUID()}`}, actor.id FROM notice CROSS JOIN actor
         RETURNING id
       ), event AS (
-        INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id,
+        INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
           copyright_notice_correspondence_id)
         SELECT notice.id, 'outbound_correspondence_created', actor.id, correspondence.id
         FROM notice CROSS JOIN actor CROSS JOIN correspondence
@@ -43,27 +43,27 @@ export async function eraseCopyrightActorAndReadAuditLinks(): Promise<{
   const result = await read<{
     assessed_by_id: null
     drafted_by_id: null
-    actor_user_id: null
+    changed_by_id: string
     recipient_user_id: null
     recipient_user_erased_at: Date
   }>(
     sql`/* readCopyrightErasedAuditActors */
-      SELECT assessment.assessed_by_id, correspondence.drafted_by_id, event.actor_user_id,
+      SELECT assessment.assessed_by_id, correspondence.drafted_by_id, event.changed_by_id,
         delivery_intent.recipient_user_id, delivery_intent.recipient_user_erased_at
       FROM copyright_notice_submission_assessments assessment
       CROSS JOIN copyright_notice_correspondence_messages correspondence
-      CROSS JOIN copyright_notice_lifecycle_events event
+      CROSS JOIN copyright_notice_lifecycle_changes event
       CROSS JOIN copyright_notice_delivery_intents delivery_intent
       WHERE assessment.copyright_notice_submission_id = ${fixture.submission_id}
         AND correspondence.copyright_notice_id = ${fixture.notice_id}
         AND event.copyright_notice_id = ${fixture.notice_id}
-        AND event.event_type = 'outbound_correspondence_created'
+        AND event.change_type = 'outbound_correspondence_created'
         AND delivery_intent.copyright_notice_id = ${fixture.notice_id}`,
   )
   return {
     assessedById: result.rows[0]!.assessed_by_id,
     draftedById: result.rows[0]!.drafted_by_id,
-    actorUserId: result.rows[0]!.actor_user_id,
+    actorUserId: result.rows[0]!.changed_by_id,
     recipientUserId: result.rows[0]!.recipient_user_id,
     recipientUserErasedAt: result.rows[0]!.recipient_user_erased_at,
   }

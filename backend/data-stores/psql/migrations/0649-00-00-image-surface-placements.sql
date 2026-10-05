@@ -211,12 +211,6 @@ BEGIN
     AND surface.image_id IS DISTINCT FROM p_image_id
   ON CONFLICT (delivery_key) DO UPDATE
   SET desired_state = 'withheld',
-    state = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'
-      THEN 'pending' ELSE media_delivery_registry_records.state END,
-    claimed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'
-      THEN NULL ELSE media_delivery_registry_records.claimed_at END,
-    completed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'
-      THEN NULL ELSE media_delivery_registry_records.completed_at END,
     generation = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'
       THEN media_delivery_registry_records.generation + 1 ELSE media_delivery_registry_records.generation END;
 
@@ -405,7 +399,7 @@ RETURNS boolean LANGUAGE sql STABLE AS $$
       AND image.openai_omni_moderation_created_at IS NOT NULL
       AND EXISTS (
         SELECT 1
-        FROM media_delivery_registry_records registry
+        FROM media_delivery_registry_current_records registry
         WHERE registry.delivery_key = concat('image-placement:', p_placement_id, ':', p_revision, ':', p_image_id)
           AND registry.desired_state = 'allow'
           AND registry.state = 'completed'

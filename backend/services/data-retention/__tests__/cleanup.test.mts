@@ -13,11 +13,10 @@ import {
   createTestSku,
   hardDeleteTestUser,
   hasTestRetainedIdentityRoot,
-  insertTestUserDeletionAudit,
   insertTestRetainedIdentityRoot,
   beginTransaction,
   readTestPublicationIdentityBridge,
-  countUserDeletionAuditLogsForTest,
+  countUserDeletionRequestsForTest,
   createTestPost,
   createTestTopic,
   createTestUser,
@@ -62,18 +61,17 @@ describe('retained user identity cleanup', () => {
     expect(await hasTestRetainedIdentityRoot('user', user.id)).toBe(false)
   })
 
-  it('preserves target and requester owners after live deletion while request and audit remain', async () => {
+  it('preserves target and requester owners after live deletion while request remains', async () => {
     const target = await createTestUserDirect()
     const requester = await createTestUserDirect()
     const request = await createUserDeletionRequest(target.id, requester.id)
-    await insertTestUserDeletionAudit(target.id, requester.id)
     await hardDeleteTestUser(target.id)
     await hardDeleteTestUser(requester.id)
 
     await cleanupRetainedIdentityRoots(1_000, { user: [target.id, requester.id] })
     expect(request.userId).toBe(target.id)
     expect((await getUserDeletionRequestForTest(request.id))?.userId).toBe(target.id)
-    expect(await countUserDeletionAuditLogsForTest(target.id)).toBe(1)
+    expect(await countUserDeletionRequestsForTest(target.id)).toBe(1)
     expect(await hasTestRetainedIdentityRoot('user', target.id)).toBe(true)
     expect(await hasTestRetainedIdentityRoot('user', requester.id)).toBe(true)
   })

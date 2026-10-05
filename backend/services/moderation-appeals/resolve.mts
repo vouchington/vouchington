@@ -95,7 +95,7 @@ export async function resolveModerationAppealAccept(
     appealId,
     'resolve_accept',
     staffUserId,
-    { resolved_at: row.resolved_at, resolution_action: 'accept' },
+    {},
     { query },
   )
   await Promise.all([

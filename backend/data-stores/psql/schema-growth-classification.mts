@@ -2,7 +2,7 @@ import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations
 import { EXTRA_BOUNDED_TABLES } from './schema-growth-bounded-extra.mts'
 import { EXTRA_UNBOUNDED_TABLES } from './schema-growth-unbounded-extra.mts'
 import {
-  RETAINED_ID_POLICIES,
+  SHARED_PARENT_ID_POLICIES,
   RETAINED_RELATION_GROWTH_POLICIES,
   sharedParentUuidv7,
 } from './schema-growth-retained-identities.mts'
@@ -47,7 +47,7 @@ const naturalOrProviderId = (rationale: string): NonDefaultIdException => ({
   rationale,
 })
 export const NON_DEFAULT_ID_EXCEPTIONS = new Map<string, NonDefaultIdException>([
-  ...RETAINED_ID_POLICIES,
+  ...SHARED_PARENT_ID_POLICIES,
   ['post_publication_post_identities', sharedParentUuidv7('posts')],
   ['post_publication_community_identities', sharedParentUuidv7('communities')],
   ['post_publication_rss_feed_item_identities', sharedParentUuidv7('rss_feed_items')],
@@ -86,8 +86,8 @@ const INDEFINITE_AUDIT_AND_WORKFLOW_TABLES = [
   'activitypub_distribution_checkpoints',
   'ap_inbox_activities',
   'community_activity_digest_dispatch_windows',
-  'community_agent_prompt_changes',
-  'dynamic_config_change_logs',
+  'community_agent_prompt_revisions',
+  'dynamic_configuration_revisions',
   'follower_distribution_deliveries',
   'follower_distributions',
   'membership_changes',
@@ -111,7 +111,6 @@ const INDEFINITE_AUDIT_AND_WORKFLOW_TABLES = [
   'ses_bounce_events',
   'stripe_events',
   'user_data_requests',
-  'user_deletion_audit_logs',
   'user_engagement_email_sends',
   'user_import_requests',
   'user_moderation_email_sends',

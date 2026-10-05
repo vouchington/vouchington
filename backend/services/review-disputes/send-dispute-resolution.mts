@@ -48,12 +48,6 @@ export async function sendApprovedReviewDisputeResolution(
         review_dispute_id,
         change_type,
         changed_by_id,
-        drafted_at,
-        edited_at,
-        approved_at,
-        sent_at,
-        resolved_at,
-        resolution_action,
         metadata
       )
       SELECT
@@ -61,12 +55,6 @@ export async function sendApprovedReviewDisputeResolution(
         updated.id,
         'send',
         ${staffUserId},
-        updated.drafted_at,
-        updated.edited_at,
-        updated.approved_at,
-        updated.sent_at,
-        updated.resolved_at,
-        updated.resolution_action,
         '{}'::jsonb
       FROM updated
       CROSS JOIN lifecycle_change_id

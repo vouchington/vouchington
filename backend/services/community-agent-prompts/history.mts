@@ -34,20 +34,20 @@ export async function listCommunityAgentPromptHistory(
   const query = sql`/* listCommunityAgentPromptHistory */
     SELECT
       c.id,
-      c.agent_prompt_id,
+      c.community_agent_prompt_id AS agent_prompt_id,
       c.community_id,
-      c.action,
-      c.previous_fields,
-      c.next_fields,
+      c.revision_type AS action,
+      (SELECT COALESCE(jsonb_object_agg(key, value -> 'before'), '{}'::jsonb) FROM jsonb_each(c.changes)) AS previous_fields,
+      (SELECT COALESCE(jsonb_object_agg(key, value -> 'after'), '{}'::jsonb) FROM jsonb_each(c.changes)) AS next_fields,
       c.created_at,
-      c.changed_by_id AS changed_by_user_id,
+      c.revised_by_id AS changed_by_user_id,
       u.username AS changed_by_username
-    FROM community_agent_prompt_changes c
-    LEFT JOIN users u ON u.id = c.changed_by_id AND u.deleted_at IS NULL
+    FROM community_agent_prompt_revisions c
+    LEFT JOIN users u ON u.id = c.revised_by_id AND u.deleted_at IS NULL
     WHERE c.community_id = ${communityId}`
 
   if (options.promptId) {
-    query.append(sql` AND c.agent_prompt_id = ${options.promptId}`)
+    query.append(sql` AND c.community_agent_prompt_id = ${options.promptId}`)
   }
   if (options.before) {
     query.append(sql` AND c.id < ${options.before}`)

@@ -103,15 +103,15 @@ function feedStatements(feed: StagingRssFeed): string[] {
   const { ids } = feed
   const topicName = sourceTopicName(feed)
   const sha256 = createTopicEmbeddingContent({ name: topicName }).content_sha256.toString('hex')
-  const changeInsert = (table: string, id: string): string => `
-INSERT INTO ${table} (id, rss_feed_id, enabled, created_by_id, reason)
-SELECT ${lit(id)}, f.id, TRUE,
+  const changeInsert = (kind: 'enablement' | 'discoverability', id: string): string => `
+INSERT INTO rss_feed_setting_changes (id, rss_feed_id, change_type, enabled, changed_by_id, reason)
+SELECT ${lit(id)}, f.id, ${lit(kind)}::rss_feed_setting_change_types, TRUE,
   (SELECT u.id FROM users u
     WHERE u.username = ${lit(AUTO_UPDATER_USERNAME)} AND u.platform_account_kind = 'system'),
   'initial state'
 FROM rss_feeds f
 WHERE f.id = ${lit(ids.feed)}
-  AND NOT EXISTS (SELECT 1 FROM ${table} c WHERE c.rss_feed_id = f.id)
+  AND NOT EXISTS (SELECT 1 FROM rss_feed_setting_changes c WHERE c.rss_feed_id = f.id AND c.change_type = ${lit(kind)}::rss_feed_setting_change_types)
 ON CONFLICT DO NOTHING;`
 
   return [
@@ -167,8 +167,8 @@ WHERE u.url = ${lit(feed.url)}
 ON CONFLICT DO NOTHING;`,
     // The initial enabled=TRUE rows are what set rss_feeds.is_enabled / is_discoverable (AFTER
     // INSERT sync triggers). Inserted only while the feed has no change row at all.
-    changeInsert('rss_feed_enablement_changes', ids.enablement),
-    changeInsert('rss_feed_discoverability_changes', ids.discoverability),
+    changeInsert('enablement', ids.enablement),
+    changeInsert('discoverability', ids.discoverability),
   ]
 }
 

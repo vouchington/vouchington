@@ -67,3 +67,28 @@ export function computePostChanges(
   }
   return changes
 }
+
+/** Records the reversal of a committed edit without erasing its immutable revision. */
+export async function compensatePostRevision(
+  postId: string,
+  revisionId: string,
+  options: QueryOptions,
+): Promise<void> {
+  const { rows } = await write<PostRevision>(
+    sql`/* compensatePostRevision */
+    SELECT changes
+    FROM post_revisions
+    WHERE id = ${revisionId} AND post_id = ${postId}
+  `,
+    options,
+  )
+  const revision = rows[0]
+  if (!revision) return
+  const changes = Object.fromEntries(
+    Object.entries(revision.changes).map(([field, change]) => [
+      field,
+      { before: change.after, after: change.before },
+    ]),
+  )
+  await createPostRevision(postId, 'update', changes, null, options)
+}

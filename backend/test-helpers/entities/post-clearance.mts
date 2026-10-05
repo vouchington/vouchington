@@ -61,14 +61,6 @@ export async function updateTestPostClearanceChange(options: {
   `)
 }
 
-/** Deletes an audit row only for trigger-maintenance regression coverage. */
-export async function deleteTestPostClearanceChange(id: string): Promise<void> {
-  await write(sql`/* deleteTestPostClearanceChange */
-    DELETE FROM post_clearance_changes
-    WHERE id = ${id}::uuid
-  `)
-}
-
 export async function setTestPostClearanceStatus(
   postId: string,
   status: TestClearanceStatus,

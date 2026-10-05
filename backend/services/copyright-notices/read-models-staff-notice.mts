@@ -75,7 +75,7 @@ export async function selectStaffFormReview(
     SELECT intake.id AS intake_id, submission.source_kind, execution.state, screening.recommendation, screening.rationale_ciphertext, screening.guidance_ciphertext,
       review.accepted AS review_accepted, review.reviewed_at, review.reviewed_by_id
     FROM copyright_notice_form_intakes intake JOIN copyright_notice_submissions submission ON submission.id = intake.copyright_notice_submission_id
-    LEFT JOIN copyright_notice_form_screening_executions execution ON execution.copyright_notice_form_intake_id = intake.id
+    LEFT JOIN LATERAL (SELECT * FROM copyright_notice_form_screening_attempts attempt WHERE attempt.copyright_notice_form_intake_id = intake.id ORDER BY attempt.attempt_number DESC LIMIT 1) execution ON true
     LEFT JOIN copyright_notice_form_screenings screening ON screening.id = execution.copyright_notice_form_screening_id AND execution.state = 'completed'
     LEFT JOIN copyright_notice_form_intake_reviews review ON review.copyright_notice_form_intake_id = intake.id
     WHERE intake.copyright_notice_id = ${noticeId}

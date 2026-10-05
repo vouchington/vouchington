@@ -365,3 +365,13 @@ eligible fanout or completed crawl work; the response shape remains unchanged. S
 The [pagination contract](../overview/architecture/pagination.md#runtime-page-limits) defines
 profile ownership and default clamping. This records API behavior coordination and does not
 change rendered native parity claims.
+
+## Retained community prompt creator handoff
+
+The pre-launch schema review (#1597) retains community prompts when their creator is deleted.
+The shared prompt contract therefore makes `created_by_id` nullable. Web prompt management does not
+render or authorize from that field; the server requires a live creator's membership before an
+active prompt can run. Swift and .NET must regenerate from this nullable shared contract when it
+lands. Their native build and fixture validation remain unverified in this schema-only stack.
+Moderation appeal original-decision fields keep the same wire shape; the generated schema now
+names their existing object type.

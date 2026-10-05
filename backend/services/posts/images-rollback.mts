@@ -1,4 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
+import { compensatePostRevision } from '@services/post-revisions'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
@@ -121,12 +122,7 @@ export async function rollbackPostImages(
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ${postId}
       `),
-      () =>
-        query(sql`/* rollbackPostImages */
-      DELETE FROM post_revisions
-      WHERE id = ${rollback.revisionId}
-        AND post_id = ${postId}
-      `),
+      () => compensatePostRevision(postId, rollback.revisionId, { query }),
     ])
     if (rollback.currentLatestClearanceChangeId !== rollback.latestClearanceChangeId) {
       if (rollback.currentLatestClearanceChangeId === null) {

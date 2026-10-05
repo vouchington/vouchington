@@ -16,7 +16,7 @@ Whether Voucha actually federates with an instance is separate from the topic/vo
 - `fediverse_instance_integration_changes` — append-only rows (`topic_id`, `integration_status`, `changed_by_id`, `reason`).
 - `getLatestIntegrationStatusChange()` reads the latest row.
 - `setIntegrationStatusAsAdmin()` authorizes via `currentUserCanModifyFediverseInstanceIntegrationStatus`, locks the latest change row `FOR UPDATE`, no-ops if the status is unchanged, otherwise inserts a new change row and invalidates the topic cache.
-- The `topics__fediverse_instances.integration_status` column is a trigger-maintained projection of the latest change row, kept in sync the same way `rss_feeds.is_enabled` mirrors `rss_feed_enablement_changes`.
+- The `topics__fediverse_instances.integration_status` column is a trigger-maintained projection of the latest change row, kept in sync the same way `rss_feeds.is_enabled` mirrors `rss_feed_setting_changes`.
 
 ## Authorization
 

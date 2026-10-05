@@ -37,3 +37,13 @@ export async function getPostArchiveRevisionsForTest(postId: string): Promise<Po
   `)
   return rows
 }
+
+export async function getPostImageRevisionsForTest(postId: string): Promise<PostRevision[]> {
+  const { rows } = await write<PostRevision>(sql`/* getPostImageRevisionsForTest */
+    SELECT id, post_id, revision_type, revised_by_id, changes, created_at
+    FROM post_revisions
+    WHERE post_id = ${postId} AND changes ? 'post_images'
+    ORDER BY id
+  `)
+  return rows
+}

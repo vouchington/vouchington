@@ -7,7 +7,7 @@ import {
 import { readTestLatestCopyrightFormScreeningRecommendation } from '@voucha/test-helpers/data-stores/psql/copyright-form-reviews'
 import {
   readTestCopyrightStaffScreening,
-  expireTestCopyrightScreeningClaim,
+  getTestExpiredCopyrightScreeningClaimTime,
   startTestCopyrightScreeningBeforeAdmission,
   admitTestCopyrightBeforeScreening,
 } from '@voucha/test-helpers/data-stores/psql/copyright-screening-executions'
@@ -179,8 +179,8 @@ describe('current copyright form screening execution', () => {
     const { notice } = await createClearScreenedForm()
     await startCopyrightFormScreening(notice.intake.id)
     const old = (await claimCopyrightFormScreening(notice.intake.id))!
-    await expireTestCopyrightScreeningClaim(notice.intake.id)
-    const retry = await claimCopyrightFormScreening(notice.intake.id)
+    const cutoff = await getTestExpiredCopyrightScreeningClaimTime(notice.intake.id)
+    const retry = await claimCopyrightFormScreening(notice.intake.id, cutoff)
     expect(retry?.leaseToken).not.toBe(old.leaseToken)
     expect(retry?.attemptNumber).toBe(old.attemptNumber + 1)
     const input = {

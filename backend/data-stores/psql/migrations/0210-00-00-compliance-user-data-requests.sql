@@ -86,21 +86,3 @@ COMMENT ON COLUMN user_data_requests.failed_at IS 'When the worker terminated un
 COMMENT ON COLUMN user_data_requests.last_error_message IS 'Most recent bounded processing error retained for audit and recovery.';
 COMMENT ON COLUMN user_data_requests.s3_key IS 'S3 path to the generated ZIP file while the export is downloadable; cleared when reclaimed.';
 COMMENT ON COLUMN user_data_requests.expires_at IS 'When the download link expires; the cleanup sweep reclaims the ZIP from S3 after this time.';
-
--- Audit references retained identities so the trail survives live-user hard deletion.
-CREATE TABLE IF NOT EXISTS user_deletion_audit_logs (
-  id UUID PRIMARY KEY DEFAULT uuidv7(),
-  user_id UUID NOT NULL REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
-  requested_by_id UUID REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
-  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
-);
-
-CREATE INDEX IF NOT EXISTS idx_user_deletion_audit_logs__user_id
-ON user_deletion_audit_logs (user_id);
-
-CREATE INDEX IF NOT EXISTS idx_user_deletion_audit_logs__requested_by_id
-ON user_deletion_audit_logs (requested_by_id) WHERE requested_by_id IS NOT NULL;
-
-COMMENT ON TABLE user_deletion_audit_logs IS 'Compliance audit trail referencing retained user identities after live hard-delete.';
-COMMENT ON COLUMN user_deletion_audit_logs.user_id IS 'Retained identity of the deleted user.';
-COMMENT ON COLUMN user_deletion_audit_logs.requested_by_id IS 'Retained identity of the requesting user, if any.';

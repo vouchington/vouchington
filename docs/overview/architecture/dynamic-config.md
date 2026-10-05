@@ -40,7 +40,7 @@ audit changes from one admin surface.
 ## History
 
 Writes through `PATCH /api/v1/dynamic-config/namespaces/:namespace` record a
-`dynamic_config_change_logs` row before changing Valkey. The admin UI shows the previous value, next
+`dynamic_configuration_revisions` row before changing Valkey. The admin UI shows the previous value, next
 value, actor, and timestamp for each namespace.
 
 No-op writes return `changed: false` and do not create history rows.

@@ -5,17 +5,17 @@ import sql from 'sql-template-strings'
 export async function readTestCopyrightDeliveryIntentReplayEvents(intentId: string): Promise<
   Array<{
     copyright_notice_id: string | null
-    event_type: string
-    actor_user_id: string | null
+    change_type: string
+    changed_by_id: string | null
   }>
 > {
   const { rows } = await read<{
     copyright_notice_id: string | null
-    event_type: string
-    actor_user_id: string | null
+    change_type: string
+    changed_by_id: string | null
   }>(sql`/* readTestCopyrightDeliveryIntentReplayEvents */
-    SELECT copyright_notice_id, event_type, actor_user_id
-    FROM copyright_notice_lifecycle_events
+    SELECT copyright_notice_id, change_type, changed_by_id
+    FROM copyright_notice_lifecycle_changes
     WHERE copyright_notice_delivery_intent_id = ${intentId}
     ORDER BY id
   `)

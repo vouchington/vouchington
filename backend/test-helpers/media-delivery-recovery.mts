@@ -63,15 +63,19 @@ export async function setTestMediaRecoveryState(
   },
 ): Promise<void> {
   await write(sql`/* setTestMediaRecoveryState */
-    UPDATE media_delivery_registry_records
-    SET state = ${input.state}, delivery_attempt_count = ${input.attempts},
-      claimed_at = CASE WHEN ${input.state} = 'pending' THEN NULL ELSE ${input.at}::timestamptz END,
-      completed_at = CASE WHEN ${input.state} IN ('completed', 'failed') THEN ${input.at}::timestamptz ELSE NULL END,
-      next_attempt_at = ${input.nextAttemptAt ?? null}::timestamptz,
-      failure_message = 'Owned recovery failure evidence',
-      created_at = COALESCE(${input.createdAt ?? null}::timestamptz, created_at)
+    INSERT INTO media_delivery_registry_changes(delivery_key, generation, change_type, delivery_attempt_count,
+      claimed_at, completed_at, next_attempt_at, failure_message)
+    SELECT delivery_key, generation, ${input.state}::media_delivery_registry_change_types, ${input.attempts},
+      CASE WHEN ${input.state} = 'pending' THEN NULL ELSE ${input.at}::timestamptz END,
+      CASE WHEN ${input.state} IN ('completed', 'failed') THEN ${input.at}::timestamptz ELSE NULL END,
+      ${input.nextAttemptAt ?? null}::timestamptz, 'Owned recovery failure evidence'
+    FROM media_delivery_registry_current_records
     WHERE delivery_key = ANY(${deliveryKeys}::text[])
   `)
+  if (input.createdAt)
+    await write(
+      sql`UPDATE media_delivery_registry_records SET created_at = ${input.createdAt}::timestamptz WHERE delivery_key = ANY(${deliveryKeys}::text[])`,
+    )
 }
 
 /**
@@ -94,9 +98,7 @@ export async function fenceTestMediaDeliveryRegistry(input: {
     `)
   await transaction(sql`/* fenceTestMediaDeliveryRegistry:reopen */
     UPDATE media_delivery_registry_records
-    SET generation = generation + 1, state = 'pending', delivery_attempt_count = 0,
-      claimed_at = NULL, completed_at = NULL, projected_at = NULL, invalidated_at = NULL,
-      next_attempt_at = NULL, failure_message = NULL
+    SET generation = generation + 1
     WHERE delivery_key = ANY(${input.reopenDeliveryKeys}::text[])
   `)
   await transaction.commit()
@@ -108,7 +110,7 @@ export async function withLockedTestMediaDeliveryRecord<T>(
 ): Promise<T> {
   await using transaction = await beginTransaction()
   await transaction(
-    sql`SELECT delivery_key FROM media_delivery_registry_records WHERE delivery_key = ${deliveryKey} FOR UPDATE`,
+    sql`SELECT delivery_key FROM media_delivery_registry_current_records WHERE delivery_key = ${deliveryKey} FOR UPDATE`,
   )
   return await run()
 }

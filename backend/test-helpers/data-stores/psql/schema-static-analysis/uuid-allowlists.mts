@@ -29,7 +29,7 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'Opaque worker fencing token, not a durable relation.',
   ],
   [
-    'copyright_notice_form_screening_executions.lease_token',
+    'copyright_notice_form_screening_attempts.lease_token',
     'Opaque worker fencing token, not a durable relation.',
   ],
   [
@@ -97,14 +97,6 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'Lifecycle ownership FK; survives moderator deletion as audit record.',
   ],
   [
-    'community_agent_prompt_changes.agent_prompt_id',
-    'Audit snapshot intentionally survives prompt deletion; no FK on purpose.',
-  ],
-  [
-    'dynamic_config_change_logs.changed_by_id',
-    'Audit snapshot intentionally survives user deletion.',
-  ],
-  [
     'moderation_report_judgements.triggering_report_id',
     'Optional FK to the report that triggered this judgement; survives report deletion.',
   ],
@@ -143,14 +135,6 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
   [
     'review_disputes.resolved_by_id',
     'Lifecycle ownership FK; survives moderator deletion as audit record.',
-  ],
-  [
-    'user_deletion_audit_logs.requested_by_id',
-    'Compliance audit records intentionally survive user deletion.',
-  ],
-  [
-    'user_deletion_audit_logs.user_id',
-    'Compliance audit records intentionally survive user deletion.',
   ],
 ])
 export const COMMENT_EXEMPT_COLUMN_NAMES = [

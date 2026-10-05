@@ -141,8 +141,8 @@ describe('copyright guest capabilities', () => {
       revoked_at: revokedAt,
     })
     expect(await listCopyrightGuestCapabilityEvents(capability.id)).toEqual([
-      { event_type: 'guest_capability_issued', actor_user_id: issuer.id },
-      { event_type: 'guest_capability_revoked', actor_user_id: revoker.id },
+      { change_type: 'guest_capability_issued', changed_by_id: issuer.id },
+      { change_type: 'guest_capability_revoked', changed_by_id: revoker.id },
     ])
   })
 
@@ -235,7 +235,7 @@ describe('copyright guest capabilities', () => {
     expect(
       heldAggregate?.lifecycleEvents.find(
         event => event.copyright_notice_submission_id === withdrawal.id,
-      )?.event_type,
+      )?.change_type,
     ).toBe('withdrawal_received')
     expect(await countCopyrightUrgentFilings(court.id)).toBe(1)
     expect(await countCopyrightUrgentFilings(secondCourt.id)).toBe(1)

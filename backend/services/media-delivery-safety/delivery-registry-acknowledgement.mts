@@ -24,9 +24,9 @@ export async function publishPersistedDeliveryRecord(
   })
   await dependencies.invalidateMediaDeliveryPath(getMediaDeliveryPath(record))
   const { rowCount } = await query(sql`/* markPublishedMediaDeliveryRecord */
-    UPDATE media_delivery_registry_records
-    SET state = 'completed', projected_at = CURRENT_TIMESTAMP, invalidated_at = CURRENT_TIMESTAMP,
-      completed_at = CURRENT_TIMESTAMP, next_attempt_at = NULL, failure_message = NULL
+    INSERT INTO media_delivery_registry_changes(delivery_key, generation, change_type, delivery_attempt_count, projected_at, invalidated_at, completed_at)
+    SELECT delivery_key, generation, 'completed', delivery_attempt_count, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+    FROM media_delivery_registry_current_records
     WHERE delivery_key = ${record.delivery_key} AND desired_state = ${record.desired_state} AND generation = ${record.generation}
   `)
   if (rowCount !== 1)

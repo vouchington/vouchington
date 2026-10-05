@@ -77,13 +77,13 @@ export async function insertTestPodcastShow(suffix: string): Promise<TestPodcast
 
   // Enable the feed
   await write(
-    `INSERT INTO rss_feed_enablement_changes (rss_feed_id, enabled, reason)
-     VALUES ($1, TRUE, 'playwright test fixture')`,
+    `INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, enabled, reason)
+     VALUES ('enablement', $1, TRUE, 'playwright test fixture')`,
     [rssFeedId],
   )
   await write(
-    `INSERT INTO rss_feed_discoverability_changes (rss_feed_id, enabled, reason)
-     VALUES ($1, TRUE, 'playwright test fixture')`,
+    `INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, enabled, reason)
+     VALUES ('discoverability', $1, TRUE, 'playwright test fixture')`,
     [rssFeedId],
   )
 

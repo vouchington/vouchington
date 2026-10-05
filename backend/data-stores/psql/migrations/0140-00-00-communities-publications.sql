@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Coalesced pre-launch domain baseline.
 -- edited-in-place: pre-launch, never deployed to production
 -- edited-in-place: added ban-evasion detection columns to community_members
@@ -524,7 +525,7 @@ CREATE TABLE IF NOT EXISTS community_agent_prompts (
   id UUID NOT NULL PRIMARY KEY REFERENCES agent_prompts(id) ON DELETE CASCADE,
 
   community_id  UUID NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
-  created_by_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_by_id UUID REFERENCES users(id) ON DELETE SET NULL,
 
   slot_allocated BOOLEAN NOT NULL DEFAULT false,
   activated_at   TIMESTAMPTZ,

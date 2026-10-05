@@ -57,7 +57,7 @@ describe('required EXPLAIN plan shapes', () => {
 
   it('rejects RSS state plans that scan history relations', () => {
     const historyScan = result('rss-feed-search', 'FROM view_rss_feed_current_states', {
-      Plan: { 'Node Type': 'Index Scan', 'Relation Name': 'rss_feed_enablement_changes' },
+      Plan: { 'Node Type': 'Index Scan', 'Relation Name': 'rss_feed_setting_changes' },
     })
     expect(() => assertRequiredPlanShape(historyScan)).toThrow('without lateral history scans')
   })

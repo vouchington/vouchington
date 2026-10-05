@@ -36,6 +36,14 @@ CREATE OR REPLACE FUNCTION public.fn_copyright_retention_erasure_permitted(table
  STABLE
 ```
 
+## `fn_create_media_delivery_generation_change`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_create_media_delivery_generation_change()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_create_metrics`
 
 ```sql
@@ -75,6 +83,15 @@ CREATE OR REPLACE FUNCTION public.fn_ensure_retained_actor_identity()
 CREATE OR REPLACE FUNCTION public.fn_ensure_retained_identity(family retained_identity_families, identity_id uuid)
  RETURNS void
  LANGUAGE plpgsql
+```
+
+## `fn_field_changes(before_fields jsonb, after_fields jsonb)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_field_changes(before_fields jsonb, after_fields jsonb)
+ RETURNS jsonb
+ LANGUAGE sql
+ IMMUTABLE
 ```
 
 ## `fn_guard_copyright_eu_dispute_settlement_outcome`
@@ -648,6 +665,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_copyright_restriction_lifecycle()
  LANGUAGE plpgsql
 ```
 
+## `fn_reject_copyright_screening_attempt_rewind`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_screening_attempt_rewind()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_reject_copyright_territorial_acknowledgment_attempt`
 
 ```sql
@@ -982,6 +1007,14 @@ CREATE OR REPLACE FUNCTION public.fn_update_classifier_run_scope()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_update_clearance_transparency_scope()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_media_delivery_change_authority`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_media_delivery_change_authority()
  RETURNS trigger
  LANGUAGE plpgsql
 ```

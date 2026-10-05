@@ -84,13 +84,18 @@ export async function completeCopyrightMandatoryHumanReview(input: {
     transaction,
   )
   await transaction(sql`/* completeCopyrightMandatoryHumanReview:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id,
-      copyright_restriction_id, review_action, review_rationale_ciphertext)
-    VALUES (${input.noticeId}, 'mandatory_human_review_completed', ${input.currentUser.id},
-      ${input.restrictionId}, ${input.action}, ${encryptSecret(
-        input.rationale,
-        `copyright-restriction-review:${input.restrictionId}`,
-      )})
+    WITH change_id AS (SELECT uuidv7() AS id), inserted_change AS (
+      INSERT INTO copyright_notice_lifecycle_changes (id, copyright_notice_id, change_type, changed_by_id,
+        copyright_restriction_id, review_action, review_rationale_id)
+      SELECT id, ${input.noticeId}, 'mandatory_human_review_completed', ${input.currentUser.id},
+        ${input.restrictionId}, ${input.action}, id FROM change_id
+      RETURNING id, copyright_notice_id
+    )
+    INSERT INTO copyright_notice_lifecycle_change_rationales (id, copyright_notice_id, review_rationale_ciphertext)
+    SELECT id, copyright_notice_id, ${encryptSecret(
+      input.rationale,
+      `copyright-restriction-review:${input.restrictionId}`,
+    )} FROM inserted_change
   `)
   await transaction.commit()
   if (restoreIntentId) void enqueueApplyCopyrightAction(restoreIntentId)

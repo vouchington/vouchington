@@ -157,8 +157,8 @@ async function createAuthenticatedCopyrightSubmission(
         copyright_notice_submission_id, requester_user_id, idempotency_key, request_sha256
       ) VALUES (${submission.id}, ${currentUser.id}, ${idempotencyKey}, ${requestSha256})
     )
-    INSERT INTO copyright_notice_lifecycle_events (
-      copyright_notice_id, event_type, actor_user_id, copyright_notice_submission_id
+    INSERT INTO copyright_notice_lifecycle_changes (
+      copyright_notice_id, change_type, changed_by_id, copyright_notice_submission_id
     ) VALUES (${noticeId}, ${`${kind}_received`}, ${currentUser.id}, ${submission.id})
   `)
   await createCopyrightDeliveryIntent(

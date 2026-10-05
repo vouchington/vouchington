@@ -82,8 +82,8 @@ export async function recoverMissingDecisionAssessments(
       FROM candidates
       RETURNING id, copyright_notice_submission_id, assessed_by_id
     )
-    INSERT INTO copyright_notice_lifecycle_events (
-      copyright_notice_id, event_type, actor_user_id,
+    INSERT INTO copyright_notice_lifecycle_changes (
+      copyright_notice_id, change_type, changed_by_id,
       copyright_notice_submission_assessment_id, recovery_source
     )
     SELECT submission.copyright_notice_id, 'submission_assessed', inserted.assessed_by_id,

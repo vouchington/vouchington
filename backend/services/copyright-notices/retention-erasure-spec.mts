@@ -155,7 +155,7 @@ export const COPYRIGHT_RETENTION_ERASURE: readonly CopyrightRetentionErasureTabl
       sql`copyright_notice_delivery_intent_id IN (SELECT id FROM copyright_notice_delivery_intents
         WHERE copyright_notice_id = ${id})`,
   ),
-  table('copyright_notice_lifecycle_events', { review_rationale_ciphertext: 'redact' }),
+  table('copyright_notice_lifecycle_change_rationales', { review_rationale_ciphertext: 'redact' }),
 ]
 
 const OVERWRITE: Record<CopyrightRetentionErasureKind, (column: string) => string> = {

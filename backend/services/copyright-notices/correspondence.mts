@@ -139,7 +139,7 @@ async function insertOutboundCopyrightCorrespondence(
   const correspondence = rows[0]
   assert(correspondence, 404, 'Copyright notice or case submission not found')
   await transaction(sql`/* createOutboundCopyrightCorrespondence:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, copyright_notice_correspondence_id)
+    INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, copyright_notice_correspondence_id)
     VALUES (${input.noticeId}, 'outbound_correspondence_created', ${correspondence.id})
   `)
   return correspondence

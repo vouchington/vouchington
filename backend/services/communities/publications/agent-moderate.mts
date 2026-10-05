@@ -87,7 +87,7 @@ async function unpublishInTransaction(
   await write(
     sql`/* recordAgentPublicationReviewChange */
       INSERT INTO community_post_review_changes (
-        community_id, post_id, actor_user_id, action, platform_override
+        community_id, post_id, changed_by_id, change_type, platform_override
       ) VALUES (
         ${communityId}, ${postId}, ${moderationSystemUserId}, 'unpublish', false
       )`,

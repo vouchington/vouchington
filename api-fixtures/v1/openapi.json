@@ -1789,7 +1789,14 @@
             "type": "string"
           },
           "created_by_id": {
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
           },
           "deactivated_at": {
             "anyOf": [
@@ -15235,6 +15242,33 @@
           }
         },
         "required": ["id", "name", "slug", "topic_type"],
+        "type": "object"
+      },
+      "OriginalModerationDecision": {
+        "additionalProperties": false,
+        "properties": {
+          "actor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModerationActorSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "internal_reason": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": ["actor", "internal_reason"],
         "type": "object"
       },
       "PageInfo": {
@@ -29254,31 +29288,7 @@
                                     "$ref": "#/components/schemas/ModerationActorSummary"
                                   },
                                   "original_decision": {
-                                    "additionalProperties": false,
-                                    "properties": {
-                                      "actor": {
-                                        "anyOf": [
-                                          {
-                                            "$ref": "#/components/schemas/ModerationActorSummary"
-                                          },
-                                          {
-                                            "type": "null"
-                                          }
-                                        ]
-                                      },
-                                      "internal_reason": {
-                                        "anyOf": [
-                                          {
-                                            "type": "null"
-                                          },
-                                          {
-                                            "type": "string"
-                                          }
-                                        ]
-                                      }
-                                    },
-                                    "required": ["actor", "internal_reason"],
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/OriginalModerationDecision"
                                   }
                                 },
                                 "required": ["appellant", "original_decision"],
@@ -31134,31 +31144,7 @@
                                   "$ref": "#/components/schemas/ModerationActorSummary"
                                 },
                                 "original_decision": {
-                                  "additionalProperties": false,
-                                  "properties": {
-                                    "actor": {
-                                      "anyOf": [
-                                        {
-                                          "$ref": "#/components/schemas/ModerationActorSummary"
-                                        },
-                                        {
-                                          "type": "null"
-                                        }
-                                      ]
-                                    },
-                                    "internal_reason": {
-                                      "anyOf": [
-                                        {
-                                          "type": "null"
-                                        },
-                                        {
-                                          "type": "string"
-                                        }
-                                      ]
-                                    }
-                                  },
-                                  "required": ["actor", "internal_reason"],
-                                  "type": "object"
+                                  "$ref": "#/components/schemas/OriginalModerationDecision"
                                 }
                               },
                               "required": ["appellant", "original_decision"],
@@ -31753,31 +31739,7 @@
                               "$ref": "#/components/schemas/ModerationActorSummary"
                             },
                             "original_decision": {
-                              "additionalProperties": false,
-                              "properties": {
-                                "actor": {
-                                  "anyOf": [
-                                    {
-                                      "$ref": "#/components/schemas/ModerationActorSummary"
-                                    },
-                                    {
-                                      "type": "null"
-                                    }
-                                  ]
-                                },
-                                "internal_reason": {
-                                  "anyOf": [
-                                    {
-                                      "type": "null"
-                                    },
-                                    {
-                                      "type": "string"
-                                    }
-                                  ]
-                                }
-                              },
-                              "required": ["actor", "internal_reason"],
-                              "type": "object"
+                              "$ref": "#/components/schemas/OriginalModerationDecision"
                             }
                           },
                           "required": ["appellant", "original_decision"],
@@ -32363,31 +32325,7 @@
                               "$ref": "#/components/schemas/ModerationActorSummary"
                             },
                             "original_decision": {
-                              "additionalProperties": false,
-                              "properties": {
-                                "actor": {
-                                  "anyOf": [
-                                    {
-                                      "$ref": "#/components/schemas/ModerationActorSummary"
-                                    },
-                                    {
-                                      "type": "null"
-                                    }
-                                  ]
-                                },
-                                "internal_reason": {
-                                  "anyOf": [
-                                    {
-                                      "type": "null"
-                                    },
-                                    {
-                                      "type": "string"
-                                    }
-                                  ]
-                                }
-                              },
-                              "required": ["actor", "internal_reason"],
-                              "type": "object"
+                              "$ref": "#/components/schemas/OriginalModerationDecision"
                             }
                           },
                           "required": ["appellant", "original_decision"],
@@ -32973,31 +32911,7 @@
                               "$ref": "#/components/schemas/ModerationActorSummary"
                             },
                             "original_decision": {
-                              "additionalProperties": false,
-                              "properties": {
-                                "actor": {
-                                  "anyOf": [
-                                    {
-                                      "$ref": "#/components/schemas/ModerationActorSummary"
-                                    },
-                                    {
-                                      "type": "null"
-                                    }
-                                  ]
-                                },
-                                "internal_reason": {
-                                  "anyOf": [
-                                    {
-                                      "type": "null"
-                                    },
-                                    {
-                                      "type": "string"
-                                    }
-                                  ]
-                                }
-                              },
-                              "required": ["actor", "internal_reason"],
-                              "type": "object"
+                              "$ref": "#/components/schemas/OriginalModerationDecision"
                             }
                           },
                           "required": ["appellant", "original_decision"],
@@ -33592,31 +33506,7 @@
                               "$ref": "#/components/schemas/ModerationActorSummary"
                             },
                             "original_decision": {
-                              "additionalProperties": false,
-                              "properties": {
-                                "actor": {
-                                  "anyOf": [
-                                    {
-                                      "$ref": "#/components/schemas/ModerationActorSummary"
-                                    },
-                                    {
-                                      "type": "null"
-                                    }
-                                  ]
-                                },
-                                "internal_reason": {
-                                  "anyOf": [
-                                    {
-                                      "type": "null"
-                                    },
-                                    {
-                                      "type": "string"
-                                    }
-                                  ]
-                                }
-                              },
-                              "required": ["actor", "internal_reason"],
-                              "type": "object"
+                              "$ref": "#/components/schemas/OriginalModerationDecision"
                             }
                           },
                           "required": ["appellant", "original_decision"],

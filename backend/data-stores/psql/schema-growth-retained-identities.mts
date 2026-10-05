@@ -7,6 +7,13 @@ export function sharedParentUuidv7(parentTable: string) {
   }
 }
 
+const COMPANION_ID_POLICIES = [
+  [
+    'copyright_notice_lifecycle_change_rationales',
+    sharedParentUuidv7('copyright_notice_lifecycle_changes'),
+  ],
+] as const
+
 export const RETAINED_ID_POLICIES = [
   ['retained_user_identities', sharedParentUuidv7('users')],
   ['retained_api_key_identities', sharedParentUuidv7('api_keys')],
@@ -19,6 +26,11 @@ export const RETAINED_ID_POLICIES = [
       ? ([[`retained_${metadata.table_name}`, sharedParentUuidv7(metadata.table_name)]] as const)
       : [],
   ),
+] as const
+
+export const SHARED_PARENT_ID_POLICIES = [
+  ...RETAINED_ID_POLICIES,
+  ...COMPANION_ID_POLICIES,
 ] as const
 
 export const RETAINED_MISSING_UPDATED_AT = [

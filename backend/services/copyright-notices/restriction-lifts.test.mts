@@ -83,8 +83,8 @@ describe('administrator copyright restriction lifts', () => {
     expect(after?.lifecycleEvents).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          event_type: 'restriction_lifted_by_administrator',
-          actor_user_id: administrator.id,
+          change_type: 'restriction_lifted_by_administrator',
+          changed_by_id: administrator.id,
           copyright_restriction_id: restriction.id,
         }),
       ]),

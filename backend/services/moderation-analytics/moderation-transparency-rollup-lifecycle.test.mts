@@ -7,7 +7,7 @@ import {
   createTestUser,
   deleteTestReleasedModerationTransparencyRollup,
   deleteTestModerationAppeal,
-  deleteTestPostClearanceChange,
+  hardDeleteTestPost,
   getTestModerationTransparencyRollupCount,
   getTestReleasedModerationTransparencyRollupCount,
   insertTestModerationAppeal,
@@ -89,7 +89,7 @@ describe('moderation transparency daily rollup lifecycle', () => {
       createdById: author.id,
       markdown: 'Test rollup lifecycle aggregation.',
     })
-    const changes = await Promise.all(
+    await Promise.all(
       Array.from({ length: 20 }, (_, occurredAtSequence) =>
         insertTestPostClearanceChange({
           postId,
@@ -101,7 +101,7 @@ describe('moderation transparency daily rollup lifecycle', () => {
       ),
     )
     await expectReleasedBucket(now, occurredAt, 'automated_moderation', 'openai_omni')
-    await deleteTestPostClearanceChange(changes[0]!.id)
+    await hardDeleteTestPost(postId)
     await expectReleasedBucket(now, occurredAt, 'automated_moderation', 'openai_omni')
   })
 

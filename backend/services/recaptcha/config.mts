@@ -2,7 +2,7 @@ import { DynamicConfig } from '@data-stores/valkey'
 import onError from '@modules/on-error'
 
 // reCAPTCHA Enterprise runtime configuration. All three knobs are admin-editable via the Dynamic
-// Config API recaptcha-config namespace and audited in dynamic_config_change_logs. We deliberately use a
+// Config API recaptcha-config namespace and audited in dynamic_configuration_revisions. We deliberately use a
 // DynamicConfig (not a frontend feature flag) because backend behaviour must never be gated by a
 // feature flag (see backend/api/AGENTS.md). `enabled` controls whether we call the paid assessment
 // API at all; `blocking_enabled` controls monitor-vs-enforce; `block_threshold` is the score below

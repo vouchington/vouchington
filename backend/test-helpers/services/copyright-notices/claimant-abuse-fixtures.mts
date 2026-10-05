@@ -14,9 +14,9 @@ export async function recordTestConfigChange(
   next: Record<string, unknown>,
 ): Promise<void> {
   await write(sql`/* recordTestConfigChange */
-    INSERT INTO dynamic_config_change_logs (id, config_key, previous_fields, next_fields)
-    VALUES (uuidv7(${`-${daysAgo} days`}::interval), ${configKey},
-      ${JSON.stringify(previous)}::jsonb, ${JSON.stringify(next)}::jsonb)
+    INSERT INTO dynamic_configuration_revisions (id, config_key, revision_type, changes)
+    VALUES (uuidv7(${`-${daysAgo} days`}::interval), ${configKey}, 'update',
+      fn_field_changes(${JSON.stringify(previous)}::jsonb, ${JSON.stringify(next)}::jsonb))
   `)
 }
 

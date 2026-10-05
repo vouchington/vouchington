@@ -116,8 +116,8 @@ export async function reopenCopyrightRestoreIntentInTransaction(
       AND intent.action = 'restore'
       AND intent.state = 'blocked'
     RETURNING target.copyright_notice_id, intent.id)
-    INSERT INTO copyright_notice_lifecycle_events (
-      copyright_notice_id, event_type, copyright_notice_action_intent_id
+    INSERT INTO copyright_notice_lifecycle_changes (
+      copyright_notice_id, change_type, copyright_notice_action_intent_id
     )
     SELECT copyright_notice_id, 'copyright_action_replayed', id
     FROM reopened RETURNING id
@@ -162,7 +162,7 @@ export async function replayFailedCopyrightActionIntent(input: {
   const replayed = rows[0]
   if (replayed) {
     await transaction(sql`/* replayFailedCopyrightActionIntent:event */
-      INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id,
+      INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
         copyright_notice_action_intent_id, replay_reason)
       VALUES (${replayed.copyright_notice_id}, 'copyright_action_replayed', ${input.actorUserId},
         ${input.intentId}, 'operator_replay')

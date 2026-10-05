@@ -13,6 +13,7 @@ export interface ClearanceDecisionContext {
   reasonCode?: string
   privateNote?: string
   platformOverride?: boolean
+  isCreationModerationBypass?: boolean
 }
 
 export interface ClearanceCompensationMetadata extends Record<string, unknown> {
@@ -74,9 +75,9 @@ async function writePostClearanceStatus(
       WITH inserted_change AS (
         INSERT INTO post_clearance_changes (
           post_id, change_type, changed_by_id, public_reason_code, private_note,
-          platform_override, metadata, moderation_transparency_categories
+          platform_override, metadata, is_creation_moderation_bypass, moderation_transparency_categories
         )
-        SELECT p.id, $2::post_clearance_change_types, $3, $6, $7, $8, $5::jsonb,
+        SELECT p.id, $2::post_clearance_change_types, $3, $6, $7, $8, $5::jsonb, $10::boolean,
           CASE WHEN $9 IS NOT TRUE
               AND $2::post_clearance_change_types = 'reject' AND actor.username = $4
             THEN ARRAY['post_clearance_reject']::text[] ELSE '{}'::text[] END
@@ -131,6 +132,7 @@ async function writePostClearanceStatus(
         decision.privateNote ?? null,
         decision.platformOverride ?? false,
         isCompensation,
+        decision.isCreationModerationBypass ?? false,
       ],
     )
     const row = rows[0]
