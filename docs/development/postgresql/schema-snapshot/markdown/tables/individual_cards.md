@@ -43,9 +43,9 @@ _none_
 **Indexes:**
 
 - `idx_individual_cards__authorized_user_of_id`: `CREATE INDEX idx_individual_cards__authorized_user_of_id ON public.individual_cards USING btree (authorized_user_of_id) WHERE (authorized_user_of_id IS NOT NULL)`
+- `idx_individual_cards__card_id`: `CREATE INDEX idx_individual_cards__card_id ON public.individual_cards USING btree (card_id)`
+- `idx_individual_cards__currency_code`: `CREATE INDEX idx_individual_cards__currency_code ON public.individual_cards USING btree (currency_code) WHERE (currency_code IS NOT NULL)`
 - `idx_individual_cards__individual_id_id`: `CREATE INDEX idx_individual_cards__individual_id_id ON public.individual_cards USING btree (individual_id, id)`
-- `individual_cards__card_id`: `CREATE INDEX individual_cards__card_id ON public.individual_cards USING btree (card_id)`
-- `individual_cards__currency_code`: `CREATE INDEX individual_cards__currency_code ON public.individual_cards USING btree (currency_code) WHERE (currency_code IS NOT NULL)`
 - `individual_cards_pkey`: `CREATE UNIQUE INDEX individual_cards_pkey ON public.individual_cards USING btree (id)`
 
 **Triggers:**

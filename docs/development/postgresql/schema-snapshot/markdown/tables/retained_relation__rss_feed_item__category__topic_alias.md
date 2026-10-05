@@ -21,7 +21,7 @@ _none_
 
 **Foreign keys:**
 
-- `retained_relation__rss_feed_item__category__to_subject_id_fkey1`: `FOREIGN KEY (subject_id) REFERENCES retained_rss_feed_item_identities(id) ON DELETE RESTRICT`
+- `fk_retai_relati__rss_feed_item__catego__topic_alias__subject_id`: `FOREIGN KEY (subject_id) REFERENCES retained_rss_feed_item_identities(id) ON DELETE RESTRICT`
 
 **Indexes:**
 

@@ -29,7 +29,7 @@ _none_
 
 **Check constraints:**
 
-- `membership_provider_evidence_recor_evidence_lookup_sha256_check`: `CHECK ((evidence_lookup_sha256 ~ '^[a-f0-9]{64}$'::text))`
+- `chk_membershi_provider_evidence_records__evidence_lookup_sha256`: `CHECK ((evidence_lookup_sha256 ~ '^[a-f0-9]{64}$'::text))`
 - `membership_provider_evidence_records_application_id_check`: `CHECK ((((char_length(application_id) >= 1) AND (char_length(application_id) <= 255)) AND (application_id = TRIM(BOTH FROM application_id))))`
 - `membership_provider_evidence_records_check`: `CHECK ((num_nonnulls(verified_at, rejected_at) <= 1))`
 - `membership_provider_evidence_records_check1`: `CHECK (((rejection_reason IS NULL) OR ((rejected_at IS NOT NULL) AND ((char_length(rejection_reason) >= 1) AND (char_length(rejection_reason) <= 1000)) AND (rejection_reason = TRIM(BOTH FROM rejection_reason)))))`

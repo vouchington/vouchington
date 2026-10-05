@@ -25,7 +25,7 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `post_publication_identity_sna_snapshot_id_topic_key_author__key`: `UNIQUE NULLS NOT DISTINCT (snapshot_id, topic_key, author_key, author_username, community_key, community_slug, post_slug, rss_feed_key, post_type, day)`
+- `uq_post_publication_identity_snapshot_keys__snapshot_identity`: `UNIQUE NULLS NOT DISTINCT (snapshot_id, topic_key, author_key, author_username, community_key, community_slug, post_slug, rss_feed_key, post_type, day)`
 
 **Check constraints:**
 
@@ -38,8 +38,8 @@ Not partitioned — growth: unbounded.
 
 **Indexes:**
 
-- `post_publication_identity_sna_snapshot_id_topic_key_author__key`: `CREATE UNIQUE INDEX post_publication_identity_sna_snapshot_id_topic_key_author__key ON public.post_publication_identity_snapshot_keys USING btree (snapshot_id, topic_key, author_key, author_username, community_key, community_slug, post_slug, rss_feed_key, post_type, day) NULLS NOT DISTINCT`
 - `post_publication_identity_snapshot_keys_pkey`: `CREATE UNIQUE INDEX post_publication_identity_snapshot_keys_pkey ON public.post_publication_identity_snapshot_keys USING btree (snapshot_id, id) INCLUDE (topic_key, author_key, author_username, community_key, community_slug, post_slug, rss_feed_key, post_type, day)`
+- `uq_post_publication_identity_snapshot_keys__snapshot_identity`: `CREATE UNIQUE INDEX uq_post_publication_identity_snapshot_keys__snapshot_identity ON public.post_publication_identity_snapshot_keys USING btree (snapshot_id, topic_key, author_key, author_username, community_key, community_slug, post_slug, rss_feed_key, post_type, day) NULLS NOT DISTINCT`
 
 **Triggers:**
 _none_

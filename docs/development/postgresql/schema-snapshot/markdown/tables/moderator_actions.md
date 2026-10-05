@@ -52,13 +52,13 @@ _none_
 
 **Foreign keys:**
 
+- `fk_moderator_actions__agent_moderation_post__agent_moderation`: `FOREIGN KEY (agent_moderation_post_id, agent_moderation_id) REFERENCES agent_moderations(post_id, id) ON DELETE SET NULL`
 - `fk_moderator_actions__moderation_appeal_id`: `FOREIGN KEY (moderation_appeal_id) REFERENCES moderation_appeals(id) ON DELETE SET NULL`
 - `fk_moderator_actions__oauth_client_id`: `FOREIGN KEY (oauth_client_id) REFERENCES oauth_clients(id) ON DELETE SET NULL`
 - `fk_moderator_actions__report_abuse_penalty_id`: `FOREIGN KEY (report_abuse_penalty_id) REFERENCES report_abuse_penalties(id) ON DELETE SET NULL`
 - `fk_moderator_actions__report_integrity_flag_id`: `FOREIGN KEY (report_integrity_flag_id) REFERENCES report_integrity_flags(id) ON DELETE SET NULL`
 - `moderator_actions_actor_id_fkey`: `FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE SET NULL`
 - `moderator_actions_admin_import_batch_id_fkey`: `FOREIGN KEY (admin_import_batch_id) REFERENCES admin_import_batches(id) ON DELETE SET NULL`
-- `moderator_actions_agent_moderation_post_id_agent_moderatio_fkey`: `FOREIGN KEY (agent_moderation_post_id, agent_moderation_id) REFERENCES agent_moderations(post_id, id) ON DELETE SET NULL`
 - `moderator_actions_community_application_id_fkey`: `FOREIGN KEY (community_application_id) REFERENCES community_applications(id) ON DELETE SET NULL`
 - `moderator_actions_community_id_fkey`: `FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE SET NULL`
 - `moderator_actions_crawler_id_fkey`: `FOREIGN KEY (crawler_id) REFERENCES hostname_crawler_configurations(id) ON DELETE SET NULL`
@@ -101,8 +101,8 @@ _none_
 
 **Triggers:**
 
-- `moderation_transparency_actions_delete_rollup`: `CREATE TRIGGER moderation_transparency_actions_delete_rollup AFTER DELETE ON public.moderator_actions REFERENCING OLD TABLE AS deleted_actions FOR EACH STATEMENT EXECUTE FUNCTION fn_project_transparency_rollup('deleted_actions', 'action_type', 'moderation_actions')`
-- `moderation_transparency_actions_rollup`: `CREATE TRIGGER moderation_transparency_actions_rollup AFTER INSERT ON public.moderator_actions REFERENCING NEW TABLE AS new_actions FOR EACH STATEMENT EXECUTE FUNCTION fn_project_transparency_rollup('new_actions', 'action_type', 'moderation_actions')`
-- `moderation_transparency_actions_scope_guard`: `CREATE TRIGGER moderation_transparency_actions_scope_guard BEFORE UPDATE OF moderation_transparency_community_id ON public.moderator_actions FOR EACH ROW WHEN ((old.moderation_transparency_community_id IS DISTINCT FROM new.moderation_transparency_community_id)) EXECUTE FUNCTION fn_reject_mutation()`
-- `moderation_transparency_actions_scope_stamp`: `CREATE TRIGGER moderation_transparency_actions_scope_stamp BEFORE INSERT ON public.moderator_actions FOR EACH ROW EXECUTE FUNCTION fn_update_transparency_scope('moderation_transparency_community_id', 'community_id')`
-- `moderation_transparency_actions_type_guard`: `CREATE TRIGGER moderation_transparency_actions_type_guard BEFORE UPDATE OF action_type ON public.moderator_actions FOR EACH ROW WHEN ((old.action_type IS DISTINCT FROM new.action_type)) EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_moderation_transparency_actions_delete_rollup`: `CREATE TRIGGER trigger_moderation_transparency_actions_delete_rollup AFTER DELETE ON public.moderator_actions REFERENCING OLD TABLE AS deleted_actions FOR EACH STATEMENT EXECUTE FUNCTION fn_project_transparency_rollup('deleted_actions', 'action_type', 'moderation_actions')`
+- `trigger_moderation_transparency_actions_rollup`: `CREATE TRIGGER trigger_moderation_transparency_actions_rollup AFTER INSERT ON public.moderator_actions REFERENCING NEW TABLE AS new_actions FOR EACH STATEMENT EXECUTE FUNCTION fn_project_transparency_rollup('new_actions', 'action_type', 'moderation_actions')`
+- `trigger_moderation_transparency_actions_scope_guard`: `CREATE TRIGGER trigger_moderation_transparency_actions_scope_guard BEFORE UPDATE OF moderation_transparency_community_id ON public.moderator_actions FOR EACH ROW WHEN ((old.moderation_transparency_community_id IS DISTINCT FROM new.moderation_transparency_community_id)) EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_moderation_transparency_actions_scope_stamp`: `CREATE TRIGGER trigger_moderation_transparency_actions_scope_stamp BEFORE INSERT ON public.moderator_actions FOR EACH ROW EXECUTE FUNCTION fn_update_transparency_scope('moderation_transparency_community_id', 'community_id')`
+- `trigger_moderation_transparency_actions_type_guard`: `CREATE TRIGGER trigger_moderation_transparency_actions_type_guard BEFORE UPDATE OF action_type ON public.moderator_actions FOR EACH ROW WHEN ((old.action_type IS DISTINCT FROM new.action_type)) EXECUTE FUNCTION fn_reject_mutation()`

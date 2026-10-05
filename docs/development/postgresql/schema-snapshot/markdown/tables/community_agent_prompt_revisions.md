@@ -32,9 +32,9 @@ _none_
 
 **Indexes:**
 
-- `community_agent_prompt_revisions_community_agent_prompt_id_idx`: `CREATE INDEX community_agent_prompt_revisions_community_agent_prompt_id_idx ON public.community_agent_prompt_revisions USING btree (community_agent_prompt_id, id DESC)`
-- `community_agent_prompt_revisions_community_id_idx`: `CREATE INDEX community_agent_prompt_revisions_community_id_idx ON public.community_agent_prompt_revisions USING btree (community_id, id DESC)`
 - `community_agent_prompt_revisions_pkey`: `CREATE UNIQUE INDEX community_agent_prompt_revisions_pkey ON public.community_agent_prompt_revisions USING btree (id)`
+- `idx_community_agent_prompt_revisions__community_agent_prompt_id`: `CREATE INDEX idx_community_agent_prompt_revisions__community_agent_prompt_id ON public.community_agent_prompt_revisions USING btree (community_agent_prompt_id, id DESC)`
+- `idx_community_agent_prompt_revisions__community_id`: `CREATE INDEX idx_community_agent_prompt_revisions__community_id ON public.community_agent_prompt_revisions USING btree (community_id, id DESC)`
 
 **Triggers:**
 

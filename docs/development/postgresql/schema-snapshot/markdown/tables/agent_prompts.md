@@ -46,5 +46,5 @@ _none_
 
 **Triggers:**
 
-- `moderation_transparency_agent_prompts_lock`: `CREATE TRIGGER moderation_transparency_agent_prompts_lock BEFORE DELETE OR UPDATE ON public.agent_prompts FOR EACH ROW EXECUTE FUNCTION fn_lock_agent_moderation_transparency_prompt()`
 - `trigger_agent_prompts_updated_at`: `CREATE TRIGGER trigger_agent_prompts_updated_at BEFORE UPDATE ON public.agent_prompts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_moderation_transparency_agent_prompts_lock`: `CREATE TRIGGER trigger_moderation_transparency_agent_prompts_lock BEFORE DELETE OR UPDATE ON public.agent_prompts FOR EACH ROW EXECUTE FUNCTION fn_lock_agent_moderation_transparency_prompt()`

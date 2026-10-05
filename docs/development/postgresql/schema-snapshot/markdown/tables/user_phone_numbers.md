@@ -32,8 +32,8 @@ _none_
 **Indexes:**
 
 - `idx_user_phone_numbers__phone`: `CREATE INDEX idx_user_phone_numbers__phone ON public.user_phone_numbers USING btree (phone_number)`
-- `idx_user_phone_numbers_phone_primary`: `CREATE UNIQUE INDEX idx_user_phone_numbers_phone_primary ON public.user_phone_numbers USING btree (phone_number) WHERE (is_primary = true)`
-- `idx_user_phone_numbers_user_primary`: `CREATE UNIQUE INDEX idx_user_phone_numbers_user_primary ON public.user_phone_numbers USING btree (user_id) WHERE (is_primary = true)`
+- `idx_user_phone_numbers__phone_primary`: `CREATE UNIQUE INDEX idx_user_phone_numbers__phone_primary ON public.user_phone_numbers USING btree (phone_number) WHERE (is_primary = true)`
+- `idx_user_phone_numbers__user_primary`: `CREATE UNIQUE INDEX idx_user_phone_numbers__user_primary ON public.user_phone_numbers USING btree (user_id) WHERE (is_primary = true)`
 - `user_phone_numbers_pkey`: `CREATE UNIQUE INDEX user_phone_numbers_pkey ON public.user_phone_numbers USING btree (user_id, phone_number)`
 
 **Triggers:**

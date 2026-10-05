@@ -23,7 +23,7 @@ _none_
 
 **Foreign keys:**
 
-- `copyright_notice_urgent_filin_copyright_notice_submission__fkey`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_urgent_filings__submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
 
 **Indexes:**
 

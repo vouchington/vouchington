@@ -28,7 +28,7 @@ _none_
 
 **Indexes:**
 
-- `topic_alias_category_mapping_reconciliations__updated_at`: `CREATE INDEX topic_alias_category_mapping_reconciliations__updated_at ON public.topic_alias_category_mapping_reconciliations USING btree (updated_at, topic_alias_id)`
+- `idx_topic_alias_category_mapping_reconciliations__updated_at`: `CREATE INDEX idx_topic_alias_category_mapping_reconciliations__updated_at ON public.topic_alias_category_mapping_reconciliations USING btree (updated_at, topic_alias_id)`
 - `topic_alias_category_mapping_reconciliations_pkey`: `CREATE UNIQUE INDEX topic_alias_category_mapping_reconciliations_pkey ON public.topic_alias_category_mapping_reconciliations USING btree (topic_alias_id)`
 
 **Triggers:**

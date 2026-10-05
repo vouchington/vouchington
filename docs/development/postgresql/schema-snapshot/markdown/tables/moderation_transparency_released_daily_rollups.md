@@ -32,10 +32,10 @@ _none_
 
 **Indexes:**
 
-- `moderation_transparency_released_daily_rollups__community_page`: `CREATE INDEX moderation_transparency_released_daily_rollups__community_page ON public.moderation_transparency_released_daily_rollups USING btree (community_id, day DESC) WHERE (community_id IS NOT NULL)`
-- `moderation_transparency_released_daily_rollups__global_page`: `CREATE INDEX moderation_transparency_released_daily_rollups__global_page ON public.moderation_transparency_released_daily_rollups USING btree (day DESC) WHERE (community_id IS NULL)`
+- `idx_moderatio_transparen_released_daily_rollups__community_page`: `CREATE INDEX idx_moderatio_transparen_released_daily_rollups__community_page ON public.moderation_transparency_released_daily_rollups USING btree (community_id, day DESC) WHERE (community_id IS NOT NULL)`
+- `idx_moderation_transparency_released_daily_rollups__global_page`: `CREATE INDEX idx_moderation_transparency_released_daily_rollups__global_page ON public.moderation_transparency_released_daily_rollups USING btree (day DESC) WHERE (community_id IS NULL)`
 - `moderation_transparency_released_daily_rollups_key`: `CREATE UNIQUE INDEX moderation_transparency_released_daily_rollups_key ON public.moderation_transparency_released_daily_rollups USING btree (day, community_id, metric, category) NULLS NOT DISTINCT`
 
 **Triggers:**
 
-- `moderation_transparency_released_rollup_guard`: `CREATE TRIGGER moderation_transparency_released_rollup_guard BEFORE DELETE OR UPDATE ON public.moderation_transparency_released_daily_rollups FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_moderation_transparency_released_rollup_guard`: `CREATE TRIGGER trigger_moderation_transparency_released_rollup_guard BEFORE DELETE OR UPDATE ON public.moderation_transparency_released_daily_rollups FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`

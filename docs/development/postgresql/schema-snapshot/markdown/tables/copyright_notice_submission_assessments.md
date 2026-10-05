@@ -23,9 +23,9 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `copyright_notice_submission_a_copyright_notice_submission_i_key`: `UNIQUE (copyright_notice_submission_id, id)`
-- `copyright_notice_submission_assess_supersedes_assessment_id_key`: `UNIQUE (supersedes_assessment_id)`
-- `copyright_notice_submission_assessme_copyright_notice_id_id_key`: `UNIQUE (copyright_notice_id, id)`
+- `uq_copyrigh_notice_submissi_assessmen__supersedes_assessment_id`: `UNIQUE (supersedes_assessment_id)`
+- `uq_copyright_notice_submission_assessments__notice_id__id`: `UNIQUE (copyright_notice_id, id)`
+- `uq_copyright_notice_submission_assessments__submission_id__id`: `UNIQUE (copyright_notice_submission_id, id)`
 
 **Check constraints:**
 _none_
@@ -39,13 +39,13 @@ _none_
 
 **Indexes:**
 
-- `copyright_notice_submission_a_copyright_notice_submission_i_key`: `CREATE UNIQUE INDEX copyright_notice_submission_a_copyright_notice_submission_i_key ON public.copyright_notice_submission_assessments USING btree (copyright_notice_submission_id, id)`
-- `copyright_notice_submission_assess_supersedes_assessment_id_key`: `CREATE UNIQUE INDEX copyright_notice_submission_assess_supersedes_assessment_id_key ON public.copyright_notice_submission_assessments USING btree (supersedes_assessment_id)`
-- `copyright_notice_submission_assessme_copyright_notice_id_id_key`: `CREATE UNIQUE INDEX copyright_notice_submission_assessme_copyright_notice_id_id_key ON public.copyright_notice_submission_assessments USING btree (copyright_notice_id, id)`
 - `copyright_notice_submission_assessments_pkey`: `CREATE UNIQUE INDEX copyright_notice_submission_assessments_pkey ON public.copyright_notice_submission_assessments USING btree (id)`
-- `idx_copyright_assessments__form_screening`: `CREATE INDEX idx_copyright_assessments__form_screening ON public.copyright_notice_submission_assessments USING btree (copyright_notice_form_screening_id) WHERE (copyright_notice_form_screening_id IS NOT NULL)`
-- `idx_copyright_notice_assessments__assessed_by`: `CREATE INDEX idx_copyright_notice_assessments__assessed_by ON public.copyright_notice_submission_assessments USING btree (assessed_by_id) WHERE (assessed_by_id IS NOT NULL)`
-- `idx_copyright_notice_assessments__submission`: `CREATE INDEX idx_copyright_notice_assessments__submission ON public.copyright_notice_submission_assessments USING btree (copyright_notice_submission_id, id DESC)`
+- `idx_copyright_notice_submission_assessments__assessed_by`: `CREATE INDEX idx_copyright_notice_submission_assessments__assessed_by ON public.copyright_notice_submission_assessments USING btree (assessed_by_id) WHERE (assessed_by_id IS NOT NULL)`
+- `idx_copyright_notice_submission_assessments__form_screening`: `CREATE INDEX idx_copyright_notice_submission_assessments__form_screening ON public.copyright_notice_submission_assessments USING btree (copyright_notice_form_screening_id) WHERE (copyright_notice_form_screening_id IS NOT NULL)`
+- `idx_copyright_notice_submission_assessments__submission`: `CREATE INDEX idx_copyright_notice_submission_assessments__submission ON public.copyright_notice_submission_assessments USING btree (copyright_notice_submission_id, id DESC)`
+- `uq_copyrigh_notice_submissi_assessmen__supersedes_assessment_id`: `CREATE UNIQUE INDEX uq_copyrigh_notice_submissi_assessmen__supersedes_assessment_id ON public.copyright_notice_submission_assessments USING btree (supersedes_assessment_id)`
+- `uq_copyright_notice_submission_assessments__notice_id__id`: `CREATE UNIQUE INDEX uq_copyright_notice_submission_assessments__notice_id__id ON public.copyright_notice_submission_assessments USING btree (copyright_notice_id, id)`
+- `uq_copyright_notice_submission_assessments__submission_id__id`: `CREATE UNIQUE INDEX uq_copyright_notice_submission_assessments__submission_id__id ON public.copyright_notice_submission_assessments USING btree (copyright_notice_submission_id, id)`
 
 **Triggers:**
 

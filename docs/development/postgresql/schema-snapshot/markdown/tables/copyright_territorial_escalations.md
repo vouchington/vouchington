@@ -21,8 +21,8 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `copyright_territorial_escalat_copyright_eu_supervised_compl_key`: `UNIQUE (copyright_eu_supervised_complaint_id)`
-- `copyright_territorial_escalat_copyright_territorial_notice__key`: `UNIQUE (copyright_territorial_notice_acknowledgment_id)`
+- `uq_copyright_territoria_escalations__eu_supervised_complaint_id`: `UNIQUE (copyright_eu_supervised_complaint_id)`
+- `uq_copyright_territorial_escalations__notice_acknowledgment_id`: `UNIQUE (copyright_territorial_notice_acknowledgment_id)`
 
 **Check constraints:**
 
@@ -31,16 +31,16 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `copyright_territorial_escalat_copyright_eu_supervised_comp_fkey`: `FOREIGN KEY (copyright_eu_supervised_complaint_id) REFERENCES copyright_eu_supervised_complaints(id) ON DELETE RESTRICT`
-- `copyright_territorial_escalat_copyright_territorial_notice_fkey`: `FOREIGN KEY (copyright_territorial_notice_acknowledgment_id) REFERENCES copyright_territorial_notice_acknowledgments(id) ON DELETE RESTRICT`
+- `fk_copyright_territorial_escalations__eu_supervised_complaint`: `FOREIGN KEY (copyright_eu_supervised_complaint_id) REFERENCES copyright_eu_supervised_complaints(id) ON DELETE RESTRICT`
 - `fk_copyright_territorial_escalations__notice`: `FOREIGN KEY (copyright_notice_id, jurisdiction) REFERENCES copyright_notices(id, jurisdiction) ON DELETE RESTRICT`
+- `fk_copyright_territorial_escalations__notice_acknowledgment`: `FOREIGN KEY (copyright_territorial_notice_acknowledgment_id) REFERENCES copyright_territorial_notice_acknowledgments(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `copyright_territorial_escalat_copyright_eu_supervised_compl_key`: `CREATE UNIQUE INDEX copyright_territorial_escalat_copyright_eu_supervised_compl_key ON public.copyright_territorial_escalations USING btree (copyright_eu_supervised_complaint_id)`
-- `copyright_territorial_escalat_copyright_territorial_notice__key`: `CREATE UNIQUE INDEX copyright_territorial_escalat_copyright_territorial_notice__key ON public.copyright_territorial_escalations USING btree (copyright_territorial_notice_acknowledgment_id)`
 - `copyright_territorial_escalations_pkey`: `CREATE UNIQUE INDEX copyright_territorial_escalations_pkey ON public.copyright_territorial_escalations USING btree (id)`
 - `idx_copyright_territorial_escalations__notice`: `CREATE INDEX idx_copyright_territorial_escalations__notice ON public.copyright_territorial_escalations USING btree (copyright_notice_id, jurisdiction)`
+- `uq_copyright_territoria_escalations__eu_supervised_complaint_id`: `CREATE UNIQUE INDEX uq_copyright_territoria_escalations__eu_supervised_complaint_id ON public.copyright_territorial_escalations USING btree (copyright_eu_supervised_complaint_id)`
+- `uq_copyright_territorial_escalations__notice_acknowledgment_id`: `CREATE UNIQUE INDEX uq_copyright_territorial_escalations__notice_acknowledgment_id ON public.copyright_territorial_escalations USING btree (copyright_territorial_notice_acknowledgment_id)`
 
 **Triggers:**
 

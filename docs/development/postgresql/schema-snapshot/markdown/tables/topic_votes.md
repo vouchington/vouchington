@@ -39,8 +39,8 @@ _none_
 **Indexes:**
 
 - `idx_topic_votes__topic_id__id`: `CREATE INDEX idx_topic_votes__topic_id__id ON ONLY public.topic_votes USING btree (topic_id, id)`
-- `idx_topic_votes__topic_id__uid__id`: `CREATE INDEX idx_topic_votes__topic_id__uid__id ON ONLY public.topic_votes USING btree (topic_id, user_id, id DESC)`
-- `idx_topic_votes__uid__topic_id__id`: `CREATE INDEX idx_topic_votes__uid__topic_id__id ON ONLY public.topic_votes USING btree (user_id, topic_id, id DESC)`
+- `idx_topic_votes__topic_id__user_id__id`: `CREATE INDEX idx_topic_votes__topic_id__user_id__id ON ONLY public.topic_votes USING btree (topic_id, user_id, id DESC)`
+- `idx_topic_votes__user_id__topic_id__id`: `CREATE INDEX idx_topic_votes__user_id__topic_id__id ON ONLY public.topic_votes USING btree (user_id, topic_id, id DESC)`
 - `topic_votes_pkey`: `CREATE UNIQUE INDEX topic_votes_pkey ON ONLY public.topic_votes USING btree (topic_id, id)`
 
 **Triggers:**

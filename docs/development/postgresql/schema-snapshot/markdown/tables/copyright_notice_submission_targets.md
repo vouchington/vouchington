@@ -19,8 +19,8 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `copyright_notice_submission_t_copyright_notice_submission_i_key`: `UNIQUE (copyright_notice_submission_id, copyright_notice_target_id)`
 - `copyright_notice_submission_targets_copyright_notice_id_id_key`: `UNIQUE (copyright_notice_id, id)`
+- `uq_copyright_notice_submissio_targets__submission_id__target_id`: `UNIQUE (copyright_notice_submission_id, copyright_notice_target_id)`
 
 **Check constraints:**
 _none_
@@ -32,10 +32,10 @@ _none_
 
 **Indexes:**
 
-- `copyright_notice_submission_t_copyright_notice_submission_i_key`: `CREATE UNIQUE INDEX copyright_notice_submission_t_copyright_notice_submission_i_key ON public.copyright_notice_submission_targets USING btree (copyright_notice_submission_id, copyright_notice_target_id)`
 - `copyright_notice_submission_targets_copyright_notice_id_id_key`: `CREATE UNIQUE INDEX copyright_notice_submission_targets_copyright_notice_id_id_key ON public.copyright_notice_submission_targets USING btree (copyright_notice_id, id)`
 - `copyright_notice_submission_targets_pkey`: `CREATE UNIQUE INDEX copyright_notice_submission_targets_pkey ON public.copyright_notice_submission_targets USING btree (id)`
-- `idx_copyright_submission_targets__target`: `CREATE INDEX idx_copyright_submission_targets__target ON public.copyright_notice_submission_targets USING btree (copyright_notice_target_id, copyright_notice_submission_id)`
+- `idx_copyright_notice_submission_targets__target`: `CREATE INDEX idx_copyright_notice_submission_targets__target ON public.copyright_notice_submission_targets USING btree (copyright_notice_target_id, copyright_notice_submission_id)`
+- `uq_copyright_notice_submissio_targets__submission_id__target_id`: `CREATE UNIQUE INDEX uq_copyright_notice_submissio_targets__submission_id__target_id ON public.copyright_notice_submission_targets USING btree (copyright_notice_submission_id, copyright_notice_target_id)`
 
 **Triggers:**
 

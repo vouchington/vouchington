@@ -16,20 +16,20 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `copyright_legal_hold_restrict_copyright_notice_legal_hold_a_key`: `UNIQUE (copyright_notice_legal_hold_assessment_id, copyright_restriction_id)`
+- `uq_copyright_legal_hold_restrictions__assessment_restriction`: `UNIQUE (copyright_notice_legal_hold_assessment_id, copyright_restriction_id)`
 
 **Check constraints:**
 _none_
 
 **Foreign keys:**
 
-- `copyright_legal_hold_restrict_copyright_notice_legal_hold__fkey`: `FOREIGN KEY (copyright_notice_legal_hold_assessment_id) REFERENCES copyright_notice_legal_hold_assessments(id) ON DELETE RESTRICT`
 - `copyright_legal_hold_restrictions_copyright_restriction_id_fkey`: `FOREIGN KEY (copyright_restriction_id) REFERENCES copyright_restrictions(id) ON DELETE RESTRICT`
+- `fk_copyright_legal_hold_restricti__notice_legal_hold_assessment`: `FOREIGN KEY (copyright_notice_legal_hold_assessment_id) REFERENCES copyright_notice_legal_hold_assessments(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `copyright_legal_hold_restrict_copyright_notice_legal_hold_a_key`: `CREATE UNIQUE INDEX copyright_legal_hold_restrict_copyright_notice_legal_hold_a_key ON public.copyright_legal_hold_restrictions USING btree (copyright_notice_legal_hold_assessment_id, copyright_restriction_id)`
 - `copyright_legal_hold_restrictions_pkey`: `CREATE UNIQUE INDEX copyright_legal_hold_restrictions_pkey ON public.copyright_legal_hold_restrictions USING btree (copyright_restriction_id, copyright_notice_legal_hold_assessment_id)`
+- `uq_copyright_legal_hold_restrictions__assessment_restriction`: `CREATE UNIQUE INDEX uq_copyright_legal_hold_restrictions__assessment_restriction ON public.copyright_legal_hold_restrictions USING btree (copyright_notice_legal_hold_assessment_id, copyright_restriction_id)`
 
 **Triggers:**
 _none_

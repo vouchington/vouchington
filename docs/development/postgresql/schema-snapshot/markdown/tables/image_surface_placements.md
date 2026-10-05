@@ -43,15 +43,15 @@ Not partitioned — growth: unbounded.
 **Indexes:**
 
 - `idx_image_surface_placements__community_banner`: `CREATE UNIQUE INDEX idx_image_surface_placements__community_banner ON public.image_surface_placements USING btree (community_id, image_id) WHERE (surface_kind = 'community-banner-image'::image_surface_placement_surface_kinds)`
-- `idx_image_surface_placements__community_fk`: `CREATE INDEX idx_image_surface_placements__community_fk ON public.image_surface_placements USING btree (community_id) WHERE (community_id IS NOT NULL)`
+- `idx_image_surface_placements__community_foreign_key`: `CREATE INDEX idx_image_surface_placements__community_foreign_key ON public.image_surface_placements USING btree (community_id) WHERE (community_id IS NOT NULL)`
 - `idx_image_surface_placements__community_profile`: `CREATE UNIQUE INDEX idx_image_surface_placements__community_profile ON public.image_surface_placements USING btree (community_id, image_id) WHERE (surface_kind = 'community-profile-image'::image_surface_placement_surface_kinds)`
 - `idx_image_surface_placements__image`: `CREATE INDEX idx_image_surface_placements__image ON public.image_surface_placements USING btree (image_id)`
 - `idx_image_surface_placements__profile_link`: `CREATE UNIQUE INDEX idx_image_surface_placements__profile_link ON public.image_surface_placements USING btree (user_profile_link_id, image_id) WHERE (surface_kind = 'user-profile-link-image'::image_surface_placement_surface_kinds)`
-- `idx_image_surface_placements__profile_link_fk`: `CREATE INDEX idx_image_surface_placements__profile_link_fk ON public.image_surface_placements USING btree (user_profile_link_id) WHERE (user_profile_link_id IS NOT NULL)`
-- `idx_image_surface_placements__topic_fk`: `CREATE INDEX idx_image_surface_placements__topic_fk ON public.image_surface_placements USING btree (topic_id) WHERE (topic_id IS NOT NULL)`
+- `idx_image_surface_placements__profile_link_foreign_key`: `CREATE INDEX idx_image_surface_placements__profile_link_foreign_key ON public.image_surface_placements USING btree (user_profile_link_id) WHERE (user_profile_link_id IS NOT NULL)`
+- `idx_image_surface_placements__topic_foreign_key`: `CREATE INDEX idx_image_surface_placements__topic_foreign_key ON public.image_surface_placements USING btree (topic_id) WHERE (topic_id IS NOT NULL)`
 - `idx_image_surface_placements__topic_hero`: `CREATE UNIQUE INDEX idx_image_surface_placements__topic_hero ON public.image_surface_placements USING btree (topic_id, image_id) WHERE (surface_kind = 'topic-hero-image'::image_surface_placement_surface_kinds)`
 - `idx_image_surface_placements__topic_logo`: `CREATE UNIQUE INDEX idx_image_surface_placements__topic_logo ON public.image_surface_placements USING btree (topic_id, image_id) WHERE (surface_kind = 'topic-logo-image'::image_surface_placement_surface_kinds)`
-- `idx_image_surface_placements__user_fk`: `CREATE INDEX idx_image_surface_placements__user_fk ON public.image_surface_placements USING btree (user_id) WHERE (user_id IS NOT NULL)`
+- `idx_image_surface_placements__user_foreign_key`: `CREATE INDEX idx_image_surface_placements__user_foreign_key ON public.image_surface_placements USING btree (user_id) WHERE (user_id IS NOT NULL)`
 - `idx_image_surface_placements__user_profile`: `CREATE UNIQUE INDEX idx_image_surface_placements__user_profile ON public.image_surface_placements USING btree (user_id, image_id) WHERE (surface_kind = 'user-profile-image'::image_surface_placement_surface_kinds)`
 - `image_surface_placements_pkey`: `CREATE UNIQUE INDEX image_surface_placements_pkey ON public.image_surface_placements USING btree (placement_id)`
 - `image_surface_placements_placement_id_surface_kind_key`: `CREATE UNIQUE INDEX image_surface_placements_placement_id_surface_kind_key ON public.image_surface_placements USING btree (placement_id, surface_kind)`

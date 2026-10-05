@@ -21,7 +21,7 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `copyright_notice_submission_g_copyright_notice_submission_i_key`: `UNIQUE (copyright_notice_submission_id, input_sha256, prompt_version)`
+- `uq_cop_not_sub_gui__submission_id__input_sha256__prompt_version`: `UNIQUE (copyright_notice_submission_id, input_sha256, prompt_version)`
 
 **Check constraints:**
 
@@ -32,13 +32,13 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `copyright_notice_submission_g_copyright_notice_submission__fkey`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_submission_guidance__submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `copyright_notice_submission_g_copyright_notice_submission_i_key`: `CREATE UNIQUE INDEX copyright_notice_submission_g_copyright_notice_submission_i_key ON public.copyright_notice_submission_guidance USING btree (copyright_notice_submission_id, input_sha256, prompt_version)`
 - `copyright_notice_submission_guidance_pkey`: `CREATE UNIQUE INDEX copyright_notice_submission_guidance_pkey ON public.copyright_notice_submission_guidance USING btree (id)`
-- `idx_copyright_submission_guidance__submission`: `CREATE INDEX idx_copyright_submission_guidance__submission ON public.copyright_notice_submission_guidance USING btree (copyright_notice_submission_id, id DESC)`
+- `idx_copyright_notice_submission_guidance__submission`: `CREATE INDEX idx_copyright_notice_submission_guidance__submission ON public.copyright_notice_submission_guidance USING btree (copyright_notice_submission_id, id DESC)`
+- `uq_cop_not_sub_gui__submission_id__input_sha256__prompt_version`: `CREATE UNIQUE INDEX uq_cop_not_sub_gui__submission_id__input_sha256__prompt_version ON public.copyright_notice_submission_guidance USING btree (copyright_notice_submission_id, input_sha256, prompt_version)`
 
 **Triggers:**
 

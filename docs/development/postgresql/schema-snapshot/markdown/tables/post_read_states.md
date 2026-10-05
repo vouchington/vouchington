@@ -27,7 +27,7 @@ _none_
 
 **Indexes:**
 
-- `post_read_states__post_id`: `CREATE INDEX post_read_states__post_id ON ONLY public.post_read_states USING btree (post_id)`
+- `idx_post_read_states__post_id`: `CREATE INDEX idx_post_read_states__post_id ON ONLY public.post_read_states USING btree (post_id)`
 - `post_read_states_pkey`: `CREATE UNIQUE INDEX post_read_states_pkey ON ONLY public.post_read_states USING btree (user_id, post_id)`
 
 **Triggers:**

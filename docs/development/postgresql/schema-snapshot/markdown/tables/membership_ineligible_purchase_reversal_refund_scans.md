@@ -33,16 +33,16 @@ _none_
 
 **Check constraints:**
 
+- `chk_memb_ineli_purch_rever_refun_scans__cursor_stripe_refund_id`: `CHECK (((cursor_stripe_refund_id IS NULL) OR (((char_length(cursor_stripe_refund_id) >= 1) AND (char_length(cursor_stripe_refund_id) <= 255)) AND (cursor_stripe_refund_id = TRIM(BOTH FROM cursor_stripe_refund_id)))))`
+- `chk_membe_ineli_purch_rever_refund_scans__head_stripe_refund_id`: `CHECK (((head_stripe_refund_id IS NULL) OR (((char_length(head_stripe_refund_id) >= 1) AND (char_length(head_stripe_refund_id) <= 255)) AND (head_stripe_refund_id = TRIM(BOTH FROM head_stripe_refund_id)))))`
+- `chk_member_inelig_purcha_revers_refund_scans__payment_intent_id`: `CHECK (((payment_intent_id IS NULL) OR (((char_length(payment_intent_id) >= 1) AND (char_length(payment_intent_id) <= 255)) AND (payment_intent_id = TRIM(BOTH FROM payment_intent_id)))))`
+- `chk_members_ineligi_purchas_reversa_refund_scans__currency_code`: `CHECK ((((char_length(currency_code) >= 1) AND (char_length(currency_code) <= 16)) AND (currency_code = TRIM(BOTH FROM currency_code))))`
+- `chk_members_ineligib_purchase_reversal_refund_scans__invoice_id`: `CHECK ((((char_length(invoice_id) >= 1) AND (char_length(invoice_id) <= 255)) AND (invoice_id = TRIM(BOTH FROM invoice_id))))`
+- `chk_membersh_ineligib_purchase_reversal_refund_scans__charge_id`: `CHECK (((charge_id IS NULL) OR (((char_length(charge_id) >= 1) AND (char_length(charge_id) <= 255)) AND (charge_id = TRIM(BOTH FROM charge_id)))))`
 - `ck_mipr_refund_scans__generation_safe`: `CHECK (((generation >= 1) AND (generation <= '9007199254740991'::bigint)))`
 - `ck_mipr_refund_scans__registered_cycle_generation_safe`: `CHECK (((registered_cycle_generation >= 1) AND (registered_cycle_generation <= '9007199254740991'::bigint)))`
 - `ck_mipr_refund_scans__verified_cycle_generation_safe`: `CHECK (((verified_cycle_generation >= 1) AND (verified_cycle_generation <= '9007199254740991'::bigint)))`
 - `ck_mipr_refund_scans__verified_cycle_registered`: `CHECK (((verified_cycle_generation IS NULL) OR (verified_cycle_generation <= registered_cycle_generation)))`
-- `membership_ineligible_purchase_re_cursor_stripe_refund_id_check`: `CHECK (((cursor_stripe_refund_id IS NULL) OR (((char_length(cursor_stripe_refund_id) >= 1) AND (char_length(cursor_stripe_refund_id) <= 255)) AND (cursor_stripe_refund_id = TRIM(BOTH FROM cursor_stripe_refund_id)))))`
-- `membership_ineligible_purchase_reve_head_stripe_refund_id_check`: `CHECK (((head_stripe_refund_id IS NULL) OR (((char_length(head_stripe_refund_id) >= 1) AND (char_length(head_stripe_refund_id) <= 255)) AND (head_stripe_refund_id = TRIM(BOTH FROM head_stripe_refund_id)))))`
-- `membership_ineligible_purchase_reversal_payment_intent_id_check`: `CHECK (((payment_intent_id IS NULL) OR (((char_length(payment_intent_id) >= 1) AND (char_length(payment_intent_id) <= 255)) AND (payment_intent_id = TRIM(BOTH FROM payment_intent_id)))))`
-- `membership_ineligible_purchase_reversal_ref_currency_code_check`: `CHECK ((((char_length(currency_code) >= 1) AND (char_length(currency_code) <= 16)) AND (currency_code = TRIM(BOTH FROM currency_code))))`
-- `membership_ineligible_purchase_reversal_refund__charge_id_check`: `CHECK (((charge_id IS NULL) OR (((char_length(charge_id) >= 1) AND (char_length(charge_id) <= 255)) AND (charge_id = TRIM(BOTH FROM charge_id)))))`
-- `membership_ineligible_purchase_reversal_refund_invoice_id_check`: `CHECK ((((char_length(invoice_id) >= 1) AND (char_length(invoice_id) <= 255)) AND (invoice_id = TRIM(BOTH FROM invoice_id))))`
 - `membership_ineligible_purchase_reversal_refund_scans_check`: `CHECK ((num_nonnulls(charge_id, payment_intent_id) = 1))`
 - `membership_ineligible_purchase_reversal_refund_scans_check1`: `CHECK (((first_page_seen_at IS NOT NULL) OR (num_nonnulls(head_stripe_refund_id, cursor_stripe_refund_id, reached_end_at, nonterminal_refund_seen_at, completed_at) = 0)))`
 - `membership_ineligible_purchase_reversal_refund_scans_check2`: `CHECK (((cursor_stripe_refund_id IS NULL) OR (first_page_seen_at IS NOT NULL)))`
@@ -56,10 +56,10 @@ _none_
 
 **Indexes:**
 
-- `idx_mipr_refund_scans__currency`: `CREATE INDEX idx_mipr_refund_scans__currency ON public.membership_ineligible_purchase_reversal_refund_scans USING btree (currency_code)`
-- `idx_mipr_refund_scans__target`: `CREATE UNIQUE INDEX idx_mipr_refund_scans__target ON public.membership_ineligible_purchase_reversal_refund_scans USING btree (membership_ineligible_purchase_reversal_case_id, invoice_id, currency_code, charge_id, payment_intent_id) NULLS NOT DISTINCT`
+- `idx_membersh_ineligibl_purchase_reversal_refund_scans__currency`: `CREATE INDEX idx_membersh_ineligibl_purchase_reversal_refund_scans__currency ON public.membership_ineligible_purchase_reversal_refund_scans USING btree (currency_code)`
+- `idx_membershi_ineligible_purchase_reversal_refund_scans__target`: `CREATE UNIQUE INDEX idx_membershi_ineligible_purchase_reversal_refund_scans__target ON public.membership_ineligible_purchase_reversal_refund_scans USING btree (membership_ineligible_purchase_reversal_case_id, invoice_id, currency_code, charge_id, payment_intent_id) NULLS NOT DISTINCT`
 - `pk_mipr_refund_scans`: `CREATE UNIQUE INDEX pk_mipr_refund_scans ON public.membership_ineligible_purchase_reversal_refund_scans USING btree (id)`
 
 **Triggers:**
 
-- `trigger_mipr_refund_scans_updated_at`: `CREATE TRIGGER trigger_mipr_refund_scans_updated_at BEFORE UPDATE ON public.membership_ineligible_purchase_reversal_refund_scans FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_members_ineligi_purchas_reversa_refund_scans_updated_at`: `CREATE TRIGGER trigger_members_ineligi_purchas_reversa_refund_scans_updated_at BEFORE UPDATE ON public.membership_ineligible_purchase_reversal_refund_scans FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

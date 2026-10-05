@@ -32,9 +32,9 @@ _none_
 
 **Indexes:**
 
-- `idx_rss_item_feed_shares__item`: `CREATE INDEX idx_rss_item_feed_shares__item ON ONLY public.rss_feed_item_feed_shares USING btree (rss_feed_item_id)`
-- `idx_rss_item_feed_shares__recipient__sort`: `CREATE INDEX idx_rss_item_feed_shares__recipient__sort ON ONLY public.rss_feed_item_feed_shares USING btree (recipient_user_id, sort_at DESC, id DESC)`
-- `idx_rss_item_feed_shares__sharer__item__id_desc`: `CREATE INDEX idx_rss_item_feed_shares__sharer__item__id_desc ON ONLY public.rss_feed_item_feed_shares USING btree (shared_by_user_id, rss_feed_item_id, id DESC)`
+- `idx_rss_feed_item_feed_shares__item`: `CREATE INDEX idx_rss_feed_item_feed_shares__item ON ONLY public.rss_feed_item_feed_shares USING btree (rss_feed_item_id)`
+- `idx_rss_feed_item_feed_shares__recipient__sort`: `CREATE INDEX idx_rss_feed_item_feed_shares__recipient__sort ON ONLY public.rss_feed_item_feed_shares USING btree (recipient_user_id, sort_at DESC, id DESC)`
+- `idx_rss_feed_item_feed_shares__sharer__item__id_desc`: `CREATE INDEX idx_rss_feed_item_feed_shares__sharer__item__id_desc ON ONLY public.rss_feed_item_feed_shares USING btree (shared_by_user_id, rss_feed_item_id, id DESC)`
 - `rss_feed_item_feed_shares_pkey`: `CREATE UNIQUE INDEX rss_feed_item_feed_shares_pkey ON ONLY public.rss_feed_item_feed_shares USING btree (recipient_user_id, id)`
 
 **Triggers:**

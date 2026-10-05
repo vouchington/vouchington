@@ -39,8 +39,8 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `copyright_notice_delivery_int_copyright_notice_email_intake_key`: `UNIQUE (copyright_notice_email_intake_id, delivery_kind)`
 - `copyright_notice_delivery_intents_idempotency_key_key`: `UNIQUE (idempotency_key)`
+- `uq_copyri_notice_delive_intents__email_intake_id__delivery_kind`: `UNIQUE (copyright_notice_email_intake_id, delivery_kind)`
 
 **Check constraints:**
 
@@ -74,23 +74,23 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `copyright_notice_delivery_int_copyright_notice_corresponde_fkey`: `FOREIGN KEY (copyright_notice_correspondence_message_id, copyright_notice_id) REFERENCES copyright_notice_correspondence_messages(id, copyright_notice_id) ON DELETE RESTRICT`
-- `copyright_notice_delivery_int_copyright_notice_email_intak_fkey`: `FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
-- `copyright_notice_delivery_int_copyright_notice_submission__fkey`: `FOREIGN KEY (copyright_notice_submission_id, copyright_notice_id) REFERENCES copyright_notice_submissions(id, copyright_notice_id) ON DELETE RESTRICT`
 - `copyright_notice_delivery_intents_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
 - `copyright_notice_delivery_intents_recipient_user_id_fkey`: `FOREIGN KEY (recipient_user_id) REFERENCES users(id) ON DELETE SET NULL`
+- `fk_copyri_notice_delive_intents__correspondence_message__notice`: `FOREIGN KEY (copyright_notice_correspondence_message_id, copyright_notice_id) REFERENCES copyright_notice_correspondence_messages(id, copyright_notice_id) ON DELETE RESTRICT`
+- `fk_copyright_notice_delivery_intents__email_intake`: `FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_delivery_intents__submission__notice`: `FOREIGN KEY (copyright_notice_submission_id, copyright_notice_id) REFERENCES copyright_notice_submissions(id, copyright_notice_id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `copyright_notice_delivery_int_copyright_notice_email_intake_key`: `CREATE UNIQUE INDEX copyright_notice_delivery_int_copyright_notice_email_intake_key ON public.copyright_notice_delivery_intents USING btree (copyright_notice_email_intake_id, delivery_kind)`
 - `copyright_notice_delivery_intents_idempotency_key_key`: `CREATE UNIQUE INDEX copyright_notice_delivery_intents_idempotency_key_key ON public.copyright_notice_delivery_intents USING btree (idempotency_key)`
 - `copyright_notice_delivery_intents_pkey`: `CREATE UNIQUE INDEX copyright_notice_delivery_intents_pkey ON public.copyright_notice_delivery_intents USING btree (id)`
-- `idx_copyright_delivery_intents__correspondence`: `CREATE INDEX idx_copyright_delivery_intents__correspondence ON public.copyright_notice_delivery_intents USING btree (copyright_notice_correspondence_message_id, copyright_notice_id) WHERE (copyright_notice_correspondence_message_id IS NOT NULL)`
-- `idx_copyright_delivery_intents__notice`: `CREATE INDEX idx_copyright_delivery_intents__notice ON public.copyright_notice_delivery_intents USING btree (copyright_notice_id, id)`
-- `idx_copyright_delivery_intents__recipient_user`: `CREATE INDEX idx_copyright_delivery_intents__recipient_user ON public.copyright_notice_delivery_intents USING btree (recipient_user_id) WHERE (recipient_user_id IS NOT NULL)`
-- `idx_copyright_delivery_intents__recoverable`: `CREATE INDEX idx_copyright_delivery_intents__recoverable ON public.copyright_notice_delivery_intents USING btree (channel, id) WHERE (state = ANY (ARRAY['pending'::copyright_notice_delivery_intent_states, 'claimed'::copyright_notice_delivery_intent_states]))`
-- `idx_copyright_delivery_intents__ses_message`: `CREATE INDEX idx_copyright_delivery_intents__ses_message ON public.copyright_notice_delivery_intents USING btree (ses_message_id) WHERE (ses_message_id IS NOT NULL)`
-- `idx_copyright_delivery_intents__submission`: `CREATE INDEX idx_copyright_delivery_intents__submission ON public.copyright_notice_delivery_intents USING btree (copyright_notice_submission_id, copyright_notice_id) WHERE (copyright_notice_submission_id IS NOT NULL)`
+- `idx_copyright_notice_delivery_intents__amazon_ses_message`: `CREATE INDEX idx_copyright_notice_delivery_intents__amazon_ses_message ON public.copyright_notice_delivery_intents USING btree (ses_message_id) WHERE (ses_message_id IS NOT NULL)`
+- `idx_copyright_notice_delivery_intents__correspondence`: `CREATE INDEX idx_copyright_notice_delivery_intents__correspondence ON public.copyright_notice_delivery_intents USING btree (copyright_notice_correspondence_message_id, copyright_notice_id) WHERE (copyright_notice_correspondence_message_id IS NOT NULL)`
+- `idx_copyright_notice_delivery_intents__notice`: `CREATE INDEX idx_copyright_notice_delivery_intents__notice ON public.copyright_notice_delivery_intents USING btree (copyright_notice_id, id)`
+- `idx_copyright_notice_delivery_intents__recipient_user`: `CREATE INDEX idx_copyright_notice_delivery_intents__recipient_user ON public.copyright_notice_delivery_intents USING btree (recipient_user_id) WHERE (recipient_user_id IS NOT NULL)`
+- `idx_copyright_notice_delivery_intents__recoverable`: `CREATE INDEX idx_copyright_notice_delivery_intents__recoverable ON public.copyright_notice_delivery_intents USING btree (channel, id) WHERE (state = ANY (ARRAY['pending'::copyright_notice_delivery_intent_states, 'claimed'::copyright_notice_delivery_intent_states]))`
+- `idx_copyright_notice_delivery_intents__submission`: `CREATE INDEX idx_copyright_notice_delivery_intents__submission ON public.copyright_notice_delivery_intents USING btree (copyright_notice_submission_id, copyright_notice_id) WHERE (copyright_notice_submission_id IS NOT NULL)`
+- `uq_copyri_notice_delive_intents__email_intake_id__delivery_kind`: `CREATE UNIQUE INDEX uq_copyri_notice_delive_intents__email_intake_id__delivery_kind ON public.copyright_notice_delivery_intents USING btree (copyright_notice_email_intake_id, delivery_kind)`
 
 **Triggers:**
 

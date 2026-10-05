@@ -90,7 +90,7 @@ _none_
 - `idx_notifications__moderation_report`: `CREATE INDEX idx_notifications__moderation_report ON ONLY public.notifications USING btree (moderation_report_id) WHERE ((moderation_report_id IS NOT NULL) AND (deleted_at IS NULL))`
 - `idx_notifications__moderation_report_id`: `CREATE INDEX idx_notifications__moderation_report_id ON ONLY public.notifications USING btree (moderation_report_id) WHERE (moderation_report_id IS NOT NULL)`
 - `idx_notifications__post_id`: `CREATE INDEX idx_notifications__post_id ON ONLY public.notifications USING btree (post_id) WHERE ((post_id IS NOT NULL) AND (deleted_at IS NULL))`
-- `idx_notifications__post_id__fk`: `CREATE INDEX idx_notifications__post_id__fk ON ONLY public.notifications USING btree (post_id) WHERE (post_id IS NOT NULL)`
+- `idx_notifications__post_id__foreign_key`: `CREATE INDEX idx_notifications__post_id__foreign_key ON ONLY public.notifications USING btree (post_id) WHERE (post_id IS NOT NULL)`
 - `idx_notifications__publication_post_id`: `CREATE INDEX idx_notifications__publication_post_id ON ONLY public.notifications USING btree (publication_post_id) WHERE (publication_post_id IS NOT NULL)`
 - `idx_notifications__publication_rss_feed_item_id`: `CREATE INDEX idx_notifications__publication_rss_feed_item_id ON ONLY public.notifications USING btree (publication_rss_feed_item_id) WHERE (publication_rss_feed_item_id IS NOT NULL)`
 - `idx_notifications__review_dispute`: `CREATE INDEX idx_notifications__review_dispute ON ONLY public.notifications USING btree (review_dispute_id) WHERE ((review_dispute_id IS NOT NULL) AND (deleted_at IS NULL))`
@@ -112,7 +112,7 @@ _none_
 - `idx_notifications__user_id__unread`: `CREATE INDEX idx_notifications__user_id__unread ON ONLY public.notifications USING btree (user_id, id DESC) WHERE ((deleted_at IS NULL) AND (read_at IS NULL))`
 - `idx_notifications__user_id__user_warning`: `CREATE UNIQUE INDEX idx_notifications__user_id__user_warning ON ONLY public.notifications USING btree (user_id, user_warning_id) WHERE ((user_warning_id IS NOT NULL) AND (deleted_at IS NULL) AND (delivery_type = 'subscription'::notification_delivery_types))`
 - `idx_notifications__user_warning_id`: `CREATE INDEX idx_notifications__user_warning_id ON ONLY public.notifications USING btree (user_warning_id) WHERE ((user_warning_id IS NOT NULL) AND (deleted_at IS NULL))`
-- `idx_notifications__user_warning_id__fk`: `CREATE INDEX idx_notifications__user_warning_id__fk ON ONLY public.notifications USING btree (user_warning_id) WHERE (user_warning_id IS NOT NULL)`
+- `idx_notifications__user_warning_id__foreign_key`: `CREATE INDEX idx_notifications__user_warning_id__foreign_key ON ONLY public.notifications USING btree (user_warning_id) WHERE (user_warning_id IS NOT NULL)`
 - `notifications_pkey`: `CREATE UNIQUE INDEX notifications_pkey ON ONLY public.notifications USING btree (user_id, id)`
 
 **Triggers:**

@@ -22,9 +22,9 @@ _none_
 
 **Check constraints:**
 
-- `membership_ineligible_purchase_reversa_amount_minor_units_check`: `CHECK (((amount_minor_units >= 0) AND (amount_minor_units <= '9007199254740991'::bigint)))`
-- `membership_ineligible_purchase_reversal__stripe_refund_id_check`: `CHECK ((((char_length(stripe_refund_id) >= 1) AND (char_length(stripe_refund_id) <= 255)) AND (stripe_refund_id = TRIM(BOTH FROM stripe_refund_id))))`
-- `membership_ineligible_purchase_reversal_re_currency_code_check1`: `CHECK ((((char_length(currency_code) >= 1) AND (char_length(currency_code) <= 16)) AND (currency_code = TRIM(BOTH FROM currency_code))))`
+- `chk_membe_ineli_purcha_revers_refund_observ__amount_minor_units`: `CHECK (((amount_minor_units >= 0) AND (amount_minor_units <= '9007199254740991'::bigint)))`
+- `chk_member_inelig_purcha_revers_refund_observ__stripe_refund_id`: `CHECK ((((char_length(stripe_refund_id) >= 1) AND (char_length(stripe_refund_id) <= 255)) AND (stripe_refund_id = TRIM(BOTH FROM stripe_refund_id))))`
+- `chk_member_inelig_purchas_reversa_refund_observa__currency_code`: `CHECK ((((char_length(currency_code) >= 1) AND (char_length(currency_code) <= 16)) AND (currency_code = TRIM(BOTH FROM currency_code))))`
 
 **Foreign keys:**
 
@@ -33,10 +33,10 @@ _none_
 
 **Indexes:**
 
-- `idx_mipr_refund_observations__currency`: `CREATE INDEX idx_mipr_refund_observations__currency ON public.membership_ineligible_purchase_reversal_refund_observations USING btree (currency_code)`
+- `idx_members_ineligi_purchase_reversal_refund_observat__currency`: `CREATE INDEX idx_members_ineligi_purchase_reversal_refund_observat__currency ON public.membership_ineligible_purchase_reversal_refund_observations USING btree (currency_code)`
 - `pk_mipr_succeeded_refund_observations`: `CREATE UNIQUE INDEX pk_mipr_succeeded_refund_observations ON public.membership_ineligible_purchase_reversal_refund_observations USING btree (membership_ineligible_purchase_reversal_refund_scan_id, stripe_refund_id)`
 
 **Triggers:**
 
-- `trigger_mipr_succeeded_refund_observations_context`: `CREATE TRIGGER trigger_mipr_succeeded_refund_observations_context BEFORE INSERT ON public.membership_ineligible_purchase_reversal_refund_observations FOR EACH ROW EXECUTE FUNCTION fn_reject_mipr_succeeded_refund_observation_context()`
-- `trigger_mipr_succeeded_refund_observations_immutable`: `CREATE TRIGGER trigger_mipr_succeeded_refund_observations_immutable BEFORE DELETE OR UPDATE ON public.membership_ineligible_purchase_reversal_refund_observations FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_purchase_reversal_refund_observation_currency`: `CREATE TRIGGER trigger_purchase_reversal_refund_observation_currency BEFORE INSERT ON public.membership_ineligible_purchase_reversal_refund_observations FOR EACH ROW EXECUTE FUNCTION fn_reject_purchase_reversal_refund_observation_currency()`
+- `trigger_purchase_reversal_refund_observations_immutable`: `CREATE TRIGGER trigger_purchase_reversal_refund_observations_immutable BEFORE DELETE OR UPDATE ON public.membership_ineligible_purchase_reversal_refund_observations FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`

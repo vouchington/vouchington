@@ -26,8 +26,8 @@ _none_
 
 **Foreign keys:**
 
-- `copyright_trusted_flagger_cha_copyright_trusted_flagger_id_fkey`: `FOREIGN KEY (copyright_trusted_flagger_id) REFERENCES copyright_trusted_flaggers(id) ON DELETE RESTRICT`
 - `copyright_trusted_flagger_changes_changed_by_id_fkey`: `FOREIGN KEY (changed_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
+- `fk_copyright_trusted_flagger_changes__flagger`: `FOREIGN KEY (copyright_trusted_flagger_id) REFERENCES copyright_trusted_flaggers(id) ON DELETE RESTRICT`
 
 **Indexes:**
 

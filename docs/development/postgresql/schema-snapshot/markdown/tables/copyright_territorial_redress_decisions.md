@@ -21,7 +21,7 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `copyright_territorial_redress_copyright_territorial_redress_key`: `UNIQUE (copyright_territorial_redress_request_id)`
+- `uq_copyright_territorial_redress_decisions__request_id`: `UNIQUE (copyright_territorial_redress_request_id)`
 
 **Check constraints:**
 
@@ -30,14 +30,14 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `copyright_territorial_redress_copyright_territorial_redres_fkey`: `FOREIGN KEY (copyright_territorial_redress_request_id) REFERENCES copyright_territorial_redress_requests(id) ON DELETE RESTRICT`
 - `fk_copyright_territorial_redress_decisions__decided_by`: `FOREIGN KEY (decided_by_id) REFERENCES users(id) ON DELETE SET NULL`
+- `fk_copyright_territorial_redress_decisions__request`: `FOREIGN KEY (copyright_territorial_redress_request_id) REFERENCES copyright_territorial_redress_requests(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `copyright_territorial_redress_copyright_territorial_redress_key`: `CREATE UNIQUE INDEX copyright_territorial_redress_copyright_territorial_redress_key ON public.copyright_territorial_redress_decisions USING btree (copyright_territorial_redress_request_id)`
 - `copyright_territorial_redress_decisions_pkey`: `CREATE UNIQUE INDEX copyright_territorial_redress_decisions_pkey ON public.copyright_territorial_redress_decisions USING btree (id)`
 - `idx_copyright_territorial_redress_decisions__decided_by`: `CREATE INDEX idx_copyright_territorial_redress_decisions__decided_by ON public.copyright_territorial_redress_decisions USING btree (decided_by_id) WHERE (decided_by_id IS NOT NULL)`
+- `uq_copyright_territorial_redress_decisions__request_id`: `CREATE UNIQUE INDEX uq_copyright_territorial_redress_decisions__request_id ON public.copyright_territorial_redress_decisions USING btree (copyright_territorial_redress_request_id)`
 
 **Triggers:**
 

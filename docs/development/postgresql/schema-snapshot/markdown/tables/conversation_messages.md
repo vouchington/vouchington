@@ -67,11 +67,11 @@ _none_
 **Indexes:**
 
 - `conversation_messages_pkey`: `CREATE UNIQUE INDEX conversation_messages_pkey ON ONLY public.conversation_messages USING btree (conversation_id, id)`
-- `idx_conv_messages__created_by_id`: `CREATE INDEX idx_conv_messages__created_by_id ON ONLY public.conversation_messages USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)`
-- `idx_conv_messages__email_message_id`: `CREATE INDEX idx_conv_messages__email_message_id ON ONLY public.conversation_messages USING btree (email_message_id) WHERE (email_message_id IS NOT NULL)`
+- `idx_conversation_messages__created_by_id`: `CREATE INDEX idx_conversation_messages__created_by_id ON ONLY public.conversation_messages USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)`
 - `idx_conversation_messages__created_via_oauth_client_id`: `CREATE INDEX idx_conversation_messages__created_via_oauth_client_id ON ONLY public.conversation_messages USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)`
+- `idx_conversation_messages__email_message_id`: `CREATE INDEX idx_conversation_messages__email_message_id ON ONLY public.conversation_messages USING btree (email_message_id) WHERE (email_message_id IS NOT NULL)`
 
 **Triggers:**
 
-- `conversation_messages_content_provenance_immutable`: `CREATE TRIGGER conversation_messages_content_provenance_immutable AFTER UPDATE ON public.conversation_messages FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_conversation_messages_content_provenance_immutable`: `CREATE TRIGGER trigger_conversation_messages_content_provenance_immutable AFTER UPDATE ON public.conversation_messages FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()`
 - `trigger_conversation_messages_updated_at`: `CREATE TRIGGER trigger_conversation_messages_updated_at BEFORE UPDATE ON public.conversation_messages FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

@@ -35,4 +35,4 @@ Not partitioned — growth: bounded.
 
 **Triggers:**
 
-- `trigger_pub_rss_feed_item_identities_updated_at`: `CREATE TRIGGER trigger_pub_rss_feed_item_identities_updated_at BEFORE UPDATE ON public.post_publication_rss_feed_item_identities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_published_rss_feed_item_identities_updated_at`: `CREATE TRIGGER trigger_published_rss_feed_item_identities_updated_at BEFORE UPDATE ON public.post_publication_rss_feed_item_identities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

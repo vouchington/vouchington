@@ -49,13 +49,13 @@ _none_
 
 **Indexes:**
 
-- `idx_mchanges__stripe_event`: `CREATE UNIQUE INDEX idx_mchanges__stripe_event ON public.membership_changes USING btree (stripe_event_id) WHERE (stripe_event_id IS NOT NULL)`
 - `idx_membership_changes__changed_by_id`: `CREATE INDEX idx_membership_changes__changed_by_id ON public.membership_changes USING btree (changed_by_id) WHERE (changed_by_id IS NOT NULL)`
 - `idx_membership_changes__evidence_id`: `CREATE UNIQUE INDEX idx_membership_changes__evidence_id ON public.membership_changes USING btree (membership_provider_evidence_id) WHERE (membership_provider_evidence_id IS NOT NULL)`
 - `idx_membership_changes__from_product_id`: `CREATE INDEX idx_membership_changes__from_product_id ON public.membership_changes USING btree (from_membership_product_id) WHERE (from_membership_product_id IS NOT NULL)`
 - `idx_membership_changes__grant_id`: `CREATE INDEX idx_membership_changes__grant_id ON public.membership_changes USING btree (membership_grant_id, id DESC) WHERE (membership_grant_id IS NOT NULL)`
 - `idx_membership_changes__membership_id`: `CREATE INDEX idx_membership_changes__membership_id ON public.membership_changes USING btree (membership_id, id DESC)`
 - `idx_membership_changes__source_id`: `CREATE INDEX idx_membership_changes__source_id ON public.membership_changes USING btree (membership_source_id, id DESC) WHERE (membership_source_id IS NOT NULL)`
+- `idx_membership_changes__stripe_event`: `CREATE UNIQUE INDEX idx_membership_changes__stripe_event ON public.membership_changes USING btree (stripe_event_id) WHERE (stripe_event_id IS NOT NULL)`
 - `idx_membership_changes__to_product_id`: `CREATE INDEX idx_membership_changes__to_product_id ON public.membership_changes USING btree (to_membership_product_id) WHERE (to_membership_product_id IS NOT NULL)`
 - `idx_membership_changes__user_id`: `CREATE INDEX idx_membership_changes__user_id ON public.membership_changes USING btree (user_id, id DESC)`
 - `membership_changes_pkey`: `CREATE UNIQUE INDEX membership_changes_pkey ON public.membership_changes USING btree (id)`

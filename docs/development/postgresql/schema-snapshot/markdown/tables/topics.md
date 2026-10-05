@@ -102,9 +102,9 @@ _none_
 
 **Indexes:**
 
-- `ids_topics__bedrock_nova_multimodal_v1_to_update`: `CREATE INDEX ids_topics__bedrock_nova_multimodal_v1_to_update ON public.topics USING btree (id) WHERE ((bedrock_nova_multimodal_v1_input_sha256 IS NULL) OR (bedrock_nova_multimodal_v1_input_sha256 <> bedrock_nova_multimodal_v1_content_sha256))`
 - `idx_topics__bedrock_nova_multimodal_v1_embedding`: `CREATE INDEX idx_topics__bedrock_nova_multimodal_v1_embedding ON public.topics USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops) WHERE (bedrock_nova_multimodal_v1_embedding IS NOT NULL)`
 - `idx_topics__bedrock_nova_multimodal_v1_input_sha256`: `CREATE INDEX idx_topics__bedrock_nova_multimodal_v1_input_sha256 ON public.topics USING btree (bedrock_nova_multimodal_v1_input_sha256) WHERE (bedrock_nova_multimodal_v1_input_sha256 IS NOT NULL)`
+- `idx_topics__bedrock_nova_multimodal_v1_to_update`: `CREATE INDEX idx_topics__bedrock_nova_multimodal_v1_to_update ON public.topics USING btree (id) WHERE ((bedrock_nova_multimodal_v1_input_sha256 IS NULL) OR (bedrock_nova_multimodal_v1_input_sha256 <> bedrock_nova_multimodal_v1_content_sha256))`
 - `idx_topics__created_by_id`: `CREATE INDEX idx_topics__created_by_id ON public.topics USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)`
 - `idx_topics__created_via_oauth_client_id`: `CREATE INDEX idx_topics__created_via_oauth_client_id ON public.topics USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)`
 - `idx_topics__deleted_by_id`: `CREATE INDEX idx_topics__deleted_by_id ON public.topics USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)`
@@ -112,6 +112,7 @@ _none_
 - `idx_topics__hero_image_id`: `CREATE INDEX idx_topics__hero_image_id ON public.topics USING btree (hero_image_id) WHERE (hero_image_id IS NOT NULL)`
 - `idx_topics__homepage_url_id`: `CREATE INDEX idx_topics__homepage_url_id ON public.topics USING btree (homepage_url_id) WHERE (homepage_url_id IS NOT NULL)`
 - `idx_topics__hostname_id`: `CREATE INDEX idx_topics__hostname_id ON public.topics USING btree (hostname_id) WHERE (hostname_id IS NOT NULL)`
+- `idx_topics__lingua_rs_pending`: `CREATE INDEX idx_topics__lingua_rs_pending ON public.topics USING btree (id) WHERE (lingua_rs_input_sha256 IS NULL)`
 - `idx_topics__logo_image_id`: `CREATE INDEX idx_topics__logo_image_id ON public.topics USING btree (logo_image_id) WHERE (logo_image_id IS NOT NULL)`
 - `idx_topics__merged_by_id`: `CREATE INDEX idx_topics__merged_by_id ON public.topics USING btree (merged_by_id) WHERE (merged_by_id IS NOT NULL)`
 - `idx_topics__merged_into_topic_id`: `CREATE INDEX idx_topics__merged_into_topic_id ON public.topics USING btree (merged_into_topic_id) WHERE (merged_into_topic_id IS NOT NULL)`
@@ -127,14 +128,13 @@ _none_
 - `idx_topics__updated_at_id_active`: `CREATE INDEX idx_topics__updated_at_id_active ON public.topics USING btree (updated_at, id) WHERE ((deleted_at IS NULL) AND (merged_into_topic_id IS NULL))`
 - `idx_topics__updated_by_id`: `CREATE INDEX idx_topics__updated_by_id ON public.topics USING btree (updated_by_id) WHERE (updated_by_id IS NOT NULL)`
 - `idx_topics__votes_score_sort__id`: `CREATE INDEX idx_topics__votes_score_sort__id ON public.topics USING btree (votes_score_sort DESC, id DESC) WHERE (deleted_at IS NULL)`
-- `idx_topics__votes_score_sort__pos__id`: `CREATE INDEX idx_topics__votes_score_sort__pos__id ON public.topics USING btree (votes_score_sort DESC, id DESC) WHERE ((votes_score_net > (0)::double precision) AND (deleted_at IS NULL))`
-- `topics_lingua_rs_pending_idx`: `CREATE INDEX topics_lingua_rs_pending_idx ON public.topics USING btree (id) WHERE (lingua_rs_input_sha256 IS NULL)`
+- `idx_topics__votes_score_sort__positive__id`: `CREATE INDEX idx_topics__votes_score_sort__positive__id ON public.topics USING btree (votes_score_sort DESC, id DESC) WHERE ((votes_score_net > (0)::double precision) AND (deleted_at IS NULL))`
 - `topics_pkey`: `CREATE UNIQUE INDEX topics_pkey ON public.topics USING btree (id)`
 
 **Triggers:**
 
-- `topics_content_provenance_immutable`: `CREATE TRIGGER topics_content_provenance_immutable AFTER UPDATE ON public.topics FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()`
 - `trigger_create_topic_metrics`: `CREATE TRIGGER trigger_create_topic_metrics AFTER INSERT ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_create_metrics('topic_metrics', 'topic_id')`
 - `trigger_register_retained_topic_identity`: `CREATE TRIGGER trigger_register_retained_topic_identity BEFORE INSERT ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('topic')`
 - `trigger_sync_topic_image_placements`: `CREATE TRIGGER trigger_sync_topic_image_placements AFTER INSERT OR UPDATE OF logo_image_id, hero_image_id, deleted_at, merged_into_topic_id ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_project_topic_image_placements()`
+- `trigger_topics_content_provenance_immutable`: `CREATE TRIGGER trigger_topics_content_provenance_immutable AFTER UPDATE ON public.topics FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()`
 - `trigger_topics_updated_at`: `CREATE TRIGGER trigger_topics_updated_at BEFORE UPDATE ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

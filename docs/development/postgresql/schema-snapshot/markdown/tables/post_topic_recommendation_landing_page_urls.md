@@ -16,7 +16,7 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `post_topic_recommendation_landing_page_u_post_id_sort_order_key`: `UNIQUE (post_id, sort_order)`
+- `uq_post_topic_recommenda_landing_page_urls__post_id__sort_order`: `UNIQUE (post_id, sort_order)`
 
 **Check constraints:**
 
@@ -30,8 +30,8 @@ Not partitioned — growth: unbounded.
 **Indexes:**
 
 - `idx_post_topic_recommendation_landing_page_urls__url_id`: `CREATE INDEX idx_post_topic_recommendation_landing_page_urls__url_id ON public.post_topic_recommendation_landing_page_urls USING btree (url_id)`
-- `post_topic_recommendation_landing_page_u_post_id_sort_order_key`: `CREATE UNIQUE INDEX post_topic_recommendation_landing_page_u_post_id_sort_order_key ON public.post_topic_recommendation_landing_page_urls USING btree (post_id, sort_order)`
 - `post_topic_recommendation_landing_page_urls_pkey`: `CREATE UNIQUE INDEX post_topic_recommendation_landing_page_urls_pkey ON public.post_topic_recommendation_landing_page_urls USING btree (post_id, url_id)`
+- `uq_post_topic_recommenda_landing_page_urls__post_id__sort_order`: `CREATE UNIQUE INDEX uq_post_topic_recommenda_landing_page_urls__post_id__sort_order ON public.post_topic_recommendation_landing_page_urls USING btree (post_id, sort_order)`
 
 **Triggers:**
 _none_

@@ -21,7 +21,7 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `copyright_eu_dispute_settleme_copyright_eu_dispute_settleme_key`: `UNIQUE (copyright_eu_dispute_settlement_referral_id)`
+- `uq_copyright_eu_dispute_settlement_outcomes__referral_id`: `UNIQUE (copyright_eu_dispute_settlement_referral_id)`
 
 **Check constraints:**
 
@@ -30,14 +30,14 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `copyright_eu_dispute_settleme_copyright_eu_dispute_settlem_fkey`: `FOREIGN KEY (copyright_eu_dispute_settlement_referral_id) REFERENCES copyright_eu_dispute_settlement_referrals(id) ON DELETE RESTRICT`
 - `fk_copyright_eu_dispute_settlement_outcomes__recorded_by`: `FOREIGN KEY (recorded_by_id) REFERENCES users(id) ON DELETE SET NULL`
+- `fk_copyright_eu_dispute_settlement_outcomes__referral`: `FOREIGN KEY (copyright_eu_dispute_settlement_referral_id) REFERENCES copyright_eu_dispute_settlement_referrals(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `copyright_eu_dispute_settleme_copyright_eu_dispute_settleme_key`: `CREATE UNIQUE INDEX copyright_eu_dispute_settleme_copyright_eu_dispute_settleme_key ON public.copyright_eu_dispute_settlement_outcomes USING btree (copyright_eu_dispute_settlement_referral_id)`
 - `copyright_eu_dispute_settlement_outcomes_pkey`: `CREATE UNIQUE INDEX copyright_eu_dispute_settlement_outcomes_pkey ON public.copyright_eu_dispute_settlement_outcomes USING btree (id)`
 - `idx_copyright_eu_dispute_settlement_outcomes__recorded_by`: `CREATE INDEX idx_copyright_eu_dispute_settlement_outcomes__recorded_by ON public.copyright_eu_dispute_settlement_outcomes USING btree (recorded_by_id) WHERE (recorded_by_id IS NOT NULL)`
+- `uq_copyright_eu_dispute_settlement_outcomes__referral_id`: `CREATE UNIQUE INDEX uq_copyright_eu_dispute_settlement_outcomes__referral_id ON public.copyright_eu_dispute_settlement_outcomes USING btree (copyright_eu_dispute_settlement_referral_id)`
 
 **Triggers:**
 

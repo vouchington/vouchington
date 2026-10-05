@@ -32,7 +32,7 @@ _none_
 **Indexes:**
 
 - `community_pinned_posts_pkey`: `CREATE UNIQUE INDEX community_pinned_posts_pkey ON public.community_pinned_posts USING btree (community_id, post_id)`
-- `idx_comm_pinned__order`: `CREATE UNIQUE INDEX idx_comm_pinned__order ON public.community_pinned_posts USING btree (community_id, order_index)`
+- `idx_community_pinned_posts__order`: `CREATE UNIQUE INDEX idx_community_pinned_posts__order ON public.community_pinned_posts USING btree (community_id, order_index)`
 - `idx_community_pinned_posts__pinned_by_id`: `CREATE INDEX idx_community_pinned_posts__pinned_by_id ON public.community_pinned_posts USING btree (pinned_by_id)`
 - `idx_community_pinned_posts__post_id`: `CREATE INDEX idx_community_pinned_posts__post_id ON public.community_pinned_posts USING btree (post_id)`
 

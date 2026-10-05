@@ -25,27 +25,27 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `copyright_notice_email_intake_copyright_notice_email_intake_key`: `UNIQUE (copyright_notice_email_intake_id)`
+- `uq_copyright_notice_email_intake_parses__intake_id`: `UNIQUE (copyright_notice_email_intake_id)`
 
 **Check constraints:**
 
-- `copyright_notice_email_intake_par_sender_email_ciphertext_check`: `CHECK (((char_length(sender_email_ciphertext) >= 1) AND (char_length(sender_email_ciphertext) <= 1048576)))`
-- `copyright_notice_email_intake_parse_message_id_ciphertext_check`: `CHECK (((char_length(message_id_ciphertext) >= 1) AND (char_length(message_id_ciphertext) <= 1048576)))`
+- `chk_copyr_notic_email_intak_parses__reply_references_ciphertext`: `CHECK (((char_length(reply_references_ciphertext) >= 1) AND (char_length(reply_references_ciphertext) <= 1048576)))`
+- `chk_copyrig_notice_email_intake_parses__sender_email_ciphertext`: `CHECK (((char_length(sender_email_ciphertext) >= 1) AND (char_length(sender_email_ciphertext) <= 1048576)))`
+- `chk_copyright_notice_email_intake_parses__message_id_ciphertext`: `CHECK (((char_length(message_id_ciphertext) >= 1) AND (char_length(message_id_ciphertext) <= 1048576)))`
 - `copyright_notice_email_intake_parses_body_ciphertext_check`: `CHECK (((char_length(body_ciphertext) >= 1) AND (char_length(body_ciphertext) <= 4194304)))`
 - `copyright_notice_email_intake_parses_check`: `CHECK ((((status = 'succeeded'::copyright_notice_email_intake_parse_statuses) AND (sender_email_ciphertext IS NOT NULL) AND (subject_ciphertext IS NOT NULL) AND (body_ciphertext IS NOT NULL) AND (error_ciphertext IS NULL)) OR ((status = 'failed'::copyright_notice_email_intake_parse_statuses) AND (sender_email_ciphertext IS NULL) AND (sender_name_ciphertext IS NULL) AND (subject_ciphertext IS NULL) AND (body_ciphertext IS NULL) AND (message_id_ciphertext IS NULL) AND (reply_references_ciphertext IS NULL) AND (error_ciphertext IS NOT NULL))))`
 - `copyright_notice_email_intake_parses_error_ciphertext_check`: `CHECK (((char_length(error_ciphertext) >= 1) AND (char_length(error_ciphertext) <= 1048576)))`
 - `copyright_notice_email_intake_parses_status_check`: `CHECK ((status = ANY (ARRAY['succeeded'::copyright_notice_email_intake_parse_statuses, 'failed'::copyright_notice_email_intake_parse_statuses])))`
 - `copyright_notice_email_intake_parses_subject_ciphertext_check`: `CHECK (((char_length(subject_ciphertext) >= 1) AND (char_length(subject_ciphertext) <= 4194304)))`
-- `copyright_notice_email_intake_reply_references_ciphertext_check`: `CHECK (((char_length(reply_references_ciphertext) >= 1) AND (char_length(reply_references_ciphertext) <= 1048576)))`
 
 **Foreign keys:**
 
-- `copyright_notice_email_intake_copyright_notice_email_intak_fkey`: `FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_email_intake_parses__intake`: `FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `copyright_notice_email_intake_copyright_notice_email_intake_key`: `CREATE UNIQUE INDEX copyright_notice_email_intake_copyright_notice_email_intake_key ON public.copyright_notice_email_intake_parses USING btree (copyright_notice_email_intake_id)`
 - `copyright_notice_email_intake_parses_pkey`: `CREATE UNIQUE INDEX copyright_notice_email_intake_parses_pkey ON public.copyright_notice_email_intake_parses USING btree (id)`
+- `uq_copyright_notice_email_intake_parses__intake_id`: `CREATE UNIQUE INDEX uq_copyright_notice_email_intake_parses__intake_id ON public.copyright_notice_email_intake_parses USING btree (copyright_notice_email_intake_id)`
 
 **Triggers:**
 

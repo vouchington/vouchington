@@ -77,6 +77,6 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `classifier_runs_guard`: `CREATE TRIGGER classifier_runs_guard BEFORE UPDATE ON public.classifier_runs FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_run()`
-- `classifier_runs_scope_stamp`: `CREATE TRIGGER classifier_runs_scope_stamp BEFORE INSERT ON public.classifier_runs FOR EACH ROW EXECUTE FUNCTION fn_update_classifier_run_scope()`
-- `classifier_runs_updated_at`: `CREATE TRIGGER classifier_runs_updated_at BEFORE UPDATE ON public.classifier_runs FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_classifier_runs_guard`: `CREATE TRIGGER trigger_classifier_runs_guard BEFORE UPDATE ON public.classifier_runs FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_run()`
+- `trigger_classifier_runs_scope_stamp`: `CREATE TRIGGER trigger_classifier_runs_scope_stamp BEFORE INSERT ON public.classifier_runs FOR EACH ROW EXECUTE FUNCTION fn_update_classifier_run_scope()`
+- `trigger_classifier_runs_updated_at`: `CREATE TRIGGER trigger_classifier_runs_updated_at BEFORE UPDATE ON public.classifier_runs FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

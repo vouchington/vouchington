@@ -21,26 +21,26 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `copyright_notice_email_intake_copyright_notice_email_intak_key2`: `UNIQUE (copyright_notice_email_intake_id, input_sha256, prompt_version)`
-- `copyright_notice_email_intake_copyright_notice_email_intak_key3`: `UNIQUE (copyright_notice_email_intake_id, id)`
+- `uq_cop_not_ema_int_rec__intake_id__input_sha256__prompt_version`: `UNIQUE (copyright_notice_email_intake_id, input_sha256, prompt_version)`
+- `uq_copyright_notice_email_intake_recommendations__intake_id__id`: `UNIQUE (copyright_notice_email_intake_id, id)`
 
 **Check constraints:**
 
-- `copyright_notice_email_intak_structured_output_ciphertext_check`: `CHECK (((char_length(structured_output_ciphertext) >= 1) AND (char_length(structured_output_ciphertext) <= 1048576)))`
-- `copyright_notice_email_intake_recommendati_prompt_version_check`: `CHECK (((char_length(prompt_version) >= 1) AND (char_length(prompt_version) <= 100)))`
-- `copyright_notice_email_intake_recommendation_input_sha256_check`: `CHECK ((octet_length(input_sha256) = 32))`
+- `chk_copyr_notic_email_intak_recom__structured_output_ciphertext`: `CHECK (((char_length(structured_output_ciphertext) >= 1) AND (char_length(structured_output_ciphertext) <= 1048576)))`
+- `chk_copyright_notice_email_intake_recommendatio__prompt_version`: `CHECK (((char_length(prompt_version) >= 1) AND (char_length(prompt_version) <= 100)))`
+- `chk_copyright_notice_email_intake_recommendations__input_sha256`: `CHECK ((octet_length(input_sha256) = 32))`
 - `copyright_notice_email_intake_recommendations_model_check`: `CHECK (((char_length(model) >= 1) AND (char_length(model) <= 255)))`
 
 **Foreign keys:**
 
-- `copyright_notice_email_intak_copyright_notice_email_intak_fkey2`: `FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_email_intake_recommendations__intake`: `FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `copyright_notice_email_intake_copyright_notice_email_intak_key2`: `CREATE UNIQUE INDEX copyright_notice_email_intake_copyright_notice_email_intak_key2 ON public.copyright_notice_email_intake_recommendations USING btree (copyright_notice_email_intake_id, input_sha256, prompt_version)`
-- `copyright_notice_email_intake_copyright_notice_email_intak_key3`: `CREATE UNIQUE INDEX copyright_notice_email_intake_copyright_notice_email_intak_key3 ON public.copyright_notice_email_intake_recommendations USING btree (copyright_notice_email_intake_id, id)`
 - `copyright_notice_email_intake_recommendations_pkey`: `CREATE UNIQUE INDEX copyright_notice_email_intake_recommendations_pkey ON public.copyright_notice_email_intake_recommendations USING btree (id)`
-- `idx_copyright_email_recommendations__intake`: `CREATE INDEX idx_copyright_email_recommendations__intake ON public.copyright_notice_email_intake_recommendations USING btree (copyright_notice_email_intake_id, id DESC)`
+- `idx_copyright_notice_email_intake_recommendations__intake`: `CREATE INDEX idx_copyright_notice_email_intake_recommendations__intake ON public.copyright_notice_email_intake_recommendations USING btree (copyright_notice_email_intake_id, id DESC)`
+- `uq_cop_not_ema_int_rec__intake_id__input_sha256__prompt_version`: `CREATE UNIQUE INDEX uq_cop_not_ema_int_rec__intake_id__input_sha256__prompt_version ON public.copyright_notice_email_intake_recommendations USING btree (copyright_notice_email_intake_id, input_sha256, prompt_version)`
+- `uq_copyright_notice_email_intake_recommendations__intake_id__id`: `CREATE UNIQUE INDEX uq_copyright_notice_email_intake_recommendations__intake_id__id ON public.copyright_notice_email_intake_recommendations USING btree (copyright_notice_email_intake_id, id)`
 
 **Triggers:**
 

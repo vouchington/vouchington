@@ -27,7 +27,7 @@ _none_
 **Indexes:**
 
 - `follower_distribution_selected_recipients_pkey`: `CREATE UNIQUE INDEX follower_distribution_selected_recipients_pkey ON public.follower_distribution_selected_recipients USING btree (distribution_id, recipient_user_id)`
-- `idx_fd_selected_recipients__recipient_user_id`: `CREATE INDEX idx_fd_selected_recipients__recipient_user_id ON public.follower_distribution_selected_recipients USING btree (recipient_user_id)`
+- `idx_follower_distributio_selected_recipients__recipient_user_id`: `CREATE INDEX idx_follower_distributio_selected_recipients__recipient_user_id ON public.follower_distribution_selected_recipients USING btree (recipient_user_id)`
 
 **Triggers:**
 

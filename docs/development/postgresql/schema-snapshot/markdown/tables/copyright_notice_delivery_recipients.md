@@ -18,7 +18,7 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `copyright_notice_delivery_rec_copyright_notice_delivery_int_key`: `UNIQUE (copyright_notice_delivery_intent_id)`
+- `uq_copyright_notice_delivery_recipients__intent_id`: `UNIQUE (copyright_notice_delivery_intent_id)`
 
 **Check constraints:**
 
@@ -26,12 +26,12 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `copyright_notice_delivery_rec_copyright_notice_delivery_in_fkey`: `FOREIGN KEY (copyright_notice_delivery_intent_id) REFERENCES copyright_notice_delivery_intents(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_delivery_recipients__intent`: `FOREIGN KEY (copyright_notice_delivery_intent_id) REFERENCES copyright_notice_delivery_intents(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `copyright_notice_delivery_rec_copyright_notice_delivery_int_key`: `CREATE UNIQUE INDEX copyright_notice_delivery_rec_copyright_notice_delivery_int_key ON public.copyright_notice_delivery_recipients USING btree (copyright_notice_delivery_intent_id)`
 - `copyright_notice_delivery_recipients_pkey`: `CREATE UNIQUE INDEX copyright_notice_delivery_recipients_pkey ON public.copyright_notice_delivery_recipients USING btree (id)`
+- `uq_copyright_notice_delivery_recipients__intent_id`: `CREATE UNIQUE INDEX uq_copyright_notice_delivery_recipients__intent_id ON public.copyright_notice_delivery_recipients USING btree (copyright_notice_delivery_intent_id)`
 
 **Triggers:**
 

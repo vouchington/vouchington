@@ -45,9 +45,9 @@ _none_
 
 **Indexes:**
 
+- `idx_story_post_relate_url_projec_jobs__lease_expires_at_post_id`: `CREATE INDEX idx_story_post_relate_url_projec_jobs__lease_expires_at_post_id ON public.story_post_related_url_projection_jobs USING btree (lease_expires_at, post_id)`
+- `idx_story_post_relate_url_project_jobs__last_claimed_at_post_id`: `CREATE INDEX idx_story_post_relate_url_project_jobs__last_claimed_at_post_id ON public.story_post_related_url_projection_jobs USING btree (last_claimed_at NULLS FIRST, post_id)`
 - `idx_story_post_related_url_projection_jobs__story_id`: `CREATE INDEX idx_story_post_related_url_projection_jobs__story_id ON public.story_post_related_url_projection_jobs USING btree (story_id)`
-- `idx_story_post_url_proj_jobs__last_claimed_at_post_id`: `CREATE INDEX idx_story_post_url_proj_jobs__last_claimed_at_post_id ON public.story_post_related_url_projection_jobs USING btree (last_claimed_at NULLS FIRST, post_id)`
-- `idx_story_post_url_proj_jobs__lease_expires_at_post_id`: `CREATE INDEX idx_story_post_url_proj_jobs__lease_expires_at_post_id ON public.story_post_related_url_projection_jobs USING btree (lease_expires_at, post_id)`
 - `story_post_related_url_projection_jobs_pkey`: `CREATE UNIQUE INDEX story_post_related_url_projection_jobs_pkey ON public.story_post_related_url_projection_jobs USING btree (post_id)`
 
 **Triggers:**

@@ -30,7 +30,7 @@ _none_
 
 **Indexes:**
 
-- `idx_moderation_appeal_lifecycle__appeal_created`: `CREATE INDEX idx_moderation_appeal_lifecycle__appeal_created ON public.moderation_appeal_lifecycle_changes USING btree (moderation_appeal_id, id DESC)`
+- `idx_moderation_appeal_lifecycle_changes__appeal_created`: `CREATE INDEX idx_moderation_appeal_lifecycle_changes__appeal_created ON public.moderation_appeal_lifecycle_changes USING btree (moderation_appeal_id, id DESC)`
 - `idx_moderation_appeal_lifecycle_changes__changed_by_id`: `CREATE INDEX idx_moderation_appeal_lifecycle_changes__changed_by_id ON public.moderation_appeal_lifecycle_changes USING btree (changed_by_id) WHERE (changed_by_id IS NOT NULL)`
 - `moderation_appeal_lifecycle_changes_pkey`: `CREATE UNIQUE INDEX moderation_appeal_lifecycle_changes_pkey ON public.moderation_appeal_lifecycle_changes USING btree (id)`
 

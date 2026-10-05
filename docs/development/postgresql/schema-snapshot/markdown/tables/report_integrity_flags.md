@@ -44,15 +44,15 @@ _none_
 
 **Indexes:**
 
+- `idx_report_integrity_flags__hostname_flag_pending`: `CREATE UNIQUE INDEX idx_report_integrity_flags__hostname_flag_pending ON public.report_integrity_flags USING btree (hostname_id, flag_type) WHERE ((resolved_at IS NULL) AND (hostname_id IS NOT NULL))`
+- `idx_report_integrity_flags__hostname_id`: `CREATE INDEX idx_report_integrity_flags__hostname_id ON public.report_integrity_flags USING btree (hostname_id) WHERE (hostname_id IS NOT NULL)`
 - `idx_report_integrity_flags__pending`: `CREATE INDEX idx_report_integrity_flags__pending ON public.report_integrity_flags USING btree (id) WHERE (resolved_at IS NULL)`
-- `idx_rif__hostname_flag_pending`: `CREATE UNIQUE INDEX idx_rif__hostname_flag_pending ON public.report_integrity_flags USING btree (hostname_id, flag_type) WHERE ((resolved_at IS NULL) AND (hostname_id IS NOT NULL))`
-- `idx_rif__hostname_id`: `CREATE INDEX idx_rif__hostname_id ON public.report_integrity_flags USING btree (hostname_id) WHERE (hostname_id IS NOT NULL)`
-- `idx_rif__post_flag_pending`: `CREATE UNIQUE INDEX idx_rif__post_flag_pending ON public.report_integrity_flags USING btree (post_id, flag_type) WHERE ((resolved_at IS NULL) AND (post_id IS NOT NULL))`
-- `idx_rif__post_id`: `CREATE INDEX idx_rif__post_id ON public.report_integrity_flags USING btree (post_id) WHERE (post_id IS NOT NULL)`
-- `idx_rif__reported_user_id`: `CREATE INDEX idx_rif__reported_user_id ON public.report_integrity_flags USING btree (reported_user_id) WHERE (reported_user_id IS NOT NULL)`
-- `idx_rif__rss_feed_item_id`: `CREATE INDEX idx_rif__rss_feed_item_id ON public.report_integrity_flags USING btree (rss_feed_item_id) WHERE (rss_feed_item_id IS NOT NULL)`
-- `idx_rif__rss_flag_pending`: `CREATE UNIQUE INDEX idx_rif__rss_flag_pending ON public.report_integrity_flags USING btree (rss_feed_item_id, flag_type) WHERE ((resolved_at IS NULL) AND (rss_feed_item_id IS NOT NULL))`
-- `idx_rif__user_flag_pending`: `CREATE UNIQUE INDEX idx_rif__user_flag_pending ON public.report_integrity_flags USING btree (reported_user_id, flag_type) WHERE ((resolved_at IS NULL) AND (reported_user_id IS NOT NULL))`
+- `idx_report_integrity_flags__post_flag_pending`: `CREATE UNIQUE INDEX idx_report_integrity_flags__post_flag_pending ON public.report_integrity_flags USING btree (post_id, flag_type) WHERE ((resolved_at IS NULL) AND (post_id IS NOT NULL))`
+- `idx_report_integrity_flags__post_id`: `CREATE INDEX idx_report_integrity_flags__post_id ON public.report_integrity_flags USING btree (post_id) WHERE (post_id IS NOT NULL)`
+- `idx_report_integrity_flags__reported_user_id`: `CREATE INDEX idx_report_integrity_flags__reported_user_id ON public.report_integrity_flags USING btree (reported_user_id) WHERE (reported_user_id IS NOT NULL)`
+- `idx_report_integrity_flags__rss_feed_item_id`: `CREATE INDEX idx_report_integrity_flags__rss_feed_item_id ON public.report_integrity_flags USING btree (rss_feed_item_id) WHERE (rss_feed_item_id IS NOT NULL)`
+- `idx_report_integrity_flags__rss_flag_pending`: `CREATE UNIQUE INDEX idx_report_integrity_flags__rss_flag_pending ON public.report_integrity_flags USING btree (rss_feed_item_id, flag_type) WHERE ((resolved_at IS NULL) AND (rss_feed_item_id IS NOT NULL))`
+- `idx_report_integrity_flags__user_flag_pending`: `CREATE UNIQUE INDEX idx_report_integrity_flags__user_flag_pending ON public.report_integrity_flags USING btree (reported_user_id, flag_type) WHERE ((resolved_at IS NULL) AND (reported_user_id IS NOT NULL))`
 - `report_integrity_flags_pkey`: `CREATE UNIQUE INDEX report_integrity_flags_pkey ON public.report_integrity_flags USING btree (id)`
 
 **Triggers:**

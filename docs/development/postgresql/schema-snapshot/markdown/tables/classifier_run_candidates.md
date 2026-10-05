@@ -43,4 +43,4 @@ _none_
 
 **Triggers:**
 
-- `classifier_run_candidates_append_only`: `CREATE TRIGGER classifier_run_candidates_append_only BEFORE UPDATE ON public.classifier_run_candidates FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_classifier_run_candidates_append_only`: `CREATE TRIGGER trigger_classifier_run_candidates_append_only BEFORE UPDATE ON public.classifier_run_candidates FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`

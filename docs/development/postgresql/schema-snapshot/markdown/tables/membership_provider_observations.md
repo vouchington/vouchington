@@ -43,8 +43,8 @@ _none_
 
 **Check constraints:**
 
-- `membership_provider_observatio_observed_price_minor_units_check`: `CHECK (((observed_price_minor_units >= 0) AND (observed_price_minor_units <= '9007199254740991'::bigint)))`
-- `membership_provider_observation_renewal_price_minor_units_check`: `CHECK (((renewal_price_minor_units >= 0) AND (renewal_price_minor_units <= '9007199254740991'::bigint)))`
+- `chk_membership_provider_observation__observed_price_minor_units`: `CHECK (((observed_price_minor_units >= 0) AND (observed_price_minor_units <= '9007199254740991'::bigint)))`
+- `chk_membership_provider_observations__renewal_price_minor_units`: `CHECK (((renewal_price_minor_units >= 0) AND (renewal_price_minor_units <= '9007199254740991'::bigint)))`
 - `membership_provider_observations_application_id_check`: `CHECK ((((char_length(application_id) >= 1) AND (char_length(application_id) <= 255)) AND (application_id = TRIM(BOTH FROM application_id))))`
 - `membership_provider_observations_check`: `CHECK ((num_nonnulls(observed_price_minor_units, observed_price_currency_code) = ANY (ARRAY[0, 2])))`
 - `membership_provider_observations_check1`: `CHECK (((expires_at IS NULL) OR (expires_at >= effective_at)))`
@@ -63,12 +63,12 @@ _none_
 
 **Foreign keys:**
 
+- `fk_membership_provider_observatio__observed_price_currency_code`: `FOREIGN KEY (observed_price_currency_code) REFERENCES currencies(code) ON DELETE RESTRICT`
+- `fk_membership_provider_observation__renewal_price_currency_code`: `FOREIGN KEY (renewal_price_currency_code) REFERENCES currencies(code) ON DELETE RESTRICT`
 - `fk_membership_provider_observations__evidence_context`: `FOREIGN KEY (membership_provider_evidence_id, membership_provider_lineage_id, provider, environment, application_id) REFERENCES membership_provider_evidence_records(id, membership_provider_lineage_id, provider, environment, application_id) ON DELETE RESTRICT`
 - `fk_membership_provider_observations__lineage_context`: `FOREIGN KEY (membership_provider_lineage_id, provider, environment, application_id) REFERENCES membership_provider_lineages(id, provider, environment, application_id) ON DELETE RESTRICT`
 - `fk_membership_provider_observations__product_context`: `FOREIGN KEY (membership_provider_product_id, membership_product_id, provider, environment, application_id) REFERENCES membership_provider_products(id, membership_product_id, provider, environment, application_id) ON DELETE RESTRICT`
 - `fk_membership_provider_observations__renewal_product_context`: `FOREIGN KEY (renewal_membership_provider_product_id, renewal_membership_product_id, provider, environment, application_id) REFERENCES membership_provider_products(id, membership_product_id, provider, environment, application_id) ON DELETE RESTRICT`
-- `membership_provider_observati_observed_price_currency_code_fkey`: `FOREIGN KEY (observed_price_currency_code) REFERENCES currencies(code) ON DELETE RESTRICT`
-- `membership_provider_observatio_renewal_price_currency_code_fkey`: `FOREIGN KEY (renewal_price_currency_code) REFERENCES currencies(code) ON DELETE RESTRICT`
 
 **Indexes:**
 

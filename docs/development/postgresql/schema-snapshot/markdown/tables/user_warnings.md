@@ -41,11 +41,11 @@ _none_
 
 **Indexes:**
 
-- `idx_user_warnings_case_id`: `CREATE INDEX idx_user_warnings_case_id ON public.user_warnings USING btree (case_id)`
-- `user_warnings_community_id`: `CREATE INDEX user_warnings_community_id ON public.user_warnings USING btree (community_id, id DESC) WHERE (community_id IS NOT NULL)`
+- `idx_user_warnings__case_id`: `CREATE INDEX idx_user_warnings__case_id ON public.user_warnings USING btree (case_id)`
+- `idx_user_warnings__community_id`: `CREATE INDEX idx_user_warnings__community_id ON public.user_warnings USING btree (community_id, id DESC) WHERE (community_id IS NOT NULL)`
+- `idx_user_warnings__report_id_unique`: `CREATE UNIQUE INDEX idx_user_warnings__report_id_unique ON public.user_warnings USING btree (report_id) WHERE (report_id IS NOT NULL)`
+- `idx_user_warnings__user_id`: `CREATE INDEX idx_user_warnings__user_id ON public.user_warnings USING btree (user_id, id DESC)`
 - `user_warnings_pkey`: `CREATE UNIQUE INDEX user_warnings_pkey ON public.user_warnings USING btree (id)`
-- `user_warnings_report_id_unique`: `CREATE UNIQUE INDEX user_warnings_report_id_unique ON public.user_warnings USING btree (report_id) WHERE (report_id IS NOT NULL)`
-- `user_warnings_user_id`: `CREATE INDEX user_warnings_user_id ON public.user_warnings USING btree (user_id, id DESC)`
 
 **Triggers:**
 _none_

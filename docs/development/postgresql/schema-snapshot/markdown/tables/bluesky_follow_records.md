@@ -27,8 +27,8 @@ _none_
 **Foreign keys:**
 
 - `bluesky_follow_records_followee_user_id_fkey`: `FOREIGN KEY (followee_user_id) REFERENCES users(id) ON DELETE CASCADE`
-- `bluesky_follow_records_follower_bluesky_did_follower_autho_fkey`: `FOREIGN KEY (follower_bluesky_did, follower_authorization_id) REFERENCES bluesky_linked_accounts(bluesky_did, link_authorization_id) ON DELETE CASCADE`
 - `bluesky_follow_records_follower_user_id_fkey`: `FOREIGN KEY (follower_user_id) REFERENCES users(id) ON DELETE CASCADE`
+- `fk_blue_foll_reco__follower_bluesky_did__follower_authorization`: `FOREIGN KEY (follower_bluesky_did, follower_authorization_id) REFERENCES bluesky_linked_accounts(bluesky_did, link_authorization_id) ON DELETE CASCADE`
 
 **Indexes:**
 

@@ -27,13 +27,13 @@ _none_
 
 **Foreign keys:**
 
-- `individual_rewards_program_statu_rewards_program_status_id_fkey`: `FOREIGN KEY (rewards_program_status_id) REFERENCES rewards_program_status_topics(topic_id) ON DELETE CASCADE`
+- `fk_individual_rewards_program_statuses__rewards_program_status`: `FOREIGN KEY (rewards_program_status_id) REFERENCES rewards_program_status_topics(topic_id) ON DELETE CASCADE`
 - `individual_rewards_program_statuses_individual_id_fkey`: `FOREIGN KEY (individual_id) REFERENCES individuals(id) ON DELETE CASCADE`
 
 **Indexes:**
 
-- `idx_ind_rp_statuses__individual_id_id`: `CREATE INDEX idx_ind_rp_statuses__individual_id_id ON public.individual_rewards_program_statuses USING btree (individual_id, id)`
-- `individual_rewards_program_statuses__rewards_program_status_id`: `CREATE INDEX individual_rewards_program_statuses__rewards_program_status_id ON public.individual_rewards_program_statuses USING btree (rewards_program_status_id)`
+- `idx_individ_rewards_program_statuses__rewards_program_status_id`: `CREATE INDEX idx_individ_rewards_program_statuses__rewards_program_status_id ON public.individual_rewards_program_statuses USING btree (rewards_program_status_id)`
+- `idx_individual_rewards_program_statuses__individual_id_id`: `CREATE INDEX idx_individual_rewards_program_statuses__individual_id_id ON public.individual_rewards_program_statuses USING btree (individual_id, id)`
 - `individual_rewards_program_statuses_pkey`: `CREATE UNIQUE INDEX individual_rewards_program_statuses_pkey ON public.individual_rewards_program_statuses USING btree (id)`
 
 **Triggers:**

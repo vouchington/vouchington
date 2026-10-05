@@ -21,7 +21,7 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `copyright_notice_form_intake__copyright_notice_form_intake__key`: `UNIQUE (copyright_notice_form_intake_id)`
+- `uq_copyright_notice_form_intake_reviews__intake_id`: `UNIQUE (copyright_notice_form_intake_id)`
 
 **Check constraints:**
 
@@ -29,14 +29,14 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `copyright_notice_form_intake__copyright_notice_form_intake_fkey`: `FOREIGN KEY (copyright_notice_form_intake_id) REFERENCES copyright_notice_form_intakes(id) ON DELETE RESTRICT`
 - `copyright_notice_form_intake_reviews_reviewed_by_id_fkey`: `FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL`
+- `fk_copyright_notice_form_intake_reviews__intake`: `FOREIGN KEY (copyright_notice_form_intake_id) REFERENCES copyright_notice_form_intakes(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `copyright_notice_form_intake__copyright_notice_form_intake__key`: `CREATE UNIQUE INDEX copyright_notice_form_intake__copyright_notice_form_intake__key ON public.copyright_notice_form_intake_reviews USING btree (copyright_notice_form_intake_id)`
 - `copyright_notice_form_intake_reviews_pkey`: `CREATE UNIQUE INDEX copyright_notice_form_intake_reviews_pkey ON public.copyright_notice_form_intake_reviews USING btree (id)`
-- `idx_copyright_form_reviews__reviewer`: `CREATE INDEX idx_copyright_form_reviews__reviewer ON public.copyright_notice_form_intake_reviews USING btree (reviewed_by_id) WHERE (reviewed_by_id IS NOT NULL)`
+- `idx_copyright_notice_form_intake_reviews__reviewer`: `CREATE INDEX idx_copyright_notice_form_intake_reviews__reviewer ON public.copyright_notice_form_intake_reviews USING btree (reviewed_by_id) WHERE (reviewed_by_id IS NOT NULL)`
+- `uq_copyright_notice_form_intake_reviews__intake_id`: `CREATE UNIQUE INDEX uq_copyright_notice_form_intake_reviews__intake_id ON public.copyright_notice_form_intake_reviews USING btree (copyright_notice_form_intake_id)`
 
 **Triggers:**
 

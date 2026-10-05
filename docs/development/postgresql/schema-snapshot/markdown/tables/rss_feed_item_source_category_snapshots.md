@@ -24,7 +24,7 @@ _none_
 
 **Foreign keys:**
 
-- `rss_feed_item_source_category_rss_feed_id_rss_feed_item_id_fkey`: `FOREIGN KEY (rss_feed_id, rss_feed_item_id) REFERENCES rss_feed_item_sources(rss_feed_id, rss_feed_item_id) ON DELETE CASCADE`
+- `fk_rss_feed_item_source_category_snapshots__feed__item`: `FOREIGN KEY (rss_feed_id, rss_feed_item_id) REFERENCES rss_feed_item_sources(rss_feed_id, rss_feed_item_id) ON DELETE CASCADE`
 
 **Indexes:**
 

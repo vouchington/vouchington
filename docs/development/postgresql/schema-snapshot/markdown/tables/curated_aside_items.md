@@ -41,7 +41,7 @@ _none_
 - `idx_curated_aside_items__community_id`: `CREATE INDEX idx_curated_aside_items__community_id ON public.curated_aside_items USING btree (community_id) WHERE (community_id IS NOT NULL)`
 - `idx_curated_aside_items__rss_feed_id`: `CREATE INDEX idx_curated_aside_items__rss_feed_id ON public.curated_aside_items USING btree (rss_feed_id) WHERE (rss_feed_id IS NOT NULL)`
 - `idx_curated_aside_items__topic_id`: `CREATE INDEX idx_curated_aside_items__topic_id ON public.curated_aside_items USING btree (topic_id) WHERE (topic_id IS NOT NULL)`
-- `uc_curated_aside_items__type_entity`: `CREATE UNIQUE INDEX uc_curated_aside_items__type_entity ON public.curated_aside_items USING btree (aside_type, entity_id) WHERE (deleted_at IS NULL)`
+- `idx_curated_aside_items__type_entity`: `CREATE UNIQUE INDEX idx_curated_aside_items__type_entity ON public.curated_aside_items USING btree (aside_type, entity_id) WHERE (deleted_at IS NULL)`
 
 **Triggers:**
 _none_

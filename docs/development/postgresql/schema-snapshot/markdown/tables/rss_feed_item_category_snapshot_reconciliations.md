@@ -21,12 +21,12 @@ _none_
 
 **Check constraints:**
 
-- `rss_feed_item_category_snapshot_reconciliation_categories_check`: `CHECK ((jsonb_typeof(categories) = 'array'::text))`
-- `rss_feed_item_category_snapshot_reconciliation_generation_check`: `CHECK ((generation > 0))`
+- `chk_rss_feed_item_category_snapshot_reconciliations__categories`: `CHECK ((jsonb_typeof(categories) = 'array'::text))`
+- `chk_rss_feed_item_category_snapshot_reconciliations__generation`: `CHECK ((generation > 0))`
 
 **Foreign keys:**
 
-- `rss_feed_item_category_snapshot_reconcili_rss_feed_item_id_fkey`: `FOREIGN KEY (rss_feed_item_id) REFERENCES rss_feed_items(id) ON DELETE CASCADE`
+- `fk_rss_feed_item_category_snapshot_reconciliations__item`: `FOREIGN KEY (rss_feed_item_id) REFERENCES rss_feed_items(id) ON DELETE CASCADE`
 
 **Indexes:**
 

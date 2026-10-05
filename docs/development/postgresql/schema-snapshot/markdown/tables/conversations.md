@@ -55,7 +55,7 @@ _none_
 **Indexes:**
 
 - `conversations_pkey`: `CREATE UNIQUE INDEX conversations_pkey ON public.conversations USING btree (id)`
-- `idx_conversations__assigned_mod_id`: `CREATE INDEX idx_conversations__assigned_mod_id ON public.conversations USING btree (assigned_mod_id) WHERE (assigned_mod_id IS NOT NULL)`
+- `idx_conversations__assigned_moderator_id`: `CREATE INDEX idx_conversations__assigned_moderator_id ON public.conversations USING btree (assigned_mod_id) WHERE (assigned_mod_id IS NOT NULL)`
 - `idx_conversations__community_id`: `CREATE INDEX idx_conversations__community_id ON public.conversations USING btree (community_id, id DESC) WHERE (community_id IS NOT NULL)`
 - `idx_conversations__created_by_id__id_desc`: `CREATE INDEX idx_conversations__created_by_id__id_desc ON public.conversations USING btree (created_by_id, id DESC) WHERE (created_by_id IS NOT NULL)`
 - `idx_conversations__deleted_by_id`: `CREATE INDEX idx_conversations__deleted_by_id ON public.conversations USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)`
@@ -69,8 +69,8 @@ _none_
 - `idx_conversations__subject_user_id`: `CREATE INDEX idx_conversations__subject_user_id ON public.conversations USING btree (subject_user_id) WHERE (subject_user_id IS NOT NULL)`
 - `idx_conversations__unresolved`: `CREATE INDEX idx_conversations__unresolved ON public.conversations USING btree (id DESC) WHERE (resolved_at IS NULL)`
 - `idx_conversations__updated_by_id`: `CREATE INDEX idx_conversations__updated_by_id ON public.conversations USING btree (updated_by_id) WHERE (updated_by_id IS NOT NULL)`
-- `uq_conversations__mod_internal_open_post`: `CREATE UNIQUE INDEX uq_conversations__mod_internal_open_post ON public.conversations USING btree (post_id) WHERE ((channel_type = 'mod_internal'::conversation_channel_types) AND (post_id IS NOT NULL) AND (resolved_at IS NULL) AND (deleted_at IS NULL))`
-- `uq_conversations__mod_internal_open_report`: `CREATE UNIQUE INDEX uq_conversations__mod_internal_open_report ON public.conversations USING btree (moderation_report_id) WHERE ((channel_type = 'mod_internal'::conversation_channel_types) AND (moderation_report_id IS NOT NULL) AND (resolved_at IS NULL) AND (deleted_at IS NULL))`
+- `uq_conversations__moderator_internal_open_post`: `CREATE UNIQUE INDEX uq_conversations__moderator_internal_open_post ON public.conversations USING btree (post_id) WHERE ((channel_type = 'mod_internal'::conversation_channel_types) AND (post_id IS NOT NULL) AND (resolved_at IS NULL) AND (deleted_at IS NULL))`
+- `uq_conversations__moderator_internal_open_report`: `CREATE UNIQUE INDEX uq_conversations__moderator_internal_open_report ON public.conversations USING btree (moderation_report_id) WHERE ((channel_type = 'mod_internal'::conversation_channel_types) AND (moderation_report_id IS NOT NULL) AND (resolved_at IS NULL) AND (deleted_at IS NULL))`
 - `uq_conversations__modmail_open_per_subject`: `CREATE UNIQUE INDEX uq_conversations__modmail_open_per_subject ON public.conversations USING btree (community_id, subject_user_id) WHERE ((channel_type = 'modmail'::conversation_channel_types) AND (resolved_at IS NULL) AND (deleted_at IS NULL))`
 
 **Triggers:**

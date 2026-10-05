@@ -32,7 +32,7 @@ _none_
 
 **Indexes:**
 
-- `idx_user_consents__user_id__fk`: `CREATE INDEX idx_user_consents__user_id__fk ON public.user_consents USING btree (user_id) WHERE (user_id IS NOT NULL)`
+- `idx_user_consents__user_id__foreign_key`: `CREATE INDEX idx_user_consents__user_id__foreign_key ON public.user_consents USING btree (user_id) WHERE (user_id IS NOT NULL)`
 - `idx_user_consents__user_id__unique`: `CREATE UNIQUE INDEX idx_user_consents__user_id__unique ON public.user_consents USING btree (user_id, consent_type) WHERE (revoked_at IS NULL)`
 - `user_consents_pkey`: `CREATE UNIQUE INDEX user_consents_pkey ON public.user_consents USING btree (id)`
 

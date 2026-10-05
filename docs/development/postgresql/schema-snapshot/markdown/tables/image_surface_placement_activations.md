@@ -29,7 +29,7 @@ _none_
 
 **Foreign keys:**
 
-- `image_surface_placement_activati_placement_id_surface_kind_fkey`: `FOREIGN KEY (placement_id, surface_kind) REFERENCES image_surface_placements(placement_id, surface_kind) ON DELETE RESTRICT`
+- `fk_image_surface_placement_activations__placement__surface_kind`: `FOREIGN KEY (placement_id, surface_kind) REFERENCES image_surface_placements(placement_id, surface_kind) ON DELETE RESTRICT`
 - `image_surface_placement_activations_bound_by_user_id_fkey`: `FOREIGN KEY (bound_by_user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 - `image_surface_placement_activations_uploaded_by_user_id_fkey`: `FOREIGN KEY (uploaded_by_user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 

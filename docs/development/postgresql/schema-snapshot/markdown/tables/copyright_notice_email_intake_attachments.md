@@ -23,27 +23,27 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `copyright_notice_email_intake_copyright_notice_email_intak_key1`: `UNIQUE (copyright_notice_email_intake_id, ordinal)`
+- `uq_copyright_notice_email_intake_attachment__intake_id__ordinal`: `UNIQUE (copyright_notice_email_intake_id, ordinal)`
 
 **Check constraints:**
 
-- `copyright_notice_email_intake_attac_content_id_ciphertext_check`: `CHECK (((char_length(content_id_ciphertext) >= 1) AND (char_length(content_id_ciphertext) <= 16384)))`
-- `copyright_notice_email_intake_attachm_filename_ciphertext_check`: `CHECK (((char_length(filename_ciphertext) >= 1) AND (char_length(filename_ciphertext) <= 16384)))`
+- `chk_copyrig_notice_email_intake_attachme__content_id_ciphertext`: `CHECK (((char_length(content_id_ciphertext) >= 1) AND (char_length(content_id_ciphertext) <= 16384)))`
+- `chk_copyrigh_notice_email_intake_attachmen__filename_ciphertext`: `CHECK (((char_length(filename_ciphertext) >= 1) AND (char_length(filename_ciphertext) <= 16384)))`
 - `copyright_notice_email_intake_attachments_byte_size_check`: `CHECK ((byte_size >= 0))`
 - `copyright_notice_email_intake_attachments_ordinal_check`: `CHECK ((ordinal >= 0))`
 - `copyright_notice_email_intake_attachments_sha256_check`: `CHECK ((octet_length(sha256) = 32))`
 
 **Foreign keys:**
 
-- `copyright_notice_email_intak_copyright_notice_email_intak_fkey1`: `FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
 - `copyright_notice_email_intake_attachments_media_type_id_fkey`: `FOREIGN KEY (media_type_id) REFERENCES media_types(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_email_intake_attachments__intake`: `FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
 - `copyright_notice_email_intake_attachments_pkey`: `CREATE UNIQUE INDEX copyright_notice_email_intake_attachments_pkey ON public.copyright_notice_email_intake_attachments USING btree (id)`
-- `copyright_notice_email_intake_copyright_notice_email_intak_key1`: `CREATE UNIQUE INDEX copyright_notice_email_intake_copyright_notice_email_intak_key1 ON public.copyright_notice_email_intake_attachments USING btree (copyright_notice_email_intake_id, ordinal)`
-- `idx_copyright_email_intake_attachments__intake`: `CREATE INDEX idx_copyright_email_intake_attachments__intake ON public.copyright_notice_email_intake_attachments USING btree (copyright_notice_email_intake_id, id)`
+- `idx_copyright_notice_email_intake_attachments__intake`: `CREATE INDEX idx_copyright_notice_email_intake_attachments__intake ON public.copyright_notice_email_intake_attachments USING btree (copyright_notice_email_intake_id, id)`
 - `idx_copyright_notice_email_intake_attachments__media_type_id`: `CREATE INDEX idx_copyright_notice_email_intake_attachments__media_type_id ON public.copyright_notice_email_intake_attachments USING btree (media_type_id)`
+- `uq_copyright_notice_email_intake_attachment__intake_id__ordinal`: `CREATE UNIQUE INDEX uq_copyright_notice_email_intake_attachment__intake_id__ordinal ON public.copyright_notice_email_intake_attachments USING btree (copyright_notice_email_intake_id, ordinal)`
 
 **Triggers:**
 

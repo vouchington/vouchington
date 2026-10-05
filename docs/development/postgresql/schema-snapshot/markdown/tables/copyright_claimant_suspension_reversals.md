@@ -18,19 +18,19 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `copyright_claimant_suspension_reve_copyright_restriction_id_key`: `UNIQUE (copyright_restriction_id)`
+- `uq_copyright_claimant_suspension_reversals__restriction_id`: `UNIQUE (copyright_restriction_id)`
 
 **Check constraints:**
 _none_
 
 **Foreign keys:**
 
-- `copyright_claimant_suspension_rev_copyright_restriction_id_fkey`: `FOREIGN KEY (copyright_restriction_id) REFERENCES copyright_restrictions(id) ON DELETE RESTRICT`
+- `fk_copyright_claimant_suspension_reversals__restriction`: `FOREIGN KEY (copyright_restriction_id) REFERENCES copyright_restrictions(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `copyright_claimant_suspension_reve_copyright_restriction_id_key`: `CREATE UNIQUE INDEX copyright_claimant_suspension_reve_copyright_restriction_id_key ON public.copyright_claimant_suspension_reversals USING btree (copyright_restriction_id)`
 - `copyright_claimant_suspension_reversals_pkey`: `CREATE UNIQUE INDEX copyright_claimant_suspension_reversals_pkey ON public.copyright_claimant_suspension_reversals USING btree (id)`
+- `uq_copyright_claimant_suspension_reversals__restriction_id`: `CREATE UNIQUE INDEX uq_copyright_claimant_suspension_reversals__restriction_id ON public.copyright_claimant_suspension_reversals USING btree (copyright_restriction_id)`
 
 **Triggers:**
 

@@ -37,7 +37,7 @@ Not partitioned — growth: unbounded.
 
 - `community_application_questions_identity_key`: `CREATE UNIQUE INDEX community_application_questions_identity_key ON public.community_application_questions USING btree (community_id, id)`
 - `community_application_questions_pkey`: `CREATE UNIQUE INDEX community_application_questions_pkey ON public.community_application_questions USING btree (id)`
-- `idx_comm_app_q__comm_order`: `CREATE UNIQUE INDEX idx_comm_app_q__comm_order ON public.community_application_questions USING btree (community_id, order_index) WHERE (deleted_at IS NULL)`
+- `idx_community_application_questions__comm_order`: `CREATE UNIQUE INDEX idx_community_application_questions__comm_order ON public.community_application_questions USING btree (community_id, order_index) WHERE (deleted_at IS NULL)`
 
 **Triggers:**
 _none_

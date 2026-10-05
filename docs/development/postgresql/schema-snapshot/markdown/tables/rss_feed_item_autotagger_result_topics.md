@@ -24,7 +24,7 @@ _none_
 
 **Foreign keys:**
 
-- `rss_feed_item_autotagger_resu_rss_feed_item_autotagger_res_fkey`: `FOREIGN KEY (rss_feed_item_autotagger_result_id) REFERENCES rss_feed_item_autotagger_results(id) ON DELETE CASCADE`
+- `fk_rss_feed_item_autotagger_result_topics__result`: `FOREIGN KEY (rss_feed_item_autotagger_result_id) REFERENCES rss_feed_item_autotagger_results(id) ON DELETE CASCADE`
 - `rss_feed_item_autotagger_result_topics_topic_id_fkey`: `FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE CASCADE`
 
 **Indexes:**

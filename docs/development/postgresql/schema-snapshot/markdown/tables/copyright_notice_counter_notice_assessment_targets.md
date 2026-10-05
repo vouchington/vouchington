@@ -30,8 +30,8 @@ _none_
 **Indexes:**
 
 - `copyright_notice_counter_notice_assessment_targets_pkey`: `CREATE UNIQUE INDEX copyright_notice_counter_notice_assessment_targets_pkey ON public.copyright_notice_counter_notice_assessment_targets USING btree (copyright_notice_submission_assessment_id, copyright_notice_target_id)`
-- `idx_copyright_notice_counter_assessment_targets__notice`: `CREATE INDEX idx_copyright_notice_counter_assessment_targets__notice ON public.copyright_notice_counter_notice_assessment_targets USING btree (copyright_notice_id)`
-- `idx_copyright_notice_counter_assessment_targets__target`: `CREATE INDEX idx_copyright_notice_counter_assessment_targets__target ON public.copyright_notice_counter_notice_assessment_targets USING btree (copyright_notice_target_id, copyright_notice_submission_assessment_id)`
+- `idx_copyright_notice_counter_notice_assessment_targets__notice`: `CREATE INDEX idx_copyright_notice_counter_notice_assessment_targets__notice ON public.copyright_notice_counter_notice_assessment_targets USING btree (copyright_notice_id)`
+- `idx_copyright_notice_counter_notice_assessment_targets__target`: `CREATE INDEX idx_copyright_notice_counter_notice_assessment_targets__target ON public.copyright_notice_counter_notice_assessment_targets USING btree (copyright_notice_target_id, copyright_notice_submission_assessment_id)`
 
 **Triggers:**
 

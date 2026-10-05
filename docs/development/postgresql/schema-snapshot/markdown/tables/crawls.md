@@ -63,15 +63,15 @@ _none_
 
 **Indexes:**
 
-- `crawls__url_id__embeddings_generated_at`: `CREATE INDEX crawls__url_id__embeddings_generated_at ON ONLY public.crawls USING btree (url_id, embeddings_generated_at DESC) WHERE (embeddings_generated_at IS NOT NULL)`
-- `crawls__url_id__pending_embeddings`: `CREATE INDEX crawls__url_id__pending_embeddings ON ONLY public.crawls USING btree (url_id) WHERE (has_pending_embeddings = true)`
-- `crawls_lingua_rs_pending_idx`: `CREATE INDEX crawls_lingua_rs_pending_idx ON ONLY public.crawls USING btree (id) WHERE (lingua_rs_input_sha256 IS NULL)`
-- `crawls_oembed_pending_idx`: `CREATE INDEX crawls_oembed_pending_idx ON ONLY public.crawls USING btree (id) WHERE ((embed_metadata IS NOT NULL) AND (embed_oembed_url IS NOT NULL) AND (embed_oembed_resolved_at IS NULL))`
 - `crawls_pkey`: `CREATE UNIQUE INDEX crawls_pkey ON ONLY public.crawls USING btree (id)`
 - `idx_crawls__crawler_id`: `CREATE INDEX idx_crawls__crawler_id ON ONLY public.crawls USING btree (crawler_id) WHERE (crawler_id IS NOT NULL)`
+- `idx_crawls__lingua_rs_pending`: `CREATE INDEX idx_crawls__lingua_rs_pending ON ONLY public.crawls USING btree (id) WHERE (lingua_rs_input_sha256 IS NULL)`
+- `idx_crawls__oembed_pending`: `CREATE INDEX idx_crawls__oembed_pending ON ONLY public.crawls USING btree (id) WHERE ((embed_metadata IS NOT NULL) AND (embed_oembed_url IS NOT NULL) AND (embed_oembed_resolved_at IS NULL))`
 - `idx_crawls__redirect_url_id`: `CREATE INDEX idx_crawls__redirect_url_id ON ONLY public.crawls USING btree (redirect_url_id) WHERE (redirect_url_id IS NOT NULL)`
 - `idx_crawls__url_id__completed_at_desc`: `CREATE INDEX idx_crawls__url_id__completed_at_desc ON ONLY public.crawls USING btree (url_id, completed_at DESC, id DESC) WHERE (completed_at IS NOT NULL)`
+- `idx_crawls__url_id__embeddings_generated_at`: `CREATE INDEX idx_crawls__url_id__embeddings_generated_at ON ONLY public.crawls USING btree (url_id, embeddings_generated_at DESC) WHERE (embeddings_generated_at IS NOT NULL)`
 - `idx_crawls__url_id__id_desc`: `CREATE INDEX idx_crawls__url_id__id_desc ON ONLY public.crawls USING btree (url_id, id DESC)`
+- `idx_crawls__url_id__pending_embeddings`: `CREATE INDEX idx_crawls__url_id__pending_embeddings ON ONLY public.crawls USING btree (url_id) WHERE (has_pending_embeddings = true)`
 
 **Triggers:**
 _none_

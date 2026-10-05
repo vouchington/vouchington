@@ -29,7 +29,7 @@ Not partitioned — growth: unbounded.
 
 **Check constraints:**
 
-- `membership_refund_operation_atte_provider_idempotency_key_check`: `CHECK ((((char_length(provider_idempotency_key) >= 1) AND (char_length(provider_idempotency_key) <= 255)) AND (provider_idempotency_key = TRIM(BOTH FROM provider_idempotency_key))))`
+- `chk_membersh_refund_operatio_attempts__provider_idempotency_key`: `CHECK ((((char_length(provider_idempotency_key) >= 1) AND (char_length(provider_idempotency_key) <= 255)) AND (provider_idempotency_key = TRIM(BOTH FROM provider_idempotency_key))))`
 - `membership_refund_operation_attempts_amount_minor_units_check`: `CHECK (((amount_minor_units >= 0) AND (amount_minor_units <= '9007199254740991'::bigint)))`
 - `membership_refund_operation_attempts_application_id_check`: `CHECK ((((char_length(application_id) >= 1) AND (char_length(application_id) <= 255)) AND (application_id = TRIM(BOTH FROM application_id))))`
 - `membership_refund_operation_attempts_attempt_ordinal_check`: `CHECK ((attempt_ordinal >= 1))`
@@ -37,7 +37,7 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `membership_refund_operation_attemp_membership_operation_id_fkey`: `FOREIGN KEY (membership_operation_id) REFERENCES membership_operations(id) ON DELETE RESTRICT`
+- `fk_membership_refund_operation_attempts__operation`: `FOREIGN KEY (membership_operation_id) REFERENCES membership_operations(id) ON DELETE RESTRICT`
 - `membership_refund_operation_attempts_currency_code_fkey`: `FOREIGN KEY (currency_code) REFERENCES currencies(code) ON DELETE RESTRICT`
 
 **Indexes:**

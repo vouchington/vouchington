@@ -26,28 +26,28 @@ Not partitioned — growth: unbounded.
 **Unique constraints:**
 
 - `copyright_notice_form_intakes_copyright_notice_id_key`: `UNIQUE (copyright_notice_id)`
-- `copyright_notice_form_intakes_copyright_notice_submission_i_key`: `UNIQUE (copyright_notice_submission_id)`
-- `copyright_notice_form_intakes_requester_identity_sha256_ide_key`: `UNIQUE (requester_identity_sha256, idempotency_key)`
+- `uq_cop_not_for_inta__requester_identity_sha256__idempotency_key`: `UNIQUE (requester_identity_sha256, idempotency_key)`
+- `uq_copyright_notice_form_intakes__submission_id`: `UNIQUE (copyright_notice_submission_id)`
 
 **Check constraints:**
 
-- `copyright_notice_form_intake_electronic_signature_ciphert_check`: `CHECK (((char_length(electronic_signature_ciphertext) >= 1) AND (char_length(electronic_signature_ciphertext) <= 1048576)))`
+- `chk_copyri_notice_form_intakes__electronic_signature_ciphertext`: `CHECK (((char_length(electronic_signature_ciphertext) >= 1) AND (char_length(electronic_signature_ciphertext) <= 1048576)))`
 - `copyright_notice_form_intakes_request_sha256_check`: `CHECK ((octet_length(request_sha256) = 32))`
 - `copyright_notice_form_intakes_requester_identity_sha256_check`: `CHECK ((octet_length(requester_identity_sha256) = 32))`
 
 **Foreign keys:**
 
 - `copyright_notice_form_intakes_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
-- `copyright_notice_form_intakes_copyright_notice_submission__fkey`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
 - `copyright_notice_form_intakes_requester_user_id_fkey`: `FOREIGN KEY (requester_user_id) REFERENCES users(id) ON DELETE SET NULL`
+- `fk_copyright_notice_form_intakes__submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
 - `copyright_notice_form_intakes_copyright_notice_id_key`: `CREATE UNIQUE INDEX copyright_notice_form_intakes_copyright_notice_id_key ON public.copyright_notice_form_intakes USING btree (copyright_notice_id)`
-- `copyright_notice_form_intakes_copyright_notice_submission_i_key`: `CREATE UNIQUE INDEX copyright_notice_form_intakes_copyright_notice_submission_i_key ON public.copyright_notice_form_intakes USING btree (copyright_notice_submission_id)`
 - `copyright_notice_form_intakes_pkey`: `CREATE UNIQUE INDEX copyright_notice_form_intakes_pkey ON public.copyright_notice_form_intakes USING btree (id)`
-- `copyright_notice_form_intakes_requester_identity_sha256_ide_key`: `CREATE UNIQUE INDEX copyright_notice_form_intakes_requester_identity_sha256_ide_key ON public.copyright_notice_form_intakes USING btree (requester_identity_sha256, idempotency_key)`
-- `idx_copyright_form_intakes__requester`: `CREATE INDEX idx_copyright_form_intakes__requester ON public.copyright_notice_form_intakes USING btree (requester_user_id, id DESC) WHERE (requester_user_id IS NOT NULL)`
+- `idx_copyright_notice_form_intakes__requester`: `CREATE INDEX idx_copyright_notice_form_intakes__requester ON public.copyright_notice_form_intakes USING btree (requester_user_id, id DESC) WHERE (requester_user_id IS NOT NULL)`
+- `uq_cop_not_for_inta__requester_identity_sha256__idempotency_key`: `CREATE UNIQUE INDEX uq_cop_not_for_inta__requester_identity_sha256__idempotency_key ON public.copyright_notice_form_intakes USING btree (requester_identity_sha256, idempotency_key)`
+- `uq_copyright_notice_form_intakes__submission_id`: `CREATE UNIQUE INDEX uq_copyright_notice_form_intakes__submission_id ON public.copyright_notice_form_intakes USING btree (copyright_notice_submission_id)`
 
 **Triggers:**
 

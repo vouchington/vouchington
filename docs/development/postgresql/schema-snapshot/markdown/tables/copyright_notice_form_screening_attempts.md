@@ -24,7 +24,7 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `copyright_notice_form_screeni_copyright_notice_form_intake_key1`: `UNIQUE (copyright_notice_form_intake_id, attempt_number)`
+- `uq_copyri_notice_form_screen_attempt__intake_id__attempt_number`: `UNIQUE (copyright_notice_form_intake_id, attempt_number)`
 
 **Check constraints:**
 
@@ -37,15 +37,15 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `copyright_notice_form_screen_copyright_notice_form_intake_fkey1`: `FOREIGN KEY (copyright_notice_form_intake_id) REFERENCES copyright_notice_form_intakes(id) ON DELETE RESTRICT`
-- `copyright_notice_form_screen_copyright_notice_form_intake_fkey2`: `FOREIGN KEY (copyright_notice_form_intake_id, copyright_notice_form_screening_id) REFERENCES copyright_notice_form_screenings(copyright_notice_form_intake_id, id) ON DELETE RESTRICT`
+- `fk_copyright_notice_form_screening_attempts__intake`: `FOREIGN KEY (copyright_notice_form_intake_id) REFERENCES copyright_notice_form_intakes(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_form_screening_attempts__intake__screening`: `FOREIGN KEY (copyright_notice_form_intake_id, copyright_notice_form_screening_id) REFERENCES copyright_notice_form_screenings(copyright_notice_form_intake_id, id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `copyright_notice_form_screeni_copyright_notice_form_intake_key1`: `CREATE UNIQUE INDEX copyright_notice_form_screeni_copyright_notice_form_intake_key1 ON public.copyright_notice_form_screening_attempts USING btree (copyright_notice_form_intake_id, attempt_number)`
 - `copyright_notice_form_screening_attempts_pkey`: `CREATE UNIQUE INDEX copyright_notice_form_screening_attempts_pkey ON public.copyright_notice_form_screening_attempts USING btree (id)`
-- `idx_copyright_screening_attempts__latest`: `CREATE INDEX idx_copyright_screening_attempts__latest ON public.copyright_notice_form_screening_attempts USING btree (copyright_notice_form_intake_id, attempt_number DESC)`
-- `idx_copyright_screening_attempts__result`: `CREATE INDEX idx_copyright_screening_attempts__result ON public.copyright_notice_form_screening_attempts USING btree (copyright_notice_form_screening_id) WHERE (copyright_notice_form_screening_id IS NOT NULL)`
+- `idx_copyright_notice_form_screening_attempts__latest`: `CREATE INDEX idx_copyright_notice_form_screening_attempts__latest ON public.copyright_notice_form_screening_attempts USING btree (copyright_notice_form_intake_id, attempt_number DESC)`
+- `idx_copyright_notice_form_screening_attempts__result`: `CREATE INDEX idx_copyright_notice_form_screening_attempts__result ON public.copyright_notice_form_screening_attempts USING btree (copyright_notice_form_screening_id) WHERE (copyright_notice_form_screening_id IS NOT NULL)`
+- `uq_copyri_notice_form_screen_attempt__intake_id__attempt_number`: `CREATE UNIQUE INDEX uq_copyri_notice_form_screen_attempt__intake_id__attempt_number ON public.copyright_notice_form_screening_attempts USING btree (copyright_notice_form_intake_id, attempt_number)`
 
 **Triggers:**
 

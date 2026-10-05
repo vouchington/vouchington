@@ -31,8 +31,8 @@ _none_
 **Indexes:**
 
 - `idx_user_list_rss_feed_items__rss_feed_item_id`: `CREATE INDEX idx_user_list_rss_feed_items__rss_feed_item_id ON public.user_list_rss_feed_items USING btree (rss_feed_item_id) WHERE (removed_at IS NULL)`
-- `idx_user_list_rss_feed_items__rss_feed_item_id__fk`: `CREATE INDEX idx_user_list_rss_feed_items__rss_feed_item_id__fk ON public.user_list_rss_feed_items USING btree (rss_feed_item_id) WHERE (rss_feed_item_id IS NOT NULL)`
-- `idx_user_list_rss_feed_items__user_list_id__fk`: `CREATE INDEX idx_user_list_rss_feed_items__user_list_id__fk ON public.user_list_rss_feed_items USING btree (user_list_id) WHERE (user_list_id IS NOT NULL)`
+- `idx_user_list_rss_feed_items__rss_feed_item_id__foreign_key`: `CREATE INDEX idx_user_list_rss_feed_items__rss_feed_item_id__foreign_key ON public.user_list_rss_feed_items USING btree (rss_feed_item_id) WHERE (rss_feed_item_id IS NOT NULL)`
+- `idx_user_list_rss_feed_items__user_list_id__foreign_key`: `CREATE INDEX idx_user_list_rss_feed_items__user_list_id__foreign_key ON public.user_list_rss_feed_items USING btree (user_list_id) WHERE (user_list_id IS NOT NULL)`
 - `idx_user_list_rss_feed_items__user_list_id__id`: `CREATE INDEX idx_user_list_rss_feed_items__user_list_id__id ON public.user_list_rss_feed_items USING btree (user_list_id, id DESC) WHERE (removed_at IS NULL)`
 - `idx_user_list_rss_feed_items__user_list_id__rss_feed_item_id`: `CREATE UNIQUE INDEX idx_user_list_rss_feed_items__user_list_id__rss_feed_item_id ON public.user_list_rss_feed_items USING btree (user_list_id, rss_feed_item_id) WHERE (removed_at IS NULL)`
 - `user_list_rss_feed_items_pkey`: `CREATE UNIQUE INDEX user_list_rss_feed_items_pkey ON public.user_list_rss_feed_items USING btree (id)`

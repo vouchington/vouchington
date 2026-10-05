@@ -22,12 +22,12 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `copyright_notice_legal_hold_r_copyright_notice_legal_hold_a_key`: `UNIQUE (copyright_notice_legal_hold_assessment_id)`
-- `copyright_notice_legal_hold_resoluti_copyright_notice_id_id_key`: `UNIQUE (copyright_notice_id, id)`
+- `uq_copyright_notice_legal_hold_resolutions__assessment_id`: `UNIQUE (copyright_notice_legal_hold_assessment_id)`
+- `uq_copyright_notice_legal_hold_resolutions__notice_id__id`: `UNIQUE (copyright_notice_id, id)`
 
 **Check constraints:**
 
-- `copyright_notice_legal_hold_resoluti_rationale_ciphertext_check`: `CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 65536)))`
+- `chk_copyright_notice_legal_hold_resolutio__rationale_ciphertext`: `CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 65536)))`
 - `copyright_notice_legal_hold_resolutions_resolution_kind_check`: `CHECK ((resolution_kind = ANY (ARRAY['dismissed'::copyright_notice_legal_hold_resolution_kinds, 'proceeding_ended'::copyright_notice_legal_hold_resolution_kinds, 'superseded'::copyright_notice_legal_hold_resolution_kinds])))`
 
 **Foreign keys:**
@@ -37,10 +37,10 @@ Not partitioned — growth: unbounded.
 
 **Indexes:**
 
-- `copyright_notice_legal_hold_r_copyright_notice_legal_hold_a_key`: `CREATE UNIQUE INDEX copyright_notice_legal_hold_r_copyright_notice_legal_hold_a_key ON public.copyright_notice_legal_hold_resolutions USING btree (copyright_notice_legal_hold_assessment_id)`
-- `copyright_notice_legal_hold_resoluti_copyright_notice_id_id_key`: `CREATE UNIQUE INDEX copyright_notice_legal_hold_resoluti_copyright_notice_id_id_key ON public.copyright_notice_legal_hold_resolutions USING btree (copyright_notice_id, id)`
 - `copyright_notice_legal_hold_resolutions_pkey`: `CREATE UNIQUE INDEX copyright_notice_legal_hold_resolutions_pkey ON public.copyright_notice_legal_hold_resolutions USING btree (id)`
-- `idx_copyright_notice_hold_resolutions__resolved_by`: `CREATE INDEX idx_copyright_notice_hold_resolutions__resolved_by ON public.copyright_notice_legal_hold_resolutions USING btree (resolved_by_id, id DESC)`
+- `idx_copyright_notice_legal_hold_resolutions__resolved_by`: `CREATE INDEX idx_copyright_notice_legal_hold_resolutions__resolved_by ON public.copyright_notice_legal_hold_resolutions USING btree (resolved_by_id, id DESC)`
+- `uq_copyright_notice_legal_hold_resolutions__assessment_id`: `CREATE UNIQUE INDEX uq_copyright_notice_legal_hold_resolutions__assessment_id ON public.copyright_notice_legal_hold_resolutions USING btree (copyright_notice_legal_hold_assessment_id)`
+- `uq_copyright_notice_legal_hold_resolutions__notice_id__id`: `CREATE UNIQUE INDEX uq_copyright_notice_legal_hold_resolutions__notice_id__id ON public.copyright_notice_legal_hold_resolutions USING btree (copyright_notice_id, id)`
 
 **Triggers:**
 

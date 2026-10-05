@@ -21,7 +21,7 @@ _none_
 
 **Check constraints:**
 
-- `membership_ineligible_purchase_reversal_refund_generation_check`: `CHECK (((generation >= 1) AND (generation <= '9007199254740991'::bigint)))`
+- `chk_member_inelig_purcha_reversa_refund_scan_cycles__generation`: `CHECK (((generation >= 1) AND (generation <= '9007199254740991'::bigint)))`
 
 **Foreign keys:**
 
@@ -33,4 +33,4 @@ _none_
 
 **Triggers:**
 
-- `trigger_mipr_refund_scan_cycles_updated_at`: `CREATE TRIGGER trigger_mipr_refund_scan_cycles_updated_at BEFORE UPDATE ON public.membership_ineligible_purchase_reversal_refund_scan_cycles FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_membe_ineli_purcha_revers_refund_scan_cycles_updated_at`: `CREATE TRIGGER trigger_membe_ineli_purcha_revers_refund_scan_cycles_updated_at BEFORE UPDATE ON public.membership_ineligible_purchase_reversal_refund_scan_cycles FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

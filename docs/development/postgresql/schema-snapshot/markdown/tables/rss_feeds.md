@@ -68,5 +68,5 @@ _none_
 
 **Triggers:**
 
-- `rss_feeds_content_provenance_immutable`: `CREATE TRIGGER rss_feeds_content_provenance_immutable AFTER UPDATE ON public.rss_feeds FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_rss_feeds_content_provenance_immutable`: `CREATE TRIGGER trigger_rss_feeds_content_provenance_immutable AFTER UPDATE ON public.rss_feeds FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()`
 - `trigger_rss_feeds_updated_at`: `CREATE TRIGGER trigger_rss_feeds_updated_at BEFORE UPDATE ON public.rss_feeds FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

@@ -22,8 +22,8 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `copyright_notice_evidence_art_copyright_notice_submission_i_key`: `UNIQUE (copyright_notice_submission_id, storage_key)`
 - `copyright_notice_evidence_artifacts_copyright_notice_id_id_key`: `UNIQUE (copyright_notice_id, id)`
+- `uq_copyrig_notice_evidence_artifact__submission_id__storage_key`: `UNIQUE (copyright_notice_submission_id, storage_key)`
 
 **Check constraints:**
 
@@ -37,10 +37,10 @@ Not partitioned — growth: unbounded.
 
 **Indexes:**
 
-- `copyright_notice_evidence_art_copyright_notice_submission_i_key`: `CREATE UNIQUE INDEX copyright_notice_evidence_art_copyright_notice_submission_i_key ON public.copyright_notice_evidence_artifacts USING btree (copyright_notice_submission_id, storage_key)`
 - `copyright_notice_evidence_artifacts_copyright_notice_id_id_key`: `CREATE UNIQUE INDEX copyright_notice_evidence_artifacts_copyright_notice_id_id_key ON public.copyright_notice_evidence_artifacts USING btree (copyright_notice_id, id)`
 - `copyright_notice_evidence_artifacts_pkey`: `CREATE UNIQUE INDEX copyright_notice_evidence_artifacts_pkey ON public.copyright_notice_evidence_artifacts USING btree (id)`
 - `idx_copyright_notice_evidence_artifacts__media_type_id`: `CREATE INDEX idx_copyright_notice_evidence_artifacts__media_type_id ON public.copyright_notice_evidence_artifacts USING btree (media_type_id)`
+- `uq_copyrig_notice_evidence_artifact__submission_id__storage_key`: `CREATE UNIQUE INDEX uq_copyrig_notice_evidence_artifact__submission_id__storage_key ON public.copyright_notice_evidence_artifacts USING btree (copyright_notice_submission_id, storage_key)`
 
 **Triggers:**
 

@@ -19,21 +19,21 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `copyright_jurisdiction_policy_copyright_jurisdiction_policy_key`: `UNIQUE (copyright_jurisdiction_policy_approval_id)`
+- `uq_copyright_jurisdiction_policy_withdrawals__approval_id`: `UNIQUE (copyright_jurisdiction_policy_approval_id)`
 
 **Check constraints:**
 _none_
 
 **Foreign keys:**
 
-- `copyright_jurisdiction_policy_copyright_jurisdiction_polic_fkey`: `FOREIGN KEY (copyright_jurisdiction_policy_approval_id) REFERENCES copyright_jurisdiction_policy_approvals(id) ON DELETE RESTRICT`
+- `fk_copyright_jurisdiction_policy_withdrawals__approval`: `FOREIGN KEY (copyright_jurisdiction_policy_approval_id) REFERENCES copyright_jurisdiction_policy_approvals(id) ON DELETE RESTRICT`
 - `fk_copyright_jurisdiction_policy_withdrawals__withdrawn_by`: `FOREIGN KEY (withdrawn_by_id) REFERENCES users(id) ON DELETE SET NULL`
 
 **Indexes:**
 
-- `copyright_jurisdiction_policy_copyright_jurisdiction_policy_key`: `CREATE UNIQUE INDEX copyright_jurisdiction_policy_copyright_jurisdiction_policy_key ON public.copyright_jurisdiction_policy_withdrawals USING btree (copyright_jurisdiction_policy_approval_id)`
 - `copyright_jurisdiction_policy_withdrawals_pkey`: `CREATE UNIQUE INDEX copyright_jurisdiction_policy_withdrawals_pkey ON public.copyright_jurisdiction_policy_withdrawals USING btree (id)`
 - `idx_copyright_jurisdiction_policy_withdrawals__withdrawn_by`: `CREATE INDEX idx_copyright_jurisdiction_policy_withdrawals__withdrawn_by ON public.copyright_jurisdiction_policy_withdrawals USING btree (withdrawn_by_id) WHERE (withdrawn_by_id IS NOT NULL)`
+- `uq_copyright_jurisdiction_policy_withdrawals__approval_id`: `CREATE UNIQUE INDEX uq_copyright_jurisdiction_policy_withdrawals__approval_id ON public.copyright_jurisdiction_policy_withdrawals USING btree (copyright_jurisdiction_policy_approval_id)`
 
 **Triggers:**
 

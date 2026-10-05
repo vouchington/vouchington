@@ -39,8 +39,8 @@ _none_
 **Indexes:**
 
 - `idx_rss_feed_item_votes__rss_feed_item_id__id`: `CREATE INDEX idx_rss_feed_item_votes__rss_feed_item_id__id ON ONLY public.rss_feed_item_votes USING btree (rss_feed_item_id, id)`
-- `idx_rss_feed_item_votes__rss_feed_item_id__uid__id`: `CREATE INDEX idx_rss_feed_item_votes__rss_feed_item_id__uid__id ON ONLY public.rss_feed_item_votes USING btree (rss_feed_item_id, user_id, id DESC)`
-- `idx_rss_feed_item_votes__uid__rss_feed_item_id__id`: `CREATE INDEX idx_rss_feed_item_votes__uid__rss_feed_item_id__id ON ONLY public.rss_feed_item_votes USING btree (user_id, rss_feed_item_id, id DESC)`
+- `idx_rss_feed_item_votes__rss_feed_item_id__user_id__id`: `CREATE INDEX idx_rss_feed_item_votes__rss_feed_item_id__user_id__id ON ONLY public.rss_feed_item_votes USING btree (rss_feed_item_id, user_id, id DESC)`
+- `idx_rss_feed_item_votes__user_id__rss_feed_item_id__id`: `CREATE INDEX idx_rss_feed_item_votes__user_id__rss_feed_item_id__id ON ONLY public.rss_feed_item_votes USING btree (user_id, rss_feed_item_id, id DESC)`
 - `rss_feed_item_votes_pkey`: `CREATE UNIQUE INDEX rss_feed_item_votes_pkey ON ONLY public.rss_feed_item_votes USING btree (rss_feed_item_id, id)`
 
 **Triggers:**

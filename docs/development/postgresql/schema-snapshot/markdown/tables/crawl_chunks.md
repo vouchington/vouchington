@@ -37,10 +37,10 @@ _none_
 
 **Indexes:**
 
-- `crawl_chunks__bedrock_nova_multimodal_v1_embedding`: `CREATE INDEX crawl_chunks__bedrock_nova_multimodal_v1_embedding ON ONLY public.crawl_chunks USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops) WHERE (bedrock_nova_multimodal_v1_embedding IS NOT NULL)`
-- `crawl_chunks__bedrock_nova_multimodal_v1_input_sha256`: `CREATE INDEX crawl_chunks__bedrock_nova_multimodal_v1_input_sha256 ON ONLY public.crawl_chunks USING btree (bedrock_nova_multimodal_v1_input_sha256) WHERE (bedrock_nova_multimodal_v1_input_sha256 IS NOT NULL)`
-- `crawl_chunks__search_vector`: `CREATE INDEX crawl_chunks__search_vector ON ONLY public.crawl_chunks USING gin (search_vector)`
 - `crawl_chunks_pkey`: `CREATE UNIQUE INDEX crawl_chunks_pkey ON ONLY public.crawl_chunks USING btree (crawl_id, order_index)`
+- `idx_crawl_chunks__bedrock_nova_multimodal_v1_embedding`: `CREATE INDEX idx_crawl_chunks__bedrock_nova_multimodal_v1_embedding ON ONLY public.crawl_chunks USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops) WHERE (bedrock_nova_multimodal_v1_embedding IS NOT NULL)`
+- `idx_crawl_chunks__bedrock_nova_multimodal_v1_input_sha256`: `CREATE INDEX idx_crawl_chunks__bedrock_nova_multimodal_v1_input_sha256 ON ONLY public.crawl_chunks USING btree (bedrock_nova_multimodal_v1_input_sha256) WHERE (bedrock_nova_multimodal_v1_input_sha256 IS NOT NULL)`
+- `idx_crawl_chunks__search_vector`: `CREATE INDEX idx_crawl_chunks__search_vector ON ONLY public.crawl_chunks USING gin (search_vector)`
 
 **Triggers:**
 _none_

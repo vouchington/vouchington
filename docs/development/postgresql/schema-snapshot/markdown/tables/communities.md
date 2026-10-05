@@ -72,7 +72,6 @@ _none_
 
 **Indexes:**
 
-- `communities_lingua_rs_pending_idx`: `CREATE INDEX communities_lingua_rs_pending_idx ON public.communities USING btree (id) WHERE (lingua_rs_input_sha256 IS NULL)`
 - `communities_pkey`: `CREATE UNIQUE INDEX communities_pkey ON public.communities USING btree (id)`
 - `idx_communities__archived_at`: `CREATE INDEX idx_communities__archived_at ON public.communities USING btree (archived_at) WHERE ((archived_at IS NOT NULL) AND (deleted_at IS NULL))`
 - `idx_communities__archived_by_id`: `CREATE INDEX idx_communities__archived_by_id ON public.communities USING btree (archived_by_id) WHERE (archived_by_id IS NOT NULL)`
@@ -82,6 +81,7 @@ _none_
 - `idx_communities__created_by_id_bare`: `CREATE INDEX idx_communities__created_by_id_bare ON public.communities USING btree (created_by_id)`
 - `idx_communities__created_via_oauth_client_id`: `CREATE INDEX idx_communities__created_via_oauth_client_id ON public.communities USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)`
 - `idx_communities__deleted_by_id`: `CREATE INDEX idx_communities__deleted_by_id ON public.communities USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)`
+- `idx_communities__lingua_rs_pending`: `CREATE INDEX idx_communities__lingua_rs_pending ON public.communities USING btree (id) WHERE (lingua_rs_input_sha256 IS NULL)`
 - `idx_communities__list_type`: `CREATE INDEX idx_communities__list_type ON public.communities USING btree (list_type) WHERE ((list_type IS NOT NULL) AND (deleted_at IS NULL))`
 - `idx_communities__profile_image`: `CREATE INDEX idx_communities__profile_image ON public.communities USING btree (profile_image_id) WHERE ((profile_image_id IS NOT NULL) AND (deleted_at IS NULL))`
 - `idx_communities__profile_image_id_bare`: `CREATE INDEX idx_communities__profile_image_id_bare ON public.communities USING btree (profile_image_id) WHERE (profile_image_id IS NOT NULL)`
@@ -90,6 +90,6 @@ _none_
 
 **Triggers:**
 
-- `communities_content_provenance_immutable`: `CREATE TRIGGER communities_content_provenance_immutable AFTER UPDATE ON public.communities FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_communities_content_provenance_immutable`: `CREATE TRIGGER trigger_communities_content_provenance_immutable AFTER UPDATE ON public.communities FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()`
 - `trigger_communities_updated_at`: `CREATE TRIGGER trigger_communities_updated_at BEFORE UPDATE ON public.communities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
 - `trigger_sync_community_image_placements`: `CREATE TRIGGER trigger_sync_community_image_placements AFTER INSERT OR UPDATE OF profile_image_id, banner_image_id, deleted_at ON public.communities FOR EACH ROW EXECUTE FUNCTION fn_project_community_image_placements()`

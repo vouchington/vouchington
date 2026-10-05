@@ -21,7 +21,7 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `copyright_territorial_notice__copyright_territorial_notice__key`: `UNIQUE (copyright_territorial_notice_receipt_id)`
+- `uq_copyright_territorial_notice_acknowledgments__receipt_id`: `UNIQUE (copyright_territorial_notice_receipt_id)`
 
 **Check constraints:**
 
@@ -32,12 +32,12 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `copyright_territorial_notice_copyright_territorial_notice_fkey1`: `FOREIGN KEY (copyright_territorial_notice_receipt_id) REFERENCES copyright_territorial_notice_receipts(id) ON DELETE RESTRICT`
+- `fk_copyright_territorial_notice_acknowledgments__receipt`: `FOREIGN KEY (copyright_territorial_notice_receipt_id) REFERENCES copyright_territorial_notice_receipts(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `copyright_territorial_notice__copyright_territorial_notice__key`: `CREATE UNIQUE INDEX copyright_territorial_notice__copyright_territorial_notice__key ON public.copyright_territorial_notice_acknowledgments USING btree (copyright_territorial_notice_receipt_id)`
 - `copyright_territorial_notice_acknowledgments_pkey`: `CREATE UNIQUE INDEX copyright_territorial_notice_acknowledgments_pkey ON public.copyright_territorial_notice_acknowledgments USING btree (id)`
+- `uq_copyright_territorial_notice_acknowledgments__receipt_id`: `CREATE UNIQUE INDEX uq_copyright_territorial_notice_acknowledgments__receipt_id ON public.copyright_territorial_notice_acknowledgments USING btree (copyright_territorial_notice_receipt_id)`
 
 **Triggers:**
 

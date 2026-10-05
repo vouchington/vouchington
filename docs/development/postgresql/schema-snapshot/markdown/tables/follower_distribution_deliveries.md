@@ -18,7 +18,7 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `follower_distribution_deliver_recipient_user_id_delivery_id_key`: `UNIQUE (recipient_user_id, delivery_id)`
+- `uq_follower_distribut_deliverie__recipient_user_id__delivery_id`: `UNIQUE (recipient_user_id, delivery_id)`
 
 **Check constraints:**
 _none_
@@ -30,9 +30,9 @@ _none_
 
 **Indexes:**
 
-- `follower_distribution_deliver_recipient_user_id_delivery_id_key`: `CREATE UNIQUE INDEX follower_distribution_deliver_recipient_user_id_delivery_id_key ON public.follower_distribution_deliveries USING btree (recipient_user_id, delivery_id)`
 - `follower_distribution_deliveries_pkey`: `CREATE UNIQUE INDEX follower_distribution_deliveries_pkey ON public.follower_distribution_deliveries USING btree (distribution_id, recipient_user_id)`
 - `idx_follower_distribution_deliveries__delivery`: `CREATE INDEX idx_follower_distribution_deliveries__delivery ON public.follower_distribution_deliveries USING btree (delivery_id)`
+- `uq_follower_distribut_deliverie__recipient_user_id__delivery_id`: `CREATE UNIQUE INDEX uq_follower_distribut_deliverie__recipient_user_id__delivery_id ON public.follower_distribution_deliveries USING btree (recipient_user_id, delivery_id)`
 
 **Triggers:**
 

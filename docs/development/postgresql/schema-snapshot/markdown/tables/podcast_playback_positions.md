@@ -29,7 +29,7 @@ _none_
 
 **Indexes:**
 
-- `idx_podcast_playback_positions_rss_feed_item_id`: `CREATE INDEX idx_podcast_playback_positions_rss_feed_item_id ON public.podcast_playback_positions USING btree (rss_feed_item_id)`
+- `idx_podcast_playback_positions__rss_feed_item_id`: `CREATE INDEX idx_podcast_playback_positions__rss_feed_item_id ON public.podcast_playback_positions USING btree (rss_feed_item_id)`
 - `podcast_playback_positions_pkey`: `CREATE UNIQUE INDEX podcast_playback_positions_pkey ON public.podcast_playback_positions USING btree (user_id, rss_feed_item_id)`
 
 **Triggers:**

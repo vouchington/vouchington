@@ -48,8 +48,8 @@ Not partitioned — growth: unbounded.
 
 **Indexes:**
 
-- `idx_rela__rss_feed_item__cate__topic__votes_score_sort__pos__id`: `CREATE INDEX idx_rela__rss_feed_item__cate__topic__votes_score_sort__pos__id ON public.relation__rss_feed_item__category__topic USING btree (votes_score_sort DESC, id) WHERE (votes_score_net > (0)::double precision)`
 - `idx_relati__rss_feed_item__categor__topic__votes_score_sort__id`: `CREATE INDEX idx_relati__rss_feed_item__categor__topic__votes_score_sort__id ON public.relation__rss_feed_item__category__topic USING btree (votes_score_sort DESC, id)`
+- `idx_relatio__rss_feed_item__category__topic__positive_score__id`: `CREATE INDEX idx_relatio__rss_feed_item__category__topic__positive_score__id ON public.relation__rss_feed_item__category__topic USING btree (votes_score_sort DESC, id) WHERE (votes_score_net > (0)::double precision)`
 - `idx_relation__rss_feed_item__category__topic__id`: `CREATE INDEX idx_relation__rss_feed_item__category__topic__id ON public.relation__rss_feed_item__category__topic USING btree (id)`
 - `idx_relation__rss_feed_item__category__topic__reverse_index`: `CREATE INDEX idx_relation__rss_feed_item__category__topic__reverse_index ON public.relation__rss_feed_item__category__topic USING btree (object_id, subject_id)`
 - `idx_relation__rss_feed_item__category__topic__subject__best`: `CREATE INDEX idx_relation__rss_feed_item__category__topic__subject__best ON public.relation__rss_feed_item__category__topic USING btree (subject_id, votes_score_sort DESC, created_at DESC, object_id DESC) WHERE (deleted_at IS NULL)`
