@@ -1,7 +1,7 @@
-import { readFileSync, readdirSync } from 'node:fs'
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { basename, extname, join } from 'node:path'
-import ts from 'typescript'
+import { importUsages } from 'no-mistakes'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { storybookBrowserOptimizeDeps } from '../test-helpers/vitest-config/storybook-browser-optimize-deps.mts'
@@ -120,7 +120,10 @@ describe('Storybook browser Vitest environment overrides', () => {
     }
     for (const parent of nestedParents) {
       const dependencies = workspacePackageDependencies(parent)
-      const missing = runtimeImportSpecifiers(parent).filter(specifier => {
+      const imports = await runtimeImportSpecifiers(
+        productionSourceFiles(workspacePackageJsonPath(parent)),
+      )
+      const missing = imports.filter(specifier => {
         const dependency = packageRoot(specifier)
         expect(dependencies).toContain(dependency)
         return (
@@ -140,9 +143,11 @@ describe('Storybook browser Vitest environment overrides', () => {
     ).toBe(false)
   })
 
-  it('collects only literal runtime module specifiers', () => {
-    expect(
-      runtimeImportSpecifiersFromSource(
+  it('collects only literal runtime module specifiers', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'runtime-imports-'))
+    try {
+      writeFileSync(
+        join(root, 'runtime.mts'),
         [
           "import type { TypeOnly } from 'type-only'",
           "import { type AlsoTypeOnly } from 'also-type-only'",
@@ -154,10 +159,19 @@ describe('Storybook browser Vitest environment overrides', () => {
           "import { exec } from 'node:child_process'",
           'const computed = import(packageName)',
           "type Deferred = import('import-type-only').Deferred",
+          "const required = require('require-only')",
+          "import local from './local.mts'",
         ].join('\n'),
-        'fixtures/runtime.mts',
-      ),
-    ).toEqual(['@vouchington/utils/money', 'published-runtime/deep', 'literal-dynamic/deep'])
+      )
+      expect(await runtimeImportSpecifiers([], root)).toEqual([])
+      expect(await runtimeImportSpecifiers(['runtime.mts'], root)).toEqual([
+        '@vouchington/utils/money',
+        'published-runtime/deep',
+        'literal-dynamic/deep',
+      ])
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
   })
 })
 
@@ -173,50 +187,25 @@ function workspacePackageDependencies(packageName: string): string[] {
   }
   return Object.keys(manifest.dependencies ?? {})
 }
-function runtimeImportSpecifiers(packageName: string): string[] {
-  const imports = new Set(
-    productionSourceFiles(workspacePackageJsonPath(packageName)).flatMap(filePath =>
-      runtimeImportSpecifiersFromSource(readFileSync(filePath, 'utf8'), filePath),
-    ),
+async function runtimeImportSpecifiers(
+  files: readonly string[],
+  root = process.cwd(),
+): Promise<string[]> {
+  if (files.length === 0) return []
+  const result = await importUsages({
+    root,
+    files: [...files],
+    timeout: 30,
+    lockTimeout: 10,
+    jobs: 1,
+  })
+  const imports = result.files.flatMap(file =>
+    file.imports
+      .filter(item => item.kind === 'static' || item.kind === 'dynamic')
+      .map(item => item.specifier),
   )
-  return [...imports]
-}
-function runtimeImportSpecifiersFromSource(source: string, filePath: string): string[] {
-  const imports = new Set<string>()
-  const sourceFile = ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, true)
-  const visit = (node: ts.Node): void => {
-    if (ts.isImportDeclaration(node) && !isTypeOnlyImportDeclaration(node)) {
-      addStringLiteralImport(imports, node.moduleSpecifier)
-    } else if (ts.isExportDeclaration(node) && !isTypeOnlyExportDeclaration(node)) {
-      addStringLiteralImport(imports, node.moduleSpecifier)
-    } else if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
-      addStringLiteralImport(imports, node.arguments[0])
-    }
-    ts.forEachChild(node, visit)
-  }
-  visit(sourceFile)
-  return [...imports].filter(
+  return [...new Set(imports)].filter(
     specifier => !['.', '/', 'node:'].some(prefix => specifier.startsWith(prefix)),
-  )
-}
-function isTypeOnlyImportDeclaration(node: ts.ImportDeclaration): boolean {
-  const importClause = node.importClause
-  return Boolean(
-    importClause?.isTypeOnly ||
-    (!importClause?.name &&
-      importClause?.namedBindings &&
-      ts.isNamedImports(importClause.namedBindings) &&
-      importClause.namedBindings.elements.length > 0 &&
-      importClause.namedBindings.elements.every(element => element.isTypeOnly)),
-  )
-}
-function isTypeOnlyExportDeclaration(node: ts.ExportDeclaration): boolean {
-  return Boolean(
-    node.isTypeOnly ||
-    (node.exportClause &&
-      ts.isNamedExports(node.exportClause) &&
-      node.exportClause.elements.length > 0 &&
-      node.exportClause.elements.every(element => element.isTypeOnly)),
   )
 }
 
@@ -244,11 +233,7 @@ function isProductionSourceFile(filePath: string): boolean {
     !/\.(?:test|spec)\.[cm]?[jt]sx?$/.test(basename(filePath))
   )
 }
-function addStringLiteralImport(imports: Set<string>, node: ts.Node | undefined): void {
-  if (node && (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node))) {
-    imports.add(node.text)
-  }
-}
+
 function packageRoot(specifier: string): string {
   if (specifier.startsWith('@')) {
     const [scope, name] = specifier.split('/')
