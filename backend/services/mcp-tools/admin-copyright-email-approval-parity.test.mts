@@ -138,19 +138,25 @@ describe('copyright email approval parity between REST and MCP', () => {
     expect(outcomes[1]).toEqual(outcomes[0])
   })
 
-  it('rejects a missing declaration on both surfaces before promoting', async () => {
-    const { intake, body } = await approvalFixture()
-    const { has_good_faith_belief: _omitted, ...withoutDeclaration } = body
+  it.each([
+    ['a missing good-faith declaration', 'has_good_faith_belief'],
+    ['a missing accuracy declaration', 'has_accuracy_authority_under_penalty_of_perjury'],
+    ['a missing claimant contact', 'claimant_contact'],
+  ])('answers the same 422 on both surfaces for %s', async (_label, field) => {
+    const outcomes: Outcome[] = []
+    for (const [, surface] of SURFACES) {
+      const approve = await surface()
+      const { intake, body } = await approvalFixture()
+      const { [field]: _omitted, ...withoutField } = body
+      outcomes.push(await approve(intake.id, withoutField))
+      await expect(readCopyrightEmailIntakeReview(intake.id)).resolves.toEqual([])
+    }
 
-    const rest = await (await restSurface())(intake.id, withoutDeclaration)
-    expect(rest).toMatchObject({ status: 422, message: 'has_good_faith_belief must be accepted' })
-    await expect((await mcpSurface())(intake.id, withoutDeclaration)).rejects.toMatchObject({
-      code: ErrorCode.InvalidParams,
-    })
-    await expect(readCopyrightEmailIntakeReview(intake.id)).resolves.toEqual([])
+    expect(outcomes[0]).toMatchObject({ status: 422 })
+    expect(outcomes[1]).toEqual(outcomes[0])
   })
 
-  it('treats the recommendation as guidance: the caller values win and every field is required', async () => {
+  it('treats the recommendation as guidance: the caller values win over the extraction', async () => {
     const approve = await mcpSurface()
     const { form } = await createCopyrightFormFixture()
     await publishTestHostedPostImageDelivery(form.targets[0]!.post_id, form.targets[0]!.image_id)
@@ -170,11 +176,7 @@ describe('copyright email approval parity between REST and MCP', () => {
       rationale,
       manual_fallback_reason: 'The extraction named the wrong claimant.',
     }
-    const { claimant_contact: _contact, ...withoutContact } = body
 
-    await expect(approve(intake.id, withoutContact)).rejects.toMatchObject({
-      code: ErrorCode.InvalidParams,
-    })
     const outcome = await approve(intake.id, body)
 
     expect(outcome.status).toBe(201)

@@ -95,8 +95,8 @@ notice-form body as `POST /api/v1/copyright-email-intakes/:id/approvals` and cal
 function: the caller reads the raw email in the staff web interface (MCP reads return structured
 facts only) and supplies every claimant field, statutory declaration and hosted image, and
 `recommendation_id` or `manual_fallback_reason`. The recommendation is guidance only, so the
-caller's values win, as on REST. A missing declaration is rejected on both surfaces, and a
-declaration that is not `true` answers `422` on both. Correspondence admission uses the latest
+caller's values win, as on REST. A missing or untrue declaration (or any other missing
+field) answers the same `422` and message on both surfaces. Correspondence admission uses the latest
 stored recommendation; callers supply neither contact fields nor reply text. Rejection sends the
 fixed reply to the parsed sender, or queues nothing when no sender is available.
 

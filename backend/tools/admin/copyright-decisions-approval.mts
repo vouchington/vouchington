@@ -48,7 +48,7 @@ const TARGET_INPUT = {
 }
 
 export const APPROVE_COPYRIGHT_EMAIL_INTAKE_DESCRIPTION =
-  'Approve a copyright email intake as a new notice, supplying the notice form yourself, exactly as the staff approval route takes it. First read the raw email on the staff email review page; get_copyright_email_intake returns structured facts only, without the raw email or contact details. The agent recommendation is guidance only, and no check compares your values with it: state each claimant field, each statutory declaration and every hosted image from the email itself. Declarations must be true, so the approval is rejected unless has_good_faith_belief and has_accuracy_authority_under_penalty_of_perjury are both true. Send recommendation_id when you relied on the recommendation, or manual_fallback_reason when you did not.'
+  'Approve a copyright email intake as a new notice, supplying the notice form yourself, exactly as the staff approval route takes it. First read the raw email on the staff email review page; get_copyright_email_intake returns structured facts only, without the raw email or contact details. The agent recommendation is guidance only, and no check compares your values with it: state each claimant field, each statutory declaration and every hosted image from the email itself. Every field except recommendation_id and manual_fallback_reason is required, and a missing or untrue has_good_faith_belief or has_accuracy_authority_under_penalty_of_perjury is rejected with 422, exactly as on the staff route. Send recommendation_id when you relied on the recommendation, or manual_fallback_reason when you did not.'
 
 export const APPROVE_COPYRIGHT_EMAIL_INTAKE_PROPERTIES = {
   intake_id: UUID_INPUT,
@@ -65,18 +65,11 @@ export const APPROVE_COPYRIGHT_EMAIL_INTAKE_PROPERTIES = {
   targets: { type: 'array', minItems: 1, maxItems: 20, items: TARGET_INPUT },
 }
 
-export const APPROVE_COPYRIGHT_EMAIL_INTAKE_REQUIRED = [
-  'intake_id',
-  'jurisdiction',
-  'claimant_display_name',
-  'claimant_contact',
-  'claimant_email',
-  'work_description',
-  'has_good_faith_belief',
-  'has_accuracy_authority_under_penalty_of_perjury',
-  'electronic_signature',
-  'targets',
-]
+/**
+ * Only the intake id is required by the tool schema. A missing claimant field or declaration is
+ * left to the shared parsers, so it answers the same `422` and message as the REST route.
+ */
+export const APPROVE_COPYRIGHT_EMAIL_INTAKE_REQUIRED = ['intake_id']
 
 export type ApproveCopyrightEmailIntakeArgs = {
   intake_id: string
