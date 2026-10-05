@@ -4,6 +4,7 @@ import {
   IDENTITY_REQUIRED,
 } from '@modules/on-error/error-codes'
 import { verifyCaptchaOrAttestation } from '@services/captcha'
+import { attachWrittenPostProvenance } from '@services/content-provenance'
 import { assessRecaptchaToken } from '@services/recaptcha'
 import {
   admitRouteContribution,
@@ -179,5 +180,5 @@ app.route('/api/v1/posts').post(async (ctx: Context) => {
     )
   }
   ctx.setStatus(201)
-  ctx.json({ post: admission.response })
+  ctx.json({ post: await attachWrittenPostProvenance(admission.response, currentUser) })
 })

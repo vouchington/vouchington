@@ -1,5 +1,5 @@
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
-import { attachPostProvenance } from '@services/content-provenance'
+import { attachPostProvenance, attachWrittenPostProvenance } from '@services/content-provenance'
 import { getPostByAnyCachedBatch } from '@services/entity-fetch'
 import { maskAnonymousPost, type Post } from '@services/posts'
 import { closedObject, pickProperties } from './read-tool-output-schema.mts'
@@ -33,7 +33,7 @@ export type McpPost = {
   is_anonymous: boolean
   created_at: string
   updated_at: string
-  /** The public "via API" or "via MCP" label. Present on read tools; never the staff detail. */
+  /** The public provenance facts of an API or MCP post, on every tool; never the staff detail. */
   provenance?: Post['provenance']
 }
 
@@ -43,13 +43,13 @@ export function mcpPostSchema() {
 }
 
 /**
- * Maps a readable post to its MCP shape, carrying the `provenance` label the post already has.
- * Read tools go through `toMcpPosts`, which attaches it; the author's own create and update
- * echoes do not, like their REST twins. User text is sanitized and wrapped as external content,
- * like `search_posts`. The author of an anonymous post is hidden from every caller, including the
- * author and administrators, so the answer never depends on who asks.
+ * Maps a post to its MCP shape, carrying the `provenance` it already has. Read tools go through
+ * `toMcpPosts` and write tools through `toWrittenMcpPost`, which attach it. User text is sanitized
+ * and wrapped as external content, like `search_posts`. The author of an anonymous post is hidden
+ * from every caller, including the author and administrators, so the answer never depends on who
+ * asks.
  */
-export async function toMcpPost(post: Post): Promise<McpPost> {
+async function toMcpPost(post: Post): Promise<McpPost> {
   return {
     id: post.id,
     slug: post.slug ?? null,
@@ -75,6 +75,15 @@ export async function toMcpPost(post: Post): Promise<McpPost> {
  */
 export async function toMcpPosts(posts: Post[]): Promise<McpPost[]> {
   return Promise.all((await attachPostProvenance(posts, null)).map(toMcpPost))
+}
+
+/**
+ * Maps the post a write tool just wrote, with the same public provenance a read of it returns: the
+ * signed-out one, so an anonymous post never names its OAuth client even to its author. The row is
+ * read from the primary because it was committed an instant ago.
+ */
+export async function toWrittenMcpPost(post: Post): Promise<McpPost> {
+  return toMcpPost(await attachWrittenPostProvenance(post, null))
 }
 
 /**

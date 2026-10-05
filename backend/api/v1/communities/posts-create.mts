@@ -24,6 +24,7 @@ import {
   IDENTITY_REQUIRED,
 } from '@modules/on-error/error-codes'
 import { verifyCaptchaOrAttestation } from '@services/captcha'
+import { attachWrittenPostProvenance } from '@services/content-provenance'
 import { assessRecaptchaToken } from '@services/recaptcha'
 import { isHoneypotTriggered } from '@services/honeypot'
 import { sendCommunityPostHoneypotResponse } from './posts-honeypot-response.mts'
@@ -135,7 +136,8 @@ app.route('/api/v1/communities/:idOrSlug/posts').post(async (ctx: Context) => {
       CONTRIBUTION_ADMISSION_IN_PROGRESS,
     )
   }
-  const { post, communityReviews } = admission.response
+  const { communityReviews } = admission.response
+  const post = await attachWrittenPostProvenance(admission.response.post, currentUser)
   const communityReview = communityReviews.find(review => review.community_id === community.id)
 
   ctx.setStatus(201)

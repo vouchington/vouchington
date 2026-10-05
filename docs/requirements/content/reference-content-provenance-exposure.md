@@ -65,9 +65,19 @@ comment ancestors and descendants, community posts and news, feed posts and RSS 
 trending posts, topic recommendations, list items, user collections and story related posts, plus
 the MCP `get_post`, `get_post_ancestors`, `get_post_descendants`, `get_community_posts` and
 `get_community_pinned_posts`. Lean result summaries that carry no post entity (`search_posts`,
-`get_trending_posts`) and omnisearch have nothing to attach it to. The author's own `POST` and
-`PATCH` post responses, and the MCP `create_post` and `update_post` results, are mutation echoes
-rather than read projections, so they carry no label.
+`get_trending_posts`) and omnisearch have nothing to attach it to.
+
+**Write echoes.** The post that `POST /api/v1/posts`, `POST /api/v1/communities/:idOrSlug/posts`
+and `PATCH /api/v1/posts/:idOrSlug` return, and the post in the MCP `create_post` and `update_post`
+results, carries the same fields a read of it would, so a client that just wrote a post never needs
+a second request to show the badge. The REST routes apply the rules for the writer, which adds
+`staff_provenance` when the writer is moderation staff. MCP carries the public label only, and its
+signed-out rule hides the app of an anonymous post even from its author. A session write from the
+web or a native app records a telemetry-grade channel, so its echo carries no `provenance` and only
+staff get `staff_provenance`. The echo is read from the primary, because the row was committed an
+instant ago. The label is attached to the response and never to a stored post, so an idempotent
+retry of a create returns the label as it is now, such as a client's renamed or newly verified app,
+while the stored result stays unlabeled.
 
 **Not yet exposed.** Communities, topics, lists and RSS feeds have the columns but no label yet:
 [#2046](https://github.com/vouchington/vouchington/issues/2046). Native client rendering is

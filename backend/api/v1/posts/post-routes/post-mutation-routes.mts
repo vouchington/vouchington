@@ -1,6 +1,7 @@
 import type { Context } from '@jongleberry/api-server'
 import { getCommunityMember } from '@services/communities/members/get'
 import type { CommunityMemberRole } from '@services/communities/types'
+import { attachWrittenPostProvenance } from '@services/content-provenance'
 import { getPostByAnyCached } from '@services/entity-fetch'
 import { invalidate } from '@services/entity-cache/invalidate'
 import {
@@ -58,7 +59,7 @@ app.route('/api/v1/posts/:idOrSlug').patch(async (ctx: Context) => {
       : null
   const updated = await updatePost(currentUser, post, changes, membershipPlan)
 
-  ctx.json({ post: updated })
+  ctx.json({ post: await attachWrittenPostProvenance(updated, currentUser) })
 })
 
 app.route('/api/v1/posts/:idOrSlug').delete(async (ctx: Context) => {

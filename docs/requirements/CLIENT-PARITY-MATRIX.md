@@ -283,7 +283,9 @@ viewer who cannot see its author. Administrators and moderators also receive `st
 `client_name`, `metadata_url` and `verified`); the client is omitted for anonymous posts they
 cannot attribute. The REST read routes and the MCP `get_post`, `get_post_ancestors`,
 `get_post_descendants`, `get_community_posts` and `get_community_pinned_posts` tools carry the
-public label. MCP never carries `staff_provenance`.
+public label, and so do the post in the `POST /api/v1/posts`,
+`POST /api/v1/communities/:idOrSlug/posts` and `PATCH /api/v1/posts/:idOrSlug` responses and in the
+MCP `create_post` and `update_post` results. MCP never carries `staff_provenance`.
 
 Swift and .NET must decode both optional fields and render the badge where they render the post type
 badge, composing the text from their own localized copy. The structured shape is staged in
