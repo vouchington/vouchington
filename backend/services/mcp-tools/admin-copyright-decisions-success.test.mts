@@ -10,6 +10,7 @@ import {
 } from '@voucha/test-helpers/data-stores/psql/copyright-guest-lifecycle'
 import { useCopyrightMcpDecisionTools } from '@voucha/test-helpers/copyright-mcp-write-fixtures'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
+import { recordTestClaimantEmailReceipt } from '@voucha/test-helpers/services/copyright-notices/claimant-delivery'
 import {
   createCopyrightCounterNotice,
   createCopyrightAppeal,
@@ -64,6 +65,7 @@ describe('registered copyright case and capability decisions', () => {
   it('accepts a signed counter-notice through the registered tool and stores the staff actor', async () => {
     const image = await createTestCopyrightImageFixture('post-image')
     const restricted = await createTestCopyrightRestrictionForImage(image)
+    await recordTestClaimantEmailReceipt(restricted.noticeId)
     const poster = await getPrivateUserByAny(image.actorUserId)
     if (!poster) throw new Error('Poster fixture missing')
     const counter = await createCopyrightCounterNotice(

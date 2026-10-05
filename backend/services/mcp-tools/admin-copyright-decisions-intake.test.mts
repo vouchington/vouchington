@@ -6,8 +6,10 @@ import { createHostedImagePost } from '@voucha/test-helpers/services/copyright-n
 import {
   createMcpCopyrightFormIntake,
   createRecommendedMcpCopyrightEmailIntake,
+  publishTestHostedPostImageDelivery,
   useCopyrightMcpDecisionTools,
 } from '@voucha/test-helpers/copyright-mcp-write-fixtures'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { readTestCopyrightFormReviewActor } from '@voucha/test-helpers/data-stores/psql/copyright-form-reviews'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import {
@@ -140,7 +142,9 @@ describe('registered copyright intake write tools', () => {
 
   it('approves only a complete latest recommendation resolving to one hosted image', async () => {
     const admin = await createTestUser({ administrator: true })
+    installTestMediaDeliveryEdge()
     const hosted = await createHostedImagePost('public')
+    await publishTestHostedPostImageDelivery(hosted.postId, hosted.imageId)
     const valid = {
       claimant_contact: 'Synthetic claimant contact',
       claimant_email: 'claimant@example.test',
@@ -169,10 +173,13 @@ describe('registered copyright intake write tools', () => {
       },
     ]
     const ambiguous = await createHostedImagePost('public')
+    await publishTestHostedPostImageDelivery(ambiguous.postId, ambiguous.imageId)
+    const secondImageId = await insertTestImage(ambiguous.poster.id)
     await insertTestPostImage({
       postId: ambiguous.postId,
-      imageId: await insertTestImage(ambiguous.poster.id),
+      imageId: secondImageId,
     })
+    await publishTestHostedPostImageDelivery(ambiguous.postId, secondImageId)
     invalid.push({
       ...valid,
       target_urls: [`https://voucha.ai/discussion/${ambiguous.postId}`],

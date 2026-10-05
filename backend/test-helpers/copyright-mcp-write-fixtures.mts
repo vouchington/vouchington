@@ -20,6 +20,24 @@ import { createParsedCopyrightEmailIntake } from '../services/copyright-notices/
 import { appendCopyrightEmailIntakeRecommendation } from '../services/copyright-notices/email-recommendations.mts'
 import { copyrightConfig } from '../services/copyright-notices/config.mts'
 import { overrideDynamicConfigFieldsForTest } from './dynamic-config.mts'
+import { getTestPostImagePlacement } from './entities/post-images.mts'
+import {
+  publishStagedMediaDeliveryRecord,
+  stageImagePlacementDeliveryRecord,
+} from '../services/media-delivery-safety/index.mts'
+
+/** Makes a synthetic hosted image available through the actual edge-registry gate. */
+export async function publishTestHostedPostImageDelivery(postId: string, imageId: string) {
+  const placement = await getTestPostImagePlacement(postId, imageId)
+  if (!placement) throw new Error('Hosted post image placement missing')
+  const staged = await stageImagePlacementDeliveryRecord({
+    placementId: placement.placement_id,
+    revision: placement.placement_revision,
+    imageId,
+    state: 'allow',
+  })
+  await publishStagedMediaDeliveryRecord(staged.deliveryKey)
+}
 
 /** Test-fork switch override; never persists operator config into the shared database. */
 export function useCopyrightMcpDecisionTools(enabled = true): void {

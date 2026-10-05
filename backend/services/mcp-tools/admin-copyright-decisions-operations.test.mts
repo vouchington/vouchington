@@ -64,8 +64,8 @@ describe('registered copyright operations write tools', () => {
     expect(await readTestCopyrightDeliveryIntentReplayEvents(declined.intentId)).toEqual([
       {
         copyright_notice_id: null,
-        event_type: 'delivery_intent_replayed',
-        actor_user_id: admin.id,
+        change_type: 'delivery_intent_replayed',
+        changed_by_id: admin.id,
       },
     ])
     const again = await callTestCopyrightWriteTool(
