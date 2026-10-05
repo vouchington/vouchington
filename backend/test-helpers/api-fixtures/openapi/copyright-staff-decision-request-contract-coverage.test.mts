@@ -55,7 +55,7 @@ describe('copyright staff decision request contracts', () => {
   })
 
   it('declares the form-intake outcome as a boolean', () => {
-    expect(propertiesOf(FORM_INTAKE_REVIEW).accepted).toEqual({ type: 'boolean' })
+    expect(propertiesOf(FORM_INTAKE_REVIEW).is_accepted).toEqual({ type: 'boolean' })
   })
 
   it('declares the restriction action as confirm or reverse', () => {

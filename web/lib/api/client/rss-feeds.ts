@@ -42,7 +42,19 @@ export function createSource(body: {
   return clientApi.post<CreateSourceResponseBody>('/api/v1/rss-feeds', body)
 }
 
-export function updateRssFeed(rssFeedId: string, body: unknown): Promise<RssFeedResponseBody> {
+export function updateRssFeed(
+  rssFeedId: string,
+  body: {
+    rss_feed_url?: string
+    topic_id?: string
+    title?: string | null
+    is_enabled?: boolean
+    discoverable?: boolean
+    reason?: string
+    should_ignore_robots_txt?: boolean | null
+    unreliable_status_codes?: number[] | null
+  },
+): Promise<RssFeedResponseBody> {
   const safeId = assertEncodablePathSegmentIdentifier(rssFeedId)
   return clientApi.patch<RssFeedResponseBody>(
     `/api/v1/rss-feeds/${encodeURIComponent(safeId)}`,

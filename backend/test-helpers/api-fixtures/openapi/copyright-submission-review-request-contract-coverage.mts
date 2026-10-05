@@ -13,11 +13,11 @@ export const MEDIA_DELIVERY_REPLAY = 'POST:/api/v1/copyright-media-delivery/repl
 /** Closed JSON bodies and the keys each one requires. */
 export const REQUIRED_KEYS: Record<string, string[]> = {
   [APPEAL_REVIEW]: ['decisions', 'rationale'],
-  [COUNTER_NOTICE_REVIEW]: ['accepted', 'rationale'],
+  [COUNTER_NOTICE_REVIEW]: ['is_accepted', 'rationale'],
   [LEGAL_HOLD_ASSESSMENT]: [
     'is_from_original_claimant',
-    'rationale',
     'is_same_material',
+    'rationale',
     'target_ids',
   ],
 }

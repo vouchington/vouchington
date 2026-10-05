@@ -76,7 +76,7 @@ describe('copyright submission review request contracts', () => {
   })
 
   it('declares the counter-notice outcome as a boolean', () => {
-    expect(propertiesOf(COUNTER_NOTICE_REVIEW).accepted).toEqual({ type: 'boolean' })
+    expect(propertiesOf(COUNTER_NOTICE_REVIEW).is_accepted).toEqual({ type: 'boolean' })
   })
 
   it('declares the legal-hold target ids as one to twenty distinct uuids', () => {
