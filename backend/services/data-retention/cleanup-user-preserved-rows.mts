@@ -19,8 +19,8 @@ export async function cleanupUserPreservedRows(
 ): Promise<boolean> {
   const stages = [
     async (limit: number) => {
-      // no-mistakes-disable-next-line postgres-required-predicates: reassign every topic the purged user created, including deleted and merged ones, or deleting the user cascades into them
       const { rowCount } = await query(sql`/* cleanupSoftDeletedUserBatch: preserve topics */
+        -- no-mistakes-disable-next-line postgres-required-predicates: reassign every topic the purged user created, including deleted and merged ones, or deleting the user cascades into them
         WITH candidates AS (SELECT id FROM topics WHERE created_by_id = ${userId}
           ORDER BY id LIMIT ${limit} FOR UPDATE)
         UPDATE topics SET created_by_id = ${DELETED_USER_ID} WHERE id IN (SELECT id FROM candidates)`)

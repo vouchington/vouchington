@@ -107,7 +107,8 @@ export async function syncPostImagePlacements(
     INSERT INTO media_delivery_registry_records (
       delivery_key, placement_id, placement_revision, image_id, desired_state
     )
-    SELECT concat('image-placement:', placement.id, ':', placement.revision, ':', binding.image_id),
+    SELECT concat('image-placement:', placement.id, ':', placement.revision, ':', binding.image_id)
+        AS delivery_key,
       placement.id, placement.revision, binding.image_id, 'allow'::media_delivery_desired_states
     FROM image_placements binding
     JOIN media_placements placement ON placement.id = binding.placement_id
@@ -118,6 +119,7 @@ export async function syncPostImagePlacements(
       AND image.quarantine_pending_at IS NULL AND image.is_flagged_by_openai_omni_moderation = FALSE
       AND image.openai_omni_moderation_results IS NOT NULL
       AND image.openai_omni_moderation_created_at IS NOT NULL
+    ORDER BY delivery_key
     ON CONFLICT (delivery_key) DO NOTHING
     `),
   ])

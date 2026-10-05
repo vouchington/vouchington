@@ -71,9 +71,9 @@ export async function ensureDeliveryRows(
       distribution_id,
       recipient_user_id
     )
-    SELECT ${distributionId}, recipients.user_id
+    SELECT ${distributionId}::uuid AS distribution_id, recipients.user_id
     FROM unnest(${recipientIds}::uuid[]) AS recipients(user_id)
-    ORDER BY recipients.user_id
+    ORDER BY distribution_id, recipients.user_id
     ON CONFLICT (distribution_id, recipient_user_id) DO NOTHING
   `)
 }

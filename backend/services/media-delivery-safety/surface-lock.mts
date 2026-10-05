@@ -76,7 +76,8 @@ export async function lockImageSurfacePlacements(
     query,
   )
   for (const reference of references) {
-    const statement = sql`SELECT surface.placement_id FROM image_surface_placements surface WHERE `
+    const statement = sql`/* lockImageSurfacePlacements */
+      SELECT surface.placement_id FROM image_surface_placements surface WHERE `
     statement.append(imageSurfaceWhere(reference))
     // oxlint-disable-next-line no-await-in-loop -- discover the entire domain before retaining any placement.
     const { rows } = await query<{ placement_id: string }>(statement)
