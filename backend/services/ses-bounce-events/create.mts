@@ -51,13 +51,13 @@ export async function createSesBounceEvent(
 
   const { rows } = await write(sql`/* createSesBounceEvent */
     WITH registered_subtype AS (
-      INSERT INTO ses_bounce_subtypes (id)
+      INSERT INTO amazon_ses_bounce_subtypes (id)
       SELECT ${input.bounce_sub_type ?? null}::text AS id
       WHERE ${input.bounce_sub_type ?? null}::text IS NOT NULL
       ORDER BY id ASC NULLS LAST
       ON CONFLICT (id) DO NOTHING
     )
-    INSERT INTO ses_bounce_events (
+    INSERT INTO amazon_ses_bounce_events (
       notification_type,
       bounce_type,
       bounce_sub_type,
@@ -71,8 +71,8 @@ export async function createSesBounceEvent(
       dedup_key
     )
     VALUES (
-      ${input.notification_type}::ses_notification_types,
-      ${input.bounce_type ?? null}::ses_bounce_types,
+      ${input.notification_type}::amazon_ses_notification_types,
+      ${input.bounce_type ?? null}::amazon_ses_bounce_types,
       ${input.bounce_sub_type ?? null},
       ${JSON.stringify(normalizedRecipients)}::jsonb,
       ${input.ses_message_id ?? null},

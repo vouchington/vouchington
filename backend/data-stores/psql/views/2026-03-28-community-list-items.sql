@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE VIEW view_community_list_items AS
   SELECT
     id,
@@ -7,7 +8,7 @@ CREATE OR REPLACE VIEW view_community_list_items AS
     order_index,
     added_by_id,
     created_at
-  FROM community_list_items__topics
+  FROM community_list_topics
   WHERE removed_at IS NULL
 
   UNION ALL
@@ -20,7 +21,7 @@ CREATE OR REPLACE VIEW view_community_list_items AS
     order_index,
     added_by_id,
     created_at
-  FROM community_list_items__rss_feeds
+  FROM community_list_rss_feeds
   WHERE removed_at IS NULL
 
   UNION ALL
@@ -33,7 +34,7 @@ CREATE OR REPLACE VIEW view_community_list_items AS
     order_index,
     added_by_id,
     created_at
-  FROM community_list_items__posts
+  FROM community_list_posts
   WHERE removed_at IS NULL
 
   UNION ALL
@@ -46,7 +47,7 @@ CREATE OR REPLACE VIEW view_community_list_items AS
     order_index,
     added_by_id,
     created_at
-  FROM community_list_items__url_hostnames
+  FROM community_list_url_hostnames
   WHERE removed_at IS NULL
 
   UNION ALL
@@ -59,5 +60,5 @@ CREATE OR REPLACE VIEW view_community_list_items AS
     order_index,
     added_by_id,
     created_at
-  FROM community_list_items__urls
+  FROM community_list_urls
   WHERE removed_at IS NULL;

@@ -19,7 +19,7 @@ export async function getSpendingCategoryAttributes(
     SELECT
       is_foreign_transaction,
       default_spending_frequency
-    FROM topics__spending_categories
+    FROM spending_category_topics
     WHERE topic_id = ${topic.id}
     LIMIT 1
   `)
@@ -61,7 +61,7 @@ export async function updateSpendingCategoryAttributes(
   }
 
   return upsertTopicAttributes<SpendingCategoryAttributes>(
-    'topics__spending_categories',
+    'spending_category_topics',
     topic.id,
     columns,
     values,
@@ -87,7 +87,7 @@ export async function replaceSpendingCategoryAttributes(
   )
 
   const { rows } = await write(sql`/* replaceSpendingCategoryAttributes */
-    INSERT INTO topics__spending_categories (
+    INSERT INTO spending_category_topics (
       topic_id,
       is_foreign_transaction,
       default_spending_frequency

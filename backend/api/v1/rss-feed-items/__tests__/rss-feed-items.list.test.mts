@@ -198,7 +198,7 @@ describe('RSS Feed Items Routes', () => {
       // Two items sharing a story_id is the real "similar items" grouping mechanism: the search
       // query dedupes same-story items down to one canonical result (see the story_rn partition
       // in searchRssFeedItems), and the route resolves the rest via story_member_pages. There is no
-      // `similar_rss_feed_item_ids` field on results — asserting through embeddings alone (the
+      // `similar_rss_feed_item_guids` field on results — asserting through embeddings alone (the
       // prior version of this test) never actually exercised dedup or the sidecar.
       const { id: firstItemId } = await createTestRssFeedItemWithUrl(feedId)
       const { id: secondItemId } = await createTestRssFeedItemWithUrl(feedId)

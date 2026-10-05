@@ -40,7 +40,7 @@ export async function getLockedTopicRecommendationApproval(
           jsonb_build_object('id', vuh.id, 'hostname', vuh.hostname)
           ORDER BY vuh.hostname
         )
-        FROM post_topic_recommendations_hostnames ptrh
+        FROM post_topic_recommendation_hostnames ptrh
         JOIN view_url_hostnames vuh ON vuh.id = ptrh.hostname_id
         WHERE ptrh.post_id = ptr.post_id
       ), '[]'::json) AS hostnames

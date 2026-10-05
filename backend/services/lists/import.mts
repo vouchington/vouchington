@@ -16,21 +16,21 @@ export async function importCommunityList(
 
   const { rowCount: postsCount } = await write(
     `/* importCommunityList:posts */
-    INSERT INTO list_items__posts (list_id, post_id)
+    INSERT INTO user_list_posts (user_list_id, post_id)
     SELECT $1::uuid, vcli.entity_id::uuid
     FROM view_community_list_items vcli
     JOIN posts p ON p.id = vcli.entity_id::uuid AND p.deleted_at IS NULL
     WHERE vcli.community_id = $2
       AND vcli.item_type = 'post'
     ORDER BY $1::uuid, vcli.entity_id::uuid
-    ON CONFLICT (list_id, post_id) WHERE removed_at IS NULL
+    ON CONFLICT (user_list_id, post_id) WHERE removed_at IS NULL
     DO NOTHING`,
     [targetListId, communityId],
   )
 
   const { rowCount: itemsCount } = await write(
     `/* importCommunityList:feed-items */
-    INSERT INTO list_items__rss_feed_items (list_id, rss_feed_item_id)
+    INSERT INTO user_list_rss_feed_items (user_list_id, rss_feed_item_id)
     SELECT $1::uuid, rfi.id
     FROM view_community_list_items vcli
     JOIN rss_feeds rf ON rf.id = vcli.entity_id::uuid
@@ -47,7 +47,7 @@ export async function importCommunityList(
     WHERE vcli.community_id = $2
       AND vcli.item_type = 'rss_feed'
     ORDER BY $1::uuid, rfi.id
-    ON CONFLICT (list_id, rss_feed_item_id) WHERE removed_at IS NULL
+    ON CONFLICT (user_list_id, rss_feed_item_id) WHERE removed_at IS NULL
     DO NOTHING`,
     [targetListId, communityId, IMPORT_FEED_ITEM_LIMIT],
   )

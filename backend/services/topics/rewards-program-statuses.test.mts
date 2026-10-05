@@ -27,7 +27,7 @@ describe('rewards-program-statuses', () => {
       createdById: user.id,
       topicType: 'rewards_program',
     })
-    // Insert a row into topics__rewards_programs so we can reference it
+    // Insert a row into rewards_program_topics so we can reference it
     const rewardsProgramTopic = {
       id: rewardsProgramId,
       topic_type: 'rewards_program' as const,

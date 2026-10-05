@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUser, insertTestUrlHostname } from '@voucha/test-helpers'
+import { insertTestReferralProgram } from '@voucha/test-helpers/entities/cards'
 import {
   readStaffActionHistory,
   withRejectedStaffActionHistory,
@@ -8,8 +9,28 @@ import { readStaffEditorialRows } from '@voucha/test-helpers/staff-editorial-his
 import { createCrawler } from './create-crawler.mts'
 import { updateCrawler } from './update-crawler.mts'
 import { deleteCrawler } from './delete.mts'
+import { getCrawlerById } from './get.mts'
 
 describe('crawlers staff history', () => {
+  it('persists referral program changes under the public field name', async () => {
+    const actor = await createTestUser({ administrator: true })
+    const hostnameId = await insertTestUrlHostname({
+      hostname: `${crypto.randomUUID()}.example.com`,
+    })
+    const crawler = await createCrawler(actor, { hostname_id: hostnameId, crawler_type: 'fetch' })
+    const referralProgramId = await insertTestReferralProgram({ createdById: actor.id })
+    expect(
+      await updateCrawler(actor, crawler.id, { referral_program_id: referralProgramId }),
+    ).toMatchObject({ referral_program_id: referralProgramId })
+    expect(await getCrawlerById(crawler.id)).toMatchObject({
+      referral_program_id: referralProgramId,
+    })
+    const rows = await readStaffActionHistory(actor.id)
+    expect(rows[1]!.metadata).toMatchObject({
+      before: { referral_program_id: null },
+      after: { referral_program_id: referralProgramId },
+    })
+  })
   it('records crawler creation, changed fields and deletion', async () => {
     const actor = await createTestUser({ administrator: true })
     const hostnameId = await insertTestUrlHostname({

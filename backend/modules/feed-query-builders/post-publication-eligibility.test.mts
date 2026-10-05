@@ -21,7 +21,7 @@ describe('buildNotificationPostEligibilityFilter', () => {
     expect(statement.text).toContain('access_post.approved_at IS NOT NULL')
     expect(statement.text).toContain('candidate_post.archived_at IS NULL')
     expect(statement.text).toContain('publication_community.archived_at IS NULL')
-    expect(statement.text).toContain('post__stories post_story')
+    expect(statement.text).toContain('story_posts post_story')
     expect(statement.text).not.toContain("access_post.privacy = 'public'")
     expect(statement.text).not.toContain('publication_member.user_id')
   })
@@ -36,7 +36,7 @@ describe('buildDirectPostEligibilityFilter', () => {
 
     expect(statement.text).toContain('candidate_post.approved_at')
     expect(statement.text).toContain('access_post.approved_at')
-    expect(statement.text).toContain('post__stories post_story')
+    expect(statement.text).toContain('story_posts post_story')
     expect(statement.text).not.toContain('publication_community.archived_at')
     expect(statement.values).not.toContain('candidate_post')
     expect(statement.values).not.toContain('access_post')
@@ -51,7 +51,7 @@ describe('buildDirectPostEligibilityFilter', () => {
     expect(statement.text).toContain('candidate_post.deleted_at IS NULL')
     expect(statement.text).toContain('access_post.deleted_at IS NULL')
     expect(statement.text).not.toContain('approved_at')
-    expect(statement.text).not.toContain('post__stories')
+    expect(statement.text).not.toContain('story_posts')
   })
 
   it('rejects aliases that could inject SQL', () => {
@@ -78,7 +78,7 @@ describe('buildPublicPostEligibilityFilter', () => {
     expect(statement.text).toContain('publication_suspension.lifted_at IS NULL')
     expect(statement.text).toContain('publication_root_suspension.lifted_at IS NULL')
     expect(statement.text).toContain('publication_community.archived_at IS NULL')
-    expect(statement.text).toContain('post__stories post_story')
+    expect(statement.text).toContain('story_posts post_story')
   })
 
   it('never permits archived public discovery', () => {
@@ -113,7 +113,7 @@ describe('buildOtherwisePublicPostEligibilityFilter', () => {
     expect(statement.text).toContain("access_post.privacy = 'public'")
     expect(statement.text).toContain("access_post.broadcast = 'everyone'")
     expect(statement.text).toContain('publication_community.archived_at IS NULL')
-    expect(statement.text).toContain('post__stories post_story')
+    expect(statement.text).toContain('story_posts post_story')
     expect(statement.text).not.toContain('candidate_post.archived_at IS NULL')
     expect(statement.text).not.toContain('access_post.archived_at IS NULL')
   })

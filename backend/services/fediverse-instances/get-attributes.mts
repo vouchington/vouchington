@@ -30,7 +30,7 @@ export async function getFediverseInstanceAttributes(
       open_registrations,
       nodeinfo_raw,
       integration_status
-    FROM topics__fediverse_instances
+    FROM fediverse_instance_topics
     WHERE topic_id = ${topicId}
     LIMIT 1
   `)
@@ -69,7 +69,7 @@ export async function getFediverseInstanceAttributesByIdBatch(
       tfi.nodeinfo_raw,
       tfi.integration_status,
       input_data.input_order
-    FROM topics__fediverse_instances tfi
+    FROM fediverse_instance_topics tfi
     JOIN input_data ON tfi.topic_id = input_data.input_value
     ORDER BY input_data.input_order
   `,

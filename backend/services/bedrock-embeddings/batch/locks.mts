@@ -8,7 +8,7 @@ export async function isEntityLockedForBatch(
   const column = lockColumnForSingleType(entityType)
   const { rows } = await read(
     `/* isEntityLockedForBatch */
-    SELECT 1 FROM bedrock_embeddings_batch_entities
+    SELECT 1 FROM bedrock_embedding_batch_entities
     WHERE entity_type = $1::bedrock_embedding_batch_job_types
       AND ${column} = $2
     LIMIT 1`,

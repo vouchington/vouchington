@@ -20,7 +20,7 @@ export async function getReferralLinkValidationBySlug(
   const { rows } = await read<ReferralLinkValidation>(
     sql`/* getReferralLinkValidationBySlug */
       SELECT id, slug, user_help_text, updated_at
-      FROM referral_program_link_validations
+      FROM referral_program_link_validation_rule_sets
       WHERE slug = ${slug}
       LIMIT 1
     `,
@@ -37,7 +37,7 @@ async function getReferralLinkValidationById(
   const { rows } = await read<ReferralLinkValidation>(
     sql`/* getReferralLinkValidationById */
       SELECT id, slug, user_help_text, updated_at
-      FROM referral_program_link_validations
+      FROM referral_program_link_validation_rule_sets
       WHERE id = ${id}
       LIMIT 1
     `,
@@ -71,7 +71,7 @@ export async function createReferralLinkValidation(
 
   const { rows } = await write<ReferralLinkValidation>(
     sql`/* createReferralLinkValidation */
-      INSERT INTO referral_program_link_validations (slug, user_help_text)
+      INSERT INTO referral_program_link_validation_rule_sets (slug, user_help_text)
       VALUES (${slug}, ${userHelpText})
       RETURNING id, slug, user_help_text, updated_at
     `,
@@ -120,7 +120,7 @@ export async function updateReferralLinkValidation(
     return getReferralLinkValidationById(validationId)
   }
 
-  const query = sql`/* updateReferralLinkValidation */ UPDATE referral_program_link_validations SET `
+  const query = sql`/* updateReferralLinkValidation */ UPDATE referral_program_link_validation_rule_sets SET `
   let hasUpdates = false
 
   const appendSet = (fragment: ReturnType<typeof sql>) => {
@@ -157,7 +157,7 @@ export async function deleteReferralLinkValidation(
 
   await withReferralLinkEligibilityMutationLock({}, query =>
     query(sql`/* deleteReferralLinkValidation */
-        DELETE FROM referral_program_link_validations
+        DELETE FROM referral_program_link_validation_rule_sets
         WHERE id = ${validationId}
       `),
   )

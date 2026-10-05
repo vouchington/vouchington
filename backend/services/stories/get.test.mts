@@ -180,7 +180,7 @@ describe('getPostStoryIdsByStoryIds', () => {
     expect(result[story.id]).toBe(postId)
   })
 
-  it('returns only stories that have a post__stories record (missing ones absent)', async () => {
+  it('returns only stories that have a story_posts record (missing ones absent)', async () => {
     const testUser = await createTestUserDirect()
     const storyWithPost = await insertTestStory({ title: 'Story With Post' })
     const storyWithoutPost = await insertTestStory({ title: 'Story Without Post' })
@@ -201,7 +201,7 @@ describe('getPostStoryIdsByStoryIds', () => {
     expect(Object.keys(result)).toHaveLength(1)
   })
 
-  it('returns empty record when no stories have post__stories records', async () => {
+  it('returns empty record when no stories have story_posts records', async () => {
     const story = await insertTestStory({ title: 'No Post Story' })
     const result = await getPostStoryIdsByStoryIds([story.id, randomUUID()])
     expect(result).toEqual({})

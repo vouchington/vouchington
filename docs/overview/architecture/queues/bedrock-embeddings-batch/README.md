@@ -19,7 +19,7 @@ For the dedup contract, centralized table semantics, race outcomes, and bloom fi
 | Job                                                | Schedule      | Description                                                                                                                                                                       |
 | -------------------------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `creation_dispatcher`                              | `*/5 * * * *` | Scans DB for entities where `input_sha256 IS NULL OR input_sha256 != content_sha256` and no lock exists; enqueues creation jobs                                                   |
-| `poll_dispatcher`                                  | `* * * * *`   | Queries all pending batches in `bedrock_embeddings_batches`; enqueues polling jobs                                                                                                |
+| `poll_dispatcher`                                  | `* * * * *`   | Queries all pending batches in `bedrock_embedding_batches`; enqueues polling jobs                                                                                                 |
 | `backlog_dispatcher`                               | `* * * * *`   | Reads single-queue depth via `getQueueBacklogDepth`; if `waiting + active + delayed >= backlog_threshold` (default 1000, Dynamic Config), enqueues an extra `creation_dispatcher` |
 | `stale_cleanup_dispatcher`                         | `0 * * * *`   | Finds batches stuck in `Submitted`/`InProgress` past `stale_ttl_hours` (default 24h, Dynamic Config); reconciles terminal-state batches or force-stops and cancels them           |
 | `reconcile_existing_{topics,posts,rss_feed_items}` | `* * * * *`   | Copy reusable text embeddings from the centralized table in bounded pages, independent of Bedrock capacity                                                                        |
@@ -31,7 +31,7 @@ for 60 seconds by its flow and entity. A full page enqueues one cursor continuat
 deduplication by flow, entity, and opaque cursor; pending or active copies of that page coalesce.
 Continuations have no throttle TTL or fixed job ID, so a later operator replay can start again.
 
-`streamPending*` helpers used by the creation dispatcher skip any entity that already has a lock in `bedrock_embeddings_batch_entities`.
+`streamPending*` helpers used by the creation dispatcher skip any entity that already has a lock in `bedrock_embedding_batch_entities`.
 
 The `backlog_dispatcher` exists so that very large single-embedding backlogs (e.g. tens of thousands of jobs after a bulk import) drain through the cheaper batch path faster than the 5-minute `creation_dispatcher` cadence allows. It only triggers an additional batch creation pass when the single queue is genuinely backed up.
 
@@ -62,7 +62,7 @@ The `backlog_dispatcher` exists so that very large single-embedding backlogs (e.
 | `reconcile_existing`       | `reconciliation` | Scans one bounded topic, post, or RSS item candidate page and copies cache hits                        |
 | `post_trigger_recovery`    | `reconciliation` | Scans one pending post-delivery page and queues ban-evasion detection                                  |
 
-`applyBatchUpdates` writes results to the centralized table with `INSERT ... ON CONFLICT DO NOTHING`, updates entity rows guarded by `content_sha256`, then deletes the lock from `bedrock_embeddings_batch_entities`. Completed batches keep entity locks when result download fails before any result file exists; once result processing starts, locks and the temporary result file are cleaned up even if applying results fails.
+`applyBatchUpdates` writes results to the centralized table with `INSERT ... ON CONFLICT DO NOTHING`, updates entity rows guarded by `content_sha256`, then deletes the lock from `bedrock_embedding_batch_entities`. Completed batches keep entity locks when result download fails before any result file exists; once result processing starts, locks and the temporary result file are cleaned up even if applying results fails.
 
 Image batch creation logs per-image preprocessing failures. If pending images were seen but none could be added to the batch input, the creation job returns an explicit failed result instead of a silent no-op.
 

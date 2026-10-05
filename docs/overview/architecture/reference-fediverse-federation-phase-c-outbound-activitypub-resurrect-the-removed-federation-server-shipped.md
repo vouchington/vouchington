@@ -48,10 +48,10 @@ design choices:
 
 **Built, in dependency order, all Shipped:** an HTTP-signature verification module and an actor-keys
 table (private key encrypted via `@modules/token-secrets`) — `@modules/http-signatures`,
-`ap_actor_keys`, and the per-user `fediverse_federation_enabled` opt-in toggle, default off (C0+C1) →
+`activitypub_actor_keys`, and the per-user `fediverse_federation_enabled` opt-in toggle, default off (C0+C1) →
 an inbound receiver (WebFinger, NodeInfo, actor document, inbox with signature verification and replay
 dedup) that maps incoming `Follow`/`Undo` onto the existing bookmarks write-path (tagged as
-remote-origin) and incoming `Like`/`Undo` onto the new isolated `ap_posts`/`ap_post_likes` ledger
+remote-origin) and incoming `Like`/`Undo` onto the new isolated `post_activitypub_like_tallies`/`activitypub_post_likes` ledger
 (never `post_votes` — see the [reuse-mapping table](reference-fediverse-federation-protocol-reality.md#how-the-existing-model-maps-reuse-targets); inbound `Like`/`Undo(Like)` resolution is also
 gated on `canViewPost(null, post)`, so a remote actor cannot record a like tally against a post it
 could not otherwise view) (C2) → loop prevention itself, by giving the relation-upsert write-paths an
@@ -94,7 +94,7 @@ rejections delete the pending row and raw bytes.
 
 ```mermaid
 flowchart LR
-  API[Inbox network-free preflight] --> DB[(ap_inbox_deliveries)]
+  API[Inbox network-free preflight] --> DB[(activitypub_inbox_deliveries)]
   DB --> Q[activitypub-inbox]
   Q --> W[Actor fetch and received-time verification]
   W --> D[Sender limit, dedup, dispatch]

@@ -14,7 +14,7 @@ export async function seedStoryPostRelatedUrlProjection(): Promise<void> {
   )
   await using query = await beginTransaction()
   await query(
-    `/* seedExplainData */ DELETE FROM rss_feed_item_ids
+    `/* seedExplainData */ DELETE FROM rss_feed_item_guids
        WHERE id >= '019e0000-1800-7000-8000-000000000000'::uuid
          AND id < '019e0000-1801-7000-8000-000000000000'::uuid`,
   )
@@ -26,7 +26,7 @@ export async function seedStoryPostRelatedUrlProjection(): Promise<void> {
   await query(
     `/* seedExplainData */ WITH projection_items AS (
          SELECT ids.id
-         FROM rss_feed_item_ids ids
+         FROM rss_feed_item_guids ids
          WHERE ids.guid LIKE 'seed-item-guid-%'
          ORDER BY ids.id DESC
          LIMIT $1

@@ -2,9 +2,9 @@ import { write, type QueryOptions } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 // Records (or idempotently re-records) a remote actor's Like on a local post. Isolated from
-// post_votes/votes_score_net by design — see the ap_post_likes migration and
-// docs/overview/architecture/fediverse-federation.md's Like reuse-mapping row. `ap_posts`'s tally
-// columns stay in sync via the fn_project_ap_post_likes trigger; this function never touches ap_posts
+// post_votes/votes_score_net by design — see the activitypub_post_likes migration and
+// docs/overview/architecture/fediverse-federation.md's Like reuse-mapping row. `post_activitypub_like_tallies`'s tally
+// columns stay in sync via the fn_project_activitypub_post_likes trigger; this function never touches post_activitypub_like_tallies
 // directly.
 //
 // A plain `INSERT ... ON CONFLICT (post_id, remote_actor_id)` cannot resurrect a prior
@@ -26,7 +26,7 @@ export async function recordLike(
   await run(sql`/* recordLike */
     WITH target AS (
       SELECT id
-      FROM ap_post_likes
+      FROM activitypub_post_likes
       WHERE post_id = ${postId}
         AND remote_actor_id = ${remoteActorId}
         AND deleted_at IS NOT NULL
@@ -35,12 +35,12 @@ export async function recordLike(
       FOR UPDATE
     ),
     resurrect AS (
-      UPDATE ap_post_likes
+      UPDATE activitypub_post_likes
       SET deleted_at = NULL, like_ap_id = ${likeApId}
       WHERE id IN (SELECT id FROM target)
       RETURNING id
     )
-    INSERT INTO ap_post_likes (post_id, remote_actor_id, like_ap_id)
+    INSERT INTO activitypub_post_likes (post_id, remote_actor_id, like_ap_id)
     SELECT ${postId}, ${remoteActorId}, ${likeApId}
     WHERE NOT EXISTS (SELECT 1 FROM resurrect)
     ON CONFLICT (post_id, remote_actor_id) WHERE deleted_at IS NULL

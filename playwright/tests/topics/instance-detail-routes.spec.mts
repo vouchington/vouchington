@@ -44,7 +44,7 @@ test.describe('Instance Detail Routes', () => {
     referralTopicId = referralTopic.id
     await linkTopicHostname(referralTopicId, referralHostname)
     const { referralProgramTopicId } = await insertTestReferralProgram(referralSuffix)
-    await write('UPDATE topics SET referral_program_id = $1 WHERE id = $2', [
+    await write('UPDATE topics SET referral_program_topic_id = $1 WHERE id = $2', [
       referralProgramTopicId,
       referralTopicId,
     ])

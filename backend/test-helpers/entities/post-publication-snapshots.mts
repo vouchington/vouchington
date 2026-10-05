@@ -147,7 +147,7 @@ export async function insertTestPublicationFeedFanout(
   await setTestItemStoryId(itemId, story.id)
   await using query = await beginTransaction()
   await query(
-    sql`/* attachTestPublicationStory */ INSERT INTO post__stories (post_id, story_id, initiated_by_id) VALUES (${postId}, ${story.id}, ${authorId})`,
+    sql`/* attachTestPublicationStory */ INSERT INTO story_posts (post_id, story_id, initiated_by_id) VALUES (${postId}, ${story.id}, ${authorId})`,
   )
   await query(sql`/* attachTestPublicationFeedSources */ INSERT INTO rss_feed_item_sources (rss_feed_id, rss_feed_item_id)
     SELECT feed_id, ${itemId} FROM UNNEST(${feedIds}::uuid[]) AS source(feed_id) ON CONFLICT DO NOTHING`)

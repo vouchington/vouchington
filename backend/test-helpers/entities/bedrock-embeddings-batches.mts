@@ -63,7 +63,7 @@ export async function insertTestEmbeddingsBatch(data: {
   const job_arn = data.jobArn !== undefined ? data.jobArn : null
 
   await write(sql`
-    INSERT INTO bedrock_embeddings_batches
+    INSERT INTO bedrock_embedding_batches
       (id, model_id, job_type, job_arn, data, url_id, crawl_id, records, submitted_at, in_progress_at, completed_at, failed_at, cancelled_at, created_at)
     VALUES (
       ${data.id},
@@ -86,7 +86,7 @@ export async function insertTestEmbeddingsBatch(data: {
 
 export async function cleanupTestEmbeddingsBatchesByPrefix(prefix: string): Promise<void> {
   await write(sql`
-    DELETE FROM bedrock_embeddings_batches
+    DELETE FROM bedrock_embedding_batches
     WHERE id LIKE ${`${prefix}%`}
   `)
 }
@@ -95,7 +95,7 @@ export async function cleanupTestEmbeddingsBatches(ids: string[]): Promise<void>
   if (ids.length === 0) return
   await write(
     `/* cleanupTestEmbeddingsBatches */
-    DELETE FROM bedrock_embeddings_batches
+    DELETE FROM bedrock_embedding_batches
     WHERE id = ANY($1)`,
     [ids],
   )
@@ -113,7 +113,7 @@ export async function getTestBatchTerminalTimestamps(batchId: string): Promise<{
   }>(sql`
     /* getTestBatchTerminalTimestamps */
     SELECT completed_at, failed_at, cancelled_at
-    FROM bedrock_embeddings_batches
+    FROM bedrock_embedding_batches
     WHERE id = ${batchId}
   `)
   return rows[0] ?? null
@@ -132,7 +132,7 @@ export async function getTestBatchEntities(
         WHEN 'crawl_chunks' THEN crawl_id::text || '-' || crawl_order_index::text
         WHEN 'images' THEN image_id::text
       END AS entity_id
-    FROM bedrock_embeddings_batch_entities
+    FROM bedrock_embedding_batch_entities
     WHERE batch_id = ${batchId}
     ORDER BY entity_id
   `)
@@ -153,7 +153,7 @@ export async function getTestBatchSourceColumns(batchId: string): Promise<{
     metadata: unknown
   }>(sql`
     SELECT url_id, crawl_id, data -> 'metadata' AS metadata
-    FROM bedrock_embeddings_batches
+    FROM bedrock_embedding_batches
     WHERE id = ${batchId}
   `)
   return rows[0] ?? null
@@ -170,7 +170,7 @@ export async function getTestBatchSummary(
       completed_at,
       failed_at,
       cancelled_at
-    FROM bedrock_embeddings_batches
+    FROM bedrock_embedding_batches
     WHERE id = ${batchId}
   `)
   const row = rows[0]

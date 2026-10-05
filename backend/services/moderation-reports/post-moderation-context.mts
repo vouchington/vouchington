@@ -65,7 +65,7 @@ export async function getPostModerationContextBatch(
   postsQuery.append(idList)
   postsQuery.append(sql`)`)
 
-  // Fetch agent_moderations joined through agents__moderators for slug
+  // Fetch agent_moderations joined through moderator_agents for slug
   const agentQuery = sql`/* getPostModerationContextBatch:agents */
     SELECT
       am.post_id,
@@ -73,7 +73,7 @@ export async function getPostModerationContextBatch(
       am.flagged,
       am.results
     FROM agent_moderations am
-    JOIN agents__moderators mo ON mo.agent_id = am.agent_id
+    JOIN moderator_agents mo ON mo.agent_id = am.agent_id
     WHERE am.post_id IN (`
   agentQuery.append(idList)
   agentQuery.append(sql`)
@@ -90,7 +90,7 @@ export async function getPostModerationContextBatch(
       t.slug AS topic_slug
     FROM relation__post__category__topic rpct
     JOIN agents ON agents.system_user_id = rpct.created_by_id
-    JOIN agents__moderators mod ON mod.agent_id = agents.id
+    JOIN moderator_agents mod ON mod.agent_id = agents.id
     JOIN topics t ON t.id = rpct.object_id
     WHERE rpct.subject_id IN (`
   tagsQuery.append(idList)

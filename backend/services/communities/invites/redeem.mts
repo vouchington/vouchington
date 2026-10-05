@@ -79,7 +79,7 @@ export async function redeemInviteCode(
         ) OR EXISTS (
           SELECT 1
           FROM user_roles ur
-          JOIN user_roles_types urt ON urt.id = ur.role_type_id
+          JOIN user_role_types urt ON urt.id = ur.role_type_id
           WHERE ur.user_id = ${found.invited_by_id}
             AND urt.slug = 'administrator'
         )

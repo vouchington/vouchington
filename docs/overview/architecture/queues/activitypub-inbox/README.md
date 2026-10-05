@@ -3,7 +3,7 @@
 Source entrypoint: [backend/queues/activitypub-inbox/README.md](../../../../../backend/queues/activitypub-inbox/README.md)
 
 This I/O-capable queue processes durable, unverified inbox envelopes from
-`ap_inbox_deliveries`. Processing jobs carry only the delivery UUID and a fencing token. The
+`activitypub_inbox_deliveries`. Processing jobs carry only the delivery UUID and a fencing token. The
 five-minute recovery dispatcher claims at most 500 abandoned rows from PostgreSQL, rotates stale
 tokens, and bulk-enqueues them at priority 100; initial and delayed deliveries run at priority 10.
 The five-minute retention cleanup runs at priority 1, ahead of delivery and recovery work, so a

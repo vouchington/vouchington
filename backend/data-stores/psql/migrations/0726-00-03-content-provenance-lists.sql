@@ -2,13 +2,14 @@
 -- Metadata-only change: the ACCESS EXCLUSIVE lock commits before 0726-00-10 validates the
 -- constraints and 0726-00-11 builds the index online.
 
-ALTER TABLE lists
-  ADD CONSTRAINT lists_created_via_oauth_client_id_fkey
+ALTER TABLE user_lists
+  ADD CONSTRAINT user_lists_created_via_oauth_client_id_fkey
   FOREIGN KEY (created_via_oauth_client_id) REFERENCES oauth_clients(id) ON DELETE RESTRICT
   NOT VALID;
 
-CREATE OR REPLACE TRIGGER lists_content_provenance_immutable
-  AFTER UPDATE ON lists
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER user_lists_content_provenance_immutable
+  AFTER UPDATE ON user_lists
   FOR EACH ROW
   WHEN (
     OLD.created_via IS DISTINCT FROM NEW.created_via
@@ -16,5 +17,5 @@ CREATE OR REPLACE TRIGGER lists_content_provenance_immutable
   )
   EXECUTE FUNCTION fn_reject_mutation();
 
-COMMENT ON COLUMN lists.created_via IS 'Immutable channel that created the row; NULL for rows written before content provenance tracking.';
-COMMENT ON COLUMN lists.created_via_oauth_client_id IS 'Immutable OAuth client that created the row through the API or MCP; NULL for session, API-key, and system writes.';
+COMMENT ON COLUMN user_lists.created_via IS 'Immutable channel that created the row; NULL for rows written before content provenance tracking.';
+COMMENT ON COLUMN user_lists.created_via_oauth_client_id IS 'Immutable OAuth client that created the row through the API or MCP; NULL for session, API-key, and system writes.';

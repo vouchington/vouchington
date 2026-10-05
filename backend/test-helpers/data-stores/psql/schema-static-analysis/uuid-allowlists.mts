@@ -52,7 +52,7 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'Immutable scope snapshot intentionally survives post and community deletion so global release eligibility cannot change.',
   ],
   [
-    'ap_inbox_deliveries.processing_attempt_id',
+    'activitypub_inbox_deliveries.processing_attempt_id',
     'Ephemeral fencing token rotated for each queue dispatch lease; it intentionally identifies no durable relation.',
   ],
   [

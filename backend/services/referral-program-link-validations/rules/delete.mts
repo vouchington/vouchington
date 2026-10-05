@@ -22,7 +22,7 @@ export async function deleteReferralLinkValidationRule(
 
   await withReferralLinkEligibilityMutationLock({}, query =>
     query(sql`/* deleteReferralLinkValidationRule */
-        DELETE FROM referral_program_link_validations_rules
+        DELETE FROM referral_program_link_validation_rules
         WHERE id = ${ruleId}
       `),
   )

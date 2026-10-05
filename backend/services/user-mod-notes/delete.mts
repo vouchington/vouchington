@@ -14,7 +14,7 @@ export async function deleteUserModNote(
   await using query = await beginTransaction()
   const { rows } = await query(sql`/* deleteUserModNote */
     SELECT id, target_user_id, author_user_id, community_id
-    FROM user_mod_notes
+    FROM user_moderator_notes
     WHERE id = ${noteId}
       AND deleted_at IS NULL
     FOR UPDATE
@@ -37,7 +37,7 @@ export async function deleteUserModNote(
   }
 
   await query(sql`/* deleteUserModNote */
-    UPDATE user_mod_notes
+    UPDATE user_moderator_notes
     SET deleted_at = now()
     WHERE id = ${noteId}
       AND deleted_at IS NULL

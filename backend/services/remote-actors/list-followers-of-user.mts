@@ -41,7 +41,7 @@ export async function listRemoteFollowerInboxPage(
     LEFT JOIN LATERAL (
       SELECT instance_topic.id AS topic_id
       FROM topics instance_topic
-      JOIN topics__fediverse_instances tfi ON tfi.topic_id = instance_topic.id
+      JOIN fediverse_instance_topics tfi ON tfi.topic_id = instance_topic.id
       WHERE instance_topic.hostname_id = ra.hostname_id
         AND instance_topic.topic_type = 'fediverse_instance'
         AND instance_topic.deleted_at IS NULL

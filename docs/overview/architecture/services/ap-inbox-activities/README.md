@@ -3,9 +3,9 @@
 Source entrypoint: [backend/services/ap-inbox-activities/README.md](../../../../../backend/services/ap-inbox-activities/README.md)
 
 Replay-dedup ledger and dispatch logic for inbound ActivityPub activities (Phase C2). Backed by
-`ap_inbox_activities` (migration `0562`) — a pure operational log, not an entity table; it has no
+`activitypub_inbox_activities` (migration `0562`) — a pure operational log, not an entity table; it has no
 soft-delete and is never read by anything other than this service's own unique-constraint check.
-Durable unverified request envelopes are stored separately in `ap_inbox_deliveries` (migrations
+Durable unverified request envelopes are stored separately in `activitypub_inbox_deliveries` (migrations
 `0584` and `0604`) until a worker reaches a final protocol outcome or the bounded retention
 deadline.
 
@@ -13,7 +13,7 @@ deadline.
   `{ id, type, actor, object }`. Throws a 400 `http-errors` error on malformed JSON or a
   missing/empty `id`/`type`/`actor`. `object` is passed through untyped for
   `dispatchInboundActivity` to interpret per activity type.
-- `recordInboxActivity(activityId, activityType, actorUri)` — inserts into `ap_inbox_activities`
+- `recordInboxActivity(activityId, activityType, actorUri)` — inserts into `activitypub_inbox_activities`
   with `ON CONFLICT (activity_id) DO NOTHING`. Returns `true` the first time an activity id is
   seen (caller should dispatch), `false` on a replay (caller should short-circuit with an
   idempotent response) — dedup is purely on the `activity_id` unique constraint; `activity_type`
@@ -22,7 +22,7 @@ deadline.
   existing `remote_actor -> user -> follow` entity relation via `@services/entity-relations`,
   gated on the target user having `fediverse_federation_enabled`. Writes use `origin: 'remote'` so
   Phase C3's loop-prevention gate suppresses outbound fan-out for relations that originated from a
-  remote activity. `Like` / `Undo(Like)` map onto the isolated `ap_posts`/`ap_post_likes` ledger via
+  remote activity. `Like` / `Undo(Like)` map onto the isolated `post_activitypub_like_tallies`/`activitypub_post_likes` ledger via
   `@services/ap-post-likes` — deliberately never `post_votes`, so a remote actor's Like can never
   move local ranking (see the reuse-mapping table in
   `docs/overview/architecture/fediverse-federation.md`). A Like's `object` is resolved back to a
@@ -46,7 +46,7 @@ checkpointed actor is inactive, the delivery is terminally rejected without netw
 ## Durable delivery lifecycle
 
 `activityPubInboxDeliveryTransitions` is the only mutation surface for
-`ap_inbox_deliveries`. The contract uses lifecycle states
+`activitypub_inbox_deliveries`. The contract uses lifecycle states
 `available | processing | deferred | failed` and checkpoints
 `unverified | verified | sender-allowed`; timestamps remain the database representation rather
 than adding a second status column.

@@ -10,6 +10,7 @@
 -- Stories
 -- ============================================================================
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS stories (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
   title TEXT,
@@ -26,16 +27,19 @@ CREATE TABLE IF NOT EXISTS stories (
   CHECK (title IS NULL OR char_length(title) BETWEEN 1 AND 500)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_stories_updated_at
 BEFORE UPDATE ON stories
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_stories__id_desc
 ON stories (id DESC)
 WHERE deleted_at IS NULL;
 
 -- Index for looking up stories by their official item
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_stories__official_rss_feed_item_id
 ON stories (official_rss_feed_item_id)
 WHERE official_rss_feed_item_id IS NOT NULL;
@@ -53,7 +57,8 @@ COMMENT ON COLUMN stories.official_locked_at IS 'When set by admin, prevents age
 
 -- Junction table linking story posts to stories
 -- One post per story, with the user who initiated the story post creation
-CREATE TABLE IF NOT EXISTS post__stories (
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS story_posts (
   post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
   story_id UUID NOT NULL REFERENCES stories(id) ON DELETE CASCADE,
   initiated_by_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -64,19 +69,21 @@ CREATE TABLE IF NOT EXISTS post__stories (
   PRIMARY KEY (post_id)
 );
 
-CREATE OR REPLACE TRIGGER trigger_post__stories_updated_at
-BEFORE UPDATE ON post__stories
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_story_posts_updated_at
+BEFORE UPDATE ON story_posts
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
 -- One post per story
-CREATE UNIQUE INDEX IF NOT EXISTS idx_post__stories__story_id
-ON post__stories (story_id);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_story_posts__story_id
+ON story_posts (story_id);
 
-COMMENT ON TABLE post__stories IS 'Junction table linking story posts to stories. One post per story.';
-COMMENT ON COLUMN post__stories.post_id IS 'FK to the story post.';
-COMMENT ON COLUMN post__stories.story_id IS 'FK to the story being discussed.';
-COMMENT ON COLUMN post__stories.initiated_by_id IS 'The user who requested the story post creation.';
+COMMENT ON TABLE story_posts IS 'Junction table linking story posts to stories. One post per story.';
+COMMENT ON COLUMN story_posts.post_id IS 'FK to the story post.';
+COMMENT ON COLUMN story_posts.story_id IS 'FK to the story being discussed.';
+COMMENT ON COLUMN story_posts.initiated_by_id IS 'The user who requested the story post creation.';
 
 
 -- FK for rss_feed_items.story_id (column defined in 0080 without FK due to circular dependency with stories table)
@@ -96,6 +103,7 @@ END $$;
 ALTER TABLE rss_feed_items VALIDATE CONSTRAINT fk_rss_feed_items_story_id;
 
 -- Current indexes for fresh schema bootstrap.
-CREATE INDEX IF NOT EXISTS idx_post__stories__initiated_by_id
-  ON post__stories (initiated_by_id)
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_story_posts__initiated_by_id
+  ON story_posts (initiated_by_id)
   WHERE initiated_by_id IS NOT NULL;

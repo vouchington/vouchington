@@ -153,7 +153,7 @@ export async function seedAnchorPostReviewTopicRating(): Promise<void> {
   }
 }
 
-// search-communities-has-list-items needs a real community_list_items__topics row so the
+// search-communities-has-list-items needs a real community_list_topics row so the
 // hasListItems filter has a non-empty result set to return.
 export async function seedCommunityListItemTopic(): Promise<void> {
   console.log('Seeding a community list item (topic) for community 0...')
@@ -161,7 +161,7 @@ export async function seedCommunityListItemTopic(): Promise<void> {
     await using transaction = await beginTransaction()
     const query = transaction
     await query(
-      `/* seedExplainData */ INSERT INTO community_list_items__topics (community_id, topic_id, added_by_id)
+      `/* seedExplainData */ INSERT INTO community_list_topics (community_id, topic_id, added_by_id)
        VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
       [seedUuid(0, '14'), seedUuid(0, '04'), seedUuid(0, '01')],
     )

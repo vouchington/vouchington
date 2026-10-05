@@ -8,6 +8,7 @@
 -- 0050-00-00-individuals-households.sql
 -- ============================================================================
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS individuals (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
 
@@ -15,6 +16,7 @@ CREATE TABLE IF NOT EXISTS individuals (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_individuals_fn_update_updated_at
   BEFORE UPDATE ON individuals
   FOR EACH ROW
@@ -22,6 +24,7 @@ CREATE OR REPLACE TRIGGER trigger_individuals_fn_update_updated_at
 
 COMMENT ON TABLE individuals IS 'Represents a real person. A user account maps to one individual for personal finance tracking.';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS households (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
 
@@ -32,18 +35,21 @@ CREATE TABLE IF NOT EXISTS households (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_households_fn_update_updated_at
   BEFORE UPDATE ON households
   FOR EACH ROW
   EXECUTE FUNCTION fn_update_updated_at();
 
 -- Supports deterministic owned-household selection and cursor pagination.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_households__owner_updated_id
 ON households (owner_id, updated_at DESC, id DESC);
 
 COMMENT ON TABLE households IS 'A household owned by a user, grouping individuals for shared finance tracking.';
 COMMENT ON COLUMN households.owner_id IS 'The user who owns and manages this household.';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS household_members (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
 
@@ -63,16 +69,19 @@ CREATE TABLE IF NOT EXISTS household_members (
     UNIQUE (household_id, individual_id)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_household_members_fn_update_updated_at
   BEFORE UPDATE ON household_members
   FOR EACH ROW
   EXECUTE FUNCTION fn_update_updated_at();
 
 -- Supports deterministic household-membership cursor pagination.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_household_members__household_updated_id
 ON household_members (household_id, updated_at DESC, id DESC);
 
 -- Supports member-only household access checks without scanning unrelated memberships.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_household_members__individual_household
 ON household_members (individual_id, household_id);
 
@@ -81,6 +90,7 @@ COMMENT ON COLUMN household_members.household_id IS 'The household this membersh
 COMMENT ON COLUMN household_members.individual_id IS 'The individual who is a member of the household.';
 COMMENT ON COLUMN household_members.relationship IS 'Relationship to the household owner (e.g. husband, wife, child).';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS individual_cards (
   -- an individual can have more than one of the same type of card
   id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -108,15 +118,18 @@ CREATE TABLE IF NOT EXISTS individual_cards (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_individual_cards_fn_update_updated_at
   BEFORE UPDATE ON individual_cards
   FOR EACH ROW
   EXECUTE FUNCTION fn_update_updated_at();
 
 -- find a card's users
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS individual_cards__card_id
 ON individual_cards (card_id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS individual_cards__currency_code
 ON individual_cards (currency_code)
 WHERE currency_code IS NOT NULL;
@@ -133,11 +146,12 @@ COMMENT ON COLUMN individual_cards.is_authorized_user IS 'TRUE if this card is a
 COMMENT ON COLUMN individual_cards.authorized_user_of_id IS 'The primary cardholder''s individual_cards row, if this is an AU.';
 COMMENT ON COLUMN individual_cards.note IS 'Free-text note about this card.';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS individual_rewards_program_statuses (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
 
   individual_id UUID NOT NULL REFERENCES individuals ON DELETE CASCADE,
-  rewards_program_status_id UUID NOT NULL REFERENCES topics__rewards_program_statuses ON DELETE CASCADE, -- e.g. Marriott Bonvoy Platinum Elite Status
+  rewards_program_status_id UUID NOT NULL REFERENCES rewards_program_status_topics ON DELETE CASCADE, -- e.g. Marriott Bonvoy Platinum Elite Status
 
   since DATE,
   until DATE,
@@ -147,21 +161,24 @@ CREATE TABLE IF NOT EXISTS individual_rewards_program_statuses (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_individual_rewards_program_statuses_updated_at
   BEFORE UPDATE ON individual_rewards_program_statuses
   FOR EACH ROW
   EXECUTE FUNCTION fn_update_updated_at();
 
 -- find a rewards program status's users
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS individual_rewards_program_statuses__rewards_program_status_id
 ON individual_rewards_program_statuses (rewards_program_status_id);
 
 COMMENT ON TABLE individual_rewards_program_statuses IS 'Rewards program tier statuses held by individuals (e.g. Marriott Platinum Elite).';
 COMMENT ON COLUMN individual_rewards_program_statuses.individual_id IS 'The individual who holds this status.';
-COMMENT ON COLUMN individual_rewards_program_statuses.rewards_program_status_id IS 'The specific tier status (references topics__rewards_program_statuses).';
+COMMENT ON COLUMN individual_rewards_program_statuses.rewards_program_status_id IS 'The specific tier status (references rewards_program_status_topics).';
 COMMENT ON COLUMN individual_rewards_program_statuses.since IS 'Date the status was earned or started.';
 COMMENT ON COLUMN individual_rewards_program_statuses.until IS 'Date the status expires. NULL if ongoing.';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS spending_entries (
   -- an individual or household can have more than one entry for the same spending category
   -- e.g. want to split Amazon purchases between the types of purchases (recurring, one-time, discretionary, etc.)
@@ -172,7 +189,7 @@ CREATE TABLE IF NOT EXISTS spending_entries (
   individual_id UUID REFERENCES individuals ON DELETE CASCADE,
   CHECK (NOT (household_id IS NOT NULL AND individual_id IS NOT NULL)), -- only one can be set
   CHECK (NOT (household_id IS NULL AND individual_id IS NULL)), -- at least one must be set
-  spending_category_id UUID NOT NULL REFERENCES topics__spending_categories ON DELETE CASCADE,
+  spending_category_id UUID NOT NULL REFERENCES spending_category_topics ON DELETE CASCADE,
 
   spending_frequency spending_frequencies NOT NULL DEFAULT 'monthly',
   amount_minor_units BIGINT NOT NULL,
@@ -186,13 +203,16 @@ CREATE TABLE IF NOT EXISTS spending_entries (
 );
 
 -- calculate metrics for a spending category
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS spending_entries__spending_category_id
 ON spending_entries (spending_category_id);
 
 -- Index for foreign key on currency
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_spending_entries__currency_code
 ON spending_entries (currency_code);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_spending_entries_fn_update_updated_at
   BEFORE UPDATE ON spending_entries
   FOR EACH ROW
@@ -201,7 +221,7 @@ CREATE OR REPLACE TRIGGER trigger_spending_entries_fn_update_updated_at
 COMMENT ON TABLE spending_entries IS 'Spending amounts per category, associated with either a household or individual.';
 COMMENT ON COLUMN spending_entries.household_id IS 'The household this spending is for. Mutually exclusive with individual_id.';
 COMMENT ON COLUMN spending_entries.individual_id IS 'The individual this spending is for. Mutually exclusive with household_id.';
-COMMENT ON COLUMN spending_entries.spending_category_id IS 'The spending category (references topics__spending_categories).';
+COMMENT ON COLUMN spending_entries.spending_category_id IS 'The spending category (references spending_category_topics).';
 COMMENT ON COLUMN spending_entries.spending_frequency IS 'How often this spending occurs (monthly or annually).';
 COMMENT ON COLUMN spending_entries.amount_minor_units IS 'Spending amount per frequency period in the currency minor unit.';
 COMMENT ON COLUMN spending_entries.currency_code IS 'Currency of the spending amount.';
@@ -214,6 +234,7 @@ ALTER TABLE users
 ALTER TABLE users VALIDATE CONSTRAINT fk_users_individual_id;
 
 -- unique index on individual_id
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users__individual_id
 ON users (individual_id)
 WHERE individual_id IS NOT NULL;
@@ -221,6 +242,7 @@ WHERE individual_id IS NOT NULL;
 COMMENT ON COLUMN users.individual_id IS 'The real-person individual linked to this user account for personal finance tracking.';
 
 -- Create a trigger function that automatically creates individual, household, and membership for new users
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_create_user_individual_household()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -250,16 +272,18 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Create trigger that runs after user creation
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_users_create_individual_household
   AFTER INSERT ON users
   FOR EACH ROW
   EXECUTE FUNCTION fn_create_user_individual_household();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS individual_rewards_program_point_valuations (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
 
   individual_id UUID NOT NULL REFERENCES individuals ON DELETE CASCADE,
-  rewards_program_id UUID NOT NULL REFERENCES topics__rewards_programs ON DELETE CASCADE,
+  rewards_program_topic_id UUID NOT NULL REFERENCES rewards_program_topics ON DELETE CASCADE,
 
   value_microunits_per_point BIGINT NOT NULL,
   CHECK (value_microunits_per_point BETWEEN 0 AND 9999999999),
@@ -271,24 +295,27 @@ CREATE TABLE IF NOT EXISTS individual_rewards_program_point_valuations (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
   CONSTRAINT uq_ind_rp_point_valuations__individual_rewards_program
-    UNIQUE (individual_id, rewards_program_id)
+    UNIQUE (individual_id, rewards_program_topic_id)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_individual_rewards_program_point_valuations_updated_at
   BEFORE UPDATE ON individual_rewards_program_point_valuations
   FOR EACH ROW
   EXECUTE FUNCTION fn_update_updated_at();
 
 -- find a rewards program's point valuations
-CREATE INDEX IF NOT EXISTS idx_ind_rewards_program_point_valuations__rewards_program_id
-ON individual_rewards_program_point_valuations (rewards_program_id);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_ind_rewards_program_point_valuations__program_topic_id
+ON individual_rewards_program_point_valuations (rewards_program_topic_id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_ind_rewards_program_point_valuations__currency_code
 ON individual_rewards_program_point_valuations (currency_code);
 
 COMMENT ON TABLE individual_rewards_program_point_valuations IS 'Personal point valuations per individual per rewards program.';
 COMMENT ON COLUMN individual_rewards_program_point_valuations.individual_id IS 'The individual who set this valuation.';
-COMMENT ON COLUMN individual_rewards_program_point_valuations.rewards_program_id IS 'The rewards program being valued.';
+COMMENT ON COLUMN individual_rewards_program_point_valuations.rewards_program_topic_id IS 'The rewards program being valued.';
 COMMENT ON COLUMN individual_rewards_program_point_valuations.value_microunits_per_point IS 'Point value in millionths of the major currency unit.';
 COMMENT ON COLUMN individual_rewards_program_point_valuations.currency_code IS 'Currency used to value each point.';
 COMMENT ON COLUMN individual_rewards_program_point_valuations.note IS 'Free-text note about this valuation.';
@@ -299,6 +326,7 @@ COMMENT ON COLUMN individual_rewards_program_point_valuations.note IS 'Free-text
 
 -- Self-reported financial summary that can optionally pre-fill structured data point forms.
 -- Each data point captures its own snapshot in structured_data; this is just a convenience cache.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS individual_financial_profiles (
   individual_id UUID PRIMARY KEY REFERENCES individuals ON DELETE CASCADE,
 
@@ -331,11 +359,13 @@ CREATE TABLE IF NOT EXISTS individual_financial_profiles (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_individual_financial_profiles_updated_at
 BEFORE UPDATE ON individual_financial_profiles
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_individual_financial_profiles__currency_code
 ON individual_financial_profiles (currency_code);
 
@@ -370,6 +400,7 @@ BEGIN
   END IF;
 END $$;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_profile_links (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -383,12 +414,15 @@ CREATE TABLE IF NOT EXISTS user_profile_links (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_profile_links__user_id_sort
 ON user_profile_links (user_id, sort_order);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_profile_links__url_id
 ON user_profile_links (url_id) WHERE url_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_user_profile_links_updated_at
 BEFORE UPDATE ON user_profile_links
 FOR EACH ROW
@@ -408,6 +442,7 @@ COMMENT ON COLUMN user_profile_links.image_id IS 'Optional custom image/icon for
 -- ============================================================================
 
 -- GitHub accounts
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS github_accounts (
   user_id UUID REFERENCES users ON DELETE SET NULL,
   github_user_id TEXT PRIMARY KEY,
@@ -421,19 +456,23 @@ CREATE TABLE IF NOT EXISTS github_accounts (
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_github_accounts_updated_at
 BEFORE UPDATE ON github_accounts
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_github_accounts__user_id
 ON github_accounts (user_id)
 WHERE user_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_github_accounts__email
 ON github_accounts (github_user_email_address)
 WHERE github_user_email_address IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_github_accounts__token_expires_at
 ON github_accounts (access_token_expires_at)
 WHERE access_token_expires_at IS NOT NULL;
@@ -449,6 +488,7 @@ COMMENT ON COLUMN github_accounts.access_token_expires_at IS 'When the current a
 COMMENT ON COLUMN github_accounts.friends_synced_at IS 'When the user''s GitHub friends list was last synced.';
 
 -- GitHub friends
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS github_friends (
   github_user_id TEXT NOT NULL REFERENCES github_accounts(github_user_id) ON DELETE CASCADE,
   github_friend_id TEXT NOT NULL,
@@ -457,11 +497,13 @@ CREATE TABLE IF NOT EXISTS github_friends (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_github_friends_updated_at
 BEFORE UPDATE ON github_friends
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_github_friends__friend_id
 ON github_friends (github_friend_id);
 
@@ -470,6 +512,7 @@ COMMENT ON COLUMN github_friends.github_user_id IS 'The GitHub user whose friend
 COMMENT ON COLUMN github_friends.github_friend_id IS 'The GitHub user ID of the friend.';
 
 -- X friends
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS x_friends (
   x_user_id TEXT NOT NULL REFERENCES x_accounts(x_user_id) ON DELETE CASCADE,
   x_friend_id TEXT NOT NULL,
@@ -478,11 +521,13 @@ CREATE TABLE IF NOT EXISTS x_friends (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_x_friends_updated_at
 BEFORE UPDATE ON x_friends
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_x_friends__friend_id
 ON x_friends (x_friend_id);
 
@@ -491,48 +536,52 @@ COMMENT ON COLUMN x_friends.x_user_id IS 'The X user whose friends list this ent
 COMMENT ON COLUMN x_friends.x_friend_id IS 'The X user ID of the friend.';
 
 -- Reverse lookup indexes for recommendation query
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_facebook_friends__friend_id
 ON facebook_friends (facebook_friend_id);
 
 -- Sync status indexes for nightly dispatcher queries
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_github_accounts__friends_synced_at
 ON github_accounts (friends_synced_at)
 WHERE user_id IS NOT NULL AND access_token_ciphertext IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_facebook_accounts__friends_synced_at
 ON facebook_accounts (friends_synced_at)
 WHERE user_id IS NOT NULL AND access_token_ciphertext IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_x_accounts__friends_synced_at
 ON x_accounts (friends_synced_at)
 WHERE user_id IS NOT NULL AND access_token_ciphertext IS NOT NULL;
 
 -- SES Bounce Events
 DO $$ BEGIN
-  CREATE TYPE ses_notification_types AS ENUM ('bounce', 'complaint', 'delivery');
+  CREATE TYPE amazon_ses_notification_types AS ENUM ('bounce', 'complaint', 'delivery');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 DO $$ BEGIN
-  CREATE TYPE ses_bounce_types AS ENUM ('permanent', 'transient', 'undetermined');
+  CREATE TYPE amazon_ses_bounce_types AS ENUM ('permanent', 'transient', 'undetermined');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TABLE IF NOT EXISTS ses_bounce_subtypes (
+CREATE TABLE IF NOT EXISTS amazon_ses_bounce_subtypes (
   id TEXT PRIMARY KEY,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-COMMENT ON TABLE ses_bounce_subtypes IS 'SES bounce subtype names registered on first sight; the provider owns this open set and exact spelling.';
-COMMENT ON COLUMN ses_bounce_subtypes.id IS 'Exact provider value used as the natural lookup key; never normalized.';
-COMMENT ON COLUMN ses_bounce_subtypes.created_at IS 'When this provider value was first observed.';
+COMMENT ON TABLE amazon_ses_bounce_subtypes IS 'SES bounce subtype names registered on first sight; the provider owns this open set and exact spelling.';
+COMMENT ON COLUMN amazon_ses_bounce_subtypes.id IS 'Exact provider value used as the natural lookup key; never normalized.';
+COMMENT ON COLUMN amazon_ses_bounce_subtypes.created_at IS 'When this provider value was first observed.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TABLE IF NOT EXISTS ses_bounce_events (
+CREATE TABLE IF NOT EXISTS amazon_ses_bounce_events (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  notification_type ses_notification_types NOT NULL,
-  bounce_type ses_bounce_types,
-  bounce_sub_type TEXT REFERENCES ses_bounce_subtypes(id) ON DELETE RESTRICT,
+  notification_type amazon_ses_notification_types NOT NULL,
+  bounce_type amazon_ses_bounce_types,
+  bounce_sub_type TEXT REFERENCES amazon_ses_bounce_subtypes(id) ON DELETE RESTRICT,
   CHECK (bounce_sub_type IS NULL OR (char_length(bounce_sub_type) <= 255 AND TRIM(bounce_sub_type) = bounce_sub_type)),
   recipients JSONB NOT NULL DEFAULT '[]'::jsonb,
   ses_message_id TEXT,
@@ -550,41 +599,46 @@ CREATE TABLE IF NOT EXISTS ses_bounce_events (
 );
 
 -- GIN index for querying bounced email addresses in recipients array
-CREATE INDEX IF NOT EXISTS idx_ses_bounce_events__recipients
-ON ses_bounce_events USING GIN (recipients);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_amazon_ses_bounce_events__recipients
+ON amazon_ses_bounce_events USING GIN (recipients);
 
 -- Index to correlate with sent emails by SES message ID
-CREATE INDEX IF NOT EXISTS idx_ses_bounce_events__ses_message_id
-ON ses_bounce_events (ses_message_id)
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_amazon_ses_bounce_events__ses_message_id
+ON amazon_ses_bounce_events (ses_message_id)
 WHERE ses_message_id IS NOT NULL;
 
 -- Index for looking up bounces by notification type and id (for pagination)
-CREATE INDEX IF NOT EXISTS idx_ses_bounce_events__notification_type
-ON ses_bounce_events (notification_type, id DESC);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_amazon_ses_bounce_events__notification_type
+ON amazon_ses_bounce_events (notification_type, id DESC);
 
 -- Enforces at-least-once redelivery (SQS, or a retried Lambda invocation) does not create a
 -- duplicate row. NULL (missing ses_message_id or ses_timestamp) is never deduplicated.
-CREATE UNIQUE INDEX IF NOT EXISTS idx_ses_bounce_events__dedup_key
-ON ses_bounce_events (dedup_key)
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_amazon_ses_bounce_events__dedup_key
+ON amazon_ses_bounce_events (dedup_key)
 WHERE dedup_key IS NOT NULL;
 
-COMMENT ON TABLE ses_bounce_events IS 'Records email bounce, complaint, and delivery notifications received from AWS SES.';
-COMMENT ON COLUMN ses_bounce_events.notification_type IS 'SES notification type: bounce, complaint, or delivery.';
-COMMENT ON COLUMN ses_bounce_events.bounce_type IS 'Bounce classification: permanent, transient, or undetermined.';
-COMMENT ON COLUMN ses_bounce_events.bounce_sub_type IS 'Detailed bounce sub-type from SES (e.g. General, NoEmail).';
-COMMENT ON COLUMN ses_bounce_events.recipients IS 'JSONB array of recipient email addresses affected by this event.';
-COMMENT ON COLUMN ses_bounce_events.ses_message_id IS 'SES message ID for correlating with sent emails.';
-COMMENT ON COLUMN ses_bounce_events.ses_feedback_id IS 'SES feedback ID for the notification.';
-COMMENT ON COLUMN ses_bounce_events.ses_timestamp IS 'Timestamp from the SES notification payload.';
-COMMENT ON COLUMN ses_bounce_events.raw_message IS 'Full raw SES notification payload for debugging.';
-COMMENT ON COLUMN ses_bounce_events.diagnostic_code IS 'SMTP diagnostic code from the bounce (e.g. 550 5.1.1).';
-COMMENT ON COLUMN ses_bounce_events.reporting_mta IS 'The MTA that reported the bounce.';
-COMMENT ON COLUMN ses_bounce_events.dedup_key IS 'SHA-256 hex digest of ses_message_id, notification_type, ses_timestamp, and the sorted normalized recipients; NULL when ses_message_id or ses_timestamp is missing. Absorbs at-least-once redelivery duplicates without collapsing distinct per-recipient notifications that share a mail.messageId and timestamp.';
+COMMENT ON TABLE amazon_ses_bounce_events IS 'Records email bounce, complaint, and delivery notifications received from AWS SES.';
+COMMENT ON COLUMN amazon_ses_bounce_events.notification_type IS 'SES notification type: bounce, complaint, or delivery.';
+COMMENT ON COLUMN amazon_ses_bounce_events.bounce_type IS 'Bounce classification: permanent, transient, or undetermined.';
+COMMENT ON COLUMN amazon_ses_bounce_events.bounce_sub_type IS 'Detailed bounce sub-type from SES (e.g. General, NoEmail).';
+COMMENT ON COLUMN amazon_ses_bounce_events.recipients IS 'JSONB array of recipient email addresses affected by this event.';
+COMMENT ON COLUMN amazon_ses_bounce_events.ses_message_id IS 'SES message ID for correlating with sent emails.';
+COMMENT ON COLUMN amazon_ses_bounce_events.ses_feedback_id IS 'SES feedback ID for the notification.';
+COMMENT ON COLUMN amazon_ses_bounce_events.ses_timestamp IS 'Timestamp from the SES notification payload.';
+COMMENT ON COLUMN amazon_ses_bounce_events.raw_message IS 'Full raw SES notification payload for debugging.';
+COMMENT ON COLUMN amazon_ses_bounce_events.diagnostic_code IS 'SMTP diagnostic code from the bounce (e.g. 550 5.1.1).';
+COMMENT ON COLUMN amazon_ses_bounce_events.reporting_mta IS 'The MTA that reported the bounce.';
+COMMENT ON COLUMN amazon_ses_bounce_events.dedup_key IS 'SHA-256 hex digest of ses_message_id, notification_type, ses_timestamp, and the sorted normalized recipients; NULL when ses_message_id or ses_timestamp is missing. Absorbs at-least-once redelivery duplicates without collapsing distinct per-recipient notifications that share a mail.messageId and timestamp.';
 
 -- ==========================================================================
 -- 0009-00-00-user-metrics.sql
 -- ============================================================================
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_metrics (
   id UUID PRIMARY KEY REFERENCES users ON DELETE CASCADE,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -601,6 +655,7 @@ CREATE TABLE IF NOT EXISTS user_metrics (
   bookmarks__updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_user_metrics_updated_at
 BEFORE UPDATE ON user_metrics
 FOR EACH ROW
@@ -616,6 +671,7 @@ COMMENT ON COLUMN user_metrics.bookmarks__updated_at IS 'When the bookmark/follo
 -- Function to auto-create user_metrics row when user is created
 
 -- Trigger to create user_metrics after user insert
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_create_user_metrics
 AFTER INSERT ON users
 FOR EACH ROW
@@ -624,36 +680,44 @@ EXECUTE FUNCTION fn_create_metrics('user_metrics', 'id');
 -- Partial index supporting orphaned GitHub OAuth account retention cleanup:
 -- WHERE user_id IS NULL AND created_at is older than the retention cutoff
 -- ORDER BY created_at ASC, github_user_id ASC
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_github_accounts__orphan_retention_cleanup
 ON github_accounts (created_at, github_user_id)
 WHERE user_id IS NULL;
 
 -- Current indexes for fresh schema bootstrap.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_individual_cards__authorized_user_of_id
   ON individual_cards (authorized_user_of_id)
   WHERE authorized_user_of_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_profile_links__image_id
   ON user_profile_links (image_id)
   WHERE image_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_individual_cards__individual_id_id
   ON individual_cards (individual_id, id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_ind_rp_point_valuations__individual_id_id
   ON individual_rewards_program_point_valuations (individual_id, id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_ind_rp_statuses__individual_id_id
   ON individual_rewards_program_statuses (individual_id, id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_spending_entries__individual_id_id
   ON spending_entries (individual_id, id)
   WHERE individual_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_spending_entries__household_id_id
   ON spending_entries (household_id, id)
   WHERE household_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_ses_bounce_events__bounce_sub_type
-  ON ses_bounce_events (bounce_sub_type);
+CREATE INDEX IF NOT EXISTS idx_amazon_ses_bounce_events__bounce_sub_type
+  ON amazon_ses_bounce_events (bounce_sub_type);

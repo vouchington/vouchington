@@ -8,7 +8,7 @@ export async function insertTestUserModNote(options: {
   communityId?: string | null
 }): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`
-    INSERT INTO user_mod_notes (target_user_id, author_user_id, community_id, body)
+    INSERT INTO user_moderator_notes (target_user_id, author_user_id, community_id, body)
     VALUES (
       ${options.targetUserId},
       ${options.authorUserId},

@@ -5,7 +5,7 @@
 ## Data Model
 
 A fediverse instance is a topic with `topic_type = 'fediverse_instance'` plus a 1:1 extension row
-in `topics__fediverse_instances`. It mirrors the existing `rss_feed`/[source](./source.md) pattern:
+in `fediverse_instance_topics`. It mirrors the existing `rss_feed`/[source](./source.md) pattern:
 `topic_type` + extension table, voted the same way a source is.
 
 **`topics` row (shared with all topic types):**
@@ -18,7 +18,7 @@ in `topics__fediverse_instances`. It mirrors the existing `rss_feed`/[source](./
 | `topic_type`  | Always `fediverse_instance`                                      |
 | `hostname_id` | FK to the `url_hostnames` row for the instance's hostname        |
 
-**`topics__fediverse_instances` extension row:**
+**`fediverse_instance_topics` extension row:**
 
 | Field                       | Notes                                                                                                                            |
 | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
@@ -43,7 +43,7 @@ in `topics__fediverse_instances`. It mirrors the existing `rss_feed`/[source](./
 | `reason`             | Optional human-readable reason, max 1000 chars                        |
 | `created_at`         | Derived from the UUIDv7 `id`                                          |
 
-`topics__fediverse_instances.integration_status` is kept in sync by a trigger that re-reads the
+`fediverse_instance_topics.integration_status` is kept in sync by a trigger that re-reads the
 latest `fediverse_instance_integration_changes` row (by `id DESC`) after every insert, under a
 row lock — it does not trust the just-inserted row's value, defending against out-of-order
 transaction commits on the same topic.

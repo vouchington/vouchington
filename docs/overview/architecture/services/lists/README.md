@@ -13,7 +13,7 @@ User-curated named collections of RSS feed items and posts.
 - `searchUserLists(ownerUserId, { limit?, after? })` — paginated list of a user's active lists
 - `addListItem(listId, itemType, entityId)` — idempotent add of an item to a list
 - `removeListItem(listId, itemType, entityId)` — soft-remove an item from a list
-- `searchListItems(listId, { limit?, after?, mediaType? })` — paginated list items via view_list_items
+- `searchListItems(listId, { limit?, after?, mediaType? })` — paginated list items via view_user_list_items
 - `getListsContainingEntity(ownerUserId, itemType, entityId)` — list IDs containing an entity
 - `currentUserCanViewList(currentUserId, list)` — visibility check for read access
 - `currentUserCanManageList(currentUserId, list)` — ownership check for write access

@@ -23,6 +23,7 @@
 -- candidate side to feed a Merge Join. At the EXPLAIN harness's declared 32MB work_mem
 -- (EXPLAIN_WORK_MEM in explain-analyze.mts), that sort is ~10MB for the ~100k eligible posts in
 -- the CI capture and stays in memory — no spill, no resource-pressure-baseline.mts entry needed.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE VIEW view_public_post_eligibility AS
   SELECT candidate_post.id AS post_id, candidate_post.post_type
   FROM posts candidate_post
@@ -67,7 +68,7 @@ CREATE OR REPLACE VIEW view_public_post_eligibility AS
     OR EXISTS (
       WITH story_publication AS MATERIALIZED (
         SELECT 1
-        FROM post__stories post_story
+        FROM story_posts post_story
         JOIN stories publication_story
           ON publication_story.id = post_story.story_id
          AND publication_story.deleted_at IS NULL

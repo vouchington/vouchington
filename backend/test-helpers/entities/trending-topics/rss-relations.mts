@@ -31,7 +31,7 @@ export async function insertBatchRssRelations(params: {
     await using transaction = await beginTransaction()
     const query = transaction
     await query(sql`/* insertBatchRssRelations:identities */
-        INSERT INTO rss_feed_item_ids (id, url_hostname_id, guid)
+        INSERT INTO rss_feed_item_guids (id, url_hostname_id, guid)
         SELECT r.item_id, ${urlHostnameId}, r.guid
         FROM UNNEST(${itemIds}::uuid[], ${guids}::text[]) AS r(item_id, guid)
         ON CONFLICT (url_hostname_id, guid) DO NOTHING`)

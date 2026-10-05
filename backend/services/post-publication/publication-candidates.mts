@@ -46,7 +46,7 @@ export async function listPublicationCandidates(
          OR (scope.author_user_id IS NOT NULL AND (candidate.created_by_id = scope.author_user_id OR root.created_by_id = scope.author_user_id))
          OR (scope.community_id IS NOT NULL AND root.community_id = scope.community_id)
          OR (scope.rss_feed_id IS NOT NULL AND EXISTS (
-              SELECT 1 FROM post__stories ps
+              SELECT 1 FROM story_posts ps
               JOIN rss_feed_items item ON item.story_id = ps.story_id AND item.deleted_at IS NULL
               JOIN rss_feed_item_sources source ON source.rss_feed_item_id = item.id
               WHERE ps.post_id = root.id AND source.rss_feed_id = scope.rss_feed_id

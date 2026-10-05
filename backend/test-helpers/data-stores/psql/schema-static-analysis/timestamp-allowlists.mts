@@ -22,14 +22,17 @@ export const ALLOWED_MISSING_CREATED_AT = new Map<string, string>([
   ...postPublication.POST_PUBLICATION_TABLES_WITHOUT_CREATED_AT,
   ...AUTHORIZATION_TABLES_WITHOUT_CREATED_AT,
   [
-    'rss_feed_item_ids',
+    'rss_feed_item_guids',
     'Permanent identity lookup; creation time remains derivable from its UUIDv7 id and is never queried from the lookup.',
   ],
   ['rss_feed_item_read_states', 'Composite PK; read_at is the sole lifecycle timestamp.'],
   ['post_read_states', 'Composite PK; read_at is the sole lifecycle timestamp.'],
   ...postModeration.POST_MODERATION_TABLES_WITHOUT_CREATED_AT,
   ...CLASSIFIER_RUN_TABLES_WITHOUT_CREATED_AT,
-  ['boilerplate_removal_urls', 'Pure join table keyed by boilerplate removal and URL.'],
+  [
+    'hostname_path_boilerplate_removal_urls',
+    'Pure join table keyed by boilerplate removal and URL.',
+  ],
   ['categories__related_categories', 'Pure relation table; relation timing is not queried.'],
   ['categories__related_topics', 'Pure relation table; relation timing is not queried.'],
   [
@@ -37,26 +40,17 @@ export const ALLOWED_MISSING_CREATED_AT = new Map<string, string>([
     'Extension table keyed by agent_prompts.id; timestamps live on the base prompt.',
   ],
   ['community_application_questions', 'Configuration child rows ordered inside a community.'],
+  ['community_list_posts', 'Pure list membership table with added/removed lifecycle timestamps.'],
   [
-    'community_list_items__posts',
+    'community_list_rss_feeds',
     'Pure list membership table with added/removed lifecycle timestamps.',
   ],
+  ['community_list_topics', 'Pure list membership table with added/removed lifecycle timestamps.'],
   [
-    'community_list_items__rss_feeds',
+    'community_list_url_hostnames',
     'Pure list membership table with added/removed lifecycle timestamps.',
   ],
-  [
-    'community_list_items__topics',
-    'Pure list membership table with added/removed lifecycle timestamps.',
-  ],
-  [
-    'community_list_items__url_hostnames',
-    'Pure list membership table with added/removed lifecycle timestamps.',
-  ],
-  [
-    'community_list_items__urls',
-    'Pure list membership table with added/removed lifecycle timestamps.',
-  ],
+  ['community_list_urls', 'Pure list membership table with added/removed lifecycle timestamps.'],
   ['community_pinned_posts', 'Pure ordered pin table.'],
   ['community_post_reviews', 'Review lifecycle timestamps model moderation state.'],
   ['currencies', 'Static lookup table.'],
@@ -96,7 +90,7 @@ export const ALLOWED_MISSING_UPDATED_AT = new Map<string, string>([
     'Permanent response-id reservation rows are inserted atomically with one ledger row and never updated.',
   ],
   [
-    'rss_feed_item_ids',
+    'rss_feed_item_guids',
     'Permanent identity rows have no semantic updates; conflict tuple bumps exist only to return the established id.',
   ],
   [
@@ -116,11 +110,11 @@ export const ALLOWED_MISSING_UPDATED_AT = new Map<string, string>([
     'Read-state rows use composite PK; read_at is the only timestamp and is set once on insert.',
   ],
   [
-    'list_items__posts',
+    'user_list_posts',
     'Append-only list membership rows; item fields are never updated, only soft-deleted via removed_at.',
   ],
   [
-    'list_items__rss_feed_items',
+    'user_list_rss_feed_items',
     'Append-only list membership rows; item fields are never updated, only soft-deleted via removed_at.',
   ],
   ['community_agent_prompt_revisions', 'Append-only audit log of community agent prompt changes.'],
@@ -152,7 +146,7 @@ export const ALLOWED_MISSING_UPDATED_AT = new Map<string, string>([
   ['rss_feed_item_sources', 'Composite source mapping for feed items.'],
   ['rss_feed_urls', 'Feed URL alias table; crawl state lives elsewhere.'],
   ['session_referral_attributions', 'Append-only referral attribution event.'],
-  ['ses_bounce_events', 'Append-only SES bounce event log.'],
+  ['amazon_ses_bounce_events', 'Append-only SES bounce event log.'],
   ['stripe_events', 'Append-only Stripe event log.'],
   ['post_dispute_annotations', 'Append-only annotation; removal tracked by removed_at.'],
   ['moderation_appeal_lifecycle_changes', 'Append-only lifecycle audit log.'],
@@ -161,7 +155,7 @@ export const ALLOWED_MISSING_UPDATED_AT = new Map<string, string>([
   ['topic_revisions', 'Append-only topic revision history.'],
   ['user_history', 'Append-only user lifecycle history.'],
   [
-    'user_mod_notes',
+    'user_moderator_notes',
     'Append-only moderator note log; deletion tracked by deleted_at, notes are never edited.',
   ],
   ['user_import_requests', 'Import request lifecycle uses explicit state timestamps.'],
@@ -186,10 +180,10 @@ export const ALLOWED_MISSING_UPDATED_AT = new Map<string, string>([
   ],
   ...CLASSIFIER_RUN_TABLES_WITHOUT_UPDATED_AT,
   [
-    'ap_inbox_activities',
+    'activitypub_inbox_activities',
     'Append-only replay-dedup ledger; rows are inserted once by the inbox receiver and never updated.',
   ],
-  ['ap_post_likes', 'Undo/resurrect toggles deleted_at; redelivery refreshes like_ap_id.'],
+  ['activitypub_post_likes', 'Undo/resurrect toggles deleted_at; redelivery refreshes like_ap_id.'],
   ['bluesky_follow_records', 'Redelivery refreshes record_uri; unfollow deletes the row.'],
 ])
 /* v8 ignore stop */

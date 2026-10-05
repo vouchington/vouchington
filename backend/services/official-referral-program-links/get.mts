@@ -36,7 +36,7 @@ export async function getOfficialReferralLinks(
     FROM user_referral_program_links l
     JOIN urls u ON u.id = l.url_id
     JOIN users usr ON usr.id = l.user_id
-    WHERE l.referral_program_id = ${referralProgramId}
+    WHERE l.referral_program_topic_id = ${referralProgramId}
       AND l.deleted_at IS NULL
       AND l.activated_at IS NOT NULL
       AND l.deactivated_at IS NULL

@@ -2,17 +2,17 @@ import { write, type QueryOptions } from '@data-stores/psql'
 import type pg from 'pg'
 
 type TopicAttributeTableName =
-  | 'topics__cards'
-  | 'topics__referral_programs'
-  | 'topics__retailers'
-  | 'topics__rewards_program_statuses'
-  | 'topics__rewards_programs'
-  | 'topics__spending_categories'
+  | 'card_topics'
+  | 'referral_program_topics'
+  | 'retailer_topics'
+  | 'rewards_program_status_topics'
+  | 'rewards_program_topics'
+  | 'spending_category_topics'
 
 /**
  * Upserts topic attributes into a junction table using dynamic column building
  *
- * @param tableName - The table name (e.g., 'topics__cards')
+ * @param tableName - The table name (e.g., 'card_topics')
  * @param topicId - The topic ID to upsert
  * @param columns - Array of column names to update
  * @param values - Array of values corresponding to the columns
@@ -63,17 +63,17 @@ function topicAttributeUpsertQuery(
     SET ${updateSets}
     RETURNING *`
   switch (tableName) {
-    case 'topics__cards':
-      return `/* upsertTopicAttributes:cards */ INSERT INTO topics__cards ${suffix}`
-    case 'topics__referral_programs':
-      return `/* upsertTopicAttributes:referralPrograms */ INSERT INTO topics__referral_programs ${suffix}`
-    case 'topics__retailers':
-      return `/* upsertTopicAttributes:retailers */ INSERT INTO topics__retailers ${suffix}`
-    case 'topics__rewards_program_statuses':
-      return `/* upsertTopicAttributes:rewardsProgramStatuses */ INSERT INTO topics__rewards_program_statuses ${suffix}`
-    case 'topics__rewards_programs':
-      return `/* upsertTopicAttributes:rewardsPrograms */ INSERT INTO topics__rewards_programs ${suffix}`
-    case 'topics__spending_categories':
-      return `/* upsertTopicAttributes:spendingCategories */ INSERT INTO topics__spending_categories ${suffix}`
+    case 'card_topics':
+      return `/* upsertTopicAttributes:cards */ INSERT INTO card_topics ${suffix}`
+    case 'referral_program_topics':
+      return `/* upsertTopicAttributes:referralPrograms */ INSERT INTO referral_program_topics ${suffix}`
+    case 'retailer_topics':
+      return `/* upsertTopicAttributes:retailers */ INSERT INTO retailer_topics ${suffix}`
+    case 'rewards_program_status_topics':
+      return `/* upsertTopicAttributes:rewardsProgramStatuses */ INSERT INTO rewards_program_status_topics ${suffix}`
+    case 'rewards_program_topics':
+      return `/* upsertTopicAttributes:rewardsPrograms */ INSERT INTO rewards_program_topics ${suffix}`
+    case 'spending_category_topics':
+      return `/* upsertTopicAttributes:spendingCategories */ INSERT INTO spending_category_topics ${suffix}`
   }
 }

@@ -6,7 +6,7 @@ Returns referral programs ranked by number of active links created in the past 3
 
 ## Data model
 
-Reads from `topics__referral_programs` joined with `user_referral_program_links`. Filters to enabled programs.
+Reads from `referral_program_topics` joined with `user_referral_program_links`. Filters to enabled programs.
 
 ## Functions
 

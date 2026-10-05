@@ -11,7 +11,7 @@ export async function verifyActivityPubInboxDelivery(
   remoteActorId: string,
 ): Promise<ActivityPubInboxTransitionResult> {
   const result = await write(sql`/* verifyActivityPubInboxDelivery */
-    UPDATE ap_inbox_deliveries
+    UPDATE activitypub_inbox_deliveries
     SET verified_at = CURRENT_TIMESTAMP,
         remote_actor_id = ${remoteActorId},
         retention_expires_at = CASE
@@ -34,7 +34,7 @@ export async function admitActivityPubInboxDeliverySender(
   processingAttemptId: string,
 ): Promise<ActivityPubInboxTransitionResult> {
   const result = await write(sql`/* admitActivityPubInboxDeliverySender */
-    UPDATE ap_inbox_deliveries
+    UPDATE activitypub_inbox_deliveries
     SET sender_allowed_at = CURRENT_TIMESTAMP
     WHERE id = ${deliveryId}
       AND processing_attempt_id = ${processingAttemptId}
@@ -54,7 +54,7 @@ export async function deferActivityPubInboxDelivery(
   deferredUntil: Date,
 ): Promise<ActivityPubInboxTransitionResult<RecoverableActivityPubInboxDelivery>> {
   const { rows } = await write(sql`/* deferActivityPubInboxDelivery */
-    UPDATE ap_inbox_deliveries
+    UPDATE activitypub_inbox_deliveries
     SET processing_attempt_id = uuidv7(),
         processing_at = NULL,
         enqueued_at = NULL,

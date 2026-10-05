@@ -27,7 +27,7 @@ Not partitioned — growth: unbounded.
 | `agent_moderation_id`                  | `uuid`                     | yes      |                              |          |           |           | Target agent moderation whose staff vote was changed; paired with its post owner.                  |
 | `agent_moderation_post_id`             | `uuid`                     | yes      |                              |          |           |           | Post owner required by the partitioned agent-moderation target foreign key.                        |
 | `oauth_client_id`                      | `uuid`                     | yes      |                              |          |           |           | Target OAuth client whose verification was changed.                                                |
-| `user_mod_note_id`                     | `uuid`                     | yes      |                              |          |           |           | Target staff note retained after soft deletion.                                                    |
+| `user_moderator_note_id`               | `uuid`                     | yes      |                              |          |           |           | Target staff note retained after soft deletion.                                                    |
 | `crawler_id`                           | `uuid`                     | yes      |                              |          |           |           | Target crawler created, edited, or deleted by staff.                                               |
 | `topic_id`                             | `uuid`                     | yes      |                              |          |           |           | Target editorial topic assigned to an RSS category.                                                |
 | `operation_request_id`                 | `uuid`                     | yes      |                              |          |           |           | Requested audit row linked by an external-operation outcome; an absent outcome remains unresolved. |
@@ -61,7 +61,7 @@ _none_
 - `moderator_actions_agent_moderation_post_id_agent_moderatio_fkey`: `FOREIGN KEY (agent_moderation_post_id, agent_moderation_id) REFERENCES agent_moderations(post_id, id) ON DELETE SET NULL`
 - `moderator_actions_community_application_id_fkey`: `FOREIGN KEY (community_application_id) REFERENCES community_applications(id) ON DELETE SET NULL`
 - `moderator_actions_community_id_fkey`: `FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE SET NULL`
-- `moderator_actions_crawler_id_fkey`: `FOREIGN KEY (crawler_id) REFERENCES crawlers(id) ON DELETE SET NULL`
+- `moderator_actions_crawler_id_fkey`: `FOREIGN KEY (crawler_id) REFERENCES hostname_crawler_configurations(id) ON DELETE SET NULL`
 - `moderator_actions_operation_request_id_fkey`: `FOREIGN KEY (operation_request_id) REFERENCES moderator_actions(id) ON DELETE SET NULL`
 - `moderator_actions_post_id_fkey`: `FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE SET NULL`
 - `moderator_actions_report_id_fkey`: `FOREIGN KEY (report_id) REFERENCES moderation_reports(id) ON DELETE SET NULL`
@@ -69,7 +69,7 @@ _none_
 - `moderator_actions_target_user_id_fkey`: `FOREIGN KEY (target_user_id) REFERENCES users(id) ON DELETE SET NULL`
 - `moderator_actions_topic_claim_id_fkey`: `FOREIGN KEY (topic_claim_id) REFERENCES topic_claims(id) ON DELETE SET NULL`
 - `moderator_actions_topic_id_fkey`: `FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE SET NULL`
-- `moderator_actions_user_mod_note_id_fkey`: `FOREIGN KEY (user_mod_note_id) REFERENCES user_mod_notes(id) ON DELETE SET NULL`
+- `moderator_actions_user_moderator_note_id_fkey`: `FOREIGN KEY (user_moderator_note_id) REFERENCES user_moderator_notes(id) ON DELETE SET NULL`
 - `moderator_actions_vote_integrity_flag_id_fkey`: `FOREIGN KEY (vote_integrity_flag_id) REFERENCES vote_integrity_flags(id) ON DELETE SET NULL`
 - `moderator_actions_vote_weight_penalty_id_fkey`: `FOREIGN KEY (vote_weight_penalty_id) REFERENCES vote_weight_penalties(id) ON DELETE SET NULL`
 
@@ -94,7 +94,7 @@ _none_
 - `idx_moderator_actions__target_user_id`: `CREATE INDEX idx_moderator_actions__target_user_id ON public.moderator_actions USING btree (target_user_id) WHERE (target_user_id IS NOT NULL)`
 - `idx_moderator_actions__topic_claim_id`: `CREATE INDEX idx_moderator_actions__topic_claim_id ON public.moderator_actions USING btree (topic_claim_id) WHERE (topic_claim_id IS NOT NULL)`
 - `idx_moderator_actions__topic_id`: `CREATE INDEX idx_moderator_actions__topic_id ON public.moderator_actions USING btree (topic_id) WHERE (topic_id IS NOT NULL)`
-- `idx_moderator_actions__user_mod_note_id`: `CREATE INDEX idx_moderator_actions__user_mod_note_id ON public.moderator_actions USING btree (user_mod_note_id) WHERE (user_mod_note_id IS NOT NULL)`
+- `idx_moderator_actions__user_moderator_note_id`: `CREATE INDEX idx_moderator_actions__user_moderator_note_id ON public.moderator_actions USING btree (user_moderator_note_id) WHERE (user_moderator_note_id IS NOT NULL)`
 - `idx_moderator_actions__vote_integrity_flag_id`: `CREATE INDEX idx_moderator_actions__vote_integrity_flag_id ON public.moderator_actions USING btree (vote_integrity_flag_id) WHERE (vote_integrity_flag_id IS NOT NULL)`
 - `idx_moderator_actions__vote_weight_penalty_id`: `CREATE INDEX idx_moderator_actions__vote_weight_penalty_id ON public.moderator_actions USING btree (vote_weight_penalty_id) WHERE (vote_weight_penalty_id IS NOT NULL)`
 - `moderator_actions_pkey`: `CREATE UNIQUE INDEX moderator_actions_pkey ON public.moderator_actions USING btree (id)`

@@ -54,7 +54,7 @@ Valid job types:
 - `runConfigDriven` — run config-driven schema operations (seeds, functions, and generators)
 - `createPartitions` — create future monthly partitions
 - `cleanupPartitions` — drop expired monthly partitions; a `crawls` month first clears the
-  `user_referral_program_links.last_crawl_id` and `bedrock_embeddings_batches.crawl_id` pointers into it and
+  `user_referral_program_links.last_crawl_id` and `bedrock_embedding_batches.crawl_id` pointers into it and
   detaches it, because dropping a partition fires no `ON DELETE` action
 
 Response: `{ success: boolean }`

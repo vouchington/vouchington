@@ -15,7 +15,7 @@
 | `official_rss_feed_item_id` | UUID (nullable)        | FK to the canonical item                                              |
 | `official_locked_at`        | TIMESTAMPTZ (nullable) | Set by admin to prevent agent override                                |
 
-### `post__stories` junction table
+### `story_posts` junction table
 
 Links one story post to one story. Replaces the former `stories.discussion_post_id` column.
 

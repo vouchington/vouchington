@@ -6,7 +6,7 @@ export function appendTopicIdsFilter(searchQuery: SQLStatement, topicIds: string
   searchQuery.append(sql`
     AND (
       SELECT COUNT(DISTINCT clit.topic_id)
-      FROM community_list_items__topics clit
+      FROM community_list_topics clit
       WHERE clit.community_id = c.id
         AND clit.removed_at IS NULL
         AND clit.topic_id = ANY(${topicIds})

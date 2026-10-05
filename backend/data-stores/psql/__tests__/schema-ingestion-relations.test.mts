@@ -17,7 +17,7 @@ describe('bedrock embedding batch foreign keys', () => {
     await expect(
       rejectionCode(
         `/* schemaIngestionRelations */
-         INSERT INTO bedrock_embeddings_batches (id, model_id, job_type, data, url_id)
+         INSERT INTO bedrock_embedding_batches (id, model_id, job_type, data, url_id)
          VALUES ($1, 'amazon.nova-2-multimodal-embeddings-v1:0', 'topics', '{}'::jsonb, $2)`,
         [`bedrock-fk-url-${missing}`, missing],
       ),
@@ -25,7 +25,7 @@ describe('bedrock embedding batch foreign keys', () => {
     await expect(
       rejectionCode(
         `/* schemaIngestionRelations */
-         INSERT INTO bedrock_embeddings_batches (id, model_id, job_type, data, crawl_id)
+         INSERT INTO bedrock_embedding_batches (id, model_id, job_type, data, crawl_id)
          VALUES ($1, 'amazon.nova-2-multimodal-embeddings-v1:0', 'topics', '{}'::jsonb, $2)`,
         [`bedrock-fk-crawl-${missing}`, missing],
       ),

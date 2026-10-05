@@ -84,10 +84,9 @@ export const createBatch = async (
     }
     if (canReleaseLocks && batchPersisted) {
       await cleanupBatchLocks(batchId).catch(onError)
-      await write(
-        `/* createBatch:cleanup */ DELETE FROM bedrock_embeddings_batches WHERE id = $1`,
-        [batchId],
-      ).catch(onError)
+      await write(`/* createBatch:cleanup */ DELETE FROM bedrock_embedding_batches WHERE id = $1`, [
+        batchId,
+      ]).catch(onError)
     }
     throw err
   } finally {

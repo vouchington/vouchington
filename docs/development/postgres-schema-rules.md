@@ -191,8 +191,7 @@ examples describe the review baseline, rather than the current generated snapsho
     One table per target works like a partition by type. Each table has its own indexes and
     `order_index` sequence, and needs no partial-index predicates. Every reader already queries
     one type, through the storage catalogs (`community-list-item-storage.mts`,
-    `lists/catalog.mts`). The one mixed read, `view_list_items` (becoming `view_user_list_items`, with
-    `list_item_types`→`user_list_item_types`), stays a `UNION ALL`. Each
+    `lists/catalog.mts`). The one mixed read, `view_user_list_items` (using `user_list_item_types`), stays a `UNION ALL`. Each
     family's copies must keep identical columns, which an NM-10 `postgres-table-shape` (jonathanong/no-mistakes#1064) shape enforces (§5 5c).
 - Vendor or model names appear only where the stored data is bound to that model (the
   `bedrock_nova_multimodal_v1_*` vectors). Record the reason in the table comment.

@@ -10,7 +10,7 @@ the `community-moderation` classifier on the same lifecycle: a publication chang
 
 **Baseline vs community-opt-in moderators:**
 
-Moderators with `is_baseline = true` run on every post site-wide, regardless of community membership or community moderation opt-in. Community-opt-in moderators run only when the post belongs to a community that has opted into moderation. Admins can disable any baseline moderator via `agents__moderators.active = false` (kill-switch).
+Moderators with `is_baseline = true` run on every post site-wide, regardless of community membership or community moderation opt-in. Community-opt-in moderators run only when the post belongs to a community that has opted into moderation. Admins can disable any baseline moderator via `moderator_agents.active = false` (kill-switch).
 
 **Active moderators (`backend/services/agents/moderator-configs.mts`):**
 
@@ -26,7 +26,7 @@ Moderators with `is_baseline = true` run on every post site-wide, regardless of 
 
 The config carries only each moderator's identity and baseline flag; the rule text lives in the
 post classifier catalog (`backend/types/entities/post-classifier.mts`). The seed provisions the
-system user, `agents` row, and `agents__moderators` row per slug, and no `agent_prompts` rows: the
+system user, `agents` row, and `moderator_agents` row per slug, and no `agent_prompts` rows: the
 classifier's prompt, model, and provider are seeded with the post classifier. Every seeded
 moderator is record-only and has no per-agent action setting; only a community's own prompts can
 act on a flag, through the community-level `communities.automod_action` setting.
@@ -60,6 +60,6 @@ per-community cost totals at `/admin/ai-costs` (GET `/api/v1/admin/ai-costs`). T
 `total_cost.amount` as a canonical integer string so same-community sums remain exact beyond the
 JSON-safe range.
 
-**Database:** `agents__moderators` (`is_baseline`), `agent_moderations`, `agent_prompts` (community prompts only), `ai_usage_records`
+**Database:** `moderator_agents` (`is_baseline`), `agent_moderations`, `agent_prompts` (community prompts only), `ai_usage_records`
 
 **Services:** `backend/agents/community-moderation/`, `backend/services/moderation/`, `backend/services/ai-usage/`

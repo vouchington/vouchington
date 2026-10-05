@@ -43,7 +43,7 @@ const getIndividualRewardsProgramPointValuationById = async (
     sql`/* getIndividualRewardsProgramPointValuationById */
     SELECT
       individual_rewards_program_point_valuations.id,
-      individual_rewards_program_point_valuations.rewards_program_id,
+      individual_rewards_program_point_valuations.rewards_program_topic_id AS rewards_program_id,
       individual_rewards_program_point_valuations.value_microunits_per_point::TEXT AS value_microunits_per_point,
       individual_rewards_program_point_valuations.currency_code,
       individual_rewards_program_point_valuations.note,
@@ -51,7 +51,7 @@ const getIndividualRewardsProgramPointValuationById = async (
       view_topics.slug AS rewards_program_slug
     FROM individual_rewards_program_point_valuations
     JOIN view_topics
-      ON view_topics.id = individual_rewards_program_point_valuations.rewards_program_id
+      ON view_topics.id = individual_rewards_program_point_valuations.rewards_program_topic_id
     WHERE individual_rewards_program_point_valuations.id = ${id}
       AND individual_id = ${individual.id}
     LIMIT 1
@@ -80,7 +80,7 @@ export const createIndividualRewardsProgramPointValuation = async (
     ;({ rows } = await write(sql`/* createIndividualRewardsProgramPointValuation */
       INSERT INTO individual_rewards_program_point_valuations (
         individual_id,
-        rewards_program_id,
+        rewards_program_topic_id,
         value_microunits_per_point,
         currency_code,
         note

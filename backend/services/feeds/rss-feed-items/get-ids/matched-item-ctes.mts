@@ -8,7 +8,7 @@ export function appendMatchedItemCTEs(
     itemCutoffId,
   }: { feedType: RssFeedItemFeedType | undefined; itemCutoffId: string | null },
 ): void {
-  query.append(sql`, matched_source_rss_feed_item_ids AS MATERIALIZED (
+  query.append(sql`, matched_source_rss_feed_item_guids AS MATERIALIZED (
     SELECT DISTINCT source.rss_feed_item_id AS item_id
     FROM followed_rss_feeds
     JOIN rss_feed_item_sources source ON source.rss_feed_id = followed_rss_feeds.rss_feed_id
@@ -17,7 +17,7 @@ export function appendMatchedItemCTEs(
   appendItemCutoff(query, sql`source.rss_feed_item_id`, itemCutoffId)
   query
     .append(sql`
-  ), matched_topic_rss_feed_item_ids AS MATERIALIZED (
+  ), matched_topic_rss_feed_item_guids AS MATERIALIZED (
     SELECT category.rss_feed_item_id AS item_id
     FROM followed_topics
     JOIN rss_feed_item_categories category ON category.topic_id = followed_topics.topic_id
@@ -46,12 +46,12 @@ export function appendMatchedItemCTEs(
     .append(feedType === 'follow_rss_feeds' ? 'false' : 'true')
   appendItemCutoff(query, sql`relation.subject_id`, itemCutoffId)
   query.append(sql`
-  ), matched_direct_rss_feed_item_ids AS MATERIALIZED (
+  ), matched_direct_rss_feed_item_guids AS MATERIALIZED (
     SELECT item_id, bool_or(matches_source) AS matches_source, bool_or(matches_topics) AS matches_topics
     FROM (
-      SELECT item_id, true AS matches_source, false AS matches_topics FROM matched_source_rss_feed_item_ids
+      SELECT item_id, true AS matches_source, false AS matches_topics FROM matched_source_rss_feed_item_guids
       UNION ALL
-      SELECT item_id, false AS matches_source, true AS matches_topics FROM matched_topic_rss_feed_item_ids
+      SELECT item_id, false AS matches_source, true AS matches_topics FROM matched_topic_rss_feed_item_guids
     ) matches
     GROUP BY item_id
   )`)

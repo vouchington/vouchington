@@ -54,7 +54,7 @@ export function discoverPublicPostReaders(ctx: SharedContext): string[] {
       /\bposts?\.(?:id|root_id|deleted_at|approved_at|archived_at|privacy|broadcast|post_type|community_id)\b/.test(
         content,
       ) ||
-      content.includes('post__stories')
+      content.includes('story_posts')
     const buildsReaderSql =
       /\bSELECT\b/i.test(content) ||
       /(?:query-builder|search-filters|eligible-posts-cte)/.test(path)

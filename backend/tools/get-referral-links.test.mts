@@ -54,7 +54,7 @@ describe('get-referral-links', () => {
       expect((result as Extract<typeof result, { success: false }>).error).toBe('Topic not found')
     })
 
-    it('returns error for a topic that is not a card (no topics__cards entry)', async () => {
+    it('returns error for a topic that is not a card (no card_topics entry)', async () => {
       const user = await createTestUser()
       const suffix = crypto.randomUUID().slice(0, 8)
       const nonCardTopicId = await insertTestTopic({

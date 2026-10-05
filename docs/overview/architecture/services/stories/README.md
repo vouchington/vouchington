@@ -11,7 +11,7 @@ A **story** clusters articles about the same event together using embedding simi
 - **Title**: The cleaned title of the standalone item the clusterer matched when it founded the story (NULL when empty; readers fall back to the item's title). Admins can edit it
 - **`cluster_reason`**: A fixed opaque string for clusterer-founded stories; no reader parses it
 - **`published_at`**: When the event occurred (the earlier founding member's `published_at`, not row creation time)
-- **`post__stories`**: Junction table linking one story post per story
+- **`story_posts`**: Junction table linking one story post per story
 - **Official item**: The canonical/primary source article (e.g. original press release). Clustering never sets it; an admin does
 - **Admin locks**: `story_locked_at` on items prevents auto-reassignment; `official_locked_at` on stories keeps an admin's official pick
 
@@ -33,7 +33,7 @@ rss_feed_items (added columns)
   story_id        UUID FK → stories.id
   story_locked_at TIMESTAMPTZ (set by admin)
 
-post__stories (junction table)
+story_posts (junction table)
   post_id         UUID PK FK → posts.id
   story_id        UUID UNIQUE FK → stories.id
   initiated_by_id UUID FK → users.id

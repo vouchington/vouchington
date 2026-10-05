@@ -51,7 +51,7 @@ export async function searchModeratorActions(
       ma.vote_weight_penalty_id,
       ma.agent_moderation_id,
       ma.oauth_client_id,
-      ma.user_mod_note_id,
+      ma.user_moderator_note_id,
       ma.crawler_id,
       ma.topic_id,
       ma.operation_request_id,

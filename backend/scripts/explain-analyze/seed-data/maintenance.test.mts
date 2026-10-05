@@ -7,12 +7,12 @@ import {
 
 describe('EXPLAIN ANALYZE seed maintenance', () => {
   it('counts generated RSS feed items by seeded GUID', () => {
-    const target = SEEDED_ROW_COUNT_TARGETS.find(({ table }) => table === 'rss_feed_item_ids')
+    const target = SEEDED_ROW_COUNT_TARGETS.find(({ table }) => table === 'rss_feed_item_guids')
 
-    if (!target) throw new Error('Missing rss_feed_item_ids row count target')
+    if (!target) throw new Error('Missing rss_feed_item_guids row count target')
 
     expect(buildSeededRowCountQuery(target)).toEqual({
-      text: '/* printSeedRowCounts */ SELECT COUNT(*)::text AS count FROM "rss_feed_item_ids" WHERE "guid"::text LIKE $1',
+      text: '/* printSeedRowCounts */ SELECT COUNT(*)::text AS count FROM "rss_feed_item_guids" WHERE "guid"::text LIKE $1',
       values: ['seed-item-guid-%'],
     })
     expect(ANALYZE_TARGETS).toContain('rss_feed_items')
@@ -65,7 +65,7 @@ describe('EXPLAIN ANALYZE seed maintenance', () => {
       { table: 'spending_entries', column: 'id' },
       { table: 'households', column: 'id' },
       { table: 'household_members', column: 'household_id' },
-      { table: 'topics__spending_categories', column: 'topic_id' },
+      { table: 'spending_category_topics', column: 'topic_id' },
     ]
 
     for (const target of targets) {

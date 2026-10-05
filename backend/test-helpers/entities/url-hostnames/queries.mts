@@ -20,9 +20,9 @@ export async function isHostnameDispatchable(hostname: string): Promise<boolean>
       AND uh.crawlable = true
       AND uh.blocked = false
       AND NOT EXISTS (
-        SELECT 1 FROM domain_blacklists db
-        JOIN domain_blacklist_sources dbs ON dbs.id = db.source_id
-        WHERE db.domain = uh.hostname AND dbs.type = 'url'::domain_blacklist_types
+        SELECT 1 FROM blocklisted_domains db
+        JOIN domain_blocklist_sources dbs ON dbs.id = db.source_id
+        WHERE db.domain = uh.hostname AND dbs.type = 'url'::domain_blocklist_types
       )
     LIMIT 1
   `)

@@ -11,7 +11,7 @@ Not partitioned — growth: unbounded.
 | `id`                   | `uuid`                     | no       | `uuidv7()`                        |          |           |           |                                                                            |
 | `household_id`         | `uuid`                     | yes      |                                   |          |           |           | The household this spending is for. Mutually exclusive with individual_id. |
 | `individual_id`        | `uuid`                     | yes      |                                   |          |           |           | The individual this spending is for. Mutually exclusive with household_id. |
-| `spending_category_id` | `uuid`                     | no       |                                   |          |           |           | The spending category (references topics__spending_categories).            |
+| `spending_category_id` | `uuid`                     | no       |                                   |          |           |           | The spending category (references spending_category_topics).               |
 | `spending_frequency`   | `spending_frequencies`     | no       | `'monthly'::spending_frequencies` |          |           |           | How often this spending occurs (monthly or annually).                      |
 | `amount_minor_units`   | `bigint`                   | no       |                                   |          |           |           | Spending amount per frequency period in the currency minor unit.           |
 | `currency_code`        | `text`                     | no       |                                   |          |           |           | Currency of the spending amount.                                           |
@@ -35,7 +35,7 @@ _none_
 - `spending_entries_currency_code_fkey`: `FOREIGN KEY (currency_code) REFERENCES currencies(code) ON DELETE RESTRICT`
 - `spending_entries_household_id_fkey`: `FOREIGN KEY (household_id) REFERENCES households(id) ON DELETE CASCADE`
 - `spending_entries_individual_id_fkey`: `FOREIGN KEY (individual_id) REFERENCES individuals(id) ON DELETE CASCADE`
-- `spending_entries_spending_category_id_fkey`: `FOREIGN KEY (spending_category_id) REFERENCES topics__spending_categories(topic_id) ON DELETE CASCADE`
+- `spending_entries_spending_category_id_fkey`: `FOREIGN KEY (spending_category_id) REFERENCES spending_category_topics(topic_id) ON DELETE CASCADE`
 
 **Indexes:**
 

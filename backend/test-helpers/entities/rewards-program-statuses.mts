@@ -18,9 +18,9 @@ export async function insertTestRewardsProgramStatus(data: {
     createdById: data.createdById,
   })
 
-  // Insert into topics__rewards_program_statuses table
+  // Insert into rewards_program_status_topics table
   await write(sql`
-    INSERT INTO topics__rewards_program_statuses (topic_id)
+    INSERT INTO rewards_program_status_topics (topic_id)
     VALUES (${topicId})
   `)
 

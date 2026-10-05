@@ -106,9 +106,9 @@ async function checkHostnameEmailability(domain: string): Promise<HostnameEmaila
     SELECT
       uh.emailable,
       EXISTS (
-        SELECT 1 FROM domain_blacklists db
-        INNER JOIN domain_blacklist_sources dbs ON dbs.id = db.source_id
-        WHERE db.domain = ${domain} AND dbs.type = 'email'::domain_blacklist_types
+        SELECT 1 FROM blocklisted_domains db
+        INNER JOIN domain_blocklist_sources dbs ON dbs.id = db.source_id
+        WHERE db.domain = ${domain} AND dbs.type = 'email'::domain_blocklist_types
       ) AS is_blacklisted
     FROM (SELECT ${domain} AS hostname) AS d
     LEFT JOIN url_hostnames uh ON uh.hostname = d.hostname

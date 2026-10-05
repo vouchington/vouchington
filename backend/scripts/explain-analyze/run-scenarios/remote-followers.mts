@@ -45,7 +45,7 @@ async function assertRemoteFollowerSeed(): Promise<void> {
         WHERE object_id = $1 AND subject_id BETWEEN $2 AND $3) AS relation_count,
        (SELECT COUNT(*)::text
         FROM topics instance_topic
-        JOIN topics__fediverse_instances tfi ON tfi.topic_id = instance_topic.id
+        JOIN fediverse_instance_topics tfi ON tfi.topic_id = instance_topic.id
         WHERE instance_topic.topic_type = 'fediverse_instance'
           AND instance_topic.deleted_at IS NULL
           AND instance_topic.merged_into_topic_id IS NULL

@@ -78,7 +78,7 @@ Response is streamed and includes: `post`, `post_metrics`, `post_election`, `mar
 | `example_referral_link` | URL string                                | Required for `referral_program` |
 | `landing_page_urls`     | Array of URL strings (≥1)                 | Required for `card`             |
 
-Approval creates the type-specific extension row (`topics__referral_programs` or `topics__cards`) and adds landing-page URL relations for the type-specific URLs.
+Approval creates the type-specific extension row (`referral_program_topics` or `card_topics`) and adds landing-page URL relations for the type-specific URLs.
 
 ## Authorization
 

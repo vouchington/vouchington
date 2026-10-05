@@ -53,7 +53,7 @@ export function buildRecentAutomodActionsStatsQuery(
         LIMIT 1
       ) spam_disposition ON true
       LEFT JOIN agent_moderations am ON am.id = mtf.agent_moderation_id
-      LEFT JOIN agents__moderators mod ON mod.agent_id = am.agent_id
+      LEFT JOIN moderator_agents mod ON mod.agent_id = am.agent_id
       WHERE mtf.community_id = ${communityId}
         AND mtf.event_type = 'automod_reviewed'
         AND mtf.label = 'false_positive'

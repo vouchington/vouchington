@@ -32,7 +32,7 @@ export const createCrawler = async (
   const hostnameId = resolveHostnameId(creator, updates)
   const { rows } = await write(
     sql`/* createCrawler */
-    INSERT INTO crawlers (
+    INSERT INTO hostname_crawler_configurations (
       hostname_id,
       description,
       crawler_type,
@@ -41,7 +41,7 @@ export const createCrawler = async (
       link_text_content_to_remove,
       link_hrefs_to_remove,
       content_selectors,
-      referral_program_id,
+      referral_program_topic_id,
       created_by_id
     )
     VALUES (
@@ -83,7 +83,7 @@ const createCrawlerForHostname = async (
 ): Promise<Crawler> => {
   const { rows } = await write(
     sql`/* createCrawlerForHostname */
-    INSERT INTO crawlers (
+    INSERT INTO hostname_crawler_configurations (
       hostname_id,
       description,
       crawler_type,

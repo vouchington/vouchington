@@ -223,39 +223,47 @@ CREATE TABLE IF NOT EXISTS users (
   deleted_by_id UUID REFERENCES users ON DELETE SET NULL
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_register_retained_user_identity
 BEFORE INSERT ON users
 FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('user');
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_users_updated_at
 BEFORE UPDATE ON users
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
 -- unique index on username (exclude NULLs so multiple users can have NULL username)
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users__username
 ON users (LOWER(username))
 WHERE username IS NOT NULL;
 
 -- search users by username
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_users__username__text_pattern_ops
 ON users (LOWER(username) text_pattern_ops)
 WHERE username IS NOT NULL;
 
 -- partial index for referral attribution queries
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_users__referrer_id ON users (referrer_id) WHERE referrer_id IS NOT NULL;
 
 -- soft-deleted users lookup
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_users__deleted_at
   ON users (deleted_at)
   WHERE deleted_at IS NOT NULL;
 
 -- vote weight recalculation candidates
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_users__vote_weight_recalculation
   ON users (vote_weight_recalculated_at)
   WHERE deleted_at IS NULL AND vote_weight_admin_set_at IS NULL;
 
 -- find users pending language detection (bio)
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS users_lingua_rs_pending_idx
   ON users (id)
   WHERE lingua_rs_input_sha256 IS NULL;
@@ -316,6 +324,7 @@ COMMENT ON COLUMN users.individual_id IS 'The real-person individual linked to t
 -- engagement email send tracking
 -- ============================================================================
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_engagement_email_sends (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   email_type engagement_email_types NOT NULL,
@@ -326,6 +335,7 @@ CREATE TABLE IF NOT EXISTS user_engagement_email_sends (
   PRIMARY KEY (user_id, email_type)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_user_engagement_email_sends_updated_at
 BEFORE UPDATE ON user_engagement_email_sends
 FOR EACH ROW
@@ -342,6 +352,7 @@ COMMENT ON COLUMN user_engagement_email_sends.sent_at IS 'When the email process
 -- moderation email send tracking
 -- ============================================================================
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_moderation_email_sends (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   send_key TEXT NOT NULL,
@@ -351,6 +362,7 @@ CREATE TABLE IF NOT EXISTS user_moderation_email_sends (
   PRIMARY KEY (user_id, send_key)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_user_moderation_email_sends_updated_at
 BEFORE UPDATE ON user_moderation_email_sends
 FOR EACH ROW
@@ -366,6 +378,7 @@ COMMENT ON COLUMN user_moderation_email_sends.sent_at IS 'When the email process
 -- email addresses
 -- ============================================================================
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_email_addresses (
   user_id UUID REFERENCES users ON DELETE CASCADE,
   email_address TEXT NOT NULL,
@@ -378,6 +391,7 @@ CREATE TABLE IF NOT EXISTS user_email_addresses (
   PRIMARY KEY (user_id, email_address)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_email_addresses__user_primary_created_email
   ON user_email_addresses (
     user_id,
@@ -386,14 +400,17 @@ CREATE INDEX IF NOT EXISTS idx_user_email_addresses__user_primary_created_email
     email_address ASC
   );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_user_email_addresses_email_primary
   ON user_email_addresses (email_address)
   WHERE is_primary = TRUE;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_user_email_addresses_user_primary
   ON user_email_addresses (user_id)
   WHERE is_primary = TRUE;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_user_email_addresses_updated_at
 BEFORE UPDATE ON user_email_addresses
 FOR EACH ROW
@@ -404,6 +421,7 @@ COMMENT ON COLUMN user_email_addresses.user_id IS 'The user who owns this email 
 COMMENT ON COLUMN user_email_addresses.email_address IS 'Normalized (lowercase, trimmed) email address.';
 COMMENT ON COLUMN user_email_addresses.is_primary IS 'Whether this is the user''s primary email address.';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS email_address_login_tokens (
   email_address TEXT NOT NULL,
   CHECK (char_length(email_address) <= 255),
@@ -422,31 +440,37 @@ CREATE TABLE IF NOT EXISTS email_address_login_tokens (
   PRIMARY KEY (email_address, token)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_email_address_login_tokens_updated_at
 BEFORE UPDATE ON email_address_login_tokens
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
 -- looking up active login tokens by email address and token
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_email_address_login_tokens_active
 ON email_address_login_tokens (email_address, token)
 WHERE logged_in_at IS NULL;
 
 -- one pending email verification token per user+email combination
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_email_address_login_tokens__user_email_verify
 ON email_address_login_tokens (user_id, email_address)
 WHERE user_id IS NOT NULL;
 
 -- looking up valid email addresses
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_email_address_login_tokens__logged_in
   ON email_address_login_tokens (email_address)
   WHERE logged_in_at IS NOT NULL;
 
 -- index for cleanup by created_at
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_email_address_login_tokens__created_at
   ON email_address_login_tokens (created_at);
 
 -- index for user lookup by email
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_email_addresses__email
   ON user_email_addresses (email_address);
 
@@ -460,6 +484,7 @@ COMMENT ON COLUMN email_address_login_tokens.user_id IS 'Non-NULL for email veri
 -- phone numbers
 -- ============================================================================
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_phone_numbers (
   user_id UUID REFERENCES users ON DELETE CASCADE,
   phone_number TEXT NOT NULL,
@@ -472,14 +497,17 @@ CREATE TABLE IF NOT EXISTS user_phone_numbers (
   PRIMARY KEY (user_id, phone_number)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_user_phone_numbers_phone_primary
   ON user_phone_numbers (phone_number)
   WHERE is_primary = TRUE;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_user_phone_numbers_user_primary
   ON user_phone_numbers (user_id)
   WHERE is_primary = TRUE;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_user_phone_numbers_updated_at
 BEFORE UPDATE ON user_phone_numbers
 FOR EACH ROW
@@ -490,6 +518,7 @@ COMMENT ON COLUMN user_phone_numbers.user_id IS 'The user who owns this phone nu
 COMMENT ON COLUMN user_phone_numbers.phone_number IS 'Normalized (lowercase, trimmed) phone number.';
 COMMENT ON COLUMN user_phone_numbers.is_primary IS 'Whether this is the user''s primary phone number.';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS phone_number_login_tokens (
   phone_number TEXT NOT NULL,
   CHECK (char_length(phone_number) <= 255),
@@ -506,20 +535,24 @@ CREATE TABLE IF NOT EXISTS phone_number_login_tokens (
   PRIMARY KEY (phone_number, token)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_phone_number_login_tokens_updated_at
 BEFORE UPDATE ON phone_number_login_tokens
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_phone_number_login_tokens_active
   ON phone_number_login_tokens (phone_number, token)
   WHERE logged_in_at IS NULL;
 
 -- index for cleanup by created_at
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_phone_number_login_tokens__created_at
 ON phone_number_login_tokens (created_at);
 
 -- index for user lookup by phone
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_phone_numbers__phone
 ON user_phone_numbers (phone_number);
 
@@ -534,7 +567,8 @@ COMMENT ON COLUMN phone_number_login_tokens.logged_in_at IS 'When the token was 
 -- The granular permission tables are reserved near-term RBAC schema. Runtime authorization still
 -- reads role slugs; retain these tables so role-to-permission rollout does not require a redesign.
 
-CREATE TABLE IF NOT EXISTS user_roles_types (
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS user_role_types (
   id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 
   slug TEXT UNIQUE NOT NULL,
@@ -546,11 +580,13 @@ CREATE TABLE IF NOT EXISTS user_roles_types (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE OR REPLACE TRIGGER trigger_user_roles_types_updated_at
-BEFORE UPDATE ON user_roles_types
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_user_role_types_updated_at
+BEFORE UPDATE ON user_role_types
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_permission_types (
   id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 
@@ -563,13 +599,15 @@ CREATE TABLE IF NOT EXISTS user_permission_types (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_user_permission_types_updated_at
 BEFORE UPDATE ON user_permission_types
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_role_permissions (
-  role_type_id BIGINT REFERENCES user_roles_types ON DELETE CASCADE,
+  role_type_id BIGINT REFERENCES user_role_types ON DELETE CASCADE,
   permission_type_id BIGINT REFERENCES user_permission_types ON DELETE CASCADE,
   PRIMARY KEY (role_type_id, permission_type_id),
 
@@ -577,14 +615,16 @@ CREATE TABLE IF NOT EXISTS user_role_permissions (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_user_role_permissions_updated_at
 BEFORE UPDATE ON user_role_permissions
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_roles (
   user_id UUID REFERENCES users ON DELETE CASCADE,
-  role_type_id BIGINT REFERENCES user_roles_types ON DELETE CASCADE,
+  role_type_id BIGINT REFERENCES user_role_types ON DELETE CASCADE,
   PRIMARY KEY (user_id, role_type_id),
 
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -592,6 +632,7 @@ CREATE TABLE IF NOT EXISTS user_roles (
 );
 
 -- Automated accounts never receive human/staff role authority.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_role_user_is_not_system()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE account_kind platform_account_kinds;
@@ -603,17 +644,21 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_user_roles_account_kind
 BEFORE INSERT OR UPDATE OF user_id ON user_roles
 FOR EACH ROW EXECUTE FUNCTION fn_reject_role_user_is_not_system();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_user_roles_updated_at
 BEFORE UPDATE ON user_roles
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_roles__role_type_id ON user_roles (role_type_id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_permissions (
   user_id UUID REFERENCES users ON DELETE CASCADE,
   permission_type_id BIGINT REFERENCES user_permission_types ON DELETE CASCADE,
@@ -623,13 +668,14 @@ CREATE TABLE IF NOT EXISTS user_permissions (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_user_permissions_updated_at
 BEFORE UPDATE ON user_permissions
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
-COMMENT ON TABLE user_roles_types IS 'Lookup table of role types (e.g. administrator) that can be assigned to users.';
-COMMENT ON COLUMN user_roles_types.slug IS 'Unique lowercase identifier for this role type.';
+COMMENT ON TABLE user_role_types IS 'Lookup table of role types (e.g. administrator) that can be assigned to users.';
+COMMENT ON COLUMN user_role_types.slug IS 'Unique lowercase identifier for this role type.';
 
 COMMENT ON TABLE user_permission_types IS 'Lookup table of granular permission types that can be granted to roles or users.';
 COMMENT ON COLUMN user_permission_types.slug IS 'Unique lowercase identifier for this permission type.';
@@ -646,7 +692,7 @@ COMMENT ON TABLE user_permissions IS 'Direct permission grants to individual use
 COMMENT ON COLUMN user_permissions.user_id IS 'The user who has this permission.';
 COMMENT ON COLUMN user_permissions.permission_type_id IS 'The permission type granted to this user.';
 
-INSERT INTO user_roles_types (slug)
+INSERT INTO user_role_types (slug)
 VALUES ('administrator'), ('investor'), ('moderator'), ('developer')
 ON CONFLICT DO NOTHING;
 
@@ -654,6 +700,7 @@ ON CONFLICT DO NOTHING;
 -- meta (facebook)
 -- ============================================================================
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS facebook_accounts (
   -- which user this facebook account is connected to
   -- NOTE: this is nullable because a user can be created after this facebook account data is saved
@@ -674,22 +721,26 @@ CREATE TABLE IF NOT EXISTS facebook_accounts (
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_facebook_accounts_updated_at
 BEFORE UPDATE ON facebook_accounts
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
 -- user ID gets added afterwards
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_facebook_accounts__user_id
 ON facebook_accounts (user_id)
 WHERE user_id IS NOT NULL;
 
 -- no idea if facebook email addresses are unique per account
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_facebook_accounts__facebook_user_email_address
 ON facebook_accounts (facebook_user_email_address)
 WHERE facebook_user_email_address IS NOT NULL;
 
 -- index for cleanup by token expiration
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_facebook_accounts__token_expires_at
 ON facebook_accounts (access_token_expires_at)
 WHERE access_token_expires_at IS NOT NULL;
@@ -703,6 +754,7 @@ COMMENT ON COLUMN facebook_accounts.access_token_ciphertext IS 'Encrypted long-l
 COMMENT ON COLUMN facebook_accounts.access_token_expires_at IS 'When the long-lived access token expires.';
 COMMENT ON COLUMN facebook_accounts.friends_synced_at IS 'When the user''s Facebook friends list was last synced for friend discovery.';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS facebook_friends (
   facebook_user_id TEXT NOT NULL,
   facebook_friend_id TEXT NOT NULL,
@@ -713,6 +765,7 @@ CREATE TABLE IF NOT EXISTS facebook_friends (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_facebook_friends_updated_at
 BEFORE UPDATE ON facebook_friends
 FOR EACH ROW
@@ -726,6 +779,7 @@ COMMENT ON COLUMN facebook_friends.facebook_friend_id IS 'The Facebook user ID o
 -- passkeys
 -- ============================================================================
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_passkeys (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -742,10 +796,12 @@ CREATE TABLE IF NOT EXISTS user_passkeys (
   CONSTRAINT user_passkeys_credential_id_unique UNIQUE (credential_id)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_user_passkeys_updated_at
   BEFORE UPDATE ON user_passkeys
   FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_passkeys__user_id ON user_passkeys (user_id);
 
 COMMENT ON TABLE user_passkeys IS 'WebAuthn/FIDO2 passkey credentials registered by users for passwordless authentication.';
@@ -763,6 +819,7 @@ COMMENT ON COLUMN user_passkeys.last_used_at IS 'When this passkey was last used
 -- session referral attributions
 -- ============================================================================
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS session_referral_attributions (
   id           UUID        PRIMARY KEY DEFAULT uuidv7(),
   session_id   UUID        NOT NULL,
@@ -790,11 +847,14 @@ CREATE TABLE IF NOT EXISTS session_referral_attributions (
   created_at   TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 ) PARTITION BY RANGE (id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_session_referral_attributions__session_id_id
   ON session_referral_attributions (session_id, id);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_session_referral_attributions__referrer_id
   ON session_referral_attributions (referrer_id)
   WHERE referrer_id IS NOT NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_session_referral_attributions__user_id
   ON session_referral_attributions (user_id)
   WHERE user_id IS NOT NULL;
@@ -819,6 +879,7 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_consents (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -831,9 +892,11 @@ CREATE TABLE IF NOT EXISTS user_consents (
   CHECK (version = TRIM(version))
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_user_consents_updated_at
   BEFORE UPDATE ON user_consents FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_user_consents__user_id__unique ON user_consents (user_id, consent_type) WHERE revoked_at IS NULL;
 
 COMMENT ON TABLE user_consents IS 'Records user consent to legal agreements such as privacy policy and terms of service.';
@@ -850,6 +913,7 @@ COMMENT ON COLUMN user_consents.revoked_at IS 'When the user revoked this consen
 -- OAuth provider accounts
 --------------------------------------------------------------------------------
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS apple_accounts (
   user_id UUID REFERENCES users ON DELETE SET NULL,
   apple_user_id TEXT PRIMARY KEY,
@@ -859,15 +923,18 @@ CREATE TABLE IF NOT EXISTS apple_accounts (
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_apple_accounts_updated_at
 BEFORE UPDATE ON apple_accounts
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_apple_accounts__user_id
 ON apple_accounts (user_id)
 WHERE user_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_apple_accounts__email
 ON apple_accounts (apple_user_email_address)
 WHERE apple_user_email_address IS NOT NULL;
@@ -878,6 +945,7 @@ COMMENT ON COLUMN apple_accounts.apple_user_id IS 'Apple''s unique user identifi
 COMMENT ON COLUMN apple_accounts.apple_user_email_address IS 'Email address from the Apple profile.';
 COMMENT ON COLUMN apple_accounts.apple_user_data IS 'Raw JSONB profile data from Apple Sign In.';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS google_accounts (
   user_id UUID REFERENCES users ON DELETE SET NULL,
   google_user_id TEXT PRIMARY KEY,
@@ -887,15 +955,18 @@ CREATE TABLE IF NOT EXISTS google_accounts (
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_google_accounts_updated_at
 BEFORE UPDATE ON google_accounts
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_google_accounts__user_id
 ON google_accounts (user_id)
 WHERE user_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_google_accounts__email
 ON google_accounts (google_user_email_address)
 WHERE google_user_email_address IS NOT NULL;
@@ -906,6 +977,7 @@ COMMENT ON COLUMN google_accounts.google_user_id IS 'Google''s unique user ident
 COMMENT ON COLUMN google_accounts.google_user_email_address IS 'Email address from the Google profile.';
 COMMENT ON COLUMN google_accounts.google_user_data IS 'Raw JSONB profile data from Google OAuth.';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS x_accounts (
   user_id UUID REFERENCES users ON DELETE SET NULL,
   x_user_id TEXT PRIMARY KEY,
@@ -919,19 +991,23 @@ CREATE TABLE IF NOT EXISTS x_accounts (
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_x_accounts_updated_at
 BEFORE UPDATE ON x_accounts
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_x_accounts__user_id
 ON x_accounts (user_id)
 WHERE user_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_x_accounts__token_expires_at
 ON x_accounts (access_token_expires_at)
 WHERE access_token_expires_at IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_x_accounts__friends_synced_at
 ON x_accounts (friends_synced_at)
 WHERE user_id IS NOT NULL AND access_token_ciphertext IS NOT NULL;
@@ -946,6 +1022,7 @@ COMMENT ON COLUMN x_accounts.refresh_token_ciphertext IS 'Encrypted OAuth 2.0 re
 COMMENT ON COLUMN x_accounts.access_token_expires_at IS 'When the access token expires.';
 COMMENT ON COLUMN x_accounts.friends_synced_at IS 'When the user''s X (Twitter) friends list was last synced for friend discovery.';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS linkedin_accounts (
   user_id UUID REFERENCES users ON DELETE SET NULL,
   linkedin_user_id TEXT PRIMARY KEY,
@@ -958,19 +1035,23 @@ CREATE TABLE IF NOT EXISTS linkedin_accounts (
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_linkedin_accounts_updated_at
 BEFORE UPDATE ON linkedin_accounts
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_linkedin_accounts__user_id
 ON linkedin_accounts (user_id)
 WHERE user_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_linkedin_accounts__email
 ON linkedin_accounts (linkedin_user_email_address)
 WHERE linkedin_user_email_address IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_linkedin_accounts__token_expires_at
 ON linkedin_accounts (access_token_expires_at)
 WHERE access_token_expires_at IS NOT NULL;
@@ -984,6 +1065,7 @@ COMMENT ON COLUMN linkedin_accounts.access_token_ciphertext IS 'Encrypted OAuth 
 COMMENT ON COLUMN linkedin_accounts.refresh_token_ciphertext IS 'Encrypted OAuth 2.0 refresh token ciphertext for renewing access.';
 COMMENT ON COLUMN linkedin_accounts.access_token_expires_at IS 'When the access token expires.';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS microsoft_accounts (
   user_id UUID REFERENCES users ON DELETE SET NULL,
   microsoft_user_id TEXT PRIMARY KEY,
@@ -996,19 +1078,23 @@ CREATE TABLE IF NOT EXISTS microsoft_accounts (
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_microsoft_accounts_updated_at
 BEFORE UPDATE ON microsoft_accounts
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_microsoft_accounts__user_id
 ON microsoft_accounts (user_id)
 WHERE user_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_microsoft_accounts__email
 ON microsoft_accounts (microsoft_user_email_address)
 WHERE microsoft_user_email_address IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_microsoft_accounts__token_expires_at
 ON microsoft_accounts (access_token_expires_at)
 WHERE access_token_expires_at IS NOT NULL;
@@ -1026,6 +1112,7 @@ COMMENT ON COLUMN microsoft_accounts.access_token_expires_at IS 'When the access
 -- Aside preferences and curated aside items
 -- ============================================================================
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_aside_preferences (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -1057,18 +1144,22 @@ CREATE TABLE IF NOT EXISTS curated_aside_items (
     CHECK (num_nonnulls(topic_id, rss_feed_id, community_id) = 1)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS uc_curated_aside_items__type_entity
 ON curated_aside_items (aside_type, entity_id)
 WHERE (deleted_at IS NULL);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_curated_aside_items__topic_id
 ON curated_aside_items (topic_id)
 WHERE topic_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_curated_aside_items__rss_feed_id
 ON curated_aside_items (rss_feed_id)
 WHERE rss_feed_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_curated_aside_items__community_id
 ON curated_aside_items (community_id)
 WHERE community_id IS NOT NULL;
@@ -1090,39 +1181,48 @@ COMMENT ON COLUMN curated_aside_items.created_by_id IS 'Admin who curated the it
 -- Partial indexes supporting orphaned OAuth account retention cleanup:
 -- WHERE user_id IS NULL AND created_at is older than the retention cutoff
 -- ORDER BY created_at ASC, <provider_user_id> ASC
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_facebook_accounts__orphan_retention_cleanup
 ON facebook_accounts (created_at, facebook_user_id)
 WHERE user_id IS NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_apple_accounts__orphan_retention_cleanup
 ON apple_accounts (created_at, apple_user_id)
 WHERE user_id IS NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_google_accounts__orphan_retention_cleanup
 ON google_accounts (created_at, google_user_id)
 WHERE user_id IS NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_x_accounts__orphan_retention_cleanup
 ON x_accounts (created_at, x_user_id)
 WHERE user_id IS NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_linkedin_accounts__orphan_retention_cleanup
 ON linkedin_accounts (created_at, linkedin_user_id)
 WHERE user_id IS NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_microsoft_accounts__orphan_retention_cleanup
 ON microsoft_accounts (created_at, microsoft_user_id)
 WHERE user_id IS NULL;
 
 -- Current indexes for fresh schema bootstrap.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_consents__user_id__fk
   ON user_consents (user_id)
   WHERE user_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_permissions__permission_type_id
   ON user_permissions (permission_type_id)
   WHERE permission_type_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_role_permissions__permission_type_id
   ON user_role_permissions (permission_type_id)
   WHERE permission_type_id IS NOT NULL;

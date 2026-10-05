@@ -9,9 +9,9 @@ export async function* urlBlocklistBatchesFromDb(): AsyncGenerator<string[]> {
   for await (const row of createAsyncGeneratorFromCursor<{ domain: string }>(
     sql`/* urlBlocklistBatchesFromDb */
       SELECT db.domain
-      FROM domain_blacklists db
-      INNER JOIN domain_blacklist_sources dbs ON dbs.id = db.source_id
-      WHERE dbs.type = 'url'::domain_blacklist_types
+      FROM blocklisted_domains db
+      INNER JOIN domain_blocklist_sources dbs ON dbs.id = db.source_id
+      WHERE dbs.type = 'url'::domain_blocklist_types
     `,
     { batchSize: URL_BLOCKLIST_BLOOM_BATCH_SIZE },
   )) {

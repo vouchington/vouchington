@@ -42,7 +42,7 @@ export async function listReferralLinkValidations(
 
   const query = sql`/* listReferralLinkValidations */
     SELECT id, slug, user_help_text, updated_at
-    FROM referral_program_link_validations
+    FROM referral_program_link_validation_rule_sets
   `
 
   // Search and cursor-based pagination filters
@@ -94,10 +94,10 @@ export async function listReferralLinkValidationsForProgram(
   const { rows } = await read<ReferralLinkValidation>(
     sql`/* listReferralLinkValidationsForProgram */
       SELECT v.id, v.slug, v.user_help_text, v.updated_at
-      FROM referral_program_link_validations v
-      JOIN topics__referral_program_link_validations j
-        ON j.referral_program_link_validation_id = v.id
-      WHERE j.referral_program_id = ${referralProgramId}
+      FROM referral_program_link_validation_rule_sets v
+      JOIN referral_program_topic_link_validation_rule_sets j
+        ON j.referral_program_link_validation_rule_set_id = v.id
+      WHERE j.referral_program_topic_id = ${referralProgramId}
       ORDER BY v.slug ASC, v.id ASC
     `,
     options,

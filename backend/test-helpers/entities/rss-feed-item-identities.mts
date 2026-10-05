@@ -6,7 +6,7 @@ export async function getTestRssFeedItemIdentityTransactionId(itemId: string): P
     transaction_id: string
   }>(sql`/* getTestRssFeedItemIdentityTransactionId */
     SELECT xmin::text AS transaction_id
-    FROM rss_feed_item_ids
+    FROM rss_feed_item_guids
     WHERE id = ${itemId}
   `)
   if (!rows[0]) throw new Error(`RSS feed item identity not found: ${itemId}`)

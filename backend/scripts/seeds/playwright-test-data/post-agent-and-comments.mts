@@ -9,7 +9,7 @@ async function seedPlaywrightAgentAndComments(query: TransactionQuery): Promise<
     `INSERT INTO agents (id, system_user_id, agent_type, activated_at) VALUES ( '019d0000-0000-7000-8000-000000000002', '019d0000-0000-7000-8000-000000000001', 'moderator', CURRENT_TIMESTAMP ) ON CONFLICT (id) DO NOTHING`,
   )
   await query(
-    `INSERT INTO agents__moderators (agent_id, slug) VALUES ('019d0000-0000-7000-8000-000000000002', 'test-reviewer') ON CONFLICT (agent_id) DO UPDATE SET slug = EXCLUDED.slug`,
+    `INSERT INTO moderator_agents (agent_id, slug) VALUES ('019d0000-0000-7000-8000-000000000002', 'test-reviewer') ON CONFLICT (agent_id) DO UPDATE SET slug = EXCLUDED.slug`,
   )
   await query(
     `INSERT INTO conversations (id, created_by_id, title) VALUES ( '019d0000-0000-7000-8000-000000000003', '019f0000-0000-7000-8000-000000000000', 'Test Agent Conversation' ) ON CONFLICT (id) DO UPDATE SET created_by_id = EXCLUDED.created_by_id, title = EXCLUDED.title`,

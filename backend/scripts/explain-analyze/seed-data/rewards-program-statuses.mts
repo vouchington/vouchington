@@ -33,7 +33,7 @@ export async function seedRewardsProgramStatuses(
       topicValues,
     )
     await query(
-      `/* seedExplainData */ INSERT INTO topics__rewards_program_statuses (topic_id)
+      `/* seedExplainData */ INSERT INTO rewards_program_status_topics (topic_id)
        SELECT id FROM UNNEST($1::UUID[]) AS id
        ON CONFLICT DO NOTHING`,
       [statusIds],

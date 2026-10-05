@@ -35,13 +35,13 @@ export async function getReferralProgramAttributes(
       rp.enabled_at,
       rp.disabled_at,
       COALESCE(
-        array_agg(trplv.referral_program_link_validation_id ORDER BY trplv.referral_program_link_validation_id)
-          FILTER (WHERE trplv.referral_program_link_validation_id IS NOT NULL),
+        array_agg(trplv.referral_program_link_validation_rule_set_id ORDER BY trplv.referral_program_link_validation_rule_set_id)
+          FILTER (WHERE trplv.referral_program_link_validation_rule_set_id IS NOT NULL),
         ARRAY[]::uuid[]
       ) AS referral_program_link_validation_ids
-    FROM topics__referral_programs rp
-    LEFT JOIN topics__referral_program_link_validations trplv
-      ON trplv.referral_program_id = rp.topic_id
+    FROM referral_program_topics rp
+    LEFT JOIN referral_program_topic_link_validation_rule_sets trplv
+      ON trplv.referral_program_topic_id = rp.topic_id
     WHERE rp.topic_id = ${topic.id}
     GROUP BY rp.topic_id
     LIMIT 1
@@ -60,7 +60,7 @@ export async function enableReferralProgram(
     values.push(companyId ?? null)
   }
   await withReferralLinkEligibilityMutationLock({}, query =>
-    upsertTopicAttributes<object>('topics__referral_programs', topicId, columns, values, {
+    upsertTopicAttributes<object>('referral_program_topics', topicId, columns, values, {
       query,
     }),
   )
@@ -79,7 +79,7 @@ export async function linkValidationToReferralProgram(
   await assertReferralLinkValidationExists(validationId, 'validation_id', options)
   await withReferralLinkEligibilityMutationLock(options ?? {}, query =>
     query(sql`/* linkValidationToReferralProgram */
-        INSERT INTO topics__referral_program_link_validations (referral_program_id, referral_program_link_validation_id)
+        INSERT INTO referral_program_topic_link_validation_rule_sets (referral_program_topic_id, referral_program_link_validation_rule_set_id)
         VALUES (${referralProgramId}, ${validationId})
         ON CONFLICT DO NOTHING
       `),
@@ -98,9 +98,9 @@ export async function unlinkValidationFromReferralProgram(
 
   await withReferralLinkEligibilityMutationLock({}, query =>
     query(sql`/* unlinkValidationFromReferralProgram */
-        DELETE FROM topics__referral_program_link_validations
-        WHERE referral_program_id = ${referralProgramId}
-          AND referral_program_link_validation_id = ${validationId}
+        DELETE FROM referral_program_topic_link_validation_rule_sets
+        WHERE referral_program_topic_id = ${referralProgramId}
+          AND referral_program_link_validation_rule_set_id = ${validationId}
       `),
   )
 }
@@ -144,7 +144,7 @@ export async function updateReferralProgramAttributes(
 
   return withReferralLinkEligibilityMutationLock({}, query =>
     upsertTopicAttributes<ReferralProgramAttributes>(
-      'topics__referral_programs',
+      'referral_program_topics',
       topic.id,
       columns,
       values,

@@ -3,12 +3,12 @@
 Source entrypoint: [backend/services/ap-post-likes/README.md](../../../../../backend/services/ap-post-likes/README.md)
 
 Isolated ledger for remote ActivityPub `Like`/`Undo(Like)` activity against local posts (Phase C2).
-Backed by `ap_posts` and `ap_post_likes` (migration `0563`) — deliberately **not** `post_votes`.
+Backed by `post_activitypub_like_tallies` and `activitypub_post_likes` (migration `0563`) — deliberately **not** `post_votes`.
 See `docs/overview/architecture/fediverse-federation.md`'s Like reuse-mapping row:
 `post_votes.user_id` has no polymorphic slot for a non-`users` actor (no polymorphic
 relationships — see `data-stores/psql/AGENTS.md`), and a remote actor must never move local
-`votes_score_net` ranking. `ap_posts.ap_likes_score`/`ap_likes_count` are trigger-maintained from
-`ap_post_likes` by `fn_project_ap_post_likes` — nothing in this package writes `ap_posts` directly.
+`votes_score_net` ranking. `post_activitypub_like_tallies.ap_likes_score`/`ap_likes_count` are trigger-maintained from
+`activitypub_post_likes` by `fn_project_activitypub_post_likes` — nothing in this package writes `post_activitypub_like_tallies` directly.
 
 - `recordLike(postId, remoteActorId, likeApId)` — upserts the active Like row for
   `(postId, remoteActorId)`. Idempotent: a redelivered Like with the same `like_ap_id` is a no-op
@@ -20,7 +20,7 @@ relationships — see `data-stores/psql/AGENTS.md`), and a remote actor must nev
   `(postId, remoteActorId)`, if one exists. No-ops when there is none — an out-of-order
   Undo-before-Like, or a redelivered Undo.
 - `getApPostLikesTally(postId)` — reads the trigger-maintained `{ ap_likes_score, ap_likes_count }`
-  tally from `ap_posts`. Returns `null` when no remote actor has ever liked the post — `ap_posts`
+  tally from `post_activitypub_like_tallies`. Returns `null` when no remote actor has ever liked the post — `post_activitypub_like_tallies`
   is lazily created on first Like, so `null` means zero, not an error.
 
 Both functions take a bare `postId`/`remoteActorId` pair — resolving an inbound activity's
@@ -31,6 +31,6 @@ Both functions take a bare `postId`/`remoteActorId` pair — resolving an inboun
 
 Both functions are single-statement writes on the inbox's request hot path. `recordLike` is one
 statement (a `WITH` CTE combining the conditional resurrect-update with the fallback
-insert-or-update, not two round-trips); `undoLike` is a single `UPDATE`. The `fn_project_ap_post_likes`
-trigger recomputes `ap_posts`'s tally with a `COUNT(*)` scoped to the one affected `post_id`, using
-the `idx_ap_post_likes__post_remote_actor` partial index.
+insert-or-update, not two round-trips); `undoLike` is a single `UPDATE`. The `fn_project_activitypub_post_likes`
+trigger recomputes `post_activitypub_like_tallies`'s tally with a `COUNT(*)` scoped to the one affected `post_id`, using
+the `idx_activitypub_post_likes__post_remote_actor` partial index.

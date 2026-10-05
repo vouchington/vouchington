@@ -11,7 +11,7 @@ type InsertTestListOptions = {
 export async function insertTestList(options: InsertTestListOptions): Promise<List> {
   const { rows } = await write(
     `/* insertTestList */
-    INSERT INTO lists (owner_user_id, name, description, visibility, created_via)
+    INSERT INTO user_lists (owner_user_id, name, description, visibility, created_via)
     VALUES ($1, $2, $3, $4, 'system')
     RETURNING id, owner_user_id, name, description, visibility, created_at, updated_at, removed_at
     `,
@@ -46,9 +46,9 @@ export async function insertTestListRssFeedItem(
 ): Promise<ListItem> {
   const { rows } = await write(
     `/* insertTestListRssFeedItem */
-    INSERT INTO list_items__rss_feed_items (list_id, rss_feed_item_id)
+    INSERT INTO user_list_rss_feed_items (user_list_id, rss_feed_item_id)
     VALUES ($1, $2)
-    RETURNING id, list_id, rss_feed_item_id AS entity_id, order_index, created_at
+    RETURNING id, user_list_id AS list_id, rss_feed_item_id AS entity_id, order_index, created_at
     `,
     [options.listId, options.rssFeedItemId],
   )
@@ -67,7 +67,7 @@ export async function insertTestListRssFeedItem(
 
 export async function listPostItemExists(listId: string, postId: string): Promise<boolean> {
   const { rows } = await read(
-    'SELECT 1 FROM list_items__posts WHERE list_id = $1 AND post_id = $2 AND removed_at IS NULL',
+    'SELECT 1 FROM user_list_posts WHERE user_list_id = $1 AND post_id = $2 AND removed_at IS NULL',
     [listId, postId],
   )
   return rows.length > 0
@@ -75,7 +75,7 @@ export async function listPostItemExists(listId: string, postId: string): Promis
 
 export async function listPostItemCount(listId: string, postId: string): Promise<number> {
   const { rows } = await read(
-    'SELECT COUNT(*)::int AS cnt FROM list_items__posts WHERE list_id = $1 AND post_id = $2 AND removed_at IS NULL',
+    'SELECT COUNT(*)::int AS cnt FROM user_list_posts WHERE user_list_id = $1 AND post_id = $2 AND removed_at IS NULL',
     [listId, postId],
   )
   return (rows[0] as { cnt: number }).cnt
@@ -87,9 +87,9 @@ export async function listRssFeedItemsFromFeedExist(
   rssFeedItemId: string,
 ): Promise<boolean> {
   const { rows } = await read(
-    `SELECT li.rss_feed_item_id FROM list_items__rss_feed_items li
+    `SELECT li.rss_feed_item_id FROM user_list_rss_feed_items li
      JOIN rss_feed_item_sources src ON src.rss_feed_item_id = li.rss_feed_item_id
-     WHERE li.list_id = $1 AND src.rss_feed_id = $2 AND li.removed_at IS NULL`,
+     WHERE li.user_list_id = $1 AND src.rss_feed_id = $2 AND li.removed_at IS NULL`,
     [listId, rssFeedId],
   )
   return rows.some((r: Record<string, unknown>) => r.rss_feed_item_id === rssFeedItemId)

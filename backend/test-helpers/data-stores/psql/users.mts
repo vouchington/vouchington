@@ -92,7 +92,7 @@ export async function countLocalUserRoleAssignments(
   const { rows } = await read<{ count: number }>(sql`
     SELECT COUNT(*)::int AS count
     FROM user_roles ur
-    INNER JOIN user_roles_types urt ON ur.role_type_id = urt.id
+    INNER JOIN user_role_types urt ON ur.role_type_id = urt.id
     WHERE ur.user_id = ${userId}
       AND urt.slug = ${roleSlug}
   `)

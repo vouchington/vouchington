@@ -38,7 +38,7 @@ export async function getRssFeedItemKeyByGuid(
 ): Promise<{ id: string } | null> {
   const { rows } = await read(
     sql`/* getRssFeedItemKeyByGuid */
-      SELECT id FROM rss_feed_item_ids WHERE guid = ${guid} LIMIT 1
+      SELECT id FROM rss_feed_item_guids WHERE guid = ${guid} LIMIT 1
     `,
     options,
   )

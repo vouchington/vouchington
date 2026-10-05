@@ -11,7 +11,7 @@ export async function getTestCountryId(code: string): Promise<number> {
 
 export async function insertTestRetailer(data: { topicId: string }): Promise<void> {
   await write(sql`/* insertTestRetailer */
-    INSERT INTO topics__retailers (topic_id)
+    INSERT INTO retailer_topics (topic_id)
     VALUES (${data.topicId})
     ON CONFLICT (topic_id) DO NOTHING
   `)

@@ -186,7 +186,7 @@ config-driven operations, and views. After migration the database contains:
   [`config-driven/0005-00-01-seed-topics.mts`](../../../backend/data-stores/psql/config-driven/0005-00-01-seed-topics.mts)
 - **Agents** — `system` user, agent system users (`autotagger`, `story-teller`, and all moderator slugs including `click-bait`,
   `vague-post`, and `shit-post`),
-  agent rows, and `agents__moderators` rows (slug, baseline flag) seeded by
+  agent rows, and `moderator_agents` rows (slug, baseline flag) seeded by
   [`config-driven/0010-00-01-seed-agents.mts`](../../../backend/data-stores/psql/config-driven/0010-00-01-seed-agents.mts).
   The seed writes no `agent_prompts` rows: only community prompts create them, and the built-in
   classifier's prompt, model, and provider are seeded by
@@ -264,3 +264,5 @@ SQL, or view change, request `pnpm run db:snapshot:update` from a pushed PR head
 CI-generated snapshot commit;
 `pnpm run db:snapshot:check` (also run in CI) fails when the live schema no longer matches the
 committed snapshot.
+
+Canonical object names use subtype-before-parent tables, full provider names, and target-named foreign keys. Public topic, crawler, list-item and referral-validation API fields keep their documented names through explicit SQL projections; the underlying storage uses the canonical target names.

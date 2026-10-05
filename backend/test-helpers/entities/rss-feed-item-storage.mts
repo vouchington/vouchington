@@ -18,7 +18,7 @@ export async function getRssFeedItemStorageStateForTest(itemId: string): Promise
     deleted_at: Date | null
   }>(sql`/* getRssFeedItemStorageStateForTest */
     SELECT
-      EXISTS (SELECT 1 FROM rss_feed_item_ids WHERE id = ${itemId}) AS identity_exists,
+      EXISTS (SELECT 1 FROM rss_feed_item_guids WHERE id = ${itemId}) AS identity_exists,
       EXISTS (SELECT 1 FROM rss_feed_items WHERE id = ${itemId}) AS content_exists,
       (SELECT tableoid::regclass::text FROM rss_feed_items WHERE id = ${itemId}) AS storage_table,
       (SELECT guid FROM view_rss_feed_items WHERE id = ${itemId}) AS view_guid,

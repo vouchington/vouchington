@@ -24,7 +24,7 @@ export async function insertLockRowsWithQuery(
   await pipeline(createReadStream(entityIdsFilePath), copyStream)
 
   await query(
-    `/* insertLockRows */ INSERT INTO bedrock_embeddings_batch_entities (
+    `/* insertLockRows */ INSERT INTO bedrock_embedding_batch_entities (
       batch_id,
       entity_type,
       topic_id,

@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE VIEW view_posts AS
   SELECT
     'post' AS __entity_type,
@@ -177,7 +178,7 @@ CREATE OR REPLACE VIEW view_posts AS
         ),
         'hostnames', COALESCE((
           SELECT JSON_AGG(TO_JSONB(vuh.*) ORDER BY vuh.hostname)
-          FROM post_topic_recommendations_hostnames ptrh
+          FROM post_topic_recommendation_hostnames ptrh
           JOIN view_url_hostnames vuh ON vuh.id = ptrh.hostname_id
           WHERE ptrh.post_id = ptr.post_id
         ), '[]'::json),

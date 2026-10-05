@@ -292,7 +292,7 @@ describe('PostgreSQL schema static-analysis rule helpers', () => {
     expect(looksPlural('content_series')).toBe(false)
     expect(looksPlural('authorized_people')).toBe(true)
     expect(looksPlural('eligible_children')).toBe(true)
-    expect(looksPlural('topics__rewards_program_statuses')).toBe(true)
+    expect(looksPlural('rewards_program_status_topics')).toBe(true)
     expect(looksPlural('analyses')).toBe(true)
   })
 })

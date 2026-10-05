@@ -3,11 +3,11 @@
 Source entrypoint: [backend/services/ap-actor-keys/README.md](../../../../../backend/services/ap-actor-keys/README.md)
 
 Manages the ActivityPub RSA-2048 signing keypair each local user needs to act as a federated
-actor. Backed by `ap_actor_keys` (one row per `user_id`, migration `0560`).
+actor. Backed by `activitypub_actor_keys` (one row per `user_id`, migration `0560`).
 
 - `getOrCreateActorKeyPair(userId)` — idempotent get-or-create. Generates a fresh RSA-2048
   keypair via `@modules/http-signatures`'s `generateRsaSha256KeyPair()` unconditionally, then inserts
-  it with `ON CONFLICT (user_id) DO UPDATE SET user_id = ap_actor_keys.user_id` — a no-op update
+  it with `ON CONFLICT (user_id) DO UPDATE SET user_id = activitypub_actor_keys.user_id` — a no-op update
   used only so `RETURNING` resolves to the existing row on conflict. This is deliberate: an
   existing keypair is never overwritten by a later call. Rotating it would silently invalidate the
   public key remote servers have already fetched and cached for verifying this actor's past and

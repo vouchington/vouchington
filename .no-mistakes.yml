@@ -1719,16 +1719,16 @@ rules:
         - community_auto_tagger_agents.enabled_by_id
         - community_bans.banned_by_id
         - community_bans.lifted_by_id
-        - community_list_items__posts.added_by_id
-        - community_list_items__posts.removed_by_id
-        - community_list_items__rss_feeds.added_by_id
-        - community_list_items__rss_feeds.removed_by_id
-        - community_list_items__topics.added_by_id
-        - community_list_items__topics.removed_by_id
-        - community_list_items__url_hostnames.added_by_id
-        - community_list_items__url_hostnames.removed_by_id
-        - community_list_items__urls.added_by_id
-        - community_list_items__urls.removed_by_id
+        - community_list_posts.added_by_id
+        - community_list_posts.removed_by_id
+        - community_list_rss_feeds.added_by_id
+        - community_list_rss_feeds.removed_by_id
+        - community_list_topics.added_by_id
+        - community_list_topics.removed_by_id
+        - community_list_url_hostnames.added_by_id
+        - community_list_url_hostnames.removed_by_id
+        - community_list_urls.added_by_id
+        - community_list_urls.removed_by_id
         - community_members.approved_by_id
         - community_members.removed_by_id
         - community_members.suspected_ban_evader_dismissed_by_id
@@ -1746,8 +1746,8 @@ rules:
         - conversation_messages.edited_by_id
         - conversation_messages.updated_by_id
         - conversation_participants.removed_by_id
-        - crawlers.deleted_by_id
-        - crawlers.updated_by_id
+        - hostname_crawler_configurations.deleted_by_id
+        - hostname_crawler_configurations.updated_by_id
         - curated_aside_items.created_by_id
         - dynamic_configuration_revisions.revised_by_id
         - images.deleted_by_id
@@ -2266,5 +2266,5 @@ rules:
       # longer need allowlisting. These remaining names are live prefixes of
       # implicit unique/PK composites. Do not drop them in this consume PR.
       allowedIndexes:
-        - topics__referral_program_link_validations.idx_topics__referral_program_validations__referral_program_id
+        - referral_program_topic_link_validation_rule_sets.idx_referral_program_topic_link_validation_rule_sets__topic_id
         - admin_import_rows.idx_admin_import_rows__batch_id

@@ -19,7 +19,7 @@ export async function insertTestRewardsProgram(data: {
   })
 
   await write(sql`
-    INSERT INTO topics__rewards_programs (topic_id)
+    INSERT INTO rewards_program_topics (topic_id)
     VALUES (${topicId})
   `)
 

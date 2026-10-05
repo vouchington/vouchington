@@ -7,6 +7,7 @@
 -- 0000-00-00-functions-and-sites.sql
 -- ============================================================================
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TYPE content_creation_channels AS ENUM ('web', 'swift', 'dotnet', 'api', 'mcp', 'system');
 COMMENT ON TYPE content_creation_channels IS 'Channel that created a row: a first-party client (web, swift, dotnet), a credentialed agent path (api, mcp), or a platform job (system).';
 
@@ -37,6 +38,7 @@ BEGIN
 END;
 $$;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_project_latest_change()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE
@@ -56,6 +58,7 @@ BEGIN
 END;
 $$;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_create_metrics()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
@@ -67,6 +70,7 @@ $$;
 
 -- Parent scope is stored solely to express concrete composite foreign keys.
 -- Fill it on insertion; the FK also enforces explicit scope and every later UPDATE.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_update_parent_notice_scope()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE notice_id UUID;
@@ -86,6 +90,7 @@ END;
 $$;
 
 -- Wilson score lower bound function for ranking
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_wilson_score_lower_bound(pos double precision, tot double precision)
 RETURNS double precision
 LANGUAGE sql
@@ -103,6 +108,7 @@ AS $$
 $$;
 
 -- function to update the updated_at column on a table
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_update_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -111,6 +117,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_terminal_lifecycle()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -148,6 +155,7 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 -- Currencies table
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS currencies (
   code TEXT PRIMARY KEY,
   CHECK (code ~ '^[a-z]{3}$'),
@@ -168,47 +176,8 @@ INSERT INTO currencies (code, minor_unit_exponent) VALUES
   ('aud', 2)
 ON CONFLICT (code) DO NOTHING;
 
--- Sites table
--- site-specific logic is handled at the application layer
-CREATE TABLE IF NOT EXISTS sites (
-  slug TEXT PRIMARY KEY,
-  CHECK (char_length(slug) <= 255),
-  CHECK (slug = LOWER(slug)),
-  CHECK (slug = TRIM(slug)),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE OR REPLACE TRIGGER trigger_sites_updated_at
-  BEFORE UPDATE ON sites
-  FOR EACH ROW
-  EXECUTE FUNCTION fn_update_updated_at();
-
-COMMENT ON TABLE sites IS 'Top-level content sites/verticals. Each site groups topics and content under a slug.';
-COMMENT ON COLUMN sites.slug IS 'URL-safe lowercase identifier for the site (e.g. rewards, cars).';
-
-INSERT INTO sites (slug) VALUES
-  ('meta'), -- about this site
-  ('rewards'),
-  ('cars'),
-  ('software-engineering'),
-  ('artificial-intelligence'),
-  ('apple'),
-  ('android'),
-  ('personal-computers'),
-  ('games'),
-  ('politics'),
-  ('public-policy'),
-  ('personal-finance'),
-  ('corporate-finance'),
-  ('cryptocurrency'),
-  ('investing'),
-  ('economics'),
-  ('business'),
-  ('health'),
-  ('legal'),
-  ('science')
-  ;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+-- The unused sites table, trigger and seed are removed.
 
 -- Immutable function to convert text to timestamptz
 -- Used for generated columns that extract timestamps from JSONB
@@ -217,6 +186,7 @@ INSERT INTO sites (slug) VALUES
 -- (session timezone would make this non-immutable)
 -- Best-effort: malformed dates (bad offset, unknown weekday, out-of-range TZ) return NULL
 -- rather than throwing, so the generated column falls back to uuid_extract_timestamp(id).
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_text_to_timestamptz(text_value TEXT)
 RETURNS TIMESTAMPTZ
 LANGUAGE plpgsql
@@ -271,6 +241,7 @@ END $$;
 -- concern doesn't apply, so this wrapper narrows the signature and re-asserts immutability —
 -- same precedent as fn_reverse_hostname_labels. Needed so array_to_string can appear inside a
 -- GENERATED ALWAYS AS (...) STORED expression.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_immutable_array_to_string(p_array TEXT[], p_delimiter TEXT)
 RETURNS TEXT
 LANGUAGE SQL
@@ -283,6 +254,7 @@ $$;
 -- Countries
 -- ============================================================================
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS countries (
   id SMALLINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   code TEXT UNIQUE NOT NULL,
@@ -296,6 +268,7 @@ CREATE TABLE IF NOT EXISTS countries (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_countries_updated_at
 BEFORE UPDATE ON countries
 FOR EACH ROW

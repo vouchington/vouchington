@@ -23,14 +23,14 @@ export async function registerOgDependencyManifest(
   const query = options.query
   const { rows } = await query<{ id: string }>(sql`
     /* registerOgDependencyManifest */
-    INSERT INTO og_dependency_manifests DEFAULT VALUES RETURNING id
+    INSERT INTO open_graph_dependency_manifests DEFAULT VALUES RETURNING id
   `)
   const manifestId = rows[0]?.id
   if (!manifestId) throw new Error('OG dependency manifest was not registered')
   if (dependencies.length === 0) return manifestId
   await query(sql`
     /* registerOgDependencyManifest:placements */
-    INSERT INTO og_dependency_manifest_placements (
+    INSERT INTO open_graph_dependency_manifest_placements (
       manifest_id, placement_id, image_id, placement_revision, ordinal
     )
     SELECT ${manifestId}::uuid, dependency.placement_id, dependency.image_id,
@@ -56,13 +56,13 @@ export async function authorizeOgDependencyManifest(
       SELECT bool_and(`
   statement.append(imageDeliveryAuthorityProof())
   statement.append(sql`)
-      FROM og_dependency_manifest_placements entry
+      FROM open_graph_dependency_manifest_placements entry
       CROSS JOIN LATERAL (
         VALUES (entry.image_id, entry.placement_id, entry.placement_revision)
       ) AS authority(image_id, placement_id, placement_revision)
       WHERE entry.manifest_id = manifest.id
     ), TRUE) AS allowed
-    FROM og_dependency_manifests manifest
+    FROM open_graph_dependency_manifests manifest
     WHERE manifest.id = ${manifestId}::uuid
   `)
   const { rows } = await query<{ allowed: boolean }>(statement)

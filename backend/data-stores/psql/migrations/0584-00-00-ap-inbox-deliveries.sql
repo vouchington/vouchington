@@ -1,6 +1,6 @@
 -- edited-in-place: pre-launch, never deployed to production
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TABLE IF NOT EXISTS ap_inbox_deliveries (
+CREATE TABLE IF NOT EXISTS activitypub_inbox_deliveries (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   request_method http_request_methods NOT NULL,
   request_target TEXT NOT NULL,
@@ -28,15 +28,15 @@ CREATE TABLE IF NOT EXISTS ap_inbox_deliveries (
   last_error TEXT,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT ap_inbox_deliveries__request_method_uppercase CHECK (request_method::text = UPPER(request_method::text)),
-  CONSTRAINT ap_inbox_deliveries__request_method_length CHECK (LENGTH(request_method::text) BETWEEN 1 AND 16),
-  CONSTRAINT ap_inbox_deliveries__sender_hostname_lowercase CHECK (sender_hostname = LOWER(sender_hostname)),
-  CONSTRAINT ap_inbox_deliveries__raw_body_bounded CHECK (OCTET_LENGTH(raw_body) <= 1048576),
-  CONSTRAINT ap_inbox_deliveries__verified_actor_paired CHECK ((verified_at IS NULL) = (remote_actor_id IS NULL)),
-  CONSTRAINT ap_inbox_deliveries__sender_admission_requires_verification CHECK (
+  CONSTRAINT activitypub_inbox_deliveries__request_method_uppercase CHECK (request_method::text = UPPER(request_method::text)),
+  CONSTRAINT activitypub_inbox_deliveries__request_method_length CHECK (LENGTH(request_method::text) BETWEEN 1 AND 16),
+  CONSTRAINT activitypub_inbox_deliveries__sender_hostname_lowercase CHECK (sender_hostname = LOWER(sender_hostname)),
+  CONSTRAINT activitypub_inbox_deliveries__raw_body_bounded CHECK (OCTET_LENGTH(raw_body) <= 1048576),
+  CONSTRAINT activitypub_inbox_deliveries__verified_actor_paired CHECK ((verified_at IS NULL) = (remote_actor_id IS NULL)),
+  CONSTRAINT activitypub_inbox_deliveries__sender_requires_verification CHECK (
     sender_allowed_at IS NULL OR (verified_at IS NOT NULL AND remote_actor_id IS NOT NULL)
   ),
-  CONSTRAINT ap_inbox_deliveries__deferral_state_valid CHECK (
+  CONSTRAINT activitypub_inbox_deliveries__deferral_state_valid CHECK (
     deferred_until IS NULL OR (
       verified_at IS NOT NULL
       AND remote_actor_id IS NOT NULL
@@ -47,71 +47,76 @@ CREATE TABLE IF NOT EXISTS ap_inbox_deliveries (
       AND last_error IS NOT NULL
     )
   ),
-  CONSTRAINT ap_inbox_deliveries__failure_state_valid CHECK (
+  CONSTRAINT activitypub_inbox_deliveries__failure_state_valid CHECK (
     failed_at IS NULL OR (
       processing_at IS NOT NULL
       AND deferred_until IS NULL
       AND last_error IS NOT NULL
     )
   ),
-  CONSTRAINT ap_inbox_deliveries__terminal_diagnostics_present CHECK (
+  CONSTRAINT activitypub_inbox_deliveries__terminal_diagnostics_present CHECK (
     (deferred_until IS NULL AND failed_at IS NULL) OR last_error IS NOT NULL
   ),
-  CONSTRAINT ap_inbox_deliveries__last_error_bounded CHECK (last_error IS NULL OR LENGTH(last_error) <= 1000),
-  CONSTRAINT ap_inbox_deliveries__failed_requires_first_failed CHECK (failed_at IS NULL OR first_failed_at IS NOT NULL),
-  CONSTRAINT ap_inbox_deliveries__first_failed_requires_retention CHECK (first_failed_at IS NULL OR retention_expires_at IS NOT NULL),
-  CONSTRAINT ap_inbox_deliveries__verified_never_failed_has_no_retention CHECK (verified_at IS NULL OR first_failed_at IS NOT NULL OR retention_expires_at IS NULL),
-  CONSTRAINT ap_inbox_deliveries__unverified_requires_retention CHECK (verified_at IS NOT NULL OR retention_expires_at IS NOT NULL),
-  CONSTRAINT ap_inbox_deliveries__first_failed_precedes_failure CHECK (failed_at IS NULL OR first_failed_at <= failed_at),
-  CONSTRAINT ap_inbox_deliveries__unverified_retention_bounded CHECK (verified_at IS NOT NULL OR retention_expires_at <= received_at + INTERVAL '1 hour'),
-  CONSTRAINT ap_inbox_deliveries__verified_failure_retention_bounded CHECK (
+  CONSTRAINT activitypub_inbox_deliveries__last_error_bounded CHECK (last_error IS NULL OR LENGTH(last_error) <= 1000),
+  CONSTRAINT activitypub_inbox_deliveries__failed_requires_first_failed CHECK (failed_at IS NULL OR first_failed_at IS NOT NULL),
+  CONSTRAINT activitypub_inbox_deliveries__first_failed_requires_retention CHECK (first_failed_at IS NULL OR retention_expires_at IS NOT NULL),
+  CONSTRAINT activitypub_inbox_deliveries__verified_first_failure_retention CHECK (verified_at IS NULL OR first_failed_at IS NOT NULL OR retention_expires_at IS NULL),
+  CONSTRAINT activitypub_inbox_deliveries__unverified_requires_retention CHECK (verified_at IS NOT NULL OR retention_expires_at IS NOT NULL),
+  CONSTRAINT activitypub_inbox_deliveries__first_failed_precedes_failure CHECK (failed_at IS NULL OR first_failed_at <= failed_at),
+  CONSTRAINT activitypub_inbox_deliveries__unverified_retention_bounded CHECK (verified_at IS NOT NULL OR retention_expires_at <= received_at + INTERVAL '1 hour'),
+  CONSTRAINT activitypub_inbox_deliveries__verified_bounded_retention CHECK (
     verified_at IS NULL OR first_failed_at IS NULL OR retention_expires_at <= first_failed_at + INTERVAL '7 days'
   )
 );
 
-CREATE OR REPLACE TRIGGER trigger_ap_inbox_deliveries_updated_at
-BEFORE UPDATE ON ap_inbox_deliveries
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_activitypub_inbox_deliveries_updated_at
+BEFORE UPDATE ON activitypub_inbox_deliveries
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
-CREATE INDEX IF NOT EXISTS idx_ap_inbox_deliveries__recovery
-  ON ap_inbox_deliveries (failed_at, deferred_until, processing_at, enqueued_at, received_at, id);
-CREATE INDEX IF NOT EXISTS idx_ap_inbox_deliveries__remote_actor_id
-  ON ap_inbox_deliveries (remote_actor_id) WHERE remote_actor_id IS NOT NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_activitypub_inbox_deliveries__recovery
+  ON activitypub_inbox_deliveries (failed_at, deferred_until, processing_at, enqueued_at, received_at, id);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_activitypub_inbox_deliveries__remote_actor_id
+  ON activitypub_inbox_deliveries (remote_actor_id) WHERE remote_actor_id IS NOT NULL;
 
-COMMENT ON TABLE ap_inbox_deliveries IS 'Durable, unverified ActivityPub inbox envelopes awaiting worker verification and dispatch. Rows and raw request bytes are deleted after a final protocol outcome.';
-COMMENT ON COLUMN ap_inbox_deliveries.request_method IS 'Uppercase HTTP method from the exact inbound signed request; bounded to 16 characters.';
-COMMENT ON COLUMN ap_inbox_deliveries.request_target IS 'Exact path and query string used to reconstruct the signed (request-target) value.';
-COMMENT ON COLUMN ap_inbox_deliveries.expected_host IS 'Public Host value covered by the sender''s HTTP Signature.';
-COMMENT ON COLUMN ap_inbox_deliveries.signature_header IS 'Exact inbound Signature header retained until verification reaches a final outcome.';
-COMMENT ON COLUMN ap_inbox_deliveries.digest_header IS 'Exact inbound Digest header binding the signature to raw_body.';
-COMMENT ON COLUMN ap_inbox_deliveries.date_header IS 'Exact inbound Date header evaluated relative to received_at during queued verification.';
-COMMENT ON COLUMN ap_inbox_deliveries.content_type_header IS 'Optional exact Content-Type header for senders that include it in their signed headers.';
-COMMENT ON COLUMN ap_inbox_deliveries.raw_body IS 'Exact inbound request bytes, bounded to 1 MiB and deleted after a final protocol outcome.';
-COMMENT ON COLUMN ap_inbox_deliveries.claimed_activity_id IS 'Untrusted activity id parsed before signature verification. Intentionally not unique so an unsigned request cannot squat a legitimate id.';
-COMMENT ON COLUMN ap_inbox_deliveries.claimed_activity_type IS 'Untrusted activity type parsed during the network-free request preflight.';
-COMMENT ON COLUMN ap_inbox_deliveries.claimed_actor_uri IS 'Untrusted activity actor URI parsed during the network-free request preflight.';
-COMMENT ON COLUMN ap_inbox_deliveries.sender_hostname IS 'Lowercase hostname derived from the unverified Signature keyId and revalidated by the worker.';
-COMMENT ON COLUMN ap_inbox_deliveries.processing_attempt_id IS 'Fencing token rotated whenever recovery re-enqueues the delivery; stale queue jobs cannot process the row.';
-COMMENT ON COLUMN ap_inbox_deliveries.remote_actor_id IS 'Verified signing actor checkpoint. Actor deletion is restricted while the durable delivery remains.';
-COMMENT ON COLUMN ap_inbox_deliveries.received_at IS 'When the API durably accepted the unverified envelope.';
-COMMENT ON COLUMN ap_inbox_deliveries.enqueued_at IS 'Latest dispatch lease timestamp; recovery waits five minutes before replacing a missing queue job.';
-COMMENT ON COLUMN ap_inbox_deliveries.processing_at IS 'Active worker lease timestamp; non-final retryable failures release it and stale crashes recover after thirty minutes.';
-COMMENT ON COLUMN ap_inbox_deliveries.verified_at IS 'When the worker first verified the exact request signature and actor match; always paired with remote_actor_id.';
-COMMENT ON COLUMN ap_inbox_deliveries.sender_allowed_at IS 'Set after the sender-hostname delivery rate limit admits this envelope; retries do not charge the sender again.';
-COMMENT ON COLUMN ap_inbox_deliveries.deferred_until IS 'Earliest retry time after a valid sender exceeds its hostname delivery allowance.';
-COMMENT ON COLUMN ap_inbox_deliveries.failed_at IS 'Set only after the queue exhausts retryable operational attempts. Manual backfill clears it and rotates the fencing token.';
-COMMENT ON COLUMN ap_inbox_deliveries.first_failed_at IS 'Immutable timestamp of the first retry-exhausting operational failure; survives rearm to anchor sticky retention.';
-COMMENT ON COLUMN ap_inbox_deliveries.retention_expires_at IS 'Maximum retention deadline for an unverified or previously failed durable delivery.';
-COMMENT ON COLUMN ap_inbox_deliveries.last_error IS 'Latest bounded operational failure message for recovery and operator diagnostics.';
+COMMENT ON TABLE activitypub_inbox_deliveries IS 'Durable, unverified ActivityPub inbox envelopes awaiting worker verification and dispatch. Rows and raw request bytes are deleted after a final protocol outcome.';
+COMMENT ON COLUMN activitypub_inbox_deliveries.request_method IS 'Uppercase HTTP method from the exact inbound signed request; bounded to 16 characters.';
+COMMENT ON COLUMN activitypub_inbox_deliveries.request_target IS 'Exact path and query string used to reconstruct the signed (request-target) value.';
+COMMENT ON COLUMN activitypub_inbox_deliveries.expected_host IS 'Public Host value covered by the sender''s HTTP Signature.';
+COMMENT ON COLUMN activitypub_inbox_deliveries.signature_header IS 'Exact inbound Signature header retained until verification reaches a final outcome.';
+COMMENT ON COLUMN activitypub_inbox_deliveries.digest_header IS 'Exact inbound Digest header binding the signature to raw_body.';
+COMMENT ON COLUMN activitypub_inbox_deliveries.date_header IS 'Exact inbound Date header evaluated relative to received_at during queued verification.';
+COMMENT ON COLUMN activitypub_inbox_deliveries.content_type_header IS 'Optional exact Content-Type header for senders that include it in their signed headers.';
+COMMENT ON COLUMN activitypub_inbox_deliveries.raw_body IS 'Exact inbound request bytes, bounded to 1 MiB and deleted after a final protocol outcome.';
+COMMENT ON COLUMN activitypub_inbox_deliveries.claimed_activity_id IS 'Untrusted activity id parsed before signature verification. Intentionally not unique so an unsigned request cannot squat a legitimate id.';
+COMMENT ON COLUMN activitypub_inbox_deliveries.claimed_activity_type IS 'Untrusted activity type parsed during the network-free request preflight.';
+COMMENT ON COLUMN activitypub_inbox_deliveries.claimed_actor_uri IS 'Untrusted activity actor URI parsed during the network-free request preflight.';
+COMMENT ON COLUMN activitypub_inbox_deliveries.sender_hostname IS 'Lowercase hostname derived from the unverified Signature keyId and revalidated by the worker.';
+COMMENT ON COLUMN activitypub_inbox_deliveries.processing_attempt_id IS 'Fencing token rotated whenever recovery re-enqueues the delivery; stale queue jobs cannot process the row.';
+COMMENT ON COLUMN activitypub_inbox_deliveries.remote_actor_id IS 'Verified signing actor checkpoint. Actor deletion is restricted while the durable delivery remains.';
+COMMENT ON COLUMN activitypub_inbox_deliveries.received_at IS 'When the API durably accepted the unverified envelope.';
+COMMENT ON COLUMN activitypub_inbox_deliveries.enqueued_at IS 'Latest dispatch lease timestamp; recovery waits five minutes before replacing a missing queue job.';
+COMMENT ON COLUMN activitypub_inbox_deliveries.processing_at IS 'Active worker lease timestamp; non-final retryable failures release it and stale crashes recover after thirty minutes.';
+COMMENT ON COLUMN activitypub_inbox_deliveries.verified_at IS 'When the worker first verified the exact request signature and actor match; always paired with remote_actor_id.';
+COMMENT ON COLUMN activitypub_inbox_deliveries.sender_allowed_at IS 'Set after the sender-hostname delivery rate limit admits this envelope; retries do not charge the sender again.';
+COMMENT ON COLUMN activitypub_inbox_deliveries.deferred_until IS 'Earliest retry time after a valid sender exceeds its hostname delivery allowance.';
+COMMENT ON COLUMN activitypub_inbox_deliveries.failed_at IS 'Set only after the queue exhausts retryable operational attempts. Manual backfill clears it and rotates the fencing token.';
+COMMENT ON COLUMN activitypub_inbox_deliveries.first_failed_at IS 'Immutable timestamp of the first retry-exhausting operational failure; survives rearm to anchor sticky retention.';
+COMMENT ON COLUMN activitypub_inbox_deliveries.retention_expires_at IS 'Maximum retention deadline for an unverified or previously failed durable delivery.';
+COMMENT ON COLUMN activitypub_inbox_deliveries.last_error IS 'Latest bounded operational failure message for recovery and operator diagnostics.';
 
-COMMENT ON TABLE ap_inbox_activities IS 'Replay-dedup ledger for the ActivityPub inbox receiver. The marker commits atomically with the activity core database effect; a second delivery of the same activity id is rejected before it reaches any write-path.';
+COMMENT ON TABLE activitypub_inbox_activities IS 'Replay-dedup ledger for the ActivityPub inbox receiver. The marker commits atomically with the activity core database effect; a second delivery of the same activity id is rejected before it reaches any write-path.';
 
 -- Current indexes for fresh schema bootstrap.
-CREATE INDEX IF NOT EXISTS idx_ap_inbox_deliveries__unverified_retention
-  ON ap_inbox_deliveries (retention_expires_at, id)
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_activitypub_inbox_deliveries__unverified_retention
+  ON activitypub_inbox_deliveries (retention_expires_at, id)
   WHERE verified_at IS NULL AND retention_expires_at IS NOT NULL;
 
-CREATE INDEX IF NOT EXISTS idx_ap_inbox_deliveries__verified_retention
-  ON ap_inbox_deliveries (retention_expires_at, id)
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_activitypub_inbox_deliveries__verified_retention
+  ON activitypub_inbox_deliveries (retention_expires_at, id)
   WHERE verified_at IS NOT NULL AND retention_expires_at IS NOT NULL;

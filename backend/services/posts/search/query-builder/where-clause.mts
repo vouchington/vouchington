@@ -50,9 +50,9 @@ function appendSimpleColumnFilters(filters: SQLStatement[], options: PostSearchO
   if (options.story_id) {
     filters.push(sql`EXISTS (
       SELECT 1
-      FROM post__stories
-      WHERE post__stories.post_id = posts.id
-        AND post__stories.story_id = ${options.story_id}
+      FROM story_posts
+      WHERE story_posts.post_id = posts.id
+        AND story_posts.story_id = ${options.story_id}
     )`)
   }
 }

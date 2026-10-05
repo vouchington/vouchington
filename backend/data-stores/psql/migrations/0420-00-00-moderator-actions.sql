@@ -73,6 +73,7 @@ EXCEPTION
 END
 $$;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS moderator_actions (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   -- guardrails-disable-next-line uuid-must-be-key
@@ -101,8 +102,8 @@ CREATE TABLE IF NOT EXISTS moderator_actions (
   agent_moderation_id uuid,
   agent_moderation_post_id uuid,
   oauth_client_id uuid,
-  user_mod_note_id uuid REFERENCES user_mod_notes (id) ON DELETE SET NULL,
-  crawler_id uuid REFERENCES crawlers (id) ON DELETE SET NULL,
+  user_moderator_note_id uuid REFERENCES user_moderator_notes (id) ON DELETE SET NULL,
+  crawler_id uuid REFERENCES hostname_crawler_configurations (id) ON DELETE SET NULL,
   topic_id uuid REFERENCES topics (id) ON DELETE SET NULL,
   operation_request_id uuid REFERENCES moderator_actions (id) ON DELETE SET NULL,
   queue_name text,
@@ -121,15 +122,19 @@ CREATE TABLE IF NOT EXISTS moderator_actions (
   CHECK ((agent_moderation_id IS NULL) = (agent_moderation_post_id IS NULL))
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__community__id
   ON moderator_actions (community_id, id DESC);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__id
   ON moderator_actions (id DESC);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__actor__id
   ON moderator_actions (actor_id, id DESC);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__agent_moderation_target
   ON moderator_actions (agent_moderation_post_id, agent_moderation_id);
 
@@ -160,7 +165,7 @@ COMMENT ON COLUMN moderator_actions.vote_weight_penalty_id IS 'Target vote-weigh
 COMMENT ON COLUMN moderator_actions.agent_moderation_id IS 'Target agent moderation whose staff vote was changed; paired with its post owner.';
 COMMENT ON COLUMN moderator_actions.agent_moderation_post_id IS 'Post owner required by the partitioned agent-moderation target foreign key.';
 COMMENT ON COLUMN moderator_actions.oauth_client_id IS 'Target OAuth client whose verification was changed.';
-COMMENT ON COLUMN moderator_actions.user_mod_note_id IS 'Target staff note retained after soft deletion.';
+COMMENT ON COLUMN moderator_actions.user_moderator_note_id IS 'Target staff note retained after soft deletion.';
 COMMENT ON COLUMN moderator_actions.crawler_id IS 'Target crawler created, edited, or deleted by staff.';
 COMMENT ON COLUMN moderator_actions.topic_id IS 'Target editorial topic assigned to an RSS category.';
 COMMENT ON COLUMN moderator_actions.operation_request_id IS 'Requested audit row linked by an external-operation outcome; an absent outcome remains unresolved.';
@@ -175,59 +180,76 @@ COMMENT ON COLUMN moderator_actions.reason IS 'Optional free-text reason for the
 COMMENT ON COLUMN moderator_actions.metadata IS 'Structured context snapshot (e.g. role change target role, topic slugs for tags).';
 
 -- Current indexes for fresh schema bootstrap.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__community_application_id
   ON moderator_actions (community_application_id)
   WHERE community_application_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__post_id
   ON moderator_actions (post_id)
   WHERE post_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__report_id
   ON moderator_actions (report_id)
   WHERE report_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__review_dispute_id
   ON moderator_actions (review_dispute_id)
   WHERE review_dispute_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__target_user_id
   ON moderator_actions (target_user_id)
   WHERE target_user_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__topic_claim_id
   ON moderator_actions (topic_claim_id) WHERE topic_claim_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__report_integrity_flag_id
   ON moderator_actions (report_integrity_flag_id) WHERE report_integrity_flag_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__report_abuse_penalty_id
   ON moderator_actions (report_abuse_penalty_id) WHERE report_abuse_penalty_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__vote_integrity_flag_id
   ON moderator_actions (vote_integrity_flag_id) WHERE vote_integrity_flag_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__vote_weight_penalty_id
   ON moderator_actions (vote_weight_penalty_id) WHERE vote_weight_penalty_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__agent_moderation_id
   ON moderator_actions (agent_moderation_id) WHERE agent_moderation_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__oauth_client_id
   ON moderator_actions (oauth_client_id) WHERE oauth_client_id IS NOT NULL;
 
-CREATE INDEX IF NOT EXISTS idx_moderator_actions__user_mod_note_id
-  ON moderator_actions (user_mod_note_id) WHERE user_mod_note_id IS NOT NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_moderator_actions__user_moderator_note_id
+  ON moderator_actions (user_moderator_note_id) WHERE user_moderator_note_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__crawler_id
   ON moderator_actions (crawler_id) WHERE crawler_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__topic_id
   ON moderator_actions (topic_id) WHERE topic_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__operation_request_id
   ON moderator_actions (operation_request_id) WHERE operation_request_id IS NOT NULL;
 
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__admin_import_batch_id
   ON moderator_actions (admin_import_batch_id) WHERE admin_import_batch_id IS NOT NULL;

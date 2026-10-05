@@ -40,10 +40,10 @@ async function getVerifiedEmailCandidatesBatch(
         WHERE user_id = ANY(${userIds}::uuid[]) AND microsoft_user_email_address IS NOT NULL
     )
     SELECT candidates.user_id, candidates.email_address, EXISTS (
-      SELECT 1 FROM domain_blacklists db
-      INNER JOIN domain_blacklist_sources dbs ON dbs.id = db.source_id
+      SELECT 1 FROM blocklisted_domains db
+      INNER JOIN domain_blocklist_sources dbs ON dbs.id = db.source_id
       WHERE db.domain = LOWER(split_part(candidates.email_address, '@', 2))
-        AND dbs.type = 'email'::domain_blacklist_types
+        AND dbs.type = 'email'::domain_blocklist_types
     ) AS is_disposable
     FROM candidates
     INNER JOIN users ON users.id = candidates.user_id AND users.deleted_at IS NULL

@@ -56,7 +56,7 @@ test.describe('Hacker News discussions aside', () => {
       errors.push(err)
     }
     try {
-      await write(`DELETE FROM rss_feed_item_ids WHERE id = $1`, [rssItemId])
+      await write(`DELETE FROM rss_feed_item_guids WHERE id = $1`, [rssItemId])
     } catch (err) {
       errors.push(err)
     }

@@ -11,7 +11,7 @@ as `rsa-sha256`.
 ## Data model
 
 None — this module is pure functions over PEM strings and header values. Persistence lives
-elsewhere: `ap_actor_keys` (local actor keypairs, private key encrypted) and `remote_actors`
+elsewhere: `activitypub_actor_keys` (local actor keypairs, private key encrypted) and `remote_actors`
 (remote actor public keys), both defined in `backend/data-stores/psql/migrations/`.
 
 ## Usage

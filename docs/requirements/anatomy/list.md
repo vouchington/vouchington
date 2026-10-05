@@ -11,7 +11,7 @@
 
 ## Data Model
 
-### `lists`
+### `user_lists`
 
 | Field           | Notes                                                                          |
 | --------------- | ------------------------------------------------------------------------------ |
@@ -24,7 +24,7 @@
 | `removed_at`    | Soft-delete; non-null = deleted                                                |
 | `created_via`   | Required immutable channel; see [provenance](../content/content-provenance.md) |
 
-### `list_items__rss_feed_items` / `list_items__posts`
+### `user_list_rss_feed_items` / `user_list_posts`
 
 Junction tables. Both have a partial unique index on `(list_id, entity_id) WHERE removed_at IS NULL`
 and cursor-pagination index on `(list_id, id DESC) WHERE removed_at IS NULL`.
@@ -33,7 +33,7 @@ and cursor-pagination index on `(list_id, id DESC) WHERE removed_at IS NULL`.
 
 Append-only read-tracking tables with PK `(user_id, entity_id)`.
 
-### `view_list_items`
+### `view_user_list_items`
 
 UNION ALL view over both junction tables:
 `(id, list_id, item_type, entity_id, order_index, created_at, media_type)`.

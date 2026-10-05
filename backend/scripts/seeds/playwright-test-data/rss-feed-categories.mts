@@ -8,7 +8,7 @@ import type { TransactionQuery } from '@data-stores/psql'
 export async function seedPlaywrightRssFeedCategoryData(query: TransactionQuery): Promise<void> {
   // Get existing seeded RSS feed item IDs (created in feeds.mts)
   const { rows: itemRows } = await query<{ id: string }>(
-    `SELECT id FROM rss_feed_item_ids WHERE guid IN ('doc-csp-bonus', 'tpg-csp-bonus', 'doc-amex-grocery', 'tpg-amex-grocery', 'doc-hilton-devalue')
+    `SELECT id FROM rss_feed_item_guids WHERE guid IN ('doc-csp-bonus', 'tpg-csp-bonus', 'doc-amex-grocery', 'tpg-amex-grocery', 'doc-hilton-devalue')
     LIMIT 5`,
   )
 

@@ -19,7 +19,7 @@ export async function seedSpendingCategories(
     const categoryIds = Array.from({ length: categoryCount }, (_, index) => seedUuid(index, '04'))
 
     await query(
-      `/* seedExplainData */ INSERT INTO topics__spending_categories (topic_id)
+      `/* seedExplainData */ INSERT INTO spending_category_topics (topic_id)
        SELECT id FROM UNNEST($1::UUID[]) AS id
        ON CONFLICT DO NOTHING`,
       [categoryIds],

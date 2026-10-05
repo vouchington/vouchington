@@ -4,7 +4,7 @@ export const getPendingBatches = async (): Promise<Array<{ id: string }>> => {
   const { rows } = await read(
     `/* getPendingBatches */
     SELECT id
-    FROM bedrock_embeddings_batches
+    FROM bedrock_embedding_batches
     WHERE submitted_at IS NOT NULL
       AND completed_at IS NULL
       AND failed_at IS NULL
@@ -19,7 +19,7 @@ export const getBatchRecordsCreatedInLastHour = async (): Promise<number> => {
   const { rows } = await read(
     `/* getBatchRecordsCreatedInLastHour */
     SELECT COALESCE(SUM(records), 0) as records
-    FROM bedrock_embeddings_batches
+    FROM bedrock_embedding_batches
     WHERE created_at > NOW() - INTERVAL '1 hour'
   `,
   )
@@ -36,7 +36,7 @@ export const getActiveBatchStats = async (): Promise<{
     SELECT
       COUNT(*) as count,
       COALESCE(SUM((data->'metadata'->>'inputSizeMB')::DOUBLE PRECISION), 0) as input_size_mb
-    FROM bedrock_embeddings_batches
+    FROM bedrock_embedding_batches
     WHERE submitted_at IS NOT NULL
       AND completed_at IS NULL
       AND failed_at IS NULL
@@ -53,7 +53,7 @@ export const getActiveBatchStats = async (): Promise<{
 export const getBatchIdByJobArn = async (jobArn: string): Promise<string | null> => {
   const { rows } = await read(
     `/* getBatchIdByJobArn */
-    SELECT id FROM bedrock_embeddings_batches WHERE job_arn = $1 LIMIT 1
+    SELECT id FROM bedrock_embedding_batches WHERE job_arn = $1 LIMIT 1
   `,
     [jobArn],
   )
@@ -66,7 +66,7 @@ export const getBatchInfo = async (
   const { rows } = await read(
     `/* getBatchInfo */
     SELECT job_type, data
-    FROM bedrock_embeddings_batches
+    FROM bedrock_embedding_batches
     WHERE id = $1
   `,
     [batchId],

@@ -30,7 +30,7 @@ describe('system-user seed reclaim (real DB)', () => {
 
 INSERT INTO user_roles (user_id, role_type_id)
 SELECT u.id, urt.id FROM users u
-JOIN user_roles_types urt ON urt.slug = 'moderator'
+JOIN user_role_types urt ON urt.slug = 'moderator'
 WHERE u.username = '${reservedUsername}' AND u.platform_account_kind = 'official'
 ON CONFLICT (user_id, role_type_id) DO NOTHING;`
 

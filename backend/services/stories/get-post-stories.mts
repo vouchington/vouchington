@@ -17,7 +17,7 @@ export async function getPostStoryIdsByStoryIds(
   const { rows } = await runQuery(
     sql`/* getPostStoryIdsByStoryIds */
     SELECT post_id, story_id
-    FROM post__stories
+    FROM story_posts
     WHERE story_id = ANY(${storyIds}::uuid[])
   `,
     options,
@@ -43,7 +43,7 @@ export async function getVisiblePostStoryIdsByStoryIds(
     : buildPublicPostEligibilityFilter('candidate_post', 'root_post')
   const query = sql`/* getVisiblePostStoryIdsByStoryIds */
     SELECT post_story.post_id, post_story.story_id
-    FROM post__stories post_story
+    FROM story_posts post_story
     JOIN posts candidate_post ON candidate_post.id = post_story.post_id
     JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_id, candidate_post.id)
     WHERE post_story.story_id = ANY(${storyIds}::uuid[])
@@ -59,7 +59,7 @@ export async function getPostStoryByStoryId(
   const { rows } = await read(
     sql`/* getPostStoryByStoryId */
     SELECT post_id, story_id, initiated_by_id, created_at
-    FROM post__stories
+    FROM story_posts
     WHERE story_id = ${storyId}
     LIMIT 1
   `,
@@ -76,7 +76,7 @@ export async function getPostStoryByPostId(
   const { rows } = await runQuery(
     sql`/* getPostStoryByPostId */
     SELECT post_id, story_id, initiated_by_id, created_at
-    FROM post__stories
+    FROM story_posts
     WHERE post_id = ${postId}
     LIMIT 1
   `,

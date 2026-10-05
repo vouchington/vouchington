@@ -17,9 +17,9 @@ export async function upsertCrawlerForReferralProgram(
   const { rows } = await read(
     `/* upsertCrawlerForReferralProgram */
     SELECT id
-    FROM crawlers
+    FROM hostname_crawler_configurations
     WHERE hostname_id = $1
-      AND referral_program_id = $2
+      AND referral_program_topic_id = $2
       AND deleted_at IS NULL
     ORDER BY priority DESC, id ASC
     LIMIT 1`,

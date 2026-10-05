@@ -18,7 +18,7 @@ export async function getLandingPageReferralLinksByIds(
       urpl.label,
       u.url
     FROM user_referral_program_links urpl
-    JOIN topics source_topic ON source_topic.id = urpl.referral_program_id
+    JOIN topics source_topic ON source_topic.id = urpl.referral_program_topic_id
     LEFT JOIN topics destination_topic ON destination_topic.id = source_topic.merged_into_topic_id
     JOIN urls u ON u.id = urpl.url_id
     WHERE urpl.user_id = ${userId}
@@ -53,7 +53,7 @@ export async function getOwnedLandingPageReferralLinks(
       urpl.label,
       u.url
     FROM user_referral_program_links urpl
-    JOIN topics source_topic ON source_topic.id = urpl.referral_program_id
+    JOIN topics source_topic ON source_topic.id = urpl.referral_program_topic_id
     LEFT JOIN topics destination_topic ON destination_topic.id = source_topic.merged_into_topic_id
     JOIN urls u ON u.id = urpl.url_id
     WHERE urpl.user_id = ${userId}

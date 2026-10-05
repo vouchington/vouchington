@@ -105,7 +105,7 @@ export function buildRecentAutomodActionsQuery(
         CASE WHEN p.rejected_at IS NOT NULL THEN 'rejected' ELSE 'in_review' END::text AS current_state,
         latest_feedback.label AS feedback_label
       FROM agent_moderations am
-      JOIN agents__moderators mod ON mod.agent_id = am.agent_id
+      JOIN moderator_agents mod ON mod.agent_id = am.agent_id
       JOIN posts p ON p.id = am.post_id
       LEFT JOIN posts root_post ON root_post.id = p.root_id AND p.post_type = 'comment'
       LEFT JOIN community_agent_prompts cap ON cap.id = am.prompt_id

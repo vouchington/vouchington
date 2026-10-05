@@ -149,24 +149,24 @@ export async function createContentProvenanceListFixture(): Promise<ContentProve
     oauthClientId,
     async insertList(provenance) {
       const result = await write<{ id: string }>(sql`/* insertContentProvenanceList */
-        INSERT INTO lists (owner_user_id, name, created_via, created_via_oauth_client_id)
+        INSERT INTO user_lists (owner_user_id, name, created_via, created_via_oauth_client_id)
         VALUES (${owner.id}, 'Provenance list', ${provenance.createdVia}, ${provenance.oauthClientId})
         RETURNING id`)
       return result.rows[0]!.id
     },
     updateProvenance: (listId, provenance) =>
       write(sql`/* updateContentProvenanceList */
-        UPDATE lists
+        UPDATE user_lists
         SET created_via = ${provenance.createdVia}, created_via_oauth_client_id = ${provenance.oauthClientId}
         WHERE id = ${listId}`),
     keepProvenance: listId =>
       write(sql`/* keepContentProvenanceList */
-        UPDATE lists
+        UPDATE user_lists
         SET created_via = created_via, created_via_oauth_client_id = created_via_oauth_client_id
         WHERE id = ${listId}`),
     renameList: listId =>
       write(sql`/* renameContentProvenanceList */
-        UPDATE lists SET name = 'Renamed provenance list' WHERE id = ${listId}`),
+        UPDATE user_lists SET name = 'Renamed provenance list' WHERE id = ${listId}`),
     deleteOAuthClient: () => deleteContentProvenanceOAuthClient(oauthClientId),
   }
 }
@@ -179,5 +179,5 @@ export function deleteContentProvenanceOAuthClient(oauthClientId: string) {
 export async function insertListWithoutContentProvenance(): Promise<void> {
   const owner = await createTestUser()
   await write(sql`/* insertListWithoutContentProvenance */
-    INSERT INTO lists (owner_user_id, name) VALUES (${owner.id}, 'Missing provenance')`)
+    INSERT INTO user_lists (owner_user_id, name) VALUES (${owner.id}, 'Missing provenance')`)
 }

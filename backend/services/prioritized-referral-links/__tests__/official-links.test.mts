@@ -54,6 +54,11 @@ describe('getPrioritizedReferralLinks — official links', () => {
     expect(thisLink).toBeDefined()
     expect(thisLink!.priority_group).toBe(0)
     expect(thisLink!.is_official).toBe(true)
+    expect(thisLink!.referral_program_id).toBe(referralProgramId)
+    const allLinks = await getPrioritizedReferralLinks(viewer!.id, referralProgramId, { all: true })
+    expect(allLinks.links.find(item => item.id === link.id)?.referral_program_id).toBe(
+      referralProgramId,
+    )
   }, 30_000)
 
   it('official links appear before personal links', async () => {
@@ -113,6 +118,7 @@ describe('getPrioritizedReferralLinks — official links', () => {
     expect(personalLink).toBeDefined()
     expect(personalLink!.priority_group).toBeGreaterThanOrEqual(1)
     expect(personalLink!.priority_group).toBeLessThanOrEqual(5)
+    expect(personalLink!.referral_program_id).toBe(referralProgramId)
   }, 30_000)
 
   it('collectUsers does not fail for official links (user_id is not null for voucha)', async () => {

@@ -20,7 +20,7 @@ Query parameters:
 - `data_point_topic` — data point topic UUID, slug, or alias (data points for this topic)
 - `topic` / `topics` — singular topic identifier or comma-separated topic identifiers. This universal filter matches posts tagged with, reviewing, or about any listed topic.
 - `category` / `categories` — singular topic identifier or comma-separated topic identifiers for tag-based relations only (`relation__post__category__topic`)
-- `story_id` — story UUID; filters posts linked through `post__stories`
+- `story_id` — story UUID; filters posts linked through `story_posts`
 - `drafts` — boolean; includes the authenticated creator's drafts. It cannot expose another user's or anonymous drafts.
 - `data_point_vertical` — exact data-point vertical string
 

@@ -90,7 +90,7 @@ export async function createTestReferralProgramLink(input: {
   const { rows } = await write(sql`
     INSERT INTO user_referral_program_links (
       user_id,
-      referral_program_id,
+      referral_program_topic_id,
       url_id,
       label,
       activated_at,

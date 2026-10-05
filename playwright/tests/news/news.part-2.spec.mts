@@ -123,7 +123,7 @@ test.describe('News Page', () => {
       try {
         await write(
           `/* news.part-2.spec cleanup youtube summary rss item */
-          DELETE FROM rss_feed_item_ids WHERE id = $1`,
+          DELETE FROM rss_feed_item_guids WHERE id = $1`,
           [youtubeItemId],
         )
       } catch (err) {

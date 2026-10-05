@@ -121,7 +121,7 @@ describe('dispatchInboundActivity', () => {
     ).resolves.toBeUndefined()
   })
 
-  it('records a Like on the ap_post_likes ledger, never touching post_votes', async () => {
+  it('records a Like on the activitypub_post_likes ledger, never touching post_votes', async () => {
     const remoteActor = await createRemoteActorFixture()
     const post = await createTestPost()
 

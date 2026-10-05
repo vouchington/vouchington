@@ -25,7 +25,7 @@ export const downloadBatchResults = async (
   const { rows: batchRows } = await readBatch(
     `/* downloadBatchResults */
     SELECT data
-    FROM bedrock_embeddings_batches
+    FROM bedrock_embedding_batches
     WHERE id = $1
   `,
     [batchId],

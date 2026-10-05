@@ -32,14 +32,14 @@ export function appendDirectCandidateCTE(
         rss_feed_items.story_id,
         (
           rss_feed_items.votes_score_net >= ${minScoreFollowRssFeeds}
-          AND matched_direct_rss_feed_item_ids.matches_source
+          AND matched_direct_rss_feed_item_guids.matches_source
         ) AS matches_source,
         (
           rss_feed_items.votes_score_net >= ${minScoreFollowTopics}
-          AND matched_direct_rss_feed_item_ids.matches_topics
+          AND matched_direct_rss_feed_item_guids.matches_topics
         ) AS matches_topics
       FROM rss_feed_items
-      JOIN matched_direct_rss_feed_item_ids ON matched_direct_rss_feed_item_ids.item_id = rss_feed_items.id
+      JOIN matched_direct_rss_feed_item_guids ON matched_direct_rss_feed_item_guids.item_id = rss_feed_items.id
       WHERE
   `)
   appendRssFeedItemEligibilityFilters(query, options)
@@ -67,8 +67,8 @@ function appendMembershipScoreFilter(
   query: SQLStatement,
   { feedType, minScoreFollowRssFeeds, minScoreFollowTopics }: DirectCandidateFilterOptions,
 ): void {
-  const source = sql`(matched_direct_rss_feed_item_ids.matches_source AND rss_feed_items.votes_score_net >= ${minScoreFollowRssFeeds})`
-  const topics = sql`(matched_direct_rss_feed_item_ids.matches_topics AND rss_feed_items.votes_score_net >= ${minScoreFollowTopics})`
+  const source = sql`(matched_direct_rss_feed_item_guids.matches_source AND rss_feed_items.votes_score_net >= ${minScoreFollowRssFeeds})`
+  const topics = sql`(matched_direct_rss_feed_item_guids.matches_topics AND rss_feed_items.votes_score_net >= ${minScoreFollowTopics})`
   query.append(sql` AND (`)
   if (feedType === 'follow_rss_feeds') query.append(source)
   else if (feedType === 'follow_topics') query.append(topics)

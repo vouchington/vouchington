@@ -32,7 +32,7 @@ export function buildExpireActivityPubInboxDeliveriesQuery(
   const query = sql`/* expireActivityPubInboxDeliveries */
     WITH candidates AS (
       SELECT delivery.id
-      FROM ap_inbox_deliveries delivery
+      FROM activitypub_inbox_deliveries delivery
       WHERE delivery.retention_expires_at <= CURRENT_TIMESTAMP
         AND `
   query.append(
@@ -50,7 +50,7 @@ export function buildExpireActivityPubInboxDeliveriesQuery(
       LIMIT ${limit}
       FOR UPDATE SKIP LOCKED
     ), deleted AS (
-      DELETE FROM ap_inbox_deliveries delivery
+      DELETE FROM activitypub_inbox_deliveries delivery
       USING candidates
       WHERE delivery.id = candidates.id
       RETURNING OCTET_LENGTH(delivery.raw_body) AS raw_body_bytes
@@ -84,7 +84,7 @@ export async function getActivityPubInboxStorageSnapshot(): Promise<ActivityPubI
     unverified_raw_body_bytes: string | number
   }>(sql`/* getActivityPubInboxStorageSnapshot */
     SELECT retained_rows, retained_raw_body_bytes, unverified_rows, unverified_raw_body_bytes
-    FROM ap_inbox_delivery_storage_counters
+    FROM activitypub_inbox_delivery_storage_counters
     WHERE singleton
   `)
   const row = rows[0]

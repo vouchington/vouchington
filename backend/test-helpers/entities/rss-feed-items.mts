@@ -44,7 +44,7 @@ export async function insertTestRssFeedItem(data: {
 
   await using transaction = await beginTransaction()
   const { rows: identityRows } = await transaction(sql`
-        INSERT INTO rss_feed_item_ids (id, url_hostname_id, guid)
+        INSERT INTO rss_feed_item_guids (id, url_hostname_id, guid)
         VALUES (COALESCE(${id}::uuid, uuidv7()), ${urlHostnameId}, ${data.guid})
         ON CONFLICT (url_hostname_id, guid) DO UPDATE
           SET guid = EXCLUDED.guid

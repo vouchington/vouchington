@@ -8,11 +8,11 @@ Referral programs can have validation rules that constrain which URLs users may 
 
 ### Schema
 
-| Table                                       | Key columns                                                                                                                                              |
-| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `referral_program_link_validations`         | `id`, `slug`, `user_help_text` — a named set of rules                                                                                                    |
-| `referral_program_link_validations_rules`   | `hostname`, `pathname` (SQL LIKE pattern), `is_referral_link_url` (flags URLs that are valid referral links), `user_error_text`, `example_urls` (text[]) |
-| `topics__referral_program_link_validations` | join table linking validation sets to referral program topics                                                                                            |
+| Table                                              | Key columns                                                                                                                                              |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `referral_program_link_validation_rule_sets`       | `id`, `slug`, `user_help_text` — a named set of rules                                                                                                    |
+| `referral_program_link_validation_rules`           | `hostname`, `pathname` (SQL LIKE pattern), `is_referral_link_url` (flags URLs that are valid referral links), `user_error_text`, `example_urls` (text[]) |
+| `referral_program_topic_link_validation_rule_sets` | join table linking validation sets to referral program topics                                                                                            |
 
 Multiple validation sets can be linked to one program; matching checks against all linked sets. A rule where `is_referral_link_url = TRUE` marks a URL pattern as a valid referral link.
 

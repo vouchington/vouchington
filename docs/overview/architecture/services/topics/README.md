@@ -24,7 +24,7 @@ Reviews are disabled for `person` topics. All other types support reviews.
 These are similar to topic types, but are not mutually exclusive and thus are not set as a `topic.topic_type=`:
 
 - `spending_category` - adds information specific to a spending category, but these are not mutually exclusive to the types above. For example, World of Hyatt can be a spending category and a rewards program
-- `retailer` - marks a topic as operating in retail (e.g. sells products). Only applicable to `brand` and `organization` topics. Managed via `topics__retailers` and `retailer_countries`.
+- `retailer` - marks a topic as operating in retail (e.g. sells products). Only applicable to `brand` and `organization` topics. Managed via `retailer_topics` and `retailer_countries`.
 
 ## Topic Links to Programs
 
@@ -33,7 +33,7 @@ Any topic can link to a referral program or rewards program via nullable foreign
 - `topics.rewards_program_id` - nullable foreign key linking to a rewards program topic
 - `topics.referral_program_id` - nullable foreign key linking to a referral program topic
 
-These columns replace previous extension table patterns (`topics__cards`, `topics__referral_programs`, etc.) and allow topics to directly reference programs without requiring dedicated extension tables.
+These columns replace previous extension table patterns (`card_topics`, `referral_program_topics`, etc.) and allow topics to directly reference programs without requiring dedicated extension tables.
 
 ## Topic Authority
 

@@ -1,4 +1,5 @@
 -- Durable, resumable account-deletion work references retained user identities, not live users.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_lock_active_user_for_mutation(target_user_id UUID)
 RETURNS VOID
 LANGUAGE plpgsql
@@ -49,21 +50,26 @@ CREATE TABLE IF NOT EXISTS user_deletion_requests (
   UNIQUE (user_id)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_user_deletion_requests_updated_at
 BEFORE UPDATE ON user_deletion_requests
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_user_deletion_requests__processing_attempt_id
 ON user_deletion_requests (processing_attempt_id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_deletion_requests__requested_by_id
 ON user_deletion_requests (requested_by_id) WHERE requested_by_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_deletion_requests__recover_unstarted
 ON user_deletion_requests (dispatched_at, id)
 WHERE completed_at IS NULL AND processing_started_at IS NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_deletion_requests__recover_started
 ON user_deletion_requests (processing_started_at, id)
 WHERE completed_at IS NULL AND processing_started_at IS NOT NULL;
@@ -98,19 +104,23 @@ CREATE TABLE IF NOT EXISTS user_deletion_external_works (
   UNIQUE (request_id, relation_impact_id)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_user_deletion_external_works_updated_at
 BEFORE UPDATE ON user_deletion_external_works
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_deletion_external_works__pending
 ON user_deletion_external_works (request_id, id)
 WHERE completed_at IS NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_deletion_external_works__relation_impact
 ON user_deletion_external_works (relation_impact_id, request_id)
 WHERE relation_impact_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_user_deletion_has_remaining_owned_data(target_user_id UUID)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
@@ -179,7 +189,7 @@ BEGIN
   END LOOP;
 
   IF EXISTS (
-    SELECT 1 FROM lists WHERE owner_user_id = target_user_id AND removed_at IS NULL
+    SELECT 1 FROM user_lists WHERE owner_user_id = target_user_id AND removed_at IS NULL
   ) THEN RETURN TRUE; END IF;
   IF EXISTS (
     SELECT 1 FROM bluesky_link_authorizations
@@ -223,6 +233,7 @@ COMMENT ON COLUMN user_deletion_external_works.completed_at IS 'Timestamp when t
 COMMENT ON COLUMN user_deletion_external_works.last_error_message IS 'Truncated diagnostic from the latest failed external-work attempt.';
 
 -- Current indexes for fresh schema bootstrap.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_deletion_external_works__completed_audit
   ON user_deletion_external_works (request_id, id)
   WHERE completed_at IS NOT NULL

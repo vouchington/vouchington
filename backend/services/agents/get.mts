@@ -52,7 +52,7 @@ export async function getAgentModeratorConfig(agent_id: string): Promise<AgentMo
       agent_id,
       created_at,
       updated_at
-    FROM agents__moderators
+    FROM moderator_agents
     WHERE agent_id = ${agent_id}
     LIMIT 1
   `)

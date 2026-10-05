@@ -60,7 +60,7 @@ function buildTopicsQuery() {
         slug,
         topic_type,
         allow_reviews,
-        referral_program_id,
+        referral_program_topic_id,
         updated_at
       FROM topics
       WHERE deleted_at IS NULL
@@ -111,7 +111,7 @@ function buildTopicsQuery() {
   query.append(buildTopicSlugCaseSql())
   query.append(sql` AS slug_path, slug, updated_at, 'referral-links' AS subpage, id
       FROM eligible_topics
-      WHERE topic_type = 'referral_program' OR referral_program_id IS NOT NULL
+      WHERE topic_type = 'referral_program' OR referral_program_topic_id IS NOT NULL
     ) entries
     ORDER BY id DESC, subpage ASC
   `)

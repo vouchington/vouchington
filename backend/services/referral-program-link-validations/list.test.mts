@@ -26,8 +26,8 @@ describe('listReferralLinkValidationsForProgram', () => {
       createdById: adminUser!.id,
       topicType: 'referral_program',
     })
-    // topics__referral_program_link_validations.referral_program_id FK references
-    // topics__referral_programs.topic_id, so we must register this topic as a referral program.
+    // referral_program_topic_link_validation_rule_sets.referral_program_id FK references
+    // referral_program_topics.topic_id, so we must register this topic as a referral program.
     await enableReferralProgramByTopicId(programId)
 
     const v1Id = await createReferralProgramLinkValidation(`aaa_valid_${suffix}`, 'Help text 1')

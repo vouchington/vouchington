@@ -101,7 +101,7 @@ export const EXISTING_CORE_DISPATCHER_BACKFILLS: BackfillEntry[] = [
     queue_name: 'bedrock-embeddings-batch',
     job_name: 'poll_dispatcher',
     description: 'Dispatch polling jobs for pending Bedrock batches',
-    source_table: 'bedrock_embeddings_batches',
+    source_table: 'bedrock_embedding_batches',
     trigger: createBackfillDispatcherTrigger(
       'bedrock-embeddings-poll-dispatch',
       enqueueEmbeddingsBatchPollDispatcher,

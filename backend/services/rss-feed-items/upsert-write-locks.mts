@@ -86,7 +86,7 @@ async function lockRssFeedItemIdentities(
     const result = await txQuery<{ id: string; guid: string }>(
       `/* upsertRssFeedItems:lockIdentities */
         SELECT id, guid
-        FROM rss_feed_item_ids
+        FROM rss_feed_item_guids
         WHERE url_hostname_id = $1
           AND guid = ANY($2::text[])
         ORDER BY guid

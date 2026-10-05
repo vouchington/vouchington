@@ -61,7 +61,7 @@ export async function insertTestRssFeedItemSourceBatch(options: {
     WITH input AS (
       SELECT * FROM unnest($1::uuid[], $2::text[]) AS batch(item_id, guid)
     ), inserted_item_ids AS (
-      INSERT INTO rss_feed_item_ids (id, url_hostname_id, guid)
+      INSERT INTO rss_feed_item_guids (id, url_hostname_id, guid)
       SELECT input.item_id, url.hostname_id, input.guid FROM input
       CROSS JOIN urls url WHERE url.id = $3
     ), inserted_items AS (
@@ -98,7 +98,7 @@ export async function insertTestStoryCategoryPublicationBatch(options: {
       INSERT INTO stories (id, title)
       SELECT story_id, 'Publication batch story ' || story_id::text FROM input
     ), inserted_item_ids AS (
-      INSERT INTO rss_feed_item_ids (id, url_hostname_id, guid)
+      INSERT INTO rss_feed_item_guids (id, url_hostname_id, guid)
       SELECT input.item_id, url.hostname_id, input.guid FROM input
       CROSS JOIN urls url WHERE url.id = $5
     ), inserted_items AS (
@@ -121,7 +121,7 @@ export async function insertTestStoryCategoryPublicationBatch(options: {
       SELECT post_id, 'story', 'Publication batch post ' || post_id::text, '', $10, $6, $6, 'system'
       FROM input
     )
-    INSERT INTO post__stories (post_id, story_id, initiated_by_id)
+    INSERT INTO story_posts (post_id, story_id, initiated_by_id)
     SELECT post_id, story_id, $10 FROM input`,
     [
       storyIds,

@@ -29,7 +29,7 @@ export async function createUserModNote(
           AND deleted_at IS NULL
         LIMIT 1
       )
-      INSERT INTO user_mod_notes (target_user_id, author_user_id, community_id, body)
+      INSERT INTO user_moderator_notes (target_user_id, author_user_id, community_id, body)
       SELECT ${input.targetUserId}, ${currentUser.id}, ${input.communityId}, ${input.body}
       FROM target_check
       RETURNING id, created_at, target_user_id, author_user_id, community_id, body, deleted_at

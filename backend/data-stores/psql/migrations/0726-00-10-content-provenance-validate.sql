@@ -5,8 +5,8 @@ ALTER TABLE communities
 ALTER TABLE topics
   VALIDATE CONSTRAINT topics_created_via_oauth_client_id_fkey;
 
-ALTER TABLE lists
-  VALIDATE CONSTRAINT lists_created_via_oauth_client_id_fkey;
+ALTER TABLE user_lists
+  VALIDATE CONSTRAINT user_lists_created_via_oauth_client_id_fkey;
 
 ALTER TABLE rss_feeds
   VALIDATE CONSTRAINT rss_feeds_created_via_oauth_client_id_fkey;

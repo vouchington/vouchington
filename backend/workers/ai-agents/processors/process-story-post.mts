@@ -49,7 +49,7 @@ export async function processStoryPost(job: Job<StoryPostJobData>): Promise<unkn
   }
 
   const postStory = await getPostStoryByPostId(post.id)
-  if (!postStory) unrecoverable(new Error(`No post__stories row for post ${post.id}`))
+  if (!postStory) unrecoverable(new Error(`No story_posts row for post ${post.id}`))
 
   const story = await getStoryById(postStory!.story_id)
   if (!story) unrecoverable(new Error(`Story ${postStory!.story_id} not found`))

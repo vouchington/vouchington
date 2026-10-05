@@ -25,7 +25,7 @@ export interface ModeratorAction {
   agent_moderation_id: string | null
   agent_moderation_post_id: string | null
   oauth_client_id: string | null
-  user_mod_note_id: string | null
+  user_moderator_note_id: string | null
   crawler_id: string | null
   topic_id: string | null
   operation_request_id: string | null

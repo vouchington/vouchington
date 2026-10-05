@@ -6,7 +6,7 @@ export async function getStaleBatches(
   const { rows } = await read(
     `/* getStaleBatches */
     SELECT id, job_arn
-    FROM bedrock_embeddings_batches
+    FROM bedrock_embedding_batches
     WHERE submitted_at IS NOT NULL
       AND completed_at IS NULL
       AND failed_at IS NULL

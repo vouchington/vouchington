@@ -15,7 +15,7 @@ export async function insertTestFediverseInstanceMetadata(
   metadata: TestFediverseInstanceMetadata,
 ): Promise<void> {
   await write(
-    `INSERT INTO topics__fediverse_instances (
+    `INSERT INTO fediverse_instance_topics (
        topic_id,
        software,
        protocol,

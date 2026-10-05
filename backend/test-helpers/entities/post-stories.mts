@@ -7,13 +7,13 @@ export async function insertTestPostStory(
   initiatedById: string,
 ): Promise<void> {
   await write(sql`/* insertTestPostStory */
-    INSERT INTO post__stories (post_id, story_id, initiated_by_id)
+    INSERT INTO story_posts (post_id, story_id, initiated_by_id)
     VALUES (${postId}, ${storyId}, ${initiatedById})
   `)
 }
 
 export async function deleteTestPostStory(postId: string): Promise<void> {
-  await write(sql`/* deleteTestPostStory */ DELETE FROM post__stories WHERE post_id = ${postId}`)
+  await write(sql`/* deleteTestPostStory */ DELETE FROM story_posts WHERE post_id = ${postId}`)
 }
 
 /** Holds a newly inserted story-post association before commit for capture race tests. */
@@ -33,7 +33,7 @@ export async function insertTestPostStoryAndWaitBeforeCommit(
       [storyId],
     )
     await query(sql`/* insertTestPostStoryAndWaitBeforeCommit */
-        INSERT INTO post__stories (post_id, story_id, initiated_by_id)
+        INSERT INTO story_posts (post_id, story_id, initiated_by_id)
         VALUES (${postId}, ${storyId}, ${initiatedById})
       `)
     onInserted()

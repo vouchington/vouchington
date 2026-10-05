@@ -39,7 +39,7 @@ export async function insertTestReferralProgram(suffix: string): Promise<TestRef
   )
 
   await write(
-    `INSERT INTO topics__referral_programs (topic_id, enabled_at)
+    `INSERT INTO referral_program_topics (topic_id, enabled_at)
      VALUES ($1, CURRENT_TIMESTAMP)
      ON CONFLICT (topic_id) DO UPDATE
      SET enabled_at = CURRENT_TIMESTAMP, disabled_at = NULL`,
@@ -48,7 +48,7 @@ export async function insertTestReferralProgram(suffix: string): Promise<TestRef
 
   const validationSlug = `pw_validation_${suffix.replaceAll('-', '_')}`
   const validationResult = await write(
-    `INSERT INTO referral_program_link_validations (slug, user_help_text)
+    `INSERT INTO referral_program_link_validation_rule_sets (slug, user_help_text)
      VALUES ($1, $2)
      RETURNING id`,
     [validationSlug, 'playwright referral validation'],
@@ -56,8 +56,8 @@ export async function insertTestReferralProgram(suffix: string): Promise<TestRef
   const validationId = validationResult.rows[0].id as string
 
   const ruleResult = await write(
-    `INSERT INTO referral_program_link_validations_rules (
-       referral_program_link_validation_id, hostname, pathname, is_referral_link_url
+    `INSERT INTO referral_program_link_validation_rules (
+       referral_program_link_validation_rule_set_id, hostname, pathname, is_referral_link_url
      ) VALUES ($1, $2, $3, TRUE)
      RETURNING id`,
     [validationId, hostname, pathname],
@@ -65,17 +65,17 @@ export async function insertTestReferralProgram(suffix: string): Promise<TestRef
   const ruleId = ruleResult.rows[0].id as string
 
   await write(
-    `INSERT INTO topics__referral_program_link_validations (
-       referral_program_id, referral_program_link_validation_id
+    `INSERT INTO referral_program_topic_link_validation_rule_sets (
+       referral_program_topic_id, referral_program_link_validation_rule_set_id
      ) VALUES ($1, $2)
-     ON CONFLICT (referral_program_id, referral_program_link_validation_id) DO NOTHING`,
+     ON CONFLICT (referral_program_topic_id, referral_program_link_validation_rule_set_id) DO NOTHING`,
     [topic.id, validationId],
   )
 
   // Second validation set — NOT linked to the referral program (used for link/unlink flow tests)
   const validationSlug2 = `pw_validation2_${suffix.replaceAll('-', '_')}`
   const validationResult2 = await write(
-    `INSERT INTO referral_program_link_validations (slug, user_help_text)
+    `INSERT INTO referral_program_link_validation_rule_sets (slug, user_help_text)
      VALUES ($1, $2)
      RETURNING id`,
     [validationSlug2, 'playwright referral validation 2'],
@@ -130,7 +130,7 @@ export async function insertTestEmptyReferralProgram(suffix: string): Promise<{ 
     'referral_program',
   )
   await write(
-    `INSERT INTO topics__referral_programs (topic_id, enabled_at)
+    `INSERT INTO referral_program_topics (topic_id, enabled_at)
      VALUES ($1, CURRENT_TIMESTAMP)
      ON CONFLICT (topic_id) DO UPDATE
      SET enabled_at = CURRENT_TIMESTAMP, disabled_at = NULL`,

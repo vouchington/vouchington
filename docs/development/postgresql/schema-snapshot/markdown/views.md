@@ -130,7 +130,7 @@ Rolling 30-day top-hashtag recommendations from public posts and discoverable RS
             ('rss:'::text || (identity.url_hostname_id)::text) AS contributor_id
            FROM ((rss_feed_item_categories category
              JOIN rss_feed_items item ON ((item.id = category.rss_feed_item_id)))
-             JOIN rss_feed_item_ids identity ON ((identity.id = item.id)))
+             JOIN rss_feed_item_guids identity ON ((identity.id = item.id)))
           WHERE ((category.topic_alias_id IS NOT NULL) AND (item.deleted_at IS NULL) AND (item.published_at >= (CURRENT_TIMESTAMP - '30 days'::interval)) AND (EXISTS ( SELECT 1
                    FROM ((rss_feed_item_sources source
                      JOIN rss_feeds feed ON ((feed.id = source.rss_feed_id)))
@@ -190,55 +190,55 @@ Rolling 30-day top-hashtag recommendations from public posts and discoverable RS
 ## `view_community_list_items`
 
 ```sql
- SELECT community_list_items__topics.id,
-    community_list_items__topics.community_id,
+ SELECT community_list_topics.id,
+    community_list_topics.community_id,
     'topic'::community_list_item_types AS item_type,
-    community_list_items__topics.topic_id AS entity_id,
-    community_list_items__topics.order_index,
-    community_list_items__topics.added_by_id,
-    community_list_items__topics.created_at
-   FROM community_list_items__topics
-  WHERE (community_list_items__topics.removed_at IS NULL)
+    community_list_topics.topic_id AS entity_id,
+    community_list_topics.order_index,
+    community_list_topics.added_by_id,
+    community_list_topics.created_at
+   FROM community_list_topics
+  WHERE (community_list_topics.removed_at IS NULL)
 UNION ALL
- SELECT community_list_items__rss_feeds.id,
-    community_list_items__rss_feeds.community_id,
+ SELECT community_list_rss_feeds.id,
+    community_list_rss_feeds.community_id,
     'rss_feed'::community_list_item_types AS item_type,
-    community_list_items__rss_feeds.rss_feed_id AS entity_id,
-    community_list_items__rss_feeds.order_index,
-    community_list_items__rss_feeds.added_by_id,
-    community_list_items__rss_feeds.created_at
-   FROM community_list_items__rss_feeds
-  WHERE (community_list_items__rss_feeds.removed_at IS NULL)
+    community_list_rss_feeds.rss_feed_id AS entity_id,
+    community_list_rss_feeds.order_index,
+    community_list_rss_feeds.added_by_id,
+    community_list_rss_feeds.created_at
+   FROM community_list_rss_feeds
+  WHERE (community_list_rss_feeds.removed_at IS NULL)
 UNION ALL
- SELECT community_list_items__posts.id,
-    community_list_items__posts.community_id,
+ SELECT community_list_posts.id,
+    community_list_posts.community_id,
     'post'::community_list_item_types AS item_type,
-    community_list_items__posts.post_id AS entity_id,
-    community_list_items__posts.order_index,
-    community_list_items__posts.added_by_id,
-    community_list_items__posts.created_at
-   FROM community_list_items__posts
-  WHERE (community_list_items__posts.removed_at IS NULL)
+    community_list_posts.post_id AS entity_id,
+    community_list_posts.order_index,
+    community_list_posts.added_by_id,
+    community_list_posts.created_at
+   FROM community_list_posts
+  WHERE (community_list_posts.removed_at IS NULL)
 UNION ALL
- SELECT community_list_items__url_hostnames.id,
-    community_list_items__url_hostnames.community_id,
+ SELECT community_list_url_hostnames.id,
+    community_list_url_hostnames.community_id,
     'url_hostname'::community_list_item_types AS item_type,
-    community_list_items__url_hostnames.url_hostname_id AS entity_id,
-    community_list_items__url_hostnames.order_index,
-    community_list_items__url_hostnames.added_by_id,
-    community_list_items__url_hostnames.created_at
-   FROM community_list_items__url_hostnames
-  WHERE (community_list_items__url_hostnames.removed_at IS NULL)
+    community_list_url_hostnames.url_hostname_id AS entity_id,
+    community_list_url_hostnames.order_index,
+    community_list_url_hostnames.added_by_id,
+    community_list_url_hostnames.created_at
+   FROM community_list_url_hostnames
+  WHERE (community_list_url_hostnames.removed_at IS NULL)
 UNION ALL
- SELECT community_list_items__urls.id,
-    community_list_items__urls.community_id,
+ SELECT community_list_urls.id,
+    community_list_urls.community_id,
     'url'::community_list_item_types AS item_type,
-    community_list_items__urls.url_id AS entity_id,
-    community_list_items__urls.order_index,
-    community_list_items__urls.added_by_id,
-    community_list_items__urls.created_at
-   FROM community_list_items__urls
-  WHERE (community_list_items__urls.removed_at IS NULL);
+    community_list_urls.url_id AS entity_id,
+    community_list_urls.order_index,
+    community_list_urls.added_by_id,
+    community_list_urls.created_at
+   FROM community_list_urls
+  WHERE (community_list_urls.removed_at IS NULL);
 ```
 
 ## `view_community_metrics`
@@ -318,11 +318,11 @@ UNION ALL
           WHERE ((surface.surface_kind = 'topic-hero-image'::image_surface_placement_surface_kinds) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))
           ORDER BY placement.id DESC
          LIMIT 1) AS hero_image_placement,
-    rewards_program_id,
-    referral_program_id,
+    rewards_program_topic_id AS rewards_program_id,
+    referral_program_topic_id AS referral_program_id,
     ( SELECT t2.slug
            FROM topics t2
-          WHERE ((t2.id = topics.referral_program_id) AND (t2.deleted_at IS NULL) AND (t2.merged_into_topic_id IS NULL))
+          WHERE ((t2.id = topics.referral_program_topic_id) AND (t2.deleted_at IS NULL) AND (t2.merged_into_topic_id IS NULL))
          LIMIT 1) AS referral_program_slug,
     lingua_rs_detected_language
    FROM topics
@@ -378,8 +378,8 @@ UNION ALL
             END
             WHEN ((platform_account_kind = 'official'::platform_account_kinds) OR (EXISTS ( SELECT 1
                FROM (user_roles
-                 JOIN user_roles_types ON ((user_roles_types.id = user_roles.role_type_id)))
-              WHERE ((user_roles.user_id = users.id) AND (user_roles_types.slug = ANY (ARRAY['administrator'::text, 'investor'::text])))))) THEN 'official'::text
+                 JOIN user_role_types ON ((user_role_types.id = user_roles.role_type_id)))
+              WHERE ((user_roles.user_id = users.id) AND (user_role_types.slug = ANY (ARRAY['administrator'::text, 'investor'::text])))))) THEN 'official'::text
             ELSE NULL::text
         END AS account_type
    FROM users
@@ -647,31 +647,6 @@ UNION ALL
    FROM relation__rss_feed_item__category__topic_alias__votes;
 ```
 
-## `view_list_items`
-
-```sql
- SELECT li.id,
-    li.list_id,
-    'rss_feed_item'::list_item_types AS item_type,
-    li.rss_feed_item_id AS entity_id,
-    li.order_index,
-    li.created_at,
-    (rfi.media_type)::text AS media_type
-   FROM (list_items__rss_feed_items li
-     JOIN rss_feed_items rfi ON (((rfi.id = li.rss_feed_item_id) AND (rfi.deleted_at IS NULL))))
-  WHERE (li.removed_at IS NULL)
-UNION ALL
- SELECT li.id,
-    li.list_id,
-    'post'::list_item_types AS item_type,
-    li.post_id AS entity_id,
-    li.order_index,
-    li.created_at,
-    NULL::text AS media_type
-   FROM list_items__posts li
-  WHERE (li.removed_at IS NULL);
-```
-
 ## `view_memberships`
 
 ```sql
@@ -850,7 +825,7 @@ UNION ALL
                        FROM view_url_hostnames vuh
                       WHERE (vuh.id = ptr.hostname_id)
                      LIMIT 1), 'hostnames', COALESCE(( SELECT json_agg(to_jsonb(vuh.*) ORDER BY vuh.hostname) AS json_agg
-                       FROM (post_topic_recommendations_hostnames ptrh
+                       FROM (post_topic_recommendation_hostnames ptrh
                          JOIN view_url_hostnames vuh ON ((vuh.id = ptrh.hostname_id)))
                       WHERE (ptrh.post_id = ptr.post_id)), '[]'::json), 'topic_type', ptr.topic_type, 'example_referral_link', ( SELECT urls.url
                        FROM urls
@@ -920,7 +895,7 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
          SELECT 1
            FROM publication))) AND ((root_post.post_type <> 'story'::post_types) OR (EXISTS ( WITH story_publication AS MATERIALIZED (
                  SELECT 1 AS "?column?"
-                   FROM ((post__stories post_story
+                   FROM ((story_posts post_story
                      JOIN stories publication_story ON (((publication_story.id = post_story.story_id) AND (publication_story.deleted_at IS NULL))))
                      JOIN rss_feed_items story_item ON (((story_item.story_id = publication_story.id) AND (story_item.deleted_at IS NULL))))
                   WHERE ((post_story.post_id = root_post.id) AND (EXISTS ( WITH source_publication AS MATERIALIZED (
@@ -950,8 +925,8 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
 ```sql
  SELECT 'rss_feed_item'::text AS __entity_type,
     rss_feed_items.id,
-    rss_feed_item_ids.guid,
-    rss_feed_item_ids.url_hostname_id,
+    rss_feed_item_guids.guid,
+    rss_feed_item_guids.url_hostname_id,
     rss_feed_items.published_at,
     rss_feed_items.media_type,
     rss_feed_items.enclosure_url,
@@ -1003,7 +978,7 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
     rss_feed_items.lingua_rs_detected_language
    FROM ((((((rss_feed_items
      LEFT JOIN media_types enclosure_media_type ON ((enclosure_media_type.id = rss_feed_items.enclosure_media_type_id)))
-     JOIN rss_feed_item_ids ON ((rss_feed_item_ids.id = rss_feed_items.id)))
+     JOIN rss_feed_item_guids ON ((rss_feed_item_guids.id = rss_feed_items.id)))
      LEFT JOIN view_urls ON ((view_urls.id = rss_feed_items.url_id)))
      JOIN LATERAL ( SELECT rfis.rss_feed_id
            FROM (((rss_feed_item_sources rfis
@@ -1155,8 +1130,8 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
           WHERE ((surface.surface_kind = 'topic-hero-image'::image_surface_placement_surface_kinds) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))
           ORDER BY placement.id DESC
          LIMIT 1) AS hero_image_placement,
-    topics.rewards_program_id,
-    topics.referral_program_id,
+    topics.rewards_program_topic_id AS rewards_program_id,
+    topics.referral_program_topic_id AS referral_program_id,
     topics.aliases,
         CASE
             WHEN (view_url_hostnames.id IS NULL) THEN NULL::json
@@ -1205,6 +1180,31 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
      JOIN view_url_hostnames ON ((urls.hostname_id = view_url_hostnames.id)));
 ```
 
+## `view_user_list_items`
+
+```sql
+ SELECT li.id,
+    li.user_list_id AS list_id,
+    'rss_feed_item'::user_list_item_types AS item_type,
+    li.rss_feed_item_id AS entity_id,
+    li.order_index,
+    li.created_at,
+    (rfi.media_type)::text AS media_type
+   FROM (user_list_rss_feed_items li
+     JOIN rss_feed_items rfi ON (((rfi.id = li.rss_feed_item_id) AND (rfi.deleted_at IS NULL))))
+  WHERE (li.removed_at IS NULL)
+UNION ALL
+ SELECT li.id,
+    li.user_list_id AS list_id,
+    'post'::user_list_item_types AS item_type,
+    li.post_id AS entity_id,
+    li.order_index,
+    li.created_at,
+    NULL::text AS media_type
+   FROM user_list_posts li
+  WHERE (li.removed_at IS NULL);
+```
+
 ## `view_user_metrics`
 
 ```sql
@@ -1230,9 +1230,9 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
           WHERE (fa.user_id = users.id)) AS facebook_account,
     user_email_addresses.email_address,
     user_phone_numbers.phone_number,
-    ( SELECT COALESCE(array_agg(user_roles_types.slug), ARRAY[]::text[]) AS "coalesce"
+    ( SELECT COALESCE(array_agg(user_role_types.slug), ARRAY[]::text[]) AS "coalesce"
            FROM (user_roles
-             LEFT JOIN user_roles_types ON ((user_roles_types.id = user_roles.role_type_id)))
+             LEFT JOIN user_role_types ON ((user_role_types.id = user_roles.role_type_id)))
           WHERE (user_roles.user_id = users.id)) AS roles,
     users.individual_id,
     users.profile_image_id,

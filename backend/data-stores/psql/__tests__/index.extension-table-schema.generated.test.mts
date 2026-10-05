@@ -8,11 +8,11 @@ type TableColumn = {
 }
 
 const topicExtensionTables = [
-  'topics__cards',
-  'topics__referral_programs',
-  'topics__rewards_program_statuses',
-  'topics__rewards_programs',
-  'topics__spending_categories',
+  'card_topics',
+  'referral_program_topics',
+  'rewards_program_status_topics',
+  'rewards_program_topics',
+  'spending_category_topics',
 ]
 
 describe('extension table key columns', () => {

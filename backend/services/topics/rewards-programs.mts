@@ -19,7 +19,7 @@ export async function getRewardsProgramAttributes(
   const { rows } = await read(sql`/* getRewardsProgramAttributes */
     SELECT
       company_id
-    FROM topics__rewards_programs
+    FROM rewards_program_topics
     WHERE topic_id = ${topic.id}
     LIMIT 1
   `)
@@ -45,7 +45,7 @@ export async function updateRewardsProgramAttributes(
   }
 
   return upsertTopicAttributes<RewardsProgramAttributes>(
-    'topics__rewards_programs',
+    'rewards_program_topics',
     topic.id,
     columns,
     values,

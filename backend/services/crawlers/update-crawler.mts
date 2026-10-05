@@ -50,11 +50,11 @@ export const updateCrawler = async (
 
   await using transaction = await beginTransaction()
   await transaction(
-    sql`/* updateCrawler:lock */ SELECT id FROM crawlers WHERE id = ${crawlerId} AND deleted_at IS NULL FOR UPDATE`,
+    sql`/* updateCrawler:lock */ SELECT id FROM hostname_crawler_configurations WHERE id = ${crawlerId} AND deleted_at IS NULL FOR UPDATE`,
   )
   const previous = await getCrawlerById(crawlerId, { query: transaction })
   if (!previous) throw createError(404, `Crawler not found: ${crawlerId}`)
-  const query = sql`/* updateCrawler */ UPDATE crawlers SET updated_by_id = ${updater.id}`
+  const query = sql`/* updateCrawler */ UPDATE hostname_crawler_configurations SET updated_by_id = ${updater.id}`
   if (hostnameId !== undefined) query.append(sql`, hostname_id = ${hostnameId}`)
   if (updates.description !== undefined) query.append(sql`, description = ${updates.description}`)
   if (updates.crawler_type !== undefined)
@@ -73,13 +73,13 @@ export const updateCrawler = async (
     query.append(sql`, content_selectors = ${updates.content_selectors}`)
   }
   if (updates.referral_program_id !== undefined) {
-    query.append(sql`, referral_program_id = ${updates.referral_program_id}`)
+    query.append(sql`, referral_program_topic_id = ${updates.referral_program_id}`)
   }
   query.append(sql`
     WHERE id = ${crawlerId} AND deleted_at IS NULL
     RETURNING id, hostname_id, description, crawler_type, priority,
       css_selectors_to_remove, link_text_content_to_remove, link_hrefs_to_remove,
-      content_selectors, referral_program_id,
+      content_selectors, referral_program_topic_id AS referral_program_id,
       created_at, updated_at, deleted_at
   `)
 
@@ -112,13 +112,13 @@ export const updateCrawlerCssSelectorsByHostname = async (
 
   const { rowCount } = await write(
     sql`/* updateCrawlerCssSelectorsByHostname */
-    UPDATE crawlers
+    UPDATE hostname_crawler_configurations
     SET css_selectors_to_remove = (
       SELECT ARRAY_AGG(value ORDER BY first_ord ASC)
       FROM (
         SELECT value, MIN(ord) AS first_ord
         FROM unnest(
-          COALESCE(crawlers.css_selectors_to_remove, ARRAY[]::TEXT[]) || ${selectorsToAppend}::TEXT[]
+          COALESCE(hostname_crawler_configurations.css_selectors_to_remove, ARRAY[]::TEXT[]) || ${selectorsToAppend}::TEXT[]
         ) WITH ORDINALITY AS selectors(value, ord)
         GROUP BY value
       ) deduped
@@ -129,7 +129,7 @@ export const updateCrawlerCssSelectorsByHostname = async (
         SELECT 1
         FROM unnest(${selectorsToAppend}::TEXT[]) AS candidate(value)
         WHERE NOT (
-          candidate.value = ANY(COALESCE(crawlers.css_selectors_to_remove, ARRAY[]::TEXT[]))
+          candidate.value = ANY(COALESCE(hostname_crawler_configurations.css_selectors_to_remove, ARRAY[]::TEXT[]))
         )
       )
   `,

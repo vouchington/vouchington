@@ -66,7 +66,7 @@ export async function seedPlaywrightTestData() {
       testUserId,
     )
     const { rows: rssItemRows } = await read(
-      `/* seedPlaywrightTestData.rssItem */ SELECT id FROM rss_feed_item_ids WHERE guid = 'test-item-1' AND url_hostname_id = '019c64e6-1000-7000-b000-000000000001' LIMIT 1`,
+      `/* seedPlaywrightTestData.rssItem */ SELECT id FROM rss_feed_item_guids WHERE guid = 'test-item-1' AND url_hostname_id = '019c64e6-1000-7000-b000-000000000001' LIMIT 1`,
     )
     const rssItemId = (rssItemRows[0] as { id: string } | undefined)?.id
     if (rssItemId) await upsertRecentlyViewed('rss_feed_item', rssItemId, testSessionId, testUserId)

@@ -6,7 +6,7 @@ export async function removeTestUserRole(userId: string, roleSlug: string): Prom
   await write(
     `/* removeTestUserRole */ DELETE FROM user_roles
      WHERE user_id = $1
-       AND role_type_id = (SELECT id FROM user_roles_types WHERE slug = $2)`,
+       AND role_type_id = (SELECT id FROM user_role_types WHERE slug = $2)`,
     [userId, roleSlug],
   )
 }

@@ -16,7 +16,7 @@ export async function insertTestUserReferralProgramLink(opts: {
   const { rows } = await write(sql`/* insertTestUserReferralProgramLink */
     INSERT INTO user_referral_program_links (
       user_id,
-      referral_program_id,
+      referral_program_topic_id,
       url_id,
       label,
       activated_at,

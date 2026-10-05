@@ -68,11 +68,11 @@ Full technical design: [Fediverse Federation architecture](../../overview/archit
   cutover's reachability requirement. When enabled, the API
   performs network-free preflight, verifies a cached signer locally when one exists (rejecting
   invalid signatures before any durable row), persists the exact raw signed envelope in
-  `ap_inbox_deliveries`, awaits the initial enqueue attempt, and returns `202` once PostgreSQL is
+  `activitypub_inbox_deliveries`, awaits the initial enqueue attempt, and returns `202` once PostgreSQL is
   durable. The I/O worker fetches unknown actors, verifies freshness relative to receipt time, checks the
   signed actor, applies sender limits when the row is not already admitted, and deduplicates/dispatches `Follow`/`Undo(Follow)` onto the
   remote-origin bookmarks relation and `Like`/`Undo(Like)` onto the isolated
-  `ap_posts`/`ap_post_likes` ledger, never `post_votes`. Five-minute recovery repairs lost/stale
+  `post_activitypub_like_tallies`/`activitypub_post_likes` ledger, never `post_votes`. Five-minute recovery repairs lost/stale
   queue work, manual backfill re-arms exhausted operational failures, and final outcomes delete the
   pending raw envelope. Unverified envelopes retain at most one hour and share hard global caps of
   10,000 rows and 256 MiB of exact raw-body bytes; a full unverified store returns `503` with

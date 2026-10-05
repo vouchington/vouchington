@@ -19,7 +19,7 @@ export const createTestBatch = async (
   // Create the batch first
   await write(
     `
-    INSERT INTO bedrock_embeddings_batches (id, model_id, job_type, data, records, submitted_at)
+    INSERT INTO bedrock_embedding_batches (id, model_id, job_type, data, records, submitted_at)
     VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
   `,
     [
@@ -43,7 +43,7 @@ export const createTestBatch = async (
       WITH entity_ids (batch_id, entity_type, entity_id) AS (
         VALUES ${rows.join(', ')}
       )
-      INSERT INTO bedrock_embeddings_batch_entities (
+      INSERT INTO bedrock_embedding_batch_entities (
         batch_id,
         entity_type,
         topic_id,
@@ -78,7 +78,7 @@ export const countBatchEntities = async (batchId: string): Promise<number> => {
   const { rows } = await read(
     `
     SELECT COUNT(*)::int as count
-    FROM bedrock_embeddings_batch_entities
+    FROM bedrock_embedding_batch_entities
     WHERE batch_id = $1
   `,
     [batchId],

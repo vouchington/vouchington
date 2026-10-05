@@ -52,14 +52,14 @@ export async function measureActivityPubInboxOwnedStorageCounterForTest(
       )
     }
     await transaction(sql`/* measureActivityPubInboxOwnedStorageCounterForTest */
-      UPDATE ap_inbox_deliveries
+      UPDATE activitypub_inbox_deliveries
       SET verified_at = CURRENT_TIMESTAMP,
           remote_actor_id = ${verificationActorId}
       WHERE id = ${deliveryId}
     `)
   } else if (scenario === 'insert-delete') {
     await transaction(sql`/* measureActivityPubInboxOwnedStorageCounterForTest */
-      DELETE FROM ap_inbox_deliveries WHERE id = ANY(${deliveryIds})
+      DELETE FROM activitypub_inbox_deliveries WHERE id = ANY(${deliveryIds})
     `)
   } else {
     await transaction(sql`/* measureActivityPubInboxOwnedStorageCounterForTest */
@@ -79,7 +79,7 @@ async function readStorageCounter(
     unverified_raw_body_bytes: string | number
   }>(sql`/* measureActivityPubInboxOwnedStorageCounterForTest */
     SELECT retained_rows, retained_raw_body_bytes, unverified_rows, unverified_raw_body_bytes
-    FROM ap_inbox_delivery_storage_counters
+    FROM activitypub_inbox_delivery_storage_counters
     WHERE singleton
     FOR UPDATE
   `)
@@ -101,7 +101,7 @@ async function insertUnverifiedDelivery(
   const actor = `https://${suffix}.example/users/alice`
   const { rows } = await transaction<{ id: string }>(
     sql`/* measureActivityPubInboxOwnedStorageCounterForTest */
-      INSERT INTO ap_inbox_deliveries (
+      INSERT INTO activitypub_inbox_deliveries (
         request_method, request_target, expected_host, signature_header, digest_header,
         date_header, raw_body, claimed_activity_id, claimed_activity_type,
         claimed_actor_uri, sender_hostname

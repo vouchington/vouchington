@@ -8,7 +8,7 @@ export async function recordStoryPostPublicationChanges(
 ): Promise<void> {
   const { rows: posts } = await query<{ post_id: string }>(
     `/* recordStoryPostPublicationChanges */
-    SELECT post_id FROM post__stories WHERE story_id = $1`,
+    SELECT post_id FROM story_posts WHERE story_id = $1`,
     [storyId],
   )
   await Promise.all(

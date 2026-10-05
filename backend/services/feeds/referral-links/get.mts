@@ -78,7 +78,7 @@ export async function getReferralLinksFeed(
     SELECT
       urpl.id,
       urpl.user_id,
-      urpl.referral_program_id,
+      urpl.referral_program_topic_id AS referral_program_id,
       t.name AS referral_program_name,
       t.slug AS referral_program_slug,
       u.url,
@@ -89,8 +89,8 @@ export async function getReferralLinksFeed(
       vup.profile_image_id
     FROM user_referral_program_links urpl
     JOIN urls u ON u.id = urpl.url_id
-    JOIN topics t ON t.id = urpl.referral_program_id
-    JOIN topics__referral_programs trp ON trp.topic_id = urpl.referral_program_id
+    JOIN topics t ON t.id = urpl.referral_program_topic_id
+    JOIN referral_program_topics trp ON trp.topic_id = urpl.referral_program_topic_id
       AND trp.enabled_at IS NOT NULL
       AND trp.disabled_at IS NULL
     JOIN view_users_public vup ON vup.id = urpl.user_id
@@ -103,7 +103,7 @@ export async function getReferralLinksFeed(
       AND t.merged_into_topic_id IS NULL
       AND NOT EXISTS (SELECT 1 FROM excluded_hostname_ids WHERE excluded_hostname_ids.hostname_id = u.hostname_id)
       AND NOT EXISTS (SELECT 1 FROM excluded_users WHERE excluded_users.user_id = urpl.user_id)
-      AND NOT EXISTS (SELECT 1 FROM excluded_topics WHERE excluded_topics.topic_id = urpl.referral_program_id)
+      AND NOT EXISTS (SELECT 1 FROM excluded_topics WHERE excluded_topics.topic_id = urpl.referral_program_topic_id)
       AND `,
     )
     .append(childVisibilitySql('urpl.parent_link_id', 'urpl.user_id'))
@@ -113,7 +113,7 @@ export async function getReferralLinksFeed(
         SELECT urpl2.id
         FROM user_referral_program_links urpl2
         WHERE urpl2.user_id = urpl.user_id
-          AND urpl2.referral_program_id = urpl.referral_program_id
+          AND urpl2.referral_program_topic_id = urpl.referral_program_topic_id
           AND urpl2.deleted_at IS NULL
           AND urpl2.deactivated_at IS NULL
           AND urpl2.activated_at IS NOT NULL

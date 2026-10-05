@@ -157,9 +157,9 @@ describe('cards', () => {
   })
 
   it.each([
-    ['topics__cards_topic_id_fkey', 404, 'Not found'],
-    ['topics__cards_bank_id_fkey', 422, 'Invalid bank_id'],
-    ['topics__cards_brand_id_fkey', 422, 'Invalid brand_id'],
+    ['card_topics_topic_id_fkey', 404, 'Not found'],
+    ['card_topics_bank_id_fkey', 422, 'Invalid bank_id'],
+    ['card_topics_brand_id_fkey', 422, 'Invalid brand_id'],
   ])('maps the %s race to a precise domain error', async (constraint, status, message) => {
     await assert.rejects(
       mapCardAttributeReferenceError(() =>
@@ -174,7 +174,7 @@ describe('cards', () => {
   it('does not relabel unrelated database errors as card reference errors', async () => {
     const error = Object.assign(new Error('database constraint'), {
       code: '23503',
-      constraint: 'topics__cards_currency_code_fkey',
+      constraint: 'card_topics_currency_code_fkey',
     })
 
     await assert.rejects(

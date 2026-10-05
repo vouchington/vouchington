@@ -131,7 +131,7 @@ write, vacuum, or retention pressure warrants it, except where a dedicated trigg
 a stronger invariant. The typed registry owns the rationale and trigger.
 
 - Durable entities and content: `communities`, `conversations`, `image_placements`,
-  `image_surface_placement_activations`, `image_surface_placements`, `images`, `lists`,
+  `image_surface_placement_activations`, `image_surface_placements`, `images`, `user_lists`,
   `media_placements`, `podcast_shows`,
   `remote_actors`, `retained_api_key_identities`, `retained_topic_identities`,
   `retained_user_identities`, `rss_feeds`, `topics`, `url_hostnames`, `urls`, `users`. The three
@@ -139,7 +139,7 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   orphan cleanup; reconsider partitioning at the registry's documented growth threshold rather
   than introducing partition overhead before measurement.
 - Audit and workflow history: `admin_import_batches`, `admin_import_rows`,
-  `activitypub_distribution_checkpoints`, `ap_inbox_activities`,
+  `activitypub_distribution_checkpoints`, `activitypub_inbox_activities`,
   `community_activity_digest_dispatch_windows`, `community_agent_prompt_revisions`,
   `copyright_automatic_withholding_refusals`, `copyright_claimant_misuse_events`,
   `copyright_claimant_suspension_reversals`, `copyright_eu_dispute_settlement_outcomes`,
@@ -181,7 +181,7 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `copyright_territorial_redress_requests`,
   `dynamic_configuration_revisions`, `follower_distribution_deliveries`, `follower_distributions`,
   `identity_verification_attempts`, `media_delivery_registry_records`, `media_delivery_registry_changes`,
-  `og_dependency_manifest_placements`, `og_dependency_manifests`,
+  `open_graph_dependency_manifest_placements`, `open_graph_dependency_manifests`,
   `membership_administrator_refund_operation_requests`,
   `membership_changes`, `membership_entitlement_effects`,
   `membership_ineligible_purchase_reversal_refund_observations`,
@@ -194,7 +194,7 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `moderation_transparency_daily_rollups`, `moderation_transparency_released_daily_rollups`,
   `moderator_actions`, `oauth_authorization_server_events`, `report_integrity_flags`,
   `review_dispute_lifecycle_changes`, `review_successions`, `review_succession_topics`,
-  `review_disputes`, `ses_bounce_events`, `stripe_events`, `user_data_request_attempts`,
+  `review_disputes`, `amazon_ses_bounce_events`, `stripe_events`, `user_data_request_attempts`,
   `user_data_requests`, `user_deletion_external_works`,
   `user_deletion_relation_impacts`, `user_deletion_requests`, `user_engagement_email_sends`,
   `user_import_requests`, `user_legal_preservation_holds`, `user_moderation_email_sends`, `user_rss_feed_import_batches`,
@@ -223,20 +223,20 @@ a stronger invariant. The typed registry owns the rationale and trigger.
 - Global idempotency keys: `ai_usage_provider_response_keys`. Partitioning cannot preserve the
   response-ID primary key's global uniqueness; reconsider only if the replacement enforces that
   invariant across every ledger partition.
-- Work queue (drains to empty): `ap_inbox_deliveries`. Rows are deleted on success and rejection.
+- Work queue (drains to empty): `activitypub_inbox_deliveries`. Rows are deleted on success and rejection.
   Unverified envelopes expire after one hour; operational failures expire seven days after their
   immutable first failure. A five-minute cleanup deletes at most 10,000 rows per run in locked
   batches, so table size remains bounded work rather than retained history.
-- Singleton aggregate: `ap_inbox_delivery_storage_counters`. Its true-valued primary key permits
+- Singleton aggregate: `activitypub_inbox_delivery_storage_counters`. Its true-valued primary key permits
   exactly one row, which statement triggers maintain as the exact retained and unverified row/byte
   totals used for admission and monitoring.
-- Ordinary relationship edges: `ap_post_likes`, `bluesky_follow_records`,
-  `community_list_items__posts`,
-  `community_list_items__rss_feeds`, `community_list_items__topics`,
-  `community_list_items__url_hostnames`, `community_list_items__urls`, `community_members`,
+- Ordinary relationship edges: `activitypub_post_likes`, `bluesky_follow_records`,
+  `community_list_posts`,
+  `community_list_rss_feeds`, `community_list_topics`,
+  `community_list_url_hostnames`, `community_list_urls`, `community_members`,
   `community_pinned_posts`, `conversation_participants`, `facebook_friends`, `github_friends`,
-  `household_members`, `linkedin_accounts`, `list_items__posts`, `list_items__rss_feed_items`,
-  `post_images`, `post_slugs`, `post_topic_alias_sources`, `rss_feed_item_categories`, `rss_feed_item_ids`,
+  `household_members`, `linkedin_accounts`, `user_list_posts`, `user_list_rss_feed_items`,
+  `post_images`, `post_slugs`, `post_topic_alias_sources`, `rss_feed_item_categories`, `rss_feed_item_guids`,
   `rss_feed_item_sources`,
   `topic_aliases`, `x_friends`.
 - Config-generated relationship edges: `relation__rss_feed_item__category__topic_alias`.
@@ -254,19 +254,19 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   identities exist only while retained deletion impacts reference them; bounded cleanup removes
   unreferenced rows, and partitioning is reconsidered at the registry's growth threshold.
 - Lower-amplification entities and workflow rows: `agent_prompts`, `agents`,
-  `agents__moderators`, `ap_actor_keys`, `ap_posts`, `api_keys`, `app_attestation_keys`,
+  `moderator_agents`, `activitypub_actor_keys`, `post_activitypub_like_tallies`, `api_keys`, `app_attestation_keys`,
   `apple_accounts`,
-  `bedrock_embeddings_batch_entities`, `bedrock_embeddings_batches`,
+  `bedrock_embedding_batch_entities`, `bedrock_embedding_batches`,
   `bedrock_nova_multimodal_v1_embeddings`, `bedrock_nova_multimodal_v1_image_embeddings`,
   `bluesky_link_authorizations`, `bluesky_link_completions`, `bluesky_linked_accounts`,
-  `boilerplate_removal_urls`, `boilerplate_removals`, `classifier_candidate_community_overrides`,
+  `hostname_path_boilerplate_removal_urls`, `hostname_path_boilerplate_removals`, `classifier_candidate_community_overrides`,
   `classifier_candidate_thresholds`, `classifier_candidates`, `classifier_decision_batches`, `classifier_decision_calls`,
   `classifier_prompt_versions`, `classifier_run_candidates`, `classifier_run_requests`, `classifier_runs`, `classifier_topic_vote_applications`, `classifiers`, `community_agent_prompts`,
   `community_application_answers`, `community_application_questions`, `community_applications`,
   `community_auto_tagger_agents`,
   `community_bans`, `community_invites`, `community_member_vacations`,
-  `community_post_reviews`, `community_restrictions`, `community_saved_replies`, `crawlers`,
-  `curated_aside_items`, `domain_blacklists`, `email_address_login_tokens`,
+  `community_post_reviews`, `community_restrictions`, `community_saved_replies`, `hostname_crawler_configurations`,
+  `curated_aside_items`, `blocklisted_domains`, `email_address_login_tokens`,
   `facebook_accounts`, `fediverse_instance_integration_changes`,
   `follower_distribution_selected_recipients`, `github_accounts`, `google_accounts`,
   `households`, `individual_cards`, `individual_financial_profiles`,
@@ -286,23 +286,23 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `moderation_media_reveals`, `moderation_queue_claims`, `moderation_training_feedbacks`,
   `moderator_action_community_restrictions`, `oauth_access_tokens`, `oauth_authorization_codes`, `oauth_authorization_requests`,
   `oauth_clients`, `oauth_grants`, `oauth_refresh_token_families`, `oauth_refresh_tokens`,
-  `phone_number_login_tokens`, `podcast_playback_positions`, `post__stories`,
+  `phone_number_login_tokens`, `podcast_playback_positions`, `story_posts`,
   `post_autotagger_result_topics`, `post_classifier_local_outcomes`, `post_dispute_annotations`, `post_locks`,
-  `post_topic_recommendations_hostnames`, `post_topic_recommendation_landing_page_urls`,
-  `referral_program_link_validations`,
-  `referral_program_link_validations_rules`, `report_abuse_penalties`,
+  `post_topic_recommendation_hostnames`, `post_topic_recommendation_landing_page_urls`,
+  `referral_program_link_validation_rule_sets`,
+  `referral_program_link_validation_rules`, `report_abuse_penalties`,
   `report_integrity_flag_reporters`, `retailer_countries`,
   `rss_feed_categories`, `rss_feed_setting_changes`, `rss_feed_setting_changes`,
   `rss_feed_item_autotagger_result_topics`, `rss_feed_item_autotagger_results`,
   `rss_feed_item_category_rejections`, `rss_feed_item_unmapped_category_counts`,
   `sites`, `spending_entries`, `stories`, `topic_claims`, `topic_metrics`,
-  `topic_revisions`, `topics__cards`, `topics__fediverse_instances`,
-  `topics__referral_program_link_validations`,
-  `topics__referral_programs`, `topics__retailers`, `topics__rewards_program_statuses`,
-  `topics__rewards_programs`, `topics__spending_categories`, `url_hostname_blocks`,
+  `topic_revisions`, `card_topics`, `fediverse_instance_topics`,
+  `referral_program_topic_link_validation_rule_sets`,
+  `referral_program_topics`, `retailer_topics`, `rewards_program_status_topics`,
+  `rewards_program_topics`, `spending_category_topics`, `url_hostname_blocks`,
   `user_aside_preferences`, `user_consents`, `user_email_addresses`,
   `user_landing_page_group_members`, `user_landing_page_items`, `user_landing_pages`,
-  `user_metrics`, `user_mod_notes`, `user_passkeys`, `user_permissions`, `user_phone_numbers`,
+  `user_metrics`, `user_moderator_notes`, `user_passkeys`, `user_permissions`, `user_phone_numbers`,
   `user_profile_links`, `user_referral_program_links`, `user_role_permissions`, `user_roles`,
   `user_suspensions`, `user_totp_authenticators`, `user_warnings`, `verified_identities`,
   `user_agent_strings`, `vote_weight_penalties`, `x_accounts`.

@@ -40,12 +40,12 @@ export async function getTrendingReferralPrograms(
         rp.topic_id AS id,
         COUNT(url.id)::DOUBLE PRECISION AS trending_score,
         COUNT(url.id)::INTEGER AS link_count
-      FROM topics__referral_programs rp
+      FROM referral_program_topics rp
       INNER JOIN topics t ON t.id = rp.topic_id
         AND t.deleted_at IS NULL
         AND t.merged_into_topic_id IS NULL
       INNER JOIN user_referral_program_links url
-        ON url.referral_program_id = rp.topic_id
+        ON url.referral_program_topic_id = rp.topic_id
         AND url.id >= ${lowerBoundUuid}
         AND url.activated_at IS NOT NULL
         AND url.deleted_at IS NULL

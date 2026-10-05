@@ -30,7 +30,7 @@ export async function markBatchSubmittedForPolling(
 ): Promise<void> {
   await write(
     `/* createBatch:markSubmitted */
-    UPDATE bedrock_embeddings_batches
+    UPDATE bedrock_embedding_batches
     SET job_arn = $2,
         submitted_at = COALESCE(submitted_at, CURRENT_TIMESTAMP),
         data = $3
@@ -54,7 +54,7 @@ export async function insertBatchAndLockRows(params: {
 
   await query(
     `/* createBatch:insertPreparing */
-      INSERT INTO bedrock_embeddings_batches (
+      INSERT INTO bedrock_embedding_batches (
         id, job_arn, model_id, job_type, data, url_id, crawl_id, records, created_at
       )
       VALUES ($1, NULL, $2, $3, $4, $5, $6, $7, $8)`,

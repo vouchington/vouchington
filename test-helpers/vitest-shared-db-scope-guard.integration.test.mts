@@ -93,7 +93,9 @@ it('runs', () => {})`,
       },
     ])
     expect(result.exitCode).not.toBe(0)
-    expect(result.output).toContain('rearmFailedActivityPubInboxDeliveries on ap_inbox_deliveries')
+    expect(result.output).toContain(
+      'rearmFailedActivityPubInboxDeliveries on activitypub_inbox_deliveries',
+    )
   })
 
   it('retains violations across resetModules', async () => {

@@ -7,7 +7,7 @@ export async function insertTestPublicationSourceLessFeedItems(
   count: number,
 ): Promise<void> {
   const { rows } = await write<{ story_id: string; url_id: string }>(
-    `/* findPublicationSourceLessFeedFixture */ SELECT story.story_id, item.url_id FROM post__stories story
+    `/* findPublicationSourceLessFeedFixture */ SELECT story.story_id, item.url_id FROM story_posts story
       JOIN rss_feed_items item ON item.story_id = story.story_id WHERE story.post_id = $1 ORDER BY item.id LIMIT 1`,
     [postId],
   )
@@ -27,7 +27,7 @@ export async function insertTestPublicationAdditionalFeedItems(
   deleted = false,
 ): Promise<void> {
   const { rows } = await write<{ story_id: string; url_id: string }>(
-    `/* findPublicationFeedStoryFixture */ SELECT story.story_id, item.url_id FROM post__stories story
+    `/* findPublicationFeedStoryFixture */ SELECT story.story_id, item.url_id FROM story_posts story
       JOIN rss_feed_items item ON item.story_id = story.story_id AND item.deleted_at IS NULL
       WHERE story.post_id = $1 ORDER BY item.id LIMIT 1`,
     [postId],

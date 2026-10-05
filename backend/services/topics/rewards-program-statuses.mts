@@ -25,7 +25,7 @@ export async function getRewardsProgramStatusAttributes(
     SELECT
       lifetime_version_id,
       order_index
-    FROM topics__rewards_program_statuses
+    FROM rewards_program_status_topics
     WHERE topic_id = ${topic.id}
     LIMIT 1
   `)
@@ -83,7 +83,7 @@ export async function updateRewardsProgramStatusAttributes(
   }
 
   return upsertTopicAttributes<RewardsProgramStatusAttributes>(
-    'topics__rewards_program_statuses',
+    'rewards_program_status_topics',
     topic.id,
     columns,
     values,

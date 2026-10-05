@@ -24,5 +24,11 @@ const officialReferralLinkColumnNames = Object.keys({
  */
 export function officialReferralLinkColumns(alias?: string): string {
   const prefix = alias ? `${alias}.` : ''
-  return officialReferralLinkColumnNames.map(column => `${prefix}${column}`).join(', ')
+  return officialReferralLinkColumnNames
+    .map(column =>
+      column === 'referral_program_id'
+        ? `${prefix}referral_program_topic_id AS referral_program_id`
+        : `${prefix}${column}`,
+    )
+    .join(', ')
 }

@@ -5,7 +5,7 @@ export async function isEmailSuppressed(email: string): Promise<boolean> {
   const normalizedEmail = email.toLowerCase().trim()
   const { rows } = await read(sql`/* isEmailSuppressed */
     SELECT 1
-    FROM ses_bounce_events
+    FROM amazon_ses_bounce_events
     WHERE recipients @> ${JSON.stringify([normalizedEmail])}::jsonb
       AND (
         (notification_type = 'bounce' AND bounce_type = 'permanent')

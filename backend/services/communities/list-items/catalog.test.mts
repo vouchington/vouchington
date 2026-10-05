@@ -69,30 +69,30 @@ describe('community list item catalogs', () => {
 
     expect(communityListItemStorageCatalog).toMatchObject({
       topic: {
-        table: 'community_list_items__topics',
+        table: 'community_list_topics',
         entityTable: 'topics',
         entityColumn: 'topic_id',
         activeEntityFilter: 'AND deleted_at IS NULL',
       },
       rss_feed: {
-        table: 'community_list_items__rss_feeds',
+        table: 'community_list_rss_feeds',
         entityTable: 'rss_feeds',
         entityColumn: 'rss_feed_id',
       },
       post: {
-        table: 'community_list_items__posts',
+        table: 'community_list_posts',
         entityTable: 'posts',
         entityColumn: 'post_id',
         activeEntityFilter: 'AND deleted_at IS NULL',
       },
       url_hostname: {
-        table: 'community_list_items__url_hostnames',
+        table: 'community_list_url_hostnames',
         entityTable: 'url_hostnames',
         entityColumn: 'url_hostname_id',
         activeEntityFilter: '',
       },
       url: {
-        table: 'community_list_items__urls',
+        table: 'community_list_urls',
         entityTable: 'urls',
         entityColumn: 'url_id',
         activeEntityFilter: '',

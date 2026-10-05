@@ -39,7 +39,7 @@ export const getIndividualRewardsProgramPointValuations = async (
   const query = sql`/* getIndividualRewardsProgramPointValuations */
     SELECT
       individual_rewards_program_point_valuations.id,
-      individual_rewards_program_point_valuations.rewards_program_id,
+      individual_rewards_program_point_valuations.rewards_program_topic_id AS rewards_program_id,
       individual_rewards_program_point_valuations.value_microunits_per_point::TEXT AS value_microunits_per_point,
       individual_rewards_program_point_valuations.currency_code,
       individual_rewards_program_point_valuations.note,
@@ -49,7 +49,7 @@ export const getIndividualRewardsProgramPointValuations = async (
     JOIN LATERAL (
       SELECT view_topics.name, view_topics.slug
       FROM view_topics
-      WHERE view_topics.id = individual_rewards_program_point_valuations.rewards_program_id
+      WHERE view_topics.id = individual_rewards_program_point_valuations.rewards_program_topic_id
       LIMIT 1
     ) rewards_program ON TRUE
     WHERE individual_id = ${individual.id}`

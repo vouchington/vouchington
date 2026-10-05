@@ -26,15 +26,15 @@ export async function createReferralProgramFixture(data: {
   })
 
   const validation = await write(sql`
-    INSERT INTO referral_program_link_validations (slug, user_help_text)
+    INSERT INTO referral_program_link_validation_rule_sets (slug, user_help_text)
     VALUES (${`validation_${randomSuffix}`}, 'test validation')
     RETURNING id
   `)
   const validationId = validation.rows[0].id
 
   const rule = await write(sql`
-    INSERT INTO referral_program_link_validations_rules (
-      referral_program_link_validation_id,
+    INSERT INTO referral_program_link_validation_rules (
+      referral_program_link_validation_rule_set_id,
       hostname,
       pathname,
       is_referral_link_url
@@ -45,7 +45,7 @@ export async function createReferralProgramFixture(data: {
   const ruleId = rule.rows[0].id
 
   await write(sql`
-    INSERT INTO topics__referral_programs (topic_id, enabled_at)
+    INSERT INTO referral_program_topics (topic_id, enabled_at)
     VALUES (${referralProgramId}, CURRENT_TIMESTAMP)
     ON CONFLICT (topic_id) DO UPDATE
     SET enabled_at = CURRENT_TIMESTAMP,
@@ -53,12 +53,12 @@ export async function createReferralProgramFixture(data: {
   `)
 
   await write(sql`
-    INSERT INTO topics__referral_program_link_validations (
-      referral_program_id,
-      referral_program_link_validation_id
+    INSERT INTO referral_program_topic_link_validation_rule_sets (
+      referral_program_topic_id,
+      referral_program_link_validation_rule_set_id
     )
     VALUES (${referralProgramId}, ${validationId})
-    ON CONFLICT (referral_program_id, referral_program_link_validation_id) DO NOTHING
+    ON CONFLICT (referral_program_topic_id, referral_program_link_validation_rule_set_id) DO NOTHING
   `)
 
   return {
@@ -74,7 +74,7 @@ export async function createReferralProgramLinkValidation(
   userHelpText = 'Test help text',
 ): Promise<string> {
   const result = await write(sql`
-    INSERT INTO referral_program_link_validations (slug, user_help_text)
+    INSERT INTO referral_program_link_validation_rule_sets (slug, user_help_text)
     VALUES (${slug}, ${userHelpText})
     RETURNING id
   `)
@@ -91,8 +91,8 @@ export async function createReferralProgramLinkValidationRule(data: {
   userErrorText?: string | null
 }): Promise<string> {
   const result = await write(sql`
-    INSERT INTO referral_program_link_validations_rules (
-      referral_program_link_validation_id,
+    INSERT INTO referral_program_link_validation_rules (
+      referral_program_link_validation_rule_set_id,
       hostname,
       pathname,
       is_referral_link_url,
@@ -115,7 +115,7 @@ export async function createReferralProgramLinkValidationRule(data: {
 
 export async function enableReferralProgramByTopicId(referralProgramId: string): Promise<void> {
   await write(sql`
-    INSERT INTO topics__referral_programs (topic_id, enabled_at)
+    INSERT INTO referral_program_topics (topic_id, enabled_at)
     VALUES (${referralProgramId}, CURRENT_TIMESTAMP)
     ON CONFLICT (topic_id) DO UPDATE
     SET enabled_at = CURRENT_TIMESTAMP,
@@ -125,7 +125,7 @@ export async function enableReferralProgramByTopicId(referralProgramId: string):
 
 export async function disableReferralProgramByTopicId(referralProgramId: string): Promise<void> {
   await write(sql`
-    UPDATE topics__referral_programs
+    UPDATE referral_program_topics
     SET disabled_at = CURRENT_TIMESTAMP, enabled_at = NULL
     WHERE topic_id = ${referralProgramId}
   `)
@@ -136,12 +136,12 @@ export async function assignValidationToReferralProgram(
   validationId: string,
 ): Promise<void> {
   await write(sql`
-    INSERT INTO topics__referral_program_link_validations (
-      referral_program_id,
-      referral_program_link_validation_id
+    INSERT INTO referral_program_topic_link_validation_rule_sets (
+      referral_program_topic_id,
+      referral_program_link_validation_rule_set_id
     )
     VALUES (${referralProgramId}, ${validationId})
-    ON CONFLICT (referral_program_id, referral_program_link_validation_id) DO NOTHING
+    ON CONFLICT (referral_program_topic_id, referral_program_link_validation_rule_set_id) DO NOTHING
   `)
 }
 
@@ -150,6 +150,6 @@ export async function setTopicReferralProgramId(
   referralProgramId: string,
 ): Promise<void> {
   await write(sql`
-    UPDATE topics SET referral_program_id = ${referralProgramId} WHERE id = ${topicId}
+    UPDATE topics SET referral_program_topic_id = ${referralProgramId} WHERE id = ${topicId}
   `)
 }

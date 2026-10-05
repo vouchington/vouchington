@@ -158,7 +158,7 @@ export async function syncImageSurfacePlacement(
         CASE WHEN surface.surface_kind IN ('community-profile-image', 'community-banner-image')
           THEN EXISTS (
             SELECT 1 FROM user_roles role
-            JOIN user_roles_types role_type ON role_type.id = role.role_type_id
+            JOIN user_role_types role_type ON role_type.id = role.role_type_id
             WHERE role.user_id = ${actorUserId} AND role_type.slug = 'administrator'
           )
           ELSE NULL END

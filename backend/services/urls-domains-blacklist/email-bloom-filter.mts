@@ -132,9 +132,9 @@ async function* emailBlocklistBatchesFromDb(): AsyncGenerator<string[]> {
   for await (const row of createAsyncGeneratorFromCursor<{ domain: string }>(
     sql`/* emailBlocklistBatchesFromDb */
       SELECT db.domain
-      FROM domain_blacklists db
-      INNER JOIN domain_blacklist_sources dbs ON dbs.id = db.source_id
-      WHERE dbs.type = 'email'::domain_blacklist_types
+      FROM blocklisted_domains db
+      INNER JOIN domain_blocklist_sources dbs ON dbs.id = db.source_id
+      WHERE dbs.type = 'email'::domain_blocklist_types
     `,
     { batchSize: BATCH_SIZE },
   )) {
@@ -187,9 +187,9 @@ async function repairEmailBlocklistUnavailableRead(): Promise<void> {
 async function hasEmailBlocklistData(): Promise<boolean> {
   const { rows } = await read(sql`/* warmUpEmailBlocklistBloomFilter */
     SELECT db.domain
-    FROM domain_blacklists db
-    INNER JOIN domain_blacklist_sources dbs ON dbs.id = db.source_id
-    WHERE dbs.type = 'email'::domain_blacklist_types
+    FROM blocklisted_domains db
+    INNER JOIN domain_blocklist_sources dbs ON dbs.id = db.source_id
+    WHERE dbs.type = 'email'::domain_blocklist_types
     LIMIT 1
   `)
   return rows.length > 0

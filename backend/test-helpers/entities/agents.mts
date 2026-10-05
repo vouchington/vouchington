@@ -78,11 +78,11 @@ export async function createTestAgent(options: CreateTestAgentOptions = {}) {
   `)
   const agent = rows[0]
 
-  // If moderator, insert into agents__moderators
+  // If moderator, insert into moderator_agents
   if (agentType === 'moderator') {
     const slug = options.slug ?? `mod-${random}`
     await write(sql`
-      INSERT INTO agents__moderators (agent_id, slug)
+      INSERT INTO moderator_agents (agent_id, slug)
       VALUES (${agent.id}, ${slug})
     `)
     agent.slug = slug

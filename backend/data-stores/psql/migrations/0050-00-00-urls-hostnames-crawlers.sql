@@ -8,13 +8,14 @@
 -- edited-in-place: added unreliable_status_codes to url_hostnames
 -- edited-in-place: added html_sha256 to crawls to dedupe redundant S3 PUTs
 -- edited-in-place: added normalized embed metadata to crawls
--- Merged from: 0002-00-00-oauth-urls.sql, 0030-00-00-url-crawlers.sql
+-- Merged from: 0002-00-00-oauth-urls.sql, 0030-00-00-url-hostname_crawler_configurations.sql
 
 -- ==========================================================================
 -- URL registry and domain blacklists from 0002-00-00-oauth-urls.sql
 -- ============================================================================
 
 -- Reverse hostname labels for efficient subdomain prefix scans
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reverse_hostname_labels(p_hostname TEXT)
 RETURNS TEXT
 LANGUAGE SQL
@@ -27,6 +28,7 @@ $$;
 -- Hostnames
 --------------------------------------------------------------------------------
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS url_hostnames (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
 
@@ -84,30 +86,37 @@ CREATE TABLE IF NOT EXISTS url_hostnames (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__hostname__text_pattern_ops
 ON url_hostnames (hostname text_pattern_ops);
 
 -- trigram index for ILIKE '%query%' searches
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__hostname_trgm
 ON url_hostnames USING GIN (hostname gin_trgm_ops);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__reversed_hostname__text_pattern_ops
 ON url_hostnames (reversed_hostname text_pattern_ops);
 
 -- Partial index for fast exact and prefix hostname lookups among blocked hostnames.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__blocked
   ON url_hostnames (hostname text_pattern_ops)
   WHERE blocked = TRUE;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__skip_web_risk
   ON url_hostnames (hostname text_pattern_ops)
   WHERE skip_web_risk = TRUE;
 
 -- Partial index for finding auto-disabled hostnames (admin observability, cleanup queries).
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__dns_disabled_at
   ON url_hostnames (dns_disabled_at)
   WHERE dns_disabled_at IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_url_hostnames_updated_at
 BEFORE UPDATE ON url_hostnames
 FOR EACH ROW
@@ -181,20 +190,24 @@ CREATE TABLE IF NOT EXISTS urls (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_urls_updated_at
 BEFORE UPDATE ON urls
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
 -- filter urls by hostname
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_urls__hostname_id
 ON urls (hostname_id);
 
 -- search urls by url prefix
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_urls__url__text_pattern_ops
 ON urls (url text_pattern_ops);
 
 -- trigram index for ILIKE '%query%' searches on urls
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_urls__url_trgm
 ON urls USING GIN (url gin_trgm_ops);
 
@@ -211,16 +224,17 @@ COMMENT ON COLUMN urls.canonical_url_id IS 'Self-referencing FK to the canonical
 --------------------------------------------------------------------------------
 
 DO $$ BEGIN
-  CREATE TYPE domain_blacklist_types AS ENUM (
+  CREATE TYPE domain_blocklist_types AS ENUM (
   'url',
   'email'
 );
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
-CREATE TABLE IF NOT EXISTS domain_blacklist_sources (
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS domain_blocklist_sources (
   id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  type domain_blacklist_types NOT NULL,
+  type domain_blocklist_types NOT NULL,
   name TEXT UNIQUE NOT NULL,
   CHECK (name ~ '^[a-z-]+$'),
   CHECK (name = LOWER(name)),
@@ -234,21 +248,23 @@ CREATE TABLE IF NOT EXISTS domain_blacklist_sources (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE OR REPLACE TRIGGER trigger_domain_blacklist_sources_updated_at
-BEFORE UPDATE ON domain_blacklist_sources
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_domain_blocklist_sources_updated_at
+BEFORE UPDATE ON domain_blocklist_sources
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
-COMMENT ON TABLE domain_blacklist_sources IS 'External sources of domain blacklists (e.g. spam lists, disposable email lists).';
-COMMENT ON COLUMN domain_blacklist_sources.type IS 'Whether this source blocks URL domains or email domains.';
-COMMENT ON COLUMN domain_blacklist_sources.name IS 'Unique lowercase identifier for this blacklist source.';
-COMMENT ON COLUMN domain_blacklist_sources.url IS 'URL where the blacklist can be fetched from.';
-COMMENT ON COLUMN domain_blacklist_sources.etag IS 'HTTP ETag from the last fetch, for conditional requests.';
-COMMENT ON COLUMN domain_blacklist_sources.last_modified_at IS 'HTTP Last-Modified from the last fetch.';
-COMMENT ON COLUMN domain_blacklist_sources.last_fetched_at IS 'When this source was last successfully fetched.';
+COMMENT ON TABLE domain_blocklist_sources IS 'External sources of domain blacklists (e.g. spam user_lists, disposable email user_lists).';
+COMMENT ON COLUMN domain_blocklist_sources.type IS 'Whether this source blocks URL domains or email domains.';
+COMMENT ON COLUMN domain_blocklist_sources.name IS 'Unique lowercase identifier for this blacklist source.';
+COMMENT ON COLUMN domain_blocklist_sources.url IS 'URL where the blacklist can be fetched from.';
+COMMENT ON COLUMN domain_blocklist_sources.etag IS 'HTTP ETag from the last fetch, for conditional requests.';
+COMMENT ON COLUMN domain_blocklist_sources.last_modified_at IS 'HTTP Last-Modified from the last fetch.';
+COMMENT ON COLUMN domain_blocklist_sources.last_fetched_at IS 'When this source was last successfully fetched.';
 
-CREATE TABLE IF NOT EXISTS domain_blacklists (
-  source_id BIGINT NOT NULL REFERENCES domain_blacklist_sources ON DELETE CASCADE,
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS blocklisted_domains (
+  source_id BIGINT NOT NULL REFERENCES domain_blocklist_sources ON DELETE CASCADE,
   domain TEXT NOT NULL,
   CHECK (domain = LOWER(domain)),
   CHECK (domain = TRIM(domain)),
@@ -257,20 +273,22 @@ CREATE TABLE IF NOT EXISTS domain_blacklists (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE OR REPLACE TRIGGER trigger_domain_blacklists_updated_at
-BEFORE UPDATE ON domain_blacklists
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_blocklisted_domains_updated_at
+BEFORE UPDATE ON blocklisted_domains
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
-CREATE INDEX IF NOT EXISTS idx_domain_blacklists__source_id__domain
-ON domain_blacklists (source_id, domain);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_blocklisted_domains__source_id__domain
+ON blocklisted_domains (source_id, domain);
 
-COMMENT ON TABLE domain_blacklists IS 'Individual blacklisted domains from external sources.';
-COMMENT ON COLUMN domain_blacklists.source_id IS 'The blacklist source this domain came from.';
-COMMENT ON COLUMN domain_blacklists.domain IS 'The blacklisted domain name (lowercase).';
+COMMENT ON TABLE blocklisted_domains IS 'Individual blacklisted domains from external sources.';
+COMMENT ON COLUMN blocklisted_domains.source_id IS 'The blacklist source this domain came from.';
+COMMENT ON COLUMN blocklisted_domains.domain IS 'The blacklisted domain name (lowercase).';
 
 -- ==========================================================================
--- 0030-00-00-url-crawlers.sql
+-- 0030-00-00-url-hostname_crawler_configurations.sql
 -- ============================================================================
 
 DO $$ BEGIN
@@ -282,7 +300,8 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 -- rules per crawler
-CREATE TABLE IF NOT EXISTS crawlers (
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS hostname_crawler_configurations (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   hostname_id UUID NOT NULL REFERENCES url_hostnames ON DELETE CASCADE,
   description TEXT NOT NULL DEFAULT '',
@@ -304,25 +323,27 @@ CREATE TABLE IF NOT EXISTS crawlers (
   link_hrefs_to_remove TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
 
   content_selectors TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
-  referral_program_id UUID  -- FK to topics__referral_programs added in 0130
+  referral_program_topic_id UUID  -- FK to referral_program_topics added in 0130
 );
 
-CREATE OR REPLACE TRIGGER trigger_crawlers_updated_at
-BEFORE UPDATE ON crawlers
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_hostname_crawler_configurations_updated_at
+BEFORE UPDATE ON hostname_crawler_configurations
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
-CREATE INDEX IF NOT EXISTS idx_crawlers__hostname_id
-ON crawlers (hostname_id);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_hostname_crawler_configurations__hostname_id
+ON hostname_crawler_configurations (hostname_id);
 
-COMMENT ON TABLE crawlers IS 'Per-hostname crawler configurations defining how to fetch and parse web pages.';
-COMMENT ON COLUMN crawlers.hostname_id IS 'The hostname this crawler is configured for.';
-COMMENT ON COLUMN crawlers.description IS 'Human-readable description of what this crawler does.';
-COMMENT ON COLUMN crawlers.crawler_type IS 'Method of crawling: fetch (HTTP) or automation (headless browser).';
-COMMENT ON COLUMN crawlers.priority IS 'Selection priority (descending). Higher priority crawlers are tried first.';
-COMMENT ON COLUMN crawlers.css_selectors_to_remove IS 'CSS selectors of elements to strip before parsing HTML content.';
-COMMENT ON COLUMN crawlers.link_text_content_to_remove IS 'Link text values to strip (exact match) before parsing.';
-COMMENT ON COLUMN crawlers.link_hrefs_to_remove IS 'Link href values to strip (exact match) before parsing.';
+COMMENT ON TABLE hostname_crawler_configurations IS 'Per-hostname crawler configurations defining how to fetch and parse web pages.';
+COMMENT ON COLUMN hostname_crawler_configurations.hostname_id IS 'The hostname this crawler is configured for.';
+COMMENT ON COLUMN hostname_crawler_configurations.description IS 'Human-readable description of what this crawler does.';
+COMMENT ON COLUMN hostname_crawler_configurations.crawler_type IS 'Method of crawling: fetch (HTTP) or automation (headless browser).';
+COMMENT ON COLUMN hostname_crawler_configurations.priority IS 'Selection priority (descending). Higher priority hostname_crawler_configurations are tried first.';
+COMMENT ON COLUMN hostname_crawler_configurations.css_selectors_to_remove IS 'CSS selectors of elements to strip before parsing HTML content.';
+COMMENT ON COLUMN hostname_crawler_configurations.link_text_content_to_remove IS 'Link text values to strip (exact match) before parsing.';
+COMMENT ON COLUMN hostname_crawler_configurations.link_hrefs_to_remove IS 'Link href values to strip (exact match) before parsing.';
 
 -------------------------------------------------------------------------------
 -- crawls
@@ -338,12 +359,13 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS crawls (
   id UUID NOT NULL DEFAULT uuidv7(),
   url_id UUID NOT NULL REFERENCES urls ON DELETE CASCADE,
   PRIMARY KEY (id),
 
-  crawler_id UUID REFERENCES crawlers ON DELETE SET NULL,
+  crawler_id UUID REFERENCES hostname_crawler_configurations ON DELETE SET NULL,
 
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL, -- when the crawl was started
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -403,38 +425,46 @@ CREATE TABLE IF NOT EXISTS crawls (
 ) PARTITION BY RANGE (id);
 
 -- for the dominant query pattern: WHERE url_id = $1 ORDER BY id DESC
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_crawls__url_id__id_desc
 ON crawls (url_id, id DESC);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_crawls__crawler_id
 ON crawls (crawler_id)
 WHERE crawler_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_crawls__redirect_url_id
 ON crawls (redirect_url_id)
 WHERE redirect_url_id IS NOT NULL;
 
 -- for finding the latest crawl for a URL
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS crawls__url_id__embeddings_generated_at
 ON crawls (url_id, embeddings_generated_at DESC)
 WHERE embeddings_generated_at IS NOT NULL;
 
 -- for finding URLs that have pending embeddings
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS crawls__url_id__pending_embeddings
 ON crawls (url_id)
 WHERE has_pending_embeddings = TRUE;
 
 -- latest-completed-crawl lookup by URL
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_crawls__url_id__completed_at_desc
 ON crawls (url_id, completed_at DESC, id DESC)
 WHERE completed_at IS NOT NULL;
 
 -- find crawls pending language detection
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS crawls_lingua_rs_pending_idx
   ON crawls (id)
   WHERE lingua_rs_input_sha256 IS NULL;
 
 -- find crawls pending remote oEmbed enrichment
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS crawls_oembed_pending_idx
   ON crawls (id)
   WHERE embed_metadata IS NOT NULL
@@ -469,6 +499,7 @@ COMMENT ON COLUMN crawls.lang IS 'Language from the <html lang="..."> attribute.
 -- crawl_chunks
 -------------------------------------------------------------------------------
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS crawl_chunks (
   crawl_id UUID NOT NULL REFERENCES crawls(id) ON DELETE CASCADE,
 
@@ -494,15 +525,18 @@ CREATE TABLE IF NOT EXISTS crawl_chunks (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) PARTITION BY RANGE (crawl_id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS crawl_chunks__search_vector
 ON crawl_chunks USING GIN (search_vector);
 
 -- find existing embeddings by input hash
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS crawl_chunks__bedrock_nova_multimodal_v1_input_sha256
 ON crawl_chunks (bedrock_nova_multimodal_v1_input_sha256)
 WHERE bedrock_nova_multimodal_v1_input_sha256 IS NOT NULL;
 
 -- index embeddings for similarity search (vector_cosine_ops matches <=> queries)
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS crawl_chunks__bedrock_nova_multimodal_v1_embedding
 ON crawl_chunks USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops)
 WHERE bedrock_nova_multimodal_v1_embedding IS NOT NULL;
@@ -517,10 +551,12 @@ COMMENT ON COLUMN crawl_chunks.markdown IS 'The markdown content of this chunk.'
 -- votes_score_net/votes_count_up columns added by the elections config-driven generator.
 
 -- Current indexes for fresh schema bootstrap.
-CREATE INDEX IF NOT EXISTS idx_crawlers__created_by_id
-  ON crawlers (created_by_id)
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_hostname_crawler_configurations__created_by_id
+  ON hostname_crawler_configurations (created_by_id)
   WHERE created_by_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_urls__canonical_url_id
   ON urls (canonical_url_id)
   WHERE canonical_url_id IS NOT NULL;

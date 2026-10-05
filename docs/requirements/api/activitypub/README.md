@@ -64,7 +64,7 @@ gates on `isFederationEnabledForUser` and returns `404` for an opted-out or none
     dedup** (`recordInboxActivity`; a duplicate delivery returns `200` and skips dispatch) →
     `dispatchInboundActivity`, which maps `Follow`/`Undo(Follow)` onto the existing
     `remote_actor -> user` follow entity-relation (tagged `origin: 'remote'`, gating Phase C3's
-    loop prevention), maps `Like`/`Undo(Like)` onto the isolated `ap_posts`/`ap_post_likes` ledger
+    loop prevention), maps `Like`/`Undo(Like)` onto the isolated `post_activitypub_like_tallies`/`activitypub_post_likes` ledger
     (`@services/ap-post-likes` — deliberately never `post_votes`, so a remote actor's Like can
     never move local ranking; see the reuse-mapping table in
     [the architecture doc](../../../overview/architecture/fediverse-federation.md)), and
@@ -73,7 +73,7 @@ gates on `isFederationEnabledForUser` and returns `404` for an opted-out or none
   When `activitypub-inbox.async_delivery_enabled` is false, the synchronous path above remains the rollout
   fallback and preserves its existing response statuses. When enabled, the request path stays
   network-free for unknown actors: after the header/body/digest/allowlist/rate-limit preflight it
-  writes the exact request bytes and signed header envelope to `ap_inbox_deliveries`, attempts an
+  writes the exact request bytes and signed header envelope to `activitypub_inbox_deliveries`, attempts an
   awaited enqueue, and returns `202` once PostgreSQL is durable even if that first enqueue fails.
   If the signing `keyId` already has a local `remote_actors` row, the API verifies the signature
   against that cached key (a self-contained DB read plus crypto) and rejects invalid signatures
@@ -91,7 +91,7 @@ gates on `isFederationEnabledForUser` and returns `404` for an opted-out or none
     R[POST inbox] --> P[Network-free preflight]
     P --> C{Cached signer?}
     C -->|yes, invalid| X401[401 no row]
-    C -->|yes, valid| D[(ap_inbox_deliveries)]
+    C -->|yes, valid| D[(activitypub_inbox_deliveries)]
     C -->|unknown| D
     D --> Q[activitypub-inbox queue]
     Q --> V[Fetch unknown actor and verify]

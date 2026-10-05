@@ -31,7 +31,7 @@ export function appendRecommendationFilters(
   if (spending_category) {
     query.append(sql`
         AND EXISTS (
-          SELECT 1 FROM topics__spending_categories tsc
+          SELECT 1 FROM spending_category_topics tsc
           WHERE tsc.topic_id = t.id
         )`)
   }

@@ -15,8 +15,8 @@ export async function getListsContainingEntity(
   const { rows } = await read(
     `/* getListsContainingEntity */
     SELECT l.id
-    FROM lists l
-    JOIN ${table} li ON li.list_id = l.id
+    FROM user_lists l
+    JOIN ${table} li ON li.user_list_id = l.id
     WHERE l.owner_user_id = $1
       AND l.removed_at IS NULL
       ${privateFilter}

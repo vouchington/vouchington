@@ -26,12 +26,12 @@ export async function retireMonthlyPartition(
   const partitionName = assertSafeSqlIdentifier(partition.partitionName)
   if (table === 'crawl_chunks') {
     await query(`/* retireMonthlyPartition:deleteChunkBatchEntities */
-      DELETE FROM bedrock_embeddings_batch_entities AS entity
+      DELETE FROM bedrock_embedding_batch_entities AS entity
       USING ${partitionName} AS chunk
       WHERE entity.crawl_id = chunk.crawl_id AND entity.crawl_order_index = chunk.order_index`)
   } else if (table === 'crawls') {
     await query(`/* retireMonthlyPartition:clearBatchCrawls */
-      UPDATE bedrock_embeddings_batches SET crawl_id = NULL
+      UPDATE bedrock_embedding_batches SET crawl_id = NULL
       WHERE crawl_id IN (SELECT id FROM ${partitionName})`)
     await query(`/* retireMonthlyPartition:clearReferralCrawls */
       UPDATE user_referral_program_links SET last_crawl_id = NULL

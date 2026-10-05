@@ -18,6 +18,7 @@ EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS rss_feeds (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   created_via content_creation_channels NOT NULL,
@@ -56,55 +57,66 @@ CREATE TABLE IF NOT EXISTS rss_feeds (
   unreliable_status_codes SMALLINT[] -- RSS fetch HTTP status codes that should retry instead of soft-deleting this feed. NULL = inherit from hostname; empty array = no override statuses
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_rss_feeds_updated_at
 BEFORE UPDATE ON rss_feeds
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
 -- feeds must be unique by rss feed url
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_rss_feeds__rss_feed_url_id
 ON rss_feeds (rss_feed_url_id)
 WHERE deleted_at IS NULL;
 
 -- RI-usable index for the rss_feed_url_id FK (the unique index above is partial, so it isn't RI-usable)
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feeds__rss_feed_url_id_bare
 ON rss_feeds (rss_feed_url_id);
 
 -- for finding feeds by topic
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feeds__topic_id
 ON rss_feeds (topic_id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_rss_feeds__topic_id__unique
 ON rss_feeds (topic_id)
 WHERE deleted_at IS NULL;
 
 -- for searching feeds by text
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feeds__search_vector
 ON rss_feeds USING GIN (search_vector)
 WHERE deleted_at IS NULL;
 
 -- backs the LOWER(title) LIKE LOWER('%…%') substring fallback in searchRssFeeds; LOWER() defeats
 -- a plain-column trigram index, so the expression itself must be indexed
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feeds__title_trgm
 ON rss_feeds USING GIN (LOWER(title) gin_trgm_ops)
 WHERE deleted_at IS NULL;
 
 -- for filtering feeds by type
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feeds__feed_type
 ON rss_feeds (feed_type)
 WHERE deleted_at IS NULL;
 
 -- for walking canonical redirect chains
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feeds__canonical_rss_feed_id
 ON rss_feeds (canonical_rss_feed_id)
 WHERE canonical_rss_feed_id IS NOT NULL;
 
 -- for fast feed-enabled checks without joining enablement_changes
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feeds__is_enabled
 ON rss_feeds (id)
 WHERE is_enabled = TRUE AND deleted_at IS NULL;
 
 -- for public feed queries that require both current-state gates
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feeds__enabled__discoverable
 ON rss_feeds (id)
 WHERE is_enabled = TRUE AND is_discoverable = TRUE AND deleted_at IS NULL;
@@ -124,7 +136,9 @@ COMMENT ON COLUMN rss_feeds.ignore_robots_txt IS 'Whether robots.txt allow/disal
 COMMENT ON COLUMN rss_feeds.unreliable_status_codes IS 'RSS feed fetch HTTP status codes that should retry instead of soft-deleting this feed. NULL = inherit from hostname. Empty array = no unreliable statuses, overriding hostname defaults.';
 COMMENT ON COLUMN rss_feeds.declared_language IS 'Feed-declared language from <language> or xml:lang element';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TYPE rss_feed_setting_change_types AS ENUM ('enablement', 'discoverability');
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS rss_feed_setting_changes (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   rss_feed_id UUID NOT NULL REFERENCES rss_feeds(id) ON DELETE CASCADE,
@@ -134,7 +148,9 @@ CREATE TABLE IF NOT EXISTS rss_feed_setting_changes (
   reason TEXT CHECK (reason IS NULL OR char_length(reason) <= 1000),
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_rss_feed_setting_changes__feed_type_id ON rss_feed_setting_changes(rss_feed_id, change_type, id DESC);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_rss_feed_setting_changes__changed_by_id ON rss_feed_setting_changes(changed_by_id) WHERE changed_by_id IS NOT NULL;
 COMMENT ON TYPE rss_feed_setting_change_types IS 'Independent fetch enablement and public discoverability decisions.';
 COMMENT ON TABLE rss_feed_setting_changes IS 'Append-only feed setting decisions; current values are the latest row per feed and change type.';
@@ -143,11 +159,15 @@ COMMENT ON COLUMN rss_feed_setting_changes.change_type IS 'Setting whose value t
 COMMENT ON COLUMN rss_feed_setting_changes.enabled IS 'Value after this setting decision.';
 COMMENT ON COLUMN rss_feed_setting_changes.changed_by_id IS 'Retained identity of the decision actor; never current authorization.';
 COMMENT ON COLUMN rss_feed_setting_changes.reason IS 'Optional bounded reason for the decision.';
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_ensure_rss_feed_setting_changes_actor BEFORE INSERT ON rss_feed_setting_changes FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id');
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_rss_feed_setting_changes_append_only BEFORE UPDATE OR DELETE ON rss_feed_setting_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_project_rss_feed_enablement AFTER INSERT ON rss_feed_setting_changes
 FOR EACH ROW WHEN (NEW.change_type = 'enablement')
 EXECUTE FUNCTION fn_project_latest_change('rss_feeds', 'id', 'rss_feed_id', 'is_enabled', 'enabled', 'change_type', 'enablement');
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_project_rss_feed_discoverability AFTER INSERT ON rss_feed_setting_changes
 FOR EACH ROW WHEN (NEW.change_type = 'discoverability')
 EXECUTE FUNCTION fn_project_latest_change('rss_feeds', 'id', 'rss_feed_id', 'is_discoverable', 'enabled', 'change_type', 'discoverability');
@@ -162,7 +182,8 @@ EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
-CREATE TABLE IF NOT EXISTS rss_feed_item_ids (
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS rss_feed_item_guids (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
 
   -- GUID as defined by the RSS feed; unique per feed hostname.
@@ -178,8 +199,8 @@ CREATE TABLE IF NOT EXISTS rss_feed_item_ids (
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS rss_feed_items (
-  -- Shared with rss_feed_item_ids; the identity row is inserted first.
-  id UUID PRIMARY KEY REFERENCES rss_feed_item_ids (id) ON DELETE CASCADE,
+  -- Shared with rss_feed_item_guids; the identity row is inserted first.
+  id UUID PRIMARY KEY REFERENCES rss_feed_item_guids (id) ON DELETE CASCADE,
   votes_score_up DOUBLE PRECISION NOT NULL DEFAULT 0 CONSTRAINT chk_rss_feed_items_votes_score_up CHECK (votes_score_up >= 0),
   votes_score_none DOUBLE PRECISION NOT NULL DEFAULT 0 CONSTRAINT chk_rss_feed_items_votes_score_none CHECK (votes_score_none >= 0),
   votes_score_down DOUBLE PRECISION NOT NULL DEFAULT 0 CONSTRAINT chk_rss_feed_items_votes_score_down CHECK (votes_score_down >= 0),
@@ -256,15 +277,18 @@ CREATE TABLE IF NOT EXISTS rss_feed_items (
     REFERENCES retained_rss_feed_item_identities (id) ON DELETE RESTRICT
 ) PARTITION BY RANGE (id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_register_retained_rss_feed_item_identity
 BEFORE INSERT ON rss_feed_items
 FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('rss_feed_item');
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS rss_feed_items_default
 PARTITION OF rss_feed_items DEFAULT;
 
 -- Recomputes search_vector only when data changes, avoiding a full tsvector
 -- rebuild on every unrelated item update (embeddings, language detection).
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_update_rss_feed_items_search_vector()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -283,44 +307,52 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_sync_rss_feed_items_search_vector
 BEFORE INSERT OR UPDATE OF data ON rss_feed_items
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_rss_feed_items_search_vector();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_rss_feed_items_updated_at
 BEFORE UPDATE ON rss_feed_items
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
 -- for searching items by text
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_items__search_vector
 ON rss_feed_items
 USING GIN (search_vector)
 WHERE deleted_at IS NULL;
 
 -- stable feed pagination (id is UUIDv7, monotonically increasing)
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_items__published_at__id
 ON rss_feed_items (published_at DESC, id DESC)
 WHERE deleted_at IS NULL;
 
 -- find existing embeddings by input hash
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_items__bedrock_nova_multimodal_v1_input_sha256
 ON rss_feed_items (bedrock_nova_multimodal_v1_input_sha256)
 WHERE bedrock_nova_multimodal_v1_input_sha256 IS NOT NULL;
 
 -- index embeddings for similarity search (vector_cosine_ops matches <=> queries)
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_items__bedrock_nova_multimodal_v1_embedding
 ON rss_feed_items USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops)
 WHERE bedrock_nova_multimodal_v1_embedding IS NOT NULL;
 
 -- similar-item candidates by published_at window
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_items__embedding_candidates__published_at__id
 ON rss_feed_items (published_at DESC, id DESC)
 WHERE deleted_at IS NULL
   AND bedrock_nova_multimodal_v1_embedding IS NOT NULL;
 
 -- find out of date embeddings
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_items__bedrock_nova_multimodal_v1_to_update
 ON rss_feed_items (id)
 WHERE (
@@ -329,20 +361,24 @@ WHERE (
 );
 
 -- for filtering by media type
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_items__media_type__pub
 ON rss_feed_items (media_type, published_at DESC, id DESC)
 WHERE deleted_at IS NULL;
 
 -- for looking up items by url
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_items__url_id
 ON rss_feed_items (url_id);
 
 -- RI-usable index for the story_id FK
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_items__story_id__ri
 ON rss_feed_items (story_id)
 WHERE story_id IS NOT NULL;
 
 -- find rss feed items pending language detection
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS rss_feed_items_lingua_rs_pending_idx
   ON rss_feed_items (id)
   WHERE lingua_rs_input_sha256 IS NULL;
@@ -353,6 +389,7 @@ CREATE INDEX IF NOT EXISTS rss_feed_items_lingua_rs_pending_idx
 
 -- Category strings an admin has marked as too vague to map to a topic.
 -- A rejected category is hidden from the unmapped-category work queue.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS rss_feed_item_category_rejections (
   category_text TEXT PRIMARY KEY,
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -362,10 +399,10 @@ CREATE TABLE IF NOT EXISTS rss_feed_item_category_rejections (
 COMMENT ON TABLE rss_feed_item_category_rejections IS 'Category strings marked by admins as too vague to map to a topic (e.g. "news"). Hidden from the unmapped-category triage queue.';
 COMMENT ON COLUMN rss_feed_item_category_rejections.category_text IS 'Normalized (trimmed, lowercased) category text — matches rss_feed_item_categories.category_text. Primary key.';
 
-COMMENT ON TABLE rss_feed_item_ids IS 'RSS feed item identity lookup. Unique per (url_hostname_id, guid): same GUID on same feed domain = same item, regardless of which feed URL discovered it.';
-COMMENT ON COLUMN rss_feed_item_ids.guid IS 'The GUID/ID as defined by the RSS feed, for deduplication within the same hostname.';
-COMMENT ON COLUMN rss_feed_item_ids.url_hostname_id IS 'The hostname of the RSS feed URL. Combined with guid for dedup: GUIDs are unique per domain, not globally.';
-COMMENT ON TABLE rss_feed_items IS 'Partitioned RSS feed item content keyed by rss_feed_item_ids.id.';
+COMMENT ON TABLE rss_feed_item_guids IS 'RSS feed item identity lookup. Unique per (url_hostname_id, guid): same GUID on same feed domain = same item, regardless of which feed URL discovered it.';
+COMMENT ON COLUMN rss_feed_item_guids.guid IS 'The GUID/ID as defined by the RSS feed, for deduplication within the same hostname.';
+COMMENT ON COLUMN rss_feed_item_guids.url_hostname_id IS 'The hostname of the RSS feed URL. Combined with guid for dedup: GUIDs are unique per domain, not globally.';
+COMMENT ON TABLE rss_feed_items IS 'Partitioned RSS feed item content keyed by rss_feed_item_guids.id.';
 COMMENT ON COLUMN rss_feed_items.url_id IS 'The canonical URL for this feed item.';
 COMMENT ON COLUMN rss_feed_items.data IS 'Raw JSONB dump of the parsed feed item data.';
 COMMENT ON COLUMN rss_feed_items.media_type IS 'Content type: article, audio, or video.';
@@ -388,6 +425,7 @@ COMMENT ON COLUMN rss_feed_items.votes_snapshot_xip_count IS 'Number of transact
 
 -- Tracks which RSS feeds contain which items (many-to-many).
 -- Same item (same hostname+guid) can appear in multiple feeds from the same domain.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS rss_feed_item_sources (
   rss_feed_id UUID NOT NULL REFERENCES rss_feeds ON DELETE CASCADE,
   rss_feed_item_id UUID NOT NULL REFERENCES rss_feed_items ON DELETE CASCADE,
@@ -408,6 +446,7 @@ COMMENT ON COLUMN rss_feed_item_sources.published_at IS 'Publication timestamp c
 
 -- feed item categories --> internal topics
 -- Categories belong to the item, not to a specific feed-item pair.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS rss_feed_item_categories (
   rss_feed_item_id UUID NOT NULL REFERENCES rss_feed_items ON DELETE CASCADE,
   category_text TEXT NOT NULL, -- the category text from the RSS feed
@@ -420,39 +459,47 @@ CREATE TABLE IF NOT EXISTS rss_feed_item_categories (
   PRIMARY KEY (rss_feed_item_id, category_text)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_rss_feed_item_categories__item_category_lower
 ON rss_feed_item_categories (rss_feed_item_id, (LOWER(category_text)));
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_rss_feed_item_categories_updated_at
 BEFORE UPDATE ON rss_feed_item_categories
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
 -- for searching items by topic
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_item_categories__topic_id
 ON rss_feed_item_categories (topic_id, rss_feed_item_id DESC)
 WHERE topic_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_item_categories__topic_alias_id
 ON rss_feed_item_categories (topic_alias_id, rss_feed_item_id DESC)
 WHERE topic_alias_id IS NOT NULL;
 
 -- for updating and joining
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_item_categories__category_text
 ON rss_feed_item_categories (LOWER(category_text));
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_item_categories__unmapped_category_text
 ON rss_feed_item_categories (LOWER(category_text))
 WHERE topic_id IS NULL;
 
 -- Incrementally refreshed aggregate for count-ranked admin triage. Keeping this
 -- in the same transaction as category writes avoids stale queue results.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS rss_feed_item_unmapped_category_counts (
   category_text TEXT PRIMARY KEY,
   item_count BIGINT NOT NULL CHECK (item_count > 0),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_project_refresh_rss_feed_item_unmapped_category_count()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -487,6 +534,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_refresh_rss_feed_item_unmapped_category_count
 AFTER INSERT OR DELETE OR UPDATE OF category_text, topic_id ON rss_feed_item_categories
 FOR EACH ROW
@@ -504,6 +552,7 @@ COMMENT ON COLUMN rss_feed_item_unmapped_category_counts.updated_at IS 'When thi
 
 -- Durable outbox for complete category snapshots. The crawler commits this row with the item/source
 -- write, so a post-commit queue enqueue failure cannot strand category state indefinitely.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS rss_feed_item_category_snapshot_reconciliations (
   rss_feed_item_id UUID PRIMARY KEY REFERENCES rss_feed_items ON DELETE CASCADE,
   categories JSONB NOT NULL,
@@ -513,6 +562,7 @@ CREATE TABLE IF NOT EXISTS rss_feed_item_category_snapshot_reconciliations (
   CHECK (jsonb_typeof(categories) = 'array')
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_item_category_snapshot_reconciliations__updated_at
 ON rss_feed_item_category_snapshot_reconciliations (updated_at, rss_feed_item_id);
 
@@ -528,6 +578,7 @@ COMMENT ON COLUMN rss_feed_item_category_snapshot_reconciliations.updated_at IS 
 -------------------------------------------------------------------------------
 
 -- Crawl history per feed: response code and optional feed payload (partitioned monthly by id)
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS rss_feed_crawls (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   rss_feed_id UUID NOT NULL REFERENCES rss_feeds ON DELETE CASCADE,
@@ -540,10 +591,12 @@ CREATE TABLE IF NOT EXISTS rss_feed_crawls (
   CHECK (feed_data_sha256 IS NULL OR OCTET_LENGTH(feed_data_sha256) = 32)
 ) PARTITION BY RANGE (id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_crawls__rss_feed_id
 ON rss_feed_crawls (rss_feed_id, id DESC);
 
 -- RI-usable index for the redirect_url_id FK
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_crawls__redirect_url_id
 ON rss_feed_crawls (redirect_url_id)
 WHERE redirect_url_id IS NOT NULL;
@@ -564,6 +617,7 @@ COMMENT ON COLUMN rss_feed_crawls.redirect_url_id IS 'The URL this crawl redirec
 -- all tracked via url_hostnames.topic_id. The UNIQUE constraint allowed only one hostname
 -- per topic; removing it enables the one-to-many relationship.
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__topic_id
 ON url_hostnames (topic_id)
 WHERE topic_id IS NOT NULL;
@@ -575,6 +629,7 @@ COMMENT ON COLUMN url_hostnames.topic_id IS
 -- 0370-00-00-rss-feed-open-source-creation.sql
 -- ============================================================================
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topics__hostname_id
 ON topics (hostname_id)
 WHERE hostname_id IS NOT NULL;
@@ -591,26 +646,32 @@ COMMENT ON COLUMN rss_feeds.created_by_id IS 'User who created this RSS feed, us
 
 -- RSS item search often starts from rss_feed_items ordered by published_at and
 -- checks whether each item belongs to one of a small set of source feeds.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_item_sources__item_feed
 ON rss_feed_item_sources (rss_feed_item_id, rss_feed_id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feeds__created_via_oauth_client_id
   ON rss_feeds (created_via_oauth_client_id)
   WHERE created_via_oauth_client_id IS NOT NULL;
 
 -- Current indexes for fresh schema bootstrap.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_item_sources__feed_published_item
   ON rss_feed_item_sources (rss_feed_id, published_at DESC, rss_feed_item_id DESC)
   WHERE published_at IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_item_sources__missing_published_at
   ON rss_feed_item_sources (rss_feed_id, rss_feed_item_id)
   WHERE published_at IS NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS rss_feed_items_default_story_id_id_url_id_idx
   ON rss_feed_items_default (story_id, id) INCLUDE (url_id)
   WHERE story_id IS NOT NULL AND deleted_at IS NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_items__story_id__id__url_id
   ON ONLY rss_feed_items (story_id, id) INCLUDE (url_id)
   WHERE story_id IS NOT NULL AND deleted_at IS NULL;
@@ -618,4 +679,5 @@ CREATE INDEX IF NOT EXISTS idx_rss_feed_items__story_id__id__url_id
 ALTER INDEX idx_rss_feed_items__story_id__id__url_id
   ATTACH PARTITION rss_feed_items_default_story_id_id_url_id_idx;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_rss_feed_items__enclosure_media_type_id ON rss_feed_items (enclosure_media_type_id);

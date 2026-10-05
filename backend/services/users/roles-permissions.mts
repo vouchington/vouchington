@@ -15,7 +15,7 @@ export const addUserRole = async (userId: string, role: string) => {
   assert(rows[0]?.platform_account_kind !== 'system', 403, 'System accounts cannot hold roles')
   await query(sql`/* addUserRole */
     WITH user_role AS (
-      SELECT id FROM user_roles_types WHERE slug = ${role}
+      SELECT id FROM user_role_types WHERE slug = ${role}
     )
 
     INSERT INTO user_roles (user_id, role_type_id)

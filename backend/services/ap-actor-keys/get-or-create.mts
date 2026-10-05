@@ -25,13 +25,13 @@ type PostgresError = {
 function isKeyIdUniqueViolation(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false
   const pgError = error as PostgresError
-  return pgError.code === '23505' && pgError.constraint === 'idx_ap_actor_keys__key_id'
+  return pgError.code === '23505' && pgError.constraint === 'idx_activitypub_actor_keys__key_id'
 }
 
 async function getActorKeyPairRow(userId: string): Promise<ActorKeyPairRow | null> {
   const { rows } = await read(sql`/* getActorKeyPairRow */
     SELECT user_id, key_id, public_key_pem, private_key_ciphertext, created_at, updated_at
-    FROM ap_actor_keys
+    FROM activitypub_actor_keys
     WHERE user_id = ${userId}
     LIMIT 1
   `)
@@ -52,10 +52,10 @@ export async function getOrCreateActorKeyPair(userId: string): Promise<ActorKeyP
 
   try {
     const { rows } = await write(sql`/* getOrCreateActorKeyPair */
-      INSERT INTO ap_actor_keys (user_id, key_id, public_key_pem, private_key_ciphertext)
+      INSERT INTO activitypub_actor_keys (user_id, key_id, public_key_pem, private_key_ciphertext)
       VALUES (${userId}, ${keyId}, ${publicKeyPem}, ${privateKeyCiphertext})
       ON CONFLICT (user_id) DO UPDATE
-        SET user_id = ap_actor_keys.user_id
+        SET user_id = activitypub_actor_keys.user_id
       RETURNING user_id, key_id, public_key_pem, private_key_ciphertext, created_at, updated_at
     `)
     return rows[0] as ActorKeyPairRow
@@ -74,7 +74,7 @@ export async function getOrCreateActorKeyPair(userId: string): Promise<ActorKeyP
 export async function getActorPrivateKeyPem(userId: string): Promise<string | null> {
   const { rows } = await read(sql`/* getActorPrivateKeyPem */
     SELECT private_key_ciphertext
-    FROM ap_actor_keys
+    FROM activitypub_actor_keys
     WHERE user_id = ${userId}
     LIMIT 1
   `)

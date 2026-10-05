@@ -56,7 +56,7 @@ export async function captureAutotaggerAgentCandidateTopicIds(
       WHERE follow.deleted_at IS NULL
         AND NOT EXISTS (
           SELECT 1 FROM user_roles staff_role
-          JOIN user_roles_types staff_type ON staff_type.id = staff_role.role_type_id
+          JOIN user_role_types staff_type ON staff_type.id = staff_role.role_type_id
           WHERE staff_role.user_id = follower.id AND staff_type.slug = ANY(${STAFF_ROLE_SLUGS})
         )
     )

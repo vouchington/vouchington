@@ -30,7 +30,7 @@ const FOLLOW_RELATION = {
 // Maps inbound Follow/Undo(Follow) and Like/Undo(Like) activities onto their respective
 // write-paths (Phase C2). Follow/Undo(Follow) go through the existing
 // remote_actor -> user -> follow entity relation; Like/Undo(Like) go through the isolated
-// ap_posts/ap_post_likes ledger (@services/ap-post-likes) — deliberately never post_votes, so a
+// post_activitypub_like_tallies/activitypub_post_likes ledger (@services/ap-post-likes) — deliberately never post_votes, so a
 // remote actor can never move local ranking (see the reuse-mapping table in
 // docs/overview/architecture/fediverse-federation.md). Both write-paths use `origin: 'remote'`
 // (Follow) or an isolated table with no outbound-emission concept of its own (Like), which

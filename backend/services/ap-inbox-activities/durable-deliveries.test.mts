@@ -45,35 +45,40 @@ describe('durable ActivityPub inbox deliveries', () => {
     expect(constraints).toHaveLength(6)
     expect(
       constraints.find(
-        constraint => constraint.constraintName === 'ap_inbox_deliveries__verified_actor_paired',
+        constraint =>
+          constraint.constraintName === 'activitypub_inbox_deliveries__verified_actor_paired',
       )?.definition,
     ).toContain('(verified_at IS NULL) = (remote_actor_id IS NULL)')
     expect(
       constraints.find(
-        constraint => constraint.constraintName === 'ap_inbox_deliveries_remote_actor_id_fkey',
+        constraint =>
+          constraint.constraintName === 'activitypub_inbox_deliveries_remote_actor_id_fkey',
       )?.deleteAction,
     ).toBe('RESTRICT')
     expect(
       constraints.find(
         constraint =>
           constraint.constraintName ===
-          'ap_inbox_deliveries__sender_admission_requires_verification',
+          'activitypub_inbox_deliveries__sender_requires_verification',
       )?.definition,
     ).toContain('sender_allowed_at IS NULL')
     expect(
       constraints.find(
-        constraint => constraint.constraintName === 'ap_inbox_deliveries__deferral_state_valid',
+        constraint =>
+          constraint.constraintName === 'activitypub_inbox_deliveries__deferral_state_valid',
       )?.definition,
     ).toContain('processing_at IS NULL')
     expect(
       constraints.find(
-        constraint => constraint.constraintName === 'ap_inbox_deliveries__failure_state_valid',
+        constraint =>
+          constraint.constraintName === 'activitypub_inbox_deliveries__failure_state_valid',
       )?.definition,
     ).toContain('processing_at IS NOT NULL')
     expect(
       constraints.find(
         constraint =>
-          constraint.constraintName === 'ap_inbox_deliveries__terminal_diagnostics_present',
+          constraint.constraintName ===
+          'activitypub_inbox_deliveries__terminal_diagnostics_present',
       )?.definition,
     ).toContain('last_error IS NOT NULL')
   })

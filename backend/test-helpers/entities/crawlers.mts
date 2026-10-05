@@ -3,7 +3,7 @@ import sql from 'sql-template-strings'
 
 export async function insertStaleFetchCrawlerForHostname(hostnameId: string): Promise<string[]> {
   const { rows } = await write(sql`
-    INSERT INTO crawlers (
+    INSERT INTO hostname_crawler_configurations (
       hostname_id,
       description,
       crawler_type,
@@ -52,7 +52,7 @@ export async function insertTestCrawler(options: {
   } = options
 
   const result = await write(sql`
-    INSERT INTO crawlers (
+    INSERT INTO hostname_crawler_configurations (
       hostname_id,
       description,
       crawler_type,

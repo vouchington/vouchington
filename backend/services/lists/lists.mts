@@ -31,7 +31,7 @@ export async function createList(
   ])
   const { rows } = await query(
     `/* createList */
-      INSERT INTO lists (
+      INSERT INTO user_lists (
         owner_user_id, name, description, visibility, created_via, created_via_oauth_client_id
       )
       VALUES ($1, $2, $3, $4, $5, $6)
@@ -64,7 +64,7 @@ async function fetchListById(query: typeof read, listId: string): Promise<List |
   const { rows } = await query(
     `/* fetchListById */
     SELECT id, owner_user_id, name, description, visibility, created_at, updated_at, removed_at
-    FROM lists
+    FROM user_lists
     WHERE id = $1
       AND removed_at IS NULL
     LIMIT 1
@@ -86,7 +86,7 @@ export async function updateList(
   ])
   const { rows } = await query(
     `/* updateList */
-      UPDATE lists
+      UPDATE user_lists
       SET
         name = COALESCE($3, name),
         description = CASE WHEN $4::boolean THEN $5 ELSE description END,
@@ -115,7 +115,7 @@ export async function updateList(
 export async function softDeleteList(currentUserId: string, listId: string): Promise<void> {
   const { rows } = await write(
     `/* softDeleteList */
-    UPDATE lists
+    UPDATE user_lists
     SET removed_at = NOW()
     WHERE id = $1
       AND owner_user_id = $2
@@ -139,7 +139,7 @@ export async function searchUserLists(
   const params: unknown[] = [ownerUserId]
   let sql = `/* searchUserLists */
     SELECT id, owner_user_id, name, description, visibility, created_at, updated_at, removed_at
-    FROM lists
+    FROM user_lists
     WHERE owner_user_id = $1
       AND removed_at IS NULL
   `

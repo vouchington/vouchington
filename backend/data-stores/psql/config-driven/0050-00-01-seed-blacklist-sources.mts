@@ -24,7 +24,7 @@ export function generateSQL(blacklists: DomainBlacklistSource[]): string {
     .join(',\n')
 
   parts.push(`
-INSERT INTO domain_blacklist_sources (type, name, url)
+INSERT INTO domain_blocklist_sources (type, name, url)
 VALUES
 ${rows}
 ON CONFLICT (name) DO UPDATE SET

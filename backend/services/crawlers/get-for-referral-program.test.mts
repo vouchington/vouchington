@@ -6,7 +6,10 @@ import {
   insertTestUrl,
 } from '@voucha/test-helpers'
 import { createCrawler } from './create-crawler.mts'
-import { getCrawlerForReferralProgram } from './get-for-referral-program.mts'
+import {
+  getCrawlerForReferralProgram,
+  getCrawlersByReferralProgramId,
+} from './get-for-referral-program.mts'
 
 // Uses insertTestUrlHostname/insertTestUrl (not addUrl from @services/urls/upsert) because
 // @services/urls already depends on @services/crawlers for real (getOrCreateCrawlerForHostname),
@@ -73,5 +76,11 @@ describe('get-for-referral-program', () => {
     expect(resolved.referral_program_id).toBe(fixture.referralProgramId)
     expect(resolved.crawler_type).toBe('automation')
     expect(resolved.content_selectors).toEqual(['.offer-section'])
+    expect(await getCrawlersByReferralProgramId(fixture.referralProgramId)).toEqual([
+      expect.objectContaining({
+        id: programCrawler.id,
+        referral_program_id: fixture.referralProgramId,
+      }),
+    ])
   })
 })
