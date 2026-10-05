@@ -130,7 +130,7 @@ describe('create_content_report — real store', () => {
     const privatePost = (await createTestPost({
       user: await createTestUser(),
       privacy: 'private',
-      broadcast: 'users',
+      broadcast: 'followers',
     }))!.id
 
     expect(await errorOf(caller, args(ownPost))).toMatchObject({
