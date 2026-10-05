@@ -38,8 +38,8 @@ export async function mergeTopicAliases(
     ],
     query,
   )
-  // no-mistakes-disable-next-line postgres-required-predicates: lifecycle output enables precise 404/409 assertions below
   const { rows: topicRows } = await query<MergeRow>(
+    // no-mistakes-disable-next-line postgres-required-predicates: lifecycle output enables precise 404/409 assertions below
     `/* mergeTopicAliases lockTopics */ SELECT id, slug, deleted_at IS NOT NULL AS is_deleted, merged_into_topic_id IS NOT NULL AS is_merged FROM topics WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE`,
     [[sourceTopic.id, destinationTopic.id]],
   )
@@ -49,8 +49,8 @@ export async function mergeTopicAliases(
   assert(destinationRow && !destinationRow.is_deleted, 404, 'Destination topic not found')
   assert(!sourceRow.is_merged, 409, 'Source topic has already been merged')
   assert(!destinationRow.is_merged, 409, 'Destination topic has already been merged')
-  // no-mistakes-disable-next-line postgres-required-predicates: inverse lookup for topics already merged into the source
   const { rows: inboundMergeRows } = await query<{ id: string }>(
+    // no-mistakes-disable-next-line postgres-required-predicates: inverse lookup for topics already merged into the source
     `/* mergeTopicAliases inboundMerges */ SELECT id FROM topics WHERE merged_into_topic_id = $1 AND deleted_at IS NULL ORDER BY id FOR UPDATE`,
     [sourceTopic.id],
   )
