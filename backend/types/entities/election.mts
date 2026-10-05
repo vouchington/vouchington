@@ -97,6 +97,11 @@ export type EntityElectionConfig = {
   tracksOutboundActivityPubLike?: boolean
   tracksNeutralScore?: boolean
   tracksSemanticScore?: boolean
+  /**
+   * The writer rejects every non-null score from an official, system or ai_agent account; only
+   * clears (`score: null`) are allowed. Unset for entities that platform accounts may rank.
+   */
+  rejectsPlatformAccountVotes?: boolean
   legacySentimentEntityFilter?: { field: string; excludedValues: string[] }
   votePolicy?: ElectionVotePolicy
   /**

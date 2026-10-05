@@ -8,5 +8,6 @@ export const TOPIC_ELECTION_CONFIG: EntityElectionConfig = {
   deletedAtFilter: true,
   tracksNeutralScore: true,
   tracksSemanticScore: true,
+  rejectsPlatformAccountVotes: true,
   votePolicy: 'sentiment',
 }

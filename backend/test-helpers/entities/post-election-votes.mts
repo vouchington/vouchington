@@ -22,6 +22,14 @@ export async function insertPostElectionVote(
   `)
 }
 
+/** Every post election vote row a user has ever written, across all posts. */
+export async function countPostElectionVoteRowsForUser(userId: string): Promise<number> {
+  const { rows } = await write<{ count: number }>(sql`/* countPostElectionVoteRowsForUser */
+    SELECT COUNT(*)::integer AS count FROM post_votes WHERE user_id = ${userId}
+  `)
+  return rows[0]?.count ?? 0
+}
+
 export async function insertPostElectionVoteAndWaitBeforeCommit(options: {
   userId: string
   postId: string

@@ -2,7 +2,7 @@ import type { BasicUser } from '@services/users/types'
 import { normalizeUrlForUrlTable } from '@modules/utils/urls'
 import { resolveHostname } from '@services/topics/hostname-link'
 import { upsertEntityRelation } from '@services/entity-relations/upsert'
-import { upsertTopicElectionVotes } from '@services/elections-votes/topic/votes-upsert'
+import { upsertAutomaticTopicUpvote } from '@services/elections-votes/topic/automatic-upvote'
 import assert from 'http-assert'
 import { createRssFeedUrlId } from './rss-feed-url-id.mts'
 import { buildSourceTopicName, type FeedClassification } from './validate.mts'
@@ -56,7 +56,7 @@ export async function createSourceFromUrl(
     if (existingHttps) await assertUrlAllowedByWebRisk(httpsUrl)
     const existing = existingHttps ?? (await findExistingFeedByUrl(httpUrl))
     if (existing) {
-      await upsertTopicElectionVotes(currentUser.id, [{ entityId: existing.topic_id, score: 1 }])
+      await upsertAutomaticTopicUpvote(currentUser, existing.topic_id)
       if (follow) {
         await upsertEntityRelation(currentUser, followRssFeedRelation, { id: currentUser.id }, [
           { id: existing.id },
@@ -120,7 +120,7 @@ export async function createSourceFromUrl(
 
   const existing = await findExistingFeedByUrl(normalizedFeedUrl)
   if (existing) {
-    await upsertTopicElectionVotes(currentUser.id, [{ entityId: existing.topic_id, score: 1 }])
+    await upsertAutomaticTopicUpvote(currentUser, existing.topic_id)
     if (follow) {
       await upsertEntityRelation(currentUser, followRssFeedRelation, { id: currentUser.id }, [
         { id: existing.id },
@@ -159,7 +159,7 @@ export async function createSourceFromUrl(
     // Race condition: another request created this URL concurrently — switch to upvote path.
     const raceExisting = await findExistingFeedByUrlId(rssFeedUrlId)
     assert(raceExisting, 500, 'Concurrent source creation race condition')
-    await upsertTopicElectionVotes(currentUser.id, [{ entityId: raceExisting.topic_id, score: 1 }])
+    await upsertAutomaticTopicUpvote(currentUser, raceExisting.topic_id)
     if (follow) {
       await upsertEntityRelation(currentUser, followRssFeedRelation, { id: currentUser.id }, [
         { id: raceExisting.id },
@@ -175,7 +175,7 @@ export async function createSourceFromUrl(
 
   const { topicId, rssFeedId, slug } = created
 
-  upsertTopicElectionVotes(currentUser.id, [{ entityId: topicId, score: 1 }]).catch(onError)
+  upsertAutomaticTopicUpvote(currentUser, topicId).catch(onError)
 
   if (follow) {
     await upsertEntityRelation(currentUser, followRssFeedRelation, { id: currentUser.id }, [

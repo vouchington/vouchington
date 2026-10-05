@@ -7,6 +7,7 @@ import {
   insertTestTopic,
 } from '@voucha/test-helpers'
 import { NEUTRAL_REQUIRES_EXISTING_BALLOT } from '@modules/on-error/error-codes'
+import { setAccountTypeTestUserKind } from '@voucha/test-helpers/account-types'
 import { upsertTopicElectionVotes } from '@services/elections-votes/topic'
 
 describe('election-vote-handler retract contract', () => {
@@ -52,15 +53,17 @@ describe('election-vote-handler retract contract', () => {
 
   it('allows an official account to Clear a historical ballot', async () => {
     const topicId = await createTopic()
-    const adminUser = await createTestUser({ administrator: true })
-    await upsertTopicElectionVotes(adminUser.id, [{ entityId: topicId, score: 1 }])
+    // The writer rejects a platform account's vote, so the ballot predates the promotion.
+    const officialUser = await createTestUser()
+    await upsertTopicElectionVotes(officialUser.id, [{ entityId: topicId, score: 1 }])
+    await setAccountTypeTestUserKind(officialUser.id, 'official')
     const request = createRequest()
-    await request.authenticateAs(adminUser)
+    await request.authenticateAs(officialUser)
 
     await request.delete(`/api/v1/topics/${topicId}/vote`).expect(204)
     const response = await request.get(`/api/v1/topics/${topicId}/votes`).expect(200)
     expect(response.body.results).not.toContainEqual(
-      expect.objectContaining({ user_id: adminUser.id }),
+      expect.objectContaining({ user_id: officialUser.id }),
     )
   }, 60_000)
 })
