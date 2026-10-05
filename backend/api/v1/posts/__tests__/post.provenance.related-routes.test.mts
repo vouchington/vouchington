@@ -19,6 +19,7 @@ import {
 import { insertContentProvenanceOAuthClient } from '@voucha/test-helpers/data-stores/psql/content-provenance'
 import { renameTestOAuthClient } from '@voucha/test-helpers/entities/oauth-client-management'
 
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import type { PrivateUser } from '@services/users/types'
 
 const suffix = randomBytes(6).toString('hex')
@@ -65,16 +66,16 @@ describe('post provenance on routes that embed related or listed posts', () => {
       contentSha256: createHash('sha256').update(suffix).digest(),
     })
 
-    const seed = (key: string, createdVia: 'mcp' | 'web') =>
+    const seed = (key: string, provenance: ContentProvenance) =>
       insertTestPost({
         title: `Related provenance ${key} ${suffix}`,
         slug: `related-provenance-${key}-${suffix}`,
         createdById: author.id,
         markdown: 'Related provenance route test',
-        provenance: { createdVia, oauthClientId: createdVia === 'mcp' ? clientRowId : null },
+        provenance,
       })
-    postId = await seed('mcp', 'mcp')
-    webPostId = await seed('web', 'web')
+    postId = await seed('mcp', { createdVia: 'mcp', oauthClientId: clientRowId })
+    webPostId = await seed('web', { createdVia: 'web', oauthClientId: null })
     await createEntityRelationWithElection(postId, urlId, author.id, 1)
     await createEntityRelationWithElection(webPostId, urlId, author.id, 1)
 
