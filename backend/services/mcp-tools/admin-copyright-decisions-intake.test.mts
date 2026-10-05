@@ -120,10 +120,10 @@ describe('registered copyright intake write tools', () => {
         rationale: 'Human staff found the email insufficient to open a case.',
       })
       expect(result.isError).not.toBe(true)
-      const rejected = (await readCopyrightEmailIntakeResponses(intake.id)).filter(
+      const rejected = (await readCopyrightEmailIntakeResponses(intake.id)).find(
         response => response.delivery_kind === 'email_intake_rejected',
       )
-      const delivery = rejected[0] ? await prepareCopyrightEmailDelivery(rejected[0].id) : null
+      const delivery = rejected ? await prepareCopyrightEmailDelivery(rejected.id) : null
       outcomes.push({
         queued: result.structuredContent?.['reply_queued'] === true,
         subject: delivery?.subject ?? null,

@@ -278,7 +278,7 @@ async function expectNarrowPublicEmbedQuery(
   enableQueryCapture()
   try {
     await runQuery()
-    const [query] = stopTestQueryCapture().filter(captured =>
+    const query = stopTestQueryCapture().find(captured =>
       captured.text.includes(`/* ${annotation} */`),
     )
 

@@ -9,6 +9,12 @@ const OXLINT = resolve('node_modules/.bin/oxlint')
 const CONFIG = resolve('.oxlintrc.json')
 const CASES = [
   {
+    rule: 'prefer-array-find',
+    rejected: 'const values = [1, 2]\nexport const first = values.filter(value => value > 0)[0]\n',
+    accepted:
+      'const values = [1, 2]\nexport const first = values.find(value => value > 0)\nexport const matches = values.filter(value => value > 0)\n',
+  },
+  {
     rule: 'no-array-reverse',
     rejected: 'const values = [1, 2]\nexport const reversed = values.reverse()\n',
     accepted:

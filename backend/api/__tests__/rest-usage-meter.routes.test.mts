@@ -24,7 +24,7 @@ async function signedIn(plan?: 'plus') {
 }
 
 async function userQuotaSize(userId: string) {
-  const [key] = (await usageQuotaKeys()).filter(entry => entry.includes(userId))
+  const key = (await usageQuotaKeys()).find(entry => entry.includes(userId))
   return rateLimiterValkeyClient.zcard(key!)
 }
 
