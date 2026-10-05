@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
-import { join } from 'node:path'
+import { createRequire } from 'node:module'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 export type ByteRange = { start: number; end: number }
@@ -24,6 +25,11 @@ type QueryMatch = {
 }
 
 const queryDirectory = fileURLToPath(new URL('./ast-grep-queries/', import.meta.url))
+const require = createRequire(import.meta.url)
+const astGrepExecutable = join(
+  dirname(require.resolve('@ast-grep/cli/package.json')),
+  process.platform === 'win32' ? 'ast-grep.exe' : 'ast-grep',
+)
 const queryFiles = [
   'route-admin-function-declarations.yml',
   'route-admin-function-bodies.yml',
@@ -42,12 +48,16 @@ export function collectRouteAdminSurfaceFacts(
   content: string,
   file: string,
 ): RouteAdminSurfaceFacts {
-  const scan = spawnSync('ast-grep', ['scan', '--inline-rules', queryText, '--stdin', '--json'], {
-    cwd: process.cwd(),
-    encoding: 'utf8',
-    input: content,
-    maxBuffer: 32 * 1024 * 1024,
-  })
+  const scan = spawnSync(
+    astGrepExecutable,
+    ['scan', '--inline-rules', queryText, '--stdin', '--json'],
+    {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      input: content,
+      maxBuffer: 32 * 1024 * 1024,
+    },
+  )
   if (scan.error) throw new Error(`${file}: could not run ast-grep: ${scan.error.message}`)
   if (scan.status !== 0) {
     throw new Error(`${file}: ast-grep route-admin fact query failed: ${scan.stderr.trim()}`)

@@ -113,6 +113,21 @@ describe('route-admin-surface AST-grep facts', () => {
     ).toBe(true)
   })
 
+  it('runs the pinned ast-grep binary when PATH has no package bin directory', () => {
+    const originalPath = process.env.PATH
+    process.env.PATH = ''
+    try {
+      const facts = collectRouteAdminSurfaceFacts(
+        'function route() { requireAdmin() }',
+        'reduced-path-route.tsx',
+      )
+      expect(callsRequireAdmin(facts)).toBe(true)
+    } finally {
+      if (originalPath === undefined) delete process.env.PATH
+      else process.env.PATH = originalPath
+    }
+  })
+
   it('rejects page declarations nested under a control-flow block', () => {
     const source = [
       'function createRoutePage() {',
