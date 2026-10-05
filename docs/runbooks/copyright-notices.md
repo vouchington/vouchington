@@ -530,9 +530,10 @@ Notes for operators:
 5. Resolve a hold only with an immutable resolution record and staff rationale.
 6. Read the submission-guidance panel as advisory evidence alongside the filed counter-notice or
    court/CCB submission. It neither supplies the assessment nor decides qualification, and it never
-   changes a deadline, restriction, restoration, or hold. Contact redaction removes email addresses
-   and phone numbers from free-text filings before sanitization and hashing; erased bodies are not
-   dispatched. Preserve human review and the recorded filing receipt as the source of statutory
+   changes a deadline, restriction, restoration, or hold. Personal-detail redaction removes email
+   addresses, phone numbers, postal addresses, government ID numbers, dates of birth, and
+   payment-card and IBAN numbers from free-text filings before sanitization and hashing; party
+   names, case numbers, and other dates stay; erased bodies are not dispatched. Preserve human review and the recorded filing receipt as the source of statutory
    timing.
 
 ## Repeat-infringer review

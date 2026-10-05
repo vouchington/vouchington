@@ -7,7 +7,7 @@ import type {
 } from '@ts-shared/utils/copyright-submission-guidance'
 import { liveCopyrightCiphertext } from './erased-ciphertext.mts'
 import { copyrightSubmissionPurpose } from './submissions.mts'
-import { stripContactDetails } from './contact-redaction.mts'
+import { stripPersonalDetails } from './contact-redaction.mts'
 
 type GuidanceKind = 'counter_notice' | 'court_or_ccb_hold'
 type CounterInput = {
@@ -90,7 +90,7 @@ export async function getCopyrightSubmissionGuidanceSource(
         submission: {
           source: row.source_kind,
           receivedAt: row.received_at,
-          filingText: stripContactDetails(fields.summary),
+          filingText: stripPersonalDetails(fields.summary),
         },
         notice: { workDescription: row.work_description },
         targetUrls,

@@ -1,29 +1,56 @@
-// Preserve legal references and URLs before considering phone-shaped numeric text.
-const preservedText = [
-  String.raw`(?:https?:\/\/|www\.)[^\s<>]+`,
-  String.raw`\b\d{4}-\d{2}-\d{2}\b`,
-  String.raw`\b\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}\b`,
-  String.raw`\b\d+:\d{2}-[a-z]+-\d+(?:-[a-z\d]+)*\b`,
-  String.raw`\b(?:case|docket|claim)\s+(?:(?:number|no\.)\s*)?#?\s*[a-z\d]+(?:[-:/][a-z\d]+)*\b`,
-].join('|')
-const emailAddress = String.raw`(?<![\w.+-])[\w.!#$%&'*+/=?^\x60{|}~-]+@[a-z\d](?:[a-z\d.-]*[a-z\d])?\.[a-z]{2,}(?![\w-])`
-const phoneNumber = [
-  String.raw`(?<![\w])(?:\+?\d{1,3}[ .-])?(?:\(\d{2,4}\)|\d{2,4})[ .-]?\d{3,4}[ .-]\d{3,4}(?![\w])`,
-  String.raw`(?<![\w])\d{3}[-.]\d{4}(?![\w])`,
-  String.raw`(?<![\w])(?:\+\d{8,15}|\d{10})(?![\w])`,
-].join('|')
-const contactOrPreservedText = new RegExp(
-  `(${preservedText})|(${emailAddress})|(${phoneNumber})`,
+import { isValidCardNumber, isValidIban } from './payment-checks.mts'
+import {
+  cardNumber,
+  dateOfBirth,
+  emailAddress,
+  ibanNumber,
+  labelledIdNumber,
+  phoneNumber,
+  postOfficeBox,
+  preservedText,
+  socialSecurityNumber,
+  streetAddress,
+} from './personal-detail-patterns.mts'
+
+// One pass over the text. At a given position the first alternative wins, so preserved legal
+// references come first, and card/SSN/IBAN shapes come before the phone shapes they resemble.
+const personalOrPreservedText = new RegExp(
+  [
+    `(?<preserved>${preservedText})`,
+    dateOfBirth,
+    labelledIdNumber,
+    `(?<address>${streetAddress}|${postOfficeBox})`,
+    `(?<ssn>${socialSecurityNumber})`,
+    `(?<card>${cardNumber})`,
+    `(?<iban>${ibanNumber})`,
+    `(?<email>${emailAddress})`,
+    `(?<phone>${phoneNumber})`,
+  ].join('|'),
   'gi',
 )
 
-/** Strip contact details before sanitizing or hashing external filing text. */
-export function stripContactDetails(text: string): string {
-  return text.replace(
-    contactOrPreservedText,
-    (match: string, preserved: string | undefined, email: string | undefined) => {
-      if (preserved) return match
-      return email ? '[email removed]' : '[phone removed]'
-    },
-  )
+type Groups = Partial<
+  Record<
+    'preserved' | 'dobLabel' | 'idPrefix' | 'address' | 'ssn' | 'card' | 'iban' | 'email',
+    string
+  >
+>
+
+/**
+ * Strip contact and personal details before sanitizing or hashing external filing text:
+ * email addresses, phone numbers, postal addresses, government ID numbers, dates of birth, and
+ * payment-card and IBAN numbers. Names, URLs, other dates, and case/docket numbers stay.
+ */
+export function stripPersonalDetails(text: string): string {
+  return text.replace(personalOrPreservedText, (match: string, ...rest: unknown[]) => {
+    const groups = rest.at(-1) as Groups
+    if (groups.preserved) return match
+    if (groups.dobLabel) return `${groups.dobLabel}[date of birth removed]`
+    if (groups.idPrefix) return `${groups.idPrefix}[ID number removed]`
+    if (groups.address) return '[address removed]'
+    if (groups.ssn) return '[ID number removed]'
+    if (groups.card) return isValidCardNumber(match) ? '[payment details removed]' : match
+    if (groups.iban) return isValidIban(match) ? '[payment details removed]' : match
+    return groups.email ? '[email removed]' : '[phone removed]'
+  })
 }

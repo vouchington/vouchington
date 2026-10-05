@@ -82,9 +82,10 @@ a summary, a statutory-element checklist with gaps, and bounded risk notes, with
 action. Counter-notice prompts use only statutory answers, field-presence booleans, receipt/source,
 notice context, target URLs, and restricted-target count; names, addresses, telephone numbers,
 email, signature text, and claimant display name are excluded. For free-text filings, deterministic
-contact redaction replaces emails and phone numbers before sanitization and input hashing. Names and
-postal addresses typed into free text remain subject to the owner's decision on #1230. Erased bodies are
-not sent. Guidance is encrypted, immutable, retention-erased with its submission, and advisory only.
+personal-detail redaction replaces emails, phone numbers, postal addresses, government ID numbers,
+dates of birth, and payment-card and IBAN numbers before sanitization and input hashing. Party
+names, case and docket numbers, and other dates stay, per the #1230 advisor review. Erased bodies
+are not sent. Guidance is encrypted, immutable, retention-erased with its submission, and advisory only.
 There is no guidance activation switch; `COPYRIGHT_INTAKE_ENABLED` does not gate guidance for an
 already-filed case. The panel uses the same "AI guidance — not a decision" label and no workflow
 predicate reads the result.

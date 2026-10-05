@@ -11,7 +11,7 @@ const email = 'claimant@example.test'
 const phone = '415-555-0181'
 
 describe('copyright MCP read redaction', () => {
-  it('keeps queue keys and names while masking contact and stripping contact from narrative fields', () => {
+  it('keeps queue keys and names while masking contact and stripping personal details from narrative fields', () => {
     const staffCase = {
       id: crypto.randomUUID(),
       received_at: new Date(),
@@ -20,7 +20,7 @@ describe('copyright MCP read redaction', () => {
       waiting_since: new Date(),
       next_deadline: null,
       claimant: { display_name: 'Claimant Name', contact: email, misuse: null },
-      work_description: `Copied image; contact ${email}`,
+      work_description: `Copied image; contact ${email}; lives at 12 Elm Street, Springfield, IL 62701; DOB 04/15/1980; card 4111 1111 1111 1111`,
       targets: [],
       evidence: [],
       form_review: null,
@@ -64,7 +64,9 @@ describe('copyright MCP read redaction', () => {
     } satisfies CopyrightStaffQueueCase
     const result = redactCopyrightQueueCase(staffCase)
     expect(result.claimant).toMatchObject({ display_name: 'Claimant Name', contact: '[redacted]' })
-    expect(result.work_description).not.toContain(email)
+    expect(result.work_description).toBe(
+      'Copied image; contact [email removed]; lives at [address removed]; DOB [date of birth removed]; card [payment details removed]',
+    )
     expect(result.appeals[0]?.reason).not.toContain(phone)
     expect(result.counter_notices[0]?.statement).toMatchObject({
       name: 'Poster Name',
