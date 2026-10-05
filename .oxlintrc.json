@@ -195,7 +195,7 @@
     "unicorn/no-array-fill-with-reference-type": "error",
     "unicorn/no-await-in-promise-methods": "error",
     "unicorn/no-confusing-array-with": "error",
-    "unicorn/no-empty-file": "off", // Staged #1692: 1 findings / 1 files; scan 2026-10-01.
+    "unicorn/no-empty-file": "error",
     "unicorn/no-invalid-fetch-options": "off", // Intentional #1692: reviewed exclusion; see Unicorn rule policy.
     "unicorn/no-invalid-remove-event-listener": "error",
     "unicorn/no-single-promise-in-promise-methods": "off", // Intentional #1692: reviewed exclusion; see Unicorn rule policy.
