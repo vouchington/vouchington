@@ -1090,6 +1090,9 @@
     "report_integrity_resolutions": {
       "values": ["dismissed", "penalized"]
     },
+    "retained_identity_cleanup_families": {
+      "values": ["user", "api_key", "topic", "post", "rss_feed_item", "image", "membership"]
+    },
     "retained_identity_families": {
       "values": ["user", "api_key", "topic", "post", "rss_feed_item", "membership"]
     },
@@ -104180,7 +104183,7 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 1,
-          "type": "retained_identity_families"
+          "type": "retained_identity_cleanup_families"
         },
         "updated_at": {
           "collation": null,

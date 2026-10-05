@@ -6,11 +6,11 @@ One operational keyset cursor per concrete retained root family.
 
 Not partitioned — growth: bounded.
 
-| Column               | Type                         | Nullable | Default             | Identity | Generated | Collation | Comment                                                             |
-| -------------------- | ---------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------- |
-| `family`             | `retained_identity_families` | no       |                     |          |           |           | Concrete retained root family selected by the cleanup worker.       |
-| `cursor_identity_id` | `uuid`                       | yes      |                     |          |           |           | Last scanned identity, not a durable relationship to that identity. |
-| `updated_at`         | `timestamp with time zone`   | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                     |
+| Column               | Type                                 | Nullable | Default             | Identity | Generated | Collation | Comment                                                             |
+| -------------------- | ------------------------------------ | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------- |
+| `family`             | `retained_identity_cleanup_families` | no       |                     |          |           |           | Concrete retained root family selected by the cleanup worker.       |
+| `cursor_identity_id` | `uuid`                               | yes      |                     |          |           |           | Last scanned identity, not a durable relationship to that identity. |
+| `updated_at`         | `timestamp with time zone`           | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                     |
 
 **Primary key:** `PRIMARY KEY (family)`
 

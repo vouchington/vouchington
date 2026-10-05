@@ -1439,6 +1439,16 @@
 - `dismissed`
 - `penalized`
 
+## `retained_identity_cleanup_families`
+
+- `user`
+- `api_key`
+- `topic`
+- `post`
+- `rss_feed_item`
+- `image`
+- `membership`
+
 ## `retained_identity_families`
 
 - `user`
