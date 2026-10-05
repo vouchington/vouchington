@@ -43,6 +43,7 @@ test.describe('Author account labels outside the profile header', () => {
       await navigateTo(page, `/discussion/${postId}`)
       const byline = page.getByTestId('post-detail-byline-link')
       await expect(byline).toBeVisible()
+      await expect(byline).toHaveAttribute('href', `/user/${username}`)
       await expectAccountLabel(byline.locator('..'), username, label)
     }
   })
