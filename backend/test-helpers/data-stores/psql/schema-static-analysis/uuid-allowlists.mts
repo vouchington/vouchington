@@ -1,3 +1,4 @@
+import { DSA_SUBMISSION_UUID_COLUMNS_WITHOUT_KEYS } from './dsa-submission-uuid-allowlists.mts'
 /* v8 ignore start -- declarative schema-test allowlists have no executable branches */
 import { POST_PUBLICATION_UUID_COLUMNS_WITHOUT_KEYS } from './post-publication-allowlists.mts'
 import { ALLOWED_MEMBERSHIP_UUID_COLUMNS_WITHOUT_KEYS } from './membership-uuid-allowlists.mts'
@@ -7,14 +8,7 @@ import { USER_DELETION_UUID_COLUMNS_WITHOUT_KEYS } from './user-deletion-uuid-al
 export const ALLOWED_UNCOMMENTED_RELATIONS = new Map<string, string>([])
 export const ALLOWED_UNCOMMENTED_COLUMNS = new Map<string, string>([])
 export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
-  [
-    'copyright_dsa_statement_submissions.lease_token',
-    'Random worker claim fencing token, not a durable relation.',
-  ],
-  [
-    'copyright_dsa_statement_submissions.transparency_database_uuid',
-    'External Commission statement UUID returned by the DSA protocol; no local parent row exists.',
-  ],
+  ...DSA_SUBMISSION_UUID_COLUMNS_WITHOUT_KEYS,
   [
     'copyright_notice_form_screening_work_items.lease_token',
     'Opaque current screening ownership fence.',

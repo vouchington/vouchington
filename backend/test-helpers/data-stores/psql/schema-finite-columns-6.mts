@@ -51,7 +51,7 @@ export const FINITE_COLUMN_CONTRACTS_6 = [
   ['post_topic_alias_sources', 'source', 'post_topic_alias_source_types', false],
   ['posts', 'post_type', 'post_types', false],
   ['posts', 'privacy', 'privacy_types', false],
-  ['retained_identity_cleanup_cursors', 'family', 'retained_identity_families', false],
+  ['retained_identity_cleanup_cursors', 'family', 'retained_identity_cleanup_families', false],
   ['retained_image_placement_bindings', 'binding_family', 'image_binding_families', false],
   ['review_disputes', 'reason', 'review_dispute_reasons', false],
   ['review_disputes', 'recommended_action', 'review_dispute_actions', false],

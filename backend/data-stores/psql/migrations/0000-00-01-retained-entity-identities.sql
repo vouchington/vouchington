@@ -85,8 +85,12 @@ CREATE TYPE retained_identity_families AS ENUM ('user', 'api_key', 'topic', 'pos
 COMMENT ON TYPE retained_identity_families IS 'Concrete identity owners supported by the shared ownership fence; image identity requires its uploader and uses a separate creator.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TYPE retained_identity_cleanup_families AS ENUM ('user', 'api_key', 'topic', 'post', 'rss_feed_item', 'image', 'membership');
+COMMENT ON TYPE retained_identity_cleanup_families IS 'Retained root families swept by cleanup, including image roots with their own provenance-aware creator.';
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS retained_identity_cleanup_cursors (
-  family retained_identity_families PRIMARY KEY,
+  family retained_identity_cleanup_families PRIMARY KEY,
   cursor_identity_id UUID,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -113,8 +117,6 @@ FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 COMMENT ON TABLE retained_image_placement_binding_cleanup_cursors IS 'Independent bounded sweep of placement bindings; bindings are not root identity owners.';
 COMMENT ON COLUMN retained_image_placement_binding_cleanup_cursors.is_singleton IS 'One cyclic cleanup job sweeps placement bindings.';
 COMMENT ON COLUMN retained_image_placement_binding_cleanup_cursors.cursor_placement_id IS 'Last placement UUIDv7 examined in ascending order; no FK preserves position after cleanup deletes a binding.';
-
-
 
 CREATE OR REPLACE FUNCTION fn_ensure_retained_identity(family retained_identity_families, identity_id UUID)
 RETURNS VOID LANGUAGE plpgsql AS $$
