@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import type { PointValuationPageInput } from '@/components/my/point-valuations-manager/valuations-state'
 
 const { getMyRewardsProgramPointValuationsMock } = vi.hoisted(() => ({
   getMyRewardsProgramPointValuationsMock: vi.fn<VitestLooseMock>(),
@@ -12,16 +13,9 @@ vi.mock(import('@/lib/i18n/get-translations'), () => ({
   getTranslations: async () => (key: string) => key,
 }))
 vi.mock(import('@/components/my/point-valuations-manager'), () => ({
-  PointValuationsManager: ({
-    initialData,
-  }: {
-    initialData: {
-      results: { rewards_program: { name: string } }[]
-      page_info: { end_cursor: string | null }
-    }
-  }) => (
+  PointValuationsManager: ({ initialData }: { initialData: PointValuationPageInput }) => (
     <div data-testid='point-valuations-page-data'>
-      {`${initialData.results[0]?.rewards_program.name ?? ''}|${initialData.page_info.end_cursor ?? ''}`}
+      {`${initialData.results[0]?.rewards_program.name ?? ''}|${initialData.page_info?.end_cursor ?? ''}`}
     </div>
   ),
 }))
