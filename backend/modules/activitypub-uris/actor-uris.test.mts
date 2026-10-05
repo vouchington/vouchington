@@ -2,7 +2,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   getActorFollowersUri,
   getActorFollowingUri,
-  getActorInboxUri,
   getActorKeyId,
   getActorOutboxUri,
   getActorUri,
@@ -28,7 +27,6 @@ describe('actor URI builders', () => {
 
     const actorUri = getActorUri(USER_ID)
     expect(getActorKeyId(USER_ID)).toBe(`${actorUri}#main-key`)
-    expect(getActorInboxUri(USER_ID)).toBe(`${actorUri}/inbox`)
     expect(getActorOutboxUri(USER_ID)).toBe(`${actorUri}/outbox`)
     expect(getActorFollowersUri(USER_ID)).toBe(`${actorUri}/followers`)
     expect(getActorFollowingUri(USER_ID)).toBe(`${actorUri}/following`)

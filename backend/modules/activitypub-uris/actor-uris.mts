@@ -12,10 +12,6 @@ export function getActorKeyId(userId: string): string {
   return `${getActorUri(userId)}#main-key`
 }
 
-export function getActorInboxUri(userId: string): string {
-  return `${getActorUri(userId)}/inbox`
-}
-
 export function getActorOutboxUri(userId: string): string {
   return `${getActorUri(userId)}/outbox`
 }

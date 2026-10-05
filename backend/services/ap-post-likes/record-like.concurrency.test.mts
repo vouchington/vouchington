@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createTestPost } from '@voucha/test-helpers'
 import { recordLike } from './record-like.mts'
 import { getApPostLikesTally } from './get-tally.mts'
-import { createRemoteActorFixture } from './test-fixtures.mts'
+import { createRemoteActorFixture } from '@voucha/test-helpers/ap-post-likes-fixtures'
 
 // Regression test for the TOCTOU race fn_project_activitypub_post_likes used to have (see the trigger's
 // comment in the activitypub_post_likes migration): the old trigger read

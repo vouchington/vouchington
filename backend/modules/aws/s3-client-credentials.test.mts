@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { registerClientCredentialEnvCases } from './client-credential-env-cases.mts'
+import { registerClientCredentialEnvCases } from '@voucha/test-helpers/aws-client-credential-env-cases'
 import { buildS3Buckets, getS3ClientCredentials } from './s3.mts'
 
 const ENV_KEYS = [

@@ -27,9 +27,7 @@ exports backend/entrypoints/worker-cpu/index.mts startWorkerRuntime
 exports backend/entrypoints/worker-cpu/schedule-definitions.mts CPU_ONLY_SCHEDULE_DEFINITIONS
 exports backend/entrypoints/worker-cpu/worker-definitions.mts CPU_ONLY_WORKER_DEFINITIONS
 exports backend/entrypoints/worker-io/index.mts reportWorkerLoadFailure
-exports backend/modules/activitypub-uris/actor-uris.mts getActorInboxUri
 exports backend/modules/api-egress-proxy/transport.mts resetApiEgressProxyTransportForTest
-exports backend/modules/aws/client-credential-env-cases.mts registerClientCredentialEnvCases
 exports backend/modules/on-error/error-codes.mts AUTH_REQUIRED
 exports backend/modules/on-error/error-codes.mts BAD_GATEWAY
 exports backend/modules/on-error/error-codes.mts INTERNAL_ERROR
@@ -61,12 +59,7 @@ exports backend/services/agents/get.mts getActiveAgentsByType
 exports backend/services/agents/get.mts getAgentBySystemUserId
 exports backend/services/ai-usage/daily-total.mts clearDailyAiCostTotalCacheForTesting
 exports backend/services/analytics/cache.mts trackCacheCall
-exports backend/services/ap-inbox-activities/test-fixtures.mts acceptJobsFor
-exports backend/services/ap-inbox-activities/test-fixtures.mts createFederatedUser
-exports backend/services/ap-inbox-activities/test-fixtures.mts createRemoteActorFixture
-exports backend/services/ap-inbox-activities/test-fixtures.mts waitForDeliverActivityJobs
 exports backend/services/ap-post-likes/get-tally.mts getApPostLikesTally
-exports backend/services/ap-post-likes/test-fixtures.mts createRemoteActorFixture
 exports backend/services/api-keys/bloom-filter.mts deleteApiKeyBloomFilter
 exports backend/services/api-keys/validate.mts validateApiKeyForUserMcp
 exports backend/services/app-attestation/request-canonical.mts EMPTY_BODY_SHA256
@@ -162,10 +155,6 @@ exports backend/services/moderation-reports/get.mts listPendingModerationReports
 exports backend/services/moderation/search-post-moderations.mts searchPostModerationsByAgent
 exports backend/services/moderators/tagging.mts tagPostWithTopicForModerators
 exports backend/services/notifications-push/push-intents.mts createNotificationPushIntents
-exports backend/services/notifications-push/test-fixtures.mts createDelivery
-exports backend/services/notifications-push/test-fixtures.mts getLeaseExpiry
-exports backend/services/notifications-push/test-fixtures.mts successfulSendResult
-exports backend/services/notifications-push/test-fixtures.mts waitForDeliveredEndpoint
 exports backend/services/notifications/community-activity-digest.mts getPreviousClosedMondayWindow
 exports backend/services/oauth-apple/index.mts getAppleAccountByAppleUserId
 exports backend/services/oauth-authorization-server/access-tokens.mts isOAuthAccessToken
@@ -186,10 +175,6 @@ exports backend/services/queue-monitoring/remove-queue-scheduler.mts removeQueue
 exports backend/services/recaptcha/authorization.mts currentUserCanUpdateRecaptchaConfig
 exports backend/services/recaptcha/authorization.mts currentUserCanViewRecaptchaConfig
 exports backend/services/recently-viewed/get.mts getRecentlyViewedIds
-exports backend/services/remote-actors/test-fixtures.mts ROTATED_REMOTE_ACTOR_PUBLIC_KEY_PEM
-exports backend/services/remote-actors/test-fixtures.mts VALID_REMOTE_ACTOR_PUBLIC_KEY_PEM
-exports backend/services/remote-actors/test-fixtures.mts fetchWithTimeoutResult
-exports backend/services/remote-actors/test-fixtures.mts makeJsonResponse
 exports backend/services/review-disputes/config.mts REVIEW_DISPUTE_ACTIONS
 exports backend/services/route-rate-limits/activitypub-inbox.mts isActivityPubInboxAttemptRateLimited
 exports backend/services/rss-feed-items/categories.mts getRssFeedItemCategories

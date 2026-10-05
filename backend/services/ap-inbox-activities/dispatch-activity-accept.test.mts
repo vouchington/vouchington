@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { dispatchInboundActivity } from './dispatch-activity.mts'
-import { createRemoteActorFixture, createFederatedUser } from './test-fixtures.mts'
+import {
+  createRemoteActorFixture,
+  createFederatedUser,
+} from '@voucha/test-helpers/ap-inbox-activity-fixtures'
 import { getActorUri } from '@modules/activitypub-uris'
 import { createTestUserDirect } from '@voucha/test-helpers'
 

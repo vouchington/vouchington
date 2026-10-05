@@ -9,7 +9,10 @@ import {
 import { getEntityRelationMetadataOrThrow, upsertEntityRelation } from '@services/entity-relations'
 import { listRemoteFollowerInboxPage } from './list-followers-of-user.mts'
 import { getOrFetchRemoteActorByKeyId } from './get-or-fetch.mts'
-import { makeJsonResponse, VALID_REMOTE_ACTOR_PUBLIC_KEY_PEM } from './test-fixtures.mts'
+import {
+  makeJsonResponse,
+  VALID_REMOTE_ACTOR_PUBLIC_KEY_PEM,
+} from '@voucha/test-helpers/remote-actor-fixtures'
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
 

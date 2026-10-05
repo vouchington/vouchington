@@ -8,7 +8,7 @@ import {
   fetchWithTimeoutResult,
   makeJsonResponse,
   VALID_REMOTE_ACTOR_PUBLIC_KEY_PEM,
-} from './test-fixtures.mts'
+} from '@voucha/test-helpers/remote-actor-fixtures'
 
 const VALID_ACTOR_URI = 'https://remote.example/users/alice'
 const VALID_KEY_ID = `${VALID_ACTOR_URI}#main-key`

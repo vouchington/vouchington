@@ -5,7 +5,10 @@ import {
   softDeleteEntityRelation,
   upsertEntityRelation,
 } from '@services/entity-relations'
-import { createRemoteActorFixture, createFederatedUser } from './test-fixtures.mts'
+import {
+  createRemoteActorFixture,
+  createFederatedUser,
+} from '@voucha/test-helpers/ap-inbox-activity-fixtures'
 
 // Round-9 review fix: the sequential test in record-and-dispatch.test.mts (round-7) passes whether
 // or not recoverDuplicateFollow's write is actually guarded — a separate read-then-check happens

@@ -3,18 +3,22 @@
  * remote_actors row (via the real getOrFetchRemoteActorByKeyId with an injected fetch mock —
  * dependency injection, not a module mock, per backend/AGENTS.md's non-web mocking policy), a
  * federation-opted-in user, and the deliverActivity queue-polling helpers used to assert an
- * Accept job was enqueued. Kept local to this package rather than @voucha/test-helpers: every
- * backend service devDeps test-helpers for its own tests, so a test-helpers -> @services/remote-actors
- * edge would be a workspace cycle (mirrors ap-post-likes/test-fixtures.mts).
+ * Accept job was enqueued. This centralized helper uses source-relative imports for its former
+ * owning workspaces to avoid adding higher-layer service dependencies to @voucha/test-helpers.
  */
 
 import { vi } from 'vitest'
 import { generateRsaSha256KeyPair } from '@modules/http-signatures'
-import { activitypubDelivery } from '@queues/activitypub-delivery/queues'
-import type { DeliverActivityData } from '@queues/activitypub-delivery/enqueues'
-import { getOrFetchRemoteActorByKeyId, type RemoteActorRow } from '@services/remote-actors'
-import { updateUserFields } from '@services/users'
-import { createTestUserDirect, readAllQueueJobs } from '@voucha/test-helpers'
+import { activitypubDelivery } from '../queues/activitypub-delivery/queues.mts'
+import type { DeliverActivityData } from '../queues/activitypub-delivery/enqueues.mts'
+import type { FetchRemoteActorDocumentDeps } from '../services/remote-actors/fetch-remote-actor-document.mts'
+import {
+  getOrFetchRemoteActorByKeyId,
+  type RemoteActorRow,
+} from '../services/remote-actors/index.mts'
+import { updateUserFields } from '../services/users/update-fields.mts'
+import { createTestUserDirect } from './entities/users-direct.mts'
+import { readAllQueueJobs } from './queue-jobs.mts'
 import type { PrivateUser } from '@voucha/types/entities/user'
 
 const VALID_REMOTE_ACTOR_PUBLIC_KEY_PEM = generateRsaSha256KeyPair().publicKeyPem
@@ -37,19 +41,21 @@ function makeJsonResponse(body: unknown, status = 200): Response {
 export async function createRemoteActorFixture(): Promise<RemoteActorRow> {
   const actorUri = `https://remote.example/users/${randomSuffix()}`
   const keyId = `${actorUri}#main-key`
-  const fetchWithTimeout = vi.fn<VitestLooseMock>().mockResolvedValueOnce({
-    response: makeJsonResponse({
-      id: actorUri,
-      inbox: `${actorUri}/inbox`,
-      publicKey: {
-        id: keyId,
-        publicKeyPem: VALID_REMOTE_ACTOR_PUBLIC_KEY_PEM,
-      },
-    }),
-    responseSignal: new AbortController().signal,
-  })
+  const fetchWithTimeout = vi
+    .fn<FetchRemoteActorDocumentDeps['fetchWithTimeout']>()
+    .mockResolvedValueOnce({
+      response: makeJsonResponse({
+        id: actorUri,
+        inbox: `${actorUri}/inbox`,
+        publicKey: {
+          id: keyId,
+          publicKeyPem: VALID_REMOTE_ACTOR_PUBLIC_KEY_PEM,
+        },
+      }),
+      responseSignal: new AbortController().signal,
+    })
   const validateUrl = vi
-    .fn<VitestLooseMock>()
+    .fn<FetchRemoteActorDocumentDeps['validateUrl']>()
     .mockResolvedValue([{ address: '93.184.216.34', family: 4 }])
   return getOrFetchRemoteActorByKeyId(keyId, { fetchWithTimeout, validateUrl })
 }
@@ -67,10 +73,8 @@ export async function waitForDeliverActivityJobs(
 ): Promise<Awaited<ReturnType<typeof activitypubDelivery.getJobs>>> {
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
-    // oxlint-disable-next-line no-await-in-loop -- each bounded poll must observe the latest state before deciding whether to stop
     const jobs = await readAllQueueJobs(activitypubDelivery)
     if (predicate(jobs)) return jobs
-    // oxlint-disable-next-line no-await-in-loop -- yields between reads within the bounded poll
     await new Promise<void>(resolve => setImmediate(resolve))
   }
   return readAllQueueJobs(activitypubDelivery)

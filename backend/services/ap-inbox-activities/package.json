@@ -37,7 +37,6 @@
     "@services/remote-actors": "workspace:^",
     "@services/route-rate-limits": "workspace:^",
     "@services/users": "workspace:^",
-    "@voucha/types": "workspace:^",
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2"
   },

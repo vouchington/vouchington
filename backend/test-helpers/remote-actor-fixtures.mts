@@ -1,9 +1,7 @@
 /**
  * Test-only fixtures shared across this package's own test files (get-or-fetch.test.mts and
  * siblings): building a fake JSON `Response` and wrapping it in the `{ response, responseSignal }`
- * pair `fetchWithTimeout` resolves. Kept local rather than in `@voucha/test-helpers` — every
- * backend service devDeps test-helpers for its own tests, so a test-helpers -> @services/remote-actors
- * edge would be a workspace cycle (mirrors ap-inbox-activities/test-fixtures.mts).
+ * pair `fetchWithTimeout` resolves.
  */
 
 import { generateRsaSha256KeyPair } from '@modules/http-signatures'

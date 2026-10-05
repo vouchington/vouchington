@@ -7,7 +7,7 @@ import {
   makeJsonResponse,
   ROTATED_REMOTE_ACTOR_PUBLIC_KEY_PEM,
   VALID_REMOTE_ACTOR_PUBLIC_KEY_PEM,
-} from './test-fixtures.mts'
+} from '@voucha/test-helpers/remote-actor-fixtures'
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
 const DAY_MS = 24 * 60 * 60 * 1000

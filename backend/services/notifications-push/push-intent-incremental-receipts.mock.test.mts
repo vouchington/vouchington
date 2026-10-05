@@ -13,7 +13,7 @@ import {
   getLeaseExpiry,
   successfulSendResult,
   waitForDeliveredEndpoint,
-} from './test-fixtures.mts'
+} from '@voucha/test-helpers/notification-push-fixtures'
 
 const shortLeasePolicy: NotificationPushDeliveryPolicy = {
   leaseSeconds: 1,
