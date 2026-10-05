@@ -45,6 +45,15 @@ already authorized `get_my_profile`, so a profile write grant also lets the cred
 profile. See
 [Profile, Notification, and Preference Write Tools](../../../agent-tools/profile-notification-write-tools.md).
 
+`communities:write`, `disputes:read/write`, `appeals:read/write` and `reports:write` are
+user-audience resource scopes for the community, review dispute, moderation appeal and content
+report tools. Each write except `reports:write` requires its read, and `mcp.user:write` covers them.
+`communities:write` also covers `join_community`, `leave_community` and `apply_to_community`.
+`disputes:read` and `appeals:read` return only the credential owner's own cases. `reports:write` is
+write-only: it carries no read prerequisite because `create_content_report` returns only the report
+it filed. See
+[Community, Report, Dispute and Appeal Tools](../../../agent-tools/community-report-appeal-write-tools.md).
+
 `hostnames:read` and `users:read` are user-audience resource scopes for the hostname and user MCP
 read tools. Both tools read as a signed-out reader whatever the credential owner's role, so neither
 scope exposes a blocked hostname or a private profile field, and `mcp.user:read` covers them like

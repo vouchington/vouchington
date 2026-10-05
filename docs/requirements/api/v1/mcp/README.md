@@ -143,6 +143,9 @@ The [trending, referral, search and reference read tools](../../../../overview/a
 read public data as a signed-out reader would, so a private community never appears.
 `get_my_referral_links` returns only the caller's own links. Web snippets are external content.
 
+[Community, report, dispute and appeal tools](../../../../overview/architecture/agent-tools/community-report-appeal-write-tools.md)
+follow REST guards.
+
 ### Paged results
 
 `search_posts`, `search_topics`, `get_trending_posts` and `get_trending_topics` take the `after` and

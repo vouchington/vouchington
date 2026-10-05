@@ -31,3 +31,31 @@ export async function countTestModerationReportsByReporter(userId: string): Prom
     SELECT count(*)::TEXT AS count FROM moderation_reports WHERE reporter_user_id = ${userId}`)
   return Number(rows[0]?.count)
 }
+
+/** How many communities the user created, for asserting a refused call wrote nothing. */
+export async function countTestCommunitiesCreatedBy(userId: string): Promise<number> {
+  const { rows } = await read<{ count: string }>(sql`/* countTestCommunitiesCreatedBy */
+    SELECT count(*)::TEXT AS count FROM communities WHERE created_by_id = ${userId}`)
+  return Number(rows[0]?.count)
+}
+
+/** How many community applications the user filed, for asserting a refused call wrote nothing. */
+export async function countTestCommunityApplicationsByUser(userId: string): Promise<number> {
+  const { rows } = await read<{ count: string }>(sql`/* countTestCommunityApplicationsByUser */
+    SELECT count(*)::TEXT AS count FROM community_applications WHERE user_id = ${userId}`)
+  return Number(rows[0]?.count)
+}
+
+/** How many review disputes the user filed, for asserting a refused call wrote nothing. */
+export async function countTestReviewDisputesByDisputant(userId: string): Promise<number> {
+  const { rows } = await read<{ count: string }>(sql`/* countTestReviewDisputesByDisputant */
+    SELECT count(*)::TEXT AS count FROM review_disputes WHERE disputant_user_id = ${userId}`)
+  return Number(rows[0]?.count)
+}
+
+/** How many moderation appeals the user filed, for asserting a refused call wrote nothing. */
+export async function countTestModerationAppealsByAppellant(userId: string): Promise<number> {
+  const { rows } = await read<{ count: string }>(sql`/* countTestModerationAppealsByAppellant */
+    SELECT count(*)::TEXT AS count FROM moderation_appeals WHERE appellant_user_id = ${userId}`)
+  return Number(rows[0]?.count)
+}

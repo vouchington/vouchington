@@ -76,3 +76,20 @@ export async function updateTestReviewDisputeSubject(
   query.append(sql` WHERE id = ${input.disputeId}`)
   await write(query)
 }
+
+/** Marks a dispute decided and its approved public response delivered, as the moderators do. */
+export async function sendTestReviewDisputeResponse(input: {
+  disputeId: string
+  publicResponse: string
+  resolutionAction?: 'no_action' | 'remove' | 'annotate' | 'dismiss'
+}): Promise<void> {
+  await write(sql`/* sendTestReviewDisputeResponse */
+    UPDATE review_disputes
+    SET public_response = ${input.publicResponse},
+        approved_at = CURRENT_TIMESTAMP,
+        sent_at = CURRENT_TIMESTAMP,
+        resolved_at = CURRENT_TIMESTAMP,
+        resolution_action = ${input.resolutionAction ?? 'no_action'}
+    WHERE id = ${input.disputeId}
+  `)
+}

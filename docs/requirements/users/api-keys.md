@@ -33,6 +33,7 @@ API keys use a permission-based access control system. Each key has a `permissio
 - `topics:read` — Read topic and recommendation MCP tools
 - `posts:read/write` — Read posts and create, reply, edit, archive or delete own posts and comments through MCP; write requires read
 - `communities:read`, `hostnames:read`, `users:read` — Read public community, hostname and public user profile MCP tools
+- `communities:write`, `disputes:read/write`, `appeals:read/write`, `reports:write` — MCP community, dispute, appeal and content report tools; write requires read, except `reports:write`
 - `cards:read/write` — Read or manage cards; write requires read
 - `entity-relations:read/write` — Read or add relations, add or remove tags; write requires read
 - `bookmarks:read/write`, `lists:read/write` — Set bookmarks or manage lists and items; write requires read
