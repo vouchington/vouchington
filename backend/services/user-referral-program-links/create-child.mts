@@ -6,6 +6,7 @@ import type { ContentProvenance } from '@voucha/types/entities/content-provenanc
 import { isUrlReferralLink } from '@services/referral-program-link-validations'
 import { addUrl } from '@services/urls/upsert'
 import type { UserReferralLink } from './types.mts'
+import { userReferralLinkColumns } from './columns.mts'
 
 /**
  * Creates (or re-activates) a child referral link produced by unfurling a parent link.
@@ -88,8 +89,7 @@ export async function createChildReferralLink(
         activated_at = CURRENT_TIMESTAMP,
         deactivated_at = NULL
       WHERE user_referral_program_links.parent_link_id IS NOT NULL
-      RETURNING *
-    `,
+      RETURNING `.append(userReferralLinkColumns()),
     options,
   )
 

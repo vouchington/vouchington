@@ -29380,8 +29380,8 @@
         },
         {
           "tool": {
-            "name": "list_user_mod_notes",
-            "title": "List user mod notes",
+            "name": "list_user_moderator_notes",
+            "title": "List user moderator notes",
             "description": "Page staff notes for a user.",
             "inputSchema": {
               "type": "object",
