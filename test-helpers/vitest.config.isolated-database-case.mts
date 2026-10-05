@@ -24,6 +24,8 @@ export default defineConfig({
     testNamePattern: isolatedTestNamePattern(caseId),
     coverage: {
       ...coverageConfig(),
+      // Parent LCOV supplies zero-count files; children report executed scripts.
+      include: undefined,
       ...(process.env.VITEST_ISOLATED_COVERAGE_DIR
         ? { reportsDirectory: process.env.VITEST_ISOLATED_COVERAGE_DIR }
         : {}),

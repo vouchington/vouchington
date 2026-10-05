@@ -12,6 +12,9 @@ matrix. See [VITEST.md](VITEST.md) for the canonical project → workflow/job ow
 Backend shard coverage includes registered disposable-database cases. Coverage-enabled parent runs
 give each child a unique report directory; the shard merges those child reports with its parent
 LCOV before uploading the full artifact. Ordinary runs leave child coverage disabled.
+Child reports include executed scripts; the parent supplies zero-count sources. Parent wrapper
+deadlines account for bootstrap, child execution/reporting and cleanup, while child test bodies
+retain their normal deadline.
 
 The all-route localization bounds project also runs independently for its catalog, web, extraction,
 and test/configuration inputs. The Tooling workflow passes `run_tooling: false` to

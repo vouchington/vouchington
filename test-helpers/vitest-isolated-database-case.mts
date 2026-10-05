@@ -23,6 +23,13 @@ const isolatedConfig = join(root, 'test-helpers/vitest.config.isolated-database-
 const collectCoverage =
   process.env.VITEST_COVERAGE_ENABLED === 'true' ||
   process.argv.some(argument => argument === '--coverage' || argument === '--coverage=true')
+const commandTimeoutMs = 10_000
+const bootstrapTimeoutMs = 60_000
+const childTimeoutMs = 120_000
+const cleanupTimeoutMs = 60_000
+// A parent orchestrates two admin commands, bootstrap, child execution/reporting and cleanup.
+export const ISOLATED_DATABASE_PARENT_TIMEOUT_MS =
+  2 * commandTimeoutMs + bootstrapTimeoutMs + childTimeoutMs + cleanupTimeoutMs + 10_000
 
 /** Runs a registered global test against a fresh local database, then drops only that database. */
 export async function runIsolatedDatabaseCase(caseId: IsolatedDatabaseCaseId): Promise<void> {
@@ -102,12 +109,12 @@ export async function runIsolatedDatabaseCase(caseId: IsolatedDatabaseCaseId): P
       adminEnv,
     )
     created = true
-    await command('pnpm', ['--dir', 'backend', 'db:migrate'], childEnv, 60_000)
+    await command('pnpm', ['--dir', 'backend', 'db:migrate'], childEnv, bootstrapTimeoutMs)
     const childOutput = await command(
       process.execPath,
       [vitestCli, 'run', '--config', isolatedConfig],
       childEnv,
-      120_000,
+      childTimeoutMs,
     )
     assertIsolatedDatabaseCaseRan(caseId, childOutput)
     if (collectCoverage) {
@@ -127,7 +134,7 @@ export async function runIsolatedDatabaseCase(caseId: IsolatedDatabaseCaseId): P
         'psql',
         ['-v', 'ON_ERROR_STOP=1', '-qc', `DROP DATABASE IF EXISTS ${databaseName} WITH (FORCE)`],
         adminEnv,
-        60_000,
+        cleanupTimeoutMs,
       )
     } catch (err) {
       if (primaryFailure) {
@@ -148,7 +155,7 @@ async function command(
   file: string,
   args: string[],
   env: NodeJS.ProcessEnv,
-  timeout = 10_000,
+  timeout = commandTimeoutMs,
 ): Promise<string> {
   try {
     const result = await exec(file, args, { cwd: root, env, timeout, maxBuffer: 4_000_000 })

@@ -19,7 +19,10 @@ import type {
   LanguageDetectionEntityType,
 } from '@queues/language-detection/types'
 import { processLanguageDetection, processLanguageDetectionBackfill } from './processors.mts'
-import { runIsolatedDatabaseCase } from '../../../test-helpers/vitest-isolated-database-case.mts'
+import {
+  ISOLATED_DATABASE_PARENT_TIMEOUT_MS,
+  runIsolatedDatabaseCase,
+} from '../../../test-helpers/vitest-isolated-database-case.mts'
 import { getIsolatedDatabaseCaseMode } from '../../../test-helpers/vitest-isolated-database-cases.mts'
 
 describe('language detection processors', () => {
@@ -130,47 +133,55 @@ describe('language detection processors', () => {
     await expectEnglishDetection('topic', 'topics', topicId)
   })
 
-  it('accepts every known language detection backfill job name', async () => {
-    if (getIsolatedDatabaseCaseMode('language-backfill-job-names') === 'parent') {
-      await runIsolatedDatabaseCase('language-backfill-job-names')
-      return
-    }
-    const jobs: LanguageDetectionBackfillJobName[] = [
-      'backfill_posts',
-      'backfill_rss_feed_items',
-      'backfill_crawls',
-      'backfill_communities',
-      'backfill_users',
-      'backfill_topics',
-    ]
+  it(
+    'accepts every known language detection backfill job name',
+    async () => {
+      if (getIsolatedDatabaseCaseMode('language-backfill-job-names') === 'parent') {
+        await runIsolatedDatabaseCase('language-backfill-job-names')
+        return
+      }
+      const jobs: LanguageDetectionBackfillJobName[] = [
+        'backfill_posts',
+        'backfill_rss_feed_items',
+        'backfill_crawls',
+        'backfill_communities',
+        'backfill_users',
+        'backfill_topics',
+      ]
 
-    for (const job of jobs) {
-      await expect(processLanguageDetectionBackfill(job)).resolves.toMatchObject({
-        updated: expect.any(Number),
+      for (const job of jobs) {
+        await expect(processLanguageDetectionBackfill(job)).resolves.toMatchObject({
+          updated: expect.any(Number),
+        })
+      }
+    },
+    ISOLATED_DATABASE_PARENT_TIMEOUT_MS,
+  )
+
+  it(
+    'backfills non-post entities through the batch processor path',
+    async () => {
+      if (getIsolatedDatabaseCaseMode('language-backfill-non-post') === 'parent') {
+        await runIsolatedDatabaseCase('language-backfill-non-post')
+        return
+      }
+      const random = createRandomString(10)
+      const userId = await insertLanguageDetectionUserForTest({
+        username: `language-backfill-user-${random}`,
+        markdown:
+          'This backfilled user profile is written in English with clear sentences, common vocabulary, and enough context for reliable language detection by the worker processor.',
       })
-    }
-  }, 240_000)
 
-  it('backfills non-post entities through the batch processor path', async () => {
-    if (getIsolatedDatabaseCaseMode('language-backfill-non-post') === 'parent') {
-      await runIsolatedDatabaseCase('language-backfill-non-post')
-      return
-    }
-    const random = createRandomString(10)
-    const userId = await insertLanguageDetectionUserForTest({
-      username: `language-backfill-user-${random}`,
-      markdown:
-        'This backfilled user profile is written in English with clear sentences, common vocabulary, and enough context for reliable language detection by the worker processor.',
-    })
+      const result = await processLanguageDetectionBackfill('backfill_users')
 
-    const result = await processLanguageDetectionBackfill('backfill_users')
-
-    expect(result.updated).toBeGreaterThan(0)
-    const state = await getLanguageDetectionStateForTest('users', userId)
-    expect(state.lingua_rs_detected_language).toBe('en')
-    expect(state.lingua_rs_input_sha256).toBeInstanceOf(Buffer)
-    expect(state.lingua_rs_detected_at).toBeInstanceOf(Date)
-  }, 240_000)
+      expect(result.updated).toBeGreaterThan(0)
+      const state = await getLanguageDetectionStateForTest('users', userId)
+      expect(state.lingua_rs_detected_language).toBe('en')
+      expect(state.lingua_rs_input_sha256).toBeInstanceOf(Buffer)
+      expect(state.lingua_rs_detected_at).toBeInstanceOf(Date)
+    },
+    ISOLATED_DATABASE_PARENT_TIMEOUT_MS,
+  )
 
   it('ignores missing post rows', async () => {
     await expect(processLanguageDetection('post', randomUUID())).resolves.toBeUndefined()
