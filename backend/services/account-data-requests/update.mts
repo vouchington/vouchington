@@ -31,7 +31,9 @@ export async function leaseDataRequestUpload(
   await using transaction = await beginTransaction()
   const userId = await getDataRequestUserId(transaction, requestId)
   if (!userId || !(await lockActiveDataRequestUser(transaction, userId))) return null
-  const { rows } = await transaction<{ upload_lease_expires_at: Date }>(sql`
+  const { rows } = await transaction<{
+    upload_lease_expires_at: Date
+  }>(sql`/* leaseDataRequestUpload */
     UPDATE user_data_request_attempts attempt
     SET upload_lease_expires_at = CURRENT_TIMESTAMP
       + (${leaseMs}::int * INTERVAL '1 millisecond')

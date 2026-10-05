@@ -84,7 +84,9 @@ export async function submitTerritorialCopyrightRedress(
       },
       transaction,
     )
-    const { rows: clocks } = await transaction<{ now: Date }>(sql`SELECT CURRENT_TIMESTAMP AS now`)
+    const { rows: clocks } = await transaction<{ now: Date }>(
+      sql`/* submitTerritorialCopyrightRedress:clock */ SELECT CURRENT_TIMESTAMP AS now`,
+    )
     assert(
       !window.window_ends_at || clocks[0]!.now <= window.window_ends_at,
       422,

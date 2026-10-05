@@ -11,7 +11,9 @@ export async function replayDsaStatementSubmission(
   submissionId: string,
 ): Promise<boolean> {
   await using transaction = await beginTransaction()
-  const { rows } = await transaction<{ submitted_at: Date | null }>(sql`
+  const { rows } = await transaction<{
+    submitted_at: Date | null
+  }>(sql`/* replayDsaStatementSubmission:lockSubmission */
     SELECT submitted_at FROM copyright_dsa_statement_submissions
     WHERE id = ${submissionId} FOR UPDATE
   `)
@@ -29,7 +31,7 @@ export async function replayDsaStatementSubmission(
     transaction,
   )
   if (!appended) throw new Error('Could not append DSA statement replay')
-  await transaction(sql`
+  await transaction(sql`/* replayDsaStatementSubmission:rearm */
     UPDATE copyright_dsa_statement_submissions
     SET available_at = CURRENT_TIMESTAMP
     WHERE id = ${submissionId}

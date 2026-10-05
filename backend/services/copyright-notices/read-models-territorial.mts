@@ -12,6 +12,9 @@ import { getTerritorialInformedWindow } from './territorial-informed-at.mts'
 import { selectEuParticipantSettlements } from './read-models-eu-settlements.mts'
 import { territorialDecisionIsLiveSql } from './territorial-redress-sql.mts'
 import { territorialLabels } from './territorial-labels.mts'
+
+type SubmissionRow = CopyrightParticipantNoticeDetail['submissions'][number]
+
 /** EU participants can read a received case before staff accepts or declines it. */
 export async function getEuParticipantNoticeDetail(
   noticeId: string,
@@ -132,7 +135,7 @@ export async function getEuParticipantNoticeDetail(
     transaction,
   )
   const [{ rows: submissions }, statements] = await Promise.all([
-    transaction<CopyrightParticipantNoticeDetail['submissions'][number]>(sql`
+    transaction<SubmissionRow>(sql`/* getEuParticipantNoticeDetail:submissions */
       SELECT id, kind, received_at, source_kind FROM copyright_notice_submissions
       WHERE copyright_notice_id = ${noticeId}
         AND (${viewerRole === 'staff'} OR submitted_by_id = ${currentUser.id})

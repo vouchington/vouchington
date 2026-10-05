@@ -82,7 +82,9 @@ export async function eraseCopyrightRetentionCase(
   const { rows: keyRows } = await transaction<{ key: string }>(evidenceKeysSql(noticeId))
   const keys = keyRows.map(row => row.key)
   await deleteCopyrightEvidenceObjectVersions(keys)
-  await transaction(sql`SET LOCAL app.copyright_retention_erasure = 'on'`)
+  await transaction(
+    sql`/* enableCopyrightRetentionErasure */ SET LOCAL app.copyright_retention_erasure = 'on'`,
+  )
   for (const spec of COPYRIGHT_RETENTION_ERASURE) {
     // oxlint-disable-next-line no-await-in-loop -- one transaction connection runs its statements in order.
     await transaction(eraseCopyrightRetentionTableSql(spec, noticeId))

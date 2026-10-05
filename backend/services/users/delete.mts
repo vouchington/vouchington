@@ -65,7 +65,7 @@ async function scrubUserDeletionIdentities(
   userId: string,
   requestedById: string,
 ): Promise<void> {
-  const { rows: links } = await query<{ id: string }>(sql`
+  const { rows: links } = await query<{ id: string }>(sql`/* scrubUserDeletionIdentities:links */
     SELECT id FROM user_profile_links WHERE user_id = ${userId} ORDER BY id
   `)
   await prepublishImageSurfaceDenials(
