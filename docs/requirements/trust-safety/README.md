@@ -4,11 +4,12 @@ Trust system design, vote integrity, and platform-wide contribution limits and p
 
 ## Documents
 
-| File                                            | Description                                                                               |
-| ----------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| [Trust System](./trust-system.md)               | Phased trust/reputation design, vote weight calibration, contribution gating, bot defense |
-| [Contribution Limits](./CONTRIBUTION-LIMITS.md) | Trust-tier contribution limits for content creation, configurable via DynamicConfig       |
-| [Penalties](./PENALTIES.md)                     | Vote-weight and report-abuse penalty semantics                                            |
+| File                                                                | Description                                                                               |
+| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| [Trust System](./trust-system.md)                                   | Phased trust/reputation design, vote weight calibration, contribution gating, bot defense |
+| [Contribution Limits](./CONTRIBUTION-LIMITS.md)                     | Trust-tier contribution limits for content creation, configurable via DynamicConfig       |
+| [Penalties](./PENALTIES.md)                                         | Vote-weight and report-abuse penalty semantics                                            |
+| [Platform-account writer audit](./platform-account-writer-audit.md) | Non-HTTP vote and relation writers run as official, system, and AI agent accounts         |
 
 ## Sync Rule
 

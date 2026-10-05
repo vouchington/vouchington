@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
 import { getTopicElectionVote } from '@services/elections-votes/topic'
+import { createAccountTypeTestAgent } from '@voucha/test-helpers/account-types'
 import { createClassifierFixture } from '../../test-helpers/data-stores/psql/classifiers.mts'
 import {
   applyDecisionRelationsForTest,
@@ -12,7 +13,11 @@ import {
   createTestPost,
   createTestTopic,
 } from '../../test-helpers/entities/create-test-entities.mts'
-import { createSystemUser, createTestUser } from '../../test-helpers/entities/users.mts'
+import {
+  createSystemUser,
+  createTestUser,
+  getTestPrivateUserById,
+} from '../../test-helpers/entities/users.mts'
 
 async function createCase() {
   const fixture = await createClassifierFixture()
@@ -55,6 +60,25 @@ describe('applyTopicClassifierDecisionRelations', () => {
     }
     await expect(getTopicElectionVote(actor.id, first)).resolves.toBeNull()
     await expect(getTopicElectionVote(actor.id, second)).resolves.toBeNull()
+  })
+
+  it('persists the relation and vote for an actor that is an ai_agent, not only a system account', async () => {
+    const { fixture, actor, first, postSubject } = await createCase()
+    await createAccountTypeTestAgent(actor.id, false, true)
+    await expect(getTestPrivateUserById(actor.id)).resolves.toMatchObject({
+      account_type: 'ai_agent',
+    })
+    const decision = await persistSubjectTopicDecision(fixture, postSubject, [
+      { topicId: first, probability: 0.9 },
+    ])
+
+    await expect(applyDecisionRelationsForTest(decision, actor.id, [first])).resolves.toEqual({
+      addedTopicIds: [first],
+    })
+
+    expect(await readSubjectTopicRelationFacts(postSubject)).toMatchObject([
+      { topicId: first, createdById: actor.id, votes: [{ userId: actor.id, score: 1 }] },
+    ])
   })
 
   it('tags a classified RSS feed item the same way', async () => {

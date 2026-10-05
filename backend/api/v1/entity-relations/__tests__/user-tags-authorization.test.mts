@@ -8,6 +8,11 @@ import {
   createTestUserWithAge,
   suspendTestUser,
 } from '@voucha/test-helpers'
+import {
+  createAccountTypeTestAgent,
+  setAccountTypeTestUserKind,
+} from '@voucha/test-helpers/account-types'
+import { OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN } from '@modules/on-error/error-codes'
 import { getUserTagTopics } from '@services/topics/user-tag-topics'
 import {
   getEntityRelationElectionVote,
@@ -74,6 +79,38 @@ describe('user tag authorization and voting', () => {
         .expect(403)
     }
   })
+
+  it.each(['system', 'ai_agent'] as const)(
+    'rejects a %s account adding or voting on a user tag',
+    async kind => {
+      const admin = await createTestUser({ administrator: true })
+      const target = await createTestUser()
+      const [tag] = await getUserTagTopics()
+      const adminRequest = createRequest()
+      await adminRequest.authenticateAs(admin)
+      const created = await adminRequest
+        .post(`/api/v1/entity-relations/user/${target.id}/category/topic`)
+        .send({ objectId: tag!.id })
+        .expect(201)
+      const actor = await createTestUserDirect({ withEmail: true })
+      await setAccountTypeTestUserKind(actor.id, 'system')
+      if (kind === 'ai_agent') await createAccountTypeTestAgent(actor.id, false, true)
+      const request = createRequest()
+      await request.authenticateAs(actor)
+
+      await request
+        .post(`/api/v1/entity-relations/user/${target.id}/category/topic`)
+        .send({ objectId: tag!.id })
+        .expect(403)
+      const vote = await request
+        .put(`/api/v1/entity-relations/${created.body.relation.id}/vote`)
+        .send({ choice: 'dispute' })
+        .expect(403)
+
+      expect(vote.body.code).toBe(OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN)
+    },
+    60_000,
+  )
 
   it('rejects missing and suspended targets for adds', async () => {
     const admin = await createTestUser({ administrator: true })

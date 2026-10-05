@@ -3,6 +3,7 @@ import { getEntityRelationElectionVote } from '@services/elections-votes/entity-
 import { upsertEntityRelation } from '@services/entity-relations'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { createTestUser, waitForQueueJobs } from '@voucha/test-helpers'
+import { getTestPrivateUserById } from '@voucha/test-helpers/entities/users'
 import { getClassifierRunFacts } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
 import {
   createPostClassifierExecutionFixture,
@@ -175,6 +176,11 @@ describe('post classifier effects on the shared lifecycle (real PG)', () => {
     await expect(
       getEntityRelationElectionVote(first.lease.resolved.actorId, relationId),
     ).resolves.toMatchObject({ choice: 'confirm' })
+    // The restriction on platform-account trust signals does not apply to this service-level
+    // writer: the actor is the seeded @post-classifier ai_agent and its relation vote persists.
+    await expect(getTestPrivateUserById(first.lease.resolved.actorId)).resolves.toMatchObject({
+      account_type: 'ai_agent',
+    })
   })
 
   it('completes without altering approval history, and replays after un-approval', async () => {

@@ -47,7 +47,7 @@ export async function createOfficialReferralLink(
     assert(label.length <= 255, 422, 'label must be 255 characters or less')
   }
 
-  // Get the @voucha system user
+  // Get the @voucha official account (platform_account_kind='official')
   const vouchaUser = await getPrivateUserByAny('voucha')
   assert(vouchaUser, 500, 'Voucha system user not found')
 

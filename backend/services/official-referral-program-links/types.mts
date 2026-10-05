@@ -1,6 +1,6 @@
 export type OfficialReferralLink = {
   id: string
-  user_id: string // always the @voucha system user's id
+  user_id: string // always the @voucha official account's id
   referral_program_id: string
   url_id: string
   url: string // populated via join

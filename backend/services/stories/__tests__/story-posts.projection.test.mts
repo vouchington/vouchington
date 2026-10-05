@@ -22,6 +22,7 @@ import {
   updateEntityRelationElectionVoteStatsFromPrimary,
 } from '@services/elections-votes/entity-relation'
 import { getSystemUserByUsername, upsertSystemUser } from '@services/users/system-users'
+import { getPrivateUserByAny } from '@services/users'
 import { createStoryPost } from '../story-posts.mts'
 import { reconcileStoryPostRelatedUrlProjection } from '../story-post-related-url-projection.mts'
 import { elections } from '../../../queues/elections/queues.mts'
@@ -92,6 +93,11 @@ describe('story post projection', () => {
     await expect(
       getEntityRelationElectionVote(storyTeller!.id, relation!.id),
     ).resolves.toMatchObject({ choice: 'confirm' })
+    // The seeded @story-teller is an ai_agent: the platform-account trust-signal restriction is
+    // enforced at HTTP guards only, so this service-level relation vote persists.
+    await expect(getPrivateUserByAny(storyTeller!.id)).resolves.toMatchObject({
+      account_type: 'ai_agent',
+    })
     await updateEntityRelationElectionVoteStatsFromPrimary(
       createEntityRelationElectionTarget(relation!.id, 'relation__post__category__topic'),
     )
