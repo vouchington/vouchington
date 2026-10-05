@@ -30,7 +30,7 @@ export async function claimAdministratorRefundRequest(
     )
     SELECT source.id, lineage.id, binding.id,
       lineage.provider, lineage.environment, lineage.application_id,
-      'administrator_refund', ${request.idempotencyKey},
+      'administrator_refund', ${request.idempotencyKey}::text AS idempotency_key,
       ${request.amount.amount}, ${request.amount.amount}, ${request.amount.currency},
       ${request.periodStartedAt}, ${request.periodEndsAt}, CURRENT_TIMESTAMP
     FROM memberships membership
@@ -40,6 +40,7 @@ export async function claimAdministratorRefundRequest(
     INNER JOIN membership_lineage_bindings binding
       ON binding.membership_provider_lineage_id = lineage.id AND binding.released_at IS NULL
     WHERE membership.id = ${request.membershipId}
+    ORDER BY lineage.provider, lineage.environment, lineage.application_id, idempotency_key
     ON CONFLICT (provider, environment, application_id, idempotency_key) DO NOTHING
   `)
   const operation = await getLockedAdministratorRefundOperation(

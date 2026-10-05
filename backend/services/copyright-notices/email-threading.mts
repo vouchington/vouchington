@@ -43,10 +43,11 @@ export async function recordCopyrightEmailThreadReferences(input: {
     await transaction(sql`/* recordCopyrightEmailThreadReferences */
       INSERT INTO copyright_notice_email_thread_references (
         copyright_notice_email_intake_id, lookup_token, reference_kind
-      ) SELECT ${input.intakeId}, reference.lookup_token, reference.reference_kind
+      ) SELECT ${input.intakeId}::uuid AS intake_id, reference.lookup_token, reference.reference_kind
       FROM jsonb_to_recordset(${rows}::jsonb) AS reference(
         lookup_token text, reference_kind copyright_notice_email_thread_reference_kinds
       )
+      ORDER BY intake_id, reference.lookup_token, reference.reference_kind
       ON CONFLICT (copyright_notice_email_intake_id, lookup_token, reference_kind) DO NOTHING
     `)
   }

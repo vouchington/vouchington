@@ -64,6 +64,7 @@ export async function openModmailThread(
 
     if (modRows.length > 0) {
       const typedModRows = modRows as Array<{ user_id: string }>
+      // no-mistakes-disable-next-line postgres-conflict-ordering: the target matches the partial unique index on (conversation_id, user_id), but the rule only resolves the catalog's parenthesized predicate text
       await query(sql`/* openModmailThread:modParticipants */
         INSERT INTO conversation_participants (conversation_id, user_id, role)
         SELECT ${thread.id}::uuid AS conversation_id, user_id, 'admin'

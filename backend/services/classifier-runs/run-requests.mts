@@ -97,6 +97,7 @@ export async function requestRssFeedItemClassifierRuns(
     FROM rss_feed_items item
     CROSS JOIN classifiers classifier
     WHERE item.id = ANY(${ids}::uuid[]) AND classifier.slug = ANY(${slugs}::text[])
+    ORDER BY classifier.id, item.id, item.bedrock_nova_multimodal_v1_content_sha256
     ON CONFLICT (classifier_id, rss_feed_item_id, input_sha256)
       WHERE rss_feed_item_id IS NOT NULL
       DO UPDATE SET stale_at = NULL WHERE classifier_run_requests.stale_at IS NOT NULL

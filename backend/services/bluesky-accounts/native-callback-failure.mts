@@ -67,6 +67,7 @@ export async function resolveNativeBlueskyCallbackFailure(
     ) {
       const expiresAt = new Date(Date.now() + COMPLETION_TTL_MS)
       const { rowCount } = await query(sql`/* resolveNativeBlueskyCallbackFailure:persist */
+        /* deadlock-safe: the SELECT has no FROM clause, so it yields at most one row */
         INSERT INTO bluesky_link_completions (
           authorization_id, user_id, bluesky_did, handle, token_hash, expires_at
         )

@@ -16,6 +16,7 @@ export async function completeIneligiblePurchaseReversal(
 ): Promise<void> {
   await using transaction = await beginTransaction()
   await transaction(sql`/* completeIneligiblePurchaseReversal:receipt */
+      /* deadlock-safe: the SELECT reads one operation row by its primary key */
       INSERT INTO membership_automatic_refund_receipts (
         membership_operation_id, provider, environment, application_id, operation_kind,
         provider_refund_id, amount_minor_units, remaining_refundable_minor_units, currency_code

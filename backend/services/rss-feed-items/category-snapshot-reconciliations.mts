@@ -23,9 +23,9 @@ export async function persistRssFeedItemCategorySnapshotReconciliations(
     `/* persistRssFeedItemSourceCategorySnapshots */
       INSERT INTO rss_feed_item_source_category_snapshots
         (rss_feed_id, rss_feed_item_id, categories)
-      SELECT $1, rss_feed_item_id, categories
+      SELECT $1::uuid AS rss_feed_id, rss_feed_item_id, categories
       FROM UNNEST($2::uuid[], $3::jsonb[]) AS snapshot(rss_feed_item_id, categories)
-      ORDER BY rss_feed_item_id
+      ORDER BY rss_feed_id, rss_feed_item_id
       ON CONFLICT (rss_feed_id, rss_feed_item_id) DO UPDATE
       SET categories = EXCLUDED.categories`,
     [

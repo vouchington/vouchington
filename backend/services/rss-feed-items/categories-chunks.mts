@@ -43,6 +43,7 @@ async function insertMissingCategoriesChunk(
   toInsert: Array<{ rss_feed_item_id: string; category: string; hashtag_alias: string | null }>,
   query: QueryExecutor,
 ): Promise<CategoryTopicMutation[]> {
+  // no-mistakes-disable-next-line postgres-conflict-ordering: the target and ORDER BY follow the unique index on (rss_feed_item_id, lower(category_text)), but the catalog marks that expression key unsupported, so the rule cannot resolve it
   const { rows } = await query<CategoryTopicMutation>(
     `/* insertMissingCategories */
       INSERT INTO rss_feed_item_categories (
