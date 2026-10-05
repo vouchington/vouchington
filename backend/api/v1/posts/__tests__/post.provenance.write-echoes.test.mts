@@ -61,7 +61,11 @@ const create = async (viewer: PrivateUser, clientHeaders: Record<string, string>
   await request.authenticateAs(viewer)
   const { body } = await request
     .post('/api/v1/posts')
-    .send({ post_type: 'discussion', title: `Created ${suffix}`, markdown: 'Created echo content' })
+    .send({
+      post_type: 'discussion',
+      title: `Created ${randomBytes(6).toString('hex')}`,
+      markdown: `Created echo content ${randomBytes(6).toString('hex')}`,
+    })
     .expect(201)
   return body.post
 }

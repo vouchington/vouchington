@@ -20,7 +20,11 @@ const create = async (user: PrivateUser, clientHeaders: Record<string, string> =
   await request.authenticateAs(user)
   const { body } = await request
     .post(`/api/v1/communities/${slug}/posts`)
-    .send({ post_type: 'discussion', title: 'Community echo', markdown: 'Community echo content' })
+    .send({
+      post_type: 'discussion',
+      title: `Community echo ${createRandomString(8)}`,
+      markdown: `Community echo content ${createRandomString(8)}`,
+    })
     .expect(201)
   return body
 }
