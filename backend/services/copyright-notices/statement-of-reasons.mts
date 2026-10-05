@@ -71,7 +71,7 @@ export function buildCopyrightStatementOfReasons(input: CopyrightStatementInput)
       noticeId: input.noticeId,
       receivedAt: input.receivedAt.toISOString(),
       targetUrls: input.audience === 'poster' ? input.targetUrls : [],
-      basis: 'art_16_notice',
+      basis: 'notice',
     },
     automation: {
       detection: false,

@@ -71,9 +71,12 @@ function fillText() {
   fireEvent.change(screen.getByLabelText('Internal rationale'), {
     target: { value: 'Reviewed work and URL.' },
   })
-  fireEvent.change(screen.getByLabelText('Explanation for the poster and the notifier'), {
-    target: { value: 'This photograph matches the notified work.' },
-  })
+  fireEvent.change(
+    screen.getByLabelText('Why we decided this (sent to the poster and the notifier)'),
+    {
+      target: { value: 'This photograph matches the notified work.' },
+    },
+  )
 }
 
 describe('territorial staff decision', () => {
@@ -92,9 +95,12 @@ describe('territorial staff decision', () => {
     expect(button).toBeDisabled()
     fireEvent.change(screen.getByLabelText('Internal rationale'), { target: { value: 'Review' } })
     expect(button).toBeDisabled()
-    fireEvent.change(screen.getByLabelText('Explanation for the poster and the notifier'), {
-      target: { value: 'No restriction is warranted.' },
-    })
+    fireEvent.change(
+      screen.getByLabelText('Why we decided this (sent to the poster and the notifier)'),
+      {
+        target: { value: 'No restriction is warranted.' },
+      },
+    )
     expect(button).toBeEnabled()
     fireEvent.click(button)
     await onReview.mock.calls[0]![0]()
@@ -179,9 +185,9 @@ describe('territorial staff decision', () => {
       />,
     )
     expect(screen.getByLabelText('Internal rationale')).toHaveValue('Reviewed work and URL.')
-    expect(screen.getByLabelText('Explanation for the poster and the notifier')).toHaveValue(
-      'This photograph matches the notified work.',
-    )
+    expect(
+      screen.getByLabelText('Why we decided this (sent to the poster and the notifier)'),
+    ).toHaveValue('This photograph matches the notified work.')
     expect(screen.getByRole('button', { name: 'Record decision' })).toBeDisabled()
   })
 })

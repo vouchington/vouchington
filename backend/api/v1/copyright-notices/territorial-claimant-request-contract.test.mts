@@ -99,6 +99,12 @@ describe.each(TERRITORIAL_SURFACES)('$label claimant request contracts', surface
       .expect(422)
     expect(rejected.body.message).toBe(message)
   })
+})
+
+describe('EU redress request contracts', () => {
+  useCopyrightIntakeEnvironment()
+  // UK redress is staff-only: its request contract is covered with the staff routes.
+  const surface = TERRITORIAL_SURFACES.find(candidate => candidate.jurisdiction === 'eu_dsa')!
 
   it.each(MALFORMED_FIELDS)(
     'rejects %s on a redress request before recording it',

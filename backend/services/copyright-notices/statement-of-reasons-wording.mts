@@ -1,12 +1,22 @@
-import type { CopyrightDeliveryKind } from './delivery-types.mts'
-import { TERRITORIAL_COMPLAINT_WINDOW_MONTHS } from './territorial-fields.mts'
-import { copyrightStatementLegalGround } from './statement-of-reasons-legal-ground.mts'
+import { getSiteUrl } from '@modules/utils'
+import {
+  copyrightStatementLegalGround,
+  copyrightUsDecisionReason,
+} from './statement-of-reasons-legal-ground.mts'
+import { copyrightRedressText } from './statement-of-reasons-redress-wording.mts'
+import { copyrightStatementSummary } from './statement-of-reasons-summary.mts'
 import type {
   CopyrightStatementInput,
   CopyrightStatementFields,
 } from './statement-of-reasons-types.mts'
 
 export { copyrightNotificationCopy } from './statement-of-reasons-notification-copy.mts'
+export {
+  copyrightEmailSubject,
+  copyrightIntakeRejectionText,
+  copyrightNeedsInformationText,
+} from './statement-of-reasons-email-wording.mts'
+export { copyrightStatementSummary } from './statement-of-reasons-summary.mts'
 
 export const COPYRIGHT_AI_ASSISTED_SENTENCE = 'Automated tools assisted with processing this case.'
 
@@ -14,8 +24,12 @@ export function copyrightReceiptText(noticeId?: string): string {
   return `We received your copyright notice${noticeId ? ` for case ${noticeId}` : ''}. We will review it and contact you if we need more information.`
 }
 
-export function copyrightEuReceiptText(noticeId: string): string {
-  return `We received your EU copyright notice for case ${noticeId}. A moderator will decide whether to restrict the material. We will send the decision by email. You may complain about the decision within six months after we inform you; reply to the decision email to file a complaint. You may also seek out-of-court dispute settlement or judicial redress.`
+/** A signed-in notifier complains on the case page; a guest replies to the decision email. */
+export function copyrightEuReceiptText(noticeId: string, signedIn: boolean): string {
+  const complaint = signedIn
+    ? `use the complaint link on your case page: ${getSiteUrl(`/copyright/notices/${noticeId}`)}`
+    : 'reply to the decision email to file a complaint'
+  return `We received your EU copyright notice for case ${noticeId}. A moderator will decide whether to restrict the material. We will send the decision by email. You may complain about the decision within six months after we inform you; ${complaint}. You may also seek out-of-court dispute settlement or judicial redress.`
 }
 
 export function copyrightPromotionText(noticeId: string): string {
@@ -26,11 +40,8 @@ export function copyrightStatementText(
   input: CopyrightStatementInput,
   fields: CopyrightStatementFields,
 ): string {
-  const decision = copyrightStatementSummary(input)
-  const facts = `This decision concerns copyright case ${input.noticeId}, received ${input.receivedAt.toISOString()}, and was taken in response to a notice. ${fields.facts.targetUrls.join(' ')}`
-  const scope = fields.restriction
-    ? 'A global image visibility restriction is authorized. Delivery of that restriction withholds the image from visibility globally. This restriction does not delete the image. The restriction continues until review or the applicable restoration process ends it.'
-    : ''
+  const decided = input.event === 'restricted' || input.event === 'confirmed'
+  const ground = copyrightStatementLegalGround(input.jurisdiction)
   const automation =
     fields.automation.decision === 'automatic_deadline'
       ? 'The restriction ended automatically when the counter-notice waiting period expired.'
@@ -40,129 +51,66 @@ export function copyrightStatementText(
   const assistance = input.aiGuidance
     ? COPYRIGHT_AI_ASSISTED_SENTENCE
     : 'Automated tools did not assist with processing this case.'
-  const legal = copyrightStatementLegalGround(input.jurisdiction).text
-  const explainableEvent =
-    input.event === 'restricted' || input.event === 'confirmed' || input.event === 'not_accepted'
-  const explanation =
-    input.jurisdiction !== 'us_dmca' && explainableEvent && input.explanation
-      ? `Public explanation: ${input.explanation}`
-      : ''
-  const redress = fields.redress.map(copyrightRedressRouteText).join(' ')
   return [
-    decision,
-    scope,
-    facts.trim(),
+    copyrightStatementSummary(input),
+    fields.restriction ? copyrightScopeText(input) : '',
+    copyrightFactsText(input, fields),
     automation,
     'Automated detection was not used.',
     assistance,
-    legal,
-    explanation,
-    redress,
+    decided ? ground.decisionText : ground.text,
+    copyrightReasonText(input, decided),
+    input.audience === 'poster' && input.event === 'confirmed'
+      ? copyrightRepeatInfringerText()
+      : '',
+    copyrightRedressText(fields.redress),
   ]
     .filter(Boolean)
     .join('\n\n')
 }
 
-export function copyrightStatementSummary(input: CopyrightStatementInput): string {
-  switch (input.event) {
-    case 'restricted':
-      return input.audience === 'claimant'
-        ? `Your copyright notice resulted in authorization of an image restriction for case ${input.noticeId}. The reasons and redress routes are included in this notice.`
-        : `An image restriction was authorized for copyright case ${input.noticeId}. See the case page for the reasons and redress routes.`
-    case 'confirmed':
-      return input.audience === 'claimant'
-        ? `A person confirmed the image restriction for your copyright case ${input.noticeId}. The reasons and redress routes are included in this notice.`
-        : `A person confirmed the image restriction for copyright case ${input.noticeId}. See the case page for the reasons and redress routes.`
-    case 'reversed':
-      return `A person reversed the image restriction decision for copyright case ${input.noticeId}. Restoration will be processed separately.`
-    case 'not_accepted':
-      if (input.jurisdiction !== 'us_dmca')
-        return `We decided not to restrict the material for copyright case ${input.noticeId}. You may seek judicial redress through a court.`
-      return `We could not accept the notice for copyright case ${input.noticeId}. You may file a new notice at /copyright/notices/new, contact /copyright/designated-agent, or seek judicial redress through a court.`
-    case 'restriction_ended': {
-      const outcome =
-        input.restorationOutcome === 'visible'
-          ? 'Restoration is authorized. The image will become visible again when restoration delivery completes.'
-          : input.restorationOutcome === 'still_hidden'
-            ? 'Another restriction keeps the image hidden.'
-            : 'The image is unavailable.'
-      return `The image restriction for copyright case ${input.noticeId} ended (${copyrightRestorationCauseText(input.restorationCause)}). ${outcome}`
-    }
-  }
+function copyrightScopeText(input: CopyrightStatementInput): string {
+  const scope =
+    'We have hidden this image from all viewers worldwide. It has not been deleted. It stays hidden until a review, appeal, complaint or counter-notice outcome restores it.'
+  return input.audience === 'poster' && input.jurisdiction === 'us_dmca'
+    ? `${scope} If you send a valid counter-notice, we restore the image 10 to 14 business days after we receive it, unless the notifier tells us they have filed a court action.`
+    : scope
 }
 
-export const copyrightNeedsInformationText =
-  'We need more information before we can evaluate your copyright notice.'
-
-function copyrightRestorationCauseText(cause: CopyrightStatementInput['restorationCause']): string {
-  switch (cause) {
-    case 'review_reversed':
-      return 'human review reversed the decision'
-    case 'appeal_reversed':
-      return 'the appeal reversed the decision'
-    case 'hold_resolved':
-      return 'the legal hold was resolved'
-    case 'administrator_lift':
-      return 'an administrator lifted the restriction after review'
-    case 'complaint_reversed':
-      return 'a complaint reversed the decision'
-    case 'counter_notice_window':
-      return 'the counter-notice waiting period ended'
-    default:
-      throw new Error('Restoration cause is required')
-  }
+/** A plain UTC date, a labelled URL per affected image, and the case page when none is public. */
+function copyrightFactsText(
+  input: CopyrightStatementInput,
+  fields: CopyrightStatementFields,
+): string {
+  const received = input.receivedAt.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
+  const facts = [
+    `This decision concerns copyright case ${input.noticeId}, received ${received}, and was taken in response to a notice.`,
+  ]
+  if (input.audience !== 'poster') return facts[0]!
+  if (fields.facts.targetUrls.length === 0)
+    facts.push(
+      `The affected image is not publicly visible; your case page lists it: ${getSiteUrl(`/copyright/notices/${input.noticeId}`)}.`,
+    )
+  for (const url of fields.facts.targetUrls) facts.push(`Affected image: ${url}`)
+  return facts.join('\n')
 }
 
-export function copyrightEmailSubject(kind: CopyrightDeliveryKind): string {
-  switch (kind) {
-    case 'email_intake_rejected':
-      return 'We could not accept your copyright notice'
-    case 'email_intake_needs_information':
-    case 'staff_information_request':
-      return 'More information is needed for your copyright notice'
-    case 'email_intake_received':
-    case 'claimant_receipt':
-      return 'We received your copyright notice'
-    case 'poster_review_notice':
-      return 'Review of your copyright restriction'
-    case 'poster_restoration_notice':
-      return 'Your copyright restriction has ended'
-    case 'owner_information_notice':
-      return 'Copyright notice affecting your community image'
-    case 'claimant_decision_notice':
-      return 'Decision on your copyright notice'
-    case 'redress_decision_notice':
-      return 'Decision on your copyright complaint'
-    case 'poster_restriction_notice':
-      return 'Copyright notice affecting your material'
-    case 'counter_notice_forwarding':
-      return 'Counter-notice for your copyright claim'
-    case 'status_update':
-      return 'Update to your copyright case'
-  }
+/** US decisions print a template. EU and UK decisions print the staff reason, never the US one. */
+function copyrightReasonText(input: CopyrightStatementInput, decided: boolean): string {
+  if (input.jurisdiction === 'us_dmca')
+    return decided
+      ? `Why we decided this: ${copyrightUsDecisionReason(input.automatedDecision)}`
+      : ''
+  return (decided || input.event === 'not_accepted') && input.explanation
+    ? `Why we decided this: ${input.explanation}`
+    : ''
 }
 
-/** Unpromoted intake has neither a copyright case nor an established legal ground. */
-export function copyrightIntakeRejectionText(receivedAt: Date, aiGuidance: boolean): string {
-  return [
-    'We could not accept your emailed copyright notice. No copyright case was opened.',
-    `This response concerns the email received ${receivedAt.toISOString()}. A person made this intake decision.`,
-    aiGuidance
-      ? 'Automated tools assisted with processing this email.'
-      : 'Automated tools did not assist with processing this email.',
-    'You may file a new notice at /copyright/notices/new, contact /copyright/designated-agent, or seek judicial redress through a court.',
-  ].join('\n\n')
-}
-
-function copyrightRedressRouteText(route: CopyrightStatementFields['redress'][number]): string {
-  switch (route.key) {
-    case 'court':
-      return 'You may seek judicial redress through a court.'
-    case 'internal_complaint':
-      return `You may submit an internal complaint within ${TERRITORIAL_COMPLAINT_WINDOW_MONTHS} months after you are informed of this decision. ${route.path ? `Internal complaint: ${route.path}.` : 'To submit a complaint, reply to this email.'}`
-    case 'out_of_court_dispute_settlement':
-      return 'You may refer this decision to a certified out-of-court dispute settlement body under Article 21 of the Digital Services Act.'
-    default:
-      return `${route.label}: ${route.path}`
-  }
+function copyrightRepeatInfringerText(): string {
+  return `A confirmed copyright restriction counts toward our repeat-infringer policy: ${getSiteUrl('/copyright/repeat-infringer-policy')}.`
 }

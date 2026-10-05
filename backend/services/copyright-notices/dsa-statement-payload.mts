@@ -80,7 +80,7 @@ export async function buildCopyrightDsaStatementPayload(
       fields.restriction.subject === 'image' &&
       !fields.restriction.deleted &&
       fields.restriction.scope === 'global' &&
-      fields.facts.basis === 'art_16_notice',
+      fields.facts.basis === 'notice',
     500,
     'Unsupported copyright statement restriction',
   )

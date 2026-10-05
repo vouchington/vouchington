@@ -325,6 +325,11 @@ The period is checked against the incoming email's `received_at`, not staff admi
 Complaint decisions create `redress_decision_notice` delivery to the complainant; reviewer-filed
 requests create no recipient notice.
 
+`POST /api/v1/copyright-uk-notices/:id/redress-requests` is staff-only (the same reviewer guard as the
+other UK staff routes): a notifier or poster session gets `403`, and the request has no CAPTCHA. Staff
+record a UK complaint that arrived by another channel, with an `Idempotency-Key` and an `explanation`.
+The UK statement of reasons lists court redress only, and the web has no participant UK redress UI.
+
 `GET /api/v1/copyright-notices/:id/participant` serves EU cases before acceptance and after
 `no_action`, with nullable `accepted_at` and a viewer-specific `eu` block. It includes the live
 outcome, decision and informed times, reopening state, the viewer's own complaint and window,

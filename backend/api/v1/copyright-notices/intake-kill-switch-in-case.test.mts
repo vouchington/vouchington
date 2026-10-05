@@ -178,7 +178,7 @@ describe('copyright in-case responses with intake switched off', () => {
     ])
   })
 
-  it('accepts EU and UK redress and staff decisions on existing territorial notices', async () => {
+  it('accepts EU redress, staff-recorded UK redress and staff decisions on existing territorial notices', async () => {
     const [claimant, moderator, administrator] = await Promise.all([
       createTestUser(),
       createTestUser({ extraRoles: ['moderator'] }),
@@ -259,7 +259,7 @@ describe('copyright in-case responses with intake switched off', () => {
         outcome: 'no_action',
       })
       .expect(201)
-    const ukRedress = await claimantRequest
+    const ukRedress = await staff
       .post(`${ukNotice}/redress-requests`)
       .set('Idempotency-Key', crypto.randomUUID())
       .send({ explanation: 'Please review this notice' })

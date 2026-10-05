@@ -1,3 +1,4 @@
+import { getCopyrightNoticeJurisdiction } from './notice-jurisdiction.mts'
 import { getCopyrightStatementInAppSummary } from './statement-in-app-summary.mts'
 import { copyrightInAppDecisionWasAiAssisted } from './ai-assistance-disclosure.mts'
 import {
@@ -45,8 +46,11 @@ export async function deliverCopyrightInAppNotification(intentId: string): Promi
       422,
       'Copyright delivery kind is not sent in-app',
     )
-    const summary = await getCopyrightStatementInAppSummary(intent.id)
-    const copy = copyrightNotificationCopy(intent.delivery_kind)
+    const [summary, jurisdiction] = await Promise.all([
+      getCopyrightStatementInAppSummary(intent.id),
+      getCopyrightNoticeJurisdiction(intent.copyright_notice_id),
+    ])
+    const copy = copyrightNotificationCopy(intent.delivery_kind, jurisdiction)
     const aiAssisted =
       intent.delivery_kind === 'status_update'
         ? await copyrightInAppDecisionWasAiAssisted(intent.id)

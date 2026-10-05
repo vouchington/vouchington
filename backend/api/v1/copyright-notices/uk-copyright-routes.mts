@@ -30,7 +30,7 @@ import {
 import type {
   CopyrightTerritorialNoticeRequest,
   CopyrightTerritorialRedressDecisionRequest,
-  CopyrightTerritorialRedressRequest,
+  CopyrightUkRedressRequest,
   CopyrightTerritorialReviewRequest,
 } from './territorial-request-types.mts'
 
@@ -97,16 +97,17 @@ app.route('/api/v1/copyright-uk-notices/:id/reviews').post(async (ctx: Context) 
   ctx.json({ copyright_uk_review: review })
 })
 
+// Staff record a UK complaint received through another channel. UK redress has no participant route.
 app.route('/api/v1/copyright-uk-notices/:id/redress-requests').post(async (ctx: Context) => {
   setPrivateNoStoreCacheHeaders(ctx)
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
-  const currentUser = await requireAuth(
+  const currentUser = await requireAuthAndRateLimit(
     ctx,
+    currentUserCanReviewCopyrightNotices,
     'POST:/api/v1/copyright-uk-notices/:id/redress-requests',
   )
   assertNotSuspended(currentUser)
-  const body = await parseJsonBody<CopyrightTerritorialRedressRequest>(ctx)
-  await verifyCaptchaOrAttestation(ctx, body, { actionTag: 'copyright-uk-redress.create' })
+  const body = await parseJsonBody<CopyrightUkRedressRequest>(ctx)
   const noticeId = validateUUIDParam(ctx, 'id')
   const idempotencyKey = requireIdempotencyKey(ctx)
   const explanation = parseTerritorialText(body, 'explanation')

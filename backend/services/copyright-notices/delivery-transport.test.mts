@@ -74,7 +74,7 @@ describe('copyright email delivery transport', () => {
     const { intentId } = await createRestrictedNotice(poster)
 
     await expect(prepareCopyrightEmailDelivery(intentId)).resolves.toMatchObject({
-      subject: 'Copyright notice affecting your material',
+      subject: 'Your image was restricted after a copyright notice',
       recipientEmail: expect.stringMatching(/@/),
     })
   })

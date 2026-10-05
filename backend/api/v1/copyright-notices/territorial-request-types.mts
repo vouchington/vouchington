@@ -36,6 +36,11 @@ export type CopyrightTerritorialRedressRequest = {
   cf_turnstile_response?: string
 }
 
+/** Staff record a UK complaint received by another channel, so there is no CAPTCHA token. */
+export type CopyrightUkRedressRequest = {
+  explanation: string
+}
+
 export type CopyrightTerritorialRedressDecisionRequest = {
   staff_disposition: 'maintain' | 'revoke'
   rationale: string

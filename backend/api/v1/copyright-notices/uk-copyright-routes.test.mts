@@ -17,7 +17,7 @@ function noticeBody() {
 describe('UK copyright notice routes', () => {
   useCopyrightIntakeEnvironment()
 
-  it('records acknowledgment, review, and redress handlers after policy approval', async () => {
+  it('records acknowledgment, review, and staff-recorded redress handlers after policy approval', async () => {
     const [claimant, staff, administrator] = await Promise.all([
       createTestUser(),
       createTestUser({ extraRoles: ['moderator'] }),
@@ -81,13 +81,22 @@ describe('UK copyright notice routes', () => {
       .expect(201)
     expect(review.body.copyright_uk_review.automation_disclosure).toBe('human')
     const redressKey = crypto.randomUUID()
-    const redress = await claimantRequest
+    const member = await createTestUser()
+    const memberRequest = createRequest()
+    await memberRequest.authenticateAs(member)
+    for (const request of [claimantRequest, memberRequest])
+      await request
+        .post(`/api/v1/copyright-uk-notices/${noticeId}/redress-requests`)
+        .set('Idempotency-Key', redressKey)
+        .send({ explanation: 'Please review this notice' })
+        .expect(403)
+    const redress = await staffRequest
       .post(`/api/v1/copyright-uk-notices/${noticeId}/redress-requests`)
       .set('Idempotency-Key', redressKey)
       .send({ explanation: 'Please review this notice' })
       .expect(201)
     expect(redress.body.copyright_uk_redress_request.is_duplicate).toBe(false)
-    const redressReplay = await claimantRequest
+    const redressReplay = await staffRequest
       .post(`/api/v1/copyright-uk-notices/${noticeId}/redress-requests`)
       .set('Idempotency-Key', redressKey)
       .send({ explanation: 'Please review this notice' })
@@ -110,7 +119,7 @@ describe('UK copyright notice routes', () => {
         outcome: 'no_action',
       })
       .expect(201)
-    await claimantRequest
+    await staffRequest
       .post(`/api/v1/copyright-uk-notices/${otherNoticeId}/redress-requests`)
       .set('Idempotency-Key', redressKey)
       .send({ explanation: 'Reuse the first key' })

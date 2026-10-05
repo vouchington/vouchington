@@ -470,6 +470,20 @@ the community image change, not participant rights. Administrator-lift restorati
 `administrator_lift` cause and the delivery-confirmed outcome; it is not sent while restoration is
 blocked by a court or CCB filing.
 
+Every route in a statement or decision notice is an absolute URL from the site origin that ends with a
+full stop, because the email body is the stored statement verbatim. A statement gives the date the
+notice was received in UTC (`5 October 2026`) and each affected image as `Affected image: <URL>`, or the
+case page when no image is public. For a restriction it says the image is hidden from all viewers
+worldwide, not deleted, and stays hidden until an outcome restores it; a US poster also gets the 10 to
+14 business day counter-notice restoration timing. A restrict or confirm decision states the legal
+ground as a finding: US 17 U.S.C. 106 and 501 under the 512(c) notice-and-takedown process with a
+templated reason, EU the copyright law of the Member State concerned (Directive 2001/29/EC as
+implemented), and UK the Copyright, Designs and Patents Act 1988. EU and UK print the staff reason as
+"Why we decided this"; US prints no staff text. A confirmed restriction tells the poster it counts
+toward the repeat-infringer policy. Redress routes are one line each: US appeal and counter-notice, EU
+internal complaint and out-of-court settlement with the Commission's list of certified bodies, and UK
+court only. The first paragraph never points to the case page for reasons the email already carries.
+
 `/copyright/notices/new` is public. A signed-out visitor files with the same Turnstile check,
 statutory fields, and § 512(f) warning as a signed-in member, and the notice is a guest filing as
 described below. The API returns only the case identifier, and a guest has no case read, so after
@@ -851,8 +865,9 @@ decision, the viewer's own stored statements and delivery times, complaint state
 settlements. It never exposes another party's complaint or staff-only restriction rationale. The
 statement builder supplies the Art. 20 internal-complaint and Art. 21 dispute-settlement routes for
 EU posters and notifiers, together with judicial redress. Signed-in parties use the case-page
-complaint link; a guest notifier replies to the decision email. UK keeps its separate redress
-contract and has no EU UI or Art. 21 route.
+complaint link; a guest notifier replies to the decision email, and the EU receipt says which. UK has
+no EU UI or Art. 21 route and no participant redress route: staff record a UK complaint received by
+another channel, and the UK statement lists court redress only.
 
 An EU notifier, targeted post owner, or reviewer may complain about the live decision. Each party
 has one request per decision, so the notifier and poster do not share a complaint, and a successor
