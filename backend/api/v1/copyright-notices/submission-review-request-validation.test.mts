@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CloudFrontClient } from '@aws-sdk/client-cloudfront'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
-import { counterNoticeBody } from '@services/copyright-notices/route-test-fixtures'
+import { counterNoticeBody } from '@voucha/test-helpers/copyright-route-fixtures'
 import { createTestUser } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { insertEncryptedCopyrightHoldSubmission } from '@voucha/test-helpers/data-stores/psql/copyright-hold-submission'

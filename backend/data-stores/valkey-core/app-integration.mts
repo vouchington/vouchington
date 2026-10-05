@@ -35,20 +35,6 @@ function getValkeyAppIntegrationState(): ValkeyAppIntegrationState {
   return globalState[valkeyAppIntegrationStateKey]
 }
 
-export function setValkeyAnalyticsLoaderForTest(loader: ValkeyAnalyticsLoader): void {
-  const state = getValkeyAppIntegrationState()
-  state.loadAnalytics = loader
-  state.analyticsPromise = null
-}
-
-export function resetValkeyAnalyticsLoaderForTest(): void {
-  setValkeyAnalyticsLoaderForTest(loadDefaultAnalytics)
-}
-
-export function getValkeyAnalyticsPromiseForTest(): Promise<AnalyticsModule | null> | null {
-  return getValkeyAppIntegrationState().analyticsPromise
-}
-
 export function initializeValkeyAppIntegration(): void {
   const state = getValkeyAppIntegrationState()
 

@@ -167,7 +167,7 @@ app.route('/api/v1/my/conversations/:conversationId/title').post(async (ctx: Con
   const titleInput = await getConversationTitleGenerationInput(conversationId)
   let title: string
   if (titleInput === null) {
-    // No messages yet -- generateChatTitle's local fallback never calls OpenAI for this case, so
+    // No messages yet -- this local fallback never calls OpenAI for this case, so
     // enforcing the spend cap here would 429 a request that was always going to be free.
     title = 'New Conversation'
   } else {

@@ -1,6 +1,6 @@
 import { CloudFrontClient } from '@aws-sdk/client-cloudfront'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
-import { verifyMediaDeliveryReplayRoute } from '@services/copyright-notices/route-replay-fixtures'
+import { verifyMediaDeliveryReplayRoute } from '@voucha/test-helpers/copyright-route-replay-fixtures'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 describe('isolated global media replay route', () => {

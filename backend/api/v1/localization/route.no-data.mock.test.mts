@@ -3,9 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { PUBLIC_LOCALIZATION_CONSUMERS } from '@vouchington/localization'
 
 vi.mock<typeof import('node:fs')>(import('node:fs'), async importOriginal => importOriginal())
-import { localizationRoute } from './localization-route-helpers.mts'
-import { setLocalizationDatabaseForTests } from '@services/localization/database'
-import { installSampleLocalizationDatabase } from '@voucha/test-helpers/services/localization/fixtures'
+import { createLocalizationRoute } from './localization-route-helpers.mts'
+import { createSampleLocalizationContext } from '@voucha/test-helpers/localization-fixtures'
 
 function createContext(query: Record<string, unknown>, ifNoneMatch?: string) {
   const ctx = {
@@ -24,12 +23,15 @@ function createContext(query: Record<string, unknown>, ifNoneMatch?: string) {
 }
 
 describe('localization route handler', () => {
+  let context: ReturnType<typeof createSampleLocalizationContext>
+  let localizationRoute: ReturnType<typeof createLocalizationRoute>
   beforeEach(() => {
-    installSampleLocalizationDatabase()
+    context = createSampleLocalizationContext()
+    localizationRoute = createLocalizationRoute(context.resolver.localizationGetResult)
   })
 
   afterEach(() => {
-    setLocalizationDatabaseForTests(undefined)
+    context.close()
   })
 
   it('publishes a required public-consumer enum in both API contracts', () => {

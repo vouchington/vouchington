@@ -1,3 +1,4 @@
+import { claimTestIneligiblePurchaseReversalOperations } from '@voucha/test-helpers/membership-reversal-case-fixtures'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import {
@@ -10,7 +11,6 @@ import {
   failIneligiblePurchaseReversal,
   recordIneligiblePurchaseReversalProviderRefund,
 } from './ineligible-stripe-purchase-reversal-execution.mts'
-import { claimIneligiblePurchaseReversals } from './ineligible-stripe-purchase-reversal/claim-ledger.mts'
 import { reconcileRecordedIneligibleStripePurchaseReversal } from './reconcile-recorded-ineligible-stripe-purchase-reversal.mts'
 import type { IneligibleStripePurchaseOperations } from './reverse-ineligible-stripe-purchase-types.mts'
 
@@ -47,7 +47,7 @@ describe('recorded ineligible Stripe purchase failed-refund reconciliation', () 
       paymentIntentId: null,
       qualifyingAmountMinorUnits: 1_000,
     }
-    const initial = (await claimIneligiblePurchaseReversals(options, [target], {
+    const initial = (await claimTestIneligiblePurchaseReversalOperations(options, [target], {
       currency: target.currency,
       qualifyingAmountMinorUnits: target.qualifyingAmountMinorUnits,
     }))!

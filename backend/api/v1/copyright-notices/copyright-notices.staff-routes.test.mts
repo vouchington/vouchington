@@ -9,13 +9,11 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
-import {
-  acceptCopyrightNoticeAndImposeRestriction,
-  appendCopyrightNoticeSubmission,
-  appendCopyrightSubmissionAssessment,
-  createCopyrightDeliveryIntent,
-  createOutboundCopyrightCorrespondence,
-} from '@services/copyright-notices'
+import { appendCopyrightNoticeSubmission } from '@services/copyright-notices'
+import { acceptCopyrightNoticeAndImposeRestriction } from '@services/copyright-notices/restrictions'
+import { appendCopyrightSubmissionAssessment } from '@services/copyright-notices/compliance'
+import { createCopyrightDeliveryIntent } from '@services/copyright-notices/delivery-intents'
+import { createOutboundCopyrightCorrespondence } from '@services/copyright-notices/correspondence'
 import { failTestCopyrightDeliveryIntent } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'

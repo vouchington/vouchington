@@ -1,4 +1,4 @@
-import { it, expect, afterEach, beforeEach, describe } from 'vitest'
+import { it, expect, afterEach, beforeEach, describe, vi, type MockInstance } from 'vitest'
 import {
   checkEmailBloomFilter,
   addDomainsToEmailBloomFilter,
@@ -6,10 +6,8 @@ import {
   deleteEmailBloomFilter,
   warmUpEmailBlocklistBloomFilter,
 } from './email-bloom-filter.mts'
-import {
-  enqueueRebuildBloomFilterBestEffortWithEnqueue,
-  waitForBestEffortRebuildEnqueuesForTest,
-} from './rebuild-enqueue.mts'
+import { enqueueRebuildBloomFilterBestEffortWithEnqueue } from './rebuild-enqueue.mts'
+import * as rebuildEnqueue from './rebuild-enqueue.mts'
 import { checkBloomFilterRead, normalizeValkeyKeyTypeForRepair } from './read-repair.mts'
 import {
   createTestBlacklistSource,
@@ -21,13 +19,25 @@ import { bloomValkeyClient } from '@data-stores/valkey'
 describe('email-bloom-filter.generated', () => {
   const TEST_SOURCE_NAME = `test-email-bloom-filter-${Array.from({ length: 8 }, () => String.fromCodePoint(97 + Math.floor(Math.random() * 26))).join('')}`
 
+  let enqueueSpy: MockInstance<typeof rebuildEnqueue.enqueueRebuildBloomFilterBestEffort>
+
+  async function settleOwnedRebuildEnqueues() {
+    await Promise.allSettled(
+      enqueueSpy.mock.results.flatMap(result => (result.type === 'return' ? [result.value] : [])),
+    )
+  }
+
   beforeEach(async () => {
-    await waitForBestEffortRebuildEnqueuesForTest()
+    enqueueSpy = vi.spyOn(rebuildEnqueue, 'enqueueRebuildBloomFilterBestEffort')
     await deleteEmailBloomFilter()
   })
 
   afterEach(async () => {
-    await waitForBestEffortRebuildEnqueuesForTest()
+    try {
+      await settleOwnedRebuildEnqueues()
+    } finally {
+      enqueueSpy.mockRestore()
+    }
     await deleteEmailBloomFilter()
   })
 
@@ -46,14 +56,16 @@ describe('email-bloom-filter.generated', () => {
     const result = await checkEmailBloomFilter('wrong-ready-type.com')
 
     expect(result).toBeNull()
-    await waitForBestEffortRebuildEnqueuesForTest()
+    expect(enqueueSpy).toHaveBeenCalled()
+    await settleOwnedRebuildEnqueues()
   })
 
   it('checkEmailBloomFilter keeps ready marker valid when missing-filter repair runs', async () => {
     await bloomValkeyClient.set('bloom-filter:email-blocklist:ready', '1')
 
     const result = await checkEmailBloomFilter('missing-filter.com')
-    await waitForBestEffortRebuildEnqueuesForTest()
+    expect(enqueueSpy).toHaveBeenCalled()
+    await settleOwnedRebuildEnqueues()
     expect(result).toBeNull()
     const readyMarker = await bloomValkeyClient.get('bloom-filter:email-blocklist:ready')
     expect(readyMarker == null || readyMarker.toString().startsWith('ready:')).toBe(true)
@@ -64,7 +76,8 @@ describe('email-bloom-filter.generated', () => {
     await bloomValkeyClient.set('bloom-filter:email-blocklist', 'corrupted')
 
     const result = await checkEmailBloomFilter('corrupted-filter.com')
-    await waitForBestEffortRebuildEnqueuesForTest()
+    expect(enqueueSpy).toHaveBeenCalled()
+    await settleOwnedRebuildEnqueues()
     expect(result).toBeNull()
     const readyMarker = await bloomValkeyClient.get('bloom-filter:email-blocklist:ready')
     expect(readyMarker == null || readyMarker.toString().startsWith('ready:')).toBe(true)
@@ -73,20 +86,19 @@ describe('email-bloom-filter.generated', () => {
   it('enqueueRebuildBloomFilterBestEffortWithEnqueue runs callbacks after promise enqueues', async () => {
     const callbacks: string[] = []
 
-    enqueueRebuildBloomFilterBestEffortWithEnqueue(
+    await enqueueRebuildBloomFilterBestEffortWithEnqueue(
       () => Promise.resolve(),
       'email-blocklist',
       async () => {
         callbacks.push('enqueued')
       },
     )
-    await waitForBestEffortRebuildEnqueuesForTest()
 
     expect(callbacks).toEqual(['enqueued'])
   })
 
   it('enqueueRebuildBloomFilterBestEffortWithEnqueue swallows synchronous callback errors', async () => {
-    expect(() =>
+    await expect(
       enqueueRebuildBloomFilterBestEffortWithEnqueue(
         () => undefined,
         'email-blocklist',
@@ -94,8 +106,7 @@ describe('email-bloom-filter.generated', () => {
           throw new Error('callback failed')
         },
       ),
-    ).not.toThrow()
-    await waitForBestEffortRebuildEnqueuesForTest()
+    ).resolves.toBeUndefined()
   })
 
   it('checkBloomFilterRead repairs throwing reads and returns null', async () => {
@@ -254,7 +265,8 @@ describe('email-bloom-filter.generated', () => {
     await bloomValkeyClient.set('bloom-filter:email-blocklist', 'corrupted')
 
     await expect(addDomainsToEmailBloomFilter(['blocked.com'])).resolves.toBeUndefined()
-    await waitForBestEffortRebuildEnqueuesForTest()
+    expect(enqueueSpy).toHaveBeenCalled()
+    await settleOwnedRebuildEnqueues()
     expect(
       await bloomValkeyClient.customCommand(['TYPE', 'bloom-filter:email-blocklist:ready']),
     ).not.toBe('list')

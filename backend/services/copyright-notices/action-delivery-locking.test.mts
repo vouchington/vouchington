@@ -16,16 +16,15 @@ import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/service
 import {
   createCounterNoticeRestoreIntent,
   createCopyrightRestorationHoldFixture,
-} from './evidence-and-holds-restoration-hold-fixtures.mts'
+} from '@voucha/test-helpers/copyright-restoration-hold-fixtures'
 import {
-  acceptCopyrightNoticeAndImposeRestriction,
-  createCopyrightDeliveryIntent,
   markCopyrightDeliveryIntentSent,
   markCopyrightDeliveryIntentFailed,
   prepareCopyrightEmailDelivery,
   enforceCopyrightAssessment,
 } from './index.mts'
-import { claimCopyrightDeliveryIntent } from './delivery-intents.mts'
+import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
+import { claimCopyrightDeliveryIntent, createCopyrightDeliveryIntent } from './delivery-intents.mts'
 import { claimCopyrightActionIntent, failCopyrightActionIntent } from './action-delivery-state.mts'
 import { compensateCopyrightActionFailure } from './action-delivery-compensation.mts'
 import { executeCopyrightActionIntent } from './action-delivery-execution.mts'

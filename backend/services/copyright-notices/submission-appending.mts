@@ -7,6 +7,7 @@ import type {
   CopyrightSubmissionSourceKind,
 } from './types.mts'
 
+/** @public Retained provisionally under issue #1360; intended production use is unconfirmed and this export may be removed after intended-use review. */
 export async function appendCopyrightNoticeSubmission(input: {
   noticeId: string
   kind: CopyrightSubmissionKind

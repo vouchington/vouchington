@@ -7,7 +7,7 @@ import {
   appendCopyrightNoticeSubmission,
   processCopyrightActionIntent,
 } from './index.mts'
-import { openHeldCounterNoticeRestore } from './restoration-hold-scene.mts'
+import { openHeldCounterNoticeRestore } from '@voucha/test-helpers/copyright-restoration-hold-scene'
 
 describe('late legal-hold and restoration concurrency', () => {
   it('serializes the placement fence before case records, leaving a concurrent restored tuple denied', async () => {

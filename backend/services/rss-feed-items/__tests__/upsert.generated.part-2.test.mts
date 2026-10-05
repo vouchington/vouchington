@@ -7,7 +7,8 @@ import * as psqlEnqueues from '@queues/psql/enqueues'
 import { createUnlinkedTopicAlias } from '@services/topics/aliases'
 import { setTestRssFeedDiscoverable } from '@voucha/test-helpers/entities/rss-feeds-discovery'
 
-import { getRssFeedItemById, getRssFeedItemKeyByGuid } from '../get.mts'
+import { getRssFeedItemById } from '../get.mts'
+import { getRssFeedItemKeyByGuid } from '@voucha/test-helpers/rss-feed-item-guid-lookup'
 
 import {
   createTopHashtagRssSourceForTest,

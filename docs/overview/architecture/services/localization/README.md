@@ -14,6 +14,12 @@ SQLite directly.
 - `resolveEmailLocalizationBatch(locales, selectors)` — local email-only resolution
 - `getLocalizationDatabase()` — opens `LOCALIZATION_SQLITE_PATH` (default `/app/localization/catalog.sqlite`)
 
+The production database and resolver use the same owned factories as SQLite-backed service and
+route tests. Production opens its environment-selected catalog lazily and keeps its existing cached
+handle. Tests compile isolated real catalogs through the flat
+[localization fixture](../../../../../backend/test-helpers/localization-fixtures.mts), close their
+owned SQLite handles, and then remove their temporary directories.
+
 Catalog JSON in `localization/catalog/` is the committed source: row-based `copies.json`,
 `aliases.json`, per-locale `translations/*.json`, and generated `routes.json`. Image builds
 compile it with `backend/services/localization/compile-cli.mts`. Playwright CI compiles a temp sqlite file

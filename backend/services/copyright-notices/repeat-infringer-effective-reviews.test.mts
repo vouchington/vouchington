@@ -13,13 +13,13 @@ import {
 } from '@voucha/test-helpers/copyright-repeat-infringer'
 import type { PrivateUser } from '@services/users/types'
 import {
-  acceptCopyrightNoticeAndImposeRestriction,
-  appendCopyrightSubmissionAssessment,
   createCopyrightAppeal,
   reviewCopyrightAppeal,
   completeCopyrightMandatoryHumanReview,
   recordCopyrightRepeatInfringerReviewOutcome,
 } from './index.mts'
+import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
+import { appendCopyrightSubmissionAssessment } from './compliance.mts'
 import {
   getCopyrightRepeatInfringerAccount,
   recordCopyrightRepeatInfringerDisposition,

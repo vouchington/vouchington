@@ -1,4 +1,3 @@
-export { getImagePlacementDeliveryKey } from './delivery-registry-types.mts'
 export { stageImagePlacementDeliveryRecord } from './delivery-registry-staging.mts'
 export {
   prepublishImagePlacementDenial,

@@ -18,7 +18,7 @@ import {
   listTestPostPublicationImpactTopicIds,
   withTestStoryLifecycleLock,
 } from '@voucha/test-helpers'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { createHash, randomUUID } from 'node:crypto'
 import { upsertSystemUser } from '@services/users/system-users'
 import { createStoryPost } from './story-posts.mts'

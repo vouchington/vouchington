@@ -23,7 +23,7 @@ import {
   lockTestPublicationSnapshots,
   readTestPublicationSnapshotIds,
 } from '@voucha/test-helpers/entities/post-publication-cleanup'
-import { createTestPublicationSnapshotWork } from './test-fixtures.mts'
+import { createTestPublicationSnapshotWork } from '@voucha/test-helpers/post-publication-fixtures'
 import { materializePostPublicationIdentitySnapshot } from './identity-snapshots.mts'
 import {
   acknowledgePostPublicationDirtyWork,

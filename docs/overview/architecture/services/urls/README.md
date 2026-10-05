@@ -17,6 +17,10 @@ However, URLs with blocked hostnames should be filtered upstream (e.g. block a u
 - Store hostname separately for efficient filtering
 - Track URL metadata (domain, robots.txt compliance)
 
+The production `addUrl` and `addUrls` functions come from one `createUrlUpsert` owner, bound to the
+default Web Risk checker. Owned instances can bind another real checker to the same prewrite
+validation and persistence path; URL rows are never written before that checker accepts the URL.
+
 Multi-row hostname and URL upserts use their unique keys (`hostname`, then `url`) as canonical
 write order. `addUrls` still returns results in the caller's first-normalized occurrence order.
 

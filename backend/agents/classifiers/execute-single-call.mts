@@ -16,6 +16,9 @@ import type {
  * and lets an oversized-context provider rejection surface as an ordinary
  * `StructuredDecisionError` for the caller's own retry/queue semantics to
  * handle — it makes no token estimate and never approximates one.
+ * @public Retained provisionally under issue #1360 and documented in
+ * `docs/overview/architecture/structured-decisions.md`; external production use is unconfirmed
+ * and this export may be removed after intended-use review.
  */
 export async function executeSingleCallClassifierDecision(
   input: ExecuteSingleCallClassifierDecisionInput,

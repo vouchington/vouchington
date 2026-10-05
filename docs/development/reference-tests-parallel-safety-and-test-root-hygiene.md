@@ -35,11 +35,19 @@ blocking wait.
 
 Randomized fixture IDs prevent uniqueness collisions but cannot isolate an exact query over a shared
 aggregate. AI-usage tests that assert `getDailyAiCostTotalMicrounits()` use the test-helper
-`acquireTestAiUsageDateReservation()` API: it locks one of several independent slots, clears its
-three-day UUIDv7 window before use and on release, and returns the center day. Register release with
-`onTestFinished` immediately after acquisition. Do not replace this with a production filter, a
-larger random namespace, or a single global lock; those either alter product semantics, remain
-probabilistic, or unnecessarily serialize parallel tests.
+`acquireTestAiUsageDateReservation()` API: it advisory-locks an owned three-day UUIDv7 window,
+clears that window before use and on release, and returns the center day. Register release with
+`onTestFinished` immediately after acquisition. Ordinary windows come from complete three-day
+buckets between 8000-01-01 and 9000-01-01, excluding slots 0–16; slot 16 retains its deterministic
+control/reuse contract. A randomized initial cursor visits each eligible ordinary bucket at most
+once per process and fails explicitly on range exhaustion. Acquisition tries at most 16 independent
+locks; another process holding a bucket causes that attempt to advance, never an unowned read or
+cleanup. Fresh ordinary days prevent reuse of a still-valid in-process daily-total cache entry.
+Control-window tests use the actual primary-Postgres refresh after writes and cleanup; cache tests
+exercise the 60-second expiry with a Date-only clock and await their coalesced reads before release.
+Do not replace these locks and owned cleanup with a production filter, unreserved random dates, or
+a single global lock; those alter product semantics, remain probabilistic, or unnecessarily
+serialize parallel tests.
 
 ### Stateful test helpers must be parallel-safe
 

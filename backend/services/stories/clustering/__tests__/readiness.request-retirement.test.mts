@@ -1,4 +1,4 @@
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import {
   setFeedItemContentHashForTest,
   setFeedItemDeletedForTest,

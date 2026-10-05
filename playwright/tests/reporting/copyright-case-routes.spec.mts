@@ -3,7 +3,7 @@ import { scrollToLoadMore } from '../../helpers/scroll-to-load-more.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { createCopyrightCaseFixture } from '../../helpers/create-copyright-case-fixture.mts'
-import { createParsedCopyrightEmailIntake } from '../../../backend/services/copyright-notices/email-intake-test-fixtures.mts'
+import { createParsedCopyrightEmailIntake } from '../../../backend/test-helpers/copyright-email-intake-fixtures.mts'
 
 test('accepted case links retain poster scope in appeal and statutory counter-notice forms', async ({
   page,

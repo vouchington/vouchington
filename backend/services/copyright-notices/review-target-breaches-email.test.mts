@@ -7,7 +7,7 @@ import { rejectCopyrightEmailIntake } from './email-rejection.mts'
 import {
   createParsedCopyrightEmailIntake,
   createUnparsedCopyrightEmailIntake,
-} from './email-intake-test-fixtures.mts'
+} from '@voucha/test-helpers/copyright-email-intake-fixtures'
 import { linkCopyrightEmailIntakeToNotice } from './email-threading.mts'
 
 const HOUR_MS = 60 * 60 * 1000

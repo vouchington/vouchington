@@ -10,7 +10,7 @@ import {
   suspendTestUser,
   executeTestAdmittedPost,
 } from '@voucha/test-helpers'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { setRssFeedDiscoverabilityAsSystem } from '@services/rss-feeds/discoverability'
 import { runContributionAdmission } from '@services/contribution-gating/admission'
 import { CONTRIBUTION_ADMISSION_CLAIM_SECONDS } from '@services/contribution-gating/config'

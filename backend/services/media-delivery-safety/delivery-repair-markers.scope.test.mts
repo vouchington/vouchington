@@ -5,7 +5,8 @@ import {
   getTestDeliveryRepairMarker,
   reconcileTestDeliveryRepairMarker,
 } from '@voucha/test-helpers/entities/media-delivery-repair'
-import { getImagePlacementDeliveryKey, reconcileMediaDeliveryRepairMarkers } from './index.mts'
+import { reconcileMediaDeliveryRepairMarkers } from './index.mts'
+import { getImagePlacementDeliveryKey } from './delivery-registry-types.mts'
 import { recordImageDeliveryRepairMarker } from './delivery-repair-markers.mts'
 
 describe('scoped delivery repair', () => {

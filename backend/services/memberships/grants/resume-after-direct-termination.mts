@@ -1,5 +1,4 @@
-import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
-import { enqueueDeliverMembershipEntitlementEffectsBestEffort } from '@queues/memberships/enqueues'
+import type { QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { recordMembershipChange } from '../changes.mts'
 import { restoreFallbackAfterCurrentAccessEndsInTransaction } from '../fallback/restore-after-current-access-ends.mts'
@@ -8,21 +7,6 @@ import { getCurrentMembershipProjection } from './current-projection.mts'
 import { expireElapsedMemberships } from './expire-elapsed.mts'
 import { resumePausedGrantProjection } from './resume-paused-grant.mts'
 import { selectDirectTerminationReplacement } from './select-direct-termination-replacement.mts'
-export async function resumeGrantAfterDirectTermination(
-  userId: string,
-  membershipId: string,
-): Promise<boolean> {
-  await using transaction = await beginTransaction()
-  const outcome = await resumeGrantAfterDirectAccessSuspensionInTransaction(
-    userId,
-    membershipId,
-    transaction,
-  )
-  await transaction.commit()
-  if (outcome.changed) void enqueueDeliverMembershipEntitlementEffectsBestEffort()
-  return outcome.changed
-}
-
 export async function resumeGrantAfterDirectAccessSuspensionInTransaction(
   userId: string,
   membershipId: string,

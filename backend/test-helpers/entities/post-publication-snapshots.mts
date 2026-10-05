@@ -11,7 +11,12 @@ import { insertTestStory, setTestItemStoryId } from './stories.mts'
 import { insertTestRssFeedItem } from './rss-feed-items.mts'
 import { insertSnapshotKeys } from '../../services/post-publication/snapshot-key-writes.mts'
 import type { PublicationSnapshotKey } from '../../services/post-publication/identity-source.mts'
-import type { PublicationProjectionIdentity } from '../../services/post-publication/projection-identity.mts'
+export type PublicationProjectionIdentity = {
+  topicIds: string[]
+  identityKeys: Array<{ kind: string; value: string }>
+  sitemapTargets: Array<{ postType: string; day: string }>
+}
+
 export async function insertTestPublicationTopicSlugFanout(
   postId: string,
   authorId: string,

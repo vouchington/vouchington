@@ -1,28 +1,35 @@
+import { existsSync } from 'node:fs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock<typeof import('node:fs')>(import('node:fs'), async importOriginal => importOriginal())
 import { DEFAULT_LOCALIZATION_BOUNDS, type CatalogMessage } from '@vouchington/localization'
-import { headerValue, isLocalizationClientError, localizationGetResult } from './index.mts'
+import { headerValue, isLocalizationClientError } from './index.mts'
 import {
-  getLocalizationDatabase,
+  createLocalizationDatabaseOwner,
   localizationSqlitePath,
-  setLocalizationDatabaseForTests,
   DEFAULT_LOCALIZATION_SQLITE_PATH,
 } from './database.mts'
-import { localizationBatchPayload, resolveEmailLocalizationBatch } from './resolve.mts'
 
 import { queryValues } from './query.mts'
 
-import { installSampleLocalizationDatabase } from '@voucha/test-helpers/services/localization/fixtures'
+import { createSampleLocalizationContext } from '@voucha/test-helpers/localization-fixtures'
 
 describe('localization service', () => {
+  const contexts: ReturnType<typeof createSampleLocalizationContext>[] = []
+  function useSampleCatalog(messages?: readonly CatalogMessage[]) {
+    const context = createSampleLocalizationContext(messages)
+    contexts.push(context)
+    return context
+  }
   afterEach(() => {
-    setLocalizationDatabaseForTests(undefined)
-    delete process.env.LOCALIZATION_SQLITE_PATH
+    for (const context of contexts.splice(0)) context.close()
+    vi.unstubAllEnvs()
   })
 
   it('resolves public batches, headers, and client errors', () => {
-    const path = installSampleLocalizationDatabase()
+    const context = useSampleCatalog()
+    const { localizationBatchPayload, localizationGetResult, resolveEmailLocalizationBatch } =
+      context.resolver
     const payload = localizationBatchPayload({
       consumer: 'web',
       locales: ['en', 'es'],
@@ -71,26 +78,69 @@ describe('localization service', () => {
     expect(resolveEmailLocalizationBatch(['en-US'], ['email.welcome.preview']).messages).toEqual({
       'email.welcome.preview': 'Welcome to Voucha',
     })
-    installSampleLocalizationDatabase(boundMessages(1))
-    setLocalizationDatabaseForTests(undefined)
-    process.env.LOCALIZATION_SQLITE_PATH = path
-    expect(getLocalizationDatabase().revision).toBe(payload.revision)
+    vi.stubEnv('LOCALIZATION_SQLITE_PATH', context.path)
+    const owner = createLocalizationDatabaseOwner()
+    try {
+      expect(owner.get().revision).toBe(payload.revision)
+    } finally {
+      owner.close()
+    }
   })
 
   it('resolves a public batch at the message bound and rejects one more message', () => {
     const { maxMessages } = DEFAULT_LOCALIZATION_BOUNDS
-    installSampleLocalizationDatabase(boundMessages(maxMessages))
+    const atBound = useSampleCatalog(boundMessages(maxMessages))
     const body = JSON.parse(
-      localizationBatchPayload({ consumer: 'web', locales: ['en'], selectors: ['bound.*'] }).body,
+      atBound.resolver.localizationBatchPayload({
+        consumer: 'web',
+        locales: ['en'],
+        selectors: ['bound.*'],
+      }).body,
     ) as { messages: Record<string, string> }
     expect(Object.keys(body.messages)).toHaveLength(maxMessages)
     expect(body.messages['bound.0000']).toBe('Message 0')
 
-    installSampleLocalizationDatabase(boundMessages(maxMessages + 1))
+    const overBound = useSampleCatalog(boundMessages(maxMessages + 1))
     const overLimitError = thrownBy(() =>
-      localizationBatchPayload({ consumer: 'web', locales: ['en'], selectors: ['bound.*'] }),
+      overBound.resolver.localizationBatchPayload({
+        consumer: 'web',
+        locales: ['en'],
+        selectors: ['bound.*'],
+      }),
     )
     expect(isLocalizationClientError(overLimitError)).toBe(true)
+  })
+
+  it('opens the current environment path lazily and caches one owned SQLite handle', () => {
+    const first = useSampleCatalog()
+    const second = useSampleCatalog(boundMessages(1))
+    vi.stubEnv('LOCALIZATION_SQLITE_PATH', first.path)
+    const owner = createLocalizationDatabaseOwner()
+    vi.stubEnv('LOCALIZATION_SQLITE_PATH', second.path)
+    const database = owner.get()
+    try {
+      expect(database.revision).toBe(second.database.revision)
+      expect(database.revision).not.toBe(first.database.revision)
+      vi.stubEnv('LOCALIZATION_SQLITE_PATH', first.path)
+      expect(owner.get()).toBe(database)
+      expect(database.sqlite.isOpen).toBe(true)
+    } finally {
+      owner.close()
+    }
+    expect(database.sqlite.isOpen).toBe(false)
+    expect(() => owner.close()).not.toThrow()
+  })
+
+  it('disposes real SQLite and its temporary artifact idempotently', () => {
+    const context = useSampleCatalog()
+    expect(context.database.sqlite.isOpen).toBe(true)
+    expect(existsSync(context.path)).toBe(true)
+
+    context.close()
+
+    expect(context.database.sqlite.isOpen).toBe(false)
+    expect(existsSync(context.path)).toBe(false)
+    expect(() => context.close()).not.toThrow()
   })
 
   it('parses query lists and header values', () => {
@@ -104,6 +154,7 @@ describe('localization service', () => {
     expect(headerValue(undefined)).toBeUndefined()
     expect(headerValue('etag')).toBe('etag')
     expect(headerValue(['a', 'b'])).toBe('a,b')
+    vi.stubEnv('LOCALIZATION_SQLITE_PATH', undefined)
     expect(localizationSqlitePath()).toBe(DEFAULT_LOCALIZATION_SQLITE_PATH)
   })
 })

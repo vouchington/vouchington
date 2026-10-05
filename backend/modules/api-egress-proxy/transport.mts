@@ -28,74 +28,120 @@ export type ProviderFetchProfile = 'routine' | 'long-running'
 
 type ProviderFetch = (input: string | URL | Request, init?: RequestInit) => Promise<Response>
 
-let proxyDispatchers: Partial<Record<ProviderFetchProfile, ProxyAgent>> = {}
-let closePromise: Promise<void> | undefined
-let providerRoutingResolver: ((provider: ApiEgressProxyProvider) => boolean) | undefined
-
-export function installApiEgressProxyRoutingResolver(
-  resolver: (provider: ApiEgressProxyProvider) => boolean,
-): void {
-  providerRoutingResolver = resolver
+type DirectTransport = {
+  getExternalFetch: typeof getExternalFetch
+  getLongRunningExternalFetch: typeof getLongRunningExternalFetch
+  getExternalRequestDispatcher: typeof getExternalRequestDispatcher
+  getLongRunningExternalRequestDispatcher: typeof getLongRunningExternalRequestDispatcher
 }
 
-export function isApiEgressProxyRouteEnabled(provider: ApiEgressProxyProvider): boolean {
-  return providerRoutingResolver?.(provider) === true
-}
+export function createApiEgressProxyTransport(
+  directTransport: DirectTransport = {
+    getExternalFetch,
+    getLongRunningExternalFetch,
+    getExternalRequestDispatcher,
+    getLongRunningExternalRequestDispatcher,
+  },
+) {
+  const proxyDispatchers: Partial<Record<ProviderFetchProfile, ProxyAgent>> = {}
+  let closePromise: Promise<void> | undefined
+  let providerRoutingResolver: ((provider: ApiEgressProxyProvider) => boolean) | undefined
 
-/**
- * Returns a stable fetch seam whose dispatcher is selected at request time, so a DynamicConfig
- * change applies to an already-created provider SDK client without a process restart.
- */
-export function getProviderFetch(
-  provider: ApiEgressProxyProvider,
-  profile: ProviderFetchProfile = 'routine',
-): ProviderFetch {
-  return async (input, init) => {
-    const dispatcher = isApiEgressProxyRouteEnabled(provider)
-      ? getProxyDispatcher(profile)
-      : undefined
-    if (!dispatcher) {
-      return profile === 'long-running'
-        ? getLongRunningExternalFetch()(input, init)
-        : getExternalFetch()(input, init)
+  function installApiEgressProxyRoutingResolver(
+    resolver: (provider: ApiEgressProxyProvider) => boolean,
+  ): void {
+    providerRoutingResolver = resolver
+  }
+
+  function isApiEgressProxyRouteEnabled(provider: ApiEgressProxyProvider): boolean {
+    return providerRoutingResolver?.(provider) === true
+  }
+
+  /**
+   * Returns a stable fetch seam whose dispatcher is selected at request time, so a DynamicConfig
+   * change applies to an already-created provider SDK client without a process restart.
+   */
+  function getProviderFetch(
+    provider: ApiEgressProxyProvider,
+    profile: ProviderFetchProfile = 'routine',
+  ): ProviderFetch {
+    return async (input, init) => {
+      const dispatcher = isApiEgressProxyRouteEnabled(provider)
+        ? getProxyDispatcher(profile)
+        : undefined
+      if (!dispatcher) {
+        return profile === 'long-running'
+          ? directTransport.getLongRunningExternalFetch()(input, init)
+          : directTransport.getExternalFetch()(input, init)
+      }
+      return undiciFetch(input as Parameters<typeof undiciFetch>[0], {
+        ...(init as Parameters<typeof undiciFetch>[1]),
+        dispatcher,
+      }) as unknown as Promise<Response>
     }
-    return undiciFetch(input as Parameters<typeof undiciFetch>[0], {
-      ...(init as Parameters<typeof undiciFetch>[1]),
-      dispatcher,
-    }) as unknown as Promise<Response>
+  }
+
+  function getProxyDispatcher(profile: ProviderFetchProfile = 'routine'): Dispatcher {
+    const existing = proxyDispatchers[profile]
+    if (existing) return existing
+    const proxyUrl = getApiEgressProxyUrl()
+    const dispatcher = new ProxyAgent({
+      uri: proxyUrl,
+      connections: 5,
+      headersTimeout:
+        profile === 'long-running'
+          ? LONG_RUNNING_EXTERNAL_DISPATCHER_HEADERS_TIMEOUT_MS
+          : EXTERNAL_DISPATCHER_HEADERS_TIMEOUT_MS,
+      bodyTimeout: EXTERNAL_DISPATCHER_BODY_TIMEOUT_MS,
+      keepAliveTimeout: EXTERNAL_DISPATCHER_KEEP_ALIVE_TIMEOUT_MS,
+      keepAliveMaxTimeout: EXTERNAL_DISPATCHER_KEEP_ALIVE_MAX_TIMEOUT_MS,
+      connect: { timeout: EXTERNAL_DISPATCHER_CONNECT_TIMEOUT_MS },
+    })
+    proxyDispatchers[profile] = dispatcher
+    return dispatcher
+  }
+
+  function getProviderRequestDispatcher(
+    provider: ApiEgressProxyProvider,
+    profile: ProviderFetchProfile = 'routine',
+  ): Dispatcher {
+    return isApiEgressProxyRouteEnabled(provider)
+      ? getProxyDispatcher(profile)
+      : profile === 'long-running'
+        ? directTransport.getLongRunningExternalRequestDispatcher()
+        : directTransport.getExternalRequestDispatcher()
+  }
+
+  async function closeApiEgressProxyTransport(): Promise<void> {
+    if (closePromise) return closePromise
+    closePromise = Promise.all(
+      Object.values(proxyDispatchers).map(dispatcher => dispatcher.close().catch(onError)),
+    ).then(() => undefined)
+    return closePromise
+  }
+
+  return {
+    getApiEgressProxyUrl,
+    installApiEgressProxyRoutingResolver,
+    isApiEgressProxyRouteEnabled,
+    getProviderFetch,
+    getProxyDispatcher,
+    getProviderRequestDispatcher,
+    closeApiEgressProxyTransport,
+    [Symbol.asyncDispose]: closeApiEgressProxyTransport,
   }
 }
 
-export function getProxyDispatcher(profile: ProviderFetchProfile = 'routine'): Dispatcher {
-  const existing = proxyDispatchers[profile]
-  if (existing) return existing
-  const proxyUrl = getApiEgressProxyUrl()
-  const dispatcher = new ProxyAgent({
-    uri: proxyUrl,
-    connections: 5,
-    headersTimeout:
-      profile === 'long-running'
-        ? LONG_RUNNING_EXTERNAL_DISPATCHER_HEADERS_TIMEOUT_MS
-        : EXTERNAL_DISPATCHER_HEADERS_TIMEOUT_MS,
-    bodyTimeout: EXTERNAL_DISPATCHER_BODY_TIMEOUT_MS,
-    keepAliveTimeout: EXTERNAL_DISPATCHER_KEEP_ALIVE_TIMEOUT_MS,
-    keepAliveMaxTimeout: EXTERNAL_DISPATCHER_KEEP_ALIVE_MAX_TIMEOUT_MS,
-    connect: { timeout: EXTERNAL_DISPATCHER_CONNECT_TIMEOUT_MS },
-  })
-  proxyDispatchers[profile] = dispatcher
-  return dispatcher
-}
+const apiEgressProxyTransport = createApiEgressProxyTransport()
 
-export function getProviderRequestDispatcher(
-  provider: ApiEgressProxyProvider,
-  profile: ProviderFetchProfile = 'routine',
-): Dispatcher {
-  return isApiEgressProxyRouteEnabled(provider)
-    ? getProxyDispatcher(profile)
-    : profile === 'long-running'
-      ? getLongRunningExternalRequestDispatcher()
-      : getExternalRequestDispatcher()
-}
+export const {
+  installApiEgressProxyRoutingResolver,
+  isApiEgressProxyRouteEnabled,
+  getProviderFetch,
+  getProxyDispatcher,
+  getProviderRequestDispatcher,
+  closeApiEgressProxyTransport,
+} = apiEgressProxyTransport
 
 export function getApiEgressProxyUrl(): string {
   const rawUrl = process.env.API_EGRESS_PROXY_URL?.trim()
@@ -124,22 +170,6 @@ export function getApiEgressProxyUrl(): string {
     )
   }
   return url.toString()
-}
-
-export async function closeApiEgressProxyTransport(): Promise<void> {
-  if (closePromise) return closePromise
-  closePromise = Promise.all(
-    Object.values(proxyDispatchers).map(dispatcher => dispatcher.close().catch(onError)),
-  ).then(() => undefined)
-  return closePromise
-}
-
-export async function resetApiEgressProxyTransportForTest(): Promise<void> {
-  const previous = Object.values(proxyDispatchers)
-  proxyDispatchers = {}
-  closePromise = undefined
-  providerRoutingResolver = undefined
-  await Promise.all(previous.map(dispatcher => dispatcher.close().catch(onError)))
 }
 
 addGracefulShutdownDrainCallback(closeApiEgressProxyTransport)

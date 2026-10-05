@@ -9,10 +9,8 @@ import {
   setTestBlueskyLinkCompletionExpiresAt,
   testBlueskyLinkCompletionExists,
 } from '@voucha/test-helpers/entities/bluesky-linked-accounts'
-import {
-  createNativeBlueskyLinkCompletion,
-  finalizeNativeBlueskyAccountLink,
-} from '@services/bluesky-accounts'
+import { createNativeBlueskyLinkCompletion } from '@voucha/test-helpers/bluesky-native-completion-fixtures'
+import { finalizeNativeBlueskyAccountLink } from '@services/bluesky-accounts'
 import { onceEntityListenerCompleted } from '@voucha/test-helpers/workers/entity-listeners/test-support'
 import { v7 as uuidv7 } from 'uuid'
 

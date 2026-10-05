@@ -58,7 +58,3 @@ export function logTurnstileAlwaysApproveSkip(): void {
     }),
   )
 }
-
-export function resetTurnstileAlwaysApproveSkipLogForTests(): void {
-  loggedAlwaysApproveSkip = false
-}

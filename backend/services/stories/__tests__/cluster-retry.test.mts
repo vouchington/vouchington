@@ -16,7 +16,7 @@ import {
   listTestPostPublicationImpactTopicIds,
   setTestItemStoryId,
 } from '@voucha/test-helpers'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { upsertSystemUser } from '@services/users/system-users'
 import { settleStoryPostTopicVoteCapture } from '../../../test-helpers/services/stories/post-topic-vote-capture.mts'
 import {

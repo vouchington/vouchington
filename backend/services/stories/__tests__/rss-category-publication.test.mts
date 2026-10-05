@@ -21,7 +21,7 @@ import {
   updateTestTopicAliasCategoryMappingOwner,
   beginTransaction,
 } from '@voucha/test-helpers'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { upsertSystemUser } from '@services/users/system-users'
 import type { PrivateUser } from '@services/users/types'
 import { upsertRssFeedItemCategories } from '@services/rss-feed-items/categories'
@@ -29,7 +29,7 @@ import { backfillCategoriesForTopicAliases } from '@services/rss-feed-items/back
 import { clearCategoriesForUnlinkedTopicAlias } from '@services/rss-feed-items/clear-topic-alias-categories'
 import * as storyLifecycleLock from '@services/post-publication/story-lifecycle-lock'
 import { createStoryPost } from '../story-posts.mts'
-import { recordTestStoryTopicPublicationChange } from '@services/post-publication/test-fixtures'
+import { recordTestStoryTopicPublicationChange } from '@voucha/test-helpers/post-publication-fixtures'
 
 let feedId: string
 let urlId: string

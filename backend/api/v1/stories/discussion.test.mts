@@ -10,7 +10,7 @@ import {
   setTestItemStoryId,
   executeTestAdmittedPost,
 } from '@voucha/test-helpers'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { upsertSystemUser } from '@services/users/system-users'
 import { setRssFeedDiscoverabilityAsSystem } from '@services/rss-feeds/discoverability'
 import { FEED_NOT_DISCOVERABLE } from '@modules/on-error/error-codes'

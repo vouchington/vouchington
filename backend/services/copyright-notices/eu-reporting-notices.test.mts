@@ -18,19 +18,19 @@ import {
   type CopyrightLegalHoldGuidance,
 } from '@ts-shared/utils/copyright-submission-guidance'
 import {
-  acceptCopyrightNoticeAndImposeRestriction,
-  appendCopyrightSubmissionAssessment,
   processCopyrightActionIntent,
   recordEuCopyrightRedressDecision,
   recordUkCopyrightReview,
   submitEuCopyrightRedress,
   appendCopyrightNoticeSubmission,
 } from './index.mts'
+import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
+import { appendCopyrightSubmissionAssessment } from './compliance.mts'
 import { appendCopyrightSubmissionGuidance } from './submission-guidance.mts'
 import {
   openHeldCounterNoticeRestore,
   recordOrdinaryCopyrightHold,
-} from './restoration-hold-scene.mts'
+} from '@voucha/test-helpers/copyright-restoration-hold-scene'
 import { readDsaCopyrightNoticeFigures } from './eu-reporting-notices.mts'
 
 const period = () => ({

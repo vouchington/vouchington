@@ -6,12 +6,12 @@ import {
   lockImageDeliveryMutation,
   prepublishImagePlacementDenial,
   publishStagedMediaDeliveryRecord,
-  getImagePlacementDeliveryKey,
   replayFailedMediaDeliveryRegistryRecords,
   stageImagePlacementDeliveryRecord,
   stageAllCurrentImagePlacementDeliveryRecords,
   processMediaDeliveryRegistryRecord,
 } from '@services/media-delivery-safety'
+import { getImagePlacementDeliveryKey } from '@services/media-delivery-safety/delivery-registry-types'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import {
   beginTransaction,
@@ -25,7 +25,7 @@ import {
 import { lockImageDeliveryLegalAuthority } from '../media-delivery-safety/delivery-authority.mts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { appendCopyrightNoticeSubmission, processCopyrightActionIntent } from './index.mts'
-import { openHeldCounterNoticeRestore } from './restoration-hold-scene.mts'
+import { openHeldCounterNoticeRestore } from '@voucha/test-helpers/copyright-restoration-hold-scene'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('copyright action persisted delivery authority', () => {

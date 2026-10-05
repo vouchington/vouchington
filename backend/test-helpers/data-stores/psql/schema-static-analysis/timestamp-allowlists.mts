@@ -11,7 +11,7 @@ import { SOCIAL_GRAPH_TABLES_WITHOUT_CREATED_AT } from './social-graph-timestamp
 import { AUTHORIZATION_TABLES_WITHOUT_CREATED_AT } from './oauth-authorization-allowlists.mts'
 import { MEDIA_PLACEMENT_MISSING_UPDATED_AT } from './media-placement-allowlists.mts'
 import { COMMUNITY_APPLICATION_MISSING_UPDATED_AT } from './community-application-allowlists.mts'
-import { RETAINED_MISSING_UPDATED_AT } from '../../../../data-stores/psql/schema-growth-retained-identities.mts'
+import { RETAINED_MISSING_UPDATED_AT } from '../../../schema-growth-test-policies.mts'
 
 export const ALLOWED_NON_UUIDV7_CREATED_AT = new Map<string, string>([])
 export const ALLOWED_MISSING_CREATED_AT = new Map<string, string>([

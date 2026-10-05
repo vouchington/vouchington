@@ -11,51 +11,58 @@ import {
   requiredString,
 } from './job-payload-read.mts'
 
-const oauthProviders = [
-  'facebook',
-  'apple',
-  'google',
-  'x',
-  'linkedin',
-  'microsoft',
-  'github',
-] as const
-const userLoginKeys = [
-  'oauth_provider',
-  'oauth_user_id',
-  'email_address',
-  'phone_number',
-  'device_id',
-  'session_id',
-  'ip_address',
-  'user_agent',
-] as const
-const topicUpdateRequired = ['name', 'slug'] as const
-const topicUpdateOptional = [
-  'markdown',
-  'topic_type',
-  'is_noindexed',
-  'should_allow_reviews',
-  'updated_by_id',
-  'hostname',
-  'homepage_url_id',
-  'logo_image_id',
-  'hero_image_id',
-  'rewards_program_id',
-  'referral_program_id',
-  'source_topic_alias_id',
-] as const
-const reconcileRequired = ['entityType', 'entityId', 'changedAtEpochUs'] as const
-const reconcileOptional = ['changeId', 'contentChanged', 'referrerId'] as const
-const entityTypes = [
-  'user',
-  'topic',
-  'post_created',
-  'post_updated',
-  'post_deleted',
-  'image',
-  'url',
-] as const
+const oauthProviders = {
+  facebook: true,
+  apple: true,
+  google: true,
+  x: true,
+  linkedin: true,
+  microsoft: true,
+  github: true,
+} as const satisfies Record<NonNullable<UserLoginContext['oauth_provider']>, true>
+const userLoginKeys = {
+  oauth_provider: true,
+  oauth_user_id: true,
+  email_address: true,
+  phone_number: true,
+  device_id: true,
+  session_id: true,
+  ip_address: true,
+  user_agent: true,
+} as const satisfies Record<keyof UserLoginContext, true>
+const topicUpdateKeys = {
+  name: true,
+  slug: true,
+  markdown: true,
+  topic_type: true,
+  is_noindexed: true,
+  should_allow_reviews: true,
+  updated_by_id: true,
+  hostname: true,
+  homepage_url_id: true,
+  logo_image_id: true,
+  hero_image_id: true,
+  rewards_program_id: true,
+  referral_program_id: true,
+  source_topic_alias_id: true,
+} as const satisfies Record<keyof CreateTopicUpdates, true>
+const reconcileKeys = {
+  entityType: true,
+  entityId: true,
+  changedAtEpochUs: true,
+  changeId: true,
+  contentChanged: true,
+  referrerId: true,
+} as const satisfies Record<keyof ReconcileEntityData, true>
+const entityTypes = {
+  user: true,
+  topic: true,
+  post_created: true,
+  post_updated: true,
+  post_deleted: true,
+  image: true,
+  url: true,
+} as const satisfies Record<ReconcileEntityData['entityType'], true>
 const topicIdKeys = [
   'homepage_url_id',
   'logo_image_id',
@@ -65,50 +72,14 @@ const topicIdKeys = [
   'source_topic_alias_id',
 ] as const
 
-export function entityJobContractCoversCanonicalTypes(): true {
-  const userLoginCovered: Exclude<
-    keyof UserLoginContext,
-    (typeof userLoginKeys)[number]
-  > extends never
-    ? true
-    : never = true
-  const topicCovered: Exclude<
-    keyof CreateTopicUpdates,
-    (typeof topicUpdateRequired)[number] | (typeof topicUpdateOptional)[number]
-  > extends never
-    ? true
-    : never = true
-  const reconcileCovered: Exclude<
-    keyof ReconcileEntityData,
-    (typeof reconcileRequired)[number] | (typeof reconcileOptional)[number]
-  > extends never
-    ? true
-    : never = true
-  const entityTypeCovered: Exclude<
-    ReconcileEntityData['entityType'],
-    (typeof entityTypes)[number]
-  > extends never
-    ? true
-    : never = true
-  const providerCovered: Exclude<
-    NonNullable<UserLoginContext['oauth_provider']>,
-    (typeof oauthProviders)[number]
-  > extends never
-    ? true
-    : never = true
-  return (
-    userLoginCovered && topicCovered && reconcileCovered && entityTypeCovered && providerCovered
-  )
-}
-
 export function userWithContext(data: unknown): Record<string, unknown> {
   const record = asRecord(data, 'payload')
   assertExactKeys(record, ['id', 'context'])
   requiredString(record, 'id')
   const context = asRecord(record.context, 'context')
-  assertExactKeys(context, userLoginKeys)
-  optionalEnum(context, 'oauth_provider', oauthProviders)
-  for (const key of userLoginKeys) {
+  assertExactKeys(context, Object.keys(userLoginKeys))
+  optionalEnum(context, 'oauth_provider', Object.keys(oauthProviders))
+  for (const key of Object.keys(userLoginKeys)) {
     if (key !== 'oauth_provider') optionalString(context, key)
   }
   return record
@@ -135,7 +106,7 @@ export function topicPayload(data: unknown): Record<string, unknown> {
   assertExactKeys(record, ['id', 'updates'])
   requiredString(record, 'id')
   const updates = asRecord(record.updates, 'updates')
-  assertExactKeys(updates, [...topicUpdateRequired, ...topicUpdateOptional])
+  assertExactKeys(updates, Object.keys(topicUpdateKeys))
   requiredString(updates, 'name')
   requiredString(updates, 'slug')
   optionalString(updates, 'markdown')
@@ -171,8 +142,8 @@ export function communityPromptPayload(data: unknown): Record<string, unknown> {
 
 export function parseReconcileEntity(data: unknown): Record<string, unknown> {
   const record = asRecord(data, 'payload')
-  assertExactKeys(record, [...reconcileRequired, ...reconcileOptional])
-  requiredEnum(record, 'entityType', entityTypes)
+  assertExactKeys(record, Object.keys(reconcileKeys))
+  requiredEnum(record, 'entityType', Object.keys(entityTypes))
   requiredString(record, 'entityId')
   requiredString(record, 'changedAtEpochUs')
   optionalString(record, 'changeId')

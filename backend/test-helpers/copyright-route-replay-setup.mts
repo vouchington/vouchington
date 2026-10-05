@@ -6,12 +6,10 @@ import {
   insertTestPostImage,
 } from '@voucha/test-helpers'
 import { markTestMediaDeliveryRecordFailed } from '@voucha/test-helpers/entities/image-surface-placements'
-import { getImagePlacementDeliveryKey } from '@services/media-delivery-safety'
-import {
-  acceptCopyrightNoticeAndImposeRestriction,
-  appendCopyrightSubmissionAssessment,
-  processCopyrightActionIntent,
-} from '@services/copyright-notices'
+import { getImagePlacementDeliveryKey } from '../services/media-delivery-safety/delivery-registry-types.mts'
+import { processCopyrightActionIntent } from '../services/copyright-notices/index.mts'
+import { acceptCopyrightNoticeAndImposeRestriction } from '../services/copyright-notices/restrictions.mts'
+import { appendCopyrightSubmissionAssessment } from '../services/copyright-notices/compliance.mts'
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 

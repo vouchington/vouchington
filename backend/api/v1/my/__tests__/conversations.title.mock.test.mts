@@ -137,7 +137,7 @@ describe('POST /api/v1/my/conversations/:conversationId/title', () => {
   })
 
   it('returns 200 with the local "New Conversation" fallback for an empty conversation even when the spend cap is breached', async () => {
-    // Reproduces #8773 Finding 3: generateChatTitle's no-messages path never calls OpenAI, so the
+    // Reproduces #8773 Finding 3: the route's no-messages path never calls OpenAI, so the
     // spend cap must not gate it -- a breached cap should never turn this free fallback into a 429.
     await spendCapConfig.waitForInitialization()
     const restore = overrideDynamicConfigFieldsForTest(spendCapConfig, {

@@ -9,7 +9,7 @@ import {
   readCopyrightEmailIntakeResponses,
   readCopyrightEmailIntakeReviewRecord,
 } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
-import { createParsedCopyrightEmailIntake } from './email-intake-test-fixtures.mts'
+import { createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
 import { recordCopyrightEmailIntakeLegalProcess } from './index.mts'
 import { promoteCopyrightEmailIntake } from './email-promotion.mts'
 import { rejectCopyrightEmailIntake } from './email-rejection.mts'

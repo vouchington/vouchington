@@ -1,58 +1,106 @@
-import { afterEach, beforeEach, expect, it, vi, describe } from 'vitest'
-import { invalidateEmailDomainCaches } from '@voucha/test-helpers'
-import { DnsTimeoutError } from '../resolve-mx.mts'
+import { randomUUID } from 'node:crypto'
+import dnsPromises from 'node:dns/promises'
+import type { MxRecord } from 'node:dns'
+import { afterEach, beforeEach, expect, it, vi, describe, type MockInstance } from 'vitest'
 import {
-  setResolveMxRecordsForDomainValidationTest,
-  validateEmailDomain,
-} from '../domain-validation.mts'
+  deleteTestEmailDomainValidationCache,
+  readTestEmailDomainValidationCache,
+} from '@voucha/test-helpers/email-domain-validation-cache'
+import { validateEmailDomain } from '../domain-validation.mts'
 import { EmailDomainInvalidError } from '../errors.mts'
 
-const mockResolveMxRecords = vi.fn<VitestLooseMock>()
-
 describe('domain-validation', () => {
-  let restoreResolveMxRecords: (() => void) | undefined
+  const ownedDomains: string[] = []
+  let mockResolveMx: MockInstance<typeof dnsPromises.resolveMx>
 
-  beforeEach(async () => {
-    await invalidateEmailDomainCaches()
-    mockResolveMxRecords.mockReset()
-    restoreResolveMxRecords = setResolveMxRecordsForDomainValidationTest(mockResolveMxRecords)
+  beforeEach(() => {
+    mockResolveMx = vi.spyOn(dnsPromises, 'resolveMx')
+    mockResolveMx.mockRejectedValue(new Error('Unexpected DNS provider invocation'))
   })
 
   afterEach(async () => {
-    restoreResolveMxRecords?.()
-    restoreResolveMxRecords = undefined
-    await invalidateEmailDomainCaches()
+    try {
+      vi.useRealTimers()
+      await deleteTestEmailDomainValidationCache(...ownedDomains.splice(0))
+    } finally {
+      mockResolveMx.mockRestore()
+    }
   })
 
-  it('does NOT cache DnsTimeoutError — second call re-resolves DNS', async () => {
-    const domain = `timeout-test-${Date.now()}.invalid`
-    mockResolveMxRecords.mockRejectedValue(new DnsTimeoutError())
+  function ownDomain(prefix: string): string {
+    const domain = `${prefix}-${randomUUID()}.invalid`
+    ownedDomains.push(domain)
+    return domain
+  }
 
-    await expect(validateEmailDomain(domain)).rejects.toThrow(EmailDomainInvalidError)
-    expect(mockResolveMxRecords).toHaveBeenCalledTimes(1)
+  it('does NOT cache DnsTimeoutError — second call retries DNS again', async () => {
+    const domain = ownDomain('timeout-test')
+    const lookups: ReturnType<typeof Promise.withResolvers<MxRecord[]>>[] = []
+    const validations: Promise<unknown>[] = []
+    let disposed = false
+    mockResolveMx.mockImplementation(requestedDomain => {
+      if (requestedDomain !== domain) throw new Error('Unexpected DNS fixture domain')
+      const lookup = Promise.withResolvers<MxRecord[]>()
+      lookups.push(lookup)
+      if (disposed) lookup.resolve([])
+      return lookup.promise
+    })
+    // Leave Date, intervals and native I/O real. Advance only after the real reads reach DNS.
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      await validateWithTimeout(3)
+      await validateWithTimeout(6)
+    } finally {
+      disposed = true
+      for (const lookup of lookups) lookup.resolve([])
+      await Promise.allSettled(validations)
+      await Promise.allSettled(lookups.map(lookup => lookup.promise))
+      vi.useRealTimers()
+    }
 
-    // Cache must NOT have stored the timeout, so DNS resolves again.
-    await expect(validateEmailDomain(domain)).rejects.toThrow(EmailDomainInvalidError)
-    expect(mockResolveMxRecords).toHaveBeenCalledTimes(2)
+    async function validateWithTimeout(expectedCalls: number): Promise<void> {
+      const outcome = validateEmailDomain(domain).catch((err: unknown) => err)
+      validations.push(outcome)
+      await vi.waitFor(() => expect(mockResolveMx).toHaveBeenCalledTimes(expectedCalls - 2), {
+        interval: 10,
+        timeout: 2_000,
+      })
+      await vi.advanceTimersByTimeAsync(15_000)
+      await expect(outcome).resolves.toBeInstanceOf(EmailDomainInvalidError)
+      await expect(outcome).resolves.toMatchObject({
+        domain,
+        reason: 'DNS error: DNS lookup timeout',
+      })
+      expect(mockResolveMx).toHaveBeenCalledTimes(expectedCalls)
+      await expect(readTestEmailDomainValidationCache(domain)).resolves.toBeNull()
+    }
   })
 
   it('rejects empty/whitespace domain without DNS lookup', async () => {
-    // toSerializedKey returns null for empty strings, so cacheGetByAny short-circuits
-    // before invoking performDomainValidation — no DNS resolution, no DB query.
+    // Empty normalized keys short-circuit before any internal domain validation or DNS lookup.
     await expect(validateEmailDomain('')).rejects.toThrow(EmailDomainInvalidError)
     await expect(validateEmailDomain('   ')).rejects.toThrow(EmailDomainInvalidError)
-    expect(mockResolveMxRecords).not.toHaveBeenCalled()
+    expect(mockResolveMx).not.toHaveBeenCalled()
   })
 
-  it('DOES cache non-timeout DNS errors — second call serves from cache', async () => {
-    const domain = `nxdomain-test-${Date.now()}.invalid`
-    mockResolveMxRecords.mockRejectedValue(new Error('queryMx ENOTFOUND'))
+  it('DOES cache non-timeout DNS errors — second call serves from the real cache', async () => {
+    const domain = ownDomain('nxdomain-test')
+    const error = Object.assign(new Error('queryMx ENOTFOUND'), { code: 'ENOTFOUND' })
+    mockResolveMx.mockRejectedValue(error)
 
     await expect(validateEmailDomain(domain)).rejects.toThrow(EmailDomainInvalidError)
-    expect(mockResolveMxRecords).toHaveBeenCalledTimes(1)
-
-    // Cached failure: DNS not re-resolved.
+    expect(mockResolveMx).toHaveBeenCalledExactlyOnceWith(domain)
+    // The actual cache owner writes asynchronously; observe persistence before asserting reuse.
+    await vi.waitFor(
+      async () => {
+        await expect(readTestEmailDomainValidationCache(domain)).resolves.toMatchObject({
+          success: false,
+          reason: 'DNS error: queryMx ENOTFOUND',
+        })
+      },
+      { timeout: 3_000 },
+    )
     await expect(validateEmailDomain(domain)).rejects.toThrow(EmailDomainInvalidError)
-    expect(mockResolveMxRecords).toHaveBeenCalledTimes(1)
+    expect(mockResolveMx).toHaveBeenCalledExactlyOnceWith(domain)
   })
 })

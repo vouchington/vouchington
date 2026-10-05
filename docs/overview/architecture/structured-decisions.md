@@ -110,9 +110,10 @@ tags topics, or changes story membership.
 
 `executeSingleCallClassifierDecision` (`@agents/classifiers/execute-single-call.mts`) is a
 sharding-free twin of `executeClassifierDecision` for classifier families that have no exact,
-synchronous context measurer for their active provider/model — the C6 tagging autotagger's Noul
-classifier run (`backend/agents/classifier-runs/execute.mts`, the shared executor for C5 and C6)
-is the current caller. It shares validation, mapping, and persistence with the sharded executor through a common
+synchronous context measurer for their active provider/model. The C6 tagging autotagger's Noul
+classifier run is a documented intended use; production use of this exported helper is unconfirmed.
+The export is retained provisionally under issue #1360 and may be removed after intended-use review.
+It shares validation, mapping, and persistence with the sharded executor through a common
 base input type, but sends every binding as a single request instead of packing shards against a
 token budget: it makes no character, byte, or candidate-count estimate at all, rather than
 approximating one. The tradeoff this accepts: an oversized-context provider rejection is not

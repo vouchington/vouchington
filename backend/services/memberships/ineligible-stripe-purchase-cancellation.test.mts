@@ -1,9 +1,9 @@
+import { claimTestIneligiblePurchaseReversalOperations } from '@voucha/test-helpers/membership-reversal-case-fixtures'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { createTestSku, createTestUser } from '@voucha/test-helpers'
 import { createMembership } from './create.mts'
 import { markIneligiblePurchaseReversalCompleted } from './ineligible-stripe-purchase-reversal-execution.mts'
-import { claimIneligiblePurchaseReversals } from './ineligible-stripe-purchase-reversal/claim-ledger.mts'
 
 describe('claimIneligiblePurchaseCancellationOperation', () => {
   it('returns the completed cancellation instead of taking a new execution claim', async () => {
@@ -32,10 +32,12 @@ describe('claimIneligiblePurchaseCancellationOperation', () => {
       userId: user.id,
     }
     const snapshot = { currency: 'usd', qualifyingAmountMinorUnits: 0 }
-    const initial = (await claimIneligiblePurchaseReversals(options, [], snapshot))!
+    const initial = (await claimTestIneligiblePurchaseReversalOperations(options, [], snapshot))!
     await markIneligiblePurchaseReversalCompleted(initial.cancellation!)
 
-    await expect(claimIneligiblePurchaseReversals(options, [], snapshot)).resolves.toEqual({
+    await expect(
+      claimTestIneligiblePurchaseReversalOperations(options, [], snapshot),
+    ).resolves.toEqual({
       cancellation: {
         completed: true,
         leaseToken: null,

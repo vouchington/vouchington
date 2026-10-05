@@ -6,7 +6,7 @@ import {
 import { getElectionIndexName } from '../config-driven/utils/election-sql-identifiers.mts'
 import { VOTE_SCHEMA_CONFIGS } from '../config-driven/utils/election-schema-config.mts'
 import { onGracefulShutdown, read } from '../index.mts'
-import { NON_DEFAULT_ID_EXCEPTIONS } from '../schema-growth-classification.mts'
+import { NON_DEFAULT_ID_EXCEPTIONS } from '../../../test-helpers/schema-growth-test-policies.mts'
 import {
   getConstraintRows,
   getIndexRows,

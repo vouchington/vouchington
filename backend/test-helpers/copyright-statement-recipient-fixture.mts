@@ -4,10 +4,8 @@ import sql from 'sql-template-strings'
 import { DELETED_USER_ID } from '../services/users/constants.mts'
 import { createCopyrightNoticeAggregate } from './services/copyright-notices/create-notice-aggregate.mts'
 import { getCopyrightNoticePrivateAggregate } from './services/copyright-notices/private-aggregate.mts'
-import {
-  appendCopyrightSubmissionAssessment,
-  acceptCopyrightNoticeAndImposeRestriction,
-} from '../services/copyright-notices/index.mts'
+import { appendCopyrightSubmissionAssessment } from '../services/copyright-notices/compliance.mts'
+import { acceptCopyrightNoticeAndImposeRestriction } from '../services/copyright-notices/restrictions.mts'
 
 export async function createMultiOwnerStatementFixture() {
   const [claimant, moderator, publicOwner, privateOwner] = await Promise.all([

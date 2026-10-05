@@ -17,7 +17,7 @@ import {
   setTopicEmbeddingContentAndInputSha256,
   updatePostEmbeddingData,
 } from '@voucha/test-helpers'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { updateTopicEmbeddingData } from '@voucha/test-helpers/entities/topics/embeddings'
 import { ai_agents } from '@queues/ai-agents/queues'
 import { createPostTextEmbeddingContent } from '@services/posts/content'

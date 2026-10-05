@@ -1,16 +1,20 @@
 import type {
   EmailDispatcherJobs,
   EmailJobInput,
-  EmailJobs,
   EmailSendJobs,
   ProcessSendCommunityInviteEmailVariables,
   ProcessSendEmailAddressLoginTokenVariables,
   ProcessSendEmailVerificationTokenVariables,
   ProcessSendWelcomeEmailVariables,
 } from '../types.mts'
-import { dispatcherPayload } from './job-payload-dispatcher.mts'
+import { dispatcherPayload, getEmailJobKind } from './job-payload-dispatcher.mts'
 import { parseEngagementVariables } from './job-payload-engagement.mts'
-import { emailVariableKeysCoverCanonicalTypes } from './job-payload-contract.mts'
+import {
+  inviteVariableKeys,
+  loginVariableKeys,
+  verificationVariableKeys,
+  welcomeVariableKeys,
+} from './job-payload-contract.mts'
 import { JobPayloadError } from './job-payload-error.mts'
 import {
   asRecord,
@@ -44,26 +48,25 @@ export type ParsedEmailJob =
       variables: Record<string, unknown>
     }
 
-const dispatcherJobs = [
-  'dispatchEngagementEmails',
-  'dispatchCommunityModerationSummaryEmails',
-  'dispatchApiKeyExpiryReminders',
-] as const satisfies readonly EmailDispatcherJobs[]
-
 const templateParsers = {
   processSendCommunityInviteEmail: (data: unknown) =>
-    stringVariables<ProcessSendCommunityInviteEmailVariables>(data, [
+    stringVariables<ProcessSendCommunityInviteEmailVariables>(data, inviteVariableKeys, [
       'communityName',
       'inviterName',
       'code',
     ]),
   processSendEmailAddressLoginToken: (data: unknown) =>
-    stringVariables<ProcessSendEmailAddressLoginTokenVariables>(data, ['token', 'expiration']),
+    stringVariables<ProcessSendEmailAddressLoginTokenVariables>(data, loginVariableKeys, [
+      'token',
+      'expiration',
+    ]),
   processSendDataExportReadyEmail: dataExportVariables,
   processSendEmailVerificationToken: (data: unknown) =>
-    stringVariables<ProcessSendEmailVerificationTokenVariables>(data, ['token']),
+    stringVariables<ProcessSendEmailVerificationTokenVariables>(data, verificationVariableKeys, [
+      'token',
+    ]),
   processSendWelcomeEmail: (data: unknown) =>
-    stringVariables<ProcessSendWelcomeEmailVariables>(data, [], ['userName']),
+    stringVariables<ProcessSendWelcomeEmailVariables>(data, welcomeVariableKeys, [], ['userName']),
   processSendCommunityApplicationDecisionEmail: applicationDecisionVariables,
   processSendCommunityRoleChangeEmail: roleChangeVariables,
   processSendCommunityOwnershipTransferEmail: ownershipVariables,
@@ -99,24 +102,12 @@ export function parseEmailJob(name: string, data: unknown): ParsedEmailJob {
   }
 }
 
-export function emailJobContractCoversCanonicalTypes(): true {
-  const dispatchers: Exclude<EmailDispatcherJobs, (typeof dispatcherJobs)[number]> extends never
-    ? true
-    : never = true
-  const templates: Exclude<TemplateName, keyof typeof templateParsers> extends never
-    ? true
-    : never = true
-  const jobs: Exclude<EmailJobs, EmailDispatcherJobs | EmailSendJobs> extends never ? true : never =
-    true
-  return dispatchers && templates && jobs && emailVariableKeysCoverCanonicalTypes()
-}
-
 function isDispatcher(name: string): name is EmailDispatcherJobs {
-  return dispatcherJobs.some(job => job === name)
+  return getEmailJobKind(name) === 'dispatcher'
 }
 
 function isTemplate(name: string): name is TemplateName {
-  return Object.hasOwn(templateParsers, name)
+  return getEmailJobKind(name) === 'template'
 }
 
 function copyrightPayload(data: unknown): { intentId: string } {

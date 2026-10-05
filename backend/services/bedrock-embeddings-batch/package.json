@@ -47,7 +47,6 @@
     "@queues/ai-agents": "workspace:^",
     "@queues/ban-evasion": "workspace:^",
     "@services/copyright-notices": "workspace:^",
-    "@services/rss-feeds": "workspace:^",
     "@services/urls": "workspace:^",
     "@types/pg-copy-streams": "^1.2.5",
     "@voucha/test-helpers": "workspace:^"

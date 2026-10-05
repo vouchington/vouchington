@@ -3,12 +3,10 @@ import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/co
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyright-statement-notices'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import { openHeldCounterNoticeRestore } from './restoration-hold-scene.mts'
-import {
-  acceptCopyrightNoticeAndImposeRestriction,
-  appendCopyrightSubmissionAssessment,
-  processCopyrightActionIntent,
-} from './index.mts'
+import { openHeldCounterNoticeRestore } from '@voucha/test-helpers/copyright-restoration-hold-scene'
+import { processCopyrightActionIntent } from './index.mts'
+import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
+import { appendCopyrightSubmissionAssessment } from './compliance.mts'
 
 describe('restoration notices with another active restriction', () => {
   it('records the lift without claiming that an independently restricted image is visible', async () => {

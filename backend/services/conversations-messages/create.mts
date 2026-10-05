@@ -16,6 +16,11 @@ export async function createConversation(createdById: string, title = ''): Promi
   return rows[0]!
 }
 
+/**
+ * @public Retained provisionally under issue #1360 and documented in
+ * `docs/overview/architecture/services/conversations-messages/README.md`; production use is
+ * unconfirmed and this export may be removed after intended-use review.
+ */
 export async function createConversationMessage(
   conversationId: string,
   createdById: string,

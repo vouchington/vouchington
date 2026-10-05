@@ -397,9 +397,6 @@ importers:
         specifier: workspace:^
         version: link:../../services/conversations-messages
     devDependencies:
-      '@jongleberry/vurst-prompt':
-        specifier: ^0.4.3
-        version: 0.4.3
       '@services/users':
         specifier: workspace:^
         version: link:../../services/users
@@ -629,9 +626,6 @@ importers:
       '@services/ai-usage':
         specifier: workspace:^
         version: link:../../services/ai-usage
-      '@services/rss-feeds':
-        specifier: workspace:^
-        version: link:../../services/rss-feeds
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -4078,9 +4072,6 @@ importers:
       '@services/copyright-notices':
         specifier: workspace:^
         version: link:../copyright-notices
-      '@services/rss-feeds':
-        specifier: workspace:^
-        version: link:../rss-feeds
       '@services/urls':
         specifier: workspace:^
         version: link:../urls
@@ -11029,12 +11020,6 @@ importers:
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../data-stores/valkey
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../data-stores/valkey-glide-mq
-      '@data-stores/valkey-pubsub':
-        specifier: workspace:^
-        version: link:../data-stores/valkey-pubsub
       '@data-stores/valkey-rate-limiter':
         specifier: workspace:^
         version: link:../data-stores/valkey-rate-limiter
@@ -11150,6 +11135,9 @@ importers:
       '@types/supertest':
         specifier: ^7.2.1
         version: 7.2.1
+      stripe:
+        specifier: ^23.0.0
+        version: 23.0.0(@types/node@26.6.4)
       typescript:
         specifier: npm:@typescript/typescript6@^6.0.2
         version: '@typescript/typescript6@6.0.2'
@@ -11782,9 +11770,6 @@ importers:
         specifier: ^7.0.8
         version: 7.0.8
     devDependencies:
-      '@services/rss-feeds':
-        specifier: workspace:^
-        version: link:../../services/rss-feeds
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -11911,9 +11896,6 @@ importers:
         specifier: ^0.17.0
         version: 0.17.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
-      '@services/rss-feeds':
-        specifier: workspace:^
-        version: link:../../services/rss-feeds
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -12703,9 +12685,6 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
-      stripe:
-        specifier: ^23.0.0
-        version: 23.0.0(@types/node@26.6.4)
 
   backend/workers/notifications:
     dependencies:

@@ -1,7 +1,8 @@
+import { readTestStripeRefundHistory } from '@voucha/test-helpers/membership-reversal-case-fixtures'
+import { createRefundScanCase } from '@voucha/test-helpers/services/memberships/refund-scan-case'
 import { describe, expect, it } from 'vitest'
 import { getQualifyingInvoiceLineAmount } from './ineligible-stripe-purchase-reversal-target-allocation.mts'
 import { getRefundableReversalTargets } from './ineligible-stripe-purchase-reversal-targets.mts'
-import { getObservedStripeRefunds } from './ineligible-stripe-purchase-reversal/refund-history.mts'
 
 async function getNoStripeDisputeSettlement() {
   return { lostDisputeAmountMinorUnits: 0, refundDeferred: false }
@@ -49,7 +50,6 @@ describe('Stripe reversal qualifying allocation', () => {
       ),
     ).toThrow('Unsupported Stripe invoice line tax behavior: future_behavior')
   })
-
   it('allocates only the matching price across mixed invoice payment targets', async () => {
     const invoice = {
       created: 1_893_456_000,
@@ -107,7 +107,6 @@ describe('Stripe reversal qualifying allocation', () => {
       },
     ])
   })
-
   it('uses a payment intent as the sole refund target when Stripe records one', async () => {
     await expect(
       getRefundableReversalTargets(
@@ -137,7 +136,6 @@ describe('Stripe reversal qualifying allocation', () => {
       expect.objectContaining({ chargeId: null, paymentIntentId: 'pi_payment_intent_target' }),
     ])
   })
-
   it('includes only exclusive tax from the matching line in the qualifying refund allocation', async () => {
     await expect(
       getRefundableReversalTargets(
@@ -187,8 +185,8 @@ describe('Stripe reversal qualifying allocation', () => {
       }),
     ])
   })
-
   it('keeps a completed refund local while the later fixed slice remains outstanding', async () => {
+    const { reversalCaseId } = await createRefundScanCase()
     await expect(
       getRefundableReversalTargets(
         [
@@ -216,9 +214,10 @@ describe('Stripe reversal qualifying allocation', () => {
         ],
         async target =>
           target.chargeId === 'ch_a'
-            ? getObservedStripeRefunds(
+            ? readTestStripeRefundHistory(
                 [{ amount: 200, currency: 'usd', id: 're_external', status: 'succeeded' }],
-                target.currency,
+                target,
+                reversalCaseId,
               )
             : { alreadyRefundedMinorUnits: 0, refundDeferred: false },
         getNoStripeDisputeSettlement,
@@ -246,8 +245,8 @@ describe('Stripe reversal qualifying allocation', () => {
       },
     ])
   })
-
   it('keeps the fixed qualifying slice when a refund lands on another payment target', async () => {
+    const { reversalCaseId } = await createRefundScanCase()
     await expect(
       getRefundableReversalTargets(
         [
@@ -275,9 +274,10 @@ describe('Stripe reversal qualifying allocation', () => {
         ],
         async target =>
           target.chargeId === 'ch_second'
-            ? getObservedStripeRefunds(
+            ? readTestStripeRefundHistory(
                 [{ amount: 200, currency: 'usd', id: 're_other_target', status: 'succeeded' }],
-                target.currency,
+                target,
+                reversalCaseId,
               )
             : { alreadyRefundedMinorUnits: 0, refundDeferred: false },
         getNoStripeDisputeSettlement,

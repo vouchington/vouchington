@@ -17,7 +17,3 @@ export function getQueueBacklogDepthCached(name: string, ttlMs: number): Promise
   cache.set(name, { fetchedAt: now, promise })
   return promise
 }
-
-export function clearQueueStatsCacheForTesting(): void {
-  cache.clear()
-}

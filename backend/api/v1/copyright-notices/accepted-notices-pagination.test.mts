@@ -4,7 +4,7 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import { readCopyrightAcceptedNoticeCursorBefore } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
-import { createCopyrightFormFixture } from '@services/copyright-notices/route-test-fixtures'
+import { createCopyrightFormFixture } from '@voucha/test-helpers/copyright-route-fixtures'
 import { createAcceptedCopyrightNotice } from '@voucha/test-helpers/services/copyright-notices/accepted-notice'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 

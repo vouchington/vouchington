@@ -8,10 +8,8 @@ import {
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { createProfileLink } from '../../my/profile-links.mts'
 import { deleteUser } from '../delete.mts'
-import {
-  getImagePlacementDeliveryKey,
-  processMediaDeliveryRegistryRecord,
-} from '../../media-delivery-safety/index.mts'
+import { getImagePlacementDeliveryKey } from '../../media-delivery-safety/delivery-registry-types.mts'
+import { processMediaDeliveryRegistryRecord } from '../../media-delivery-safety/index.mts'
 
 describe('user deletion media authority', () => {
   afterEach(() => {

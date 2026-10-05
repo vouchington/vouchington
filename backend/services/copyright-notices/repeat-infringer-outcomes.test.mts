@@ -8,7 +8,7 @@ import { confirmTestRepeatInfringerNotice } from '@voucha/test-helpers/services/
 import { deleteUser } from '@services/users/delete'
 import { getPrivateUserByAny } from '@services/users/get'
 import { suspendUser, unsuspendUser } from '@services/users/suspension'
-import { createCopyrightRestorationHoldFixture } from './evidence-and-holds-restoration-hold-fixtures.mts'
+import { createCopyrightRestorationHoldFixture } from '@voucha/test-helpers/copyright-restoration-hold-fixtures'
 import {
   appendCopyrightLegalHoldAssessment,
   appendCopyrightNoticeSubmission,

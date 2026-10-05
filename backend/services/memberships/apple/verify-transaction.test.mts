@@ -1,7 +1,5 @@
-import {
-  createConfiguredAppleSignedTransactionEvidenceVerifier,
-  createConfiguredAppleTransactionVerifier,
-} from './configured-verifier.mts'
+import { getAppleAppStoreRootCertificates } from '@voucha/config/apple-app-store-root-certificates'
+import { createConfiguredAppleTransactionVerifier } from './configured-verifier.mts'
 import {
   Environment,
   InAppOwnershipType,
@@ -9,10 +7,9 @@ import {
 } from '@apple/app-store-server-library'
 import { describe, expect, it } from 'vitest'
 import {
-  createAppleSignedTransactionEvidenceVerifier,
+  createAppleTransactionVerifier,
   verifyAppleSignedTransactionEvidence,
   type AppleSignedTransactionExpectation,
-  type AppleSignedTransactionVerifierConfig,
   type AppleTransactionVerifier,
 } from './verify-transaction.mts'
 
@@ -152,30 +149,24 @@ describe('Apple App Store signed transaction verification', () => {
   })
 
   it('constructs the Apple verifier with offline checks by default', async () => {
-    let receivedConfig: AppleSignedTransactionVerifierConfig | undefined
-    const verifier = createAppleSignedTransactionEvidenceVerifier(
-      {
-        appleRootCertificates: [Buffer.from('root-certificate')],
-        environment: 'test',
-        applicationId: 'ai.voucha.ios',
-      },
-      config => {
-        receivedConfig = config
-        return makeVerifier()
-      },
-    )
+    const verifier = createAppleTransactionVerifier({
+      appleRootCertificates: getAppleAppStoreRootCertificates(),
+      environment: 'test',
+      applicationId: 'ai.voucha.ios',
+    })
 
-    await verifier.verify({ signed_transaction_info: 'signed' }, expectedTransaction())
-
-    expect(receivedConfig).toMatchObject({ enableOnlineChecks: false })
+    expect(verifier).toHaveProperty('enableOnlineChecks', false)
+    await expect(
+      verifyAppleSignedTransactionEvidence({
+        evidence: { signed_transaction_info: 'not-a-jws' },
+        expected: expectedTransaction(),
+        verifier,
+      }),
+    ).resolves.toEqual({ accepted: false, reasonCode: 'invalid_evidence' })
   })
 
   it('uses the pinned Apple trust roots for membership verification', async () => {
     const transactionVerifier = createConfiguredAppleTransactionVerifier({
-      applicationId: 'ai.voucha.ios',
-      environment: 'test',
-    })
-    const evidenceVerifier = createConfiguredAppleSignedTransactionEvidenceVerifier({
       applicationId: 'ai.voucha.ios',
       environment: 'test',
     })
@@ -184,7 +175,11 @@ describe('Apple App Store signed transaction verification', () => {
       transactionVerifier.verifyAndDecodeTransaction('not-a-jws'),
     ).rejects.toBeInstanceOf(Error)
     await expect(
-      evidenceVerifier.verify({ signed_transaction_info: 'not-a-jws' }, expectedTransaction()),
+      verifyAppleSignedTransactionEvidence({
+        evidence: { signed_transaction_info: 'not-a-jws' },
+        expected: expectedTransaction(),
+        verifier: transactionVerifier,
+      }),
     ).resolves.toEqual({ accepted: false, reasonCode: 'invalid_evidence' })
   })
 

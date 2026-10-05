@@ -3,7 +3,6 @@ import {
   markJwtStale,
   markJwtStaleBatch,
   isJwtStale,
-  clearJwtStale,
   clearJwtStaleIfCurrent,
 } from './jwt-stale.mts'
 import { v7 } from 'uuid'
@@ -24,13 +23,13 @@ describe('jwt-stale', () => {
     expect(result).toBe(true)
   })
 
-  it('clearJwtStale removes the stale flag', async () => {
+  it('clears the captured current stale marker', async () => {
     const userId = v7()
 
-    await markJwtStale(userId)
+    const marker = await markJwtStale(userId)
     expect(await isJwtStale(userId)).toBe(true)
 
-    await clearJwtStale(userId)
+    await expect(clearJwtStaleIfCurrent(userId, marker)).resolves.toBe(true)
     expect(await isJwtStale(userId)).toBe(false)
   })
 
@@ -73,9 +72,9 @@ describe('jwt-stale', () => {
     await expect(markJwtStaleBatch([])).resolves.toEqual(new Map())
   })
 
-  it('clearJwtStale on non-stale user does not throw', async () => {
+  it('conditional clear does not remove a marker for a non-stale user', async () => {
     const userId = v7()
-    await expect(clearJwtStale(userId)).resolves.not.toThrow()
+    await expect(clearJwtStaleIfCurrent(userId, crypto.randomUUID())).resolves.toBe(false)
   })
 
   it('clearJwtStaleIfCurrent preserves newer stale markers', async () => {

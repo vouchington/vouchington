@@ -16,19 +16,19 @@ import {
 } from '@voucha/test-helpers/services/copyright-notices/hold-restoration'
 import {
   appendCopyrightNoticeSubmission,
-  appendCopyrightSubmissionAssessment,
   processCopyrightActionIntent,
   recoverBlockedCopyrightHoldRestorations,
   searchBlockedCopyrightHoldRestorationNoticeIds,
   searchRecoverableCopyrightActionIntentIds,
 } from './index.mts'
+import { appendCopyrightSubmissionAssessment } from './compliance.mts'
 import { claimCopyrightActionIntent } from './action-delivery-state.mts'
 import { failCopyrightActionIntent } from './action-delivery-completion.mts'
 import {
   openHeldCounterNoticeRestore,
   recordOrdinaryCopyrightHold,
-} from './restoration-hold-scene.mts'
-import { createCounterNoticeRestoreIntent } from './evidence-and-holds-restoration-hold-fixtures.mts'
+} from '@voucha/test-helpers/copyright-restoration-hold-scene'
+import { createCounterNoticeRestoreIntent } from '@voucha/test-helpers/copyright-restoration-hold-fixtures'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 const publish: CopyrightTestDeliveryPublisher = async () => undefined

@@ -1,5 +1,5 @@
 import { createAutotaggerRunAdapter } from '../autotagger/index.mts'
-import { createTestRssFeed } from '../rss-feeds/test-fixtures.mts'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { createStoryClusteringRunAdapter } from '../stories/index.mts'
 import {
   getSubjectClassifierRunRequestFacts,

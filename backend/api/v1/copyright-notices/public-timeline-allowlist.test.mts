@@ -4,8 +4,8 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import { createCopyrightReplayFixture } from '@services/copyright-notices/route-replay-fixture-setup'
-import { exhaustCopyrightActionIntent } from '@services/copyright-notices/route-replay-fixtures'
+import { createCopyrightReplayFixture } from '@voucha/test-helpers/copyright-route-replay-setup'
+import { exhaustCopyrightActionIntent } from '@voucha/test-helpers/copyright-route-replay-fixtures'
 
 type TimelineEvent = { event_type: string }
 

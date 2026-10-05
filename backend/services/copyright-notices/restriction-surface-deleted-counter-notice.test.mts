@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import { getCopyrightParticipantNoticeDetail } from './read-models.mts'
-import { getImagePlacementDeliveryKey } from '@services/media-delivery-safety'
+import { getImagePlacementDeliveryKey } from '@services/media-delivery-safety/delivery-registry-types'
 import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import {

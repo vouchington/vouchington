@@ -23,9 +23,8 @@ export {
   listAcceptedCopyrightNotices,
   copyrightAcceptedNoticeCursorScope,
 } from './read-models.mts'
+/** @public Retained provisionally under issue #1360; intended production use is unconfirmed and this export may be removed after intended-use review. */
 export { appendCopyrightNoticeSubmission } from './submission-appending.mts'
-export { appendCopyrightSubmissionAssessment } from './compliance.mts'
-export { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 export { completeCopyrightMandatoryHumanReview } from './human-review.mts'
 export { reviewCopyrightStaydownMatch } from './staydown-review.mts'
 export {
@@ -40,8 +39,6 @@ export {
   searchBlockedCopyrightHoldRestorationNoticeIds,
   recoverBlockedCopyrightHoldRestorations,
 } from './hold-restoration-recovery.mts'
-export { createOutboundCopyrightCorrespondence } from './correspondence.mts'
-export { createEligibleCopyrightRestoreIntent } from './restoration.mts'
 export {
   createDueStatutoryCopyrightRestoreIntentsForDeadline,
   searchDueStatutoryCopyrightRestorationDeadlineIds,
@@ -70,7 +67,6 @@ export {
   type CopyrightAgentDispatch,
 } from './reconcile-agent-dispatches.mts'
 export {
-  createCopyrightDeliveryIntent,
   markCopyrightDeliveryIntentFailed,
   markCopyrightDeliveryIntentSent,
   markCopyrightDeliveryIntentEmailSent,

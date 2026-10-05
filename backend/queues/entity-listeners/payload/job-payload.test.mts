@@ -1,11 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { entityJobContractCoversCanonicalTypes, parseEntityJob } from './job-payload.mts'
+import { parseEntityJob } from './job-payload.mts'
 
 describe('parseEntityJob', () => {
-  it('covers the canonical entity job names', () => {
-    expect(entityJobContractCoversCanonicalTypes()).toBe(true)
-  })
-
   it('rejects an optional flag or enum that is the wrong type', () => {
     expect(() =>
       parseEntityJob('processPostUpdated', { id: 'post', contentChanged: 'yes' }),

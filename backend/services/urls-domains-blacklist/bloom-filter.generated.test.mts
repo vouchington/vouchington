@@ -1,4 +1,4 @@
-import { it, expect, afterEach, beforeEach, describe } from 'vitest'
+import { it, expect, afterEach, beforeEach, describe, vi, type MockInstance } from 'vitest'
 import {
   checkBloomFilter,
   addDomainsToBloomFilter,
@@ -6,10 +6,8 @@ import {
   deleteBloomFilter,
   warmUpUrlBlocklistBloomFilter,
 } from './bloom-filter.mts'
-import {
-  enqueueRebuildBloomFilterBestEffortWithEnqueue,
-  waitForBestEffortRebuildEnqueuesForTest,
-} from './rebuild-enqueue.mts'
+import { enqueueRebuildBloomFilterBestEffortWithEnqueue } from './rebuild-enqueue.mts'
+import * as rebuildEnqueue from './rebuild-enqueue.mts'
 import {
   createTestBlacklistSource,
   insertTestDomainBlacklist,
@@ -22,13 +20,25 @@ import { unlinkReadyMarkerIfValue } from './ready-marker.mts'
 describe('bloom-filter.generated', () => {
   const TEST_SOURCE_NAME = `test-bloom-filter-${Array.from({ length: 8 }, () => String.fromCodePoint(97 + Math.floor(Math.random() * 26))).join('')}`
 
+  let enqueueSpy: MockInstance<typeof rebuildEnqueue.enqueueRebuildBloomFilterBestEffort>
+
+  async function settleOwnedRebuildEnqueues() {
+    await Promise.allSettled(
+      enqueueSpy.mock.results.flatMap(result => (result.type === 'return' ? [result.value] : [])),
+    )
+  }
+
   beforeEach(async () => {
-    await waitForBestEffortRebuildEnqueuesForTest()
+    enqueueSpy = vi.spyOn(rebuildEnqueue, 'enqueueRebuildBloomFilterBestEffort')
     await deleteBloomFilter()
   })
 
   afterEach(async () => {
-    await waitForBestEffortRebuildEnqueuesForTest()
+    try {
+      await settleOwnedRebuildEnqueues()
+    } finally {
+      enqueueSpy.mockRestore()
+    }
     await deleteBloomFilter()
   })
 
@@ -47,14 +57,16 @@ describe('bloom-filter.generated', () => {
     const result = await checkBloomFilter('wrong-ready-type.com')
 
     expect(result).toBeNull()
-    await waitForBestEffortRebuildEnqueuesForTest()
+    expect(enqueueSpy).toHaveBeenCalled()
+    await settleOwnedRebuildEnqueues()
   })
 
   it('checkBloomFilter keeps ready marker valid when missing-filter repair runs', async () => {
     await bloomValkeyClient.set('bloom-filter:url-blocklist:ready', '1')
 
     const result = await checkBloomFilter('missing-filter.com')
-    await waitForBestEffortRebuildEnqueuesForTest()
+    expect(enqueueSpy).toHaveBeenCalled()
+    await settleOwnedRebuildEnqueues()
     expect(result).toBeNull()
     const readyMarker = await bloomValkeyClient.get('bloom-filter:url-blocklist:ready')
     expect(readyMarker == null || readyMarker.toString().startsWith('ready:')).toBe(true)
@@ -65,7 +77,8 @@ describe('bloom-filter.generated', () => {
     await bloomValkeyClient.set('bloom-filter:url-blocklist', 'corrupted')
 
     const result = await checkBloomFilter('corrupted-filter.com')
-    await waitForBestEffortRebuildEnqueuesForTest()
+    expect(enqueueSpy).toHaveBeenCalled()
+    await settleOwnedRebuildEnqueues()
     expect(result).toBeNull()
     const readyMarker = await bloomValkeyClient.get('bloom-filter:url-blocklist:ready')
     expect(readyMarker == null || readyMarker.toString().startsWith('ready:')).toBe(true)
@@ -84,14 +97,13 @@ describe('bloom-filter.generated', () => {
   it('enqueueRebuildBloomFilterBestEffortWithEnqueue runs callbacks after non-promise enqueues', async () => {
     const callbacks: string[] = []
 
-    enqueueRebuildBloomFilterBestEffortWithEnqueue(
+    await enqueueRebuildBloomFilterBestEffortWithEnqueue(
       () => undefined,
       'url-blocklist',
       async () => {
         callbacks.push('enqueued')
       },
     )
-    await waitForBestEffortRebuildEnqueuesForTest()
 
     expect(callbacks).toEqual(['enqueued'])
   })
@@ -99,7 +111,7 @@ describe('bloom-filter.generated', () => {
   it('enqueueRebuildBloomFilterBestEffortWithEnqueue skips callbacks when enqueue throws', async () => {
     const callbacks: string[] = []
 
-    enqueueRebuildBloomFilterBestEffortWithEnqueue(
+    await enqueueRebuildBloomFilterBestEffortWithEnqueue(
       () => {
         throw new Error('enqueue failed')
       },
@@ -108,7 +120,6 @@ describe('bloom-filter.generated', () => {
         callbacks.push('enqueued')
       },
     )
-    await waitForBestEffortRebuildEnqueuesForTest()
 
     expect(callbacks).toEqual([])
   })
@@ -258,7 +269,8 @@ describe('bloom-filter.generated', () => {
     await bloomValkeyClient.set('bloom-filter:url-blocklist', 'corrupted')
 
     await expect(addDomainsToBloomFilter(['blocked.com'])).resolves.toBeUndefined()
-    await waitForBestEffortRebuildEnqueuesForTest()
+    expect(enqueueSpy).toHaveBeenCalled()
+    await settleOwnedRebuildEnqueues()
     expect(
       await bloomValkeyClient.customCommand(['TYPE', 'bloom-filter:url-blocklist:ready']),
     ).not.toBe('list')

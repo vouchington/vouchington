@@ -11,7 +11,6 @@ import { MAX_MONEY_AMOUNT } from '@ts-shared/money'
 import type { PrivateUser } from '@services/users/types'
 import { recordAiUsage } from '../record.mts'
 import {
-  clearDailyAiCostTotalCacheForTesting,
   getDailyAiCostTotalMicrounits,
   parseDailyTotalMicrounits,
   refreshDailyAiCostTotalMicrounits,
@@ -34,12 +33,10 @@ describe('getDailyAiCostTotalMicrounits', () => {
   beforeEach(async () => {
     user = await createTestUser()
     vi.useFakeTimers({ toFake: ['Date'] })
-    clearDailyAiCostTotalCacheForTesting()
   })
 
   afterEach(() => {
     vi.useRealTimers()
-    clearDailyAiCostTotalCacheForTesting()
   })
 
   async function reserveDay(): Promise<string> {
@@ -169,18 +166,36 @@ describe('getDailyAiCostTotalMicrounits', () => {
     })
   })
 
-  it('reuses the cached promise for a second call within the TTL window on the same day', async () => {
+  it('coalesces reads, retains a stale total before 60 seconds, and refreshes at expiry', async () => {
     const day = await reserveDay()
-    vi.setSystemTime(new Date(`${day}T00:00:00.000Z`))
-
-    const first = getDailyAiCostTotalMicrounits()
-    await expect(first).resolves.toEqual({ totalMicrounits: 0, hasUnpricedRows: false, day })
-
-    // Same faked "now" -- still inside the 60s TTL and on the same cache day, so this must return
-    // the identical cached promise rather than re-running the query.
-    const second = getDailyAiCostTotalMicrounits()
-    expect(second).toBe(first)
-    await expect(second).resolves.toEqual({ totalMicrounits: 0, hasUnpricedRows: false, day })
+    const now = Date.parse(`${day}T12:00:00.000Z`)
+    vi.setSystemTime(now)
+    const pending: Promise<unknown>[] = []
+    try {
+      const first = getDailyAiCostTotalMicrounits()
+      const second = getDailyAiCostTotalMicrounits()
+      pending.push(first, second)
+      expect(second).toBe(first)
+      await expect(first).resolves.toEqual({ totalMicrounits: 0, hasUnpricedRows: false, day })
+      await insertTestAiUsageRecord({
+        id: timestampToUuidv7LowerBound(now),
+        costMicrounits: 321,
+      })
+      vi.setSystemTime(now + 59_999)
+      const stale = getDailyAiCostTotalMicrounits()
+      pending.push(stale)
+      expect(stale).toBe(first)
+      await expect(stale).resolves.toEqual({ totalMicrounits: 0, hasUnpricedRows: false, day })
+      vi.setSystemTime(now + 60_000)
+      const fresh = getDailyAiCostTotalMicrounits()
+      const coalesced = getDailyAiCostTotalMicrounits()
+      pending.push(fresh, coalesced)
+      expect(fresh).not.toBe(first)
+      expect(coalesced).toBe(fresh)
+      await expect(fresh).resolves.toEqual({ totalMicrounits: 321, hasUnpricedRows: false, day })
+    } finally {
+      await Promise.allSettled(pending)
+    }
   })
 
   it('clamps to MAX_MONEY_AMOUNT instead of crashing when the raw SUM overflows the JSON-safe integer range', async () => {
@@ -238,10 +253,18 @@ describe('getDailyAiCostTotalMicrounits', () => {
 
     const firstRefresh = refreshDailyAiCostTotalMicrounits()
     const secondRefresh = refreshDailyAiCostTotalMicrounits()
-    expect(secondRefresh).toBe(firstRefresh)
-    expect(firstRefresh).not.toBe(cached)
-    await expect(firstRefresh).resolves.toEqual({ totalMicrounits: 1, hasUnpricedRows: false, day })
-    expect(getDailyAiCostTotalMicrounits()).toBe(firstRefresh)
+    try {
+      expect(secondRefresh).toBe(firstRefresh)
+      expect(firstRefresh).not.toBe(cached)
+      await expect(firstRefresh).resolves.toEqual({
+        totalMicrounits: 1,
+        hasUnpricedRows: false,
+        day,
+      })
+      expect(getDailyAiCostTotalMicrounits()).toBe(firstRefresh)
+    } finally {
+      await Promise.allSettled([firstRefresh, secondRefresh])
+    }
   })
 
   it('clears refresh coordination after a query failure instead of reusing the rejected promise', async () => {

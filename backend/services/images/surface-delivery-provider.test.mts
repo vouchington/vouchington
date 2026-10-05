@@ -6,10 +6,8 @@ import {
   insertTestImage,
   setTestUserProfileImage,
 } from '@voucha/test-helpers'
-import {
-  getImagePlacementDeliveryKey,
-  prepublishImagePlacementDenials,
-} from '@services/media-delivery-safety'
+import { prepublishImagePlacementDenials } from '@services/media-delivery-safety'
+import { getImagePlacementDeliveryKey } from '@services/media-delivery-safety/delivery-registry-types'
 
 describe('surface delivery provider boundary', () => {
   afterEach(() => {

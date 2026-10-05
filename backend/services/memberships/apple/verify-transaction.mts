@@ -12,7 +12,6 @@ import type {
   AppleSignedTransactionVerificationResult,
   AppleSignedTransactionVerifierConfig,
   AppleTransactionVerifier,
-  AppleTransactionVerifierFactory,
   RejectedAppleSignedTransactionVerification,
 } from './types.mts'
 
@@ -21,7 +20,6 @@ export type {
   AppleSignedTransactionVerificationResult,
   AppleSignedTransactionVerifierConfig,
   AppleTransactionVerifier,
-  AppleTransactionVerifierFactory,
 } from './types.mts'
 
 export function createAppleTransactionVerifier(
@@ -34,27 +32,6 @@ export function createAppleTransactionVerifier(
     config.applicationId,
     config.appAppleId,
   )
-}
-
-export function createAppleSignedTransactionEvidenceVerifier(
-  config: AppleSignedTransactionVerifierConfig,
-  createVerifier: AppleTransactionVerifierFactory = createAppleTransactionVerifier,
-): {
-  verify(
-    evidence: unknown,
-    expected: AppleSignedTransactionExpectation,
-    now?: Date,
-  ): Promise<AppleSignedTransactionVerificationResult>
-} {
-  const verifier = createVerifier({
-    ...config,
-    enableOnlineChecks: config.enableOnlineChecks ?? false,
-  })
-  return {
-    verify(evidence, expected, now = new Date()) {
-      return verifyAppleSignedTransactionEvidence({ evidence, expected, now, verifier })
-    },
-  }
 }
 
 export async function verifyAppleSignedTransactionEvidence(options: {

@@ -1,19 +1,14 @@
 /**
  * Test-only fixture: create an RSS feed via the real create path.
  *
- * This lives in @services/rss-feeds rather than @voucha/test-helpers because the real
- * createRssFeed is genuine business logic: URL/UUID validation, assertTopicHasHostname,
- * createRssFeedUrlId, a transaction-wrapped INSERT plus createInitialRssFeedStateChanges,
- * and — critically — fire-and-forget enqueueBulkFetchRssFeeds / enqueueEvaluateRssFeedDiscoverability
- * side effects whenever no caller-managed transaction is passed (always true for fixture usage).
- * @voucha/test-helpers must never depend on this service (this service already devDeps
- * @voucha/test-helpers for its own tests), so consumers that need this fixture import it
- * from here directly instead of through the @voucha/test-helpers barrel.
+ * Import this narrow helper directly, outside the main test-helper barrel. The source-relative
+ * service import avoids a workspace dependency cycle while preserving URL/UUID validation,
+ * hostname attachment checks, initial state changes, and the real create path's enqueue effects.
  */
 
 import { createTestTopic, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createRandomString } from '@voucha/test-helpers/data'
-import { createRssFeed } from './create.mts'
+import { createRssFeed } from '../services/rss-feeds/create.mts'
 
 export async function createTestRssFeed(options: {
   topicId?: string

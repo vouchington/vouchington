@@ -1,17 +1,16 @@
 import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations-metadata'
 import { describe, expect, it } from 'vitest'
+import { buildUnboundedUnpartitionedTables } from './schema-growth-classification.mts'
 import {
-  buildUnboundedUnpartitionedTables,
   EXPLICIT_BOUNDED_TABLES,
-  NON_DEFAULT_ID_EXCEPTIONS,
   STATIC_IDENTITY_EXCEPTIONS,
-} from './schema-growth-classification.mts'
+} from '../../test-helpers/schema-growth-bounded-policies.mts'
 import {
   buildSchemaGrowthRegistry,
-  PARTITION_POLICIES,
-  UNBOUNDED_UNPARTITIONED_TABLES,
+  NON_DEFAULT_ID_EXCEPTIONS,
   type SchemaIdPolicy,
-} from './schema-growth-registry.mts'
+} from '../../test-helpers/schema-growth-test-policies.mts'
+import { PARTITION_POLICIES, UNBOUNDED_UNPARTITIONED_TABLES } from './schema-growth-registry.mts'
 import { EXTRA_UNBOUNDED_TABLES } from './schema-growth-unbounded-extra.mts'
 
 const uuidv7Identity = {

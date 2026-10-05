@@ -4,7 +4,7 @@ import { acquireTestAiUsageDateReservation, insertTestAiUsageRecord } from '@vou
 import { getCurrentUtcDay } from '@ts-shared/utils/dates'
 import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import type { SpendCapBreachContext } from '@modules/on-error/spend-cap-breach'
-import { clearDailyAiCostTotalCacheForTesting, type DailyAiCostTotal } from '../daily-total.mts'
+import type { DailyAiCostTotal } from '../daily-total.mts'
 import { spendCapConfig } from '../spend-cap-config.mts'
 import {
   assertDailySpendCapNotBreached,
@@ -205,12 +205,10 @@ describe('assertDailySpendCapNotBreached', () => {
     onTestFinished(() => reservation.release())
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date(`${reservation.day}T12:00:00.000Z`))
-    clearDailyAiCostTotalCacheForTesting()
   })
 
   afterEach(() => {
     vi.useRealTimers()
-    clearDailyAiCostTotalCacheForTesting()
   })
 
   it('returns null and does not record a breach when the daily total is under the cap', async () => {

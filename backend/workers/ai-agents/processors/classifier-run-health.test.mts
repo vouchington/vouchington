@@ -4,7 +4,7 @@ import {
   CLASSIFIER_TERMINAL_FAILURE_ALARM_COUNT,
   CLASSIFIER_UNREQUESTED_GRACE_MS,
 } from '@services/classifier-runs'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { createStoryClusteringRunAdapter } from '@services/stories'
 import {
   createClassifierRunSweepScope,

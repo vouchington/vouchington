@@ -1,5 +1,5 @@
 import type { StoryRunCandidate } from '@services/classifier-runs'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { deleteTestStory, insertTestStory, setTestItemStoryId } from '@voucha/test-helpers'
 import {
   setStoryPublishedAtForTest,

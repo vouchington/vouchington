@@ -23,7 +23,7 @@ import {
 import {
   reconcileTestPublicationUntilSnapshotsComplete as reconcilePostPublicationDirtyWork,
   getTestPublicationProjectionIdentity,
-} from './test-fixtures.mts'
+} from '@voucha/test-helpers/post-publication-fixtures'
 import { recordPostPublicationChange } from './capture.mts'
 import { retainPostPublicationKeys } from './retained-key-writes.mts'
 import { postPublicationWorkConfig } from './work-limits.mts'

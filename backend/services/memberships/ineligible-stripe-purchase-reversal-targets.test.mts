@@ -1,10 +1,11 @@
+import { readTestStripeRefundHistory } from '@voucha/test-helpers/membership-reversal-case-fixtures'
+import { createRefundScanCase } from '@voucha/test-helpers/services/memberships/refund-scan-case'
 import { describe, expect, it, vi } from 'vitest'
 import { getInvoicePaymentTargets } from './ineligible-stripe-purchase-reversal-target-allocation.mts'
 import {
   getInvoicesInReversalWindow,
   getRefundableReversalTargets,
 } from './ineligible-stripe-purchase-reversal-targets.mts'
-import { getObservedStripeRefunds } from './ineligible-stripe-purchase-reversal/refund-history.mts'
 
 async function getNoStripeDisputeSettlement() {
   return { lostDisputeAmountMinorUnits: 0, refundDeferred: false }
@@ -130,6 +131,7 @@ describe('getRefundableReversalTargets', () => {
   })
 
   it('rejects settled refunds denominated in another currency', async () => {
+    const { reversalCaseId } = await createRefundScanCase()
     await expect(
       getRefundableReversalTargets(
         [
@@ -149,15 +151,17 @@ describe('getRefundableReversalTargets', () => {
           },
         ],
         async target =>
-          getObservedStripeRefunds(
+          readTestStripeRefundHistory(
             [{ amount: 1_000, currency: 'eur', id: 're_eur', status: 'succeeded' }],
-            target.currency,
+            target,
+            reversalCaseId,
           ),
       ),
     ).rejects.toThrow('Stripe refund currency eur did not match usd')
   })
 
   it('limits a reversal target to the payment amount not already refunded', async () => {
+    const { reversalCaseId } = await createRefundScanCase()
     const getStripeRefundHistoryForPayment =
       vi.fn<
         (options: {
@@ -168,12 +172,13 @@ describe('getRefundableReversalTargets', () => {
         }) => Promise<{ alreadyRefundedMinorUnits: number; refundDeferred: boolean }>
       >()
     getStripeRefundHistoryForPayment.mockImplementation(async target =>
-      getObservedStripeRefunds(
+      readTestStripeRefundHistory(
         [
           { amount: 400, currency: 'usd', id: 're_succeeded', status: 'succeeded' },
           { amount: 100, currency: 'usd', id: 're_failed', status: 'failed' },
         ],
-        target.currency,
+        target,
+        reversalCaseId,
       ),
     )
 
@@ -216,9 +221,18 @@ describe('getRefundableReversalTargets', () => {
         paymentIntentId: null,
       }),
     )
+    await expect(
+      getStripeRefundHistoryForPayment({
+        chargeId: 'ch_partial_refund',
+        currency: 'usd',
+        invoiceId: 'in_partial_refund',
+        paymentIntentId: null,
+      }),
+    ).resolves.toEqual({ alreadyRefundedMinorUnits: 400, refundDeferred: false })
   })
 
   it('coalesces repeated payment allocations before reading the shared refund history', async () => {
+    const { reversalCaseId } = await createRefundScanCase()
     const getStripeRefundHistoryForPayment = vi
       .fn<
         (options: {
@@ -229,9 +243,10 @@ describe('getRefundableReversalTargets', () => {
         }) => Promise<{ alreadyRefundedMinorUnits: number; refundDeferred: boolean }>
       >()
       .mockImplementation(async target =>
-        getObservedStripeRefunds(
+        readTestStripeRefundHistory(
           [{ amount: 100, currency: 'usd', id: 're_shared', status: 'succeeded' }],
-          target.currency,
+          target,
+          reversalCaseId,
         ),
       )
 

@@ -9,17 +9,16 @@ import { expireTestCopyrightDeliveryIntentClaim } from '@voucha/test-helpers/dat
 import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
 import {
   appendCopyrightNoticeSubmission,
-  appendCopyrightSubmissionAssessment,
-  createCopyrightDeliveryIntent,
   deliverCopyrightInAppNotification,
   prepareCopyrightEmailDelivery,
-  createOutboundCopyrightCorrespondence,
   markCopyrightDeliveryIntentBouncedBySesMessageId,
   markCopyrightDeliveryIntentFailed,
   markCopyrightDeliveryIntentSent,
   searchRecoverableCopyrightDeliveryIntentIds,
 } from './index.mts'
-import { claimCopyrightDeliveryIntent } from './delivery-intents.mts'
+import { appendCopyrightSubmissionAssessment } from './compliance.mts'
+import { createOutboundCopyrightCorrespondence } from './correspondence.mts'
+import { claimCopyrightDeliveryIntent, createCopyrightDeliveryIntent } from './delivery-intents.mts'
 import { resolveCopyrightEmailRecipient } from './delivery-transport.mts'
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'

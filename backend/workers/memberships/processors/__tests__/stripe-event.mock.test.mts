@@ -17,7 +17,7 @@ import {
   createUniqueStripeId,
   createUniqueStripePriceId,
   toJobData,
-} from '../stripe-event-test-fixtures.mts'
+} from '@voucha/test-helpers/membership-stripe-fixtures'
 import { processStripeEvent } from '../stripe-event.mts'
 
 const { mockGetStripeSubscription } = vi.hoisted(() => ({

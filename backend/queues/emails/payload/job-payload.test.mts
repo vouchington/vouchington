@@ -1,13 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { emailJobContractCoversCanonicalTypes, parseEmailJob } from './job-payload.mts'
+import { parseEmailJob } from './job-payload.mts'
 
 const address = { emailAddress: 'owner@example.test' }
 
 describe('parseEmailJob', () => {
-  it('covers the canonical email job names', () => {
-    expect(emailJobContractCoversCanonicalTypes()).toBe(true)
-  })
-
   it('accepts empty dispatcher payloads and rejects unknown jobs', () => {
     expect(parseEmailJob('dispatchEngagementEmails', null)).toEqual({
       kind: 'dispatcher',

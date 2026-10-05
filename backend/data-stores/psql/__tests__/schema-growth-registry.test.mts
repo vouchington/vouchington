@@ -1,13 +1,12 @@
 import { afterAll, describe, expect, it } from 'vitest'
 import { onGracefulShutdown, read } from '../index.mts'
+import { PARTITION_POLICIES, UNBOUNDED_UNPARTITIONED_TABLES } from '../schema-growth-registry.mts'
+import { STATIC_IDENTITY_EXCEPTIONS } from '../../../test-helpers/schema-growth-bounded-policies.mts'
 import {
   buildSchemaGrowthRegistry,
   NON_DEFAULT_ID_EXCEPTIONS,
-  PARTITION_POLICIES,
-  STATIC_IDENTITY_EXCEPTIONS,
-  UNBOUNDED_UNPARTITIONED_TABLES,
   type SchemaIdPolicy,
-} from '../schema-growth-registry.mts'
+} from '../../../test-helpers/schema-growth-test-policies.mts'
 
 type CatalogTable = {
   table_name: string

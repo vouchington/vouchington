@@ -13,8 +13,8 @@ import {
   reconcileTestDeliveryRepairMarker,
 } from '@voucha/test-helpers/entities/media-delivery-repair'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { getImagePlacementDeliveryKey } from './delivery-registry-types.mts'
 import {
-  getImagePlacementDeliveryKey,
   lockImageDeliveryMutation,
   lockImageAssetAdmission,
   processMediaDeliveryRegistryRecord,

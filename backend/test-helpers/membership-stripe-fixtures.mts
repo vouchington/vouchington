@@ -1,5 +1,5 @@
 import type Stripe from 'stripe'
-import type { getStripeSubscription } from '@modules/stripe/subscriptions'
+import type { getStripeSubscription } from '../modules/stripe/subscriptions.mts'
 
 type TestStripeSubscription = Awaited<ReturnType<typeof getStripeSubscription>>
 

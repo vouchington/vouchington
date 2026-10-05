@@ -11,7 +11,7 @@ import {
   readCopyrightStaffQueueCursorBefore,
   readCopyrightStaffQueueCursorRows,
 } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
-import { createCopyrightFormFixture } from '@services/copyright-notices/route-test-fixtures'
+import { createCopyrightFormFixture } from '@voucha/test-helpers/copyright-route-fixtures'
 import { createCopyrightFormIntake } from '@services/copyright-notices'
 import { copyrightStaffQueueCursorScope } from '@services/copyright-notices/read-models-staff'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'

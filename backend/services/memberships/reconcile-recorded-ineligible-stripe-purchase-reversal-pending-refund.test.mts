@@ -1,3 +1,4 @@
+import { claimTestIneligiblePurchaseReversalOperations } from '@voucha/test-helpers/membership-reversal-case-fixtures'
 import { describe, expect, it, vi } from 'vitest'
 import {
   createTestSku,
@@ -7,7 +8,6 @@ import {
 } from '@voucha/test-helpers'
 import { createMembership } from './create.mts'
 import { failIneligiblePurchaseReversal } from './ineligible-stripe-purchase-reversal-execution.mts'
-import { claimIneligiblePurchaseReversals } from './ineligible-stripe-purchase-reversal/claim-ledger.mts'
 import { reconcileRecordedIneligibleStripePurchaseReversal } from './reconcile-recorded-ineligible-stripe-purchase-reversal.mts'
 import type { IneligibleStripePurchaseOperations } from './reverse-ineligible-stripe-purchase-types.mts'
 
@@ -33,7 +33,7 @@ describe('recorded ineligible Stripe purchase pending-refund reconciliation', ()
       paymentIntentId: null,
       qualifyingAmountMinorUnits: 100,
     }
-    const initial = (await claimIneligiblePurchaseReversals(
+    const initial = (await claimTestIneligiblePurchaseReversalOperations(
       {
         customerId: `cus_reconcile_observed_${member.id}`,
         effectiveAt: undefined,
@@ -146,7 +146,7 @@ describe('recorded ineligible Stripe purchase pending-refund reconciliation', ()
       paymentIntentId: null,
       qualifyingAmountMinorUnits: 100,
     }
-    const initial = (await claimIneligiblePurchaseReversals(
+    const initial = (await claimTestIneligiblePurchaseReversalOperations(
       {
         customerId: `cus_reconcile_invalid_${member.id}`,
         effectiveAt: undefined,

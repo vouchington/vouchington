@@ -10,8 +10,9 @@ non-streaming model response can validly delay its complete response headers whi
 
 Both policies keep `bodyTimeout` at 300,000ms. This is the maximum delay between body chunks, not a
 total request deadline; tightening it would abort sparse LLM streams mid-response. Both agents use
-the same connection and keepalive settings, API egress guardrail, graceful-shutdown drain, and test
-reset lifecycle. New callers should use the routine policy unless their external protocol can
+the same connection and keepalive settings, API egress guardrail, and graceful-shutdown drain.
+Tests that create an owner await its disposal; production registers its singleton for the drain.
+New callers should use the routine policy unless their external protocol can
 legitimately delay complete response headers beyond 60 seconds.
 
 The pinned/SSRF-validated dispatcher (`getPinnedRequestDispatcher`, same file) uses

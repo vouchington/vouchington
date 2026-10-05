@@ -19,8 +19,8 @@ import {
 import {
   openHeldCounterNoticeRestore,
   recordOrdinaryCopyrightHold,
-} from './restoration-hold-scene.mts'
-import { createCounterNoticeRestoreIntent } from './evidence-and-holds-restoration-hold-fixtures.mts'
+} from '@voucha/test-helpers/copyright-restoration-hold-scene'
+import { createCounterNoticeRestoreIntent } from '@voucha/test-helpers/copyright-restoration-hold-fixtures'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 const publish = async () => undefined

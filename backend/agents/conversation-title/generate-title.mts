@@ -72,9 +72,3 @@ export async function generateChatTitleFromInput(input: string, userId: string):
       .trim() || 'New Conversation'
   )
 }
-
-export async function generateChatTitle(conversationId: string, userId: string): Promise<string> {
-  const input = await getConversationTitleGenerationInput(conversationId)
-  if (input === null) return 'New Conversation'
-  return generateChatTitleFromInput(input, userId)
-}

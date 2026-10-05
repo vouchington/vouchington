@@ -14,9 +14,9 @@ import {
   setTestUserProfileImage,
 } from '@voucha/test-helpers'
 import { syncImageSurfacePlacement } from './surface-placement-sync.mts'
+import { getImagePlacementDeliveryKey } from './delivery-registry-types.mts'
 import {
   repairFailedImageDeliveryMutation,
-  getImagePlacementDeliveryKey,
   processMediaDeliveryRegistryRecord,
   prepublishImagePlacementDenial,
   stageImagePlacementDeliveryRecord,

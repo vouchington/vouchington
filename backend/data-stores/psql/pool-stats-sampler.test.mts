@@ -1,22 +1,17 @@
-import { describe, it, expect, beforeAll, afterEach, afterAll, vi } from 'vitest'
+import { describe, it, expect, beforeAll, beforeEach, afterEach, afterAll, vi } from 'vitest'
 import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 import { flush } from '@data-stores/analytics/backend-local'
 import { query } from '@data-stores/analytics/query'
-import {
-  emitPoolStats,
-  startPoolStatsSampler,
-  stopPoolStatsSampler,
-  type SampledPools,
-} from './pool-stats-sampler.mts'
+import { emitPoolStats, createPoolStatsSampler, type SampledPools } from './pool-stats-sampler.mts'
 
-function fakePool(total: number, idle: number, waiting: number): import('pg').Pool {
+function fakePool(total: number, idle: number, waiting: number): SampledPools['write'] {
   return {
     totalCount: total,
     idleCount: idle,
     waitingCount: waiting,
-  } as unknown as import('pg').Pool
+  }
 }
 
 async function waitForPoolRows(
@@ -38,6 +33,8 @@ async function waitForPoolRows(
 }
 
 describe('pool-stats-sampler', () => {
+  let sampler: ReturnType<typeof createPoolStatsSampler>
+  let clock: ReturnType<typeof createControlledPoolStatsClock>
   let testDir: string
   let prior: { backend?: string; dir?: string; interval?: string }
 
@@ -56,8 +53,14 @@ describe('pool-stats-sampler', () => {
     await import('@data-stores/analytics')
   })
 
-  afterEach(() => {
-    stopPoolStatsSampler()
+  beforeEach(() => {
+    clock = createControlledPoolStatsClock()
+    sampler = createPoolStatsSampler(clock.schedule)
+  })
+
+  afterEach(async () => {
+    await sampler[Symbol.asyncDispose]()
+    vi.restoreAllMocks()
     process.env.ANALYTICS_BACKEND = 'local'
     delete process.env.PG_POOL_STATS_INTERVAL_MS
   })
@@ -98,43 +101,100 @@ describe('pool-stats-sampler', () => {
   })
 
   it('does not start a timer when analytics is disabled', () => {
-    const pools: SampledPools = {
-      write: fakePool(1, 1, 0),
-      read: fakePool(1, 1, 0),
-      advisoryLock: fakePool(0, 0, 0),
-      readMax: 1,
-      writeMax: 1,
-      advisoryLockMax: 1,
-    }
     process.env.ANALYTICS_BACKEND = 'disabled'
     process.env.PG_POOL_STATS_INTERVAL_MS = '25'
-    startPoolStatsSampler(pools)
+    sampler.startPoolStatsSampler(sampledPools(0))
     delete process.env.PG_POOL_STATS_INTERVAL_MS
-    startPoolStatsSampler(pools)
-    // No timer was created, so a follow-up stop is a safe no-op.
-    expect(() => stopPoolStatsSampler()).not.toThrow()
+    sampler.startPoolStatsSampler(sampledPools(0))
+    expect(clock.schedule).not.toHaveBeenCalled()
   })
 
-  it('starts at most one timer and stops cleanly when analytics is enabled', () => {
-    const pools: SampledPools = {
-      write: fakePool(1, 1, 0),
-      read: fakePool(1, 1, 0),
-      advisoryLock: fakePool(0, 0, 0),
-      readMax: 1,
-      writeMax: 1,
-      advisoryLockMax: 1,
+  it('starts one interval, samples on its tick, and cancels future ticks when disposed', async () => {
+    const sentinel = Math.floor(Math.random() * 1_000_000_000)
+    sampler.startPoolStatsSampler(sampledPools(sentinel), 100)
+    sampler.startPoolStatsSampler(sampledPools(sentinel), 100)
+    expect(clock.schedule).toHaveBeenCalledOnce()
+    expect(clock.schedule).toHaveBeenCalledWith(expect.any(Function), 100)
+    expect(clock.unref).toHaveBeenCalledOnce()
+    clock.fire()
+    await sampler[Symbol.asyncDispose]()
+    await sampler[Symbol.asyncDispose]()
+    expect(clock.dispose).toHaveBeenCalledOnce()
+    clock.fire()
+    expect(await waitForPoolRows(sentinel, 3)).toHaveLength(3)
+  })
+
+  it('unrefs and disposes its real Node interval', async () => {
+    const interval = vi.spyOn(globalThis, 'setInterval')
+    const clear = vi.spyOn(globalThis, 'clearInterval')
+    let timer: ReturnType<typeof setInterval> | undefined
+    try {
+      {
+        await using actual = createPoolStatsSampler()
+        actual.startPoolStatsSampler(sampledPools(0), 3_600_000)
+        expect(interval).toHaveBeenCalledOnce()
+        timer = interval.mock.results[0]?.value
+        expect(timer?.hasRef()).toBe(false)
+      }
+      expect(clear).toHaveBeenCalledWith(timer)
+    } finally {
+      interval.mockRestore()
+      clear.mockRestore()
     }
-    process.env.ANALYTICS_BACKEND = 'local'
-    startPoolStatsSampler(pools, 3_600_000)
-    // A second start is idempotent: the existing timer short-circuits the guard.
-    startPoolStatsSampler(pools, 3_600_000)
-    expect(() => stopPoolStatsSampler()).not.toThrow()
-    // A second stop with no timer is also safe.
-    expect(() => stopPoolStatsSampler()).not.toThrow()
+  })
+
+  it.each([
+    ['25', 25],
+    ['0', 60_000],
+    ['invalid', 60_000],
+  ])('uses the configured interval %s or its default', (configured, expected) => {
+    process.env.PG_POOL_STATS_INTERVAL_MS = configured
+    sampler.startPoolStatsSampler(sampledPools(0))
+    expect(clock.schedule).toHaveBeenCalledWith(expect.any(Function), expected)
+  })
+
+  it('does not sample during prewarm', () => {
+    const pools = sampledPools(0)
+    sampler.startConfiguredPoolStatsSampler(
+      {
+        writePool: pools.write,
+        readPool: pools.read,
+        advisoryLockPool: pools.advisoryLock,
+      },
+      { readMax: 1, writeMax: 1, advisoryLockMax: 1 },
+      true,
+    )
+    expect(clock.schedule).not.toHaveBeenCalled()
   })
 })
 
 function restore(key: string, value: string | undefined): void {
   if (value === undefined) delete process.env[key]
   else process.env[key] = value
+}
+
+function sampledPools(waiting: number): SampledPools {
+  return {
+    write: fakePool(1, 1, waiting),
+    read: fakePool(1, 1, waiting),
+    advisoryLock: fakePool(0, 0, waiting),
+    readMax: 1,
+    writeMax: 1,
+    advisoryLockMax: 1,
+  }
+}
+
+function createControlledPoolStatsClock() {
+  let callback: (() => void) | undefined
+  const unref = vi.fn<() => void>()
+  const dispose = vi.fn<() => void>(() => {
+    callback = undefined
+  })
+  const schedule = vi.fn<NonNullable<Parameters<typeof createPoolStatsSampler>[0]>>(
+    nextCallback => {
+      callback = nextCallback
+      return { unref, dispose }
+    },
+  )
+  return { schedule, unref, dispose, fire: () => callback?.() }
 }

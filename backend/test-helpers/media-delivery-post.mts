@@ -8,8 +8,8 @@ import {
   getTestMediaDeliveryRecord,
 } from './index.mts'
 import { getPostByAny } from '../services/posts/get.mts'
+import { getImagePlacementDeliveryKey } from '../services/media-delivery-safety/delivery-registry-types.mts'
 import {
-  getImagePlacementDeliveryKey,
   publishStagedMediaDeliveryRecord,
   stageImagePlacementDeliveryRecord,
 } from '../services/media-delivery-safety/index.mts'

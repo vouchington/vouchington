@@ -1,6 +1,6 @@
 import { getRssFeedItemById } from '@services/rss-feed-items/get'
 import type { ViewRssFeedItem } from '@services/rss-feed-items/types'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import {
   createStoryClusteringItem,
   makeStoryClusteringVectors,

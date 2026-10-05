@@ -12,7 +12,7 @@ import {
 } from '@voucha/test-helpers'
 import { readCopyrightAcceptedNoticeCursorBefore } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { setUserDisplayNameFrom } from '@voucha/test-helpers/data-stores/psql/views/view-users'
-import { createCopyrightFormFixture } from '@services/copyright-notices/route-test-fixtures'
+import { createCopyrightFormFixture } from '@voucha/test-helpers/copyright-route-fixtures'
 import { createCopyrightFormIntake, reviewCopyrightFormIntake } from '@services/copyright-notices'
 import { createAcceptedCopyrightNotice } from '@voucha/test-helpers/services/copyright-notices/accepted-notice'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'

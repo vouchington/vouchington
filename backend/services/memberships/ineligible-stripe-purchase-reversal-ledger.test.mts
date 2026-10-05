@@ -1,3 +1,4 @@
+import { claimTestIneligiblePurchaseReversalOperations } from '@voucha/test-helpers/membership-reversal-case-fixtures'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import {
@@ -8,10 +9,7 @@ import {
 import { createMembership } from './create.mts'
 import { failIneligiblePurchaseReversal } from './ineligible-stripe-purchase-reversal-execution.mts'
 import { createIneligiblePurchaseReversalRetryIdempotencyKey } from './ineligible-stripe-purchase-reversal-idempotency.mts'
-import {
-  claimIneligiblePurchaseReversals,
-  claimPersistedIneligiblePurchaseReversalCase,
-} from './ineligible-stripe-purchase-reversal/claim-ledger.mts'
+import { claimPersistedIneligiblePurchaseReversalCase } from './ineligible-stripe-purchase-reversal/claim-ledger.mts'
 import {
   createOrRetrieveIneligiblePurchaseReversalRefund,
   type IneligiblePurchaseReversalRefundOperations,
@@ -24,12 +22,12 @@ describe('ineligible Stripe purchase reversal ledger', () => {
     const applicationA = 'voucha-ios'
     const applicationB = 'voucha-android'
     const [first, second] = await Promise.all([
-      claimIneligiblePurchaseReversals(
+      claimTestIneligiblePurchaseReversalOperations(
         { ...options, providerApplicationId: applicationA },
         [target],
         caseSnapshot(target),
       ),
-      claimIneligiblePurchaseReversals(
+      claimTestIneligiblePurchaseReversalOperations(
         { ...options, providerApplicationId: applicationB },
         [target],
         caseSnapshot(target),
@@ -43,7 +41,11 @@ describe('ineligible Stripe purchase reversal ledger', () => {
   it('claims the cancellation with its durable refund operations under the same locked disposition', async () => {
     const { options, target } = await createIneligiblePurchaseReversalFixture()
 
-    const claimed = await claimIneligiblePurchaseReversals(options, [target], caseSnapshot(target))
+    const claimed = await claimTestIneligiblePurchaseReversalOperations(
+      options,
+      [target],
+      caseSnapshot(target),
+    )
 
     expect(claimed).toEqual(
       expect.objectContaining({
@@ -60,7 +62,7 @@ describe('ineligible Stripe purchase reversal ledger', () => {
 
   it('advances a known failed operation to the newly observed refundable remainder', async () => {
     const { options, target } = await createIneligiblePurchaseReversalFixture()
-    const initial = (await claimIneligiblePurchaseReversals(
+    const initial = (await claimTestIneligiblePurchaseReversalOperations(
       options,
       [target],
       caseSnapshot(target),
@@ -71,7 +73,7 @@ describe('ineligible Stripe purchase reversal ledger', () => {
       ),
     )
 
-    const retried = (await claimIneligiblePurchaseReversals(
+    const retried = (await claimTestIneligiblePurchaseReversalOperations(
       options,
       [
         {
@@ -95,7 +97,7 @@ describe('ineligible Stripe purchase reversal ledger', () => {
 
   it('converges an ordinary retry when Stripe has fully refunded a response-loss operation', async () => {
     const { options, target } = await createIneligiblePurchaseReversalFixture()
-    const initial = (await claimIneligiblePurchaseReversals(
+    const initial = (await claimTestIneligiblePurchaseReversalOperations(
       options,
       [target],
       caseSnapshot(target),
@@ -106,7 +108,7 @@ describe('ineligible Stripe purchase reversal ledger', () => {
       ),
     )
 
-    const replay = (await claimIneligiblePurchaseReversals(
+    const replay = (await claimTestIneligiblePurchaseReversalOperations(
       options,
       [
         {
@@ -127,7 +129,7 @@ describe('ineligible Stripe purchase reversal ledger', () => {
 
   it('reconciles a failed resume to an externally partially refunded positive remainder', async () => {
     const { options, target } = await createIneligiblePurchaseReversalFixture()
-    const initial = (await claimIneligiblePurchaseReversals(
+    const initial = (await claimTestIneligiblePurchaseReversalOperations(
       options,
       [target],
       caseSnapshot(target),
@@ -157,7 +159,7 @@ describe('ineligible Stripe purchase reversal ledger', () => {
 
   it('rejects a resume whose persisted reversal target cannot be reconstructed', async () => {
     const { options, target } = await createIneligiblePurchaseReversalFixture()
-    const initial = (await claimIneligiblePurchaseReversals(
+    const initial = (await claimTestIneligiblePurchaseReversalOperations(
       options,
       [target],
       caseSnapshot(target),
@@ -175,7 +177,7 @@ describe('ineligible Stripe purchase reversal ledger', () => {
 
   it('requires a retrieval operation before it reuses a recorded provider refund', async () => {
     const { options, target } = await createIneligiblePurchaseReversalFixture()
-    const reversal = (await claimIneligiblePurchaseReversals(
+    const reversal = (await claimTestIneligiblePurchaseReversalOperations(
       options,
       [target],
       caseSnapshot(target),
@@ -193,7 +195,7 @@ describe('ineligible Stripe purchase reversal ledger', () => {
 
   it('retries a failed recorded provider refund with a derived idempotency key', async () => {
     const { options, target } = await createIneligiblePurchaseReversalFixture()
-    const reversal = (await claimIneligiblePurchaseReversals(
+    const reversal = (await claimTestIneligiblePurchaseReversalOperations(
       options,
       [target],
       caseSnapshot(target),

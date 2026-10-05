@@ -1,36 +1,28 @@
 import { gracefulShutdownPeriodSeconds } from '@voucha/config'
 import onError, { flushSentry } from '@modules/on-error'
-
-type ConnectionShutdown = () => Promise<void>
-
-const noopConnectionShutdown: ConnectionShutdown = async () => {}
+import {
+  createDataStoreShutdownRegistry,
+  type ConnectionShutdown,
+  type DataStoreShutdownDeps as GracefulShutdownDeps,
+} from './data-store-shutdown-registry.mts'
 
 const callbacks: (() => Promise<void>)[] = []
 const drainCallbacks: (() => Promise<void>)[] = []
 let shuttingDown = false
-let gracefulShutdownValkeyRegistered = false
 
 // Registered by @data-stores/psql and @data-stores/valkey at their own module load time (mirrors
 // the addGracefulShutdownCallback self-registration pattern used elsewhere, e.g.
 // @data-stores/analytics's graceful-shutdown.mts). This package must not import those data stores
 // directly — doing so previously created a workspace dependency cycle
 // (graceful-shutdown -> psql/valkey -> ... -> analytics -> graceful-shutdown).
-let registeredValkeyShutdown: ConnectionShutdown = noopConnectionShutdown
-let registeredPSQLShutdown: ConnectionShutdown = noopConnectionShutdown
+const dataStoreShutdownRegistry = createDataStoreShutdownRegistry(log)
 
 export function registerGracefulShutdownValkey(shutdown: ConnectionShutdown): void {
-  registeredValkeyShutdown = shutdown
-  gracefulShutdownValkeyRegistered = true
+  dataStoreShutdownRegistry.registerGracefulShutdownValkey(shutdown)
 }
 
 export function registerGracefulShutdownPSQL(shutdown: ConnectionShutdown): void {
-  registeredPSQLShutdown = shutdown
-}
-
-interface GracefulShutdownDeps {
-  onGracefulShutdownValkey?: ConnectionShutdown
-  onGracefulShutdownPSQL?: ConnectionShutdown
-  logger?: (...args: unknown[]) => void
+  dataStoreShutdownRegistry.registerGracefulShutdownPSQL(shutdown)
 }
 
 type OneOffShutdownDeps = Omit<GracefulShutdownDeps, 'logger'>
@@ -41,10 +33,6 @@ export function addGracefulShutdownCallback(callback: () => Promise<void>): numb
 
 export function addGracefulShutdownDrainCallback(callback: () => Promise<void>): number {
   return drainCallbacks.push(callback)
-}
-
-export function isGracefulShutdownValkeyRegistered(): boolean {
-  return gracefulShutdownValkeyRegistered
 }
 
 const SIGNAL_LISTENERS_REGISTERED = Symbol.for('voucha.graceful-shutdown.signal-listeners')
@@ -129,7 +117,7 @@ export async function onGracefulShutdown(signal: string, deps: GracefulShutdownD
 }
 
 export async function gracefulShutdown(deps: GracefulShutdownDeps = {}): Promise<void> {
-  const errors = await closeDataStores(deps)
+  const errors = await dataStoreShutdownRegistry.close(deps)
   for (const error of errors) onError(error)
 }
 
@@ -142,7 +130,7 @@ export async function shutdownDataStoresForOneOffCommand(
   }, gracefulShutdownPeriodSeconds * 1000)
 
   try {
-    const errors = await closeDataStores({ ...deps, logger: () => {} })
+    const errors = await dataStoreShutdownRegistry.close({ ...deps, logger: () => {} })
     if (errors.length > 0) {
       throw new AggregateError(errors, 'One-off data-store shutdown failed')
     }
@@ -152,27 +140,4 @@ export async function shutdownDataStoresForOneOffCommand(
     // keep the process alive long enough for the fallback to fire.
     forceExitTimer.unref()
   }
-}
-
-async function closeDataStores(deps: GracefulShutdownDeps): Promise<Error[]> {
-  const shutdownValkey = deps.onGracefulShutdownValkey ?? registeredValkeyShutdown
-  const shutdownPSQL = deps.onGracefulShutdownPSQL ?? registeredPSQLShutdown
-  const shutdownLog = deps.logger ?? log
-  const results = await Promise.allSettled([
-    Promise.resolve().then(shutdownValkey),
-    Promise.resolve().then(shutdownPSQL),
-  ])
-
-  if (results[0].status === 'fulfilled') {
-    shutdownLog('Graceful Shutdown: Valkey connection closed.')
-  }
-  if (results[1].status === 'fulfilled') {
-    shutdownLog('Graceful Shutdown: PostgreSQL connection closed.')
-  }
-
-  return results.flatMap(result => (result.status === 'rejected' ? [toError(result.reason)] : []))
-}
-
-function toError(error: unknown): Error {
-  return error instanceof Error ? error : new Error(String(error))
 }

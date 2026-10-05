@@ -7,14 +7,13 @@ import {
   insertTestPostImage,
 } from '@voucha/test-helpers'
 import {
-  createCopyrightDeliveryIntent,
   createCopyrightEmailIntake,
-  createOutboundCopyrightCorrespondence,
   markCopyrightDeliveryIntentSent,
   recordCopyrightEmailParse,
 } from './index.mts'
 import { rejectCopyrightEmailIntake } from './email-rejection.mts'
-import { claimCopyrightDeliveryIntent } from './delivery-intents.mts'
+import { createOutboundCopyrightCorrespondence } from './correspondence.mts'
+import { claimCopyrightDeliveryIntent, createCopyrightDeliveryIntent } from './delivery-intents.mts'
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 
 describe('copyright email threading', () => {

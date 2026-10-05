@@ -13,7 +13,7 @@ import {
   readAllQueueJobs,
   setTestItemStoryId,
 } from '@voucha/test-helpers'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { crawlUrls } from '@queues/crawler/queues'
 import { notifications } from '@queues/notifications/queues'
 import {

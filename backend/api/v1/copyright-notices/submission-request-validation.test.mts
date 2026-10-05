@@ -8,7 +8,7 @@ import {
   counterNoticeBody,
   createCopyrightFormFixture,
   createNotice,
-} from '@services/copyright-notices/route-test-fixtures'
+} from '@voucha/test-helpers/copyright-route-fixtures'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 
 const NOTICES = '/api/v1/copyright-notices'

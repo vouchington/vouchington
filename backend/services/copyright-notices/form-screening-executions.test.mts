@@ -16,11 +16,9 @@ import {
   createClearScreenedForm,
   isTestCopyrightStaffCaseQueued,
 } from '@voucha/test-helpers/services/copyright-notices/screened-form'
-import {
-  acceptCopyrightNoticeAndImposeRestriction,
-  appendCopyrightSubmissionAssessment,
-  enforceCopyrightAssessment,
-} from './index.mts'
+import { enforceCopyrightAssessment } from './index.mts'
+import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
+import { appendCopyrightSubmissionAssessment } from './compliance.mts'
 import {
   appendCopyrightFormScreening,
   applyNonSpamSignedInCopyrightFormScreening,

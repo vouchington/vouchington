@@ -6,7 +6,7 @@ import { fetchStructuredDecisionProvider } from '@modules/structured-decisions/t
 import { CLASSIFIER_RUN_ATTEMPTS } from '@queues/ai-agents/config'
 import { spendCapConfig } from '@services/ai-usage'
 import { claimClassifierRun } from '@services/classifier-runs'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { createStoryClusteringRunAdapter } from '@services/stories'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 import { classifierRunJobFor } from '@voucha/test-helpers/classifier-run-worker'

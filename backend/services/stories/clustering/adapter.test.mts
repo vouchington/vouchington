@@ -1,6 +1,6 @@
 import type { QueryExecutor } from '@data-stores/psql'
 import { listPendingClassifierRunRequests, reserveClassifierRun } from '@services/classifier-runs'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import {
   createStoryClusteringItem,
   makeStoryClusteringVectors,

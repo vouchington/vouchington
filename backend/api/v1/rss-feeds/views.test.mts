@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUserDirect } from '@voucha/test-helpers'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { createDeviceAndSessionTokens } from '@services/jwt-session'
 import { getRecentlyViewedIds } from '@services/recently-viewed'
 import { v7 } from 'uuid'

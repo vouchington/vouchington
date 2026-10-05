@@ -56,11 +56,6 @@ export async function isJwtStale(userId: string): Promise<boolean> {
   return result !== null
 }
 
-/** Clear the stale flag after re-issuing enriched tokens. */
-export async function clearJwtStale(userId: string): Promise<void> {
-  await sessionValkeyClient.unlink([getJwtStaleKey(userId)])
-}
-
 /** Clear the stale flag only if no newer invalidation has replaced it. */
 export async function clearJwtStaleIfCurrent(
   userId: string,

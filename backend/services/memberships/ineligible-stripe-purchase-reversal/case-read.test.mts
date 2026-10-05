@@ -1,8 +1,8 @@
+import { claimTestIneligiblePurchaseReversalOperations } from '@voucha/test-helpers/membership-reversal-case-fixtures'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { createTestSku, createTestUser } from '@voucha/test-helpers'
 import { createMembership } from '../create.mts'
-import { claimIneligiblePurchaseReversals } from './claim-ledger.mts'
 import { getIneligiblePurchaseReversalCase } from './case-read.mts'
 
 describe('getIneligiblePurchaseReversalCase', () => {
@@ -27,7 +27,7 @@ describe('getIneligiblePurchaseReversalCase', () => {
       paymentIntentId: null,
       qualifyingAmountMinorUnits: 100,
     }
-    await claimIneligiblePurchaseReversals(
+    await claimTestIneligiblePurchaseReversalOperations(
       {
         customerId: `cus_case_read_${randomUUID()}`,
         effectiveAt: undefined,

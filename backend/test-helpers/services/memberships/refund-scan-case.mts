@@ -1,7 +1,7 @@
+import { claimTestIneligiblePurchaseReversalOperations } from '@voucha/test-helpers/membership-reversal-case-fixtures'
 import { randomUUID } from 'node:crypto'
 import { createTestFamilyMembership, createTestSku, createTestUser } from '@voucha/test-helpers'
 import { getIneligiblePurchaseReversalCase } from '../../../services/memberships/ineligible-stripe-purchase-reversal/case-read.mts'
-import { claimIneligiblePurchaseReversals } from '../../../services/memberships/ineligible-stripe-purchase-reversal/claim-ledger.mts'
 
 export async function createRefundScanCase() {
   const [user, familySku, incomingSku] = await Promise.all([
@@ -25,7 +25,7 @@ export async function createRefundScanCase() {
     invoiceId,
     paymentIntentId: null,
   }
-  await claimIneligiblePurchaseReversals(
+  await claimTestIneligiblePurchaseReversalOperations(
     {
       customerId: `cus_refund_scan_${randomUUID()}`,
       effectiveAt: new Date(Date.now() - 30_000),

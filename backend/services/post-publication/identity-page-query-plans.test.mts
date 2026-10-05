@@ -26,7 +26,7 @@ import {
   insertTestPublicationAdditionalFeedItems,
 } from '@voucha/test-helpers/entities/post-publication-feed-pages'
 import { listFeedRows } from './identity-feed-paging.mts'
-import { createTestPublicationSnapshotWork } from './test-fixtures.mts'
+import { createTestPublicationSnapshotWork } from '@voucha/test-helpers/post-publication-fixtures'
 import { listPublicationIdentitySourcePage } from './identity-source-paging.mts'
 import { materializePostPublicationIdentitySnapshot } from './identity-snapshots.mts'
 import { acknowledgePostPublicationProjectionReceipts } from './receipts.mts'

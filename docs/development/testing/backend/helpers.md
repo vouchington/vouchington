@@ -419,8 +419,13 @@ Randomized IDs isolate fixture ownership, but they cannot isolate a query that s
 `ai_usage_records` row in a day. Tests making exact assertions through
 `getDailyAiCostTotalMicrounits()` must acquire `acquireTestAiUsageDateReservation()` from
 `@voucha/test-helpers`, register `release()` with `onTestFinished` immediately, and use its returned
-center day. The helper owns a clean three-day UUIDv7 window and uses independent advisory-lock slots
-so parallel tests remain concurrent. See the [parallel-safety reference](../../reference-tests-parallel-safety-and-test-root-hygiene.md).
+center day. The helper clears only its advisory-locked three-day UUIDv7 window before use and on
+release, so parallel tests remain concurrent. Ordinary windows are not recycled within a process;
+this keeps a prior day's valid in-process cache entry from becoming another test's initial total.
+The deterministic control window remains available for cleanup/reuse regressions, which use the
+actual `refreshDailyAiCostTotalMicrounits()` after mutations. See the
+[parallel-safety reference](../../reference-tests-parallel-safety-and-test-root-hygiene.md#exact-global-aggregates-need-owned-windows)
+for allocation bounds.
 
 ### Result-set overflow
 

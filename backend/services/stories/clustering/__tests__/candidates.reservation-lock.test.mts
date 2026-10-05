@@ -1,5 +1,5 @@
 import { reserveClassifierRun, supersedeStaleClassifierRun } from '@services/classifier-runs'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { insertTestStory, setTestItemStoryId } from '@voucha/test-helpers'
 import { changeConfigurationAfterFirstResolve } from '@voucha/test-helpers/data-stores/psql/classifier-runs/altered-configuration'
 import {
