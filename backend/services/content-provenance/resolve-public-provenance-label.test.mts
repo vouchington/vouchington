@@ -7,7 +7,7 @@ import {
 } from './resolve-public-provenance-label.mts'
 
 const REVIEWED_URL = 'https://reviewed.example/oauth/client.json'
-const KNOWN = { [REVIEWED_URL]: 'Reviewed App' }
+const KNOWN = { [REVIEWED_URL]: { key: 'reviewed-app', name: 'Reviewed App' } }
 const VERIFIED_AT = new Date('2026-01-02T03:04:05Z')
 
 function client(overrides: Partial<ProvenanceClient>): ProvenanceClient {
@@ -34,23 +34,29 @@ describe('resolvePublicProvenanceLabel', () => {
     const resolve = (c: ProvenanceClient | null | undefined) =>
       resolvePublicProvenanceLabel(via, c, KNOWN)
 
-    // Tier 1: CIMD client on the reviewed allowlist.
-    expect(resolve(allowlistedCimd)).toEqual({ via, app_name: 'Reviewed App' })
+    // Tier 1: CIMD client on the reviewed allowlist, by key only: never the consent-screen name.
+    expect(resolve(allowlistedCimd)).toEqual({ via, app: { kind: 'known', key: 'reviewed-app' } })
     // Tier 2: any other CIMD client gets the metadata hostname, never its self-described name.
-    expect(resolve(unlistedCimd)).toEqual({ via, app_name: 'other.example' })
+    expect(resolve(unlistedCimd)).toEqual({
+      via,
+      app: { kind: 'hostname', hostname: 'other.example' },
+    })
     // Tier 3: a dynamically registered client only counts once staff verified it.
-    expect(resolve(verifiedDynamic)).toEqual({ via, app_name: 'Registered Name' })
+    expect(resolve(verifiedDynamic)).toEqual({
+      via,
+      app: { kind: 'verified', client_id: 'voucha_client', client_name: 'Registered Name' },
+    })
     // Tier 4: everything else is the plain channel.
-    expect(resolve(unverifiedDynamic)).toEqual({ via, app_name: null })
-    expect(resolve(null)).toEqual({ via, app_name: null })
-    expect(resolve(undefined)).toEqual({ via, app_name: null })
+    expect(resolve(unverifiedDynamic)).toEqual({ via, app: null })
+    expect(resolve(null)).toEqual({ via, app: null })
+    expect(resolve(undefined)).toEqual({ via, app: null })
   })
 
   it('does not trust a verified timestamp over a CIMD client', () => {
     const verifiedCimd = { ...unlistedCimd, verified_at: VERIFIED_AT }
     expect(resolvePublicProvenanceLabel('mcp', verifiedCimd, KNOWN)).toEqual({
       via: 'mcp',
-      app_name: 'other.example',
+      app: { kind: 'hostname', hostname: 'other.example' },
     })
   })
 
@@ -58,15 +64,23 @@ describe('resolvePublicProvenanceLabel', () => {
     const nearMiss = client({ metadata_url: `${REVIEWED_URL}?other` })
     expect(resolvePublicProvenanceLabel('api', nearMiss, KNOWN)).toEqual({
       via: 'api',
-      app_name: 'reviewed.example',
+      app: { kind: 'hostname', hostname: 'reviewed.example' },
     })
   })
 
   it('ships with an empty allowlist, so every CIMD client shows its hostname', () => {
     expect(resolvePublicProvenanceLabel('mcp', allowlistedCimd)).toEqual({
       via: 'mcp',
-      app_name: 'reviewed.example',
+      app: { kind: 'hostname', hostname: 'reviewed.example' },
     })
+  })
+
+  it('never carries free text beyond the hostname and the verified registered name', () => {
+    const { app } = resolvePublicProvenanceLabel('api', allowlistedCimd, KNOWN) ?? {}
+    expect(JSON.stringify(app)).not.toContain('Reviewed App')
+    expect(JSON.stringify(resolvePublicProvenanceLabel('api', unlistedCimd, KNOWN))).not.toContain(
+      'Self Described',
+    )
   })
 
   it.each(['web', 'swift', 'dotnet', 'system'] as const)(

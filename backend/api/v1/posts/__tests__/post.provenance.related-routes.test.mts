@@ -26,13 +26,17 @@ const suffix = randomBytes(6).toString('hex')
 const APP_NAME = `Related Route Agent ${suffix}`
 
 let reader: PrivateUser
+let clientRowId: string
 let feedId: string
 let postId: string
 let webPostId: string
 let communitySlug: string
 
 const expectLabels = (posts: Record<string, Record<string, unknown>>) => {
-  expect(posts[postId]!.provenance).toEqual({ via: 'mcp', app_name: APP_NAME })
+  expect(posts[postId]!.provenance).toEqual({
+    via: 'mcp',
+    app: { kind: 'verified', client_id: clientRowId, client_name: APP_NAME },
+  })
   expect(posts[postId]).not.toHaveProperty('staff_provenance')
   expect(posts[webPostId]).toBeDefined()
   expect(posts[webPostId]).not.toHaveProperty('provenance')
@@ -45,7 +49,7 @@ describe('post provenance on routes that embed related or listed posts', () => {
       createTestUser({ administrator: true }),
     ])
     reader = await createTestUser()
-    const clientRowId = await insertContentProvenanceOAuthClient({
+    clientRowId = await insertContentProvenanceOAuthClient({
       verifiedAt: new Date(),
       verifiedById: admin.id,
     })

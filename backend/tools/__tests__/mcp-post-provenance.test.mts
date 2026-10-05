@@ -15,6 +15,12 @@ let clientId: string
 let root: { id: string }
 const posts: Record<string, { id: string }> = {}
 
+const verifiedApp = () => ({
+  kind: 'verified',
+  client_id: clientId,
+  client_name: APP_NAME,
+})
+
 const read = async (tool: string, id: string, caller: PrivateUser = author) =>
   callStructuredMcpTool({ ...caller, membership_plan: null }, tool, { post_id: id }, SCOPES)
 
@@ -47,10 +53,10 @@ describe('MCP post provenance read tools', () => {
   describe('MCP post provenance', () => {
     it('get_post carries the public label for API and MCP posts', async () => {
       expect((await read('get_post', root.id)).post).toMatchObject({
-        provenance: { via: 'mcp', app_name: APP_NAME },
+        provenance: { via: 'mcp', app: verifiedApp() },
       })
       expect((await read('get_post', posts.api!.id)).post).toMatchObject({
-        provenance: { via: 'api', app_name: null },
+        provenance: { via: 'api', app: null },
       })
     })
 
@@ -64,25 +70,27 @@ describe('MCP post provenance read tools', () => {
     it('never names the client behind an anonymous post, even to an administrator or its author', async () => {
       for (const caller of [author, admin]) {
         const { post } = await read('get_post', posts.anonymous!.id, caller)
-        expect(post).toMatchObject({ provenance: { via: 'mcp', app_name: null } })
+        expect(post).toMatchObject({ provenance: { via: 'mcp', app: null } })
         expect(JSON.stringify(post)).not.toContain(APP_NAME)
+        expect(JSON.stringify(post)).not.toContain(clientId)
       }
     })
 
     it('never returns the staff detail, even to an administrator', async () => {
       const { post } = await read('get_post', root.id, admin)
       expect(post).not.toHaveProperty('staff_provenance')
-      expect(JSON.stringify(post)).not.toContain(clientId)
+      expect(post).toMatchObject({ provenance: { via: 'mcp', app: verifiedApp() } })
+      expect(JSON.stringify(post)).not.toContain('metadata_url')
     })
 
     it('labels the posts that get_post_ancestors and get_post_descendants return', async () => {
       const { ancestors } = await read('get_post_ancestors', posts.api!.id)
       expect(ancestors).toEqual([
-        expect.objectContaining({ id: root.id, provenance: { via: 'mcp', app_name: APP_NAME } }),
+        expect.objectContaining({ id: root.id, provenance: { via: 'mcp', app: verifiedApp() } }),
       ])
       const { descendants } = await read('get_post_descendants', root.id)
       const byId = new Map((descendants as { id: string }[]).map(post => [post.id, post]))
-      expect(byId.get(posts.api!.id)).toMatchObject({ provenance: { via: 'api', app_name: null } })
+      expect(byId.get(posts.api!.id)).toMatchObject({ provenance: { via: 'api', app: null } })
       expect(byId.get(posts.web!.id)).not.toHaveProperty('provenance')
     })
   })

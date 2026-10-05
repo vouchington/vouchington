@@ -31,6 +31,11 @@ const seed = async (key: string, provenance: ContentProvenance, isAnonymous = fa
   })
 }
 
+const verifiedLabel = () => ({
+  via: 'mcp',
+  app: { kind: 'verified', client_id: clientRowId, client_name: APP_NAME },
+})
+
 const detail = async (key: string, viewer?: PrivateUser) => {
   const request = createRequest()
   if (viewer) await request.authenticateAs(viewer)
@@ -61,8 +66,8 @@ describe('post provenance', () => {
   describe('post provenance on read routes', () => {
     describe('GET /api/v1/posts/:idOrSlug', () => {
       it('labels api and mcp posts for signed-out readers', async () => {
-        expect((await detail('mcp')).provenance).toEqual({ via: 'mcp', app_name: APP_NAME })
-        expect((await detail('api')).provenance).toEqual({ via: 'api', app_name: null })
+        expect((await detail('mcp')).provenance).toEqual(verifiedLabel())
+        expect((await detail('api')).provenance).toEqual({ via: 'api', app: null })
       })
 
       it.each(['web', 'swift', 'dotnet', 'system'])('has no label on %s posts', async channel => {
@@ -75,7 +80,9 @@ describe('post provenance', () => {
         for (const viewer of [undefined, reader, author]) {
           const post = await detail('mcp', viewer)
           expect(post).not.toHaveProperty('staff_provenance')
-          expect(JSON.stringify(post)).not.toContain(clientRowId)
+          // Only the verified tier's facts are public: the id and registered name, nothing else.
+          expect(post.provenance).toEqual(verifiedLabel())
+          expect(JSON.stringify(post)).not.toContain('metadata_url')
         }
       })
 
@@ -102,17 +109,18 @@ describe('post provenance', () => {
       it('hides the app behind an anonymous author from readers and moderators', async () => {
         for (const viewer of [undefined, reader, moderator]) {
           const post = await detail('anon', viewer)
-          expect(post.provenance).toEqual({ via: 'mcp', app_name: null })
+          expect(post.provenance).toEqual({ via: 'mcp', app: null })
           expect(post.created_by_id).toBeNull()
           expect(JSON.stringify(post)).not.toContain(APP_NAME)
+          expect(JSON.stringify(post)).not.toContain(clientRowId)
         }
         expect((await detail('anon', moderator)).staff_provenance).toEqual({ created_via: 'mcp' })
       })
 
       it('shows the app behind an anonymous post to its author and to an administrator', async () => {
-        expect((await detail('anon', author)).provenance?.app_name).toBe(APP_NAME)
+        expect((await detail('anon', author)).provenance).toEqual(verifiedLabel())
         const forAdmin = await detail('anon', admin)
-        expect(forAdmin.provenance?.app_name).toBe(APP_NAME)
+        expect(forAdmin.provenance).toEqual(verifiedLabel())
         expect(forAdmin.staff_provenance?.oauth_client?.client_name).toBe(APP_NAME)
       })
     })
@@ -121,8 +129,8 @@ describe('post provenance', () => {
       it('labels list rows with the same rules as the detail route', async () => {
         const request = createRequest()
         const { body } = await request.get(`/api/v1/posts?creator=${author.id}`).expect(200)
-        expect(body.posts[ids.mcp!].provenance).toEqual({ via: 'mcp', app_name: APP_NAME })
-        expect(body.posts[ids.api!].provenance).toEqual({ via: 'api', app_name: null })
+        expect(body.posts[ids.mcp!].provenance).toEqual(verifiedLabel())
+        expect(body.posts[ids.api!].provenance).toEqual({ via: 'api', app: null })
         expect(body.posts[ids.web!]).not.toHaveProperty('provenance')
         expect(body.posts[ids.mcp!]).not.toHaveProperty('staff_provenance')
       })
@@ -154,7 +162,7 @@ describe('post provenance', () => {
         const { body } = await createRequest()
           .get(`/api/v1/posts/${ids.web}/descendants`)
           .expect(200)
-        expect(body.posts[commentId].provenance).toEqual({ via: 'mcp', app_name: APP_NAME })
+        expect(body.posts[commentId].provenance).toEqual(verifiedLabel())
       })
     })
   })

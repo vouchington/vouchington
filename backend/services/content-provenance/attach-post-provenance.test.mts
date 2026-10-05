@@ -77,12 +77,18 @@ describe('attachPostProvenance', () => {
       ['system', undefined],
       ['swift', undefined],
       ['dotnet', undefined],
-      ['apiBare', { via: 'api', app_name: null }],
-      ['mcpUnverified', { via: 'mcp', app_name: null }],
-      ['mcpVerified', { via: 'mcp', app_name: VERIFIED_NAME }],
-      ['apiCimd', { via: 'api', app_name: new URL(CIMD_URL).hostname }],
+      ['apiBare', { via: 'api', app: null }],
+      ['mcpUnverified', { via: 'mcp', app: null }],
+      ['apiCimd', { via: 'api', app: { kind: 'hostname', hostname: new URL(CIMD_URL).hostname } }],
     ])('labels %s rows', async (key, expected) => {
       expect((await labelFor(key, null)).provenance).toEqual(expected)
+    })
+
+    it('labels a staff-verified client with its id and registered name', async () => {
+      expect((await labelFor('mcpVerified', null)).provenance).toEqual({
+        via: 'mcp',
+        app: { kind: 'verified', client_id: verifiedClientId, client_name: VERIFIED_NAME },
+      })
     })
 
     it('never gives a signed-out, regular or author viewer the staff detail', async () => {
@@ -118,11 +124,15 @@ describe('attachPostProvenance', () => {
       const mine = await seedPost('changing', { createdVia: 'api', oauthClientId: rowId })
       const read = async () =>
         (await attachPostProvenance([{ ...mine, created_by_id: author.id }], null))[0]?.provenance
-      expect(await read()).toEqual({ via: 'api', app_name: 'Content provenance test client' })
+      const verified = (client_name: string) => ({
+        via: 'api',
+        app: { kind: 'verified', client_id: rowId, client_name },
+      })
+      expect(await read()).toEqual(verified('Content provenance test client'))
       await renameTestOAuthClient(rowId, renamed)
-      expect(await read()).toEqual({ via: 'api', app_name: renamed })
+      expect(await read()).toEqual(verified(renamed))
       await clearTestOAuthClientVerified(rowId)
-      expect(await read()).toEqual({ via: 'api', app_name: null })
+      expect(await read()).toEqual({ via: 'api', app: null })
     })
   })
 
@@ -158,15 +168,20 @@ describe('attachPostProvenance', () => {
     const anon = (viewer?: PrivateUser | null) =>
       attachPostProvenance([withAuthor('anonVerified')], viewer).then(rows => rows[0] as Labelled)
 
-    it('keeps the app name from viewers who cannot see the author', async () => {
+    const verifiedApp = {
+      via: 'mcp',
+      app: { kind: 'verified', client_id: verifiedClientId, client_name: VERIFIED_NAME },
+    }
+
+    it('keeps the app from viewers who cannot see the author', async () => {
       for (const viewer of [null, reader]) {
-        expect((await anon(viewer)).provenance).toEqual({ via: 'mcp', app_name: null })
+        expect((await anon(viewer)).provenance).toEqual({ via: 'mcp', app: null })
       }
     })
 
-    it('shows the app name to the author and to administrators', async () => {
+    it('shows the app to the author and to administrators', async () => {
       for (const viewer of [author, admin]) {
-        expect((await anon(viewer)).provenance).toEqual({ via: 'mcp', app_name: VERIFIED_NAME })
+        expect((await anon(viewer)).provenance).toEqual(verifiedApp)
       }
     })
 
@@ -180,12 +195,9 @@ describe('attachPostProvenance', () => {
     it('decides before masking, so a masked author does not hide the label', async () => {
       const [masked] = await labelAndMaskPosts([created.anonVerified!], reader)
       expect(masked?.created_by_id).toBeNull()
-      expect(masked).toMatchObject({ provenance: { via: 'mcp', app_name: null } })
+      expect(masked).toMatchObject({ provenance: { via: 'mcp', app: null } })
       const [own] = await labelAndMaskPosts([created.anonVerified!], author)
-      expect(own).toMatchObject({
-        created_by_id: author.id,
-        provenance: { app_name: VERIFIED_NAME },
-      })
+      expect(own).toMatchObject({ created_by_id: author.id, provenance: verifiedApp })
     })
   })
 })
