@@ -8,8 +8,8 @@ import {
 import { readTestMcpCallAuditRowText } from '@voucha/test-helpers/entities/mcp-call-audit'
 import { issueTestOAuthTokensForClient } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import { copyrightConfig } from '@services/copyright-notices/config'
-import { createCopyrightReplayFixture } from '@services/copyright-notices/route-replay-fixture-setup'
-import { exhaustCopyrightActionIntent } from '@services/copyright-notices/route-replay-fixtures'
+import { createCopyrightReplayFixture } from '@voucha/test-helpers/copyright-route-replay-setup'
+import { exhaustCopyrightActionIntent } from '@voucha/test-helpers/copyright-route-replay-fixtures'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { useCopyrightMcpDecisionTools } from '@voucha/test-helpers/copyright-mcp-write-fixtures'
 
