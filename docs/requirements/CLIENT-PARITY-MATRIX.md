@@ -184,9 +184,10 @@ OAuth app management and administrator verification remain web-only. Native deli
 Administrator MCP access is OAuth-only: `mcp.admin:*` scopes accept only the `oauth` surface and
 `POST /api/v1/my/api-keys` rejects them for every owner. API-key pickers therefore drop the
 administrator audience choice, which the `api-key` surface filter already does for a catalogue
-consumer. Native clients that still offer an administrator API-key audience must remove it; the
-`native.credentials.adminAudience` and `native.credentials.audience` claims stay in the manifest
-until the linked native change lands.
+consumer. The native manifest and catalog no longer carry the `native.credentials.adminAudience`
+and `native.credentials.audience` claims. A native client that still offers an administrator
+API-key audience drops that choice the next time it reworks the picker; Vouchington does not wait
+on it.
 
 The API-key storage column is `scopes` and uses the same generated enum as OAuth grants. API v1
 continues accepting and returning `permissions` as catalogue scope strings; client DTOs and pickers

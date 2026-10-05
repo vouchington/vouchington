@@ -317,10 +317,11 @@ documenting it. Descriptive uses such as `ActivityPub-compatible` or `Mastodon A
 are not matched, and string literals are never scanned. A genuine external protocol or wire-format
 constraint stays and is suppressed on its own line directly above the comment with
 `// ast-grep-ignore: no-compatibility-tombstone-comments -- <the external constraint>`. A v1 field
-that first-party native clients still decode is removed with those clients through the
-[client parity matrix](../../../requirements/CLIENT-PARITY-MATRIX.md), not in a static-analysis PR;
-until then, suppress it with a reason that links the open removal issue. Word the
-reason without those trigger words, because the reason is itself a comment the rule reads, and never
+that first-party native clients still decode is removed by Vouchington first, in its own contract
+change through the [client parity matrix](../../../requirements/CLIENT-PARITY-MATRIX.md), not in a
+static-analysis PR; native consumption follows later in the clients repository, so the removal never
+waits for the clients. Until that change lands, suppress it with a reason that links the open removal
+issue. Word the reason without those trigger words, because the reason is itself a comment the rule reads, and never
 suppress with a trailing same-line comment, which ast-grep parses as a separate comment node. The
 rule covers only the `Tsx`-parsed extensions; Rust, Lua, SQL, shell, Python, and YAML sources are
 not scanned.

@@ -4,7 +4,7 @@ Source entrypoint: [web/app/README.md](../../../../../web/app/README.md)
 
 Next.js App Router tree. Top-level directories beginning with `(group)` are
 [route groups](https://nextjs.org/docs/app/building-your-application/routing/route-groups) — they
-do **not** add a URL segment. Some groups (e.g. `(my)`, `(growth)`, `(chat)`) define a shared
+do **not** add a URL segment. Some groups (e.g. `(my)`, `(growth)`) define a shared
 `layout.tsx`; others are organizational only.
 
 Full route catalogue (with auth/permission rules and metadata expectations):
@@ -18,7 +18,6 @@ Full route catalogue (with auth/permission rules and metadata expectations):
 | [`(my)/`](<../../../../../web/app/(my)>)                   | Signed-in `/my/*` settings, bookmarks, subscriptions, history.    |
 | [`(topics)/`](<../../../../../web/app/(topics)>)           | Topic detail and per-topic post routes (`/[topicType]/[id]/...`). |
 | [`(communities)/`](<../../../../../web/app/(communities)>) | Communities (`/communities/*`).                                   |
-| [`(chat)/`](<../../../../../web/app/(chat)>)               | LLM chat surface.                                                 |
 | [`(growth)/`](<../../../../../web/app/(growth)>)           | Acquisition/growth experiments and landings.                      |
 | [`(posts)/`](<../../../../../web/app/(posts)>)             | Post creation/edit forms.                                         |
 | [`(user)/`](<../../../../../web/app/(user)>)               | Public user profiles (`/user/[idOrUsername]`).                    |

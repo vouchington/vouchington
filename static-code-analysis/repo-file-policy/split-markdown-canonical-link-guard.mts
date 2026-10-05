@@ -12,7 +12,6 @@ const SPLIT_PARENT_PATHS = [
   'docs/requirements/ENTITIES.md',
   'docs/requirements/ENTITY-ACTION-MATRIX.md',
   'docs/requirements/ENTITY-LIFECYCLE-MATRIX.md',
-  'docs/requirements/admin/CUSTOMER-SUPPORT.md',
   'docs/requirements/anatomy/fediverse-instance.md',
   'docs/requirements/community/community-lists.md',
   'docs/requirements/content/LISTS.md',
