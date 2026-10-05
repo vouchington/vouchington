@@ -7,7 +7,8 @@ ALTER TABLE topics
   FOREIGN KEY (created_via_oauth_client_id) REFERENCES oauth_clients(id) ON DELETE RESTRICT
   NOT VALID;
 
-CREATE OR REPLACE TRIGGER topics_content_provenance_immutable
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_topics_content_provenance_immutable
   AFTER UPDATE ON topics
   FOR EACH ROW
   WHEN (

@@ -15,6 +15,7 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS moderation_reports (
   id               uuid PRIMARY KEY DEFAULT uuidv7(),
   created_via content_creation_channels NOT NULL,
@@ -46,47 +47,59 @@ CREATE TABLE IF NOT EXISTS moderation_reports (
 );
 
 -- Per-entity dedup: one pending report per reporter per target
-CREATE UNIQUE INDEX IF NOT EXISTS moderation_reports_active_post_uniq
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_moderation_reports__active_post_unique
   ON moderation_reports (reporter_user_id, post_id)
   WHERE reviewed_at IS NULL AND post_id IS NOT NULL;
 
-CREATE UNIQUE INDEX IF NOT EXISTS moderation_reports_active_user_uniq
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_moderation_reports__active_user_unique
   ON moderation_reports (reporter_user_id, reported_user_id)
   WHERE reviewed_at IS NULL AND reported_user_id IS NOT NULL;
 
-CREATE UNIQUE INDEX IF NOT EXISTS moderation_reports_active_hostname_uniq
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_moderation_reports__active_hostname_unique
   ON moderation_reports (reporter_user_id, hostname_id)
   WHERE reviewed_at IS NULL AND hostname_id IS NOT NULL;
 
-CREATE UNIQUE INDEX IF NOT EXISTS moderation_reports_active_rss_uniq
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_moderation_reports__active_rss_unique
   ON moderation_reports (reporter_user_id, rss_feed_item_id)
   WHERE reviewed_at IS NULL AND rss_feed_item_id IS NOT NULL;
 
-CREATE INDEX IF NOT EXISTS idx_moderation_reports_pending_id
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_moderation_reports__pending_id
   ON moderation_reports (id DESC)
   WHERE reviewed_at IS NULL;
 
-CREATE INDEX IF NOT EXISTS idx_moderation_reports_resolution_id
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_moderation_reports__resolution_id
   ON moderation_reports (resolution_action, id DESC)
   WHERE reviewed_at IS NOT NULL;
 
 -- Per-entity lookup indexes
-CREATE INDEX IF NOT EXISTS idx_moderation_reports_post_id
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_moderation_reports__post_id
   ON moderation_reports (post_id) WHERE post_id IS NOT NULL;
 
-CREATE INDEX IF NOT EXISTS idx_moderation_reports_reported_user_id
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_moderation_reports__reported_user_id
   ON moderation_reports (reported_user_id) WHERE reported_user_id IS NOT NULL;
 
-CREATE INDEX IF NOT EXISTS idx_moderation_reports_hostname_id
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_moderation_reports__hostname_id
   ON moderation_reports (hostname_id) WHERE hostname_id IS NOT NULL;
 
-CREATE INDEX IF NOT EXISTS idx_moderation_reports_rss_feed_item_id
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_moderation_reports__rss_feed_item_id
   ON moderation_reports (rss_feed_item_id) WHERE rss_feed_item_id IS NOT NULL;
 
-CREATE INDEX IF NOT EXISTS idx_moderation_reports_case_id
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_moderation_reports__case_id
   ON moderation_reports (case_id);
 
-CREATE INDEX IF NOT EXISTS idx_moderation_reports_resolved_by_id
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_moderation_reports__resolved_by_id
   ON moderation_reports (resolved_by_id)
   WHERE resolved_by_id IS NOT NULL;
 
@@ -107,11 +120,13 @@ COMMENT ON COLUMN moderation_reports.escalated_at IS 'When a moderator escalated
 COMMENT ON COLUMN moderation_reports.escalated_by_id IS 'The moderator who escalated this report.';
 COMMENT ON COLUMN moderation_reports.case_id IS 'The moderation case this report belongs to.';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_reports__created_via_oauth_client_id
   ON moderation_reports (created_via_oauth_client_id)
   WHERE created_via_oauth_client_id IS NOT NULL;
 
 -- Current indexes for fresh schema bootstrap.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_reports__reporter_user_id
   ON moderation_reports (reporter_user_id)
   WHERE reporter_user_id IS NOT NULL;

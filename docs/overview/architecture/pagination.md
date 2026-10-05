@@ -82,7 +82,7 @@ requested limit. See [client coordination](../../requirements/CLIENT-PARITY-MATR
 - Direct-message inbox queries must scan `idx_conversations__direct_message_updated` in
   `(updated_at DESC, id DESC)` order without an explicit Sort under custom and generic plans.
   Membership uses a correlated scalar probe whose singleton contract is enforced by
-  `idx_conv_participants__conversation_user`; decorrelating into a participant-driven join would
+  `idx_conversation_participants__conversation_user`; decorrelating into a participant-driven join would
   require sorting the inbox after membership lookup and fails the seeded plan gate.
 
 The backend implementation owner is [`@modules/pagination`](backend/modules/pagination/README.md),

@@ -9,7 +9,10 @@ import {
   createVoteDefaultPartitionSql,
   createVoteIndexesSql,
 } from './utils/election-vote-table-sql.mts'
-import { getElectionForeignKeyName } from './utils/election-sql-identifiers.mts'
+import {
+  getElectionConstraintClause,
+  getElectionForeignKeyName,
+} from './utils/election-sql-identifiers.mts'
 import { createEntityRelationVoteIntegrityTargets } from './utils/entity-relation-vote-integrity-targets.mts'
 import { createRetainedEntityRelationImpacts } from './utils/retained-entity-relation-impacts.mts'
 
@@ -31,17 +34,18 @@ export default () => {
 }
 
 function createEntityRelationTable(metadata: EntityRelationMetadata) {
-  let query = `CREATE TABLE IF NOT EXISTS "${metadata.table_name}" (\n`
+  let query = `-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS "${metadata.table_name}" (\n`
   const primary_keys = []
-  query += `  subject_id UUID NOT NULL REFERENCES ${entityRelationEntityTables[metadata.subject_type as EntityRelationEntityType].foreign_key_table} (id) ON DELETE CASCADE,\n`
+  query += `  subject_id UUID NOT NULL ${getElectionConstraintClause(metadata.table_name, ['subject_id'], 'fk')}REFERENCES ${entityRelationEntityTables[metadata.subject_type as EntityRelationEntityType].foreign_key_table} (id) ON DELETE CASCADE,\n`
   primary_keys.push('subject_id')
-  query += `  object_id UUID NOT NULL REFERENCES ${entityRelationEntityTables[metadata.object_type as EntityRelationEntityType].foreign_key_table} (id) ON DELETE CASCADE,\n`
+  query += `  object_id UUID NOT NULL ${getElectionConstraintClause(metadata.table_name, ['object_id'], 'fk')}REFERENCES ${entityRelationEntityTables[metadata.object_type as EntityRelationEntityType].foreign_key_table} (id) ON DELETE CASCADE,\n`
   primary_keys.push('object_id')
 
-  query += `    created_by_id UUID REFERENCES users ON DELETE SET NULL,
+  query += `    created_by_id UUID ${getElectionConstraintClause(metadata.table_name, ['created_by_id'], 'fk')}REFERENCES users ON DELETE SET NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMPTZ,
-    deleted_by_id UUID REFERENCES users ON DELETE SET NULL`
+    deleted_by_id UUID ${getElectionConstraintClause(metadata.table_name, ['deleted_by_id'], 'fk')}REFERENCES users ON DELETE SET NULL`
   const storesOutboundFollowActivityId = metadata.table_name === 'relation__user__follow__user'
   if (storesOutboundFollowActivityId) {
     query += `,
@@ -65,19 +69,19 @@ function createEntityRelationTable(metadata: EntityRelationMetadata) {
     votes_score_net DOUBLE PRECISION GENERATED ALWAYS AS (
       votes_score_up - votes_score_down
     ) STORED,
-    CHECK (votes_score_up >= 0),
-    CHECK (votes_score_none >= 0),
-    CHECK (votes_score_down >= 0),
-    CHECK (votes_count_up >= 0),
-    CHECK (votes_count_none >= 0),
-    CHECK (votes_count_down >= 0)`
+    ${getElectionConstraintClause(metadata.table_name, ['votes_score_up'], 'chk')}CHECK (votes_score_up >= 0),
+    ${getElectionConstraintClause(metadata.table_name, ['votes_score_none'], 'chk')}CHECK (votes_score_none >= 0),
+    ${getElectionConstraintClause(metadata.table_name, ['votes_score_down'], 'chk')}CHECK (votes_score_down >= 0),
+    ${getElectionConstraintClause(metadata.table_name, ['votes_count_up'], 'chk')}CHECK (votes_count_up >= 0),
+    ${getElectionConstraintClause(metadata.table_name, ['votes_count_none'], 'chk')}CHECK (votes_count_none >= 0),
+    ${getElectionConstraintClause(metadata.table_name, ['votes_count_down'], 'chk')}CHECK (votes_count_down >= 0)`
 
     query += `,
     CHECK (id > subject_id)`
     query += `,
     CHECK (id > object_id)`
     query += `,
-    UNIQUE (subject_id, id)`
+    ${getElectionConstraintClause(metadata.table_name, ['subject_id', 'id'], 'uq')}UNIQUE (subject_id, id)`
   }
 
   if (metadata.order_index) {
@@ -108,17 +112,17 @@ function createEntityRelationVoteTable(metadata: EntityRelationMetadata): string
   const voteTable = getEntityRelationVoteTableName(metadata)
   return `-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS ${voteTable} (
-  user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
+  user_id UUID NOT NULL ${getElectionConstraintClause(voteTable, ['user_id'], 'fk')}REFERENCES users ON DELETE CASCADE,
   subject_id UUID NOT NULL,
   entity_relation_id UUID NOT NULL,
   id UUID DEFAULT uuidv7() NOT NULL,
-  score SMALLINT CHECK (score IS NULL OR score IN (-1, 0, 1)),
+  score SMALLINT ${getElectionConstraintClause(voteTable, ['score'], 'chk')}CHECK (score IS NULL OR score IN (-1, 0, 1)),
   score_is_neutral BOOLEAN NOT NULL DEFAULT FALSE CHECK (NOT score_is_neutral OR score IS NOT DISTINCT FROM 0),
   score_is_semantic BOOLEAN NOT NULL DEFAULT FALSE CHECK (NOT score_is_semantic OR score IS NOT NULL),
   ip_address INET,
   device_id UUID,
   session_id UUID,
-  user_agent_id UUID REFERENCES user_agent_strings ON DELETE SET NULL,
+  user_agent_id UUID ${getElectionConstraintClause(voteTable, ['user_agent_id'], 'fk')}REFERENCES user_agent_strings ON DELETE SET NULL,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   PRIMARY KEY (entity_relation_id, id),
   CONSTRAINT ${getElectionForeignKeyName(voteTable, 'subject_entity_relation')} FOREIGN KEY (subject_id, entity_relation_id) REFERENCES ${metadata.table_name} (subject_id, id) ON DELETE CASCADE

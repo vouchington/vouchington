@@ -14,7 +14,7 @@ export async function getMembershipPendingState(userId: string) {
     read<{ count: string }>(sql`/* getMembershipPendingState.grants */
       SELECT COUNT(*)::text AS count FROM membership_grants grant_row
       WHERE grant_row.user_id = ${userId} AND grant_row.revoked_at IS NULL
-        AND membership_grant_remaining_duration(grant_row.id) > INTERVAL '0'
+        AND fn_membership_grant_remaining_duration(grant_row.id) > INTERVAL '0'
         AND NOT EXISTS (
           SELECT 1 FROM membership_grant_activation_periods period
           WHERE period.membership_grant_id = grant_row.id AND period.ended_at IS NULL

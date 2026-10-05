@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS activitypub_post_likes (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_activitypub_post_likes__like_ap_id ON activitypub_post_likes (like_ap_id) WHERE deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_activitypub_post_likes__like_activitypub_id ON activitypub_post_likes (like_ap_id) WHERE deleted_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_activitypub_post_likes__post_remote_actor ON activitypub_post_likes (post_id, remote_actor_id) WHERE deleted_at IS NULL;
 -- RI-usable leading indexes for the post_id/remote_actor_id FKs — the unique index above is

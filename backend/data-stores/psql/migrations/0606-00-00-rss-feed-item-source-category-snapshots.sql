@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS rss_feed_item_source_category_snapshots (
   categories JSONB NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (rss_feed_id, rss_feed_item_id),
-  FOREIGN KEY (rss_feed_id, rss_feed_item_id)
+  CONSTRAINT fk_rss_feed_item_source_category_snapshots__feed__item FOREIGN KEY (rss_feed_id, rss_feed_item_id)
     REFERENCES rss_feed_item_sources (rss_feed_id, rss_feed_item_id) ON DELETE CASCADE,
   CHECK (jsonb_typeof(categories) = 'array')
 );

@@ -75,7 +75,7 @@ export function createGrantDurationTestActivation(
 export async function getGrantDurationTestRemainingSeconds(grantId: string): Promise<string> {
   const { rows } = await read<{ remaining_seconds: string }>(sql`
     /* getGrantDurationTestRemainingSeconds */
-    SELECT EXTRACT(EPOCH FROM membership_grant_remaining_duration(${grantId}))::bigint
+    SELECT EXTRACT(EPOCH FROM fn_membership_grant_remaining_duration(${grantId}))::bigint
       AS remaining_seconds`)
   return rows[0]!.remaining_seconds
 }

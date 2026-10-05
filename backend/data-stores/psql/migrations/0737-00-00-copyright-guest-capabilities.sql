@@ -37,7 +37,7 @@ ALTER TABLE copyright_notice_lifecycle_changes
 
 CREATE TABLE copyright_notice_urgent_filings (
   copyright_notice_submission_id uuid PRIMARY KEY
-    REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_copyright_notice_urgent_filings__submission REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
   classified_at timestamptz NOT NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(copyright_notice_submission_id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP

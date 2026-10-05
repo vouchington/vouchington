@@ -211,7 +211,7 @@ WHERE bedrock_nova_multimodal_v1_embedding IS NOT NULL;
 
 -- find out of date embeddings
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS ids_topics__bedrock_nova_multimodal_v1_to_update
+CREATE INDEX IF NOT EXISTS idx_topics__bedrock_nova_multimodal_v1_to_update
 ON topics (id)
 WHERE (
   bedrock_nova_multimodal_v1_input_sha256 IS NULL
@@ -232,7 +232,7 @@ WHERE deleted_at IS NULL;
 
 -- find topics pending language detection
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS topics_lingua_rs_pending_idx
+CREATE INDEX IF NOT EXISTS idx_topics__lingua_rs_pending
   ON topics (id)
   WHERE lingua_rs_input_sha256 IS NULL;
 
@@ -614,27 +614,27 @@ FOR EACH STATEMENT EXECUTE FUNCTION fn_project_topic_aliases();
 
 -- finding aliases by topic
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS topic_aliases__topic_id
+CREATE INDEX IF NOT EXISTS idx_topic_aliases__topic_id
 ON topic_aliases (topic_id, alias)
 WHERE topic_id IS NOT NULL;
 
 -- search by prefix for searching aliases
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS topic_aliases__alias__text_pattern_ops
+CREATE INDEX IF NOT EXISTS idx_topic_aliases__alias__text_pattern_ops
 ON topic_aliases (LOWER(alias) text_pattern_ops);
 
 -- full text search for aliases
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS topic_aliases__search_vector
+CREATE INDEX IF NOT EXISTS idx_topic_aliases__search_vector
 ON topic_aliases USING GIN (search_vector);
 
 -- indexes for foreign keys
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS topic_aliases__created_by_id
+CREATE INDEX IF NOT EXISTS idx_topic_aliases__created_by_id
 ON topic_aliases (created_by_id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS topic_aliases__updated_by_id
+CREATE INDEX IF NOT EXISTS idx_topic_aliases__updated_by_id
 ON topic_aliases (updated_by_id);
 
 COMMENT ON TABLE topic_aliases IS 'Topic aliases and standalone hashtags. Linked aliases are synced to topics.aliases.';
@@ -653,7 +653,7 @@ CREATE TABLE IF NOT EXISTS topic_alias_category_mapping_reconciliations (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS topic_alias_category_mapping_reconciliations__updated_at
+CREATE INDEX IF NOT EXISTS idx_topic_alias_category_mapping_reconciliations__updated_at
 ON topic_alias_category_mapping_reconciliations (updated_at, topic_alias_id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

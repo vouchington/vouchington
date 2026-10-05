@@ -181,7 +181,7 @@ export async function getTestMembershipGrantRemainingMilliseconds(
 ): Promise<number | undefined> {
   const { rows } = await read<{ remaining_milliseconds: string }>(
     sql`/* getTestMembershipGrantRemainingMilliseconds */
-      SELECT FLOOR(EXTRACT(EPOCH FROM membership_grant_remaining_duration(${grantId})) * 1000)
+      SELECT FLOOR(EXTRACT(EPOCH FROM fn_membership_grant_remaining_duration(${grantId})) * 1000)
         ::bigint AS remaining_milliseconds`,
   )
   const remaining = rows[0]?.remaining_milliseconds

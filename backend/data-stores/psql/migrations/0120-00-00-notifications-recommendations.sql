@@ -313,7 +313,7 @@ ON notifications (moderation_report_id)
 WHERE moderation_report_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_notifications__post_id__fk
+CREATE INDEX IF NOT EXISTS idx_notifications__post_id__foreign_key
 ON notifications (post_id)
 WHERE post_id IS NOT NULL;
 
@@ -333,7 +333,7 @@ ON notifications (sent_by_user_id)
 WHERE sent_by_user_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_notifications__user_warning_id__fk
+CREATE INDEX IF NOT EXISTS idx_notifications__user_warning_id__foreign_key
 ON notifications (user_warning_id)
 WHERE user_warning_id IS NOT NULL;
 
@@ -640,7 +640,7 @@ CREATE TABLE IF NOT EXISTS post_topic_recommendation_landing_page_urls (
   url_id UUID NOT NULL REFERENCES urls(id) ON DELETE RESTRICT,
   sort_order INT NOT NULL CHECK (sort_order >= 0),
   PRIMARY KEY (post_id, url_id),
-  UNIQUE (post_id, sort_order)
+  CONSTRAINT uq_post_topic_recommenda_landing_page_urls__post_id__sort_order UNIQUE (post_id, sort_order)
 );
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_topic_recommendation_landing_page_urls__url_id
@@ -707,11 +707,11 @@ CREATE TABLE IF NOT EXISTS rss_feed_item_feed_shares (
 ) PARTITION BY RANGE (recipient_user_id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_rss_item_feed_shares__recipient__sort
+CREATE INDEX IF NOT EXISTS idx_rss_feed_item_feed_shares__recipient__sort
 ON rss_feed_item_feed_shares (recipient_user_id, sort_at DESC, id DESC);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_rss_item_feed_shares__item
+CREATE INDEX IF NOT EXISTS idx_rss_feed_item_feed_shares__item
 ON rss_feed_item_feed_shares (rss_feed_item_id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

@@ -1,6 +1,7 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Global endpoint ownership is deliberately unpartitioned: it is the serialization point that
 -- prevents a physical browser endpoint from being active for more than one user generation.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE web_push_endpoint_owners (
   endpoint_digest BYTEA PRIMARY KEY
     CHECK (endpoint_digest = digest(endpoint, 'sha256')),
@@ -14,10 +15,12 @@ CREATE TABLE web_push_endpoint_owners (
   UNIQUE (user_id, subscription_id)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_web_push_endpoint_owners_updated_at
 BEFORE UPDATE ON web_push_endpoint_owners
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE notification_push_intent_subscription_receipts (
   user_id UUID NOT NULL,
   notification_id UUID NOT NULL,
@@ -36,13 +39,16 @@ CREATE TABLE notification_push_intent_subscription_receipts (
   CHECK ((status = 'permanently_failed') = (permanently_failed_at IS NOT NULL))
 );
 
-CREATE INDEX idx_push_intent_subscription_receipts_user_subscription
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_notifi_push_intent_subscr_receipt__user_id__subscription_id
   ON notification_push_intent_subscription_receipts (user_id, subscription_id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_notification_push_receipts_updated_at
 BEFORE UPDATE ON notification_push_intent_subscription_receipts
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_web_push_subscription_owner() RETURNS TRIGGER AS $$
 DECLARE
   checked_user_id UUID := COALESCE(NEW.user_id, OLD.user_id);
@@ -87,6 +93,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_web_push_endpoint_owner_subscription() RETURNS TRIGGER AS $$
 DECLARE
   checked_endpoint_digest BYTEA := COALESCE(NEW.endpoint_digest, OLD.endpoint_digest);
@@ -139,6 +146,7 @@ AFTER INSERT OR UPDATE OR DELETE ON web_push_endpoint_owners
 DEFERRABLE INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION fn_reject_web_push_endpoint_owner_subscription();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_project_capture_notification_push_intent() RETURNS TRIGGER AS $$
 BEGIN
   IF TG_OP = 'UPDATE' THEN
@@ -160,6 +168,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_notifications_capture_push_intent
 AFTER INSERT OR UPDATE OF id ON notifications
 FOR EACH ROW EXECUTE FUNCTION fn_project_capture_notification_push_intent();

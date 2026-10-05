@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS bluesky_follow_records (
   record_uri TEXT NOT NULL,
   CHECK (record_uri LIKE 'at://%' AND char_length(record_uri) <= 8192),
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (follower_bluesky_did, follower_authorization_id)
+  CONSTRAINT fk_blue_foll_reco__follower_bluesky_did__follower_authorization FOREIGN KEY (follower_bluesky_did, follower_authorization_id)
     REFERENCES bluesky_linked_accounts (bluesky_did, link_authorization_id) ON DELETE CASCADE
 );
 

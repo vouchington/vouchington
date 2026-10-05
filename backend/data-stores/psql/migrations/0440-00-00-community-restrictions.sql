@@ -49,8 +49,8 @@ COMMENT ON COLUMN community_restrictions.reason IS 'Optional reason recorded for
 -- Restrictions a moderator action activated or lifted. Rebuilt into the action's metadata
 -- (`restriction_id` / `restriction_ids`) when moderator actions are read.
 CREATE TABLE IF NOT EXISTS moderator_action_community_restrictions (
-  moderator_action_id UUID NOT NULL REFERENCES moderator_actions (id) ON DELETE CASCADE,
-  community_restriction_id UUID NOT NULL REFERENCES community_restrictions (id) ON DELETE CASCADE,
+  moderator_action_id UUID NOT NULL CONSTRAINT fk_moderator_action_community_restrictions__action REFERENCES moderator_actions (id) ON DELETE CASCADE,
+  community_restriction_id UUID NOT NULL CONSTRAINT fk_moderator_action_community_restrictio__community_restriction REFERENCES community_restrictions (id) ON DELETE CASCADE,
   PRIMARY KEY (moderator_action_id, community_restriction_id)
 );
 

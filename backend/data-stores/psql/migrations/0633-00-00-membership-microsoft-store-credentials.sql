@@ -4,9 +4,9 @@ CREATE TABLE IF NOT EXISTS membership_microsoft_store_credentials (
   environment membership_provider_environments NOT NULL,
   application_id TEXT NOT NULL,
   publisher_user_id TEXT NOT NULL,
-  collections_key_lookup_sha256 TEXT NOT NULL CHECK (collections_key_lookup_sha256 ~ '^[a-f0-9]{64}$'),
+  collections_key_lookup_sha256 TEXT NOT NULL CONSTRAINT chk_member_microso_store_credent__collections_key_lookup_sha256 CHECK (collections_key_lookup_sha256 ~ '^[a-f0-9]{64}$'),
   encrypted_collections_key BYTEA NOT NULL,
-  purchase_key_lookup_sha256 TEXT NOT NULL CHECK (purchase_key_lookup_sha256 ~ '^[a-f0-9]{64}$'),
+  purchase_key_lookup_sha256 TEXT NOT NULL CONSTRAINT chk_members_microsof_store_credenti__purchase_key_lookup_sha256 CHECK (purchase_key_lookup_sha256 ~ '^[a-f0-9]{64}$'),
   encrypted_purchase_key BYTEA NOT NULL,
   collections_issued_at TIMESTAMPTZ NOT NULL, collections_expires_at TIMESTAMPTZ NOT NULL,
   purchase_issued_at TIMESTAMPTZ NOT NULL, purchase_expires_at TIMESTAMPTZ NOT NULL,
@@ -16,8 +16,8 @@ CREATE TABLE IF NOT EXISTS membership_microsoft_store_credentials (
   last_error TEXT, created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CHECK (char_length(application_id) BETWEEN 1 AND 255 AND application_id = TRIM(application_id)),
-  CHECK (publisher_user_id = user_id::TEXT), CHECK (octet_length(encrypted_collections_key) BETWEEN 1 AND 65536),
-  CHECK (octet_length(encrypted_purchase_key) BETWEEN 1 AND 65536), CHECK (processing_attempts >= 0),
+  CHECK (publisher_user_id = user_id::TEXT), CONSTRAINT chk_membersh_microsof_store_credenti__encrypted_collections_key CHECK (octet_length(encrypted_collections_key) BETWEEN 1 AND 65536),
+  CONSTRAINT chk_membershi_microsoft_store_credentia__encrypted_purchase_key CHECK (octet_length(encrypted_purchase_key) BETWEEN 1 AND 65536), CONSTRAINT chk_membership_microsoft_store_credentials__processing_attempts CHECK (processing_attempts >= 0),
   CHECK ((processing_claim_token IS NULL) = (processing_claimed_at IS NULL))
 );
 CREATE OR REPLACE TRIGGER trigger_membership_microsoft_store_credentials_updated_at BEFORE UPDATE ON membership_microsoft_store_credentials FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();

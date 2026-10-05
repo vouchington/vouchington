@@ -34,7 +34,7 @@ CREATE TRIGGER trigger_copyright_trusted_flaggers_updated_at
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_trusted_flagger_changes (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_trusted_flagger_id uuid NOT NULL REFERENCES copyright_trusted_flaggers(id) ON DELETE RESTRICT,
+  copyright_trusted_flagger_id uuid NOT NULL CONSTRAINT fk_copyright_trusted_flagger_changes__flagger REFERENCES copyright_trusted_flaggers(id) ON DELETE RESTRICT,
   change_type copyright_trusted_flagger_change_types NOT NULL,
   changed_by_id uuid NOT NULL REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
   reason text NOT NULL CHECK (char_length(reason) BETWEEN 1 AND 4000),
@@ -52,7 +52,7 @@ CREATE TRIGGER trigger_copyright_trusted_flagger_changes_immutable
 CREATE TABLE copyright_trusted_flagger_matches (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL UNIQUE REFERENCES copyright_notices(id) ON DELETE RESTRICT,
-  copyright_trusted_flagger_id uuid NOT NULL REFERENCES copyright_trusted_flaggers(id) ON DELETE RESTRICT,
+  copyright_trusted_flagger_id uuid NOT NULL CONSTRAINT fk_copyright_trusted_flagger_matches__flagger REFERENCES copyright_trusted_flaggers(id) ON DELETE RESTRICT,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

@@ -441,13 +441,13 @@ WHERE redirect_url_id IS NOT NULL;
 
 -- for finding the latest crawl for a URL
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS crawls__url_id__embeddings_generated_at
+CREATE INDEX IF NOT EXISTS idx_crawls__url_id__embeddings_generated_at
 ON crawls (url_id, embeddings_generated_at DESC)
 WHERE embeddings_generated_at IS NOT NULL;
 
 -- for finding URLs that have pending embeddings
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS crawls__url_id__pending_embeddings
+CREATE INDEX IF NOT EXISTS idx_crawls__url_id__pending_embeddings
 ON crawls (url_id)
 WHERE has_pending_embeddings = TRUE;
 
@@ -459,13 +459,13 @@ WHERE completed_at IS NOT NULL;
 
 -- find crawls pending language detection
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS crawls_lingua_rs_pending_idx
+CREATE INDEX IF NOT EXISTS idx_crawls__lingua_rs_pending
   ON crawls (id)
   WHERE lingua_rs_input_sha256 IS NULL;
 
 -- find crawls pending remote oEmbed enrichment
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS crawls_oembed_pending_idx
+CREATE INDEX IF NOT EXISTS idx_crawls__oembed_pending
   ON crawls (id)
   WHERE embed_metadata IS NOT NULL
     AND embed_oembed_url IS NOT NULL
@@ -526,18 +526,18 @@ CREATE TABLE IF NOT EXISTS crawl_chunks (
 ) PARTITION BY RANGE (crawl_id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS crawl_chunks__search_vector
+CREATE INDEX IF NOT EXISTS idx_crawl_chunks__search_vector
 ON crawl_chunks USING GIN (search_vector);
 
 -- find existing embeddings by input hash
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS crawl_chunks__bedrock_nova_multimodal_v1_input_sha256
+CREATE INDEX IF NOT EXISTS idx_crawl_chunks__bedrock_nova_multimodal_v1_input_sha256
 ON crawl_chunks (bedrock_nova_multimodal_v1_input_sha256)
 WHERE bedrock_nova_multimodal_v1_input_sha256 IS NOT NULL;
 
 -- index embeddings for similarity search (vector_cosine_ops matches <=> queries)
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS crawl_chunks__bedrock_nova_multimodal_v1_embedding
+CREATE INDEX IF NOT EXISTS idx_crawl_chunks__bedrock_nova_multimodal_v1_embedding
 ON crawl_chunks USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops)
 WHERE bedrock_nova_multimodal_v1_embedding IS NOT NULL;
 

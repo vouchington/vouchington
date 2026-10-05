@@ -14,8 +14,8 @@ CREATE INDEX idx_notifications__copyright_notice
 
 CREATE TABLE copyright_notice_delivery_recipients (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_delivery_intent_id uuid NOT NULL UNIQUE
-    REFERENCES copyright_notice_delivery_intents(id) ON DELETE RESTRICT,
+  copyright_notice_delivery_intent_id uuid NOT NULL CONSTRAINT uq_copyright_notice_delivery_recipients__intent_id UNIQUE
+    CONSTRAINT fk_copyright_notice_delivery_recipients__intent REFERENCES copyright_notice_delivery_intents(id) ON DELETE RESTRICT,
   email_ciphertext text NOT NULL CHECK (char_length(email_ciphertext) BETWEEN 1 AND 1048576),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP

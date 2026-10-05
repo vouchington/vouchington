@@ -7,12 +7,12 @@ const PAGINATION_INDEXES_BY_SCENARIO = new Map<string, string[]>([
   ['direct-message-inbox-page', ['idx_conversations__direct_message_updated']],
   ['modmail-inbox-page', ['idx_conversations__modmail_community_updated']],
   ['individual-cards-page', ['idx_individual_cards__individual_id_id']],
-  ['point-valuations-page', ['idx_ind_rp_point_valuations__individual_id_id']],
+  ['point-valuations-page', ['idx_individua_rewards_program_point_valuation__individual_id_id']],
   [
     'spending-categories-page',
     ['idx_spending_entries__individual_id_id', 'idx_spending_entries__household_id_id'],
   ],
-  ['rewards-program-statuses-page', ['idx_ind_rp_statuses__individual_id_id']],
+  ['rewards-program-statuses-page', ['idx_individual_rewards_program_statuses__individual_id_id']],
   ['profile-posts-page', ['idx_relation__user__save__post__subject__newest']],
 ])
 const RSS_FEED_ITEMS_GLOBAL_CURSOR_INDEX = 'idx_rss_feed_items__published_at__id'

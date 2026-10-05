@@ -33,7 +33,7 @@ describe('terminal-first direct terms', () => {
     })
 
     const remainingAfter = await getTestMembershipGrantRemainingMilliseconds(grantId!)
-    // membership_grant_remaining_duration() is computed from now() in Postgres, so this
+    // fn_membership_grant_remaining_duration() is computed from now() in Postgres, so this
     // tolerance must absorb real wall-clock drift from the createTestSku/createMembership
     // writes between the two reads.
     expect(remainingAfter).toBeGreaterThan((remainingBefore ?? 0) - 1000)

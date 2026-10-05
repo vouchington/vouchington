@@ -130,7 +130,7 @@ describe('PostgreSQL schema static analysis', () => {
         FROM pg_indexes
         WHERE schemaname = 'public'
           AND tablename = 'moderation_reports'
-          AND indexname = 'idx_moderation_reports_pending_id'
+          AND indexname = 'idx_moderation_reports__pending_id'
         LIMIT 1`,
     )
 

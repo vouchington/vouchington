@@ -25,8 +25,8 @@ CREATE TABLE IF NOT EXISTS copyright_jurisdiction_policy_approvals (
 
 CREATE TABLE IF NOT EXISTS copyright_jurisdiction_policy_withdrawals (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_jurisdiction_policy_approval_id uuid NOT NULL UNIQUE
-    REFERENCES copyright_jurisdiction_policy_approvals (id) ON DELETE RESTRICT,
+  copyright_jurisdiction_policy_approval_id uuid NOT NULL CONSTRAINT uq_copyright_jurisdiction_policy_withdrawals__approval_id UNIQUE
+    CONSTRAINT fk_copyright_jurisdiction_policy_withdrawals__approval REFERENCES copyright_jurisdiction_policy_approvals (id) ON DELETE RESTRICT,
   withdrawn_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   withdrawn_by_id uuid,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -74,7 +74,7 @@ CREATE TABLE IF NOT EXISTS copyright_territorial_notice_receipts (
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS copyright_territorial_notice_routings (
   copyright_territorial_notice_receipt_id uuid PRIMARY KEY
-    REFERENCES copyright_territorial_notice_receipts (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_copyright_territorial_notice_routings__receipt REFERENCES copyright_territorial_notice_receipts (id) ON DELETE RESTRICT,
   destination copyright_territorial_notice_routing_destinations NOT NULL,
   routed_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -84,8 +84,8 @@ CREATE TABLE IF NOT EXISTS copyright_territorial_notice_routings (
 
 CREATE TABLE IF NOT EXISTS copyright_territorial_notice_acknowledgments (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_territorial_notice_receipt_id uuid NOT NULL UNIQUE
-    REFERENCES copyright_territorial_notice_receipts (id) ON DELETE RESTRICT,
+  copyright_territorial_notice_receipt_id uuid NOT NULL CONSTRAINT uq_copyright_territorial_notice_acknowledgments__receipt_id UNIQUE
+    CONSTRAINT fk_copyright_territorial_notice_acknowledgments__receipt REFERENCES copyright_territorial_notice_receipts (id) ON DELETE RESTRICT,
   attempt_count integer NOT NULL DEFAULT 0,
   last_attempt_at timestamptz,
   acknowledged_at timestamptz,
@@ -175,8 +175,8 @@ CREATE UNIQUE INDEX uq_copyright_territorial_redress_requests__guest
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS copyright_territorial_redress_decisions (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_territorial_redress_request_id uuid NOT NULL UNIQUE
-    REFERENCES copyright_territorial_redress_requests (id) ON DELETE RESTRICT,
+  copyright_territorial_redress_request_id uuid NOT NULL CONSTRAINT uq_copyright_territorial_redress_decisions__request_id UNIQUE
+    CONSTRAINT fk_copyright_territorial_redress_decisions__request REFERENCES copyright_territorial_redress_requests (id) ON DELETE RESTRICT,
   decided_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   decided_by_id uuid,
   staff_disposition copyright_territorial_redress_decision_staff_dispositions NOT NULL,
@@ -239,8 +239,8 @@ CREATE TABLE IF NOT EXISTS copyright_eu_dispute_settlement_referrals (
 
 CREATE TABLE IF NOT EXISTS copyright_eu_dispute_settlement_outcomes (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_eu_dispute_settlement_referral_id uuid NOT NULL UNIQUE
-    REFERENCES copyright_eu_dispute_settlement_referrals (id) ON DELETE RESTRICT,
+  copyright_eu_dispute_settlement_referral_id uuid NOT NULL CONSTRAINT uq_copyright_eu_dispute_settlement_outcomes__referral_id UNIQUE
+    CONSTRAINT fk_copyright_eu_dispute_settlement_outcomes__referral REFERENCES copyright_eu_dispute_settlement_referrals (id) ON DELETE RESTRICT,
   decided_at timestamptz NOT NULL,
   result copyright_eu_dispute_settlement_results NOT NULL,
   implemented_at timestamptz,
@@ -259,10 +259,10 @@ CREATE TABLE IF NOT EXISTS copyright_territorial_escalations (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL,
   jurisdiction copyright_jurisdictions NOT NULL,
-  copyright_territorial_notice_acknowledgment_id uuid UNIQUE
-    REFERENCES copyright_territorial_notice_acknowledgments (id) ON DELETE RESTRICT,
-  copyright_eu_supervised_complaint_id uuid UNIQUE
-    REFERENCES copyright_eu_supervised_complaints (id) ON DELETE RESTRICT,
+  copyright_territorial_notice_acknowledgment_id uuid CONSTRAINT uq_copyright_territorial_escalations__notice_acknowledgment_id UNIQUE
+    CONSTRAINT fk_copyright_territorial_escalations__notice_acknowledgment REFERENCES copyright_territorial_notice_acknowledgments (id) ON DELETE RESTRICT,
+  copyright_eu_supervised_complaint_id uuid CONSTRAINT uq_copyright_territoria_escalations__eu_supervised_complaint_id UNIQUE
+    CONSTRAINT fk_copyright_territorial_escalations__eu_supervised_complaint REFERENCES copyright_eu_supervised_complaints (id) ON DELETE RESTRICT,
   escalated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,

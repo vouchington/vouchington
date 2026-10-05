@@ -3,26 +3,27 @@
 -- It deliberately records the anti-spam recommendation separately: the model is advisory and
 -- cannot write a restriction or a human-review decision.
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_form_intakes (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL UNIQUE REFERENCES copyright_notices(id) ON DELETE RESTRICT,
-  copyright_notice_submission_id uuid NOT NULL UNIQUE REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
+  copyright_notice_submission_id uuid NOT NULL CONSTRAINT uq_copyright_notice_form_intakes__submission_id UNIQUE CONSTRAINT fk_copyright_notice_form_intakes__submission REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
   requester_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
   requester_identity_sha256 bytea NOT NULL CHECK (octet_length(requester_identity_sha256) = 32),
   idempotency_key uuid NOT NULL,
   request_sha256 bytea NOT NULL CHECK (octet_length(request_sha256) = 32),
   good_faith_belief boolean NOT NULL,
   accuracy_authority_under_penalty_of_perjury boolean NOT NULL,
-  electronic_signature_ciphertext text NOT NULL CHECK (char_length(electronic_signature_ciphertext) BETWEEN 1 AND 1048576),
+  electronic_signature_ciphertext text NOT NULL CONSTRAINT chk_copyri_notice_form_intakes__electronic_signature_ciphertext CHECK (char_length(electronic_signature_ciphertext) BETWEEN 1 AND 1048576),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE (requester_identity_sha256, idempotency_key)
+  CONSTRAINT uq_cop_not_for_inta__requester_identity_sha256__idempotency_key UNIQUE (requester_identity_sha256, idempotency_key)
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_form_screenings (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_form_intake_id uuid NOT NULL REFERENCES copyright_notice_form_intakes(id) ON DELETE RESTRICT,
+  copyright_notice_form_intake_id uuid NOT NULL CONSTRAINT fk_copyright_notice_form_screenings__intake REFERENCES copyright_notice_form_intakes(id) ON DELETE RESTRICT,
   input_sha256 bytea NOT NULL CHECK (octet_length(input_sha256) = 32),
   prompt_version text NOT NULL CHECK (char_length(prompt_version) BETWEEN 1 AND 100),
   model text NOT NULL CHECK (char_length(model) BETWEEN 1 AND 255),
@@ -31,13 +32,14 @@ CREATE TABLE copyright_notice_form_screenings (
   guidance_ciphertext text NOT NULL CHECK (char_length(guidance_ciphertext) BETWEEN 1 AND 1048576),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE (copyright_notice_form_intake_id, id)
+  CONSTRAINT uq_copyright_notice_form_screenings__intake_id__id UNIQUE (copyright_notice_form_intake_id, id)
 );
 
 CREATE TYPE copyright_notice_form_screening_attempt_states AS ENUM ('pending', 'failed', 'completed');
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_form_screening_attempts (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_form_intake_id uuid NOT NULL REFERENCES copyright_notice_form_intakes(id) ON DELETE RESTRICT,
+  copyright_notice_form_intake_id uuid NOT NULL CONSTRAINT fk_copyright_notice_form_screening_attempts__intake REFERENCES copyright_notice_form_intakes(id) ON DELETE RESTRICT,
   attempt_number integer NOT NULL CHECK (attempt_number > 0),
   copyright_notice_form_screening_id uuid,
   started_at timestamptz NOT NULL DEFAULT clock_timestamp(),
@@ -51,8 +53,8 @@ CREATE TABLE copyright_notice_form_screening_attempts (
       ELSE 'pending'::copyright_notice_form_screening_attempt_states END
   ) STORED,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  UNIQUE (copyright_notice_form_intake_id, attempt_number),
-  FOREIGN KEY (copyright_notice_form_intake_id, copyright_notice_form_screening_id)
+  CONSTRAINT uq_copyri_notice_form_screen_attempt__intake_id__attempt_number UNIQUE (copyright_notice_form_intake_id, attempt_number),
+  CONSTRAINT fk_copyright_notice_form_screening_attempts__intake__screening FOREIGN KEY (copyright_notice_form_intake_id, copyright_notice_form_screening_id)
     REFERENCES copyright_notice_form_screenings(copyright_notice_form_intake_id, id) ON DELETE RESTRICT,
   CHECK ((completed_at IS NULL) = (copyright_notice_form_screening_id IS NULL)),
   CHECK (num_nonnulls(completed_at, failed_at) <= 1),
@@ -60,9 +62,12 @@ CREATE TABLE copyright_notice_form_screening_attempts (
   CHECK (failed_at IS NULL OR failed_at >= started_at),
   CHECK (claimed_at IS NULL OR claimed_at >= started_at)
 );
-CREATE INDEX idx_copyright_screening_attempts__result ON copyright_notice_form_screening_attempts(copyright_notice_form_screening_id) WHERE copyright_notice_form_screening_id IS NOT NULL;
-CREATE INDEX idx_copyright_screening_attempts__latest ON copyright_notice_form_screening_attempts(copyright_notice_form_intake_id, attempt_number DESC);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_copyright_notice_form_screening_attempts__result ON copyright_notice_form_screening_attempts(copyright_notice_form_screening_id) WHERE copyright_notice_form_screening_id IS NOT NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_copyright_notice_form_screening_attempts__latest ON copyright_notice_form_screening_attempts(copyright_notice_form_intake_id, attempt_number DESC);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_reject_copyright_screening_attempt_rewind() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' OR OLD.completed_at IS NOT NULL OR OLD.failed_at IS NOT NULL
@@ -75,12 +80,14 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_screening_attempts_monotonic BEFORE UPDATE OR DELETE ON copyright_notice_form_screening_attempts
 FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_screening_attempt_rewind();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_form_intake_reviews (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_form_intake_id uuid NOT NULL UNIQUE REFERENCES copyright_notice_form_intakes(id) ON DELETE RESTRICT,
+  copyright_notice_form_intake_id uuid NOT NULL CONSTRAINT uq_copyright_notice_form_intake_reviews__intake_id UNIQUE CONSTRAINT fk_copyright_notice_form_intake_reviews__intake REFERENCES copyright_notice_form_intakes(id) ON DELETE RESTRICT,
   reviewed_at timestamptz NOT NULL,
   reviewed_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
   accepted boolean NOT NULL,
@@ -89,12 +96,18 @@ CREATE TABLE copyright_notice_form_intake_reviews (
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_copyright_form_intakes__requester ON copyright_notice_form_intakes(requester_user_id, id DESC) WHERE requester_user_id IS NOT NULL;
-CREATE INDEX idx_copyright_form_reviews__reviewer ON copyright_notice_form_intake_reviews(reviewed_by_id) WHERE reviewed_by_id IS NOT NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_copyright_notice_form_intakes__requester ON copyright_notice_form_intakes(requester_user_id, id DESC) WHERE requester_user_id IS NOT NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_copyright_notice_form_intake_reviews__reviewer ON copyright_notice_form_intake_reviews(reviewed_by_id) WHERE reviewed_by_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_form_intakes_immutable BEFORE UPDATE OR DELETE ON copyright_notice_form_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('requester_user_id');
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_form_screenings_immutable BEFORE UPDATE OR DELETE ON copyright_notice_form_screenings FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_form_reviews_immutable BEFORE UPDATE OR DELETE ON copyright_notice_form_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('reviewed_by_id');
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_form_reviews_require_actor BEFORE INSERT ON copyright_notice_form_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_human_actor('reviewed_by_id');
 
 COMMENT ON TABLE copyright_notice_form_intakes IS 'Idempotent structured web-form copyright admissions. Anonymous identities are one-way digests, not retained IP addresses.';

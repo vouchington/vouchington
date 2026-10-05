@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS verified_identities (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_verified_identities_updated_at
   BEFORE UPDATE ON verified_identities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
@@ -56,17 +57,20 @@ COMMENT ON COLUMN verified_identities.created_at IS 'Row creation timestamp.';
 COMMENT ON COLUMN verified_identities.updated_at IS 'Row last-updated timestamp.';
 
 -- One active verified identity per fingerprint (one document = one active account)
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS uq_verified_identities__fingerprint_active
   ON verified_identities (identity_fingerprint)
   WHERE revoked_at IS NULL AND transferred_to_user_id IS NULL;
 
 -- One active verified identity per user (a user can hold only one active identity)
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS uq_verified_identities__user_active
   ON verified_identities (user_id)
   WHERE revoked_at IS NULL AND transferred_to_user_id IS NULL;
 
 -- Support grants are durable entitlements. Each funded Checkout uses a separate
 -- child row so releasing it preserves the original Checkout audit record.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE identity_verification_attempts (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
@@ -95,31 +99,38 @@ CREATE TABLE identity_verification_attempts (
   CHECK (consumed_at IS NULL OR provider_creation_started_at IS NOT NULL)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_identity_verification_attempts_updated_at
   BEFORE UPDATE ON identity_verification_attempts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX uq_identity_verification_attempts__included_active_or_consumed
   ON identity_verification_attempts (user_id)
   WHERE source = 'membership_included'
     AND released_at IS NULL
     AND user_id <> '00000000-0000-7000-8000-000000000000'::uuid;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX uq_identity_verification_attempts__support_grant_active_child
   ON identity_verification_attempts (grant_entitlement_id)
   WHERE grant_entitlement_id IS NOT NULL AND released_at IS NULL;
 
-CREATE INDEX ix_identity_verification_attempts__user
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_identity_verification_attempts__user
   ON identity_verification_attempts (user_id);
 
-CREATE INDEX ix_identity_verification_attempts__grant_entitlement
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_identity_verification_attempts__grant_entitlement
   ON identity_verification_attempts (grant_entitlement_id)
   WHERE grant_entitlement_id IS NOT NULL;
 
-CREATE INDEX ix_identity_verification_attempts__granted_by
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_identity_verification_attempts__granted_by
   ON identity_verification_attempts (granted_by_id)
   WHERE granted_by_id IS NOT NULL;
 
-CREATE INDEX ix_identity_verification_attempts__checkout_session
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_identity_verification_attempts__checkout_session
   ON identity_verification_attempts (checkout_session_id)
   WHERE checkout_session_id IS NOT NULL;
 
@@ -138,10 +149,12 @@ COMMENT ON COLUMN identity_verification_attempts.granted_by_id IS 'Administrator
 COMMENT ON COLUMN identity_verification_attempts.grant_note IS 'Required support rationale recorded on a parent support-grant entitlement.';
 
 -- Current indexes for fresh schema bootstrap.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_verified_identities__transferred_to_user_id
   ON verified_identities (transferred_to_user_id)
   WHERE transferred_to_user_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_verified_identities__user_id
   ON verified_identities (user_id)
   WHERE user_id IS NOT NULL;

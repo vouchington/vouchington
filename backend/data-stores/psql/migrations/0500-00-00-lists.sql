@@ -116,26 +116,26 @@ CREATE INDEX IF NOT EXISTS idx_user_lists__created_via_oauth_client_id
 
 -- Current indexes for fresh schema bootstrap.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_user_list_posts__user_list_id__fk
+CREATE INDEX IF NOT EXISTS idx_user_list_posts__user_list_id__foreign_key
   ON user_list_posts (user_list_id)
   WHERE user_list_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_user_list_posts__post_id__fk
+CREATE INDEX IF NOT EXISTS idx_user_list_posts__post_id__foreign_key
   ON user_list_posts (post_id)
   WHERE post_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_user_list_rss_feed_items__user_list_id__fk
+CREATE INDEX IF NOT EXISTS idx_user_list_rss_feed_items__user_list_id__foreign_key
   ON user_list_rss_feed_items (user_list_id)
   WHERE user_list_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_user_list_rss_feed_items__rss_feed_item_id__fk
+CREATE INDEX IF NOT EXISTS idx_user_list_rss_feed_items__rss_feed_item_id__foreign_key
   ON user_list_rss_feed_items (rss_feed_item_id)
   WHERE rss_feed_item_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_user_lists__owner_user_id__fk
+CREATE INDEX IF NOT EXISTS idx_user_lists__owner_user_id__foreign_key
   ON user_lists (owner_user_id)
   WHERE owner_user_id IS NOT NULL;

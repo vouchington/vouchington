@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS post_moderation_versions (
   policy_revision TEXT NOT NULL CHECK (char_length(policy_revision) BETWEEN 1 AND 100),
   deadline_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP + INTERVAL '30 minutes',
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  UNIQUE (post_id, content_sha256, policy_revision)
+  CONSTRAINT uq_post_modera_versio__post_id__content_sha256__policy_revision UNIQUE (post_id, content_sha256, policy_revision)
 );
 
 CREATE INDEX IF NOT EXISTS idx_post_moderation_versions__post_id__id

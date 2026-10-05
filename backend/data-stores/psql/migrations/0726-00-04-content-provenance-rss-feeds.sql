@@ -7,7 +7,8 @@ ALTER TABLE rss_feeds
   FOREIGN KEY (created_via_oauth_client_id) REFERENCES oauth_clients(id) ON DELETE RESTRICT
   NOT VALID;
 
-CREATE OR REPLACE TRIGGER rss_feeds_content_provenance_immutable
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_rss_feeds_content_provenance_immutable
   AFTER UPDATE ON rss_feeds
   FOR EACH ROW
   WHEN (

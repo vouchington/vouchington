@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS post_publication_identity_snapshot_keys (
   day DATE,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   PRIMARY KEY (snapshot_id, id) INCLUDE (topic_key, author_key, author_username, community_key, community_slug, post_slug, rss_feed_key, post_type, day),
-  UNIQUE NULLS NOT DISTINCT (snapshot_id, topic_key, author_key, author_username, community_key, community_slug, post_slug, rss_feed_key, post_type, day),
+  CONSTRAINT uq_post_publication_identity_snapshot_keys__snapshot_identity UNIQUE NULLS NOT DISTINCT (snapshot_id, topic_key, author_key, author_username, community_key, community_slug, post_slug, rss_feed_key, post_type, day),
   CHECK (num_nonnulls(topic_key, author_key, author_username, community_key, community_slug, post_slug, rss_feed_key, post_type) = 1),
   CHECK ((post_type IS NULL) = (day IS NULL))
 );

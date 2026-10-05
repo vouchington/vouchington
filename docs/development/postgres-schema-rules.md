@@ -136,7 +136,7 @@ examples describe the review baseline, rather than the current generated snapsho
 
   When the full words would push a name past 63 bytes, choose a shorter name made of full words; don't
   abbreviate. For example, `fn_reject_mipr_case_op_context` becomes
-  `fn_require_purchase_reversal_case_operation_context`, not a 73-byte full expansion.
+  `fn_reject_purchase_reversal_case_operation_context`, not a 73-byte full expansion.
 
 - Index names are `idx_<table>__<suffix>`, where `<table>` is the index's own table and `__`
   separates it from the suffix. A UNIQUE index may use `uq_<table>__<suffix>` instead; `uq_` on a

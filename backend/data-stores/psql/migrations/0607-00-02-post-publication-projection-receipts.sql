@@ -1,9 +1,11 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_publication_reconciliation_audit_checkpoints (
   checkpoint_name TEXT PRIMARY KEY,
   cursor_post_id UUID,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_publication_projection_receipts (
   post_identity_id UUID NOT NULL,
   eligibility_fingerprint TEXT NOT NULL,
@@ -13,7 +15,8 @@ CREATE TABLE IF NOT EXISTS post_publication_projection_receipts (
   PRIMARY KEY (post_identity_id)
 ) PARTITION BY RANGE (post_identity_id);
 
-CREATE OR REPLACE TRIGGER trigger_post_pub_audit_checkpoints_updated_at
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_post_published_audit_checkpoints_updated_at
 BEFORE UPDATE ON post_publication_reconciliation_audit_checkpoints
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 

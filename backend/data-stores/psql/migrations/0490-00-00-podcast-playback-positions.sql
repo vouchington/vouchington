@@ -3,6 +3,7 @@
 -- position_seconds is updated continuously while playing.
 -- completed_at is set (once) when the episode ends.
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS podcast_playback_positions (
   user_id          UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   rss_feed_item_id UUID NOT NULL REFERENCES rss_feed_items(id) ON DELETE CASCADE,
@@ -12,9 +13,11 @@ CREATE TABLE IF NOT EXISTS podcast_playback_positions (
   PRIMARY KEY (user_id, rss_feed_item_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_podcast_playback_positions_rss_feed_item_id
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_podcast_playback_positions__rss_feed_item_id
 ON podcast_playback_positions (rss_feed_item_id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_podcast_playback_positions_updated_at
 BEFORE UPDATE ON podcast_playback_positions
 FOR EACH ROW

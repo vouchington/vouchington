@@ -41,6 +41,7 @@ EXCEPTION
 END
 $$;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS review_disputes (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   post_id uuid NOT NULL REFERENCES posts (id) ON DELETE CASCADE,
@@ -83,27 +84,34 @@ CREATE TABLE IF NOT EXISTS review_disputes (
 );
 
 -- Queue pagination index
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_review_disputes__status_created
   ON review_disputes (resolved_at, id DESC);
 
 -- One open dispute per (disputant, review post, rated topic)
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_review_disputes__one_open_per_disputant_topic
   ON review_disputes (disputant_user_id, post_id, topic_id)
   WHERE resolved_at IS NULL;
 
 -- Fast lookup for annotation/badge on post detail
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_review_disputes__post_id
   ON review_disputes (post_id);
 
 -- FK-backing indexes
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_review_disputes__topic_id ON review_disputes (topic_id);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_review_disputes__disputant ON review_disputes (disputant_user_id, id DESC);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_review_disputes_updated_at
   BEFORE UPDATE ON review_disputes
   FOR EACH ROW
   EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_review_dispute_subject_snapshot()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -119,12 +127,14 @@ BEGIN
 END;
 $$;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_review_disputes_guard_subject_snapshot
   BEFORE UPDATE OF post_id, topic_id, disputed_rating ON review_disputes
   FOR EACH ROW
   EXECUTE FUNCTION fn_reject_review_dispute_subject_snapshot();
 
 -- Append-only audit/lifecycle log
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS review_dispute_lifecycle_changes (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   review_dispute_id uuid NOT NULL REFERENCES review_disputes (id) ON DELETE CASCADE,
@@ -135,7 +145,8 @@ CREATE TABLE IF NOT EXISTS review_dispute_lifecycle_changes (
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
 
-CREATE INDEX IF NOT EXISTS idx_review_dispute_lifecycle__dispute_created
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_review_dispute_lifecycle_changes__dispute_created
   ON review_dispute_lifecycle_changes (review_dispute_id, id DESC);
 
 DO $$
@@ -151,6 +162,7 @@ BEGIN
   END IF;
 END $$;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_review_disputes__latest_lifecycle_change_id
   ON review_disputes (latest_lifecycle_change_id)
   WHERE latest_lifecycle_change_id IS NOT NULL;
@@ -168,12 +180,14 @@ ALTER TABLE notifications
 ALTER TABLE notifications
   VALIDATE CONSTRAINT fk_notifications__review_dispute_id;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_notifications__user_id__review_dispute
 ON notifications (user_id, review_dispute_id)
 WHERE review_dispute_id IS NOT NULL
   AND deleted_at IS NULL
   AND delivery_type = 'subscription';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_notifications__review_dispute
 ON notifications (review_dispute_id)
 WHERE review_dispute_id IS NOT NULL AND deleted_at IS NULL;
@@ -210,6 +224,7 @@ COMMENT ON COLUMN review_dispute_lifecycle_changes.metadata IS 'Extra structured
 
 COMMENT ON TABLE review_dispute_lifecycle_changes IS 'Append-only audit log of state transitions for review disputes.';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_dispute_annotations (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   post_id uuid NOT NULL REFERENCES posts (id) ON DELETE CASCADE,
@@ -223,16 +238,19 @@ CREATE TABLE IF NOT EXISTS post_dispute_annotations (
 );
 
 -- At most one active annotation per dispute
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_post_dispute_annotations__dispute_active
   ON post_dispute_annotations (review_dispute_id)
   WHERE removed_at IS NULL;
 
 -- Fast render on review detail pages
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_dispute_annotations__post_active
   ON post_dispute_annotations (post_id)
   WHERE removed_at IS NULL;
 
 -- FK-backing
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_dispute_annotations__created_by ON post_dispute_annotations (created_by_id);
 
 COMMENT ON TABLE post_dispute_annotations IS 'Public, human-approved rebuttal annotations attached to reviewed posts as the outcome of a resolved review dispute. At most one active annotation per dispute.';
@@ -244,14 +262,19 @@ COMMENT ON COLUMN post_dispute_annotations.removed_at IS 'When the annotation wa
 COMMENT ON COLUMN post_dispute_annotations.removed_by_id IS 'Moderator who retracted the annotation.';
 
 -- Current indexes for fresh schema bootstrap.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_dispute_annotations__post_id
   ON post_dispute_annotations (post_id)
   WHERE post_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_dispute_annotations__review_dispute_id
   ON post_dispute_annotations (review_dispute_id)
   WHERE review_dispute_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_ensure_review_dispute_lifecycle_changes_actor BEFORE INSERT ON review_dispute_lifecycle_changes FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id');
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_review_dispute_lifecycle_changes_append_only BEFORE UPDATE OR DELETE ON review_dispute_lifecycle_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_review_dispute_lifecycle_changes__changed_by_id ON review_dispute_lifecycle_changes(changed_by_id) WHERE changed_by_id IS NOT NULL;

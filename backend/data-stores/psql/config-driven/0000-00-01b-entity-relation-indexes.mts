@@ -41,7 +41,7 @@ ON "${metadata.table_name}" (id);
 CREATE INDEX IF NOT EXISTS ${getElectionIndexName(metadata.table_name, 'votes_score_sort__id')}
 ON "${metadata.table_name}" (votes_score_sort DESC, id);
 
-CREATE INDEX IF NOT EXISTS ${getElectionIndexName(metadata.table_name, 'votes_score_sort__pos__id')}
+CREATE INDEX IF NOT EXISTS ${getElectionIndexName(metadata.table_name, 'positive_score__id')}
 ON "${metadata.table_name}" (votes_score_sort DESC, id)
 WHERE votes_score_net > 0;
 

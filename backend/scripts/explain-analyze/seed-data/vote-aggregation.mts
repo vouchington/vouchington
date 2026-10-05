@@ -69,7 +69,7 @@ export async function seedVoteAggregation(): Promise<void> {
 // (plan-topic-viewer-counts-gate.mts) requires the planner resolve that through
 // idx_relation__post__category__topic__reverse_index (object_id, subject_id). But
 // seedVoteAggregation above only ever votes on ONE of the 50,000 relations seedEntityRelations
-// inserted (post 0 / topic 0), leaving idx_relation__post__category__topic__votes_score_sort__pos__id
+// inserted (post 0 / topic 0), leaving idx_relation__post__category__topic__positive_score__id
 // (votes_score_sort DESC, id) WHERE votes_score_net > 0 with exactly one row -- trivially cheap for
 // the planner to scan regardless of how poorly it matches object_id, so it wins over reverse_index
 // on cost. Voting on a wide spread of OTHER topics' relations (never topic 0, whose relation is the

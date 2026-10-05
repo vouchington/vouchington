@@ -1,13 +1,13 @@
 CREATE TABLE IF NOT EXISTS membership_google_play_purchase_tokens (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   environment membership_provider_environments NOT NULL, application_id TEXT NOT NULL,
-  purchase_token_lookup_sha256 TEXT NOT NULL CHECK (purchase_token_lookup_sha256 ~ '^[a-f0-9]{64}$'),
-  encrypted_purchase_token BYTEA NOT NULL CHECK (octet_length(encrypted_purchase_token) BETWEEN 1 AND 65536),
+  purchase_token_lookup_sha256 TEXT NOT NULL CONSTRAINT chk_membe_googl_play_purch_tokens__purchase_token_lookup_sha256 CHECK (purchase_token_lookup_sha256 ~ '^[a-f0-9]{64}$'),
+  encrypted_purchase_token BYTEA NOT NULL CONSTRAINT chk_member_google_play_purchas_tokens__encrypted_purchase_token CHECK (octet_length(encrypted_purchase_token) BETWEEN 1 AND 65536),
   membership_provider_lineage_id UUID NOT NULL,
   provider membership_provider_kinds NOT NULL DEFAULT 'google_play' CHECK (provider = 'google_play'),
   linked_purchase_token_lookup_sha256 TEXT, created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CHECK (char_length(application_id) BETWEEN 1 AND 255 AND application_id = TRIM(application_id)),
-  CHECK (linked_purchase_token_lookup_sha256 IS NULL OR linked_purchase_token_lookup_sha256 ~ '^[a-f0-9]{64}$'),
+  CONSTRAINT chk_mem_goo_play_purc_toke__linked_purchase_token_lookup_sha256 CHECK (linked_purchase_token_lookup_sha256 IS NULL OR linked_purchase_token_lookup_sha256 ~ '^[a-f0-9]{64}$'),
   CHECK (linked_purchase_token_lookup_sha256 IS NULL OR linked_purchase_token_lookup_sha256 <> purchase_token_lookup_sha256),
   CONSTRAINT fk_membership_google_play_purchase_tokens__lineage_context FOREIGN KEY (membership_provider_lineage_id, provider, environment, application_id) REFERENCES membership_provider_lineages(id, provider, environment, application_id) ON DELETE RESTRICT
 );

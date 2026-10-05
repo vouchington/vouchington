@@ -14,19 +14,19 @@ describe('membership refund query indexes', () => {
         WHERE schemaname = 'public'
           AND tablename = 'membership_refunds'
           AND indexname IN (
-            'idx_mrefunds__stripe_charge_id',
-            'idx_mrefunds__stripe_payment_intent_id'
+            'idx_membership_refunds__stripe_charge_id',
+            'idx_membership_refunds__stripe_payment_intent_id'
           )
         ORDER BY indexname`,
     )
 
     expect(rows).toEqual([
       {
-        indexname: 'idx_mrefunds__stripe_charge_id',
+        indexname: 'idx_membership_refunds__stripe_charge_id',
         indexdef: expect.stringContaining('USING btree (stripe_charge_id)'),
       },
       {
-        indexname: 'idx_mrefunds__stripe_payment_intent_id',
+        indexname: 'idx_membership_refunds__stripe_payment_intent_id',
         indexdef: expect.stringContaining(
           'USING btree (stripe_payment_intent_id) WHERE (stripe_payment_intent_id IS NOT NULL)',
         ),

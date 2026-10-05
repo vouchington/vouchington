@@ -64,14 +64,15 @@ describe('election schema partitioning', () => {
       const tableIndexes = indexes.filter(row => row.table_name === config.voteTable)
       expect(tableIndexes.map(row => row.index_name)).toEqual(
         expect.arrayContaining([
-          `idx_${config.voteTable}__${config.entityIdColumn}__uid__id`,
+          `idx_${config.voteTable}__${config.entityIdColumn}__user_id__id`,
           `idx_${config.voteTable}__${config.entityIdColumn}__id`,
-          `idx_${config.voteTable}__uid__${config.entityIdColumn}__id`,
+          `idx_${config.voteTable}__user_id__${config.entityIdColumn}__id`,
         ]),
       )
       expect(
         tableIndexes.find(
-          row => row.index_name === `idx_${config.voteTable}__uid__${config.entityIdColumn}__id`,
+          row =>
+            row.index_name === `idx_${config.voteTable}__user_id__${config.entityIdColumn}__id`,
         )?.definition,
       ).toContain(`(user_id, ${config.entityIdColumn}, id DESC)`)
     }

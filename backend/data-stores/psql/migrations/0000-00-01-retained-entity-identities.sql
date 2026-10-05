@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS retained_image_placement_bindings (
   image_id UUID NOT NULL REFERENCES retained_image_identities (id) ON DELETE RESTRICT,
   binding_family image_binding_families NOT NULL CHECK (binding_family IN ('post', 'surface')),
   UNIQUE (placement_id, image_id),
-  UNIQUE (placement_id, image_id, binding_family)
+  CONSTRAINT uq_reta_imag_plac_bindi__placement_id__image_id__binding_family UNIQUE (placement_id, image_id, binding_family)
 ) PARTITION BY RANGE (placement_id);
 COMMENT ON TABLE retained_image_placement_bindings IS 'Immutable image, placement and post/surface family identity retained with live or durable references; never delivery authority.';
 COMMENT ON COLUMN retained_image_placement_bindings.placement_id IS 'UUIDv7 placement identity created with its live owner transaction.';

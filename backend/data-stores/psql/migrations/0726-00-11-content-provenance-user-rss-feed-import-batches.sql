@@ -12,7 +12,8 @@ ALTER TABLE user_rss_feed_import_batches
 ALTER TABLE user_rss_feed_import_batches
   VALIDATE CONSTRAINT user_rss_feed_import_batches_created_via_oauth_client_id_fkey;
 
-CREATE OR REPLACE TRIGGER user_rss_feed_import_batches_content_provenance_immutable
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_user_rss_feed_impor_batche_content_provenance_immutable
   AFTER UPDATE ON user_rss_feed_import_batches
   FOR EACH ROW
   WHEN (
