@@ -18,7 +18,8 @@ import { vouchaExtractOptions } from './contract-schema.mts'
 import type { HeaderContractRegistry } from './header-contract-types.mts'
 import { relativizeContractTree } from './program-paths.mts'
 import { assertUniqueResponseAttribution } from './response-contract-ambiguous-attribution.mts'
-import { REQUIRED_QUERY_PARAMETER_OVERRIDES } from './required-query-parameter-overrides.mts'
+import { hasCompleteOperationCoverage } from './catalog-operation-coverage.mts'
+import { withRequiredQueryParameters } from './required-query-parameters.mts'
 import type { BackendQueryContractRegistry } from './query-contract-types.mts'
 import type { BackendRequestContract } from './request-contract-types.mts'
 import type { BackendResponseContract } from './response-contract-types.mts'
@@ -29,9 +30,18 @@ export type { BackendResponseContract } from './response-contract-types.mts'
 
 type DiscoveryOptions = DiscoverApiResponseContractsOptions
 type PublishedCatalog = ReturnType<typeof discoverAppRouteCtxContractsV1>
+type BackendContractCatalog = Omit<
+  PublishedCatalog,
+  'responses' | 'requests' | 'queries' | 'headers'
+> & {
+  responses: Record<string, BackendResponseContract>
+  requests: Record<string, BackendRequestContract>
+  queries: BackendQueryContractRegistry
+  headers: HeaderContractRegistry
+}
 type CacheEntry<Value> = { generation: BackendProgramGeneration; value: Value }
 
-const catalogs = new Map<string, CacheEntry<PublishedCatalog>>()
+const catalogs = new Map<string, CacheEntry<BackendContractCatalog>>()
 const responses = new Map<string, CacheEntry<Record<string, BackendResponseContract>>>()
 const requests = new Map<string, CacheEntry<Record<string, BackendRequestContract>>>()
 const queries = new Map<string, CacheEntry<BackendQueryContractRegistry>>()
@@ -42,7 +52,7 @@ export function loadBackendResponseContracts(
   requestedKeys?: ReadonlySet<string>,
   options?: DiscoveryOptions,
 ): Record<string, BackendResponseContract> {
-  if (!requestedKeys) return catalog(options).responses as Record<string, BackendResponseContract>
+  if (!requestedKeys) return loadBackendContractCatalog(options).responses
   return cached(responses, signature(requestedKeys, options), loaded =>
     relativizeContractTree(
       discoverAttributedResponses(loaded, requestedKeys, schemaOptions(options)),
@@ -54,7 +64,7 @@ export function loadBackendRequestContracts(
   requestedKeys?: ReadonlySet<string>,
   options?: DiscoveryOptions,
 ): Record<string, BackendRequestContract> {
-  if (!requestedKeys) return catalog(options).requests as Record<string, BackendRequestContract>
+  if (!requestedKeys) return loadBackendContractCatalog(options).requests
   return cached(requests, signature(requestedKeys, options), loaded =>
     relativizeContractTree(
       discoverApiRequestContracts(
@@ -71,54 +81,52 @@ export function loadBackendQueryContracts(
   knownResponseRoutes: ReadonlySet<string>,
 ): BackendQueryContractRegistry {
   return cached(queries, [...knownResponseRoutes].toSorted().join('\n'), loaded => {
-    const contracts = discoverApiQueryContracts(
-      loaded.program,
-      loaded.routeFiles,
-      knownResponseRoutes,
+    const shared = strictCatalogFor(loaded)?.queries
+    if (shared && hasCompleteOperationCoverage(shared, knownResponseRoutes)) return shared
+    return relativizeContractTree(
+      withRequiredQueryParameters(
+        discoverApiQueryContracts(loaded.program, loaded.routeFiles, knownResponseRoutes),
+      ),
     )
-    for (const [operation, names] of Object.entries(REQUIRED_QUERY_PARAMETER_OVERRIDES)) {
-      const parameters = contracts[operation]?.parameters
-      if (!parameters) continue
-      for (const name of names) {
-        const descriptor = parameters[name]
-        if (!descriptor) throw new Error(`Required query parameter ${operation} ${name} is missing`)
-        Object.assign(descriptor, { required: true })
-      }
-    }
-    return relativizeContractTree(contracts)
   }) as BackendQueryContractRegistry
 }
 
 export function loadBackendHeaderContracts(
   knownResponseRoutes: ReadonlySet<string>,
 ): HeaderContractRegistry {
-  return cached(headers, [...knownResponseRoutes].toSorted().join('\n'), loaded =>
-    relativizeContractTree(
+  return cached(headers, [...knownResponseRoutes].toSorted().join('\n'), loaded => {
+    const shared = strictCatalogFor(loaded)?.headers
+    if (shared && hasCompleteOperationCoverage(shared, knownResponseRoutes)) return shared
+    return relativizeContractTree(
       discoverApiHeaderContracts(loaded.program, loaded.routeFiles, knownResponseRoutes),
-    ),
-  ) as HeaderContractRegistry
+    )
+  }) as HeaderContractRegistry
 }
 
 export function loadRegisteredRouteCatalog(): RegisteredRoute[] {
   const loaded = loadBackendProgram()
   if (routes?.generation === loaded.generation) return routes.value
   const value =
-    routesFor(loaded) ??
+    catalogFor(loaded)?.routes ??
     relativizeContractTree(discoverRegisteredRoutes(loaded.program, loaded.routeFiles))
   routes = { generation: loaded.generation, value }
   return value
 }
 
-function catalog(options: DiscoveryOptions | undefined): PublishedCatalog {
+export function loadBackendContractCatalog(options?: DiscoveryOptions): BackendContractCatalog {
   return cached(catalogs, signature(undefined, options), loaded => {
     assertUniqueResponseAttribution(loaded.program, loaded.routeFiles)
-    return relativizeContractTree(
+    const value = relativizeContractTree(
       discoverAppRouteCtxContractsV1({
         program: loaded.program,
         sourceFiles: loaded.routeFiles,
         options: schemaOptions(options),
       }),
-    )
+    ) as BackendContractCatalog
+    return {
+      ...value,
+      queries: withRequiredQueryParameters(value.queries),
+    }
   })
 }
 
@@ -131,11 +139,16 @@ function discoverAttributedResponses(
   return discoverApiResponseContracts(loaded.program, loaded.routeFiles, requestedKeys, options)
 }
 
-function routesFor(loaded: BackendProgram): RegisteredRoute[] | undefined {
+function catalogFor(loaded: BackendProgram): BackendContractCatalog | undefined {
   for (const entry of catalogs.values()) {
-    if (entry.generation === loaded.generation) return entry.value.routes
+    if (entry.generation === loaded.generation) return entry.value
   }
   return undefined
+}
+
+function strictCatalogFor(loaded: BackendProgram): BackendContractCatalog | undefined {
+  const entry = catalogs.get(signature(undefined, undefined))
+  return entry?.generation === loaded.generation ? entry.value : undefined
 }
 
 function schemaOptions(options: DiscoveryOptions | undefined): DiscoveryOptions {
