@@ -9,6 +9,12 @@ const OXLINT = resolve('node_modules/.bin/oxlint')
 const CONFIG = resolve('.oxlintrc.json')
 const CASES = [
   {
+    rule: 'no-array-fill-with-reference-type',
+    rejected: 'export const batch = new Array(2).fill({})\n',
+    accepted:
+      'export const batch = Array.from({ length: 2 }, () => ({}))\nexport const flags = new Array(2).fill(false)\n',
+  },
+  {
     rule: 'prefer-array-find',
     rejected: 'const values = [1, 2]\nexport const first = values.filter(value => value > 0)[0]\n',
     accepted:

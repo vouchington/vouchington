@@ -192,7 +192,7 @@
     "unicorn/switch-case-braces": "off", // Policy: switch case block layout is a style choice.
     "unicorn/text-encoding-identifier-case": "error",
     "unicorn/throw-new-error": "error",
-    "unicorn/no-array-fill-with-reference-type": "off", // Staged #1692: 2 findings / 1 files; scan 2026-10-01.
+    "unicorn/no-array-fill-with-reference-type": "error",
     "unicorn/no-await-in-promise-methods": "error",
     "unicorn/no-confusing-array-with": "error",
     "unicorn/no-empty-file": "off", // Staged #1692: 1 findings / 1 files; scan 2026-10-01.

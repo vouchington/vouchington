@@ -200,8 +200,12 @@ describe('classifyMcpCalls', () => {
 
 describe('exceedsMcpAuditBatchLimit', () => {
   it('allows a batch up to the limit and rejects a larger one', () => {
-    expect(exceedsMcpAuditBatchLimit(new Array(MAX_AUDITED_MCP_MESSAGES).fill({}))).toBe(false)
-    expect(exceedsMcpAuditBatchLimit(new Array(MAX_AUDITED_MCP_MESSAGES + 1).fill({}))).toBe(true)
+    expect(
+      exceedsMcpAuditBatchLimit(Array.from({ length: MAX_AUDITED_MCP_MESSAGES }, () => ({}))),
+    ).toBe(false)
+    expect(
+      exceedsMcpAuditBatchLimit(Array.from({ length: MAX_AUDITED_MCP_MESSAGES + 1 }, () => ({}))),
+    ).toBe(true)
   })
 
   it('never limits a single message', () => {
