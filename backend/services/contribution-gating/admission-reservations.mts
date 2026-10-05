@@ -106,6 +106,7 @@ export async function claimContributionAdmission<T>(
     SELECT attempt.id, clock_timestamp() FROM post_admission_attempts attempt
     JOIN post_admission_claims claim ON claim.reservation_id = attempt.reservation_id AND claim.lease_token = attempt.lease_token
     WHERE claim.reservation_id = ${reservationId} AND claim.lease_expires_at <= clock_timestamp()
+    ORDER BY attempt.id ASC NULLS LAST
     ON CONFLICT (post_admission_attempt_id) DO NOTHING`)
   const leaseToken = randomUUID()
   const claim = await query<{
