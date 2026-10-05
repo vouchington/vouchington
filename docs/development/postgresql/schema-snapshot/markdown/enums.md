@@ -65,6 +65,7 @@
 - `cards:write`
 - `communities:read`
 - `copyright-notices:read`
+- `copyright-notices:write`
 - `data-points:read`
 - `domain-ratings:read`
 - `editorial:read`
