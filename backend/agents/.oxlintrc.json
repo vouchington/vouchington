@@ -21,6 +21,8 @@
       "error",
       {
         "importSpecifier": "@data-stores/psql",
+        "executorFactoryNames": ["beginTransaction", "beginBoundedTransaction"],
+        "executorTypeNames": ["TransactionQuery", "QueryExecutor"],
         "owners": [
           "backend/data-stores/psql/explain-analyze.mts",
           "backend/test-helpers/postgres-advisory-lock.mts",
@@ -31,7 +33,11 @@
     ],
     "no-mistakes/postgres-no-unbounded-query-fanout": [
       "error",
-      { "importSpecifier": "@data-stores/psql" }
+      {
+        "importSpecifier": "@data-stores/psql",
+        "executorFactoryNames": ["beginTransaction", "beginBoundedTransaction"],
+        "executorTypeNames": ["TransactionQuery", "QueryExecutor"]
+      }
     ],
     "no-await-in-loop": "off"
   }

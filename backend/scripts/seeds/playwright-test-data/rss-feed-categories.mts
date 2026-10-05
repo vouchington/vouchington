@@ -16,15 +16,13 @@ export async function seedPlaywrightRssFeedCategoryData(query: TransactionQuery)
 
   // Insert unmapped categories for Playwright tests
   // Use ON CONFLICT DO NOTHING so re-seeding is safe
-  await Promise.all(
-    itemRows.map(row =>
-      query(
-        `INSERT INTO rss_feed_item_categories (rss_feed_item_id, category_text, topic_id)
-        VALUES ($1, 'credit-cards-pw-test', NULL), ($1, 'news-pw-test', NULL)
-        ON CONFLICT DO NOTHING`,
-        [row.id],
-      ),
-    ),
+  await query(
+    `INSERT INTO rss_feed_item_categories (rss_feed_item_id, category_text, topic_id)
+    SELECT item.id, category.category_text, NULL
+    FROM unnest($1::uuid[]) AS item(id)
+    CROSS JOIN (VALUES ('credit-cards-pw-test'), ('news-pw-test')) AS category(category_text)
+    ON CONFLICT DO NOTHING`,
+    [itemRows.map(row => row.id)],
   )
 
   // Pre-reject 'news-pw-test' so the rejected-status view has a row for Playwright tests

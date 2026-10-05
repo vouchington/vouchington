@@ -549,6 +549,44 @@ not own our module layout and has no module default: a rule that omits both `imp
 to select no executor calls. Migration-only rules and `postgres-sql-statement-policy` do not take the
 option.
 
+Those entries and configs also set `executorFactoryNames: [beginTransaction,
+beginBoundedTransaction]` and `executorTypeNames: [TransactionQuery, QueryExecutor]`, except the two
+`postgres-lock-ordering` entries (see the gaps below). Without the options `no-mistakes` finds executor
+calls only by the imported names `query`, `read`, and `write`, so SQL run through a transaction handle
+or an injected executor is invisible. With them it also scans:
+
+- a local bound to a configured factory call, such as `await using query = await beginTransaction()`,
+  within the declaring block; and
+- a parameter typed with a configured type, including a destructured parameter whose type literal
+  names the executor, within the declaring function.
+
+Known gaps, tracked in [#2029](https://github.com/vouchington/vouchington/issues/2029):
+
+- `postgres-lock-ordering` does not set the options yet. It reports every comma-separated
+  `FOR UPDATE OF a, b` list as unparseable, and most locking statements that handles bring into scope
+  use that form. Enabling it waits for the upstream parser fix; the statements stay as written until
+  then.
+- Factory and type imports are matched only against the exact `importSpecifier`. A parameter typed
+  with an executor type imported from `@data-stores/psql/types`, or from a relative path, is not
+  scanned by any rule until `no-mistakes` matches more than one module path.
+- A destructured factory result (`const { query } = await beginTransaction()`) and a name shadowed
+  inside the scope are not tracked. The repository has no such site today.
+
+Shapes that satisfy `postgres-conflict-ordering` for handle and typed-executor SQL:
+
+- A constant leading arbiter column (a bound parameter) gets a select alias that heads the
+  `ORDER BY`: `SELECT $1::uuid AS url_hostname_id, ... ORDER BY url_hostname_id, ...`. Positional
+  `ORDER BY 1` and `ORDER BY $1::uuid` are not mapped.
+- A multi-row `DO NOTHING` names its conflict target.
+- The rule resolves a partial-index target only when the predicate matches the catalog's
+  parenthesized text. A statement that writes the predicate plainly carries a
+  `no-mistakes-disable-next-line postgres-conflict-ordering` with the reason until upstream
+  normalizes it.
+- A statement that provably touches one row (no `FROM`, or one primary-key lookup) carries
+  `/* deadlock-safe: <reason> */` inside the SQL. `postgres-conflict-ordering` reports the executor
+  call line, so a `no-mistakes-disable-next-line` goes above the call;
+  `postgres-required-predicates` reports the SQL string line.
+
 PostgreSQL final-state inventories in `repo-file-policy` load the tracked, versioned
 [`schema.json`](../../../../backend/data-stores/psql/schema-snapshot/schema.json) once and fail closed when it
 is missing, malformed, or stale-format. Migration authoring, deploy sequencing, inline directives,
