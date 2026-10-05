@@ -34,13 +34,11 @@ function unsafeCatalogPath(path: string): Error {
 }
 
 async function lstatOrNull(path: string): Promise<Stats | null> {
-  try {
-    return await lstat(path)
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null
-    /* v8 ignore next -- non-ENOENT stat failures are host-specific */
-    throw err
-  }
+  /* v8 ignore start -- non-ENOENT stat failures are host-specific */
+  return lstat(path).catch((err: NodeJS.ErrnoException) =>
+    err.code === 'ENOENT' ? null : Promise.reject(err),
+  )
+  /* v8 ignore stop */
 }
 
 async function readExisting(root: string, path: string): Promise<string | null> {

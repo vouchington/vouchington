@@ -75,17 +75,12 @@ export async function writeSchemaSnapshot({
       : writeNoMistakesCatalog({ catalog, root, format: formatWithOxfmt, check }),
   ])
   const failures = outcomes.flatMap(outcome =>
-    outcome.status === 'rejected' ? [outcome.reason] : [],
+    outcome.status === 'rejected' ? [outcome.reason as Error] : [],
   )
   const [firstFailure] = failures
   if (failures.length === 1) throw firstFailure
   if (failures.length > 1) {
-    throw new AggregateError(
-      failures,
-      failures
-        .map(failure => (failure instanceof Error ? failure.message : String(failure)))
-        .join('\n\n'),
-    )
+    throw new AggregateError(failures, failures.map(failure => failure.message).join('\n\n'))
   }
 }
 
