@@ -4720,9 +4720,6 @@ importers:
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../../data-stores/valkey
-      '@jongleberry/api-server':
-        specifier: ^2.1.0
-        version: 2.1.0
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws

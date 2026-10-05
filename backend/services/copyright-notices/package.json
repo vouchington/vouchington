@@ -23,7 +23,6 @@
     "@aws-sdk/client-s3": "^3.1146.0",
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
-    "@jongleberry/api-server": "^2.1.0",
     "@modules/aws": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/pagination": "workspace:^",
