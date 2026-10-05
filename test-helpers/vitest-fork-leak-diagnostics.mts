@@ -4,6 +4,15 @@ import type { ForkLeakVerdict } from 'vouchington-tooling/vitest-diagnostics'
 type ForkLeakGrowthStep = NonNullable<ForkLeakVerdict['suspectedGrowth']>
 import { formatResourceCounts } from './vitest-process-resources.mts'
 
+type PsqlPoolMetricsProvider = () => PsqlPoolMetrics
+
+export function getRegisteredPsqlPoolMetrics(): PsqlPoolMetrics | null {
+  const provider = (
+    globalThis as typeof globalThis & Record<symbol, PsqlPoolMetricsProvider | undefined>
+  )[Symbol.for('vitest-fork-leak-psql-pool-metrics')]
+  return provider?.() ?? null
+}
+
 export function formatForkLeakDiagnostics(
   verdict: ForkLeakVerdict,
   counts: ReadonlyMap<string, number>,
