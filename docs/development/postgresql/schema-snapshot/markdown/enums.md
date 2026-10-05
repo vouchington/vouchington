@@ -72,6 +72,7 @@
 - `editorial:write`
 - `entity-relations:read`
 - `entity-relations:write`
+- `feeds:read`
 - `financial-profile:read`
 - `financial-profile:write`
 - `hostnames:read`
@@ -103,6 +104,8 @@
 - `referral-links:write`
 - `rewards-statuses:read`
 - `rewards-statuses:write`
+- `rss-feed-items:read`
+- `rss-feeds:read`
 - `rss:read`
 - `site-operations:config`
 - `site-operations:jobs`

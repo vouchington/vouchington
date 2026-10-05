@@ -59,6 +59,7 @@
     "@services/posts": "workspace:^",
     "@services/prioritized-referral-links": "workspace:^",
     "@services/queue-monitoring": "workspace:^",
+    "@services/recommended-rss-feeds": "workspace:^",
     "@services/recommended-topics": "workspace:^",
     "@services/referral-link-unfurl": "workspace:^",
     "@services/report-integrity": "workspace:^",
@@ -74,6 +75,7 @@
     "@services/trending-communities": "workspace:^",
     "@services/trending-posts": "workspace:^",
     "@services/trending-referral-programs": "workspace:^",
+    "@services/trending-rss-feeds": "workspace:^",
     "@services/trending-topics": "workspace:^",
     "@services/urls": "workspace:^",
     "@services/urls-hostnames": "workspace:^",
@@ -96,6 +98,7 @@
     "http-errors": "^2.0.1"
   },
   "devDependencies": {
+    "@services/follower-distributions": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^"
   }

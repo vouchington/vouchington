@@ -6229,6 +6229,1721 @@
         },
         {
           "tool": {
+            "name": "search_rss_feeds",
+            "title": "Search RSS Feeds",
+            "description": "Search RSS feeds by title, type and current state. Returns at most 25 feeds per page and page_info.end_cursor for the next page. Text search has no cursor, as on REST.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "q": {
+                  "type": "string"
+                },
+                "text_search_query": {
+                  "type": "string"
+                },
+                "feed_type": {
+                  "type": "string",
+                  "enum": ["article", "podcast", "video", "mixed"]
+                },
+                "enabled": {
+                  "type": ["boolean", "null"]
+                },
+                "discoverable": {
+                  "type": ["boolean", "null"]
+                },
+                "apply_mutes": {
+                  "type": "boolean",
+                  "description": "Exclude your muted feeds, as on REST."
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Defaults to 25; clamped to 25."
+                },
+                "after": {
+                  "type": "string"
+                }
+              },
+              "required": []
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "feed_type": {
+                            "enum": ["article", "mixed", "podcast", "video"],
+                            "type": "string"
+                          },
+                          "is_enabled": {
+                            "type": "boolean"
+                          },
+                          "is_discoverable": {
+                            "type": "boolean"
+                          },
+                          "rss_feed_url": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "feed_type",
+                          "is_enabled",
+                          "is_discoverable",
+                          "rss_feed_url"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page_info": {
+                      "type": "object",
+                      "properties": {
+                        "has_next_page": {
+                          "type": "boolean"
+                        },
+                        "start_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "end_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["has_next_page", "start_cursor", "end_cursor"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["success", "results", "page_info"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["rss-feeds:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/rss-feeds"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_rss_feed",
+            "title": "Get RSS Feed",
+            "description": "Get an RSS feed by UUID, including disabled or non-discoverable feeds as the REST detail route does.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "rss_feed_id": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "required": ["rss_feed_id"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "rss_feed": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "feed_type": {
+                          "enum": ["article", "mixed", "podcast", "video"],
+                          "type": "string"
+                        },
+                        "is_enabled": {
+                          "type": "boolean"
+                        },
+                        "is_discoverable": {
+                          "type": "boolean"
+                        },
+                        "rss_feed_url": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "title",
+                        "feed_type",
+                        "is_enabled",
+                        "is_discoverable",
+                        "rss_feed_url"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["success", "rss_feed"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["rss-feeds:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/rss-feeds/:id"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "list_rss_feed_items",
+            "title": "List RSS Feed Items",
+            "description": "Search and page RSS feed items by keyword, semantic text, similar item, feed, media type or read state. Returns at most 100 items per page and page_info.end_cursor for the next page. The old internal search_rss_feed_items tool has no cursor; use this tool for MCP reads.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "q": {
+                  "type": "string",
+                  "description": "Keyword or hashtag search, like the REST q parameter."
+                },
+                "search": {
+                  "type": "string",
+                  "description": "Hybrid search shortcut. Same as setting both text_search_query and semantic_search_query to this value."
+                },
+                "text_search_query": {
+                  "type": "string",
+                  "description": "Text/keyword query for exact or lexical matching"
+                },
+                "semantic_search_query": {
+                  "type": "string",
+                  "description": "Natural language query for semantic similarity search"
+                },
+                "similar_post_id": {
+                  "type": "string",
+                  "description": "Find results similar to a post ID using embeddings"
+                },
+                "similar_topic_id": {
+                  "type": "string",
+                  "description": "Find results similar to a topic ID using embeddings"
+                },
+                "similar_rss_feed_item_id": {
+                  "type": "string",
+                  "description": "Find results similar to an RSS feed item UUID"
+                },
+                "after": {
+                  "type": "string",
+                  "description": "Cursor from a previous result page_info.end_cursor, for the next page."
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Items per page; defaults to 10 and clamps at 100."
+                },
+                "rss_feed_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "media_type": {
+                  "type": "string",
+                  "enum": ["article", "audio", "video"]
+                },
+                "read": {
+                  "type": "boolean",
+                  "description": "Filter by your own read state."
+                }
+              },
+              "required": []
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "markdown": {
+                            "type": "string"
+                          },
+                          "url": {
+                            "type": "string"
+                          },
+                          "guid": {
+                            "type": "string"
+                          },
+                          "published_at": {
+                            "type": "string"
+                          },
+                          "rss_feed_id": {
+                            "type": "string"
+                          },
+                          "rss_feed_title": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "markdown",
+                          "url",
+                          "guid",
+                          "published_at",
+                          "rss_feed_id",
+                          "rss_feed_title"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page_info": {
+                      "type": "object",
+                      "properties": {
+                        "has_next_page": {
+                          "type": "boolean"
+                        },
+                        "start_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "end_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["has_next_page", "start_cursor", "end_cursor"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["success", "results", "page_info"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["rss-feed-items:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/rss-feed-items"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_rss_feed_item",
+            "title": "Get RSS Feed Item",
+            "description": "Get an RSS feed item by UUID, with article text marked as external content.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "rss_feed_item_id": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "required": ["rss_feed_item_id"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "rss_feed_item": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "markdown": {
+                          "type": "string"
+                        },
+                        "url": {
+                          "type": "string"
+                        },
+                        "guid": {
+                          "type": "string"
+                        },
+                        "published_at": {
+                          "type": "string"
+                        },
+                        "rss_feed_id": {
+                          "type": "string"
+                        },
+                        "rss_feed_title": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "title",
+                        "markdown",
+                        "url",
+                        "guid",
+                        "published_at",
+                        "rss_feed_id",
+                        "rss_feed_title"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["success", "rss_feed_item"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["rss-feed-items:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/rss-feed-items/:id"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_trending_rss_feeds",
+            "title": "Get Trending RSS Feeds",
+            "description": "List trending RSS feed IDs, scores and counts. Use get_rss_feed for details. Returns at most 100 per page and a cursor for the next page.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Defaults to 20; clamped to 100."
+                },
+                "after": {
+                  "type": "string",
+                  "description": "Previous page_info.end_cursor."
+                },
+                "time_range": {
+                  "type": "string",
+                  "enum": ["day", "week", "month"]
+                },
+                "min_score": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              },
+              "required": []
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "trending_score": {
+                            "type": "number"
+                          },
+                          "follow_count": {
+                            "type": "number"
+                          },
+                          "item_count": {
+                            "type": "number"
+                          }
+                        },
+                        "required": ["id", "trending_score", "follow_count", "item_count"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page_info": {
+                      "type": "object",
+                      "properties": {
+                        "has_next_page": {
+                          "type": "boolean"
+                        },
+                        "start_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "end_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["has_next_page", "start_cursor", "end_cursor"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["success", "results", "page_info"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["rss-feeds:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/rss-feeds/trending"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_recommended_rss_feeds",
+            "title": "Get Recommended RSS Feeds",
+            "description": "List RSS feed recommendations for the current user, with scores and reasons. Use get_rss_feed for details. Returns at most 100 per page and a cursor for the next page.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Defaults to 20; clamped to 100."
+                },
+                "after": {
+                  "type": "string",
+                  "description": "Previous page_info.end_cursor."
+                },
+                "source": {
+                  "type": "string",
+                  "enum": ["friends", "topic", "collaborative", "all"]
+                }
+              },
+              "required": []
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "recommendation_score": {
+                            "type": "number"
+                          },
+                          "recommendation_reasons": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "required": ["id", "recommendation_score", "recommendation_reasons"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page_info": {
+                      "type": "object",
+                      "properties": {
+                        "has_next_page": {
+                          "type": "boolean"
+                        },
+                        "start_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "end_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["has_next_page", "start_cursor", "end_cursor"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["success", "results", "page_info"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["rss-feeds:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/rss-feeds/recommended"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "list_rss_feed_crawls",
+            "title": "List RSS Feed Crawls",
+            "description": "List crawl summaries for an RSS feed. REST requires a premium membership or administrator role. Returns at most 100 per page with page_info.end_cursor for the next page.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "rss_feed_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Defaults to 50; clamped to 100."
+                },
+                "after": {
+                  "type": "string"
+                }
+              },
+              "required": ["rss_feed_id"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "response_code": {
+                            "type": "number"
+                          },
+                          "created_at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["id", "response_code", "created_at"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page_info": {
+                      "type": "object",
+                      "properties": {
+                        "has_next_page": {
+                          "type": "boolean"
+                        },
+                        "start_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "end_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["has_next_page", "start_cursor", "end_cursor"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["success", "results", "page_info"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["rss-feeds:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/rss-feeds/:id/crawls"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_rss_feed_crawl",
+            "title": "Get RSS Feed Crawl",
+            "description": "Get one RSS feed crawl. Premium callers receive only the REST paid summary; administrators may also receive raw feed data, fenced as external content.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "rss_feed_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "crawl_id": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "required": ["rss_feed_id", "crawl_id"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "crawl": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "response_code": {
+                              "type": "number"
+                            },
+                            "created_at": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["id", "response_code", "created_at"],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "response_code": {
+                              "type": "number"
+                            },
+                            "created_at": {
+                              "type": "string"
+                            },
+                            "redirect_url_id": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "feed_data": {
+                              "type": ["string", "null"]
+                            },
+                            "feed_data_sha256": {
+                              "type": ["string", "null"]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "response_code",
+                            "created_at",
+                            "redirect_url_id",
+                            "feed_data",
+                            "feed_data_sha256"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["success", "crawl"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["rss-feeds:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/rss-feeds/:id/crawls/:crawlId"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_rss_feed_item_follow_context",
+            "title": "Get RSS Feed Item Follow Context",
+            "description": "For an RSS item, list up to five users you follow who voted positively or negatively, with the total for each side. Uses the same follow and vote visibility policy as REST.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "rss_feed_item_id": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "required": ["rss_feed_item_id"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "positive_by_following": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number"
+                        },
+                        "users": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["id"],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": ["total", "users"],
+                      "additionalProperties": false
+                    },
+                    "negative_by_following": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number"
+                        },
+                        "users": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["id"],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": ["total", "users"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["success", "positive_by_following", "negative_by_following"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["rss-feed-items:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/rss-feed-items/:id/follow-context"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_rss_feed_item_votes",
+            "title": "Get RSS Feed Item Votes",
+            "description": "List votes on an RSS item. As on REST, administrators see all votes and other callers see only their own. Returns at most 100 per page with page_info.end_cursor.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "rss_feed_item_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Defaults to 100; clamped to 100."
+                },
+                "after": {
+                  "type": "string"
+                }
+              },
+              "required": ["rss_feed_item_id"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "user_id": {
+                            "type": "string"
+                          },
+                          "entity_id": {
+                            "type": "string"
+                          },
+                          "choice": {
+                            "enum": ["disavow", "dislike", "like", "neutral", "vouch"],
+                            "type": "string"
+                          },
+                          "created_at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["user_id", "entity_id", "choice", "created_at"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page_info": {
+                      "type": "object",
+                      "properties": {
+                        "has_next_page": {
+                          "type": "boolean"
+                        },
+                        "start_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "end_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["has_next_page", "start_cursor", "end_cursor"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["success", "results", "page_info"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["rss-feed-items:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/rss-feed-items/:id/votes"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_post_feed",
+            "title": "Get Post Feed",
+            "description": "Page posts delivered to your own feed. Results identify each post for get_post; the domain feed service applies the REST follow, community and content policy. Returns at most 100 per page.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Defaults to 25; clamped to 100."
+                },
+                "after": {
+                  "type": "string",
+                  "description": "Previous page_info.end_cursor."
+                },
+                "community": {
+                  "type": "string",
+                  "description": "Community UUID or slug, ignored for follow_users as on REST."
+                },
+                "q": {
+                  "type": "string",
+                  "description": "Keyword or hashtag search."
+                },
+                "text_search_query": {
+                  "type": "string"
+                },
+                "time_range": {
+                  "type": "string",
+                  "enum": ["1d", "1w", "1m", "1y", "all"]
+                },
+                "min_score_follow_topics": {
+                  "type": "number"
+                },
+                "feed_type": {
+                  "type": "string",
+                  "enum": ["follow_users", "follow_topics", "any", "all"]
+                },
+                "post_types": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "discussion",
+                      "review",
+                      "data_point",
+                      "comment",
+                      "link",
+                      "article",
+                      "blog_post",
+                      "story"
+                    ]
+                  }
+                },
+                "sort": {
+                  "type": "string",
+                  "enum": ["new", "hot"]
+                },
+                "min_score_follow_users": {
+                  "type": "number"
+                }
+              },
+              "required": ["feed_type"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "entity_id": {
+                            "type": "string"
+                          },
+                          "delivery_type": {
+                            "type": "string",
+                            "enum": ["direct", "share"]
+                          },
+                          "shared_by_id": {
+                            "type": ["string", "null"]
+                          },
+                          "shared_at": {
+                            "type": ["string", "null"],
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "entity_id",
+                          "delivery_type",
+                          "shared_by_id",
+                          "shared_at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page_info": {
+                      "type": "object",
+                      "properties": {
+                        "has_next_page": {
+                          "type": "boolean"
+                        },
+                        "start_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "end_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["has_next_page", "start_cursor", "end_cursor"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["success", "results", "page_info"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["feeds:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/feeds/posts/:feed_type"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_rss_feed_item_feed",
+            "title": "Get RSS Feed Item Feed",
+            "description": "Page RSS items delivered to your own feed. Results identify each item for get_rss_feed_item; the domain feed service applies the REST follow, community and content policy. Returns at most 100 per page.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Defaults to 25; clamped to 100."
+                },
+                "after": {
+                  "type": "string",
+                  "description": "Previous page_info.end_cursor."
+                },
+                "community": {
+                  "type": "string",
+                  "description": "Community UUID or slug, ignored for follow_users as on REST."
+                },
+                "q": {
+                  "type": "string",
+                  "description": "Keyword or hashtag search."
+                },
+                "text_search_query": {
+                  "type": "string"
+                },
+                "time_range": {
+                  "type": "string",
+                  "enum": ["1d", "1w", "1m", "1y", "all"]
+                },
+                "min_score_follow_topics": {
+                  "type": "number"
+                },
+                "feed_type": {
+                  "type": "string",
+                  "enum": ["follow_users", "follow_rss_feeds", "follow_topics", "any", "all"]
+                },
+                "min_score_follow_rss_feeds": {
+                  "type": "number"
+                },
+                "has_related_posts": {
+                  "type": "boolean"
+                },
+                "media_types": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": ["article", "audio", "video"]
+                  }
+                }
+              },
+              "required": ["feed_type"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "entity_id": {
+                            "type": "string"
+                          },
+                          "delivery_type": {
+                            "type": "string",
+                            "enum": ["direct", "share"]
+                          },
+                          "shared_by_id": {
+                            "type": ["string", "null"]
+                          },
+                          "shared_at": {
+                            "type": ["string", "null"],
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "entity_id",
+                          "delivery_type",
+                          "shared_by_id",
+                          "shared_at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page_info": {
+                      "type": "object",
+                      "properties": {
+                        "has_next_page": {
+                          "type": "boolean"
+                        },
+                        "start_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "end_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["has_next_page", "start_cursor", "end_cursor"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["success", "results", "page_info"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["feeds:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/feeds/rss_feed_items/:feed_type"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_referral_link_feed",
+            "title": "Get Referral Link Feed",
+            "description": "Page referral links from users you follow, applying the REST feed privacy and mute policy. Returns at most 100 per page with page_info.end_cursor.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Defaults to 25; clamped to 100."
+                },
+                "after": {
+                  "type": "string",
+                  "description": "Previous page_info.end_cursor."
+                },
+                "feed_type": {
+                  "type": "string",
+                  "enum": ["follow_users", "mutual_follows"]
+                }
+              },
+              "required": ["feed_type"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "user_id": {
+                            "type": "string"
+                          },
+                          "referral_program_id": {
+                            "type": "string"
+                          },
+                          "referral_program_name": {
+                            "type": "string"
+                          },
+                          "referral_program_slug": {
+                            "type": "string"
+                          },
+                          "url": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "user_id",
+                          "referral_program_id",
+                          "referral_program_name",
+                          "referral_program_slug",
+                          "url",
+                          "label"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page_info": {
+                      "type": "object",
+                      "properties": {
+                        "has_next_page": {
+                          "type": "boolean"
+                        },
+                        "start_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "end_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["has_next_page", "start_cursor", "end_cursor"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["success", "results", "page_info"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["feeds:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/feeds/referral_links/:feed_type"
+            }
+          ]
+        },
+        {
+          "tool": {
             "name": "activate_referral_link",
             "title": "Activate Referral Link",
             "description": "Turn a referral link you own back on so it is shown again. Links the system derived from another link follow their parent and cannot be turned on by themselves.",
@@ -8731,7 +10446,7 @@
           "tool": {
             "name": "get_list_items",
             "title": "Get List Items",
-            "description": "List the items on a list, newest first: each is a post or an RSS feed item, with the item_type and entity_id to read it with (get_post, or the RSS item tools). The list must be readable as get_list describes; otherwise this returns { success: false, error: \"List not found\" }. A post the caller cannot read, such as a private or deleted post, is left out, so a page can hold fewer items than limit while page_info.has_next_page is still true: keep paging until it is false. media_type keeps only RSS feed items of that media type. Returns at most 25 items per page and page_info.end_cursor; pass it as after to get the next page. A malformed cursor returns { success: false, error: \"Invalid cursor\" }.",
+            "description": "List the items on a list, newest first: each is a post or an RSS feed item, with the item_type and entity_id to read it with (get_post or get_rss_feed_item). The list must be readable as get_list describes; otherwise this returns { success: false, error: \"List not found\" }. A post the caller cannot read, such as a private or deleted post, is left out, so a page can hold fewer items than limit while page_info.has_next_page is still true: keep paging until it is false. media_type keeps only RSS feed items of that media type. Returns at most 25 items per page and page_info.end_cursor; pass it as after to get the next page. A malformed cursor returns { success: false, error: \"Invalid cursor\" }.",
             "inputSchema": {
               "type": "object",
               "properties": {
