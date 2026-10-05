@@ -250,7 +250,7 @@ Your data export is a ZIP file of CSV files, grouped here by category:
 
 - **Profile and sign-in** — `profile.csv` (username, display preferences, bio, settings, created date), `emails.csv`, `phones.csv`, `oauth-accounts.csv` (connected sign-in providers), `passkeys.csv` (passkey details, never private keys), and `consents.csv` (your consent records)
 - **Content and activity** — `posts.csv` (all posts created by you), `votes.csv` (all votes you cast), `bookmarks.csv` (saves, follows, hides, and other bookmarks), `entity-relations.csv` (follows, mutes, blocks, and similar signals), `followed-rss-feeds.csv`, `followed-topics.csv`, and `referral-attributions.csv`
-- **Copyright records** — `copyright-notices-filed.csv`, `copyright-appeals.csv`, and `copyright-counter-notices.csv` (what you submitted yourself), `copyright-cases.csv` (accepted cases you are part of, as members see them), and `copyright-repeat-infringer-incidents.csv` and `copyright-repeat-infringer-reviews.csv` (repeat-infringer records about your account). Text that the retention period has erased shows as erased.
+- **Copyright records** — `copyright-notices-filed.csv`, `copyright-appeals.csv`, and `copyright-counter-notices.csv` (what you submitted yourself), `copyright-cases.csv` (accepted cases you are part of, as members see them), and `copyright-repeat-infringer-incidents.csv` and `copyright-repeat-infringer-reviews.csv` (repeat-infringer records about your account). Text that the retention period has erased appears blank or marked as erased.
 
 Download links expire after 7 days. You can request a new export at any time.
 
