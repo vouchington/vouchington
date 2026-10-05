@@ -1651,6 +1651,8 @@ rules:
     scope: repository
     options:
       importSpecifier: '@data-stores/psql'
+      executorFactoryNames: [beginTransaction, beginBoundedTransaction]
+      executorTypeNames: [TransactionQuery, QueryExecutor]
       # 0.46.1 peels DO $tag$ bodies for pairing engines. This rule may still
       # skip chr()-encoded statements. extraGeneratedColumns stays only for
       # config-driven tables whose DDL is TypeScript.
@@ -1829,6 +1831,8 @@ rules:
     scope: repository
     options:
       importSpecifier: '@data-stores/psql'
+      executorFactoryNames: [beginTransaction, beginBoundedTransaction]
+      executorTypeNames: [TransactionQuery, QueryExecutor]
       sqlInclude:
         - backend/data-stores/psql/config-driven/**/*.sql
       include:
@@ -1849,6 +1853,8 @@ rules:
     scope: repository
     options:
       importSpecifier: '@data-stores/psql'
+      executorFactoryNames: [beginTransaction, beginBoundedTransaction]
+      executorTypeNames: [TransactionQuery, QueryExecutor]
       include:
         - backend/**/*.{ts,mts}
       exclude:
@@ -1862,6 +1868,8 @@ rules:
     scope: repository
     options:
       importSpecifier: '@data-stores/psql'
+      executorFactoryNames: [beginTransaction, beginBoundedTransaction]
+      executorTypeNames: [TransactionQuery, QueryExecutor]
       include:
         - backend/**/*.{ts,mts}
       exclude:
@@ -1875,6 +1883,8 @@ rules:
     scope: repository
     options:
       importSpecifier: '@data-stores/psql'
+      executorFactoryNames: [beginTransaction, beginBoundedTransaction]
+      executorTypeNames: [TransactionQuery, QueryExecutor]
       sqlInclude:
         - backend/data-stores/psql/config-driven/**/*.sql
       include:

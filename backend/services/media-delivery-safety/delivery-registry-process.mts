@@ -55,7 +55,7 @@ async function claimMediaDeliveryRegistryRecord(
   `)
   const { rows: claimed } = await transaction(statement)
   const { rows } = claimed.length
-    ? await transaction<ImageDeliveryRecord>(sql`
+    ? await transaction<ImageDeliveryRecord>(sql`/* claimMediaDeliveryRegistryRecord:read */
     SELECT delivery_key, desired_state, placement_id, placement_revision, image_id, generation
     FROM media_delivery_registry_records WHERE delivery_key = ${deliveryKey}
   `)

@@ -27,8 +27,9 @@ export async function cleanupSoftDeletedUser(
     await query.commit()
     return { deleted: 0, hasMore: false }
   }
-  const { rows: authors } = await query<{ username: string | null }>(sql`
-    SELECT username FROM users WHERE id = ${targetId}`)
+  const { rows: authors } = await query<{ username: string | null }>(
+    sql`/* cleanupSoftDeletedUserBatch:username */ SELECT username FROM users WHERE id = ${targetId}`,
+  )
   const publication = await processAuthorDeletionPublicationBatch(
     query,
     targetId,
