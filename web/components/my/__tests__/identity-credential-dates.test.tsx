@@ -21,7 +21,7 @@ const passkey: Passkey = {
   id: 'pk-1',
   name: 'Laptop',
   device_type: 'multiDevice',
-  backed_up: true,
+  is_backed_up: true,
   created_at: createdAt,
   last_used_at: lastUsedAt,
 }
