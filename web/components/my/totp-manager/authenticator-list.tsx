@@ -1,9 +1,11 @@
 'use client'
 
+import { formatUtcDate } from '@ts-shared/utils/format'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import type { TotpAuthenticator } from '@/types/user'
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import type { TotpAuthenticator } from '@/types/user'
 
 interface AuthenticatorListProps {
   authenticators: TotpAuthenticator[]
@@ -33,6 +35,7 @@ export function AuthenticatorList({
   setRenamingId,
 }: AuthenticatorListProps) {
   const t = useTranslations()
+  const uiLocale = useUiLocale()
   return (
     <ul className='space-y-2'>
       {authenticators.map(authenticator => (
@@ -93,12 +96,9 @@ export function AuthenticatorList({
                 >
                   {authenticator.name}
                 </span>
-                <p
-                  className='text-xs text-muted-foreground'
-                  suppressHydrationWarning
-                >
+                <p className='text-xs text-muted-foreground'>
                   {t('extracted.totpManager.authenticatorList.addedDate_e7bbba62', {
-                    date: new Date(authenticator.created_at).toLocaleDateString(),
+                    date: formatUtcDate(authenticator.created_at, uiLocale),
                   })}
                 </p>
               </div>

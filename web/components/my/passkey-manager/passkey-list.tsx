@@ -1,9 +1,11 @@
 'use client'
 
+import { formatUtcDate } from '@ts-shared/utils/format'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import type { Passkey } from '@/types/user'
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import type { Passkey } from '@/types/user'
 
 interface PasskeyListProps {
   confirmingDeleteId: string | null
@@ -33,6 +35,7 @@ export function PasskeyList({
   setRenamingId,
 }: PasskeyListProps) {
   const t = useTranslations()
+  const uiLocale = useUiLocale()
   return (
     <ul className='space-y-2'>
       {passkeys.map(passkey => (
@@ -101,18 +104,15 @@ export function PasskeyList({
                       : t('extracted.passkeyManager.passkeyList.singleDevice_94eac1bc')}
                   </span>
                 </div>
-                <p
-                  className='text-xs text-muted-foreground'
-                  suppressHydrationWarning
-                >
+                <p className='text-xs text-muted-foreground'>
                   {t('extracted.passkeyManager.passkeyList.addedDate_e7bbba62', {
-                    date: new Date(passkey.created_at).toLocaleDateString(),
+                    date: formatUtcDate(passkey.created_at, uiLocale),
                   })}
                   {passkey.last_used_at && (
                     <>
                       {' · '}
                       {t('extracted.passkeyManager.passkeyList.lastUsedDate_01c03319', {
-                        date: new Date(passkey.last_used_at).toLocaleDateString(),
+                        date: formatUtcDate(passkey.last_used_at, uiLocale),
                       })}
                     </>
                   )}
