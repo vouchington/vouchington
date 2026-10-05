@@ -1,4 +1,4 @@
-import { gunzip, gzip } from 'node:zlib'
+import { gzip } from 'node:zlib'
 
 /**
  * @public Documented contract; production use is unconfirmed and this export may be
@@ -6,10 +6,6 @@ import { gunzip, gzip } from 'node:zlib'
  */
 export function gzipBytes(value: Uint8Array): Promise<Uint8Array> {
   return transformBytes(value, gzip)
-}
-
-export function gunzipBytes(value: Uint8Array): Promise<Uint8Array> {
-  return transformBytes(value, gunzip)
 }
 
 type ByteTransform = (

@@ -36,9 +36,6 @@ describe('image quarantine', () => {
 
   beforeEach(() => {
     vi.stubEnv('IMAGE_ORIGIN', 'https://images.example.com')
-    vi.spyOn(s3Module, 'uploadImageToS3').mockResolvedValue(
-      {} as Awaited<ReturnType<typeof s3Module.uploadImageToS3>>,
-    )
     vi.spyOn(s3Lifecycle, 'deleteKnownImageStorageFromS3').mockResolvedValue()
     vi.spyOn(s3Module, 'copyImageToQuarantine').mockResolvedValue(undefined)
     vi.spyOn(s3Module, 'deleteImageRenders').mockResolvedValue(undefined)

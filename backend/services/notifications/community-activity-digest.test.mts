@@ -13,10 +13,8 @@ import {
   suspendTestUser,
   setTestCommunityDigestVacationSuppression,
 } from '@voucha/test-helpers'
-import {
-  createCommunityActivityDigestBatch,
-  getPreviousClosedMondayWindow,
-} from './community-activity-digest.mts'
+import { createCommunityActivityDigestBatch } from './community-activity-digest.mts'
+import { getCommunityActivityDigestDispatchData } from '@queues/notifications/enqueues/community-activity-digest'
 import { deleteNotification } from './mutations.mts'
 import { listNotifications } from './list.mts'
 import { buildCommunityActivityDigestBody } from './community-activity-digest-body.mts'
@@ -35,10 +33,10 @@ async function runDigestBatchForUser(userId: string, input: DigestInput) {
 }
 
 describe('community activity digest', () => {
-  it('returns the previous closed Monday-to-Monday UTC window', () => {
-    expect(getPreviousClosedMondayWindow(new Date('2026-07-15T18:42:00Z'))).toEqual({
-      start: new Date('2026-07-06T00:00:00Z'),
-      end: new Date('2026-07-13T00:00:00Z'),
+  it('dispatches the previous closed Monday-to-Monday UTC window', () => {
+    expect(getCommunityActivityDigestDispatchData(new Date('2026-07-15T18:42:00Z'))).toEqual({
+      windowStart: '2026-07-06T00:00:00.000Z',
+      windowEnd: '2026-07-13T00:00:00.000Z',
     })
   })
 

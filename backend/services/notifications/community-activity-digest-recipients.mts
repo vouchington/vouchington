@@ -2,15 +2,6 @@ import { getNotificationsWorkLimit } from './work-limits.mts'
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
-export function getPreviousClosedMondayWindow(now: Date): { start: Date; end: Date } {
-  const end = new Date(now)
-  end.setUTCHours(0, 0, 0, 0)
-  end.setUTCDate(end.getUTCDate() - ((end.getUTCDay() + 6) % 7))
-  const start = new Date(end)
-  start.setUTCDate(start.getUTCDate() - 7)
-  return { start, end }
-}
-
 export async function listCommunityActivityDigestRecipientPage(afterUserId?: string) {
   const COMMUNITY_ACTIVITY_DIGEST_RECIPIENT_BATCH_SIZE = getNotificationsWorkLimit(
     'community_digest_recipient_batch_size',

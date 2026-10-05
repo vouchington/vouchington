@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
   createRandomString,
+  getTestBlueskyLinkedAccountRow,
   createTestUserDirect,
   getTestBlueskyLinkAuthorizationRow,
   insertTestBlueskyLinkedAccount,
@@ -29,10 +30,11 @@ vi.mock<typeof import('@modules/bluesky-oauth')>(
 // each test's beforeEach.
 createBlueskyOAuthClientMock.mockReturnValue({} as NodeOAuthClient)
 
-import { disconnectBlueskyAccountFromUser } from './disconnect.mts'
+import { disconnectAcceptedBlueskyGeneration } from './disconnect.mts'
 import { getBlueskyLinkedAccountForUser } from './connect.mts'
 import { getBlueskyOAuthClient } from './client.mts'
 import { BlueskySessionStore } from './session-store.mts'
+import { requestBlueskyDisconnect } from '../bluesky-follows/disconnect-request.mts'
 
 function fakeDid(): string {
   return `did:plc:${createRandomString(24)}`
@@ -44,7 +46,7 @@ async function seedLinkedAccount(userId: string): Promise<string> {
   return did
 }
 
-describe('disconnectBlueskyAccountFromUser', () => {
+describe('disconnectAcceptedBlueskyGeneration', () => {
   beforeEach(() => {
     revokeBlueskySessionMock.mockReset()
     revokeBlueskySessionMock.mockImplementation(async (_client: NodeOAuthClient, did: string) =>
@@ -52,25 +54,49 @@ describe('disconnectBlueskyAccountFromUser', () => {
     )
   })
 
-  it('throws 404 when the user has no Bluesky account linked', async () => {
+  it('ignores an accepted generation when the user has no linked account', async () => {
     const user = await createTestUserDirect()
 
-    await expect(disconnectBlueskyAccountFromUser(user.id)).rejects.toThrow(
-      /No Bluesky account linked/,
-    )
+    await expect(
+      disconnectAcceptedBlueskyGeneration(user.id, {
+        blueskyDid: fakeDid(),
+        linkAuthorizationId: crypto.randomUUID(),
+      }),
+    ).resolves.toBeUndefined()
     expect(revokeBlueskySessionMock).not.toHaveBeenCalled()
+  })
+
+  it('ignores a linked generation without an accepted disconnect request', async () => {
+    const user = await createTestUserDirect()
+    const did = await seedLinkedAccount(user.id)
+    const linked = await getBlueskyLinkedAccountForUser(user.id)
+    if (!linked) throw new Error('Expected a linked Bluesky account')
+
+    await disconnectAcceptedBlueskyGeneration(user.id, {
+      blueskyDid: did,
+      linkAuthorizationId: linked.link_authorization_id,
+    })
+
+    expect(revokeBlueskySessionMock).not.toHaveBeenCalled()
+    expect(await getTestBlueskyLinkedAccountRow(did)).toMatchObject({
+      user_id: user.id,
+      link_authorization_id: linked.link_authorization_id,
+    })
   })
 
   it('revokes the session for the calling user own DID', async () => {
     const user = await createTestUserDirect()
     const did = await seedLinkedAccount(user.id)
 
-    const linked = await getBlueskyLinkedAccountForUser(user.id)
-    await disconnectBlueskyAccountFromUser(user.id)
+    const request = await requestBlueskyDisconnect(user.id)
+    await disconnectAcceptedBlueskyGeneration(user.id, {
+      blueskyDid: request.blueskyDid,
+      linkAuthorizationId: request.linkAuthorizationId,
+    })
 
     expect(revokeBlueskySessionMock).toHaveBeenCalledTimes(1)
     expect(revokeBlueskySessionMock).toHaveBeenCalledWith(await getBlueskyOAuthClient(), did)
-    expect(await getTestBlueskyLinkAuthorizationRow(linked!.link_authorization_id)).toMatchObject({
+    expect(await getTestBlueskyLinkAuthorizationRow(request.linkAuthorizationId)).toMatchObject({
       status: 'revoked',
       handle: null,
     })
@@ -79,26 +105,34 @@ describe('disconnectBlueskyAccountFromUser', () => {
   it('never revokes another user session, even if the caller knows their DID', async () => {
     const owner = await createTestUserDirect()
     const attacker = await createTestUserDirect()
-    await seedLinkedAccount(owner.id)
-
-    await expect(disconnectBlueskyAccountFromUser(attacker.id)).rejects.toThrow(
-      /No Bluesky account linked/,
-    )
+    const did = await seedLinkedAccount(owner.id)
+    const request = await requestBlueskyDisconnect(owner.id)
+    await disconnectAcceptedBlueskyGeneration(attacker.id, {
+      blueskyDid: request.blueskyDid,
+      linkAuthorizationId: request.linkAuthorizationId,
+    })
     expect(revokeBlueskySessionMock).not.toHaveBeenCalled()
     // The owner's link must still be intact — disconnect never touched it.
-    expect(await getBlueskyLinkedAccountForUser(owner.id)).not.toBeNull()
+    expect(await getTestBlueskyLinkedAccountRow(did)).toMatchObject({
+      user_id: owner.id,
+      link_authorization_id: request.linkAuthorizationId,
+    })
   })
 
   it('ignores a stale expected generation while preserving the current link', async () => {
     const user = await createTestUserDirect()
     const did = await seedLinkedAccount(user.id)
 
-    await disconnectBlueskyAccountFromUser(user.id, {
-      blueskyDid: fakeDid(),
+    const request = await requestBlueskyDisconnect(user.id)
+    await disconnectAcceptedBlueskyGeneration(user.id, {
+      blueskyDid: request.blueskyDid,
       linkAuthorizationId: crypto.randomUUID(),
     })
 
     expect(revokeBlueskySessionMock).not.toHaveBeenCalled()
-    expect(await getBlueskyLinkedAccountForUser(user.id)).toMatchObject({ bluesky_did: did })
+    expect(await getTestBlueskyLinkedAccountRow(did)).toMatchObject({
+      user_id: user.id,
+      link_authorization_id: request.linkAuthorizationId,
+    })
   })
 })

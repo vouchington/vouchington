@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import {
-  getEntityRelationDeletionState,
   getEntityRelationMetadataOrThrow,
   softDeleteEntityRelation,
   upsertEntityRelation,
 } from '@services/entity-relations'
+import { getEntityRelation } from '@voucha/test-helpers'
 import {
   createRemoteActorFixture,
   createFederatedUser,
@@ -45,12 +45,9 @@ describe('upsertEntityRelation skipIfDeleted guard', () => {
     )
     expect(relations).toEqual([])
 
-    const deletionState = await getEntityRelationDeletionState(
-      relationMetadata,
-      { id: remoteActor.id },
-      { id: user.id },
-    )
-    expect(deletionState).toBe('deleted')
+    const relation = await getEntityRelation(relationMetadata.table_name, remoteActor.id, user.id)
+    expect(relation).toHaveLength(1)
+    expect(relation[0]).toMatchObject({ deleted_at: expect.any(Date) })
   })
 
   it('still inserts a relation that was never created', async () => {

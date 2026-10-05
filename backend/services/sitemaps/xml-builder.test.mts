@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import type { SitemapUrl } from './types.mts'
-import { buildSitemapIndex, buildUrlset } from './xml-builder.mts'
+import { iterateSitemapIndexXml, iterateUrlsetXml } from './xml-builder.mts'
+
+const buildSitemapIndex = (sitemaps: Iterable<{ loc: string }>) =>
+  Array.from(iterateSitemapIndexXml(sitemaps)).join('')
+const buildUrlset = (urls: Iterable<SitemapUrl>) => Array.from(iterateUrlsetXml(urls)).join('')
 
 describe('XML Builder', () => {
   describe('buildSitemapIndex', () => {

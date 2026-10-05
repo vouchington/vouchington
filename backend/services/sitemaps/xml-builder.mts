@@ -26,16 +26,6 @@ export function* iterateSitemapIndexXml(sitemaps: Iterable<{ loc: string }>): It
   yield SITEMAP_INDEX_CLOSE
 }
 
-export function buildSitemapIndex(sitemaps: Iterable<{ loc: string }>): string {
-  let xml = XML_DECLARATION + SITEMAP_INDEX_OPEN
-
-  for (const sitemap of sitemaps) {
-    xml += buildSitemapIndexEntryXml(sitemap)
-  }
-
-  return xml + SITEMAP_INDEX_CLOSE
-}
-
 export function* iterateUrlsetXml(urls: Iterable<SitemapUrl>): Iterable<string> {
   yield XML_DECLARATION
   yield URLSET_OPEN
@@ -45,14 +35,4 @@ export function* iterateUrlsetXml(urls: Iterable<SitemapUrl>): Iterable<string> 
   }
 
   yield URLSET_CLOSE
-}
-
-export function buildUrlset(urls: Iterable<SitemapUrl>): string {
-  let xml = XML_DECLARATION + URLSET_OPEN
-
-  for (const url of urls) {
-    xml += buildUrlEntryXml(url)
-  }
-
-  return xml + URLSET_CLOSE
 }

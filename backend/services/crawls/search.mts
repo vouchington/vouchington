@@ -4,8 +4,7 @@ import sql, { type SQLStatement } from 'sql-template-strings'
 import { buildPageInfo, decodeScopedUuidCursor } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
 
-import type { CrawlBasic } from './types.mts'
-import type { PaidSafeUrlCrawlHistory } from './public-url-response.mts'
+import type { CrawlBasic, PaidSafeUrlCrawlHistory } from './types.mts'
 
 type SearchCrawlsForUrlOptions = {
   after?: string

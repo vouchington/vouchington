@@ -46,3 +46,14 @@ export type UpdateCrawlOptions = {
   embeddings_generated_at?: Date | null
   language?: string | null
 }
+
+export type PaidSafeUrlCrawlHistory = Pick<
+  CrawlBasic,
+  | '__entity_type'
+  | 'id'
+  | 'created_at'
+  | 'response_status_code'
+  | 'completed_at'
+  | 'title'
+  | 'language'
+>

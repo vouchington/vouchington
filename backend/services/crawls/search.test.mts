@@ -71,7 +71,26 @@ describe('search', () => {
     const result = await searchPublicUrlCrawlsForUrl(url!.id)
     const retrieved = result.results.find(result => result.id === crawl.id)
 
-    expect(retrieved).toMatchObject({ id: crawl.id })
+    expect(retrieved).toMatchObject({
+      __entity_type: 'crawl',
+      id: crawl.id,
+      created_at: crawl.created_at,
+      response_status_code: crawl.response_status_code,
+      completed_at: crawl.completed_at,
+      title: crawl.title,
+      language: crawl.language,
+    })
+    expect(Object.keys(retrieved ?? {}).toSorted()).toEqual(
+      [
+        '__entity_type',
+        'completed_at',
+        'created_at',
+        'id',
+        'language',
+        'response_status_code',
+        'title',
+      ].toSorted(),
+    )
     expect(retrieved).not.toHaveProperty('request_headers')
     expect(retrieved).not.toHaveProperty('response_headers')
     expect(retrieved).not.toHaveProperty('markdown')

@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { getActorUri, getPostUri } from '@modules/activitypub-uris'
 import { getApPostLikesTally } from '@services/ap-post-likes'
+import { getEntityRelationMetadataOrThrow, upsertEntityRelation } from '@services/entity-relations'
 import {
-  getEntityRelationDeletionState,
-  getEntityRelationMetadataOrThrow,
-  upsertEntityRelation,
-} from '@services/entity-relations'
-import { createTestPost, withForcedTransactionRollbackForTest } from '@voucha/test-helpers'
+  createTestPost,
+  getEntityRelation,
+  withForcedTransactionRollbackForTest,
+} from '@voucha/test-helpers'
 import { dispatchInboundActivity } from './dispatch-activity.mts'
 import { recordInboxActivity } from './record-activity.mts'
 import {
@@ -42,13 +42,8 @@ describe('inbound ActivityPub transaction rollback', () => {
       }),
     ).rejects.toThrow('Injected transaction rollback for test')
 
-    expect(
-      await getEntityRelationDeletionState(
-        followRelation(),
-        { id: remoteActor.id },
-        { id: user.id },
-      ),
-    ).toBe('absent')
+    const relation = followRelation()
+    expect(await getEntityRelation(relation.table_name, remoteActor.id, user.id)).toEqual([])
     expect(await recordInboxActivity(activity.id, activity.type, activity.actor)).toBe(true)
   })
 
@@ -73,9 +68,9 @@ describe('inbound ActivityPub transaction rollback', () => {
       }),
     ).rejects.toThrow('Injected transaction rollback for test')
 
-    expect(
-      await getEntityRelationDeletionState(relation, { id: remoteActor.id }, { id: user.id }),
-    ).toBe('active')
+    const rows = await getEntityRelation(relation.table_name, remoteActor.id, user.id)
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({ deleted_at: null })
     expect(await recordInboxActivity(activity.id, activity.type, activity.actor)).toBe(true)
   })
 

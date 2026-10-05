@@ -24,16 +24,6 @@ function buildS3Key(hostname: string, urlId: string, htmlSha256Hex: string): str
   return `${hostname}/${urlId}/${htmlSha256Hex}`
 }
 
-export async function uploadCrawlHtmlToS3(
-  hostname: string,
-  urlId: string,
-  htmlSha256Hex: string,
-  htmlBuffer: Buffer,
-): Promise<void> {
-  const gzipFile = await createTemporaryGzipFile(htmlBuffer)
-  await uploadTemporaryGzipFile(hostname, urlId, htmlSha256Hex, gzipFile)
-}
-
 export async function uploadCrawlHtmlFileToS3(
   hostname: string,
   urlId: string,
@@ -138,22 +128,6 @@ function isWebReadableStream(body: unknown): body is NodeWebReadableStream<Uint8
 
 function isAsyncIterable(body: unknown): body is AsyncIterable<Uint8Array> {
   return typeof (body as AsyncIterable<Uint8Array> | null)?.[Symbol.asyncIterator] === 'function'
-}
-
-async function createTemporaryGzipFile(
-  htmlBuffer: Buffer,
-): Promise<{ filePath: string; byteLength: number; tempDir: string }> {
-  const tempDir = await mkdtemp(path.join(os.tmpdir(), 'crawl-html-'))
-  const filePath = path.join(tempDir, 'crawl.html.gz')
-
-  try {
-    await pipeline(Readable.from([htmlBuffer]), createGzip(), createWriteStream(filePath))
-    const fileStats = await stat(filePath)
-    return { filePath, byteLength: fileStats.size, tempDir }
-  } catch (err) {
-    await rm(tempDir, { recursive: true, force: true })
-    throw err
-  }
 }
 
 async function createTemporaryGzipFileFromPath(

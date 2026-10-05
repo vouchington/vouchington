@@ -1,11 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { FEDIVERSE_SEARCH_DEADLINE_MS } from '@voucha/config'
-import {
-  buildUnavailableFediverseSearchResponse,
-  parseFediverseProviders,
-  parseFediverseResultType,
-  searchFediverse,
-} from './search.mts'
+import { parseFediverseProviders, parseFediverseResultType, searchFediverse } from './search.mts'
 import type { FediverseProviderAdapter } from './types.mts'
 
 describe('searchFediverse', () => {
@@ -150,24 +145,47 @@ describe('searchFediverse', () => {
     ])
   })
 
-  it('builds unavailable buckets with the same requested and default provider selection', () => {
-    expect(
-      buildUnavailableFediverseSearchResponse({ q: 'social', providers: ['lemmy', 'mastodon'] }),
-    ).toEqual({
+  it('returns provider errors for requested and default providers that fail', async () => {
+    const failingAdapter = (
+      provider: FediverseProviderAdapter['provider'],
+    ): FediverseProviderAdapter => ({
+      provider,
+      async search() {
+        throw new Error('provider offline')
+      },
+    })
+    const result = await searchFediverse(
+      { q: 'social', providers: ['lemmy', 'mastodon'] },
+      { lemmy: failingAdapter('lemmy'), mastodon: failingAdapter('mastodon') },
+    )
+    expect(result).toEqual({
       buckets: [
         { provider: 'lemmy', status: 'error', items: [], error_code: 'provider_error' },
         { provider: 'mastodon', status: 'error', items: [], error_code: 'provider_error' },
       ],
     })
-    expect(
-      buildUnavailableFediverseSearchResponse({ q: 'social' }).buckets.map(
-        bucket => bucket.provider,
-      ),
-    ).toEqual(['peertube', 'mastodon', 'lemmy', 'bluesky'])
-  })
-
-  it('builds no unavailable buckets for a short query', () => {
-    expect(buildUnavailableFediverseSearchResponse({ q: ' x ' })).toEqual({ buckets: [] })
+    const unavailable = await searchFediverse(
+      { q: 'social' },
+      {
+        peertube: failingAdapter('peertube'),
+        mastodon: failingAdapter('mastodon'),
+        lemmy: failingAdapter('lemmy'),
+        bluesky: failingAdapter('bluesky'),
+      },
+    )
+    expect(unavailable.buckets.map(bucket => bucket.provider)).toEqual([
+      'peertube',
+      'mastodon',
+      'lemmy',
+      'bluesky',
+    ])
+    expect(unavailable.buckets).toEqual([
+      { provider: 'peertube', status: 'error', items: [], error_code: 'provider_error' },
+      { provider: 'mastodon', status: 'error', items: [], error_code: 'provider_error' },
+      { provider: 'lemmy', status: 'error', items: [], error_code: 'provider_error' },
+      { provider: 'bluesky', status: 'error', items: [], error_code: 'provider_error' },
+    ])
+    await expect(searchFediverse({ q: ' x ' })).resolves.toEqual({ buckets: [] })
   })
 
   it('forwards the incoming cursor only when a single provider is requested', async () => {

@@ -28,7 +28,6 @@
     "@data-stores/valkey": "workspace:^",
     "@modules/aws": "workspace:^",
     "@modules/feed-query-builders": "workspace:^",
-    "@modules/utils": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/config": "workspace:^",
     "@voucha/types": "workspace:^",

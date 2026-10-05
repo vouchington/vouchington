@@ -9551,9 +9551,6 @@ importers:
       '@modules/feed-query-builders':
         specifier: workspace:^
         version: link:../../modules/feed-query-builders
-      '@modules/utils':
-        specifier: workspace:^
-        version: link:../../modules/utils
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils

@@ -1,6 +1,3 @@
-import { mkdtempDisposable, open, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const { mockS3Send } = vi.hoisted(() => ({
@@ -17,70 +14,6 @@ vi.mock<typeof import('@modules/aws')>(import('@modules/aws'), async importOrigi
 })
 
 import { S3Buckets } from '@modules/aws'
-
-describe('uploadImageToS3', () => {
-  beforeEach(() => {
-    vi.resetModules()
-    vi.clearAllMocks()
-  })
-
-  it('uploads the image contents and metadata', async () => {
-    await using directory = await mkdtempDisposable(join(tmpdir(), 's3-upload-'))
-    const filename = join(directory.path, 'image.png')
-    await writeFile(filename, 'image contents')
-    let uploadedBody = ''
-    mockS3Send.mockImplementationOnce(async command => {
-      const body = (command as unknown as { input: { Body: AsyncIterable<Buffer> } }).input.Body
-      for await (const chunk of body) uploadedBody += chunk.toString()
-      return {} as never
-    })
-    const { uploadImageToS3 } = await import('./s3.mts')
-
-    await uploadImageToS3({
-      filename,
-      hash: Buffer.from('unused hash'),
-      metadata: { format: 'png' },
-      s3Key: 'images/example.png',
-    })
-
-    const command = mockS3Send.mock.calls[0]![0] as unknown as {
-      input: { Bucket: string; Key: string; ContentType: string }
-    }
-    expect(command.input).toMatchObject({
-      Bucket: S3Buckets.images,
-      Key: 'images/example.png',
-      ContentType: 'image/png',
-    })
-    expect(uploadedBody).toBe('image contents')
-  })
-
-  it('disposes the file handle when the provider rejects before reading the stream', async () => {
-    await using directory = await mkdtempDisposable(join(tmpdir(), 's3-upload-'))
-    const filename = join(directory.path, 'image.png')
-    await writeFile(filename, 'image contents')
-    const probe = await open(filename, 'r')
-    const fileHandlePrototype = Object.getPrototypeOf(probe) as {
-      [Symbol.asyncDispose]: () => Promise<void>
-    }
-    await probe.close()
-    const dispose = vi.spyOn(fileHandlePrototype, Symbol.asyncDispose)
-    mockS3Send.mockRejectedValueOnce(new Error('upload failed'))
-    const { uploadImageToS3 } = await import('./s3.mts')
-
-    try {
-      await expect(
-        uploadImageToS3({
-          filename,
-          hash: Buffer.from('image hash'),
-          metadata: {},
-        }),
-      ).rejects.toThrow('upload failed')
-      expect(dispose).toHaveBeenCalledOnce()
-    } finally {
-      dispose.mockRestore()
-    }
-  })
-})
 
 describe('copyImageToQuarantine', () => {
   beforeEach(() => {

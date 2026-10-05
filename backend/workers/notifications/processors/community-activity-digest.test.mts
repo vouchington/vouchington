@@ -11,10 +11,8 @@ import type {
   enqueueCommunityActivityDigestDispatch,
   CommunityActivityDigestBatchData,
 } from '@queues/notifications/enqueues'
-import {
-  getPreviousClosedMondayWindow,
-  type createCommunityActivityDigestBatch,
-} from '@services/notifications/community-activity-digest'
+import type { createCommunityActivityDigestBatch } from '@services/notifications/community-activity-digest'
+import { getCommunityActivityDigestDispatchData } from '@queues/notifications/enqueues/community-activity-digest'
 import type {
   markCommunityActivityDigestDispatchWindowCompleted,
   markCommunityActivityDigestDispatchWindowEnqueued,
@@ -47,9 +45,9 @@ describe('community activity digest processors', () => {
   })
 
   it('dispatches the closed previous Monday activity window', () => {
-    expect(getPreviousClosedMondayWindow(new Date('2026-07-13T09:00:00.000Z'))).toEqual({
-      start: new Date('2026-07-06T00:00:00.000Z'),
-      end: new Date('2026-07-13T00:00:00.000Z'),
+    expect(getCommunityActivityDigestDispatchData(new Date('2026-07-13T09:00:00.000Z'))).toEqual({
+      windowStart: '2026-07-06T00:00:00.000Z',
+      windowEnd: '2026-07-13T00:00:00.000Z',
     })
   })
 

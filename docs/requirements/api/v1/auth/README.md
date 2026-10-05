@@ -169,7 +169,7 @@ The route also accepts `otp` as an alias for `token`.
 | POST /api/v1/auth/logout          | 2           | None (write) | Exempt from route rate limits; revokes uid-bearing row + Valkey, skips anon markers                                                      |
 | POST /api/v1/auth/bluesky/link    | 2           | None (write) | 1 DB read (existing-link check) + 1 AT Protocol PAR request (`beginBlueskyAccountLink`)                                                  |
 | GET /api/v1/auth/bluesky/callback | 3           | None (write) | Required session and suspension guard, then 1 AT Protocol token exchange + Valkey session read + DB write (`completeBlueskyAccountLink`) |
-| DELETE /api/v1/auth/bluesky/link  | 2           | None (write) | 1 DB read + 1 AT Protocol session revocation (`disconnectBlueskyAccountFromUser`)                                                        |
+| DELETE /api/v1/auth/bluesky/link  | 2           | None (write) | Persists and enqueues the exact-generation unlink request; follow cleanup and AT Protocol revocation run through the replayable worker   |
 
 ## Related
 
