@@ -117,7 +117,7 @@ export async function renderMarkdownBatch(
 
     // Apply replacements in reverse order to preserve indices
     let finalHtml = html
-    for (const mention of [...validMentions].reverse()) {
+    for (const mention of [...validMentions].toReversed()) {
       const resolved = resolvedMentionsMap.get(mention.raw)
       if (resolved) {
         const replacement = formatMentionAsHtml(resolved)

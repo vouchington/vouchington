@@ -26,7 +26,7 @@ export function derivedBindingIsConsumed(ast: Node, name: string, declaredAt: nu
       return
     }
     const declaration = [...ancestors]
-      .reverse()
+      .toReversed()
       .find(ancestor => ancestor.type === 'VariableDeclarator' && isNode(ancestor.id))
     const derivedName = declaration && isNode(declaration.id) ? propertyName(declaration.id) : null
     if (declaration && derivedName) {

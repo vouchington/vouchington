@@ -37,7 +37,7 @@ describe('RSS feed precise pagination', () => {
     )
     const expected = [items[0].id, items[1].id]
       .toSorted()
-      .reverse()
+      .toReversed()
       .concat(items.slice(2).map(item => item.id))
     const seen: string[] = []
     let after: string | undefined

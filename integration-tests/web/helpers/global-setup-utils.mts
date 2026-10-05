@@ -22,7 +22,7 @@ export async function cleanupGlobalSetupState(options: {
 }): Promise<void> {
   const { existingWorkerDevVars, processes, reservedPorts, traceProxy, workerDevVarsPath } = options
 
-  await Promise.allSettled(processes.reverse().map(process => process.stop()))
+  await Promise.allSettled(processes.toReversed().map(process => process.stop()))
   await Promise.allSettled(reservedPorts.map(reservation => reservation.release()))
   await Promise.allSettled([traceProxy.close()])
   restoreWorkerDevVars(existingWorkerDevVars, workerDevVarsPath)

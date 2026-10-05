@@ -98,7 +98,7 @@ describe('GET /api/v1/users/:idOrSlug/rss-feed-items/:listType pagination', () =
       itemB,
       tieDate,
     )
-    const expectedOrder = [itemA, itemB].toSorted().reverse()
+    const expectedOrder = [itemA, itemB].toSorted().toReversed()
 
     const request = createRequest()
     await request.authenticateAs(owner)

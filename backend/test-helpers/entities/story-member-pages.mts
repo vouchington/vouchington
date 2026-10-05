@@ -39,7 +39,7 @@ export async function createTestStoryMembers(
     itemIds: rows
       .map(row => row.id)
       .toSorted()
-      .reverse(),
+      .toReversed(),
   }
 }
 

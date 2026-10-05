@@ -10,7 +10,7 @@ describe('createChannelPubSub', () => {
   let closeSubscriber: (() => Promise<void>) | null = null
 
   afterEach(async () => {
-    for (const fn of cleanup.reverse()) {
+    for (const fn of cleanup.toReversed()) {
       await fn()
     }
     cleanup = []

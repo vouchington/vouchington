@@ -7,7 +7,7 @@ describe('import-progress-pubsub', () => {
   let cleanup: Array<() => void | Promise<void>> = []
 
   afterEach(async () => {
-    for (const fn of cleanup.reverse()) {
+    for (const fn of cleanup.toReversed()) {
       await fn()
     }
     cleanup = []

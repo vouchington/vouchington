@@ -52,7 +52,7 @@ export async function getStoryMemberPagesBatch(
   }
   return Object.fromEntries(
     prepared.map(request => {
-      const selected = (idsByStory.get(request.story_id) ?? []).toSorted().reverse()
+      const selected = (idsByStory.get(request.story_id) ?? []).toSorted().toReversed()
       const item_ids = selected.slice(0, limit)
       const has_next_page = selected.length > limit
       return [

@@ -100,7 +100,7 @@
     "unicorn/no-array-for-each": "off", // Policy: forEach is allowed for synchronous side effects.
     "unicorn/no-array-method-this-argument": "error",
     "unicorn/no-array-reduce": "off", // Policy: typed reducers are allowed for aggregation.
-    "unicorn/no-array-reverse": "off", // Staged #1692: 35 findings / 29 files; scan 2026-10-01.
+    "unicorn/no-array-reverse": "error",
     "unicorn/no-array-sort": "error",
     "unicorn/no-await-expression-member": "off", // Policy: accessing a property on an awaited result is allowed.
     "unicorn/no-console-spaces": "error",
