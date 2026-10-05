@@ -1,11 +1,10 @@
-import { initializeWorkerRuntime, reportWorkerLoadFailure } from './runtime.mts'
+import { initializeWorkerRuntime } from './runtime.mts'
 // Side-effect registration: see backend/entrypoints/api/index.mts for why this import exists.
 import '@backend/service-registrations'
 
 const runtime = await initializeWorkerRuntime()
 
 export const startWorkerRuntime = runtime.startWorkerRuntime
-export { reportWorkerLoadFailure }
 
 if (!process.env.NODE_PREWARM) await startWorkerRuntime()
 

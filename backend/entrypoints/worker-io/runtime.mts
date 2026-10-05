@@ -15,8 +15,6 @@ const defaultWorkerIoDependencies = {
   initializeWorkerRuntime: initializeSharedWorkerRuntime,
 } satisfies WorkerIoDependencies
 
-export { reportWorkerLoadFailure } from '@backend/worker-runtime'
-
 export function initializeWorkerRuntime(
   dependencies: WorkerIoDependencies = defaultWorkerIoDependencies,
 ): Promise<WorkerRuntime> {

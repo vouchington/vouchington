@@ -4,12 +4,12 @@ import { createTestUser } from '@voucha/test-helpers'
 import { ALL_TOOLS } from '@voucha/tools/registry/index'
 import type { PrivateUser } from '@services/users/types'
 import { listMcpToolsForUser } from './list-tools.mts'
+import { callMcpTool } from './call-tool.mts'
 import {
-  callMcpTool,
   MAX_MCP_TOOL_RESULT_BYTES,
   MAX_MCP_TOOL_RESULT_VISITS,
   serializeMcpToolResult,
-} from './call-tool.mts'
+} from './serialize-mcp-tool-result.mts'
 import { ADMIN_MCP_SERVER_CONFIG, USER_MCP_SERVER_CONFIG } from './config.mts'
 import { validateToolArguments } from './validate-tool-arguments.mts'
 

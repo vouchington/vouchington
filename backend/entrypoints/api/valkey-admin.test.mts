@@ -1,9 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import {
-  parseValkeyAdminCommand,
-  runValkeyAdminCommand,
-  type ValkeyAdminRuntime,
-} from './valkey-admin-command.mts'
+import { runValkeyAdminCommand, type ValkeyAdminRuntime } from './valkey-admin-command.mts'
 
 const DIAGNOSTIC_RESULT = {
   memory: {
@@ -68,6 +64,34 @@ function makeIO() {
   }
 }
 
+async function runCommand(
+  argv: Parameters<typeof runValkeyAdminCommand>[0],
+  env: Parameters<typeof runValkeyAdminCommand>[1],
+  events: string[] = [],
+) {
+  const output = makeIO()
+  const exitCode = await runValkeyAdminCommand(
+    argv,
+    env,
+    async () => {
+      events.push('load')
+      return makeRuntime(events)
+    },
+    output.io,
+  )
+  return { ...output, exitCode, events }
+}
+
+async function expectRejectedCommand(
+  argv: Parameters<typeof runValkeyAdminCommand>[0],
+  env: Parameters<typeof runValkeyAdminCommand>[1],
+  message: string,
+) {
+  const result = await runCommand(argv, env)
+  expect(result.exitCode).toBe(2)
+  expect(result.stderr[0]).toContain(message)
+}
+
 describe('Valkey admin command', () => {
   it('prints help with exit code 0 without loading runtime dependencies', async () => {
     let loads = 0
@@ -128,70 +152,70 @@ describe('Valkey admin command', () => {
     }
   })
 
-  it('accepts staging and production and allows test only under NODE_ENV=test', () => {
-    expect(parseValkeyAdminCommand(['diagnose'], { ENVIRONMENT: 'staging' })).toMatchObject({
-      environment: 'staging',
-    })
-    expect(parseValkeyAdminCommand(['diagnose'], { ENVIRONMENT: 'production' })).toMatchObject({
-      environment: 'production',
-    })
-    expect(
-      parseValkeyAdminCommand(['diagnose'], { ENVIRONMENT: 'test', NODE_ENV: 'test' }),
-    ).toMatchObject({ environment: 'test' })
-    expect(() => parseValkeyAdminCommand(['diagnose'], { ENVIRONMENT: 'test' })).toThrow(
-      'ENVIRONMENT must be staging or production',
-    )
+  it('accepts staging and production and allows test only under NODE_ENV=test', async () => {
+    for (const environment of ['staging', 'production', 'test'] as const) {
+      const result = await runCommand(['diagnose'], {
+        ENVIRONMENT: environment,
+        ...(environment === 'test' && { NODE_ENV: 'test' }),
+      })
+      expect(result.exitCode).toBe(0)
+      expect(JSON.parse(result.stdout[0] ?? 'null')).toMatchObject({ environment })
+    }
+
+    const rejectedOutput = makeIO()
+    await expect(
+      runValkeyAdminCommand(
+        ['diagnose'],
+        { ENVIRONMENT: 'test' },
+        async () => {
+          throw new Error('runtime must not load')
+        },
+        rejectedOutput.io,
+      ),
+    ).resolves.toBe(2)
+    expect(rejectedOutput.stderr[0]).toContain('ENVIRONMENT must be staging or production')
   })
 
-  it('requires an environment-bound confirmation for every flush', () => {
-    expect(() => parseValkeyAdminCommand(['flush', 'caches'], { ENVIRONMENT: 'staging' })).toThrow(
-      'Confirmation must be exactly: FLUSH staging VALKEY caches',
+  it('requires an environment-bound confirmation for every flush', async () => {
+    const message = 'Confirmation must be exactly: FLUSH staging VALKEY caches'
+    await expectRejectedCommand(['flush', 'caches'], { ENVIRONMENT: 'staging' }, message)
+    await expectRejectedCommand(
+      ['flush', 'caches', '--confirm', 'FLUSH production VALKEY caches'],
+      { ENVIRONMENT: 'staging' },
+      message,
     )
-    expect(() =>
-      parseValkeyAdminCommand(['flush', 'caches', '--confirm', 'FLUSH production VALKEY caches'], {
-        ENVIRONMENT: 'staging',
-      }),
-    ).toThrow('Confirmation must be exactly: FLUSH staging VALKEY caches')
-    expect(
-      parseValkeyAdminCommand(['flush', 'caches', '--confirm', 'FLUSH staging VALKEY caches'], {
-        ENVIRONMENT: 'staging',
-      }),
-    ).toMatchObject({ operation: 'flush', concern: 'caches' })
+
+    const accepted = await runCommand(
+      ['flush', 'caches', '--confirm', 'FLUSH staging VALKEY caches'],
+      { ENVIRONMENT: 'staging' },
+    )
+    expect(accepted.exitCode).toBe(0)
+    expect(accepted.events).toContain('flush:caches:false')
   })
 
-  it('requires force only for sessions and rejects it for every other concern', () => {
-    expect(() =>
-      parseValkeyAdminCommand(
-        ['flush', 'sessions', '--confirm', 'FLUSH production VALKEY sessions'],
-        { ENVIRONMENT: 'production' },
-      ),
-    ).toThrow('Flushing sessions requires --force')
-    expect(
-      parseValkeyAdminCommand(
-        ['flush', 'sessions', '--force', '--confirm', 'FLUSH production VALKEY sessions'],
-        { ENVIRONMENT: 'production' },
-      ),
-    ).toMatchObject({ concern: 'sessions', force: true })
-    expect(() =>
-      parseValkeyAdminCommand(
-        ['flush', 'queues', '--force', '--confirm', 'FLUSH production VALKEY queues'],
-        { ENVIRONMENT: 'production' },
-      ),
-    ).toThrow('--force is allowed only for sessions')
+  it('requires force only for sessions and rejects it for every other concern', async () => {
+    await expectRejectedCommand(
+      ['flush', 'sessions', '--confirm', 'FLUSH production VALKEY sessions'],
+      { ENVIRONMENT: 'production' },
+      'Flushing sessions requires --force',
+    )
+
+    const accepted = await runCommand(
+      ['flush', 'sessions', '--force', '--confirm', 'FLUSH production VALKEY sessions'],
+      { ENVIRONMENT: 'production' },
+    )
+    expect(accepted.exitCode).toBe(0)
+    expect(accepted.events).toContain('flush:sessions:true')
+
+    await expectRejectedCommand(
+      ['flush', 'queues', '--force', '--confirm', 'FLUSH production VALKEY queues'],
+      { ENVIRONMENT: 'production' },
+      '--force is allowed only for sessions',
+    )
   })
 
   it('loads runtime dependencies only after parsing a valid operation', async () => {
-    const events: string[] = []
-    const output = makeIO()
-    await runValkeyAdminCommand(
-      ['diagnose'],
-      { ENVIRONMENT: 'staging' },
-      async () => {
-        events.push('load')
-        return makeRuntime(events)
-      },
-      output.io,
-    )
+    const { events } = await runCommand(['diagnose'], { ENVIRONMENT: 'staging' })
     expect(events).toEqual(['load', 'diagnose', 'shutdown'])
   })
 
@@ -226,17 +250,13 @@ describe('Valkey admin command', () => {
   })
 
   it('dispatches service and queue flushes and writes the versioned result', async () => {
-    const serviceEvents: string[] = []
-    const serviceOutput = makeIO()
-    expect(
-      await runValkeyAdminCommand(
-        ['flush', 'blooms', '--confirm', 'FLUSH staging VALKEY blooms'],
-        { ENVIRONMENT: 'staging' },
-        async () => makeRuntime(serviceEvents),
-        serviceOutput.io,
-      ),
-    ).toBe(0)
-    expect(serviceEvents).toEqual(['flush:blooms:false', 'shutdown'])
+    const serviceOutput = await runCommand(
+      ['flush', 'blooms', '--confirm', 'FLUSH staging VALKEY blooms'],
+      { ENVIRONMENT: 'staging' },
+    )
+    expect(serviceOutput.exitCode).toBe(0)
+    const serviceEvents = serviceOutput.events
+    expect(serviceEvents).toEqual(['load', 'flush:blooms:false', 'shutdown'])
     expect(JSON.parse(serviceOutput.stdout[0]!)).toMatchObject({
       schemaVersion: 1,
       operation: 'flush',
@@ -245,15 +265,12 @@ describe('Valkey admin command', () => {
       keysRemoved: 3,
     })
 
-    const queueEvents: string[] = []
-    const queueOutput = makeIO()
-    await runValkeyAdminCommand(
+    const queueOutput = await runCommand(
       ['flush', 'queues', '--confirm', 'FLUSH production VALKEY queues'],
       { ENVIRONMENT: 'production' },
-      async () => makeRuntime(queueEvents),
-      queueOutput.io,
     )
-    expect(queueEvents).toEqual(['flush:queues', 'shutdown'])
+    const queueEvents = queueOutput.events
+    expect(queueEvents).toEqual(['load', 'flush:queues', 'shutdown'])
     expect(JSON.parse(queueOutput.stdout[0]!)).toMatchObject({
       concern: 'queues',
       keysRemoved: null,

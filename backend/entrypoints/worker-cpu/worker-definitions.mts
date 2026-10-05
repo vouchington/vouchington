@@ -3,7 +3,7 @@ import { WORKER_DEFINITIONS as IO_WORKER_DEFINITIONS } from '@entrypoints/worker
 import { LANGUAGE_DETECTION_QUEUE_NAME } from '@queues/language-detection/config'
 import { UNFURL_REFERRAL_LINKS_QUEUE_NAME } from '@queues/unfurl-referral-links/config'
 
-export const CPU_ONLY_WORKER_DEFINITIONS: WorkerDefinition[] = [
+const CPU_ONLY_WORKER_DEFINITIONS: WorkerDefinition[] = [
   {
     queueName: 'crawl_urls',
     load: () => import('@workers/crawler/workers').then(module => module.crawlUrls),

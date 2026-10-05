@@ -48,11 +48,6 @@ type TransitionDefinition = {
   postCommitEffects: readonly ActivityPubInboxDeliveryPostCommitEffect[]
 }
 
-export type ActivityPubInboxDeliveryTransitionDimensions = Pick<
-  TransitionDefinition,
-  'fence' | 'consistency' | 'atomicBoundary' | 'postCommitEffects'
->
-
 export const ACTIVITYPUB_INBOX_DELIVERY_TRANSITION_CONTRACT = {
   accept: {
     from: ['absent'],

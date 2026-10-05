@@ -4,7 +4,7 @@ import { allLiveWorkerQueueNames, SQS_CONSUMER_QUEUE_NAMES } from '@modules/work
 import { WORKER_DEFINITIONS as IO_WORKER_DEFINITIONS } from '@entrypoints/worker-io/worker-definitions'
 import { SQS_CONSUMER_DEFINITIONS as IO_SQS_CONSUMER_DEFINITIONS } from '@entrypoints/worker-io/sqs-consumer-definitions'
 import { SCHEDULE_DEFINITIONS as IO_SCHEDULE_DEFINITIONS } from '@entrypoints/worker-io/definitions'
-import { CPU_ONLY_WORKER_DEFINITIONS, WORKER_DEFINITIONS } from '../worker-definitions.mts'
+import { WORKER_DEFINITIONS } from '../worker-definitions.mts'
 import { SQS_CONSUMER_DEFINITIONS } from '../sqs-consumer-definitions.mts'
 import { SCHEDULE_DEFINITIONS as CPU_SCHEDULE_DEFINITIONS } from '../schedule-definitions.mts'
 
@@ -29,9 +29,13 @@ describe('worker queue policy', () => {
     expect(IO_SQS_CONSUMER_DEFINITIONS.map(definition => definition.queueName).toSorted()).toEqual(
       SQS_CONSUMER_QUEUE_NAMES.toSorted(),
     )
-    expect(CPU_ONLY_WORKER_DEFINITIONS.map(definition => definition.queueName).toSorted()).toEqual(
-      workerQueuePolicy.cpuOnlyQueues.toSorted(),
-    )
+    expect(
+      WORKER_DEFINITIONS.filter(definition =>
+        workerQueuePolicy.cpuOnlyQueues.includes(definition.queueName),
+      )
+        .map(definition => definition.queueName)
+        .toSorted(),
+    ).toEqual(workerQueuePolicy.cpuOnlyQueues.toSorted())
   })
 
   it('keeps worker-cpu registered schedules a duplicate-free superset of worker-io schedules', () => {

@@ -2,7 +2,8 @@ import { describe } from 'vitest'
 
 import { registerWorkerQueueClassTests } from '../../test-helpers/worker-queue-class-selection.mts'
 import { initializeWorkerRuntime } from './runtime.mts'
-import { CPU_ONLY_SCHEDULE_DEFINITIONS, SCHEDULE_DEFINITIONS } from './schedule-definitions.mts'
+import { SCHEDULE_DEFINITIONS } from './schedule-definitions.mts'
+import { SCHEDULE_DEFINITIONS as IO_SCHEDULE_DEFINITIONS } from '@entrypoints/worker-io/definitions'
 
 const queueNames = (definitions: readonly { queueName: string }[]): string[] =>
   definitions.map(definition => definition.queueName)
@@ -22,7 +23,11 @@ describe('worker-cpu WORKER_QUEUE_CLASS selection', () => {
     // worker-io registers the IO schedules, so a cpu-class worker-cpu must not repeat them.
     expectedSchedules: {
       all: queueNames(SCHEDULE_DEFINITIONS),
-      cpu: queueNames(CPU_ONLY_SCHEDULE_DEFINITIONS),
+      cpu: queueNames(
+        SCHEDULE_DEFINITIONS.filter(
+          definition => !IO_SCHEDULE_DEFINITIONS.some(io => io.queueName === definition.queueName),
+        ),
+      ),
     },
     alwaysRunSchedules: ['heartbeat'],
   })

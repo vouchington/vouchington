@@ -35,7 +35,7 @@ type CommandIO = {
 
 class ValkeyAdminUsageError extends Error {}
 
-export function parseValkeyAdminCommand(
+function parseValkeyAdminCommand(
   argv: readonly string[],
   env: ValkeyAdminCommandEnvironment,
 ): ParsedValkeyAdminCommand {

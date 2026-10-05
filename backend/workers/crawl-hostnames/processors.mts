@@ -47,23 +47,21 @@ function getDependencies(
   }
 }
 
-export const processCrawlCleanup = async (
-  dependencies?: Partial<CrawlHostnamesProcessorDependencies>,
-) => {
+const processCrawlCleanup = async (dependencies?: Partial<CrawlHostnamesProcessorDependencies>) => {
   const deps = getDependencies(dependencies)
   return {
     crawls_deleted_invalid: await deps.deleteOldInvalidCrawls(),
   }
 }
 
-export const processRefreshHostnameCrawlerDispatcher = (
+const processRefreshHostnameCrawlerDispatcher = (
   dependencies?: Partial<CrawlHostnamesProcessorDependencies>,
 ): Promise<string[]> => {
   const deps = getDependencies(dependencies)
   return deps.searchHostnameIdsNeedingCrawlerRefresh(getWeeklyHostnameRefreshBatchSize())
 }
 
-export async function processRefreshHostnameCrawlerDispatcherJob(
+async function processRefreshHostnameCrawlerDispatcherJob(
   dependencies?: Partial<CrawlHostnamesProcessorDependencies>,
 ): Promise<number> {
   const deps = getDependencies(dependencies)
@@ -72,7 +70,7 @@ export async function processRefreshHostnameCrawlerDispatcherJob(
   return hostnameIds.length
 }
 
-export async function processRefreshHostnameCrawler(
+async function processRefreshHostnameCrawler(
   hostnameId: string,
   dependencies?: Partial<CrawlHostnamesProcessorDependencies>,
 ) {

@@ -1,11 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  processCrawlCleanup,
-  processCrawlHostnamesJob,
-  processRefreshHostnameCrawler,
-  processRefreshHostnameCrawlerDispatcher,
-  processRefreshHostnameCrawlerDispatcherJob,
-} from './processors.mts'
+import { processCrawlHostnamesJob } from './processors.mts'
 import type { deleteOldInvalidCrawls } from '@services/crawls/cleanup'
 import type { dispatchCrawlHostnames } from '@services/crawls/dispatch-crawl-hostnames'
 import type { dispatchCrawlUrlsPerHostname } from '@services/crawls/dispatch-per-hostname'
@@ -158,7 +152,10 @@ describe('crawl-hostnames processors', () => {
       url_ids_to_crawl: [],
     })
 
-    await processRefreshHostnameCrawler('hostname-a', dependencies())
+    await processCrawlHostnamesJob(
+      job('refresh_hostname_crawler', { hostname_id: 'hostname-a' }),
+      dependencies(),
+    )
 
     expect(enqueueBulkCrawlUrlsMock).not.toHaveBeenCalled()
   })
@@ -175,18 +172,5 @@ describe('crawl-hostnames processors', () => {
     await expect(processCrawlHostnamesJob(job('unknown_job'), deps)).rejects.toThrow(
       'Crawl hostnames job unknown_job not found',
     )
-  })
-
-  it('exposes helper processors for direct worker tests', async () => {
-    const deps = dependencies()
-
-    await expect(processCrawlCleanup(deps)).resolves.toEqual({
-      crawls_deleted_invalid: 3,
-    })
-    await expect(processRefreshHostnameCrawlerDispatcher(deps)).resolves.toEqual([
-      'hostname-a',
-      'hostname-b',
-    ])
-    await expect(processRefreshHostnameCrawlerDispatcherJob(deps)).resolves.toBe(2)
   })
 })
