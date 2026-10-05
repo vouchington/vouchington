@@ -47,7 +47,12 @@ const appealsQuery = defineQueryContract({
   limit: queryInteger({ minimum: 1, maximum: 100, default: 25 }),
   after: queryString(),
 })
-const appealDetailQuery = defineQueryContract({ consistency: queryEnum(['primary']) })
+const appealDetailQuery = defineQueryContract({
+  consistency: queryEnum(['primary'], {
+    description:
+      'Set to primary to read the appeal from the primary database. Only moderation staff get the primary read; every viewer must send a valid value, and any other value answers 422.',
+  }),
+})
 
 app.route('/api/v1/appeals').post(async (ctx: Context) => {
   const currentUser = await requireAuthForSuspendedException(ctx, 'POST:/api/v1/appeals')
@@ -93,14 +98,9 @@ app.route('/api/v1/appeals/:id').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/appeals/:id', appealDetailQuery)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/appeals/:id')
   const id = validateUUIDParam(ctx, 'id')
-  validateRequestContract(ctx, 'GET:/api/v1/appeals/:id', { path: ctx.params })
+  validateRequestContract(ctx, 'GET:/api/v1/appeals/:id', { path: ctx.params, query: ctx.query })
 
   const isStaff = isModerationStaff(currentUser)
-  if (isStaff) {
-    validateRequestContract(ctx, 'GET:/api/v1/appeals/:id', {
-      query: ctx.query.consistency === 'primary' ? { consistency: 'primary' } : {},
-    })
-  }
   const appeal = await (isStaff && ctx.query.consistency === 'primary'
     ? getModerationAppealByIdFromPrimary(id)
     : getModerationAppealById(id))

@@ -42,7 +42,9 @@ valid query.
 
 `GET /api/v1/communities/:idOrSlug/moderation-analytics` returns the default 30-day result when
 `range` is omitted or unrecognized. `GET /api/v1/communities/:idOrSlug/moderator-stats` keeps its
-30-day default when `window` is omitted or unsupported.
+30-day default when `window` is omitted, but validates the `window` the client sent: any value other
+than `30` or `90` (including `7`, an empty value, or a repeated key) returns `422` after the
+community access check instead of silently returning 30-day stats.
 
 `GET /api/v1/communities/:idOrSlug/moderation-queue` keeps its existing `limit` clamp and default,
 but a supplied `source` must now match the declared `report`, `community_review`, or `automod_flag`

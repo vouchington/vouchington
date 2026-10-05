@@ -28369,6 +28369,7 @@
       "query": {
         "properties": {
           "window": {
+            "default": "30",
             "enum": ["30", "90"],
             "type": "string"
           }

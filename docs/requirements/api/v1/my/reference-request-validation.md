@@ -39,8 +39,9 @@ test.
 
 Every `/my` route that reads a query declares it with `apiQuery(...)` and validates it with
 `validateRequestContract`, after identity and any ownership or role check and before the service
-read. `ctx.query` carries raw strings and the shared validator does no coercion, so no route hands it
-the raw query. Each handler parses first and validates the values it settled on:
+read. `ctx.query` carries raw strings and the shared validator does no coercion. The two export
+routes hand it `ctx.query` as the client sent it (see below); every other handler parses first and
+validates the values it settled on:
 
 1. The pagination parser (or the handler's own lenient read) clamps `limit`, decodes the cursor, and
    keeps its status: `400` for a `limit` that is not a positive integer, an empty or repeated
@@ -54,10 +55,13 @@ the raw query. Each handler parses first and validates the values it settled on:
 Unknown query parameters are ignored, as on every other validated query carrier: the generated
 query schemas never set `additionalProperties: false`, and step 2 drops undeclared keys. After the
 parser accepts a request the schema cannot fail, so it is a drift guard between the source and the
-published contract, and the parser or handler status stays the contract. Only the RSS export's
-`feed_type` can fail its schema, and that is the one status change here: a value outside the feed
-types used to reach the service and fail the database enum cast with a `500`, and it is now a `422`
-before the export limit is read or anything streams.
+published contract, and the parser or handler status stays the contract. Only the two export routes
+can fail their schema, because they validate the value the client actually sent instead of a rebuilt
+literal (plan #298, no exception list). `format`, `preflight` and `download` no longer fall back to
+a default when the value is invalid: each answers `422` before the export limit is read or anything
+streams. A `feed_type` outside the feed types used to fail the database enum cast with a `500` and
+is also a `422`. An empty `feed_type` is dropped before validation because it has always meant no
+filter.
 
 The paginated reads below run the parser first, so their `400` and their clamped `limit` are
 unchanged. On the thread routes under `/my/messages/:conversationId/**`, conversation membership
@@ -73,8 +77,8 @@ and never a schema diagnostic.
 | `GET /my/messages`, `GET /my/messages/:conversationId/messages`, `GET /my/messages/:conversationId/participants`       | `after`, `limit`                                          | `400` from the parser or the cursor decoder. The two thread reads answer `403` to a non-member before the query is read.                                                                                                                                                                   |
 | `GET /my/bans`, `GET /my/removed-posts`                                                                                | `after`, `limit`, and `include_platform` on removed posts | None from the schema. A `limit` that is not a positive integer uses `25`, a larger one is clamped to `100`, a repeated or empty `after` is ignored, and only `include_platform=true` includes platform removals. A malformed cursor is still `400`.                                        |
 | `GET /my/contribution-status`                                                                                          | `action`                                                  | `400` for an unknown or repeated `action`, checked before the plan lookup                                                                                                                                                                                                                  |
-| `GET /my/export/rss-feeds`                                                                                             | `feed_type`, `format`, `preflight`                        | `422` for a `feed_type` outside `article`, `podcast`, `video`, `mixed` (case-sensitive), or a repeated one, before the export runs. Previously `500`. An empty `feed_type` is still no filter, any `format` other than `json` or `csv` exports OPML, and only `preflight=1` answers `204`. |
-| `GET /my/export/topics`                                                                                                | `download`, `preflight`                                   | None. Only the literal `1` switches to the bare array or the `204` preflight.                                                                                                                                                                                                              |
+| `GET /my/export/rss-feeds`                                                                                             | `feed_type`, `format`, `preflight`                        | `422` before the export runs for a `feed_type` outside of `article`, `podcast`, `video`, `mixed` (case-sensitive), a `format` outside `json`, `csv`, `opml`, a `preflight` other than `1`, or a repeated key. An empty `feed_type` is no filter, and an omitted `format` exports OPML XML. |
+| `GET /my/export/topics`                                                                                                | `download`, `preflight`                                   | `422` for a `download` or `preflight` other than `1`, or a repeated key. Omitted means the normal response.                                                                                                                                                                                |
 
 ## Routes with no request contract
 
@@ -233,3 +237,5 @@ against the field lists in `request-contracts.json`.
   or `video` from the source-type dropdown, or omit `feed_type` for "all". None sends `mixed`, a
   repeated key, an empty value, or a value outside the enum, so the `500` to `422` change is not
   reachable from the web client. The native clients were not checked (see above).
+- Export `format`, `preflight` and `download`: the web callers send only `format=csv` (or omit it),
+  `preflight=1` and `download=1`, so the strict `422` is not reachable from the web client.
