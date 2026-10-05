@@ -1,4 +1,3 @@
-import { write } from '@data-stores/psql'
 import { createTestUser } from '@voucha/test-helpers'
 import { runClassifierBorrowedTestTransaction } from '@voucha/test-helpers/data-stores/psql/classifier-borrowed-transactions'
 import {
@@ -15,7 +14,7 @@ import {
   remoteDecisionFor,
 } from '@voucha/test-helpers/data-stores/psql/post-classifier/outcomes'
 import { softDeleteScoredPostTopicCategoryRelation } from '@voucha/test-helpers/entities/entity-relations-posts'
-import sql from 'sql-template-strings'
+import { countTopicElectionVoteRowsForUser } from '@voucha/test-helpers/entities/topic-election-votes'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   completeClassifierRun,
@@ -50,14 +49,6 @@ const localTopicId = (setup: PostClassifierExecutionFixture) =>
 
 const actorOf = (setup: PostClassifierExecutionFixture) => setup.lease.resolved.actorId
 
-/** Every global topic election vote row the classifier actor has ever written. */
-async function topicElectionVoteRows(actorId: string): Promise<number> {
-  const { rows } = await write<{ votes: number }>(sql`/* countClassifierActorTopicVotes */
-    SELECT COUNT(*)::int AS votes FROM topic_votes WHERE user_id = ${actorId}::uuid
-  `)
-  return rows[0]!.votes
-}
-
 describe('post classifier relation votes on the shared lifecycle (real PG)', () => {
   let release: (() => Promise<void>) | undefined
   beforeAll(async () => {
@@ -82,7 +73,7 @@ describe('post classifier relation votes on the shared lifecycle (real PG)', () 
         votes: [{ userId: actorOf(setup), score: 1 }],
       },
     ])
-    expect(await topicElectionVoteRows(actorOf(setup))).toBe(0)
+    expect(await countTopicElectionVoteRowsForUser(actorOf(setup))).toBe(0)
   })
 
   it.each([
@@ -111,7 +102,7 @@ describe('post classifier relation votes on the shared lifecycle (real PG)', () 
           ],
         },
       ])
-      expect(await topicElectionVoteRows(actorOf(setup))).toBe(0)
+      expect(await countTopicElectionVoteRowsForUser(actorOf(setup))).toBe(0)
     },
   )
 
@@ -129,7 +120,7 @@ describe('post classifier relation votes on the shared lifecycle (real PG)', () 
       })
 
       expect(await readSubjectTopicRelationFacts(subjectOf(setup))).toEqual([])
-      expect(await topicElectionVoteRows(actorOf(setup))).toBe(0)
+      expect(await countTopicElectionVoteRowsForUser(actorOf(setup))).toBe(0)
     },
   )
 
@@ -170,7 +161,7 @@ describe('post classifier relation votes on the shared lifecycle (real PG)', () 
         votes: [{ userId: actorOf(setup), score: 1 }],
       },
     ])
-    expect(await topicElectionVoteRows(actorOf(setup))).toBe(0)
+    expect(await countTopicElectionVoteRowsForUser(actorOf(setup))).toBe(0)
   })
 
   it('tags a mixed local and remote result as relations and writes no topic vote', async () => {
@@ -185,7 +176,7 @@ describe('post classifier relation votes on the shared lifecycle (real PG)', () 
     const facts = await readSubjectTopicRelationFacts(subjectOf(setup))
     expect(facts.map(fact => fact.topicId)).toEqual(expected)
     for (const fact of facts) expect(fact.votes).toEqual([{ userId: actorOf(setup), score: 1 }])
-    expect(await topicElectionVoteRows(actorOf(setup))).toBe(0)
+    expect(await countTopicElectionVoteRowsForUser(actorOf(setup))).toBe(0)
   })
 
   it('is idempotent on replay and when the effects are applied again', async () => {

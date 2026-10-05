@@ -56,6 +56,14 @@ export async function getTopicElectionVoteEventCount(
   return rows[0]?.count ?? 0
 }
 
+/** Every global topic election vote row a user has ever written, across all topics. */
+export async function countTopicElectionVoteRowsForUser(userId: string): Promise<number> {
+  const { rows } = await write<{ count: number }>(sql`/* countTopicElectionVoteRowsForUser */
+    SELECT COUNT(*)::integer AS count FROM topic_votes WHERE user_id = ${userId}
+  `)
+  return rows[0]?.count ?? 0
+}
+
 export async function setTopicElectionNeutralStats(
   topicId: string,
   scoreNone: number,
