@@ -5,8 +5,9 @@
 ## Web Client Auth Boundary
 
 The root server component resolves the private user once, then projects it before crossing into
-client components. `AuthProvider` receives only the user ID, roles, and a derived official-account
-boolean. It must not receive the private API `User` shape or expose client-side user mutation.
+client components. `AuthProvider` receives only the user ID, roles, and the derived `account_type`
+(`official`, `system`, `ai_agent` or `null`). It must not receive the private API `User` shape or
+expose client-side user mutation.
 
 UI that needs other account data receives a dedicated narrow view model. The root shell separately
 projects profile-menu identity and suspension notice data, while settings pages pass only their

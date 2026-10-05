@@ -8,7 +8,8 @@ from per-user personal endorsements (`user-referral-program-links`).
 ## Data model
 
 Official links are rows in `user_referral_program_links` owned by the `@voucha`
-system account. Two audit columns distinguish them:
+account, which is an `official` platform account (`account_type = 'official'`). Two audit
+columns distinguish them:
 
 - `created_by_id` — the admin who published the link
 - `deleted_by_id` — the admin who soft-deleted it
@@ -22,8 +23,10 @@ existing row and create a new one.
 ## Authorization
 
 All mutations require the `administrator` role (`currentUserCanManageOfficialReferralLink`).
-The personal `isOfficialAccount` block in `user-referral-program-links/create.mts`
-is deliberately bypassed here — this is the sanctioned official path.
+The personal-link guards `assertCurrentUserCanCreateUserReferralLink` and
+`assertCurrentUserCanUpdateUserReferralLink` in `user-referral-program-links/authorization.mts`
+reject any platform account (`isPlatformAccount`, a non-null `account_type`). They are
+deliberately not called here — this is the sanctioned official path.
 
 ## Display
 

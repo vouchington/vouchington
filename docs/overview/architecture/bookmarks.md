@@ -60,9 +60,10 @@ auto-mutes and auto-unfollows (see [`docs/overview/architecture/services/electio
 This is one-directional: unfollowing does not retract the vouch. The vouch cast is best-effort — a
 failure is logged via `onError` and does not fail the follow.
 
-The cast is skipped (the follow still succeeds) when the follower is an official account
-(`isOfficialAccount`) or is not contribution-eligible (`getContributionStatus`, skipping the
-account-age gate) — see [Trust System overview § Mechanics (Official-account exclusion)](../../requirements/trust-safety/reference-trust-system-overview.md#mechanics).
+The cast is skipped (the follow still succeeds) when the follower is a platform account
+(`isPlatformAccount`: any non-null `account_type`, so official, system and AI agent accounts) or is
+not contribution-eligible (`getContributionStatus`, skipping the account-age gate) — see
+[Trust System overview § Mechanics (Official-account exclusion)](../../requirements/trust-safety/reference-trust-system-overview.md#mechanics).
 The cast deliberately does **not** consume the shared daily contribution quota
 (`@services/contribution-gating`): quota throttles the volume of deliberate contribution actions
 (posts, votes), and folding an incidental follow side-effect into that shared counter would starve
