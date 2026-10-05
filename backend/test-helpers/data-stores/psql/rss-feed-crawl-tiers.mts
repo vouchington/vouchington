@@ -1,22 +1,10 @@
-import { scheduler } from 'node:timers/promises'
 import { read, write } from '@data-stores/psql'
-import { refreshMaterializedView } from '@data-stores/psql/migrate'
+import { refreshMaterializedViewForTest } from '../../refresh-materialized-view.mts'
 
 const CRAWL_TIERS_VIEW = 'mv_rss_feed_crawl_tiers'
-const RETRYABLE_CONTENTION_MESSAGE = 'Materialized view refresh contention; retryable'
 
 export async function refreshRssFeedCrawlTiers(): Promise<void> {
-  const deadline = Date.now() + 5_000
-  while (true) {
-    try {
-      await refreshMaterializedView(CRAWL_TIERS_VIEW)
-      return
-    } catch (err) {
-      if (!(err instanceof Error) || err.message !== RETRYABLE_CONTENTION_MESSAGE) throw err
-      if (Date.now() >= deadline) throw err
-      await scheduler.wait(50)
-    }
-  }
+  await refreshMaterializedViewForTest(CRAWL_TIERS_VIEW)
 }
 
 export async function followRssFeed(followerIds: string[], feedId: string): Promise<void> {
