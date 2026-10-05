@@ -26,3 +26,19 @@ guidance only when used without credentials. Bucket names have no application-so
 OpenTofu injects deployed values, local development supplies user-local values, and Vitest uses
 identifier-free synthetic names. See
 [local-env-vars.md](../../development/local-env-vars.md).
+
+## Media Delivery
+
+Private infrastructure injects these five variables into both the API and worker tasks; the API and
+the registry outbox worker read the same values. Their deployed values belong to the private
+`vouchington-infra` repository and are intentionally not recorded here. The ordered procedure for
+turning enforcement on is the
+[media-delivery edge enforcement runbook](../../runbooks/media-delivery-edge-enforcement.md).
+
+| Name                                          | Required         | Where                  | Notes                                                                                                                                                                                                                                                                                                                                                   |
+| --------------------------------------------- | ---------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED` | Feature          | ECS backend and worker | Must be exactly `true`; the value is not trimmed or case-folded, and anything else leaves publication off. While off, no registry record publishes, so hosted images are not projected. While on, the three identifiers below must be set or publication throws.                                                                                        |
+| `MEDIA_DELIVERY_EDGE_ENFORCEMENT_ENABLED`     | Feature          | ECS backend and worker | Must be exactly `true`. Turn it on only after every current placement has a completed registry record, because the edge denies any placement route without one. It requires publication, and the private infrastructure plan refuses it while publication is off. Copyright intake and legal media actions also refuse to run unless both flags are on. |
+| `MEDIA_DELIVERY_REGISTRY_TABLE`               | With publication | ECS backend and worker | Name of the edge registry the viewer-request function reads and the publisher writes. Infrastructure owns the value.                                                                                                                                                                                                                                    |
+| `MEDIA_DELIVERY_REGISTRY_REGION`              | With publication | ECS backend and worker | Region of that registry. The edge function executes in a fixed region, so this is independent of `AWS_REGION`.                                                                                                                                                                                                                                          |
+| `MEDIA_DELIVERY_CLOUDFRONT_DISTRIBUTION_ID`   | With publication | ECS backend and worker | Image distribution whose cached route the publisher invalidates after each accepted registry write. Infrastructure owns the value.                                                                                                                                                                                                                      |

@@ -62,6 +62,25 @@ describe('environment contract', () => {
     ])
   })
 
+  it('assigns every media-delivery variable to both API and worker tasks as internal infra config', () => {
+    const names = [
+      'MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED',
+      'MEDIA_DELIVERY_EDGE_ENFORCEMENT_ENABLED',
+      'MEDIA_DELIVERY_REGISTRY_TABLE',
+      'MEDIA_DELIVERY_REGISTRY_REGION',
+      'MEDIA_DELIVERY_CLOUDFRONT_DISTRIBUTION_ID',
+    ]
+    for (const name of names) {
+      expect(envContractsByName().get(name)).toEqual([
+        expect.objectContaining({
+          sourceOfTruth: 'vouchington-infra',
+          sensitivity: 'internal',
+          surfaces: ['ecs-backend-environment', 'ecs-worker-environment'],
+        }),
+      ])
+    }
+  })
+
   it('keeps public identifiers out of the secret sensitivity set', () => {
     expect(knownPublicEnvNames()).toEqual(expect.arrayContaining(['GOOGLE_CLIENT_ID']))
     expect(knownPublicEnvNames()).toEqual(

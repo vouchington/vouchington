@@ -219,6 +219,18 @@ export const ENV_VAR_CONTRACT_GROUPS = [
   ),
   group(
     'vouchington-infra',
+    'internal',
+    ['ecs-backend-environment', 'ecs-worker-environment'],
+    [
+      'MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED',
+      'MEDIA_DELIVERY_EDGE_ENFORCEMENT_ENABLED',
+      'MEDIA_DELIVERY_REGISTRY_TABLE',
+      'MEDIA_DELIVERY_REGISTRY_REGION',
+      'MEDIA_DELIVERY_CLOUDFRONT_DISTRIBUTION_ID',
+    ],
+  ),
+  group(
+    'vouchington-infra',
     'secret',
     ['ecs-backend-secret', 'ecs-worker-secret'],
     [
