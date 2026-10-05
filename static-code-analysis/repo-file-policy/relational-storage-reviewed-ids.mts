@@ -98,11 +98,6 @@ export const ALLOWED_AUDIT_SNAPSHOT_ID = new Map<string, string>([
     'oauth_authorization_server_events.refresh_token_family_id',
     'Short-lived refresh family id; the audit record outlives the family.',
   ],
-  ...reviewed('Membership id at write time; the audit row survives the membership.', [
-    'membership_administrator_refund_operation_requests.membership_id',
-    'membership_changes.membership_id',
-    'membership_refunds.membership_id',
-  ]),
   ...reviewed('Community scope stamped at write time; aggregate history survives the community.', [
     'agent_moderations.moderation_transparency_community_id',
     'moderation_appeals.moderation_transparency_community_id',

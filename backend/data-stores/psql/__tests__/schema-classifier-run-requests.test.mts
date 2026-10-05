@@ -116,7 +116,7 @@ describe('classifier run request, candidate set and local outcome schema', () =>
     await expect(revisePostClassifierLocalOutcomeForSchemaTest(fixture.id)).rejects.toMatchObject({
       code: '23514',
     })
-    expect(await getPostClassifierLocalOutcomeFacts(fixture.id)).toMatchObject({ flagged: true })
+    expect(await getPostClassifierLocalOutcomeFacts(fixture.id)).toMatchObject({ is_flagged: true })
 
     await deleteClassifierRunForSchemaTest(fixture.id)
     expect(await getPostClassifierLocalOutcomeFacts(fixture.id)).toBeNull()
