@@ -4,6 +4,7 @@ import { createTestPost, createTestUser } from '@voucha/test-helpers'
 import { insertContentProvenanceOAuthClient } from '@voucha/test-helpers/data-stores/psql/content-provenance'
 import {
   clearTestOAuthClientVerified,
+  getTestOAuthClientPublicId,
   renameTestOAuthClient,
 } from '@voucha/test-helpers/entities/oauth-client-management'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
@@ -20,6 +21,7 @@ let reader: PrivateUser
 let admin: PrivateUser
 let moderator: PrivateUser
 let verifiedClientId: string
+let verifiedPublicId: string
 let unverifiedClientId: string
 let cimdClientId: string
 
@@ -48,6 +50,7 @@ describe('attachPostProvenance', () => {
       verifiedById: admin.id,
     })
     await renameTestOAuthClient(verifiedClientId, VERIFIED_NAME)
+    verifiedPublicId = await getTestOAuthClientPublicId(verifiedClientId)
     unverifiedClientId = await insertContentProvenanceOAuthClient({})
     cimdClientId = await insertContentProvenanceOAuthClient({ metadataUrl: CIMD_URL })
 
@@ -87,7 +90,7 @@ describe('attachPostProvenance', () => {
     it('labels a staff-verified client with its id and registered name', async () => {
       expect((await labelFor('mcpVerified', null)).provenance).toEqual({
         via: 'mcp',
-        app: { kind: 'verified', client_id: verifiedClientId, client_name: VERIFIED_NAME },
+        app: { kind: 'verified', client_id: verifiedPublicId, client_name: VERIFIED_NAME },
       })
     })
 
@@ -121,12 +124,13 @@ describe('attachPostProvenance', () => {
         verifiedAt: new Date(),
         verifiedById: admin.id,
       })
+      const publicId = await getTestOAuthClientPublicId(rowId)
       const mine = await seedPost('changing', { createdVia: 'api', oauthClientId: rowId })
       const read = async () =>
         (await attachPostProvenance([{ ...mine, created_by_id: author.id }], null))[0]?.provenance
       const verified = (client_name: string) => ({
         via: 'api',
-        app: { kind: 'verified', client_id: rowId, client_name },
+        app: { kind: 'verified', client_id: publicId, client_name },
       })
       expect(await read()).toEqual(verified('Content provenance test client'))
       await renameTestOAuthClient(rowId, renamed)
@@ -168,10 +172,10 @@ describe('attachPostProvenance', () => {
     const anon = (viewer?: PrivateUser | null) =>
       attachPostProvenance([withAuthor('anonVerified')], viewer).then(rows => rows[0] as Labelled)
 
-    const verifiedApp = {
+    const verifiedApp = () => ({
       via: 'mcp',
-      app: { kind: 'verified', client_id: verifiedClientId, client_name: VERIFIED_NAME },
-    }
+      app: { kind: 'verified', client_id: verifiedPublicId, client_name: VERIFIED_NAME },
+    })
 
     it('keeps the app from viewers who cannot see the author', async () => {
       for (const viewer of [null, reader]) {
@@ -181,7 +185,7 @@ describe('attachPostProvenance', () => {
 
     it('shows the app to the author and to administrators', async () => {
       for (const viewer of [author, admin]) {
-        expect((await anon(viewer)).provenance).toEqual(verifiedApp)
+        expect((await anon(viewer)).provenance).toEqual(verifiedApp())
       }
     })
 
@@ -197,7 +201,7 @@ describe('attachPostProvenance', () => {
       expect(masked?.created_by_id).toBeNull()
       expect(masked).toMatchObject({ provenance: { via: 'mcp', app: null } })
       const [own] = await labelAndMaskPosts([created.anonVerified!], author)
-      expect(own).toMatchObject({ created_by_id: author.id, provenance: verifiedApp })
+      expect(own).toMatchObject({ created_by_id: author.id, provenance: verifiedApp() })
     })
   })
 })

@@ -3,7 +3,10 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { createTestPost, createTestUser } from '@voucha/test-helpers'
 import { callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { insertContentProvenanceOAuthClient } from '@voucha/test-helpers/data-stores/psql/content-provenance'
-import { renameTestOAuthClient } from '@voucha/test-helpers/entities/oauth-client-management'
+import {
+  getTestOAuthClientPublicId,
+  renameTestOAuthClient,
+} from '@voucha/test-helpers/entities/oauth-client-management'
 import type { PrivateUser } from '@services/users/types'
 
 const SCOPES = ['posts:read'] as const
@@ -12,12 +15,13 @@ const APP_NAME = `MCP Agent ${randomBytes(6).toString('hex')}`
 let admin: PrivateUser
 let author: PrivateUser
 let clientId: string
+let clientPublicId: string
 let root: { id: string }
 const posts: Record<string, { id: string }> = {}
 
 const verifiedApp = () => ({
   kind: 'verified',
-  client_id: clientId,
+  client_id: clientPublicId,
   client_name: APP_NAME,
 })
 
@@ -35,6 +39,7 @@ describe('MCP post provenance read tools', () => {
       verifiedById: admin.id,
     })
     await renameTestOAuthClient(clientId, APP_NAME)
+    clientPublicId = await getTestOAuthClientPublicId(clientId)
     const mcp = { createdVia: 'mcp', oauthClientId: clientId } as const
     root = await createTestPost({ user: author, provenance: mcp })
     const comment = (key: string, extra: Record<string, unknown>) =>
@@ -73,6 +78,7 @@ describe('MCP post provenance read tools', () => {
         expect(post).toMatchObject({ provenance: { via: 'mcp', app: null } })
         expect(JSON.stringify(post)).not.toContain(APP_NAME)
         expect(JSON.stringify(post)).not.toContain(clientId)
+        expect(JSON.stringify(post)).not.toContain(clientPublicId)
       }
     })
 

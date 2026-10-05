@@ -2,10 +2,13 @@ import { describe, expect, it } from 'vitest'
 import {
   getKnownOAuthClient,
   getOAuthClientDisplayName,
-  isKnownOAuthClientKey,
   KNOWN_OAUTH_CLIENTS,
   type KnownOAuthClients,
 } from './known-clients.mts'
+
+// Letters and digits with single hyphens between words: the shape each client's localization
+// catalog keys its display copy by.
+const KEY_SLUG_PATTERN = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/
 
 const metadataUrl = 'https://client.example/metadata.json'
 const knownClients: KnownOAuthClients = {
@@ -26,20 +29,9 @@ describe('known OAuth clients', () => {
     expect(getKnownOAuthClient(`${metadataUrl}?other`, knownClients)).toBeNull()
   })
 
-  it.each(['agent', 'agent-2', 'my-agent', 'a1-b2-c3'])('accepts %j as a key', key => {
-    expect(isKnownOAuthClientKey(key)).toBe(true)
-  })
-
-  it.each(['', 'Agent', 'my agent', 'my_agent', '-agent', 'agent-', 'my--agent', '2agent', 'é'])(
-    'rejects %j as a key',
-    key => {
-      expect(isKnownOAuthClientKey(key)).toBe(false)
-    },
-  )
-
   it('keeps every shipped entry keyed by a lowercase slug and named for the consent screens', () => {
     const entries = Object.values<{ key: string; name: string }>(KNOWN_OAUTH_CLIENTS)
-    expect(entries.filter(({ key }) => !isKnownOAuthClientKey(key))).toEqual([])
+    expect(entries.filter(({ key }) => !KEY_SLUG_PATTERN.test(key))).toEqual([])
     expect(entries.filter(({ name }) => name.trim() === '')).toEqual([])
   })
 })

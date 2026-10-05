@@ -12,13 +12,6 @@ export type KnownOAuthClients = Readonly<Record<string, KnownOAuthClient>>
 // `web/components/posts/known-app-name-keys.ts`) and, later, in the native catalogs.
 export const KNOWN_OAUTH_CLIENTS = {} as const satisfies KnownOAuthClients
 
-const KEY_SLUG_PATTERN = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/
-
-/** Whether `key` is a lowercase slug: letters and digits, with single hyphens between words. */
-export function isKnownOAuthClientKey(key: string): boolean {
-  return KEY_SLUG_PATTERN.test(key)
-}
-
 export function getKnownOAuthClient(
   metadataUrl: string,
   knownClients: KnownOAuthClients = KNOWN_OAUTH_CLIENTS,

@@ -15,6 +15,17 @@ export async function getTestOAuthClientRowId(clientId: string): Promise<string>
   return row.id
 }
 
+/** Returns the public OAuth client id that responses carry for a client's internal row id. */
+export async function getTestOAuthClientPublicId(id: string): Promise<string> {
+  const { rows } = await read<{ client_id: string }>(
+    `/* getTestOAuthClientPublicId */ SELECT client_id FROM oauth_clients WHERE id = $1`,
+    [id],
+  )
+  const row = rows[0]
+  if (!row) throw new Error(`OAuth client row ${id} does not exist`)
+  return row.client_id
+}
+
 /** Records staff verification directly, for tests that only need a verified client. */
 export async function setTestOAuthClientVerified(id: string, verifiedById: string): Promise<void> {
   await write(

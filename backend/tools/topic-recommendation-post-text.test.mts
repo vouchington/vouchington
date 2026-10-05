@@ -168,9 +168,9 @@ const TEXT_FIELDS = [
 
 /**
  * Ids, timestamps, slugs, hostnames, URLs and enums: formats the service or the database validates.
- * The provenance facts are too: `kind` and `via` are enums, `key` is a reviewed slug, `hostname` is
- * a URL hostname, `client_id` is a generated id, and `client_name` is the name staff verified,
- * because renaming a client drops its verification.
+ * The provenance facts are too: `via` is an enum (`kind` is a constant and never a string field),
+ * `key` is a reviewed slug, `hostname` is a URL hostname, `client_id` is a generated id, and
+ * `client_name` is the name staff verified, because renaming a client drops its verification.
  */
 const FORMAT_FIELDS = [
   'approved_at',
@@ -205,7 +205,6 @@ const FORMAT_FIELDS = [
   'provenance.app.client_name',
   'provenance.app.hostname',
   'provenance.app.key',
-  'provenance.app.kind',
   'provenance.via',
   'rejected_at',
   'review_topic_ratings[].category_slug',

@@ -5,7 +5,10 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, insertTestPost } from '@voucha/test-helpers'
 import { insertContentProvenanceOAuthClient } from '@voucha/test-helpers/data-stores/psql/content-provenance'
-import { renameTestOAuthClient } from '@voucha/test-helpers/entities/oauth-client-management'
+import {
+  getTestOAuthClientPublicId,
+  renameTestOAuthClient,
+} from '@voucha/test-helpers/entities/oauth-client-management'
 
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import type { PrivateUser } from '@services/users/types'
@@ -18,6 +21,7 @@ let admin: PrivateUser
 let moderator: PrivateUser
 let reader: PrivateUser
 let clientRowId: string
+let clientPublicId: string
 const ids: Record<string, string> = {}
 
 const seed = async (key: string, provenance: ContentProvenance, isAnonymous = false) => {
@@ -33,7 +37,7 @@ const seed = async (key: string, provenance: ContentProvenance, isAnonymous = fa
 
 const verifiedLabel = () => ({
   via: 'mcp',
-  app: { kind: 'verified', client_id: clientRowId, client_name: APP_NAME },
+  app: { kind: 'verified', client_id: clientPublicId, client_name: APP_NAME },
 })
 
 const detail = async (key: string, viewer?: PrivateUser) => {
@@ -55,6 +59,7 @@ describe('post provenance', () => {
       verifiedById: admin.id,
     })
     await renameTestOAuthClient(clientRowId, APP_NAME)
+    clientPublicId = await getTestOAuthClientPublicId(clientRowId)
     await seed('mcp', { createdVia: 'mcp', oauthClientId: clientRowId })
     await seed('api', { createdVia: 'api', oauthClientId: null })
     await seed('anon', { createdVia: 'mcp', oauthClientId: clientRowId }, true)
@@ -113,6 +118,7 @@ describe('post provenance', () => {
           expect(post.created_by_id).toBeNull()
           expect(JSON.stringify(post)).not.toContain(APP_NAME)
           expect(JSON.stringify(post)).not.toContain(clientRowId)
+          expect(JSON.stringify(post)).not.toContain(clientPublicId)
         }
         expect((await detail('anon', moderator)).staff_provenance).toEqual({ created_via: 'mcp' })
       })
