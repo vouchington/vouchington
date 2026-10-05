@@ -36,3 +36,4 @@ actions, surface renames), update the matching anatomy file here and keep it in 
 - [Fediverse Instance Anatomy reference](reference-fediverse-instance-see-also.md)
 - [Fediverse Instance Anatomy reference](reference-fediverse-instance-states.md)
 - [Fediverse Instance Anatomy reference](reference-fediverse-instance-surfaces.md)
+- [Post Anatomy reference](reference-post-list-item-card-anatomy.md)
