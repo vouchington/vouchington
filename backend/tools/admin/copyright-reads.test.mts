@@ -4,6 +4,8 @@ import { addTestUserRole, getTestPrivateUserById } from '@voucha/test-helpers/en
 import { createTestCopyrightMcpQueueCase } from '@voucha/test-helpers/copyright-mcp-read-fixtures'
 import { readCopyrightStaffQueueCursorBefore } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { openTestGuestCopyrightNotice } from '@voucha/test-helpers/services/copyright-notices/guest-capability'
+import { createAcceptedCopyrightNotice } from '@voucha/test-helpers/services/copyright-notices/accepted-notice'
+import { createCopyrightFormFixture } from '@services/copyright-notices/route-test-fixtures'
 import { createParsedCopyrightEmailIntake } from '@services/copyright-notices/email-intake-test-fixtures'
 import { appendCopyrightEmailIntakeRecommendation } from '@services/copyright-notices/email-recommendations'
 import { reviewCopyrightFormIntake } from '@services/copyright-notices/form-reviews'
@@ -52,10 +54,11 @@ describe('copyright admin MCP reads against live services', () => {
     }
     expect(capabilities.copyright_guest_capabilities).toEqual([])
 
+    const acceptedNoticeId = await createAcceptedCopyrightNotice(await createCopyrightFormFixture())
     const staffCase = (await readTool<{ id: string }>('get_copyright_case').function(administrator)(
-      { id: noticeId },
+      { id: acceptedNoticeId },
     )) as { copyright_notice: Record<string, unknown> }
-    expect(staffCase.copyright_notice).toMatchObject({ id: noticeId, viewer_role: 'staff' })
+    expect(staffCase.copyright_notice).toMatchObject({ id: acceptedNoticeId, viewer_role: 'staff' })
     expect(staffCase.copyright_notice).toHaveProperty('submissions')
     expect(staffCase.copyright_notice).toHaveProperty('timeline')
   }, 240_000)
@@ -167,7 +170,7 @@ describe('copyright admin MCP reads against live services', () => {
     await reviewCopyrightFormIntake({
       intakeId: scene.intakeId,
       currentUser: administrator,
-      accepted: true,
+      is_accepted: true,
       rationale: 'The submitted notice is complete.',
     })
     const caseTool = readTool<{ id: string }>('get_copyright_case')

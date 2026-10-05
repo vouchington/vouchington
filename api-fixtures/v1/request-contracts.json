@@ -3424,49 +3424,6 @@
       "required": ["kind", "rationale"],
       "type": "object"
     },
-    "CopyrightEmailIntakeQueueResponse": {
-      "additionalProperties": false,
-      "properties": {
-        "copyright_email_intakes": {
-          "items": {
-            "$ref": "#/components/schemas/CopyrightStaffEmailIntakeQueueItem"
-          },
-          "type": "array"
-        },
-        "page_info": {
-          "additionalProperties": false,
-          "properties": {
-            "end_cursor": {
-              "anyOf": [
-                {
-                  "type": "null"
-                },
-                {
-                  "type": "string"
-                }
-              ]
-            },
-            "has_next_page": {
-              "type": "boolean"
-            },
-            "start_cursor": {
-              "anyOf": [
-                {
-                  "type": "null"
-                },
-                {
-                  "type": "string"
-                }
-              ]
-            }
-          },
-          "required": ["end_cursor", "has_next_page", "start_cursor"],
-          "type": "object"
-        }
-      },
-      "required": ["copyright_email_intakes", "page_info"],
-      "type": "object"
-    },
     "CopyrightEmailLegalProcessRequest": {
       "additionalProperties": false,
       "properties": {
@@ -4873,63 +4830,6 @@
         "recommendation",
         "review_path",
         "ses_verdicts"
-      ],
-      "type": "object"
-    },
-    "CopyrightStaffEmailIntakeQueueItem": {
-      "additionalProperties": false,
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "linked_notice_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "parse_status": {
-          "enum": ["failed", "succeeded", "unparsed"],
-          "type": "string"
-        },
-        "received_at": {
-          "type": "string"
-        },
-        "recommendation_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "review_path": {
-          "enum": ["initial", "matched_thread", "unresolved_thread"],
-          "type": "string"
-        },
-        "waiting_reason": {
-          "enum": ["awaiting_review", "reply_bounced", "reply_failed"],
-          "type": "string"
-        },
-        "waiting_since": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "id",
-        "linked_notice_id",
-        "parse_status",
-        "received_at",
-        "recommendation_id",
-        "review_path",
-        "waiting_reason",
-        "waiting_since"
       ],
       "type": "object"
     },
@@ -36806,9 +36706,6 @@
     },
     "GET:/api/v1/communities/:idOrSlug/posts/pending": {
       "$ref": "#/components/schemas/Record_string_unknown"
-    },
-    "GET:/api/v1/copyright-email-intakes/review-queue": {
-      "$ref": "#/components/schemas/CopyrightEmailIntakeQueueResponse"
     },
     "GET:/api/v1/currencies": {
       "$ref": "#/components/schemas/CurrencyPage"
