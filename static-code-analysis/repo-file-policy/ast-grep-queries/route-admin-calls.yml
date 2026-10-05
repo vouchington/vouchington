@@ -1,0 +1,42 @@
+id: route-admin-calls
+language: Tsx
+severity: hint
+message: call-name fact for route-admin policy
+utils:
+  transparent:
+    any:
+      - kind: parenthesized_expression
+      - kind: as_expression
+      - kind: satisfies_expression
+      - kind: non_null_expression
+  call-name:
+    any:
+      - all:
+          - kind: identifier
+          - pattern: $CALL_NAME
+      - all:
+          - kind: member_expression
+          - has:
+              field: property
+              pattern: $CALL_NAME
+      - matches: transparent
+        has:
+          matches: call-name
+rule:
+  all:
+    - kind: call_expression
+    - has:
+        field: function
+        matches: call-name
+    - has:
+        field: arguments
+        kind: arguments
+examples:
+  - code: |
+      (Auth.requireAdmin as Function)()
+    isValid: false
+    file: web/lib/routes/route-page.tsx
+  - code: |
+      requireAdmin`template`
+    isValid: true
+    file: web/lib/routes/route-page.tsx

@@ -1,0 +1,43 @@
+id: route-admin-return-defaults
+language: Tsx
+severity: hint
+message: returned default identifier fact for route-admin policy
+utils:
+  transparent:
+    any:
+      - kind: parenthesized_expression
+      - kind: as_expression
+      - kind: satisfies_expression
+      - kind: non_null_expression
+  returned-object:
+    kind: object
+    inside:
+      kind: return_statement
+      stopBy:
+        not:
+          matches: transparent
+rule:
+  all:
+    - kind: identifier
+    - pattern: $RETURNED_DEFAULT
+    - inside:
+        kind: pair
+        has:
+          field: key
+          all:
+            - kind: property_identifier
+            - regex: "^(?:d|\\\\u(?i:0064)|\\\\u\\{0*(?i:64)\\})(?:e|\\\\u(?i:0065)|\\\\u\\{0*(?i:65)\\})(?:f|\\\\u(?i:0066)|\\\\u\\{0*(?i:66)\\})(?:a|\\\\u(?i:0061)|\\\\u\\{0*(?i:61)\\})(?:u|\\\\u(?i:0075)|\\\\u\\{0*(?i:75)\\})(?:l|\\\\u(?i:006c)|\\\\u\\{0*(?i:6c)\\})(?:t|\\\\u(?i:0074)|\\\\u\\{0*(?i:74)\\})$"
+        inside:
+          matches: returned-object
+        stopBy:
+          not:
+            matches: transparent
+examples:
+  - code: |
+      function factory() { return { default: RoutePage } }
+    isValid: false
+    file: web/lib/routes/route-page.tsx
+  - code: |
+      function factory() { return { page: RoutePage } }
+    isValid: true
+    file: web/lib/routes/route-page.tsx

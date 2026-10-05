@@ -1,0 +1,57 @@
+id: route-admin-first-arguments
+language: Tsx
+severity: hint
+message: first-argument identifier fact for route-admin policy
+utils:
+  transparent:
+    any:
+      - kind: parenthesized_expression
+      - kind: as_expression
+      - kind: satisfies_expression
+      - kind: non_null_expression
+  call-name:
+    any:
+      - all:
+          - kind: identifier
+          - pattern: $CALL_NAME
+      - all:
+          - kind: member_expression
+          - has:
+              field: property
+              pattern: $CALL_NAME
+      - matches: transparent
+        has:
+          matches: call-name
+  argument-name:
+    any:
+      - all:
+          - kind: identifier
+          - pattern: $FIRST_ARGUMENT_NAME
+      - matches: transparent
+        has:
+          matches: argument-name
+rule:
+  all:
+    - kind: call_expression
+    - has:
+        field: function
+        matches: call-name
+    - has:
+        field: arguments
+        has:
+          all:
+            - nthChild:
+                position: 1
+                ofRule:
+                  not:
+                    kind: comment
+            - matches: argument-name
+examples:
+  - code: |
+      loadRoute(/* comment */ (id as string), other)
+    isValid: false
+    file: web/lib/routes/route-page.tsx
+  - code: |
+      loadRoute({ id })
+    isValid: true
+    file: web/lib/routes/route-page.tsx

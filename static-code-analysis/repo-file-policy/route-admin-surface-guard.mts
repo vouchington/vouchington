@@ -1,24 +1,20 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-
 import {
-  type AdminSurfacePredicate,
   callsRequireAdmin,
   factoryReturnsPageThatCalls,
   rejectsNonReferralProgramTopics,
   rendersPageWithAside,
-} from './route-admin-surface-ast.mts'
-
-interface RequiredPredicate {
-  predicate: AdminSurfacePredicate
+} from './route-admin-surface-facts.mts'
+import {
+  collectRouteAdminSurfaceFacts,
+  type RouteAdminSurfaceFacts,
+} from './route-admin-surface-query.mts'
+type RequiredPredicate = {
+  predicate: (facts: RouteAdminSurfaceFacts) => boolean
   description: string
 }
-
-interface RequiredFilePolicy {
-  file: string
-  requirements: RequiredPredicate[]
-}
-
+type RequiredFilePolicy = { file: string; requirements: RequiredPredicate[] }
 const ENTITY_ADMIN_SURFACE_REQUIREMENTS: RequiredFilePolicy[] = [
   {
     file: 'web/app/(topics)/topics/create/page.tsx',
@@ -183,9 +179,18 @@ export function checkRouteAdminSurfaceGuard(
       )
       continue
     }
-    const content = readFileSync(fullPath, 'utf8')
+    let facts: RouteAdminSurfaceFacts
+    try {
+      facts = collectRouteAdminSurfaceFacts(readFileSync(fullPath, 'utf8'), policy.file)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      errors.push(
+        `::error file=${policy.file}::${policy.file}: could not inspect route-admin syntax: ${message}`,
+      )
+      continue
+    }
     for (const requirement of policy.requirements) {
-      if (!requirement.predicate(content, policy.file)) {
+      if (!requirement.predicate(facts)) {
         errors.push(
           `::error file=${policy.file}::${policy.file}: entity-scoped admin surface must ${requirement.description}; see docs/requirements/navigation/ROUTES.md#route-relocation-audit`,
         )
