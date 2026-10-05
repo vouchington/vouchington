@@ -73507,7 +73507,10 @@
             "name": "limit",
             "required": false,
             "schema": {
-              "type": "number"
+              "default": 3,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
             }
           },
           {

@@ -31191,7 +31191,10 @@
       "query": {
         "properties": {
           "limit": {
-            "type": "number"
+            "default": 3,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
           },
           "q": {
             "type": "string"

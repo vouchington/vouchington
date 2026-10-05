@@ -73,6 +73,14 @@ describe('GET /api/v1/search', () => {
     expect(response.headers['cache-control'] ?? '').not.toContain('public')
   })
 
+  it('rejects fractional limits before searching', async () => {
+    const request = createRequest()
+    await request.authenticateAs(user)
+    const response = await request.get('/api/v1/search?q=test&limit=1.5').expect(422)
+
+    expect(response.body.message).toBe('Invalid request query')
+  })
+
   it('returns an empty shape for an unknown hashtag topic mention', async () => {
     const request = createRequest()
     const response = await request

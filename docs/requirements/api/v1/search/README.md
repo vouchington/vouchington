@@ -22,7 +22,8 @@ Query parameters:
   topics, posts, news, and communities; an unlinked alias filters posts and news exactly. An
   unknown hashtag returns no results, and verticals without the relevant hashtag filter do not
   return text-only matches.
-- `limit` — per-vertical result cap (default 3, max 25 for anon)
+- `limit` — integer per-vertical result cap from 1 to 100 (default 3); anonymous requests clamp
+  the maximum to 25
 
 Response shape (intentionally differs from the standard `{ results, page_info }` wrapper — this
 endpoint aggregates five distinct entity types, not a single-type paginated list; each key IS the
