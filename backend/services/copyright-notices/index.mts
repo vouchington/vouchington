@@ -9,10 +9,6 @@ export {
 } from './guest-capabilities.mts'
 export { requestCopyrightGuestInformation } from './information-requests.mts'
 export { appendCopyrightGuestFiling } from './guest-filings.mts'
-export {
-  copyrightGuestCapabilityCursorScope,
-  listCopyrightGuestCapabilities,
-} from './guest-capability-listing.mts'
 export { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
 export { reviewCopyrightFormIntake } from './form-reviews.mts'
 export { createCopyrightAppeal, createCopyrightCounterNotice } from './submissions.mts'
@@ -35,11 +31,6 @@ export {
   listAcceptedCopyrightNotices,
   copyrightAcceptedNoticeCursorScope,
 } from './read-models.mts'
-export {
-  copyrightStaffEmailIntakeQueueCursorScope,
-  searchCopyrightStaffEmailIntakes,
-} from './read-models-staff-email-intakes.mts'
-export type { CopyrightStaffEmailIntakeQueueItem } from './read-models-staff-email-intakes.mts'
 export { appendCopyrightNoticeSubmission } from './submission-appending.mts'
 export { appendCopyrightSubmissionAssessment } from './compliance.mts'
 export { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'

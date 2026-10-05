@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
-import {
-  getCopyrightStaffEmailIntake,
-  searchCopyrightStaffEmailIntakes,
-} from '@services/copyright-notices'
+import { getCopyrightStaffEmailIntake } from '@services/copyright-notices'
+import { searchCopyrightStaffEmailIntakes } from '@services/copyright-notices/read-models-staff-email-intakes'
 import { listCopyrightStaffQueue } from '@services/copyright-notices/read-models-staff'
 import { getIsolatedDatabaseCaseMode } from '../../../test-helpers/vitest-isolated-database-cases.mts'
 import { runIsolatedDatabaseCase } from '../../../test-helpers/vitest-isolated-database-case.mts'

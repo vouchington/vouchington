@@ -12693,32 +12693,29 @@
     },
     "GET:/api/v1/copyright-email-intakes/review-queue": {
       "bodyKind": "content",
-      "hash": "aa3f27faa243815a024a9488de111719b8f75132bc2b72dca7c698757ecb63dd",
+      "hash": "1ee21643428291a0c3b2c18dd19ef9aac13b34a5a9382f553d710dc497839103",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
       "routeTemplate": "/api/v1/copyright-email-intakes/review-queue",
       "schema": {
-        "definitions": {
-          "CopyrightEmailIntakeQueueResponse": {
-            "additionalProperties": false,
-            "properties": {
-              "copyright_email_intakes": {
-                "required": true,
-                "schema": {
-                  "items": {
-                    "name": "CopyrightStaffEmailIntakeQueueItem",
-                    "type": "ref"
-                  },
-                  "type": "array"
-                }
-              },
-              "page_info": {
-                "required": true,
-                "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "copyright_email_intakes": {
+              "required": true,
+              "schema": {
+                "items": {
                   "additionalProperties": false,
                   "properties": {
-                    "end_cursor": {
+                    "id": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "linked_notice_id": {
                       "required": true,
                       "schema": {
                         "type": "union",
@@ -12732,13 +12729,33 @@
                         ]
                       }
                     },
-                    "has_next_page": {
+                    "parse_status": {
                       "required": true,
                       "schema": {
-                        "type": "boolean"
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "literal",
+                            "value": "failed"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "succeeded"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "unparsed"
+                          }
+                        ]
                       }
                     },
-                    "start_cursor": {
+                    "received_at": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "recommendation_id": {
                       "required": true,
                       "schema": {
                         "type": "union",
@@ -12750,131 +12767,105 @@
                             "type": "string"
                           }
                         ]
+                      }
+                    },
+                    "review_path": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "literal",
+                            "value": "initial"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "matched_thread"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "unresolved_thread"
+                          }
+                        ]
+                      }
+                    },
+                    "waiting_reason": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "literal",
+                            "value": "awaiting_review"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "reply_bounced"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "reply_failed"
+                          }
+                        ]
+                      }
+                    },
+                    "waiting_since": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
                       }
                     }
                   },
                   "type": "object"
-                }
+                },
+                "type": "array"
               }
             },
-            "type": "object"
+            "page_info": {
+              "required": true,
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "end_cursor": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "has_next_page": {
+                    "required": true,
+                    "schema": {
+                      "type": "boolean"
+                    }
+                  },
+                  "start_cursor": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            }
           },
-          "CopyrightStaffEmailIntakeQueueItem": {
-            "additionalProperties": false,
-            "properties": {
-              "id": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "linked_notice_id": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "parse_status": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "literal",
-                      "value": "failed"
-                    },
-                    {
-                      "type": "literal",
-                      "value": "succeeded"
-                    },
-                    {
-                      "type": "literal",
-                      "value": "unparsed"
-                    }
-                  ]
-                }
-              },
-              "received_at": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "recommendation_id": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "review_path": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "literal",
-                      "value": "initial"
-                    },
-                    {
-                      "type": "literal",
-                      "value": "matched_thread"
-                    },
-                    {
-                      "type": "literal",
-                      "value": "unresolved_thread"
-                    }
-                  ]
-                }
-              },
-              "waiting_reason": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "literal",
-                      "value": "awaiting_review"
-                    },
-                    {
-                      "type": "literal",
-                      "value": "reply_bounced"
-                    },
-                    {
-                      "type": "literal",
-                      "value": "reply_failed"
-                    }
-                  ]
-                }
-              },
-              "waiting_since": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "type": "object"
-          }
-        },
-        "root": {
-          "name": "CopyrightEmailIntakeQueueResponse",
-          "type": "ref"
+          "type": "object"
         }
       },
       "source": "backend/api/v1/copyright-notices/email-intake-queue-route.mts",

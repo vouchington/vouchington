@@ -377,6 +377,7 @@ export async function getCopyrightNoticeViewerRole(
   await using transaction = await beginTransaction()
   const viewerSql = sql`/* getCopyrightNoticeViewerRole */
     SELECT CASE
+      WHEN ${canReview} THEN 'staff'
       WHEN notice.claimant_user_id = ${currentUser.id} THEN 'claimant'
       WHEN EXISTS (
         SELECT 1 FROM copyright_notice_targets target
@@ -385,7 +386,7 @@ export async function getCopyrightNoticeViewerRole(
   viewerSql.append(sql` party
         WHERE target.copyright_notice_id = notice.id AND party.user_id = ${currentUser.id}
       ) THEN 'poster'
-      ELSE CASE WHEN ${canReview} THEN 'staff' ELSE NULL END
+      ELSE NULL
     END AS role
     FROM copyright_notices notice
     WHERE notice.id = ${noticeId}

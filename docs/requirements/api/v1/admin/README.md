@@ -73,6 +73,12 @@ statuses: `403` (not an administrator, or a token missing the scope a tool needs
 limited), and `503` (the audit row could not be stored, so the call did not run). See the
 [MCP tools architecture](../../../../overview/architecture/services/mcp-tools/README.md#mcp-audit-log).
 
+The `copyright-notices:read` grant exposes the copyright review queue, public notice, repeat-infringer
+accounts, email-intake queue and structured intake detail, guest-capability list, and participant
+case detail. Email-intake reads never expose raw MIME, `.eml`, parsed email, or parser errors.
+Copyright MCP reads mask claimant and poster contact details before tool output is wrapped; names
+remain visible. The two new lists use the same opaque cursor contract as their staff REST routes.
+
 ## Performance
 
 | Endpoint                                                        | Round Trips | Caching      | Notes                                                                  |

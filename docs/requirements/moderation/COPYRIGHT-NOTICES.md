@@ -554,6 +554,12 @@ operations. Urgency depends on the clock, so a case can move to an
 earlier tier between pages. The staff pages are reached from the Moderation sidebar's Copyright
 group, and the public policy page shows its staff queue links only to administrators and moderators.
 
+The OAuth-only admin MCP exposes the queue, structured email-intake and guest-capability lists,
+participant case detail, public notice, and repeat-infringer accounts under the exact
+`copyright-notices:read` grant. MCP outputs mask claimant and poster contact details; email-intake
+detail contains neither raw MIME nor parsed message or parser-error text. The read tools retain
+the staff REST lists' opaque pagination and do not perform a legal decision.
+
 The web uses Turnstile for each notice, appeal, and counter-notice form. Native clients use the
 attestation route described by the CAPTCHA boundary. CAPTCHA is an intake abuse control, not a
 legal-validity or merits assessment.

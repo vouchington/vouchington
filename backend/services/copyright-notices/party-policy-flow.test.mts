@@ -71,7 +71,7 @@ describe('copyright subscriber and informational-owner flows', () => {
       await expectChannels(noticeId, owner.id, 'poster', 'poster_restriction_notice')
       const detail = await getCopyrightParticipantNoticeDetail(noticeId, owner)
       expect(detail).toMatchObject({
-        viewer_role: 'poster',
+        viewer_role: 'staff',
         respondable_target_ids: [targetId],
       })
       await expect(
@@ -115,7 +115,7 @@ describe('copyright subscriber and informational-owner flows', () => {
       )?.target_path,
     ).toMatch(/^\/communities\//)
     expect(await getCopyrightParticipantNoticeDetail(noticeId, setter)).toMatchObject({
-      viewer_role: 'poster',
+      viewer_role: 'staff',
       respondable_target_ids: [targetId],
     })
     await expect(

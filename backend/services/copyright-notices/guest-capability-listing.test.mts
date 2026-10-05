@@ -4,11 +4,8 @@ import {
   openTestGuestCopyrightNotice,
 } from '@voucha/test-helpers/services/copyright-notices/guest-capability'
 import { describe, expect, it } from 'vitest'
-import {
-  issueCopyrightGuestCapability,
-  listCopyrightGuestCapabilities,
-  revokeCopyrightGuestCapability,
-} from './index.mts'
+import { issueCopyrightGuestCapability, revokeCopyrightGuestCapability } from './index.mts'
+import { listCopyrightGuestCapabilities } from './guest-capability-listing.mts'
 
 const dayMs = 24 * 60 * 60 * 1000
 
