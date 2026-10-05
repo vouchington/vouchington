@@ -147,7 +147,7 @@ describe('copyright email approval parity between REST and MCP', () => {
     for (const [, surface] of SURFACES) {
       const approve = await surface()
       const { intake, body } = await approvalFixture()
-      const { [field]: _omitted, ...withoutField } = body
+      const withoutField = Object.fromEntries(Object.entries(body).filter(([key]) => key !== field))
       outcomes.push(await approve(intake.id, withoutField))
       await expect(readCopyrightEmailIntakeReview(intake.id)).resolves.toEqual([])
     }
