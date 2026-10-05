@@ -55,7 +55,7 @@ replacement analyzer rules. See [R2](../postgres-schema-rules.md#r2--columns-say
 Cleanup and reconciliation jobs create their own `_cursors` rows. Concrete sweep families use enum
 keys; single-job sweeps use checked `is_singleton` keys. Publication bridge cleanup advances the
 least recently advanced unlocked family independently instead of rotating a family inside one row.
-Retained root cleanup uses the seven `retained_identity_families`; placement binding cleanup has its
+Retained root cleanup uses the seven `retained_identity_cleanup_families`; placement binding cleanup has its
 own singleton because a binding is a placement/image pair, not a root identity owner. Cursor UUIDs
 retain their keyset positions after the swept rows are deleted. Tests for singleton checkpoints run
 in disposable databases instead of introducing free-text cursor keys.
