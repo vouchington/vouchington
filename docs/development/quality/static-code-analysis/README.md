@@ -532,8 +532,10 @@ duplicate annotation check after the package-owned rule covers it.
 
 Every `postgres-*` rule that scans executor calls, in `.no-mistakes.yml` and in the nested
 `.oxlintrc.json` files, sets `importSpecifier: '@data-stores/psql'` explicitly. `no-mistakes` does
-not own our module layout, so a rule without `importSpecifier` can scan zero calls once the package
-drops its default. Migration-only rules and `postgres-sql-statement-policy` do not take the option.
+not own our module layout and has no module default: a rule that omits both `importSpecifier` and
+`executorNames` is a configuration error, and `executorNames: []` without a module is the only way
+to select no executor calls. Migration-only rules and `postgres-sql-statement-policy` do not take the
+option.
 
 PostgreSQL final-state inventories in `repo-file-policy` load the tracked, versioned
 [`schema.json`](../../../../backend/data-stores/psql/schema-snapshot/schema.json) once and fail closed when it
@@ -563,7 +565,9 @@ Tracked config-driven INSERT replay-safety, correlated `EXISTS` set-operation sh
 active-topic filter (`deleted_at IS NULL` and `merged_into_topic_id IS NULL`) live in
 [`.no-mistakes.yml`](../../../../.no-mistakes.yml) as `postgres-idempotent-insert`,
 `postgres-sql-shape-policy`, and `postgres-required-predicates`. Suppress with
-`no-mistakes-disable-next-line <rule>`. TypeScript-generated config-driven SQL that those `.sql`
+`no-mistakes-disable-next-line <rule>` on the line above the SQL text the rule reports (the line
+of the SQL string or `sql` template, not the executor call; inside a multi-line template, a SQL `--`
+comment above the reported line). TypeScript-generated config-driven SQL that those `.sql`
 files never contain is still judged at test time by
 `backend/test-helpers/data-stores/psql/config-driven/generated-ddl-insert-invariants.mts`.
 
@@ -766,7 +770,8 @@ This section records the outcomes of the evaluation in #5044 so the tracking iss
 
 - **Catalog-backed PostgreSQL conflict and lock order → `no-mistakes` 0.59.0**:
   `postgres-conflict-ordering` resolves production multi-row UPSERTs across backend runtime code and
-  deploy-time config-driven SQL against the committed v2 schema snapshot. It requires the conflict
+  deploy-time config-driven SQL against the generated
+  [no-mistakes catalog](../../postgresql/schema-snapshot/README.md#no-mistakes-catalog). It requires the conflict
   target and source `ORDER BY` to begin with the same unique-index key sequence. The
   catalog-backed `postgres-lock-ordering` configuration applies that prefix to multi-row row locks,
   while the repository-wide configuration continues to require deterministic ordering. Tests, test

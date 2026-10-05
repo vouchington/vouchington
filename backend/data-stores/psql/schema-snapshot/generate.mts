@@ -1,5 +1,6 @@
 import { resolve } from 'node:path'
 import { format } from 'oxfmt'
+import type { PostgresCatalog } from 'no-mistakes'
 import { stableStringify } from '@modules/utils/stable-stringify'
 import {
   readSchemaCatalog,
@@ -8,6 +9,7 @@ import {
 } from '@vouchington/postgres/pg-schema-snapshot'
 import { buildSchemaSnapshot } from './build-snapshot.mts'
 import { catalogQuery } from './catalog-query.mts'
+import { readNoMistakesCatalog, writeNoMistakesCatalog } from './no-mistakes-catalog.mts'
 import { renderSchemaMarkdown } from './render-markdown.mts'
 
 const __dirname = import.meta.dirname
@@ -43,6 +45,7 @@ function rewriteStaleError(error: unknown): never {
 export async function writeSchemaSnapshot({
   snapshot,
   markdown,
+  catalog,
   check = false,
   root = __dirname,
   markdownRoot = root === __dirname
@@ -51,12 +54,14 @@ export async function writeSchemaSnapshot({
 }: {
   snapshot: SchemaSnapshot
   markdown: Map<string, string>
+  catalog?: PostgresCatalog
   check?: boolean
   root?: string
   markdownRoot?: string
 }): Promise<void> {
-  try {
-    await writeFromPostgres({
+  // Both writers run so one stale file never hides the other in a single --check report.
+  const outcomes = await Promise.allSettled([
+    writeFromPostgres({
       snapshot,
       markdown,
       check,
@@ -64,9 +69,18 @@ export async function writeSchemaSnapshot({
       ...(markdownRoot === undefined ? {} : { markdownRoot }),
       format: formatWithOxfmt,
       stringify: stableStringify,
-    })
-  } catch (err) {
-    rewriteStaleError(err)
+    }).catch(rewriteStaleError),
+    catalog === undefined
+      ? undefined
+      : writeNoMistakesCatalog({ catalog, root, format: formatWithOxfmt, check }),
+  ])
+  const failures = outcomes.flatMap(outcome =>
+    outcome.status === 'rejected' ? [outcome.reason as Error] : [],
+  )
+  const [firstFailure] = failures
+  if (failures.length === 1) throw firstFailure
+  if (failures.length > 1) {
+    throw new AggregateError(failures, failures.map(failure => failure.message).join('\n\n'))
   }
 }
 
@@ -75,9 +89,11 @@ export async function generateSchemaSnapshot({
   check = false,
 }: { check?: boolean } = {}): Promise<void> {
   const snapshot = buildSchemaSnapshot(await readSchemaCatalog(catalogQuery))
+  const { generatePostgresCatalog } = await import('no-mistakes')
   await writeSchemaSnapshot({
     snapshot,
     markdown: renderSchemaMarkdown(snapshot),
+    catalog: await readNoMistakesCatalog(generatePostgresCatalog),
     check,
   })
 }

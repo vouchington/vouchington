@@ -1589,7 +1589,7 @@ rules:
     scope: repository
     options:
       importSpecifier: '@data-stores/psql'
-      schemaCatalogPath: backend/data-stores/psql/schema-snapshot/schema.json
+      schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
       sqlInclude:
         - backend/data-stores/psql/config-driven/**/*.sql
       executorNames: [query, write]
@@ -1617,7 +1617,7 @@ rules:
     scope: repository
     options:
       importSpecifier: '@data-stores/psql'
-      schemaCatalogPath: backend/data-stores/psql/schema-snapshot/schema.json
+      schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
       sqlInclude:
         - backend/data-stores/psql/config-driven/**/*.sql
       include:

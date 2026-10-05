@@ -81,8 +81,8 @@ async function createTopicInDatabase(
   const { rows } = await write(
     sql`/* createTopicInDatabase */
     WITH source_alias_owner AS (
-      -- no-mistakes-disable-next-line postgres-required-predicates: source-alias owner must be soft-deleted to revive it
       SELECT topic.id
+      -- no-mistakes-disable-next-line postgres-required-predicates: source-alias owner must be soft-deleted to revive it
       FROM topic_aliases source_alias
       JOIN topics topic ON topic.id = source_alias.topic_id
       WHERE source_alias.id = ${updates.source_topic_alias_id ?? null}

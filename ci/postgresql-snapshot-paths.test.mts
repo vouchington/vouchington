@@ -8,6 +8,10 @@ import {
 describe('snapshot artifact destinations', () => {
   it.each([
     ['schema.json', 'backend/data-stores/psql/schema-snapshot/schema.json'],
+    [
+      'no-mistakes-catalog.json',
+      'backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json',
+    ],
     ['markdown/README.md', 'docs/development/postgresql/schema-snapshot/markdown/README.md'],
     [
       'markdown/tables/widgets.md',
@@ -26,12 +30,13 @@ describe('snapshot artifact destinations', () => {
 
   it.each([
     'backend/data-stores/psql/schema-snapshot/generate.mts',
+    'backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.test.mts',
     'backend/data-stores/psql/schema-snapshot/markdown/README.md',
     'docs/development/postgresql/schema-snapshot/README.md',
     `${snapshotMarkdownPath}-other/README.md`,
     `${snapshotMarkdownPath}/tables/file.sql`,
     `${snapshotMarkdownPath}/../escape.md`,
-  ])('rejects repository paths outside the two generated destinations: %s', path => {
+  ])('rejects repository paths outside the generated destinations: %s', path => {
     expect(snapshotArtifactPath(path)).toBeNull()
   })
 })

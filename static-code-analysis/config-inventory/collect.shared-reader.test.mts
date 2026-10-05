@@ -13,11 +13,13 @@ describe('collectConfigInventory shared reader', () => {
     await Promise.all(testDirs.splice(0).map(dir => rm(dir, { force: true, recursive: true })))
   })
 
-  it('uses the shared reader and skips the generated PostgreSQL snapshot', async () => {
+  it('uses the shared reader and skips the generated PostgreSQL snapshot and catalog', async () => {
     const files = {
       'backend/config/example.mts': 'process.env.SHARED_READER_ENV\n',
       'backend/data-stores/psql/schema-snapshot/schema.json':
         '{"generated":"process.env.GENERATED_ARTIFACT_ENV"}',
+      'backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json':
+        '{"generated":"process.env.GENERATED_CATALOG_ENV"}',
       'package.json': '{"scripts":{}}',
     }
     const fixture = await makeRepoFixture(files)

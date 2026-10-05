@@ -5,7 +5,8 @@ Source entrypoint: [backend/data-stores/psql/schema-snapshot/README.md](../../..
 The [generator](../../../../backend/data-stores/psql/schema-snapshot/generate.mts) writes a committed
 PostgreSQL schema snapshot from `pg_catalog`/`information_schema` introspection. The
 [runtime JSON catalog](../../../../backend/data-stores/psql/schema-snapshot/schema.json) stays in its
-backend package; the [generated Markdown index](markdown/README.md) and table/reference pages live
+backend package beside the [no-mistakes catalog](#no-mistakes-catalog); the
+[generated Markdown index](markdown/README.md) and table/reference pages live
 here under `markdown/`. The snapshot
 exists because the backend schema is assembled from migrations, config-driven definitions, and
 views and `pg_dump`/`psql \d` output is unusable as a diffable artifact: it enumerates every
@@ -24,19 +25,50 @@ every DDL-affecting change must regenerate and commit the snapshot alongside it.
   the current branch's open pull request in the repository `gh repo view` resolves. The command only
   dispatches CI; it does not read or change the worktree database.
 - The workflow migrates a fresh PostgreSQL 18 service from the exact PR head and commits only
-  `schema.json` and generated `markdown/` files to that head. An unchanged snapshot creates no
-  commit. The artifact format remains `schema.json` plus `markdown/**`; the publisher maps these
-  whitelisted artifact paths to their separate repository owners. Fetch the publisher commit before
+  `schema.json`, `no-mistakes-catalog.json`, and generated `markdown/` files to that head. An
+  unchanged snapshot creates no commit. The artifact format is those three whitelisted artifact paths
+  (`schema.json`, `no-mistakes-catalog.json`, `markdown/**`); the publisher requires all of them and
+  maps each to its separate repository owner. Fetch the publisher commit before
   further local work or rebasing.
-- Ordinary PR CI then migrates its own fresh database and checks the committed snapshot with
-  `generate.mts --check`. Local `pnpm run db:snapshot:check` continues to check the configured
+- Ordinary PR CI then migrates its own fresh database and checks the committed snapshot and
+  catalog with `generate.mts --check`. Local `pnpm run db:snapshot:check` continues to check the configured
   worktree database after clean migration.
 
 **PG18 parity matters.** `pg_get_constraintdef`, `pg_get_indexdef`, `pg_get_viewdef`, and
-`pg_get_functiondef` deparse output can shift wording across major PostgreSQL versions. Generate the
-committed snapshot against the digest-pinned PostgreSQL 18 image in
+`pg_get_functiondef` deparse output can shift wording across major PostgreSQL versions, and the
+no-mistakes catalog carries the same deparsed text. Generate the committed snapshot and catalog against the digest-pinned PostgreSQL 18 image in
 `tests-postgres-schema.yml`; the workflow reads the candidate PR's image pin, so an image update
 and its generated extension versions move together.
+
+## no-mistakes Catalog
+
+`backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json` is the only input the
+`schemaCatalogPath` option of `postgres-conflict-ordering` and `postgres-lock-ordering` in
+[`.no-mistakes.yml`](../../../../.no-mistakes.yml) reads. `no-mistakes` owns this format and its
+generator and never reads `schema.json`; `schema.json` and the catalog describe one database for two
+readers and are generated, written, and compared together.
+
+- **Generation.** `generate.mts` calls the `no-mistakes` N-API `generatePostgresCatalog` with
+  `connectionEnv: 'DATABASE_URL'`, `schema: 'public'`, `coverage: 'complete'`, and a fixed
+  `currentDatabase` (the generator's `--current-database` option). It spawns `psql`, so `psql` must be
+  on `PATH`; the CI runners already provide it.
+- **Fixed `currentDatabase`.** The catalog records the database name that application SQL treats as
+  local when a reference is database-qualified. App SQL never qualifies a reference, so the name
+  changes no finding. It is fixed to the canonical application database name (`voucha`) so a
+  per-worktree database (`voucha-<hash>`), CI's `postgres` database, and the publisher's database all
+  produce identical bytes.
+- **Regeneration and freshness.** The `/postgresql-snapshot-update` flow above regenerates and commits
+  it. `generate.mts --check`, which `db:snapshot:check` and `tests-postgres-schema.yml` run, compares
+  `schema.json`, the Markdown, and the catalog, and reports every stale file in one error. There is no
+  catalog-only CI step; a migration that changes an index, constraint, column, or function body moves
+  both JSON files.
+- **Formatting.** The catalog passes through the same oxfmt `format()` call as `schema.json` before it is
+  written or compared, so `oxfmt --check` accepts it and no ignore entry exists. Regenerate it only
+  through `generate.mts` or `/postgresql-snapshot-update`: a raw `no-mistakes postgres catalog`
+  write has different whitespace and `--check` reports it stale.
+- **Release bumps.** A `no-mistakes` release can change the generated catalog. Dependabot's grouped
+  update PR then fails `generate.mts --check` until it receives `/postgresql-snapshot-update`; see
+  [dependency updates](../../dependency-updates.md#no-mistakes-releases).
 
 ## Architecture
 
@@ -63,9 +95,12 @@ and its generated extension versions move together.
   only resolves a topic-suffixed `<stem>.<topic>.test.mts` back to its `<stem>.mts` source when the
   test lives in a `__tests__/` directory. `generate.test.mts` stays colocated since its name is an
   exact match for `generate.mts` (no suffix, no `__tests__/` needed).
+- `no-mistakes-catalog.mts` — pins the `generatePostgresCatalog` options, and writes or compares
+  `no-mistakes-catalog.json` with the same symlink refusals as the platform writer.
+  `__tests__/generate.catalog.test.mts` covers the shared check flow.
 - `generate.mts` — the live schema generator used by the snapshot workflow and the `--check` CLI.
   Exports
-  `generateSchemaSnapshot({ check })` and `writeSchemaSnapshot({ snapshot, markdown, check, root, markdownRoot })`
+  `generateSchemaSnapshot({ check })` and `writeSchemaSnapshot({ snapshot, markdown, catalog, check, root, markdownRoot })`
   for unit testing against temporary JSON and Markdown directories; the direct-execution guard at the bottom only runs when
   invoked as a script. It detects missing, changed, legacy, and orphaned generated Markdown files;
   update mode removes only legacy `schema.md` and proven orphans in `markdown/`. Before comparing or

@@ -1,6 +1,7 @@
 export function shouldSkipFile(file: string): boolean {
   return (
     file === 'backend/data-stores/psql/schema-snapshot/schema.json' ||
+    file === 'backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json' ||
     file.startsWith('.agents/') ||
     file.includes('/node_modules/') ||
     file === 'pnpm-lock.yaml' ||
