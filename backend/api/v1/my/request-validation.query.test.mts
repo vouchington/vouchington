@@ -155,37 +155,85 @@ describe('protected my query carrier validation', () => {
       expect(response.headers['content-disposition']).toBeUndefined()
     })
 
-    it('keeps the format fallback: json, csv, and OPML for anything else', async () => {
+    it('exports each accepted format, and OPML when format is omitted', async () => {
       const request = await signedIn()
       const json = await request.get('/api/v1/my/export/rss-feeds?format=json').expect(200)
       expect(json.headers['content-type']).toContain('application/json')
       expect(json.body).toEqual({ results: [] })
       const csv = await request.get('/api/v1/my/export/rss-feeds?format=csv').expect(200)
       expect(csv.headers['content-type']).toContain('text/csv')
-      for (const query of ['', 'format=xml', 'format=json&format=csv']) {
+      for (const query of ['', 'format=opml']) {
         const opml = await request.get(`/api/v1/my/export/rss-feeds?${query}`).expect(200)
         expect(opml.headers['content-disposition']).toContain('rss-feeds.opml')
       }
     })
 
-    it('answers 204 only to the literal preflight=1', async () => {
+    // Plan #298: format is validated exactly as the client sent it. It used to fall back to OPML.
+    it.each([
+      ['an unknown format', 'format=xml'],
+      ['a wrong-case format', 'format=JSON'],
+      ['an empty format', 'format='],
+      ['a repeated format', 'format=json&format=csv'],
+      ['an unknown format on a preflight', 'format=xml&preflight=1'],
+    ])('answers 422 without exporting for %s', async (_label, query) => {
+      const request = await signedIn()
+      const response = await request.get(`/api/v1/my/export/rss-feeds?${query}`).expect(422)
+      expect(response.text).toContain('Invalid request query')
+      expect(response.headers['content-disposition']).toBeUndefined()
+    })
+
+    it('answers 204 to preflight=1 and 200 when preflight is omitted', async () => {
       const request = await signedIn()
       await request.get('/api/v1/my/export/rss-feeds?preflight=1').expect(204)
-      const response = await request.get('/api/v1/my/export/rss-feeds?preflight=true').expect(200)
+      await request.get('/api/v1/my/export/rss-feeds?format=csv&preflight=1').expect(204)
+      const response = await request.get('/api/v1/my/export/rss-feeds').expect(200)
       expect(response.headers['content-disposition']).toContain('rss-feeds.opml')
+    })
+
+    // Plan #298: preflight used to export for anything other than the literal 1.
+    it.each([
+      ['a truthy word', 'preflight=true'],
+      ['zero', 'preflight=0'],
+      ['an empty value', 'preflight='],
+      ['a repeated value', 'preflight=1&preflight=1'],
+    ])('answers 422 without exporting for preflight as %s', async (_label, query) => {
+      const request = await signedIn()
+      const response = await request.get(`/api/v1/my/export/rss-feeds?${query}`).expect(422)
+      expect(response.text).toContain('Invalid request query')
+      expect(response.headers['content-disposition']).toBeUndefined()
     })
   })
 
   describe('GET /api/v1/my/export/topics', () => {
-    it('keeps the lenient download and preflight switches', async () => {
+    it('streams the bare array for download=1, a results object when download is omitted', async () => {
       const request = await signedIn()
       const bare = await request.get('/api/v1/my/export/topics?download=1').expect(200)
       expect(bare.body).toEqual([])
-      for (const query of ['', 'download=yes', 'download=1&download=2', 'preflight=x']) {
-        const response = await request.get(`/api/v1/my/export/topics?${query}`).expect(200)
-        expect(response.body).toEqual({ results: [] })
-      }
+      const results = await request.get('/api/v1/my/export/topics').expect(200)
+      expect(results.body).toEqual({ results: [] })
+    })
+
+    it('answers 204 to preflight=1 and exports when preflight is omitted', async () => {
+      const request = await signedIn()
       await request.get('/api/v1/my/export/topics?preflight=1').expect(204)
+      await request.get('/api/v1/my/export/topics?download=1&preflight=1').expect(204)
+      await request.get('/api/v1/my/export/topics').expect(200)
+    })
+
+    // Plan #298: download and preflight are validated exactly as the client sent them. Any value
+    // other than the literal 1 used to be ignored.
+    it.each([
+      ['a non-1 download', 'download=yes'],
+      ['an empty download', 'download='],
+      ['a repeated download', 'download=1&download=2'],
+      ['a non-1 preflight', 'preflight=x'],
+      ['an empty preflight', 'preflight='],
+      ['a repeated preflight', 'preflight=1&preflight=1'],
+      ['a bad preflight beside a good download', 'download=1&preflight=true'],
+    ])('answers 422 for %s', async (_label, query) => {
+      const request = await signedIn()
+      const response = await request.get(`/api/v1/my/export/topics?${query}`).expect(422)
+      expect(response.text).toContain('Invalid request query')
     })
   })
 })

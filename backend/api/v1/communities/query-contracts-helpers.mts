@@ -39,7 +39,10 @@ export const communityModerationAnalyticsQuery = defineQueryContract({
 })
 
 export const communityModeratorStatsQuery = defineQueryContract({
-  window: queryEnum(['30', '90']),
+  window: queryEnum(['30', '90'], {
+    default: '30',
+    description: 'Look-back window in days. Omitted means 30; any other value answers 422.',
+  }),
 })
 
 export const communityAutomodActionsQuery = defineQueryContract({

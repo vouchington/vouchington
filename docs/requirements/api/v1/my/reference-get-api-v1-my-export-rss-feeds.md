@@ -4,7 +4,11 @@
 
 Query parameters:
 
-- `format` — `json` or `csv`; omitted or any other value returns OPML XML
+- `format` — `json`, `csv` or `opml`; omitted returns OPML XML. Any other value, or a repeated
+  `format`, answers `422` before the export runs (see
+  [request validation](reference-request-validation.md#query-carriers))
+- `preflight` — `1` answers `204` without a body when the export fits the synchronous limit. Any
+  other value, or a repeated `preflight`, answers `422`
 - `feed_type` — filter by feed type: `article`, `podcast`, `video`, or `mixed` (lowercase); an empty
   value means no filter. Any other value, or a repeated `feed_type`, answers `422` before the export
   runs, with no `Content-Disposition` header (see

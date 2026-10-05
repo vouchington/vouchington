@@ -34,9 +34,9 @@ malformed limit and serves a valid query with `200`.
 
 `GET /api/v1/communities/:idOrSlug/moderation-transparency` returns `422` for an unrecognized
 `range`; omitting it keeps the 30-day default. `GET /api/v1/communities/:idOrSlug/moderation-analytics`
-uses its 30-day default for an omitted or unrecognized range, and
-`GET /api/v1/communities/:idOrSlug/moderator-stats` retains its 30-day default for an unsupported
-window. A supplied moderation-queue `source` outside the supported values returns `422` after the
+uses its 30-day default for an omitted or unrecognized range. `GET /api/v1/communities/:idOrSlug/moderator-stats`
+returns `422` for a `window` other than `30` or `90` after its access checks; omitting it keeps the
+30-day default. A supplied moderation-queue `source` outside the supported values returns `422` after the
 community access check.
 
 ## Community request bodies

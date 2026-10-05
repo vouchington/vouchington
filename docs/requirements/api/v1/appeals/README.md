@@ -21,6 +21,11 @@ Routes for the moderation appeals workflow.
 `mine` values, and keeps the cursor `400`. A fractional `limit` returns `422` (it used to fail with
 `500`). See [Staff and operations validation](../../reference-staff-operations-request-validation.md).
 
+`GET /api/v1/appeals/:id` validates `consistency` for every viewer, before the staff branch: the
+only accepted value is `primary`, and any other value (including an empty or repeated one) returns
+`422`. Only moderation staff get the primary-database read; a non-staff viewer who sends
+`consistency=primary` gets the normal redacted response and the value is otherwise ignored.
+
 Staff mutation responses re-read the canonical full appeal from the primary database after the
 lifecycle change is persisted. Immediate delivery and resolution-draft guards also use the primary
 so an approve-then-send or lifecycle transition cannot observe a lagging replica.

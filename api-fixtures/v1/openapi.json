@@ -30483,6 +30483,7 @@
             }
           },
           {
+            "description": "Set to primary to read the appeal from the primary database. Only moderation staff get the primary read; every viewer must send a valid value, and any other value answers 422.",
             "in": "query",
             "name": "consistency",
             "required": false,
@@ -41858,10 +41859,12 @@
             }
           },
           {
+            "description": "Look-back window in days. Omitted means 30; any other value answers 422.",
             "in": "query",
             "name": "window",
             "required": false,
             "schema": {
+              "default": "30",
               "enum": ["30", "90"],
               "type": "string"
             }
@@ -63228,7 +63231,7 @@
         "operationId": "get_api_v1_my_export_rss-feeds",
         "parameters": [
           {
-            "description": "Only export feeds of this type: article, podcast, video or mixed. An empty value means no filter.",
+            "description": "Only export feeds of this type: article, podcast, video or mixed. An empty value means no filter; any other value answers 422.",
             "in": "query",
             "name": "feed_type",
             "required": false,
@@ -63238,7 +63241,7 @@
             }
           },
           {
-            "description": "Any value other than json or csv exports opml.",
+            "description": "Export format. Omitted means opml; any other value answers 422.",
             "in": "query",
             "name": "format",
             "required": false,
@@ -63249,7 +63252,7 @@
             }
           },
           {
-            "description": "Only the literal 1 answers 204 without a body when the export fits the limit.",
+            "description": "Set to 1 to answer 204 without a body when the export fits the limit, instead of streaming it. Any other value answers 422.",
             "in": "query",
             "name": "preflight",
             "required": false,
@@ -63301,7 +63304,7 @@
         "operationId": "get_api_v1_my_export_topics",
         "parameters": [
           {
-            "description": "Only the literal 1 streams the bare JSON array instead of a results object.",
+            "description": "Set to 1 to stream the bare JSON array instead of a results object. Any other value answers 422.",
             "in": "query",
             "name": "download",
             "required": false,
@@ -63311,7 +63314,7 @@
             }
           },
           {
-            "description": "Only the literal 1 answers 204 without a body when the export fits the limit.",
+            "description": "Set to 1 to answer 204 without a body when the export fits the limit, instead of streaming it. Any other value answers 422.",
             "in": "query",
             "name": "preflight",
             "required": false,

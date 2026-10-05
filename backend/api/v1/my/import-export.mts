@@ -25,21 +25,17 @@ const SYNC_EXPORT_TOO_LARGE_ERROR =
   'Export is too large for a synchronous download. Ask an administrator to adjust user-import-export-config.sync_export_max_items or retry after reducing followed items.'
 
 const PREFLIGHT = queryEnum(['1'], {
-  description: 'Only the literal 1 answers 204 without a body when the export fits the limit.',
+  description:
+    'Set to 1 to answer 204 without a body when the export fits the limit, instead of streaming it. Any other value answers 422.',
 })
 
-// `format` and `preflight` are read leniently: any format other than json or csv exports OPML, and
-// any preflight other than the literal 1 exports. The handler validates the values it settled on,
-// so those two params publish the accepted shape without rejecting input. `feed_type` is the one
-// strict param, because it filters an enum column: an empty value has always meant "no filter", and
-// any other value outside the enum answers 422 instead of a 500 from the database enum cast.
 const rssFeedsExportQuery = defineQueryContract({
   feed_type: queryEnum(VALID_FEED_TYPES, {
     description:
-      'Only export feeds of this type: article, podcast, video or mixed. An empty value means no filter.',
+      'Only export feeds of this type: article, podcast, video or mixed. An empty value means no filter; any other value answers 422.',
   }),
   format: queryEnum(['json', 'csv', 'opml'], {
-    description: 'Any value other than json or csv exports opml.',
+    description: 'Export format. Omitted means opml; any other value answers 422.',
     default: 'opml',
   }),
   preflight: PREFLIGHT,
@@ -47,7 +43,8 @@ const rssFeedsExportQuery = defineQueryContract({
 
 const topicsExportQuery = defineQueryContract({
   download: queryEnum(['1'], {
-    description: 'Only the literal 1 streams the bare JSON array instead of a results object.',
+    description:
+      'Set to 1 to stream the bare JSON array instead of a results object. Any other value answers 422.',
   }),
   preflight: PREFLIGHT,
 })
@@ -56,17 +53,13 @@ app.route('/api/v1/my/export/rss-feeds').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/my/export/rss-feeds', rssFeedsExportQuery)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/export/rss-feeds')
 
-  const format =
-    ctx.query.format === 'json' || ctx.query.format === 'csv' ? ctx.query.format : 'opml'
-  const rawFeedType = ctx.query.feed_type === '' ? undefined : ctx.query.feed_type
   validateRequestContract(ctx, 'GET:/api/v1/my/export/rss-feeds', {
-    query: {
-      format,
-      ...(rawFeedType === undefined ? {} : { feed_type: rawFeedType }),
-      ...(ctx.query.preflight === '1' ? { preflight: '1' } : {}),
-    },
+    query: omitEmptyFeedType(ctx.query),
   })
-  const feedType = rawFeedType as string | undefined
+  const format = (ctx.query.format ?? 'opml') as 'json' | 'csv' | 'opml'
+  const feedType = (ctx.query.feed_type === '' ? undefined : ctx.query.feed_type) as
+    | string
+    | undefined
   const { sync_export_max_items } = getUserImportExportConfig()
   const exceedsMaxItems = await userRssFeedExportExceedsLimit(
     currentUser.id,
@@ -100,12 +93,7 @@ app.route('/api/v1/my/export/rss-feeds').get(async (ctx: Context) => {
 app.route('/api/v1/my/export/topics').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/my/export/topics', topicsExportQuery)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/export/topics')
-  validateRequestContract(ctx, 'GET:/api/v1/my/export/topics', {
-    query: {
-      ...(ctx.query.download === '1' ? { download: '1' } : {}),
-      ...(ctx.query.preflight === '1' ? { preflight: '1' } : {}),
-    },
-  })
+  validateRequestContract(ctx, 'GET:/api/v1/my/export/topics', { query: ctx.query })
   const { sync_export_max_items } = getUserImportExportConfig()
   const exceedsMaxItems = await userTopicExportExceedsLimit(currentUser.id, sync_export_max_items)
   assertSyncExportWithinLimit(ctx, exceedsMaxItems)
@@ -137,4 +125,11 @@ function finishExportPreflight(ctx: Context): boolean {
   if (ctx.query.preflight !== '1') return false
   ctx.setStatus(204)
   return true
+}
+
+// An empty `feed_type` has always meant "no filter", so it is dropped before validation. Every other
+// value and every other param reaches the contract exactly as the client sent it.
+function omitEmptyFeedType(query: Context['query']): Context['query'] {
+  if (query.feed_type !== '') return query
+  return Object.fromEntries(Object.entries(query).filter(([key]) => key !== 'feed_type'))
 }

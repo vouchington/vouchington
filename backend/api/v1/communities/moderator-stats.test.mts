@@ -132,18 +132,43 @@ describe('GET /api/v1/communities/:idOrSlug/moderator-stats', () => {
     expect(res.body.window).toBe(90)
   })
 
-  it('defaults to 30-day window for invalid window param', async () => {
+  it('returns 200 with a 30-day window for window=30 and when window is omitted', async () => {
     const community = await insertTestCommunity({
       createdById: owner.id,
-      name: `Mod Stats Default ${crypto.randomUUID().slice(0, 8)}`,
-      slug: `mod-stats-default-${crypto.randomUUID().slice(0, 8)}`,
+      name: `Mod Stats 30d ${crypto.randomUUID().slice(0, 8)}`,
+      slug: `mod-stats-30d-${crypto.randomUUID().slice(0, 8)}`,
+    })
+    await insertTestCommunityMember({ communityId: community.id, userId: owner.id, role: 'owner' })
+    const request = createRequest()
+    await request.authenticateAs(owner)
+    for (const query of ['', '?window=30']) {
+      const res = await request
+        .get(`/api/v1/communities/${community.slug}/moderator-stats${query}`)
+        .expect(200)
+      expect(res.body.window).toBe(30)
+    }
+  })
+
+  // Plan #298: window is validated exactly as the client sent it. An invalid value used to be
+  // replaced by the 30-day default.
+  it.each([
+    ['a number outside the accepted set', 'window=7'],
+    ['a non-numeric value', 'window=abc'],
+    ['an empty value', 'window='],
+    ['a zero-padded value', 'window=090'],
+    ['a repeated value', 'window=30&window=90'],
+  ])('answers 422 for window as %s', async (_label, query) => {
+    const community = await insertTestCommunity({
+      createdById: owner.id,
+      name: `Mod Stats 422 ${crypto.randomUUID().slice(0, 8)}`,
+      slug: `mod-stats-422-${crypto.randomUUID().slice(0, 8)}`,
     })
     await insertTestCommunityMember({ communityId: community.id, userId: owner.id, role: 'owner' })
     const request = createRequest()
     await request.authenticateAs(owner)
     const res = await request
-      .get(`/api/v1/communities/${community.slug}/moderator-stats?window=7`)
-      .expect(200)
-    expect(res.body.window).toBe(30)
+      .get(`/api/v1/communities/${community.slug}/moderator-stats?${query}`)
+      .expect(422)
+    expect(res.text).toContain('Invalid request query')
   })
 })
