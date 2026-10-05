@@ -13,4 +13,7 @@ Non-JSON request bodies are rejected with `415`; the API is JSON-only as a CSRF 
 The encoded JSON body is limited to 2 MiB and an import may resolve to at most 500 URLs. User-facing
 web and native clients submit `follow: true`. The response identifies the asynchronous import batch;
 clients observe progress through the owner-scoped status endpoint. Stopping a client poller does not
-cancel queued server work. See [Sources and Domains: Import/Export](../../../content/SOURCES-DOMAINS.md#importexport).
+cancel queued server work. A row that creates a new feed casts the importer's automatic +1 vote on
+the feed's topic, as [POST /api/v1/rss-feeds](../rss-feeds/reference-post-api-v1-rss-feeds.md) does;
+an official, system or AI agent account still gets the feed and the follow but no vote, and a row for
+an existing feed only follows it. See [Sources and Domains: Import/Export](../../../content/SOURCES-DOMAINS.md#importexport).

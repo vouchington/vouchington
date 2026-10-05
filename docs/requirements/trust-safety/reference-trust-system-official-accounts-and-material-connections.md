@@ -19,12 +19,13 @@ Staff or other affiliated people may use separate non-role personal accounts for
 | User trust or user-tag votes                      | ❌ Blocked                   | Sentiment / relation |
 | Create/edit community reviews or data points      | ❌ Blocked                   | Sentiment            |
 | Creator auto-positive choice on own post          | ❌ Suppressed                | Sentiment            |
+| Automatic +1 on an RSS feed or instance you add   | ❌ Suppressed                | Sentiment            |
 | Personal referral-link endorsement                | ❌ Blocked                   | Endorsement          |
 | Official Voucha referral link (admin-only)        | ✅ Allowed                   | Platform             |
 | Admin moderation vote                             | ✅ Allowed                   | Internal tooling     |
 | Moderator agent: tag post + move to review queue  | ✅ Allowed                   | Structural           |
 | Following / commenting / reporting                | ✅ Not restricted            | Social               |
 
-The restriction is enforced only at HTTP and authorization guards, not in the service-level relation and vote writers. The [platform-account writer audit](platform-account-writer-audit.md) lists every non-HTTP writer that casts a vote or writes an entity relation as a platform account, whether the restriction applies and why, and the mismatches with this table (M1 is resolved; M2 to M4 remain).
+The restriction is enforced at HTTP and authorization guards and, for topic and post votes, inside the service-level writers: `upsertTopicElectionVotes` and `upsertPostElectionVotes` reject any non-null score from a platform account with `403` (including a neutral `0`) and still accept a clear (`score: null`). Adding an RSS feed or fediverse instance as a platform account creates the source and keeps the RSS follow, but casts no automatic +1 vote. The relation writers have no such check. The [platform-account writer audit](platform-account-writer-audit.md) lists every non-HTTP writer that casts a vote or writes an entity relation as a platform account, whether the restriction applies and why, and the mismatches with this table (M1 to M3 are resolved; M4 remains).
 
 Classifier and AI accounts vote only on entity relations, never on topic or post elections.
