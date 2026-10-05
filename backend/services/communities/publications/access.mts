@@ -39,6 +39,10 @@ export type CommunityPublicationReviewChange = {
   created_at: Date
 }
 
+/**
+ * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/communities/publications/README.md`.
+ */
 export async function getPublicationReviewChanges(
   communityId: string,
   postId: string,

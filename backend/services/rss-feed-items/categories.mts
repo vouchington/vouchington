@@ -191,6 +191,10 @@ async function recordCategoryPublicationChanges(
   ])
 }
 
+/**
+ * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/rss-feed-items/README.md`.
+ */
 export const getRssFeedItemCategories = async (rss_feed_item_id: string) => {
   const { rows } = await read<{
     rss_feed_item_id: string

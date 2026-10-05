@@ -66,6 +66,10 @@ export async function reconcileChildrenForParent(
   )
 }
 
+/**
+ * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/user-referral-program-links/README.md`.
+ */
 export async function getActiveChildUrlIdsForParent(
   parentLinkId: string,
   options?: QueryOptions,

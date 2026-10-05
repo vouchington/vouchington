@@ -83,3 +83,12 @@ The `stripe_events` table and enqueue pipeline are already generic — no additi
 - [Memberships Service](../memberships/README.md)
 - [Memberships Requirements](../../../../requirements/users/memberships.md)
 - [`stripe-events-sqs` worker](../../queues/workers/stripe-events-sqs/README.md)
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `getStripeEventByStripeEventId`
+- `getStripeObjectBoolean`

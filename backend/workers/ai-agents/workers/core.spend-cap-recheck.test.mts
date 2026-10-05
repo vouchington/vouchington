@@ -12,7 +12,6 @@ import { registerSpendCapDelayedJob as registerDelayedJob } from '@services/ai-u
 import { getDayBounds } from '@ts-shared/utils/dates'
 import { processAIAgentWorkerJob } from './core.mts'
 import {
-  getSpendCapRecheckAt,
   processSpendCapRecheckJob,
   registerSpendCapRecheck,
 } from '../processors/spend-cap-recheck.mts'
@@ -269,13 +268,6 @@ describe('AI spend-cap coordinated rechecks', () => {
     expect(dependencies.beginSpendCapDelayedJobRelease).toHaveBeenCalledOnce()
     expect(dependencies.completeSpendCapDelayedJobRelease).toHaveBeenCalledOnce()
     expect(job.moveToDelayed).not.toHaveBeenCalled()
-  })
-
-  it('bounds rechecks at the queried UTC day end', () => {
-    const day = '2026-08-16'
-    const now = Date.parse('2026-08-16T23:59:30.000Z')
-    expect(getSpendCapRecheckAt(day, now)).toBe(getDayBounds(day).endMs)
-    expect(getSpendCapRecheckAt('2026-08-15')).toBe(getDayBounds('2026-08-15').endMs)
   })
 
   it('uses generation-scoped deduplication across the full registry recovery window', () => {

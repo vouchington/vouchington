@@ -12,7 +12,7 @@ import type { PrivateUser } from '@voucha/types/entities/user'
 import type { EntityRelationEntityType, EntityRelationPredicateType } from './config.mts'
 import { getEntityRelationMetadataOrThrow } from './metadata.mts'
 import { getEntityRelations } from './query.mts'
-import { stubUrlGuardsForSuite } from '@voucha/test-helpers/services/entity-relations/test-support'
+import '@voucha/test-helpers/entity-url-guard-registrations'
 import { upsertEntityRelation } from './upsert.mts'
 import {
   ANONYMOUS_ENTITY_RELATION_VIEWER,
@@ -53,8 +53,6 @@ const objectDataKeys = async (tuple: Tuple, subjectId: string, objectId: string)
   Object.keys((await readRelation(tuple, subjectId, objectId))!.object_data).toSorted()
 
 describe('entity relation object projection', () => {
-  stubUrlGuardsForSuite()
-
   let creator: PrivateUser
   let postId: string
   let topicId: string

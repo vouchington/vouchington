@@ -125,3 +125,12 @@ Losing a continuation replays the unchanged checkpoint window through the schedu
   - [`../bedrock-embeddings/README.md`](../bedrock-embeddings/README.md)
   - [`../openai-moderation/README.md`](../openai-moderation/README.md)
   - [`../elections/README.md`](../elections/README.md)
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `enqueueBulkReconcileEntities`
+- `enqueueOnTopicDeleted`

@@ -13,10 +13,8 @@ import {
   acknowledgeEuCopyrightNotice,
   recordEuCopyrightAcknowledgmentFailure,
 } from './eu-acknowledgment.mts'
-import {
-  receiveEuCopyrightNotice,
-  receiveEuCopyrightNoticeInTransaction,
-} from './eu-notice-receipt.mts'
+import { receiveEuCopyrightNotice } from './eu-notice-receipt.mts'
+import { receiveTerritorialCopyrightNoticeInTransaction } from './territorial-notice-receipt.mts'
 import { recordEuCopyrightStatementOfReasons } from './eu-reasons.mts'
 import { recordEuCopyrightRedressDecision, submitEuCopyrightRedress } from './eu-redress.mts'
 import {
@@ -65,8 +63,9 @@ describe('EU copyright notice contracts', () => {
     await withRolledBackTerritorialTransaction(async transaction => {
       await concealJurisdictionPolicyApprovals(transaction, 'eu_dsa', claimant.id)
       await expect(
-        receiveEuCopyrightNoticeInTransaction(
+        receiveTerritorialCopyrightNoticeInTransaction(
           { user: claimant, identity: `user:${claimant.id}` },
+          'eu_dsa',
           crypto.randomUUID(),
           noticeRequest(),
           transaction,
@@ -78,8 +77,9 @@ describe('EU copyright notice contracts', () => {
         `eu-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
         claimant.id,
       )
-      const opened = await receiveEuCopyrightNoticeInTransaction(
+      const opened = await receiveTerritorialCopyrightNoticeInTransaction(
         { user: claimant, identity: `user:${claimant.id}` },
+        'eu_dsa',
         crypto.randomUUID(),
         noticeRequest(),
         transaction,
@@ -87,8 +87,9 @@ describe('EU copyright notice contracts', () => {
       expect(opened.route_destination).toBe('staff_queue')
       await insertJurisdictionPolicyWithdrawal(transaction, approvalId, claimant.id)
       await expect(
-        receiveEuCopyrightNoticeInTransaction(
+        receiveTerritorialCopyrightNoticeInTransaction(
           { user: claimant, identity: `user:${claimant.id}` },
+          'eu_dsa',
           crypto.randomUUID(),
           noticeRequest(),
           transaction,

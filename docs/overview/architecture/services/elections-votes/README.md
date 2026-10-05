@@ -171,3 +171,12 @@ services) can use the shared waiter.
 - [Elections System](../../queues/elections/README.md) — scheduled vote tally refresh and cache invalidation
 - [Vote Integrity Service](../vote-integrity/README.md) — vote manipulation detection
 - [Vote Weight Service](../vote-weight/README.md) — vote weight calculation
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `getAgentModerationElectionById`
+- `getTopicElectionById`

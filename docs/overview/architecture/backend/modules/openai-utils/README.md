@@ -117,3 +117,11 @@ backstop. Both dispatcher profiles retain the API egress guardrail; see
 - OpenAI agents service: [../../services/openai-agents/README.md](../../../services/openai-agents/README.md)
 - Retry policy per workload: [../../agents/_shared/reference-exports.md](../../../ai-agents/_shared/reference-exports.md)
 - Usage ledger: [../../services/ai-usage/README.md](../../../services/ai-usage/README.md)
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `describeOpenAIUpstreamFailure`

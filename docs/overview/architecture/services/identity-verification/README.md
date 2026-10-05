@@ -34,3 +34,11 @@ Manages the paid identity-verification lifecycle via Stripe Identity Verificatio
 - Stripe event wiring: [../stripe-event-processing/](../../../../../backend/services/stripe-event-processing/)
 - Trust-tier integration: [../user-rate-limits/trust-tier.mts](../../../../../backend/services/user-rate-limits/trust-tier.mts)
 - Vote-weight integration: [../vote-weight/calculate.mts](../../../../../backend/services/vote-weight/calculate.mts)
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `currentUserCanUpdateIdentityVerification`

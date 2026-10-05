@@ -24,7 +24,7 @@ import {
   acknowledgePostPublicationDirtyWork,
 } from './dirty-work.mts'
 import { listPublicationCandidates } from './publication-candidates.mts'
-import { retainStoredPublicationIdentities } from './retain-stored-identities.mts'
+import { retainStoredPublicationIdentityPage } from './retain-stored-identities.mts'
 import { acknowledgePostPublicationProjectionReceipts } from './receipts.mts'
 import { runPostPublicationShadowAudit } from './shadow-audit.mts'
 import { reconcilePostPublicationDirtyWork } from './reconcile.mts'
@@ -190,7 +190,18 @@ describe('bounded publication identity snapshots', () => {
     })
     await hardDeleteTestPost(candidate.id)
     await using query = await beginTransaction()
-    await retainStoredPublicationIdentities(query, work.id, candidate.id)
+    const page = await retainStoredPublicationIdentityPage(
+      query,
+      work.id,
+      candidate.id,
+      null,
+      null,
+      2,
+    )
+    expect(page).toMatchObject({
+      complete: true,
+      keys: [{ kind: 'post_slug', textValue: oldSlug }],
+    })
     await query.commit()
     expect(await readTestPublicationRetainedKeys(work.id)).toContainEqual({
       kind: 'identity_post_slug',

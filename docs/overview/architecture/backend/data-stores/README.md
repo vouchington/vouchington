@@ -21,3 +21,11 @@ For connections to close cleanly:
 - PostgreSQL: [psql/README.md](../../../../development/postgresql/README.md)
 - Valkey: [valkey/AGENTS.md](../../../../../backend/data-stores/valkey/AGENTS.md)
 - Backend context: [../AGENTS.md](../../../../../backend/AGENTS.md)
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `extractIndexShapes`

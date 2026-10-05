@@ -19,14 +19,12 @@ import {
 } from '@voucha/test-helpers'
 import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import { entityRelationMetadatum } from '@services/entity-relations/metadata'
-import { stubUrlGuardsForSuite } from '@voucha/test-helpers/services/entity-relations/test-support'
+import '@voucha/test-helpers/entity-url-guard-registrations'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { blockHostname } from './block-hostname.mts'
 import { DEFAULT_PENALTY_MULTIPLIER } from '@services/vote-integrity/config'
 
 describe('block-hostname', () => {
-  stubUrlGuardsForSuite()
-
   const rand = () => randomBytes(6).toString('hex')
 
   function randomHostname() {
@@ -120,7 +118,7 @@ describe('block-hostname', () => {
       const urlObj = await insertTestUrlDirect(creator.id, urlStr)
       expect(urlObj).toBeDefined()
 
-      // We need to bypass the blocked-hostname check since the hostname is not yet blocked
+      // The real guard permits this URL before its hostname is blocked.
       await relatePostToUrl(creator, postId, urlObj!.id)
 
       // Relation should not be deleted yet

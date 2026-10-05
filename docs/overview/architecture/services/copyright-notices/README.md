@@ -184,3 +184,12 @@ and legal lifecycle changes remain. Accepted mail can later bounce, retaining bo
 Form screening keeps its numbered historical execution separately from
 `copyright_notice_form_screening_work_items`; late worker output requires the current token and
 live deadline, and terminal screening removes only current work.
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `authorizeCopyrightGuestCapability`
+- `getCopyrightRepeatInfringerAccount`

@@ -43,3 +43,15 @@ than omitting a selected column.
 - Account-deletion lifecycle: [../../../docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md](../../../../requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md)
 - Durable deletion lifecycle service: [../user-deletions/README.md](../user-deletions/README.md)
 - My service: [../my/README.md](../my/README.md)
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `createPhoneNumberLoginToken`
+- `getUserByPrimaryEmail`
+- `updateUserEmailAddress`
+- `updateUserPhoneNumber`
+- `upsertAdminEmailAddresses`

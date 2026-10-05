@@ -119,3 +119,11 @@ and policy revision. An exact committed replay retains its original audit and re
 refreshing both durable replay boundaries to another 48 hours plus the bounded five-minute
 clock-skew margin from the PostgreSQL clock; mismatched or already expired keys never extend the old
 record.
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `getContributionLimitActionForPostType`

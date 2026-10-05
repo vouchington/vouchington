@@ -27,14 +27,6 @@ export {
   type ImageSurfaceReference,
 } from './surface-lock.mts'
 
-/** Denies the exact current tuple while retaining its stable owner serialization fence. */
-export async function prepublishImageSurfaceDenial(
-  reference: ImageSurfaceReference,
-  query: QueryExecutor,
-): Promise<void> {
-  await prepublishImageSurfaceDenials([reference], query)
-}
-
 export async function prepublishImageSurfaceDenials(
   references: (ImageSurfaceReference & { nextImageId?: string | null })[],
   query: QueryExecutor,

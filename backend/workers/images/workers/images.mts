@@ -10,7 +10,7 @@ type ImagesJobData =
   | {/* cleanup-abandoned-uploads */}
   | { id: string /* extract-metadata, staydown-hash */ }
 
-export async function handleImagesJob(job: Job<ImagesJobData>): Promise<unknown> {
+async function handleImagesJob(job: Job<ImagesJobData>): Promise<unknown> {
   switch (job.name) {
     case 'cleanup-abandoned-uploads':
       return cleanupAbandonedUploads()

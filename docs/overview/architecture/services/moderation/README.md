@@ -68,3 +68,11 @@ The fixed toggle matrix is:
 
 - AI agents system: [../../queues/ai-agents/README.md](../../queues/ai-agents/README.md)
 - Community moderation agent: [../../ai-agents/community-moderation/README.md](../../ai-agents/community-moderation/README.md)
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `searchPostModerationsByAgent`

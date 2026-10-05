@@ -46,3 +46,11 @@ function-level detail `reconcileFollow` calls into.
 
 - Service: [../../services/bluesky-follows](../../../../../backend/services/bluesky-follows)
 - Worker: [../../workers/bluesky-follow-propagation](../../../../../backend/workers/bluesky-follow-propagation)
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `enqueueReconcileBlueskyFollow`

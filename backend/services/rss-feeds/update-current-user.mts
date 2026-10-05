@@ -18,6 +18,10 @@ import { omitStateChanges, type RssFeedStateChange } from './update-state-helper
 import { enqueueEvaluateRssFeedDiscoverability } from '@queues/rss-feed-discoverability/enqueues'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 
+/**
+ * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/rss-feeds/README.md`.
+ */
 export const updateRssFeedByIdAsCurrentUser = async (
   currentUser: PrivateUser,
   id: string,

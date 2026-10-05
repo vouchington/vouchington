@@ -92,3 +92,11 @@ without hiding the original persistence error.
 - `@queues/bluesky-follow-propagation` / `@workers/bluesky-follow-propagation` — the job queue that
   calls `reconcileBlueskyFollow` in response to follow/unfollow relation writes.
 - [docs/overview/architecture/fediverse-federation.md](../../fediverse-federation.md) — Phase D section.
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `hasPendingBlueskyDisconnect`

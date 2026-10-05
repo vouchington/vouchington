@@ -10,6 +10,8 @@ interface ContentItem {
 
 /**
  * Fetches posts by IDs
+ * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/topic-recommendations/README.md`.
  */
 export async function getPosts(ids: string[]): Promise<ContentItem[]> {
   if (ids.length === 0) return []

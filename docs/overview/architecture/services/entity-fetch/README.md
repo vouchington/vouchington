@@ -25,3 +25,14 @@ per-entity election fetches.
 
 - [Entity Cache Service](../entity-cache/README.md)
 - [Search Overview](../../search.md)
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `fetchPostsWithMetadata`
+- `fetchRssFeedItemsWithMetadata`
+- `fetchTopicsWithMetadata`
+- `invalidateAnonymousSearchCaches`

@@ -7,7 +7,7 @@ import {
 } from '@voucha/test-helpers'
 import { createFollowNotification } from '@services/notifications/create-follow-notification'
 import { listAvailableNotificationPushIntents } from './push-intent-recovery.mts'
-import { createNotificationPushIntents } from './push-intents.mts'
+import { ensureNotificationPushIntents } from '@services/notifications'
 
 describe('listAvailableNotificationPushIntents', () => {
   it('rejects a non-positive or non-integer page size', async () => {
@@ -79,7 +79,7 @@ function toCursor(intent: { updated_at: string; user_id: string; notification_id
   }
 }
 
-describe('createNotificationPushIntents', () => {
+describe('ensureNotificationPushIntents', () => {
   it('creates the missing durable intent for a pre-capture notification', async () => {
     const recipient = await createTestUserDirect()
     const notificationId = await createTestPreCaptureNotification(recipient.id)
@@ -97,7 +97,7 @@ describe('createNotificationPushIntents', () => {
 
     async function createPreCaptureNotificationPushIntent(): Promise<number> {
       await using query = await beginTransaction()
-      const result = await createNotificationPushIntents(
+      const result = await ensureNotificationPushIntents(
         [{ userId: recipient.id, notificationId }],
         { query },
       )

@@ -14,6 +14,10 @@ import { getSystemUserByUsername } from '@services/users/system-users'
 
 export type ClearedCategoryTopicMapping = { rss_feed_item_id: string; topic_id: string }
 
+/**
+ * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/rss-feed-items/README.md`.
+ */
 export async function clearCategorizerVotesForUnreferencedCategoryTopicRelations(
   mappings: ClearedCategoryTopicMapping[],
 ): Promise<void> {

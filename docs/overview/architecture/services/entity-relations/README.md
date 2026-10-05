@@ -121,6 +121,12 @@ When a relation write receives `options.query`, the referral guard reads URL row
 
 Story URL projection holds a shared referral-eligibility fence through its in-transaction recheck and relation insert. Mutations to referral rules, program enablement, and validation membership hold the exclusive fence so eligibility and mutation have one database-enforced order.
 
+URL relation tests load the real side-effect registrars through
+`backend/test-helpers/entity-url-guard-registrations.mts`. Registry ownership tests use the same
+registry factories as the production singletons to check missing registration, callback execution,
+and replacement without changing shared guards. See the
+[dependency-inversion registration contract](../README.md#dependency-inversion-registries).
+
 ## Searching
 
 When searching entity relations, you either choose an entity relation and either a subject type/id or an object type/id, but not both.

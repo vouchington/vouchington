@@ -11,10 +11,8 @@ import {
   acknowledgeUkCopyrightNotice,
   recordUkCopyrightAcknowledgmentFailure,
 } from './uk-acknowledgment.mts'
-import {
-  receiveUkCopyrightNotice,
-  receiveUkCopyrightNoticeInTransaction,
-} from './uk-notice-receipt.mts'
+import { receiveUkCopyrightNotice } from './uk-notice-receipt.mts'
+import { receiveTerritorialCopyrightNoticeInTransaction } from './territorial-notice-receipt.mts'
 import { recordUkCopyrightRedressDecision, submitUkCopyrightRedress } from './uk-redress.mts'
 import { recordUkCopyrightReview } from './uk-review.mts'
 import { recordCopyrightJurisdictionPolicyApproval } from './jurisdiction-policy.mts'
@@ -36,8 +34,9 @@ describe('UK copyright notice contracts', () => {
     await withRolledBackTerritorialTransaction(async transaction => {
       await concealJurisdictionPolicyApprovals(transaction, 'uk', claimant.id)
       await expect(
-        receiveUkCopyrightNoticeInTransaction(
+        receiveTerritorialCopyrightNoticeInTransaction(
           { user: claimant, identity: `user:${claimant.id}` },
+          'uk',
           crypto.randomUUID(),
           noticeRequest(),
           transaction,
@@ -49,8 +48,9 @@ describe('UK copyright notice contracts', () => {
         `uk-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
         claimant.id,
       )
-      const opened = await receiveUkCopyrightNoticeInTransaction(
+      const opened = await receiveTerritorialCopyrightNoticeInTransaction(
         { user: claimant, identity: `user:${claimant.id}` },
+        'uk',
         crypto.randomUUID(),
         noticeRequest(),
         transaction,
@@ -58,8 +58,9 @@ describe('UK copyright notice contracts', () => {
       expect(opened.route_destination).toBe('staff_queue')
       await insertJurisdictionPolicyWithdrawal(transaction, approvalId, claimant.id)
       await expect(
-        receiveUkCopyrightNoticeInTransaction(
+        receiveTerritorialCopyrightNoticeInTransaction(
           { user: claimant, identity: `user:${claimant.id}` },
+          'uk',
           crypto.randomUUID(),
           noticeRequest(),
           transaction,

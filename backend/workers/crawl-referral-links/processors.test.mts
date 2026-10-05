@@ -22,8 +22,8 @@ import {
 import {
   handleCrawlReferralLinkError,
   handleCrawlReferralLinkResult,
-  processCrawlReferralLinksJob,
-} from './processors.mts'
+} from './processors/outcomes.mts'
+import { processCrawlReferralLinksJob } from './processors.mts'
 import { setDomainRateLimited } from '@services/crawls/domain-rate-limit'
 import { createCrawl } from '@services/crawls/create'
 import type { CrawlBasic } from '@services/crawls/types'

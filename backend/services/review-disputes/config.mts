@@ -1,5 +1,4 @@
 import {
-  REVIEW_DISPUTE_ACTIONS,
   REVIEW_DISPUTE_REASONS,
   REVIEW_DISPUTE_STATUSES,
   type ReviewDisputeReason,
@@ -9,7 +8,6 @@ import {
 } from '@ts-shared/utils/moderation-catalogs'
 
 export {
-  REVIEW_DISPUTE_ACTIONS,
   REVIEW_DISPUTE_REASONS,
   REVIEW_DISPUTE_STATUSES,
   type ReviewDisputeReason,

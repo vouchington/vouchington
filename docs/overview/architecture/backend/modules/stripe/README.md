@@ -25,3 +25,12 @@ The [durable transition matrix](../../../../../checklists/backend-queues.md#dura
 [Financial (Stripe) variant](../../../../../checklists/reference-financial-stripe-variant.md)
 covers this module's provider-idempotency, receipt-retention, and rolling-compatibility contract in
 full.
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `cancelSubscriptionImmediatelyOperation`
+- `createRefundOperation`

@@ -13,6 +13,7 @@ type RejectedEvidenceTarget = {
 }
 // The evidence transition wins exactly once; its membership change owns the durable
 // entitlement-effect outbox row.
+/** @public #1360: external production use is unconfirmed; may be removed after intended-use review. */
 export async function rejectMembershipProviderEvidence(
   evidenceId: string,
   reason: string,

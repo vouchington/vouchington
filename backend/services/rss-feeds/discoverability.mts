@@ -128,6 +128,11 @@ async function setStateAsSystem(
   await applyCommittedRssFeedStateChangeEffects(input.rssFeedId, result === 'updated', options)
   return result
 }
+/**
+ * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
+ * export may be made private or removed after intended-use review.
+ * Evidence: `docs/overview/architecture/services/rss-feeds/README.md`.
+ */
 export function getLatestDiscoverabilityChange(
   rssFeedId: string,
   options?: QueryOptions,
@@ -135,6 +140,10 @@ export function getLatestDiscoverabilityChange(
   return getLatestChange('discoverability', rssFeedId, options)
 }
 
+/**
+ * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/rss-feeds/README.md`.
+ */
 export function getLatestEnablementChange(
   rssFeedId: string,
   options?: QueryOptions,

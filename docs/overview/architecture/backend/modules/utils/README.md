@@ -40,3 +40,11 @@ All sub-modules are re-exported from the barrel `index.mts`.
 - Shared utilities (Node.js + Workers): [`../../../ts-shared/utils/`](../../../../../../ts-shared/utils/)
 - Shared URL helpers: [`../../../ts-shared/utils/urls.mts`](../../../../../../ts-shared/utils/urls.mts)
 - Runtime timeouts registry: [../../../docs/development/runtime-timeouts.md](../../../../../development/runtime-timeouts.md)
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `getSideloadImageUrlPrefix`

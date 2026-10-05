@@ -26,6 +26,8 @@ import type { IneligibleStripePurchaseOperations } from './reverse-ineligible-st
  * Reverses a paid Stripe subscription that lost the entitlement race. The operation row is
  * committed before Stripe is called, and its deterministic provider idempotency key makes every
  * event retry and concurrent delivery converge on the same cancellation and refund receipts.
+ * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/memberships/README.md`.
  */
 export async function reverseIneligibleStripePurchase(
   options: IneligibleStripePurchase & { operations?: IneligibleStripePurchaseOperations },

@@ -1,5 +1,4 @@
 import {
-  composeQueryContracts as composePlatformQueryContracts,
   defineQueryContract as definePlatformQueryContract,
   queryBoolean as createQueryBoolean,
   queryCsvArray as createQueryCsvArray,
@@ -55,14 +54,6 @@ export function defineQueryContract<const TContract extends QueryContractShape>(
   return definePlatformQueryContract(
     queryContract as QueryContract,
   ) as QueryContractCarrier<TContract>
-}
-
-export function composeQueryContracts<const TSources extends readonly AnyQueryContractCarrier[]>(
-  ...sources: TSources & ValidatedQueryContractCarriers<TSources>
-): QueryContractCarrier<ComposedQueryContract<TSources>> {
-  return composePlatformQueryContracts(...sources) as QueryContractCarrier<
-    ComposedQueryContract<TSources>
-  >
 }
 
 export function withQueryContract<

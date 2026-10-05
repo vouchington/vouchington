@@ -26,6 +26,13 @@ safe.
 
 The processor function `processExtractImageMetadata` is internal to this package. It is not part of the public export map but is accessible via relative import in tests within this package.
 
+## Worker coverage
+
+[`images.real-glide.mock.test.mts`](../../../../../../backend/workers/images/workers/images.real-glide.mock.test.mts)
+enqueues a native cleanup job and checks its persisted result. The parent launches the existing
+isolated database case before importing the worker; the child owns the fresh database and queue
+prefix for the global abandoned-upload sweep.
+
 ## Related
 
 - Shared queue surface (API-safe): [../images/README.md](README.md)

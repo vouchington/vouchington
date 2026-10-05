@@ -110,6 +110,7 @@ export async function checkEmailBloomFilter(domain: string): Promise<boolean | n
  * Only adds items that pass domain format validation.
  * If the filter is absent, addOrThrow() is a no-op and reads keep falling back
  * until a completed rebuild sets the ready marker.
+ * @public #1360: external production use is unconfirmed; may be removed after intended-use review.
  */
 export async function addDomainsToEmailBloomFilter(domains: string[]): Promise<void> {
   const validDomains = domains.flatMap(d => {
@@ -170,6 +171,7 @@ export async function warmUpEmailBlocklistBloomFilter(): Promise<void> {
   })
 }
 
+/** @public #1360: external production use is unconfirmed; may be removed after intended-use review. */
 export async function deleteEmailBloomFilter(): Promise<void> {
   await withBlocklistBloomFilterLock('email-blocklist', () =>
     getEmailBloomFilter().deleteWithAdditionalKeys([BLOOM_READY_KEY]),

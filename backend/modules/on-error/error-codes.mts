@@ -17,6 +17,10 @@ export const ATTESTATION_TIMESTAMP_INVALID = 'ATTESTATION_TIMESTAMP_INVALID'
 export const ATTESTATION_NONCE_REPLAYED = 'ATTESTATION_NONCE_REPLAYED'
 
 // Multi-factor authentication
+/**
+ * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/backend/modules/on-error/README.md`.
+ */
 export const MFA_REQUIRED = 'MFA_REQUIRED'
 export const MFA_REAUTH_REQUIRED = 'MFA_REAUTH_REQUIRED'
 
@@ -45,6 +49,11 @@ export const EMAIL_VERIFICATION_REQUIRED = 'EMAIL_VERIFICATION_REQUIRED'
 export const CONTRIBUTION_QUOTA_EXCEEDED = 'CONTRIBUTION_QUOTA_EXCEEDED'
 export const IDEMPOTENCY_KEY_REUSED = 'IDEMPOTENCY_KEY_REUSED'
 export const CONTRIBUTION_ADMISSION_IN_PROGRESS = 'CONTRIBUTION_ADMISSION_IN_PROGRESS'
+/**
+ * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
+ * export may be made private or removed after intended-use review.
+ * Evidence: `docs/overview/architecture/backend/modules/on-error/README.md`.
+ */
 export const MEMBERSHIP_REQUIRED = 'MEMBERSHIP_REQUIRED'
 
 // Tag limits

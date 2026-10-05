@@ -7,13 +7,3 @@ export function isHighTrustUser(currentUser: PrivateUser | null): boolean {
   if (!currentUser) return false
   return currentUser.roles.includes('administrator')
 }
-
-export function currentUserCanViewRecaptchaConfig(currentUser: PrivateUser | null): boolean {
-  if (!currentUser) return false
-  return currentUser.roles.includes('administrator')
-}
-
-export function currentUserCanUpdateRecaptchaConfig(currentUser: PrivateUser | null): boolean {
-  if (!currentUser) return false
-  return currentUser.roles.includes('administrator')
-}

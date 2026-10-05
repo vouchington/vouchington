@@ -9,6 +9,10 @@ files that fit the native library's 10 MiB aggregate input cap. Native extractio
 process, and only that selected corpus is materialized for the current buffer-only Vurst API. Every
 downloaded artifact is removed after success, skip, or failure.
 
+The actual processor imports UTF-8 validation and byte-budget selection from
+[`html-file-selection.mts`](../../../../../../backend/workers/crawl-boilerplate-removal/processors/html-file-selection.mts).
+`processors.mts` retains native extraction serialization and the persisted result/cleanup pipeline.
+
 ## Exports
 
 - `boilerplateRemoval` - worker instance for the `crawl_html_boilerplate_removal` queue.

@@ -212,7 +212,7 @@ applies both without allowing either transformation to overwrite the other.
 
 Scrubbing strips query strings, not path segments, so a request whose URL path is itself the
 credential must not be traced at all. The Grafana IRM heartbeat (`GRAFANA_IRM_HEARTBEAT_URL`) is the
-one such request: `sendGrafanaHeartbeat` in `backend/entrypoints/worker-cpu/grafana-heartbeat.mts`
+one such request: `sendGrafanaHeartbeat` in `backend/entrypoints/worker-cpu/grafana-heartbeat-request.mts`
 runs it inside `suppressSentryTracing` (from `@modules/on-error`) and OpenTelemetry's
 `suppressTracing`. Both are required: Sentry v11 instruments `fetch` and `http` natively and honors
 only its own scope-based suppression, so OpenTelemetry's context key alone does not keep `url.full`

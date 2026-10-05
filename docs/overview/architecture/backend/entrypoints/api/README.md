@@ -10,6 +10,8 @@ Starts the backend HTTP API process, applies request context/rate-limit/error ha
 - `serve.mts` - process startup entry point.
 - `migrate.mts` - one-off schema migration entry point used by the deployment workflow.
 - `verify-ipv6-egress.mts` - one-off IPv6 egress verification entry point.
+- `verify-ipv6-egress-checks.mts` - diagnostic orchestration and independent evidence sections.
+- `verify-ipv6-egress-host-checks.mts` - actual host inventory, OS route evidence, DNS and TLS checks.
 - `valkey-admin.mts` - deployed, curated Valkey diagnosis and scoped recovery entry point.
 - `context/` - request context helpers.
 - `infra/` - infrastructure endpoints mounted outside the versioned API route docs.
@@ -60,3 +62,14 @@ The command exposes no arbitrary Valkey command or pattern surface. Operators mu
 - API routes: [../../api/README.md](../../../../../requirements/api/README.md)
 - Local entrypoint rules: [AGENTS.md](../../../../../../backend/entrypoints/api/AGENTS.md)
 - Valkey admin service: [../../services/valkey-admin/README.md](../../../services/valkey-admin/README.md)
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+The exported name is retained only as an external surface: its same-file production implementation and
+current default callers remain required.
+
+- `createIsAdminDashboardRequest`

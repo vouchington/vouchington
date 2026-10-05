@@ -10,17 +10,13 @@ export type PostRelatedUrlsGuard = (
   options?: QueryOptions,
 ) => Promise<void>
 
-let registeredGuard: PostRelatedUrlsGuard | null = null
+const postRelatedUrlsGuardRegistry = createPostRelatedUrlsGuardRegistry()
 
 // @services/posts registers its guard here as a side effect of module load
 // (see backend/services/posts/register-post-related-urls-guard.mts) so entity-relations never
 // imports posts or communities directly.
 export function registerPostRelatedUrlsGuard(guard: PostRelatedUrlsGuard): void {
-  registeredGuard = guard
-}
-
-export function unregisterPostRelatedUrlsGuardForTest(): void {
-  registeredGuard = null
+  postRelatedUrlsGuardRegistry.registerPostRelatedUrlsGuard(guard)
 }
 
 // Internal to entity-relations: only assert-post-related-urls-allowed.mts should call this.
@@ -28,12 +24,26 @@ export function unregisterPostRelatedUrlsGuardForTest(): void {
 // restriction check when the registration above never ran (e.g. a missing side-effect import
 // at process boot).
 export function getRegisteredPostRelatedUrlsGuard(): PostRelatedUrlsGuard {
-  if (!registeredGuard) {
-    throw createCodedError(
-      500,
-      'No post-related-urls guard registered for entity relations; @services/posts must be imported for side effects before post/url relation writes occur',
-      ENTITY_RELATION_POST_RELATED_URLS_GUARD_UNREGISTERED,
-    )
+  return postRelatedUrlsGuardRegistry.getRegisteredPostRelatedUrlsGuard()
+}
+
+export function createPostRelatedUrlsGuardRegistry() {
+  let registeredGuard: PostRelatedUrlsGuard | null = null
+
+  function registerPostRelatedUrlsGuard(guard: PostRelatedUrlsGuard): void {
+    registeredGuard = guard
   }
-  return registeredGuard
+
+  function getRegisteredPostRelatedUrlsGuard(): PostRelatedUrlsGuard {
+    if (!registeredGuard) {
+      throw createCodedError(
+        500,
+        'No post-related-urls guard registered for entity relations; @services/posts must be imported for side effects before post/url relation writes occur',
+        ENTITY_RELATION_POST_RELATED_URLS_GUARD_UNREGISTERED,
+      )
+    }
+    return registeredGuard
+  }
+
+  return { registerPostRelatedUrlsGuard, getRegisteredPostRelatedUrlsGuard }
 }

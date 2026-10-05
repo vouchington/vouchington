@@ -1,20 +1,8 @@
 import { Batch } from '@valkey/valkey-glide'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
 import { getJwtRevokedKey, getJwtUserRevokedBeforeKey } from './constants.mts'
-import { revokeSession } from './user-session-revocation.mts'
 
 export { revokeSession } from './user-session-revocation.mts'
-
-/**
- * Revoke a session by session ID. Called on logout.
- * Revocation is enforced by request context for uid-bearing sessions and on the warm/cold
- * paths in refreshSessionState (PATCH /api/v1/session) and uid-bearing resetSessionState
- * (DELETE /api/v1/session).
- * The revocation key expires after the longest supported session lifetime.
- */
-export async function revokeSessions(sids: readonly string[]): Promise<void> {
-  await Promise.all(sids.map(sid => revokeSession(sid)))
-}
 
 /** Returns true if the session has been revoked. */
 export async function isSessionRevoked(

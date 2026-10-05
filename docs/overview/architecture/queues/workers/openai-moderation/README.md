@@ -8,6 +8,12 @@ Worker package for OpenAI moderation jobs.
 
 - `openai_moderation_omni_single` - worker instance for the `openai_moderation_omni_single` queue.
 
+The default instance uses
+[`createOpenAIModerationOmniSingleWorker`](../../../../../../backend/workers/openai-moderation/processors/create-omni-single-worker.mts).
+Each instance supplies itself to the existing processor's rate-limit handling. The native queue
+[test](../../../../../../backend/workers/openai-moderation/workers/openai_moderation_omni_single.real-glide.mock.test.mts)
+uses an owned prefix and verifies the persisted failure for an image job without an id.
+
 ## CSAM quarantine transfer
 
 `reconcile_image_quarantines` runs once a minute with one queue attempt. PostgreSQL is the source

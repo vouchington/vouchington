@@ -14,3 +14,11 @@ treating a uid-bearing session as logged in.
 - <a id="api"></a>[API](reference-api.md)
 - <a id="notes"></a>[Notes](reference-notes.md)
 - <a id="related"></a>[Related](reference-related.md)
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `touchAuthenticatedSession`

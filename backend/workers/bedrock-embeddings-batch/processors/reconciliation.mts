@@ -7,18 +7,7 @@ import {
   enqueueReconcileExistingEmbeddings,
 } from '@queues/bedrock-embeddings-batch/enqueues'
 import type { ReconciliationEntityType } from '@queues/bedrock-embeddings-batch/types'
-
-type ReconciliationPage = { nextCursor: string | null }
-
-export async function processReconciliationPage<TPage extends ReconciliationPage>(
-  after: string | undefined,
-  readPage: (after?: string) => Promise<TPage>,
-  enqueueContinuation: (after: string) => unknown | Promise<unknown>,
-): Promise<TPage> {
-  const page = await readPage(after)
-  if (page.nextCursor !== null) await enqueueContinuation(page.nextCursor)
-  return page
-}
+import { processReconciliationPage, type ReconciliationPage } from './reconciliation-page.mts'
 
 export function processExistingEmbeddingReconciliation(
   entityType: ReconciliationEntityType,

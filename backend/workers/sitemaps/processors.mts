@@ -30,6 +30,11 @@ type UpdatePostDaySitemapDependencies = {
   invalidateSitemaps: typeof invalidate.sitemaps
 }
 
+/**
+ * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
+ * export may be made private or removed after intended-use review.
+ * Evidence: `docs/overview/architecture/queues/workers/sitemaps/README.md`.
+ */
 export const updatePostDaySitemapDependencies: UpdatePostDaySitemapDependencies = {
   generatePostDaySitemapFiles,
   enqueueUpdatePostTypeIndex,
@@ -47,6 +52,10 @@ type UpdateSitemapIndexDependencies = {
   invalidateSitemaps: typeof invalidate.sitemaps
 }
 
+/**
+ * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/queues/workers/sitemaps/README.md`.
+ */
 export const updateSitemapIndexDependencies: UpdateSitemapIndexDependencies = {
   generatePostTypeIndex,
   generatePostsIndex,
@@ -56,6 +65,11 @@ export const updateSitemapIndexDependencies: UpdateSitemapIndexDependencies = {
   invalidateSitemaps: invalidate.sitemaps,
 }
 
+/**
+ * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
+ * export may be made private or removed after intended-use review.
+ * Evidence: `docs/overview/architecture/queues/workers/sitemaps/README.md`.
+ */
 export const backfillDispatcherDependencies = {
   enqueueBulkUpdatePostDaySitemaps,
   enqueueUpdateFamilySitemap,

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { sendGrafanaHeartbeat, startGrafanaHeartbeat } from './grafana-heartbeat.mts'
+import { startGrafanaHeartbeat } from './grafana-heartbeat.mts'
+import { sendGrafanaHeartbeat } from './grafana-heartbeat-request.mts'
 
 const HEARTBEAT_URL =
   'https://oncall-prod-us-central-0.grafana.net/oncall/integrations/v1/formatted_webhook/token/heartbeat/'

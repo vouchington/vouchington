@@ -1,13 +1,27 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
+import { createTestUser } from '@voucha/test-helpers'
 import {
   ENTITY_RELATION_BLOCKED_HOSTNAME_GUARD_UNREGISTERED,
   ENTITY_RELATION_BOOKMARK_BLOOM_HANDLER_UNREGISTERED,
   ENTITY_RELATION_POST_RELATED_URLS_GUARD_UNREGISTERED,
   ENTITY_RELATION_REFERRAL_LINK_GUARD_UNREGISTERED,
 } from '@modules/on-error/error-codes'
-import type { BlockedHostnameGuard } from './blocked-hostname-guard-registry.mts'
-import type { PostRelatedUrlsGuard } from './post-related-urls-guard-registry.mts'
-import type { ReferralLinkGuard } from './referral-link-guard-registry.mts'
+import {
+  createBlockedHostnameGuardRegistry,
+  type BlockedHostnameGuard,
+} from './blocked-hostname-guard-registry.mts'
+import {
+  createBookmarkBloomHandlerRegistry,
+  type BookmarkBloomHandler,
+} from './bookmark-bloom-handler-registry.mts'
+import {
+  createPostRelatedUrlsGuardRegistry,
+  type PostRelatedUrlsGuard,
+} from './post-related-urls-guard-registry.mts'
+import {
+  createReferralLinkGuardRegistry,
+  type ReferralLinkGuard,
+} from './referral-link-guard-registry.mts'
 
 function expectCodedError(fn: () => unknown, code: string) {
   let caughtError: unknown
@@ -17,127 +31,124 @@ function expectCodedError(fn: () => unknown, code: string) {
     caughtError = err
   }
   expect(caughtError).toBeInstanceOf(Error)
-  expect((caughtError as { status?: number }).status).toBe(500)
-  expect((caughtError as { code?: string }).code).toBe(code)
+  expect(caughtError).toMatchObject({ status: 500, code })
 }
 
 describe('entity-relations guard registries', () => {
-  it('blocked-hostname getter throws a coded error when unregistered', async () => {
-    vi.resetModules()
-    const { getRegisteredBlockedHostnameGuard } =
-      await import('./blocked-hostname-guard-registry.mts')
+  it('blocked-hostname getter throws a coded error when unregistered', () => {
+    const registry = createBlockedHostnameGuardRegistry()
     expectCodedError(
-      () => getRegisteredBlockedHostnameGuard(),
+      () => registry.getRegisteredBlockedHostnameGuard(),
       ENTITY_RELATION_BLOCKED_HOSTNAME_GUARD_UNREGISTERED,
     )
   })
 
-  it('bookmark-bloom getter throws a coded error when unregistered', async () => {
-    vi.resetModules()
-    const { getRegisteredBookmarkBloomHandler } =
-      await import('./bookmark-bloom-handler-registry.mts')
+  it('bookmark-bloom getter throws a coded error when unregistered', () => {
+    const registry = createBookmarkBloomHandlerRegistry()
     expectCodedError(
-      () => getRegisteredBookmarkBloomHandler(),
+      () => registry.getRegisteredBookmarkBloomHandler(),
       ENTITY_RELATION_BOOKMARK_BLOOM_HANDLER_UNREGISTERED,
     )
   })
 
-  it('post-related-urls getter throws a coded error when unregistered', async () => {
-    vi.resetModules()
-    const { getRegisteredPostRelatedUrlsGuard } =
-      await import('./post-related-urls-guard-registry.mts')
+  it('post-related-urls getter throws a coded error when unregistered', () => {
+    const registry = createPostRelatedUrlsGuardRegistry()
     expectCodedError(
-      () => getRegisteredPostRelatedUrlsGuard(),
+      () => registry.getRegisteredPostRelatedUrlsGuard(),
       ENTITY_RELATION_POST_RELATED_URLS_GUARD_UNREGISTERED,
     )
   })
 
-  it('referral-link getter throws a coded error when unregistered', async () => {
-    vi.resetModules()
-    const { getRegisteredReferralLinkGuard } = await import('./referral-link-guard-registry.mts')
+  it('referral-link getter throws a coded error when unregistered', () => {
+    const registry = createReferralLinkGuardRegistry()
     expectCodedError(
-      () => getRegisteredReferralLinkGuard(),
+      () => registry.getRegisteredReferralLinkGuard(),
       ENTITY_RELATION_REFERRAL_LINK_GUARD_UNREGISTERED,
     )
   })
 
-  it('test url guard stubs restore unregistered registries', async () => {
-    vi.resetModules()
-    const [
-      { getRegisteredBlockedHostnameGuard },
-      { getRegisteredPostRelatedUrlsGuard },
-      { getRegisteredReferralLinkGuard },
-      { stubUrlGuardsForTest },
-    ] = await Promise.all([
-      import('./blocked-hostname-guard-registry.mts'),
-      import('./post-related-urls-guard-registry.mts'),
-      import('./referral-link-guard-registry.mts'),
-      import('@voucha/test-helpers/services/entity-relations/test-support'),
-    ])
-
-    const restoreUrlGuards = stubUrlGuardsForTest()
-
-    expect(getRegisteredBlockedHostnameGuard()).toBeTypeOf('function')
-    expect(getRegisteredPostRelatedUrlsGuard()).toBeTypeOf('function')
-    expect(getRegisteredReferralLinkGuard()).toBeTypeOf('function')
-
-    restoreUrlGuards()
-
+  it('executes and replaces an owned blocked-hostname callback without sharing registration', async () => {
+    const registry = createBlockedHostnameGuardRegistry()
+    const firstCalls: Parameters<BlockedHostnameGuard>[] = []
+    const replacementCalls: Parameters<BlockedHostnameGuard>[] = []
+    registry.registerBlockedHostnameGuard(async (...args) => {
+      firstCalls.push(args)
+    })
+    await registry.getRegisteredBlockedHostnameGuard()(['url-1'], 'user-1')
+    registry.registerBlockedHostnameGuard(async (...args) => {
+      replacementCalls.push(args)
+    })
+    await registry.getRegisteredBlockedHostnameGuard()(['url-2'], null)
+    expect(firstCalls).toEqual([[['url-1'], 'user-1']])
+    expect(replacementCalls).toEqual([[['url-2'], null]])
     expectCodedError(
-      () => getRegisteredBlockedHostnameGuard(),
+      () => createBlockedHostnameGuardRegistry().getRegisteredBlockedHostnameGuard(),
       ENTITY_RELATION_BLOCKED_HOSTNAME_GUARD_UNREGISTERED,
     )
+  })
+
+  it('executes and replaces an owned bookmark callback without sharing registration', async () => {
+    const registry = createBookmarkBloomHandlerRegistry()
+    const firstCalls: Parameters<BookmarkBloomHandler>[] = []
+    const replacementCalls: Parameters<BookmarkBloomHandler>[] = []
+    registry.registerBookmarkBloomHandler(async (...args) => {
+      firstCalls.push(args)
+    })
+    await registry.getRegisteredBookmarkBloomHandler()('user-1', 'bookmarks', ['url-1'])
+    registry.registerBookmarkBloomHandler(async (...args) => {
+      replacementCalls.push(args)
+    })
+    await registry.getRegisteredBookmarkBloomHandler()('user-2', 'bookmarks', ['url-2'])
+    expect(firstCalls).toEqual([['user-1', 'bookmarks', ['url-1']]])
+    expect(replacementCalls).toEqual([['user-2', 'bookmarks', ['url-2']]])
     expectCodedError(
-      () => getRegisteredPostRelatedUrlsGuard(),
-      ENTITY_RELATION_POST_RELATED_URLS_GUARD_UNREGISTERED,
-    )
-    expectCodedError(
-      () => getRegisteredReferralLinkGuard(),
-      ENTITY_RELATION_REFERRAL_LINK_GUARD_UNREGISTERED,
+      () => createBookmarkBloomHandlerRegistry().getRegisteredBookmarkBloomHandler(),
+      ENTITY_RELATION_BOOKMARK_BLOOM_HANDLER_UNREGISTERED,
     )
   })
 
-  it('test url guard stubs restore previously registered guards', async () => {
-    vi.resetModules()
-    const [
-      blockedHostnameRegistry,
-      postRelatedUrlsRegistry,
-      referralLinkRegistry,
-      { stubUrlGuardsForTest },
-    ] = await Promise.all([
-      import('./blocked-hostname-guard-registry.mts'),
-      import('./post-related-urls-guard-registry.mts'),
-      import('./referral-link-guard-registry.mts'),
-      import('@voucha/test-helpers/services/entity-relations/test-support'),
-    ])
-    const blockedHostnameGuard = vi.fn<BlockedHostnameGuard>()
-    const postRelatedUrlsGuard = vi.fn<PostRelatedUrlsGuard>()
-    const referralLinkGuard = vi.fn<ReferralLinkGuard>()
+  it('executes and replaces an owned post-related-urls callback without sharing registration', async () => {
+    const registry = createPostRelatedUrlsGuardRegistry()
+    const creator = await createTestUser()
+    const options = {}
+    const firstCalls: Parameters<PostRelatedUrlsGuard>[] = []
+    const replacementCalls: Parameters<PostRelatedUrlsGuard>[] = []
+    registry.registerPostRelatedUrlsGuard(async (...args) => {
+      firstCalls.push(args)
+    })
+    await registry.getRegisteredPostRelatedUrlsGuard()(creator, 'post-1', ['url-1'], options)
+    registry.registerPostRelatedUrlsGuard(async (...args) => {
+      replacementCalls.push(args)
+    })
+    await registry.getRegisteredPostRelatedUrlsGuard()(creator, 'post-2', ['url-2'])
+    expect(firstCalls).toEqual([[creator, 'post-1', ['url-1'], options]])
+    expect(firstCalls[0]?.[3]).toBe(options)
+    expect(replacementCalls).toEqual([[creator, 'post-2', ['url-2']]])
+    expectCodedError(
+      () => createPostRelatedUrlsGuardRegistry().getRegisteredPostRelatedUrlsGuard(),
+      ENTITY_RELATION_POST_RELATED_URLS_GUARD_UNREGISTERED,
+    )
+  })
 
-    blockedHostnameRegistry.registerBlockedHostnameGuard(blockedHostnameGuard)
-    postRelatedUrlsRegistry.registerPostRelatedUrlsGuard(postRelatedUrlsGuard)
-    referralLinkRegistry.registerReferralLinkGuard(referralLinkGuard)
-
-    try {
-      const restoreUrlGuards = stubUrlGuardsForTest()
-
-      expect(blockedHostnameRegistry.getRegisteredBlockedHostnameGuard()).not.toBe(
-        blockedHostnameGuard,
-      )
-      expect(postRelatedUrlsRegistry.getRegisteredPostRelatedUrlsGuard()).not.toBe(
-        postRelatedUrlsGuard,
-      )
-      expect(referralLinkRegistry.getRegisteredReferralLinkGuard()).not.toBe(referralLinkGuard)
-
-      restoreUrlGuards()
-
-      expect(blockedHostnameRegistry.getRegisteredBlockedHostnameGuard()).toBe(blockedHostnameGuard)
-      expect(postRelatedUrlsRegistry.getRegisteredPostRelatedUrlsGuard()).toBe(postRelatedUrlsGuard)
-      expect(referralLinkRegistry.getRegisteredReferralLinkGuard()).toBe(referralLinkGuard)
-    } finally {
-      blockedHostnameRegistry.unregisterBlockedHostnameGuardForTest()
-      postRelatedUrlsRegistry.unregisterPostRelatedUrlsGuardForTest()
-      referralLinkRegistry.unregisterReferralLinkGuardForTest()
-    }
+  it('executes and replaces an owned referral-link callback without sharing registration', async () => {
+    const registry = createReferralLinkGuardRegistry()
+    const options = {}
+    const firstCalls: Parameters<ReferralLinkGuard>[] = []
+    const replacementCalls: Parameters<ReferralLinkGuard>[] = []
+    registry.registerReferralLinkGuard(async (...args) => {
+      firstCalls.push(args)
+    })
+    await registry.getRegisteredReferralLinkGuard()(['url-1'], 'user-1', options)
+    registry.registerReferralLinkGuard(async (...args) => {
+      replacementCalls.push(args)
+    })
+    await registry.getRegisteredReferralLinkGuard()(['url-2'], null)
+    expect(firstCalls).toEqual([[['url-1'], 'user-1', options]])
+    expect(firstCalls[0]?.[2]).toBe(options)
+    expect(replacementCalls).toEqual([[['url-2'], null]])
+    expectCodedError(
+      () => createReferralLinkGuardRegistry().getRegisteredReferralLinkGuard(),
+      ENTITY_RELATION_REFERRAL_LINK_GUARD_UNREGISTERED,
+    )
   })
 })

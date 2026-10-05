@@ -38,6 +38,8 @@ type ParsedIndexStmt = Extract<
  * would mask a malformed generator as a passing check.
  *
  * Requires loadSqlParserModule() from sql-statements.mts to have resolved before the first call.
+ * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/backend/data-stores/README.md`.
  */
 export function extractIndexShapes(
   sql: string,

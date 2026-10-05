@@ -1,4 +1,3 @@
-import { getPostPublicationWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { PublicationSnapshotKey } from './identity-source.mts'
@@ -6,32 +5,6 @@ import type { PublicationIdentitySourcePage } from './identity-source-paging.mts
 import { retainSnapshotPage } from './snapshot-key-writes.mts'
 import { publicationSnapshotKeyPageSql } from './snapshot-key-pages.mts'
 import { publicationPageLimit } from './page-limit.mts'
-
-export async function retainStoredPublicationIdentities(
-  query: TransactionQuery,
-  dirtyWorkId: string,
-  postId: string,
-): Promise<void> {
-  const POST_PUBLICATION_IDENTITY_SNAPSHOT_PAGE_SIZE = getPostPublicationWorkLimit(
-    'identity_snapshot_page_size',
-  )
-  let kind: string | null = null
-  let value: string | null = null
-  while (true) {
-    // oxlint-disable-next-line no-await-in-loop -- native receipt pages commit with disappearing sources.
-    const page = await retainStoredPublicationIdentityPage(
-      query,
-      dirtyWorkId,
-      postId,
-      kind,
-      value,
-      POST_PUBLICATION_IDENTITY_SNAPSHOT_PAGE_SIZE,
-    )
-    if (page.complete) return
-    kind = page.cursorKind
-    value = page.cursorValue
-  }
-}
 
 export async function retainStoredPublicationIdentityPage(
   query: TransactionQuery,

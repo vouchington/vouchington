@@ -1,19 +1,10 @@
-import { write, type QueryOptions } from '@data-stores/psql'
-import { ensureNotificationPushIntents, type NotificationPushInput } from '@services/notifications'
+import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export type NotificationPushIntent = {
   user_id: string
   notification_id: string
   lease_token: string
-}
-
-/** Ensures replayed pre-capture notifications enter the durable delivery path. */
-export async function createNotificationPushIntents(
-  notifications: NotificationPushInput[],
-  options: QueryOptions = {},
-): Promise<number> {
-  return ensureNotificationPushIntents(notifications, options)
 }
 
 export async function claimNotificationPushIntent(

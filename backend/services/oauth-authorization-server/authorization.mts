@@ -51,6 +51,7 @@ type AuthorizationRequestRow = {
   metadata_url: string | null
 }
 
+/** @public #1360: external production use is unconfirmed; may be removed after intended-use review. */
 export async function beginOAuthAuthorizationRequest(
   input: {
     deviceId: string
