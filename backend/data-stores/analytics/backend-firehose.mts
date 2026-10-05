@@ -1,10 +1,5 @@
-/* oxlint-disable eslint/max-lines -- Firehose buffering, batching, retry, and test hooks share one in-process queue. */
 import onError from '@modules/on-error'
-import {
-  putFirehoseRecordBatch,
-  type PutRecordBatchCommandInput,
-  type PutRecordBatchCommandOutput,
-} from '@modules/aws/firehose'
+import { putFirehoseRecordBatch } from '@modules/aws/firehose'
 import { getAnalyticsFirehoseStreamName } from './config.mts'
 import type { AnalyticsTableName, AnalyticsTableRegistry } from './tables.mts'
 
@@ -21,15 +16,10 @@ interface BufferedRecord {
 
 const encoder = new TextEncoder()
 const buffer: BufferedRecord[] = []
-let sendFirehoseRecordBatch: (
-  input: PutRecordBatchCommandInput,
-) => Promise<PutRecordBatchCommandOutput> = putFirehoseRecordBatch
 let bufferedBytes = 0
 let flushTimer: ReturnType<typeof setTimeout> | null = null
 let isFlushing = false
 let activeFlushPromise: Promise<void> | null = null
-let retryDelayMs = RETRY_DELAY_MS
-let waitBeforeRetry = delay
 
 function firehoseError(message: string): Error {
   const error = new Error(message)
@@ -86,32 +76,6 @@ export async function flush(): Promise<void> {
   activeFlushPromise = flushBufferedRecords()
 
   await activeFlushPromise
-}
-
-export function setFirehoseRecordBatchSenderForTest(
-  sender: (input: PutRecordBatchCommandInput) => Promise<PutRecordBatchCommandOutput>,
-): () => void {
-  const previousSender = sendFirehoseRecordBatch
-  sendFirehoseRecordBatch = sender
-  return () => {
-    sendFirehoseRecordBatch = previousSender
-  }
-}
-
-export function setFirehoseRetryDelayForTest(delayMs: number): () => void {
-  const previousDelayMs = retryDelayMs
-  retryDelayMs = delayMs
-  return () => {
-    retryDelayMs = previousDelayMs
-  }
-}
-
-export function setFirehoseRetryWaitForTest(wait: (delayMs: number) => Promise<void>): () => void {
-  const previousWait = waitBeforeRetry
-  waitBeforeRetry = wait
-  return () => {
-    waitBeforeRetry = previousWait
-  }
 }
 
 async function flushBufferedRecords(): Promise<void> {
@@ -179,7 +143,7 @@ async function sendBatch(streamName: string, records: BufferedRecord[]): Promise
   const failedRecords = await sendBatchOnce(streamName, records)
   if (failedRecords.length === 0) return
 
-  await waitBeforeRetry(retryDelayMs)
+  await delay(RETRY_DELAY_MS)
   const retryFailedRecords = await sendBatchOnce(streamName, failedRecords)
   if (retryFailedRecords.length > 0) {
     onError(
@@ -197,7 +161,7 @@ async function delay(delayMs: number): Promise<void> {
 
 async function sendBatchOnce(streamName: string, records: BufferedRecord[]) {
   try {
-    const output = await sendFirehoseRecordBatch({
+    const output = await putFirehoseRecordBatch({
       DeliveryStreamName: streamName,
       Records: records.map(record => ({ Data: record.data })),
     })

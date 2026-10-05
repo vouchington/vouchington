@@ -30,11 +30,6 @@ export function registerPsqlPoolMetricsForTestEnvironment(
   return true
 }
 
-export function getExistingPsqlPoolMetrics(): PsqlPoolMetrics | null {
-  const target = globalThis as typeof globalThis & Partial<Record<symbol, PsqlPoolMetricsProvider>>
-  return target[psqlPoolMetricsKey()]?.() ?? null
-}
-
 type PsqlPools = {
   write: pg.Pool
   read: pg.Pool

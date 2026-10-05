@@ -4,9 +4,10 @@ import os from 'node:os'
 
 import path from 'node:path'
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest'
 
 import type { PutRecordBatchCommandInput, PutRecordBatchCommandOutput } from '@modules/aws/firehose'
+import * as firehoseProvider from '@modules/aws/firehose'
 
 import { emit } from '../emit.mts'
 
@@ -14,14 +15,7 @@ import { onGracefulShutdown } from '../graceful-shutdown.mts'
 
 import { writeRecord as writeLocalRecord } from '../backend-local.mts'
 import { suppressedError } from '../../../test-helpers/data-stores/analytics/suppressed-error.mts'
-
-import {
-  flush,
-  setFirehoseRecordBatchSenderForTest,
-  setFirehoseRetryDelayForTest,
-  setFirehoseRetryWaitForTest,
-  writeRecord,
-} from '../backend-firehose.mts'
+import { flush, writeRecord } from '../backend-firehose.mts'
 
 type PutBatch = (input: PutRecordBatchCommandInput) => Promise<PutRecordBatchCommandOutput>
 
@@ -32,38 +26,33 @@ describe('backend-firehose', () => {
 
   const originalPrefix = process.env.ANALYTICS_FIREHOSE_PREFIX
 
-  let restoreSender: (() => void) | undefined
-
-  let restoreRetryDelay: (() => void) | undefined
-
-  let restoreRetryWait: (() => void) | undefined
-
   let calls: PutRecordBatchCommandInput[]
 
   let responses: Array<PutRecordBatchCommandOutput | Error>
+
+  let firehoseSender: MockInstance<PutBatch>
 
   beforeEach(async () => {
     process.env.ANALYTICS_FIREHOSE_PREFIX = 'voucha-analytics-test-'
     calls = []
     responses = []
-    const sender: PutBatch = input => {
+    firehoseSender = vi.spyOn(firehoseProvider, 'putFirehoseRecordBatch')
+    firehoseSender.mockImplementation((input: PutRecordBatchCommandInput) => {
       calls.push(input)
       const response = responses.shift()
       if (response instanceof Error) return Promise.reject(response)
       return Promise.resolve(response ?? makeFirehoseOutput())
-    }
-    restoreSender = setFirehoseRecordBatchSenderForTest(sender)
-    restoreRetryDelay = setFirehoseRetryDelayForTest(0)
-    restoreRetryWait = setFirehoseRetryWaitForTest(() => Promise.resolve())
+    })
     await flush()
   })
 
   afterEach(async () => {
     vi.useRealTimers()
-    await flush()
-    restoreSender?.()
-    restoreRetryDelay?.()
-    restoreRetryWait?.()
+    try {
+      await flush()
+    } finally {
+      firehoseSender.mockRestore()
+    }
     if (originalPrefix === undefined) {
       delete process.env.ANALYTICS_FIREHOSE_PREFIX
     } else {
@@ -169,6 +158,7 @@ describe('backend-firehose', () => {
   })
 
   it('retries only failed records once', async () => {
+    vi.useFakeTimers()
     responses.push(
       {
         $metadata: {},
@@ -184,7 +174,11 @@ describe('backend-firehose', () => {
     writeRecord('queue_workers', makeQueueWorkerRecord({ event_id: 'ok' }))
     writeRecord('queue_workers', makeQueueWorkerRecord({ event_id: 'retry' }))
 
-    await flush()
+    const flushPromise = flush()
+    await vi.advanceTimersByTimeAsync(99)
+    expect(calls).toHaveLength(1)
+    await vi.advanceTimersByTimeAsync(1)
+    await flushPromise
 
     expect(calls).toHaveLength(2)
     expect(calls[1]!.Records).toHaveLength(1)
@@ -202,8 +196,7 @@ describe('backend-firehose', () => {
   it('drains records added while a flush is in progress', async () => {
     let releaseFirstSend: ((output: PutRecordBatchCommandOutput) => void) | undefined
     const firstSendStarted = new Promise<void>(resolve => {
-      restoreSender?.()
-      restoreSender = setFirehoseRecordBatchSenderForTest(input => {
+      firehoseSender.mockImplementation(input => {
         calls.push(input)
         if (calls.length === 1) {
           resolve()
