@@ -355,15 +355,10 @@ discovery skips the command rather than falling back to `.`. Ignored and untrack
 neither fail nor satisfy this guard. Run its real-Git/aggregate regression with
 `pnpm exec vitest run --project static-analysis-ast-grep static-code-analysis/__tests__/ast-grep-backend-manifests.test.mts`.
 
-- **Baseline.** [`baseline.txt`](../../../../static-code-analysis/knip-production-exports/baseline.txt)
-  lists one `<issue type> <repo-relative path> <symbol>` line per known finding, sorted, without line
-  numbers. The [preprocessor](../../../../static-code-analysis/knip-production-exports/baseline.mts)
-  is passed to Knip with `--preprocessor` and drops baselined findings before Knip computes its exit
-  status, so a new finding fails the run. A line that matches no finding is stale and also fails,
-  so the file only shrinks.
-- **Update.** `pnpm run knip:production-exports:update` rewrites the baseline from the current
-  findings. Run it after deleting exports to remove their stale lines; a diff that adds lines accepts
-  new debt and needs review.
+- **Direct enforcement.** The production command reports every finding and exits unsuccessfully
+  when any backend export is reachable only from tests. It runs Knip directly without a baseline
+  or preprocessor; the production workspace scope and entry-export checks remain in the root
+  `package.json` script.
 - **Fixing a new finding.** Delete the export, make it module-private, move a test-only helper into
   test helpers, or mark a deliberate seam with a JSDoc `@public` tag and a reason, which Knip never
   reports. Config-driven migration default exports carry that tag because the migration runner loads
@@ -376,8 +371,9 @@ neither fail nor satisfy this guard. Run its real-Git/aggregate regression with
 - **Config hints.** Knip disables configuration hints under `--production`, so
   `pnpm exec knip --treat-config-hints-as-errors` remains the check for stale `knip.jsonc` entries.
 
-The baseline follows [Rolling Out A Repo-Wide Guard](#rolling-out-a-repo-wide-guard): the guard and
-its seeded baseline land first, and remediation removes entries in later changes.
+The production-export check now uses [direct enforcement](#rolling-out-a-repo-wide-guard) after
+the findings were resolved and the temporary baseline, preprocessor, and update command were
+removed. New findings must be resolved before the direct production check passes.
 
 ## Migration Artifact Cleanup
 
