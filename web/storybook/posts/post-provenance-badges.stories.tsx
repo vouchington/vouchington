@@ -11,6 +11,12 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+const verifiedApp = {
+  kind: 'verified',
+  client_id: 'voucha_fixture_agent',
+  client_name: 'Fixture Agent',
+} as const
+
 const strip = (props: ComponentProps<typeof PostProvenanceBadges>) => (
   <StoryFrame width='max-w-xl'>
     <div className='flex flex-wrap items-center gap-1.5'>
@@ -20,21 +26,31 @@ const strip = (props: ComponentProps<typeof PostProvenanceBadges>) => (
 )
 
 export const ViaApi: Story = {
-  render: () => strip({ provenance: { via: 'api', app_name: null } }),
+  render: () => strip({ provenance: { via: 'api', app: null } }),
 }
 
 export const ViaMcp: Story = {
-  render: () => strip({ provenance: { via: 'mcp', app_name: null } }),
+  render: () => strip({ provenance: { via: 'mcp', app: null } }),
 }
 
-export const ViaNamedApp: Story = {
-  render: () => strip({ provenance: { via: 'mcp', app_name: 'Fixture Agent' } }),
+export const ViaVerifiedApp: Story = {
+  render: () => strip({ provenance: { via: 'mcp', app: verifiedApp } }),
+}
+
+export const ViaHostname: Story = {
+  render: () =>
+    strip({ provenance: { via: 'api', app: { kind: 'hostname', hostname: 'agent.example' } } }),
+}
+
+/** A reviewed app whose key has no catalog copy falls back to the channel label. */
+export const ViaKnownAppWithoutCopy: Story = {
+  render: () => strip({ provenance: { via: 'mcp', app: { kind: 'known', key: 'fixture-agent' } } }),
 }
 
 export const StaffCardChannel: Story = {
   render: () =>
     strip({
-      provenance: { via: 'mcp', app_name: 'Fixture Agent' },
+      provenance: { via: 'mcp', app: verifiedApp },
       staffProvenance: {
         created_via: 'mcp',
         oauth_client: {
@@ -50,7 +66,7 @@ export const StaffCardChannel: Story = {
 export const StaffDetailClient: Story = {
   render: () =>
     strip({
-      provenance: { via: 'api', app_name: 'agent.example' },
+      provenance: { via: 'api', app: { kind: 'hostname', hostname: 'agent.example' } },
       staffProvenance: {
         created_via: 'api',
         oauth_client: {

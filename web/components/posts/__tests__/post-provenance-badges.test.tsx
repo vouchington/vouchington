@@ -9,16 +9,25 @@ const staffClient = {
   verified: true,
 }
 
+const verifiedApp = {
+  kind: 'verified',
+  client_id: 'voucha_fixture_agent',
+  client_name: 'Fixture Agent',
+} as const
+
 describe('PostProvenanceBadges', () => {
   it.each([
-    [{ via: 'api', app_name: null }, 'via API'],
-    [{ via: 'mcp', app_name: null }, 'via MCP'],
-    [{ via: 'mcp', app_name: 'Fixture Agent' }, 'via Fixture Agent'],
-    [{ via: 'api', app_name: 'agent.example' }, 'via agent.example'],
+    [{ via: 'api', app: null }, 'via API'],
+    [{ via: 'mcp', app: null }, 'via MCP'],
+    [{ via: 'mcp', app: verifiedApp }, 'via Fixture Agent'],
+    [{ via: 'api', app: { kind: 'hostname', hostname: 'agent.example' } }, 'via agent.example'],
+    // No catalog copy exists for this key, so the badge falls back to the channel.
+    [{ via: 'mcp', app: { kind: 'known', key: 'no-copy-app' } }, 'via MCP'],
   ] as const)('renders the public label for %j', (provenance, text) => {
     render(<PostProvenanceBadges provenance={provenance} />)
     expect(screen.getByText(text)).toHaveAttribute('data-pw', 'post-provenance-badge')
     expect(screen.queryByText(/^Channel:/)).toBeNull()
+    expect(screen.queryByText(/no-copy-app/)).toBeNull()
   })
 
   it('renders nothing for a post with no provenance fields', () => {
@@ -26,8 +35,15 @@ describe('PostProvenanceBadges', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
-  it('renders an app name as text, never as markup', () => {
-    render(<PostProvenanceBadges provenance={{ via: 'mcp', app_name: '<b>Agent</b>' }} />)
+  it('renders a client name as text, never as markup', () => {
+    render(
+      <PostProvenanceBadges
+        provenance={{
+          via: 'mcp',
+          app: { kind: 'verified', client_id: 'voucha_markup', client_name: '<b>Agent</b>' },
+        }}
+      />,
+    )
     expect(screen.getByText('via <b>Agent</b>')).toBeInTheDocument()
     expect(document.querySelector('b')).toBeNull()
   })
@@ -52,7 +68,7 @@ describe('PostProvenanceBadges', () => {
   it('shows staff the raw OAuth client and its verification on detail pages', () => {
     render(
       <PostProvenanceBadges
-        provenance={{ via: 'mcp', app_name: 'Fixture Agent' }}
+        provenance={{ via: 'mcp', app: verifiedApp }}
         staffProvenance={{ created_via: 'mcp', oauth_client: staffClient }}
         showClient
       />,

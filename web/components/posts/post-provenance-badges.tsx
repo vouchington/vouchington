@@ -3,6 +3,7 @@
 import { Badge } from '@/components/ui/badge'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import type { Post } from '@/types/posts'
+import { publicProvenanceLabel } from './post-provenance-label'
 
 export interface PostProvenanceBadgesProps {
   provenance?: Post['provenance']
@@ -12,9 +13,9 @@ export interface PostProvenanceBadgesProps {
 }
 
 /**
- * The "via API", "via MCP" or "via {app}" label for posts written through the API or MCP, and, for
- * administrators and moderators, the raw channel and OAuth client. The server decides who sees
- * what, so this renders exactly the fields the response carries.
+ * The "via API", "via MCP" or "via {app}" label for posts written through the API or MCP, composed
+ * from the `{ via, app }` facts, and, for administrators and moderators, the raw channel and OAuth
+ * client. The server decides who sees what, so this renders exactly the fields the response carries.
  */
 export function PostProvenanceBadges({
   provenance,
@@ -23,7 +24,6 @@ export function PostProvenanceBadges({
 }: PostProvenanceBadgesProps) {
   const t = useTranslations()
   const client = showClient ? staffProvenance?.oauth_client : null
-  const viaKey = provenance?.via === 'mcp' ? 'shared.provenance.viaMcp' : 'shared.provenance.viaApi'
   return (
     <>
       {provenance ? (
@@ -32,9 +32,7 @@ export function PostProvenanceBadges({
           className='whitespace-nowrap text-xs'
           data-pw='post-provenance-badge'
         >
-          {provenance.app_name !== null
-            ? t('shared.provenance.viaApp', { app: provenance.app_name })
-            : t(viaKey)}
+          {publicProvenanceLabel(t, provenance)}
         </Badge>
       ) : null}
       {staffProvenance ? (
