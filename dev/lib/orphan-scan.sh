@@ -77,76 +77,83 @@ if ! declare -F worktree_resource_owned_db_name >/dev/null 2>&1; then
   source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)/worktree-resource-env.sh"
 fi
 
+orphan_scan_contains_line() {
+  case $'\n'"$1"$'\n' in
+    *$'\n'"$2"$'\n'*) return 0 ;;
+  esac
+  return 1
+}
+
+# Print the names that live worktrees protect, deriving each worktree identity once.
+# Kind "db" prints .env database names; kind "container" prints raw .env
+# VALKEY_CONTAINER lines. Both print derived names whose .env WORKTREE_DIR is stale.
+orphan_scan_protected_names() {
+  local kind=$1 env_worktree_dir owned worktree worktree_dir
+  for worktree in "${WORKTREE_PATHS[@]+"${WORKTREE_PATHS[@]}"}"; do
+    if [ -f "$worktree/.env" ]; then
+      if [ "$kind" = db ]; then
+        (
+          DATABASE_URL="$(env_database_url_from_file "$worktree/.env")"
+          [ -n "${DATABASE_URL:-}" ] && printf '%s\n' "$(db_name_from_url)"
+        )
+      else
+        grep -hF 'VALKEY_CONTAINER=' "$worktree/.env" 2>/dev/null
+      fi
+    fi
+    if [ "$kind" = db ]; then
+      owned=$(worktree_resource_owned_db_name "$worktree") || return 1
+    else
+      owned=$(worktree_resource_owned_valkey_container "$worktree") || return 1
+    fi
+    worktree_dir=$(worktree_resource_current_dir "$worktree") || return 1
+    env_worktree_dir=$(env_value_from_file "$worktree/.env" WORKTREE_DIR)
+    if [ "$env_worktree_dir" != "$worktree_dir" ]; then
+      printf '%s\n' "$owned"
+    fi
+  done
+  return 0
+}
+
 scan_orphaned_dbs() {
-  local db env_worktree_dir FOUND owned_db worktree worktree_dir
+  local db protected
+  local candidates=()
   ORPHANED_DBS=()
   while IFS= read -r db; do
     db=$(echo "$db" | xargs)
     [ -z "$db" ] && continue
     [[ "$db" == "voucha" || "$db" == "filaments" ]] && continue
     is_managed_worktree_db_name "$db" || continue
-
-    FOUND=false
-    for worktree in "${WORKTREE_PATHS[@]+"${WORKTREE_PATHS[@]}"}"; do
-      if [ -f "$worktree/.env" ]; then
-        if (
-          DATABASE_URL="$(env_database_url_from_file "$worktree/.env")"
-          [ -n "${DATABASE_URL:-}" ] && [ "$(db_name_from_url)" = "$db" ]
-        ); then
-          FOUND=true
-          break
-        fi
-      fi
-      owned_db=$(worktree_resource_owned_db_name "$worktree") || return 1
-      if [ "$owned_db" = "$db" ]; then
-        worktree_dir=$(worktree_resource_current_dir "$worktree") || return 1
-        env_worktree_dir=$(env_value_from_file "$worktree/.env" WORKTREE_DIR)
-        if [ "$env_worktree_dir" != "$worktree_dir" ]; then
-          FOUND=true
-          break
-        fi
-      fi
-    done
-
-    if ! $FOUND; then
-      ORPHANED_DBS+=("$db")
-    fi
+    candidates+=("$db")
   done < <(psql -lqt 2>/dev/null | cut -d \| -f 1 | grep -E 'voucha-|vouchit-|filaments-' || true)
+
+  [ ${#candidates[@]} -gt 0 ] || return 0
+  protected=$(orphan_scan_protected_names db) || return 1
+  for db in "${candidates[@]}"; do
+    orphan_scan_contains_line "$protected" "$db" || ORPHANED_DBS+=("$db")
+  done
 }
 
 scan_orphaned_containers() {
-  local container env_worktree_dir FOUND owned_container worktree worktree_dir
+  local container protected
+  local candidates=()
   ORPHANED_CONTAINERS=()
   while IFS= read -r container; do
     [ -z "$container" ] && continue
     [[ "$container" == "voucha-valkey" || "$container" == "filaments-valkey" ]] && continue
     is_managed_worktree_valkey_container "$container" || continue
-
-    FOUND=false
-    for worktree in "${WORKTREE_PATHS[@]+"${WORKTREE_PATHS[@]}"}"; do
-      if [ -f "$worktree/.env" ]; then
-        if grep -qF "VALKEY_CONTAINER=$container" "$worktree/.env" 2>/dev/null; then
-          FOUND=true
-          break
-        fi
-      fi
-      owned_container=$(worktree_resource_owned_valkey_container "$worktree") || return 1
-      if [ "$owned_container" = "$container" ]; then
-        worktree_dir=$(worktree_resource_current_dir "$worktree") || return 1
-        env_worktree_dir=$(env_value_from_file "$worktree/.env" WORKTREE_DIR)
-        if [ "$env_worktree_dir" != "$worktree_dir" ]; then
-          FOUND=true
-          break
-        fi
-      fi
-    done
-
-    if ! $FOUND; then
-      ORPHANED_CONTAINERS+=("$container")
-    fi
+    candidates+=("$container")
   done < <({
     docker ps -a --filter "name=voucha-valkey-" --format '{{.Names}}' 2>/dev/null || true
     docker ps -a --filter "name=vouchit-valkey-" --format '{{.Names}}' 2>/dev/null || true
     docker ps -a --filter "name=filaments-valkey-" --format '{{.Names}}' 2>/dev/null || true
   })
+
+  [ ${#candidates[@]} -gt 0 ] || return 0
+  protected=$(orphan_scan_protected_names container) || return 1
+  for container in "${candidates[@]}"; do
+    case "$protected" in
+      *"VALKEY_CONTAINER=$container"*) continue ;;
+    esac
+    orphan_scan_contains_line "$protected" "$container" || ORPHANED_CONTAINERS+=("$container")
+  done
 }
