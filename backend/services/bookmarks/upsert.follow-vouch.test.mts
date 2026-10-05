@@ -30,9 +30,10 @@ describe('Follow -> trust-vote coupling (issue #7257)', () => {
   })
 
   it('an official account following a user does not cast a vouch', async () => {
-    // `administrator` is one of the OFFICIAL_ROLE_SLUGS in isPlatformAccount(), and admins
-    // also bypass contribution-gating -- so this proves the isPlatformAccount guard itself
-    // blocks the cast (without it, the admin contribution-status bypass would let it through).
+    // A member holding the `administrator` role has account_type 'official', so
+    // isPlatformAccount() is true, and admins also bypass contribution-gating -- so this proves
+    // the isPlatformAccount guard itself blocks the cast (without it, the admin
+    // contribution-status bypass would let it through).
     const official = await createTestUser({ administrator: true })
     const target = await createTestUser()
 

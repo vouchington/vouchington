@@ -33,6 +33,9 @@ import {
 } from '@voucha/test-helpers'
 
 import { createTopic } from '@services/topics'
+import { getEntityRelationElectionVote } from '@services/elections-votes/entity-relation'
+import { getPrivateUserByAny } from '@services/users'
+import { getSystemUserByUsername } from '@services/users/system-users'
 
 describe('categories relations', () => {
   let testTopicId: string
@@ -113,6 +116,21 @@ describe('categories relations', () => {
         topic_id: testTopicId,
       }),
     )
+
+    // The seeded rss-feed-categorizer is an ai_agent: its relation vote persists because the
+    // platform-account trust-signal restriction is enforced at HTTP guards only.
+    const categorizer = await getSystemUserByUsername('rss-feed-categorizer')
+    const [relation] = (await getEntityRelation(
+      'relation__rss_feed_item__category__topic',
+      testRssFeedItemId,
+      testTopicId,
+    )) as Array<{ id: string }>
+    await expect(getPrivateUserByAny(categorizer!.id)).resolves.toMatchObject({
+      account_type: 'ai_agent',
+    })
+    await expect(
+      getEntityRelationElectionVote(categorizer!.id, relation!.id),
+    ).resolves.toMatchObject({ choice: 'confirm' })
   })
 
   it('keeps a positive hashtag visible when its mapped topic relation becomes nonpositive', async () => {
