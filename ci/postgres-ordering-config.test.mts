@@ -39,6 +39,10 @@ describe('PostgreSQL ordering guard config', () => {
       ],
       safeDirective: 'deadlock-safe',
     }
+    const executorOptions = {
+      executorFactoryNames: ['beginTransaction', 'beginBoundedTransaction'],
+      executorTypeNames: ['TransactionQuery', 'QueryExecutor'],
+    }
     const catalogOrderingRules = config.rules.filter(
       candidate =>
         candidate.options?.schemaCatalogPath === expectedOptions.schemaCatalogPath &&
@@ -52,6 +56,7 @@ describe('PostgreSQL ordering guard config', () => {
         scope: 'repository',
         options: {
           ...expectedOptions,
+          ...executorOptions,
           executorNames: ['query', 'write'],
           unanalyzableSql: 'ignore',
         },
@@ -82,12 +87,16 @@ describe('PostgreSQL ordering guard config', () => {
     expect(directiveInventory).toEqual([
       'backend/data-stores/psql/config-driven/0503-00-00-youtube-rss-unreliable-status-codes.sql:1',
       'backend/services/bedrock-embeddings-batch/orchestrator/reconcile-existing.mts:1',
+      'backend/services/bluesky-accounts/native-callback-failure.mts:1',
       'backend/services/bluesky-accounts/native-completion-persistence.mts:1',
       'backend/services/communities/list-items/add.mts:1',
+      'backend/services/copyright-notices/dsa-statement-submission-sweep.mts:1',
       'backend/services/crawl-chunks/create.mts:1',
       'backend/services/identity-verification/attempts.mts:1',
       'backend/services/individuals-households/households/spending-categories.mts:1',
       'backend/services/lists/items.mts:1',
+      'backend/services/memberships/ineligible-stripe-purchase-reversal-execution.mts:1',
+      'backend/services/memberships/refunds/refund-event-receipt.mts:1',
       'backend/services/notifications/create-critical-moderation-alert-notification.mts:1',
       'backend/services/notifications/create-moderation-report-reviewed-notification.mts:1',
       'backend/services/notifications/reconcile-post-writes.mts:1',
