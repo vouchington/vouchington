@@ -19,6 +19,7 @@ const PLUS_GATED_WRITE_TOOL_NAMES = [
   'activate_referral_link',
   'add_list_item',
   'add_my_profile_link',
+  'create_content_report',
   'create_list',
   'create_referral_link',
   'deactivate_referral_link',
@@ -77,6 +78,7 @@ const PLUS_GATED_WRITE_SCOPES: ApiScope[] = [
   'profile:write',
   'referral-links:read',
   'referral-links:write',
+  'reports:write',
   'topic-recommendations:read',
   'topic-recommendations:write',
 ]

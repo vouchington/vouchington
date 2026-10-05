@@ -32,6 +32,7 @@ export const ALLOWED_OPAQUE_JSON = new Set([
   'topic_classifier_results.raw_response',
   'topics.lingua_rs_results',
   'fediverse_instance_topics.nodeinfo_raw',
+  'user_mcp_create_attempts.response',
   'user_topic_import_attempts.response',
   'users.lingua_rs_results',
   'x_accounts.x_user_data',

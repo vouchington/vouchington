@@ -1,10 +1,12 @@
 import type { ScopeAction, ScopeDefinition, ScopeDescriptionKey } from './scope-types.mts'
 
 const USER_RESOURCE_SCOPES = {
+  appeals: ['read', 'write'],
   bookmarks: ['read', 'write'],
   cards: ['read', 'write'],
-  communities: ['read'],
+  communities: ['read', 'write'],
   'data-points': ['read'],
+  disputes: ['read', 'write'],
   'domain-ratings': ['read'],
   feeds: ['read'],
   'entity-relations': ['read', 'write'],
@@ -19,6 +21,7 @@ const USER_RESOURCE_SCOPES = {
   recommendations: ['read'],
   'reference-data': ['read'],
   'referral-links': ['read', 'write'],
+  reports: ['write'],
   'rss-feeds': ['read'],
   'rss-feed-items': ['read'],
   'rewards-statuses': ['read', 'write'],
@@ -44,7 +47,9 @@ export function userResourceDefinitions(): Record<string, ScopeDefinition> {
         {
           action: action as ScopeAction,
           audience: 'user',
-          ...(action === 'write' ? { requires: `${resource}:read` } : {}),
+          ...(action === 'write' && actions.some(candidate => candidate === 'read')
+            ? { requires: `${resource}:read` }
+            : {}),
           ...(SENSITIVE_DESCRIPTIONS[`${resource}:${action}`]
             ? {
                 descriptionKey: SENSITIVE_DESCRIPTIONS[`${resource}:${action}`],

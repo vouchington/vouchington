@@ -1890,6 +1890,113 @@
         },
         {
           "tool": {
+            "name": "create_content_report",
+            "title": "Report Content",
+            "description": "Report a post, comment, user, hostname or RSS feed item to the moderators. Reports are about user content only; copyright claims use the copyright process. Reporting something you already have an open report on updates that report and returns is_duplicate true. Reuse the same UUID idempotency_key and arguments to safely retry; the first result is replayed. The note is optional and at most 1000 characters. The vote_manipulation reason is for posts only.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "idempotency_key": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "A UUID for this report and its retries."
+                },
+                "entity_type": {
+                  "type": "string",
+                  "enum": ["rss_feed_item", "post", "comment", "user", "url_hostname"]
+                },
+                "entity_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "The ID of the reported entity."
+                },
+                "reason": {
+                  "type": "string",
+                  "enum": [
+                    "spam",
+                    "harassment",
+                    "misinformation",
+                    "illegal_content",
+                    "vote_manipulation",
+                    "other"
+                  ]
+                },
+                "note": {
+                  "type": "string",
+                  "description": "Optional context for the moderators."
+                }
+              },
+              "required": ["idempotency_key", "entity_type", "entity_id", "reason"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "report": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "entity_type": {
+                      "enum": ["rss_feed_item", "post", "comment", "user", "url_hostname"]
+                    },
+                    "entity_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "reason": {
+                      "enum": [
+                        "spam",
+                        "harassment",
+                        "misinformation",
+                        "illegal_content",
+                        "vote_manipulation",
+                        "other"
+                      ]
+                    },
+                    "status": {
+                      "const": "pending"
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": ["id", "entity_type", "entity_id", "reason", "status", "created_at"],
+                  "additionalProperties": false
+                },
+                "is_duplicate": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["success", "report", "is_duplicate"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["reports:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/reports"
+            }
+          ]
+        },
+        {
+          "tool": {
             "name": "get_community_list_item_counts",
             "title": "Get Community List Item Counts",
             "description": "Count the entries on a public community's curated list, by its UUID or slug, for each item_type: topic, rss_feed, post, url_hostname and url. The counts are what a signed-out reader sees, so post leaves out a post the public cannot see, and they match what get_community_list_items pages through. A private, deleted or unknown community returns { success: false, error: \"Community not found\" }.",

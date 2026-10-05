@@ -10,6 +10,8 @@ export type ScopeDescriptionKey =
   | 'spending_write'
 
 export type ApiScope =
+  | 'appeals:read'
+  | 'appeals:write'
   | 'bookmarks:read'
   | 'bookmarks:write'
   | 'moderation:read'
@@ -34,7 +36,10 @@ export type ApiScope =
   | 'cards:read'
   | 'cards:write'
   | 'communities:read'
+  | 'communities:write'
   | 'data-points:read'
+  | 'disputes:read'
+  | 'disputes:write'
   | 'domain-ratings:read'
   | 'entity-relations:read'
   | 'entity-relations:write'
@@ -62,6 +67,7 @@ export type ApiScope =
   | 'reference-data:read'
   | 'referral-links:read'
   | 'referral-links:write'
+  | 'reports:write'
   | 'rewards-statuses:read'
   | 'rewards-statuses:write'
   | 'rss:read'
