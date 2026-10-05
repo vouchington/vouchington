@@ -59,8 +59,8 @@ export async function addConversationParticipant(
       FROM inserted i
       LEFT JOIN users u ON u.id = i.user_id
     `)
-  await query(sql`/* addConversationParticipant:bump_updated_at */
-      UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ${conversationId}
+  await query(sql`/* addConversationParticipant:record_activity */
+      UPDATE conversations SET last_activity_at = CURRENT_TIMESTAMP WHERE id = ${conversationId}
     `)
   const result = rows[0] as ConversationParticipant
   await query.commit()
@@ -108,8 +108,8 @@ export async function removeConversationParticipant(
     if (rowCount === 0) throw createHttpError(404, 'Participant not found')
   }
 
-  await query(sql`/* removeConversationParticipant:bump_updated_at */
-      UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ${conversationId}
+  await query(sql`/* removeConversationParticipant:record_activity */
+      UPDATE conversations SET last_activity_at = CURRENT_TIMESTAMP WHERE id = ${conversationId}
     `)
   await query.commit()
 }
@@ -124,7 +124,7 @@ export async function updateConversationParticipantAddPolicy(
 
   await write(sql`/* updateConversationParticipantAddPolicy */
     UPDATE conversations
-    SET participant_add_policy = ${policy}
+    SET participant_add_policy = ${policy}, last_activity_at = CURRENT_TIMESTAMP
     WHERE id = ${conversationId}
   `)
 }

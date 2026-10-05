@@ -69,8 +69,7 @@ export async function clearUnlinkedTopicAliasCategories(
             )
         )
         UPDATE rss_feed_categories target
-        SET topic_id = candidates.replacement_topic_id,
-            updated_at = CURRENT_TIMESTAMP
+        SET topic_id = candidates.replacement_topic_id
         FROM candidates
         WHERE target.rss_feed_id = candidates.rss_feed_id
           AND target.category_text = candidates.category_text`,

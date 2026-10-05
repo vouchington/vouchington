@@ -15,7 +15,7 @@ export async function updateStoryTitle(
   const { rows } = await write(
     sql`/* updateStoryTitle */
     UPDATE stories
-    SET title = ${title}, updated_at = CURRENT_TIMESTAMP
+    SET title = ${title}
     WHERE id = ${storyId}
       AND deleted_at IS NULL
     RETURNING
@@ -58,8 +58,7 @@ export async function adminSetStoryOfficialItem(
     UPDATE stories
     SET
       official_rss_feed_item_id = ${officialItemId},
-      official_locked_at = CURRENT_TIMESTAMP,
-      updated_at = CURRENT_TIMESTAMP
+      official_locked_at = CURRENT_TIMESTAMP
     WHERE id = ${storyId}
       AND deleted_at IS NULL
       AND EXISTS (SELECT 1 FROM rss_feed_items WHERE id = ${officialItemId} AND story_id = ${storyId} AND deleted_at IS NULL)

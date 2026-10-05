@@ -75,8 +75,7 @@ export async function upsertMembershipSourceState(
       expired_at = CASE WHEN EXCLUDED.expired_at IS NULL THEN NULL ELSE COALESCE(membership_source_states.expired_at, EXCLUDED.expired_at) END,
       past_due_at = CASE WHEN EXCLUDED.past_due_at IS NULL THEN NULL ELSE COALESCE(membership_source_states.past_due_at, EXCLUDED.past_due_at) END,
       paused_at = CASE WHEN EXCLUDED.paused_at IS NULL THEN NULL ELSE COALESCE(membership_source_states.paused_at, EXCLUDED.paused_at) END,
-      should_auto_renew = EXCLUDED.should_auto_renew,
-      updated_at = CURRENT_TIMESTAMP
+      should_auto_renew = EXCLUDED.should_auto_renew
     WHERE ${source.membershipProviderObservationId ?? null}::uuid IS NULL
       OR membership_source_states.membership_provider_observation_id IS NULL
       OR EXISTS (
@@ -127,7 +126,7 @@ export async function setMembershipProjectionCancelAtPeriodEnd(
 ): Promise<CreatedMembership> {
   if (membership.should_cancel_at_period_end === cancelAtPeriodEnd) return membership
   await query(sql`/* setMembershipProjectionCancelAtPeriodEnd */
-    UPDATE memberships SET should_cancel_at_period_end = ${cancelAtPeriodEnd}, updated_at = CURRENT_TIMESTAMP
+    UPDATE memberships SET should_cancel_at_period_end = ${cancelAtPeriodEnd}
     WHERE id = ${membership.id} AND projection_ended_at IS NULL`)
   return { ...membership, should_cancel_at_period_end: cancelAtPeriodEnd }
 }

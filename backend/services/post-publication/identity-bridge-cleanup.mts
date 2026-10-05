@@ -60,7 +60,7 @@ export async function cleanupPostPublicationIdentityBridges(limit = 100): Promis
   const families = Object.keys(PUBLICATION_IDENTITY_BRIDGES) as PublicationIdentityBridgeFamily[]
   const complete = candidates.length < budget
   await query(
-    `/* checkpointPublicationIdentityBridgeCleanup */ UPDATE post_publication_identity_bridge_cleanup_progress SET family=$1, cursor_identity_id=$2, updated_at=CURRENT_TIMESTAMP WHERE singleton`,
+    `/* checkpointPublicationIdentityBridgeCleanup */ UPDATE post_publication_identity_bridge_cleanup_progress SET family=$1, cursor_identity_id=$2 WHERE singleton`,
     [
       complete ? families[(families.indexOf(family) + 1) % families.length] : family,
       complete ? null : candidates.at(-1)!.id,

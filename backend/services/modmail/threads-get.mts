@@ -14,7 +14,7 @@ export async function getCommunityModmailInbox(
       id, channel_type, title, community_id, subject_user_id,
       assigned_moderator_user_id, assigned_at, resolved_at, resolved_by_id,
       created_by_id, created_at, updated_at,
-      to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_timestamp
+      to_char(last_activity_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_timestamp
     FROM conversations
     WHERE channel_type = 'modmail'
       AND community_id = ${communityId}
@@ -22,10 +22,10 @@ export async function getCommunityModmailInbox(
   `
   if (options?.after) {
     query.append(
-      sql` AND (updated_at, id) < (${options.after.timestamp}::timestamptz, ${options.after.id})`,
+      sql` AND (last_activity_at, id) < (${options.after.timestamp}::timestamptz, ${options.after.id})`,
     )
   }
-  query.append(sql` ORDER BY updated_at DESC, id DESC LIMIT ${limit + 1}`)
+  query.append(sql` ORDER BY last_activity_at DESC, id DESC LIMIT ${limit + 1}`)
 
   const { rows } = await read(query)
   return rows as Array<ModmailThread & { cursor_timestamp: string }>
@@ -41,7 +41,7 @@ export async function getMyModmailThreads(
       id, channel_type, title, community_id, subject_user_id,
       assigned_moderator_user_id, assigned_at, resolved_at, resolved_by_id,
       created_by_id, created_at, updated_at,
-      to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_timestamp
+      to_char(last_activity_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_timestamp
     FROM conversations
     WHERE channel_type = 'modmail'
       AND subject_user_id = ${userId}
@@ -52,10 +52,10 @@ export async function getMyModmailThreads(
   }
   if (options?.after) {
     query.append(
-      sql` AND (updated_at, id) < (${options.after.timestamp}::timestamptz, ${options.after.id})`,
+      sql` AND (last_activity_at, id) < (${options.after.timestamp}::timestamptz, ${options.after.id})`,
     )
   }
-  query.append(sql` ORDER BY updated_at DESC, id DESC LIMIT ${limit + 1}`)
+  query.append(sql` ORDER BY last_activity_at DESC, id DESC LIMIT ${limit + 1}`)
 
   const { rows } = await read(query)
   return rows as Array<ModmailThread & { cursor_timestamp: string }>

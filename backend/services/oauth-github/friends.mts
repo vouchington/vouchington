@@ -43,8 +43,8 @@ async function getGithubSyncAccount(githubUserId: string) {
 
 // Carry the marker as text and cast back to timestamptz in the cleanup DELETE — pg's TIMESTAMPTZ
 // parser (data-stores/psql/setup.mts) returns a JS Date, which truncates PostgreSQL's microsecond
-// precision to milliseconds and can leave stale rows whose updated_at sits in the truncated
-// sub-ms window uncleaned by `updated_at <= marker`.
+// precision to milliseconds and can leave stale rows whose last_observed_at sits in the truncated
+// sub-ms window uncleaned by `last_observed_at <= marker`.
 async function getSyncStartTime(): Promise<string> {
   const {
     rows: [{ now }],

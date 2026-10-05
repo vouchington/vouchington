@@ -17,9 +17,7 @@ CREATE TABLE copyright_notice_email_intakes (
   dmarc_verdict email_security_verdicts NOT NULL CHECK (dmarc_verdict IN ('pass', 'fail', 'gray', 'processing_failed', 'unknown')),
   spam_verdict email_security_verdicts NOT NULL CHECK (spam_verdict IN ('pass', 'fail', 'gray', 'processing_failed', 'unknown')),
   virus_verdict email_security_verdicts NOT NULL CHECK (virus_verdict IN ('pass', 'fail', 'gray', 'processing_failed', 'unknown')),
-  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL);
 
 ALTER TABLE copyright_notice_lifecycle_changes
   ADD CONSTRAINT copyright_lifecycle_event_email_intake_fk
@@ -41,7 +39,7 @@ CREATE TABLE copyright_notice_email_intake_parses (
   reply_references_ciphertext text CONSTRAINT chk_copyr_notic_email_intak_parses__reply_references_ciphertext CHECK (char_length(reply_references_ciphertext) BETWEEN 1 AND 1048576),
   error_ciphertext text CHECK (char_length(error_ciphertext) BETWEEN 1 AND 1048576),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   CHECK (
     (status = 'succeeded' AND sender_email_ciphertext IS NOT NULL AND subject_ciphertext IS NOT NULL AND body_ciphertext IS NOT NULL AND error_ciphertext IS NULL)
     OR
@@ -60,7 +58,7 @@ CREATE TABLE copyright_notice_email_intake_attachments (
   byte_size integer NOT NULL CHECK (byte_size >= 0),
   sha256 bytea NOT NULL CHECK (octet_length(sha256) = 32),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   CONSTRAINT uq_copyright_notice_email_intake_attachment__intake_id__ordinal UNIQUE (copyright_notice_email_intake_id, ordinal)
 );
 
@@ -73,7 +71,7 @@ CREATE TABLE copyright_notice_email_intake_recommendations (
   model text NOT NULL CHECK (char_length(model) BETWEEN 1 AND 255),
   structured_output_ciphertext text NOT NULL CONSTRAINT chk_copyr_notic_email_intak_recom__structured_output_ciphertext CHECK (char_length(structured_output_ciphertext) BETWEEN 1 AND 1048576),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   CONSTRAINT uq_cop_not_ema_int_rec__intake_id__input_sha256__prompt_version UNIQUE (copyright_notice_email_intake_id, input_sha256, prompt_version),
   CONSTRAINT uq_copyright_notice_email_intake_recommendations__intake_id__id UNIQUE (copyright_notice_email_intake_id, id)
 );
@@ -89,7 +87,7 @@ CREATE TABLE copyright_notice_email_intake_reviews (
   rationale_ciphertext text NOT NULL CONSTRAINT chk_copyright_notice_email_intake_reviews__rationale_ciphertext CHECK (char_length(rationale_ciphertext) BETWEEN 1 AND 1048576),
   promoted_copyright_notice_id uuid CONSTRAINT uq_copyr_notic_email_intak_review__promoted_copyright_notice_id UNIQUE CONSTRAINT fk_copyri_notice_email_intake_review__promoted_copyright_notice REFERENCES copyright_notices(id) ON DELETE RESTRICT,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   CONSTRAINT uq_copyright_notice_email_intake_reviews__intake_id UNIQUE (copyright_notice_email_intake_id),
   CHECK ((decision = 'approved') = (promoted_copyright_notice_id IS NOT NULL)),
   CONSTRAINT fk_copyright_email_reviews__recommendation_intake

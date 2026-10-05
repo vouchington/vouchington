@@ -25,8 +25,7 @@ export async function dismissReviewDispute(
       UPDATE review_disputes
       SET resolved_at = ${now},
           resolved_by_id = ${staffUserId},
-          resolution_action = 'dismiss',
-          updated_at = CURRENT_TIMESTAMP
+          resolution_action = 'dismiss'
       WHERE id = ${disputeId} AND resolved_at IS NULL
       RETURNING `.append(DISPUTE_RETURNING),
   )

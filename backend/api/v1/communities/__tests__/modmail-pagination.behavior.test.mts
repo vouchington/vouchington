@@ -42,7 +42,7 @@ describe('community modmail cursor behavior', () => {
       communityId: partialCommunity.id,
       subjectUserId: partialSubject.id,
       modUserId: owner.id,
-      updatedAt: '2026-07-01T10:00:00.000001Z',
+      lastActivityAt: '2026-07-01T10:00:00.000001Z',
     })
     const partial = await getInbox(owner, partialCommunity, 'limit=2')
     expect(partial.results.map(result => result.id)).toEqual([partialThread.id])
@@ -76,7 +76,7 @@ describe('community modmail cursor behavior', () => {
           communityId: tieCommunity.id,
           subjectUserId: subject.id,
           modUserId: owner.id,
-          updatedAt: '2026-07-01T10:00:00.123456Z',
+          lastActivityAt: '2026-07-01T10:00:00.123456Z',
         }),
       ),
     )
@@ -95,13 +95,13 @@ describe('community modmail cursor behavior', () => {
       communityId: preciseCommunity.id,
       subjectUserId: olderSubject.id,
       modUserId: owner.id,
-      updatedAt: '2026-07-01T10:00:00.000001Z',
+      lastActivityAt: '2026-07-01T10:00:00.000001Z',
     })
     const newer = await createTestModmailThread({
       communityId: preciseCommunity.id,
       subjectUserId: newerSubject.id,
       modUserId: owner.id,
-      updatedAt: '2026-07-01T10:00:00.000999Z',
+      lastActivityAt: '2026-07-01T10:00:00.000999Z',
     })
     const preciseFirst = await getInbox(owner, preciseCommunity, 'limit=1')
     expect(preciseFirst.results.map(result => result.id)).toEqual([newer.id])
@@ -126,14 +126,14 @@ describe('community modmail cursor behavior', () => {
         communityId: sourceCommunity.id,
         subjectUserId: sourceSubject.id,
         modUserId: owner.id,
-        updatedAt: '2026-07-01T10:00:02.000001Z',
+        lastActivityAt: '2026-07-01T10:00:02.000001Z',
       }),
     ])
     const targetThread = await createTestModmailThread({
       communityId: targetCommunity.id,
       subjectUserId: targetSubject.id,
       modUserId: owner.id,
-      updatedAt: '2026-07-01T10:00:01.000001Z',
+      lastActivityAt: '2026-07-01T10:00:01.000001Z',
     })
     const sourcePage = await getInbox(owner, sourceCommunity, 'limit=1')
     const ownerReplay = await getInbox(
@@ -269,7 +269,7 @@ async function createThreads(owner: PrivateUser, target: Community, count: numbe
         communityId: target.id,
         subjectUserId: subject.id,
         modUserId: owner.id,
-        updatedAt: `2026-07-01T10:00:0${index}.000001Z`,
+        lastActivityAt: `2026-07-01T10:00:0${index}.000001Z`,
       }),
     ),
   )

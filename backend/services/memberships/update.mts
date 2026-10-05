@@ -27,7 +27,7 @@ export async function updateMembershipFromEvent(
   options: MembershipEventUpdateOptions,
   recordChange: RecordMembershipUpdateEventChange,
 ): Promise<MembershipUpdateResult | null> {
-  const setClauses = [sql`updated_at = CURRENT_TIMESTAMP`]
+  const setClauses: ReturnType<typeof sql>[] = []
 
   if (options.status !== undefined) {
     appendLifecycleSetClauses(setClauses, options.status, options)
@@ -46,6 +46,8 @@ export async function updateMembershipFromEvent(
     if (!isTerminal)
       setClauses.push(sql`should_cancel_at_period_end = ${options.cancelAtPeriodEnd}`)
   }
+
+  if (setClauses.length === 0) setClauses.push(sql`membership_product_id = membership_product_id`)
 
   const query = sql`/* updateMembershipFromEvent */ UPDATE memberships SET `
   for (let i = 0; i < setClauses.length; i++) {
@@ -114,8 +116,7 @@ export async function updateMembershipFromEvent(
             expired_at = NULL,
             past_due_at = NULL,
             paused_at = NULL,
-            should_auto_renew = false,
-            updated_at = CURRENT_TIMESTAMP
+            should_auto_renew = false
         WHERE membership_source_id = ${options.membershipSourceId}
       `)
     }

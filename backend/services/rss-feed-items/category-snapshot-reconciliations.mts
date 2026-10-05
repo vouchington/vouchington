@@ -27,8 +27,7 @@ export async function persistRssFeedItemCategorySnapshotReconciliations(
       FROM UNNEST($2::uuid[], $3::jsonb[]) AS snapshot(rss_feed_item_id, categories)
       ORDER BY rss_feed_item_id
       ON CONFLICT (rss_feed_id, rss_feed_item_id) DO UPDATE
-      SET categories = EXCLUDED.categories,
-          updated_at = CURRENT_TIMESTAMP`,
+      SET categories = EXCLUDED.categories`,
     [
       rssFeedId,
       orderedSnapshots.map(snapshot => snapshot.rss_feed_item_id),
@@ -44,8 +43,7 @@ export async function persistRssFeedItemCategorySnapshotReconciliations(
       ORDER BY rss_feed_item_id
       ON CONFLICT (rss_feed_item_id) DO UPDATE
       SET categories = EXCLUDED.categories,
-          generation = rss_feed_item_category_snapshot_reconciliations.generation + 1,
-          updated_at = CURRENT_TIMESTAMP`,
+          generation = rss_feed_item_category_snapshot_reconciliations.generation + 1`,
     [
       orderedSnapshots.map(snapshot => snapshot.rss_feed_item_id),
       orderedSnapshots.map(snapshot => JSON.stringify(snapshot.categories)),
@@ -69,8 +67,7 @@ export async function markRssFeedItemCategorySnapshotsForReconciliation(
       FROM UNNEST($1::uuid[]) AS snapshot(rss_feed_item_id)
       ORDER BY rss_feed_item_id
       ON CONFLICT (rss_feed_item_id) DO UPDATE
-      SET generation = rss_feed_item_category_snapshot_reconciliations.generation + 1,
-          updated_at = CURRENT_TIMESTAMP`,
+      SET generation = rss_feed_item_category_snapshot_reconciliations.generation + 1`,
     [orderedIds],
   )
 }
@@ -88,8 +85,7 @@ export async function markRssFeedCategorySnapshotsForReconciliation(
       WHERE rss_feed_id = $1::uuid
       ORDER BY rss_feed_item_id
       ON CONFLICT (rss_feed_item_id) DO UPDATE
-      SET generation = rss_feed_item_category_snapshot_reconciliations.generation + 1,
-          updated_at = CURRENT_TIMESTAMP`,
+      SET generation = rss_feed_item_category_snapshot_reconciliations.generation + 1`,
     [rssFeedId],
   )
 }

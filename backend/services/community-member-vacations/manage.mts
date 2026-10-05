@@ -11,12 +11,11 @@ export async function setMyCommunityVacation(
 ): Promise<CommunityMemberVacation> {
   const { communityId, endsAt } = options
   const { rows } = await write<CommunityMemberVacation>(sql`/* setMyCommunityVacation */
-    INSERT INTO community_member_vacations (community_id, user_id, starts_at, ends_at, updated_at)
-    VALUES (${communityId}, ${currentUserId}, now(), ${endsAt ?? null}, now())
+    INSERT INTO community_member_vacations (community_id, user_id, starts_at, ends_at)
+    VALUES (${communityId}, ${currentUserId}, now(), ${endsAt ?? null})
     ON CONFLICT (community_id, user_id) DO UPDATE SET
       starts_at  = now(),
-      ends_at    = EXCLUDED.ends_at,
-      updated_at = now()
+      ends_at    = EXCLUDED.ends_at
     RETURNING community_id, user_id, starts_at, ends_at, created_at, updated_at
   `)
   return rows[0]!

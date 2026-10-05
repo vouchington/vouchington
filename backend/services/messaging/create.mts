@@ -128,7 +128,7 @@ export async function createConversationMessage(
   conversationId: string,
   bodyText: string,
 ): Promise<DirectMessage> {
-  // CTE atomically guards participant membership, inserts message, and bumps updated_at.
+  // CTE atomically guards participant membership, inserts message, and records conversation activity.
   const { rows } = await write(sql`/* createConversationMessage */
     WITH participant_check AS (
       SELECT 1 FROM conversation_participants
@@ -146,7 +146,7 @@ export async function createConversationMessage(
       RETURNING id, conversation_id, body_text, created_by_id, created_at, updated_at, deleted_at
     ),
     touch_conversation AS (
-      UPDATE conversations SET updated_at = CURRENT_TIMESTAMP
+      UPDATE conversations SET last_activity_at = CURRENT_TIMESTAMP
       WHERE id = ${conversationId} AND EXISTS (SELECT 1 FROM participant_check)
     )
     SELECT * FROM new_message

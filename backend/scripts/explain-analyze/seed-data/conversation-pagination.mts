@@ -16,8 +16,8 @@ export async function seedConversationPaginationRows(count = 1000): Promise<void
       const modmailValues: unknown[] = []
       const modmailRows: string[] = []
       for (let index = offset; index < offset + batch; index += 1) {
-        const updatedAt = new Date(Date.UTC(2026, 0, 1) + index * 1000).toISOString()
-        directValues.push(seedUuid(index, '0c'), inboxUserId, updatedAt)
+        const lastActivityAt = new Date(Date.UTC(2026, 0, 1) + index * 1000).toISOString()
+        directValues.push(seedUuid(index, '0c'), inboxUserId, lastActivityAt)
         let base = directValues.length - 2
         directRows.push(`($${base}, 'direct_message', $${base + 1}, $${base + 2})`)
 
@@ -26,7 +26,7 @@ export async function seedConversationPaginationRows(count = 1000): Promise<void
           communityId,
           seedUuid(index + 1, '01'),
           inboxUserId,
-          updatedAt,
+          lastActivityAt,
         )
         base = modmailValues.length - 4
         modmailRows.push(
@@ -34,13 +34,13 @@ export async function seedConversationPaginationRows(count = 1000): Promise<void
         )
       }
       await query(
-        `/* seedExplainData */ INSERT INTO conversations (id, channel_type, created_by_id, updated_at)
+        `/* seedExplainData */ INSERT INTO conversations (id, channel_type, created_by_id, last_activity_at)
          VALUES ${directRows.join(', ')} ON CONFLICT DO NOTHING`,
         directValues,
       )
       await query(
         `/* seedExplainData */ INSERT INTO conversations (
-           id, channel_type, community_id, subject_user_id, created_by_id, updated_at
+           id, channel_type, community_id, subject_user_id, created_by_id, last_activity_at
          ) VALUES ${modmailRows.join(', ')} ON CONFLICT DO NOTHING`,
         modmailValues,
       )

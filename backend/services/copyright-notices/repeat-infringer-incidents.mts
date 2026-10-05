@@ -57,12 +57,12 @@ export async function syncCopyrightRepeatInfringerIncidents(
       )
       SELECT account_user_id, ${noticeId}, is_operative FROM desired
       ON CONFLICT (account_user_id, copyright_notice_id) DO UPDATE
-      SET is_operative = EXCLUDED.is_operative, updated_at = CURRENT_TIMESTAMP
+      SET is_operative = EXCLUDED.is_operative
       WHERE copyright_repeat_infringer_incidents.is_operative IS DISTINCT FROM EXCLUDED.is_operative
       RETURNING account_user_id, is_operative
     ), cleared AS (
       UPDATE copyright_repeat_infringer_incidents incident
-      SET is_operative = false, updated_at = CURRENT_TIMESTAMP
+      SET is_operative = false
       WHERE incident.copyright_notice_id = ${noticeId}
         AND incident.is_operative
         AND NOT EXISTS (

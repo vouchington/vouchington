@@ -29,8 +29,7 @@ export async function resolveReviewDisputeRemove(
       UPDATE review_disputes
       SET resolution_action = 'remove',
           resolved_at = ${now},
-          resolved_by_id = ${staffUserId},
-          updated_at = CURRENT_TIMESTAMP
+          resolved_by_id = ${staffUserId}
       WHERE id = ${disputeId} AND resolved_at IS NULL
       RETURNING `.append(DISPUTE_RETURNING),
   )
@@ -90,8 +89,7 @@ export async function resolveReviewDisputeAnnotate(
       UPDATE review_disputes
       SET resolution_action = 'annotate',
           resolved_at = ${now},
-          resolved_by_id = ${staffUserId},
-          updated_at = CURRENT_TIMESTAMP
+          resolved_by_id = ${staffUserId}
       WHERE id = ${disputeId} AND resolved_at IS NULL
       RETURNING `.append(DISPUTE_RETURNING),
   )

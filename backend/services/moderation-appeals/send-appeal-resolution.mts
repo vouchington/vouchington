@@ -36,8 +36,7 @@ export async function sendApprovedModerationAppealResolution(
     updated AS (
       UPDATE moderation_appeals
       SET sent_at = ${now},
-          latest_lifecycle_change_id = (SELECT id FROM lifecycle_change_id),
-          updated_at = CURRENT_TIMESTAMP
+          latest_lifecycle_change_id = (SELECT id FROM lifecycle_change_id)
       WHERE id = ${appealId}
         AND approved_at IS NOT NULL
         AND sent_at IS NULL

@@ -297,33 +297,30 @@ examples describe the review baseline, rather than the current generated snapsho
     (RFC 6749), and it becomes `client_state`. The protocol parameter keeps its name.
     `users.verification_status` is not named `status`/`state`.
 - **`updated_at` exists only on tables whose rows change, always with the `fn_update_updated_at`
-  trigger, and code never writes it.** A table whose only allowed UPDATE erases an actor id
-  counts as append-only. 86 tables have the column without the trigger, because
-  `schema-static-analysis.test.mts` (`missing-updated-at`) requires `updated_at` on every table
-  unless an allowlist entry exempts it. Invert that rule: a table without the column needs no
-  reason, and a table with it needs the trigger.
-  - Drop the column from 67 tables: 50 with a trigger that rejects UPDATE or allows only actor
-    erasure (copyright legal records, classifier results, `agent_moderations`), and 17 that code
-    only inserts (copyright evidence-retention previews and dispositions, `og_dependency_manifests`,
-    `media_types`, …). Check each for readers of the column (API `updatedAt` fields) first.
-  - Add the trigger to 19 tables: 16 whose writers set `updated_at` by hand today (10 through
-    UPDATE, including `membership_source_states` and the 4 `*_cleanup_progress` tables; 6 through
-    `ON CONFLICT DO UPDATE`), and 3 whose `updated_at` is wrong today because nobody sets it
-    (`crawls`, `crawl_chunks`, `copyright_notice_guest_capabilities`).
-  - Delete the explicit `updated_at = now()` / `CURRENT_TIMESTAMP` writes (89 runtime files). The
-    trigger overwrites them, so they do nothing and wrongly suggest the code owns the value.
-  - Some tables that get the trigger now write a chosen time, not `now()`:
-    `post_admission_reservations` sets `updated_at = replay_deadline.now`
-    (`admission-replay-retention.mts`), `terminal.committed_at` (`admission.mts`) and
-    `observed_at.value` (`admission-lease-renewal.mts`). Once the trigger exists it replaces these
-    values. Before deleting each write, check whether anything reads `updated_at` as that domain
-    time. If something does, store it in a named column (`replay_deadline_at`, `lease_renewed_at`)
-    and point the reader there.
-  - The upsert `ON CONFLICT … DO UPDATE SET updated_at = copyright_notice_action_intents.updated_at`
-    (4 files in `backend/services/copyright-notices/`) is meant as a no-op that makes `RETURNING`
-    return the existing row. The table already has the trigger, so every conflict bumps
-    `updated_at`. Replace it with `ON CONFLICT DO NOTHING` followed by a `SELECT` of the existing
-    row, or with a CTE that does the same.
+  trigger, and runtime code never writes it.** A table whose only allowed UPDATE erases an actor id
+  counts as append-only. The live schema guard checks column ⇔ enabled trigger, including generated
+  parents, instead of requiring the column on every table. Keep that guard until the replacement
+  no-mistakes rules are enabled and verified after #1864.
+  - The current #1595 audit removes the column from 59 tables (52 guarded immutable or actor-erasure
+    records and seven insert-only tables), removes three redundant stamps on immutable tables,
+    and adds triggers to 21 mutable tables. The plan's 67/19 counts describe its earlier baseline.
+    `agent_moderations` now has elected tally projections, and EU dispute settlement outcomes can
+    record implementation; both are mutable. Classifier prompt activation and deletion are also
+    lifecycle mutations. Inspect current writers and guards before assigning a table to either shape.
+  - Only `fn_update_updated_at` maintains the generic timestamp. Ordinary writers update their
+    business fields. An empty partial update may use a conditional self-assignment to preserve its
+    existing row-lock, RETURNING and lifecycle-event contract; never duplicate a real SET target.
+  - Named facts drive domain readers: provider friend reconciliation writes and compares
+    `last_observed_at` using the exact database sync-start clock; conversation messages, participants
+    and metadata actions record `last_activity_at`, which drives inbox cursors and their indexes.
+    Generic `updated_at` remains the trigger-owned row mutation time.
+  - Admission replay and lease code captures explicit clocks in `committed_at`, `expires_at` and
+    `retention_expires_at`. No reader uses its former chosen-time `updated_at` assignment, so no
+    unused timestamp is added. Preserve those named horizon and lease facts when removing the write.
+  - Copyright action-intent conflicts use `ON CONFLICT DO NOTHING` followed by a fresh `SELECT`.
+    A duplicate does not update the retained intent, and the second statement sees a concurrent
+    winner after the uniqueness conflict resolves. A same-statement CTE fallback can miss that row
+    because its read snapshot predates the competing commit.
 
 ## R3 — Normalize: ids are FK columns, JSON is for schemaless data
 
@@ -653,20 +650,18 @@ interval '1 hour')` through the shared helper, so partitions from before the par
   `created_by_id`, `updated_by_id`, `deleted_at`, `deleted_by_id`) or it belongs to a vendor group
   whose table comment covers it (`bedrock_nova_multimodal_v1_*`, `lingua_rs_*`, `llm_moderation_*`,
   `openai_omni_moderation_*`, `search_vector`, `votes_{count,score}_*`). These exemptions stay.
-- **Generated tables.** 59 are exempt today: 52 `relation__*` and 7 `*_votes`, with no table
-  comments and 168 uncommented columns. After the vote-table split (R3) there are 75: 52
-  `relation__*`, 6 `*_votes` and 17 `relation__*__votes`, with about 295 columns to comment. The generators emit `COMMENT ON TABLE` and
-  `COMMENT ON COLUMN`, and the exemption goes away. The generators are
-  `config-driven/0000-00-01-entity-relations.mts` and
-  `config-driven/utils/election-schema-config.mts`.
-  - Relation tables: the table comment comes from the relation config (for example "Users who
-    follow topics"). `subject_id` and `object_id` name their target tables.
-  - Vote tables: comments on `device_id`, `ip_address`, `session_id`, `user_agent_id` and `score`,
-    plus `subject_id` and `entity_relation_id` on the relation vote tables.
-  - Only the `migrations` ledger stays exempt, through an `allow` entry.
-- **Views.** 19 of 22 have no comment (`view_posts`, `view_users_private`, `view_users_public`, …).
-  Each gets one that says what it is for and who may read it. For the `view_users_*` pair, the
-  comment states the privacy boundary.
+- **Generated tables.** All 75 parents (52 `relation__*`, six entity vote parents and 17
+  standalone relation vote parents) receive table and non-exempt column comments from their
+  generators. The generated-table comment exemptions are removed from the live guard.
+  - Relation descriptions come from metadata. `subject_id` and `object_id` name their concrete
+    targets; ordered relations and protocol identifiers state their meaning.
+  - Vote comments describe ballot targets and audit provenance (`device_id`, `ip_address`,
+    `session_id`, `user_agent_string_id`, `score`), including composite relation targets.
+  - The internal `migrations` ledger remains exempt. Extension-owned objects, identified through
+    PostgreSQL dependency metadata, belong to the extension and are outside application comments.
+- **Views.** Every application view has a purpose comment. The 19 previously uncommented views
+  now state their projection or privacy boundary, including the private/public user views. Check
+  materialized views as well. Conventional table-column names and vendor-prefix exemptions remain.
 - Enums and functions are out of scope: the snapshot doesn't record their comments.
 
 ## Index every foreign key with a referential-integrity-usable leading index

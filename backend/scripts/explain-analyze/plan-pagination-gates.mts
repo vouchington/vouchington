@@ -4,8 +4,8 @@ import { isBoundedStoryPresentationSort } from './story-presentation-sort.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 const PAGINATION_INDEXES_BY_SCENARIO = new Map<string, string[]>([
-  ['direct-message-inbox-page', ['idx_conversations__direct_message_updated']],
-  ['modmail-inbox-page', ['idx_conversations__modmail_community_updated']],
+  ['direct-message-inbox-page', ['idx_conversations__direct_message_activity']],
+  ['modmail-inbox-page', ['idx_conversations__modmail_community_activity']],
   ['individual-cards-page', ['idx_individual_cards__individual_id_id']],
   ['point-valuations-page', ['idx_individua_rewards_program_point_valuation__individual_id_id']],
   [

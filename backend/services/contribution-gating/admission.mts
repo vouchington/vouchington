@@ -112,8 +112,7 @@ export async function runContributionAdmission<T>(
         committed_post_id = ${committedContributionPostId(response)}, committed_status = 'created',
         committed_at = terminal.committed_at,
         expires_at = terminal.committed_at + ${CONTRIBUTION_ADMISSION_REPLAY_RETENTION_MINUTES} * INTERVAL '1 minute',
-        retention_expires_at = terminal.committed_at + ${CONTRIBUTION_ADMISSION_REPLAY_RETENTION_MINUTES} * INTERVAL '1 minute',
-        updated_at = terminal.committed_at
+        retention_expires_at = terminal.committed_at + ${CONTRIBUTION_ADMISSION_REPLAY_RETENTION_MINUTES} * INTERVAL '1 minute'
       FROM terminal
       WHERE r.id = ${claim.reservationId}`)
     commitMayHaveSucceeded = true

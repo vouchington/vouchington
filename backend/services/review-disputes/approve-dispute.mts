@@ -17,8 +17,7 @@ export async function approveReviewDispute(
       UPDATE review_disputes
       SET approved_at = ${now},
           approved_by_id = ${staffUserId},
-          latest_lifecycle_change_id = (SELECT id FROM lifecycle_change_id),
-          updated_at = CURRENT_TIMESTAMP
+          latest_lifecycle_change_id = (SELECT id FROM lifecycle_change_id)
       WHERE id = ${disputeId}
         AND sent_at IS NULL
         AND resolved_at IS NULL

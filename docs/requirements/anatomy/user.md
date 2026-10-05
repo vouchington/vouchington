@@ -23,6 +23,10 @@
 | `news_digest_frequency`        | First-party news digest cadence: `none`, `daily`, or `weekly`                          |
 | `community_digest_frequency`   | Community digest cadence: `none`, `daily`, or `weekly`                                 |
 
+Provider friend relationships store `last_observed_at` for synchronization and stale-row cleanup.
+This is an internal provider-observation clock; see the
+[friend-sync lifecycle](../../overview/architecture/queues/find-your-friends/README.md#durable-recovery).
+
 ## States
 
 | State     | Condition      | Behavior                                                            |

@@ -36,8 +36,7 @@ export async function upsertPlaybackPosition(
         completed_at = CASE
           WHEN ${completed}::boolean THEN CURRENT_TIMESTAMP
           ELSE NULL
-        END,
-        updated_at = CURRENT_TIMESTAMP
+        END
     `,
   )
 }

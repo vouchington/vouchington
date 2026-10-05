@@ -54,17 +54,21 @@ export async function updateCommunityPostTypeSettings(
   }
 
   const updateQuery = sql`/* updateCommunityPostTypeSettings */
-    UPDATE communities SET updated_at = CURRENT_TIMESTAMP`
+    UPDATE communities SET `
+  const updates: ReturnType<typeof sql>[] = []
 
   if ('should_allow_review_posts' in input) {
-    updateQuery.append(sql`, should_allow_review_posts = ${input.should_allow_review_posts}`)
+    updates.push(sql`should_allow_review_posts = ${input.should_allow_review_posts}`)
   }
   if ('should_allow_data_point_posts' in input) {
-    updateQuery.append(
-      sql`, should_allow_data_point_posts = ${input.should_allow_data_point_posts}`,
-    )
+    updates.push(sql`should_allow_data_point_posts = ${input.should_allow_data_point_posts}`)
   }
 
+  if (updates.length === 0) updates.push(sql`name = name`)
+  for (const [index, update] of updates.entries()) {
+    if (index > 0) updateQuery.append(sql`, `)
+    updateQuery.append(update)
+  }
   updateQuery.append(sql`
     WHERE id = ${communityId}
       AND deleted_at IS NULL`)

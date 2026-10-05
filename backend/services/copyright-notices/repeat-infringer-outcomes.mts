@@ -117,8 +117,7 @@ async function recordCopyrightRepeatInfringerReviewOutcomeInTransaction(
       rationale_ciphertext = ${encryptSecret(
         input.rationale,
         `copyright-repeat-infringer-review:${input.reviewId}`,
-      )},
-      updated_at = CURRENT_TIMESTAMP
+      )}
     WHERE id = ${input.reviewId} AND outcome IS NULL
     RETURNING account_user_id
   `)

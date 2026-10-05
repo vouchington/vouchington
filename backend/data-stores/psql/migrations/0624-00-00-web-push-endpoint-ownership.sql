@@ -162,8 +162,7 @@ BEGIN
       leased_at = NULL,
       lease_expires_at = NULL,
       suppressed_at = NULL,
-      delivered_at = NULL,
-      updated_at = CURRENT_TIMESTAMP;
+      delivered_at = NULL;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;

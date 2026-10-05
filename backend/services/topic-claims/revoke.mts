@@ -15,8 +15,7 @@ export async function revokeTopicClaim(
     UPDATE topic_claims
     SET revoked_at = NOW(),
         revoked_by_id = ${staffUserId},
-        revocation_reason = ${revocationReason.trim()},
-        updated_at = CURRENT_TIMESTAMP
+        revocation_reason = ${revocationReason.trim()}
     WHERE id = ${claimId}
       AND verified_at IS NOT NULL
       AND revoked_at IS NULL

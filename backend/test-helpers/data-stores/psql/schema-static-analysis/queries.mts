@@ -82,7 +82,12 @@ export async function getCommentViolations(): Promise<CommentViolation[]> {
         FROM pg_class
         JOIN pg_namespace ON pg_namespace.oid = pg_class.relnamespace
         WHERE pg_namespace.nspname = 'public'
-          AND pg_class.relkind IN ('r', 'p')
+          AND pg_class.relkind IN ('r', 'p', 'v', 'm')
+          AND NOT EXISTS (
+            SELECT 1 FROM pg_depend
+            WHERE pg_depend.classid = 'pg_class'::regclass
+              AND pg_depend.objid = pg_class.oid AND pg_depend.deptype = 'e'
+          )
           AND NOT EXISTS (
             SELECT 1
             FROM pg_inherits
@@ -93,6 +98,8 @@ export async function getCommentViolations(): Promise<CommentViolation[]> {
         CASE relkind
           WHEN 'r' THEN 'table'
           WHEN 'p' THEN 'table'
+          WHEN 'v' THEN 'view'
+          WHEN 'm' THEN 'materialized-view'
         END AS kind,
         relname AS relation_name,
         NULL::text AS column_name
@@ -110,7 +117,8 @@ export async function getCommentViolations(): Promise<CommentViolation[]> {
         pg_attribute.attname AS column_name
       FROM public_tables
       JOIN pg_attribute ON pg_attribute.attrelid = public_tables.oid
-      WHERE pg_attribute.attnum > 0
+      WHERE public_tables.relkind IN ('r', 'p')
+        AND pg_attribute.attnum > 0
         AND NOT pg_attribute.attisdropped
         AND pg_attribute.attname <> ALL($1)
         AND col_description(public_tables.oid, pg_attribute.attnum) IS NULL

@@ -15,6 +15,11 @@ CREATE TABLE IF NOT EXISTS activitypub_inbox_delivery_storage_counters (
   )
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trg_activitypub_inbox_delivery_storage_counters__updated_at
+BEFORE UPDATE ON activitypub_inbox_delivery_storage_counters
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+
 INSERT INTO activitypub_inbox_delivery_storage_counters (
   singleton,
   retained_rows,
@@ -47,8 +52,7 @@ BEGIN
   SET retained_rows = retained_rows + retained_rows_delta,
       retained_raw_body_bytes = retained_raw_body_bytes + retained_bytes_delta,
       unverified_rows = unverified_rows + unverified_rows_delta,
-      unverified_raw_body_bytes = unverified_raw_body_bytes + unverified_bytes_delta,
-      updated_at = CURRENT_TIMESTAMP
+      unverified_raw_body_bytes = unverified_raw_body_bytes + unverified_bytes_delta
   WHERE singleton
     AND (unverified_rows_delta <= 0 OR unverified_rows + unverified_rows_delta <= 10000)
     AND (
@@ -105,8 +109,7 @@ BEGIN
   UPDATE activitypub_inbox_delivery_storage_counters
   SET retained_raw_body_bytes = retained_raw_body_bytes + retained_bytes_delta,
       unverified_rows = unverified_rows + unverified_rows_delta,
-      unverified_raw_body_bytes = unverified_raw_body_bytes + unverified_bytes_delta,
-      updated_at = CURRENT_TIMESTAMP
+      unverified_raw_body_bytes = unverified_raw_body_bytes + unverified_bytes_delta
   WHERE singleton
     AND (unverified_rows_delta <= 0 OR unverified_rows + unverified_rows_delta <= 10000)
     AND (
@@ -162,8 +165,7 @@ BEGIN
   SET retained_rows = retained_rows - retained_rows_delta,
       retained_raw_body_bytes = retained_raw_body_bytes - retained_bytes_delta,
       unverified_rows = unverified_rows - unverified_rows_delta,
-      unverified_raw_body_bytes = unverified_raw_body_bytes - unverified_bytes_delta,
-      updated_at = CURRENT_TIMESTAMP
+      unverified_raw_body_bytes = unverified_raw_body_bytes - unverified_bytes_delta
   WHERE singleton;
 
   IF NOT FOUND THEN

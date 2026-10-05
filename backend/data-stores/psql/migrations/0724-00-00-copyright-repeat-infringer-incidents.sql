@@ -15,6 +15,11 @@ CREATE TABLE copyright_repeat_infringer_incidents (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trg_copyright_repeat_infringer_incidents__updated_at
+BEFORE UPDATE ON copyright_repeat_infringer_incidents
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_repeat_infringer_incidents__operative_account
   ON copyright_repeat_infringer_incidents (account_user_id)
   WHERE is_operative;
@@ -30,9 +35,7 @@ CREATE TABLE copyright_repeat_infringer_dispositions (
   rationale_ciphertext text NOT NULL CONSTRAINT chk_copyright_repeat_infringer_dispositio__rationale_ciphertext CHECK (char_length(rationale_ciphertext) BETWEEN 1 AND 65536),
   recorded_at timestamptz NOT NULL,
   recorded_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
-  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL);
 
 CREATE INDEX idx_copyright_repeat_infringer_dispositions__recorded_by
   ON copyright_repeat_infringer_dispositions (recorded_by_id);
@@ -53,6 +56,11 @@ CREATE TABLE copyright_repeat_infringer_reviews (
   CHECK ((outcome IS NULL) = (outcome_at IS NULL)),
   CHECK ((outcome IS NULL) = (rationale_ciphertext IS NULL))
 );
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trg_copyright_repeat_infringer_reviews__updated_at
+BEFORE UPDATE ON copyright_repeat_infringer_reviews
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 CREATE UNIQUE INDEX idx_copyright_repeat_infringer_reviews__one_open
   ON copyright_repeat_infringer_reviews (account_user_id)

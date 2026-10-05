@@ -58,8 +58,7 @@ export async function reconcileSourceProjection(
       projection_ended_at = CASE
         WHEN ${options.reactivateProjection} THEN NULL
         ELSE projection_ended_at
-      END,
-      updated_at = CURRENT_TIMESTAMP
+      END
     WHERE id = ${prior.id} AND membership_source_id = ${prior.membership_source_id}
     RETURNING cancelled_at, expired_at, past_due_at, paused_at, should_cancel_at_period_end`)
   const current = rows[0] as Omit<CreatedMembership, 'id' | 'grantId' | 'projected'>

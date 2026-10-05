@@ -103,3 +103,5 @@ CREATE OR REPLACE VIEW view_rss_feeds AS
     LEFT JOIN podcast_shows AS podcast_show
       ON podcast_show.rss_feed_id = rss_feeds.id
 ;
+
+COMMENT ON VIEW view_rss_feeds IS 'RSS feed response projection with current discoverability and topic references.';

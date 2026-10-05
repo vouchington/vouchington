@@ -49,7 +49,7 @@ export async function advanceMicrosoftStoreSourceRecoveryCursor(
   const lastSourceId = batch.completesSweep ? null : batch.nextCursor
   const upperBound = batch.completesSweep ? null : batch.sweepUpperBound
   const { rowCount } = await write(
-    sql`/* advanceMicrosoftStoreSourceRecoveryCursor */ INSERT INTO membership_microsoft_store_recovery_cursors (id, last_source_id, sweep_upper_bound_id) VALUES (${RECOVERY_CURSOR_ID}, ${lastSourceId}::UUID, ${upperBound}::UUID) ON CONFLICT (id) DO UPDATE SET last_source_id = EXCLUDED.last_source_id, sweep_upper_bound_id = EXCLUDED.sweep_upper_bound_id, updated_at = CURRENT_TIMESTAMP WHERE membership_microsoft_store_recovery_cursors.last_source_id IS NOT DISTINCT FROM ${batch.previousCursor}::UUID AND membership_microsoft_store_recovery_cursors.sweep_upper_bound_id IS NOT DISTINCT FROM ${batch.previousUpperBound}::UUID`,
+    sql`/* advanceMicrosoftStoreSourceRecoveryCursor */ INSERT INTO membership_microsoft_store_recovery_cursors (id, last_source_id, sweep_upper_bound_id) VALUES (${RECOVERY_CURSOR_ID}, ${lastSourceId}::UUID, ${upperBound}::UUID) ON CONFLICT (id) DO UPDATE SET last_source_id = EXCLUDED.last_source_id, sweep_upper_bound_id = EXCLUDED.sweep_upper_bound_id WHERE membership_microsoft_store_recovery_cursors.last_source_id IS NOT DISTINCT FROM ${batch.previousCursor}::UUID AND membership_microsoft_store_recovery_cursors.sweep_upper_bound_id IS NOT DISTINCT FROM ${batch.previousUpperBound}::UUID`,
   )
   return rowCount === 1
 }

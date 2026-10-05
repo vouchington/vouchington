@@ -16,8 +16,7 @@ export async function extendContributionAdmissionReplay(
     SET expires_at = GREATEST(expires_at, retention_expires_at,
         replay_deadline.now + ${CONTRIBUTION_ADMISSION_REPLAY_RETENTION_MINUTES} * INTERVAL '1 minute'),
       retention_expires_at = GREATEST(expires_at, retention_expires_at,
-        replay_deadline.now + ${CONTRIBUTION_ADMISSION_REPLAY_RETENTION_MINUTES} * INTERVAL '1 minute'),
-      updated_at = replay_deadline.now
+        replay_deadline.now + ${CONTRIBUTION_ADMISSION_REPLAY_RETENTION_MINUTES} * INTERVAL '1 minute')
     FROM replay_deadline
     WHERE id = ${reservationId} AND state = 'committed'`)
 }
@@ -36,8 +35,7 @@ export async function completeMarkerlessContributionAdmissionReplay(
         expires_at = GREATEST(expires_at, retention_expires_at,
           replay_deadline.now + ${CONTRIBUTION_ADMISSION_REPLAY_RETENTION_MINUTES} * INTERVAL '1 minute'),
         retention_expires_at = GREATEST(expires_at, retention_expires_at,
-          replay_deadline.now + ${CONTRIBUTION_ADMISSION_REPLAY_RETENTION_MINUTES} * INTERVAL '1 minute'),
-        updated_at = replay_deadline.now
+          replay_deadline.now + ${CONTRIBUTION_ADMISSION_REPLAY_RETENTION_MINUTES} * INTERVAL '1 minute')
       FROM replay_deadline
       WHERE id = ${reservationId} AND state = 'committed'
       RETURNING id

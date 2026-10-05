@@ -8,6 +8,7 @@ import type { EntityRelationEntityType } from '@voucha/types/entities/entity-rel
 import {
   createVoteDefaultPartitionSql,
   createVoteIndexesSql,
+  createEntityRelationComments,
 } from './utils/election-vote-table-sql.mts'
 import {
   getElectionConstraintClause,
@@ -105,7 +106,7 @@ CREATE TABLE IF NOT EXISTS "${metadata.table_name}" (\n`
 
   query += `;\n\n`
 
-  return query.trim()
+  return `${query.trim()}\n\n${createEntityRelationComments(metadata)}`
 }
 
 function createEntityRelationVoteTable(metadata: EntityRelationMetadata): string {
@@ -132,6 +133,7 @@ ${createVoteDefaultPartitionSql(voteTable)}
 
 ${createVoteIndexesSql(voteTable, 'entity_relation_id')}
 
+COMMENT ON COLUMN ${voteTable}.user_id IS 'User who cast this concrete relation ballot event.';
 COMMENT ON TABLE ${voteTable} IS 'Append-only votes for the concrete ${metadata.table_name} elected relation.';
 COMMENT ON COLUMN ${voteTable}.score_is_neutral IS 'Explicit neutral provenance; binary relation vote producers leave this false.';
 COMMENT ON COLUMN ${voteTable}.score_is_semantic IS 'Explicit semantic score provenance; binary relation vote producers leave this false.';

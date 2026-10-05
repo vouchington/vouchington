@@ -106,9 +106,8 @@ export async function assignModmailThread(
 ): Promise<void> {
   await write(sql`/* assignModmailThread */
     UPDATE conversations
-    SET assigned_moderator_user_id = ${modUserId},
-        assigned_at = CURRENT_TIMESTAMP,
-        updated_at = CURRENT_TIMESTAMP
+    SET last_activity_at = CURRENT_TIMESTAMP, assigned_moderator_user_id = ${modUserId},
+        assigned_at = CURRENT_TIMESTAMP
     WHERE id = ${conversationId}
       AND channel_type = 'modmail'
       AND deleted_at IS NULL
@@ -121,9 +120,8 @@ export async function resolveModmailThread(
 ): Promise<void> {
   await write(sql`/* resolveModmailThread */
     UPDATE conversations
-    SET resolved_at = CURRENT_TIMESTAMP,
-        resolved_by_id = ${resolvedBy},
-        updated_at = CURRENT_TIMESTAMP
+    SET last_activity_at = CURRENT_TIMESTAMP, resolved_at = CURRENT_TIMESTAMP,
+        resolved_by_id = ${resolvedBy}
     WHERE id = ${conversationId}
       AND channel_type = 'modmail'
       AND deleted_at IS NULL
@@ -133,9 +131,8 @@ export async function resolveModmailThread(
 export async function unresolveModmailThread(conversationId: string): Promise<void> {
   await write(sql`/* unresolveModmailThread */
     UPDATE conversations
-    SET resolved_at = NULL,
-        resolved_by_id = NULL,
-        updated_at = CURRENT_TIMESTAMP
+    SET last_activity_at = CURRENT_TIMESTAMP, resolved_at = NULL,
+        resolved_by_id = NULL
     WHERE id = ${conversationId}
       AND channel_type = 'modmail'
       AND deleted_at IS NULL

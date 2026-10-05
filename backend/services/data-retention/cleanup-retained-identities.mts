@@ -178,7 +178,7 @@ async function cleanupRetainedIdentityFamily(
     await query(
       `/* checkpointRetainedIdentityCleanup */
       UPDATE retained_identity_cleanup_progress
-      SET cursor_identity_id = $2, updated_at = CURRENT_TIMESTAMP WHERE family = $1`,
+      SET cursor_identity_id = $2 WHERE family = $1`,
       [family, hasMore ? page.at(-1)!.id : null],
     )
   await query.commit()

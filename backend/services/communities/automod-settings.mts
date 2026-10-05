@@ -38,7 +38,7 @@ export async function updateCommunityAutomodSettings(
 
   await write(sql`/* updateCommunityAutomodSettings */
     UPDATE communities
-    SET automod_action = ${input.automod_action}, updated_at = CURRENT_TIMESTAMP
+    SET automod_action = ${input.automod_action}
     WHERE id = ${communityId} AND deleted_at IS NULL`)
   const updated = await getCommunity(communityId)
   assert(updated, 404, 'Community not found after update')

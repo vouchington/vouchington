@@ -152,7 +152,7 @@ COMMENT ON COLUMN url_hostnames.votes_snapshot_xip_count IS 'Number of transacti
 CREATE TABLE IF NOT EXISTS media_types (
   id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   mime_type TEXT UNIQUE NOT NULL,
   CHECK (mime_type = LOWER(mime_type)),
   CHECK (mime_type = TRIM(mime_type)),
@@ -424,6 +424,11 @@ CREATE TABLE IF NOT EXISTS crawls (
   CHECK (embeddings_generated_at IS NULL OR markdown IS NOT NULL)
 ) PARTITION BY RANGE (id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trg_crawls__updated_at
+BEFORE UPDATE ON crawls
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+
 -- for the dominant query pattern: WHERE url_id = $1 ORDER BY id DESC
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_crawls__url_id__id_desc
@@ -524,6 +529,11 @@ CREATE TABLE IF NOT EXISTS crawl_chunks (
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) PARTITION BY RANGE (crawl_id);
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trg_crawl_chunks__updated_at
+BEFORE UPDATE ON crawl_chunks
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_crawl_chunks__search_vector

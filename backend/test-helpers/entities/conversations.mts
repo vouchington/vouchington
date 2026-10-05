@@ -10,14 +10,14 @@ type CreateTestConversationOptions = {
 type CreateTestDirectConversationOptions = {
   user1Id: string
   user2Id: string
-  updatedAt?: string
+  lastActivityAt?: string
 }
 
 export async function createTestDirectConversation(options: CreateTestDirectConversationOptions) {
-  const insert = options.updatedAt
+  const insert = options.lastActivityAt
     ? sql`/* createTestDirectConversation */
-        INSERT INTO conversations (channel_type, title, created_by_id, updated_at)
-        VALUES ('direct_message', '', ${options.user1Id}, ${options.updatedAt})
+        INSERT INTO conversations (channel_type, title, created_by_id, last_activity_at)
+        VALUES ('direct_message', '', ${options.user1Id}, ${options.lastActivityAt})
         RETURNING id`
     : sql`/* createTestDirectConversation */
         INSERT INTO conversations (channel_type, title, created_by_id)
@@ -83,17 +83,17 @@ type CreateTestModmailThreadOptions = {
   communityId: string
   subjectUserId: string
   modUserId: string
-  updatedAt?: string
+  lastActivityAt?: string
 }
 
 export async function createTestModmailThread(options: CreateTestModmailThreadOptions) {
-  const insert = options.updatedAt
+  const insert = options.lastActivityAt
     ? sql`/* createTestModmailThread */
         INSERT INTO conversations (
-          channel_type, title, community_id, subject_user_id, created_by_id, updated_at
+          channel_type, title, community_id, subject_user_id, created_by_id, last_activity_at
         )
         VALUES (
-          'modmail', '', ${options.communityId}, ${options.subjectUserId}, ${options.subjectUserId}, ${options.updatedAt}
+          'modmail', '', ${options.communityId}, ${options.subjectUserId}, ${options.subjectUserId}, ${options.lastActivityAt}
         )
         RETURNING id`
     : sql`/* createTestModmailThread */

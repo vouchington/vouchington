@@ -25,3 +25,5 @@ UNION ALL
     NULL::TEXT AS media_type
   FROM user_list_posts li
   WHERE li.removed_at IS NULL;
+
+COMMENT ON VIEW view_user_list_items IS 'User list content projection; callers enforce list ownership and audience access.';

@@ -7,8 +7,7 @@ export async function dismissPendingDisputesForDeletedReview(postId: string): Pr
       UPDATE review_disputes
       SET resolution_action = 'dismiss',
           resolved_at = NOW(),
-          latest_lifecycle_change_id = uuidv7(),
-          updated_at = CURRENT_TIMESTAMP
+          latest_lifecycle_change_id = uuidv7()
       WHERE post_id = ${postId}
         AND resolved_at IS NULL
       RETURNING id, latest_lifecycle_change_id, resolved_at

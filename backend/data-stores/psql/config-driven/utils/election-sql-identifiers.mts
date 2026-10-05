@@ -35,6 +35,10 @@ export function getElectionForeignKeyName(table: string, suffix: string): string
   return getElectionSqlIdentifier('fk', table, suffix)
 }
 
+export function getElectionTriggerName(table: string, suffix: string): string {
+  return getElectionSqlIdentifier('trg', table, suffix, true)
+}
+
 /** Name only constraints whose implicit PostgreSQL name would be truncated. */
 export function getElectionConstraintClause(
   table: string,

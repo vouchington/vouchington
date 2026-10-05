@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { createTestDirectConversation, createTestUser } from '@voucha/test-helpers'
+import { createTestDirectConversation, createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
+import { createConversationMessage } from '@services/messaging/create'
 import { decodeCursor } from '@modules/pagination'
 import type { PrivateUser } from '@services/users/types'
 
@@ -29,13 +30,40 @@ describe('direct-message inbox cursor behavior', () => {
     })
   })
 
+  it('moves a conversation to the front when a participant sends a message', async () => {
+    const [sender, olderPeer, newerPeer] = await Promise.all([
+      createTestUser(),
+      createTestUser(),
+      createTestUser(),
+    ])
+    const older = await createTestDirectConversation({
+      user1Id: sender!.id,
+      user2Id: olderPeer!.id,
+      lastActivityAt: '2026-07-01T10:00:00.000001Z',
+    })
+    const newer = await createTestDirectConversation({
+      user1Id: sender!.id,
+      user2Id: newerPeer!.id,
+      lastActivityAt: '2026-07-01T10:00:01.000001Z',
+    })
+    expect((await getInbox(sender!, 'limit=2')).results.map(result => result.id)).toEqual([
+      newer.id,
+      older.id,
+    ])
+    await createConversationMessage(sender!.id, WEB_PROVENANCE, older.id, 'New activity')
+    expect((await getInbox(sender!, 'limit=2')).results.map(result => result.id)).toEqual([
+      older.id,
+      newer.id,
+    ])
+  })
+
   it('distinguishes partial, exact-limit, and multi-page results without gaps', async () => {
     const partialUser = await createTestUser()
     const partialPeer = await createTestUser()
     const partialConversation = await createTestDirectConversation({
       user1Id: partialUser.id,
       user2Id: partialPeer.id,
-      updatedAt: '2026-07-01T10:00:00.000001Z',
+      lastActivityAt: '2026-07-01T10:00:00.000001Z',
     })
     const partial = await getInbox(partialUser, 'limit=2')
     expect(partial.results.map(result => result.id)).toEqual([partialConversation.id])
@@ -49,7 +77,7 @@ describe('direct-message inbox cursor behavior', () => {
         createTestDirectConversation({
           user1Id: exactUser.id,
           user2Id: peer!.id,
-          updatedAt: `2026-07-01T10:00:0${index}.000001Z`,
+          lastActivityAt: `2026-07-01T10:00:0${index}.000001Z`,
         }),
       ),
     )
@@ -64,7 +92,7 @@ describe('direct-message inbox cursor behavior', () => {
         createTestDirectConversation({
           user1Id: pagedUser.id,
           user2Id: peer!.id,
-          updatedAt: `2026-07-01T10:00:0${index}.000001Z`,
+          lastActivityAt: `2026-07-01T10:00:0${index}.000001Z`,
         }),
       ),
     )
@@ -88,7 +116,7 @@ describe('direct-message inbox cursor behavior', () => {
         createTestDirectConversation({
           user1Id: user.id,
           user2Id: peer!.id,
-          updatedAt: '2026-07-01T10:00:00.123456Z',
+          lastActivityAt: '2026-07-01T10:00:00.123456Z',
         }),
       ),
     )
@@ -109,12 +137,12 @@ describe('direct-message inbox cursor behavior', () => {
     const older = await createTestDirectConversation({
       user1Id: user.id,
       user2Id: olderPeer!.id,
-      updatedAt: '2026-07-01T10:00:00.000001Z',
+      lastActivityAt: '2026-07-01T10:00:00.000001Z',
     })
     const newer = await createTestDirectConversation({
       user1Id: user.id,
       user2Id: newerPeer!.id,
-      updatedAt: '2026-07-01T10:00:00.000999Z',
+      lastActivityAt: '2026-07-01T10:00:00.000999Z',
     })
 
     const first = await getInbox(user, 'limit=1')
@@ -138,12 +166,12 @@ describe('direct-message inbox cursor behavior', () => {
     const source = await createTestDirectConversation({
       user1Id: sourceUser!.id,
       user2Id: sourcePeer!.id,
-      updatedAt: '2026-07-01T10:00:02.000001Z',
+      lastActivityAt: '2026-07-01T10:00:02.000001Z',
     })
     const target = await createTestDirectConversation({
       user1Id: targetUser!.id,
       user2Id: targetPeer!.id,
-      updatedAt: '2026-07-01T10:00:01.000001Z',
+      lastActivityAt: '2026-07-01T10:00:01.000001Z',
     })
     const sourcePage = await getInbox(sourceUser!, 'limit=1')
     const replay = await getInbox(

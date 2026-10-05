@@ -2,6 +2,7 @@
 -- Case-scoped guest access. The raw token is never stored. Email receipt and
 -- thread correlation do not create a row.
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_guest_capabilities (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE RESTRICT,
@@ -15,6 +16,11 @@ CREATE TABLE copyright_notice_guest_capabilities (
   CONSTRAINT copyright_guest_capability_expiry_cap
     CHECK (expires_at - uuid_extract_timestamp(id) <= interval '30 days')
 );
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trg_copyright_notice_guest_capabilities__updated_at
+BEFORE UPDATE ON copyright_notice_guest_capabilities
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 CREATE INDEX idx_copyright_notice_guest_capabilities__notice
   ON copyright_notice_guest_capabilities (copyright_notice_id, id);
@@ -35,13 +41,12 @@ ALTER TABLE copyright_notice_lifecycle_changes
 ALTER TABLE copyright_notice_lifecycle_changes
   VALIDATE CONSTRAINT copyright_lifecycle_event_guest_capability_fk;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_urgent_filings (
   copyright_notice_submission_id uuid PRIMARY KEY
     CONSTRAINT fk_copyright_notice_urgent_filings__submission REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
   classified_at timestamptz NOT NULL,
-  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(copyright_notice_submission_id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(copyright_notice_submission_id)) VIRTUAL);
 
 COMMENT ON TABLE copyright_notice_guest_capabilities IS 'Hashed, expiring, revocable capability for one copyright notice. Possession of mail or a thread is not a row.';
 COMMENT ON COLUMN copyright_notice_guest_capabilities.copyright_notice_id IS 'The one copyright notice this capability authorizes.';

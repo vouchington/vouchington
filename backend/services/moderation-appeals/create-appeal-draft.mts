@@ -29,8 +29,7 @@ export async function createModerationAppealDraft(
           drafted_at = COALESCE(drafted_at, ${now}),
           approved_at = NULL,
           approved_by_id = NULL,
-          latest_lifecycle_change_id = (SELECT id FROM lifecycle_change_id),
-          updated_at = CURRENT_TIMESTAMP
+          latest_lifecycle_change_id = (SELECT id FROM lifecycle_change_id)
       WHERE id = ${input.appealId}
         AND approved_at IS NULL
         AND sent_at IS NULL

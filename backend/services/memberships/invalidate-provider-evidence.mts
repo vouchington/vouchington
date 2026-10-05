@@ -58,8 +58,7 @@ async function rejectMembershipProviderEvidenceInTransaction(
   await query(sql`/* rejectMembershipProviderEvidence: cancel source */
     UPDATE membership_source_states
     SET effective_at = LEAST(effective_at, ${rejectedAt}), cancelled_at = ${rejectedAt},
-        expired_at = NULL, past_due_at = NULL, paused_at = NULL, should_auto_renew = false,
-        updated_at = CURRENT_TIMESTAMP
+        expired_at = NULL, past_due_at = NULL, paused_at = NULL, should_auto_renew = false
     WHERE membership_source_id = ${lockedTarget.membership_source_id}
   `)
   if (!lockedTarget.membership_id) return { audited: false, invalidated: true, membershipId: null }
@@ -102,8 +101,7 @@ async function cancelMembershipProjectionAndRecordRejection(
   await query(sql`/* rejectMembershipProviderEvidence: cancel projection */
     UPDATE memberships
     SET effective_at = LEAST(effective_at, ${rejectedAt}), cancelled_at = ${rejectedAt},
-        expired_at = NULL, past_due_at = NULL, paused_at = NULL, should_cancel_at_period_end = false,
-        updated_at = CURRENT_TIMESTAMP
+        expired_at = NULL, past_due_at = NULL, paused_at = NULL, should_cancel_at_period_end = false
     WHERE id = ${membershipId} AND projection_ended_at IS NULL
   `)
   await recordMembershipChange({

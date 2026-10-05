@@ -44,3 +44,10 @@ settings use `should_auto_renew` and `should_cancel_at_period_end`; review outco
 `is_accepted`. This naming pass does not invent lifecycle timestamps or change review history.
 First-party API fields follow the same names. Provider payloads, encrypted replay evidence,
 OAuth `state`, and HTML attributes retain their external protocol spelling at their boundaries.
+
+Mutable rows pair `updated_at` with `fn_update_updated_at`; append-only and insert-only rows omit it.
+Runtime writes use business fields and named observation/activity clocks. Generated relation and vote
+parents receive comments for their tables, joined identifiers and vote tallies; views document their
+purpose and privacy boundary. The live convention guard retains these checks while #1864 blocks the
+replacement analyzer rules. See [R2](../postgres-schema-rules.md#r2--columns-say-their-type-and-target) and
+[R7](../postgres-schema-rules.md#r7--every-table-column-and-view-has-a-comment).

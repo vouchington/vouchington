@@ -76,8 +76,7 @@ export async function createModerationAppeal(
       ON CONFLICT (appellant_user_id, user_warning_id)
       WHERE resolved_at IS NULL AND user_warning_id IS NOT NULL
       DO UPDATE SET
-        appeal_reason = EXCLUDED.appeal_reason,
-        updated_at = CURRENT_TIMESTAMP
+        appeal_reason = EXCLUDED.appeal_reason
       RETURNING
         (xmax = 0) AS inserted,
         id, case_id, appellant_user_id, user_warning_id, community_ban_id, post_id, user_suspension_id, community_id, post_removal_kind,

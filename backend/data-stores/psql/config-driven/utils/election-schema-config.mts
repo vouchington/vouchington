@@ -5,6 +5,7 @@ export type VoteSchemaConfig = {
   entityIdColumn: string // the FK column name in the vote table (simple FK case)
   entityKeyColumns: string[] // PK/unique columns of entity used for FK reference
   entitySortColumns?: string[] // columns after votes_score_sort in sort index; defaults to entityKeyColumns
+  voteAdditionalColumnComments?: Record<string, string>
   voteAdditionalColumns?: string[] // extra columns on vote table (e.g. for composite FK)
   voteTableConstraints?: string[] // extra constraints (e.g. composite FK)
   voteScoreConstraint?: string // nullable score-domain CHECK
@@ -22,6 +23,9 @@ export const VOTE_SCHEMA_CONFIGS: VoteSchemaConfig[] = [
     entityKeyColumns: ['id'],
     entitySortColumns: ['id DESC'],
     voteAdditionalColumns: ['post_id UUID NOT NULL', 'outbound_activitypub_like_activity_id UUID'],
+    voteAdditionalColumnComments: {
+      outbound_activitypub_like_activity_id: 'Stable outbound ActivityPub Like protocol identity.',
+    },
     voteTableConstraints: ['FOREIGN KEY (post_id) REFERENCES posts (id) ON DELETE CASCADE'],
     deletedAtFilter: true,
     voteScoreConstraint: 'CHECK (score IS NULL OR score BETWEEN -2 AND 2)',
@@ -70,6 +74,9 @@ export const VOTE_SCHEMA_CONFIGS: VoteSchemaConfig[] = [
     entityKeyColumns: ['post_id', 'id'],
     entitySortColumns: ['post_id', 'id'],
     voteAdditionalColumns: ['post_id UUID NOT NULL', 'agent_moderation_id UUID NOT NULL'],
+    voteAdditionalColumnComments: {
+      post_id: 'Post scope paired with the concrete agent moderation ballot target.',
+    },
     voteTableConstraints: [
       'FOREIGN KEY (post_id, agent_moderation_id) REFERENCES agent_moderations (post_id, id) ON DELETE CASCADE',
     ],

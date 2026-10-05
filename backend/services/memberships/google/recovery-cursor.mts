@@ -63,8 +63,7 @@ export async function advanceGooglePlayRecoverySweep(options: {
     ) VALUES (${options.cursorId}, ${lastEvidenceId}::UUID, ${sweepUpperBoundId}::UUID)
     ON CONFLICT (id) DO UPDATE
       SET last_evidence_id = EXCLUDED.last_evidence_id,
-        sweep_upper_bound_id = EXCLUDED.sweep_upper_bound_id,
-        updated_at = CURRENT_TIMESTAMP
+        sweep_upper_bound_id = EXCLUDED.sweep_upper_bound_id
       WHERE membership_google_play_recovery_cursors.last_evidence_id
           IS NOT DISTINCT FROM ${options.previousCursor}::UUID
         AND membership_google_play_recovery_cursors.sweep_upper_bound_id

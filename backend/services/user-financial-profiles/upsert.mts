@@ -55,28 +55,26 @@ export async function upsertUserFinancialProfile(
 
   // Build UPDATE SET clause only for fields that were explicitly provided (not undefined).
   // This allows null to clear a field while omitting a key preserves the existing value.
-  const updateParts = sql``
+  const updates: ReturnType<typeof sql>[] = []
   if (input.credit_score_range !== undefined)
-    updateParts.append(sql`, credit_score_range = ${input.credit_score_range}`)
+    updates.push(sql`credit_score_range = ${input.credit_score_range}`)
   if (input.stated_income_range !== undefined) {
-    updateParts.append(
-      sql`, stated_income_minimum_minor_units = ${input.stated_income_range?.minimum.amount ?? null}`,
+    updates.push(
+      sql`stated_income_minimum_minor_units = ${input.stated_income_range?.minimum.amount ?? null}`,
     )
-    updateParts.append(
-      sql`, stated_income_maximum_minor_units = ${input.stated_income_range?.maximum?.amount ?? null}`,
+    updates.push(
+      sql`stated_income_maximum_minor_units = ${input.stated_income_range?.maximum?.amount ?? null}`,
     )
   }
   if (input.total_credit_limit !== undefined)
-    updateParts.append(
-      sql`, total_credit_limit_minor_units = ${input.total_credit_limit?.amount ?? null}`,
-    )
-  if (input.currency !== undefined) updateParts.append(sql`, currency_code = ${input.currency}`)
+    updates.push(sql`total_credit_limit_minor_units = ${input.total_credit_limit?.amount ?? null}`)
+  if (input.currency !== undefined) updates.push(sql`currency_code = ${input.currency}`)
   if (input.years_of_credit_history !== undefined)
-    updateParts.append(sql`, years_of_credit_history = ${input.years_of_credit_history}`)
+    updates.push(sql`years_of_credit_history = ${input.years_of_credit_history}`)
   if (input.hard_inquiries_12m !== undefined)
-    updateParts.append(sql`, hard_inquiries_12m = ${input.hard_inquiries_12m}`)
+    updates.push(sql`hard_inquiries_12m = ${input.hard_inquiries_12m}`)
   if (input.cards_opened_24m !== undefined)
-    updateParts.append(sql`, cards_opened_24m = ${input.cards_opened_24m}`)
+    updates.push(sql`cards_opened_24m = ${input.cards_opened_24m}`)
 
   const statement = sql`/* upsertUserFinancialProfile */
     INSERT INTO individual_financial_profiles (
@@ -101,9 +99,13 @@ export async function upsertUserFinancialProfile(
       ${input.hard_inquiries_12m ?? null},
       ${input.cards_opened_24m ?? null}
     )
-    ON CONFLICT (individual_id) DO UPDATE SET
-      updated_at = CURRENT_TIMESTAMP`
-  statement.append(updateParts)
+    ON CONFLICT (individual_id) DO UPDATE SET `
+  if (updates.length === 0)
+    updates.push(sql`currency_code = individual_financial_profiles.currency_code`)
+  for (const [index, update] of updates.entries()) {
+    if (index > 0) statement.append(sql`, `)
+    statement.append(update)
+  }
   statement.append(sql`
     RETURNING
       individual_id,

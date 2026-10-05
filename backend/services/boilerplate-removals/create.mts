@@ -25,8 +25,7 @@ export const createBoilerplateRemoval = async (
       updated_removal AS (
         UPDATE hostname_path_boilerplate_removals
         SET
-          results = ${JSON.stringify(results)}::jsonb,
-          updated_at = CURRENT_TIMESTAMP
+          results = ${JSON.stringify(results)}::jsonb
         WHERE id = (SELECT id FROM existing_removal)
         RETURNING *
       ),
@@ -61,8 +60,7 @@ export const createBoilerplateRemoval = async (
     updated_removal AS (
       UPDATE hostname_path_boilerplate_removals
       SET
-        results = ${JSON.stringify(results)}::jsonb,
-        updated_at = CURRENT_TIMESTAMP
+        results = ${JSON.stringify(results)}::jsonb
       WHERE id = (SELECT id FROM existing_removal)
       RETURNING *
     ),

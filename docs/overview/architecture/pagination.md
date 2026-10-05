@@ -79,8 +79,8 @@ requested limit. See [client coordination](../../requirements/CLIENT-PARITY-MATR
 - Authorization and visibility constrain the path dataset before its keyset boundary. Replaying an
   otherwise valid cursor on another authorized path only selects a boundary inside that path and
   cannot expose rows from the source path. Clients still reset traversal when the path changes.
-- Direct-message inbox queries must scan `idx_conversations__direct_message_updated` in
-  `(updated_at DESC, id DESC)` order without an explicit Sort under custom and generic plans.
+- Direct-message inbox queries must scan `idx_conversations__direct_message_activity` in
+  `(last_activity_at DESC, id DESC)` order without an explicit Sort under custom and generic plans.
   Membership uses a correlated scalar probe whose singleton contract is enforced by
   `idx_conversation_participants__conversation_user`; decorrelating into a participant-driven join would
   require sorting the inbox after membership lookup and fails the seeded plan gate.

@@ -299,3 +299,9 @@ CREATE OR REPLACE VIEW view_users_private AS
   ) susp ON true
   WHERE users.deleted_at IS NULL
 ;
+
+COMMENT ON VIEW view_embedded_users IS 'Compact public user references without private account fields.';
+
+COMMENT ON VIEW view_users_private IS 'Private account projection for the authenticated owner or explicitly authorized staff; never a public user response.';
+
+COMMENT ON VIEW view_users_public IS 'Public user profile projection excluding private account and authentication fields.';

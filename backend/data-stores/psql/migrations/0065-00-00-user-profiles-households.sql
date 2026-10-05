@@ -494,6 +494,7 @@ CREATE TABLE IF NOT EXISTS github_friends (
   github_friend_id TEXT NOT NULL,
   PRIMARY KEY (github_user_id, github_friend_id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  last_observed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -518,6 +519,7 @@ CREATE TABLE IF NOT EXISTS x_friends (
   x_friend_id TEXT NOT NULL,
   PRIMARY KEY (x_user_id, x_friend_id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  last_observed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -721,3 +723,6 @@ CREATE INDEX IF NOT EXISTS idx_spending_entries__household_id_id
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_amazon_ses_bounce_events__bounce_sub_type
   ON amazon_ses_bounce_events (bounce_sub_type);
+
+COMMENT ON COLUMN github_friends.last_observed_at IS 'Database timestamp of the latest provider friend-sync observation; stale observations are removed against the exact sync-start clock.';
+COMMENT ON COLUMN x_friends.last_observed_at IS 'Database timestamp of the latest provider friend-sync observation; stale observations are removed against the exact sync-start clock.';

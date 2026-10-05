@@ -50,7 +50,6 @@ export async function updateCommunityAgentPrompt(
     WITH updated_prompt AS (
       UPDATE agent_prompts
       SET prompt = COALESCE(${trimmedPrompt ?? null}, prompt),
-          updated_at = CURRENT_TIMESTAMP,
           updated_by_id = ${currentUser.id}
       WHERE id = ${promptId}
         AND deleted_at IS NULL

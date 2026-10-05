@@ -7,7 +7,7 @@ CREATE TABLE copyright_notice_submission_guidance (
   model text NOT NULL CHECK (char_length(model) BETWEEN 1 AND 255),
   guidance_ciphertext text NOT NULL CHECK (char_length(guidance_ciphertext) BETWEEN 1 AND 1048576),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   CONSTRAINT uq_cop_not_sub_gui__submission_id__input_sha256__prompt_version UNIQUE (copyright_notice_submission_id, input_sha256, prompt_version)
 );
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

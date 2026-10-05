@@ -241,7 +241,7 @@ CREATE TABLE IF NOT EXISTS post_autotagger_result_topics (
   topic_id UUID NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
   topic_order INT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   PRIMARY KEY (post_id, prompt_id, topic_id),
   FOREIGN KEY (post_id, prompt_id) REFERENCES post_autotagger_results(post_id, prompt_id) ON DELETE CASCADE
 );
@@ -286,7 +286,7 @@ CREATE TABLE IF NOT EXISTS rss_feed_item_autotagger_result_topics (
   topic_id UUID NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
   topic_order INT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   PRIMARY KEY (rss_feed_item_autotagger_result_id, topic_id)
 );
 

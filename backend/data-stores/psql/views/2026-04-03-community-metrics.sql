@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE VIEW view_community_metrics AS
   SELECT
     'community_metrics' AS __entity_type,
@@ -43,3 +44,5 @@ CREATE OR REPLACE VIEW view_community_metrics AS
   ) proxy_mute ON TRUE
   WHERE c.deleted_at IS NULL
 ;
+
+COMMENT ON VIEW view_community_metrics IS 'Community activity metrics for authorized community reads.';

@@ -2,6 +2,7 @@ import { VOTE_SCHEMA_CONFIGS, type VoteSchemaConfig } from './utils/election-sch
 import {
   createVoteDefaultPartitionSql,
   createVoteIndexesSql,
+  createEntityVoteComments,
 } from './utils/election-vote-table-sql.mts'
 import {
   neutralScoreProvenanceColumnSql,
@@ -16,6 +17,7 @@ function createVoteSchemaSql(config: VoteSchemaConfig): string {
   parts.push(addEntityVoteColumnsSql(config))
 
   parts.push(createVoteTableSql(config))
+  parts.push(createEntityVoteComments(config))
   parts.push(createVoteDefaultPartitionSql(config.voteTable))
   parts.push(createVoteIndexesSql(config.voteTable, config.entityIdColumn))
 
@@ -37,7 +39,8 @@ WHERE votes_score_net > 0${deletedAtClause};`
 function createVoteTableSql(config: VoteSchemaConfig): string {
   const extraColumns = buildVoteTableExtraColumns(config)
 
-  return `CREATE TABLE IF NOT EXISTS ${config.voteTable} (
+  return `-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS ${config.voteTable} (
   user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
   ${extraColumns.join('\n  ')}
   id UUID DEFAULT uuidv7() NOT NULL,

@@ -96,3 +96,7 @@ CREATE OR REPLACE VIEW view_topics AS
   WHERE topics.deleted_at IS NULL
     AND topics.merged_into_topic_id IS NULL
 ;
+
+COMMENT ON VIEW view_embedded_topics IS 'Compact topic references embedded in current entity responses.';
+
+COMMENT ON VIEW view_topics IS 'Current topic response projection; callers enforce topic lifecycle and visibility.';

@@ -9,7 +9,6 @@ import {
 import { NON_DEFAULT_ID_EXCEPTIONS } from '../../../../data-stores/psql/schema-growth-classification.mts'
 import {
   ALLOWED_MISSING_CREATED_AT,
-  ALLOWED_MISSING_UPDATED_AT,
   ALLOWED_NON_UUIDV7_CREATED_AT,
 } from './timestamp-allowlists.mts'
 
@@ -34,8 +33,6 @@ export type TimestampConventionViolation = {
 }
 
 export function isAllowedCommentViolation(violation: CommentViolation): boolean {
-  if (isGeneratedRelationTable(violation.relation_name)) return true
-  if (isGeneratedVoteTable(violation.relation_name)) return true
   if (violation.relation_name === 'migrations') return true
   if (violation.column_name != null && isConventionallyNamedColumn(violation.column_name)) {
     return true
@@ -66,6 +63,7 @@ export function isAllowedUuidConventionViolation(violation: UuidConventionViolat
 export function isAllowedTimestampConventionViolation(
   violation: TimestampConventionViolation,
 ): boolean {
+  if (violation.problem === 'updated-at-trigger-mismatch') return false
   if (isGeneratedRelationTable(violation.table_name)) return true
   if (isGeneratedVoteTable(violation.table_name)) return true
   if (violation.problem === 'created-at-not-derived-from-uuidv7-id') {
@@ -73,9 +71,6 @@ export function isAllowedTimestampConventionViolation(
   }
   if (violation.problem === 'missing-created-at') {
     return ALLOWED_MISSING_CREATED_AT.has(violation.table_name)
-  }
-  if (violation.problem === 'missing-updated-at') {
-    return ALLOWED_MISSING_UPDATED_AT.has(violation.table_name)
   }
   return false
 }

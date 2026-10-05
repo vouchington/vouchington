@@ -77,26 +77,32 @@ export async function resolveCopyrightLegalHoldInTransaction(
       copyright_notice_legal_hold_resolution_id)
     VALUES (${assessment.copyright_notice_id}, 'legal_hold_resolved', ${input.currentUser.id}, ${resolution.id})
   `)
-  const { rows: restrictionRows } = await transaction<{ id: string; intent_id: string }>(sql`
+  await transaction(sql`
+    /* resolveCopyrightLegalHold:insertRestoreIntents */
+    INSERT INTO copyright_notice_action_intents (
+      copyright_restriction_id, copyright_notice_deadline_id, expected_placement_revision, action
+    ) SELECT restriction.id, NULL, placement.revision, 'restore'
+    FROM copyright_legal_hold_restrictions source
+    JOIN copyright_restrictions restriction ON restriction.id = source.copyright_restriction_id
+    JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
+    JOIN media_placements placement ON placement.id = target.placement_id
+    WHERE source.copyright_notice_legal_hold_assessment_id = ${input.assessmentId}
+      AND restriction.lifted_at IS NULL
+    ON CONFLICT (copyright_restriction_id, expected_placement_revision, action) DO NOTHING
+  `)
+  // A fresh statement sees a competing insertion after the unique conflict has resolved.
+  const { rows: restrictionRows } = await transaction<{ intent_id: string }>(sql`
     /* resolveCopyrightLegalHold:affectedRestrictions */
-    WITH hold_restrictions AS (
-      SELECT restriction.id, target.placement_id
-      FROM copyright_legal_hold_restrictions source
-      JOIN copyright_restrictions restriction ON restriction.id = source.copyright_restriction_id
-      JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
-      WHERE source.copyright_notice_legal_hold_assessment_id = ${input.assessmentId}
-        AND restriction.lifted_at IS NULL
-    ), intents AS (
-      INSERT INTO copyright_notice_action_intents (
-        copyright_restriction_id, copyright_notice_deadline_id, expected_placement_revision, action
-      ) SELECT held.id, NULL, placement.revision, 'restore'
-      FROM hold_restrictions held
-      JOIN media_placements placement ON placement.id = held.placement_id
-      ON CONFLICT (copyright_restriction_id, expected_placement_revision, action)
-      DO UPDATE SET updated_at = copyright_notice_action_intents.updated_at
-      RETURNING id, copyright_restriction_id
-    ) SELECT held.id, intents.id AS intent_id
-      FROM hold_restrictions held JOIN intents ON intents.copyright_restriction_id = held.id
+    SELECT intent.id AS intent_id
+    FROM copyright_legal_hold_restrictions source
+    JOIN copyright_restrictions restriction ON restriction.id = source.copyright_restriction_id
+    JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
+    JOIN media_placements placement ON placement.id = target.placement_id
+    JOIN copyright_notice_action_intents intent
+      ON intent.copyright_restriction_id = restriction.id
+      AND intent.expected_placement_revision = placement.revision AND intent.action = 'restore'
+    WHERE source.copyright_notice_legal_hold_assessment_id = ${input.assessmentId}
+      AND restriction.lifted_at IS NULL
   `)
   const replayedIds = await replayEligibleCopyrightRestoreIntentsInTransaction({
     noticeId: assessment.copyright_notice_id,

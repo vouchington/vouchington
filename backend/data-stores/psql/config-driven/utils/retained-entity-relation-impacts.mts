@@ -1,4 +1,8 @@
-import { getElectionConstraintClause, getElectionIndexName } from './election-sql-identifiers.mts'
+import {
+  getElectionConstraintClause,
+  getElectionIndexName,
+  getElectionTriggerName,
+} from './election-sql-identifiers.mts'
 import {
   getEntityRelationIntegrityTargetColumn,
   type EntityRelationMetadata,
@@ -21,13 +25,19 @@ CREATE TABLE IF NOT EXISTS ${retained} (
 COMMENT ON TABLE ${retained} IS 'Concrete retained identity for an elected relation captured by durable deletion work.';
 COMMENT ON COLUMN ${retained}.subject_id IS 'Concrete subject root paired with this retained relation identifier.';`
   })
-  const cleanupProgress = `CREATE TABLE IF NOT EXISTS retained_relation_identity_cleanup_progress (
+  const cleanupProgress = `-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS retained_relation_identity_cleanup_progress (
   entity_relation elected_entity_relations PRIMARY KEY,
   cursor_subject_id UUID,
   cursor_relation_id UUID,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CHECK ((cursor_subject_id IS NULL) = (cursor_relation_id IS NULL))
 );
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER ${getElectionTriggerName('retained_relation_identity_cleanup_progress', 'updated_at')}
+BEFORE UPDATE ON retained_relation_identity_cleanup_progress
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 COMMENT ON TABLE retained_relation_identity_cleanup_progress IS 'One operational keyset cursor per metadata-declared elected relation family.';
 COMMENT ON COLUMN retained_relation_identity_cleanup_progress.entity_relation IS 'Metadata family selector for cleanup, not a persisted relation reference.';

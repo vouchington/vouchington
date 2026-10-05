@@ -49,7 +49,7 @@ export async function activateOldestQueuedGrant(
       SET effective_at = activated.started_at,
         expires_at = activated.started_at + candidate.remaining_duration,
         cancelled_at = NULL, expired_at = NULL, past_due_at = NULL, paused_at = NULL,
-        should_auto_renew = false, updated_at = CURRENT_TIMESTAMP
+        should_auto_renew = false
       FROM candidate INNER JOIN activated ON activated.membership_grant_id = candidate.id
       WHERE source_state.membership_source_id = candidate.membership_source_id
       RETURNING candidate.id AS membership_grant_id, candidate.membership_source_id,

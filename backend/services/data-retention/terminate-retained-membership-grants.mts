@@ -43,7 +43,7 @@ export async function terminateRetainedMembershipGrants(
     , closed_states AS (UPDATE membership_source_states source_state
     SET cancelled_at = GREATEST(source_state.effective_at, target.terminal_at),
       expired_at = NULL, past_due_at = NULL, paused_at = NULL,
-      should_auto_renew = false, updated_at = CURRENT_TIMESTAMP
+      should_auto_renew = false
     FROM target_grants target
     WHERE source_state.membership_source_id = target.membership_source_id
       AND source_state.cancelled_at IS NULL AND source_state.expired_at IS NULL

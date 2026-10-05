@@ -41,3 +41,5 @@ CREATE OR REPLACE VIEW view_current_paid_memberships AS
       WHEN 'plus' THEN 2
     END DESC,
     m.id DESC;
+
+COMMENT ON VIEW view_current_paid_memberships IS 'Current paid membership entitlement projection; retained identities alone grant no access.';

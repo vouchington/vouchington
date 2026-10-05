@@ -16,7 +16,7 @@ CREATE TABLE copyright_notice_form_intakes (
   has_accuracy_authority_under_penalty_of_perjury boolean NOT NULL,
   electronic_signature_ciphertext text NOT NULL CONSTRAINT chk_copyri_notice_form_intakes__electronic_signature_ciphertext CHECK (char_length(electronic_signature_ciphertext) BETWEEN 1 AND 1048576),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   CONSTRAINT uq_cop_not_for_inta__requester_identity_sha256__idempotency_key UNIQUE (requester_identity_sha256, idempotency_key)
 );
 
@@ -31,7 +31,7 @@ CREATE TABLE copyright_notice_form_screenings (
   rationale_ciphertext text NOT NULL CHECK (char_length(rationale_ciphertext) BETWEEN 1 AND 1048576),
   guidance_ciphertext text NOT NULL CHECK (char_length(guidance_ciphertext) BETWEEN 1 AND 1048576),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   CONSTRAINT uq_copyright_notice_form_screenings__intake_id__id UNIQUE (copyright_notice_form_intake_id, id)
 );
 
@@ -92,9 +92,7 @@ CREATE TABLE copyright_notice_form_intake_reviews (
   reviewed_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
   is_accepted boolean NOT NULL,
   rationale_ciphertext text NOT NULL CHECK (char_length(rationale_ciphertext) BETWEEN 1 AND 1048576),
-  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_form_intakes__requester ON copyright_notice_form_intakes(requester_user_id, id DESC) WHERE requester_user_id IS NOT NULL;

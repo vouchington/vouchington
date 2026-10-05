@@ -83,8 +83,7 @@ export async function createReviewDispute(
       WHERE resolved_at IS NULL
       DO UPDATE SET
         reason = EXCLUDED.reason,
-        claim_text = EXCLUDED.claim_text,
-        updated_at = CURRENT_TIMESTAMP
+        claim_text = EXCLUDED.claim_text
       RETURNING
         (xmax = 0) AS inserted,
         id, post_id, topic_id, disputant_user_id, reason, claim_text,

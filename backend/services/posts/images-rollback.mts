@@ -118,8 +118,7 @@ export async function rollbackPostImages(
       () =>
         query(sql`/* rollbackPostImages */
       UPDATE posts
-      SET llm_moderation_content_sha256 = ${rollback.llmModerationContentSha256},
-          updated_at = CURRENT_TIMESTAMP
+      SET llm_moderation_content_sha256 = ${rollback.llmModerationContentSha256}
       WHERE id = ${postId}
       `),
       () => compensatePostRevision(postId, rollback.revisionId, { query }),

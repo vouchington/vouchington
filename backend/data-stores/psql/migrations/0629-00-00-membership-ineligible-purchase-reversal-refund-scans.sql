@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS membership_ineligible_purchase_reversal_refund_observ
   amount_minor_units BIGINT NOT NULL CONSTRAINT chk_membe_ineli_purcha_revers_refund_observ__amount_minor_units CHECK (amount_minor_units BETWEEN 0 AND 9007199254740991),
   currency_code TEXT NOT NULL,
   observed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   CONSTRAINT pk_mipr_succeeded_refund_observations PRIMARY KEY (
     membership_ineligible_purchase_reversal_refund_scan_id, stripe_refund_id
   ),
@@ -154,5 +154,3 @@ COMMENT ON COLUMN membership_ineligible_purchase_reversal_refund_observations.cu
   'Stripe refund currency, required by trigger to match the owning scan.';
 COMMENT ON COLUMN membership_ineligible_purchase_reversal_refund_observations.observed_at IS
   'Time this succeeded refund was first committed locally.';
-COMMENT ON COLUMN membership_ineligible_purchase_reversal_refund_observations.updated_at IS
-  'Immutable insertion timestamp retained for the repository timestamp convention.';

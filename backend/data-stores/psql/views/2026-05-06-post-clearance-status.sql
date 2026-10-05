@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE VIEW view_post_clearance_status AS
   SELECT
     posts.id AS post_id,
@@ -24,3 +25,5 @@ CREATE OR REPLACE VIEW view_post_clearance_status AS
   LEFT JOIN post_clearance_changes
     ON post_clearance_changes.id = posts.latest_clearance_change_id
 ;
+
+COMMENT ON VIEW view_post_clearance_status IS 'Current post clearance derived from moderation lifecycle facts.';

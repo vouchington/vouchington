@@ -1,3 +1,4 @@
+import { insertCopyrightActionIntent } from './action-intent-insertion.mts'
 import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -131,20 +132,12 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   `)
   const restriction = rows[0]
   assert(restriction, 409, 'An active copyright restriction already exists for this target')
-  const { rows: actionIntentRows } = await transaction<{
-    id: string
-  }>(sql`/* acceptCopyrightNoticeAndImposeRestriction:createWithholdIntent */
-    INSERT INTO copyright_notice_action_intents (
-      copyright_restriction_id, copyright_notice_deadline_id, expected_placement_revision, action
-    ) VALUES (
-      ${restriction.id}, NULL, ${lockedTargets[0].placement_revision}, 'withhold'
-    )
-    ON CONFLICT (copyright_restriction_id, expected_placement_revision, action)
-    DO UPDATE SET updated_at = copyright_notice_action_intents.updated_at
-    RETURNING id
-  `)
-  const actionIntent = actionIntentRows[0]
-  assert(actionIntent, 500, 'Copyright withhold action intent was not recorded')
+  const actionIntent = await insertCopyrightActionIntent(
+    transaction,
+    restriction.id,
+    lockedTargets[0].placement_revision,
+    'withhold',
+  )
   await createCopyrightPosterNoticesInTransaction(
     {
       noticeId: input.noticeId,

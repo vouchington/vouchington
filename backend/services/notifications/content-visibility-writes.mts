@@ -89,8 +89,7 @@ async function restoreSystemPrunedManualPostNotifications(
     `/* restoreSystemPrunedManualPostNotifications */
       UPDATE notifications notification
       SET deleted_at = NULL,
-          delete_reason = NULL,
-          updated_at = CURRENT_TIMESTAMP
+          delete_reason = NULL
       WHERE notification.publication_post_id = $1
         AND notification.entity_type = 'post'
         AND notification.delivery_type = 'manual_send'
@@ -108,8 +107,7 @@ async function restoreSystemPrunedManualRssFeedItemNotifications(
     `/* restoreSystemPrunedManualRssFeedItemNotifications */
       UPDATE notifications notification
       SET deleted_at = NULL,
-          delete_reason = NULL,
-          updated_at = CURRENT_TIMESTAMP
+          delete_reason = NULL
       WHERE notification.publication_rss_feed_item_id = $1
         AND notification.entity_type = 'rss_feed_item'
         AND notification.delivery_type = 'manual_send'
