@@ -9,6 +9,12 @@ const OXLINT = resolve('node_modules/.bin/oxlint')
 const CONFIG = resolve('.oxlintrc.json')
 const CASES = [
   {
+    rule: 'no-array-reverse',
+    rejected: 'const values = [1, 2]\nexport const reversed = values.reverse()\n',
+    accepted:
+      'const values = [1, 2]\nvalues.reverse()\nexport const reversed = values.toReversed()\n',
+  },
+  {
     rule: 'no-anonymous-default-export',
     rejected: 'export default () => "CREATE TABLE example (id UUID);"\n',
     accepted:

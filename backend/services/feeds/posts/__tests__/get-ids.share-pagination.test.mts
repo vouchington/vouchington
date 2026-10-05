@@ -35,7 +35,7 @@ describe('post share delivery pagination', () => {
           }),
         )
       }
-      const expectedIds = [post.id, ...sharedIds].toSorted().reverse()
+      const expectedIds = [post.id, ...sharedIds].toSorted().toReversed()
       const delivered = []
       let after: string | undefined
       for (const id of expectedIds) {

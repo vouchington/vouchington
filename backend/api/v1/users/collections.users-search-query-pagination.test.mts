@@ -150,7 +150,7 @@ describe('GET /api/v1/users/:idOrSlug/users/:listType q search-filter pagination
     const tieDate = new Date(Date.now() - 60_000)
     await updateTestEntityRelationCreatedAt(FOLLOW_USER_TABLE, followerA.id, owner.id, tieDate)
     await updateTestEntityRelationCreatedAt(FOLLOW_USER_TABLE, followerB.id, owner.id, tieDate)
-    const expectedOrder = [followerA.id, followerB.id].toSorted().reverse()
+    const expectedOrder = [followerA.id, followerB.id].toSorted().toReversed()
 
     const request = createRequest()
     const page1 = await request

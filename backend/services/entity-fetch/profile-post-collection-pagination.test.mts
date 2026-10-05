@@ -259,8 +259,8 @@ describe('private post collection pagination', () => {
       after: first.page_info.end_cursor!,
     })
 
-    expect(first.results[0]?.id).toBe([...postIds].toSorted().reverse()[0])
-    expect(second.results[0]?.id).toBe([...postIds].toSorted().reverse()[1])
+    expect(first.results[0]?.id).toBe([...postIds].toSorted().toReversed()[0])
+    expect(second.results[0]?.id).toBe([...postIds].toSorted().toReversed()[1])
   })
 })
 

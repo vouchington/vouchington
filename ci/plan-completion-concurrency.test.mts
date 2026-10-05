@@ -49,7 +49,7 @@ function snapshotFixture() {
     pending = []
     batch = gate()
     if (error) requests[0]!.reject(error)
-    for (const request of requests.slice(error ? 1 : 0).reverse()) request.resolve()
+    for (const request of requests.slice(error ? 1 : 0).toReversed()) request.resolve()
   }
 
   async function runGh(args: string[]): Promise<string> {

@@ -149,7 +149,7 @@ describe('get_my_referral_links — real DB', () => {
     const shared = (rows: Body[]) =>
       rows.map(row => Object.fromEntries(keys.map(key => [key, row[key]])))
 
-    expect(ids(page)).toEqual([...links].reverse())
+    expect(ids(page)).toEqual([...links].toReversed())
     expect(ids(page)).not.toContain(othersLink)
     expect(ids(await mine({}, other))).toEqual([othersLink])
     expect(shared(page.results)).toEqual(shared(rest.body.results))
@@ -174,7 +174,7 @@ describe('get_my_referral_links — real DB', () => {
   it('ignores a user_id argument and keeps to the caller own links', async () => {
     const page = await mine({ user_id: other.id })
 
-    expect(ids(page)).toEqual([...links].reverse())
+    expect(ids(page)).toEqual([...links].toReversed())
   })
 
   it('keeps only the links under one program and sanitizes the labels', async () => {

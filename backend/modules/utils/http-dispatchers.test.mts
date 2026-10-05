@@ -167,7 +167,7 @@ describe('http-dispatchers', () => {
     ]
 
     const first = getPinnedRequestDispatcher(resolvedAddresses)
-    const second = getPinnedRequestDispatcher([...resolvedAddresses].reverse())
+    const second = getPinnedRequestDispatcher([...resolvedAddresses].toReversed())
 
     expect(first).toBe(second)
   })

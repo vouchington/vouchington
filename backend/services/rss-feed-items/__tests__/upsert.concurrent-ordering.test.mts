@@ -38,7 +38,7 @@ describe('RSS feed item concurrent upsert ordering', () => {
         ),
         writeSharedItems(
           secondFeed.id,
-          [...preparedItems].reverse(),
+          [...preparedItems].toReversed(),
           urlHostnameId,
           secondDispatching,
           firstDispatching,
@@ -75,7 +75,7 @@ describe('RSS feed item concurrent upsert ordering', () => {
           secondContentDispatching,
           firstContentDispatching,
           identities,
-          [...preparedItems].reverse(),
+          [...preparedItems].toReversed(),
         ),
       ]),
     ).resolves.toHaveLength(2)
@@ -94,7 +94,7 @@ describe('RSS feed item concurrent upsert ordering', () => {
           secondSourceDispatching,
           firstSourceDispatching,
           firstFeed.id,
-          [...identities].reverse(),
+          [...identities].toReversed(),
         ),
       ]),
     ).resolves.toHaveLength(2)
@@ -113,7 +113,7 @@ describe('RSS feed item concurrent upsert ordering', () => {
     const second = (async () => {
       secondDispatching.resolve()
       await firstDispatching.promise
-      return upsertRssFeedItems(secondFeed.id, [...items].reverse())
+      return upsertRssFeedItems(secondFeed.id, [...items].toReversed())
     })()
 
     const [firstResults, secondResults] = await Promise.all([first, second])
@@ -142,7 +142,10 @@ describe('RSS feed item concurrent upsert ordering', () => {
     const canonicalOrderIds = expectedFirstOrder.map(item => item?.id)
     const writers = [
       { ids: firstResults.map(result => result.id), expected: canonicalOrderIds },
-      { ids: secondResults.map(result => result.id), expected: [...canonicalOrderIds].reverse() },
+      {
+        ids: secondResults.map(result => result.id),
+        expected: [...canonicalOrderIds].toReversed(),
+      },
     ].filter(writer => writer.ids.length > 0)
     expect(writers.length).toBeGreaterThan(0)
     expect(writers.every(writer => writer.ids.length === canonicalOrderIds.length)).toBe(true)

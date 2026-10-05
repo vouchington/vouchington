@@ -236,7 +236,7 @@ describe('post publication reconciliation', () => {
     )
     await expect(
       countTestPostPublicationAdvisoryLockConnections(() =>
-        withPostPublicationReconciliationLocks([...postIds].reverse(), async () => {}),
+        withPostPublicationReconciliationLocks([...postIds].toReversed(), async () => {}),
       ),
     ).resolves.toBe(1)
   })

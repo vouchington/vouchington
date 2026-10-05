@@ -26,7 +26,7 @@ describe('RSS opaque precise cursor routes', () => {
         }
       }),
     )
-    const expected = [items[0].id, items[1].id].toSorted().reverse().concat(items[2].id)
+    const expected = [items[0].id, items[1].id].toSorted().toReversed().concat(items[2].id)
     const request = createRequest()
     await request.authenticateAs(user)
     const searchPath = '/api/v1/rss-feed-items'

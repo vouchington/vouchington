@@ -156,7 +156,7 @@ describe('searchRssFeedItemsBySemantic', () => {
       items
         .map(item => item.id)
         .toSorted()
-        .reverse(),
+        .toReversed(),
     )
   })
 

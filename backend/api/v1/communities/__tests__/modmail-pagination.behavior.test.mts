@@ -88,7 +88,7 @@ describe('community modmail cursor behavior', () => {
     )
     const tieIds = [...tieFirst.results, ...tieSecond.results].map(result => result.id)
     expect(new Set(tieIds)).toEqual(new Set(sameTimestampThreads.map(thread => thread.id)))
-    expect(tieIds).toEqual([...tieIds].toSorted().reverse())
+    expect(tieIds).toEqual([...tieIds].toSorted().toReversed())
     const preciseCommunity = await communityWithOwner(owner)
     const [olderSubject, newerSubject] = await users(2)
     const older = await createTestModmailThread({

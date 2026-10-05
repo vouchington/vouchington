@@ -50,7 +50,7 @@ describe('native moderation review queue fixtures', () => {
       firstPage.results
         .map(post => post.id)
         .toSorted()
-        .reverse(),
+        .toReversed(),
     )
     expect(decodeReviewQueueCursor(firstPage.page_info.start_cursor)).toBe(
       firstPage.results.at(0)?.id,

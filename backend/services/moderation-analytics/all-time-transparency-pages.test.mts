@@ -261,10 +261,10 @@ describe('all-time moderation transparency pages', () => {
     const second = await getModerationTransparency('all', now, first.next_cursor)
     expect(second.buckets).toContainEqual(bucket(older, 'remove'))
     expect(first.buckets.map(result => result.date)).toEqual(
-      [...first.buckets.map(result => result.date)].toSorted().reverse(),
+      [...first.buckets.map(result => result.date)].toSorted().toReversed(),
     )
     expect(second.buckets.map(result => result.date)).toEqual(
-      [...second.buckets.map(result => result.date)].toSorted().reverse(),
+      [...second.buckets.map(result => result.date)].toSorted().toReversed(),
     )
   })
 })

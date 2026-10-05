@@ -90,7 +90,7 @@ describe('moderation transparency statement deletion', () => {
     await expectRollupCount(occurredAt, 'pin', 2)
     await expectRollupCount(occurredAt, 'warn', 2)
 
-    await deleteTestModeratorActions(actions.map(action => action.id).reverse())
+    await deleteTestModeratorActions(actions.map(action => action.id).toReversed())
 
     await expectRollupCount(occurredAt, 'pin', undefined)
     await expectRollupCount(occurredAt, 'warn', undefined)

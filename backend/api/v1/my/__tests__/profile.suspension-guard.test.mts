@@ -23,7 +23,7 @@ const calls: Array<[string, Call]> = [
   [
     'PUT /api/v1/my/profile/links/order',
     (request, linkIds) =>
-      request.put('/api/v1/my/profile/links/order').send({ ids: [...linkIds].reverse() }),
+      request.put('/api/v1/my/profile/links/order').send({ ids: [...linkIds].toReversed() }),
   ],
   [
     'PATCH /api/v1/my/profile/links/:id',

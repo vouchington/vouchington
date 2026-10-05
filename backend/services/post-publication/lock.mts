@@ -98,7 +98,7 @@ export async function withPostPublicationReconciliationLocks<Result>(
       )
     }
     const result = await operation()
-    for (const key of [...keys].reverse()) {
+    for (const key of [...keys].toReversed()) {
       // oxlint-disable-next-line no-await-in-loop -- release in reverse acquisition order.
       const { rows } = await client.query<{ unlocked: boolean }>(
         '/* withPostPublicationReconciliationLocks.unlock */ SELECT pg_advisory_unlock(hashtextextended($1, 0)) AS unlocked',
