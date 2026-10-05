@@ -1,3 +1,3 @@
-import { createOpenAIModerationOmniSingleWorker } from '../processors/create-omni-single-worker.mts'
+import { createOpenAIModerationOmniSingleWorker as createWorker } from '../processors/create-omni-single-worker.mts'
 
-export const openai_moderation_omni_single = createOpenAIModerationOmniSingleWorker()
+export const openai_moderation_omni_single = createWorker()
