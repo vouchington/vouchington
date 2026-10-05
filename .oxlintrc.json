@@ -134,7 +134,7 @@
     "unicorn/no-zero-fractions": "off", // Intentional #1692: staged pedantic/style exclusion.
     "unicorn/number-literal-case": "off", // Policy: numeric literal casing is a style choice.
     "unicorn/numeric-separators-style": "off", // Intentional #1692: staged pedantic/style exclusion.
-    "unicorn/prefer-array-find": "off", // Staged #1692: 7 findings / 6 files; scan 2026-10-01.
+    "unicorn/prefer-array-find": "error",
     "unicorn/prefer-array-flat": "error",
     "unicorn/prefer-array-flat-map": "error",
     "unicorn/prefer-array-index-of": "off", // Policy: findIndex predicates are allowed even for equality searches.

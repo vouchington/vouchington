@@ -115,7 +115,7 @@ describe('applyReportAbusePenalty / revokeReportAbusePenalty', () => {
 
     expect([dismissal, penalty].filter(result => result.status === 'fulfilled')).toHaveLength(1)
 
-    const [storedFlag] = (await getTestReportIntegrityFlagsByUserId(targetUser.id)).filter(
+    const storedFlag = (await getTestReportIntegrityFlagsByUserId(targetUser.id)).find(
       flag => flag.id === flagId,
     )
     const penalties = await getTestReportAbusePenaltiesByFlagId(flagId)

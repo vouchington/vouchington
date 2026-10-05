@@ -216,7 +216,7 @@ describe('searchAdminUsers', () => {
     enableQueryCapture()
     try {
       await searchAdminUsers(prefix)
-      const [query] = stopTestQueryCapture().filter(captured =>
+      const query = stopTestQueryCapture().find(captured =>
         captured.text.includes('/* searchAdminUsers */'),
       )
 

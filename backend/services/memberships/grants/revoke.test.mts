@@ -157,8 +157,8 @@ describe('revokeMembershipGrant', () => {
     ])
 
     const winnerIndex = results.findIndex(result => !result?.alreadyRevoked)
-    const [winner] = results.filter(result => !result?.alreadyRevoked)
-    const [replay] = results.filter(result => result?.alreadyRevoked)
+    const winner = results.find(result => !result?.alreadyRevoked)
+    const replay = results.find(result => result?.alreadyRevoked)
     if (!winner || !replay) throw new Error('Expected one revocation winner and one replay')
     expect(replay.revokedAt).toEqual(winner.revokedAt)
     const persisted = (await getTestMembershipGrant(grant.grantId))!

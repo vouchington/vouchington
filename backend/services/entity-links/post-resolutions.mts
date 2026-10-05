@@ -73,7 +73,7 @@ function extractRouteSegmentFromRaw(mention: PostMention): string | null {
   const raw = mention.raw.replace(/^!/, '')
   try {
     const url = new URL(raw.startsWith('/') ? `https://placeholder${raw}` : raw)
-    const segment = url.pathname.split('/').filter(Boolean)[0]
+    const segment = url.pathname.split('/').find(Boolean)
     if (segment && POST_DETAIL_SEGMENTS.has(segment)) return segment
   } catch {
     // invalid URL

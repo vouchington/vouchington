@@ -30,7 +30,7 @@ describe('knip production-exports baseline preprocessor', () => {
   const run = () => {
     const before = process.listeners('exit')
     const result = baseline(findings(), file)
-    const [onExit] = process.listeners('exit').filter(listener => !before.includes(listener))
+    const onExit = process.listeners('exit').find(listener => !before.includes(listener))
     if (onExit) process.off('exit', onExit)
     return { result, onExit }
   }

@@ -210,9 +210,9 @@ describe('classifier usage report: remote runs (real PG)', () => {
     expect(await runIds(at - 1000, at + 1)).toContain(setup.run.runId)
     expect(await runIds(at + 1, at + 60_000)).not.toContain(setup.run.runId)
     expect(await runIds(at - 60_000, at)).not.toContain(setup.run.runId)
-    const [row] = (
+    const row = (
       await readClassifierRunUsage({ from: new Date(at - 1000), to: new Date(at + 1) })
-    ).filter(r => r.runId === setup.run.runId)
+    ).find(r => r.runId === setup.run.runId)
     expect(row).toMatchObject({ providerCalls: 1, costMicrounits: '2000' })
   })
 
