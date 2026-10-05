@@ -19,7 +19,8 @@ import {
   currentUserCanUpdatePost,
   isPostContentEditable,
 } from '@services/posts/authorization'
-import { canViewPostsBatch, maskAnonymousPosts } from '@services/posts'
+import { labelAndMaskPosts } from '@services/content-provenance'
+import { canViewPostsBatch } from '@services/posts'
 import type { CommunityMemberRole } from '@services/communities/types'
 import app from '../../../app.mts'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../../response-helpers.mts'
@@ -112,7 +113,7 @@ app.route('/api/v1/posts/:idOrSlug/ancestors').get(async (ctx: Context) => {
   }
 
   const results = ancestorIds.map(id => ({ id, __entity_type: 'post' as const }))
-  const postsPromise = Promise.resolve(maskAnonymousPosts(posts, currentUser))
+  const postsPromise = labelAndMaskPosts(posts, currentUser)
 
   const output: Record<string, unknown> = {
     results,

@@ -21,8 +21,8 @@ import {
   currentUserCanUnpublishFromCommunity,
   currentUserCanUpdatePost,
   isPostContentEditable,
-  maskAnonymousPost,
 } from '@services/posts'
+import { labelAndMaskPosts } from '@services/content-provenance'
 import { getUrlEmbedByUrlId } from '@services/rss-feed-items'
 import { DELETED_USER_ID, getUserMarkdown, isAdminUser, isFollowingUser } from '@services/users'
 import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
@@ -95,7 +95,7 @@ app.route('/api/v1/posts/:idOrSlug').get(async (ctx: Context) => {
 
   const communityMemberRole: CommunityMemberRole | null = communityMembership?.role ?? null
 
-  const maskedPost = maskAnonymousPost(post!, currentUser)!
+  const maskedPost = (await labelAndMaskPosts([post], currentUser))[0]!
   const canUpdatePost = currentUserCanUpdatePost(currentUser, post)
   const canDelete = currentUserCanDeletePost(currentUser, post, { communityMemberRole })
   const canUnpublishFromCommunity = currentUserCanUnpublishFromCommunity(currentUser, post, {

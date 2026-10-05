@@ -25,6 +25,24 @@ export async function setTestOAuthClientVerified(id: string, verifiedById: strin
   )
 }
 
+/** Withdraws staff verification directly, as a staff action would. */
+export async function clearTestOAuthClientVerified(id: string): Promise<void> {
+  await write(
+    `/* clearTestOAuthClientVerified */ UPDATE oauth_clients
+     SET verified_at = NULL, verified_by_id = NULL
+     WHERE id = $1`,
+    [id],
+  )
+}
+
+/** Renames a client directly, as a registration update would. */
+export async function renameTestOAuthClient(id: string, clientName: string): Promise<void> {
+  await write(
+    `/* renameTestOAuthClient */ UPDATE oauth_clients SET client_name = $2 WHERE id = $1`,
+    [id, clientName],
+  )
+}
+
 /**
  * Gives an anonymously registered client an owner, as a signed-in registration would, and returns
  * the app id that the owner's management calls take.

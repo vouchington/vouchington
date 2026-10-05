@@ -89,6 +89,18 @@ export const contentAndProfilesEndpointRegistry = {
     post_types: 'review',
     sort: 'new',
   }),
+  'native.users.profile.posts.provenance': endpoint('/api/v1/posts', {
+    creator: 'user-abc',
+    limit: '25',
+    post_types: 'discussion',
+    sort: 'new',
+  }),
+  'native.users.profile.posts.staff-provenance': endpoint('/api/v1/posts', {
+    creator: 'user-abc',
+    limit: '25',
+    post_types: 'discussion,review',
+    sort: 'new',
+  }),
   'native.users.profile.posts.discussions': endpoint('/api/v1/posts', {
     creator: 'user-abc',
     limit: '25',

@@ -11,23 +11,25 @@
 
 ## Data Model
 
-| Field              | Notes                                                                          |
-| ------------------ | ------------------------------------------------------------------------------ |
-| `id`               | UUID                                                                           |
-| `title`            | Optional; fallback label is "Untitled {PostType}"                              |
-| `markdown`         | Body content                                                                   |
-| `post_type`        | Enum (see table below)                                                         |
-| `clearance_status` | Moderation state: approved / pending / rejected / in_review                    |
-| `approved_at`      | Current derived approval timestamp; mutually exclusive with rejection/review   |
-| `rejected_at`      | Current derived rejection timestamp                                            |
-| `in_review_at`     | Current derived staff-review timestamp                                         |
-| `broadcast`        | Feed visibility: `everyone` \| `users` \| `followers` \| `mutual_followers`    |
-| `privacy`          | URL visibility: `public` \| `private`                                          |
-| `is_anonymous`     | Hides author from everyone except creator and admins                           |
-| `archived_at`      | Non-null when archived (hidden from listings, reachable by URL)                |
-| `community_id`     | Non-null for community-scoped posts                                            |
-| `created_by_id`    | Creator; null for system-generated posts                                       |
-| `created_via`      | Required immutable channel; see [provenance](../content/content-provenance.md) |
+| Field              | Notes                                                                                                                            |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| `id`               | UUID                                                                                                                             |
+| `title`            | Optional; fallback label is "Untitled {PostType}"                                                                                |
+| `markdown`         | Body content                                                                                                                     |
+| `post_type`        | Enum (see table below)                                                                                                           |
+| `clearance_status` | Moderation state: approved / pending / rejected / in_review                                                                      |
+| `approved_at`      | Current derived approval timestamp; mutually exclusive with rejection/review                                                     |
+| `rejected_at`      | Current derived rejection timestamp                                                                                              |
+| `in_review_at`     | Current derived staff-review timestamp                                                                                           |
+| `broadcast`        | Feed visibility: `everyone` \| `users` \| `followers` \| `mutual_followers`                                                      |
+| `privacy`          | URL visibility: `public` \| `private`                                                                                            |
+| `is_anonymous`     | Hides author from everyone except creator and admins                                                                             |
+| `archived_at`      | Non-null when archived (hidden from listings, reachable by URL)                                                                  |
+| `community_id`     | Non-null for community-scoped posts                                                                                              |
+| `created_by_id`    | Creator; null for system-generated posts                                                                                         |
+| `created_via`      | Required immutable channel; see [provenance](../content/content-provenance.md)                                                   |
+| `provenance`       | Public label, API and MCP posts only: `{ via, app_name }`; see [provenance](../content/reference-content-provenance-exposure.md) |
+| `staff_provenance` | Staff-only channel and raw OAuth client, computed per request; never cached or public                                            |
 
 **Post types:**
 
@@ -81,33 +83,18 @@ that epoch; see [Review succession](../content/reference-post-lifecycle-review-s
 
 ## List-Item / Card Anatomy
 
-| Element         | Shows                                                              | Visible when                                                                       |
-| --------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
-| Post type badge | Humanized type label, color-coded (see table above)                | Always                                                                             |
-| Review rating   | Star display (e.g. ★★★★☆)                                          | Review posts only                                                                  |
-| Category badges | Up to 5 category topic chips (outline variant)                     | When categories exist                                                              |
-| Share actions   | Share/Send to followers                                            | Signed-in, not creator, top-level, public post                                     |
-| Title           | Post title or fallback                                             | Always                                                                             |
-| Body preview    | Markdown preview with heading demotion (no page-level h1 conflict) | Always                                                                             |
-| Author          | Username link — **no avatar on cards**                             | When not anonymous                                                                 |
-| Timestamp       | Relative post age                                                  | Always                                                                             |
-| Vote            | Semantic choice control; hides negative count from non-members     | When post has an election                                                          |
-| Comment count   | Number of top-level comments                                       | When comments exist                                                                |
-| Save            | Bookmark toggle                                                    | Signed-in viewers                                                                  |
-| Hide            | Hides from viewer's feed                                           | Signed-in viewers                                                                  |
-| Broadcast badge | Audience indicator (followers / signed-in / mutual)                | Only for `followers`/`users`/`mutual_followers` broadcast — **not** for `everyone` |
-| Report          | Opens report dialog; `...` overflow only                           | Signed-in, non-author viewers                                                      |
-
-The label row (`[PostType] [Rating] [Categories] … [Share]`) uses a single-line horizontal scroll;
-share actions are pushed right with `ml-auto`.
+Every card element, with the provenance and staff channel badges, is in
+[Post card anatomy](reference-post-list-item-card-anatomy.md).
 
 ## Detail Anatomy
 
 Post detail renders all post types through one shared layout. Element order:
 
 1. **Title** — `h1`; fallback "Untitled {PostType}" when blank
-2. **Badge strip** — post-type badge + review ratings (review only) + category badges + "Referral"
-   badge (when any rated topic has a referral program) + share actions pushed right
+2. **Badge strip** — post-type badge + provenance badge (API and MCP posts only) + review ratings
+   (review only) + category badges + "Referral" badge (when any rated topic has a referral program) +
+   share actions pushed right. Administrators and moderators also get a channel badge that names the
+   raw OAuth client (name, id, verified) when the post came through one
 3. **Review star ratings** — full star-rating rows (review posts only)
 4. **Data point metadata** — card/issuer, credit score, spend (data_point posts only)
 5. **Author metadata** — avatar + "Posted by" byline; rendered **below the markdown body,

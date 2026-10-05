@@ -1,7 +1,7 @@
 import type { BasicUser } from '@services/users/types'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { resolveReadableThread } from './mcp-post-access.mts'
-import { mcpPostSchema, toMcpPost, type McpPost } from './mcp-post-output.mts'
+import { mcpPostSchema, toMcpPosts, type McpPost } from './mcp-post-output.mts'
 import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
 
 type ToolArgs = {
@@ -38,7 +38,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     async (args: ToolArgs): Promise<ToolResult> => {
       const thread = await resolveReadableThread(currentUser, args.post_id)
       if (!thread) return { success: false, error: 'Post not found' }
-      return { success: true, post: await toMcpPost(thread.post) }
+      return { success: true, post: (await toMcpPosts([thread.post]))[0]! }
     },
 }
 

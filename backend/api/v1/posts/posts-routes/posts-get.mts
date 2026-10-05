@@ -15,7 +15,8 @@ import { getPostIdsCached } from '@services/entity-fetch/search-caches'
 import { getAdminUserIdsFromPosts } from '@services/markdown/admin-users'
 import { renderMarkdownBatch } from '@services/markdown/batch-render'
 import { searchPostModerationsByPostIds } from '@services/moderation'
-import { getPostIds, getPublicPostIds, maskAnonymousPosts } from '@services/posts'
+import { labelAndMaskPosts } from '@services/content-provenance'
+import { getPostIds, getPublicPostIds } from '@services/posts'
 import {
   parsePostsSearchParams,
   preparePostsSearchParams,
@@ -87,7 +88,7 @@ app.route('/api/v1/posts').get(async (ctx: Context) => {
   const postIds = result.results.map((r: { id: string }) => r.id)
   const postIdSet = new Set(postIds)
   const rawPostsPromise = getPostByAnyCachedBatch(postIds)
-  const postsPromise = rawPostsPromise.then(posts => maskAnonymousPosts(posts, currentUser))
+  const postsPromise = rawPostsPromise.then(posts => labelAndMaskPosts(posts, currentUser))
   const postsWithRootsPromise = Promise.all([rawPostsPromise, postsPromise]).then(
     async ([rawPosts, posts]) => {
       const rootPostIds = [
@@ -95,7 +96,7 @@ app.route('/api/v1/posts').get(async (ctx: Context) => {
       ].filter(rootPostId => !postIdSet.has(rootPostId))
       if (rootPostIds.length === 0) return posts
       const rawRootPosts = await getPostByAnyCachedBatch(rootPostIds)
-      const rootPosts = maskAnonymousPosts(rawRootPosts, currentUser)
+      const rootPosts = await labelAndMaskPosts(rawRootPosts, currentUser)
       return [...posts, ...rootPosts]
     },
   )

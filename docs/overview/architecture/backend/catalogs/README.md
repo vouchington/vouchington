@@ -133,6 +133,7 @@ This catalog keeps package documentation directly discoverable from the owning `
 - [`../services/community-agent-prompt-audit/README.md`](../../services/community-agent-prompt-audit/README.md)
 - [`../services/community-agent-prompts/README.md`](../../services/community-agent-prompts/README.md)
 - [`../services/community-member-vacations/README.md`](../../services/community-member-vacations/README.md)
+- [`../services/content-provenance/README.md`](../../services/content-provenance/README.md)
 - [`../services/contribution-gating/README.md`](../../services/contribution-gating/README.md)
 - [`../services/conversations-messages/README.md`](../../services/conversations-messages/README.md)
 - [`../services/copyright-notices/README.md`](../../services/copyright-notices/README.md)

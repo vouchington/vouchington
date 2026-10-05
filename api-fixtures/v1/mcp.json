@@ -228,6 +228,27 @@
                     },
                     "updated_at": {
                       "type": "string"
+                    },
+                    "provenance": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "app_name": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "via": {
+                          "enum": ["api", "mcp"],
+                          "type": "string"
+                        }
+                      },
+                      "required": ["app_name", "via"],
+                      "type": "object"
                     }
                   },
                   "required": [
@@ -440,6 +461,27 @@
                     },
                     "updated_at": {
                       "type": "string"
+                    },
+                    "provenance": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "app_name": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "via": {
+                          "enum": ["api", "mcp"],
+                          "type": "string"
+                        }
+                      },
+                      "required": ["app_name", "via"],
+                      "type": "object"
                     }
                   },
                   "required": [
@@ -1107,6 +1149,27 @@
                       "enum": ["private", "public"],
                       "type": "string"
                     },
+                    "provenance": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "app_name": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "via": {
+                          "enum": ["api", "mcp"],
+                          "type": "string"
+                        }
+                      },
+                      "required": ["app_name", "via"],
+                      "type": "object"
+                    },
                     "rejected_at": {
                       "anyOf": [
                         {
@@ -1211,6 +1274,50 @@
                           "type": "string"
                         }
                       ]
+                    },
+                    "staff_provenance": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "created_via": {
+                          "enum": ["api", "dotnet", "mcp", "swift", "system", "web"],
+                          "type": "string"
+                        },
+                        "oauth_client": {
+                          "anyOf": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "client_id": {
+                                  "type": "string"
+                                },
+                                "client_name": {
+                                  "type": "string"
+                                },
+                                "metadata_url": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "verified": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": ["client_id", "client_name", "metadata_url", "verified"],
+                              "type": "object"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["created_via"],
+                      "type": "object"
                     },
                     "structured_data": {},
                     "title": {
@@ -4314,6 +4421,27 @@
                             "enum": ["private", "public"],
                             "type": "string"
                           },
+                          "provenance": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "app_name": {
+                                "anyOf": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "via": {
+                                "enum": ["api", "mcp"],
+                                "type": "string"
+                              }
+                            },
+                            "required": ["app_name", "via"],
+                            "type": "object"
+                          },
                           "rejected_at": {
                             "anyOf": [
                               {
@@ -4418,6 +4546,55 @@
                                 "type": "string"
                               }
                             ]
+                          },
+                          "staff_provenance": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "created_via": {
+                                "enum": ["api", "dotnet", "mcp", "swift", "system", "web"],
+                                "type": "string"
+                              },
+                              "oauth_client": {
+                                "anyOf": [
+                                  {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "client_id": {
+                                        "type": "string"
+                                      },
+                                      "client_name": {
+                                        "type": "string"
+                                      },
+                                      "metadata_url": {
+                                        "anyOf": [
+                                          {
+                                            "type": "null"
+                                          },
+                                          {
+                                            "type": "string"
+                                          }
+                                        ]
+                                      },
+                                      "verified": {
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "required": [
+                                      "client_id",
+                                      "client_name",
+                                      "metadata_url",
+                                      "verified"
+                                    ],
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": ["created_via"],
+                            "type": "object"
                           },
                           "structured_data": {},
                           "title": {
@@ -7624,6 +7801,27 @@
                           },
                           "updated_at": {
                             "type": "string"
+                          },
+                          "provenance": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "app_name": {
+                                "anyOf": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "via": {
+                                "enum": ["api", "mcp"],
+                                "type": "string"
+                              }
+                            },
+                            "required": ["app_name", "via"],
+                            "type": "object"
                           }
                         },
                         "required": [
@@ -7803,6 +8001,27 @@
                           },
                           "updated_at": {
                             "type": "string"
+                          },
+                          "provenance": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "app_name": {
+                                "anyOf": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "via": {
+                                "enum": ["api", "mcp"],
+                                "type": "string"
+                              }
+                            },
+                            "required": ["app_name", "via"],
+                            "type": "object"
                           }
                         },
                         "required": [
@@ -10153,6 +10372,27 @@
                           },
                           "updated_at": {
                             "type": "string"
+                          },
+                          "provenance": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "app_name": {
+                                "anyOf": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "via": {
+                                "enum": ["api", "mcp"],
+                                "type": "string"
+                              }
+                            },
+                            "required": ["app_name", "via"],
+                            "type": "object"
                           }
                         },
                         "required": [
@@ -10317,6 +10557,27 @@
                           },
                           "updated_at": {
                             "type": "string"
+                          },
+                          "provenance": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "app_name": {
+                                "anyOf": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "via": {
+                                "enum": ["api", "mcp"],
+                                "type": "string"
+                              }
+                            },
+                            "required": ["app_name", "via"],
+                            "type": "object"
                           }
                         },
                         "required": [
@@ -10499,6 +10760,27 @@
                         },
                         "updated_at": {
                           "type": "string"
+                        },
+                        "provenance": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "app_name": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "via": {
+                              "enum": ["api", "mcp"],
+                              "type": "string"
+                            }
+                          },
+                          "required": ["app_name", "via"],
+                          "type": "object"
                         }
                       },
                       "required": [
@@ -16442,6 +16724,27 @@
                       "enum": ["private", "public"],
                       "type": "string"
                     },
+                    "provenance": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "app_name": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "via": {
+                          "enum": ["api", "mcp"],
+                          "type": "string"
+                        }
+                      },
+                      "required": ["app_name", "via"],
+                      "type": "object"
+                    },
                     "rejected_at": {
                       "anyOf": [
                         {
@@ -16546,6 +16849,50 @@
                           "type": "string"
                         }
                       ]
+                    },
+                    "staff_provenance": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "created_via": {
+                          "enum": ["api", "dotnet", "mcp", "swift", "system", "web"],
+                          "type": "string"
+                        },
+                        "oauth_client": {
+                          "anyOf": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "client_id": {
+                                  "type": "string"
+                                },
+                                "client_name": {
+                                  "type": "string"
+                                },
+                                "metadata_url": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "verified": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": ["client_id", "client_name", "metadata_url", "verified"],
+                              "type": "object"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["created_via"],
+                      "type": "object"
                     },
                     "structured_data": {},
                     "title": {

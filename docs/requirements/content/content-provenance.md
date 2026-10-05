@@ -65,9 +65,9 @@ Invariants and what enforces each:
 - **Clients are kept:** `ON DELETE RESTRICT` blocks deleting an OAuth client that created content.
   [OAuth authorization server](../security/OAUTH-AUTHORIZATION-SERVER.md) clients are retired by
   setting `oauth_clients.revoked_at`, and no code path deletes them.
-- **Private by default:** both columns stay out of API responses until the exposure stage below
-  adds a reviewed label. Tests enforce this rather than the schema: read paths select declared
-  column lists whose tests assert the exact response keys (for example
+- **Private by default:** neither column appears in an API response as a column. Only the derived
+  [exposure](#exposure) fields do, and only for posts. Tests enforce this rather than the schema:
+  read paths select declared column lists whose tests assert the exact response keys (for example
   [`communities/get.test.mts`](../../../backend/services/communities/get.test.mts)), and the schema
   test below fails if a view references either column.
 
@@ -86,7 +86,8 @@ Client ID Metadata Document clients store their exact Client Identifier URL in `
 dynamically registered clients keep it `NULL`. Administrators set and clear `verified_at` and
 `verified_by_id` for dynamically registered clients through the
 [OAuth client verification routes](../api/v1/admin/README.md), and renaming a client
-or replacing its redirect URIs clears them. Labels stay generic until the exposure stage below.
+or replacing its redirect URIs clears them. The [exposure](#exposure) rules below turn these facts
+into a label.
 
 The enum, columns, checks, indexes and immutability triggers live in the canonical table creators.
 The `0726-00-01` through `0726-00-09` migrations add the cross-file OAuth client foreign keys, and
@@ -125,12 +126,20 @@ A session origin with missing or invalid client information cannot create conten
 routes return `400` with `INVALID_CLIENT_INFO`, including while client metadata enforcement is
 in observe mode. This prevents an unknown channel from being recorded.
 
+## Exposure
+
+[#706](https://github.com/vouchington/vouchington/issues/706) shows `api` and `mcp` posts with a
+"via API", "via MCP" or "via {app}" label, and shows moderation staff every channel plus the raw
+OAuth client. The four label tiers, the anonymous-post rule, the per-request computation and the
+routes that carry it are in [Exposure](reference-content-provenance-exposure.md).
+
 ## Delivery scope
 
 [#611](https://github.com/vouchington/vouchington/issues/611) delivers writers, seeds and required
 schema together as one current contract. There is no historical untracked-row state or separate
-Contract stage. [#706](https://github.com/vouchington/vouchington/issues/706) owns public “via API”
-and “via MCP” labels and staff visibility; these columns remain private until that stage.
+Contract stage. [#706](https://github.com/vouchington/vouchington/issues/706) shipped public "via API"
+and "via MCP" labels and staff visibility for posts (see [Exposure](#exposure)); the other content
+types follow in [#2046](https://github.com/vouchington/vouchington/issues/2046).
 
 ## AI authorship disclosure
 

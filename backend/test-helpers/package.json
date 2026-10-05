@@ -52,7 +52,7 @@
     "@queues/post-publication": "workspace:^",
     "@queues/psql": "workspace:^",
     "@queues/sitemaps": "workspace:^",
-    "@sentry/node": "^11.2.0",
+    "@sentry/node": "^11.4.0",
     "@ts-shared/money": "workspace:^",
     "@valkey/valkey-glide": "^2.5.3",
     "@voucha/api-fixtures": "workspace:^",

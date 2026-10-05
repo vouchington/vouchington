@@ -13,7 +13,7 @@ import {
 } from '@services/entity-fetch'
 import { getRssFeedItemFeedIds } from '@services/feeds'
 import { VALID_RSS_FEED_ITEM_FEED_TYPES, type RssFeedItemFeedType } from '@services/feeds/types'
-import { maskAnonymousPosts } from '@services/posts'
+import { labelAndMaskPosts } from '@services/content-provenance'
 import { getPostIdsByUrlIds } from '@services/posts/search/get-posts-by-url-ids'
 import {
   getStoryPreviews,
@@ -150,7 +150,7 @@ app.route('/api/v1/feeds/rss_feed_items/:feed_type').get(async (ctx: Context) =>
     posts: relatedPostsPromise.then(r =>
       r.postIds.length > 0
         ? getPostByAnyCachedBatch(r.postIds)
-            .then(posts => maskAnonymousPosts(posts, currentUser))
+            .then(posts => labelAndMaskPosts(posts, currentUser))
             .then(indexById)
         : {},
     ),

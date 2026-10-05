@@ -6041,5 +6041,12 @@
 {"descriptor":null,"id":"copy.shared.accountType.system"},
 {"descriptor":{"cases":["action","alias","appeal","candidate","click","conversation","domain","email","field","hostname","image","item","key","link","member","message","moderator","note","participant","page","post","positiveVote","negativeVote","prefix","loadedReport","queueItem","listItem","report","reporter","comment","view","rating","review","discussion","result","signup","source","topic","url","user","visit","visitor"],"kind":"select-plural","numberParameters":["count"],"selectParameter":"unit","valueParameter":"count"},"id":"copy.shared.countLabel.format"},
 {"descriptor":null,"id":"copy.shared.oauth.consent.sensitivePermissionsHeading"},
+{"descriptor":null,"id":"copy.shared.provenance.channel"},
+{"descriptor":null,"id":"copy.shared.provenance.client"},
+{"descriptor":null,"id":"copy.shared.provenance.unverified"},
+{"descriptor":null,"id":"copy.shared.provenance.verified"},
+{"descriptor":null,"id":"copy.shared.provenance.viaApi"},
+{"descriptor":null,"id":"copy.shared.provenance.viaApp"},
+{"descriptor":null,"id":"copy.shared.provenance.viaMcp"},
 {"descriptor":{"cases":["minute","hour","day","week","month","year"],"kind":"select-plural","numberParameters":[],"selectParameter":"unit","valueParameter":"value"},"id":"copy.shared.timeAgo.relativeDuration"}
 ]
