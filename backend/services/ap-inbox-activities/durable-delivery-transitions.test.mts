@@ -3,10 +3,14 @@ import { describe, expect, it } from 'vitest'
 import {
   ACTIVITYPUB_INBOX_DELIVERY_TRANSITION_CONTRACT,
   activityPubInboxDeliveryTransitions,
-  type ActivityPubInboxDeliveryTransitionDimensions,
   type ActivityPubInboxDeliveryTransitionName,
   type ActivityPubInboxEnvelope,
 } from './durable-delivery-transitions.mts'
+
+type TransitionDimensions = Pick<
+  (typeof ACTIVITYPUB_INBOX_DELIVERY_TRANSITION_CONTRACT)[ActivityPubInboxDeliveryTransitionName],
+  'fence' | 'consistency' | 'atomicBoundary' | 'postCommitEffects'
+>
 
 describe('ActivityPub inbox durable-delivery transition facade', () => {
   it('exposes exactly one implementation for every named transition', () => {
@@ -163,10 +167,7 @@ describe('ActivityPub inbox durable-delivery transition facade', () => {
         atomicBoundary: 'bounded-locking-claim',
         postCommitEffects: ['sequential-backfill-enqueue'],
       },
-    } as const satisfies Record<
-      ActivityPubInboxDeliveryTransitionName,
-      ActivityPubInboxDeliveryTransitionDimensions
-    >
+    } as const satisfies Record<ActivityPubInboxDeliveryTransitionName, TransitionDimensions>
 
     expect(dimensions).toEqual(expected)
   })

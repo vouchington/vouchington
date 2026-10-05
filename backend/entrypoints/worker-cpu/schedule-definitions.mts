@@ -1,7 +1,7 @@
 import type { ScheduleDefinition } from '@backend/worker-runtime'
 import { SCHEDULE_DEFINITIONS as IO_SCHEDULE_DEFINITIONS } from '@entrypoints/worker-io/definitions'
 
-export const CPU_ONLY_SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
+export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
   {
     // The heartbeat queue is universal and intentionally omitted from queue selection. This schedule is
     // registered by worker-cpu only, so queue metrics have one publisher even when worker-io is
@@ -53,9 +53,5 @@ export const CPU_ONLY_SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
     load: () =>
       import('@queues/ai-agents/enqueues/schedules').then(module => module.upsertSchedules),
   },
-]
-
-export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
-  ...CPU_ONLY_SCHEDULE_DEFINITIONS,
   ...IO_SCHEDULE_DEFINITIONS,
 ]

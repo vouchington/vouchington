@@ -7,12 +7,17 @@ import { upsertSchedules as upsertCrawlReferralLinkSchedules } from '@queues/cra
 import { upsertSchedules as upsertQueueMetricsSchedules } from '@queues/heartbeat/enqueues/schedules'
 import { upsertSchedules as upsertImageSchedules } from '@queues/images/enqueues/schedules'
 import { upsertSchedules as upsertUnfurlReferralLinkSchedules } from '@queues/unfurl-referral-links/enqueues/schedules'
-import { CPU_ONLY_SCHEDULE_DEFINITIONS } from './schedule-definitions.mts'
+import { SCHEDULE_DEFINITIONS } from './schedule-definitions.mts'
+import { SCHEDULE_DEFINITIONS as IO_SCHEDULE_DEFINITIONS } from '@entrypoints/worker-io/definitions'
 
-describe('worker-cpu CPU_ONLY_SCHEDULE_DEFINITIONS load functions', () => {
+const cpuOnlySchedules = SCHEDULE_DEFINITIONS.filter(
+  definition => !IO_SCHEDULE_DEFINITIONS.some(io => io.queueName === definition.queueName),
+)
+
+describe('worker-cpu schedule definitions', () => {
   it('each schedule definition load resolves to the expected export', async () => {
     const byQueue = (name: string) =>
-      CPU_ONLY_SCHEDULE_DEFINITIONS.find(definition => definition.queueName === name)!
+      cpuOnlySchedules.find(definition => definition.queueName === name)!
 
     await expect(byQueue('crawl_hostnames').load()).resolves.toBe(upsertCrawlHostnameSchedules)
     await expect(byQueue('crawl_html_boilerplate_removal').load()).resolves.toBe(

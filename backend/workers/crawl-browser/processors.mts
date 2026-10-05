@@ -64,7 +64,7 @@ export async function processBrowserCrawl(
   }
 }
 
-export async function handleBrowserCrawlResult(
+async function handleBrowserCrawlResult(
   urlId: string,
   linkId: string,
   crawler: Crawler,
@@ -97,6 +97,10 @@ export async function handleBrowserCrawlResult(
   })
 }
 
+/**
+ * @public Documented retry-classification contract called by `processBrowserCrawl`; may be
+ * removed after intended-use review, since external production use is unconfirmed.
+ */
 export async function handleBrowserCrawlError(linkId: string, error: unknown): Promise<void> {
   // Provider/connect-phase failures (rate limits, CDP connect/setup failures) are unrelated
   // to the target link's health: rethrow so GlideMQ retries with backoff instead of marking

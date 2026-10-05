@@ -27,7 +27,7 @@ type ApiShutdownDeps = {
 
 type ApiShutdownBootstrapDeps = Partial<Omit<ApiShutdownDeps, 'terminate'>>
 
-export function registerApiShutdownCallbacks({
+function registerApiShutdownCallbacks({
   addShutdownCallback,
   addDrainCallback,
   terminate,

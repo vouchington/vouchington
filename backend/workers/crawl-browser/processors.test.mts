@@ -20,11 +20,7 @@ import {
   getReferralLinkLastCrawlId,
 } from '@voucha/test-helpers/entities/referral-links'
 import type { PrivateUser } from '@services/users/types'
-import {
-  handleBrowserCrawlError,
-  handleBrowserCrawlResult,
-  processBrowserCrawl,
-} from './processors.mts'
+import { processBrowserCrawl } from './processors.mts'
 import { suppressedError } from '@voucha/test-helpers/suppressed-error'
 
 describe('processBrowserCrawl', () => {
@@ -32,9 +28,11 @@ describe('processBrowserCrawl', () => {
     return Math.random().toString(36).slice(2, 10)
   }
 
-  async function createBrowserCrawlFixture(
-    suffix = randomSuffix(),
-  ): Promise<{ linkId: string; urlId: string; crawler: Crawler }> {
+  async function createBrowserCrawlFixture(suffix = randomSuffix()): Promise<{
+    linkId: string
+    url: { id: string; url: string; hostname: { id: string; hostname: string } }
+    crawler: Crawler
+  }> {
     const user = (await createTestUser()) as PrivateUser
     const hostname = `browser-crawl-${suffix}.example.com`
     const referralProgram = await createReferralProgramFixture({
@@ -55,7 +53,7 @@ describe('processBrowserCrawl', () => {
       crawler_type: 'automation',
       css_selectors_to_remove: ['.remove-me'],
     })
-    return { linkId: link.id, urlId: url!.id, crawler }
+    return { linkId: link.id, url: url!, crawler }
   }
 
   function createBrowserResult(overrides: Partial<BrowserCrawlResult>): BrowserCrawlResult {
@@ -171,10 +169,8 @@ describe('processBrowserCrawl', () => {
   it('persists extracted HTML crawl content and records the successful crawl on the referral link', async () => {
     const fixture = await createBrowserCrawlFixture()
 
-    await handleBrowserCrawlResult(
-      fixture.urlId,
-      fixture.linkId,
-      fixture.crawler,
+    await runBrowserCrawl(
+      fixture,
       createBrowserResult({
         html: '<html><head><title>Browser Title</title></head><body><main><p>Hello browser crawl.</p><p class="remove-me">Noise</p></main></body></html>',
       }),
@@ -187,7 +183,7 @@ describe('processBrowserCrawl', () => {
 
     const crawlId = await getReferralLinkLastCrawlId(fixture.linkId)
     expect(crawlId).toBeTruthy()
-    const crawl = (await getCrawlData(fixture.urlId, crawlId!)) as {
+    const crawl = (await getCrawlData(fixture.url.id, crawlId!)) as {
       response_status_code: number
       markdown: string
     }
@@ -199,12 +195,7 @@ describe('processBrowserCrawl', () => {
   it('immediately deactivates referral links for not-found browser results', async () => {
     const fixture = await createBrowserCrawlFixture()
 
-    await handleBrowserCrawlResult(
-      fixture.urlId,
-      fixture.linkId,
-      fixture.crawler,
-      createBrowserResult({ statusCode: 404, hasContent: false }),
-    )
+    await runBrowserCrawl(fixture, createBrowserResult({ statusCode: 404, hasContent: false }))
 
     const linkStatus = await getReferralLinkCrawlStatus(fixture.linkId)
     expect(linkStatus.activated_at).toBeNull()
@@ -216,8 +207,8 @@ describe('processBrowserCrawl', () => {
     const fixture = await createBrowserCrawlFixture()
 
     await expect(
-      handleBrowserCrawlError(
-        fixture.linkId,
+      runBrowserCrawl(
+        fixture,
         new CrawlerNetworkError('https://example.com/ref', 12, new Error('connection reset')),
       ),
     ).resolves.toBeUndefined()
@@ -232,10 +223,7 @@ describe('processBrowserCrawl', () => {
     const fixture = await createBrowserCrawlFixture()
 
     await expect(
-      handleBrowserCrawlError(
-        fixture.linkId,
-        new CrawlerRateLimitError('https://example.com/ref', 429, 5, 1000),
-      ),
+      runBrowserCrawl(fixture, new CrawlerRateLimitError('https://example.com/ref', 429, 5, 1000)),
     ).rejects.toBeInstanceOf(CrawlerRateLimitError)
 
     const linkStatus = await getReferralLinkCrawlStatus(fixture.linkId)
@@ -247,8 +235,8 @@ describe('processBrowserCrawl', () => {
     const fixture = await createBrowserCrawlFixture()
 
     await expect(
-      handleBrowserCrawlError(
-        fixture.linkId,
+      runBrowserCrawl(
+        fixture,
         new CrawlerConnectError('https://example.com/ref', 0, new Error('connection refused')),
       ),
     ).rejects.toBeInstanceOf(CrawlerConnectError)
@@ -262,10 +250,7 @@ describe('processBrowserCrawl', () => {
     const fixture = await createBrowserCrawlFixture()
 
     await expect(
-      handleBrowserCrawlError(
-        fixture.linkId,
-        new CrawlerTimeoutError('https://example.com/ref', 5000, 5001),
-      ),
+      runBrowserCrawl(fixture, new CrawlerTimeoutError('https://example.com/ref', 5000, 5001)),
     ).resolves.toBeUndefined()
 
     const linkStatus = await getReferralLinkCrawlStatus(fixture.linkId)
@@ -273,3 +258,20 @@ describe('processBrowserCrawl', () => {
     expect(linkStatus.last_crawl_failure_at).toBeTruthy()
   })
 })
+
+async function runBrowserCrawl(
+  fixture: {
+    linkId: string
+    url: { id: string; url: string; hostname: { id: string; hostname: string } }
+    crawler: Crawler
+  },
+  resultOrError: BrowserCrawlResult | Error,
+): Promise<void> {
+  await processBrowserCrawl(fixture.url, fixture.linkId, fixture.crawler, {
+    isUrlCrawlable: () => Promise.resolve(true),
+    crawlWithBrowser: () =>
+      resultOrError instanceof Error
+        ? Promise.reject(resultOrError)
+        : Promise.resolve(resultOrError),
+  })
+}

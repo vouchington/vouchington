@@ -19,12 +19,6 @@ import { validateToolArguments } from './validate-tool-arguments.mts'
 import { buildToolResult } from './build-tool-result.mts'
 import { McpToolResultTooLargeError } from './serialize-mcp-tool-result.mts'
 
-export {
-  MAX_MCP_TOOL_RESULT_BYTES,
-  MAX_MCP_TOOL_RESULT_VISITS,
-  serializeMcpToolResult,
-} from './serialize-mcp-tool-result.mts'
-
 export const MCP_TOOL_RESULT_TOO_LARGE_TEXT =
   'The tool result is too large to return. Narrow the query or lower the limit, then try again.'
 

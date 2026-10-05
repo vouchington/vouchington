@@ -30,7 +30,7 @@ describe('worker-io runtime bootstrap', () => {
 })
 
 describe('worker-io entrypoint wrapper', () => {
-  it('initializes in prewarm mode and re-exports the runtime controls', async () => {
+  it('initializes in prewarm mode and exposes the start control', async () => {
     const originalNodePrewarm = process.env.NODE_PREWARM
     const originalQueues = process.env.QUEUES
 
@@ -45,7 +45,6 @@ describe('worker-io entrypoint wrapper', () => {
       expect(Array.isArray(entrypoint.default)).toBe(true)
       expect(Array.isArray(entrypoint.sqsConsumers)).toBe(true)
       expect(typeof entrypoint.startWorkerRuntime).toBe('function')
-      expect(typeof entrypoint.reportWorkerLoadFailure).toBe('function')
       await Promise.all(entrypoint.default.map(worker => worker.close()))
       await Promise.all(entrypoint.sqsConsumers.map(consumer => consumer.close()))
     } finally {

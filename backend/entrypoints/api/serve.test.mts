@@ -1,52 +1,10 @@
 import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
-import {
-  registerApiShutdownCallbacks,
-  registerProductionApiShutdownCallbacks,
-} from './shutdown.mts'
+import { registerProductionApiShutdownCallbacks } from './shutdown.mts'
 
 type AsyncCallback = () => Promise<void>
 
 describe('api serve shutdown callbacks', () => {
-  it('registers native addon drain after server termination and begins shutdown before waiting', async () => {
-    const events: string[] = []
-    const shutdownCallbacks: AsyncCallback[] = []
-    let drainCallback: AsyncCallback | undefined
-
-    registerApiShutdownCallbacks({
-      addShutdownCallback: callback => {
-        shutdownCallbacks.push(callback)
-        return shutdownCallbacks.length
-      },
-      addDrainCallback: callback => {
-        drainCallback = callback
-        return 2
-      },
-      terminate: () => {
-        events.push('terminate')
-        return Promise.resolve()
-      },
-      beginNativeShutdown: () => {
-        events.push('begin-native-shutdown')
-      },
-      waitForNativeDrain: () => {
-        events.push('wait-for-native-drain')
-        return Promise.resolve()
-      },
-      log: () => {},
-    })
-
-    expect(shutdownCallbacks).toHaveLength(1)
-    expect(drainCallback).toBeDefined()
-
-    for (const callback of shutdownCallbacks) {
-      await callback()
-    }
-    await drainCallback!()
-
-    expect(events).toEqual(['terminate', 'begin-native-shutdown', 'wait-for-native-drain'])
-  })
-
   it('wires production shutdown callbacks through native server-close methods', async () => {
     const events: string[] = []
     const shutdownCallbacks: AsyncCallback[] = []

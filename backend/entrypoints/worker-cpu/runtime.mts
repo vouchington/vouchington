@@ -21,8 +21,6 @@ const defaultWorkerCpuDependencies = {
   startGrafanaHeartbeat,
 } satisfies WorkerCpuDependencies
 
-export { reportWorkerLoadFailure } from '@backend/worker-runtime'
-
 export function initializeWorkerRuntime(
   dependencies: WorkerCpuDependencies = defaultWorkerCpuDependencies,
 ): Promise<WorkerRuntime> {

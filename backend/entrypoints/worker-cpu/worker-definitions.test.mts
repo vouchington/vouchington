@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { CPU_ONLY_WORKER_DEFINITIONS, WORKER_DEFINITIONS } from './worker-definitions.mts'
+import { WORKER_DEFINITIONS } from './worker-definitions.mts'
 import { WORKER_DEFINITIONS as IO_WORKER_DEFINITIONS } from '@entrypoints/worker-io/worker-definitions'
+import { workerQueuePolicy } from '@backend/worker-runtime'
+
+const cpuOnlyDefinitions = WORKER_DEFINITIONS.filter(definition =>
+  workerQueuePolicy.cpuOnlyQueues.includes(definition.queueName),
+)
 
 function expectLazyImport(loadSource: string, runtimePath: string, exportName: string) {
   const pathMatch = runtimePath.match(/\/backend\/workers\/(?<directory>[^/]+)\/(?<file>[^/.]+)/)
@@ -11,13 +16,13 @@ function expectLazyImport(loadSource: string, runtimePath: string, exportName: s
   expect(loadSource).toMatch(new RegExp(`\\b${exportName}\\b`))
 }
 
-describe('worker-cpu CPU_ONLY_WORKER_DEFINITIONS load functions', () => {
+describe('worker-cpu worker definitions', () => {
   it('combines CPU-only and IO-capable definitions for the merged worker entrypoint', () => {
-    expect(WORKER_DEFINITIONS).toEqual([...CPU_ONLY_WORKER_DEFINITIONS, ...IO_WORKER_DEFINITIONS])
+    expect(WORKER_DEFINITIONS).toEqual([...cpuOnlyDefinitions, ...IO_WORKER_DEFINITIONS])
   })
 
   it('loads and closes the dedicated AI spend-cap recheck worker', async () => {
-    const definition = CPU_ONLY_WORKER_DEFINITIONS.find(
+    const definition = cpuOnlyDefinitions.find(
       definition => definition.queueName === 'ai-spend-cap-rechecks',
     )!
     const worker = await definition.load()
@@ -78,9 +83,9 @@ describe('worker-cpu CPU_ONLY_WORKER_DEFINITIONS load functions', () => {
       ],
     ] as const
     const byQueue = (name: string) =>
-      CPU_ONLY_WORKER_DEFINITIONS.find(definition => definition.queueName === name)!
+      cpuOnlyDefinitions.find(definition => definition.queueName === name)!
 
-    expect(CPU_ONLY_WORKER_DEFINITIONS.map(definition => definition.queueName)).toEqual(
+    expect(cpuOnlyDefinitions.map(definition => definition.queueName)).toEqual(
       expectedDefinitions.map(([queueName]) => queueName),
     )
     for (const [queueName, runtimePath, exportName] of expectedDefinitions) {

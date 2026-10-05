@@ -7,12 +7,11 @@ import type { PrivateUser } from '@services/users/types'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import { McpToolOutputMismatchError } from './build-tool-result.mts'
+import { callMcpTool, MCP_TOOL_RESULT_TOO_LARGE_TEXT } from './call-tool.mts'
 import {
-  callMcpTool,
   MAX_MCP_TOOL_RESULT_BYTES,
   MAX_MCP_TOOL_RESULT_VISITS,
-  MCP_TOOL_RESULT_TOO_LARGE_TEXT,
-} from './call-tool.mts'
+} from './serialize-mcp-tool-result.mts'
 import { USER_MCP_SERVER_CONFIG } from './config.mts'
 
 const TOOL_NAME = 'get_trending_topics'
