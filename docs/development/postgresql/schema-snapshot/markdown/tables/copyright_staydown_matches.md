@@ -6,18 +6,18 @@ An upload that matched a staydown entry, shown to staff until a moderator marks 
 
 Not partitioned — growth: unbounded.
 
-| Column                        | Type                             | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                         |
-| ----------------------------- | -------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                          | `uuid`                           | no       | `uuidv7()`                   |          |           |           |                                                                                                                                 |
-| `copyright_staydown_entry_id` | `uuid`                           | no       |                              |          |           |           | The registered image the upload matched; it leads to the case staff review.                                                     |
-| `image_id`                    | `uuid`                           | no       |                              |          |           |           | The matching image: the new upload for a perceptual match, or the existing image the upload deduplicated to for an exact match. |
-| `uploaded_by_id`              | `uuid`                           | no       |                              |          |           |           | The user who uploaded the matching bytes.                                                                                       |
-| `match_kind`                  | `copyright_staydown_match_kinds` | no       |                              |          |           |           | exact (same SHA-256) or perceptual (dHash within the documented Hamming distance).                                              |
-| `hamming_distance`            | `smallint`                       | no       |                              |          |           |           | Bit difference between the two perceptual hashes; 0 for an exact match.                                                         |
-| `reviewed_at`                 | `timestamp with time zone`       | yes      |                              |          |           |           | When a moderator marked the match reviewed; null while it waits in the staff queue.                                             |
-| `reviewed_by_id`              | `uuid`                           | yes      |                              |          |           |           | The moderator who reviewed the match; null while unreviewed or once that account is erased.                                     |
-| `created_at`                  | `timestamp with time zone`       | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                 |
-| `updated_at`                  | `timestamp with time zone`       | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                 |
+| Column                        | Type                             | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                              |
+| ----------------------------- | -------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                          | `uuid`                           | no       | `uuidv7()`                   |          |           |           |                                                                                                                                                      |
+| `copyright_staydown_entry_id` | `uuid`                           | no       |                              |          |           |           | The registered image the upload matched; it leads to the case staff review.                                                                          |
+| `image_id`                    | `uuid`                           | no       |                              |          |           |           | Retained identity of the matching image: the new upload for a perceptual match, or the existing image the upload deduplicated to for an exact match. |
+| `uploaded_by_id`              | `uuid`                           | no       |                              |          |           |           | The user who uploaded the matching bytes.                                                                                                            |
+| `match_kind`                  | `copyright_staydown_match_kinds` | no       |                              |          |           |           | exact (same SHA-256) or perceptual (dHash within the documented Hamming distance).                                                                   |
+| `hamming_distance`            | `smallint`                       | no       |                              |          |           |           | Bit difference between the two perceptual hashes; 0 for an exact match.                                                                              |
+| `reviewed_at`                 | `timestamp with time zone`       | yes      |                              |          |           |           | When a moderator marked the match reviewed; null while it waits in the staff queue.                                                                  |
+| `reviewed_by_id`              | `uuid`                           | yes      |                              |          |           |           | The moderator who reviewed the match; null while unreviewed or once that account is erased.                                                          |
+| `created_at`                  | `timestamp with time zone`       | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                      |
+| `updated_at`                  | `timestamp with time zone`       | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                                      |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -35,7 +35,7 @@ Not partitioned — growth: unbounded.
 **Foreign keys:**
 
 - `copyright_staydown_matches_copyright_staydown_entry_id_fkey`: `FOREIGN KEY (copyright_staydown_entry_id) REFERENCES copyright_staydown_entries(id) ON DELETE CASCADE`
-- `copyright_staydown_matches_image_id_fkey`: `FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE CASCADE`
+- `copyright_staydown_matches_image_id_fkey`: `FOREIGN KEY (image_id) REFERENCES retained_image_identities(id) ON DELETE RESTRICT`
 - `copyright_staydown_matches_reviewed_by_id_fkey`: `FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `copyright_staydown_matches_uploaded_by_id_fkey`: `FOREIGN KEY (uploaded_by_id) REFERENCES users(id) ON DELETE CASCADE`
 

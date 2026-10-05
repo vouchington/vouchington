@@ -10,7 +10,7 @@ Not partitioned — growth: unbounded.
 | -------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`                       | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                                                               |
 | `copyright_restriction_id` | `uuid`                     | no       |                              |          |           |           | The moderator-confirmed restriction this entry belongs to. Lifting the restriction deletes the entry.                                                                         |
-| `image_id`                 | `uuid`                     | no       |                              |          |           |           | The confirmed image the hashes were taken from.                                                                                                                               |
+| `image_id`                 | `uuid`                     | no       |                              |          |           |           | Retained identity of the confirmed image the hashes were taken from, even if its live row is deleted.                                                                         |
 | `sha_256`                  | `bytea`                    | no       |                              |          |           |           | SHA-256 of the original image bytes, for exact re-upload matching.                                                                                                            |
 | `perceptual_hash`          | `bit(64)`                  | yes      |                              |          |           |           | 64-bit difference hash (dHash) of the image, for near-duplicate matching by Hamming distance. Null until the image worker computes it, or when the image is too flat to hash. |
 | `created_at`               | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                                               |
@@ -29,7 +29,7 @@ Not partitioned — growth: unbounded.
 **Foreign keys:**
 
 - `copyright_staydown_entries_copyright_restriction_id_fkey`: `FOREIGN KEY (copyright_restriction_id) REFERENCES copyright_restrictions(id) ON DELETE CASCADE`
-- `copyright_staydown_entries_image_id_fkey`: `FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE CASCADE`
+- `copyright_staydown_entries_image_id_fkey`: `FOREIGN KEY (image_id) REFERENCES retained_image_identities(id) ON DELETE RESTRICT`
 
 **Indexes:**
 

@@ -26,7 +26,6 @@ Not partitioned — growth: unbounded.
 **Foreign keys:**
 
 - `fk_image_placements__retained_image_binding`: `FOREIGN KEY (placement_id, image_id, binding_family) REFERENCES retained_image_placement_bindings(placement_id, image_id, binding_family) ON DELETE RESTRICT`
-- `image_placements_image_id_fkey`: `FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE RESTRICT`
 - `image_placements_placement_id_fkey`: `FOREIGN KEY (placement_id) REFERENCES media_placements(id) ON DELETE RESTRICT`
 - `image_placements_post_id_fkey`: `FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE RESTRICT`
 

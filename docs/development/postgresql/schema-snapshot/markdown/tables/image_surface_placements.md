@@ -34,7 +34,6 @@ Not partitioned — growth: unbounded.
 
 - `fk_image_surface_placements__retained_image_binding`: `FOREIGN KEY (placement_id, image_id, binding_family) REFERENCES retained_image_placement_bindings(placement_id, image_id, binding_family) ON DELETE RESTRICT`
 - `image_surface_placements_community_id_fkey`: `FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE RESTRICT`
-- `image_surface_placements_image_id_fkey`: `FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE RESTRICT`
 - `image_surface_placements_placement_id_fkey`: `FOREIGN KEY (placement_id) REFERENCES media_placements(id) ON DELETE RESTRICT`
 - `image_surface_placements_topic_id_fkey`: `FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE RESTRICT`
 - `image_surface_placements_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`

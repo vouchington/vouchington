@@ -324,6 +324,13 @@
 - `restriction_reversed_by_counter_notice`
 - `restriction_reversed_by_appeal`
 
+## `copyright_dsa_statement_attempt_outcomes`
+
+- `submitted`
+- `retryable_failure`
+- `permanent_failure`
+- `replayed`
+
 ## `copyright_eu_dispute_settlement_results`
 
 - `decided_for_recipient`
@@ -1448,7 +1455,6 @@
 - `topic`
 - `post`
 - `rss_feed_item`
-- `image`
 - `membership`
 
 ## `review_dispute_actions`

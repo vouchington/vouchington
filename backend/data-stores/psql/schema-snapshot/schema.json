@@ -236,6 +236,9 @@
         "restriction_reversed_by_appeal"
       ]
     },
+    "copyright_dsa_statement_attempt_outcomes": {
+      "values": ["submitted", "retryable_failure", "permanent_failure", "replayed"]
+    },
     "copyright_eu_dispute_settlement_results": {
       "values": ["decided_for_recipient", "decided_for_platform", "withdrawn", "no_decision"]
     },
@@ -1095,7 +1098,7 @@
       ]
     },
     "retained_identity_families": {
-      "values": ["user", "api_key", "topic", "post", "rss_feed_item", "image", "membership"]
+      "values": ["user", "api_key", "topic", "post", "rss_feed_item", "membership"]
     },
     "review_dispute_actions": {
       "values": ["no_action", "remove", "annotate", "dismiss"]
@@ -1386,6 +1389,9 @@
     },
     "fn_register_retained_identity": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_register_retained_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM fn_ensure_retained_identity(TG_ARGV[0]::retained_identity_families, NEW.id);\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_register_retained_image_identity": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_register_retained_image_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE pinned_uploader_id UUID;\nBEGIN\n  -- Cleanup may remove an unreferenced root between insertion and pinning.\n  LOOP\n    INSERT INTO retained_image_identities (id, created_by_id)\n    VALUES (NEW.id, NEW.created_by_id)\n    ON CONFLICT (id) DO NOTHING;\n    SELECT created_by_id INTO pinned_uploader_id\n    FROM retained_image_identities WHERE id = NEW.id FOR KEY SHARE;\n    EXIT WHEN pinned_uploader_id IS NOT NULL;\n  END LOOP;\n  IF pinned_uploader_id <> NEW.created_by_id THEN\n    RAISE EXCEPTION 'retained image uploader does not match the live image'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_reject_admin_import_row_target": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_admin_import_row_target()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  batch_import_type import_entity_types;\nBEGIN\n  SELECT import_type\n  INTO STRICT batch_import_type\n  FROM admin_import_batches\n  WHERE id = NEW.batch_id;\n\n  IF NOT (\n    (batch_import_type = 'topic' AND NEW.topic_id IS NOT NULL)\n    OR (batch_import_type = 'rss_feed' AND NEW.rss_feed_id IS NOT NULL)\n  ) THEN\n    RAISE EXCEPTION 'admin import row target does not match batch import type %', batch_import_type\n      USING ERRCODE = 'check_violation';\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n"
@@ -21646,6 +21652,494 @@
         }
       }
     },
+    "copyright_dsa_statement_submission_attempts": {
+      "checkConstraints": {
+        "copyright_dsa_statement_submission_attempt_attempt_number_check": "CHECK ((attempt_number > 0))",
+        "copyright_dsa_statement_submission_attempts_check": "CHECK (((outcome = 'replayed'::copyright_dsa_statement_attempt_outcomes) = (replayed_by_id IS NOT NULL)))",
+        "copyright_dsa_statement_submission_attempts_error_code_check": "CHECK (((error_code IS NULL) OR ((char_length(error_code) >= 1) AND (char_length(error_code) <= 128))))",
+        "copyright_dsa_statement_submission_attempts_outcome_check": "CHECK ((outcome = ANY (ARRAY['submitted'::copyright_dsa_statement_attempt_outcomes, 'retryable_failure'::copyright_dsa_statement_attempt_outcomes, 'permanent_failure'::copyright_dsa_statement_attempt_outcomes, 'replayed'::copyright_dsa_statement_attempt_outcomes])))",
+        "copyright_dsa_statement_submission_attempts_status_code_check": "CHECK (((status_code IS NULL) OR ((status_code >= 100) AND (status_code <= 599))))"
+      },
+      "columns": {
+        "attempt_number": {
+          "collation": null,
+          "comment": "Monotone sequence across retries and replay rounds for this submission.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "integer"
+        },
+        "copyright_dsa_statement_submission_id": {
+          "collation": null,
+          "comment": "Parent durable statement submission.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": "Attempt time derived from the UUIDv7 identifier.",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "error_code": {
+          "collation": null,
+          "comment": "Small failure class or lease_expired marker, never a response body or token.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "text"
+        },
+        "id": {
+          "collation": null,
+          "comment": "UUIDv7 immutable attempt identifier.",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "outcome": {
+          "collation": null,
+          "comment": "Submitted, retryable, permanent, or administrator-replayed outcome.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "copyright_dsa_statement_attempt_outcomes"
+        },
+        "replayed_by_id": {
+          "collation": null,
+          "comment": "Retained administrator identity, present only on a replay row and never an authorization source.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "uuid"
+        },
+        "status_code": {
+          "collation": null,
+          "comment": "HTTP status when known; no response body is stored.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "integer"
+        }
+      },
+      "comment": "Append-only outcome ledger; the rows after the latest replay determine retry budget and dead-letter state.",
+      "foreignKeys": {
+        "copyright_dsa_statement_submi_copyright_dsa_statement_subm_fkey": {
+          "columns": ["copyright_dsa_statement_submission_id"],
+          "definition": "FOREIGN KEY (copyright_dsa_statement_submission_id) REFERENCES copyright_dsa_statement_submissions(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_dsa_statement_submissions",
+          "validated": true
+        },
+        "copyright_dsa_statement_submission_attempts_replayed_by_id_fkey": {
+          "columns": ["replayed_by_id"],
+          "definition": "FOREIGN KEY (replayed_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_dsa_statement_submi_copyright_dsa_statement_submi_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_dsa_statement_submi_copyright_dsa_statement_submi_key ON public.copyright_dsa_statement_submission_attempts USING btree (copyright_dsa_statement_submission_id, attempt_number)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_dsa_statement_submission_id",
+              "descending": false,
+              "expression": "copyright_dsa_statement_submission_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "attempt_number",
+              "descending": false,
+              "expression": "attempt_number",
+              "nullsFirst": false,
+              "opclass": "int4_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_dsa_statement_submission_attempts_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_dsa_statement_submission_attempts_pkey ON public.copyright_dsa_statement_submission_attempts USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_dsa_statement_submission_attempts__item__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_dsa_statement_submission_attempts__item__id ON public.copyright_dsa_statement_submission_attempts USING btree (copyright_dsa_statement_submission_id, id DESC)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_dsa_statement_submission_id",
+              "descending": false,
+              "expression": "copyright_dsa_statement_submission_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_dsa_statement_submission_attempts__replayed_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_dsa_statement_submission_attempts__replayed_by ON public.copyright_dsa_statement_submission_attempts USING btree (replayed_by_id) WHERE (replayed_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "replayed_by_id",
+              "descending": false,
+              "expression": "replayed_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(replayed_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_dsa_statement_submission_attempts_immutable": "CREATE TRIGGER trigger_copyright_dsa_statement_submission_attempts_immutable BEFORE DELETE OR UPDATE ON public.copyright_dsa_statement_submission_attempts FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
+      },
+      "uniqueConstraints": {
+        "copyright_dsa_statement_submi_copyright_dsa_statement_submi_key": {
+          "columns": ["copyright_dsa_statement_submission_id", "attempt_number"],
+          "definition": "UNIQUE (copyright_dsa_statement_submission_id, attempt_number)"
+        }
+      }
+    },
+    "copyright_dsa_statement_submissions": {
+      "checkConstraints": {
+        "copyright_dsa_statement_submissions_check": "CHECK ((((lease_token IS NULL) AND (leased_at IS NULL) AND (lease_expires_at IS NULL)) OR ((lease_token IS NOT NULL) AND (leased_at IS NOT NULL) AND (lease_expires_at IS NOT NULL) AND (lease_expires_at > leased_at))))",
+        "copyright_dsa_statement_submissions_check1": "CHECK (((submitted_at IS NULL) = (transparency_database_uuid IS NULL)))",
+        "copyright_dsa_statement_submissions_payload_check": "CHECK ((jsonb_typeof(payload) = 'object'::text))"
+      },
+      "columns": {
+        "available_at": {
+          "collation": null,
+          "comment": "Earliest time at which an unsubmitted, non-dead-lettered item may be claimed.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "copyright_restriction_id": {
+          "collation": null,
+          "comment": "The unique Art. 17(1) restriction decision represented by this public statement.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": "Creation time derived from the UUIDv7 identifier.",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": "UUIDv7 durable work-item identifier.",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "lease_expires_at": {
+          "collation": null,
+          "comment": "Deadline after which a stale lease becomes a retryable failure ledger entry.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "lease_token": {
+          "collation": null,
+          "comment": "Random claim token fencing every write after the HTTP request.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "leased_at": {
+          "collation": null,
+          "comment": "Time the current worker lease was taken.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
+        "payload": {
+          "collation": null,
+          "comment": "Validated, personal-data-free API JSON, frozen across retries and replay.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "jsonb"
+        },
+        "submitted_at": {
+          "collation": null,
+          "comment": "Time the Commission accepted this statement or confirmed its existing PUID.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "transparency_database_uuid": {
+          "collation": null,
+          "comment": "Commission statement UUID returned on success or existing-PUID confirmation.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": "Last durable claim or terminal-outcome update.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 11,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "One durable public DSA Transparency Database statement per copyright restriction decision; the payload is frozen before retry.",
+      "foreignKeys": {
+        "copyright_dsa_statement_submissio_copyright_restriction_id_fkey": {
+          "columns": ["copyright_restriction_id"],
+          "definition": "FOREIGN KEY (copyright_restriction_id) REFERENCES copyright_restrictions(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_restrictions",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_dsa_statement_submission_copyright_restriction_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_dsa_statement_submission_copyright_restriction_id_key ON public.copyright_dsa_statement_submissions USING btree (copyright_restriction_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_restriction_id",
+              "descending": false,
+              "expression": "copyright_restriction_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_dsa_statement_submissions_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_dsa_statement_submissions_pkey ON public.copyright_dsa_statement_submissions USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_dsa_statement_submissions__available": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_dsa_statement_submissions__available ON public.copyright_dsa_statement_submissions USING btree (available_at, id) WHERE (submitted_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "available_at",
+              "descending": false,
+              "expression": "available_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(submitted_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_dsa_statement_submissions__lease_expiry": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_dsa_statement_submissions__lease_expiry ON public.copyright_dsa_statement_submissions USING btree (lease_expires_at, id) WHERE (lease_token IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "lease_expires_at",
+              "descending": false,
+              "expression": "lease_expires_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(lease_token IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_dsa_statement_submissions_updated_at": "CREATE TRIGGER trigger_copyright_dsa_statement_submissions_updated_at BEFORE UPDATE ON public.copyright_dsa_statement_submissions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {
+        "copyright_dsa_statement_submission_copyright_restriction_id_key": {
+          "columns": ["copyright_restriction_id"],
+          "definition": "UNIQUE (copyright_restriction_id)"
+        }
+      }
+    },
     "copyright_eu_dispute_settlement_outcomes": {
       "checkConstraints": {
         "chk_copyright_eu_dispute_settlement_outcomes__implementation": "CHECK (((implemented_at IS NULL) OR (result = 'decided_for_recipient'::copyright_eu_dispute_settlement_results)))",
@@ -34453,7 +34947,7 @@
         },
         "image_id": {
           "collation": null,
-          "comment": "The confirmed image the hashes were taken from.",
+          "comment": "Retained identity of the confirmed image the hashes were taken from, even if its live row is deleted.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -34509,11 +35003,11 @@
         },
         "copyright_staydown_entries_image_id_fkey": {
           "columns": ["image_id"],
-          "definition": "FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE CASCADE",
-          "onDelete": "cascade",
+          "definition": "FOREIGN KEY (image_id) REFERENCES retained_image_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
-          "referencedTable": "images",
+          "referencedTable": "retained_image_identities",
           "validated": true
         }
       },
@@ -34671,7 +35165,7 @@
         },
         "image_id": {
           "collation": null,
-          "comment": "The matching image: the new upload for a perceptual match, or the existing image the upload deduplicated to for an exact match.",
+          "comment": "Retained identity of the matching image: the new upload for a perceptual match, or the existing image the upload deduplicated to for an exact match.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -34749,11 +35243,11 @@
         },
         "copyright_staydown_matches_image_id_fkey": {
           "columns": ["image_id"],
-          "definition": "FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE CASCADE",
-          "onDelete": "cascade",
+          "definition": "FOREIGN KEY (image_id) REFERENCES retained_image_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
-          "referencedTable": "images",
+          "referencedTable": "retained_image_identities",
           "validated": true
         },
         "copyright_staydown_matches_reviewed_by_id_fkey": {
@@ -42854,15 +43348,6 @@
           "referencedTable": "retained_image_placement_bindings",
           "validated": true
         },
-        "image_placements_image_id_fkey": {
-          "columns": ["image_id"],
-          "definition": "FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "images",
-          "validated": true
-        },
         "image_placements_placement_id_fkey": {
           "columns": ["placement_id"],
           "definition": "FOREIGN KEY (placement_id) REFERENCES media_placements(id) ON DELETE RESTRICT",
@@ -43293,15 +43778,6 @@
           "referencedTable": "communities",
           "validated": true
         },
-        "image_surface_placements_image_id_fkey": {
-          "columns": ["image_id"],
-          "definition": "FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "images",
-          "validated": true
-        },
         "image_surface_placements_placement_id_fkey": {
           "columns": ["placement_id"],
           "definition": "FOREIGN KEY (placement_id) REFERENCES media_placements(id) ON DELETE RESTRICT",
@@ -43711,7 +44187,7 @@
         },
         "created_by_id": {
           "collation": null,
-          "comment": "Original uploader identity retained after account deletion for shared image provenance; never alone authorizes a deleted user.",
+          "comment": "Original uploader, fixed to the retained image identity creator; a live matching account is separately required for upload authorization.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -43933,11 +44409,11 @@
       "comment": "Uploaded images with S3 storage, metadata, and moderation results.",
       "foreignKeys": {
         "fk_images__retained_image_identity": {
-          "columns": ["id"],
-          "definition": "FOREIGN KEY (id) REFERENCES retained_image_identities(id) ON DELETE RESTRICT",
+          "columns": ["id", "created_by_id"],
+          "definition": "FOREIGN KEY (id, created_by_id) REFERENCES retained_image_identities(id, created_by_id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": ["id", "created_by_id"],
           "referencedTable": "retained_image_identities",
           "validated": true
         },
@@ -44155,7 +44631,7 @@
         "trigger_images_guard_terminal_lifecycle": "CREATE TRIGGER trigger_images_guard_terminal_lifecycle BEFORE UPDATE ON public.images FOR EACH ROW EXECUTE FUNCTION fn_reject_terminal_lifecycle('upload_completed_at', 'upload_failed_at')",
         "trigger_images_id_immutable": "CREATE TRIGGER trigger_images_id_immutable BEFORE UPDATE OF id ON public.images FOR EACH ROW WHEN ((old.id IS DISTINCT FROM new.id)) EXECUTE FUNCTION fn_reject_mutation()",
         "trigger_images_updated_at": "CREATE TRIGGER trigger_images_updated_at BEFORE UPDATE ON public.images FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
-        "trigger_register_retained_image_identity": "CREATE TRIGGER trigger_register_retained_image_identity BEFORE INSERT ON public.images FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('image')"
+        "trigger_register_retained_image_identity": "CREATE TRIGGER trigger_register_retained_image_identity BEFORE INSERT ON public.images FOR EACH ROW EXECUTE FUNCTION fn_register_retained_image_identity()"
       },
       "uniqueConstraints": {
         "images_sha_256_key": {
@@ -46128,15 +46604,6 @@
           "onUpdate": "no action",
           "referencedColumns": ["placement_id", "image_id"],
           "referencedTable": "retained_image_placement_bindings",
-          "validated": true
-        },
-        "media_delivery_registry_records_image_id_fkey": {
-          "columns": ["image_id"],
-          "definition": "FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "images",
           "validated": true
         },
         "media_delivery_registry_records_placement_id_fkey": {
@@ -67416,13 +67883,13 @@
       },
       "comment": "One source placement embedded by an OG manifest. Authorization uses the recorded revision, not a later sibling.",
       "foreignKeys": {
-        "fk_open_graph_dependency_manifest_placements__image": {
-          "columns": ["image_id"],
-          "definition": "FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE RESTRICT",
+        "fk_open_graph_dependency_manifest_placements__image_binding": {
+          "columns": ["placement_id", "image_id"],
+          "definition": "FOREIGN KEY (placement_id, image_id) REFERENCES retained_image_placement_bindings(placement_id, image_id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "images",
+          "referencedColumns": ["placement_id", "image_id"],
+          "referencedTable": "retained_image_placement_bindings",
           "validated": true
         },
         "fk_open_graph_dependency_manifest_placements__placement": {
@@ -101596,6 +102063,17 @@
     "retained_image_identities": {
       "checkConstraints": {},
       "columns": {
+        "created_by_id": {
+          "collation": null,
+          "comment": "Immutable original uploader retained user identity, including after the live image or user row is deleted.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
         "id": {
           "collation": null,
           "comment": null,
@@ -101608,10 +102086,67 @@
           "type": "uuid"
         }
       },
-      "comment": "Concrete image byte identity retained while live or durable references remain; never delivery authority.",
-      "foreignKeys": {},
+      "comment": "Concrete image byte identity and original uploader provenance retained while live or durable references remain; never delivery or account authority.",
+      "foreignKeys": {
+        "retained_image_identities_created_by_id_fkey": {
+          "columns": ["created_by_id"],
+          "definition": "FOREIGN KEY (created_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        }
+      },
       "growth": "unbounded",
       "indexes": {
+        "idx_retained_image_identities__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_retained_image_identities__created_by_id ON ONLY public.retained_image_identities USING btree (created_by_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "retained_image_identities_id_created_by_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX retained_image_identities_id_created_by_id_key ON ONLY public.retained_image_identities USING btree (id, created_by_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
         "retained_image_identities_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -101649,8 +102184,15 @@
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "partitioned table",
-      "triggers": {},
-      "uniqueConstraints": {}
+      "triggers": {
+        "trigger_guard_retained_image_uploader": "CREATE TRIGGER trigger_guard_retained_image_uploader BEFORE UPDATE OF id, created_by_id ON public.retained_image_identities FOR EACH ROW WHEN (((old.id IS DISTINCT FROM new.id) OR (old.created_by_id IS DISTINCT FROM new.created_by_id))) EXECUTE FUNCTION fn_reject_mutation()"
+      },
+      "uniqueConstraints": {
+        "retained_image_identities_id_created_by_id_key": {
+          "columns": ["id", "created_by_id"],
+          "definition": "UNIQUE (id, created_by_id)"
+        }
+      }
     },
     "retained_image_placement_bindings": {
       "checkConstraints": {
