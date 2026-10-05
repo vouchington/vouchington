@@ -13,7 +13,7 @@ import {
   getRssFeedItemElectionByIdCachedBatch,
 } from '@services/entity-fetch'
 import { getPostIdsByUrlIds } from '@services/posts/search/get-posts-by-url-ids'
-import { maskAnonymousPosts } from '@services/posts'
+import { labelAndMaskPosts } from '@services/content-provenance'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
 import { getRssFeedItemElectionVotesByUser } from '@services/elections-votes/rss-feed-item'
 import { getPublicUsersByAnyBatch } from '@services/users/get-public-batch'
@@ -150,7 +150,7 @@ app.route('/api/v1/communities/:idOrSlug/news').get(async (ctx: Context) => {
     posts: relatedPostsPromise.then(r =>
       r.postIds.length > 0
         ? getPostByAnyCachedBatch(r.postIds)
-            .then(posts => maskAnonymousPosts(posts, currentUser))
+            .then(posts => labelAndMaskPosts(posts, currentUser))
             .then(indexById)
         : {},
     ),

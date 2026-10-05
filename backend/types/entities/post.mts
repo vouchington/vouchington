@@ -1,3 +1,4 @@
+import type { PublicContentProvenance, StaffContentProvenance } from './content-provenance.mts'
 import type { BasicUser } from './user.mts'
 
 export type ClearanceStatus = 'pending' | 'approved' | 'rejected' | 'in_review'
@@ -123,6 +124,9 @@ export type Post = {
   lingua_rs_detected_language?: string | null
   url_id?: string | null
   can_edit_content?: boolean
+  // Attached per request after the cache read, never stored on the cached post or in view_posts.
+  provenance?: PublicContentProvenance
+  staff_provenance?: StaffContentProvenance
 }
 
 export type PostMetrics = {

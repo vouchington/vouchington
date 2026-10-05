@@ -9,7 +9,7 @@ import type { BasicUser } from '@services/users/types'
 import createHttpError from 'http-errors'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { resolveReadableThread } from './mcp-post-access.mts'
-import { mcpPostSchema, toMcpPost, type McpPost } from './mcp-post-output.mts'
+import { mcpPostSchema, toMcpPosts, type McpPost } from './mcp-post-output.mts'
 import { closedObject, foundOrNotFoundSchema, pickProperties } from './read-tool-output-schema.mts'
 import { clampToolLimit } from './search-system.mts'
 
@@ -77,9 +77,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
       const posts = await getPostByAnyCachedBatch(page.ids)
       return {
         success: true,
-        descendants: await Promise.all(
-          posts.filter((post): post is Post => Boolean(post)).map(toMcpPost),
-        ),
+        descendants: await toMcpPosts(posts.filter((post): post is Post => Boolean(post))),
         page_info: page.pageInfo,
       }
     },

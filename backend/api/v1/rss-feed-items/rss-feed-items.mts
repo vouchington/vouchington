@@ -18,6 +18,7 @@ import {
   getRssFeedItemElectionByIdCachedBatch,
 } from '@services/entity-fetch'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
+import { attachPostProvenance } from '@services/content-provenance'
 import { getRssFeedItemElectionVotesByUser } from '@services/elections-votes/rss-feed-item'
 import { electionVotesMapToRecord } from '@modules/utils/collections'
 import { indexById } from '@modules/utils'
@@ -145,7 +146,11 @@ app.route('/api/v1/rss-feed-items').get(async (ctx: Context) => {
 
     output.related_posts_by_url_id = relatedPostsPromise.then(r => r.related_posts_by_url_id)
     output.posts = relatedPostsPromise.then(r =>
-      r.postIds.length > 0 ? getPostByAnyCachedBatch(r.postIds).then(indexById) : {},
+      r.postIds.length > 0
+        ? getPostByAnyCachedBatch(r.postIds)
+            .then(posts => attachPostProvenance(posts, currentUser))
+            .then(indexById)
+        : {},
     )
     output.posts_metrics = relatedPostsPromise.then(r =>
       r.postIds.length > 0 ? getPostMetricsByAnyCachedBatch(r.postIds).then(indexById) : {},

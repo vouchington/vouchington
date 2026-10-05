@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
+import { PostProvenanceBadges } from './post-provenance-badges'
 import { TopicLabel } from '@/components/topics/topic-label'
 import { communityHref, topicTabForPostType } from '@/lib/links/entity-href'
 import { humanizePostType } from '@ts-shared/utils/format'
@@ -29,6 +30,8 @@ interface PostDetailBadgesProps {
   locked: boolean
   reviewRatings: ReviewRatingViewModel[]
   community?: PostCommunity | null
+  provenance?: Post['provenance']
+  staffProvenance?: Post['staff_provenance']
   labels: PostDetailBadgeLabels
 }
 
@@ -40,6 +43,8 @@ export function PostDetailBadges({
   locked,
   reviewRatings,
   community,
+  provenance,
+  staffProvenance,
   labels,
 }: PostDetailBadgesProps) {
   return (
@@ -51,6 +56,11 @@ export function PostDetailBadges({
       >
         {humanizePostType(postType)}
       </Badge>
+      <PostProvenanceBadges
+        provenance={provenance}
+        staffProvenance={staffProvenance}
+        showClient
+      />
       <BroadcastBadge
         broadcast={broadcast}
         labels={labels}

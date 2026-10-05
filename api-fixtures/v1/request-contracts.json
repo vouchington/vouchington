@@ -13412,6 +13412,10 @@
       ],
       "type": "object"
     },
+    "OAuthContentCreationChannel": {
+      "enum": ["api", "mcp"],
+      "type": "string"
+    },
     "OAuthGrantClientView": {
       "additionalProperties": false,
       "properties": {
@@ -16478,6 +16482,9 @@
         "privacy": {
           "$ref": "#/components/schemas/PostPrivacy"
         },
+        "provenance": {
+          "$ref": "#/components/schemas/PublicContentProvenance"
+        },
         "rejected_at": {
           "anyOf": [
             {
@@ -16582,6 +16589,9 @@
               "type": "string"
             }
           ]
+        },
+        "staff_provenance": {
+          "$ref": "#/components/schemas/StaffContentProvenance"
         },
         "structured_data": {},
         "title": {
@@ -17315,6 +17325,26 @@
         }
       },
       "required": ["type"],
+      "type": "object"
+    },
+    "PublicContentProvenance": {
+      "additionalProperties": false,
+      "properties": {
+        "app_name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "via": {
+          "$ref": "#/components/schemas/OAuthContentCreationChannel"
+        }
+      },
+      "required": ["app_name", "via"],
       "type": "object"
     },
     "PublicDisplayAccount": {
@@ -21200,6 +21230,50 @@
         }
       },
       "required": ["reason_code", "status"],
+      "type": "object"
+    },
+    "StaffContentProvenance": {
+      "additionalProperties": false,
+      "properties": {
+        "created_via": {
+          "enum": ["api", "dotnet", "mcp", "swift", "system", "web"],
+          "type": "string"
+        },
+        "oauth_client": {
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "client_id": {
+                  "type": "string"
+                },
+                "client_name": {
+                  "type": "string"
+                },
+                "metadata_url": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "verified": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["client_id", "client_name", "metadata_url", "verified"],
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": ["created_via"],
       "type": "object"
     },
     "Story": {

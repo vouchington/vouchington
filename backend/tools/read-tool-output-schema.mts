@@ -24,12 +24,18 @@ export function pickProperties(
   )
 }
 
-/** A closed object that requires every property it declares. */
-export function closedObject(properties: Record<string, JsonSchema>): JsonSchema {
+/**
+ * A closed object that requires every property it declares, except the `optionalKeys`, which may
+ * be absent but are still checked against their schema when present.
+ */
+export function closedObject(
+  properties: Record<string, JsonSchema>,
+  optionalKeys: readonly string[] = [],
+): JsonSchema {
   return {
     type: 'object',
     properties,
-    required: Object.keys(properties),
+    required: Object.keys(properties).filter(key => !optionalKeys.includes(key)),
     additionalProperties: false,
   }
 }

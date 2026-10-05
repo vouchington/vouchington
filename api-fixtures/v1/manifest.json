@@ -35908,7 +35908,7 @@
     },
     "GET:/api/v1/posts": {
       "bodyKind": "content",
-      "hash": "b39c9f077465a7caf76373fb089924b4167d480e8f26cff207717f9c8e0c0163",
+      "hash": "aef8d4ef84f079bbc86b6a25b06f8cd28e32f5ced0d935d3db5cdd34e1d93415",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -36641,6 +36641,19 @@
             },
             "type": "object"
           },
+          "OAuthContentCreationChannel": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "api"
+              },
+              {
+                "type": "literal",
+                "value": "mcp"
+              }
+            ]
+          },
           "PageInfo": {
             "additionalProperties": false,
             "properties": {
@@ -37203,6 +37216,13 @@
                   "type": "ref"
                 }
               },
+              "provenance": {
+                "required": false,
+                "schema": {
+                  "name": "PublicContentProvenance",
+                  "type": "ref"
+                }
+              },
               "rejected_at": {
                 "required": true,
                 "schema": {
@@ -37353,6 +37373,13 @@
                       "type": "string"
                     }
                   ]
+                }
+              },
+              "staff_provenance": {
+                "required": false,
+                "schema": {
+                  "name": "StaffContentProvenance",
+                  "type": "ref"
                 }
               },
               "structured_data": {
@@ -37877,6 +37904,33 @@
               }
             ]
           },
+          "PublicContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "app_name": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "via": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthContentCreationChannel",
+                  "type": "ref"
+                }
+              }
+            },
+            "type": "object"
+          },
           "RecommendationStatus": {
             "type": "union",
             "variants": [
@@ -38118,6 +38172,93 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "StaffContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "created_via": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "api"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "dotnet"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "mcp"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "swift"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "system"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "web"
+                    }
+                  ]
+                }
+              },
+              "oauth_client": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "metadata_url": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "verified": {
+                          "required": true,
+                          "schema": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -44635,7 +44776,7 @@
     },
     "GET:/api/v1/stories/:id": {
       "bodyKind": "content",
-      "hash": "fb6ca6f433b756caed87ec40ca5b9d6d7ab7bc819d9ac6f6abffe2f284473b39",
+      "hash": "8044e46838bc2b81690bc3883fed5d061676e7c1633199a2265ced92ee093ee9",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -45231,6 +45372,19 @@
               }
             },
             "type": "object"
+          },
+          "OAuthContentCreationChannel": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "api"
+              },
+              {
+                "type": "literal",
+                "value": "mcp"
+              }
+            ]
           },
           "PageInfo": {
             "additionalProperties": false,
@@ -45848,6 +46002,13 @@
                   "type": "ref"
                 }
               },
+              "provenance": {
+                "required": false,
+                "schema": {
+                  "name": "PublicContentProvenance",
+                  "type": "ref"
+                }
+              },
               "rejected_at": {
                 "required": true,
                 "schema": {
@@ -45998,6 +46159,13 @@
                       "type": "string"
                     }
                   ]
+                }
+              },
+              "staff_provenance": {
+                "required": false,
+                "schema": {
+                  "name": "StaffContentProvenance",
+                  "type": "ref"
                 }
               },
               "structured_data": {
@@ -46484,6 +46652,33 @@
                 "value": "topic_recommendation"
               }
             ]
+          },
+          "PublicContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "app_name": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "via": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthContentCreationChannel",
+                  "type": "ref"
+                }
+              }
+            },
+            "type": "object"
           },
           "PublicViewHostname": {
             "additionalProperties": false,
@@ -46995,6 +47190,93 @@
                 "required": false,
                 "schema": {
                   "type": "string"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "StaffContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "created_via": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "api"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "dotnet"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "mcp"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "swift"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "system"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "web"
+                    }
+                  ]
+                }
+              },
+              "oauth_client": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "metadata_url": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "verified": {
+                          "required": true,
+                          "schema": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 }
               }
             },
@@ -58300,7 +58582,7 @@
     },
     "GET:/api/v1/users/:idOrSlug/posts/:listType": {
       "bodyKind": "content",
-      "hash": "6c52b4007e5c7bb6c498dd5735638afacef8979c252e20250a6472ca3c8326e4",
+      "hash": "c1d56c628d62059ad415abca580fcdce1e17ab05da06371b6d4c6c73faf51d98",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -58588,6 +58870,19 @@
               }
             },
             "type": "object"
+          },
+          "OAuthContentCreationChannel": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "api"
+              },
+              {
+                "type": "literal",
+                "value": "mcp"
+              }
+            ]
           },
           "PageInfo": {
             "additionalProperties": false,
@@ -59132,6 +59427,13 @@
                   "type": "ref"
                 }
               },
+              "provenance": {
+                "required": false,
+                "schema": {
+                  "name": "PublicContentProvenance",
+                  "type": "ref"
+                }
+              },
               "rejected_at": {
                 "required": true,
                 "schema": {
@@ -59282,6 +59584,13 @@
                       "type": "string"
                     }
                   ]
+                }
+              },
+              "staff_provenance": {
+                "required": false,
+                "schema": {
+                  "name": "StaffContentProvenance",
+                  "type": "ref"
                 }
               },
               "structured_data": {
@@ -59696,6 +60005,33 @@
               }
             ]
           },
+          "PublicContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "app_name": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "via": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthContentCreationChannel",
+                  "type": "ref"
+                }
+              }
+            },
+            "type": "object"
+          },
           "RecommendationStatus": {
             "type": "union",
             "variants": [
@@ -59712,6 +60048,93 @@
                 "value": "rejected"
               }
             ]
+          },
+          "StaffContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "created_via": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "api"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "dotnet"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "mcp"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "swift"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "system"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "web"
+                    }
+                  ]
+                }
+              },
+              "oauth_client": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "metadata_url": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "verified": {
+                          "required": true,
+                          "schema": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
           }
         },
         "root": {
@@ -92732,6 +93155,60 @@
       "responseSchema": {
         "hash": "8f71395e45d2142d2e246ce33f6473fe768bf788c0b87568852b0a0f6aad1a54",
         "key": "native.users.profile.posts.discussions"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/posts"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-user-profile-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/posts",
+      "bodyFile": "responses/native.users.profile.posts.provenance.json",
+      "consumers": ["web"],
+      "id": "native.users.profile.posts.provenance",
+      "method": "GET",
+      "migratedFrom": [],
+      "path": "/api/v1/posts",
+      "query": {
+        "creator": "user-abc",
+        "limit": "25",
+        "post_types": "discussion",
+        "sort": "new"
+      },
+      "responseSchema": {
+        "hash": "18836e3933a1eec1c9ae7a113b92f0f2b4c1cb5e147ecf88eb810abc41155499",
+        "key": "native.users.profile.posts.provenance"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/posts"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-user-profile-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/posts",
+      "bodyFile": "responses/native.users.profile.posts.staff-provenance.json",
+      "consumers": ["web"],
+      "id": "native.users.profile.posts.staff-provenance",
+      "method": "GET",
+      "migratedFrom": [],
+      "path": "/api/v1/posts",
+      "query": {
+        "creator": "user-abc",
+        "limit": "25",
+        "post_types": "discussion,review",
+        "sort": "new"
+      },
+      "responseSchema": {
+        "hash": "bd81288560bd82367e60945c01921b542dac85ac86d2bbf82732f27942c058be",
+        "key": "native.users.profile.posts.staff-provenance"
       },
       "route": {
         "routeTemplate": "/api/v1/posts"

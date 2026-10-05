@@ -654,9 +654,11 @@
         "native.users.profile.posts.all",
         "native.users.profile.posts.comments",
         "native.users.profile.posts.discussions",
-        "native.users.profile.posts.reviews"
+        "native.users.profile.posts.provenance",
+        "native.users.profile.posts.reviews",
+        "native.users.profile.posts.staff-provenance"
       ],
-      "hash": "b39c9f077465a7caf76373fb089924b4167d480e8f26cff207717f9c8e0c0163"
+      "hash": "aef8d4ef84f079bbc86b6a25b06f8cd28e32f5ced0d935d3db5cdd34e1d93415"
     },
     "GET:/api/v1/posts/:idOrSlug/ancestors": {
       "fixtureIds": [
@@ -765,7 +767,7 @@
     },
     "GET:/api/v1/stories/:id": {
       "fixtureIds": ["native.stories.get.after", "native.stories.get.default"],
-      "hash": "fb6ca6f433b756caed87ec40ca5b9d6d7ab7bc819d9ac6f6abffe2f284473b39"
+      "hash": "8044e46838bc2b81690bc3883fed5d061676e7c1633199a2265ced92ee093ee9"
     },
     "GET:/api/v1/topic-recommendations/:id": {
       "fixtureIds": ["native.topic-recommendation.detail.default"],
@@ -866,7 +868,7 @@
         "native.bookmarks.posts.saved.default",
         "native.bookmarks.posts.saved.next-page"
       ],
-      "hash": "6c52b4007e5c7bb6c498dd5735638afacef8979c252e20250a6472ca3c8326e4"
+      "hash": "c1d56c628d62059ad415abca580fcdce1e17ab05da06371b6d4c6c73faf51d98"
     },
     "GET:/api/v1/users/:idOrSlug/rss-feed-items/:listType": {
       "fixtureIds": ["native.bookmarks.rss-feed-items.saved.default"],
@@ -2506,9 +2508,17 @@
       "fixtureIds": ["native.users.profile.posts.discussions"],
       "hash": "8f71395e45d2142d2e246ce33f6473fe768bf788c0b87568852b0a0f6aad1a54"
     },
+    "native.users.profile.posts.provenance": {
+      "fixtureIds": ["native.users.profile.posts.provenance"],
+      "hash": "18836e3933a1eec1c9ae7a113b92f0f2b4c1cb5e147ecf88eb810abc41155499"
+    },
     "native.users.profile.posts.reviews": {
       "fixtureIds": ["native.users.profile.posts.reviews"],
       "hash": "b9da3df140f4580d6278e5ef5469e78b53039d32e8ef6799c39e7218b29512b0"
+    },
+    "native.users.profile.posts.staff-provenance": {
+      "fixtureIds": ["native.users.profile.posts.staff-provenance"],
+      "hash": "bd81288560bd82367e60945c01921b542dac85ac86d2bbf82732f27942c058be"
     },
     "native.users.profile.restricted": {
       "fixtureIds": ["native.users.profile.restricted"],

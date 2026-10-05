@@ -193,6 +193,8 @@ export function PostDetailView({
               : [],
           )}
           community={community !== undefined ? community : post.community}
+          provenance={post.provenance}
+          staffProvenance={post.staff_provenance}
           labels={labels.badges}
         />
 

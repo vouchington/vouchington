@@ -16,6 +16,7 @@ import {
   addCommunityListItem,
   removeCommunityListItem,
 } from '@services/communities'
+import { attachPostProvenance } from '@services/content-provenance'
 import { getPostByAnyCachedBatch, getPostMetricsByAnyCachedBatch } from '@services/entity-fetch'
 import { indexById } from '@modules/utils'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
@@ -59,12 +60,14 @@ app
       })),
       page_info: result.page_info,
       community_list_items: indexById(result.results),
-      posts: getPostByAnyCachedBatch(entityIds).then(posts =>
-        posts.reduce<Record<string, unknown>>((acc, post) => {
-          if (post) acc[post.id] = post
-          return acc
-        }, {}),
-      ),
+      posts: getPostByAnyCachedBatch(entityIds)
+        .then(posts => attachPostProvenance(posts, currentUser))
+        .then(posts =>
+          posts.reduce<Record<string, unknown>>((acc, post) => {
+            if (post) acc[post.id] = post
+            return acc
+          }, {}),
+        ),
       posts_metrics: getPostMetricsByAnyCachedBatch(entityIds).then(metrics =>
         metrics.reduce<Record<string, unknown>>((acc, metric) => {
           if (metric) acc[metric.id] = metric

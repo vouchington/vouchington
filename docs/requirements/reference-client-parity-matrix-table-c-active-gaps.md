@@ -26,6 +26,7 @@ each phase.
 | 10  | Copyright staff AI guidance                                  | copyright-staff-ai-guidance        | Swift + .NET | None: advisory form-screening, counter-notice, and court/CCB guidance panels on the staff case are web-only.                                                                                                                                                                                                                                                                                                                          | 3     | [vouchington#1229]           |
 | 11  | Copyright EU notice filing and complaints                    | copyright-eu-notices               | Swift + .NET | None: web provides guest and signed-in EU filing, participant statements, per-recipient complaint windows and requests, reopening, and dispute-settlement records. Native clients provide no EU copyright surface.                                                                                                                                                                                                                    | 2     | [vouchington#1229]           |
 | 12  | Community automod flag review and action setting             | community-automod-flags            | Swift + .NET | None: web lists open automod flags on the community moderation page with a Dismiss action; native clients render neither, nor the per-community automod action setting.                                                                                                                                                                                                                                                               | 3     | [clients#199]                |
+| 13  | Post provenance label                                        | post-provenance-label              | Swift + .NET | None: web renders the public "via API", "via MCP" or "via {app}" badge on post cards and detail, plus the staff channel and OAuth client; native clients decode neither `provenance` nor `staff_provenance`.                                                                                                                                                                                                                          | 2     | [clients#206]                |
 
 ## Synchronization rule
 
@@ -41,5 +42,6 @@ any mapped capability differs from web.
 [clients#92]: https://github.com/vouchington/vouchington-clients/issues/92
 [clients#177]: https://github.com/vouchington/vouchington-clients/issues/177
 [clients#199]: https://github.com/vouchington/vouchington-clients/issues/199
+[clients#206]: https://github.com/vouchington/vouchington-clients/issues/206
 [vouchington#1229]: https://github.com/vouchington/vouchington/issues/1229
 [clients#197]: https://github.com/vouchington/vouchington-clients/issues/197

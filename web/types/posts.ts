@@ -9,6 +9,10 @@ import type { AccountType } from '@ts-shared/utils/account-type'
 
 import type { Serialized } from '@voucha/types/serialized'
 import type {
+  PublicContentProvenance,
+  StaffContentProvenance,
+} from '@voucha/types/entities/content-provenance'
+import type {
   PostType as BackendPostType,
   PostBroadcast as BackendPostBroadcast,
   PostPrivacy as BackendPostPrivacy,
@@ -71,6 +75,10 @@ export interface Post {
   broadcast: PostBroadcast
   privacy: PostPrivacy
   is_anonymous: boolean
+  /** Set for API and MCP posts only. */
+  provenance?: PublicContentProvenance
+  /** Set for administrators and moderators only. */
+  staff_provenance?: StaffContentProvenance
   community_id: string | null
   community?: PostCommunity | null
   clearance_status: 'pending' | 'approved' | 'rejected' | 'in_review'

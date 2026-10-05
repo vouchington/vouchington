@@ -19,7 +19,7 @@ describe('registered MCP post outputs', () => {
     expect(postTools.length).toBeGreaterThan(0)
     for (const tool of postTools) {
       const implementation = String(tool.function)
-      const shared = /\b(toMcpPost|loadMcpPosts|toMcpRecommendation)\b/.test(implementation)
+      const shared = /\b(toMcpPosts?|loadMcpPosts|toMcpRecommendation)\b/.test(implementation)
       const inlineSearch =
         /\bsanitizePromptInjection\b/.test(implementation) &&
         /\bwrapExternalContent\b/.test(implementation)

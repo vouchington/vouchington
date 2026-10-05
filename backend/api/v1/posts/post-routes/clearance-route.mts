@@ -22,7 +22,8 @@ import {
   currentUserCanUpdatePost,
   isPostContentEditable,
 } from '@services/posts/authorization'
-import { canViewPost, maskAnonymousPosts } from '@services/posts'
+import { labelAndMaskPosts } from '@services/content-provenance'
+import { canViewPost } from '@services/posts'
 import type { CommunityMemberRole } from '@services/communities/types'
 import { isAdminUser } from '@services/users'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
@@ -92,7 +93,7 @@ app.route('/api/v1/posts/:idOrSlug/descendants').get(async (ctx: Context) => {
   }
 
   const postsPromise = getPostByAnyCachedBatch(commentIds).then(posts =>
-    maskAnonymousPosts(posts, currentUser),
+    labelAndMaskPosts(posts, currentUser),
   )
   const output: Record<string, unknown> = {
     results,

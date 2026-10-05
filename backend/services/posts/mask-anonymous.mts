@@ -6,13 +6,21 @@ type MaskablePost = Post & {
   updated_by?: unknown | null
 }
 
+/** Administrators and the author see who wrote an anonymous post. Everyone else does not. */
+export function canViewAnonymousAuthor(
+  post: Pick<Post, 'created_by_id'>,
+  currentUser?: PrivateUser | null,
+): boolean {
+  if (currentUser?.roles.includes('administrator')) return true
+  return currentUser?.id === post.created_by_id
+}
+
 export function maskAnonymousPost<T extends MaskablePost>(
   post: T | null | undefined,
   currentUser?: PrivateUser | null,
 ): T | null | undefined {
   if (!post || !post.is_anonymous) return post
-  if (currentUser?.roles.includes('administrator')) return post
-  if (currentUser?.id === post.created_by_id) return post
+  if (canViewAnonymousAuthor(post, currentUser)) return post
 
   const masked = {
     ...post,
