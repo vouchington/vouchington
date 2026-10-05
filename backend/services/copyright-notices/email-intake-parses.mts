@@ -42,7 +42,7 @@ export async function recordCopyrightEmailParse(
   input: CopyrightEmailParseInput,
 ): Promise<CopyrightEmailThreadMatch | null> {
   validateParseInput(input)
-  const purpose = copyrightEmailIntakePurpose(intake.ses_message_id)
+  const purpose = copyrightEmailIntakePurpose(intake.amazon_ses_message_id)
   await using transaction = await beginTransaction()
   // Serialize parser receipt eligibility with staff decisions before inserting parse rows.
   await transaction(sql`/* recordCopyrightEmailParse:lock */
@@ -109,7 +109,7 @@ export async function getCopyrightEmailIntakeForAgent(
   await using transaction = await beginTransaction()
   const { rows } = await transaction<CopyrightEmailIntake & ParseCiphertexts>(
     sql`/* getCopyrightEmailIntakeForAgent */
-      SELECT intake.id, intake.ses_message_id, intake.received_at, intake.raw_storage_key,
+      SELECT intake.id, intake.amazon_ses_message_id, intake.received_at, intake.raw_storage_key,
         intake.raw_sha256, intake.raw_media_type_id,
         (SELECT mime_type FROM media_types WHERE id = intake.raw_media_type_id) AS raw_mime_type, intake.raw_byte_size,
         parse.sender_email_ciphertext, parse.sender_name_ciphertext,

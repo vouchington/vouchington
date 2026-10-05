@@ -18,7 +18,7 @@ describe('claimant misuse on the staff case', () => {
     await reviewCopyrightFormIntake({
       intakeId: rejected.notice.intake.id,
       currentUser: await createTestCopyrightStaff(),
-      accepted: false,
+      is_accepted: false,
       rationale: 'The claimed work is not described.',
     })
 

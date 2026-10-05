@@ -84,7 +84,7 @@ look at.
   `policy_version`, a `staff_disposition` outside `maintain` and `revoke`, a malformed path id, and
   a missing or malformed `Idempotency-Key` keep their existing status and message. The new decision
   fields `outcome`, `public_explanation`, and conditional `targets` are parser-validated with `422`.
-  EU notifier name and email are bounded and email-validated; `good_faith_statement` must be `true`.
+  EU notifier name and email are bounded and email-validated; `has_good_faith_statement` must be `true`.
   Art. 21 parsers validate party, outcome, bounded body name, and timestamps before the closed
   contract rejects unknown keys.
 - A redress decision `rationale` that is not a string is now rejected by

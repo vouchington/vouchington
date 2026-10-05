@@ -58,9 +58,13 @@ async function retainPostScope(
         sql`, page AS MATERIALIZED (SELECT id, post_type, created_at FROM posts CROSS JOIN native_bounds WHERE `,
       )
     statement.append(
-      nativeSourceRange('root_id', ['id'], descendantCursor === null ? null : [descendantCursor]),
+      nativeSourceRange(
+        'root_post_id',
+        ['id'],
+        descendantCursor === null ? null : [descendantCursor],
+      ),
     )
-    statement.append(sql` ORDER BY root_id, id LIMIT `).append(publicationPageLimit(limit))
+    statement.append(sql` ORDER BY root_post_id, id LIMIT `).append(publicationPageLimit(limit))
       .append(sql`)
       SELECT id, CASE WHEN post_type = ANY(${SITEMAP_CONFIG.POST_TYPES}::post_types[]) THEN post_type::text END AS post_type,
         (created_at AT TIME ZONE 'UTC')::date::text AS day FROM page ORDER BY id`)

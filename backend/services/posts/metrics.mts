@@ -46,8 +46,8 @@ export const getPostMetricsByAny = async (
       (
         SELECT COUNT(*)::bigint
         FROM posts candidate_post
-        JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_id, candidate_post.id)
-        WHERE candidate_post.root_id = base_post.id
+        JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
+        WHERE candidate_post.root_post_id = base_post.id
           AND candidate_post.id > base_post.id -- UUIDv7 partition pruning
           AND `)
   query.append(buildPublicPostEligibilityFilter('candidate_post', 'root_post'))
@@ -56,8 +56,8 @@ export const getPostMetricsByAny = async (
       (
         SELECT COUNT(*)::bigint
         FROM posts candidate_post
-        JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_id, candidate_post.id)
-        WHERE candidate_post.parent_id = base_post.id
+        JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
+        WHERE candidate_post.parent_post_id = base_post.id
           AND candidate_post.post_type = 'comment'
           AND candidate_post.id > base_post.id -- UUIDv7 partition pruning
           AND `)
@@ -67,21 +67,21 @@ export const getPostMetricsByAny = async (
       (
         SELECT COUNT(*)::bigint
         FROM posts candidate_post
-        JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_id, candidate_post.id)
+        JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
         WHERE candidate_post.id IN (
           WITH RECURSIVE ancestor_chain AS (
-            SELECT parent_id
+            SELECT parent_post_id
             FROM posts
             WHERE id = base_post.id
               AND post_type = 'comment'
             UNION ALL
-            SELECT p.parent_id
+            SELECT p.parent_post_id
             FROM posts p
-            INNER JOIN ancestor_chain ac ON p.id = ac.parent_id
-            WHERE p.parent_id IS NOT NULL
+            INNER JOIN ancestor_chain ac ON p.id = ac.parent_post_id
+            WHERE p.parent_post_id IS NOT NULL
               AND p.post_type = 'comment'
           )
-          SELECT parent_id FROM ancestor_chain WHERE parent_id IS NOT NULL
+          SELECT parent_post_id FROM ancestor_chain WHERE parent_post_id IS NOT NULL
         )
           AND `)
   query.append(buildPublicPostEligibilityFilter('candidate_post', 'root_post'))
@@ -105,10 +105,10 @@ export const getPostMetricsByAny = async (
           base_post.updated_at
         )
         FROM posts candidate_post
-        JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_id, candidate_post.id)
+        JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
         WHERE (
-          candidate_post.root_id = base_post.id
-          OR (candidate_post.parent_id = base_post.id AND candidate_post.post_type = 'comment')
+          candidate_post.root_post_id = base_post.id
+          OR (candidate_post.parent_post_id = base_post.id AND candidate_post.post_type = 'comment')
         )
           AND candidate_post.id > base_post.id -- UUIDv7 partition pruning
           AND `)

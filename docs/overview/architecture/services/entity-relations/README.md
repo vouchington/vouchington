@@ -5,7 +5,7 @@ Source entrypoint: [backend/services/entity-relations/README.md](../../../../../
 Entity relations are used to programmatically generate many-to-many or one-to-many relationships between entities.
 These are NOT used for one-to-one relationships as these entities do not have any validations.
 For one-to-one relationships, you probably want to use foreign keys on the entities themselves.
-For example, a credit card's bank does not used this system - it's easier to just set something like `card.bank_id = company.id` (these tables do not exist).
+For example, a credit card's bank does not used this system - it's easier to just set something like `card.bank_topic_id = company.id` (these tables do not exist).
 
 Additionally, these are NOT meant for nullable fields.
 For example, a URL `redirect` relation is 1-1 nullable,

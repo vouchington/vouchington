@@ -31,21 +31,21 @@ export async function getVisibleCommentDescendantIdsPage(
   )
   const query = sql`/* getVisibleCommentDescendantIdsPage */
     WITH RECURSIVE descendants AS (
-      SELECT p.id, p.parent_id
+      SELECT p.id, p.parent_post_id
       FROM posts p
       JOIN posts access_post ON access_post.id = ${rootId}
-      WHERE p.root_id = ${rootId}
-        AND p.parent_id = ${startId}
+      WHERE p.root_post_id = ${rootId}
+        AND p.parent_post_id = ${startId}
         AND p.post_type = 'comment'
         AND `
     .append(baseEligibility)
     .append(sql`
       UNION ALL
-      SELECT child.id, child.parent_id
+      SELECT child.id, child.parent_post_id
       FROM posts child
-      JOIN descendants parent ON child.parent_id = parent.id
+      JOIN descendants parent ON child.parent_post_id = parent.id
       JOIN posts access_post ON access_post.id = ${rootId}
-      WHERE child.root_id = ${rootId}
+      WHERE child.root_post_id = ${rootId}
         AND child.post_type = 'comment'
         AND `)
     .append(childEligibility).append(sql`

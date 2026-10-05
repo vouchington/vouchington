@@ -18,7 +18,7 @@ export async function listReviewSuccessionGroups(
       JOIN post_review_topic_ratings rating ON rating.post_id = review.id
       WHERE review.id = ANY($1::uuid[])
         AND review.post_type = 'review'
-        AND review.root_id IS NULL
+        AND review.root_post_id IS NULL
         AND review.created_by_id IS NOT NULL
       GROUP BY review.id, review.created_by_id
     ), active_history_groups AS (

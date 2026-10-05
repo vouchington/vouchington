@@ -62,10 +62,10 @@ export async function rejectCopyrightEmailIntake(input: {
     )
   await using transaction = await beginTransaction()
   const { rows } = await transaction<{
-    ses_message_id: string
+    amazon_ses_message_id: string
     parsed_sender_ciphertext: string | null
   }>(sql`/* rejectCopyrightEmailIntake:lock */
-    SELECT intake.ses_message_id, parse.sender_email_ciphertext AS parsed_sender_ciphertext
+    SELECT intake.amazon_ses_message_id, parse.sender_email_ciphertext AS parsed_sender_ciphertext
     FROM copyright_notice_email_intakes intake
     LEFT JOIN copyright_notice_email_intake_parses parse
       ON parse.copyright_notice_email_intake_id = intake.id AND parse.status = 'succeeded'
@@ -95,7 +95,7 @@ export async function rejectCopyrightEmailIntake(input: {
   const parsedSender = intake.parsed_sender_ciphertext
     ? decryptSecret(
         intake.parsed_sender_ciphertext,
-        copyrightEmailIntakePurpose(intake.ses_message_id),
+        copyrightEmailIntakePurpose(intake.amazon_ses_message_id),
       )
     : null
   assert(
@@ -114,7 +114,7 @@ export async function rejectCopyrightEmailIntake(input: {
           rationale: input.rationale,
           manual_fallback_reason: input.manualFallbackReason,
         }),
-        copyrightEmailIntakePurpose(intake.ses_message_id),
+        copyrightEmailIntakePurpose(intake.amazon_ses_message_id),
       )}
     )
   `)

@@ -33,7 +33,7 @@ export type CommunityPublicationReviewChange = {
   post_id: string
   actor_user_id: string | null
   action: 'approve' | 'reject' | 'unpublish' | 'restore'
-  platform_override: boolean
+  is_platform_override: boolean
   reason_code: string | null
   private_note: string | null
   created_at: Date
@@ -46,7 +46,7 @@ export async function getPublicationReviewChanges(
   const { rows } = await read(
     sql`/* getPublicationReviewChanges */
       SELECT id, community_id, post_id, changed_by_id AS actor_user_id, change_type AS action,
-        platform_override, reason_code, private_note, created_at
+        is_platform_override, reason_code, private_note, created_at
       FROM community_post_review_changes
       WHERE community_id = ${communityId}
         AND post_id = ${postId}

@@ -9,8 +9,8 @@ const makePost = (overrides: Partial<Post> = {}): Post => ({
   title: '',
   slug: 'c1',
   markdown: 'Comment c1',
-  root_id: 'root-1',
-  parent_id: 'root-1',
+  root_post_id: 'root-1',
+  parent_post_id: 'root-1',
   created_by_id: 'user-1',
   created_by: {
     account_type: null,
@@ -52,7 +52,7 @@ const makeVote = (entityId: string, choice: ElectionVote['choice']): ElectionVot
 describe('comment-tree-utils', () => {
   it('builds per-node comment data from response-wide sidecar maps', () => {
     const parent = makePost({ id: 'c1', community_id: 'community-1' })
-    const child = makePost({ id: 'c2', parent_id: 'c1', markdown: 'Comment c2' })
+    const child = makePost({ id: 'c2', parent_post_id: 'c1', markdown: 'Comment c2' })
     const tree = buildTree([{ id: 'c1' }, { id: 'c2' }], { c1: parent, c2: child })
     const moderation = {
       id: 'moderation-1',
@@ -60,7 +60,7 @@ describe('comment-tree-utils', () => {
       prompt_id: 'prompt-1',
       agent_id: 'agent-1',
       moderator_slug: 'moderator',
-      flagged: true,
+      is_flagged: true,
       results: { flagged: true },
       input_sha256: 'sha',
       created_at: '2024-01-01T00:00:00Z',

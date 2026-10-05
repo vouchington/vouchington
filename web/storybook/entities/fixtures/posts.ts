@@ -21,8 +21,8 @@ export const posts = postTitles.map(([post_type, title], index) => ({
     post_type === 'data_point'
       ? 'Applied online and received an instant decision. Income verified through account connection.'
       : 'This fixture includes enough body text to exercise excerpts, badges, bylines, ratings, and related topic chips.',
-  parent_id: post_type === 'comment' ? 'post-discussion' : null,
-  root_id: post_type === 'comment' ? 'post-discussion' : null,
+  parent_post_id: post_type === 'comment' ? 'post-discussion' : null,
+  root_post_id: post_type === 'comment' ? 'post-discussion' : null,
   created_by_id: publicUsers[0]!.id,
   created_by: {
     account_type: null,

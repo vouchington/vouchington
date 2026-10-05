@@ -94,7 +94,7 @@ describe('seedCopyright', () => {
     expect(deadlineCase).toMatchObject({
       reasons: ['deadline_due'],
       claimant: { display_name: 'Priya Natarajan' },
-      form_review: { review: { accepted: true } },
+      form_review: { review: { is_accepted: true } },
       counter_notices: [],
     })
     expect(deadlineCase!.next_deadline!.escalation_at.getTime()).toBeLessThan(Date.now())

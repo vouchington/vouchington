@@ -103,7 +103,7 @@ async function assertReportableEntity(
           SELECT id FROM users WHERE id = ${input.entityId} AND deleted_at IS NULL LIMIT 1
         )
         WHEN ${input.entityType} = 'url_hostname' THEN (
-          SELECT id FROM url_hostnames WHERE id = ${input.entityId} AND blocked IS NOT TRUE LIMIT 1
+          SELECT id FROM url_hostnames WHERE id = ${input.entityId} AND is_blocked IS NOT TRUE LIMIT 1
         )
       END AS owner_id
   `)
@@ -127,7 +127,7 @@ async function assertReportablePost(
       visibility_post.community_id
     FROM posts target_post
     JOIN view_posts visibility_post
-      ON visibility_post.id = COALESCE(target_post.root_id, target_post.id)
+      ON visibility_post.id = COALESCE(target_post.root_post_id, target_post.id)
     WHERE target_post.id = ${input.entityId}
       AND target_post.post_type `
   query.append(input.entityType === 'comment' ? sql`= 'comment'` : sql`!= 'comment'`)

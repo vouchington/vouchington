@@ -77,7 +77,7 @@ export function streamCrawlsNeedingLanguageDetection(): AsyncGenerator<string[],
           AND (
             markdown != ''
             OR COALESCE(title, '') != ''
-            OR COALESCE(lang, '') != ''
+            OR COALESCE(language, '') != ''
           )
         ORDER BY id
       `,

@@ -22,7 +22,7 @@ export async function deleteContributionAdmissionReservationDuringMutationForTes
 ): Promise<void> {
   await query(sql`/* deleteContributionAdmissionReservationDuringMutationForTest */
     DELETE FROM post_admission_reservations
-    WHERE actor_id = ${input.actorId} AND idempotency_key = ${input.idempotencyKey}`)
+    WHERE actor_user_id = ${input.actorId} AND idempotency_key = ${input.idempotencyKey}`)
 }
 
 export async function getContributionAdmissionClaimExpiryForTest(input: {
@@ -35,6 +35,6 @@ export async function getContributionAdmissionClaimExpiryForTest(input: {
     SELECT c.expires_at
     FROM post_admission_claims c
     JOIN post_admission_reservations r ON r.id = c.reservation_id
-    WHERE r.actor_id = ${input.actorId} AND r.idempotency_key = ${input.idempotencyKey}`)
+    WHERE r.actor_user_id = ${input.actorId} AND r.idempotency_key = ${input.idempotencyKey}`)
   return result.rows[0]?.expires_at ?? null
 }

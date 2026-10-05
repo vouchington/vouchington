@@ -18,7 +18,7 @@ describe('getPrioritizedReferralLinks — official links', () => {
 
   beforeAll(async () => {
     // Ensure the @voucha system user exists
-    await upsertSystemUser('voucha')
+    await upsertSystemUser('voucha', 'official')
 
     const adminUser = await createTestUser({ administrator: true })
     if (!adminUser) throw new Error('Failed to create admin user')

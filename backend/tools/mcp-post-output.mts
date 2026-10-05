@@ -10,8 +10,8 @@ export const MCP_POST_FIELDS = [
   'post_type',
   'title',
   'markdown',
-  'parent_id',
-  'root_id',
+  'parent_post_id',
+  'root_post_id',
   'created_by_id',
   'is_anonymous',
   'created_at',
@@ -25,8 +25,8 @@ export type McpPost = {
   post_type: Post['post_type']
   title: string
   markdown: string
-  parent_id: string | null
-  root_id: string | null
+  parent_post_id: string | null
+  root_post_id: string | null
   created_by_id: string | null
   is_anonymous: boolean
   created_at: string
@@ -53,8 +53,8 @@ export async function toMcpPost(post: Post): Promise<McpPost> {
       source: 'post',
       contentType: 'user_post',
     }),
-    parent_id: post.parent_id ?? null,
-    root_id: post.root_id ?? null,
+    parent_post_id: post.parent_post_id ?? null,
+    root_post_id: post.root_post_id ?? null,
     created_by_id: maskAnonymousPost(post, null)?.created_by_id ?? null,
     is_anonymous: post.is_anonymous,
     created_at: new Date(post.created_at).toISOString(),

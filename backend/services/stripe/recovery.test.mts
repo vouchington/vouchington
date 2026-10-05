@@ -36,7 +36,7 @@ describe('Stripe event recovery', () => {
       (await claimRecoverableStripeEvents()).find(
         candidate => candidate.stripeEventRecordId === event.id,
       ),
-    ).toMatchObject({ stripeSubscriptionId: subscriptionId, livemode: true })
+    ).toMatchObject({ stripeSubscriptionId: subscriptionId, isLiveMode: true })
   })
 
   it('fences lifecycle writes by the persisted processing attempt id', async () => {

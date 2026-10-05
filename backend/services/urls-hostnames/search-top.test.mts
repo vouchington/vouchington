@@ -26,8 +26,8 @@ describe('searchTopHostnames', () => {
     await setUrlHostnameVotes(lowTrustHostnameId, 100, 10)
 
     blockedHostnameId = await insertTestUrlHostname({
-      hostname: `top-blocked-${random}.example.com`,
-      blocked: true,
+      hostname: `top-is_blocked-${random}.example.com`,
+      is_blocked: true,
     })
     await setUrlHostnameVotes(blockedHostnameId, 1000, 5)
   })
@@ -46,7 +46,7 @@ describe('searchTopHostnames', () => {
     expect(medIdx).toBeLessThan(lowIdx)
   })
 
-  it('excludes blocked hostnames', async () => {
+  it('excludes is_blocked hostnames', async () => {
     const { results } = await searchTopHostnames({ limit: 100 })
     const ids = results.map(r => r.id)
     expect(ids).not.toContain(blockedHostnameId)

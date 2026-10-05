@@ -56,7 +56,7 @@ describe('claimModerationEmailSend', () => {
     const user = await createTestUser()
     const moderationEmailTime = new Date().toISOString().slice(11, 16)
     await updateUserFields(user!.id, {
-      moderation_emails_enabled: true,
+      is_moderation_emails_enabled: true,
       moderation_email_cadence: 'daily',
       moderation_email_days_of_week: [1, 2, 3, 4, 5, 6, 7],
       moderation_email_time_of_day: moderationEmailTime,
@@ -109,7 +109,7 @@ describe('claimModerationEmailSend', () => {
     await clearTestUserModerationEmailTimezone(user!.id)
     const moderationEmailTime = formatLocalTime(new Date(), 'America/Los_Angeles')
     await updateUserFields(user!.id, {
-      moderation_emails_enabled: true,
+      is_moderation_emails_enabled: true,
       moderation_email_cadence: 'daily',
       moderation_email_days_of_week: [1, 2, 3, 4, 5, 6, 7],
       moderation_email_time_of_day: moderationEmailTime,
@@ -160,7 +160,7 @@ describe('claimModerationEmailSend', () => {
     const user = await createTestUser()
     const moderationEmailTime = new Date().toISOString().slice(11, 16)
     await updateUserFields(user!.id, {
-      moderation_emails_enabled: true,
+      is_moderation_emails_enabled: true,
       moderation_email_cadence: 'daily',
       moderation_email_days_of_week: [1, 2, 3, 4, 5, 6, 7],
       moderation_email_time_of_day: moderationEmailTime,

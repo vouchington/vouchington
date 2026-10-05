@@ -11,16 +11,18 @@ import type { Community } from '@/types/api-responses'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 interface CommunityPostTypeSettingsFormProps {
-  community: Pick<Community, 'slug' | 'allow_review_posts' | 'allow_data_point_posts'>
+  community: Pick<Community, 'slug' | 'should_allow_review_posts' | 'should_allow_data_point_posts'>
 }
 
 export function CommunityPostTypeSettingsForm({ community }: CommunityPostTypeSettingsFormProps) {
   const t = useTranslations()
   const router = useRouter()
   // oxlint-disable-next-line react-doctor/no-derived-useState -- form edits start from server values; refresh remounts after save.
-  const [allowReviewPosts, setAllowReviewPosts] = useState(community.allow_review_posts)
+  const [allowReviewPosts, setAllowReviewPosts] = useState(community.should_allow_review_posts)
   // oxlint-disable-next-line react-doctor/no-derived-useState -- form edits start from server values; refresh remounts after save.
-  const [allowDataPointPosts, setAllowDataPointPosts] = useState(community.allow_data_point_posts)
+  const [allowDataPointPosts, setAllowDataPointPosts] = useState(
+    community.should_allow_data_point_posts,
+  )
   const [isSaving, setIsSaving] = useState(false)
   const [isNavigating, startNavigation] = useTransition()
   const isBusy = isSaving || isNavigating
@@ -32,8 +34,8 @@ export function CommunityPostTypeSettingsForm({ community }: CommunityPostTypeSe
     setIsSaving(true)
     try {
       await updateCommunityPostTypeSettings(community.slug, {
-        allow_review_posts: allowReviewPosts,
-        allow_data_point_posts: allowDataPointPosts,
+        should_allow_review_posts: allowReviewPosts,
+        should_allow_data_point_posts: allowDataPointPosts,
       })
       onSuccess(
         t('extracted.communities.communityPostTypeSettingsForm.postTypeSettingsSaved_56838c16'),

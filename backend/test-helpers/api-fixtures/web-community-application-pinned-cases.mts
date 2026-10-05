@@ -20,7 +20,7 @@ export const webCommunityApplicationPinnedApiFixtureCases: ApiFixtureCase[] = [
           community_id: community.id,
           question: 'Why do you want to join?',
           field_type: 'long_text',
-          required: true,
+          is_required: true,
           options: null,
           order_index: 0,
           created_at: community.created_at,

@@ -37,7 +37,7 @@
       "locked_at": null,
       "locked_by_id": null,
       "markdown": "Hello from the community.",
-      "parent_id": null,
+      "parent_post_id": null,
       "post_explicit_categories": [
         {
           "topic_id": "topic-1",
@@ -59,7 +59,7 @@
       ],
       "post_type": "discussion",
       "privacy": "public",
-      "root_id": null,
+      "root_post_id": null,
       "slug": "fixture-post",
       "title": "Fixture post",
       "updated_at": "2026-01-01T00:00:00Z",

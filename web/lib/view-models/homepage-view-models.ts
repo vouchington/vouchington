@@ -85,7 +85,7 @@ export function projectTrendingTopics(
         name: topic.name,
         href: topicHref(topic),
         typeLabel: getTopicTypeLabel(topic.topic_type),
-        allowReviews: topic.allow_reviews,
+        allowReviews: topic.should_allow_reviews,
         averageRating: metrics?.ratings?.count
           ? calculateAverageRating(metrics.ratings.count)
           : null,

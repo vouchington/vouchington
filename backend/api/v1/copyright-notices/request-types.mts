@@ -56,8 +56,8 @@ export type CopyrightNoticeFormRequest = {
   claimant_contact: string
   claimant_email: string
   work_description: string
-  good_faith_belief: true
-  accuracy_authority_under_penalty_of_perjury: true
+  has_good_faith_belief: true
+  has_accuracy_authority_under_penalty_of_perjury: true
   electronic_signature: string
   targets: ApiArrayContract<CopyrightNoticeTargetRequest, 1, 20, false>
   cf_turnstile_response?: string

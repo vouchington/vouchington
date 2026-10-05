@@ -52,7 +52,7 @@ async function makeFeed(suffix: string) {
     topic_id: topic.id,
     title: `Redirect Feed ${suffix} ${random}`,
   })
-  await updateRssFeedById(feed.id, { enabled: true })
+  await updateRssFeedById(feed.id, { is_enabled: true })
   return { ...feed, feedUrl }
 }
 

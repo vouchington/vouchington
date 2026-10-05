@@ -12,7 +12,7 @@ import { createRetentionSignedInForm } from '@voucha/test-helpers/services/copyr
 
 const INVALID_BODY = 'Invalid request body'
 const RATIONALE = 'The staff decision stands after review.'
-const FORM_REVIEW = { accepted: true, rationale: RATIONALE }
+const FORM_REVIEW = { is_accepted: true, rationale: RATIONALE }
 const RESOLUTION = { resolution_kind: 'dismissed', rationale: RATIONALE }
 const RESTRICTION_REVIEW = { action: 'confirm', rationale: RATIONALE }
 
@@ -128,10 +128,13 @@ describe('copyright staff decision request contracts', () => {
 
       const accepted = await staff
         .post(url)
-        .send({ ...FORM_REVIEW, accepted: 'yes', injected: true })
+        .send({ ...FORM_REVIEW, is_accepted: 'yes', injected: true })
         .expect(422)
-      expect(accepted.body.message).toBe('accepted must be a boolean')
-      const rationale = await staff.post(url).send({ accepted: true, injected: true }).expect(422)
+      expect(accepted.body.message).toBe('is_accepted must be a boolean')
+      const rationale = await staff
+        .post(url)
+        .send({ is_accepted: true, injected: true })
+        .expect(422)
       expect(rationale.body.message).toBe('rationale is required')
     })
   })
@@ -218,8 +221,8 @@ describe('copyright staff decision request contracts', () => {
         .post(`/api/v1/copyright-submissions/${holdId}/legal-hold-assessments`)
         .send({
           rationale: 'Verified qualifying CCB filing.',
-          from_original_claimant: true,
-          same_material: true,
+          is_from_original_claimant: true,
+          is_same_material: true,
           proceeding_kind: 'ccb',
           ccb_claim_kind: 'claim',
           commenced_at: '2026-07-01T12:00:00.000Z',

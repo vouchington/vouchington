@@ -20,7 +20,7 @@ describe('suspended notification redirect lookup', () => {
     const reply = await createTestPost({
       user: replier,
       post_type: 'comment',
-      parent_id: root.id,
+      parent_post_id: root.id,
       title: '',
       markdown: 'Reply body',
     })

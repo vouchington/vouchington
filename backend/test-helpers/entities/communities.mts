@@ -16,8 +16,8 @@ type InsertTestCommunityOptions = {
   member_roster_visibility?: CommunityMemberRosterVisibility
   list_type?: CommunityListType | null
   post_approval_required_at?: Date | null
-  allow_review_posts?: boolean
-  allow_data_point_posts?: boolean
+  should_allow_review_posts?: boolean
+  should_allow_data_point_posts?: boolean
   member_invites_allowed_at?: Date | null
   trusted_at?: Date | null
   rules_markdown?: string | null
@@ -30,15 +30,15 @@ export async function insertTestCommunity(options: InsertTestCommunityOptions): 
     sql`/* insertTestCommunity */
     INSERT INTO communities (
       name, slug, visibility, member_roster_visibility, list_type,
-      post_approval_required_at, allow_review_posts, allow_data_point_posts,
+      post_approval_required_at, should_allow_review_posts, should_allow_data_point_posts,
       member_invites_allowed_at, trusted_at, rules_markdown, created_by_id,
       created_via
     )
     VALUES (
       ${name}, ${slug}, ${options.visibility ?? 'public'},
       ${options.member_roster_visibility ?? 'public'}, ${options.list_type ?? null},
-      ${options.post_approval_required_at ?? null}, ${options.allow_review_posts ?? false},
-      ${options.allow_data_point_posts ?? false}, ${options.member_invites_allowed_at ?? null},
+      ${options.post_approval_required_at ?? null}, ${options.should_allow_review_posts ?? false},
+      ${options.should_allow_data_point_posts ?? false}, ${options.member_invites_allowed_at ?? null},
       ${options.trusted_at ?? null}, ${options.rules_markdown ?? null}, ${options.createdById},
       'system'
     )
@@ -74,7 +74,7 @@ export type TestCommunityAgentPrompt = {
   community_id: string
   created_by_id: string
   agent_id: string
-  slot_allocated: boolean
+  is_slot_allocated: boolean
   activated_at: Date | null
   deactivated_at: Date | null
   deleted_at: Date | null
@@ -108,7 +108,7 @@ export async function insertTestCommunityAgentPrompt(
       FROM prompt_id p, new_agent a
       RETURNING *
     ), new_community_prompt AS (
-      INSERT INTO community_agent_prompts (id, community_id, created_by_id, slot_allocated, activated_at, deleted_at)
+      INSERT INTO community_agent_prompts (id, community_id, created_by_id, is_slot_allocated, activated_at, deleted_at)
       SELECT id, ${options.communityId}, ${options.createdById},
         ${options.slotAllocated ?? false},
         ${options.slotAllocated ? new Date() : null},
@@ -120,7 +120,7 @@ export async function insertTestCommunityAgentPrompt(
       ncp.id,
       ncp.community_id,
       ncp.created_by_id,
-      ncp.slot_allocated,
+      ncp.is_slot_allocated,
       ncp.activated_at,
       ncp.deactivated_at,
       ncp.deleted_at,

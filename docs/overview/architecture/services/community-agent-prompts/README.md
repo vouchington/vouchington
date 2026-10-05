@@ -8,16 +8,16 @@ Service for managing LLM agent prompts attached to communities. Community owners
 
 **Table: `community_agent_prompts`**
 
-| Column           | Type          | Description                                    |
-| ---------------- | ------------- | ---------------------------------------------- |
-| `id`             | UUID (UUIDv7) | Primary key; also FK to `agent_prompts.id`     |
-| `community_id`   | UUID          | Community this prompt belongs to               |
-| `created_by_id`  | UUID          | User who created the prompt                    |
-| `slot_allocated` | BOOLEAN       | Whether a user slot is consumed by this prompt |
-| `activated_at`   | TIMESTAMPTZ   | When the prompt was activated                  |
-| `deactivated_at` | TIMESTAMPTZ   | When the prompt was deactivated                |
-| `deleted_at`     | TIMESTAMPTZ   | Soft-delete timestamp                          |
-| `deleted_by_id`  | UUID          | Who deleted the prompt                         |
+| Column              | Type          | Description                                    |
+| ------------------- | ------------- | ---------------------------------------------- |
+| `id`                | UUID (UUIDv7) | Primary key; also FK to `agent_prompts.id`     |
+| `community_id`      | UUID          | Community this prompt belongs to               |
+| `created_by_id`     | UUID          | User who created the prompt                    |
+| `is_slot_allocated` | BOOLEAN       | Whether a user slot is consumed by this prompt |
+| `activated_at`      | TIMESTAMPTZ   | When the prompt was activated                  |
+| `deactivated_at`    | TIMESTAMPTZ   | When the prompt was deactivated                |
+| `deleted_at`        | TIMESTAMPTZ   | Soft-delete timestamp                          |
+| `deleted_by_id`     | UUID          | Who deleted the prompt                         |
 
 `community_agent_prompts` is an extension table of `agent_prompts`. Prompt text, model configuration, and `agent_id` are stored on the `agent_prompts` row with the same `id`.
 
@@ -33,7 +33,7 @@ Slots are **per user across all communities**:
 | Premium | 3     |
 | Pro     | 10    |
 
-- `getUsedSlotsForUser(userId)` — counts rows where `slot_allocated = true AND deleted_at IS NULL`
+- `getUsedSlotsForUser(userId)` — counts rows where `is_slot_allocated = true AND deleted_at IS NULL`
 - `getSlotLimitForMembership(plan)` — returns the limit for the given plan slug
 - `SLOT_LIMITS_BY_PLAN` — constant record mapping plan slugs to limits
 

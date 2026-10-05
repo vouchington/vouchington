@@ -17,9 +17,9 @@ export async function readStaffActionHistory(actorId: string) {
     report_id: string | null
     target_user_id: string | null
     oauth_client_id: string | null
-    operation_request_id: string | null
+    operation_request_action_id: string | null
   }>(
-    sql`/* readStaffActionHistory */ SELECT * FROM moderator_actions WHERE actor_id = ${actorId} ORDER BY id`,
+    sql`/* readStaffActionHistory */ SELECT * FROM moderator_actions WHERE actor_user_id = ${actorId} ORDER BY id`,
   )
   return rows
 }
@@ -34,7 +34,7 @@ export async function withRejectedStaffActionHistory<T>(
   const name = `test_staff_history_${suffix}`
   await write(`/* withRejectedStaffActionHistory:createFunction */ CREATE FUNCTION ${name}() RETURNS trigger LANGUAGE plpgsql AS $body$
     BEGIN
-      IF NEW.actor_id = '${actorId.replaceAll("'", "''")}'::uuid ${phase ? "AND NEW.metadata->>'phase' = 'finished'" : ''} THEN
+      IF NEW.actor_user_id = '${actorId.replaceAll("'", "''")}'::uuid ${phase ? "AND NEW.metadata->>'phase' = 'finished'" : ''} THEN
         RAISE EXCEPTION 'staff history rejected for test';
       END IF;
       RETURN NEW;

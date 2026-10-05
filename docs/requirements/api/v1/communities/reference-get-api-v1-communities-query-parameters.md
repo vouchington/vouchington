@@ -21,7 +21,7 @@ additionally see private communities they are active members of; administrators 
 
 `eligible_post_type` is intended for global create pages that accept `community=<slug>` in the URL.
 It requires authentication, filters to active memberships in unarchived communities, and additionally
-requires `allow_review_posts=true` for reviews or `allow_data_point_posts=true` for data points.
+requires `should_allow_review_posts=true` for reviews or `should_allow_data_point_posts=true` for data points.
 Discussions are always eligible for active members.
 
 Response always includes a `users` map (`Record<string, { id, username }>`) keyed by owner user ID,

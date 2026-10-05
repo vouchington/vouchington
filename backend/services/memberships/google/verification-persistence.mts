@@ -38,7 +38,7 @@ export async function getContext(
       verification.environment, verification.application_id AS "applicationId", evidence.id AS "evidenceId", evidence.encrypted_evidence AS "encryptedEvidence", evidence.evidence_lookup_sha256 AS "evidenceLookupSha256",
       evidence.rejected_at AS "evidenceRejectedAt", evidence.rejection_reason AS "evidenceRejectionReason",
       evidence.verified_at AS "evidenceVerifiedAt", evidence.membership_provider_lineage_id AS "evidenceLineageId"
-    FROM membership_verifications verification INNER JOIN membership_provider_evidence_records evidence ON evidence.id = verification.membership_provider_evidence_id
+    FROM membership_verifications verification INNER JOIN membership_provider_evidence_records evidence ON evidence.id = verification.membership_provider_evidence_record_id
     WHERE verification.id = ${id} AND verification.provider = 'google_play' AND verification.processing_claim_token = ${token}
       AND verification.verified_at IS NULL AND verification.conflicted_at IS NULL AND verification.rejected_at IS NULL
     FOR UPDATE OF verification, evidence`)
@@ -106,7 +106,7 @@ export async function acceptObservation(
     }>(sql`
       /* findGooglePlayObservationForVerifiedEvidence */
       SELECT id, membership_provider_product_id FROM membership_provider_observations
-      WHERE membership_provider_evidence_id = ${context.evidenceId} AND provider = 'google_play'
+      WHERE membership_provider_evidence_record_id = ${context.evidenceId} AND provider = 'google_play'
         AND membership_provider_lineage_id = ${lineageId} FOR KEY SHARE`)
     const existingObservation = existingEvidenceObservation[0]
     if (existingObservation) {
@@ -138,7 +138,7 @@ export async function acceptObservation(
       AND cancelled_at IS NOT DISTINCT FROM ${observation.lifecycle === 'revoked' ? observation.terminalAt : null}
       AND expired_at IS NOT DISTINCT FROM ${observation.lifecycle === 'expired' ? observation.terminalAt : null}
       AND paused_at IS NOT DISTINCT FROM ${observation.lifecycle === 'paused' ? (observation.terminalAt ?? observation.effectiveAt) : null}
-      AND auto_renews = ${observation.autoRenews}
+      AND should_auto_renew = ${observation.autoRenews}
     `)
   if (matching[0]) return matching[0].id
   const initialEffectiveAt = observation.effectiveAt
@@ -153,7 +153,7 @@ export async function acceptObservation(
     observation.effectiveAt ??
     new Date(Math.min(initialEffectiveAt?.getTime() ?? Date.now(), observation.expiresAt.getTime()))
   const { rows } = await query<{ id: string }>(
-    sql`/* insertGooglePlayVerificationObservation */ INSERT INTO membership_provider_observations (provider, environment, application_id, membership_provider_evidence_id, membership_provider_lineage_id, membership_provider_product_id, membership_product_id, provider_revision, provider_order, terminal_at, source_kind, effective_at, expires_at, cancelled_at, expired_at, paused_at, auto_renews) VALUES ('google_play', ${context.environment}, ${context.applicationId}, ${context.evidenceId}, ${lineageId}, ${mapping.membershipProviderProductId}, ${mapping.membershipProductId}, ${observation.providerRevision}, ${observation.providerOrder}, ${observation.terminalAt}, 'direct', ${effectiveAt}, ${observation.expiresAt}, ${observation.lifecycle === 'revoked' ? observation.terminalAt : null}, ${observation.lifecycle === 'expired' ? observation.terminalAt : null}, ${observation.lifecycle === 'paused' ? (observation.terminalAt ?? effectiveAt) : null}, ${observation.autoRenews}) ON CONFLICT (membership_provider_lineage_id, provider_revision, provider_order) DO NOTHING RETURNING id`,
+    sql`/* insertGooglePlayVerificationObservation */ INSERT INTO membership_provider_observations (provider, environment, application_id, membership_provider_evidence_record_id, membership_provider_lineage_id, membership_provider_product_id, membership_product_id, provider_revision, provider_order, terminal_at, source_kind, effective_at, expires_at, cancelled_at, expired_at, paused_at, should_auto_renew) VALUES ('google_play', ${context.environment}, ${context.applicationId}, ${context.evidenceId}, ${lineageId}, ${mapping.membershipProviderProductId}, ${mapping.membershipProductId}, ${observation.providerRevision}, ${observation.providerOrder}, ${observation.terminalAt}, 'direct', ${effectiveAt}, ${observation.expiresAt}, ${observation.lifecycle === 'revoked' ? observation.terminalAt : null}, ${observation.lifecycle === 'expired' ? observation.terminalAt : null}, ${observation.lifecycle === 'paused' ? (observation.terminalAt ?? effectiveAt) : null}, ${observation.autoRenews}) ON CONFLICT (membership_provider_lineage_id, provider_revision, provider_order) DO NOTHING RETURNING id`,
   )
   if (rows[0]) return rows[0].id
   const { rows: existing } = await query<{ id: string }>(

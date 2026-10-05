@@ -81,7 +81,7 @@ describe('C8 community moderation through the shared lifecycle (real PG, mocked 
     const projection = await readCommunityModerationProjection(fixture.postId)
     expect(projection.map(row => row.prompt_id)).toEqual(idsOf(fixture.prompts))
     expect(
-      projection.every(row => !row.flagged && row.input_sha256.equals(fixture.inputSha256)),
+      projection.every(row => !row.is_flagged && row.input_sha256.equals(fixture.inputSha256)),
     ).toBe(true)
   })
 

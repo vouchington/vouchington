@@ -11,7 +11,7 @@ export async function createExpiredContributionAdmissionClaimForTest(input: {
   const reservation = await write<{
     id: string
   }>(sql`/* createExpiredContributionAdmissionClaimForTest.reservation */
-    INSERT INTO post_admission_reservations (actor_id, idempotency_key, intent_sha256, route, scope, source, post_type, policy_revision)
+    INSERT INTO post_admission_reservations (actor_user_id, idempotency_key, intent_sha256, route, scope, source, post_type, policy_revision)
     VALUES (${input.actorId}, ${input.idempotencyKey}, ${hashTestContributionAdmissionIntent(input.intent)}, 'internal', 'internal', 'discussion', 'discussion', 'test')
     RETURNING id`)
   const reservationId = reservation.rows[0]?.id
@@ -30,7 +30,7 @@ export async function expireContributionAdmissionClaimForTest(input: {
     SET expires_at = NOW() - INTERVAL '1 second'
     FROM post_admission_reservations r
     WHERE c.reservation_id = r.id
-      AND r.actor_id = ${input.actorId}
+      AND r.actor_user_id = ${input.actorId}
       AND r.idempotency_key = ${input.idempotencyKey}`)
 }
 
@@ -42,7 +42,7 @@ export async function getContributionAdmissionReservationStateForTest(input: {
     state: string
   }>(sql`/* getContributionAdmissionReservationStateForTest */
     SELECT state FROM post_admission_reservations
-    WHERE actor_id = ${input.actorId} AND idempotency_key = ${input.idempotencyKey}
+    WHERE actor_user_id = ${input.actorId} AND idempotency_key = ${input.idempotencyKey}
     LIMIT 1`)
   return result.rows[0]?.state ?? null
 }
@@ -55,7 +55,7 @@ export async function getContributionAdmissionPolicyRevisionForTest(input: {
     policy_revision: string
   }>(sql`/* getContributionAdmissionPolicyRevisionForTest */
     SELECT policy_revision FROM post_admission_reservations
-    WHERE actor_id = ${input.actorId} AND idempotency_key = ${input.idempotencyKey}
+    WHERE actor_user_id = ${input.actorId} AND idempotency_key = ${input.idempotencyKey}
     LIMIT 1`)
   return result.rows[0]?.policy_revision ?? null
 }
@@ -79,7 +79,7 @@ export async function getContributionAdmissionAuditForTest(input: {
   }>(sql`/* getContributionAdmissionAuditForTest */
     SELECT route, scope, source, post_type, policy_revision
     FROM post_admission_reservations
-    WHERE actor_id = ${input.actorId} AND idempotency_key = ${input.idempotencyKey}
+    WHERE actor_user_id = ${input.actorId} AND idempotency_key = ${input.idempotencyKey}
     LIMIT 1`)
   const row = result.rows[0]
   if (!row) return null
@@ -103,7 +103,7 @@ export async function completeContributionAdmissionResponseForTest(input: {
     SET response = ${JSON.stringify(input.response)}::jsonb,
       replay_metadata = replay_metadata || '{"finalization":"complete"}'::jsonb,
       updated_at = NOW()
-    WHERE actor_id = ${input.actorId}
+    WHERE actor_user_id = ${input.actorId}
       AND idempotency_key = ${input.idempotencyKey}
       AND state = 'committed'`)
 }
@@ -117,7 +117,7 @@ export async function setContributionAdmissionReplayMetadataForTest(input: {
     UPDATE post_admission_reservations
     SET replay_metadata = ${JSON.stringify(input.replayMetadata)}::jsonb,
       updated_at = NOW()
-    WHERE actor_id = ${input.actorId}
+    WHERE actor_user_id = ${input.actorId}
       AND idempotency_key = ${input.idempotencyKey}
       AND state = 'committed'`)
 }
@@ -131,7 +131,7 @@ export async function expireContributionAdmissionForTest(input: {
     UPDATE post_admission_reservations
     SET expires_at = NOW() - INTERVAL '1 second',
       retention_expires_at = NOW() - INTERVAL '1 second'
-    WHERE actor_id = ${input.actorId} AND idempotency_key = ${input.idempotencyKey}`)
+    WHERE actor_user_id = ${input.actorId} AND idempotency_key = ${input.idempotencyKey}`)
 }
 
 /** Sets a randomized test reservation's replay expiry relative to the authoritative DB clock. */
@@ -144,7 +144,7 @@ export async function setContributionAdmissionExpiryForTest(input: {
     UPDATE post_admission_reservations
     SET expires_at = NOW() + (${input.expiresInSeconds} * INTERVAL '1 second'),
       retention_expires_at = NOW() + (${input.expiresInSeconds} * INTERVAL '1 second')
-    WHERE actor_id = ${input.actorId} AND idempotency_key = ${input.idempotencyKey}`)
+    WHERE actor_user_id = ${input.actorId} AND idempotency_key = ${input.idempotencyKey}`)
 }
 
 export async function getContributionAdmissionReplayRetentionForTest(input: {
@@ -163,7 +163,7 @@ export async function getContributionAdmissionReplayRetentionForTest(input: {
     SELECT expires_at, retention_expires_at,
       EXTRACT(EPOCH FROM expires_at - clock_timestamp())::text AS seconds_until_expiry
     FROM post_admission_reservations
-    WHERE actor_id = ${input.actorId} AND idempotency_key = ${input.idempotencyKey}
+    WHERE actor_user_id = ${input.actorId} AND idempotency_key = ${input.idempotencyKey}
       AND state = 'committed'`)
   const row = result.rows[0]
   if (!row) return null
@@ -182,7 +182,7 @@ export async function getContributionAdmissionConsumptionCountForTest(
     count: string
   }>(sql`/* getContributionAdmissionConsumptionCountForTest */
     SELECT COUNT(*)::text AS count FROM post_admission_quota_consumptions
-    WHERE actor_id = ${actorId} AND source = ${source}`)
+    WHERE actor_user_id = ${actorId} AND source = ${source}`)
   return Number(rows[0]?.count ?? 0)
 }
 

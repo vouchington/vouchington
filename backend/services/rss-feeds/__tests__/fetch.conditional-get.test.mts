@@ -75,7 +75,7 @@ describe('fetch.conditional-get', () => {
       title: `Feed stale 304 ${random}`,
     })
     await updateRssFeedById(feed.id, {
-      enabled: true,
+      is_enabled: true,
       etag: '"stale-etag"',
       last_modified_at: new Date('2024-01-01T00:00:00.000Z'),
       last_fetched_at: new Date('2020-01-01T00:00:00.000Z'),
@@ -124,7 +124,7 @@ describe('fetch.conditional-get', () => {
       title: `Feed replay 304 ${random}`,
     })
     await updateRssFeedById(feed.id, {
-      enabled: true,
+      is_enabled: true,
       etag: '"fresh-etag"',
       last_fetched_at: new Date('2020-01-01T00:00:00.000Z'),
     })

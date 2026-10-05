@@ -51,19 +51,19 @@ describe('UserProfileHeader', () => {
     expect(screen.queryByTestId('markdown-content')).toBeNull()
   })
 
-  it('renders IdentityVerifiedBadge when verification_status=verified and verified_badge_visible=true', () => {
+  it('renders IdentityVerifiedBadge when verification_status=verified and is_verified_badge_visible=true', () => {
     render(
       <UserProfileHeader
-        user={{ ...baseUser, verification_status: 'verified', verified_badge_visible: true }}
+        user={{ ...baseUser, verification_status: 'verified', is_verified_badge_visible: true }}
       />,
     )
     expect(screen.getByTestId('identity-verified-badge')).toBeDefined()
   })
 
-  it('does not render IdentityVerifiedBadge when verification_status=verified but verified_badge_visible=false', () => {
+  it('does not render IdentityVerifiedBadge when verification_status=verified but is_verified_badge_visible=false', () => {
     render(
       <UserProfileHeader
-        user={{ ...baseUser, verification_status: 'verified', verified_badge_visible: false }}
+        user={{ ...baseUser, verification_status: 'verified', is_verified_badge_visible: false }}
       />,
     )
     expect(screen.queryByTestId('identity-verified-badge')).toBeNull()
@@ -72,7 +72,7 @@ describe('UserProfileHeader', () => {
   it('does not render IdentityVerifiedBadge when verification_status is not verified', () => {
     render(
       <UserProfileHeader
-        user={{ ...baseUser, verification_status: 'unverified', verified_badge_visible: true }}
+        user={{ ...baseUser, verification_status: 'unverified', is_verified_badge_visible: true }}
       />,
     )
     expect(screen.queryByTestId('identity-verified-badge')).toBeNull()

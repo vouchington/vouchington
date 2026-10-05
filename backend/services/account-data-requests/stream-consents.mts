@@ -22,7 +22,7 @@ export function streamReferralAttributions(userId: string) {
     SELECT
       id,
       session_id,
-      referrer_id,
+      referrer_user_id,
       landing_url,
       uuid_extract_timestamp(id) AS created_at
     FROM session_referral_attributions

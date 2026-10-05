@@ -7,47 +7,47 @@ import { updateUrlHostnameBlocked } from '@voucha/test-helpers'
 describe('update.generated', () => {
   const suffix = Math.random().toString(36).slice(2, 10)
 
-  it('updateUrlHostnameBlocked updates blocked status', async () => {
+  it('updateUrlHostnameBlocked updates is_blocked status', async () => {
     const hostnamesMap = await upsertUrlHostnames(null, [`update-block-${suffix}.com`])
     const hostnameId = [...hostnamesMap.values()][0]
 
     await updateUrlHostnameBlocked(hostnameId, true)
 
     const retrieved = await getUrlHostnameById(hostnameId)
-    expect(retrieved!.blocked).toBe(true)
+    expect(retrieved!.is_blocked).toBe(true)
   })
 
-  it('updateUrlHostname updates crawlable status', async () => {
+  it('updateUrlHostname updates is_crawlable status', async () => {
     const hostnamesMap = await upsertUrlHostnames(null, [`update-crawl-${suffix}.com`])
     const hostnameId = [...hostnamesMap.values()][0]
 
-    const updated = await updateUrlHostname(hostnameId, { crawlable: true })
+    const updated = await updateUrlHostname(hostnameId, { is_crawlable: true })
     expect(updated).toBeDefined()
 
     const retrieved = await getUrlHostnameById(hostnameId)
-    expect(retrieved!.crawlable).toBe(true)
+    expect(retrieved!.is_crawlable).toBe(true)
   })
 
-  it('updateUrlHostname updates link_rel_follow status', async () => {
+  it('updateUrlHostname updates should_follow_link_rel status', async () => {
     const hostnamesMap = await upsertUrlHostnames(null, [`update-follow-${suffix}.com`])
     const hostnameId = [...hostnamesMap.values()][0]
 
-    const updated = await updateUrlHostname(hostnameId, { link_rel_follow: false })
+    const updated = await updateUrlHostname(hostnameId, { should_follow_link_rel: false })
     expect(updated).toBeDefined()
 
     const retrieved = await getUrlHostnameById(hostnameId)
-    expect(retrieved!.link_rel_follow).toBe(false)
+    expect(retrieved!.should_follow_link_rel).toBe(false)
   })
 
   it('updateUrlHostname updates Web Risk skip status', async () => {
     const hostnamesMap = await upsertUrlHostnames(null, [`update-web-risk-${suffix}.com`])
     const hostnameId = [...hostnamesMap.values()][0]
 
-    const updated = await updateUrlHostname(hostnameId, { skip_web_risk: true })
+    const updated = await updateUrlHostname(hostnameId, { should_skip_web_risk: true })
     expect(updated).toBeDefined()
 
     const retrieved = await getUrlHostnameById(hostnameId)
-    expect(retrieved!.skip_web_risk).toBe(true)
+    expect(retrieved!.should_skip_web_risk).toBe(true)
   })
 
   it('updateUrlHostname updates multiple fields', async () => {
@@ -56,15 +56,15 @@ describe('update.generated', () => {
 
     await updateUrlHostnameBlocked(hostnameId, true)
     const updated = await updateUrlHostname(hostnameId, {
-      crawlable: false,
-      link_rel_follow: true,
+      is_crawlable: false,
+      should_follow_link_rel: true,
     })
     expect(updated).toBeDefined()
 
     const retrieved = await getUrlHostnameById(hostnameId)
-    expect(retrieved!.blocked).toBe(true)
-    expect(retrieved!.crawlable).toBe(false)
-    expect(retrieved!.link_rel_follow).toBe(true)
+    expect(retrieved!.is_blocked).toBe(true)
+    expect(retrieved!.is_crawlable).toBe(false)
+    expect(retrieved!.should_follow_link_rel).toBe(true)
   })
 
   it('updateUrlHostname returns null when no changes provided', async () => {

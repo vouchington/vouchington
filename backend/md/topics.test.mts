@@ -96,7 +96,7 @@ describe('topics', () => {
         name: `Noindex MD Topic ${random}`,
         slug,
         createdById: user.id,
-        noindex: true,
+        is_noindexed: true,
       })
       const request = createRequest()
       const response = await request.get(`/md/topics?slugs=${slug}`).expect(200)
@@ -226,7 +226,7 @@ describe('topics', () => {
         name: `Noindex Detail MD Topic ${random}`,
         slug: `noindex-detail-md-topic-${random}`,
         createdById: user.id,
-        noindex: true,
+        is_noindexed: true,
       })
       const request = createRequest()
       await request.get(`/md/topics/${topicId}`).expect(404)

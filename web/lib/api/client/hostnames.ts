@@ -15,9 +15,9 @@ interface FetchHostnamesOptions {
 }
 
 interface UpdateHostnameChanges {
-  blocked?: boolean
-  crawlable?: boolean
-  link_rel_follow?: boolean
+  is_blocked?: boolean
+  is_crawlable?: boolean
+  should_follow_link_rel?: boolean
 }
 
 export async function fetchHostnames(
@@ -37,7 +37,7 @@ export async function updateHostname(
   id: string,
   changes: UpdateHostnameChanges,
 ): Promise<BlockHostnameResult | null> {
-  if (changes.blocked === true) {
+  if (changes.is_blocked === true) {
     return clientApi.patch<BlockHostnameResult>(`/api/v1/hostnames/${id}`, changes)
   }
   await clientApi.patch<void>(`/api/v1/hostnames/${id}`, changes)
@@ -46,7 +46,7 @@ export async function updateHostname(
 
 export async function createHostname(input: {
   hostname: string
-  blocked?: boolean
+  is_blocked?: boolean
 }): Promise<CreateHostnameResponse> {
   return clientApi.post<CreateHostnameResponse>('/api/v1/hostnames', input)
 }

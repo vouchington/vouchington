@@ -19,7 +19,7 @@ export const webCommunityModerationQueueApiFixtureCases: ApiFixtureCase[] = [
         'modlog-1': {
           id: 'modlog-1',
           community_id: community.id,
-          actor_id: user.id,
+          actor_user_id: user.id,
           action_type: 'approve',
           post_id: communityPost.id,
           target_user_id: null,

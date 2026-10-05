@@ -84,7 +84,7 @@ describe('Stripe membership provider fact snapshots', () => {
       subscription: scheduled,
     })
     await expect(getTestMembershipSourceState(membership.id)).resolves.toMatchObject({
-      auto_renews: false,
+      should_auto_renew: false,
       cancelled_at: null,
       effective_at: new Date(1_700_000_000_000),
     })

@@ -42,7 +42,7 @@ export function CopyrightEuNoticeForm() {
           content_description: values.work.trim(),
           grounds: values.grounds.trim(),
           hosted_use_url: values.hostedUseUrl.trim(),
-          good_faith_statement: true,
+          has_good_faith_statement: true,
           cf_turnstile_response: turnstile.token ?? undefined,
         })
         const notice = response.copyright_eu_notice

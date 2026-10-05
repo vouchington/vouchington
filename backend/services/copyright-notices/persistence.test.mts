@@ -202,7 +202,7 @@ describe('copyright notice persistence', () => {
       expect.objectContaining({ id: deadline.id, cancelled_at: expect.any(Date) }),
     ])
     expect(refreshedAggregate?.assessments).toContainEqual(
-      expect.objectContaining({ id: correction.id, substantially_compliant: false }),
+      expect.objectContaining({ id: correction.id, is_substantially_compliant: false }),
     )
   })
 })

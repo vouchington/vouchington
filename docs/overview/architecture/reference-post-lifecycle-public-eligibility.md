@@ -5,7 +5,7 @@
 Public eligibility is persisted state, separate from an individual viewer's authorization. The
 canonical SQL owner is
 [`buildPublicPostEligibilityFilter`](../../../backend/modules/feed-query-builders/post-publication-eligibility.mts).
-Readers join a candidate post to `COALESCE(candidate.root_id, candidate.id)` and compose that
+Readers join a candidate post to `COALESCE(candidate.root_post_id, candidate.id)` and compose that
 predicate; callers must not restate a partial publication check.
 
 Post-publication reconciliation materializes the identities affected by this predicate in bounded

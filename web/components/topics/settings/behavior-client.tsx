@@ -54,8 +54,8 @@ export function BehaviorClient({
         typeAttrSaving={state.typeAttrSaving}
       />
       <TopicFlagsSection
-        noindex={state.topic.noindex}
-        allowReviews={state.topic.allow_reviews}
+        is_noindexed={state.topic.is_noindexed}
+        allowReviews={state.topic.should_allow_reviews}
         onFlagsSubmit={handlers.handleFlagsSubmit}
         setNoindex={handlers.setNoindex}
         setAllowReviews={handlers.setAllowReviews}

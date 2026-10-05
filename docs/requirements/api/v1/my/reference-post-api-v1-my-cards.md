@@ -2,4 +2,4 @@
 
 [Back to My API](README.md#post-apiv1mycards)
 
-**Request:** `{ "card_id": "<uuid>" }`
+**Request:** `{ "card_topic_id": "<uuid>" }`

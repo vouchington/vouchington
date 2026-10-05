@@ -29,7 +29,7 @@ export async function getExposureState(
       SELECT
         MIN(revealed_at) AS first_revealed_at
       FROM moderation_media_reveals
-      WHERE moderator_id = ${moderatorId}
+      WHERE moderator_user_id = ${moderatorId}
         AND revealed_at >= now() - (${EXPOSURE_WINDOW_MINUTES} * INTERVAL '1 minute')
       GROUP BY COALESCE(post_id::text, report_id::text, id::text)
     ),

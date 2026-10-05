@@ -28,7 +28,7 @@ Not partitioned — growth: unbounded.
 | `processing_at`         | `timestamp with time zone` | yes      |                              |          |           |           | Active worker lease timestamp; non-final retryable failures release it and stale crashes recover after thirty minutes.                    |
 | `verified_at`           | `timestamp with time zone` | yes      |                              |          |           |           | When the worker first verified the exact request signature and actor match; always paired with remote_actor_id.                           |
 | `sender_allowed_at`     | `timestamp with time zone` | yes      |                              |          |           |           | Set after the sender-hostname delivery rate limit admits this envelope; retries do not charge the sender again.                           |
-| `deferred_until`        | `timestamp with time zone` | yes      |                              |          |           |           | Earliest retry time after a valid sender exceeds its hostname delivery allowance.                                                         |
+| `earliest_retry_at`     | `timestamp with time zone` | yes      |                              |          |           |           | Earliest retry time after a valid sender exceeds its hostname delivery allowance.                                                         |
 | `failed_at`             | `timestamp with time zone` | yes      |                              |          |           |           | Set only after the queue exhausts retryable operational attempts. Manual backfill clears it and rotates the fencing token.                |
 | `first_failed_at`       | `timestamp with time zone` | yes      |                              |          |           |           | Immutable timestamp of the first retry-exhausting operational failure; survives rearm to anchor sticky retention.                         |
 | `retention_expires_at`  | `timestamp with time zone` | yes      |                              |          |           |           | Maximum retention deadline for an unverified or previously failed durable delivery.                                                       |
@@ -43,9 +43,9 @@ _none_
 
 **Check constraints:**
 
-- `activitypub_inbox_deliveries__deferral_state_valid`: `CHECK (((deferred_until IS NULL) OR ((verified_at IS NOT NULL) AND (remote_actor_id IS NOT NULL) AND (processing_at IS NULL) AND (enqueued_at IS NULL) AND (sender_allowed_at IS NULL) AND (failed_at IS NULL) AND (last_error IS NOT NULL))))`
+- `activitypub_inbox_deliveries__deferral_state_valid`: `CHECK (((earliest_retry_at IS NULL) OR ((verified_at IS NOT NULL) AND (remote_actor_id IS NOT NULL) AND (processing_at IS NULL) AND (enqueued_at IS NULL) AND (sender_allowed_at IS NULL) AND (failed_at IS NULL) AND (last_error IS NOT NULL))))`
 - `activitypub_inbox_deliveries__failed_requires_first_failed`: `CHECK (((failed_at IS NULL) OR (first_failed_at IS NOT NULL)))`
-- `activitypub_inbox_deliveries__failure_state_valid`: `CHECK (((failed_at IS NULL) OR ((processing_at IS NOT NULL) AND (deferred_until IS NULL) AND (last_error IS NOT NULL))))`
+- `activitypub_inbox_deliveries__failure_state_valid`: `CHECK (((failed_at IS NULL) OR ((processing_at IS NOT NULL) AND (earliest_retry_at IS NULL) AND (last_error IS NOT NULL))))`
 - `activitypub_inbox_deliveries__first_failed_precedes_failure`: `CHECK (((failed_at IS NULL) OR (first_failed_at <= failed_at)))`
 - `activitypub_inbox_deliveries__first_failed_requires_retention`: `CHECK (((first_failed_at IS NULL) OR (retention_expires_at IS NOT NULL)))`
 - `activitypub_inbox_deliveries__last_error_bounded`: `CHECK (((last_error IS NULL) OR (length(last_error) <= 1000)))`
@@ -54,7 +54,7 @@ _none_
 - `activitypub_inbox_deliveries__request_method_uppercase`: `CHECK (((request_method)::text = upper((request_method)::text)))`
 - `activitypub_inbox_deliveries__sender_hostname_lowercase`: `CHECK ((sender_hostname = lower(sender_hostname)))`
 - `activitypub_inbox_deliveries__sender_requires_verification`: `CHECK (((sender_allowed_at IS NULL) OR ((verified_at IS NOT NULL) AND (remote_actor_id IS NOT NULL))))`
-- `activitypub_inbox_deliveries__terminal_diagnostics_present`: `CHECK ((((deferred_until IS NULL) AND (failed_at IS NULL)) OR (last_error IS NOT NULL)))`
+- `activitypub_inbox_deliveries__terminal_diagnostics_present`: `CHECK ((((earliest_retry_at IS NULL) AND (failed_at IS NULL)) OR (last_error IS NOT NULL)))`
 - `activitypub_inbox_deliveries__unverified_requires_retention`: `CHECK (((verified_at IS NOT NULL) OR (retention_expires_at IS NOT NULL)))`
 - `activitypub_inbox_deliveries__unverified_retention_bounded`: `CHECK (((verified_at IS NOT NULL) OR (retention_expires_at <= (received_at + '01:00:00'::interval))))`
 - `activitypub_inbox_deliveries__verified_actor_paired`: `CHECK (((verified_at IS NULL) = (remote_actor_id IS NULL)))`
@@ -68,7 +68,7 @@ _none_
 **Indexes:**
 
 - `activitypub_inbox_deliveries_pkey`: `CREATE UNIQUE INDEX activitypub_inbox_deliveries_pkey ON public.activitypub_inbox_deliveries USING btree (id)`
-- `idx_activitypub_inbox_deliveries__recovery`: `CREATE INDEX idx_activitypub_inbox_deliveries__recovery ON public.activitypub_inbox_deliveries USING btree (failed_at, deferred_until, processing_at, enqueued_at, received_at, id)`
+- `idx_activitypub_inbox_deliveries__recovery`: `CREATE INDEX idx_activitypub_inbox_deliveries__recovery ON public.activitypub_inbox_deliveries USING btree (failed_at, earliest_retry_at, processing_at, enqueued_at, received_at, id)`
 - `idx_activitypub_inbox_deliveries__remote_actor_id`: `CREATE INDEX idx_activitypub_inbox_deliveries__remote_actor_id ON public.activitypub_inbox_deliveries USING btree (remote_actor_id) WHERE (remote_actor_id IS NOT NULL)`
 - `idx_activitypub_inbox_deliveries__unverified_retention`: `CREATE INDEX idx_activitypub_inbox_deliveries__unverified_retention ON public.activitypub_inbox_deliveries USING btree (retention_expires_at, id) WHERE ((verified_at IS NULL) AND (retention_expires_at IS NOT NULL))`
 - `idx_activitypub_inbox_deliveries__verified_retention`: `CREATE INDEX idx_activitypub_inbox_deliveries__verified_retention ON public.activitypub_inbox_deliveries USING btree (retention_expires_at, id) WHERE ((verified_at IS NOT NULL) AND (retention_expires_at IS NOT NULL))`

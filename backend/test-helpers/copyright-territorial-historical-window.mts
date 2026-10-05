@@ -60,7 +60,7 @@ export async function createTestHistoricalEuDecisionWindow(
     INSERT INTO copyright_territorial_notice_receipts (
       copyright_notice_id, jurisdiction, copyright_jurisdiction_policy_approval_id,
       requester_user_id, requester_identity_sha256, idempotency_key, request_sha256, hosted_use_url,
-      grounds_ciphertext, notifier_email_ciphertext, good_faith_statement, received_at
+      grounds_ciphertext, notifier_email_ciphertext, has_good_faith_statement, received_at
     ) VALUES (
       ${noticeId}, 'eu_dsa', ${approvalId}, ${options.requesterUserId ?? null}, ${randomBytes(32)}, ${key}, ${randomBytes(32)},
       'https://example.test/historical-use',
@@ -167,7 +167,7 @@ export async function insertTestHistoricalTerritorialComplaint(input: {
     /* insertTestHistoricalTerritorialComplaint */
     INSERT INTO copyright_territorial_redress_requests (
       copyright_notice_id, jurisdiction, copyright_territorial_decision_id,
-      submitted_by_user_id, filed_by, idempotency_key, explanation_ciphertext, received_at
+      submitted_by_id, filed_by, idempotency_key, explanation_ciphertext, received_at
     ) SELECT ${input.noticeId}, 'eu_dsa', decision.id, ${input.requesterUserId}, 'notifier',
       ${input.idempotencyKey},
       ${encryptSecret('Earlier complaint', `${territorialLabels('eu_dsa').redressPurpose}:${input.idempotencyKey}`)},

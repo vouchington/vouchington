@@ -17,13 +17,13 @@ const sapphire = topics[1]!
 
 const card: IndividualCard = {
   id: 'card-sapphire-reserve',
-  card_id: sapphire.id,
+  card_topic_id: sapphire.id,
   opened_on: '2024-02-11',
   closed_on: null,
   received_sign_up_bonus_on: '2024-05-20',
   credit_limit: { amount: 1_500_000, currency: 'usd' },
   is_authorized_user: false,
-  authorized_user_of_id: null,
+  authorized_user_of_card_id: null,
   note: 'Primary card for dining and travel.',
   authorized_user_of_card: null,
   card: { id: sapphire.id, name: sapphire.name, slug: sapphire.slug },
@@ -36,7 +36,7 @@ const initialForm: CardEditForm = {
   credit_limit: '15000.00',
   currency: 'usd',
   is_authorized_user: false,
-  authorized_user_of_id: '',
+  authorized_user_of_card_id: '',
   note: 'Primary card for dining and travel.',
 }
 

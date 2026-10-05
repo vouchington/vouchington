@@ -47,7 +47,7 @@ export async function getCurrentRenewalPriceIncreaseDetails(
       ON observation.id = state.membership_provider_observation_id
       AND observation.membership_provider_lineage_id = state.membership_provider_lineage_id
       AND observation.membership_product_id = state.membership_product_id
-      AND observation.source_kind = 'direct' AND observation.auto_renews = true
+      AND observation.source_kind = 'direct' AND observation.should_auto_renew = true
     INNER JOIN membership_products product ON product.id = m.membership_product_id
     WHERE m.user_id = ${userId}
       AND observation.id = ${membershipProviderObservationId}

@@ -18,7 +18,7 @@ const SET_BASED_QUERY = `WITH RECURSIVE requested_posts AS (
   SELECT DISTINCT id, updated_at FROM combined_posts
 ), descendant_metrics AS (
   SELECT requested.id, COUNT(*) FROM requested_posts requested
-  JOIN posts candidate_post ON candidate_post.root_id = requested.id GROUP BY requested.id
+  JOIN posts candidate_post ON candidate_post.root_post_id = requested.id GROUP BY requested.id
 ) SELECT * FROM descendant_metrics`
 
 describe('assertPostMetricsBatchIsCandidateBounded', () => {
@@ -40,9 +40,12 @@ describe('assertPostMetricsBatchIsCandidateBounded', () => {
   it('rejects the former correlated query shape', () => {
     expect(() =>
       assertPostMetricsBatchIsCandidateBounded(
-        result('SELECT (SELECT COUNT(*) FROM posts WHERE root_id = cp.id) FROM combined_posts cp', {
-          Plan: { 'Node Type': 'Result' },
-        }),
+        result(
+          'SELECT (SELECT COUNT(*) FROM posts WHERE root_post_id = cp.id) FROM combined_posts cp',
+          {
+            Plan: { 'Node Type': 'Result' },
+          },
+        ),
       ),
     ).toThrow('must constrain metric sources through requested_posts')
   })

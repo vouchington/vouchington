@@ -189,7 +189,7 @@ describe('copyright notice routes', () => {
       .expect(409)
     await request
       .post(`/api/v1/copyright-form-intakes/${missingId}/reviews`)
-      .send({ accepted: true, rationale: 'The structured notice is complete.' })
+      .send({ is_accepted: true, rationale: 'The structured notice is complete.' })
       .expect(404)
     const guestTarget = fixture.form.targets[0]!
     const guestIntake = await createCopyrightFormIntake({
@@ -217,7 +217,7 @@ describe('copyright notice routes', () => {
     })
     await request
       .post(`/api/v1/copyright-form-intakes/${guestIntake.intake.id}/reviews`)
-      .send({ accepted: true, rationale: 'The structured notice is complete.' })
+      .send({ is_accepted: true, rationale: 'The structured notice is complete.' })
       .expect(200)
     await request
       .post(`/api/v1/copyright-email-intakes/${missingId}/rejections`)
@@ -244,7 +244,7 @@ describe('copyright notice routes', () => {
       .expect(404)
     await request
       .post(`/api/v1/copyright-submissions/${missingId}/counter-notice-reviews`)
-      .send({ accepted: false, rationale: 'The counter-notice is incomplete.' })
+      .send({ is_accepted: false, rationale: 'The counter-notice is incomplete.' })
       .expect(404)
     await request
       .post(`/api/v1/copyright-email-intakes/${missingId}/correspondence`)

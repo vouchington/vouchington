@@ -1,3 +1,4 @@
+import { createTestRetainedMembershipIdentity } from '../../entities/retained-identities.mts'
 import { randomUUID } from 'node:crypto'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -182,7 +183,7 @@ export function setTestLineageBindingOriginatingInvoice(
 export async function createTestImmutableMembershipChange(): Promise<string> {
   const changeId = randomUUID()
   await write(
-    sql`/* createImmutableTestMembershipChange */ INSERT INTO membership_changes (id, membership_id, user_id, change_type, note) VALUES (${changeId}, ${randomUUID()}, (SELECT id FROM users ORDER BY id LIMIT 1), 'admin_grant', 'original')`,
+    sql`/* createImmutableTestMembershipChange */ INSERT INTO membership_changes (id, membership_id, user_id, change_type, note) VALUES (${changeId}, ${await createTestRetainedMembershipIdentity()}, (SELECT id FROM users ORDER BY id LIMIT 1), 'admin_grant', 'original')`,
   )
   return changeId
 }
@@ -192,7 +193,6 @@ export function mutateTestMembershipChange(changeId: string): Promise<QueryResul
     sql`/* mutateTestMembershipChange */ UPDATE membership_changes SET note = 'rewritten' WHERE id = ${changeId}`,
   )
 }
-
 export function deleteTestMembershipChange(changeId: string): Promise<QueryResult> {
   return write(
     sql`/* deleteTestMembershipChange */ DELETE FROM membership_changes WHERE id = ${changeId}`,

@@ -61,7 +61,7 @@ describe('fetch.permanent-error', () => {
       topic_id: topic.id,
       title: `Perm Error Test ${random}`,
     })
-    await updateRssFeedById(feed.id, { enabled: true })
+    await updateRssFeedById(feed.id, { is_enabled: true })
     return feed
   }
 

@@ -19,6 +19,8 @@ import type {
   LanguageDetectionEntityType,
 } from '@queues/language-detection/types'
 import { processLanguageDetection, processLanguageDetectionBackfill } from './processors.mts'
+import { runIsolatedDatabaseCase } from '../../../test-helpers/vitest-isolated-database-case.mts'
+import { getIsolatedDatabaseCaseMode } from '../../../test-helpers/vitest-isolated-database-cases.mts'
 
 describe('language detection processors', () => {
   async function createRssFeedItemForLanguageDetection(): Promise<string> {
@@ -129,6 +131,10 @@ describe('language detection processors', () => {
   })
 
   it('accepts every known language detection backfill job name', async () => {
+    if (getIsolatedDatabaseCaseMode('language-backfill-job-names') === 'parent') {
+      await runIsolatedDatabaseCase('language-backfill-job-names')
+      return
+    }
     const jobs: LanguageDetectionBackfillJobName[] = [
       'backfill_posts',
       'backfill_rss_feed_items',
@@ -146,6 +152,10 @@ describe('language detection processors', () => {
   })
 
   it('backfills non-post entities through the batch processor path', async () => {
+    if (getIsolatedDatabaseCaseMode('language-backfill-non-post') === 'parent') {
+      await runIsolatedDatabaseCase('language-backfill-non-post')
+      return
+    }
     const random = createRandomString(10)
     const userId = await insertLanguageDetectionUserForTest({
       username: `language-backfill-user-${random}`,

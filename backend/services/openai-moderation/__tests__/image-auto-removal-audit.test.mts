@@ -41,7 +41,7 @@ describe('recordImageAutoRemoval', () => {
     })
     expect(action).toMatchObject({
       action_type: 'remove',
-      actor_id: automodUserId,
+      actor_user_id: automodUserId,
       community_id: community.id,
       post_id: postId,
       metadata: { reason: 'openai_image_moderation', imageId },
@@ -52,7 +52,7 @@ describe('recordImageAutoRemoval', () => {
     })
     expect(otherAction).toMatchObject({
       action_type: 'remove',
-      actor_id: automodUserId,
+      actor_user_id: automodUserId,
       community_id: otherCommunity.id,
       post_id: otherPostId,
       metadata: { reason: 'openai_image_moderation', imageId },

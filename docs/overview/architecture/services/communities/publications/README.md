@@ -7,7 +7,7 @@ Manages the review lifecycle for community-scoped posts. A post is either global
 Community posts have one `community_post_reviews` row keyed by `post_id`.
 
 Global public posts may be cross-posted into a community by creating a new community-scoped
-`discussion` whose `parent_id` points at the global source post. Cross-post discussions are not
+`discussion` whose `parent_post_id` points at the global source post. Cross-post discussions are not
 comments; comment queries filter to `post_type='comment'`.
 
 ## Review Lifecycle

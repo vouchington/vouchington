@@ -60,8 +60,8 @@ describe('isUrlCrawlable with ignoreRobotsRules', () => {
   })
 
   it.each([
-    ['blocked=true', { blocked: true } as const],
-    ['crawlable=false', { crawlable: false } as const],
+    ['blocked=true', { is_blocked: true } as const],
+    ['crawlable=false', { is_crawlable: false } as const],
   ])('returns false for %s hostname even with ignoreRobotsRules=true', async (_, insert) => {
     const domain = randomDomain()
     await insertTestUrlHostname({ hostname: domain, ...insert })

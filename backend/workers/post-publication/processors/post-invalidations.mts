@@ -12,7 +12,7 @@ export async function invalidateReconciledPostSurfaces(
   const metricPostIds = [
     ...new Set(
       posts.flatMap(post =>
-        [post.id, post.parent_id, post.root_id].filter((id): id is string => !!id),
+        [post.id, post.parent_post_id, post.root_post_id].filter((id): id is string => !!id),
       ),
     ),
   ]

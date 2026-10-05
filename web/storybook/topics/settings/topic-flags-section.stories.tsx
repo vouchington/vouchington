@@ -16,7 +16,7 @@ export const ReviewsAllowed: Story = {
   render: () => (
     <StoryFrame>
       <TopicFlagsSection
-        noindex={false}
+        is_noindexed={false}
         allowReviews
         flagsSaving={false}
         onFlagsSubmit={prevent}
@@ -31,7 +31,7 @@ export const HiddenFromSearch: Story = {
   render: () => (
     <StoryFrame>
       <TopicFlagsSection
-        noindex
+        is_noindexed
         allowReviews={false}
         flagsSaving={false}
         onFlagsSubmit={prevent}

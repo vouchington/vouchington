@@ -11,7 +11,7 @@ export type MembershipLifecycleFields = {
   expired_at: Date | null
   past_due_at: Date | null
   paused_at: Date | null
-  cancel_at_period_end: boolean
+  should_cancel_at_period_end: boolean
 }
 
 export type MembershipUpdateResult = {
@@ -57,7 +57,7 @@ export function parseMembershipUpdateRow(
       expired_at: row.previous_expired_at,
       past_due_at: row.previous_past_due_at,
       paused_at: row.previous_paused_at,
-      cancel_at_period_end: row.previous_cancel_at_period_end,
+      should_cancel_at_period_end: row.previous_cancel_at_period_end,
     },
     current: {
       user_id: row.current_user_id,
@@ -69,7 +69,7 @@ export function parseMembershipUpdateRow(
       expired_at: row.current_expired_at,
       past_due_at: row.current_past_due_at,
       paused_at: row.current_paused_at,
-      cancel_at_period_end: row.current_cancel_at_period_end,
+      should_cancel_at_period_end: row.current_cancel_at_period_end,
     },
   }
 }

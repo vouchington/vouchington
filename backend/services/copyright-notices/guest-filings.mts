@@ -69,7 +69,7 @@ export async function appendCopyrightGuestFiling(input: {
   const { rows } = await transaction<{ id: string; kind: GuestFilingKind; received_at: Date }>(
     sql`/* appendCopyrightGuestFiling */
     INSERT INTO copyright_notice_submissions (
-      id, copyright_notice_id, kind, received_at, source_kind, submitted_by_user_id,
+      id, copyright_notice_id, kind, received_at, source_kind, submitted_by_id,
       body_ciphertext, copyright_notice_guest_capability_id
     ) VALUES (
       ${submissionId}, ${input.noticeId}, ${input.kind}, ${input.now}, 'guest_form', NULL,

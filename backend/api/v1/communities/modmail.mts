@@ -161,17 +161,24 @@ app.route('/api/v1/communities/:idOrSlug/modmail/:conversationId').patch(async (
     body,
   })
 
-  if (typeof body.assigned_mod_id === 'string') {
-    ctx.assert(isUUID(body.assigned_mod_id), 422, 'assigned_mod_id must be a UUID')
-    const assigneeMembership = await getCommunityMember(community.id, body.assigned_mod_id)
+  if (typeof body.assigned_moderator_user_id === 'string') {
+    ctx.assert(
+      isUUID(body.assigned_moderator_user_id),
+      422,
+      'assigned_moderator_user_id must be a UUID',
+    )
+    const assigneeMembership = await getCommunityMember(
+      community.id,
+      body.assigned_moderator_user_id,
+    )
     ctx.assert(
       assigneeMembership &&
         !assigneeMembership.removed_at &&
         (assigneeMembership.role === 'owner' || assigneeMembership.role === 'moderator'),
       422,
-      'assigned_mod_id must be an active owner or moderator in this community',
+      'assigned_moderator_user_id must be an active owner or moderator in this community',
     )
-    await assignModmailThread(conversationId, body.assigned_mod_id)
+    await assignModmailThread(conversationId, body.assigned_moderator_user_id)
   }
   if (body.resolved === true) {
     await resolveModmailThread(conversationId, currentUser.id)

@@ -59,13 +59,13 @@ function buildTopicsQuery() {
         id,
         slug,
         topic_type,
-        allow_reviews,
+        should_allow_reviews,
         referral_program_topic_id,
         updated_at
       FROM topics
       WHERE deleted_at IS NULL
         AND merged_into_topic_id IS NULL
-        AND noindex IS NOT TRUE
+        AND is_noindexed IS NOT TRUE
         AND slug IS NOT NULL
         AND topic_type = ANY(${Object.keys(topicTypes)})
     )
@@ -103,7 +103,7 @@ function buildTopicsQuery() {
   query.append(buildTopicSlugCaseSql())
   query.append(sql` AS slug_path, slug, updated_at, 'reviews' AS subpage, id
       FROM eligible_topics
-      WHERE allow_reviews IS TRUE
+      WHERE should_allow_reviews IS TRUE
 
       UNION ALL
 
@@ -132,7 +132,7 @@ function buildDomainsQuery() {
   return sql`/* buildSitemapDomainsQuery */
     SELECT CONCAT('/domain/', hostname) AS path, updated_at
     FROM url_hostnames
-    WHERE blocked IS NOT TRUE
+    WHERE is_blocked IS NOT TRUE
       AND votes_count_up > 0
     ORDER BY votes_score_net DESC, id DESC
   `

@@ -16,15 +16,15 @@ export async function selectStaffTargets(
         target.placement_revision, image.image_id, target.hosted_use_url,
         COALESCE(surface.surface_kind::text, 'post-image') AS surface,
         CASE WHEN activation.placement_id IS NULL THEN NULL ELSE jsonb_build_object(
-          'set_by_id', activation.bound_by_user_id,
-          'set_by_administrator', activation.bound_by_administrator,
-          'uploaded_by_id', activation.uploaded_by_user_id
+          'set_by_id', activation.bound_by_id,
+          'set_by_administrator', activation.is_bound_by_administrator,
+          'uploaded_by_id', activation.uploaded_by_id
         ) END AS provenance
       FROM copyright_notice_targets target JOIN copyright_notice_target_images image ON image.copyright_notice_target_id = target.id
       LEFT JOIN image_surface_placements surface ON surface.placement_id = target.placement_id
       LEFT JOIN LATERAL (
-        SELECT recorded.placement_id, recorded.bound_by_user_id, recorded.bound_by_administrator,
-          recorded.uploaded_by_user_id
+        SELECT recorded.placement_id, recorded.bound_by_id, recorded.is_bound_by_administrator,
+          recorded.uploaded_by_id
         FROM image_surface_placement_activations recorded
         WHERE recorded.placement_id = target.placement_id
           AND recorded.placement_revision = target.surface_activation_revision
@@ -74,7 +74,7 @@ export async function selectStaffFormReview(
     reviewed_by_id: string | null
   }>(sql`/* getPendingCopyrightStaffCase:formReview */
     SELECT intake.id AS intake_id, submission.source_kind, execution.state, screening.recommendation, screening.rationale_ciphertext, screening.guidance_ciphertext,
-      review.accepted AS review_accepted, review.reviewed_at, review.reviewed_by_id
+      review.is_accepted AS review_accepted, review.reviewed_at, review.reviewed_by_id
     FROM copyright_notice_form_intakes intake JOIN copyright_notice_submissions submission ON submission.id = intake.copyright_notice_submission_id
     LEFT JOIN LATERAL (SELECT * FROM copyright_notice_form_screening_attempts attempt WHERE attempt.copyright_notice_form_intake_id = intake.id ORDER BY attempt.attempt_number DESC LIMIT 1) execution ON true
     LEFT JOIN copyright_notice_form_screenings screening ON screening.id = execution.copyright_notice_form_screening_id AND execution.state = 'completed'
@@ -105,7 +105,7 @@ export async function selectStaffFormReview(
       row.review_accepted === null || row.reviewed_at === null
         ? null
         : {
-            accepted: row.review_accepted,
+            is_accepted: row.review_accepted,
             reviewed_at: row.reviewed_at,
             reviewed_by_id: row.reviewed_by_id,
           },

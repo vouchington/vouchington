@@ -6,19 +6,19 @@ Active user session registry keyed by UUIDv7 JWT sid. RANGE-partitioned by id wi
 
 RANGE partitioned on `id` (children: default, no retention owner, access class: target-scoped, growth: unbounded).
 
-| Column          | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                             |
-| --------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------- |
-| `id`            | `uuid`                     | no       |                              |          |           |           |                                                                                     |
-| `user_id`       | `uuid`                     | no       |                              |          |           |           | Owning user for this session row.                                                   |
-| `device_id`     | `uuid`                     | no       |                              |          |           |           | JWT device ID (dt.did) associated with this session.                                |
-| `device_name`   | `text`                     | no       | `'Unknown device'::text`     |          |           |           | Human-readable device label derived from the request user-agent when available.     |
-| `user_agent_id` | `uuid`                     | no       |                              |          |           |           | Normalized user-agent row for the raw browser user-agent captured for this session. |
-| `ip_address`    | `inet`                     | yes      |                              |          |           |           | Client IP address captured when the session was registered or refreshed.            |
-| `last_seen_at`  | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | Most recent login/list/logout/revoke/refresh touch time for this session.           |
-| `expires_at`    | `timestamp with time zone` | no       |                              |          |           |           | JWT session expiration timestamp.                                                   |
-| `revoked_at`    | `timestamp with time zone` | yes      |                              |          |           |           | When the session was revoked. NULL means active.                                    |
-| `created_at`    | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                     |
-| `updated_at`    | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                     |
+| Column                 | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                             |
+| ---------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------- |
+| `id`                   | `uuid`                     | no       |                              |          |           |           |                                                                                     |
+| `user_id`              | `uuid`                     | no       |                              |          |           |           | Owning user for this session row.                                                   |
+| `device_id`            | `uuid`                     | no       |                              |          |           |           | JWT device ID (dt.did) associated with this session.                                |
+| `device_name`          | `text`                     | no       | `'Unknown device'::text`     |          |           |           | Human-readable device label derived from the request user-agent when available.     |
+| `user_agent_string_id` | `uuid`                     | no       |                              |          |           |           | Normalized user-agent row for the raw browser user-agent captured for this session. |
+| `ip_address`           | `inet`                     | yes      |                              |          |           |           | Client IP address captured when the session was registered or refreshed.            |
+| `last_seen_at`         | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | Most recent login/list/logout/revoke/refresh touch time for this session.           |
+| `expires_at`           | `timestamp with time zone` | no       |                              |          |           |           | JWT session expiration timestamp.                                                   |
+| `revoked_at`           | `timestamp with time zone` | yes      |                              |          |           |           | When the session was revoked. NULL means active.                                    |
+| `created_at`           | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                     |
+| `updated_at`           | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                     |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -32,13 +32,13 @@ _none_
 
 **Foreign keys:**
 
-- `user_sessions_user_agent_id_fkey`: `FOREIGN KEY (user_agent_id) REFERENCES user_agent_strings(id) ON DELETE RESTRICT`
+- `user_sessions_user_agent_string_id_fkey`: `FOREIGN KEY (user_agent_string_id) REFERENCES user_agent_strings(id) ON DELETE RESTRICT`
 - `user_sessions_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 
 **Indexes:**
 
 - `idx_user_sessions__expires_at_active`: `CREATE INDEX idx_user_sessions__expires_at_active ON ONLY public.user_sessions USING btree (expires_at) WHERE (revoked_at IS NULL)`
-- `idx_user_sessions__user_agent_id`: `CREATE INDEX idx_user_sessions__user_agent_id ON ONLY public.user_sessions USING btree (user_agent_id) WHERE (user_agent_id IS NOT NULL)`
+- `idx_user_sessions__user_agent_id`: `CREATE INDEX idx_user_sessions__user_agent_id ON ONLY public.user_sessions USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)`
 - `idx_user_sessions__user_id__foreign_key`: `CREATE INDEX idx_user_sessions__user_id__foreign_key ON ONLY public.user_sessions USING btree (user_id) WHERE (user_id IS NOT NULL)`
 - `idx_user_sessions__user_id_active_last_seen`: `CREATE INDEX idx_user_sessions__user_id_active_last_seen ON ONLY public.user_sessions USING btree (user_id, last_seen_at DESC, id DESC) WHERE (revoked_at IS NULL)`
 - `user_sessions_pkey`: `CREATE UNIQUE INDEX user_sessions_pkey ON ONLY public.user_sessions USING btree (id)`

@@ -90,7 +90,7 @@ async function recordAgentModerations(
     WITH moderated AS (
       SELECT ${input.postId}::uuid AS post_id, ${input.inputSha256}::bytea AS input_sha256
     )
-    INSERT INTO agent_moderations (post_id, input_sha256, prompt_id, agent_id, results, flagged)
+    INSERT INTO agent_moderations (post_id, input_sha256, prompt_id, agent_id, results, is_flagged)
     SELECT moderated.post_id, moderated.input_sha256, projected.prompt_id, prompt.agent_id,
       projected.results, projected.flagged
     FROM moderated

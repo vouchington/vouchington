@@ -56,7 +56,7 @@ export async function applyNonSpamSignedInCopyrightFormScreening(
   }>(sql`/* applyNonSpamSignedInCopyrightFormScreening */
     SELECT intake.id AS intake_id, intake.copyright_notice_id AS notice_id,
       screening.id AS screening_id,
-      review.accepted AS form_review_accepted,
+      review.is_accepted AS form_review_accepted,
       EXISTS (SELECT 1 FROM copyright_automatic_withholding_refusals refusal
         WHERE refusal.copyright_notice_submission_id = submission.id) AS refused
     FROM copyright_notice_form_intakes intake JOIN copyright_notice_submissions submission ON submission.id = intake.copyright_notice_submission_id
@@ -79,7 +79,7 @@ export async function applyNonSpamSignedInCopyrightFormScreening(
     SELECT assessment.id FROM copyright_notice_submission_assessments assessment
     WHERE assessment.copyright_notice_submission_id = ${submissionId}
       AND assessment.assessed_by_id IS NULL
-      AND assessment.substantially_compliant
+      AND assessment.is_substantially_compliant
       AND assessment.copyright_notice_form_screening_id = ${intake.screening_id}
       AND NOT EXISTS (
         SELECT 1 FROM copyright_notice_submission_assessments newer
@@ -89,10 +89,10 @@ export async function applyNonSpamSignedInCopyrightFormScreening(
   const { rows: currentAssessments } = await transaction<{
     id: string
     copyright_notice_form_screening_id: string | null
-    substantially_compliant: boolean
+    is_substantially_compliant: boolean
   }>(
     sql`/* applyNonSpamSignedInCopyrightFormScreening:currentAssessment */
-      SELECT assessment.id, assessment.copyright_notice_form_screening_id, assessment.substantially_compliant
+      SELECT assessment.id, assessment.copyright_notice_form_screening_id, assessment.is_substantially_compliant
       FROM copyright_notice_submission_assessments assessment
       WHERE assessment.copyright_notice_submission_id = ${submissionId}
         AND NOT EXISTS (
@@ -105,7 +105,7 @@ export async function applyNonSpamSignedInCopyrightFormScreening(
     !existingAssessments[0] &&
     currentAssessment &&
     (currentAssessment.copyright_notice_form_screening_id === null ||
-      !currentAssessment.substantially_compliant)
+      !currentAssessment.is_substantially_compliant)
   ) {
     await transaction.commit()
     return

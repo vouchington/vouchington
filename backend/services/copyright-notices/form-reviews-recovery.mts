@@ -27,13 +27,13 @@ export function searchRecoverableCopyrightFormReviewIntakeIds(
     FROM copyright_notice_form_intake_reviews review
     JOIN copyright_notice_form_intakes intake
       ON intake.id = review.copyright_notice_form_intake_id
-    WHERE NOT review.accepted
+    WHERE NOT review.is_accepted
       AND (
         review.reviewed_by_id IS NOT NULL AND (
           NOT EXISTS (
             SELECT 1 FROM copyright_notice_submission_assessments assessment
             WHERE assessment.copyright_notice_submission_id = intake.copyright_notice_submission_id
-              AND NOT assessment.substantially_compliant
+              AND NOT assessment.is_substantially_compliant
               AND assessment.assessed_by_id IS NOT NULL
               AND NOT EXISTS (
                 SELECT 1 FROM copyright_notice_submission_assessments newer
@@ -77,18 +77,18 @@ export async function recoverRejectedCopyrightFormReviewEffect(intakeId: string)
     reviewed_by_id: string | null
     assessment_id: string | null
     assessed_by_id: string | null
-    substantially_compliant: boolean | null
+    is_substantially_compliant: boolean | null
   }>(sql`/* recoverRejectedCopyrightFormReviewEffect:state */
     SELECT intake.copyright_notice_id AS notice_id,
       intake.copyright_notice_submission_id AS submission_id, review.reviewed_at, review.reviewed_by_id,
-      assessment.id AS assessment_id, assessment.assessed_by_id, assessment.substantially_compliant
+      assessment.id AS assessment_id, assessment.assessed_by_id, assessment.is_substantially_compliant
     FROM copyright_notice_form_intakes intake
     JOIN copyright_notice_submissions submission
       ON submission.id = intake.copyright_notice_submission_id
     JOIN copyright_notices notice ON notice.id = intake.copyright_notice_id
     JOIN copyright_notice_form_intake_reviews review
       ON review.copyright_notice_form_intake_id = intake.id
-      AND NOT review.accepted
+      AND NOT review.is_accepted
     LEFT JOIN copyright_notice_submission_assessments assessment
       ON assessment.copyright_notice_submission_id = intake.copyright_notice_submission_id
       AND NOT EXISTS (
@@ -105,13 +105,13 @@ export async function recoverRejectedCopyrightFormReviewEffect(intakeId: string)
   }
   if (
     state.reviewed_by_id !== null &&
-    (state.substantially_compliant !== false || state.assessed_by_id === null)
+    (state.is_substantially_compliant !== false || state.assessed_by_id === null)
   ) {
     const { rows: recoveredAssessment } = await transaction<{
       id: string
     }>(sql`/* recoverRejectedCopyrightFormReviewEffect:assessment */
       INSERT INTO copyright_notice_submission_assessments (
-        copyright_notice_submission_id, assessed_at, assessed_by_id, substantially_compliant,
+        copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant,
         supersedes_assessment_id
       ) VALUES (
         ${state.submission_id}, ${state.reviewed_at}, ${state.reviewed_by_id}, false,

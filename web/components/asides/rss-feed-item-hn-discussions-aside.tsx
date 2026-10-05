@@ -5,7 +5,7 @@ export async function RssFeedItemHnDiscussionsAside({ url }: { url: string }) {
   const currentUser = await getCurrentUser()
   return (
     <HnDiscussionsAside
-      enabled={currentUser?.hn_discussions === true}
+      enabled={currentUser?.should_import_hacker_news_discussions === true}
       urls={[url]}
     />
   )

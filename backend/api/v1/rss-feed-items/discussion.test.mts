@@ -190,7 +190,7 @@ describe('discussion', () => {
       const nonDiscoverableFeed = await createTestRssFeed({})
       await setRssFeedDiscoverabilityAsSystem({
         rssFeedId: nonDiscoverableFeed.id,
-        enabled: false,
+        is_enabled: false,
         reason: 'test: non-discoverable — no gate for link posts',
       })
 

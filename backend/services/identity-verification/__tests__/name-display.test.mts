@@ -4,7 +4,7 @@ import { computeVerifiedDisplayName } from '../name-display.mts'
 function baseUser(overrides: Partial<Parameters<typeof computeVerifiedDisplayName>[0]> = {}) {
   return {
     verification_status: 'verified',
-    verified_badge_visible: true,
+    is_verified_badge_visible: true,
     public_verified_name_display: 'hidden',
     verified_first_name: 'Alice',
     verified_last_name_initial: 'S',
@@ -22,8 +22,8 @@ describe('computeVerifiedDisplayName', () => {
     ).toBeNull()
   })
 
-  it('returns null when verified_badge_visible is false', () => {
-    expect(computeVerifiedDisplayName(baseUser({ verified_badge_visible: false }))).toBeNull()
+  it('returns null when is_verified_badge_visible is false', () => {
+    expect(computeVerifiedDisplayName(baseUser({ is_verified_badge_visible: false }))).toBeNull()
   })
 
   it('returns null for hidden display mode', () => {
@@ -93,7 +93,7 @@ describe('computeVerifiedDisplayName', () => {
   it('returns null for hidden when badge is not visible even if verified', () => {
     const user = baseUser({
       public_verified_name_display: 'full_name',
-      verified_badge_visible: false,
+      is_verified_badge_visible: false,
     })
     expect(computeVerifiedDisplayName(user)).toBeNull()
   })

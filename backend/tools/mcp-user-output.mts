@@ -19,7 +19,7 @@ const USER_FIELDS = [
   'username',
   'markdown',
   'verification_status',
-  'verified_badge_visible',
+  'is_verified_badge_visible',
   'verified_display_name',
   'account_type',
 ] as const
@@ -34,7 +34,7 @@ export type McpUser = {
   username: string | null
   markdown: string | null
   verification_status: NonNullable<PublicUser['verification_status']> | null
-  verified_badge_visible: boolean | null
+  is_verified_badge_visible: boolean | null
   verified_display_name: string | null
   account_type: PublicUser['account_type']
 }
@@ -52,7 +52,7 @@ export async function toMcpUser(user: PublicUser): Promise<McpUser> {
     username,
     markdown,
     verification_status: user.verification_status ?? null,
-    verified_badge_visible: user.verified_badge_visible ?? null,
+    is_verified_badge_visible: user.is_verified_badge_visible ?? null,
     verified_display_name: verifiedDisplayName,
     account_type: user.account_type,
   }

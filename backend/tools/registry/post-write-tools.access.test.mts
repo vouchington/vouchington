@@ -129,23 +129,23 @@ describe('post MCP write guards — real services', () => {
       return (result.post as { id: string }).id
     }
     const root = await make()
-    const middle = await make({ post_type: 'comment', parent_id: root })
-    const leaf = await make({ post_type: 'comment', parent_id: middle })
+    const middle = await make({ post_type: 'comment', parent_post_id: root })
+    const leaf = await make({ post_type: 'comment', parent_post_id: middle })
     await setPostDeletedForTest(middle)
     expect(
       await callStructuredMcpTool(
         user,
         'create_post',
-        input({ post_type: 'comment', parent_id: leaf }),
+        input({ post_type: 'comment', parent_post_id: leaf }),
         SCOPES,
       ),
-    ).toMatchObject({ post: { parent_id: leaf } })
+    ).toMatchObject({ post: { parent_post_id: leaf } })
     await lockPost(root, user.id)
     expect(
       await callRejectedMcpTool(
         user,
         'create_post',
-        input({ post_type: 'comment', parent_id: leaf }),
+        input({ post_type: 'comment', parent_post_id: leaf }),
         SCOPES,
       ),
     ).toContain('locked')

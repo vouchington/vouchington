@@ -18,7 +18,7 @@ Not partitioned — growth: unbounded.
 | `expired_at`                                          | `timestamp with time zone` | yes      |                              |          |           |           | When the projection entered an expired state.                                                                 |
 | `past_due_at`                                         | `timestamp with time zone` | yes      |                              |          |           |           | When the projection entered a past-due state.                                                                 |
 | `paused_at`                                           | `timestamp with time zone` | yes      |                              |          |           |           | When the projection entered a paused state.                                                                   |
-| `cancel_at_period_end`                                | `boolean`                  | no       | `false`                      |          |           |           | Whether cancellation takes effect after the current period.                                                   |
+| `should_cancel_at_period_end`                         | `boolean`                  | no       | `false`                      |          |           |           | Whether cancellation takes effect after the current period.                                                   |
 | `latest_change_id`                                    | `uuid`                     | yes      |                              |          |           |           | Latest append-only audit row for this projection.                                                             |
 | `renewal_price_increase_notified_observation_id`      | `uuid`                     | yes      |                              |          |           |           | Provider observation claimed for the most recent renewal price notification.                                  |
 | `renewal_price_increase_notified_provider_product_id` | `uuid`                     | yes      |                              |          |           |           | Provider product for the most recent renewal price notification.                                              |
@@ -53,6 +53,7 @@ _none_
 - `fk_memberships__renewal_observation_snapshot`: `FOREIGN KEY (renewal_price_increase_notified_observation_id, renewal_price_increase_notified_provider_product_id, renewal_price_increase_notified_minor_units, renewal_price_increase_notified_currency_code, renewal_price_increase_notified_effective_at) REFERENCES membership_provider_observations(id, renewal_membership_provider_product_id, renewal_price_minor_units, renewal_price_currency_code, renewal_effective_at) ON DELETE RESTRICT`
 - `fk_memberships__source_user`: `FOREIGN KEY (membership_source_id, user_id) REFERENCES membership_sources(id, user_id) ON DELETE RESTRICT`
 - `fk_memberships_latest_change_id`: `FOREIGN KEY (latest_change_id) REFERENCES membership_changes(id) ON DELETE SET NULL`
+- `memberships_id_fkey`: `FOREIGN KEY (id) REFERENCES retained_membership_identities(id) ON DELETE RESTRICT`
 - `memberships_membership_product_id_fkey`: `FOREIGN KEY (membership_product_id) REFERENCES membership_products(id) ON DELETE RESTRICT`
 - `memberships_membership_source_id_fkey`: `FOREIGN KEY (membership_source_id) REFERENCES membership_sources(id) ON DELETE RESTRICT`
 - `memberships_renewal_price_increase_notified_currency_code_fkey`: `FOREIGN KEY (renewal_price_increase_notified_currency_code) REFERENCES currencies(code) ON DELETE RESTRICT`
@@ -75,4 +76,5 @@ _none_
 
 **Triggers:**
 
+- `trigger_memberships_register_retained_identity`: `CREATE TRIGGER trigger_memberships_register_retained_identity BEFORE INSERT ON public.memberships FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('membership')`
 - `trigger_memberships_updated_at`: `CREATE TRIGGER trigger_memberships_updated_at BEFORE UPDATE ON public.memberships FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

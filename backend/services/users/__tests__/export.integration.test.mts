@@ -70,8 +70,8 @@ describe('writeExportFiles', () => {
       community_memberships_visibility: 'nobody',
       direct_messages_audience: 'users',
       processing_restricted_at: true,
-      third_party_marketing: true,
-      hn_discussions: true,
+      should_receive_third_party_marketing: true,
+      should_import_hacker_news_discussions: true,
       country: 'us',
       ui_locale: 'EN_us',
     })
@@ -88,8 +88,8 @@ describe('writeExportFiles', () => {
         rss_feed_follows_visibility: 'mutual_followers',
         community_memberships_visibility: 'nobody',
         direct_messages_audience: 'users',
-        third_party_marketing: 'true',
-        hn_discussions: 'true',
+        should_receive_third_party_marketing: 'true',
+        should_import_hacker_news_discussions: 'true',
         country: 'US',
         ui_locale: 'en',
       })
@@ -107,7 +107,7 @@ describe('writeExportFiles', () => {
     if (!user) throw new Error('Expected user to be created')
 
     await updateUserFields(user.id, {
-      third_party_marketing: false,
+      should_receive_third_party_marketing: false,
     })
 
     const parentDir = await mkdtemp(join(tmpdir(), 'voucha-export-test-'))
@@ -117,7 +117,7 @@ describe('writeExportFiles', () => {
 
       const profileCsv = await readFile(join(exportDir, 'profile.csv'), 'utf8')
       const profile = readSingleRowCsv(profileCsv)
-      expect(profile.third_party_marketing).toBe('false')
+      expect(profile.should_receive_third_party_marketing).toBe('false')
     } finally {
       await rm(parentDir, { recursive: true, force: true })
     }

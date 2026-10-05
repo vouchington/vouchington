@@ -120,7 +120,10 @@ describe('inbound ActivityPub transaction rollback', () => {
       }),
     ).rejects.toThrow('Injected transaction rollback for test')
 
-    expect(await getApPostLikesTally(post.id)).toEqual({ ap_likes_score: 1, ap_likes_count: 1 })
+    expect(await getApPostLikesTally(post.id)).toEqual({
+      activitypub_likes_score: 1,
+      activitypub_likes_count: 1,
+    })
     expect(await recordInboxActivity(activity.id, activity.type, activity.actor)).toBe(true)
   })
 })

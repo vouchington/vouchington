@@ -29,7 +29,7 @@ export function getAdminReviewQueuePostHref(post: AdminReviewQueuePost) {
     return topicRecommendationReviewQueueHref(post)
   }
   if (post.post_type === 'comment') {
-    const rootIdentifier = post.root_slug ?? post.root_id
+    const rootIdentifier = post.root_slug ?? post.root_post_id
     if (!rootIdentifier || !post.root_post_type) return createPostPathname('discussion', identifier)
     if (post.root_post_type === 'topic_recommendation') {
       return topicRecommendationReviewQueueHref(post)

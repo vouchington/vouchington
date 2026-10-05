@@ -4,7 +4,7 @@
 // those parsers never looked at (an unknown key).
 
 export type CopyrightFormIntakeReviewRequest = {
-  accepted: boolean
+  is_accepted: boolean
   rationale: string
 }
 

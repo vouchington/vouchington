@@ -49,8 +49,8 @@ describe('getPostFeedIds (filtering)', () => {
     const comment = await createTestPost({
       user: commenter,
       post_type: 'comment',
-      parent_id: rootPost.id,
-      root_id: rootPost.id,
+      parent_post_id: rootPost.id,
+      root_post_id: rootPost.id,
     })
 
     // Use explicit post_types to include comments (excluded from default feed)

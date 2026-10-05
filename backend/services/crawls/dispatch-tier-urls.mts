@@ -50,8 +50,8 @@ async function dispatchTierCrawlUrls(
     FROM eligible_urls work
     JOIN urls u ON u.id = work.url_id
     JOIN url_hostnames h ON h.id = u.hostname_id
-    WHERE h.crawlable = true
-      AND h.blocked = false
+    WHERE h.is_crawlable = true
+      AND h.is_blocked = false
       `)
   if (tier === 2) {
     const positive = positiveVoteConditions(getEntityRelationUrlTablesWithElections()).join(' OR ')

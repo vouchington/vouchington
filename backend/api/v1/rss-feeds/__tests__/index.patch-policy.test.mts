@@ -8,8 +8,8 @@ import {
   getRssFeedUnreliableStatusCodesForTest,
 } from '@voucha/test-helpers'
 
-describe('PATCH /api/v1/rss-feeds/:id — ignore_robots_txt admin field', () => {
-  it('admin can set ignore_robots_txt to true', async () => {
+describe('PATCH /api/v1/rss-feeds/:id — should_ignore_robots_txt admin field', () => {
+  it('admin can set should_ignore_robots_txt to true', async () => {
     const admin = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 8)
     const topicId = await insertTestTopic({
@@ -24,12 +24,15 @@ describe('PATCH /api/v1/rss-feeds/:id — ignore_robots_txt admin field', () => 
     const request = createRequest()
     await request.authenticateAs(admin!)
 
-    await request.patch(`/api/v1/rss-feeds/${feedId}`).send({ ignore_robots_txt: true }).expect(200)
+    await request
+      .patch(`/api/v1/rss-feeds/${feedId}`)
+      .send({ should_ignore_robots_txt: true })
+      .expect(200)
 
     expect(await getRssFeedIgnoreRobotsTxtForTest(feedId)).toBe(true)
   })
 
-  it('admin can set ignore_robots_txt to false', async () => {
+  it('admin can set should_ignore_robots_txt to false', async () => {
     const admin = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 8)
     const topicId = await insertTestTopic({
@@ -46,13 +49,13 @@ describe('PATCH /api/v1/rss-feeds/:id — ignore_robots_txt admin field', () => 
 
     await request
       .patch(`/api/v1/rss-feeds/${feedId}`)
-      .send({ ignore_robots_txt: false })
+      .send({ should_ignore_robots_txt: false })
       .expect(200)
 
     expect(await getRssFeedIgnoreRobotsTxtForTest(feedId)).toBe(false)
   })
 
-  it('admin can clear ignore_robots_txt by setting it to null', async () => {
+  it('admin can clear should_ignore_robots_txt by setting it to null', async () => {
     const admin = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 8)
     const topicId = await insertTestTopic({
@@ -68,15 +71,21 @@ describe('PATCH /api/v1/rss-feeds/:id — ignore_robots_txt admin field', () => 
     await request.authenticateAs(admin!)
 
     // First set it
-    await request.patch(`/api/v1/rss-feeds/${feedId}`).send({ ignore_robots_txt: true }).expect(200)
+    await request
+      .patch(`/api/v1/rss-feeds/${feedId}`)
+      .send({ should_ignore_robots_txt: true })
+      .expect(200)
 
     // Then clear it
-    await request.patch(`/api/v1/rss-feeds/${feedId}`).send({ ignore_robots_txt: null }).expect(200)
+    await request
+      .patch(`/api/v1/rss-feeds/${feedId}`)
+      .send({ should_ignore_robots_txt: null })
+      .expect(200)
 
     expect(await getRssFeedIgnoreRobotsTxtForTest(feedId)).toBeNull()
   })
 
-  it('non-admin gets 403 when trying to set ignore_robots_txt', async () => {
+  it('non-admin gets 403 when trying to set should_ignore_robots_txt', async () => {
     const regularUser = await createTestUser()
     const admin = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 8)
@@ -92,10 +101,13 @@ describe('PATCH /api/v1/rss-feeds/:id — ignore_robots_txt admin field', () => 
     const request = createRequest()
     await request.authenticateAs(regularUser!)
 
-    await request.patch(`/api/v1/rss-feeds/${feedId}`).send({ ignore_robots_txt: true }).expect(403)
+    await request
+      .patch(`/api/v1/rss-feeds/${feedId}`)
+      .send({ should_ignore_robots_txt: true })
+      .expect(403)
   })
 
-  it('admin gets 422 when ignore_robots_txt is not a boolean or null', async () => {
+  it('admin gets 422 when should_ignore_robots_txt is not a boolean or null', async () => {
     const admin = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 8)
     const topicId = await insertTestTopic({
@@ -112,7 +124,7 @@ describe('PATCH /api/v1/rss-feeds/:id — ignore_robots_txt admin field', () => 
 
     await request
       .patch(`/api/v1/rss-feeds/${feedId}`)
-      .send({ ignore_robots_txt: 'yes' })
+      .send({ should_ignore_robots_txt: 'yes' })
       .expect(422)
   })
 

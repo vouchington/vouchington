@@ -53,8 +53,8 @@ const mockUpdateSpending = vi.mocked(updateSpendingCategoryAttributes)
 const baseTopic: Record<string, unknown> = {
   id: 'topic-1',
   topic_type: 'bank_account',
-  noindex: false,
-  allow_reviews: true,
+  is_noindexed: false,
+  should_allow_reviews: true,
 }
 
 function makeFormEvent(values: Record<string, string> = {}) {
@@ -219,14 +219,14 @@ describe('useTopicEditPage error handling', () => {
     expect(toastMock.success).toHaveBeenCalledWith('Spending category updated')
   })
 
-  it('persists noindex/allow_reviews toggles via handleFlagsSubmit', async () => {
+  it('persists noindex/should_allow_reviews toggles via handleFlagsSubmit', async () => {
     mockUpdateTopic.mockResolvedValueOnce(
       makeTopicMutationResponse({
         topic: makeTopic({
           id: 'topic-1',
           topic_type: 'bank_account',
-          noindex: true,
-          allow_reviews: false,
+          is_noindexed: true,
+          should_allow_reviews: false,
         }),
       }) as never,
     )
@@ -245,8 +245,8 @@ describe('useTopicEditPage error handling', () => {
     })
 
     expect(mockUpdateTopic).toHaveBeenCalledWith('topic-1', {
-      noindex: true,
-      allow_reviews: false,
+      is_noindexed: true,
+      should_allow_reviews: false,
     })
     expect(toastMock.success).toHaveBeenCalledWith('Visibility settings updated')
   })

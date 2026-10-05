@@ -54,7 +54,7 @@ export async function getMyCommunityVacationSettings(
   options: { communityId: string },
 ): Promise<CommunityMemberVacationSettings> {
   const { rows } = await read<
-    CommunityMemberVacation & { suppress_community_digests_while_on_vacation: boolean }
+    CommunityMemberVacation & { should_suppress_community_digests_while_on_vacation: boolean }
   >(sql`/* getMyCommunityVacationSettings */
     SELECT
       v.community_id,
@@ -63,7 +63,7 @@ export async function getMyCommunityVacationSettings(
       v.ends_at,
       v.created_at,
       v.updated_at,
-      cm.suppress_community_digests_while_on_vacation
+      cm.should_suppress_community_digests_while_on_vacation
     FROM community_members cm
     LEFT JOIN community_member_vacations v
       ON v.community_id = cm.community_id
@@ -88,8 +88,8 @@ export async function getMyCommunityVacationSettings(
             created_at: row.created_at,
             updated_at: row.updated_at,
           },
-    suppress_community_digests_while_on_vacation:
-      row?.suppress_community_digests_while_on_vacation ?? false,
+    should_suppress_community_digests_while_on_vacation:
+      row?.should_suppress_community_digests_while_on_vacation ?? false,
   }
 }
 
@@ -97,14 +97,16 @@ export async function setSuppressCommunityDigestsWhileOnVacation(
   currentUserId: string,
   options: { communityId: string; suppress: boolean },
 ): Promise<boolean> {
-  const { rows } = await write<{ suppress_community_digests_while_on_vacation: boolean }>(sql`
+  const { rows } = await write<{
+    should_suppress_community_digests_while_on_vacation: boolean
+  }>(sql`
     /* setSuppressCommunityDigestsWhileOnVacation */
     UPDATE community_members
-    SET suppress_community_digests_while_on_vacation = ${options.suppress}
+    SET should_suppress_community_digests_while_on_vacation = ${options.suppress}
     WHERE community_id = ${options.communityId}
       AND user_id = ${currentUserId}
       AND removed_at IS NULL
-    RETURNING suppress_community_digests_while_on_vacation
+    RETURNING should_suppress_community_digests_while_on_vacation
   `)
-  return rows[0]?.suppress_community_digests_while_on_vacation ?? false
+  return rows[0]?.should_suppress_community_digests_while_on_vacation ?? false
 }

@@ -117,7 +117,7 @@ describe('rejectMembershipProviderEvidence fallback access', () => {
       providerApplicationId: directSku.provider_application_id,
     })
     await attachTestStripeProductionProviderObservation({
-      auto_renews: false,
+      should_auto_renew: false,
       membership_id: direct.id,
       membership_provider_product_id: directSku.membership_provider_product_id,
     })
@@ -142,13 +142,13 @@ describe('rejectMembershipProviderEvidence fallback access', () => {
     expect(restored).toMatchObject({ plan: 'plus', status: 'active' })
     expect(restored?.id).not.toBe(direct.id)
     await expect(getTestMembershipRaw(restored!.id)).resolves.toMatchObject({
-      cancel_at_period_end: true,
+      should_cancel_at_period_end: true,
       source_auto_renews: false,
       stripe_subscription_id: stripeSubscriptionId,
     })
     expect(
       (await getMembershipHistory(member.id)).find(change => change.membership_id === restored?.id),
-    ).toMatchObject({ cancel_at_period_end: true })
+    ).toMatchObject({ should_cancel_at_period_end: true })
   })
 
   it('restores verified direct fallback despite stale past-due and expiry state', async () => {

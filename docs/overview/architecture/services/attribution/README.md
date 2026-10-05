@@ -9,14 +9,14 @@ Tracks which user referred a session, linking anonymous visitors to a referrer f
 1. Visitor lands on `/@username` or any URL with `?referrer=username`
 2. Next.js proxy ([`web/proxy.ts`](../../../../../web/proxy.ts)) fires `POST /api/v1/attribution/referrer` (fire-and-forget via `after()`)
 3. Service resolves the referrer to a `user_id` and upserts a `session_referral_attributions` row (see [Retention & dedup](#retention--dedup)); fires a `referral_click` notification to the referrer (5-min debounced at the queue layer, and only on a genuinely new (session, referrer) pair)
-4. On signup, [`backend/services/users/create.mts`](../../../../../backend/services/users/create.mts) calls `getReferrerIdForSession(sessionId)` to associate the new user with the referrer via `users.referrer_id`, updates `signed_up_at` on the attribution row, and fires a `referral_signup` notification
+4. On signup, [`backend/services/users/create.mts`](../../../../../backend/services/users/create.mts) calls `getReferrerIdForSession(sessionId)` to associate the new user with the referrer via `users.referrer_user_id`, updates `signed_up_at` on the attribution row, and fires a `referral_signup` notification
 
 ## Table: `session_referral_attributions`
 
 | Column                               | Type        | Notes                                                                                                                         |
 | ------------------------------------ | ----------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `session_id`                         | UUID        | Anonymous session (no FK — sessions live outside PostgreSQL)                                                                  |
-| `referrer_id`                        | UUID?       | FK to users, `ON DELETE SET NULL` — attribution row is preserved but column is set to NULL if referrer deletes account        |
+| `referrer_user_id`                   | UUID?       | FK to users, `ON DELETE SET NULL` — attribution row is preserved but column is set to NULL if referrer deletes account        |
 | `user_id`                            | UUID?       | FK to users, `ON DELETE SET NULL` — set on signup; attribution row is preserved but column is set to NULL on account deletion |
 | `landing_url`                        | TEXT        | Max 2048 chars                                                                                                                |
 | `signed_up_at`                       | TIMESTAMPTZ | Set when the session's visitor signs up; NULL for clicks that never converted                                                 |
@@ -36,7 +36,7 @@ attributions should ever age out.
   the final decision — a partition-drop retention model was considered and rejected for this table
   because a `DROP` is unconditional and can't honor the `user_id IS NULL` predicate.
 - **Repeat clicks dedup by moving to latest, not by inserting another row.** `createSessionReferralAttribution`
-  deletes any prior unconverted row for the same `(session_id, referrer_id)` pair and reinserts with
+  deletes any prior unconverted row for the same `(session_id, referrer_user_id)` pair and reinserts with
   a fresh `id`, so the row's recency (and its 30-day cutoff) tracks the _last_ click. A referral
   click notification only fires for a genuinely new pair, not on every repeat click. A
   transaction-scoped advisory lock on that pair serializes concurrent replacements before their
@@ -82,7 +82,7 @@ currentUserCanViewReferralClickLog(currentUser, referrerId)
 
 ## Consumers
 
-- **Signup flow** ([`backend/services/users/create.mts`](../../../../../backend/services/users/create.mts)) — sets `users.referrer_id`, calls `updateAttributionSignup`, enqueues referral signup notification
+- **Signup flow** ([`backend/services/users/create.mts`](../../../../../backend/services/users/create.mts)) — sets `users.referrer_user_id`, calls `updateAttributionSignup`, enqueues referral signup notification
 - **Attribution API** ([`backend/api/v1/attribution/`](../../../../../backend/api/v1/attribution/)) — records clicks, enqueues referral click notification
 - **Click log API** ([`backend/api/v1/my/referral-clicks.mts`](../../../../../backend/api/v1/my/referral-clicks.mts)) — returns paginated click history to the referrer
 - **Prioritized referral links** ([`backend/services/prioritized-referral-links/`](../../../../../backend/services/prioritized-referral-links/)) — tier 3: "users who referred the current user"

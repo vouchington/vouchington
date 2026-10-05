@@ -19,9 +19,9 @@ describe('parseEntityJob', () => {
     expect(() =>
       parseEntityJob('processTopicCreated', {
         id: 'topic',
-        updates: { name: 'News', slug: 'news', noindex: 'yes' },
+        updates: { name: 'News', slug: 'news', is_noindexed: 'yes' },
       }),
-    ).toThrow(/noindex must be a boolean/)
+    ).toThrow(/is_noindexed must be a boolean/)
     expect(() => parseEntityJob('missingJob', {})).toThrow(/unknown job missingJob/)
   })
 })

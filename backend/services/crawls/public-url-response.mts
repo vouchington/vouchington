@@ -2,7 +2,13 @@ import type { CrawlBasic } from './types.mts'
 
 export type PaidSafeUrlCrawlHistory = Pick<
   CrawlBasic,
-  '__entity_type' | 'id' | 'created_at' | 'response_status_code' | 'completed_at' | 'title' | 'lang'
+  | '__entity_type'
+  | 'id'
+  | 'created_at'
+  | 'response_status_code'
+  | 'completed_at'
+  | 'title'
+  | 'language'
 >
 
 export function toPaidSafeUrlCrawlHistory(crawl: CrawlBasic): PaidSafeUrlCrawlHistory {
@@ -13,6 +19,6 @@ export function toPaidSafeUrlCrawlHistory(crawl: CrawlBasic): PaidSafeUrlCrawlHi
     response_status_code: crawl.response_status_code,
     completed_at: crawl.completed_at,
     title: crawl.title,
-    lang: crawl.lang,
+    language: crawl.language,
   }
 }

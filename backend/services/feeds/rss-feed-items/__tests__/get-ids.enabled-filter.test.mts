@@ -30,7 +30,7 @@ describe('getRssFeedItemFeedIds enabled-feed filtering', () => {
     // Disable the feed (overrideHumanLock so we can toggle from the system auto-updater state)
     await setRssFeedEnablementAsSystem({
       rssFeedId: feedId,
-      enabled: false,
+      is_enabled: false,
       overrideHumanLock: true,
     })
 
@@ -54,12 +54,12 @@ describe('getRssFeedItemFeedIds enabled-feed filtering', () => {
     // Disable then re-enable
     await setRssFeedEnablementAsSystem({
       rssFeedId: feedId,
-      enabled: false,
+      is_enabled: false,
       overrideHumanLock: true,
     })
     await setRssFeedEnablementAsSystem({
       rssFeedId: feedId,
-      enabled: true,
+      is_enabled: true,
       overrideHumanLock: true,
     })
 
@@ -85,7 +85,7 @@ describe('getRssFeedItemFeedIds enabled-feed filtering', () => {
     // Disable the feed — items from disabled feeds must be excluded from all delivery paths
     await setRssFeedEnablementAsSystem({
       rssFeedId: feedId,
-      enabled: false,
+      is_enabled: false,
       overrideHumanLock: true,
     })
 
@@ -156,7 +156,7 @@ describe('getRssFeedItemFeedIds enabled-feed filtering', () => {
     )
     await setRssFeedEnablementAsSystem({
       rssFeedId: matchingFeedId,
-      enabled: false,
+      is_enabled: false,
       overrideHumanLock: true,
     })
 
@@ -176,7 +176,7 @@ describe('getRssFeedItemFeedIds enabled-feed filtering', () => {
 
     await setRssFeedEnablementAsSystem({
       rssFeedId: matchingFeedId,
-      enabled: true,
+      is_enabled: true,
       overrideHumanLock: true,
     })
 

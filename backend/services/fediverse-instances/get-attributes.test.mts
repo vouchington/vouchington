@@ -46,7 +46,7 @@ describe('getFediverseInstanceAttributes', () => {
 
     expect(attributes).toMatchObject({
       software: 'mastodon',
-      open_registrations: true,
+      is_open_for_registrations: true,
       integration_status: 'pending',
     })
   })

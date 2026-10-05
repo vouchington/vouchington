@@ -10,7 +10,7 @@ export const processUrlCreated = async (
   const url = await getUrlById(id, options)
   if (!url) return
 
-  if (url.hostname.blocked || url.hostname.crawlable === false) return
+  if (url.hostname.is_blocked || url.hostname.is_crawlable === false) return
 
   await getOrCreateCrawlerForHostname(null, url.hostname.id, options)
 

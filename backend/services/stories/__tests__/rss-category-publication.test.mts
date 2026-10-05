@@ -100,7 +100,7 @@ describe('RSS category story-post publication', () => {
 
     await expect(
       getTestPostPublicationDirtyWorkForScope({ type: 'story', id: story.id }),
-    ).resolves.toMatchObject({ story_id: story.id })
+    ).resolves.toMatchObject({ story_identity_id: story.id })
   })
 
   it('retains category topic impacts for a story that has no discussion post', async () => {
@@ -169,7 +169,7 @@ describe('RSS category story-post publication', () => {
 
     await expect(
       getTestPostPublicationDirtyWorkForScope({ type: 'story', id: story.id }),
-    ).resolves.toMatchObject({ story_id: story.id })
+    ).resolves.toMatchObject({ story_identity_id: story.id })
   })
 
   it('captures a story scope when an alias unlink clears a topic', async () => {
@@ -184,7 +184,7 @@ describe('RSS category story-post publication', () => {
 
     await expect(
       getTestPostPublicationDirtyWorkForScope({ type: 'story', id: story.id }),
-    ).resolves.toMatchObject({ story_id: story.id })
+    ).resolves.toMatchObject({ story_identity_id: story.id })
   })
 
   it('re-reads a story-post association committed by concurrent story creation', async () => {
@@ -229,7 +229,7 @@ describe('RSS category story-post publication', () => {
       await Promise.all([creating, capturing])
       await expect(
         getTestPostPublicationDirtyWorkForScope({ type: 'story', id: story.id }),
-      ).resolves.toMatchObject({ story_id: story.id })
+      ).resolves.toMatchObject({ story_identity_id: story.id })
     } finally {
       releaseCreation.resolve()
       await creating.catch(() => undefined)

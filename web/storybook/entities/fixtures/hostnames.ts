@@ -14,7 +14,7 @@ export const hostnames = [
   topic_id: index % 2 === 0 ? topics[0]!.id : null,
   blocked: index === 1,
   crawlable: index !== 2,
-  link_rel_follow: index === 0,
+  should_follow_link_rel: index === 0,
 })) as unknown as Hostname[]
 export const hostnamesResponse: HostnameListResponse = {
   results: hostnames.map(hostname => ({ __entity_type: 'hostname', id: hostname.id })),

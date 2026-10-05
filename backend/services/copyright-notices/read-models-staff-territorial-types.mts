@@ -18,7 +18,7 @@ export type CopyrightStaffTerritorialCase = {
       FiniteValue<'copyright_territorial_party_roles'>,
       'poster' | 'notifier'
     >
-    referred_by_user_id: string | null
+    referred_by_id: string | null
     outcome: {
       result: FiniteValue<'copyright_eu_dispute_settlement_results'>
       decided_at: Date

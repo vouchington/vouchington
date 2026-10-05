@@ -67,7 +67,7 @@ export async function insertActiveFeedUnderOtherTopic(
     WHERE NOT EXISTS (SELECT 1 FROM media_types WHERE mime_type = 'application/rss+xml')
     ON CONFLICT DO NOTHING`)
   await tx(sql`
-    INSERT INTO url_hostnames (hostname, crawlable)
+    INSERT INTO url_hostnames (hostname, is_crawlable)
     SELECT ${feed.hostname}, TRUE
     WHERE NOT EXISTS (SELECT 1 FROM url_hostnames WHERE hostname = ${feed.hostname})
     ON CONFLICT DO NOTHING`)
@@ -162,7 +162,7 @@ export async function appendEnablementChange(
   enabled: boolean,
 ): Promise<void> {
   await tx(sql`
-    INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, enabled, reason)
+    INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason)
     SELECT 'enablement'::rss_feed_setting_change_types, f.id, ${enabled}, 'test'
     FROM rss_feeds f JOIN urls u ON u.id = f.rss_feed_url_id
     WHERE u.url = ${url}`)

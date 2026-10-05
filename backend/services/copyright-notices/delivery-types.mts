@@ -27,7 +27,7 @@ export type CopyrightDeliveryIntentRecord = {
   target_path: string | null
   channel: FiniteValue<'copyright_notice_delivery_intent_channels'>
   state: FiniteValue<'copyright_notice_delivery_intent_states'>
-  ses_message_id: string | null
+  amazon_ses_message_id: string | null
   delivery_attempt_count: number
 }
 

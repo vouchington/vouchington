@@ -135,7 +135,7 @@ export async function setTestCommunityDigestVacationSuppression(
 ): Promise<void> {
   await write(sql`/* setTestCommunityDigestVacationSuppression */
     UPDATE community_members
-    SET suppress_community_digests_while_on_vacation = ${suppress}
+    SET should_suppress_community_digests_while_on_vacation = ${suppress}
     WHERE community_id = ${communityId}
       AND user_id = ${userId}
       AND removed_at IS NULL

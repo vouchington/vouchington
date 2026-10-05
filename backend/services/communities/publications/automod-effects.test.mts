@@ -141,7 +141,7 @@ describe('unpublishPostForAutomodFlag', () => {
     expect(state?.automod_action).toBe('unpublish')
     expect(state?.automod_flagged_content_sha256?.equals(post.contentSha256)).toBe(true)
     expect(await readTestCommunityPostReviewHistory(post.postId)).toEqual([
-      { action: 'unpublish', actor_user_id: moderationSystemUserId, platform_override: false },
+      { action: 'unpublish', actor_user_id: moderationSystemUserId, is_platform_override: false },
     ])
     expect(await countTestRemoveModeratorActions(post.postId)).toBe(1)
   })

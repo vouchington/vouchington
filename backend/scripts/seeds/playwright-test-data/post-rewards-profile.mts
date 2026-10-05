@@ -50,7 +50,7 @@ async function seedPlaywrightRewardsProfile(query: TransactionQuery): Promise<vo
     `INSERT INTO spending_category_topics (topic_id, default_spending_frequency) VALUES ('019c64e6-b300-7000-b000-000000000001', 'monthly') ON CONFLICT (topic_id) DO NOTHING`,
   )
   await query(
-    `INSERT INTO individual_cards (id, individual_id, card_id, opened_on)
+    `INSERT INTO individual_cards (id, individual_id, card_topic_id, opened_on)
      SELECT ('019c64e6-c100-7000-b000-' || LPAD(sequence::text, 12, '0'))::uuid,
             $1,
             '019c64e6-f710-74cb-b36d-130af8ff1067',
@@ -58,7 +58,7 @@ async function seedPlaywrightRewardsProfile(query: TransactionQuery): Promise<vo
        FROM GENERATE_SERIES(1, 26) AS sequence
      ON CONFLICT (id) DO UPDATE
        SET individual_id = EXCLUDED.individual_id,
-           card_id = EXCLUDED.card_id,
+           card_topic_id = EXCLUDED.card_topic_id,
            opened_on = EXCLUDED.opened_on`,
     [testIndividualId],
   )
@@ -78,7 +78,7 @@ async function seedPlaywrightRewardsProfile(query: TransactionQuery): Promise<vo
     `INSERT INTO agent_prompts (id, agent_id, prompt, model_name, model_provider, activated_at) VALUES ( '019d0000-0000-7000-8000-000000000010', '019d0000-0000-7000-8000-000000000002', 'Moderate this post for self-promotion.', 'gpt-5.4-nano', 'openai', CURRENT_TIMESTAMP ) ON CONFLICT (id) DO NOTHING`,
   )
   await query(
-    `INSERT INTO agent_moderations (post_id, input_sha256, prompt_id, agent_id, results, flagged) VALUES ( '019c64e6-f720-7001-a001-000000000001', decode('0000000000000000000000000000000000000000000000000000000000000004', 'hex'), '019d0000-0000-7000-8000-000000000010', '019d0000-0000-7000-8000-000000000002', '{"flagged": false}'::jsonb, false ), ( '019c64e6-f720-7002-a002-000000000001', decode('0000000000000000000000000000000000000000000000000000000000000007', 'hex'), '019d0000-0000-7000-8000-000000000010', '019d0000-0000-7000-8000-000000000002', '{"flagged": true}'::jsonb, true ), ( '019c64e6-f730-7001-8001-000000000001', decode('000000000000000000000000000000000000000000000000000000000000000a', 'hex'), '019d0000-0000-7000-8000-000000000010', '019d0000-0000-7000-8000-000000000002', '{"flagged": false}'::jsonb, false ) ON CONFLICT DO NOTHING`,
+    `INSERT INTO agent_moderations (post_id, input_sha256, prompt_id, agent_id, results, is_flagged) VALUES ( '019c64e6-f720-7001-a001-000000000001', decode('0000000000000000000000000000000000000000000000000000000000000004', 'hex'), '019d0000-0000-7000-8000-000000000010', '019d0000-0000-7000-8000-000000000002', '{"flagged": false}'::jsonb, false ), ( '019c64e6-f720-7002-a002-000000000001', decode('0000000000000000000000000000000000000000000000000000000000000007', 'hex'), '019d0000-0000-7000-8000-000000000010', '019d0000-0000-7000-8000-000000000002', '{"flagged": true}'::jsonb, true ), ( '019c64e6-f730-7001-8001-000000000001', decode('000000000000000000000000000000000000000000000000000000000000000a', 'hex'), '019d0000-0000-7000-8000-000000000010', '019d0000-0000-7000-8000-000000000002', '{"flagged": false}'::jsonb, false ) ON CONFLICT DO NOTHING`,
   )
 }
 

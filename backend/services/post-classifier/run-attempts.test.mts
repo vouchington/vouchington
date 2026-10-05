@@ -75,7 +75,7 @@ describe('post classifier provider attempts on the shared lifecycle (real PG)', 
       terminal_failure_kind: 'attempts-exhausted',
     })
     expect(await getPostClassifierLocalOutcomeFacts(setup.run.runId)).toMatchObject({
-      flagged: true,
+      is_flagged: true,
     })
   })
 
@@ -149,7 +149,7 @@ describe('post classifier provider attempts on the shared lifecycle (real PG)', 
       terminal_failure_kind: 'context-rejected',
     })
     expect(await getPostClassifierLocalOutcomeFacts(setup.run.runId)).toMatchObject({
-      flagged: false,
+      is_flagged: false,
     })
   })
 
@@ -169,7 +169,7 @@ describe('post classifier provider attempts on the shared lifecycle (real PG)', 
       outcomes_persisted_at: null,
     })
     expect(await getPostClassifierLocalOutcomeFacts(setup.run.runId)).toMatchObject({
-      flagged: true,
+      is_flagged: true,
     })
     expect(await reclaim(setup)).toEqual({ kind: 'terminal' })
   })

@@ -53,8 +53,8 @@ describe('index', () => {
   describe('setApplicationQuestions / getApplicationQuestions', () => {
     it('sets and retrieves questions', async () => {
       await setApplicationQuestions(owner.id, privateCommunity.id, [
-        { question: 'Why do you want to join?', field_type: 'long_text', required: true },
-        { question: 'Agree to rules?', field_type: 'checkbox', required: true },
+        { question: 'Why do you want to join?', field_type: 'long_text', is_required: true },
+        { question: 'Agree to rules?', field_type: 'checkbox', is_required: true },
       ])
 
       const questions = await getApplicationQuestions(privateCommunity.id)
@@ -65,7 +65,7 @@ describe('index', () => {
 
     it('replaces existing questions on re-set', async () => {
       await setApplicationQuestions(owner.id, privateCommunity.id, [
-        { question: 'New question only', field_type: 'short_text', required: false },
+        { question: 'New question only', field_type: 'short_text', is_required: false },
       ])
       const questions = await getApplicationQuestions(privateCommunity.id)
       expect(questions).toHaveLength(1)
@@ -86,7 +86,7 @@ describe('index', () => {
 
       await expect(
         setApplicationQuestions(owner.id, archivedCommunity.id, [
-          { question: 'Why do you want to join?', field_type: 'long_text', required: true },
+          { question: 'Why do you want to join?', field_type: 'long_text', is_required: true },
         ]),
       ).rejects.toMatchObject({ status: 403 })
     }, 60_000)

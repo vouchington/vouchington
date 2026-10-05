@@ -142,7 +142,7 @@ describe('index', () => {
 
         const patchResponse = await request
           .patch(`/api/v1/rss-feeds/${feedId}`)
-          .send({ enabled: false, discoverable: false, reason: 'test state update' })
+          .send({ is_enabled: false, discoverable: false, reason: 'test state update' })
           .expect(200)
 
         expect(patchResponse.body.rss_feed.is_enabled).toBe(false)

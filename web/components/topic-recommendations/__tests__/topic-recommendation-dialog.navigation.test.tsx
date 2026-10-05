@@ -10,7 +10,7 @@ function makePendingPost(id: string, slug: string): Post {
     post_type: 'topic_recommendation',
     title: `Title for ${id}`,
     markdown: 'Rationale',
-    root_id: null,
+    root_post_id: null,
     created_by_id: 'user-1',
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',

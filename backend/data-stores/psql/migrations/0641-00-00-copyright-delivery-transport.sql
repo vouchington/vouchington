@@ -22,6 +22,7 @@ CREATE TABLE copyright_notice_delivery_recipients (
 );
 
 -- Current automatic authority depends on the receipt and its retained recipient above.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_current_copyright_form_screening(submission_id uuid, screening_id uuid)
 RETURNS boolean LANGUAGE sql STABLE AS $$
   SELECT EXISTS (
@@ -37,7 +38,7 @@ RETURNS boolean LANGUAGE sql STABLE AS $$
       AND intake.requester_user_id IS NOT NULL AND notice.jurisdiction = 'us_dmca'
       AND char_length(notice.claimant_contact_ciphertext) > 0
       AND char_length(btrim(notice.work_description)) > 0
-      AND intake.good_faith_belief AND intake.accuracy_authority_under_penalty_of_perjury
+      AND intake.has_good_faith_belief AND intake.has_accuracy_authority_under_penalty_of_perjury
       AND char_length(intake.electronic_signature_ciphertext) > 0
       AND EXISTS (
         SELECT 1 FROM copyright_notice_targets target
@@ -52,7 +53,7 @@ RETURNS boolean LANGUAGE sql STABLE AS $$
       )
       AND NOT EXISTS (
         SELECT 1 FROM copyright_notice_form_intake_reviews review
-        WHERE review.copyright_notice_form_intake_id = intake.id AND NOT review.accepted
+        WHERE review.copyright_notice_form_intake_id = intake.id AND NOT review.is_accepted
       )
   );
 $$;

@@ -37,7 +37,7 @@ answers a post as `Post not found` unless every live node of its parent chain pa
 `canViewPostsBatch` policy both as the credential owner and as a signed-out reader. A post the owner
 sees only through private visibility (a private audience, a private community, or their own
 unapproved post) is therefore never returned, even to its author, and a topic recommendation is
-never returned. One hidden ancestor hides the whole thread, so a `parent_id`, title or count never
+never returned. One hidden ancestor hides the whole thread, so a `parent_post_id`, title or count never
 reveals it.
 
 `search_posts` applies the same rule to what it returns, so a search never lists a post these tools
@@ -58,7 +58,7 @@ fixtures.
 `get_post_descendants` pages with the REST descendants page (`getCommentDescendantsPage`), whose
 cursors are scoped to the thread and never to a viewer; a hidden reply prunes its subtree. A deleted
 post is left out rather than tombstoned, because the `view_posts` read model does not return it, so
-a `parent_id` can name a post that is not listed. Anonymous posts hide their author from every
+a `parent_post_id` can name a post that is not listed. Anonymous posts hide their author from every
 caller, including the author.
 
 `get_story` needs no owner-and-signed-out check. Stories are public, and the only viewer-dependent

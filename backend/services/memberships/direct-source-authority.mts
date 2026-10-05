@@ -56,7 +56,7 @@ export async function getDirectMembershipSourceAdmission(
     LEFT JOIN membership_provider_observations observation
       ON observation.id = source_state.membership_provider_observation_id
     LEFT JOIN membership_provider_evidence_records evidence
-      ON evidence.id = observation.membership_provider_evidence_id
+      ON evidence.id = observation.membership_provider_evidence_record_id
     LEFT JOIN membership_provider_lineages lineage
       ON lineage.id = source.membership_provider_lineage_id
     WHERE membership.user_id = ${userId}

@@ -15,7 +15,7 @@ describe('TopicFlagsSection', () => {
 
   function renderSection(overrides: Partial<React.ComponentProps<typeof TopicFlagsSection>> = {}) {
     const props = {
-      noindex: false,
+      is_noindexed: false,
       allowReviews: true,
       onFlagsSubmit: vi.fn<VitestLooseMock>(e => e.preventDefault()),
       setNoindex: vi.fn<VitestLooseMock>(),
@@ -34,12 +34,12 @@ describe('TopicFlagsSection', () => {
   })
 
   it('toggling noindex calls setNoindex with the new value', () => {
-    const { props, container } = renderSection({ noindex: false })
+    const { props, container } = renderSection({ is_noindexed: false })
     fireEvent.click(pw(container, 'topic-noindex'))
     expect(props.setNoindex).toHaveBeenCalledWith(true)
   })
 
-  it('toggling allow_reviews calls setAllowReviews with the new value', () => {
+  it('toggling should_allow_reviews calls setAllowReviews with the new value', () => {
     const { props, container } = renderSection({ allowReviews: true })
     fireEvent.click(pw(container, 'topic-allow-reviews'))
     expect(props.setAllowReviews).toHaveBeenCalledWith(false)

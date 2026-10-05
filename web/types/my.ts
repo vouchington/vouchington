@@ -68,8 +68,8 @@ export interface PointValuation {
 export interface RewardsProgramStatus {
   id: string
   rewards_program_status_id: string
-  since: string | null
-  until: string | null
+  started_on: string | null
+  expires_on: string | null
   rewards_program_status: {
     id: string
     name: string
@@ -79,7 +79,7 @@ export interface RewardsProgramStatus {
 
 export interface Household {
   id: string
-  owner_id: string
+  owner_user_id: string
   created_at?: string
   updated_at: string
 }

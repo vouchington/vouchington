@@ -30,8 +30,8 @@ describe('delegated post mutation contracts and transaction fences', () => {
   it.each([
     ['images', []],
     ['post_type', 'discussion'],
-    ['parent_id', crypto.randomUUID()],
-    ['root_id', crypto.randomUUID()],
+    ['parent_post_id', crypto.randomUUID()],
+    ['root_post_id', crypto.randomUUID()],
     ['community_id', crypto.randomUUID()],
     ['url', 'https://example.com'],
     ['url_id', crypto.randomUUID()],
@@ -57,7 +57,7 @@ describe('delegated post mutation contracts and transaction fences', () => {
         {
           idempotency_key: crypto.randomUUID(),
           title: 'Discussion',
-          root_id: crypto.randomUUID(),
+          root_post_id: crypto.randomUUID(),
         },
         SCOPES,
       ),
@@ -93,7 +93,10 @@ describe('delegated post mutation contracts and transaction fences', () => {
 
   it('rechecks enabled community types after a concurrent settings transaction', async () => {
     const user = await caller()
-    const community = await insertTestCommunity({ createdById: user.id, allow_review_posts: true })
+    const community = await insertTestCommunity({
+      createdById: user.id,
+      should_allow_review_posts: true,
+    })
     await insertTestCommunityMember({ communityId: community.id, userId: user.id, role: 'owner' })
     const args = {
       idempotency_key: crypto.randomUUID(),
@@ -147,7 +150,9 @@ describe('delegated post mutation contracts and transaction fences', () => {
         title: crypto.randomUUID(),
         markdown: 'Useful content',
         ...fields,
-        ...('post_type' in fields && fields.post_type === 'comment' ? { parent_id: parent } : {}),
+        ...('post_type' in fields && fields.post_type === 'comment'
+          ? { parent_post_id: parent }
+          : {}),
       }
       expect(await callRejectedMcpTool(user, 'create_post', body, SCOPES)).toContain(message)
       expect(
@@ -185,7 +190,7 @@ describe('delegated post mutation contracts and transaction fences', () => {
           ? {
               idempotency_key: crypto.randomUUID(),
               post_type: 'comment',
-              parent_id: root,
+              parent_post_id: root,
               markdown: 'Reply',
             }
           : { id: root, ...(name === 'update_post' ? { title: 'Changed' } : {}) }
@@ -221,7 +226,7 @@ describe('delegated post mutation contracts and transaction fences', () => {
           {
             idempotency_key: crypto.randomUUID(),
             post_type: 'comment',
-            parent_id: parent,
+            parent_post_id: parent,
             markdown: 'Reply',
           },
           SCOPES,

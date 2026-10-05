@@ -70,12 +70,12 @@ describe('CopyrightStaffLegalHoldReview', () => {
     await waitFor(() => {
       expect(mockAssessLegalHold).toHaveBeenCalledWith('hold-1', {
         rationale: 'The filing is not qualifying.',
-        from_original_claimant: false,
+        is_from_original_claimant: false,
         proceeding_kind: null,
         ccb_claim_kind: null,
         commenced_at: null,
         received_by_designated_agent_at: null,
-        same_material: false,
+        is_same_material: false,
         target_ids: ['target-1'],
       })
     })

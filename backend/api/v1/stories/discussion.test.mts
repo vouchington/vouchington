@@ -154,7 +154,7 @@ describe('discussion', () => {
 
       await setRssFeedDiscoverabilityAsSystem({
         rssFeedId: replayFeed.id,
-        enabled: false,
+        is_enabled: false,
         reason: 'test: mutable eligibility changed after commit',
       })
       const replay = await request
@@ -203,7 +203,7 @@ describe('discussion', () => {
       const nonDiscoverableFeed = await createTestRssFeed({})
       await setRssFeedDiscoverabilityAsSystem({
         rssFeedId: nonDiscoverableFeed.id,
-        enabled: false,
+        is_enabled: false,
         reason: 'test: non-discoverable for discussion bifurcation',
       })
 

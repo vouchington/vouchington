@@ -76,7 +76,7 @@ describe('C8 community actions applied in the completion transaction (real PG, m
     await processRun(await reserveCommunityModerationFixtureRun(fixture))
 
     const projection = await readCommunityModerationProjection(fixture.postId)
-    expect(projection.filter(row => row.flagged).map(row => row.prompt_id)).toEqual([flaggedId])
+    expect(projection.filter(row => row.is_flagged).map(row => row.prompt_id)).toEqual([flaggedId])
     const { review, flag } = await stateOf(fixture)
     expect(review).toMatchObject({ unpublished_at: null })
     expect(flag).toMatchObject({ automod_action: null })
@@ -155,7 +155,7 @@ describe('C8 community actions applied in the completion transaction (real PG, m
     expect(review).toMatchObject({ unpublished_at: null })
     expect(flag).toMatchObject({ automod_action: null })
     expect(
-      (await readCommunityModerationProjection(fixture.postId)).filter(row => row.flagged),
+      (await readCommunityModerationProjection(fixture.postId)).filter(row => row.is_flagged),
     ).toHaveLength(1)
   })
 

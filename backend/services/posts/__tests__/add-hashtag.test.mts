@@ -183,7 +183,7 @@ describe('addPostHashtag', () => {
     await approveTestPost(foreignRoot.id)
     const reply = await createPost(creator, WEB_PROVENANCE, {
       post_type: 'comment',
-      parent_id: foreignRoot.id,
+      parent_post_id: foreignRoot.id,
       markdown: `Reply ${suffix}`,
     })
     await approveTestPost(reply.id)

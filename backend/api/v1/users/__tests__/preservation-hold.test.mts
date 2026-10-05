@@ -104,7 +104,7 @@ describe('user preservation hold routes', () => {
       await request.delete(`/api/v1/users/${user.id}/preservation-hold`).expect(200)
 
       const audit = await getModeratorActionRowsForTest({ targetUserId: user.id })
-      expect(audit.map(row => [row.action_type, row.actor_id])).toEqual([
+      expect(audit.map(row => [row.action_type, row.actor_user_id])).toEqual([
         ['preservation_hold_release', admin.id],
         ['preservation_hold_place', admin.id],
       ])

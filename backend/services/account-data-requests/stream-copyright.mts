@@ -23,8 +23,8 @@ export async function* streamCopyrightFiledNotices(userId: string): CopyrightExp
     sql`/* streamCopyrightFiledNotices */
     SELECT notice.id AS notice_id, notice.received_at, notice.jurisdiction,
       notice.claimant_display_name, notice.claimant_contact_ciphertext, notice.work_description,
-      intake.idempotency_key, intake.good_faith_belief,
-      intake.accuracy_authority_under_penalty_of_perjury, intake.electronic_signature_ciphertext,
+      intake.idempotency_key, intake.has_good_faith_belief,
+      intake.has_accuracy_authority_under_penalty_of_perjury, intake.electronic_signature_ciphertext,
       submission.body_ciphertext,
       (SELECT erasure.created_at FROM copyright_notice_retention_erasures erasure
         WHERE erasure.copyright_notice_id = notice.id) AS erased_by_retention_at

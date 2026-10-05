@@ -17,8 +17,8 @@ export type CreateTestPostOptions = {
   description?: string
   markdown?: string
   post_type?: PostType
-  root_id?: string
-  parent_id?: string
+  root_post_id?: string
+  parent_post_id?: string
   url_id?: string
   url?: string
   broadcast?: PostBroadcast
@@ -48,8 +48,8 @@ export async function createTestPost(options: CreateTestPostOptions = {}) {
     slug: options.slug || `test-post-${random}`,
     markdown: options.markdown || options.description || `Test post description ${random}`,
     post_type: options.post_type || 'discussion',
-    root_id: options.root_id,
-    parent_id: options.parent_id,
+    root_post_id: options.root_post_id,
+    parent_post_id: options.parent_post_id,
     url_id: options.url_id,
     url: options.url,
     broadcast: options.broadcast,

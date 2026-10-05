@@ -55,7 +55,7 @@ export async function findUsersNeedingVoteWeightRecalculation(
           LEFT JOIN membership_provider_observations observation
             ON observation.id = source_state.membership_provider_observation_id
           LEFT JOIN membership_provider_evidence_records evidence
-            ON evidence.id = observation.membership_provider_evidence_id
+            ON evidence.id = observation.membership_provider_evidence_record_id
           WHERE memberships.user_id = users.id
             AND memberships.projection_ended_at IS NULL
             AND source.source_kind = 'family'

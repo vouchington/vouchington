@@ -57,7 +57,7 @@ export async function getTrendingPosts(
         p.id,
         `.append(buildHotScoreExpression('p')).append(sql` AS trending_score
       FROM posts p
-      JOIN posts root_post ON root_post.id = COALESCE(p.root_id, p.id)`)
+      JOIN posts root_post ON root_post.id = COALESCE(p.root_post_id, p.id)`)
 
   if (topicId !== undefined) {
     query.append('\n      INNER JOIN ').append(POST_TOPIC_CATEGORY_RELATION_TABLE).append(sql` r

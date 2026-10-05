@@ -24,7 +24,7 @@ describe('search', () => {
         `https://${hostname}/blog/post2`,
         `https://${hostname}/blog/post3`,
       ])
-      await updateUrlHostname(urls[0]!.hostname.id, { crawlable: true })
+      await updateUrlHostname(urls[0]!.hostname.id, { is_crawlable: true })
       const crawler = await createCrawler(user, {
         hostname_id: urls[0]!.hostname.id,
         crawler_type: 'fetch',
@@ -62,8 +62,8 @@ describe('search', () => {
         `https://${hostnameB}/articles/one`,
         `https://${hostnameB}/articles/two`,
       ])
-      await updateUrlHostname(urlsA[0]!.hostname.id, { crawlable: true })
-      await updateUrlHostname(urlsB[0]!.hostname.id, { crawlable: true })
+      await updateUrlHostname(urlsA[0]!.hostname.id, { is_crawlable: true })
+      await updateUrlHostname(urlsB[0]!.hostname.id, { is_crawlable: true })
       const crawlerA = await createCrawler(user, {
         hostname_id: urlsA[0]!.hostname.id,
         crawler_type: 'fetch',
@@ -92,7 +92,7 @@ describe('search', () => {
         `https://${hostname}/docs/page2`,
         `https://${hostname}/docs/page3`,
       ])
-      await updateUrlHostname(urls[0]!.hostname.id, { crawlable: true })
+      await updateUrlHostname(urls[0]!.hostname.id, { is_crawlable: true })
       const crawler = await createCrawler(user, {
         hostname_id: urls[0]!.hostname.id,
         crawler_type: 'fetch',
@@ -117,7 +117,7 @@ describe('search', () => {
         `https://${hostname}/docs/page1`,
         `https://${hostname}/docs/page2`,
       ])
-      await updateUrlHostname(urls[0]!.hostname.id, { crawlable: true })
+      await updateUrlHostname(urls[0]!.hostname.id, { is_crawlable: true })
       const crawler = await createCrawler(user, {
         hostname_id: urls[0]!.hostname.id,
         crawler_type: 'fetch',
@@ -144,7 +144,7 @@ describe('search', () => {
         `https://${hostname}/docs/page1`,
         `https://${hostname}/docs/page2`,
       ])
-      await updateUrlHostname(urls[0]!.hostname.id, { crawlable: true })
+      await updateUrlHostname(urls[0]!.hostname.id, { is_crawlable: true })
       const crawler = await createCrawler(user, {
         hostname_id: urls[0]!.hostname.id,
         crawler_type: 'fetch',

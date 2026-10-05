@@ -88,7 +88,7 @@ export async function getHouseholdSpendingCategoriesByUserId(
     FROM households h
     LEFT JOIN household_members hm
       ON hm.household_id = h.id AND hm.individual_id = ${individual.id}
-    WHERE h.owner_id = ${user.id} OR hm.individual_id IS NOT NULL
+    WHERE h.owner_user_id = ${user.id} OR hm.individual_id IS NOT NULL
   `,
     queryOptions,
   )
@@ -146,7 +146,7 @@ export async function getHouseholdSpendingCategoriesByUserId(
         OR ${currentUser.roles.includes('administrator')}
         OR EXISTS (
           SELECT 1 FROM households owned_household
-          WHERE owned_household.id = se.household_id AND owned_household.owner_id = ${currentUser.id}
+          WHERE owned_household.id = se.household_id AND owned_household.owner_user_id = ${currentUser.id}
         )
       ) AS can_manage,
       JSON_BUILD_OBJECT('id', sc.id, 'name', sc.name, 'slug', sc.slug) AS spending_category

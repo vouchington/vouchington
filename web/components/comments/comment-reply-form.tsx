@@ -94,8 +94,8 @@ export function CommentReplyForm({
       const recaptchaToken = await recaptcha.execute('create_comment')
       const { post: comment } = await createPost({
         post_type: 'comment',
-        parent_id: parentId,
-        root_id: rootId,
+        parent_post_id: parentId,
+        root_post_id: rootId,
         markdown: markdown.trim(),
         is_anonymous: isAnonymous,
         cf_turnstile_response: turnstile.token ?? undefined,

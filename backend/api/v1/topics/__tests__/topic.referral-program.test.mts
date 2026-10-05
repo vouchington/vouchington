@@ -74,7 +74,7 @@ describe('topic.referral-program', () => {
         // Initialize the referral program entry, then link the validation
         await adminRequest
           .patch(`/api/v1/topics/${topicId}/referral-program`)
-          .send({ company_id: null })
+          .send({ company_topic_id: null })
           .expect(200)
 
         await adminRequest
@@ -165,7 +165,7 @@ describe('topic.referral-program', () => {
 
         await adminRequest
           .patch(`/api/v1/topics/${topicId}/referral-program`)
-          .send({ company_id: null })
+          .send({ company_topic_id: null })
           .expect(200)
 
         await adminRequest

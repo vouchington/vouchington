@@ -42,7 +42,7 @@ describe('sendPostToFollowers', () => {
     const notification = await getNotificationById(notificationId)
 
     expect(notification?.delivery_type).toBe('manual_send')
-    expect(notification?.sent_by_user_id).toBe(sender.id)
+    expect(notification?.sent_by_id).toBe(sender.id)
     expect(notification?.post_id).toBe(post.id)
 
     await deleteTestNotificationPushIntent(follower.id, notificationId)

@@ -4,14 +4,14 @@ import { mergeRewardsProgramStatusPages } from './statuses-state'
 const first = {
   id: '00000000-0000-7000-8000-000000000001',
   rewards_program_status_id: 'topic-1',
-  since: null,
-  until: null,
+  started_on: null,
+  expires_on: null,
   rewards_program_status: { id: 'topic-1', name: 'Gold', slug: 'gold' },
 }
 
 describe('rewards program statuses state', () => {
   it('merges pages by ID while preserving local updates and delete tombstones', () => {
-    const updated = { ...first, since: '2026-01-01' }
+    const updated = { ...first, started_on: '2026-01-01' }
     expect(
       mergeRewardsProgramStatusPages(
         [

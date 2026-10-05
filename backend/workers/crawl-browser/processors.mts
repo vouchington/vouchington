@@ -85,7 +85,7 @@ export async function handleBrowserCrawlResult(
       title: content.title ?? null,
       links: (content.links ?? {}) as CrawlerHtmlStructuredObject,
       meta_tags: (content.meta ?? {}) as CrawlerHtmlStructuredObject,
-      lang: content.lang ?? null,
+      language: content.lang ?? null,
     })
     crawlId = crawl.id
   }

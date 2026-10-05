@@ -37,7 +37,7 @@ BEGIN
         WHERE assessment.id = NEW.authorizing_assessment_id
           AND assessment.assessed_by_id IS NULL
           AND assessment.copyright_notice_form_screening_id IS NOT NULL
-          AND NOT review.accepted AND review.reviewed_by_id IS NULL
+          AND NOT review.is_accepted AND review.reviewed_by_id IS NULL
       )
     ) THEN
     RAISE EXCEPTION 'copyright restriction human review requires an identified actor' USING ERRCODE = 'check_violation';

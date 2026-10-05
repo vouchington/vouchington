@@ -73,7 +73,7 @@ export async function claimCopyrightDeliveryIntent(
         OR (state = 'claimed' AND claimed_at < CURRENT_TIMESTAMP - ${COPYRIGHT_NOTICES_DELIVERY_LEASE_MINUTES}::integer * INTERVAL '1 minute'))
     RETURNING id, lease_token, copyright_notice_id, copyright_notice_email_intake_id,
       copyright_notice_submission_id, copyright_notice_correspondence_message_id, recipient_user_id,
-      recipient_role, delivery_kind, target_path, channel, state, ses_message_id, delivery_attempt_count,
+      recipient_role, delivery_kind, target_path, channel, state, amazon_ses_message_id, delivery_attempt_count,
       body_ciphertext
   `)
   return rows[0] ?? null
@@ -87,7 +87,7 @@ export async function markCopyrightDeliveryIntentSent(input: {
   const { rows } = await write(sql`/* markCopyrightDeliveryIntentSent */
     UPDATE copyright_notice_delivery_intents
     SET state = 'sent', sent_at = CURRENT_TIMESTAMP,
-      ses_message_id = ${input.sesMessageId ?? null}
+      amazon_ses_message_id = ${input.sesMessageId ?? null}
     WHERE id = ${input.intentId} AND state = 'claimed' AND lease_token = ${input.leaseToken}
     RETURNING id
   `)
@@ -104,7 +104,7 @@ export async function markCopyrightDeliveryIntentEmailSent(input: {
   const { rows } = await transaction(sql`/* markCopyrightDeliveryIntentEmailSent:intent */
     UPDATE copyright_notice_delivery_intents
     SET state = 'sent', sent_at = CURRENT_TIMESTAMP,
-      ses_message_id = ${input.sesMessageId}
+      amazon_ses_message_id = ${input.sesMessageId}
     WHERE id = ${input.intentId} AND state = 'claimed' AND lease_token = ${input.leaseToken} AND channel = 'email'
       AND copyright_notice_correspondence_message_id = ${input.correspondenceId}
     RETURNING id
@@ -151,7 +151,7 @@ export async function markCopyrightDeliveryIntentBouncedBySesMessageId(input: {
       FROM copyright_notice_delivery_intents intent
       JOIN copyright_notice_delivery_recipients recipient
         ON recipient.copyright_notice_delivery_intent_id = intent.id
-      WHERE intent.ses_message_id = ${input.sesMessageId} AND intent.state = 'sent'`,
+      WHERE intent.amazon_ses_message_id = ${input.sesMessageId} AND intent.state = 'sent'`,
   )
   const bouncedRecipients = new Set(input.recipientEmails.map(normalizeEmailAddress))
   const intentIds = rows.flatMap(row => {
@@ -208,7 +208,7 @@ async function insertCopyrightDeliveryIntent(
     ON CONFLICT (idempotency_key) DO NOTHING
     RETURNING id, lease_token, copyright_notice_id, copyright_notice_submission_id,
       copyright_notice_correspondence_message_id, recipient_user_id, recipient_role, delivery_kind, target_path,
-      channel, state, ses_message_id, delivery_attempt_count
+      channel, state, amazon_ses_message_id, delivery_attempt_count
   `)
   const intent = rows[0]
   if (intent) {
@@ -219,7 +219,7 @@ async function insertCopyrightDeliveryIntent(
     await transaction<CopyrightDeliveryIntentRecord>(sql`/* createCopyrightDeliveryIntent:existing */
     SELECT id, lease_token, copyright_notice_id, copyright_notice_submission_id,
       copyright_notice_correspondence_message_id, recipient_user_id, recipient_role, delivery_kind, target_path,
-      channel, state, ses_message_id, delivery_attempt_count
+      channel, state, amazon_ses_message_id, delivery_attempt_count
     FROM copyright_notice_delivery_intents
     WHERE idempotency_key = ${input.idempotencyKey}
   `)

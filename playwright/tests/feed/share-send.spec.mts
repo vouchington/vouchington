@@ -129,7 +129,7 @@ test.describe('Feed Share And Send', () => {
           SELECT COUNT(*)::INT AS count
           FROM post_feed_shares
           WHERE recipient_user_id = $1
-            AND shared_by_user_id = $2
+            AND shared_by_id = $2
             AND post_id = $3
         `,
           [followerId, sharerId, sharedPostId],
@@ -181,7 +181,7 @@ test.describe('Feed Share And Send', () => {
           SELECT COUNT(*)::INT AS count
           FROM notifications
           WHERE user_id = $1
-            AND sent_by_user_id = $2
+            AND sent_by_id = $2
             AND post_id = $3
             AND delivery_type = 'manual_send'
         `,

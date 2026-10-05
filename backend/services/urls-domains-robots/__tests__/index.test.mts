@@ -50,7 +50,7 @@ describe('urls-domains-robots', () => {
 
   it('returns DISALLOW when hostname has crawlable=false in url_hostnames', async () => {
     const domain = randomDomain()
-    await insertTestUrlHostname({ hostname: domain, crawlable: false })
+    await insertTestUrlHostname({ hostname: domain, is_crawlable: false })
 
     const result = await fetchRobotsTxtForTest(domain)
 

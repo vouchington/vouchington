@@ -128,8 +128,8 @@ describe('MCP output schema contract for topic reads — real DB', () => {
     })
     const card = await getTopicByAny(cardA)
     await updateCardAttributes(admin, card!, {
-      bank_id: bank,
-      brand_id: brand,
+      bank_topic_id: bank,
+      brand_topic_id: brand,
       annual_fee: { amount: 9500, currency: 'usd' },
     })
 
@@ -160,7 +160,7 @@ describe('MCP output schema contract for topic reads — real DB', () => {
       topicType: 'rewards_program',
     })
     await updateRewardsProgramAttributes(admin, (await getTopicByAny(program))!, {
-      company_id: company,
+      company_topic_id: company,
     })
 
     const result = await callStructuredMcpTool(caller, 'get_topic_details', { topic_id: program }, [

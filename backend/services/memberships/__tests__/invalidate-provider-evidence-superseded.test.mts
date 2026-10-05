@@ -48,7 +48,7 @@ describe('rejectMembershipProviderEvidence superseded observations', () => {
 
     await expect(
       rejectMembershipProviderEvidence(
-        olderObservation.membership_provider_evidence_id,
+        olderObservation.membership_provider_evidence_record_id,
         'An older accepted provider observation was rejected',
       ),
     ).resolves.toEqual({ invalidated: true, membershipId: direct.id })
@@ -60,7 +60,7 @@ describe('rejectMembershipProviderEvidence superseded observations', () => {
     })
     await expect(getTestMembershipSourceState(direct.id)).resolves.toMatchObject({
       cancelled_at: expect.any(Date),
-      auto_renews: false,
+      should_auto_renew: false,
     })
     await expect(getMembershipByUserId(member.id)).resolves.toMatchObject({
       plan: 'plus',
@@ -71,7 +71,8 @@ describe('rejectMembershipProviderEvidence superseded observations', () => {
         expect.objectContaining({
           change_type: 'cancellation',
           membership_id: direct.id,
-          membership_provider_evidence_id: olderObservation.membership_provider_evidence_id,
+          membership_provider_evidence_record_id:
+            olderObservation.membership_provider_evidence_record_id,
         }),
       ]),
     )

@@ -114,7 +114,7 @@ describe('create', () => {
     )
   })
 
-  it('new user created with session attribution gets referrer_id set', async () => {
+  it('new user created with session attribution gets referrer_user_id set', async () => {
     const referrerUser = await createTestUserDirect()
 
     const sessionId = v7()
@@ -128,7 +128,7 @@ describe('create', () => {
     expect(await getUserReferrerId(newUser.id)).toBe(referrerUser!.id)
   })
 
-  it('new user with no session attribution gets referrer_id = null', async () => {
+  it('new user with no session attribution gets referrer_user_id = null', async () => {
     const newUser = await upsertUser({
       emailAddress: createRandomEmailAddress(),
       sessionId: v7(),
@@ -155,7 +155,7 @@ describe('create', () => {
     await expect.poll(() => getFollowExists(newUser.id, referrer.id)).toBe(true)
   })
 
-  it('existing user logging in does not have referrer_id overwritten', async () => {
+  it('existing user logging in does not have referrer_user_id overwritten', async () => {
     const referrerUser = await createTestUserDirect()
 
     // Create a new user with a referrer
@@ -163,7 +163,7 @@ describe('create', () => {
     await insertSessionReferralAttribution(sessionId, referrerUser!.id)
     const emailAddress = createRandomEmailAddress()
     const existingUser = await upsertUser({ emailAddress, sessionId, deviceId: v7() })
-    // Verify referrer_id is set
+    // Verify referrer_user_id is set
     expect(await getUserReferrerId(existingUser.id)).toBe(referrerUser!.id)
 
     // Login again with a different session that has a different referrer
@@ -171,7 +171,7 @@ describe('create', () => {
     const newSessionId = v7()
     await insertSessionReferralAttribution(newSessionId, anotherReferrer!.id)
 
-    // This should return the existing user without overwriting referrer_id
+    // This should return the existing user without overwriting referrer_user_id
     await upsertUser({ emailAddress, sessionId: newSessionId, deviceId: v7() })
 
     expect(await getUserReferrerId(existingUser.id)).toBe(referrerUser!.id)

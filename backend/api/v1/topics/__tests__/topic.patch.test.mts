@@ -71,7 +71,7 @@ describe('Topic PATCH Routes', () => {
       // Create the rewards_program extension row
       await request
         .patch(`/api/v1/topics/${rewardsProgramId}/rewards-program`)
-        .send({ company_id: null })
+        .send({ company_topic_id: null })
         .expect(200)
 
       const response = await request
@@ -103,7 +103,7 @@ describe('Topic PATCH Routes', () => {
       // Create the referral_program extension row
       await request
         .patch(`/api/v1/topics/${referralProgramId}/referral-program`)
-        .send({ company_id: null })
+        .send({ company_topic_id: null })
         .expect(200)
 
       const patchResponse = await request
@@ -173,7 +173,7 @@ describe('Topic PATCH Routes', () => {
 
       await request
         .patch(`/api/v1/topics/${rewardsProgramId}/rewards-program`)
-        .send({ company_id: null })
+        .send({ company_topic_id: null })
         .expect(200)
 
       // Set then clear

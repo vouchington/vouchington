@@ -291,7 +291,7 @@ async function getFollowTopicsRecipients(): Promise<EngagementRecipientRow[]> {
       ON uea.user_id = u.id
       AND uea.is_primary = TRUE
     WHERE u.deleted_at IS NULL
-      AND u.engagement_emails_enabled = TRUE
+      AND u.is_engagement_emails_enabled = TRUE
       AND u.processing_restricted_at IS NULL
       AND NOT EXISTS (
         SELECT 1 FROM user_suspensions us WHERE us.user_id = u.id AND us.lifted_at IS NULL
@@ -335,7 +335,7 @@ async function getPostReferralLinkRecipients(
       ON uea.user_id = u.id
       AND uea.is_primary = TRUE
     WHERE u.deleted_at IS NULL
-      AND u.engagement_emails_enabled = TRUE
+      AND u.is_engagement_emails_enabled = TRUE
       AND u.processing_restricted_at IS NULL
       AND NOT EXISTS (
         SELECT 1 FROM user_suspensions us WHERE us.user_id = u.id AND us.lifted_at IS NULL
@@ -387,7 +387,7 @@ async function getFollowNewsSourcesRecipients(
       ON uea.user_id = u.id
       AND uea.is_primary = TRUE
     WHERE u.deleted_at IS NULL
-      AND u.engagement_emails_enabled = TRUE
+      AND u.is_engagement_emails_enabled = TRUE
       AND u.processing_restricted_at IS NULL
       AND NOT EXISTS (
         SELECT 1 FROM user_suspensions us WHERE us.user_id = u.id AND us.lifted_at IS NULL

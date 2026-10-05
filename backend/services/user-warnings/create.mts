@@ -105,7 +105,7 @@ async function createWarningInTransaction(
             SELECT COALESCE(tp.community_id, rp.community_id) AS community_id
             FROM moderation_reports r
             LEFT JOIN posts tp ON r.post_id IS NOT NULL AND tp.id = r.post_id
-            LEFT JOIN posts rp ON r.post_id IS NOT NULL AND tp.post_type = 'comment' AND rp.id = tp.root_id
+            LEFT JOIN posts rp ON r.post_id IS NOT NULL AND tp.post_type = 'comment' AND rp.id = tp.root_post_id
             WHERE r.id = ${input.reportId}
             LIMIT 1
           `,

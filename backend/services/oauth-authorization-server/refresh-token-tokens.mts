@@ -148,7 +148,7 @@ async function rotateRefreshToken(
   await query(
     `/* rotateRefreshToken */ UPDATE oauth_refresh_tokens
      SET consumed_at = CURRENT_TIMESTAMP,
-         replaced_by_id = $2
+         replaced_by_token_id = $2
      WHERE id = $1`,
     [token.id, replacementId],
   )

@@ -33,7 +33,7 @@ export function buildTree(
     const node = nodes[result.id]
     if (!node) continue
 
-    const parentId = node.parent_id
+    const parentId = node.parent_post_id
     if (parentId && nodes[parentId]) {
       nodes[parentId].children.push(node)
     } else {

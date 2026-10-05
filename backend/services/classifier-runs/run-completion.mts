@@ -44,7 +44,7 @@ async function hasCompletedClassifierRun<C>(lease: ClassifierRunLease<C>): Promi
       AND input_sha256 = ${lease.inputSha256}
       AND configuration_sha256 = ${lease.resolved.configurationSha256}
       AND configuration_json::text = ${lease.resolved.configurationJson}
-      AND shared_actor_id = ${lease.resolved.actorId}
+      AND shared_actor_user_id = ${lease.resolved.actorId}
       AND decision_batch_id IS NOT DISTINCT FROM ${lease.decisionBatchId}
   `)
   return rows[0]?.completed ?? false

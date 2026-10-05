@@ -10,7 +10,7 @@ const prompt = {
   prompt: 'Flag posts that repeatedly ask members to follow unrelated referral links.',
   model_name: 'gpt-5.4-nano',
   model_provider: 'openai',
-  slot_allocated: true,
+  is_slot_allocated: true,
   activated_at: null,
   deactivated_at: null,
   created_at: '2026-06-01T10:00:00.000Z',

@@ -5,13 +5,13 @@ import type { IndividualCard } from '@/types/my'
 function makeCard(id: string, overrides: Partial<IndividualCard> = {}): IndividualCard {
   return {
     id,
-    card_id: `topic-${id}`,
+    card_topic_id: `topic-${id}`,
     opened_on: null,
     closed_on: null,
     received_sign_up_bonus_on: null,
     credit_limit: null,
     is_authorized_user: false,
-    authorized_user_of_id: null,
+    authorized_user_of_card_id: null,
     note: null,
     card: { id: `topic-${id}`, name: `Card ${id}`, slug: `card-${id}` },
     authorized_user_of_card: null,
@@ -63,7 +63,7 @@ describe('payment card list state', () => {
     const parent = makeCard('parent')
     const child = makeCard('child', {
       is_authorized_user: true,
-      authorized_user_of_id: parent.id,
+      authorized_user_of_card_id: parent.id,
       authorized_user_of_card: {
         id: parent.id,
         opened_on: null,
@@ -80,7 +80,7 @@ describe('payment card list state', () => {
       expect.objectContaining({
         id: child.id,
         is_authorized_user: true,
-        authorized_user_of_id: null,
+        authorized_user_of_card_id: null,
         authorized_user_of_card: null,
       }),
     ])
@@ -88,7 +88,7 @@ describe('payment card list state', () => {
 
   it('retains the hydrated current parent when it is closed or outside loaded pages', () => {
     const child = makeCard('child', {
-      authorized_user_of_id: 'parent',
+      authorized_user_of_card_id: 'parent',
       authorized_user_of_card: {
         id: 'parent',
         opened_on: '2020-01-01',

@@ -7,21 +7,21 @@ export type SpendingCategoryAttributes = {
 }
 
 export interface TypeAttributes {
-  bank_id?: string
-  brand_id?: string
+  bank_topic_id?: string
+  brand_topic_id?: string
   rewards_program_id?: string
   referral_program_id?: string
   annual_fee?: Money | null
-  company_id?: string
+  company_topic_id?: string
   lifetime_version_id?: string
   order_index?: number
 }
 
 /** Canonical list of topic-reference attribute fields — the single source of truth for the field set. */
 export const topicIdFields = [
-  'company_id',
-  'bank_id',
-  'brand_id',
+  'company_topic_id',
+  'bank_topic_id',
+  'brand_topic_id',
   'rewards_program_id',
   'referral_program_id',
   'lifetime_version_id',
@@ -38,9 +38,9 @@ export type TopicIdField = (typeof topicIdFields)[number]
  * Documented in docs/requirements/content/TOPICS.md § Reference fields.
  */
 export const topicReferenceFieldTypes: Record<TopicIdField, TopicTypes[] | null> = {
-  company_id: null,
-  bank_id: null,
-  brand_id: null,
+  company_topic_id: null,
+  bank_topic_id: null,
+  brand_topic_id: null,
   rewards_program_id: ['rewards_program'],
   referral_program_id: ['referral_program'],
   lifetime_version_id: ['rewards_program_status'],

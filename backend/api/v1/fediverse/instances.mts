@@ -58,7 +58,7 @@ function toPublicFediverseInstanceAttributes(
     nodeinfo_software_version: attributes.nodeinfo_software_version,
     total_users: attributes.total_users,
     monthly_active_users: attributes.monthly_active_users,
-    open_registrations: attributes.open_registrations,
+    is_open_for_registrations: attributes.is_open_for_registrations,
   }
 }
 
@@ -111,8 +111,8 @@ app
       ...(query.software !== undefined && {
         fediverse_instance_software: stringFromUnknown(query.software),
       }),
-      ...(query.open_registrations !== undefined && {
-        fediverse_instance_open_registrations: parseBooleanish(query.open_registrations),
+      ...(query.is_open_for_registrations !== undefined && {
+        fediverse_instance_open_registrations: parseBooleanish(query.is_open_for_registrations),
       }),
       ...(integrationStatus && { fediverse_instance_integration_status: integrationStatus }),
     })

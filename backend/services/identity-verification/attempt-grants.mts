@@ -29,10 +29,10 @@ export async function grantIdentityVerificationAttempt(
         AND NOT EXISTS (
           SELECT 1 FROM identity_verification_attempts AS entitlement
           WHERE entitlement.user_id = ${userId} AND entitlement.source = 'support_grant'
-            AND entitlement.grant_entitlement_id IS NULL
+            AND entitlement.grant_entitlement_attempt_id IS NULL
             AND NOT EXISTS (
               SELECT 1 FROM identity_verification_attempts AS child
-              WHERE child.grant_entitlement_id = entitlement.id AND child.consumed_at IS NOT NULL
+              WHERE child.grant_entitlement_attempt_id = entitlement.id AND child.consumed_at IS NOT NULL
             )
         )
         AND NOT EXISTS (

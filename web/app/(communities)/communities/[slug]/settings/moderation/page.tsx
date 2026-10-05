@@ -169,7 +169,7 @@ export default async function CommunityModerationPage({ params, searchParams }: 
           communitySlug={community.slug}
           initialVacation={myVacation.vacation}
           initialSuppressCommunityDigestsWhileOnVacation={
-            myVacation.suppress_community_digests_while_on_vacation
+            myVacation.should_suppress_community_digests_while_on_vacation
           }
         />
       )}
@@ -249,7 +249,7 @@ export default async function CommunityModerationPage({ params, searchParams }: 
         <PanelError label={t('extracted.moderation.page.moderationQueue_50d92231')} />
       )}
       <CommunityPostTypeSettingsForm
-        key={`${community.slug}-${community.allow_review_posts}-${community.allow_data_point_posts}`}
+        key={`${community.slug}-${community.should_allow_review_posts}-${community.should_allow_data_point_posts}`}
         community={community}
       />
       {restrictions ? (

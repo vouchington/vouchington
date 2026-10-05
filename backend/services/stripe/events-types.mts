@@ -11,7 +11,7 @@ export type StripeEventRecord = {
   id: string
   stripe_event_id: string
   event_type: string
-  livemode: boolean
+  is_live_mode: boolean
   api_version: string | null
   stripe_created_at: Date
   customer_id: string | null

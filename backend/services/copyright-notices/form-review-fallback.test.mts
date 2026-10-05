@@ -83,26 +83,26 @@ describe('copyright form moderator fallback', () => {
     await reviewCopyrightFormIntake({
       intakeId: flaggedNotice.intake.id,
       currentUser: moderator,
-      accepted: true,
+      is_accepted: true,
       rationale: 'The anti-spam classification was a false positive.',
     })
     await expect(
       reviewCopyrightFormIntake({
         intakeId: flaggedNotice.intake.id,
         currentUser: moderator,
-        accepted: true,
+        is_accepted: true,
         rationale: 'The completed moderator decision may be safely replayed.',
       }),
     ).resolves.toMatchObject({
       noticeId: flaggedNotice.intake.copyright_notice_id,
-      accepted: true,
+      is_accepted: true,
     })
 
     const outageNotice = await createNotice('A second original photograph claim')
     await reviewCopyrightFormIntake({
       intakeId: outageNotice.intake.id,
       currentUser: moderator,
-      accepted: true,
+      is_accepted: true,
       rationale: 'Manual review completed after the screening agent exhausted its retries.',
     })
     await expect(
@@ -166,7 +166,7 @@ describe('copyright form moderator fallback', () => {
       reviewCopyrightFormIntake({
         intakeId: notice.intake.id,
         currentUser: moderator,
-        accepted: false,
+        is_accepted: false,
         rationale: 'The claimant did not substantiate this complaint.',
       }),
       applyNonSpamSignedInCopyrightFormScreening(notice.intake.copyright_notice_submission_id),
@@ -234,7 +234,7 @@ describe('copyright form moderator fallback', () => {
     await reviewCopyrightFormIntake({
       intakeId: notice.intake.id,
       currentUser: moderator,
-      accepted: false,
+      is_accepted: false,
       rationale: 'The automated restriction was not substantiated.',
     })
     await expectQueuedRestore(notice.intake.copyright_notice_id)
@@ -278,13 +278,13 @@ describe('copyright form moderator fallback', () => {
       reviewCopyrightFormIntake({
         intakeId: notice.intake.id,
         currentUser: moderator,
-        accepted: false,
+        is_accepted: false,
         rationale: 'The guest complaint was not substantiated.',
       }),
       reviewCopyrightFormIntake({
         intakeId: notice.intake.id,
         currentUser: moderator,
-        accepted: false,
+        is_accepted: false,
         rationale: 'The completed moderator decision may be safely replayed.',
       }),
     ])

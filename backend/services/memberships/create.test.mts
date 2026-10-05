@@ -123,12 +123,12 @@ describe('create', () => {
       })
 
       const membership = await getTestMembershipRaw(result.id)
-      expect(membership?.cancel_at_period_end).toBe(true)
+      expect(membership?.should_cancel_at_period_end).toBe(true)
       expect(await getMembershipHistory(cancelUser.id)).toEqual([
         expect.objectContaining({
           membership_id: result.id,
           change_type: 'renewal',
-          cancel_at_period_end: true,
+          should_cancel_at_period_end: true,
         }),
       ])
     })
@@ -147,14 +147,14 @@ describe('create', () => {
 
       const membership = await getTestMembershipRaw(result.id)
       expect(membership?.status).toBe('cancelled')
-      expect(membership?.cancel_at_period_end).toBe(false)
+      expect(membership?.should_cancel_at_period_end).toBe(false)
       expect(membership?.source_auto_renews).toBe(false)
       expect(await getMembershipHistory(cancelUser.id)).toEqual([
         expect.objectContaining({
           membership_id: result.id,
           change_type: 'cancellation',
           cancelled_at: expect.any(Date),
-          cancel_at_period_end: false,
+          should_cancel_at_period_end: false,
         }),
       ])
     })

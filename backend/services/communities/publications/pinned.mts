@@ -26,7 +26,7 @@ export async function getPinnedPosts(
       AND pub.unpublished_at IS NULL
       AND pub.rejected_at IS NULL
     JOIN view_posts vp ON vp.id = cpp.post_id
-    JOIN posts root_post ON root_post.id = COALESCE(vp.root_id, vp.id)
+    JOIN posts root_post ON root_post.id = COALESCE(vp.root_post_id, vp.id)
     WHERE cpp.community_id = ${communityId}
       AND vp.community_id = ${communityId}
       AND vp.deleted_at IS NULL

@@ -9,8 +9,8 @@ Not partitioned — growth: unbounded.
 | Column                   | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                    |
 | ------------------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ---------------------------------------------------------- |
 | `topic_id`               | `uuid`                     | no       |                     |          |           |           | The topic that is a card (PK, 1:1 with topics).            |
-| `bank_id`                | `uuid`                     | yes      |                     |          |           |           | The issuing bank topic (e.g. Chase, Citi).                 |
-| `brand_id`               | `uuid`                     | yes      |                     |          |           |           | The co-brand topic (e.g. Marriott, Hilton).                |
+| `bank_topic_id`          | `uuid`                     | yes      |                     |          |           |           | The issuing bank topic (e.g. Chase, Citi).                 |
+| `brand_topic_id`         | `uuid`                     | yes      |                     |          |           |           | The co-brand topic (e.g. Marriott, Hilton).                |
 | `created_at`             | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                            |
 | `updated_at`             | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                            |
 | `annual_fee_minor_units` | `bigint`                   | yes      |                     |          |           |           | Annual fee in the currency minor unit. NULL if unknown.    |
@@ -28,16 +28,16 @@ _none_
 
 **Foreign keys:**
 
-- `card_topics_bank_id_fkey`: `FOREIGN KEY (bank_id) REFERENCES topics(id) ON DELETE CASCADE`
-- `card_topics_brand_id_fkey`: `FOREIGN KEY (brand_id) REFERENCES topics(id) ON DELETE CASCADE`
+- `card_topics_bank_topic_id_fkey`: `FOREIGN KEY (bank_topic_id) REFERENCES topics(id) ON DELETE CASCADE`
+- `card_topics_brand_topic_id_fkey`: `FOREIGN KEY (brand_topic_id) REFERENCES topics(id) ON DELETE CASCADE`
 - `card_topics_currency_code_fkey`: `FOREIGN KEY (currency_code) REFERENCES currencies(code) ON DELETE RESTRICT`
 - `card_topics_topic_id_fkey`: `FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE CASCADE`
 
 **Indexes:**
 
 - `card_topics_pkey`: `CREATE UNIQUE INDEX card_topics_pkey ON public.card_topics USING btree (topic_id)`
-- `idx_card_topics__bank_id`: `CREATE INDEX idx_card_topics__bank_id ON public.card_topics USING btree (bank_id) WHERE (bank_id IS NOT NULL)`
-- `idx_card_topics__brand_id`: `CREATE INDEX idx_card_topics__brand_id ON public.card_topics USING btree (brand_id) WHERE (brand_id IS NOT NULL)`
+- `idx_card_topics__bank_id`: `CREATE INDEX idx_card_topics__bank_id ON public.card_topics USING btree (bank_topic_id) WHERE (bank_topic_id IS NOT NULL)`
+- `idx_card_topics__brand_id`: `CREATE INDEX idx_card_topics__brand_id ON public.card_topics USING btree (brand_topic_id) WHERE (brand_topic_id IS NOT NULL)`
 - `idx_card_topics__currency_code`: `CREATE INDEX idx_card_topics__currency_code ON public.card_topics USING btree (currency_code) WHERE (currency_code IS NOT NULL)`
 
 **Triggers:**

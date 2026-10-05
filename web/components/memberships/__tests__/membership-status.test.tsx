@@ -20,7 +20,7 @@ const membership: SubscriptionMembership = {
   expired_at: null,
   past_due_at: null,
   paused_at: null,
-  cancel_at_period_end: true,
+  should_cancel_at_period_end: true,
   latest_change_id: null,
   created_at: '2026-01-01T12:00:00.000Z',
   updated_at: '2026-01-01T12:00:00.000Z',

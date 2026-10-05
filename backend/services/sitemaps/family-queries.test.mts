@@ -28,7 +28,7 @@ describe('sitemap family queries', () => {
     expect(query).not.toContain("'discussions' AS subpage")
     expect(query).toContain('updated_at')
     expect(query).not.toContain('created_at AS updated_at')
-    expect(query).toContain('allow_reviews IS TRUE')
+    expect(query).toContain('should_allow_reviews IS TRUE')
     expect(query).toContain(
       "topic_type = 'referral_program' OR referral_program_topic_id IS NOT NULL",
     )

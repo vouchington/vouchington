@@ -29,7 +29,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
   schema: {
     name: 'get_post_descendants',
     type: 'function',
-    description: `Get the replies below a post by its UUID or slug, in id order, one cursor page at a time. Pass page_info.end_cursor as after to read the next page while page_info.has_next_page is true. A reply the public cannot see hides its whole subtree. A deleted reply is left out but the replies below it still appear, so a parent_id can name a reply that is not listed. A post that is not fully public, or that is deleted or missing, returns { success: false, error: "Post not found" }. A malformed or foreign cursor returns { success: false, error: "Invalid cursor" }. A page too large to return is refused, so lower the limit and try again.`,
+    description: `Get the replies below a post by its UUID or slug, in id order, one cursor page at a time. Pass page_info.end_cursor as after to read the next page while page_info.has_next_page is true. A reply the public cannot see hides its whole subtree. A deleted reply is left out but the replies below it still appear, so a parent_post_id can name a reply that is not listed. A post that is not fully public, or that is deleted or missing, returns { success: false, error: "Post not found" }. A malformed or foreign cursor returns { success: false, error: "Invalid cursor" }. A page too large to return is refused, so lower the limit and try again.`,
     parameters: {
       type: 'object',
       properties: {

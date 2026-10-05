@@ -14,8 +14,8 @@ const fixtureStatuses: RewardsProgramStatus[] = [
   {
     id: 'status-user-1',
     rewards_program_status_id: 'stat-1',
-    since: '2022-01-15',
-    until: null,
+    started_on: '2022-01-15',
+    expires_on: null,
     rewards_program_status: {
       id: 'stat-1',
       name: 'Delta Medallion Gold',
@@ -25,8 +25,8 @@ const fixtureStatuses: RewardsProgramStatus[] = [
   {
     id: 'status-user-2',
     rewards_program_status_id: 'stat-2',
-    since: '2023-03-01',
-    until: '2024-02-28',
+    started_on: '2023-03-01',
+    expires_on: '2024-02-28',
     rewards_program_status: {
       id: 'stat-2',
       name: 'Marriott Bonvoy Platinum',
@@ -36,8 +36,8 @@ const fixtureStatuses: RewardsProgramStatus[] = [
   {
     id: 'status-user-3',
     rewards_program_status_id: 'stat-3',
-    since: null,
-    until: null,
+    started_on: null,
+    expires_on: null,
     rewards_program_status: {
       id: 'stat-3',
       name: 'Hilton Honors Diamond',

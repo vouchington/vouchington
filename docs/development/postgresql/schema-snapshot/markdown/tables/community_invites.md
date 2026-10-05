@@ -6,20 +6,20 @@ Invitations to join a community, sent to a specific user or email address.
 
 Not partitioned — growth: unbounded.
 
-| Column                | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                           |
-| --------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------- |
-| `id`                  | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                   |
-| `community_id`        | `uuid`                     | no       |                              |          |           |           | The community the invite is for.                                                  |
-| `code`                | `text`                     | no       |                              |          |           |           | Unique 8-character lowercase invite code.                                         |
-| `invited_user_id`     | `uuid`                     | yes      |                              |          |           |           | Target user, if inviting an existing user.                                        |
-| `invited_email`       | `text`                     | yes      |                              |          |           |           | Target email address, if inviting someone who may not have an account.            |
-| `invited_by_id`       | `uuid`                     | no       |                              |          |           |           | User who created the invitation.                                                  |
-| `accepted_at`         | `timestamp with time zone` | yes      |                              |          |           |           | When the invite was accepted.                                                     |
-| `accepted_by_user_id` | `uuid`                     | yes      |                              |          |           |           | User who accepted the invite (may differ from invited_user_id for email invites). |
-| `declined_at`         | `timestamp with time zone` | yes      |                              |          |           |           | When the invite was declined.                                                     |
-| `revoked_at`          | `timestamp with time zone` | yes      |                              |          |           |           | When the invite was revoked by the inviter or a moderator.                        |
-| `created_at`          | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                   |
-| `updated_at`          | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                   |
+| Column            | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                           |
+| ----------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------- |
+| `id`              | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                   |
+| `community_id`    | `uuid`                     | no       |                              |          |           |           | The community the invite is for.                                                  |
+| `code`            | `text`                     | no       |                              |          |           |           | Unique 8-character lowercase invite code.                                         |
+| `invited_user_id` | `uuid`                     | yes      |                              |          |           |           | Target user, if inviting an existing user.                                        |
+| `invited_email`   | `text`                     | yes      |                              |          |           |           | Target email address, if inviting someone who may not have an account.            |
+| `invited_by_id`   | `uuid`                     | no       |                              |          |           |           | User who created the invitation.                                                  |
+| `accepted_at`     | `timestamp with time zone` | yes      |                              |          |           |           | When the invite was accepted.                                                     |
+| `accepted_by_id`  | `uuid`                     | yes      |                              |          |           |           | User who accepted the invite (may differ from invited_user_id for email invites). |
+| `declined_at`     | `timestamp with time zone` | yes      |                              |          |           |           | When the invite was declined.                                                     |
+| `revoked_at`      | `timestamp with time zone` | yes      |                              |          |           |           | When the invite was revoked by the inviter or a moderator.                        |
+| `created_at`      | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                   |
+| `updated_at`      | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                   |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -40,7 +40,7 @@ _none_
 
 **Foreign keys:**
 
-- `community_invites_accepted_by_user_id_fkey`: `FOREIGN KEY (accepted_by_user_id) REFERENCES users(id) ON DELETE SET NULL`
+- `community_invites_accepted_by_id_fkey`: `FOREIGN KEY (accepted_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `community_invites_community_id_fkey`: `FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE`
 - `community_invites_invited_by_id_fkey`: `FOREIGN KEY (invited_by_id) REFERENCES users(id) ON DELETE CASCADE`
 - `community_invites_invited_user_id_fkey`: `FOREIGN KEY (invited_user_id) REFERENCES users(id) ON DELETE CASCADE`
@@ -50,7 +50,7 @@ _none_
 - `community_invites_pkey`: `CREATE UNIQUE INDEX community_invites_pkey ON public.community_invites USING btree (id)`
 - `idx_comm_invites__code`: `CREATE UNIQUE INDEX idx_comm_invites__code ON public.community_invites USING btree (code) WHERE ((accepted_at IS NULL) AND (declined_at IS NULL) AND (revoked_at IS NULL))`
 - `idx_comm_invites__user`: `CREATE UNIQUE INDEX idx_comm_invites__user ON public.community_invites USING btree (community_id, invited_user_id) WHERE ((invited_user_id IS NOT NULL) AND (accepted_at IS NULL) AND (declined_at IS NULL) AND (revoked_at IS NULL))`
-- `idx_community_invites__accepted_by_user_id`: `CREATE INDEX idx_community_invites__accepted_by_user_id ON public.community_invites USING btree (accepted_by_user_id) WHERE (accepted_by_user_id IS NOT NULL)`
+- `idx_community_invites__accepted_by_user_id`: `CREATE INDEX idx_community_invites__accepted_by_user_id ON public.community_invites USING btree (accepted_by_id) WHERE (accepted_by_id IS NOT NULL)`
 - `idx_community_invites__community_id`: `CREATE INDEX idx_community_invites__community_id ON public.community_invites USING btree (community_id)`
 - `idx_community_invites__invited_by_id`: `CREATE INDEX idx_community_invites__invited_by_id ON public.community_invites USING btree (invited_by_id)`
 - `idx_community_invites__invited_user_id`: `CREATE INDEX idx_community_invites__invited_user_id ON public.community_invites USING btree (invited_user_id) WHERE (invited_user_id IS NOT NULL)`

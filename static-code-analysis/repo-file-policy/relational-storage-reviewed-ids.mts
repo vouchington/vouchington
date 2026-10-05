@@ -59,11 +59,11 @@ export const ALLOWED_TOKEN_CURSOR_PROTOCOL_ID = new Map<string, string>([
     'Traversal cursor position; deleting the actor must not rewind a completed cursor.',
   ],
   [
-    'post_votes.outbound_ap_like_activity_id',
+    'post_votes.outbound_activitypub_like_activity_id',
     'Identity of the outbound ActivityPub Like; no activities table exists.',
   ],
   [
-    'relation__user__follow__user.outbound_ap_follow_activity_id',
+    'relation__user__follow__user.outbound_activitypub_follow_activity_id',
     'Identity of the outbound ActivityPub Follow; no activities table exists.',
   ],
   [
@@ -98,11 +98,6 @@ export const ALLOWED_AUDIT_SNAPSHOT_ID = new Map<string, string>([
     'oauth_authorization_server_events.refresh_token_family_id',
     'Short-lived refresh family id; the audit record outlives the family.',
   ],
-  ...reviewed('Membership id at write time; the audit row survives the membership.', [
-    'membership_administrator_refund_operation_requests.membership_id',
-    'membership_changes.membership_id',
-    'membership_refunds.membership_id',
-  ]),
   ...reviewed('Community scope stamped at write time; aggregate history survives the community.', [
     'agent_moderations.moderation_transparency_community_id',
     'moderation_appeals.moderation_transparency_community_id',

@@ -40,7 +40,7 @@ export async function insertPost({
   const { rows } = await write<PostsTableRow>(
     sql`/* createPost */
       INSERT INTO posts (
-        post_type, title, markdown, created_by_id, parent_id, root_id, community_id,
+        post_type, title, markdown, created_by_id, parent_post_id, root_post_id, community_id,
         broadcast, privacy, is_anonymous, bedrock_nova_multimodal_v1_content_sha256,
         llm_moderation_content_sha256,
         data_point_vertical, structured_data, declared_language, url_id, creation_source_url_id,

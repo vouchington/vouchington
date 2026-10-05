@@ -33,7 +33,7 @@ export async function HnDiscussionsPostAside({
 
   return (
     <HnDiscussionsAside
-      enabled={currentUser?.hn_discussions === true}
+      enabled={currentUser?.should_import_hacker_news_discussions === true}
       urls={[...extraUrls, ...relatedUrls]}
     />
   )

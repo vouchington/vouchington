@@ -13,7 +13,7 @@ export type ClassifierRunColumn =
   | 'rss_feed_item_id'
   | 'input_sha256'
   | 'configuration_sha256'
-  | 'shared_actor_id'
+  | 'shared_actor_user_id'
   | 'community_identity_id'
   | 'decision_batch_id'
   | 'provider_attempts_started'
@@ -130,7 +130,7 @@ async function insertClassifierRunRow(input: {
   const { rows } = await transaction<{ id: string }>(sql`/* insertClassifierRunSchemaRow */
     INSERT INTO classifier_runs (
       classifier_id, post_id, rss_feed_item_id, input_sha256, configuration_json,
-      configuration_sha256, shared_actor_id, decision_batch_id
+      configuration_sha256, shared_actor_user_id, decision_batch_id
     ) VALUES (
       ${input.classifierId}, ${input.postId}, ${input.rssFeedItemId}, ${input.inputSha256},
       ${input.configurationJson}::jsonb,

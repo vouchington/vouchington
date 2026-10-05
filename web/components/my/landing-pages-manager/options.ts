@@ -16,7 +16,7 @@ export function toLandingPageItemInput(item: LandingPageItem): LandingPageItemIn
   if (item.type === 'profile_link') {
     return { type: 'profile_link', profile_link_id: item.profile_link.id }
   }
-  if (item.type === 'review') return { type: 'review', review_id: item.review.id }
+  if (item.type === 'review') return { type: 'review', review_post_id: item.review.id }
   if (item.type === 'referral_link') {
     return { type: 'referral_link', referral_link_id: item.referral_link.id }
   }
@@ -28,7 +28,7 @@ export function toLandingPageItemInput(item: LandingPageItem): LandingPageItemIn
     topic_id: item.topic.id,
     entries: item.entries.map(entry =>
       entry.type === 'review'
-        ? { type: 'review', review_id: entry.review.id }
+        ? { type: 'review', review_post_id: entry.review.id }
         : { type: 'referral_link', referral_link_id: entry.referral_link.id },
     ),
   }

@@ -141,7 +141,7 @@ async function recordContributedSourceWork(
   }
   await retainPostPublicationImpacts(
     query,
-    new Map(postWork.map(work => [work.post_id!, work.id])),
+    new Map(postWork.map(work => [work.post_identity_id!, work.id])),
     [...topicIdsByPost].map(([scopeId, topicIds]) => ({
       scopeId,
       impacts: { postIds: new Set<string>(), topicIds },
@@ -156,7 +156,7 @@ async function reassignContributedSources(
 ): Promise<void> {
   await query(
     `/* processAuthorDeletionPublicationBatch:reassignSources */
-      UPDATE post_topic_alias_sources SET contributor_id = $2::uuid
+      UPDATE post_topic_alias_sources SET contributor_user_id = $2::uuid
       WHERE id = ANY($1::uuid[])`,
     [sources.map(source => source.id), DELETED_USER_ID],
   )

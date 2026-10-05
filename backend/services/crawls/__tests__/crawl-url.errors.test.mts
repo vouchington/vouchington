@@ -78,7 +78,7 @@ describe('crawl-url.errors', () => {
         hostname_id: url!.hostname.id,
         crawler_type: 'fetch',
       })
-      await updateUrlHostname(url!.hostname.id, { crawlable: true })
+      await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
 
       // Set a real rate limit in Valkey for this hostname
       setDomainRateLimitedBackground(url!.hostname.id, 30_000)
@@ -109,7 +109,7 @@ describe('crawl-url.errors', () => {
         hostname_id: url!.hostname.id,
         crawler_type: 'fetch',
       })
-      await updateUrlHostname(url!.hostname.id, { crawlable: true })
+      await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
 
       fetchCrawlerHtml.mockRejectedValueOnce(
         new CrawlerRateLimitError(`https://${hostname}/page`, 429, 10, 0),
@@ -133,7 +133,7 @@ describe('crawl-url.errors', () => {
         hostname_id: url!.hostname.id,
         crawler_type: 'fetch',
       })
-      await updateUrlHostname(url!.hostname.id, { crawlable: true })
+      await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
 
       const timeoutError = new CrawlerTimeoutError(`https://${hostname}/page`, 30_000, 30_000)
       fetchCrawlerHtml.mockRejectedValueOnce(timeoutError)
@@ -153,7 +153,7 @@ describe('crawl-url.errors', () => {
         hostname_id: url!.hostname.id,
         crawler_type: 'fetch',
       })
-      await updateUrlHostname(url!.hostname.id, { crawlable: true })
+      await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
 
       const networkError = new CrawlerNetworkError(
         `https://${hostname}/page`,
@@ -177,7 +177,7 @@ describe('crawl-url.errors', () => {
         hostname_id: url!.hostname.id,
         crawler_type: 'fetch',
       })
-      await updateUrlHostname(url!.hostname.id, { crawlable: true })
+      await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
 
       const serverError = new CrawlerServerError(`https://${hostname}/page`, 500, 1000)
       fetchCrawlerHtml.mockRejectedValueOnce(serverError)

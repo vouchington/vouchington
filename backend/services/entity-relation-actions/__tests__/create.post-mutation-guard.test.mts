@@ -131,8 +131,8 @@ describe('createEntityRelationAction post mutation guard', () => {
     const reply = await createTestPost({
       user: owner,
       post_type: 'comment',
-      parent_id: firstRoot.id,
-      root_id: firstRoot.id,
+      parent_post_id: firstRoot.id,
+      root_post_id: firstRoot.id,
     })
     const topicId = await insertTestTopic({
       name: `Effective root race ${crypto.randomUUID()}`,
@@ -148,7 +148,7 @@ describe('createEntityRelationAction post mutation guard', () => {
     const locked = Promise.withResolvers<number>()
     const release = Promise.withResolvers<void>()
     const holder = holdPublicationLockThenMutate(reply.id, locked, release, query =>
-      query(`UPDATE posts SET root_id = $1, parent_id = $1 WHERE id = $2`, [
+      query(`UPDATE posts SET root_post_id = $1, parent_post_id = $1 WHERE id = $2`, [
         secondRoot.id,
         reply.id,
       ]),

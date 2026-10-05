@@ -13,7 +13,7 @@ describe('official-links', () => {
   let createdLinkId: string | null = null
 
   beforeAll(async () => {
-    await upsertSystemUser('voucha')
+    await upsertSystemUser('voucha', 'official')
 
     regularUser = await createTestUserDirect()
     adminUser = await createTestUserDirect()

@@ -17,7 +17,7 @@ Administrators can issue Stripe refunds against a member's most recent paid invo
 
 ### Event reconciliation
 
-The `charge.refunded` event records each Stripe `Refund` object in `membership_refunds` as accounting-only (source `stripe_dashboard`, `revoked_access = false`). It never revokes access because intent cannot be inferred from an event.
+The `charge.refunded` event records each Stripe `Refund` object in `membership_refunds` as accounting-only (source `stripe_dashboard`, `has_revoked_access = false`). It never revokes access because intent cannot be inferred from an event.
 
 ### Idempotency
 
@@ -97,7 +97,7 @@ Paid members can allocate LLM agent prompts within communities they moderate. Ea
 
 Slot limits are **per user across all communities** (not per community). A Plus member can allocate at most 3 prompts across all the communities they moderate.
 
-- Slots are consumed when a prompt's `slot_allocated` is set to `true` via `POST /api/v1/communities/:slug/agent-prompts/:promptId/allocate`
+- Slots are consumed when a prompt's `is_slot_allocated` is set to `true` via `POST /api/v1/communities/:slug/agent-prompts/:promptId/allocate`
 - Slots are freed when a prompt is deallocated or when the moderator is removed from a community
 - Removing a moderator deactivates and frees all of their allocated prompts in that community
 

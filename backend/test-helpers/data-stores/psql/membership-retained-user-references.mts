@@ -1,3 +1,4 @@
+import { createTestRetainedMembershipIdentity } from '../../entities/retained-identities.mts'
 import { randomUUID } from 'node:crypto'
 import sql from 'sql-template-strings'
 import { read, write } from '@data-stores/psql'
@@ -68,7 +69,11 @@ async function insertGrant(grantedById: string | null, revokedById: string | nul
     )`)
 }
 
-async function insertRefund(userId: string | null, issuedById: string | null): Promise<void> {
+async function insertRefund(
+  userId: string | null,
+  issuedById: string | null,
+  membershipId?: string,
+): Promise<void> {
   const { sourceId } = await createAdminGrantSource()
   const admin = issuedById !== null
   await write(sql`/* insertRetainedReferenceRefund */
@@ -77,7 +82,7 @@ async function insertRefund(userId: string | null, issuedById: string | null): P
       stripe_idempotency_key, admin_request_fingerprint, amount_minor_units, currency_code,
       reason, issued_by_id, source
     ) VALUES (
-      uuidv7(), ${sourceId}, ${userId}::uuid, ${`re_${randomUUID()}`}, ${`ch_${randomUUID()}`},
+      ${membershipId ?? (await createTestRetainedMembershipIdentity())}, ${sourceId}, ${userId}::uuid, ${`re_${randomUUID()}`}, ${`ch_${randomUUID()}`},
       ${admin ? `request-${randomUUID()}` : null}, ${admin ? 'c'.repeat(64) : null}, 100, 'usd',
       'other', ${issuedById}::uuid, ${admin ? 'admin' : 'stripe_dashboard'}::membership_refund_sources
     )`)
@@ -88,6 +93,7 @@ async function insertRefund(userId: string | null, issuedById: string | null): P
 export async function insertMembershipRowReferencingUser(
   [table, column]: MembershipRetainedUserReference,
   userId: string,
+  membershipId?: string,
 ): Promise<void> {
   switch (`${table}.${column}`) {
     case 'membership_changes.user_id':
@@ -96,7 +102,7 @@ export async function insertMembershipRowReferencingUser(
       const changedBy = column === 'user_id' ? null : userId
       await write(sql`/* insertRetainedReferenceChange */
         INSERT INTO membership_changes (membership_id, user_id, change_type, changed_by_id)
-        VALUES (uuidv7(), ${actor}, 'admin_grant', ${changedBy}::uuid)`)
+        VALUES (${membershipId ?? (await createTestRetainedMembershipIdentity())}, ${actor}, 'admin_grant', ${changedBy}::uuid)`)
       return
     }
     case 'membership_grants.granted_by_id':
@@ -104,9 +110,9 @@ export async function insertMembershipRowReferencingUser(
     case 'membership_grants.revoked_by_id':
       return insertGrant(null, userId)
     case 'membership_refunds.user_id':
-      return insertRefund(userId, null)
+      return insertRefund(userId, null, membershipId)
     case 'membership_refunds.issued_by_id':
-      return insertRefund(null, userId)
+      return insertRefund(null, userId, membershipId)
     case 'membership_sources.user_id':
       await write(sql`/* insertRetainedReferenceSource */
         INSERT INTO membership_sources (user_id, source_kind) VALUES (${userId}, 'admin_grant')`)
@@ -117,9 +123,9 @@ export async function insertMembershipRowReferencingUser(
         INSERT INTO membership_administrator_refund_operation_requests (
           membership_operation_id, administrator_request_key, membership_id, issued_by_id,
           provider_payment_reference, amount_minor_units, currency_code, reason,
-          cancel_requested, request_fingerprint
+          is_cancel_requested, request_fingerprint
         ) VALUES (
-          ${operation.id}, ${`request-${randomUUID()}`}, uuidv7(), ${userId},
+          ${operation.id}, ${`request-${randomUUID()}`}, ${membershipId ?? (await createTestRetainedMembershipIdentity())}, ${userId},
           ${`ch_${randomUUID()}`}, 100, 'usd', 'requested', false, ${'d'.repeat(64)}
         )`)
     }

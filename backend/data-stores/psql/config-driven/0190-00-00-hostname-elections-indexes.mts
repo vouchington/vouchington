@@ -14,16 +14,16 @@ export default function generateHostnameElectionsIndexes(): string {
   return `
 -- Partial index supporting searchTopHostnames without topic_id filter:
 -- ORDER BY votes_score_net DESC, id DESC
--- WHERE blocked IS NOT TRUE AND votes_count_up > 0
+-- WHERE is_blocked IS NOT TRUE AND votes_count_up > 0
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__top_sort
 ON url_hostnames (votes_score_net DESC, id DESC)
-WHERE blocked IS NOT TRUE AND votes_count_up > 0;
+WHERE is_blocked IS NOT TRUE AND votes_count_up > 0;
 
 -- Partial index supporting searchTopHostnames with topic_id filter:
 -- ORDER BY votes_score_net DESC, id DESC
--- WHERE blocked IS NOT TRUE AND votes_count_up > 0 AND topic_id = $1
+-- WHERE is_blocked IS NOT TRUE AND votes_count_up > 0 AND topic_id = $1
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__top_sort_by_topic
 ON url_hostnames (topic_id, votes_score_net DESC, id DESC)
-WHERE blocked IS NOT TRUE AND votes_count_up > 0 AND topic_id IS NOT NULL;
+WHERE is_blocked IS NOT TRUE AND votes_count_up > 0 AND topic_id IS NOT NULL;
 `.trim()
 }

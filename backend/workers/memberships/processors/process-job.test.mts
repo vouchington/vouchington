@@ -70,7 +70,7 @@ describe('processMembershipJob', () => {
       stripeEventRecordId: 'event-1',
       processingAttemptId: 'attempt-1',
       stripeSubscriptionId: 'sub-1',
-      livemode: false,
+      isLiveMode: false,
     }
     const renewalData = { membershipId: 'membership-1' }
     const appleData = {
@@ -235,7 +235,7 @@ describe('recoverStripeEvents', () => {
         stripeEventRecordId: 'event-1',
         processingAttemptId: 'attempt-1',
         stripeSubscriptionId: 'sub-1',
-        livemode: false,
+        isLiveMode: false,
       },
     ]
     const claim = vi.fn<typeof claimRecoverableStripeEvents>().mockResolvedValue(events)

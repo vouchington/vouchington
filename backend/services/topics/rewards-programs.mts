@@ -8,7 +8,7 @@ import { currentUserCanUpdateTopic } from './authorization.mts'
 import { upsertTopicAttributes } from './upsert-attributes.mts'
 
 type RewardsProgramAttributes = {
-  company_id?: string | null
+  company_topic_id?: string | null
 }
 
 export async function getRewardsProgramAttributes(
@@ -18,7 +18,7 @@ export async function getRewardsProgramAttributes(
 
   const { rows } = await read(sql`/* getRewardsProgramAttributes */
     SELECT
-      company_id
+      company_topic_id
     FROM rewards_program_topics
     WHERE topic_id = ${topic.id}
     LIMIT 1
@@ -38,10 +38,11 @@ export async function updateRewardsProgramAttributes(
   const columns: string[] = []
   const values: unknown[] = []
 
-  if ('company_id' in attributes) {
-    if (attributes.company_id != null) await assertTopicExists(attributes.company_id, 'company_id')
-    columns.push('company_id')
-    values.push(attributes.company_id ?? null)
+  if ('company_topic_id' in attributes) {
+    if (attributes.company_topic_id != null)
+      await assertTopicExists(attributes.company_topic_id, 'company_topic_id')
+    columns.push('company_topic_id')
+    values.push(attributes.company_topic_id ?? null)
   }
 
   return upsertTopicAttributes<RewardsProgramAttributes>(

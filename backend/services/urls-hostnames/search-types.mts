@@ -5,8 +5,8 @@ export type SearchUrlHostnamesOptions = {
   topic_ids?: string[]
   topic_match?: 'any' | 'all'
   include_descendants?: boolean
-  blocked?: boolean | number | string
-  crawlable?: boolean | number | string
+  is_blocked?: boolean | number | string
+  is_crawlable?: boolean | number | string
   limit?: number
   sort?: 'trust'
   after?: string

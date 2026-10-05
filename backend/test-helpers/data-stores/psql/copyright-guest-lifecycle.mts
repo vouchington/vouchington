@@ -20,7 +20,7 @@ export async function insertGuestLifecycleCounterDeadline(input: {
       ) RETURNING id
     ), assessment AS (
       INSERT INTO copyright_notice_submission_assessments (
-        copyright_notice_submission_id, assessed_at, assessed_by_id, substantially_compliant
+        copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant
       ) SELECT id, ${input.receivedAt}, ${input.actorId}, true FROM counter_notice
       RETURNING id
     )
@@ -42,7 +42,7 @@ export async function insertGuestLifecycleRestriction(input: {
   await write(sql`/* insertGuestLifecycleRestriction */
     WITH assessment AS (
       INSERT INTO copyright_notice_submission_assessments (
-        copyright_notice_submission_id, assessed_at, assessed_by_id, substantially_compliant
+        copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant
       ) VALUES (${input.submissionId}, ${input.receivedAt}, ${input.actorId}, true)
       RETURNING id
     )

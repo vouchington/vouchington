@@ -2,7 +2,6 @@
   "crawl": {
     "__entity_type": "crawl",
     "completed_at": "2026-01-02T00:01:00Z",
-    "crawler_id": "crawler-1",
     "created_at": "2026-01-02T00:00:00Z",
     "embed_metadata": {
       "author": {
@@ -36,10 +35,11 @@
     "embeddings_generated_at": null,
     "etag": null,
     "has_pending_embeddings": false,
+    "hostname_crawler_configuration_id": "crawler-1",
     "html_sha256": null,
     "html_snapshot_uploaded_at": null,
     "id": "crawl-1",
-    "lang": "en",
+    "language": "en",
     "last_modified_at": null,
     "links": {},
     "markdown": "# Native client guide\n\nFixture content for native URL crawl details.",

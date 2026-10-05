@@ -32,8 +32,8 @@ export const getUrlHostnameByAny = async (id: string): Promise<ViewHostname | nu
 type UrlHostnameCrawlerDetails = {
   id: string
   hostname: string
-  blocked: boolean | null
-  crawlable: boolean | null
+  is_blocked: boolean | null
+  is_crawlable: boolean | null
   age_threshold_days: number | null
   requests_per_second_limit: number | null
   attempt_threshold_hours: number | null
@@ -49,8 +49,8 @@ export const getUrlHostnameCrawlerDetailsById = async (
     SELECT
       id,
       hostname,
-      blocked,
-      crawlable,
+      is_blocked,
+      is_crawlable,
       age_threshold_days,
       requests_per_second_limit,
       attempt_threshold_hours

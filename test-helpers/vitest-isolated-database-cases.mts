@@ -1,11 +1,17 @@
+import { classifierPlanIsolatedCases } from './vitest-isolated-database-classifier-plan-cases.mts'
 import { copyrightReportIsolatedCases } from './vitest-isolated-database-copyright-report-cases.mts'
-
-// Vitest matches `testNamePattern` against the suite and test titles joined by " > ", so every
-// registered name keeps that separator; the template type rejects a space-joined name at compile time.
+import { workerSweepIsolatedCases } from './vitest-isolated-database-worker-cases.mts'
 type IsolatedDatabaseCaseDefinition = { file: string; fullName: `${string} > ${string}` }
 
 const isolatedDatabaseCases = {
   ...copyrightReportIsolatedCases,
+  ...workerSweepIsolatedCases,
+  ...classifierPlanIsolatedCases,
+  'openai-moderation-reconciliation': {
+    file: 'backend/workers/openai-moderation/workers/__tests__/workers.test.mts',
+    fullName:
+      'openai moderation single worker > requeues due source work and moves deadline-exhausted posts to review',
+  },
   'semantic-post-window-cap': {
     file: 'backend/services/posts/search/__tests__/get-ids.semantic-window.test.mts',
     fullName:

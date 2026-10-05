@@ -17,6 +17,6 @@ export async function pauseOpenGrantActivations(
         AND activation.ended_at IS NULL
       RETURNING grant_row.membership_source_id, activation.ended_at
     ) UPDATE membership_source_states source_state
-    SET paused_at = paused.ended_at, auto_renews = false, updated_at = CURRENT_TIMESTAMP
+    SET paused_at = paused.ended_at, should_auto_renew = false, updated_at = CURRENT_TIMESTAMP
     FROM paused WHERE source_state.membership_source_id = paused.membership_source_id`)
 }

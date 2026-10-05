@@ -7,7 +7,7 @@ import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 type CopyrightRepeatInfringerNoticeAccount = {
   account_user_id: string
   incident_id: string
-  operative: boolean
+  is_operative: boolean
   open_review_id: string | null
   termination_in_effect: boolean
 }
@@ -25,7 +25,7 @@ export async function listCopyrightRepeatInfringerAccountsForNotice(
     /* listCopyrightRepeatInfringerAccountsForNotice */
     SELECT incident.account_user_id,
       incident.id AS incident_id,
-      incident.operative,
+      incident.is_operative,
       open_review.id AS open_review_id,
       EXISTS (
         SELECT 1 FROM copyright_repeat_infringer_reviews terminated

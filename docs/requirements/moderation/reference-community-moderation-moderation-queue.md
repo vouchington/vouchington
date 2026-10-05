@@ -41,7 +41,7 @@ through the existing flow also closes the flag. `record_only` classifications ne
 
 When a moderator is removed from a community, all of their allocated (active) prompts in that community are automatically deactivated:
 
-- `slot_allocated` set to `false`
+- `is_slot_allocated` set to `false`
 - `deactivated_at` set to current timestamp
 
 This happens asynchronously (fire-and-forget) after the membership removal.

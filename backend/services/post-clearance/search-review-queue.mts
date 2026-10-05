@@ -13,7 +13,7 @@ export type ReviewQueuePost = {
   post_type: string
   created_by_id: string | null
   created_at: Date
-  root_id: string | null
+  root_post_id: string | null
   root_post_type: string | null
   root_slug: string | null
   clearance_status: string
@@ -78,12 +78,12 @@ export async function searchPostsForAdminReview(
       p.post_type,
       p.created_by_id,
       p.created_at,
-      p.root_id,
+      p.root_post_id,
       root_post.post_type AS root_post_type,
       (
         SELECT slug
         FROM post_slugs
-        WHERE post_id = p.root_id
+        WHERE post_id = p.root_post_id
         ORDER BY post_slugs.created_at DESC
         LIMIT 1
       ) AS root_slug,
@@ -99,7 +99,7 @@ export async function searchPostsForAdminReview(
         'images', COALESCE(media.images, '[]'::jsonb)
       ) AS media_reveal
     FROM posts p
-    LEFT JOIN posts root_post ON root_post.id = p.root_id
+    LEFT JOIN posts root_post ON root_post.id = p.root_post_id
     JOIN view_post_clearance_status clearance ON clearance.post_id = p.id
     LEFT JOIN LATERAL (
       WITH current_version AS (

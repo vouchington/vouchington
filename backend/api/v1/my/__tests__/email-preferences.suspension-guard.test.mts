@@ -30,7 +30,7 @@ describe('email preference suspension guard', () => {
 
     const response = await request
       .patch('/api/v1/my/email-preferences')
-      .send({ engagement_emails_enabled: false, news_digest_frequency: 'daily' })
+      .send({ is_engagement_emails_enabled: false, news_digest_frequency: 'daily' })
 
     expect(response.status).toBe(403)
     expect(response.body.code).toBe(ACCOUNT_SUSPENDED)
@@ -43,6 +43,6 @@ describe('email preference suspension guard', () => {
 
     await createRequest().post('/api/v1/email-unsubscribe').send({ token }).expect(200)
 
-    expect((await getEmailPreferences(user.id)).engagement_emails_enabled).toBe(false)
+    expect((await getEmailPreferences(user.id)).is_engagement_emails_enabled).toBe(false)
   })
 })

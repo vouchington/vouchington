@@ -13,8 +13,8 @@ type Case = readonly [label: string, method: Method, path: string, body: unknown
 // (integer minor units, a known currency); the schema also fixes unknown fields and null bodies.
 const malformed: readonly Case[] = [
   ['card without an id', 'post', '/api/v1/my/cards', {}],
-  ['card with a numeric id', 'post', '/api/v1/my/cards', { card_id: 7 }],
-  ['card with an unknown field', 'post', '/api/v1/my/cards', { card_id: UUID, owner: UUID }],
+  ['card with a numeric id', 'post', '/api/v1/my/cards', { card_topic_id: 7 }],
+  ['card with an unknown field', 'post', '/api/v1/my/cards', { card_topic_id: UUID, owner: UUID }],
   [
     'card update with negative money',
     'patch',
@@ -157,7 +157,7 @@ describe('money and rewards request contract validation', () => {
     await request.authenticateAs(user)
     const created = await request
       .post('/api/v1/my/cards')
-      .send({ card_id: await insertTestCard({ createdById: user.id }) })
+      .send({ card_topic_id: await insertTestCard({ createdById: user.id }) })
       .expect(201)
     const updated = await request
       .patch(`/api/v1/my/cards/${created.body.card.id}`)

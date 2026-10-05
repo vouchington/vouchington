@@ -81,7 +81,7 @@ describe('territorial complaint effects on a confirmed restriction', () => {
       const posterId = scene.posts[0]!.poster.id
       expect((await getCopyrightRepeatInfringerAccount(posterId)).incidents).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ copyright_notice_id: scene.noticeId, operative: true }),
+          expect.objectContaining({ copyright_notice_id: scene.noticeId, is_operative: true }),
         ]),
       )
       expect(await readCopyrightStaydownEntries(scene.noticeId)).toHaveLength(1)
@@ -101,7 +101,7 @@ describe('territorial complaint effects on a confirmed restriction', () => {
       if (!restore) throw new Error('Complaint restore intent missing')
       expect((await getCopyrightRepeatInfringerAccount(posterId)).incidents).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ copyright_notice_id: scene.noticeId, operative: false }),
+          expect.objectContaining({ copyright_notice_id: scene.noticeId, is_operative: false }),
         ]),
       )
       expect(await readCopyrightStaydownEntries(scene.noticeId)).toEqual([])
@@ -141,7 +141,7 @@ describe('territorial complaint effects on a confirmed restriction', () => {
         (await getCopyrightRepeatInfringerAccount(scene.posts[0]!.poster.id)).incidents,
       ).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ copyright_notice_id: scene.noticeId, operative: true }),
+          expect.objectContaining({ copyright_notice_id: scene.noticeId, is_operative: true }),
         ]),
       )
       expect(await readCopyrightStaydownEntries(scene.noticeId)).toHaveLength(1)

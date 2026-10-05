@@ -54,7 +54,7 @@ const moderationMetrics: ModerationAnalytics = {
   moderator_workload: {
     moderators: [
       {
-        actor_id: 'user-alex',
+        actor_user_id: 'user-alex',
         total: 18,
         counts: { remove: 11, warn: 7 },
         weekly_counts: [{ date: '2026-05-25', type: 'remove', count: 3 }],

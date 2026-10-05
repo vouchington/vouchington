@@ -50,7 +50,7 @@ CREATE TABLE copyright_notice_email_correspondence_reviews (
   action copyright_notice_email_correspondence_review_actions NOT NULL CHECK (action IN ('pending', 'admitted', 'rejected')),
   kind copyright_notice_email_correspondence_review_kinds CHECK (kind IN ('supplement', 'appeal', 'counter_notice', 'withdrawal', 'court_or_ccb_hold', 'complaint')),
   copyright_notice_submission_id uuid CONSTRAINT uq_copyright_notice_email_correspondence_reviews__submission_id UNIQUE CONSTRAINT fk_copyright_notice_email_correspondence_reviews__submission REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
-  copyright_notice_correspondence_id uuid CONSTRAINT uq_copyright_notice_email_correspond_reviews__correspondence_id UNIQUE CONSTRAINT fk_copyright_notice_email_correspondenc_reviews__correspondence REFERENCES copyright_notice_correspondence_messages(id) ON DELETE RESTRICT,
+  copyright_notice_correspondence_message_id uuid CONSTRAINT uq_copyright_notice_email_correspond_reviews__correspondence_id UNIQUE CONSTRAINT fk_copyright_notice_email_correspondenc_reviews__correspondence REFERENCES copyright_notice_correspondence_messages(id) ON DELETE RESTRICT,
   reviewed_at timestamptz,
   reviewed_by_id uuid CONSTRAINT fk_copyright_notice_email_correspondence_reviews__reviewed_by REFERENCES users(id) ON DELETE SET NULL,
   rationale_ciphertext text,
@@ -60,7 +60,7 @@ CREATE TABLE copyright_notice_email_correspondence_reviews (
   CONSTRAINT uq_copyright_notice_email_correspond_reviews__intake_id__action UNIQUE (copyright_notice_email_intake_id, action),
   CHECK ((action = 'pending' AND reviewed_at IS NULL AND reviewed_by_id IS NULL AND kind IS NULL)
     OR (action IN ('admitted', 'rejected') AND reviewed_at IS NOT NULL AND reviewed_by_id IS NOT NULL AND kind IS NOT NULL)),
-  CHECK ((action = 'admitted') = (copyright_notice_submission_id IS NOT NULL AND copyright_notice_correspondence_id IS NOT NULL)),
+  CHECK ((action = 'admitted') = (copyright_notice_submission_id IS NOT NULL AND copyright_notice_correspondence_message_id IS NOT NULL)),
   CONSTRAINT chk_copyrig_notice_email_correspo_reviews__rationale_ciphertext CHECK (rationale_ciphertext IS NULL OR char_length(rationale_ciphertext) BETWEEN 1 AND 65536),
   CONSTRAINT chk_copy_noti_emai_corr_revi__manual_fallback_reason_ciphertext CHECK (manual_fallback_reason_ciphertext IS NULL OR char_length(manual_fallback_reason_ciphertext) BETWEEN 1 AND 65536),
   CHECK (action = 'pending' OR ((copyright_notice_email_intake_recommendation_id IS NULL) = (manual_fallback_reason_ciphertext IS NOT NULL))),
@@ -134,7 +134,7 @@ COMMENT ON COLUMN copyright_notice_email_correspondence_reviews.copyright_notice
 COMMENT ON COLUMN copyright_notice_email_correspondence_reviews.action IS 'Pending, admitted, or rejected human-review outcome.';
 COMMENT ON COLUMN copyright_notice_email_correspondence_reviews.kind IS 'Moderator-classified legal meaning of the email.';
 COMMENT ON COLUMN copyright_notice_email_correspondence_reviews.copyright_notice_submission_id IS 'Immutable submission created when the email is admitted.';
-COMMENT ON COLUMN copyright_notice_email_correspondence_reviews.copyright_notice_correspondence_id IS 'Private inbound correspondence created when admitted.';
+COMMENT ON COLUMN copyright_notice_email_correspondence_reviews.copyright_notice_correspondence_message_id IS 'Private inbound correspondence created when admitted.';
 COMMENT ON COLUMN copyright_notice_email_correspondence_reviews.reviewed_at IS 'Time a moderator made the terminal decision.';
 COMMENT ON COLUMN copyright_notice_email_correspondence_reviews.reviewed_by_id IS 'Moderator who made the terminal decision.';
 COMMENT ON COLUMN copyright_notice_email_correspondence_reviews.rationale_ciphertext IS 'Encrypted moderator rationale.';

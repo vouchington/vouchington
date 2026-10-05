@@ -65,8 +65,8 @@ export async function appendCopyrightLegalHoldAssessment(input: {
   )
   const { rows } = await transaction(sql`/* appendCopyrightLegalHoldAssessment */
     INSERT INTO copyright_notice_legal_hold_assessments (
-      copyright_notice_submission_id, assessed_at, assessed_by_id, from_original_claimant,
-      proceeding_kind, ccb_claim_kind, commenced_at, received_by_designated_agent_at, same_material,
+      copyright_notice_submission_id, assessed_at, assessed_by_id, is_from_original_claimant,
+      proceeding_kind, ccb_claim_kind, commenced_at, received_by_designated_agent_at, is_same_material,
       rationale_ciphertext
     ) VALUES (
       ${input.submissionId}, ${input.assessedAt}, ${input.currentUser.id}, ${input.fromOriginalClaimant},
@@ -74,8 +74,8 @@ export async function appendCopyrightLegalHoldAssessment(input: {
       ${input.receivedByDesignatedAgentAt}, ${input.sameMaterial},
       ${encryptSecret(input.rationale, `copyright-legal-hold-assessment:${input.submissionId}`)}
     )
-    RETURNING id, copyright_notice_submission_id, assessed_at, assessed_by_id, from_original_claimant,
-      proceeding_kind, ccb_claim_kind, commenced_at, received_by_designated_agent_at, same_material,
+    RETURNING id, copyright_notice_submission_id, assessed_at, assessed_by_id, is_from_original_claimant,
+      proceeding_kind, ccb_claim_kind, commenced_at, received_by_designated_agent_at, is_same_material,
       rationale_ciphertext
   `)
   const assessment = rows[0] as Omit<CopyrightLegalHoldAssessmentRecord, 'target_ids'> | undefined

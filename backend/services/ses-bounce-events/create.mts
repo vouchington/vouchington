@@ -22,12 +22,12 @@ function deriveDedupKey(
   input: CreateSesBounceEventInput,
   normalizedRecipients: string[],
 ): string | null {
-  const messageId = input.ses_message_id?.trim() ?? ''
-  if (!messageId || !input.ses_timestamp) return null
+  const messageId = input.amazon_ses_message_id?.trim() ?? ''
+  if (!messageId || !input.occurred_at) return null
   const recipientsKey = Array.from(new Set(normalizedRecipients)).toSorted().join(',')
   return createHash('sha256')
     .update(
-      `${messageId} ${input.notification_type} ${input.ses_timestamp.toISOString()} ${recipientsKey}`,
+      `${messageId} ${input.notification_type} ${input.occurred_at.toISOString()} ${recipientsKey}`,
     )
     .digest('hex')
 }
@@ -62,9 +62,9 @@ export async function createSesBounceEvent(
       bounce_type,
       bounce_sub_type,
       recipients,
-      ses_message_id,
-      ses_feedback_id,
-      ses_timestamp,
+      amazon_ses_message_id,
+      amazon_ses_feedback_id,
+      occurred_at,
       raw_message,
       diagnostic_code,
       reporting_mta,
@@ -75,9 +75,9 @@ export async function createSesBounceEvent(
       ${input.bounce_type ?? null}::amazon_ses_bounce_types,
       ${input.bounce_sub_type ?? null},
       ${JSON.stringify(normalizedRecipients)}::jsonb,
-      ${input.ses_message_id ?? null},
-      ${input.ses_feedback_id ?? null},
-      ${input.ses_timestamp ?? null},
+      ${input.amazon_ses_message_id ?? null},
+      ${input.amazon_ses_feedback_id ?? null},
+      ${input.occurred_at ?? null},
       ${JSON.stringify(input.raw_message)}::jsonb,
       ${input.diagnostic_code ?? null},
       ${input.reporting_mta ?? null},
@@ -90,9 +90,9 @@ export async function createSesBounceEvent(
       bounce_type,
       bounce_sub_type,
       recipients,
-      ses_message_id,
-      ses_feedback_id,
-      ses_timestamp,
+      amazon_ses_message_id,
+      amazon_ses_feedback_id,
+      occurred_at,
       raw_message,
       diagnostic_code,
       reporting_mta,

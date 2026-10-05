@@ -35,7 +35,7 @@ export function selectExistingTerritorialRedressRequest(
   return sql`/* submitTerritorialCopyrightRedress:existing */
     SELECT id, copyright_notice_id, copyright_territorial_decision_id
     FROM copyright_territorial_redress_requests
-    WHERE jurisdiction = ${jurisdiction} AND submitted_by_user_id = ${actorId}
+    WHERE jurisdiction = ${jurisdiction} AND submitted_by_id = ${actorId}
       AND (copyright_territorial_decision_id = ${decisionId}
         OR idempotency_key = ${idempotencyKey})`
 }
@@ -51,7 +51,7 @@ export function insertTerritorialRedressRequest(
 ) {
   return sql`/* submitTerritorialCopyrightRedress */
     INSERT INTO copyright_territorial_redress_requests (
-      copyright_notice_id, jurisdiction, copyright_territorial_decision_id, submitted_by_user_id,
+      copyright_notice_id, jurisdiction, copyright_territorial_decision_id, submitted_by_id,
       filed_by, idempotency_key, explanation_ciphertext
     ) VALUES (
       ${noticeId}, ${jurisdiction}, ${decisionId}, ${actorId}, ${filedBy}, ${idempotencyKey},

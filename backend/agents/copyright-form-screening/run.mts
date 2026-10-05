@@ -63,7 +63,7 @@ function serializeCopyrightFormScreeningInput(intake: CopyrightFormIntakeForScre
     has_claimant_contact: intake.hasClaimantContact,
     has_claimant_email: intake.hasClaimantEmail,
     has_electronic_signature: intake.hasElectronicSignature,
-    good_faith_belief: intake.goodFaithBelief,
-    accuracy_authority_under_penalty_of_perjury: intake.accuracyAuthorityUnderPenaltyOfPerjury,
+    has_good_faith_belief: intake.goodFaithBelief,
+    has_accuracy_authority_under_penalty_of_perjury: intake.accuracyAuthorityUnderPenaltyOfPerjury,
   })
 }

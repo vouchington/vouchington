@@ -7,10 +7,10 @@
       "deleted_at": null,
       "field_type": "long_text",
       "id": "question-1",
+      "is_required": true,
       "options": null,
       "order_index": 0,
-      "question": "Why do you want to join?",
-      "required": true
+      "question": "Why do you want to join?"
     }
   ]
 }

@@ -14,7 +14,7 @@ const COUNTER_ELEMENT_LABELS: Record<
 > = {
   signature: 'Signature',
   material_identification: 'Identification of the material',
-  good_faith_statement: 'Good-faith statement',
+  has_good_faith_statement: 'Good-faith statement',
   contact_and_jurisdiction_consent: 'Contact details and jurisdiction consent',
 }
 
@@ -22,11 +22,11 @@ const HOLD_CRITERION_LABELS: Record<
   CopyrightLegalHoldGuidance['criteria'][number]['criterion'],
   string
 > = {
-  from_original_claimant: 'From the original claimant',
+  is_from_original_claimant: 'From the original claimant',
   proceeding_kind: 'Type of proceeding',
   commenced_at: 'Proceeding commenced',
   received_by_designated_agent_at: 'Designated agent received proof',
-  same_material: 'Same material',
+  is_same_material: 'Same material',
 }
 
 const COUNTER_RISK_LABELS: Record<

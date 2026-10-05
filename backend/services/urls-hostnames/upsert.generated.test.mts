@@ -49,15 +49,15 @@ describe('upsert.generated', () => {
     expect(hostnamesMap.size).toBe(0)
   })
 
-  it('upsertUrlHostnames defaults crawlable to true and blocked to false', async () => {
+  it('upsertUrlHostnames defaults is_crawlable to true and is_blocked to false', async () => {
     const hostname = `upsert-defaults-${suffix}.example.com`
     const hostnamesMap = await upsertUrlHostnames(null, [hostname])
 
     const hostnameId = hostnamesMap.get(hostname)!
     const record = await getUrlHostnameById(hostnameId)
     expect(record).not.toBeNull()
-    expect(record!.crawlable).toBe(true)
-    expect(record!.blocked).toBe(false)
+    expect(record!.is_crawlable).toBe(true)
+    expect(record!.is_blocked).toBe(false)
   })
 
   it('upsertUrlHostnames persists inherited parent blocks but keeps Web Risk skips dynamic', async () => {
@@ -67,18 +67,18 @@ describe('upsert.generated', () => {
     const { updateUrlHostname } = await import('./update.mts')
     const { updateUrlHostnameBlocked } = await import('@voucha/test-helpers')
     await updateUrlHostnameBlocked(parentId, true)
-    await updateUrlHostname(parentId, { skip_web_risk: true })
+    await updateUrlHostname(parentId, { should_skip_web_risk: true })
 
     const child = `sub.${parent}`
     const childMap = await upsertUrlHostnames(null, [child])
     const record = await getUrlHostnameById(childMap.get(child)!)
 
-    expect(record!.blocked).toBe(true)
-    expect(record!.skip_web_risk).toBe(false)
+    expect(record!.is_blocked).toBe(true)
+    expect(record!.should_skip_web_risk).toBe(false)
     await updateUrlHostnameBlocked(parentId, false)
-    expect(await getHostnamePolicy(child)).toMatchObject({ skip_web_risk: true })
-    await updateUrlHostname(parentId, { skip_web_risk: false })
-    expect(await getHostnamePolicy(child)).toMatchObject({ skip_web_risk: false })
+    expect(await getHostnamePolicy(child)).toMatchObject({ should_skip_web_risk: true })
+    await updateUrlHostname(parentId, { should_skip_web_risk: false })
+    expect(await getHostnamePolicy(child)).toMatchObject({ should_skip_web_risk: false })
   })
 
   it('upsertUrlHostnames updates existing hostname', async () => {

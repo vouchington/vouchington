@@ -137,7 +137,7 @@ function recentTargetRowsQuery(
     case 'post_share':
       return sql`/* recentTargetRowsQuery */
         SELECT 1 FROM post_feed_shares
-        WHERE shared_by_user_id = ${senderUserId}
+        WHERE shared_by_id = ${senderUserId}
           AND post_id = ${entityId}
           AND id > ${recentCutoffId}
         LIMIT 1
@@ -145,7 +145,7 @@ function recentTargetRowsQuery(
     case 'post_send':
       return sql`/* recentTargetRowsQuery */
         SELECT 1 FROM notifications
-        WHERE sent_by_user_id = ${senderUserId}
+        WHERE sent_by_id = ${senderUserId}
           AND post_id = ${entityId}
           AND delivery_type = 'manual_send'
           AND id > ${recentCutoffId}
@@ -154,7 +154,7 @@ function recentTargetRowsQuery(
     case 'rss_feed_item_share':
       return sql`/* recentTargetRowsQuery */
         SELECT 1 FROM rss_feed_item_feed_shares
-        WHERE shared_by_user_id = ${senderUserId}
+        WHERE shared_by_id = ${senderUserId}
           AND rss_feed_item_id = ${entityId}
           AND id > ${recentCutoffId}
         LIMIT 1
@@ -162,7 +162,7 @@ function recentTargetRowsQuery(
     case 'rss_feed_item_send':
       return sql`/* recentTargetRowsQuery */
         SELECT 1 FROM notifications
-        WHERE sent_by_user_id = ${senderUserId}
+        WHERE sent_by_id = ${senderUserId}
           AND rss_feed_item_id = ${entityId}
           AND delivery_type = 'manual_send'
           AND id > ${recentCutoffId}

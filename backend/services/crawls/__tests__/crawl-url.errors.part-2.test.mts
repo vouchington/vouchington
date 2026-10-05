@@ -81,7 +81,7 @@ describe('crawl-url.errors', () => {
 
       const url = await addUrl(user!.id, `https://${hostname}/page`)
       await createCrawler(user!, { hostname_id: url!.hostname.id, crawler_type: 'fetch' })
-      await updateUrlHostname(url!.hostname.id, { crawlable: true })
+      await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
 
       const timeoutError = new CrawlerTimeoutError(`https://${hostname}/page`, 30_000, 30_000)
       fetchCrawlerHtml.mockRejectedValueOnce(timeoutError)
@@ -97,7 +97,7 @@ describe('crawl-url.errors', () => {
 
       const url = await addUrl(user!.id, `https://${hostname}/page`)
       await createCrawler(user!, { hostname_id: url!.hostname.id, crawler_type: 'fetch' })
-      await updateUrlHostname(url!.hostname.id, { crawlable: true })
+      await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
 
       const networkError = new CrawlerNetworkError(
         `https://${hostname}/page`,
@@ -117,7 +117,7 @@ describe('crawl-url.errors', () => {
 
       const url = await addUrl(user!.id, `https://${hostname}/page`)
       await createCrawler(user!, { hostname_id: url!.hostname.id, crawler_type: 'fetch' })
-      await updateUrlHostname(url!.hostname.id, { crawlable: true })
+      await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
 
       const nullRouteError = Object.assign(
         new Error(`DNS resolved ${hostname} to null-route address: ::`),
@@ -149,7 +149,7 @@ describe('crawl-url.errors', () => {
 
       const url = await addUrl(user!.id, `https://${hostname}/page`)
       await createCrawler(user!, { hostname_id: url!.hostname.id, crawler_type: 'fetch' })
-      await updateUrlHostname(url!.hostname.id, { crawlable: true })
+      await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
 
       const networkError = new CrawlerNetworkError(
         `https://${hostname}/page`,
@@ -171,7 +171,7 @@ describe('crawl-url.errors', () => {
 
       const url = await addUrl(user!.id, `https://${hostname}/page`)
       await createCrawler(user!, { hostname_id: url!.hostname.id, crawler_type: 'fetch' })
-      await updateUrlHostname(url!.hostname.id, { crawlable: true })
+      await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
 
       const sizeError = new CrawlerResponseSizeExceededError(
         `https://${hostname}/page`,
@@ -194,7 +194,7 @@ describe('crawl-url.errors', () => {
 
       const url = await addUrl(user!.id, `https://${hostname}/page`)
       await createCrawler(user!, { hostname_id: url!.hostname.id, crawler_type: 'fetch' })
-      await updateUrlHostname(url!.hostname.id, { crawlable: true })
+      await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
 
       const clientError = new CrawlerHttpClientError(`https://${hostname}/page`, 403, 200)
       fetchCrawlerHtml.mockRejectedValueOnce(clientError)
@@ -212,7 +212,7 @@ describe('crawl-url.errors', () => {
 
       const url = await addUrl(user!.id, `https://${hostname}/page`)
       await createCrawler(user!, { hostname_id: url!.hostname.id, crawler_type: 'fetch' })
-      await updateUrlHostname(url!.hostname.id, { crawlable: true })
+      await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
 
       fetchCrawlerHtml.mockRejectedValueOnce(new Error('S3 upload failed'))
 
@@ -230,7 +230,7 @@ describe('crawl-url.errors', () => {
         hostname_id: url!.hostname.id,
         crawler_type: 'fetch',
       })
-      await updateUrlHostname(url!.hostname.id, { crawlable: true })
+      await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
       const crawl = await createCrawl(url!.id, crawler.id)
       await updateCrawl(crawl.id, url!.id, {
         completed_at: new Date(),

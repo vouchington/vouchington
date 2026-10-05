@@ -6,7 +6,7 @@ export type CommunityAgentPrompt = {
   prompt: string
   model_name: string
   model_provider: string
-  slot_allocated: boolean
+  is_slot_allocated: boolean
   activated_at: Date | null
   deactivated_at: Date | null
   created_at: Date

@@ -182,7 +182,7 @@ describe('createTopicSettingsBehaviorPage factory', () => {
       if (id === 'company-1') return { topic: { ...baseTopic, id: 'company-1', name: 'Acme Corp' } }
       return null
     })
-    mockGetTypeAttrs.mockResolvedValue({ company_id: 'company-1' })
+    mockGetTypeAttrs.mockResolvedValue({ company_topic_id: 'company-1' })
 
     const result = await BehaviorPage({ params: Promise.resolve({ id: 'topic-1' }) })
     expect(result).toBeTruthy()

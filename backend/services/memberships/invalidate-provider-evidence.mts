@@ -58,7 +58,7 @@ async function rejectMembershipProviderEvidenceInTransaction(
   await query(sql`/* rejectMembershipProviderEvidence: cancel source */
     UPDATE membership_source_states
     SET effective_at = LEAST(effective_at, ${rejectedAt}), cancelled_at = ${rejectedAt},
-        expired_at = NULL, past_due_at = NULL, paused_at = NULL, auto_renews = false,
+        expired_at = NULL, past_due_at = NULL, paused_at = NULL, should_auto_renew = false,
         updated_at = CURRENT_TIMESTAMP
     WHERE membership_source_id = ${lockedTarget.membership_source_id}
   `)
@@ -102,7 +102,7 @@ async function cancelMembershipProjectionAndRecordRejection(
   await query(sql`/* rejectMembershipProviderEvidence: cancel projection */
     UPDATE memberships
     SET effective_at = LEAST(effective_at, ${rejectedAt}), cancelled_at = ${rejectedAt},
-        expired_at = NULL, past_due_at = NULL, paused_at = NULL, cancel_at_period_end = false,
+        expired_at = NULL, past_due_at = NULL, paused_at = NULL, should_cancel_at_period_end = false,
         updated_at = CURRENT_TIMESTAMP
     WHERE id = ${membershipId} AND projection_ended_at IS NULL
   `)
@@ -130,7 +130,7 @@ async function getUnclaimedEvidenceId(
     WHERE evidence.id = ${evidenceId}
       AND NOT EXISTS (
         SELECT 1 FROM membership_changes membership_change
-        WHERE membership_change.membership_provider_evidence_id = evidence.id
+        WHERE membership_change.membership_provider_evidence_record_id = evidence.id
       )`)
   return (rows[0] as { id: string } | undefined)?.id ?? null
 }
@@ -145,7 +145,7 @@ async function getRejectedEvidenceTarget(
       source.id AS membership_source_id, source.source_kind, source.user_id
     FROM membership_provider_evidence_records evidence
     INNER JOIN membership_provider_observations observation
-      ON observation.membership_provider_evidence_id = evidence.id
+      ON observation.membership_provider_evidence_record_id = evidence.id
     INNER JOIN membership_sources source
       ON source.membership_provider_lineage_id = observation.membership_provider_lineage_id
       AND source.source_kind = observation.source_kind

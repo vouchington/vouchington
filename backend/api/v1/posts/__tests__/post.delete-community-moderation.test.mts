@@ -25,7 +25,7 @@ describe('DELETE /api/v1/posts/:idOrSlug community moderation', () => {
     const rootPost = await createCommunityPostFixture(author, community.id)
     const comment = await createCommunityPostFixture(author, community.id, {
       post_type: 'comment',
-      parent_id: rootPost.id,
+      parent_post_id: rootPost.id,
     })
     await setTestPostClearanceStatus(comment.id, 'pending', author.id)
 

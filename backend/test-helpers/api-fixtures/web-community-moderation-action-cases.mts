@@ -55,7 +55,7 @@ export const webCommunityModerationActionApiFixtureCases: ApiFixtureCase[] = [
     id: 'web.communities.post-type-settings.update.default',
     method: 'PATCH',
     path: `/api/v1/communities/${community.slug}/post-type-settings`,
-    requestBody: { allow_review_posts: true, allow_data_point_posts: true },
+    requestBody: { should_allow_review_posts: true, should_allow_data_point_posts: true },
     route: {
       routeTemplate: '/api/v1/communities/:communitySlug/post-type-settings',
       pathParams: { communitySlug: community.slug },
@@ -65,8 +65,8 @@ export const webCommunityModerationActionApiFixtureCases: ApiFixtureCase[] = [
     body: {
       community: {
         ...community,
-        allow_review_posts: true,
-        allow_data_point_posts: true,
+        should_allow_review_posts: true,
+        should_allow_data_point_posts: true,
       },
     },
     consumers: ['web', 'swift-core', 'swift-ui', 'dotnet-core'],

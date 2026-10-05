@@ -4,7 +4,7 @@
 
 Query parameters: `after` is an opaque owner-scoped cursor and `limit` is from 1 to 100 (default
 25). Statuses are ordered by status UUID ascending and responses use `{ results, page_info }`.
-Each row includes only its ID, optional `since` and `until` dates, and
+Each row includes only its ID, optional `started_on` and `expires_on` dates, and
 `rewards_program_status: { id, name, slug }`.
 
 ### Rewards Program Point Valuations

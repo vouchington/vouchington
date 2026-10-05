@@ -32,7 +32,7 @@ export async function upsertAuthenticatedSession(
     const userAgentId = await upsertUserAgentString(userAgent, { query })
     const { rows } = await query(sql`/* upsertAuthenticatedSession */
       INSERT INTO user_sessions (
-        id, user_id, device_id, device_name, user_agent_id, ip_address, expires_at, last_seen_at
+        id, user_id, device_id, device_name, user_agent_string_id, ip_address, expires_at, last_seen_at
       )
       SELECT ${options.sid}, ${currentUserId}, ${options.deviceId},
         ${deviceName}, ${userAgentId}, ${ipAddress}, ${options.expiresAt}, CURRENT_TIMESTAMP
@@ -43,8 +43,8 @@ export async function upsertAuthenticatedSession(
         device_name = CASE WHEN ${refreshMetadata} AND ${userAgent} <> ''
           AND EXCLUDED.device_name <> 'Unknown device' THEN EXCLUDED.device_name
           ELSE user_sessions.device_name END,
-        user_agent_id = CASE WHEN ${refreshMetadata} AND ${userAgent} <> ''
-          THEN EXCLUDED.user_agent_id ELSE user_sessions.user_agent_id END,
+        user_agent_string_id = CASE WHEN ${refreshMetadata} AND ${userAgent} <> ''
+          THEN EXCLUDED.user_agent_string_id ELSE user_sessions.user_agent_string_id END,
         ip_address = CASE WHEN ${refreshMetadata}
           THEN COALESCE(EXCLUDED.ip_address, user_sessions.ip_address)
           ELSE user_sessions.ip_address END,
@@ -53,7 +53,7 @@ export async function upsertAuthenticatedSession(
       WHERE user_sessions.revoked_at IS NULL
       RETURNING id, user_id, device_id, device_name,
         (SELECT user_agent FROM user_agent_strings
-          WHERE id = user_sessions.user_agent_id) AS user_agent,
+          WHERE id = user_sessions.user_agent_string_id) AS user_agent,
         ip_address, created_at, last_seen_at, expires_at, revoked_at
     `)
     return (rows[0] as UserSessionRow | undefined) ?? null
@@ -115,7 +115,7 @@ export async function listActiveUserSessions(
       s.last_seen_at, s.expires_at,
       to_char(s.last_seen_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS last_seen_cursor
     FROM user_sessions s
-    JOIN user_agent_strings ua ON ua.id = s.user_agent_id
+    JOIN user_agent_strings ua ON ua.id = s.user_agent_string_id
     WHERE s.user_id = ${currentUserId}
       AND s.revoked_at IS NULL
       AND s.expires_at > CURRENT_TIMESTAMP

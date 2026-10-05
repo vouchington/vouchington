@@ -130,7 +130,7 @@ describe('copyright submission guidance in the staff case projection', () => {
     await reviewCopyrightCounterNotice({
       submissionId: counter.submission.id,
       currentUser: moderator,
-      accepted: false,
+      is_accepted: false,
       rationale: 'The declarations need staff review.',
     })
     const reviewed = await readTestCopyrightStaffCase(aggregate.notice.id)

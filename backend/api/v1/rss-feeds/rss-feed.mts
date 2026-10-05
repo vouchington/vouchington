@@ -45,10 +45,10 @@ type UpdateRssFeedBody = {
   rss_feed_url?: string
   topic_id?: string
   title?: string | null
-  enabled?: boolean
+  is_enabled?: boolean
   discoverable?: boolean
   reason?: string
-  ignore_robots_txt?: boolean | null
+  should_ignore_robots_txt?: boolean | null
   unreliable_status_codes?: number[] | null
 }
 app
@@ -96,24 +96,24 @@ app
     const rawBody = (await ctx.request.json('1mb')) as UpdateRssFeedBody
     if (rawBody && typeof rawBody === 'object' && !Array.isArray(rawBody)) {
       const bodyRecord = rawBody as Record<string, unknown>
-      if ('ignore_robots_txt' in bodyRecord || 'unreliable_status_codes' in bodyRecord) {
+      if ('should_ignore_robots_txt' in bodyRecord || 'unreliable_status_codes' in bodyRecord) {
         ctx.assert(isAdminUser(currentUser), 403, 'Unauthorized')
       }
     }
     validateRequestContract(ctx, 'PATCH:/api/v1/rss-feeds/:id', { body: rawBody })
-    const { enabled, discoverable, reason, ...changes } = parseUpdateRssFeedBody(rawBody)
+    const { is_enabled, discoverable, reason, ...changes } = parseUpdateRssFeedBody(rawBody)
 
-    // Admin-only operator field: ignore_robots_txt
+    // Admin-only operator field: should_ignore_robots_txt
     const bodyRecord = rawBody as Record<string, unknown>
-    if ('ignore_robots_txt' in bodyRecord) {
+    if ('should_ignore_robots_txt' in bodyRecord) {
       ctx.assert(isAdminUser(currentUser), 403, 'Unauthorized')
-      const raw = bodyRecord.ignore_robots_txt
+      const raw = bodyRecord.should_ignore_robots_txt
       ctx.assert(
         raw === null || typeof raw === 'boolean',
         400,
-        'ignore_robots_txt must be a boolean or null',
+        'should_ignore_robots_txt must be a boolean or null',
       )
-      ;(changes as UpdateRssFeedChanges).ignore_robots_txt = raw as boolean | null
+      ;(changes as UpdateRssFeedChanges).should_ignore_robots_txt = raw as boolean | null
     }
     if ('unreliable_status_codes' in bodyRecord) {
       ctx.assert(isAdminUser(currentUser), 403, 'Unauthorized')
@@ -124,7 +124,7 @@ app
         )
     }
     await updateRssFeedWithStateAsCurrentUser(currentUser, rssFeed.id, changes, {
-      enabled,
+      is_enabled,
       discoverable,
       reason,
     })

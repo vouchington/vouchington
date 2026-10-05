@@ -90,12 +90,12 @@ export function buildEntityRelationSelectQuery(
   query.append(sql` AS obj ON r.object_id = obj.id`)
   if (objectPostFilter) {
     query.append(sql`
-    JOIN posts AS obj_access ON obj_access.id = COALESCE(obj.root_id, obj.id)`)
+    JOIN posts AS obj_access ON obj_access.id = COALESCE(obj.root_post_id, obj.id)`)
   }
   if (joinsSubjectPost) {
     query.append(sql`
     JOIN posts AS subject_post ON subject_post.id = r.subject_id
-    JOIN posts AS subject_access ON subject_access.id = COALESCE(subject_post.root_id, subject_post.id)`)
+    JOIN posts AS subject_access ON subject_access.id = COALESCE(subject_post.root_post_id, subject_post.id)`)
   }
 
   const filters: SQLStatement[] = [sql`r.subject_id = ${subjectId}`, sql`r.deleted_at IS NULL`]

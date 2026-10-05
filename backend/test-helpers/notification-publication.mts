@@ -25,7 +25,7 @@ export async function createTestOrphanRssFeedItemNotification(input: {
 }): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`/* createTestOrphanRssFeedItemNotification */
     INSERT INTO notifications (
-      user_id, entity_type, delivery_type, sent_by_user_id, publication_rss_feed_item_id,
+      user_id, entity_type, delivery_type, sent_by_id, publication_rss_feed_item_id,
       title, body, target_path
     )
     VALUES (

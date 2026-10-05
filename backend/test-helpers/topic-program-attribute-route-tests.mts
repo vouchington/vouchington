@@ -44,14 +44,14 @@ function programRoute(spec: TopicProgramSpec, topicId: string): string {
 
 function companyIdFromBody(
   body: {
-    referral_program_attributes: { company_id: string }
-    rewards_program_attributes: { company_id: string }
+    referral_program_attributes: { company_topic_id: string }
+    rewards_program_attributes: { company_topic_id: string }
   },
   spec: TopicProgramSpec,
 ): string {
   return spec.kind === 'referral'
-    ? body.referral_program_attributes.company_id
-    : body.rewards_program_attributes.company_id
+    ? body.referral_program_attributes.company_topic_id
+    : body.rewards_program_attributes.company_topic_id
 }
 
 async function insertProgramTopic(
@@ -106,7 +106,10 @@ function registerGetTests(spec: TopicProgramSpec, longPublicCacheControl: string
       const request = createRequest()
       await request.authenticateAs(admin)
 
-      await request.patch(programRoute(spec, topicId)).send({ company_id: companyId }).expect(200)
+      await request
+        .patch(programRoute(spec, topicId))
+        .send({ company_topic_id: companyId })
+        .expect(200)
 
       const response = await request.get(programRoute(spec, topicId)).expect(200)
       expect(companyIdFromBody(response.body, spec)).toBe(companyId)
@@ -161,7 +164,7 @@ function registerPatchTests(spec: TopicProgramSpec): void {
 
       const response = await request
         .patch(programRoute(spec, topicId))
-        .send({ company_id: companyId })
+        .send({ company_topic_id: companyId })
         .expect(200)
 
       expect(companyIdFromBody(response.body, spec)).toBe(companyId)
@@ -177,7 +180,7 @@ function registerPatchTests(spec: TopicProgramSpec): void {
         random,
       )
       const request = createRequest()
-      await request.patch(programRoute(spec, topicId)).send({ company_id: null }).expect(401)
+      await request.patch(programRoute(spec, topicId)).send({ company_topic_id: null }).expect(401)
     })
 
     test('should return 403 when user is not admin', async () => {
@@ -191,7 +194,7 @@ function registerPatchTests(spec: TopicProgramSpec): void {
       )
       const request = createRequest()
       await request.authenticateAs(user)
-      await request.patch(programRoute(spec, topicId)).send({ company_id: null }).expect(403)
+      await request.patch(programRoute(spec, topicId)).send({ company_topic_id: null }).expect(403)
     })
   })
 }

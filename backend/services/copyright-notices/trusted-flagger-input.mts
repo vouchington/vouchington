@@ -38,7 +38,7 @@ export function validateTrustedFlaggerInput(input: CreateCopyrightTrustedFlagger
       !Number.isNaN(Date.parse(`${awardedAt}T00:00:00.000Z`)) &&
       new Date(`${awardedAt}T00:00:00.000Z`).toISOString().slice(0, 10) === awardedAt,
     422,
-    'awarded_at is invalid',
+    'awarded_on is invalid',
   )
   const awardReference =
     input.awardReference == null

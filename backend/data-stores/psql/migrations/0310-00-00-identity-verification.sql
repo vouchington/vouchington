@@ -75,7 +75,7 @@ CREATE TABLE identity_verification_attempts (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
   source identity_verification_attempt_sources NOT NULL,
-  grant_entitlement_id UUID REFERENCES identity_verification_attempts(id) ON DELETE RESTRICT,
+  grant_entitlement_attempt_id UUID REFERENCES identity_verification_attempts(id) ON DELETE RESTRICT,
   checkout_session_id TEXT UNIQUE,
   checkout_claimed_at TIMESTAMPTZ,
   provider_session_id TEXT UNIQUE,
@@ -88,11 +88,11 @@ CREATE TABLE identity_verification_attempts (
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   CHECK (
-    (source = 'support_grant' AND grant_entitlement_id IS NULL AND granted_by_id IS NOT NULL
+    (source = 'support_grant' AND grant_entitlement_attempt_id IS NULL AND granted_by_id IS NOT NULL
       AND grant_note IS NOT NULL AND btrim(grant_note) <> '')
-    OR (source = 'support_grant' AND grant_entitlement_id IS NOT NULL AND granted_by_id IS NULL
+    OR (source = 'support_grant' AND grant_entitlement_attempt_id IS NOT NULL AND granted_by_id IS NULL
       AND grant_note IS NULL)
-    OR (source <> 'support_grant' AND grant_entitlement_id IS NULL AND granted_by_id IS NULL
+    OR (source <> 'support_grant' AND grant_entitlement_attempt_id IS NULL AND granted_by_id IS NULL
       AND grant_note IS NULL)
   ),
   CHECK (released_at IS NULL OR consumed_at IS NULL),
@@ -112,8 +112,8 @@ CREATE UNIQUE INDEX uq_identity_verification_attempts__included_active_or_consum
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX uq_identity_verification_attempts__support_grant_active_child
-  ON identity_verification_attempts (grant_entitlement_id)
-  WHERE grant_entitlement_id IS NOT NULL AND released_at IS NULL;
+  ON identity_verification_attempts (grant_entitlement_attempt_id)
+  WHERE grant_entitlement_attempt_id IS NOT NULL AND released_at IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_identity_verification_attempts__user
@@ -121,8 +121,8 @@ CREATE INDEX idx_identity_verification_attempts__user
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_identity_verification_attempts__grant_entitlement
-  ON identity_verification_attempts (grant_entitlement_id)
-  WHERE grant_entitlement_id IS NOT NULL;
+  ON identity_verification_attempts (grant_entitlement_attempt_id)
+  WHERE grant_entitlement_attempt_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_identity_verification_attempts__granted_by
@@ -137,7 +137,7 @@ CREATE INDEX idx_identity_verification_attempts__checkout_session
 COMMENT ON TABLE identity_verification_attempts IS 'Durable identity-verification payment-attempt and entitlement audit. Support grants are parent entitlements; each Checkout is an immutable child attempt.';
 COMMENT ON COLUMN identity_verification_attempts.user_id IS 'Account that owns this entitlement or Checkout attempt.';
 COMMENT ON COLUMN identity_verification_attempts.source IS 'Whether the attempt was self-paid, included with membership, or funded by a support grant.';
-COMMENT ON COLUMN identity_verification_attempts.grant_entitlement_id IS 'Parent support-grant entitlement funding this Checkout attempt. Released child attempts retain their Checkout audit history.';
+COMMENT ON COLUMN identity_verification_attempts.grant_entitlement_attempt_id IS 'Parent support-grant entitlement funding this Checkout attempt. Released child attempts retain their Checkout audit history.';
 COMMENT ON COLUMN identity_verification_attempts.checkout_session_id IS 'Stripe Checkout Session that funded this attempt.';
 COMMENT ON COLUMN identity_verification_attempts.checkout_claimed_at IS 'When the guarded user payment-pending transition durably claimed this exact Checkout. Reconciles acknowledgement loss without returning a concurrent loser session.';
 COMMENT ON COLUMN identity_verification_attempts.provider_session_id IS 'Stripe Identity verification session created for this Checkout attempt.';

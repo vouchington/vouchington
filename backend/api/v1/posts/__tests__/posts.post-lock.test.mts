@@ -142,7 +142,7 @@ describe('POST/DELETE /api/v1/posts/:idOrSlug/lock', () => {
         .post('/api/v1/posts')
         .send({
           post_type: 'comment',
-          parent_id: rootPostId,
+          parent_post_id: rootPostId,
           markdown: 'blocked comment',
           cf_turnstile_response: 'test-bypass',
         })

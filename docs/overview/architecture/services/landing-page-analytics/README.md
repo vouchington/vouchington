@@ -54,7 +54,7 @@ getLandingPageAnalyticsByPageId(landingPageId)
 - **daily_stats[]** — daily visits, unique visitors, and clicks (30-day window)
 - **utm_sources[]** — top 20 UTM sources by visit count (30-day window, "direct" for untagged)
 
-API routes compose a **conversion_funnel** by combining analytics data with signup count from the landing page owner's `users.referrer_id`.
+API routes compose a **conversion_funnel** by combining analytics data with signup count from the landing page owner's `users.referrer_user_id`.
 
 ## Authorization
 

@@ -6,7 +6,7 @@ export type CommunityAgentModerationResult = {
   id: string
   post_id: string
   community_prompt_id: string
-  flagged: boolean
+  is_flagged: boolean
   results: AgentModerationStoredResults
   created_at: Date
 }
@@ -20,7 +20,7 @@ export async function searchCommunityAgentModerations(
       am.id,
       am.post_id,
       am.prompt_id AS community_prompt_id,
-      am.flagged,
+      am.is_flagged,
       am.results,
       am.created_at
     FROM agent_moderations am

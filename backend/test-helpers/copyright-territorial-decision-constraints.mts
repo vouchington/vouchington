@@ -8,7 +8,7 @@ type Fixture = { actorId: string; noticeId: string; otherNoticeId: string }
 
 async function fixture(query: TransactionQuery, jurisdiction: Jurisdiction): Promise<Fixture> {
   const { rows } = await query<{
-    actor_id: string
+    actor_user_id: string
     notice_id: string
     other_notice_id: string
   }>(sql`/* territorialDecisionConstraintFixture */
@@ -26,11 +26,11 @@ async function fixture(query: TransactionQuery, jurisdiction: Jurisdiction): Pro
       ) VALUES (${jurisdiction}, 'copyright', CURRENT_TIMESTAMP, 'contact', 'work', 'test-v1')
       RETURNING id
     )
-    SELECT actor.id AS actor_id, first_notice.id AS notice_id,
+    SELECT actor.id AS actor_user_id, first_notice.id AS notice_id,
       second_notice.id AS other_notice_id FROM actor, first_notice, second_notice`)
   const row = rows[0]
   if (!row) throw new Error('Missing territorial decision fixture')
-  return { actorId: row.actor_id, noticeId: row.notice_id, otherNoticeId: row.other_notice_id }
+  return { actorId: row.actor_user_id, noticeId: row.notice_id, otherNoticeId: row.other_notice_id }
 }
 
 async function assessment(
@@ -46,7 +46,7 @@ async function assessment(
       ) VALUES (${noticeId}, 'notice', CURRENT_TIMESTAMP, 'staff', 'body') RETURNING id
     )
     INSERT INTO copyright_notice_submission_assessments (
-      copyright_notice_submission_id, assessed_at, assessed_by_id, substantially_compliant
+      copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant
     ) SELECT id, CURRENT_TIMESTAMP, ${actorId}, ${compliant} FROM submission RETURNING id`)
   if (!rows[0]) throw new Error('Missing assessment fixture')
   return rows[0].id
@@ -88,7 +88,7 @@ async function revoke(
     WITH request AS (
       INSERT INTO copyright_territorial_redress_requests (
         copyright_notice_id, jurisdiction, copyright_territorial_decision_id,
-        filed_by, submitted_by_user_id, idempotency_key, explanation_ciphertext
+        filed_by, submitted_by_id, idempotency_key, explanation_ciphertext
       ) VALUES (${noticeId}, 'eu_dsa', ${decisionId}, 'notifier', ${actorId}, ${crypto.randomUUID()}, 'appeal')
       RETURNING id
     )

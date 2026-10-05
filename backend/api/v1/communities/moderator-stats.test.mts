@@ -81,7 +81,9 @@ describe('GET /api/v1/communities/:idOrSlug/moderator-stats', () => {
 
     expect(res.body.window).toBe(30)
     expect(Array.isArray(res.body.stats)).toBe(true)
-    const ownerStat = res.body.stats.find((s: { actor_id: string }) => s.actor_id === owner.id)
+    const ownerStat = res.body.stats.find(
+      (s: { actor_user_id: string }) => s.actor_user_id === owner.id,
+    )
     expect(ownerStat).toBeDefined()
     expect(ownerStat.counts.remove).toBeGreaterThanOrEqual(1)
     expect(typeof res.body.users).toBe('object')

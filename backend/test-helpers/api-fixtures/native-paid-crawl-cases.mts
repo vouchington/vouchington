@@ -7,7 +7,7 @@ const paidSafeCrawl = {
   completed_at: '2026-01-02T00:01:00Z',
   response_status_code: 200,
   title: 'Native client guide',
-  lang: 'en',
+  language: 'en',
 }
 
 const paidSafeRssFeedCrawl = {

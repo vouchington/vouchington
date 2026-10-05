@@ -35,7 +35,7 @@ export async function ensureGooglePlayAcknowledgement(options: {
   )
   await query(sql`/* ensureGooglePlayAcknowledgement */
     INSERT INTO membership_google_play_acknowledgements (
-      membership_provider_evidence_id, membership_provider_lineage_id, environment, application_id, subscription_id, purchase_token_lookup_sha256, encrypted_purchase_token
+      membership_provider_evidence_record_id, membership_provider_lineage_id, environment, application_id, subscription_id, purchase_token_lookup_sha256, encrypted_purchase_token
     ) VALUES (${options.evidenceId}, ${options.lineageId}, ${options.environment}, ${options.applicationId}, ${options.subscriptionId}, ${lookup}, ${encrypted})
     ON CONFLICT (environment, application_id, purchase_token_lookup_sha256) DO UPDATE
       SET skipped_at = NULL, skip_reason = NULL, next_attempt_at = CURRENT_TIMESTAMP

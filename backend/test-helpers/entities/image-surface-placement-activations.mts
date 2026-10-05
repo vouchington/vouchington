@@ -5,9 +5,9 @@ export type TestImageSurfacePlacementActivation = {
   placement_id: string
   surface_kind: string
   placement_revision: number
-  bound_by_user_id: string
-  uploaded_by_user_id: string
-  bound_by_administrator: boolean | null
+  bound_by_id: string
+  uploaded_by_id: string
+  is_bound_by_administrator: boolean | null
   bound_at: Date
 }
 
@@ -17,8 +17,8 @@ export async function getTestImageSurfacePlacementActivations(
 ): Promise<TestImageSurfacePlacementActivation[]> {
   const { rows } = await read<TestImageSurfacePlacementActivation>(sql`
     /* getTestImageSurfacePlacementActivations */
-    SELECT placement_id, surface_kind, placement_revision, bound_by_user_id,
-      uploaded_by_user_id, bound_by_administrator, bound_at
+    SELECT placement_id, surface_kind, placement_revision, bound_by_id,
+      uploaded_by_id, is_bound_by_administrator, bound_at
     FROM image_surface_placement_activations
     WHERE placement_id = ${placementId}
     ORDER BY placement_revision

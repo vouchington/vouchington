@@ -41,8 +41,8 @@ describe('refresh.generated', () => {
       `https://refresh-noncrawlable-${random}.example.com/a`,
     )
 
-    await updateUrlHostname(crawlableUrl!.hostname.id, { crawlable: true })
-    await updateUrlHostname(nonCrawlableUrl!.hostname.id, { crawlable: false })
+    await updateUrlHostname(crawlableUrl!.hostname.id, { is_crawlable: true })
+    await updateUrlHostname(nonCrawlableUrl!.hostname.id, { is_crawlable: false })
 
     const ids = await searchHostnameIdsNeedingCrawlerRefresh(100)
 
@@ -61,7 +61,7 @@ describe('refresh.generated', () => {
       insertTestUrl({ url: `${base}/4`, hostnameId }),
     ])
 
-    await updateUrlHostname(hostnameId, { crawlable: true })
+    await updateUrlHostname(hostnameId, { is_crawlable: true })
 
     const candidates = await searchCrawlerRefreshUrlCandidatesByHostnameId(hostnameId, 3)
 
@@ -79,7 +79,7 @@ describe('refresh.generated', () => {
     const hostnameId = upserted.get(hostname)
     expect(hostnameId).toBeDefined()
 
-    await updateUrlHostname(hostnameId!, { crawlable: true })
+    await updateUrlHostname(hostnameId!, { is_crawlable: true })
 
     await insertStaleFetchCrawlerForHostname(hostnameId!)
     const ids = await searchHostnameIdsNeedingCrawlerRefresh(10_000)
@@ -99,7 +99,7 @@ describe('refresh.generated', () => {
       insertTestUrl({ url: `${base}/5`, hostnameId }),
     ])
 
-    await updateUrlHostname(hostnameId, { crawlable: true })
+    await updateUrlHostname(hostnameId, { is_crawlable: true })
 
     const excludedIds = [urls[0], urls[1]]
     const candidates = await searchCrawlerRefreshUrlCandidatesByHostnameId(
@@ -127,7 +127,7 @@ describe('refresh.generated', () => {
       insertTestUrl({ url: `${base}/3`, hostnameId }),
     ])
 
-    await updateUrlHostname(hostnameId, { crawlable: true })
+    await updateUrlHostname(hostnameId, { is_crawlable: true })
 
     const candidates = await searchCrawlerRefreshUrlCandidatesByHostnameId(hostnameId)
 

@@ -17,6 +17,6 @@ export async function setRssFeedItemShareSortAtForTest({
     SET sort_at = ${sortAt}::timestamptz
     WHERE recipient_user_id = ${recipientUserId}
       AND rss_feed_item_id = ${rssFeedItemId}
-      AND shared_by_user_id = ${sharedByUserId}
+      AND shared_by_id = ${sharedByUserId}
   `)
 }

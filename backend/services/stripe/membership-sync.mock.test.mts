@@ -182,7 +182,7 @@ describe('ensureMembershipFromStripeSubscription', () => {
       (await getMembershipHistory(member.id)).find(change => change.stripe_event_id === eventId),
     ).toMatchObject({
       membership_id: existingMembership.id,
-      membership_provider_evidence_id: expect.stringMatching(/^[0-9a-f-]{36}$/),
+      membership_provider_evidence_record_id: expect.stringMatching(/^[0-9a-f-]{36}$/),
     })
   })
 
@@ -237,7 +237,7 @@ describe('ensureMembershipFromStripeSubscription', () => {
       expect.objectContaining({
         change_type: 'renewal',
         stripe_event_id: eventId,
-        membership_provider_evidence_id: expect.stringMatching(/^[0-9a-f-]{36}$/),
+        membership_provider_evidence_record_id: expect.stringMatching(/^[0-9a-f-]{36}$/),
       }),
     ])
   })

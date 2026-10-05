@@ -41,14 +41,14 @@ describe('discuss-in-community-invariants', () => {
         markdown: 'community discussion',
         post_type: 'discussion',
         community_id: community.id,
-        parent_id: source.id,
+        parent_post_id: source.id,
         broadcast: 'everyone',
         privacy: 'public',
       })
 
       expect(discussInCommunity.community_id).toBe(community.id)
-      expect(discussInCommunity.parent_id).toBe(source.id)
-      expect(discussInCommunity.root_id).toBeNull()
+      expect(discussInCommunity.parent_post_id).toBe(source.id)
+      expect(discussInCommunity.root_post_id).toBeNull()
       await expect(
         getVisibleCommentDescendantIdsPage(creator, source.id, source.id, { limit: 100 }),
       ).resolves.toMatchObject({ results: expect.not.arrayContaining([discussInCommunity.id]) })
@@ -75,7 +75,7 @@ describe('discuss-in-community-invariants', () => {
           markdown: 'community discussion',
           post_type: 'discussion',
           community_id: community.id,
-          parent_id: source.id,
+          parent_post_id: source.id,
           broadcast: 'everyone',
           privacy: 'public',
         }),
@@ -99,14 +99,14 @@ describe('discuss-in-community-invariants', () => {
         markdown: 'community discussion',
         post_type: 'discussion',
         community_id: community.id,
-        parent_id: source.id,
+        parent_post_id: source.id,
         broadcast: 'everyone',
         privacy: 'public',
       })
       const comment = await createPost(creator, WEB_PROVENANCE, {
         markdown: 'community reply',
         post_type: 'comment',
-        parent_id: discussInCommunity.id,
+        parent_post_id: discussInCommunity.id,
       })
 
       await expect(getPostMetricsByAny(discussInCommunity.id)).resolves.toMatchObject({

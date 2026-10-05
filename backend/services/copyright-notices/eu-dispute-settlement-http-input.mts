@@ -10,17 +10,16 @@ export function parseEuDisputeSettlementReferral(body: Record<string, unknown>) 
     'referred_by_party is required',
   )
   assert(
-    body.referred_by_user_id === undefined ||
-      (typeof body.referred_by_user_id === 'string' && isUUID(body.referred_by_user_id)),
+    body.referred_by_id === undefined ||
+      (typeof body.referred_by_id === 'string' && isUUID(body.referred_by_id)),
     422,
-    'referred_by_user_id must be a UUID',
+    'referred_by_id must be a UUID',
   )
   return {
     bodyName: body.body_name,
     referredAt: parseEuDisputeSettlementDate(body.referred_at, 'referred_at'),
     referredByParty: body.referred_by_party as 'poster' | 'notifier',
-    referredByUserId:
-      typeof body.referred_by_user_id === 'string' ? body.referred_by_user_id : null,
+    referredByUserId: typeof body.referred_by_id === 'string' ? body.referred_by_id : null,
   }
 }
 

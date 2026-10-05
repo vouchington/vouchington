@@ -51,13 +51,13 @@ function assertCreateInput(ctx: Context, body: CopyrightTrustedFlaggerCreateRequ
     ctx.throw(422, 'awarding_member_state must be an uppercase two-letter code')
   }
   if (
-    typeof body.awarded_at !== 'string' ||
-    !/^\d{4}-\d{2}-\d{2}$/.test(body.awarded_at) ||
-    body.awarded_at.slice(0, 4) === '0000' ||
-    Number.isNaN(Date.parse(`${body.awarded_at}T00:00:00Z`)) ||
-    new Date(`${body.awarded_at}T00:00:00Z`).toISOString().slice(0, 10) !== body.awarded_at
+    typeof body.awarded_on !== 'string' ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(body.awarded_on) ||
+    body.awarded_on.slice(0, 4) === '0000' ||
+    Number.isNaN(Date.parse(`${body.awarded_on}T00:00:00Z`)) ||
+    new Date(`${body.awarded_on}T00:00:00Z`).toISOString().slice(0, 10) !== body.awarded_on
   ) {
-    ctx.throw(422, 'awarded_at must be a valid YYYY-MM-DD date')
+    ctx.throw(422, 'awarded_on must be a valid YYYY-MM-DD date')
   }
   if (!['intellectual_property', 'other'].includes(body.area_of_expertise)) {
     ctx.throw(422, 'area_of_expertise is invalid')
@@ -123,7 +123,7 @@ app.route('/api/v1/copyright-trusted-flaggers').post(async (ctx: Context) => {
     userId: body.user_id,
     awardingCoordinatorName: body.awarding_coordinator_name,
     awardingMemberState: body.awarding_member_state,
-    awardedAt: body.awarded_at,
+    awardedAt: body.awarded_on,
     areaOfExpertise: body.area_of_expertise,
     areaDescription: body.area_description,
     awardReference: body.award_reference,

@@ -101,7 +101,7 @@ export async function beginValidatedOAuthAuthorizationRequest(
   )
   const result = await query<{ id: string }>(
     `/* beginOAuthAuthorizationRequest insert */ INSERT INTO oauth_authorization_requests (
-       client_id, user_id, browser_binding_hash, redirect_uri, state, resource, scopes,
+       client_id, user_id, browser_binding_hash, redirect_uri, client_state, resource, scopes,
        code_challenge, expires_at
      ) VALUES ($1, $2, $3, $4, $5, $6, $7::api_scopes[], $8, $9)
      RETURNING id`,

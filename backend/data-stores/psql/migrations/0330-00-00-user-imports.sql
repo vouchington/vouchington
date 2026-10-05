@@ -85,13 +85,14 @@ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_rss_feed_import_batches (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   created_via content_creation_channels NOT NULL,
   created_via_oauth_client_id UUID,
   CONSTRAINT user_rss_feed_import_batches_created_via_oauth_client_id_check CHECK (created_via_oauth_client_id IS NULL OR (created_via IS NOT NULL AND created_via IN ('api', 'mcp'))),
-  follow BOOLEAN NOT NULL DEFAULT TRUE,
+  should_follow_imported_feeds BOOLEAN NOT NULL DEFAULT TRUE,
   total_rows INT NOT NULL CHECK (total_rows > 0 AND total_rows <= 500),
   completed_rows INT NOT NULL DEFAULT 0 CHECK (completed_rows >= 0),
   failed_rows INT NOT NULL DEFAULT 0 CHECK (failed_rows >= 0),
@@ -170,7 +171,7 @@ COMMENT ON TABLE user_rss_feed_import_batches IS 'Tracks user-submitted RSS feed
 COMMENT ON COLUMN user_rss_feed_import_batches.user_id IS 'The user who submitted the RSS feed import.';
 COMMENT ON COLUMN user_rss_feed_import_batches.created_via IS 'Immutable channel of the request that submitted the import; every feed the import creates carries it.';
 COMMENT ON COLUMN user_rss_feed_import_batches.created_via_oauth_client_id IS 'Immutable OAuth client that submitted the import through the API or MCP; NULL for session and API-key submissions.';
-COMMENT ON COLUMN user_rss_feed_import_batches.follow IS 'Whether successful imported feeds should be followed by the submitting user.';
+COMMENT ON COLUMN user_rss_feed_import_batches.should_follow_imported_feeds IS 'Whether successful imported feeds should be followed by the submitting user.';
 COMMENT ON COLUMN user_rss_feed_import_batches.total_rows IS 'Total number of URLs in this import batch.';
 COMMENT ON COLUMN user_rss_feed_import_batches.completed_rows IS 'Number of rows that completed with a non-error outcome.';
 COMMENT ON COLUMN user_rss_feed_import_batches.failed_rows IS 'Number of rows that reached a terminal error outcome.';

@@ -26,7 +26,9 @@ describe('RSS feed import batches', () => {
       `https://batch-import-b-${Date.now()}.example.com/rss`,
     ]
 
-    const created = await submitRssFeedImport(user, WEB_PROVENANCE, urls, { follow: false })
+    const created = await submitRssFeedImport(user, WEB_PROVENANCE, urls, {
+      should_follow_imported_feeds: false,
+    })
     const status = await getRssFeedImport(user.id, created.import.id)
 
     expect(created.rowIds).toHaveLength(2)
@@ -57,7 +59,9 @@ describe('RSS feed import batches', () => {
       (_, index) => `https://scale-import-${suffix}-${index}.example.com/rss`,
     )
 
-    const created = await submitRssFeedImport(user, WEB_PROVENANCE, urls, { follow: false })
+    const created = await submitRssFeedImport(user, WEB_PROVENANCE, urls, {
+      should_follow_imported_feeds: false,
+    })
     const status = await getRssFeedImport(user.id, created.import.id)
 
     expect(created.rowIds).toHaveLength(500)

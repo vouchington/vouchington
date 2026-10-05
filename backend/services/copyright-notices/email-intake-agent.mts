@@ -23,10 +23,10 @@ export function decryptAgentIntake(
   intake: CopyrightEmailIntake & ParseCiphertexts,
   attachments: AttachmentCiphertexts[],
 ): CopyrightEmailIntakeForAgent {
-  const purpose = copyrightEmailIntakePurpose(intake.ses_message_id)
+  const purpose = copyrightEmailIntakePurpose(intake.amazon_ses_message_id)
   return {
     id: intake.id,
-    ses_message_id: intake.ses_message_id,
+    amazon_ses_message_id: intake.amazon_ses_message_id,
     received_at: intake.received_at,
     raw_storage_key: intake.raw_storage_key,
     raw_sha256: intake.raw_sha256,

@@ -86,7 +86,7 @@ describe('compare-hostnames', () => {
       const random = Math.random().toString(36).slice(2, 8)
       const blockedId = await insertTestUrlHostname({
         hostname: `compare-blocked-${random}.example.com`,
-        blocked: true,
+        is_blocked: true,
       })
 
       const request = createRequest()
@@ -102,7 +102,7 @@ describe('compare-hostnames', () => {
       const random = Math.random().toString(36).slice(2, 8)
       const blockedId = await insertTestUrlHostname({
         hostname: `compare-blocked-admin-${random}.example.com`,
-        blocked: true,
+        is_blocked: true,
       })
 
       const request = createRequest()

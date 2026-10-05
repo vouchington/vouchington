@@ -48,7 +48,7 @@ export async function selectDirectTerminationReplacement(
     LEFT JOIN membership_provider_observations observation
       ON observation.id = source_state.membership_provider_observation_id
     LEFT JOIN membership_provider_evidence_records evidence
-      ON evidence.id = observation.membership_provider_evidence_id
+      ON evidence.id = observation.membership_provider_evidence_record_id
     WHERE source.user_id = ${userId} AND source.id <> ${terminatedSourceId}
       AND source.source_kind IN ('direct', 'family')
       AND source_state.effective_at <= CURRENT_TIMESTAMP

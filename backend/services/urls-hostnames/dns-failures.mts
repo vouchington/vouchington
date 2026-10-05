@@ -14,7 +14,7 @@ const MAX_CONSECUTIVE_DNS_FAILURES = 3
  * - If last_dns_failure_at is NULL or older than 7 days, the counter resets to 1 (stale
  *   failures should not compound with new ones).
  * - Otherwise the counter is incremented.
- * - When the counter reaches MAX_CONSECUTIVE_DNS_FAILURES, crawlable is set to FALSE and
+ * - When the counter reaches MAX_CONSECUTIVE_DNS_FAILURES, is_crawlable is set to FALSE and
  *   dns_disabled_at is stamped. The hostname stays disabled until an admin clears it.
  */
 export async function recordHostnameDnsFailure(
@@ -56,14 +56,14 @@ export async function recordHostnameConfigurationFailure(hostnameId: string): Pr
         ELSE consecutive_dns_failures + 1
       END,
       last_dns_failure_at = CURRENT_TIMESTAMP,
-      crawlable = CASE
+      is_crawlable = CASE
         WHEN CASE
           WHEN last_dns_failure_at IS NULL
             OR last_dns_failure_at < CURRENT_TIMESTAMP - INTERVAL '7 days'
           THEN 1
           ELSE consecutive_dns_failures + 1
         END >= $2 THEN FALSE
-        ELSE crawlable
+        ELSE is_crawlable
       END,
       dns_disabled_at = CASE
         WHEN CASE

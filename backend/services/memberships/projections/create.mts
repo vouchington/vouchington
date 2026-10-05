@@ -30,7 +30,7 @@ export async function upsertMembershipSourceState(
     INSERT INTO membership_source_states (
       membership_source_id, source_kind, membership_provider_lineage_id,
       membership_provider_observation_id, membership_product_id, effective_at, expires_at,
-      cancelled_at, expired_at, past_due_at, paused_at, auto_renews
+      cancelled_at, expired_at, past_due_at, paused_at, should_auto_renew
     ) VALUES (
       ${source.id}, ${source.kind}, ${source.lineageId},
       ${source.membershipProviderObservationId ?? null}, ${productId}, ${timing.effectiveAt}, ${timing.expiresAt},
@@ -75,7 +75,7 @@ export async function upsertMembershipSourceState(
       expired_at = CASE WHEN EXCLUDED.expired_at IS NULL THEN NULL ELSE COALESCE(membership_source_states.expired_at, EXCLUDED.expired_at) END,
       past_due_at = CASE WHEN EXCLUDED.past_due_at IS NULL THEN NULL ELSE COALESCE(membership_source_states.past_due_at, EXCLUDED.past_due_at) END,
       paused_at = CASE WHEN EXCLUDED.paused_at IS NULL THEN NULL ELSE COALESCE(membership_source_states.paused_at, EXCLUDED.paused_at) END,
-      auto_renews = EXCLUDED.auto_renews,
+      should_auto_renew = EXCLUDED.should_auto_renew,
       updated_at = CURRENT_TIMESTAMP
     WHERE ${source.membershipProviderObservationId ?? null}::uuid IS NULL
       OR membership_source_states.membership_provider_observation_id IS NULL
@@ -106,7 +106,7 @@ export async function insertMembershipProjection(
   const { rows } = await query(sql`/* createMembership */
     INSERT INTO memberships (
       user_id, membership_source_id, membership_product_id, effective_at, expires_at,
-      cancelled_at, expired_at, past_due_at, paused_at, cancel_at_period_end, projection_ended_at
+      cancelled_at, expired_at, past_due_at, paused_at, should_cancel_at_period_end, projection_ended_at
     ) VALUES (
       ${userId}, ${sourceId}, ${productId}, ${timing.effectiveAt}, ${timing.expiresAt},
       CASE WHEN ${status} = 'cancelled' THEN ${timing.terminalEffectiveAt}::timestamptz ELSE NULL END,
@@ -116,7 +116,7 @@ export async function insertMembershipProjection(
       ${isTerminalMembershipStatus(status) ? false : cancelAtPeriodEnd},
       CASE WHEN ${project} THEN NULL ELSE CURRENT_TIMESTAMP END
     )
-    RETURNING id, cancelled_at, expired_at, past_due_at, paused_at, cancel_at_period_end`)
+    RETURNING id, cancelled_at, expired_at, past_due_at, paused_at, should_cancel_at_period_end`)
   return rows[0] as CreatedMembership
 }
 
@@ -125,11 +125,11 @@ export async function setMembershipProjectionCancelAtPeriodEnd(
   cancelAtPeriodEnd: boolean,
   query: QueryExecutor,
 ): Promise<CreatedMembership> {
-  if (membership.cancel_at_period_end === cancelAtPeriodEnd) return membership
+  if (membership.should_cancel_at_period_end === cancelAtPeriodEnd) return membership
   await query(sql`/* setMembershipProjectionCancelAtPeriodEnd */
-    UPDATE memberships SET cancel_at_period_end = ${cancelAtPeriodEnd}, updated_at = CURRENT_TIMESTAMP
+    UPDATE memberships SET should_cancel_at_period_end = ${cancelAtPeriodEnd}, updated_at = CURRENT_TIMESTAMP
     WHERE id = ${membership.id} AND projection_ended_at IS NULL`)
-  return { ...membership, cancel_at_period_end: cancelAtPeriodEnd }
+  return { ...membership, should_cancel_at_period_end: cancelAtPeriodEnd }
 }
 
 export type CreatedMembership = {
@@ -138,5 +138,5 @@ export type CreatedMembership = {
   expired_at: Date | null
   past_due_at: Date | null
   paused_at: Date | null
-  cancel_at_period_end: boolean
+  should_cancel_at_period_end: boolean
 }

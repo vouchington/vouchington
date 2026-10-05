@@ -22,7 +22,7 @@ describe('create.generated', () => {
   it('createBoilerplateRemoval creates a record with empty results', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const url = await addUrl(null, `https://bp-create-${random}.example.com/blog/post1`)
-    await updateUrlHostname(url!.hostname.id, { crawlable: true })
+    await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
     await deleteBoilerplateRemovalsByHostnameId(url!.hostname.id)
 
     const result = await createBoilerplateRemoval(
@@ -39,7 +39,7 @@ describe('create.generated', () => {
   it('createBoilerplateRemoval updates existing row on re-run for same hostname and path', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const url = await addUrl(null, `https://bp-history-${random}.example.com/docs/page1`)
-    await updateUrlHostname(url!.hostname.id, { crawlable: true })
+    await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
     await deleteBoilerplateRemovalsByHostnameId(url!.hostname.id)
 
     const first = await createBoilerplateRemoval(
@@ -67,7 +67,7 @@ describe('create.generated', () => {
   it('getLatestBoilerplateRemovalByHostnameAndPath returns recent record', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const url = await addUrl(null, `https://bp-get-${random}.example.com/articles/a1`)
-    await updateUrlHostname(url!.hostname.id, { crawlable: true })
+    await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
     await deleteBoilerplateRemovalsByHostnameId(url!.hostname.id)
 
     const created = await createBoilerplateRemoval(
@@ -99,13 +99,13 @@ describe('create.generated', () => {
     const base = `https://bp-search-${random}.example.com`
     const hostname = `bp-search-${random}.example.com`
 
-    await insertUrlHostname(hostname, { crawlable: false, blocked: false })
+    await insertUrlHostname(hostname, { is_crawlable: false, is_blocked: false })
 
     const url1 = await addUrl(null, `${base}/blog/post1`)
     const url2 = await addUrl(null, `${base}/blog/post2`)
     // Clear any removals created by URL listeners before checking candidates.
     await deleteBoilerplateRemovalsByHostnameId(url1!.hostname.id)
-    await updateUrlHostname(url1!.hostname.id, { crawlable: true })
+    await updateUrlHostname(url1!.hostname.id, { is_crawlable: true })
     const crawler = await createCrawler(user!, {
       hostname_id: url1!.hostname.id,
       crawler_type: 'fetch',
@@ -129,7 +129,7 @@ describe('create.generated', () => {
 
     const url1 = await addUrl(null, `${base}/news/story1`)
     const url2 = await addUrl(null, `${base}/news/story2`)
-    await updateUrlHostname(url1!.hostname.id, { crawlable: true })
+    await updateUrlHostname(url1!.hostname.id, { is_crawlable: true })
     const crawler = await createCrawler(user!, {
       hostname_id: url1!.hostname.id,
       crawler_type: 'fetch',
@@ -159,7 +159,7 @@ describe('create.generated', () => {
     // Only one URL has recent eligible crawl HTML - should not appear.
     const url1 = await addUrl(null, `${base}/solo/only`)
     const url2 = await addUrl(null, `${base}/solo/another`)
-    await updateUrlHostname(url1!.hostname.id, { crawlable: true })
+    await updateUrlHostname(url1!.hostname.id, { is_crawlable: true })
     const crawler = await createCrawler(user!, {
       hostname_id: url1!.hostname.id,
       crawler_type: 'fetch',

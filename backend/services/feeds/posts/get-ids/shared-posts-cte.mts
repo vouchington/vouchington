@@ -32,13 +32,13 @@ export function appendSharedPosts(
     ),
     shared_post_candidates AS MATERIALIZED (
       SELECT post_feed_shares.id, post_feed_shares.post_id,
-        post_feed_shares.sort_at, post_feed_shares.shared_by_user_id, post_feed_shares.created_at
+        post_feed_shares.sort_at, post_feed_shares.shared_by_id, post_feed_shares.created_at
       FROM post_feed_shares
       WHERE post_feed_shares.recipient_user_id = ${currentUserId}
-        AND post_feed_shares.shared_by_user_id IS NOT NULL
+        AND post_feed_shares.shared_by_id IS NOT NULL
         AND (NOT EXISTS (
           SELECT 1 FROM excluded_users
-          WHERE excluded_users.user_id = post_feed_shares.shared_by_user_id
+          WHERE excluded_users.user_id = post_feed_shares.shared_by_id
         )) IS TRUE`)
   if (sharedPostsCutoffDate) {
     query.append(sql`
@@ -68,7 +68,7 @@ export function appendSharedPosts(
     shared_posts AS (
       SELECT shared_post_candidates.id AS result_id, eligible_shared_posts.id AS entity_id,
         eligible_shared_posts.post_type, shared_post_candidates.sort_at,
-        'share'::text AS delivery_type, shared_post_candidates.shared_by_user_id,
+        'share'::text AS delivery_type, shared_post_candidates.shared_by_id,
         shared_post_candidates.created_at AS shared_at`)
   if (sort === 'hot') query.append(sql`,\n        eligible_shared_posts.hot_score`)
   query.append(sql`

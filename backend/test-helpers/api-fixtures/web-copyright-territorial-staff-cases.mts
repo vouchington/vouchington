@@ -111,7 +111,7 @@ export const webCopyrightTerritorialStaffApiFixtureCases: ApiFixtureCase[] = [
               {
                 id: '00000000-0000-7000-8000-00000000190a',
                 filed_by: 'poster',
-                submitted_by_user_id: '00000000-0000-7000-8000-000000001909',
+                submitted_by_id: '00000000-0000-7000-8000-000000001909',
                 received_at: '2026-10-04T11:00:00.000Z',
                 explanation: 'The image was licensed for this use.',
                 informed_at: '2026-10-04T10:35:00.000Z',

@@ -56,30 +56,30 @@ describe('Users API Routes', () => {
       expect(response.body.user.ui_locale).toBe('en')
     })
 
-    it('should default fediverse_federation_enabled to false and allow opting in', async () => {
+    it('should default is_fediverse_federation_enabled to false and allow opting in', async () => {
       const user = await createTestUser({ username: safeUsername('users-fediverse-patch') })
       const request = createRequest()
       await request.authenticateAs(user!)
 
       const before = await request.get(`/api/v1/users/${user!.id}`).expect(200)
-      expect(before.body.user.fediverse_federation_enabled).toBe(false)
+      expect(before.body.user.is_fediverse_federation_enabled).toBe(false)
 
       const response = await request
         .patch(`/api/v1/users/${user!.id}`)
-        .send({ fediverse_federation_enabled: true })
+        .send({ is_fediverse_federation_enabled: true })
         .expect(200)
 
-      expect(response.body.user.fediverse_federation_enabled).toBe(true)
+      expect(response.body.user.is_fediverse_federation_enabled).toBe(true)
     })
 
-    it('should reject a non-boolean fediverse_federation_enabled value', async () => {
+    it('should reject a non-boolean is_fediverse_federation_enabled value', async () => {
       const user = await createTestUser({ username: safeUsername('users-fediverse-invalid') })
       const request = createRequest()
       await request.authenticateAs(user!)
 
       await request
         .patch(`/api/v1/users/${user!.id}`)
-        .send({ fediverse_federation_enabled: 'yes' })
+        .send({ is_fediverse_federation_enabled: 'yes' })
         .expect(422)
     })
 

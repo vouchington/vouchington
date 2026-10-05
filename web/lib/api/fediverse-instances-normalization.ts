@@ -38,7 +38,7 @@ export function normalizeFediverseInstanceAttributes(
     nodeinfo_software_version: nullableString(source.nodeinfo_software_version),
     total_users: nullableNumber(source.total_users),
     monthly_active_users: nullableNumber(source.monthly_active_users),
-    open_registrations: nullableBoolean(source.open_registrations),
+    is_open_for_registrations: nullableBoolean(source.is_open_for_registrations),
   }
 }
 

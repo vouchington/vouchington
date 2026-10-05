@@ -93,7 +93,7 @@ describe('openModmailThread', () => {
 })
 
 describe('assignModmailThread', () => {
-  it('sets assigned_mod_id and assigned_at', async () => {
+  it('sets assigned_moderator_user_id and assigned_at', async () => {
     const owner = await createTestUser()
     const mod = await createTestUser()
     const subject = await createTestUser()
@@ -104,7 +104,7 @@ describe('assignModmailThread', () => {
     await assignModmailThread(thread.id, mod.id)
 
     const fields = await getTestConversationThreadFields(thread.id)
-    expect(fields.assigned_mod_id).toBe(mod.id)
+    expect(fields.assigned_moderator_user_id).toBe(mod.id)
     expect(fields.assigned_at).not.toBeNull()
   })
 })

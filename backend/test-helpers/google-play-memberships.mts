@@ -14,7 +14,7 @@ export async function getTestGooglePlayAcknowledgementId(
     SELECT acknowledgement.id
     FROM membership_google_play_acknowledgements acknowledgement
     INNER JOIN membership_verifications verification
-      ON verification.membership_provider_evidence_id = acknowledgement.membership_provider_evidence_id
+      ON verification.membership_provider_evidence_record_id = acknowledgement.membership_provider_evidence_record_id
     WHERE verification.id = ${verificationId}
   `)
   return rows[0]?.id ?? null
@@ -51,7 +51,7 @@ export async function countTestGooglePlayProviderObservations(
     WHERE observation.membership_provider_lineage_id = (
       SELECT evidence.membership_provider_lineage_id
       FROM membership_verifications verification
-      INNER JOIN membership_provider_evidence_records evidence ON evidence.id = verification.membership_provider_evidence_id
+      INNER JOIN membership_provider_evidence_records evidence ON evidence.id = verification.membership_provider_evidence_record_id
       WHERE verification.id = ${verificationId}
     )
   `)
@@ -120,7 +120,7 @@ export async function createTestCorruptGooglePlayMembershipVerification(options:
       ) RETURNING id
     )
     INSERT INTO membership_verifications (
-      user_id, idempotency_key, request_fingerprint, membership_provider_evidence_id,
+      user_id, idempotency_key, request_fingerprint, membership_provider_evidence_record_id,
       provider, environment, application_id
     ) SELECT
       ${options.userId}, ${randomUUID()}, ${createHash('sha256').update(randomUUID()).digest('hex')}, id,
@@ -158,9 +158,9 @@ export async function reacceptTestGooglePlayVerifiedEvidence(options: {
       observation.membership_provider_product_id AS "membershipProviderProductId"
     FROM membership_verifications verification
     INNER JOIN membership_provider_evidence_records evidence
-      ON evidence.id = verification.membership_provider_evidence_id
+      ON evidence.id = verification.membership_provider_evidence_record_id
     INNER JOIN membership_provider_observations observation
-      ON observation.membership_provider_evidence_id = evidence.id
+      ON observation.membership_provider_evidence_record_id = evidence.id
     WHERE verification.id = ${options.verificationId}
       AND observation.provider = 'google_play'
   `)

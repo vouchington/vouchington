@@ -4,13 +4,13 @@ import type { IndividualCard } from '@/types/my'
 
 const card: IndividualCard = {
   id: 'card-1',
-  card_id: 'topic-1',
+  card_topic_id: 'topic-1',
   opened_on: '2024-01-01',
   closed_on: null,
   received_sign_up_bonus_on: null,
   credit_limit: { amount: 100_000, currency: 'usd' },
   is_authorized_user: false,
-  authorized_user_of_id: null,
+  authorized_user_of_card_id: null,
   note: null,
   card: { id: 'topic-1', name: 'Named card', slug: 'named-card' },
   authorized_user_of_card: null,

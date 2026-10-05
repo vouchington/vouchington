@@ -14,10 +14,10 @@ async function seedPlaywrightPostFeedFixtures(query: TransactionQuery): Promise<
     `INSERT INTO rss_feeds (id, rss_feed_url_id, topic_id, title, created_via) VALUES ( '019c64e6-f8c0-7000-8000-000000000001', '019c64e6-f8b0-7000-b000-000000000001', '019c64e6-f8a0-7000-a000-000000000001', 'Test News Source Feed', 'system' ) ON CONFLICT (rss_feed_url_id) WHERE deleted_at IS NULL DO UPDATE SET id = EXCLUDED.id, topic_id = EXCLUDED.topic_id, title = EXCLUDED.title, deleted_at = NULL`,
   )
   await query(
-    `INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, enabled, reason) VALUES ('enablement', '019c64e6-f8c0-7000-8000-000000000001', TRUE, 'playwright seed current state')`,
+    `INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason) VALUES ('enablement', '019c64e6-f8c0-7000-8000-000000000001', TRUE, 'playwright seed current state')`,
   )
   await query(
-    `INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, enabled, reason) VALUES ('discoverability', '019c64e6-f8c0-7000-8000-000000000001', TRUE, 'playwright seed current state')`,
+    `INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason) VALUES ('discoverability', '019c64e6-f8c0-7000-8000-000000000001', TRUE, 'playwright seed current state')`,
   )
   await query(
     `INSERT INTO rss_feed_item_guids (url_hostname_id, guid) VALUES ('019c64e6-1000-7000-b000-000000000001', 'test-item-1'), ('019c64e6-1000-7000-b000-000000000001', 'test-item-2'), ('019c64e6-1000-7000-b000-000000000001', 'modal-story-primary'), ('019c64e6-1000-7000-b000-000000000001', 'modal-story-related') ON CONFLICT (url_hostname_id, guid) DO NOTHING`,
@@ -65,10 +65,10 @@ async function seedPlaywrightPostFeedFixtures(query: TransactionQuery): Promise<
     `INSERT INTO rss_feeds (id, rss_feed_url_id, topic_id, title, created_via) VALUES ( '019c64e6-f8c0-7000-8000-000000000003', '019c64e6-f8b0-7000-b000-000000000012', '019c64e6-f8a0-7000-a000-000000000002', 'The Points Guy', 'system' ) ON CONFLICT (rss_feed_url_id) WHERE deleted_at IS NULL DO UPDATE SET id = EXCLUDED.id, topic_id = EXCLUDED.topic_id, title = EXCLUDED.title, deleted_at = NULL`,
   )
   await query(
-    `INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, enabled, reason) VALUES ('enablement', '019c64e6-f8c0-7000-8000-000000000002', TRUE, 'playwright seed initial state'), ('enablement', '019c64e6-f8c0-7000-8000-000000000003', TRUE, 'playwright seed initial state')`,
+    `INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason) VALUES ('enablement', '019c64e6-f8c0-7000-8000-000000000002', TRUE, 'playwright seed initial state'), ('enablement', '019c64e6-f8c0-7000-8000-000000000003', TRUE, 'playwright seed initial state')`,
   )
   await query(
-    `INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, enabled, reason) VALUES ('discoverability', '019c64e6-f8c0-7000-8000-000000000002', TRUE, 'playwright seed initial state'), ('discoverability', '019c64e6-f8c0-7000-8000-000000000003', TRUE, 'playwright seed initial state')`,
+    `INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason) VALUES ('discoverability', '019c64e6-f8c0-7000-8000-000000000002', TRUE, 'playwright seed initial state'), ('discoverability', '019c64e6-f8c0-7000-8000-000000000003', TRUE, 'playwright seed initial state')`,
   )
 }
 

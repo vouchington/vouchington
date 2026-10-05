@@ -86,14 +86,14 @@ describe('membership enqueues', () => {
       stripeEventRecordId,
       processingAttemptId,
       stripeSubscriptionId,
-      livemode: true,
+      isLiveMode: true,
     })
     const jobs = (
       await Promise.all(QUEUE_STATES.map(state => memberships.getJobs(state, 0, -1)))
     ).flat()
     expect(jobs.find(job => job.id === jobId)).toMatchObject({
       id: jobId,
-      data: { stripeEventRecordId, processingAttemptId, stripeSubscriptionId, livemode: true },
+      data: { stripeEventRecordId, processingAttemptId, stripeSubscriptionId, isLiveMode: true },
       opts: {
         deduplication: { id: jobId, mode: 'simple' },
         ordering: { key: `stripe-subscription:production:${stripeSubscriptionId}`, concurrency: 1 },
@@ -109,7 +109,7 @@ describe('membership enqueues', () => {
       stripeEventRecordId,
       processingAttemptId,
       stripeSubscriptionId: null,
-      livemode: false,
+      isLiveMode: false,
     })
     const jobs = (
       await Promise.all(QUEUE_STATES.map(state => memberships.getJobs(state, 0, -1)))
@@ -119,7 +119,7 @@ describe('membership enqueues', () => {
         stripeEventRecordId,
         processingAttemptId,
         stripeSubscriptionId: null,
-        livemode: false,
+        isLiveMode: false,
       },
     })
     expect(jobs.find(job => job.id === jobId)?.opts.ordering).toBeUndefined()
@@ -130,7 +130,7 @@ describe('membership enqueues', () => {
       stripeEventRecordId: randomUUID(),
       processingAttemptId: randomUUID(),
       stripeSubscriptionId: `sub_${randomUUID()}`,
-      livemode: false,
+      isLiveMode: false,
     }
     const jobId = `stripe-event__${data.stripeEventRecordId}__${data.processingAttemptId}`
     const [job] = await enqueueBulkProcessStripeEvents([data])

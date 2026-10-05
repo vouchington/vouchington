@@ -30,7 +30,7 @@ describe('fetch.generated', () => {
           title: `Test Feed ${random}`,
         })
         // Enable the feed
-        await updateRssFeedById(feed.id, { enabled: true })
+        await updateRssFeedById(feed.id, { is_enabled: true })
 
         // Fetch the feed
         const items = await fetchRssFeed(feed.id, 0)
@@ -79,7 +79,7 @@ describe('fetch.generated', () => {
       topic_id: topic.id,
       title: `Test Feed ${random}`,
     })
-    await updateRssFeedById(feed.id, { enabled: false })
+    await updateRssFeedById(feed.id, { is_enabled: false })
     const result = await fetchRssFeed(feed.id)
     expect(result).toEqual([])
   })
@@ -95,7 +95,7 @@ describe('fetch.generated', () => {
       topic_id: topic.id,
       title: `Test Feed ${random}`,
     })
-    await updateRssFeedById(feed.id, { enabled: true, last_fetched_at: true })
+    await updateRssFeedById(feed.id, { is_enabled: true, last_fetched_at: true })
 
     // Should skip fetching before attempting to reach the network
     await expect(fetchRssFeed(feed.id)).resolves.toEqual([])
@@ -113,7 +113,7 @@ describe('fetch.generated', () => {
       topic_id: topic.id,
       title: `Blocked Feed ${random}`,
     })
-    await updateRssFeedById(feed.id, { enabled: true })
+    await updateRssFeedById(feed.id, { is_enabled: true })
     const urlHostname = await getUrlHostnameByAny(hostname)
     await updateUrlHostnameBlocked(urlHostname!.id, true)
 
@@ -154,7 +154,7 @@ describe('fetch.generated', () => {
           topic_id: topic.id,
           title: `Test Feed ${random}`,
         })
-        await updateRssFeedById(feed.id, { enabled: true, last_fetched_at: true })
+        await updateRssFeedById(feed.id, { is_enabled: true, last_fetched_at: true })
 
         // Should not throw when ttl=0
         const result = await fetchRssFeed(feed.id, 0)

@@ -95,21 +95,21 @@ export async function selectStaffLegalHolds(
     body_ciphertext: string
     assessment_id: string | null
     assessed_at: Date | null
-    from_original_claimant: boolean | null
+    is_from_original_claimant: boolean | null
     proceeding_kind: 'federal_court' | 'ccb' | null
     ccb_claim_kind: 'claim' | 'counterclaim' | null
     commenced_at: Date | null
     received_by_designated_agent_at: Date | null
-    same_material: boolean | null
+    is_same_material: boolean | null
     target_ids: string[]
     resolution_id: string | null
     guidance_ciphertext: string | null
   }>(sql`/* getPendingCopyrightStaffCase:legalHolds */
     SELECT submission.id AS submission_id, submission.received_at, submission.body_ciphertext,
       guidance.guidance_ciphertext,
-      assessment.id AS assessment_id, assessment.assessed_at, assessment.from_original_claimant,
+      assessment.id AS assessment_id, assessment.assessed_at, assessment.is_from_original_claimant,
       assessment.proceeding_kind, assessment.ccb_claim_kind, assessment.commenced_at,
-      assessment.received_by_designated_agent_at, assessment.same_material,
+      assessment.received_by_designated_agent_at, assessment.is_same_material,
       COALESCE(ARRAY(
         SELECT target.copyright_notice_target_id
         FROM copyright_notice_legal_hold_assessment_targets target
@@ -144,21 +144,21 @@ export async function selectStaffLegalHolds(
     assessment: row.assessment_id
       ? {
           id: row.assessment_id,
-          from_original_claimant: row.from_original_claimant === true,
+          is_from_original_claimant: row.is_from_original_claimant === true,
           proceeding_kind: row.proceeding_kind,
           ccb_claim_kind: row.ccb_claim_kind,
           commenced_at: row.commenced_at,
           received_by_designated_agent_at: row.received_by_designated_agent_at,
-          same_material: row.same_material === true,
+          is_same_material: row.is_same_material === true,
           target_ids: row.target_ids,
           qualifying:
-            row.from_original_claimant === true &&
+            row.is_from_original_claimant === true &&
             row.proceeding_kind !== null &&
             row.commenced_at !== null &&
             row.received_by_designated_agent_at !== null &&
             row.assessed_at !== null &&
             row.received_by_designated_agent_at <= row.assessed_at &&
-            row.same_material === true,
+            row.is_same_material === true,
           resolved: row.resolution_id !== null,
         }
       : null,

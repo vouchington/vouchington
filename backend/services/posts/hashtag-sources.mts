@@ -3,7 +3,7 @@ import { write } from '@data-stores/psql'
 import type { HashtagSource } from './hashtag-occurrences.mts'
 
 export type ExistingHashtagSource = {
-  contributor_id: string
+  contributor_user_id: string
   source: HashtagSource
   topic_alias_id: string
   authored_token: string
@@ -30,7 +30,7 @@ export async function getExistingHashtagSources(
 ): Promise<ExistingHashtagSource[]> {
   const { rows } = await write<ExistingHashtagSource>(
     `/* getExistingHashtagSources */
-      SELECT contributor_id, source, topic_alias_id, authored_token
+      SELECT contributor_user_id, source, topic_alias_id, authored_token
       FROM post_topic_alias_sources
       WHERE post_id = $1`,
     [postId],
@@ -52,11 +52,11 @@ export async function replacePostHashtagSources(
   if (sources.length === 0) return
   await write(
     `/* syncPostHashtagCategoriesInTransaction.insertSources */
-      INSERT INTO post_topic_alias_sources (post_id, topic_alias_id, contributor_id, source, authored_token)
-      SELECT $1, topic_alias_id, contributor_id, source, authored_token
+      INSERT INTO post_topic_alias_sources (post_id, topic_alias_id, contributor_user_id, source, authored_token)
+      SELECT $1, topic_alias_id, contributor_user_id, source, authored_token
       FROM unnest($2::uuid[], $3::uuid[], $4::post_topic_alias_source_types[], $5::text[]) AS input(
         topic_alias_id,
-        contributor_id,
+        contributor_user_id,
         source,
         authored_token
       )`,

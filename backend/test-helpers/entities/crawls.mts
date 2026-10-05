@@ -45,7 +45,7 @@ export async function crawlHasPendingEmbeddings(urlId: string, crawlId: string):
 
 /**
  * Insert a bare "just crawled" crawl row associated with a crawler — matches the shape
- * produced by the real `createCrawl` service call (crawler_id set, response_status_code
+ * produced by the real `createCrawl` service call (hostname_crawler_configuration_id set, response_status_code
  * 200, empty markdown, no completed_at/embeddings_generated_at). Use this for tests that
  * need a freshly-created, still-pending crawl; use `insertTestCrawl` when the test needs a
  * crawl that already looks "finalized" for search.
@@ -57,7 +57,7 @@ export async function insertTestCrawlPending(
   const { rows } = await write(sql`
     INSERT INTO crawls (
       url_id,
-      crawler_id,
+      hostname_crawler_configuration_id,
       request_headers,
       response_headers,
       response_status_code,

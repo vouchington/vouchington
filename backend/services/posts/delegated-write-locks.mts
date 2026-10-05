@@ -17,7 +17,7 @@ export async function lockDelegatedPostThread(
   if (!post) throw createHttpError(404, 'Post not found')
   const nodes =
     post.post_type === 'comment' ? await getCommentAncestorsByAny(postId, { query }) : [post]
-  if (nodes.at(-1)?.id !== post.id || nodes[0]?.id !== (post.root_id ?? post.id))
+  if (nodes.at(-1)?.id !== post.id || nodes[0]?.id !== (post.root_post_id ?? post.id))
     throw createHttpError(404, 'Post not found')
   if (post.community_id) await lockDelegatedPostCommunity(query, post.community_id, actorId)
   const ids = nodes.map(node => node.id).toSorted()

@@ -37,7 +37,7 @@ describe('dns-failures', () => {
     expect(row!.consecutive_dns_failures).toBe(1)
     expect(row!.last_dns_failure_at).toBeInstanceOf(Date)
     expect(row!.dns_disabled_at).toBeNull()
-    expect(row!.crawlable).not.toBe(false)
+    expect(row!.is_crawlable).not.toBe(false)
   })
 
   it('recordHostnameDnsFailure increments counter on second failure', async () => {
@@ -60,7 +60,7 @@ describe('dns-failures', () => {
 
     const row = await getTestHostnameDnsStats(id)
     expect(row!.consecutive_dns_failures).toBe(3)
-    expect(row!.crawlable).toBe(false)
+    expect(row!.is_crawlable).toBe(false)
     expect(row!.dns_disabled_at).toBeInstanceOf(Date)
   })
 
@@ -92,7 +92,7 @@ describe('dns-failures', () => {
     // Counter must reset to 1, not increment to 3
     expect(row!.consecutive_dns_failures).toBe(1)
     expect(row!.dns_disabled_at).toBeNull()
-    expect(row!.crawlable).not.toBe(false)
+    expect(row!.is_crawlable).not.toBe(false)
   })
 
   it('recordHostnameDnsFailure does nothing when canary DNS fails', async () => {
@@ -128,7 +128,7 @@ describe('dns-failures', () => {
 
     const row = await getTestHostnameDnsStats(id)
     expect(row!.consecutive_dns_failures).toBe(3)
-    expect(row!.crawlable).toBe(false)
+    expect(row!.is_crawlable).toBe(false)
     expect(row!.dns_disabled_at).toBeInstanceOf(Date)
   })
 

@@ -1,7 +1,7 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_google_play_acknowledgements (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
-  membership_provider_evidence_id UUID NOT NULL CONSTRAINT uq_membership_google_play_acknowledgement__provider_evidence_id UNIQUE,
+  membership_provider_evidence_record_id UUID NOT NULL CONSTRAINT uq_membership_google_play_acknowledgement__provider_evidence_id UNIQUE,
   membership_provider_lineage_id UUID NOT NULL,
   provider membership_provider_kinds NOT NULL DEFAULT 'google_play' CHECK (provider = 'google_play'),
   environment membership_provider_environments NOT NULL, application_id TEXT NOT NULL,
@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS membership_google_play_acknowledgements (
   CHECK (acknowledged_at IS NULL OR attempt_claim_token IS NULL),
   CHECK (skipped_at IS NULL OR attempt_claim_token IS NULL),
   CHECK (attempt_claimed_at IS NULL OR attempt_claim_token IS NOT NULL),
-  CONSTRAINT fk_membership_google_play_acknowledgements__evidence_context FOREIGN KEY (membership_provider_evidence_id, membership_provider_lineage_id, provider, environment, application_id) REFERENCES membership_provider_evidence_records(id, membership_provider_lineage_id, provider, environment, application_id) ON DELETE RESTRICT,
+  CONSTRAINT fk_membership_google_play_acknowledgements__evidence_context FOREIGN KEY (membership_provider_evidence_record_id, membership_provider_lineage_id, provider, environment, application_id) REFERENCES membership_provider_evidence_records(id, membership_provider_lineage_id, provider, environment, application_id) ON DELETE RESTRICT,
   CONSTRAINT fk_membership_google_play_acknowledgements__lineage_context FOREIGN KEY (membership_provider_lineage_id, provider, environment, application_id) REFERENCES membership_provider_lineages(id, provider, environment, application_id) ON DELETE RESTRICT
 );
 CREATE OR REPLACE TRIGGER trigger_membership_google_play_acknowledgements_updated_at BEFORE UPDATE ON membership_google_play_acknowledgements FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
@@ -28,7 +28,7 @@ CREATE INDEX IF NOT EXISTS idx_membership_google_play_acknowledgements__lineage_
 CREATE INDEX IF NOT EXISTS idx_membership_google_play_acknowledgements__due ON membership_google_play_acknowledgements (next_attempt_at, id) WHERE acknowledged_at IS NULL AND skipped_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_membership_google_play_acknowledgements__pending_id ON membership_google_play_acknowledgements (id) WHERE acknowledged_at IS NULL AND skipped_at IS NULL;
 COMMENT ON TABLE membership_google_play_acknowledgements IS 'Durable Google Play acknowledgement ledger. A retry always refetches subscriptionsv2 before another acknowledgement attempt.';
-COMMENT ON COLUMN membership_google_play_acknowledgements.membership_provider_evidence_id IS 'Immutable verified provider evidence whose eligible purchase requires acknowledgement.';
+COMMENT ON COLUMN membership_google_play_acknowledgements.membership_provider_evidence_record_id IS 'Immutable verified provider evidence whose eligible purchase requires acknowledgement.';
 COMMENT ON COLUMN membership_google_play_acknowledgements.membership_provider_lineage_id IS 'Canonical Google Play purchase lineage constrained to match the evidence context.';
 COMMENT ON COLUMN membership_google_play_acknowledgements.provider IS 'Context discriminator constrained to Google Play.';
 COMMENT ON COLUMN membership_google_play_acknowledgements.environment IS 'Google Play environment constrained to match the evidence and lineage context.';

@@ -29,7 +29,7 @@ export type PrivacyFormInitialUser = Pick<
   | 'default_post_broadcast'
   | 'default_post_privacy'
   | 'processing_restricted_at'
-  | 'third_party_marketing'
+  | 'should_receive_third_party_marketing'
 >
 
 export function PrivacyForm({ initialUser }: { initialUser: PrivacyFormInitialUser }) {
@@ -52,30 +52,30 @@ export function PrivacyForm({ initialUser }: { initialUser: PrivacyFormInitialUs
     default_post_broadcast: initialUser.default_post_broadcast ?? 'everyone',
     default_post_privacy: initialUser.default_post_privacy ?? 'public',
     processing_restricted_at: initialUser.processing_restricted_at != null,
-    third_party_marketing: initialUser.third_party_marketing ?? false,
+    should_receive_third_party_marketing: initialUser.should_receive_third_party_marketing ?? false,
   })
 
   type SettingsKey = keyof typeof settings
 
   async function handleMarketingChange(enabled: boolean) {
-    if (pending.has('third_party_marketing')) return
-    const prev = settings.third_party_marketing
+    if (pending.has('should_receive_third_party_marketing')) return
+    const prev = settings.should_receive_third_party_marketing
 
-    setSettings(s => ({ ...s, third_party_marketing: enabled }))
-    setPending(s => new Set(s).add('third_party_marketing'))
+    setSettings(s => ({ ...s, should_receive_third_party_marketing: enabled }))
+    setPending(s => new Set(s).add('should_receive_third_party_marketing'))
     try {
-      await updateMyUser(userId, { third_party_marketing: enabled })
+      await updateMyUser(userId, { should_receive_third_party_marketing: enabled })
       onSuccess(t('extracted.my.privacyForm.privacySettingUpdated_3c09f089'))
     } catch (err) {
-      setSettings(s => ({ ...s, third_party_marketing: prev }))
+      setSettings(s => ({ ...s, should_receive_third_party_marketing: prev }))
       onError(err, {
         fallback: t('extracted.my.privacyForm.failedToUpdatePrivacySetting_d08bc692'),
-        tags: { form: 'my-privacy', field: 'third_party_marketing' },
+        tags: { form: 'my-privacy', field: 'should_receive_third_party_marketing' },
       })
     } finally {
       setPending(s => {
         const next = new Set(s)
-        next.delete('third_party_marketing')
+        next.delete('should_receive_third_party_marketing')
         return next
       })
     }
@@ -154,7 +154,7 @@ export function PrivacyForm({ initialUser }: { initialUser: PrivacyFormInitialUs
       <PrivacyToggles
         pending={pending}
         processingRestricted={settings.processing_restricted_at}
-        thirdPartyMarketing={settings.third_party_marketing}
+        thirdPartyMarketing={settings.should_receive_third_party_marketing}
         onMarketingChange={handleMarketingChange}
         onRestrictProcessingChange={handleRestrictProcessingChange}
       />

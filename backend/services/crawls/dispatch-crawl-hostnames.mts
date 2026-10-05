@@ -12,8 +12,8 @@ export const dispatchCrawlHostnames = async (): Promise<number> => {
   const statement = sql`/* dispatchCrawlHostnames */
     SELECT id
     FROM url_hostnames uh
-    WHERE uh.crawlable = true
-      AND uh.blocked = false
+    WHERE uh.is_crawlable = true
+      AND uh.is_blocked = false
       AND NOT EXISTS (
         SELECT 1 FROM blocklisted_domains db
         JOIN domain_blocklist_sources dbs ON dbs.id = db.source_id

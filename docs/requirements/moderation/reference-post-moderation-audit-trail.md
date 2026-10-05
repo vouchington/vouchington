@@ -52,7 +52,7 @@ clearance projection; public eligibility reads only `approved_at`.
 
 Administrators and site moderators may approve, reject, or mark any post in review. Every override
 requires a provider-neutral public reason code, may include a staff-only private note, appends a
-staff disposition, and sets `platform_override` on the clearance change. Automated decisions do
+staff disposition, and sets `is_platform_override` on the clearance change. Automated decisions do
 not replace the latest platform override. A content edit resets the override by creating a new
 pending generation.
 

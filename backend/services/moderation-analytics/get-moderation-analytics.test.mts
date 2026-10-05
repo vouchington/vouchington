@@ -52,7 +52,7 @@ describe('getModerationAnalytics', () => {
       communityId: community.id,
     })
     expect(metrics.moderator_workload.moderators).toEqual([
-      expect.objectContaining({ actor_id: actor.id, total: 1 }),
+      expect.objectContaining({ actor_user_id: actor.id, total: 1 }),
     ])
     expect(metrics.moderator_workload.moderators[0]!.counts).toEqual({ approve: 1 })
     expect(metrics.moderator_workload.moderators[0]!.weekly_counts).toEqual([
@@ -93,7 +93,7 @@ describe('getModerationAnalytics', () => {
     })
 
     expect(metrics.moderator_workload.moderators).toEqual([
-      expect.objectContaining({ actor_id: humanModerator.id, total: 1 }),
+      expect.objectContaining({ actor_user_id: humanModerator.id, total: 1 }),
     ])
   })
 

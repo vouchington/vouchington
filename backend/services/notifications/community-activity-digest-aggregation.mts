@@ -19,7 +19,7 @@ export async function aggregateCommunityActivityDigestBatch(input: {
         AND cm.role IN ('owner', 'moderator') AND c.deleted_at IS NULL AND c.archived_at IS NULL
         AND u.deleted_at IS NULL AND NOT EXISTS (
           SELECT 1 FROM user_suspensions us WHERE us.user_id = cm.user_id AND us.lifted_at IS NULL)
-        AND (NOT cm.suppress_community_digests_while_on_vacation OR NOT EXISTS (
+        AND (NOT cm.should_suppress_community_digests_while_on_vacation OR NOT EXISTS (
           SELECT 1 FROM community_member_vacations v WHERE v.community_id = cm.community_id
             AND v.user_id = cm.user_id AND v.starts_at <= CURRENT_TIMESTAMP
             AND (v.ends_at IS NULL OR v.ends_at > CURRENT_TIMESTAMP)))
@@ -71,7 +71,7 @@ export async function aggregateCommunityActivityDigestBatch(input: {
       SELECT p.community_id, concat(c.name, ': ', p.title, ' (', count(reply.id), ' replies)') AS label,
         count(reply.id)::int AS replies, row_number() OVER (PARTITION BY p.community_id ORDER BY count(reply.id) DESC, p.id ASC) AS rank
       FROM posts p JOIN communities c ON c.id = p.community_id JOIN community_ids ids ON ids.community_id = p.community_id
-      JOIN posts reply ON reply.parent_id = p.id AND reply.post_type = 'comment'
+      JOIN posts reply ON reply.parent_post_id = p.id AND reply.post_type = 'comment'
         AND reply.id >= ${input.windowStartId} AND reply.id < ${input.windowEndId}
         AND reply.deleted_at IS NULL
       WHERE p.post_type = 'discussion' AND p.id < ${input.windowEndId} AND p.deleted_at IS NULL

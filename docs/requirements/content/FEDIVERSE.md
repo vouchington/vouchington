@@ -40,7 +40,7 @@ protocol, usage, registration, and hostname-trust metadata, and retain generic t
 follow, and mute actions. Native Fediverse search also exposes visible All, PeerTube, Mastodon,
 Lemmy, and Bluesky provider filters with canonical route state.
 
-The per-user `fediverse_federation_enabled` opt-in is persisted and transported in account models,
+The per-user `is_fediverse_federation_enabled` opt-in is persisted and transported in account models,
 but no client currently renders a control for it. It is therefore not a cross-client parity gap;
 adding its first UI is product work that must update the parity contract when a reference surface
 exists. Instance submission and integration-status administration likewise have no rendered web

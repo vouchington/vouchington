@@ -31,7 +31,7 @@ describe('createReportIntegrityFlag', () => {
     expect(flag!.reported_user_id).toBe(targetUser.id)
     expect(flag!.flag_type).toBe('mass_report_suspected')
     expect(flag!.reporter_count).toBe(5)
-    expect(flag!.new_account_reporter_pct).toBeCloseTo(0.8)
+    expect(flag!.new_account_reporter_percent).toBeCloseTo(0.8)
     expect(flag!.resolved_at).toBeNull()
 
     const dbFlags = await getTestReportIntegrityFlagsByUserId(targetUser.id)

@@ -32,8 +32,8 @@ const profileCommentPost = completeNativePost({
   post_type: 'comment',
   title: 'Profile comment',
   markdown: 'Authored profile comment',
-  parent_id: profileCommentRootPost.id,
-  root_id: profileCommentRootPost.id,
+  parent_post_id: profileCommentRootPost.id,
+  root_post_id: profileCommentRootPost.id,
 })
 
 function profilePostFeedBody(

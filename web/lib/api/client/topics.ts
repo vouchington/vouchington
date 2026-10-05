@@ -74,8 +74,8 @@ export async function updateTopic(
     slug?: string
     markdown?: string
     topic_type?: string
-    noindex?: boolean
-    allow_reviews?: boolean
+    is_noindexed?: boolean
+    should_allow_reviews?: boolean
     /** Hostname string (e.g. "thepointsguy.com") — resolved server-side */
     hostname?: string | null
     logo_image_id?: string | null

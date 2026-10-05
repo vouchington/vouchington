@@ -74,7 +74,7 @@ export async function listTestPostPublicationIdentityKeys(params: {
       COALESCE(key.uuid_value::text, key.text_value) AS value
     FROM (SELECT key.id, key.dirty_work_id, ${retainedKeyPayloadSql()} FROM post_publication_dirty_work_keys key) key
     JOIN post_publication_dirty_work work ON work.id = key.dirty_work_id
-    WHERE work.author_user_id = $1 OR work.post_id = $2
+    WHERE work.author_identity_id = $1 OR work.post_identity_id = $2
     ORDER BY key.id
   `,
     [params.authorUserId, params.postId],
@@ -97,17 +97,18 @@ export async function getTestPostPublicationDirtyWorkGenerationForAuthor(
 ): Promise<{ id: string; generation: string } | undefined> {
   const { rows } = await read<{ id: string; generation: string }>(sql`
     /* getTestPostPublicationDirtyWorkGenerationForAuthor */
-    SELECT id, generation FROM post_publication_dirty_work WHERE author_user_id = ${authorUserId}
+    SELECT id, generation FROM post_publication_dirty_work WHERE author_identity_id = ${authorUserId}
   `)
   return rows[0]
 }
 
 export async function setTestPostPublicationDirtyWorkTopicCursor(params: {
-  column: 'author_user_id' | 'rss_feed_id'
+  column: 'author_identity_id' | 'rss_feed_identity_id'
   scopeId: string
   cursorTopicId: string
 }): Promise<void> {
-  const column = params.column === 'author_user_id' ? sql`author_user_id` : sql`rss_feed_id`
+  const column =
+    params.column === 'author_identity_id' ? sql`author_identity_id` : sql`rss_feed_identity_id`
   const statement = sql`
     /* setTestPostPublicationDirtyWorkTopicCursor */
     UPDATE post_publication_dirty_work
@@ -119,10 +120,11 @@ export async function setTestPostPublicationDirtyWorkTopicCursor(params: {
 }
 
 export async function getTestPostPublicationDirtyWorkTopicCursor(params: {
-  column: 'author_user_id' | 'rss_feed_id'
+  column: 'author_identity_id' | 'rss_feed_identity_id'
   scopeId: string
 }): Promise<{ generation: string; cursor_topic_id: string | null } | undefined> {
-  const column = params.column === 'author_user_id' ? sql`author_user_id` : sql`rss_feed_id`
+  const column =
+    params.column === 'author_identity_id' ? sql`author_identity_id` : sql`rss_feed_identity_id`
   const statement = sql`
     /* getTestPostPublicationDirtyWorkTopicCursor */
     SELECT generation, cursor_topic_id

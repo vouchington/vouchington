@@ -11,7 +11,7 @@ export async function loadPostWriteThread(id: string, options: QueryOptions) {
   if (!post) throw createHttpError(404, 'Post not found')
   const nodes =
     post.post_type === 'comment' ? await getCommentAncestorsByAny(post.id, options) : [post]
-  if (nodes.at(-1)?.id !== post.id || nodes[0]?.id !== (post.root_id ?? post.id))
+  if (nodes.at(-1)?.id !== post.id || nodes[0]?.id !== (post.root_post_id ?? post.id))
     throw createHttpError(404, 'Post not found')
   const live = nodes.filter(node => !node.deleted_at)
   const chain = await getPostsByAnyBatch(

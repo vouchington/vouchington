@@ -43,7 +43,7 @@ export function CopyrightStaffFormReview({
         <section className='space-y-2'>
           <h3 className='font-medium'>Form review recorded</h3>
           <p className='text-sm'>
-            {review.accepted ? 'Approved' : 'Rejected'} by{' '}
+            {review.is_accepted ? 'Approved' : 'Rejected'} by{' '}
             {review.reviewed_by_id ?? 'a deleted moderator account'} on{' '}
             <time dateTime={review.reviewed_at}>
               {new Date(review.reviewed_at).toLocaleString()}

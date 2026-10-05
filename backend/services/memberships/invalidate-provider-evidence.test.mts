@@ -32,14 +32,14 @@ describe('rejectMembershipProviderEvidence', () => {
 
     await expect(
       rejectMembershipProviderEvidence(
-        observation.membership_provider_evidence_id,
+        observation.membership_provider_evidence_record_id,
         'Verified evidence was rejected before projection',
       ),
     ).resolves.toEqual({ invalidated: true, membershipId: null })
     await expect(getMembershipByUserId(member.id)).resolves.toBeNull()
     await expect(
       rejectMembershipProviderEvidence(
-        observation.membership_provider_evidence_id,
+        observation.membership_provider_evidence_record_id,
         'A terminal rejection cannot be replayed',
       ),
     ).resolves.toEqual({ invalidated: false, membershipId: null })
@@ -76,7 +76,7 @@ describe('rejectMembershipProviderEvidence', () => {
 
     await expect(
       rejectMembershipProviderEvidence(
-        observation.membership_provider_evidence_id,
+        observation.membership_provider_evidence_record_id,
         'Stripe rejected the verified entitlement evidence',
       ),
     ).resolves.toEqual({ invalidated: true, membershipId: direct.id })
@@ -96,7 +96,7 @@ describe('rejectMembershipProviderEvidence', () => {
     )
     expect(cancellation).toMatchObject({
       from_sku_id: directSku.id,
-      membership_provider_evidence_id: observation.membership_provider_evidence_id,
+      membership_provider_evidence_record_id: observation.membership_provider_evidence_record_id,
       note: 'Stripe rejected the verified entitlement evidence',
       to_sku_id: directSku.id,
     })
@@ -128,12 +128,12 @@ describe('rejectMembershipProviderEvidence', () => {
       changeType: 'renewal',
       fromSkuId: sku.id,
       toSkuId: sku.id,
-      membershipProviderEvidenceId: observation.membership_provider_evidence_id,
+      membershipProviderEvidenceId: observation.membership_provider_evidence_record_id,
     })
 
     await expect(
       rejectMembershipProviderEvidence(
-        observation.membership_provider_evidence_id,
+        observation.membership_provider_evidence_record_id,
         'Previously accepted evidence was rejected',
       ),
     ).resolves.toEqual({ invalidated: true, membershipId: direct.id })
@@ -142,7 +142,8 @@ describe('rejectMembershipProviderEvidence', () => {
     expect(
       history.filter(
         change =>
-          change.membership_provider_evidence_id === observation.membership_provider_evidence_id,
+          change.membership_provider_evidence_record_id ===
+          observation.membership_provider_evidence_record_id,
       ),
     ).toHaveLength(1)
     expect(
@@ -150,7 +151,7 @@ describe('rejectMembershipProviderEvidence', () => {
         change => change.membership_id === direct.id && change.change_type === 'cancellation',
       ),
     ).toMatchObject({
-      membership_provider_evidence_id: null,
+      membership_provider_evidence_record_id: null,
       note: 'Previously accepted evidence was rejected',
     })
   })
@@ -174,12 +175,12 @@ describe('rejectMembershipProviderEvidence', () => {
     })
 
     await rejectMembershipProviderEvidence(
-      observation.membership_provider_evidence_id,
+      observation.membership_provider_evidence_record_id,
       'First rejection wins',
     )
     await expect(
       rejectMembershipProviderEvidence(
-        observation.membership_provider_evidence_id,
+        observation.membership_provider_evidence_record_id,
         'Replay cannot replace the rejection reason',
       ),
     ).resolves.toEqual({ invalidated: false, membershipId: null })
@@ -215,7 +216,7 @@ describe('rejectMembershipProviderEvidence', () => {
 
     await expect(
       rejectMembershipProviderEvidence(
-        observation.membership_provider_evidence_id,
+        observation.membership_provider_evidence_record_id,
         'Future provider evidence was rejected before access began',
       ),
     ).resolves.toEqual({ invalidated: true, membershipId: direct.id })
@@ -260,7 +261,7 @@ describe('rejectMembershipProviderEvidence', () => {
     })
 
     await rejectMembershipProviderEvidence(
-      observation.membership_provider_evidence_id,
+      observation.membership_provider_evidence_record_id,
       'Direct evidence rejected without valid fallback',
     )
 

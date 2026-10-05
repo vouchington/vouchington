@@ -15,14 +15,14 @@ type SetStateResult = 'updated' | 'noop' | 'skipped:human-locked'
 type RssFeedStateChange = {
   id: string
   rss_feed_id: string
-  enabled: boolean
+  is_enabled: boolean
   changed_by_id: string | null
   reason: string | null
   created_at: Date
 }
 type SetRssFeedStateInput = {
   rssFeedId: string
-  enabled: boolean
+  is_enabled: boolean
   reason?: string | null
 }
 type SetRssFeedStateAsSystemInput = SetRssFeedStateInput & {
@@ -39,7 +39,7 @@ async function getLatestChange(
 ): Promise<RssFeedStateChange | null> {
   const { rows } = await read(
     `/* getLatestRssFeedStateChange */
-      SELECT id, rss_feed_id, enabled, changed_by_id, reason, created_at
+      SELECT id, rss_feed_id, is_enabled, changed_by_id, reason, created_at
       FROM rss_feed_setting_changes
       WHERE rss_feed_id = $1 AND change_type = $2
       ORDER BY id DESC
@@ -56,11 +56,11 @@ async function insertChange(
 ): Promise<void> {
   assertReason(input.reason)
   const query = `/* insertRssFeedSettingChange */
-    INSERT INTO rss_feed_setting_changes (rss_feed_id, enabled, changed_by_id, reason, change_type)
+    INSERT INTO rss_feed_setting_changes (rss_feed_id, is_enabled, changed_by_id, reason, change_type)
     VALUES ($1, $2, $3, $4, $5)`
   await write(
     query,
-    [input.rssFeedId, input.enabled, input.createdById, input.reason ?? null, kind],
+    [input.rssFeedId, input.is_enabled, input.createdById, input.reason ?? null, kind],
     options,
   )
 }
@@ -79,7 +79,7 @@ async function setStateAsCurrentUser(
     await lockPostPublicationScope(query, { type: 'rss_feed', rssFeedId: input.rssFeedId })
     const { rows } = await query(
       `/* setRssFeedStateAsCurrentUser:latest */
-        SELECT enabled
+        SELECT is_enabled
         FROM rss_feed_setting_changes
         WHERE rss_feed_id = $1 AND change_type = $2
         ORDER BY id DESC
@@ -87,8 +87,8 @@ async function setStateAsCurrentUser(
         FOR UPDATE`,
       [input.rssFeedId, kind],
     )
-    const latest = rows[0] as { enabled: boolean } | undefined
-    if (latest?.enabled === input.enabled) return 'noop'
+    const latest = rows[0] as { is_enabled: boolean } | undefined
+    if (latest?.is_enabled === input.is_enabled) return 'noop'
     await insertChange(kind, { ...input, createdById: currentUser.id }, { query })
     await recordRssFeedStatePublicationChange(query, input.rssFeedId, kind)
     return 'updated'
@@ -108,7 +108,7 @@ async function setStateAsSystem(
     await lockPostPublicationScope(query, { type: 'rss_feed', rssFeedId: input.rssFeedId })
     const { rows } = await query(
       `/* setRssFeedStateAsSystem:latest */
-        SELECT enabled, changed_by_id
+        SELECT is_enabled, changed_by_id
         FROM rss_feed_setting_changes
         WHERE rss_feed_id = $1 AND change_type = $2
         ORDER BY id DESC
@@ -116,10 +116,10 @@ async function setStateAsSystem(
         FOR UPDATE`,
       [input.rssFeedId, kind],
     )
-    const latest = rows[0] as { enabled: boolean; changed_by_id: string | null } | undefined
+    const latest = rows[0] as { is_enabled: boolean; changed_by_id: string | null } | undefined
     if (!overrideHumanLock && latest?.changed_by_id && latest.changed_by_id !== systemUserId)
       return 'skipped:human-locked'
-    if (latest?.enabled === input.enabled) return 'noop'
+    if (latest?.is_enabled === input.is_enabled) return 'noop'
     await insertChange(kind, { ...changeInput, createdById: systemUserId }, { query })
     await recordRssFeedStatePublicationChange(query, input.rssFeedId, kind)
     return 'updated'
@@ -175,12 +175,12 @@ export async function createInitialRssFeedStateChanges(
   const systemUserId = await getRssFeedAutoUpdaterUserId()
   await insertChange(
     'enablement',
-    { rssFeedId, enabled: true, createdById: systemUserId, reason: 'initial state' },
+    { rssFeedId, is_enabled: true, createdById: systemUserId, reason: 'initial state' },
     options,
   )
   await insertChange(
     'discoverability',
-    { rssFeedId, enabled: true, createdById: systemUserId, reason: 'initial state' },
+    { rssFeedId, is_enabled: true, createdById: systemUserId, reason: 'initial state' },
     options,
   )
 }

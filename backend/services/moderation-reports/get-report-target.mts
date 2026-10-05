@@ -44,7 +44,7 @@ export async function isModerationReportInCommunityScope(
     LEFT JOIN posts target_post
       ON r.post_id IS NOT NULL AND target_post.id = r.post_id
     LEFT JOIN posts root_post
-      ON r.post_id IS NOT NULL AND target_post.post_type = 'comment' AND root_post.id = target_post.root_id
+      ON r.post_id IS NOT NULL AND target_post.post_type = 'comment' AND root_post.id = target_post.root_post_id
     WHERE r.id = ${reportId}
     LIMIT 1
   `)

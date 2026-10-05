@@ -72,7 +72,7 @@ test.describe('Hacker News discussions aside', () => {
 
   test('shows related HN threads for an RSS item URL', async ({ page }) => {
     const user = await withCleanUser(page)
-    await updateUserFields(user.id, { hn_discussions: true })
+    await updateUserFields(user.id, { should_import_hacker_news_discussions: true })
     await page.route('https://hn.algolia.com/**', async route => {
       await route.fulfill({
         status: 200,

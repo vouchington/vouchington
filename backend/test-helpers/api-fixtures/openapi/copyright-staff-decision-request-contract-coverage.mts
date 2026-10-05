@@ -10,7 +10,7 @@ export const SIMILARITY_CANDIDATES = `GET:${NOTICES}/:id/targets/:targetId/image
 
 /** Closed JSON bodies, the keys each one requires and the one decision field each one enumerates. */
 export const BODIES: Record<string, { required: string[]; decision: string }> = {
-  [FORM_INTAKE_REVIEW]: { required: ['accepted', 'rationale'], decision: 'accepted' },
+  [FORM_INTAKE_REVIEW]: { required: ['is_accepted', 'rationale'], decision: 'is_accepted' },
   [RESTRICTION_REVIEW]: { required: ['action', 'rationale'], decision: 'action' },
   [LEGAL_HOLD_RESOLUTION]: {
     required: ['rationale', 'resolution_kind'],

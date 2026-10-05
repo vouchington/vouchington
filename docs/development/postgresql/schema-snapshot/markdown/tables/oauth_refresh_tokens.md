@@ -6,19 +6,19 @@ Single-use refresh tokens stored only as purpose-bound hashes.
 
 Not partitioned — growth: bounded.
 
-| Column           | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                  |
-| ---------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------- |
-| `id`             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                          |
-| `family_id`      | `uuid`                     | no       |                              |          |           |           | Rotating refresh-token family containing this member.    |
-| `token_hash`     | `text`                     | no       |                              |          |           |           | Purpose-bound hash of the opaque refresh token.          |
-| `scopes`         | `api_scopes[]`             | no       |                              |          |           |           | Canonical scope set carried by this family member.       |
-| `generation`     | `integer`                  | no       |                              |          |           |           | Monotonic position of this member within its family.     |
-| `expires_at`     | `timestamp with time zone` | no       |                              |          |           |           | Time after which this refresh token cannot be exchanged. |
-| `consumed_at`    | `timestamp with time zone` | yes      |                              |          |           |           | Time at which this refresh token was rotated.            |
-| `revoked_at`     | `timestamp with time zone` | yes      |                              |          |           |           | Time at which this refresh token was revoked directly.   |
-| `replaced_by_id` | `uuid`                     | yes      |                              |          |           |           | Successor issued when this refresh token was rotated.    |
-| `created_at`     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                          |
-| `updated_at`     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                          |
+| Column                 | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                  |
+| ---------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------- |
+| `id`                   | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                          |
+| `family_id`            | `uuid`                     | no       |                              |          |           |           | Rotating refresh-token family containing this member.    |
+| `token_hash`           | `text`                     | no       |                              |          |           |           | Purpose-bound hash of the opaque refresh token.          |
+| `scopes`               | `api_scopes[]`             | no       |                              |          |           |           | Canonical scope set carried by this family member.       |
+| `generation`           | `integer`                  | no       |                              |          |           |           | Monotonic position of this member within its family.     |
+| `expires_at`           | `timestamp with time zone` | no       |                              |          |           |           | Time after which this refresh token cannot be exchanged. |
+| `consumed_at`          | `timestamp with time zone` | yes      |                              |          |           |           | Time at which this refresh token was rotated.            |
+| `revoked_at`           | `timestamp with time zone` | yes      |                              |          |           |           | Time at which this refresh token was revoked directly.   |
+| `replaced_by_token_id` | `uuid`                     | yes      |                              |          |           |           | Successor issued when this refresh token was rotated.    |
+| `created_at`           | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                          |
+| `updated_at`           | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                          |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -29,7 +29,7 @@ Not partitioned — growth: bounded.
 
 **Check constraints:**
 
-- `oauth_refresh_tokens_check`: `CHECK (((replaced_by_id IS NULL) OR (consumed_at IS NOT NULL)))`
+- `oauth_refresh_tokens_check`: `CHECK (((replaced_by_token_id IS NULL) OR (consumed_at IS NOT NULL)))`
 - `oauth_refresh_tokens_generation_check`: `CHECK ((generation >= 0))`
 - `oauth_refresh_tokens_scopes_check`: `CHECK ((cardinality(scopes) > 0))`
 - `oauth_refresh_tokens_token_hash_check`: `CHECK ((char_length(token_hash) = 64))`
@@ -37,13 +37,13 @@ Not partitioned — growth: bounded.
 **Foreign keys:**
 
 - `oauth_refresh_tokens_family_id_fkey`: `FOREIGN KEY (family_id) REFERENCES oauth_refresh_token_families(id) ON DELETE CASCADE`
-- `oauth_refresh_tokens_replaced_by_id_fkey`: `FOREIGN KEY (replaced_by_id) REFERENCES oauth_refresh_tokens(id) ON DELETE SET NULL`
+- `oauth_refresh_tokens_replaced_by_token_id_fkey`: `FOREIGN KEY (replaced_by_token_id) REFERENCES oauth_refresh_tokens(id) ON DELETE SET NULL`
 
 **Indexes:**
 
 - `idx_oauth_refresh_tokens__expiry`: `CREATE INDEX idx_oauth_refresh_tokens__expiry ON public.oauth_refresh_tokens USING btree (expires_at, id) WHERE ((consumed_at IS NULL) AND (revoked_at IS NULL))`
 - `idx_oauth_refresh_tokens__family`: `CREATE INDEX idx_oauth_refresh_tokens__family ON public.oauth_refresh_tokens USING btree (family_id, id)`
-- `idx_oauth_refresh_tokens__replacement`: `CREATE INDEX idx_oauth_refresh_tokens__replacement ON public.oauth_refresh_tokens USING btree (replaced_by_id) WHERE (replaced_by_id IS NOT NULL)`
+- `idx_oauth_refresh_tokens__replacement`: `CREATE INDEX idx_oauth_refresh_tokens__replacement ON public.oauth_refresh_tokens USING btree (replaced_by_token_id) WHERE (replaced_by_token_id IS NOT NULL)`
 - `oauth_refresh_tokens_family_id_generation_key`: `CREATE UNIQUE INDEX oauth_refresh_tokens_family_id_generation_key ON public.oauth_refresh_tokens USING btree (family_id, generation)`
 - `oauth_refresh_tokens_pkey`: `CREATE UNIQUE INDEX oauth_refresh_tokens_pkey ON public.oauth_refresh_tokens USING btree (id)`
 - `oauth_refresh_tokens_token_hash_key`: `CREATE UNIQUE INDEX oauth_refresh_tokens_token_hash_key ON public.oauth_refresh_tokens USING btree (token_hash)`

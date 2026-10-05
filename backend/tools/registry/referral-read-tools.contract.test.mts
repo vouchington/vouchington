@@ -59,7 +59,7 @@ describe('get_topic_referral_program — real DB', () => {
       expect(await read(reference)).toEqual({
         success: true,
         topic_id: program.referralProgramId,
-        company_id: attributes.company_id,
+        company_topic_id: attributes.company_topic_id,
         enabled_at: attributes.enabled_at,
         disabled_at: null,
       })

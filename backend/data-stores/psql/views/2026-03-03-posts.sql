@@ -7,8 +7,8 @@ CREATE OR REPLACE VIEW view_posts AS
     posts.title,
     posts.markdown,
     posts.ai_summary_markdown,
-    posts.root_id,
-    posts.parent_id,
+    posts.root_post_id,
+    posts.parent_post_id,
     posts.broadcast,
     posts.privacy,
     posts.is_anonymous,
@@ -158,7 +158,7 @@ CREATE OR REPLACE VIEW view_posts AS
     CASE
       WHEN openai_moderation.disposition IS NULL THEN NULL
       ELSE openai_moderation.disposition <> 'pass'
-    END AS openai_omni_moderation_flagged,
+    END AS is_flagged_by_openai_omni_moderation,
     clearance.clearance_status,
     clearance.clearance_updated_at,
 

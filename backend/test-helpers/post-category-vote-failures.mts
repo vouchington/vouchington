@@ -62,7 +62,7 @@ export async function getPostCategoryMutationCounts(actorId: string) {
     (SELECT count(*)::integer FROM relation__post__category__topic_alias
       WHERE created_by_id = ${actorId}) AS hashtag_relations,
     (SELECT count(*)::integer FROM post_topic_alias_sources
-      WHERE contributor_id = ${actorId}) AS hashtag_sources,
+      WHERE contributor_user_id = ${actorId}) AS hashtag_sources,
     (SELECT count(*)::integer FROM `
   statement.append(voteTable)
   statement.append(sql` WHERE user_id = ${actorId}) AS topic_votes,

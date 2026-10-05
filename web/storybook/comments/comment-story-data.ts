@@ -39,7 +39,7 @@ export const replyPost: Post = {
   ...commentPost,
   id: 'post-comment-reply',
   title: 'Travel credit covered the lounge',
-  parent_id: commentPost.id,
+  parent_post_id: commentPost.id,
   markdown:
     'Agreed. Priority Pass from Sapphire Reserve covered two lounge visits booked through the travel portal.',
   can_delete: false,

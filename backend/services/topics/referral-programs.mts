@@ -15,7 +15,7 @@ import { upsertTopicAttributes } from './upsert-attributes.mts'
 import { withReferralLinkEligibilityMutationLock } from '@services/entity-relations/referral-link-eligibility-lock'
 
 type ReferralProgramAttributes = {
-  company_id?: string | null
+  company_topic_id?: string | null
   enabled_at?: string | null
   disabled_at?: string | null
 }
@@ -31,7 +31,7 @@ export async function getReferralProgramAttributes(
 
   const { rows } = await read(sql`/* getReferralProgramAttributes */
     SELECT
-      rp.company_id,
+      rp.company_topic_id,
       rp.enabled_at,
       rp.disabled_at,
       COALESCE(
@@ -56,7 +56,7 @@ export async function enableReferralProgram(
   const columns = ['enabled_at']
   const values: unknown[] = [new Date().toISOString()]
   if (companyId !== undefined) {
-    columns.push('company_id')
+    columns.push('company_topic_id')
     values.push(companyId ?? null)
   }
   await withReferralLinkEligibilityMutationLock({}, query =>
@@ -126,10 +126,11 @@ export async function updateReferralProgramAttributes(
     assert(false, 422, 'enabled_at and disabled_at cannot both be set')
   }
 
-  if ('company_id' in attributes) {
-    if (attributes.company_id != null) await assertTopicExists(attributes.company_id, 'company_id')
-    columns.push('company_id')
-    values.push(attributes.company_id ?? null)
+  if ('company_topic_id' in attributes) {
+    if (attributes.company_topic_id != null)
+      await assertTopicExists(attributes.company_topic_id, 'company_topic_id')
+    columns.push('company_topic_id')
+    values.push(attributes.company_topic_id ?? null)
   }
   if ('enabled_at' in attributes) {
     validateOptionalTimestamp(attributes.enabled_at, 'enabled_at')

@@ -96,13 +96,17 @@ async function recordCopyrightRepeatInfringerReviewOutcomeInTransaction(
   const review = rows[0]
   assert(review, 404, 'Copyright repeat-infringer review not found')
   if (suspendingOutcome) {
-    const { rows: operative } = await transaction<{ id: string }>(sql`
-      /* recordCopyrightRepeatInfringerReviewOutcome:operative */
+    const { rows: is_operative } = await transaction<{ id: string }>(sql`
+      /* recordCopyrightRepeatInfringerReviewOutcome:is_operative */
       SELECT id FROM copyright_repeat_infringer_incidents
-      WHERE account_user_id = ${review.account_user_id} AND operative
+      WHERE account_user_id = ${review.account_user_id} AND is_operative
       FOR UPDATE
     `)
-    assert(operative.length >= 2, 409, 'Restrict and terminate require two operative incidents')
+    assert(
+      is_operative.length >= 2,
+      409,
+      'Restrict and terminate require two is_operative incidents',
+    )
   }
   const { rows: updated } = await transaction<{ account_user_id: string }>(sql`
     /* recordCopyrightRepeatInfringerReviewOutcome:update */

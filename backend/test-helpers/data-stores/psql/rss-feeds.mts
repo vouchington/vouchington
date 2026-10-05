@@ -41,7 +41,7 @@ export async function insertLocalTestRssFeed(): Promise<{ id: string }> {
   const feedId = feedRows[0]!.id
 
   await write(sql`
-    INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, enabled, reason)
+    INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason)
     VALUES ('enablement', ${feedId}, TRUE, 'test helper initial state')
   `)
 

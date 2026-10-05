@@ -5,7 +5,7 @@ import type { DeletedFollowPair } from './enqueue-undo-follow-side-effects.mts'
 export type DeletedEntityRelation = {
   subject_id: string
   object_id: string
-  outbound_ap_follow_activity_id?: string | null
+  outbound_activitypub_follow_activity_id?: string | null
   undo_activity_id?: string | null
 }
 
@@ -15,7 +15,7 @@ export function appendDeletedRelationReturning(
 ): void {
   query.append(sql` RETURNING subject_id, object_id`)
   if (relation.table_name === 'relation__user__follow__user') {
-    query.append(sql`, outbound_ap_follow_activity_id, uuidv7() AS undo_activity_id`)
+    query.append(sql`, outbound_activitypub_follow_activity_id, uuidv7() AS undo_activity_id`)
   }
 }
 
@@ -26,9 +26,9 @@ export function getDeletedFollowPairs(
     subjectId: row.subject_id,
     objectId: row.object_id,
     activityPubUndoIdentity:
-      row.outbound_ap_follow_activity_id && row.undo_activity_id
+      row.outbound_activitypub_follow_activity_id && row.undo_activity_id
         ? {
-            originalActivityId: row.outbound_ap_follow_activity_id,
+            originalActivityId: row.outbound_activitypub_follow_activity_id,
             undoActivityId: row.undo_activity_id,
           }
         : null,

@@ -45,7 +45,7 @@ export async function updateClearanceStatus(
           SELECT 1
           FROM agent_moderations am
           WHERE am.post_id = posts.id
-            AND am.flagged IS TRUE
+            AND am.is_flagged IS TRUE
             AND am.deleted_at IS NULL
         ) AS automated_moderation_signal
       FROM posts

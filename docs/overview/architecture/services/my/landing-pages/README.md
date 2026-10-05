@@ -18,7 +18,7 @@ Landing pages let users build curated profile pages showcasing their content. Ea
 - `get.mts` — Gets a landing page with resolved items
 - `set-default.mts` — Sets a landing page as the user's default
 - `replace-items.mts` — Atomically replaces all items on a landing page (transactional delete + insert)
-- `resolve-items.mts` — Resolves item references (profile_link_id, review_id, referral_link_id, topic_id) into full objects with data
+- `resolve-items.mts` — Resolves item references (profile_link_id, review_post_id, referral_link_id, topic_id) into full objects with data
 - `public.mts` — `getPublicLandingPage()` for public-facing page rendering (resolves user, markdown, items)
 - `shared.mts` — Validation helpers (title, subtitle, slug) and shared query utilities
 - `types.mts` — Type definitions for landing pages, items, candidates, topic groups

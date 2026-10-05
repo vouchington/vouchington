@@ -79,7 +79,7 @@ function makeFlag(overrides: Partial<FlagResult> = {}): FlagResult {
     rss_feed_item_id: null,
     flag_type: 'mass_report_suspected',
     reporter_count: 5,
-    new_account_reporter_pct: 0.4,
+    new_account_reporter_percent: 0.4,
     details: {},
     resolved_at: null,
     resolved_by_id: null,

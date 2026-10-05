@@ -88,8 +88,8 @@ describe('copyright staff and participant routes', () => {
       .post(`/api/v1/copyright-submissions/${holdSubmission.id}/legal-hold-assessments`)
       .send({
         rationale: 'Verified qualifying CCB filing.',
-        from_original_claimant: true,
-        same_material: true,
+        is_from_original_claimant: true,
+        is_same_material: true,
         proceeding_kind: 'ccb',
         ccb_claim_kind: 'claim',
         commenced_at: '2026-07-01T12:00:00.000Z',

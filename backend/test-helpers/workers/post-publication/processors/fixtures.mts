@@ -36,12 +36,12 @@ import { vi } from 'vitest'
 
 export const work: ClaimedPostPublicationDirtyWork = {
   id: '00000000-0000-7000-8000-000000000001',
-  post_id: '00000000-0000-7000-8000-000000000002',
-  author_user_id: null,
-  community_id: null,
-  rss_feed_id: null,
-  topic_alias_id: null,
-  story_id: null,
+  post_identity_id: '00000000-0000-7000-8000-000000000002',
+  author_identity_id: null,
+  community_identity_id: null,
+  rss_feed_identity_id: null,
+  topic_alias_identity_id: null,
+  story_identity_id: null,
   reasons: ['post_created'],
   generation: '1',
   cursor_post_id: null,
@@ -53,9 +53,9 @@ export const work: ClaimedPostPublicationDirtyWork = {
 }
 
 export const post: ReconciliationPost = {
-  id: work.post_id!,
-  parent_id: null,
-  root_id: null,
+  id: work.post_identity_id!,
+  parent_post_id: null,
+  root_post_id: null,
   created_by_id: '00000000-0000-7000-8000-000000000005',
   community_id: null,
   post_type: 'discussion',

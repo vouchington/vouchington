@@ -152,7 +152,7 @@ describe('GET /api/v1/fediverse/instances', () => {
     const request = createRequest()
     await request.authenticateAs(admin)
     const response = await request
-      .get('/api/v1/fediverse/instances?open_registrations=true&integration_status=approved')
+      .get('/api/v1/fediverse/instances?is_open_for_registrations=true&integration_status=approved')
       .expect(200)
     const ids = response.body.results.map((result: { id: string }) => result.id)
     expect(ids).toContain(approved.id)

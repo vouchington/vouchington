@@ -25,7 +25,7 @@ const dataWithActions: ModlogResponseBody = {
     '019000000000000000000000011': {
       id: '019000000000000000000000011',
       community_id: '019000000000000000000000001',
-      actor_id: '019000000000000000000000021',
+      actor_user_id: '019000000000000000000000021',
       action_type: 'ban',
       post_id: null,
       target_user_id: '019000000000000000000000031',
@@ -39,7 +39,7 @@ const dataWithActions: ModlogResponseBody = {
     '019000000000000000000000012': {
       id: '019000000000000000000000012',
       community_id: '019000000000000000000000001',
-      actor_id: '019000000000000000000000021',
+      actor_user_id: '019000000000000000000000021',
       action_type: 'remove',
       post_id: '019000000000000000000000041',
       target_user_id: null,

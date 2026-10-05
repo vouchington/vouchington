@@ -13,7 +13,7 @@ ingests take matching unique-index locks.
 | -------------------------- | -------------------------------------------------------------------------------------------- |
 | `crawlable`                | When explicitly `false`, crawling is disabled for the hostname                               |
 | `blocked`                  | When `true`, the domain is disallowed from site surfaces                                     |
-| `link_rel_follow`          | When `true`, outbound links do not get `rel="nofollow"`                                      |
+| `should_follow_link_rel`   | When `true`, outbound links do not get `rel="nofollow"`                                      |
 | `consecutive_dns_failures` | Running count of consecutive DNS lookup failures (reset to 0 on any successful crawl)        |
 | `last_dns_failure_at`      | Timestamp of the most recent DNS failure (used for the 7-day stale-counter reset)            |
 | `dns_disabled_at`          | Set when the hostname is auto-disabled due to repeated DNS failures; cleared by admin action |

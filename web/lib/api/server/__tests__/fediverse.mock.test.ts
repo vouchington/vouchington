@@ -129,7 +129,7 @@ describe('getFediverseSearch', () => {
           nodeinfo_software_version: '4.4.0',
           total_users: 1200,
           monthly_active_users: 340,
-          open_registrations: true,
+          is_open_for_registrations: true,
           nodeinfo_raw: { secret: true },
           integration_status: 'approved',
         },
@@ -145,7 +145,7 @@ describe('getFediverseSearch', () => {
       nodeinfo_software_version: '4.4.0',
       total_users: 1200,
       monthly_active_users: 340,
-      open_registrations: true,
+      is_open_for_registrations: true,
     })
     expect(attributes).not.toHaveProperty('nodeinfo_raw')
     expect(attributes).not.toHaveProperty('integration_status')

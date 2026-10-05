@@ -223,7 +223,7 @@ describe('process-topic-row (extensions and referral)', () => {
     const attrs = await getReferralProgramAttributes(topic!)
     expect(attrs).not.toBeNull()
     expect(attrs!.enabled_at).not.toBeNull()
-    expect(attrs!.company_id).not.toBeNull()
+    expect(attrs!.company_topic_id).not.toBeNull()
     expect(attrs!.referral_program_link_validation_ids).toHaveLength(1)
 
     const validation = await getReferralLinkValidationBySlug(validationSlug)

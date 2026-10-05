@@ -43,7 +43,8 @@ export async function updateMembershipFromEvent(
   }
   if (options.cancelAtPeriodEnd !== undefined) {
     const isTerminal = options.status !== undefined && isTerminalMembershipStatus(options.status)
-    if (!isTerminal) setClauses.push(sql`cancel_at_period_end = ${options.cancelAtPeriodEnd}`)
+    if (!isTerminal)
+      setClauses.push(sql`should_cancel_at_period_end = ${options.cancelAtPeriodEnd}`)
   }
 
   const query = sql`/* updateMembershipFromEvent */ UPDATE memberships SET `
@@ -78,7 +79,7 @@ export async function updateMembershipFromEvent(
       old.expired_at AS previous_expired_at,
       old.past_due_at AS previous_past_due_at,
       old.paused_at AS previous_paused_at,
-      old.cancel_at_period_end AS previous_cancel_at_period_end,
+      old.should_cancel_at_period_end AS previous_cancel_at_period_end,
       new.user_id AS current_user_id,
       (SELECT plan FROM membership_products WHERE id = new.membership_product_id) AS current_plan,
       new.membership_product_id AS current_sku_id,
@@ -94,7 +95,7 @@ export async function updateMembershipFromEvent(
       new.expired_at AS current_expired_at,
       new.past_due_at AS current_past_due_at,
       new.paused_at AS current_paused_at,
-      new.cancel_at_period_end AS current_cancel_at_period_end
+      new.should_cancel_at_period_end AS current_cancel_at_period_end
   `)
 
   const update = async (
@@ -113,7 +114,7 @@ export async function updateMembershipFromEvent(
             expired_at = NULL,
             past_due_at = NULL,
             paused_at = NULL,
-            auto_renews = false,
+            should_auto_renew = false,
             updated_at = CURRENT_TIMESTAMP
         WHERE membership_source_id = ${options.membershipSourceId}
       `)
@@ -130,10 +131,10 @@ export async function updateMembershipFromEvent(
           expired_at = membership.expired_at,
           past_due_at = membership.past_due_at,
           paused_at = membership.paused_at,
-          auto_renews = state.source_kind = 'direct'
+          should_auto_renew = state.source_kind = 'direct'
             AND membership.cancelled_at IS NULL
             AND membership.expired_at IS NULL
-            AND NOT membership.cancel_at_period_end
+            AND NOT membership.should_cancel_at_period_end
       FROM memberships membership
       WHERE membership.id = ${options.membershipId}
         AND state.membership_source_id = membership.membership_source_id

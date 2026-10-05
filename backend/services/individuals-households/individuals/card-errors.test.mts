@@ -3,11 +3,11 @@ import { mapIndividualCardConstraintError } from './card-errors.mts'
 
 describe('individual card constraint errors', () => {
   it.each([
-    ['23503', 'individual_cards_authorized_user_of_id_fkey', 'Invalid authorized_user_of_id'],
+    ['23503', 'individual_cards_authorized_user_of_id_fkey', 'Invalid authorized_user_of_card_id'],
     [
       '23514',
       'individual_cards_check1',
-      'is_authorized_user must be true when authorized_user_of_id is set',
+      'is_authorized_user must be true when authorized_user_of_card_id is set',
     ],
   ])('maps %s:%s to a precise domain error', async (code, constraint, message) => {
     await expect(

@@ -47,9 +47,9 @@ export async function getLandingPageRowById(pageId: string): Promise<LandingPage
 
 export async function getLandingPageItemRows(pageId: string): Promise<LandingPageItemRow[]> {
   const { rows } = await read(sql`/* getLandingPageItemRows */
-    SELECT item.id, item.item_type, item.profile_link_id, item.review_id, item.referral_link_id,
+    SELECT item.id, item.item_type, item.profile_link_id, item.review_post_id, item.referral_link_id,
       item.topic_id, item.link_label, item.url_id,
-      CASE WHEN hostname.blocked = FALSE THEN link.url END AS url
+      CASE WHEN hostname.is_blocked = FALSE THEN link.url END AS url
     FROM user_landing_page_items item
     LEFT JOIN urls link ON link.id = item.url_id
     LEFT JOIN url_hostnames hostname ON hostname.id = link.hostname_id

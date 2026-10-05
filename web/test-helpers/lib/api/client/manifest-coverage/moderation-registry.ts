@@ -30,7 +30,7 @@ const moderationCoreEndpointRegistry: Record<string, ManifestEndpoint> = {
       area_description: 'Copyright notices',
       area_of_expertise: 'intellectual_property',
       award_reference: 'https://example.test/designations/1220',
-      awarded_at: '2026-09-01',
+      awarded_on: '2026-09-01',
       awarding_coordinator_name: 'Example Digital Services Coordinator',
       awarding_member_state: 'DE',
       name: 'Example copyright flagger',

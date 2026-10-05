@@ -214,7 +214,9 @@ describe('PreferencesForm', () => {
   it('enables Hacker News discussions and shows a toast', async () => {
     renderForm()
     fireEvent.click(screen.getByLabelText('Hacker News discussions'))
-    expect(mockUpdateMyUser).toHaveBeenCalledWith('user-1', { hn_discussions: true })
+    expect(mockUpdateMyUser).toHaveBeenCalledWith('user-1', {
+      should_import_hacker_news_discussions: true,
+    })
     await vi.waitFor(() => {
       expect(mockToastSuccess).toHaveBeenCalledWith('Hacker News discussions updated')
     })

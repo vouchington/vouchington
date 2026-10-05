@@ -263,8 +263,8 @@ describe('engagement email processors', () => {
     await claimEngagementEmailSend(user!.id, 'follow_topics')
     await claimModerationEmailSend(user!.id, trackingKey)
     await updateUserFields(user!.id, {
-      engagement_emails_enabled: false,
-      moderation_emails_enabled: false,
+      is_engagement_emails_enabled: false,
+      is_moderation_emails_enabled: false,
     })
 
     await expect(

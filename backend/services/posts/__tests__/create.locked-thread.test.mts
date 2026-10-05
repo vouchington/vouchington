@@ -37,7 +37,7 @@ describe('create: locked thread enforcement', () => {
       createPost(commenter, WEB_PROVENANCE, {
         markdown: 'blocked reply',
         post_type: 'comment',
-        parent_id: root.id,
+        parent_post_id: root.id,
       }),
     ).rejects.toMatchObject({
       status: 403,
@@ -73,7 +73,7 @@ describe('create: locked thread enforcement', () => {
       createPost(commenter, WEB_PROVENANCE, {
         markdown: 'nested blocked reply',
         post_type: 'comment',
-        parent_id: commentId,
+        parent_post_id: commentId,
       }),
     ).rejects.toMatchObject({
       status: 403,
@@ -107,7 +107,7 @@ describe('create: locked thread enforcement', () => {
       createPost(commenter, WEB_PROVENANCE, {
         markdown: 'blocked nested reply',
         post_type: 'comment',
-        parent_id: commentId,
+        parent_post_id: commentId,
       }),
     ).rejects.toMatchObject({
       status: 403,
@@ -156,7 +156,7 @@ describe('create: locked thread enforcement', () => {
       createPost(commenter, WEB_PROVENANCE, {
         markdown: 'blocked direct reply',
         post_type: 'comment',
-        parent_id: lockedCommentId,
+        parent_post_id: lockedCommentId,
       }),
     ).rejects.toMatchObject({ status: 403, code: 'POST_THREAD_LOCKED' })
 
@@ -166,7 +166,7 @@ describe('create: locked thread enforcement', () => {
       createPost(commenter, WEB_PROVENANCE, {
         markdown: 'allowed grandchild reply',
         post_type: 'comment',
-        parent_id: unlockedChildId,
+        parent_post_id: unlockedChildId,
       }),
     ).resolves.toBeDefined()
   })
@@ -184,7 +184,7 @@ describe('create: locked thread enforcement', () => {
       createPost(commenter, WEB_PROVENANCE, {
         markdown: 'allowed reply',
         post_type: 'comment',
-        parent_id: root.id,
+        parent_post_id: root.id,
       }),
     ).resolves.toBeDefined()
   })

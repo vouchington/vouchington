@@ -42,7 +42,7 @@ export async function createMembershipObservationConstraintFixture(): Promise<Me
   const [{ rows: observationRows }, { rows: sourceRows }] = await Promise.all([
     write<{ id: string }>(sql`/* createFamilyMembershipObservation */
     INSERT INTO membership_provider_observations (
-      provider, environment, application_id, membership_provider_evidence_id, membership_provider_lineage_id, membership_provider_product_id, membership_product_id,
+      provider, environment, application_id, membership_provider_evidence_record_id, membership_provider_lineage_id, membership_provider_product_id, membership_product_id,
       observed_price_minor_units, observed_price_currency_code, provider_revision, provider_order, source_kind, effective_at
     ) VALUES ('stripe', 'test', ${applicationId}, ${evidenceId}, ${lineageId}, ${mappingId}, ${productId}, 100, 'usd', 'family', 3, 'family', CURRENT_TIMESTAMP) RETURNING id`),
     write<{ id: string }>(sql`/* createDirectMembershipObservationSource */
@@ -53,17 +53,17 @@ export async function createMembershipObservationConstraintFixture(): Promise<Me
   return {
     allowObservationWithoutKnownPrice() {
       return write(sql`/* allowObservationWithoutKnownPrice */
-        INSERT INTO membership_provider_observations (provider, environment, application_id, membership_provider_evidence_id, membership_provider_lineage_id, membership_provider_product_id, membership_product_id, provider_revision, provider_order, source_kind, effective_at)
+        INSERT INTO membership_provider_observations (provider, environment, application_id, membership_provider_evidence_record_id, membership_provider_lineage_id, membership_provider_product_id, membership_product_id, provider_revision, provider_order, source_kind, effective_at)
         VALUES ('stripe', 'test', ${applicationId}, ${priceOptionalEvidenceRows[0]!.id}, ${lineageId}, ${mappingId}, ${productId}, 'price-optional', 0, 'direct', CURRENT_TIMESTAMP)`)
     },
     rejectPartialRenewalSnapshot() {
       return write(sql`/* rejectPartialRenewalSnapshot */
-        INSERT INTO membership_provider_observations (provider, environment, application_id, membership_provider_evidence_id, membership_provider_lineage_id, membership_provider_product_id, membership_product_id, observed_price_minor_units, observed_price_currency_code, renewal_membership_provider_product_id, provider_revision, provider_order, source_kind, effective_at, auto_renews)
+        INSERT INTO membership_provider_observations (provider, environment, application_id, membership_provider_evidence_record_id, membership_provider_lineage_id, membership_provider_product_id, membership_product_id, observed_price_minor_units, observed_price_currency_code, renewal_membership_provider_product_id, provider_revision, provider_order, source_kind, effective_at, should_auto_renew)
         VALUES ('stripe', 'test', ${applicationId}, ${evidenceId}, ${lineageId}, ${mappingId}, ${productId}, 100, 'usd', ${mappingId}, 'partial', 1, 'direct', CURRENT_TIMESTAMP, true)`)
     },
     rejectBackwardsRenewalEffectiveTime() {
       return write(sql`/* rejectBackwardsRenewalEffectiveTime */
-        INSERT INTO membership_provider_observations (provider, environment, application_id, membership_provider_evidence_id, membership_provider_lineage_id, membership_provider_product_id, membership_product_id, observed_price_minor_units, observed_price_currency_code, renewal_membership_provider_product_id, renewal_membership_product_id, renewal_price_minor_units, renewal_price_currency_code, renewal_effective_at, provider_revision, provider_order, source_kind, effective_at, auto_renews)
+        INSERT INTO membership_provider_observations (provider, environment, application_id, membership_provider_evidence_record_id, membership_provider_lineage_id, membership_provider_product_id, membership_product_id, observed_price_minor_units, observed_price_currency_code, renewal_membership_provider_product_id, renewal_membership_product_id, renewal_price_minor_units, renewal_price_currency_code, renewal_effective_at, provider_revision, provider_order, source_kind, effective_at, should_auto_renew)
         VALUES ('stripe', 'test', ${applicationId}, ${evidenceId}, ${lineageId}, ${mappingId}, ${productId}, 100, 'usd', ${mappingId}, ${productId}, 200, 'usd', CURRENT_TIMESTAMP, 'backwards', 2, 'direct', CURRENT_TIMESTAMP + INTERVAL '1 day', true)`)
     },
     rejectFamilyObservationOnDirectState() {

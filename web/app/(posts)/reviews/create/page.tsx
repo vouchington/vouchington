@@ -38,7 +38,9 @@ export default async function CreateReviewPage({ searchParams }: CreateReviewPag
   const isGated = isContributionGated(contributionData)
 
   const topic = topicData?.topic
-  const initialReviewTopic = topic?.allow_reviews ? { id: topic.id, name: topic.name } : undefined
+  const initialReviewTopic = topic?.should_allow_reviews
+    ? { id: topic.id, name: topic.name }
+    : undefined
 
   return (
     <PageWithAside

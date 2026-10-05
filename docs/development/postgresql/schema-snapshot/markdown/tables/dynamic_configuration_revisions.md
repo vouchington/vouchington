@@ -6,14 +6,14 @@ Append-only audit log of dynamic configuration changes made by administrators.
 
 Not partitioned — growth: unbounded.
 
-| Column          | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                               |
-| --------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------- |
-| `id`            | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                       |
-| `config_key`    | `text`                     | no       |                              |          |           |           | Valkey DynamicConfig key identifying which configuration was changed. |
-| `revised_by_id` | `uuid`                     | yes      |                              |          |           |           | Administrator who made the change; SET NULL on user deletion.         |
-| `revision_type` | `revision_types`           | no       |                              |          |           |           | Configuration edit operation.                                         |
-| `changes`       | `jsonb`                    | no       |                              |          |           |           | Per-field before/after differences; unchanged fields are omitted.     |
-| `created_at`    | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                       |
+| Column              | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                               |
+| ------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------- |
+| `id`                | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                       |
+| `configuration_key` | `text`                     | no       |                              |          |           |           | Valkey DynamicConfig key identifying which configuration was changed. |
+| `revised_by_id`     | `uuid`                     | yes      |                              |          |           |           | Administrator who made the change; SET NULL on user deletion.         |
+| `revision_type`     | `revision_types`           | no       |                              |          |           |           | Configuration edit operation.                                         |
+| `changes`           | `jsonb`                    | no       |                              |          |           |           | Per-field before/after differences; unchanged fields are omitted.     |
+| `created_at`        | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                       |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -30,7 +30,7 @@ _none_
 **Indexes:**
 
 - `dynamic_configuration_revisions_pkey`: `CREATE UNIQUE INDEX dynamic_configuration_revisions_pkey ON public.dynamic_configuration_revisions USING btree (id)`
-- `idx_dynamic_configuration_revisions__configuration_key`: `CREATE INDEX idx_dynamic_configuration_revisions__configuration_key ON public.dynamic_configuration_revisions USING btree (config_key, id DESC)`
+- `idx_dynamic_configuration_revisions__configuration_key`: `CREATE INDEX idx_dynamic_configuration_revisions__configuration_key ON public.dynamic_configuration_revisions USING btree (configuration_key, id DESC)`
 
 **Triggers:**
 

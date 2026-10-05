@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS conversations (
   -- guardrails-disable-next-line uuid-must-be-key
   community_id UUID,  -- FK to communities added in 0140-00-00
   subject_user_id UUID REFERENCES users ON DELETE SET NULL,
-  assigned_mod_id UUID REFERENCES users ON DELETE SET NULL,
+  assigned_moderator_user_id UUID REFERENCES users ON DELETE SET NULL,
   assigned_at TIMESTAMPTZ,
   -- Controls who can add participants to a direct_message conversation.
   -- Only applies to channel_type = 'direct_message'; ignored for other channel types.
@@ -77,17 +77,17 @@ CREATE TABLE IF NOT EXISTS conversations (
       (channel_type = 'mod_internal'
         AND community_id IS NOT NULL
         AND subject_user_id IS NULL
-        AND assigned_mod_id IS NULL
+        AND assigned_moderator_user_id IS NULL
         AND num_nonnulls(moderation_report_id, post_id) = 1
       ) OR
       (channel_type NOT IN ('modmail', 'mod_internal')
         AND community_id IS NULL
         AND subject_user_id IS NULL
-        AND assigned_mod_id IS NULL
+        AND assigned_moderator_user_id IS NULL
       )
     ),
   CONSTRAINT chk_conversations__assigned
-    CHECK (assigned_mod_id IS NULL OR assigned_at IS NOT NULL)
+    CHECK (assigned_moderator_user_id IS NULL OR assigned_at IS NOT NULL)
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -139,7 +139,7 @@ CREATE INDEX IF NOT EXISTS idx_conversations__moderation_report_id
   ON conversations (moderation_report_id)
   WHERE moderation_report_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_conversations__assigned_moderator_id ON conversations (assigned_mod_id) WHERE assigned_mod_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_conversations__assigned_moderator_id ON conversations (assigned_moderator_user_id) WHERE assigned_moderator_user_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_conversations__unresolved
@@ -155,8 +155,8 @@ COMMENT ON COLUMN conversations.post_id IS 'Optional post this conversation is a
 COMMENT ON COLUMN conversations.rss_feed_item_id IS 'Optional RSS feed item this conversation is about.';
 COMMENT ON COLUMN conversations.community_id IS 'The community this modmail thread belongs to. Required when channel_type is modmail.';
 COMMENT ON COLUMN conversations.subject_user_id IS 'The user who is the subject of a modmail thread. Required when channel_type is modmail.';
-COMMENT ON COLUMN conversations.assigned_mod_id IS 'The moderator currently assigned to handle a modmail thread. NULL means unassigned.';
-COMMENT ON COLUMN conversations.assigned_at IS 'When this modmail thread was assigned to assigned_mod_id.';
+COMMENT ON COLUMN conversations.assigned_moderator_user_id IS 'The moderator currently assigned to handle a modmail thread. NULL means unassigned.';
+COMMENT ON COLUMN conversations.assigned_at IS 'When this modmail thread was assigned to assigned_moderator_user_id.';
 COMMENT ON COLUMN conversations.moderation_report_id IS 'The moderation report this internal mod-discussion thread is about. Set when channel_type is mod_internal and the item is a report. Mutually exclusive with post_id for mod_internal threads.';
 COMMENT ON COLUMN conversations.participant_add_policy IS 'Governs who may add participants to a direct_message conversation. owner_only (default): only the creator may add. all_members: any active participant may add.';
 

@@ -16,7 +16,7 @@ export function CommunityAgentPromptStatus({ prompt }: Props) {
   const t = useTranslations()
   return (
     <p className='text-xs text-muted-foreground'>
-      {prompt.slot_allocated ? (
+      {prompt.is_slot_allocated ? (
         <span className='font-medium text-green-600'>
           {t('extracted.communities.communityAgentPromptStatus.slotAllocated_417c6c1d')}
         </span>

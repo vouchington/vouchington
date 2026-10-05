@@ -152,11 +152,11 @@ export async function getMembershipHistory(userId: string): Promise<MembershipCh
       membership_change.expired_at,
       membership_change.past_due_at,
       membership_change.paused_at,
-      membership_change.cancel_at_period_end,
+      membership_change.should_cancel_at_period_end,
       membership_change.changed_by_id,
       membership_change.note,
       membership_change.stripe_event_id,
-      membership_change.membership_provider_evidence_id,
+      membership_change.membership_provider_evidence_record_id,
       membership_change.created_at
     FROM membership_changes membership_change
     LEFT JOIN membership_products from_product ON from_product.id = membership_change.from_membership_product_id

@@ -3,16 +3,16 @@ import sql from 'sql-template-strings'
 
 export async function updateUrlHostnameBlocked(
   hostnameId: string,
-  blocked: boolean,
+  is_blocked: boolean,
 ): Promise<void> {
-  if (blocked) {
-    // Insert a block history row; the trigger keeps url_hostnames.blocked in sync.
+  if (is_blocked) {
+    // Insert a block history row; the trigger keeps url_hostnames.is_blocked in sync.
     await write(sql`/* updateUrlHostnameBlocked:block */
       INSERT INTO url_hostname_blocks (url_hostname_id, blocked_source)
       VALUES (${hostnameId}, 'admin')
     `)
   } else {
-    // Lift all active blocks; the trigger keeps url_hostnames.blocked in sync.
+    // Lift all active blocks; the trigger keeps url_hostnames.is_blocked in sync.
     await write(sql`/* updateUrlHostnameBlocked:unblock */
       UPDATE url_hostname_blocks
       SET lifted_at = CURRENT_TIMESTAMP
@@ -23,25 +23,25 @@ export async function updateUrlHostnameBlocked(
 }
 
 export async function setHostnameAsValidForCrawlSearch(hostnameId: string): Promise<void> {
-  // Lift any active blocks (trigger keeps url_hostnames.blocked in sync).
+  // Lift any active blocks (trigger keeps url_hostnames.is_blocked in sync).
   await write(sql`/* setHostnameAsValidForCrawlSearch:unblock */
     UPDATE url_hostname_blocks
     SET lifted_at = CURRENT_TIMESTAMP
     WHERE url_hostname_id = ${hostnameId}
       AND lifted_at IS NULL
   `)
-  await write(sql`/* setHostnameAsValidForCrawlSearch:crawlable */
+  await write(sql`/* setHostnameAsValidForCrawlSearch:is_crawlable */
     UPDATE url_hostnames
-    SET crawlable = true
+    SET is_crawlable = true
     WHERE id = ${hostnameId}
   `)
 }
 
 export async function updateUrlHostnameCrawlable(
   hostnameId: string,
-  crawlable: boolean,
+  is_crawlable: boolean,
 ): Promise<void> {
-  await write(sql`UPDATE url_hostnames SET crawlable = ${crawlable} WHERE id = ${hostnameId}`)
+  await write(sql`UPDATE url_hostnames SET is_crawlable = ${is_crawlable} WHERE id = ${hostnameId}`)
 }
 
 export async function updateUrlHostnameUnreliableStatusCodes(
@@ -58,9 +58,9 @@ export async function updateUrlHostnameUnreliableStatusCodes(
 export async function insertUrlHostname(
   hostname: string,
   options: {
-    emailable?: boolean | null
-    blocked?: boolean | null
-    crawlable?: boolean | null
+    is_emailable?: boolean | null
+    is_blocked?: boolean | null
+    is_crawlable?: boolean | null
   } = {},
 ): Promise<void> {
   await write(buildInsertUrlHostnameQuery(hostname, options, false))
@@ -68,14 +68,14 @@ export async function insertUrlHostname(
 
 export async function insertTestUrlHostname(options: {
   hostname: string
-  emailable?: boolean | null
-  blocked?: boolean | null
-  crawlable?: boolean | null
+  is_emailable?: boolean | null
+  is_blocked?: boolean | null
+  is_crawlable?: boolean | null
 }): Promise<string> {
   const result = await write(buildInsertUrlHostnameQuery(options.hostname, options, true))
   const hostnameId = result.rows[0].id as string
-  // If blocked is requested, insert a history row so getTestHostnameRow returns consistent results.
-  if (options.blocked === true) {
+  // If is_blocked is requested, insert a history row so getTestHostnameRow returns consistent results.
+  if (options.is_blocked === true) {
     await write(sql`/* insertTestUrlHostname:block */
       INSERT INTO url_hostname_blocks (url_hostname_id, blocked_source)
       VALUES (${hostnameId}, 'admin')
@@ -86,19 +86,23 @@ export async function insertTestUrlHostname(options: {
 
 function buildInsertUrlHostnameQuery(
   hostname: string,
-  options: { emailable?: boolean | null; blocked?: boolean | null; crawlable?: boolean | null },
+  options: {
+    is_emailable?: boolean | null
+    is_blocked?: boolean | null
+    is_crawlable?: boolean | null
+  },
   returningId: boolean,
 ) {
-  const { emailable, crawlable } = options
+  const { is_emailable, is_crawlable } = options
   let query = sql`INSERT INTO url_hostnames (hostname`
   let values = sql`${hostname}`
-  if (emailable !== undefined) {
-    query = query.append(sql`, emailable`)
-    values = values.append(sql`, ${emailable}`)
+  if (is_emailable !== undefined) {
+    query = query.append(sql`, is_emailable`)
+    values = values.append(sql`, ${is_emailable}`)
   }
-  if (crawlable !== undefined) {
-    query = query.append(sql`, crawlable`)
-    values = values.append(sql`, ${crawlable}`)
+  if (is_crawlable !== undefined) {
+    query = query.append(sql`, is_crawlable`)
+    values = values.append(sql`, ${is_crawlable}`)
   }
   query = query
     .append(sql`) VALUES (`)

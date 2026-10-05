@@ -25,9 +25,9 @@ describe('durable copyright decision recovery', () => {
           claimantContact: fixture.form.claimant_contact,
           claimantEmail: fixture.form.claimant_email,
           workDescription: fixture.form.work_description,
-          goodFaithBelief: fixture.form.good_faith_belief,
+          goodFaithBelief: fixture.form.has_good_faith_belief,
           accuracyAuthorityUnderPenaltyOfPerjury:
-            fixture.form.accuracy_authority_under_penalty_of_perjury,
+            fixture.form.has_accuracy_authority_under_penalty_of_perjury,
           electronicSignature: fixture.form.electronic_signature,
           claimantTargets: fixture.form.targets.map(target => ({
             surfaceKind: 'post-image' as const,
@@ -40,7 +40,7 @@ describe('durable copyright decision recovery', () => {
       await createTestCopyrightFormIntakeReview({
         intakeId: intake.id,
         moderatorId: moderator.id,
-        accepted: true,
+        is_accepted: true,
       })
       submissionIds.push(intake.copyright_notice_submission_id)
       noticeIds.push(intake.copyright_notice_id)

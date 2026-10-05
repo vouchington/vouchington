@@ -71,7 +71,7 @@ export async function findCopyrightImageSimilarityCandidates(input: {
       AND image.upload_completed_at IS NOT NULL
       AND image.quarantine_pending_at IS NULL
       AND image.quarantined_at IS NULL
-      AND image.openai_omni_moderation_flagged IS FALSE
+      AND image.is_flagged_by_openai_omni_moderation IS FALSE
       AND image.bedrock_nova_multimodal_v1_embedding IS NOT NULL
       AND post.deleted_at IS NULL
     ORDER BY similarity DESC, placement.id ASC

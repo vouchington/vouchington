@@ -84,7 +84,7 @@ describe('post classifier execution with real receipts', () => {
       },
     ])
     expect(await readClassifierRunOutcomes(input.adapter, input.lease)).toMatchObject({
-      local: { flagged: true },
+      local: { is_flagged: true },
       remoteDecision: { batchId: input.lease.decisionBatchId },
     })
     expect((await getClassifierRunFacts(input.post.id, POST_CLASSIFIER_SLUG))[0]).toMatchObject({
@@ -276,7 +276,7 @@ describe('post classifier execution with real receipts', () => {
     })
     expect(calls.detector).toHaveLength(1)
     expect(await getPostClassifierLocalOutcomeFacts(input.run.runId)).toMatchObject({
-      flagged: true,
+      is_flagged: true,
       detector: 'test-detector',
     })
   })

@@ -112,7 +112,7 @@ export type CopyrightStaffQueueItem = {
       guidance: CopyrightFormGuidance | null
     } | null
     review: {
-      accepted: boolean
+      is_accepted: boolean
       reviewed_at: string
       reviewed_by_id: string | null
     } | null
@@ -143,12 +143,12 @@ export type CopyrightStaffQueueItem = {
     guidance: CopyrightLegalHoldGuidance | null
     assessment: {
       id: string
-      from_original_claimant: boolean
+      is_from_original_claimant: boolean
       proceeding_kind: 'federal_court' | 'ccb' | null
       ccb_claim_kind: 'claim' | 'counterclaim' | null
       commenced_at: string | null
       received_by_designated_agent_at: string | null
-      same_material: boolean
+      is_same_material: boolean
       target_ids: string[]
       qualifying: boolean
       resolved: boolean

@@ -5,7 +5,7 @@ export async function getTestPostClearanceState(postId: string): Promise<
   | {
       approved_at: Date | null
       rejected_at: Date | null
-      openai_omni_moderation_flagged: boolean | null
+      is_flagged_by_openai_omni_moderation: boolean | null
       spam_detection_flagged: boolean | null
     }
   | undefined
@@ -13,14 +13,14 @@ export async function getTestPostClearanceState(postId: string): Promise<
   const { rows } = await read<{
     approved_at: Date | null
     rejected_at: Date | null
-    openai_omni_moderation_flagged: boolean | null
+    is_flagged_by_openai_omni_moderation: boolean | null
     spam_detection_flagged: boolean | null
   }>(
     sql`/* getTestPostClearanceState */
       SELECT
         approved_at,
         rejected_at,
-        CASE WHEN openai.disposition IS NULL THEN NULL ELSE openai.disposition <> 'pass' END AS openai_omni_moderation_flagged,
+        CASE WHEN openai.disposition IS NULL THEN NULL ELSE openai.disposition <> 'pass' END AS is_flagged_by_openai_omni_moderation,
         CASE WHEN spam.disposition IS NULL THEN NULL ELSE spam.disposition <> 'pass' END AS spam_detection_flagged
       FROM posts post
       LEFT JOIN post_moderation_versions version

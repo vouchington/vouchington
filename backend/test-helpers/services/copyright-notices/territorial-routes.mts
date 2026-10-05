@@ -74,7 +74,7 @@ export function territorialNoticeBody(jurisdiction: TerritorialJurisdiction = 'u
       ? {
           notifier_name: `Notifier ${suffix}`,
           notifier_email: `notifier-${suffix}@example.test`,
-          good_faith_statement: true as const,
+          has_good_faith_statement: true as const,
         }
       : {}),
   }

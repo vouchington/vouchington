@@ -58,14 +58,14 @@ export function EngagementEmailsSwitchRow({
   return (
     <div className='flex items-start gap-4'>
       <Switch
-        id='engagement_emails_enabled'
+        id='is_engagement_emails_enabled'
         checked={checked}
         onCheckedChange={onCheckedChange}
         disabled={disabled}
         data-pw='engagement-emails-toggle'
       />
       <div className='space-y-1'>
-        <Label htmlFor='engagement_emails_enabled'>Engagement emails</Label>
+        <Label htmlFor='is_engagement_emails_enabled'>Engagement emails</Label>
         <p className='text-sm text-muted-foreground'>
           Topic, referral link, and news source recommendations.
         </p>
@@ -86,14 +86,14 @@ export function ModerationEmailsSwitchRow({
   return (
     <div className='flex items-start gap-4'>
       <Switch
-        id='moderation_emails_enabled'
+        id='is_moderation_emails_enabled'
         checked={checked}
         onCheckedChange={onCheckedChange}
         disabled={disabled}
         data-pw='moderation-emails-toggle'
       />
       <div className='space-y-1'>
-        <Label htmlFor='moderation_emails_enabled'>Community moderation summary</Label>
+        <Label htmlFor='is_moderation_emails_enabled'>Community moderation summary</Label>
         <p className='text-sm text-muted-foreground'>
           A table of moderation queue counts for communities you moderate.
         </p>

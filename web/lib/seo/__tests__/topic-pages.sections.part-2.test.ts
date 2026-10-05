@@ -18,8 +18,8 @@ const mockTopic: Topic = {
   referral_program_id: null,
   aliases: ['book'],
   topic_type: 'topic',
-  noindex: false,
-  allow_reviews: true,
+  is_noindexed: false,
+  should_allow_reviews: true,
   created_at: '2024-01-01T00:00:00Z',
   created_by: {
     account_type: null,

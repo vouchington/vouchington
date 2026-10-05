@@ -28,10 +28,10 @@ export async function seedRssFeeds(feedCount = 500, itemCount = 5000): Promise<v
     values,
   )
   await feedsTransaction(
-    `/* seedExplainData */ INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, enabled, reason) SELECT 'enablement'::rss_feed_setting_change_types, id, TRUE, 'explain seed initial state' FROM rss_feeds WHERE NOT EXISTS ( SELECT 1 FROM rss_feed_setting_changes c WHERE c.change_type = 'enablement' AND c.rss_feed_id = rss_feeds.id )`,
+    `/* seedExplainData */ INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason) SELECT 'enablement'::rss_feed_setting_change_types, id, TRUE, 'explain seed initial state' FROM rss_feeds WHERE NOT EXISTS ( SELECT 1 FROM rss_feed_setting_changes c WHERE c.change_type = 'enablement' AND c.rss_feed_id = rss_feeds.id )`,
   )
   await feedsTransaction(
-    `/* seedExplainData */ INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, enabled, reason) SELECT 'discoverability'::rss_feed_setting_change_types, id, TRUE, 'explain seed initial state' FROM rss_feeds WHERE NOT EXISTS ( SELECT 1 FROM rss_feed_setting_changes c WHERE c.change_type = 'discoverability' AND c.rss_feed_id = rss_feeds.id )`,
+    `/* seedExplainData */ INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason) SELECT 'discoverability'::rss_feed_setting_change_types, id, TRUE, 'explain seed initial state' FROM rss_feeds WHERE NOT EXISTS ( SELECT 1 FROM rss_feed_setting_changes c WHERE c.change_type = 'discoverability' AND c.rss_feed_id = rss_feeds.id )`,
   )
   await feedsTransaction.commit()
   await using itemsTransaction = await beginTransaction()

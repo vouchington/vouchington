@@ -43,7 +43,7 @@ describe('HouseholdManager pagination', () => {
 
   function renderSharedPage() {
     const shared = makeSection({
-      household: { id: 'shared-1', owner_id: 'user-2', updated_at: '2026-07-02' },
+      household: { id: 'shared-1', owner_user_id: 'user-2', updated_at: '2026-07-02' },
       isOwner: false,
     })
     render(
@@ -61,11 +61,14 @@ describe('HouseholdManager pagination', () => {
 
   it('loads the next shared page once and deduplicates stable household ids', async () => {
     const shared = makeSection({
-      household: { id: 'shared-1', owner_id: 'user-2', updated_at: '2026-07-02' },
+      household: { id: 'shared-1', owner_user_id: 'user-2', updated_at: '2026-07-02' },
       isOwner: false,
     })
     mockGetHouseholds.mockResolvedValueOnce({
-      results: [shared.household, { id: 'shared-2', owner_id: 'user-3', updated_at: '2026-07-01' }],
+      results: [
+        shared.household,
+        { id: 'shared-2', owner_user_id: 'user-3', updated_at: '2026-07-01' },
+      ],
       page_info: terminalPageInfo,
     })
     renderSharedPage()
@@ -83,7 +86,7 @@ describe('HouseholdManager pagination', () => {
 
   it('preserves rows and retries the same cursor after a continuation failure', async () => {
     mockGetHouseholds.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({
-      results: [{ id: 'shared-2', owner_id: 'user-3', updated_at: '2026-07-01' }],
+      results: [{ id: 'shared-2', owner_user_id: 'user-3', updated_at: '2026-07-01' }],
       page_info: terminalPageInfo,
     })
     renderSharedPage()

@@ -9,7 +9,7 @@ Not partitioned — growth: bounded.
 | Column             | Type                                     | Nullable | Default                                                 | Identity | Generated | Collation | Comment                                                                                                                                                                 |
 | ------------------ | ---------------------------------------- | -------- | ------------------------------------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `reservation_id`   | `uuid`                                   | no       |                                                         |          |           |           | Admission reservation that committed and consumed quota exactly once. The consumption is deleted with its reservation, which outlives every contribution-policy window. |
-| `actor_id`         | `uuid`                                   | no       |                                                         |          |           |           | Actor whose contribution quota was consumed.                                                                                                                            |
+| `actor_user_id`    | `uuid`                                   | no       |                                                         |          |           |           | Actor whose contribution quota was consumed.                                                                                                                            |
 | `source`           | `contribution_policy_sources`            | no       |                                                         |          |           |           | Contribution-policy source whose quota was consumed.                                                                                                                    |
 | `committed_at`     | `timestamp with time zone`               | no       | `now()`                                                 |          |           |           | Clock timestamp at which the quota-consuming admission committed.                                                                                                       |
 | `consumption_mode` | `post_admission_quota_consumption_modes` | no       | `'all_windows'::post_admission_quota_consumption_modes` |          |           |           | Whether this consumption participates in all policy windows or daily windows only; the default preserves old writers as all-window consumption.                         |
@@ -25,13 +25,13 @@ _none_
 
 **Foreign keys:**
 
-- `post_admission_quota_consumptions_actor_id_fkey`: `FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE CASCADE`
+- `post_admission_quota_consumptions_actor_user_id_fkey`: `FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE CASCADE`
 - `post_admission_quota_consumptions_reservation_id_fkey`: `FOREIGN KEY (reservation_id) REFERENCES post_admission_reservations(id) ON DELETE CASCADE`
 
 **Indexes:**
 
-- `idx_post_admission_quota_consumptions__actor_committed`: `CREATE INDEX idx_post_admission_quota_consumptions__actor_committed ON public.post_admission_quota_consumptions USING btree (actor_id, committed_at DESC)`
-- `idx_post_admission_quota_consumptions__actor_source_committed`: `CREATE INDEX idx_post_admission_quota_consumptions__actor_source_committed ON public.post_admission_quota_consumptions USING btree (actor_id, source, committed_at DESC)`
+- `idx_post_admission_quota_consumptions__actor_committed`: `CREATE INDEX idx_post_admission_quota_consumptions__actor_committed ON public.post_admission_quota_consumptions USING btree (actor_user_id, committed_at DESC)`
+- `idx_post_admission_quota_consumptions__actor_source_committed`: `CREATE INDEX idx_post_admission_quota_consumptions__actor_source_committed ON public.post_admission_quota_consumptions USING btree (actor_user_id, source, committed_at DESC)`
 - `idx_post_admission_quota_consumptions__retention`: `CREATE INDEX idx_post_admission_quota_consumptions__retention ON public.post_admission_quota_consumptions USING btree (committed_at, reservation_id)`
 - `post_admission_quota_consumptions_pkey`: `CREATE UNIQUE INDEX post_admission_quota_consumptions_pkey ON public.post_admission_quota_consumptions USING btree (reservation_id)`
 

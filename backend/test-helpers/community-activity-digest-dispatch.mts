@@ -7,21 +7,21 @@ export async function clearTestCommunityActivityDigestDispatchWindows(): Promise
 
 export async function getTestCommunityActivityDigestDispatchWindows(): Promise<
   Array<{
-    window_start: Date
-    window_end: Date
+    window_starts_at: Date
+    window_ends_at: Date
     enqueued_at: Date | null
     completed_at: Date | null
   }>
 > {
   const { rows } = await write<{
-    window_start: Date
-    window_end: Date
+    window_starts_at: Date
+    window_ends_at: Date
     enqueued_at: Date | null
     completed_at: Date | null
   }>(sql`
-    SELECT window_start, window_end, enqueued_at, completed_at
+    SELECT window_starts_at, window_ends_at, enqueued_at, completed_at
     FROM community_activity_digest_dispatch_windows
-    ORDER BY window_start
+    ORDER BY window_starts_at
   `)
   return rows
 }
@@ -33,6 +33,6 @@ export async function setTestCommunityActivityDigestDispatchWindowEnqueuedAt(
   await write(sql`
     UPDATE community_activity_digest_dispatch_windows
     SET enqueued_at = ${enqueuedAt}
-    WHERE window_start = ${windowStart}
+    WHERE window_starts_at = ${windowStart}
   `)
 }

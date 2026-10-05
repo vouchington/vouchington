@@ -15,12 +15,12 @@ describe('index', () => {
   describe('computeTopicChanges', () => {
     registerTopicRevisionChangeDetection(computeTopicChanges)
 
-    it('tracks noindex and allow_reviews policy flag changes', () => {
-      const before = { noindex: false, allow_reviews: true }
-      const after = { noindex: true, allow_reviews: false }
+    it('tracks noindex and should_allow_reviews policy flag changes', () => {
+      const before = { is_noindexed: false, should_allow_reviews: true }
+      const after = { is_noindexed: true, should_allow_reviews: false }
       const changes = computeTopicChanges(before, after)
-      expect(changes.noindex).toEqual({ before: false, after: true })
-      expect(changes.allow_reviews).toEqual({ before: true, after: false })
+      expect(changes.is_noindexed).toEqual({ before: false, after: true })
+      expect(changes.should_allow_reviews).toEqual({ before: true, after: false })
     })
   })
 

@@ -15,7 +15,7 @@ Not partitioned — growth: unbounded.
 | `body_name`                         | `text`                              | no       |                                     |          |           |           | Name of the out-of-court dispute settlement body.                        |
 | `referred_at`                       | `timestamp with time zone`          | no       |                                     |          |           |           | When the party referred the decision to the body.                        |
 | `referred_by_party`                 | `copyright_territorial_party_roles` | no       |                                     |          |           |           | Whether the referring party was a poster or notifier.                    |
-| `referred_by_user_id`               | `uuid`                              | yes      |                                     |          |           |           | Party account if one exists; null for a guest or after account deletion. |
+| `referred_by_id`                    | `uuid`                              | yes      |                                     |          |           |           | Party account if one exists; null for a guest or after account deletion. |
 | `recorded_by_id`                    | `uuid`                              | yes      |                                     |          |           |           | Staff account recording the referral; null after account deletion.       |
 | `created_at`                        | `timestamp with time zone`          | yes      | `uuid_extract_timestamp(id)`        |          | virtual   |           |                                                                          |
 | `updated_at`                        | `timestamp with time zone`          | no       | `CURRENT_TIMESTAMP`                 |          |           |           |                                                                          |
@@ -36,7 +36,7 @@ _none_
 - `fk_copyright_eu_dispute_settlement_referrals__decision`: `FOREIGN KEY (copyright_notice_id, copyright_territorial_decision_id) REFERENCES copyright_territorial_decisions(copyright_notice_id, id) ON DELETE RESTRICT`
 - `fk_copyright_eu_dispute_settlement_referrals__notice`: `FOREIGN KEY (copyright_notice_id, jurisdiction) REFERENCES copyright_notices(id, jurisdiction) ON DELETE RESTRICT`
 - `fk_copyright_eu_dispute_settlement_referrals__recorded_by`: `FOREIGN KEY (recorded_by_id) REFERENCES users(id) ON DELETE SET NULL`
-- `fk_copyright_eu_dispute_settlement_referrals__referred_by`: `FOREIGN KEY (referred_by_user_id) REFERENCES users(id) ON DELETE SET NULL`
+- `fk_copyright_eu_dispute_settlement_referrals__referred_by`: `FOREIGN KEY (referred_by_id) REFERENCES users(id) ON DELETE SET NULL`
 
 **Indexes:**
 
@@ -44,10 +44,10 @@ _none_
 - `idx_copyright_eu_dispute_settlement_referrals__decision`: `CREATE INDEX idx_copyright_eu_dispute_settlement_referrals__decision ON public.copyright_eu_dispute_settlement_referrals USING btree (copyright_notice_id, copyright_territorial_decision_id)`
 - `idx_copyright_eu_dispute_settlement_referrals__notice`: `CREATE INDEX idx_copyright_eu_dispute_settlement_referrals__notice ON public.copyright_eu_dispute_settlement_referrals USING btree (copyright_notice_id, jurisdiction)`
 - `idx_copyright_eu_dispute_settlement_referrals__notice_page`: `CREATE INDEX idx_copyright_eu_dispute_settlement_referrals__notice_page ON public.copyright_eu_dispute_settlement_referrals USING btree (copyright_notice_id, id)`
-- `idx_copyright_eu_dispute_settlement_referrals__participant_page`: `CREATE INDEX idx_copyright_eu_dispute_settlement_referrals__participant_page ON public.copyright_eu_dispute_settlement_referrals USING btree (copyright_notice_id, referred_by_user_id, id) WHERE (referred_by_user_id IS NOT NULL)`
+- `idx_copyright_eu_dispute_settlement_referrals__participant_page`: `CREATE INDEX idx_copyright_eu_dispute_settlement_referrals__participant_page ON public.copyright_eu_dispute_settlement_referrals USING btree (copyright_notice_id, referred_by_id, id) WHERE (referred_by_id IS NOT NULL)`
 - `idx_copyright_eu_dispute_settlement_referrals__recorded_by`: `CREATE INDEX idx_copyright_eu_dispute_settlement_referrals__recorded_by ON public.copyright_eu_dispute_settlement_referrals USING btree (recorded_by_id) WHERE (recorded_by_id IS NOT NULL)`
-- `idx_copyright_eu_dispute_settlement_referrals__referred_by`: `CREATE INDEX idx_copyright_eu_dispute_settlement_referrals__referred_by ON public.copyright_eu_dispute_settlement_referrals USING btree (referred_by_user_id) WHERE (referred_by_user_id IS NOT NULL)`
+- `idx_copyright_eu_dispute_settlement_referrals__referred_by`: `CREATE INDEX idx_copyright_eu_dispute_settlement_referrals__referred_by ON public.copyright_eu_dispute_settlement_referrals USING btree (referred_by_id) WHERE (referred_by_id IS NOT NULL)`
 
 **Triggers:**
 
-- `trigger_copyright_eu_dispute_settlement_referrals_immutable`: `CREATE TRIGGER trigger_copyright_eu_dispute_settlement_referrals_immutable BEFORE DELETE OR UPDATE ON public.copyright_eu_dispute_settlement_referrals FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation('referred_by_user_id', 'recorded_by_id')`
+- `trigger_copyright_eu_dispute_settlement_referrals_immutable`: `CREATE TRIGGER trigger_copyright_eu_dispute_settlement_referrals_immutable BEFORE DELETE OR UPDATE ON public.copyright_eu_dispute_settlement_referrals FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation('referred_by_id', 'recorded_by_id')`

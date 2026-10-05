@@ -12,7 +12,7 @@ export type CopyrightFormGuidance = {
       | 'work_identification'
       | 'material_identification'
       | 'contact_information'
-      | 'good_faith_statement'
+      | 'has_good_faith_statement'
       | 'accuracy_authority_statement'
     status: 'present' | 'missing' | 'unclear'
     gap: string | null

@@ -53,7 +53,7 @@ describe('copyright effective incident authority', () => {
       () => confirmTestRepeatInfringerRestriction(second, moderator),
     ])
     const account = await getCopyrightRepeatInfringerAccount(poster.id)
-    expect(account.incidents.filter(row => row.operative)).toHaveLength(2)
+    expect(account.incidents.filter(row => row.is_operative)).toHaveLength(2)
     expect(await readTestRepeatInfringerOpenReviewIds(poster.id)).toEqual([account.open_review_id])
   })
   it('reverses only the appealed account in a multi-owner notice', async () => {
@@ -63,10 +63,10 @@ describe('copyright effective incident authority', () => {
     await confirmTestRepeatInfringerRestriction(fixture, moderator, 1)
     await reviewTestRepeatInfringerAppeal(fixture, poster, moderator, 'reverse')
     expect((await getCopyrightRepeatInfringerAccount(poster.id)).incidents).toEqual([
-      expect.objectContaining({ copyright_notice_id: fixture.noticeId, operative: false }),
+      expect.objectContaining({ copyright_notice_id: fixture.noticeId, is_operative: false }),
     ])
     expect((await getCopyrightRepeatInfringerAccount(otherPoster.id)).incidents).toEqual([
-      expect.objectContaining({ copyright_notice_id: fixture.noticeId, operative: true }),
+      expect.objectContaining({ copyright_notice_id: fixture.noticeId, is_operative: true }),
     ])
   })
   it('creates an incident from a confirming appeal', async () => {
@@ -74,7 +74,7 @@ describe('copyright effective incident authority', () => {
     const fixture = await createTestRepeatInfringerNotice([poster.id], moderator)
     await reviewTestRepeatInfringerAppeal(fixture, poster, moderator, 'confirm')
     expect((await getCopyrightRepeatInfringerAccount(poster.id)).incidents).toEqual([
-      expect.objectContaining({ copyright_notice_id: fixture.noticeId, operative: true }),
+      expect.objectContaining({ copyright_notice_id: fixture.noticeId, is_operative: true }),
     ])
   })
   it('keeps reversal dominant over later confirmation', async () => {
@@ -84,10 +84,10 @@ describe('copyright effective incident authority', () => {
     await reviewTestRepeatInfringerAppeal(fixture, poster, moderator, 'reverse')
     await reviewTestRepeatInfringerAppeal(fixture, poster, moderator, 'confirm')
     expect((await getCopyrightRepeatInfringerAccount(poster.id)).incidents).toEqual([
-      expect.objectContaining({ operative: false }),
+      expect.objectContaining({ is_operative: false }),
     ])
   })
-  it('does not create an operative incident for a deleted author', async () => {
+  it('does not create an is_operative incident for a deleted author', async () => {
     const { poster, moderator } = await createActors()
     const fixture = await createTestRepeatInfringerNotice([poster.id], moderator)
     await softDeleteUser(poster.id)
@@ -110,10 +110,10 @@ describe('copyright effective incident authority', () => {
     }
     await recordCopyrightRepeatInfringerDisposition(input)
     expect((await getCopyrightRepeatInfringerAccount(poster.id)).incidents).toEqual([
-      expect.objectContaining({ id: incident.id, operative: false }),
+      expect.objectContaining({ id: incident.id, is_operative: false }),
     ])
     expect((await getCopyrightRepeatInfringerAccount(otherPoster.id)).incidents).toEqual([
-      expect.objectContaining({ copyright_notice_id: fixture.noticeId, operative: true }),
+      expect.objectContaining({ copyright_notice_id: fixture.noticeId, is_operative: true }),
     ])
     await expect(recordCopyrightRepeatInfringerDisposition(input)).rejects.toMatchObject({
       status: 409,
@@ -129,7 +129,7 @@ describe('copyright effective incident authority', () => {
     await confirmTestRepeatInfringerRestriction(fixture, moderator, 1)
     await reviewTestRepeatInfringerAppeal(fixture, poster, moderator, 'reverse', 0)
     expect((await getCopyrightRepeatInfringerAccount(poster.id)).incidents).toEqual([
-      expect.objectContaining({ copyright_notice_id: fixture.noticeId, operative: true }),
+      expect.objectContaining({ copyright_notice_id: fixture.noticeId, is_operative: true }),
     ])
   })
   it('keeps an initial reversal dominant over a confirming appeal', async () => {
@@ -177,7 +177,7 @@ describe('copyright effective incident authority', () => {
     await reviewTestRepeatInfringerAppeal(first, poster, moderator, 'reverse')
     const after = await getCopyrightRepeatInfringerAccount(poster.id)
     expect(after.open_review_id).toBe(before.open_review_id)
-    expect(after.incidents.filter(row => row.operative)).toHaveLength(1)
+    expect(after.incidents.filter(row => row.is_operative)).toHaveLength(1)
     await expect(
       recordCopyrightRepeatInfringerReviewOutcome({
         currentUser: moderator,

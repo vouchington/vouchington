@@ -7,7 +7,7 @@ export type CopyrightFormGuidance = {
       | 'work_identification'
       | 'material_identification'
       | 'contact_information'
-      | 'good_faith_statement'
+      | 'has_good_faith_statement'
       | 'accuracy_authority_statement'
     status: 'present' | 'missing' | 'unclear'
     gap: string | null
@@ -31,7 +31,7 @@ export const COPYRIGHT_FORM_GUIDANCE_ELEMENTS: readonly Element[] = [
   'work_identification',
   'material_identification',
   'contact_information',
-  'good_faith_statement',
+  'has_good_faith_statement',
   'accuracy_authority_statement',
 ]
 const STATUSES = new Set(['present', 'missing', 'unclear'])

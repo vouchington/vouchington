@@ -19,7 +19,7 @@ export async function openModmailThread(
       DO NOTHING
       RETURNING
         id, channel_type, title, community_id, subject_user_id,
-        assigned_mod_id, assigned_at, resolved_at, resolved_by_id,
+        assigned_moderator_user_id, assigned_at, resolved_at, resolved_by_id,
         created_by_id, created_at, updated_at
     `)
 
@@ -30,7 +30,7 @@ export async function openModmailThread(
     const { rows: existingRows } = await query(sql`/* openModmailThread:existing */
         SELECT
           id, channel_type, title, community_id, subject_user_id,
-          assigned_mod_id, assigned_at, resolved_at, resolved_by_id,
+          assigned_moderator_user_id, assigned_at, resolved_at, resolved_by_id,
           created_by_id, created_at, updated_at
         FROM conversations
         WHERE channel_type = 'modmail'
@@ -106,7 +106,7 @@ export async function assignModmailThread(
 ): Promise<void> {
   await write(sql`/* assignModmailThread */
     UPDATE conversations
-    SET assigned_mod_id = ${modUserId},
+    SET assigned_moderator_user_id = ${modUserId},
         assigned_at = CURRENT_TIMESTAMP,
         updated_at = CURRENT_TIMESTAMP
     WHERE id = ${conversationId}

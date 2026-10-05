@@ -7,13 +7,13 @@ import type { CardEditForm } from './types'
 
 const card: IndividualCard = {
   id: 'child',
-  card_id: 'topic-child',
+  card_topic_id: 'topic-child',
   opened_on: null,
   closed_on: null,
   received_sign_up_bonus_on: null,
   credit_limit: null,
   is_authorized_user: true,
-  authorized_user_of_id: 'parent',
+  authorized_user_of_card_id: 'parent',
   note: null,
   card: { id: 'topic-child', name: 'Child card', slug: 'child-card' },
   authorized_user_of_card: {
@@ -31,7 +31,7 @@ const initialForm: CardEditForm = {
   credit_limit: '',
   currency: 'usd',
   is_authorized_user: true,
-  authorized_user_of_id: 'parent',
+  authorized_user_of_card_id: 'parent',
   note: '',
 }
 
@@ -39,7 +39,7 @@ function Harness({ error, onLoadMore }: { error: Error | null; onLoadMore: () =>
   const [editForm, setEditForm] = useState(initialForm)
   return (
     <>
-      <span data-testid='selected-parent'>{editForm.authorized_user_of_id}</span>
+      <span data-testid='selected-parent'>{editForm.authorized_user_of_card_id}</span>
       <AuthorizedUserSelect
         card={card}
         cards={[card]}

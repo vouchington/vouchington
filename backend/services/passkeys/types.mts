@@ -2,7 +2,7 @@ export type PublicPasskey = {
   id: string
   name: string
   device_type: 'singleDevice' | 'multiDevice'
-  backed_up: boolean
+  is_backed_up: boolean
   created_at: Date
   last_used_at: Date | null
 }

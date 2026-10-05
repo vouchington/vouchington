@@ -22,7 +22,7 @@ export async function insertTestFediverseInstanceMetadata(
        nodeinfo_software_version,
        total_users,
        monthly_active_users,
-       open_registrations
+       is_open_for_registrations
      ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
     [
       topicId,

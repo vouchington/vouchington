@@ -67,7 +67,7 @@ describe('fetch.feed-data', () => {
       title: `Test Feed ${random}`,
     })
     await updateRssFeedById(feed.id, {
-      enabled: true,
+      is_enabled: true,
       discoverable: true,
     })
 
@@ -93,7 +93,7 @@ describe('fetch.feed-data', () => {
       topic_id: topic.id,
       title: `Feed chapters ${random}`,
     })
-    await updateRssFeedById(feed.id, { enabled: true, etag: '"chapter-etag"' })
+    await updateRssFeedById(feed.id, { is_enabled: true, etag: '"chapter-etag"' })
     const itemLink = `https://example.com/episode-${random}`
     const chaptersUrl = `https://cdn.example.com/episode-${random}.chapters.json`
     const chaptersXml = Buffer.from(
@@ -167,7 +167,7 @@ describe('fetch.feed-data', () => {
       topic_id: topic.id,
       title: `Feed ${random}`,
     })
-    await updateRssFeedById(feed.id, { enabled: true })
+    await updateRssFeedById(feed.id, { is_enabled: true })
 
     const before = await getLatestRssFeedCrawlForFeed(feed.id)
     expect(before).toBeNull()
@@ -192,7 +192,7 @@ describe('fetch.feed-data', () => {
       topic_id: topic.id,
       title: `Feed 304 ${random}`,
     })
-    await updateRssFeedById(feed.id, { enabled: true })
+    await updateRssFeedById(feed.id, { is_enabled: true })
     const [fixtureFeed, fixtureContentSha256] = createMockFeedFixture(`304-${random}`)
 
     mockCrawlerRss
@@ -242,7 +242,7 @@ describe('fetch.feed-data', () => {
       title: `Feed headers ${random}`,
     })
     await updateRssFeedById(feed.id, {
-      enabled: true,
+      is_enabled: true,
       etag: '"seed-etag"',
       last_modified_at: new Date('2024-01-01T00:00:00.000Z'),
     })
@@ -278,7 +278,7 @@ describe('fetch.feed-data', () => {
     })
     const seedLastModifiedAt = new Date('2024-01-01T00:00:00.000Z')
     await updateRssFeedById(feed.id, {
-      enabled: true,
+      is_enabled: true,
       etag: '"seed-etag"',
       last_modified_at: seedLastModifiedAt,
     })

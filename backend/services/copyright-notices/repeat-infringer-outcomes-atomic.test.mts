@@ -68,7 +68,7 @@ describe('atomic copyright repeat-infringer outcomes', () => {
       expect.objectContaining({ suspended_at: expect.any(Date) }),
     )
     expect(await getModeratorActionRowsForTest({ targetUserId: poster.id })).toEqual([
-      expect.objectContaining({ action_type: 'suspend', actor_id: admin.id }),
+      expect.objectContaining({ action_type: 'suspend', actor_user_id: admin.id }),
     ])
     expect(
       await getTestPostPublicationDirtyWorkForScope({ type: 'author', id: poster.id }),
@@ -146,7 +146,7 @@ describe('atomic copyright repeat-infringer outcomes', () => {
       expect.objectContaining({ reason: expect.objectContaining({ status: 409 }) }),
     ])
     expect(await getModeratorActionRowsForTest({ targetUserId: poster.id })).toEqual([
-      expect.objectContaining({ action_type: 'suspend', actor_id: admin.id }),
+      expect.objectContaining({ action_type: 'suspend', actor_user_id: admin.id }),
     ])
     expect(
       await getTestPostPublicationDirtyWorkForScope({ type: 'author', id: poster.id }),

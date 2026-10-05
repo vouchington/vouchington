@@ -25,7 +25,7 @@ Triggers the full blocking flow atomically:
 
 Returns `{ blocked_hostname_count, soft_deleted_relation_count, penalized_user_count }`.
 
-Google Web Risk can also block a registrable domain automatically after local checks pass. Automated Web Risk blocks store the checked URL/threat metadata, skip the initial creator penalty, and rely on the local parent-domain block for future URLs so Google is not called again. Admins can set `skip_web_risk = true` on trusted hostnames; the flag applies to subdomains.
+Google Web Risk can also block a registrable domain automatically after local checks pass. Automated Web Risk blocks store the checked URL/threat metadata, skip the initial creator penalty, and rely on the local parent-domain block for future URLs so Google is not called again. Admins can set `should_skip_web_risk = true` on trusted hostnames; the flag applies to subdomains.
 
 ### List Blocked Hostnames
 

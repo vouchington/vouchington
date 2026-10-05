@@ -71,7 +71,7 @@ export function getMembershipLifecycleSnapshot(
 export function getMembershipLifecycleSnapshotFromFields(membership: MembershipLifecycleFields) {
   return getMembershipLifecycleSnapshot(
     membership.status,
-    membership.cancel_at_period_end,
+    membership.should_cancel_at_period_end,
     membership,
   )
 }

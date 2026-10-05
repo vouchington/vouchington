@@ -25,7 +25,7 @@
 
 For each URL crawl:
 
-1. **Guard checks** — skip if `hostname.blocked = true` or `hostname.crawlable = false`
+1. **Guard checks** — skip if `hostname.is_blocked = true` or `hostname.is_crawlable = false`
 2. **Domain rate limit check** — skip (throw `CrawlerRateLimitError`) if domain has an active 429 lock in Valkey
 3. **robots.txt check** — skip if `isUrlCrawlable()` returns false; network errors and HTTP 4xx/5xx from robots.txt are treated as ALLOW (RFC 9309); only unexpected runtime exceptions (e.g. parsing bugs) are treated as disallowed
 4. **Crawler rule lookup** — fetch per-hostname rules (`css_selectors_to_remove`, `link_*_to_remove`)
@@ -36,7 +36,7 @@ For each URL crawl:
 9. **Embed extraction** — pass the already-extracted document to `@vouchington/embeds` (no second
    document fetch or remote oEmbed request), store the normalized local `embed_metadata` and the
    crawl-local `embed_oembed_url` candidate.
-10. **Content storage and handoff** — store `markdown`, `title`, `links`, `meta_tags`, `lang`, the
+10. **Content storage and handoff** — store `markdown`, `title`, `links`, `meta_tags`, `language`, the
     crawl's nullable normalized `embed_metadata`, and its optional endpoint. Only after that write,
     enqueue the durable crawl ID on `crawl_embeds`; its I/O worker applies destination-host ordering,
     retries remote oEmbed, conditionally updates that exact crawl, and records

@@ -43,7 +43,7 @@ const plusMembership: SubscriptionMembership = {
   expired_at: null,
   past_due_at: null,
   paused_at: null,
-  cancel_at_period_end: false,
+  should_cancel_at_period_end: false,
   latest_change_id: null,
   created_at: '2026-01-15T00:00:00.000Z',
   updated_at: '2026-05-01T00:00:00.000Z',
@@ -60,7 +60,7 @@ export const ActivePlus: Story = {
 }
 
 export const CancelsAtPeriodEnd: Story = {
-  args: { membership: { ...plusMembership, cancel_at_period_end: true } },
+  args: { membership: { ...plusMembership, should_cancel_at_period_end: true } },
   render: args => (
     <StoryFrame width='max-w-md'>
       <MembershipStatus {...args} />

@@ -38,8 +38,8 @@ export async function getIndividualRewardsProgramStatuses(
     : null
   const query = sql`/* getIndividualRewardsProgramStatuses */
     SELECT individual_rewards_program_statuses.id,
-      individual_rewards_program_statuses.since::TEXT AS since,
-      individual_rewards_program_statuses.until::TEXT AS until,
+      individual_rewards_program_statuses.started_on::TEXT AS started_on,
+      individual_rewards_program_statuses.expires_on::TEXT AS expires_on,
       individual_rewards_program_statuses.rewards_program_status_id,
       rewards_program_status.name AS rewards_program_status_name,
       rewards_program_status.slug AS rewards_program_status_slug

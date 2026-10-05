@@ -98,7 +98,7 @@ export async function insertTestPostSourcesForContributor(
 ): Promise<void> {
   await write(sql`/* insertTestPostSourcesForContributor */
     INSERT INTO post_topic_alias_sources
-      (post_id, topic_alias_id, contributor_id, source, authored_token)
+      (post_id, topic_alias_id, contributor_user_id, source, authored_token)
     SELECT post_id, ${topicAliasId}, ${contributorId}, 'explicit', '#deletion-batch'
     FROM UNNEST(${postIds}::uuid[]) AS post_id
   `)
@@ -107,7 +107,7 @@ export async function insertTestPostSourcesForContributor(
 export async function countTestPostSourcesForContributor(userId: string): Promise<number> {
   const { rows } = await read<{ count: number }>(sql`/* countTestPostSourcesForContributor */
     SELECT COUNT(*)::integer AS count
-    FROM post_topic_alias_sources WHERE contributor_id = ${userId}
+    FROM post_topic_alias_sources WHERE contributor_user_id = ${userId}
   `)
   return rows[0]?.count ?? 0
 }

@@ -18,7 +18,7 @@ Free users cannot allocate slots (limit = 0). Creating a prompt does not consume
 
 ```mermaid
 stateDiagram-v2
-  [*] --> created: slot_allocated=false
+  [*] --> created: is_slot_allocated=false
   created --> active: allocate slot
   active --> inactive: deallocate
   active --> inactive: moderator removed
@@ -29,4 +29,4 @@ stateDiagram-v2
   deleted --> [*]
 ```
 
-Active prompts: `slot_allocated = true AND activated_at IS NOT NULL AND deactivated_at IS NULL AND deleted_at IS NULL`
+Active prompts: `is_slot_allocated = true AND activated_at IS NOT NULL AND deactivated_at IS NULL AND deleted_at IS NULL`

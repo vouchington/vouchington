@@ -1,3 +1,5 @@
+import { runIsolatedDatabaseCase } from '../../../../test-helpers/vitest-isolated-database-case.mts'
+import { getIsolatedDatabaseCaseMode } from '../../../../test-helpers/vitest-isolated-database-cases.mts'
 import { describe, expect, it } from 'vitest'
 import {
   createTestReferralLinkWithLastCrawl,
@@ -54,6 +56,10 @@ describe('dropRssFeedCrawlsDefaultPartition', () => {
   })
 
   it('drops the leftover default child before creating monthly partitions', async () => {
+    if (getIsolatedDatabaseCaseMode('partition-bootstrap-ddl') === 'parent') {
+      await runIsolatedDatabaseCase('partition-bootstrap-ddl')
+      return
+    }
     await createMonthlyPartitions()
 
     const { rows } = await read<{ default_exists: boolean }>(
@@ -61,11 +67,15 @@ describe('dropRssFeedCrawlsDefaultPartition', () => {
         SELECT to_regclass('rss_feed_crawls__default') IS NOT NULL AS default_exists`,
     )
     expect(rows).toEqual([{ default_exists: false }])
-  })
+  }, 240_000)
 })
 
 describe('cleanupPartitions', () => {
   it('clears referral-link crawl pointers before dropping an expired crawls partition', async () => {
+    if (getIsolatedDatabaseCaseMode('expired-crawl-partition-ddl') === 'parent') {
+      await runIsolatedDatabaseCase('expired-crawl-partition-ddl')
+      return
+    }
     // A 2019 month keeps this test clear of the current partitions: a partition drop fires no
     // ON DELETE action, so the pointer must be cleared explicitly to avoid a dangling id.
     await write(
@@ -90,5 +100,5 @@ describe('cleanupPartitions', () => {
         SELECT to_regclass('crawls__p_2019_01') IS NOT NULL AS partition_exists`,
     )
     expect(rows).toEqual([{ partition_exists: false }])
-  })
+  }, 240_000)
 })

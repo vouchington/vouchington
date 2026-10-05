@@ -51,7 +51,7 @@ export async function setTestStoryMemberSourceState(feedId: string, state: 'disa
     return
   }
   await write(sql`/* setTestStoryMemberSourceState */
-    INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, enabled, reason)
+    INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason)
     VALUES ('enablement', ${feedId}, FALSE, 'story visibility test')
   `)
 }

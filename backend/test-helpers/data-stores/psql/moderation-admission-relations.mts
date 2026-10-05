@@ -46,7 +46,7 @@ export async function createRelationTestModeratorAction(
 ): Promise<string> {
   const { rows } = await write<{ id: string }>(
     `/* createRelationTestModeratorAction */ INSERT INTO moderator_actions
-      (actor_id, action_type, community_id)
+      (actor_user_id, action_type, community_id)
       VALUES ($1, 'activate_restriction', $2) RETURNING id`,
     [actorId, communityId],
   )
@@ -75,7 +75,7 @@ export async function insertTestFlagReporter(flagId: string, userId: string): Pr
 export async function insertTestFlagWithStoredReporterIds(reportedUserId: string): Promise<void> {
   await write(
     `/* insertTestFlagWithStoredReporterIds */ INSERT INTO report_integrity_flags
-      (reported_user_id, reporter_count, new_account_reporter_pct, details)
+      (reported_user_id, reporter_count, new_account_reporter_percent, details)
       VALUES ($1, 1, 0.5, '{"reporter_user_ids": []}'::jsonb)`,
     [reportedUserId],
   )
@@ -87,7 +87,7 @@ export async function insertTestAdmissionConsumption(
 ): Promise<void> {
   await write(
     `/* insertTestAdmissionConsumption */ INSERT INTO post_admission_quota_consumptions
-      (reservation_id, actor_id, source) VALUES ($1, $2, 'discussion')`,
+      (reservation_id, actor_user_id, source) VALUES ($1, $2, 'discussion')`,
     [reservationId, actorId],
   )
 }

@@ -12,7 +12,7 @@ describe('retry-candidates', () => {
   it('getRetryCrawlUrlCandidates returns null when no other candidates exist', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const url = await addUrl(null, `https://retry-solo-${random}.example.com/page`)
-    await updateUrlHostname(url!.hostname.id, { crawlable: true })
+    await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
 
     // Only one URL on this hostname, excluding it leaves no candidates
     const result = await getRetryCrawlUrlCandidates(url!.id)
@@ -27,7 +27,7 @@ describe('retry-candidates', () => {
       addUrl(null, `${base}/page2`),
       addUrl(null, `${base}/page3`),
     ])
-    await updateUrlHostname(url1!.hostname.id, { crawlable: true })
+    await updateUrlHostname(url1!.hostname.id, { is_crawlable: true })
 
     const result = await getRetryCrawlUrlCandidates(url1!.id)
     expect(result).not.toBeNull()

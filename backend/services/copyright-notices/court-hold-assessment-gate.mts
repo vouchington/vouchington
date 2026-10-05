@@ -46,8 +46,8 @@ export async function copyrightTargetRestoreIsBlocked(
           WHERE id = ${restrictionId}
         )
         AND resolution.id IS NULL
-        AND hold.from_original_claimant
-        AND hold.same_material
+        AND hold.is_from_original_claimant
+        AND hold.is_same_material
         AND hold.proceeding_kind IS NOT NULL
         AND hold.commenced_at IS NOT NULL
         AND hold.received_by_designated_agent_at IS NOT NULL

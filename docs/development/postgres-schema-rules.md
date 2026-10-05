@@ -36,7 +36,7 @@ existing retention needs. Model alternatives as per-entity FK columns with an ex
 constraint or as typed child rows. Do not use a UUID array, type/id pair, generic attribute/value
 table, or encoded string key as relationship storage.
 
-The canonical user, topic, post, RSS-item, and API-key creators register their concrete retained identity
+The canonical user, topic, post, RSS-item, membership, and API-key creators register their concrete retained identity
 inside the live-row insertion transaction. Live rows FK back to that owner; deletion may remove the
 live row while a request, audit record, or publication bridge keeps the owner. Root reservation is
 not proof that the live entity exists or that an operation is authorized. The independent bounded
@@ -358,12 +358,13 @@ This extends the prelaunch relational-storage rule.
     exception.
 - **A ledger row that outlives its entity references that entity's retained identity.** The 3
   `membership_id` columns (`membership_changes`, `membership_refunds`,
-  `membership_administrator_refund_operation_requests`) are NOT NULL with no FK. Deleting a user
-  cascades their `memberships` rows away, while these rows survive through
-  `retained_user_identities`, so their `membership_id` points at nothing. Add
-  `retained_membership_identities`, registered by `fn_register_retained_identity()` on
-  `memberships`, and FK the 3 columns to it with `ON DELETE RESTRICT`. It authorizes nothing about
-  the deleted membership (psql `AGENTS.md`).
+  `membership_administrator_refund_operation_requests`) reference
+  `retained_membership_identities` with `ON DELETE RESTRICT`. The live `memberships.id` also
+  references that owner, registered by `fn_register_retained_identity()` in the insertion
+  transaction. Deleting a user removes live membership projections while preserving their ledger
+  rows and membership roots. Bounded root cleanup removes only identities with neither a live
+  membership nor any ledger reference. The retained identity authorizes nothing about a deleted
+  membership (psql `AGENTS.md`).
 - **A reserved suffix names what it references.** `post_publication_dirty_work.author_user_id`
   points at `post_publication_author_identities` and becomes `author_identity_id`.
   `oauth_refresh_tokens.replaced_by_id` points at the table itself and becomes

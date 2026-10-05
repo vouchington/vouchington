@@ -16,7 +16,7 @@ export async function getPasskeysByUserId(
 ): Promise<{ results: PublicPasskey[]; hasNextPage: boolean }> {
   const limit = options.limit ?? 25
   const query = sql`/* getPasskeysByUserId */
-    SELECT id, name, device_type, backed_up, created_at, last_used_at
+    SELECT id, name, device_type, is_backed_up, created_at, last_used_at
     FROM user_passkeys
     WHERE user_id = ${userId}
   `

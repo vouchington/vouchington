@@ -132,7 +132,7 @@ describe('delete', () => {
 
     await expect(
       getTestPostPublicationDirtyWorkForScope({ type: 'topic_alias', id: aliasId }),
-    ).resolves.toMatchObject({ topic_alias_id: aliasId, reasons: ['post_topics_changed'] })
+    ).resolves.toMatchObject({ topic_alias_identity_id: aliasId, reasons: ['post_topics_changed'] })
   })
 
   it('locks category aliases before waiting on the feed lifecycle', async () => {

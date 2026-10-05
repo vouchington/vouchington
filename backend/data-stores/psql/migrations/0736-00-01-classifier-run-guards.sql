@@ -32,7 +32,7 @@ BEGIN
     OR OLD.input_sha256 IS DISTINCT FROM NEW.input_sha256
     OR OLD.configuration_json::text IS DISTINCT FROM NEW.configuration_json::text
     OR OLD.configuration_sha256 IS DISTINCT FROM NEW.configuration_sha256
-    OR OLD.shared_actor_id IS DISTINCT FROM NEW.shared_actor_id
+    OR OLD.shared_actor_user_id IS DISTINCT FROM NEW.shared_actor_user_id
     OR OLD.community_identity_id IS DISTINCT FROM NEW.community_identity_id
     OR OLD.decision_batch_id IS DISTINCT FROM NEW.decision_batch_id THEN
     RAISE EXCEPTION 'classifier run identity is immutable' USING ERRCODE = '23514';

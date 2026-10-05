@@ -37,8 +37,8 @@ export function createCopyrightNotice(input: {
   claimant_email: string
   work_description: string
   electronic_signature: string
-  good_faith_belief: boolean
-  accuracy_authority_under_penalty_of_perjury: boolean
+  has_good_faith_belief: boolean
+  has_accuracy_authority_under_penalty_of_perjury: boolean
   targets: CopyrightNoticeTargetInput[]
   cf_turnstile_response?: string
 }): Promise<{ copyright_notice: { id: string }; is_duplicate: boolean }> {
@@ -120,11 +120,11 @@ export function listCopyrightReviewQueue(options?: {
 
 export function reviewCopyrightFormIntake(
   intakeId: string,
-  accepted: boolean,
+  is_accepted: boolean,
   rationale: string,
 ): Promise<void> {
   return clientApi.post(`/api/v1/copyright-form-intakes/${intakeId}/reviews`, {
-    accepted,
+    is_accepted,
     rationale,
   })
 }
@@ -155,11 +155,11 @@ export function reviewCopyrightAppeal(
 
 export function reviewCopyrightCounterNotice(
   submissionId: string,
-  accepted: boolean,
+  is_accepted: boolean,
   rationale: string,
 ): Promise<void> {
   return clientApi.post(`/api/v1/copyright-submissions/${submissionId}/counter-notice-reviews`, {
-    accepted,
+    is_accepted,
     rationale,
   })
 }
@@ -168,12 +168,12 @@ export function assessCopyrightLegalHold(
   submissionId: string,
   input: {
     rationale: string
-    from_original_claimant: boolean
+    is_from_original_claimant: boolean
     proceeding_kind: 'federal_court' | 'ccb' | null
     ccb_claim_kind: 'claim' | 'counterclaim' | null
     commenced_at: string | null
     received_by_designated_agent_at: string | null
-    same_material: boolean
+    is_same_material: boolean
     target_ids: string[]
   },
 ): Promise<void> {

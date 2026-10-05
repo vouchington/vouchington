@@ -32,7 +32,7 @@ const allocatedPrompt: CommunityAgentPrompt = {
   prompt: promptText,
   model_name: 'gpt-4.1-mini',
   model_provider: 'openai',
-  slot_allocated: true,
+  is_slot_allocated: true,
   activated_at: '2026-04-02T15:00:00.000Z',
   deactivated_at: null,
   created_at: '2026-04-02T15:00:00.000Z',
@@ -80,7 +80,7 @@ export const Unallocated: Story = {
   render: () => (
     <PromptPreview
       communitySlug={communities[0]!.slug}
-      initialPrompt={{ ...allocatedPrompt, slot_allocated: false, activated_at: null }}
+      initialPrompt={{ ...allocatedPrompt, is_slot_allocated: false, activated_at: null }}
     />
   ),
 }

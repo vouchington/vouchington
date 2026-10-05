@@ -14,9 +14,9 @@ export async function appendCopyrightEmailIntakeRecommendation(input: {
 }): Promise<boolean> {
   assert(input.inputSha256.length === 32, 422, 'Recommendation input SHA-256 must be 32 bytes')
   await using transaction = await beginTransaction()
-  const { rows } = await transaction<{ ses_message_id: string }>(
+  const { rows } = await transaction<{ amazon_ses_message_id: string }>(
     sql`/* appendCopyrightEmailIntakeRecommendation:lockIntake */
-    SELECT ses_message_id FROM copyright_notice_email_intakes WHERE id = ${input.intakeId} FOR UPDATE`,
+    SELECT amazon_ses_message_id FROM copyright_notice_email_intakes WHERE id = ${input.intakeId} FOR UPDATE`,
   )
   const intake = rows[0]
   assert(intake, 404, 'Copyright email intake not found')
@@ -25,7 +25,7 @@ export async function appendCopyrightEmailIntakeRecommendation(input: {
       copyright_notice_email_intake_id, input_sha256, prompt_version, model, structured_output_ciphertext
     ) VALUES (
       ${input.intakeId}, ${input.inputSha256}, ${input.promptVersion}, ${input.model},
-      ${encryptSecret(JSON.stringify(input.structuredOutput), copyrightEmailIntakePurpose(intake.ses_message_id))}
+      ${encryptSecret(JSON.stringify(input.structuredOutput), copyrightEmailIntakePurpose(intake.amazon_ses_message_id))}
     )
     ON CONFLICT (copyright_notice_email_intake_id, input_sha256, prompt_version) DO NOTHING
   `)

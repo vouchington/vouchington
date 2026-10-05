@@ -26,9 +26,9 @@ export type CreateTopicUpdates = {
   markdown?: string
   topic_type?: TopicTypes
   /** Exclude this topic's pages from search-engine indexing. */
-  noindex?: boolean
+  is_noindexed?: boolean
   /** When false, reviews cannot be created for this topic and review UI is hidden. */
-  allow_reviews?: boolean
+  should_allow_reviews?: boolean
   updated_by_id?: string
   /** Hostname string (e.g. "thepointsguy.com") or UUID. Resolved to a hostname record by the service. */
   hostname?: string | null

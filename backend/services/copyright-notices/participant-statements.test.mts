@@ -22,7 +22,7 @@ describe('private participant statement projection', () => {
     await reviewCopyrightFormIntake({
       intakeId: notice.intake.id,
       currentUser: moderator,
-      accepted: true,
+      is_accepted: true,
       rationale: 'Complete notice.',
     })
     const caseId = notice.intake.copyright_notice_id
@@ -50,7 +50,7 @@ describe('private participant statement projection', () => {
     await reviewCopyrightFormIntake({
       intakeId: notice.intake.id,
       currentUser: await createTestUser({ extraRoles: ['moderator'] }),
-      accepted: false,
+      is_accepted: false,
       rationale: 'Incomplete notice.',
     })
     expect(
@@ -66,7 +66,7 @@ describe('private participant statement projection', () => {
     await reviewCopyrightFormIntake({
       intakeId: notice.intake.id,
       currentUser: await createTestUser({ extraRoles: ['moderator'] }),
-      accepted: true,
+      is_accepted: true,
       rationale: 'Complete notice.',
     })
     const detail = await getCopyrightParticipantNoticeDetail(

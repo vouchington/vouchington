@@ -25,12 +25,12 @@ type UpdateLandingPageRequest =
   | { title?: string; subtitle?: string | null; slug?: string }
 
 type LandingPageTopicEntryRequest =
-  | { type: 'review'; review_id: ApiUuidContract }
+  | { type: 'review'; review_post_id: ApiUuidContract }
   | { type: 'referral_link'; referral_link_id: ApiUuidContract }
 
 type LandingPageItemRequest =
   | { type: 'profile_link'; profile_link_id: ApiUuidContract }
-  | { type: 'review'; review_id: ApiUuidContract }
+  | { type: 'review'; review_post_id: ApiUuidContract }
   | { type: 'referral_link'; referral_link_id: ApiUuidContract }
   | { type: 'topic_group'; topic_id: ApiUuidContract; entries: LandingPageTopicEntryRequest[] }
   | { type: 'link'; label: string; url: string }

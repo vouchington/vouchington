@@ -31,7 +31,7 @@ describe('search.generated', () => {
       title: `Test Feed ${random}`,
     })
     // Enable the feed
-    await updateRssFeedById(feed.id, { enabled: true })
+    await updateRssFeedById(feed.id, { is_enabled: true })
     const results = await searchRssFeeds()
     expect(Array.isArray(results)).toBe(true)
     const found = results.find(r => r.id === feed.id)
@@ -58,8 +58,8 @@ describe('search.generated', () => {
       topic_id: topic2.id,
       title: `Test Feed 2 ${random}`,
     })
-    await updateRssFeedById(feed1.id, { enabled: true })
-    await updateRssFeedById(feed2.id, { enabled: true })
+    await updateRssFeedById(feed1.id, { is_enabled: true })
+    await updateRssFeedById(feed2.id, { is_enabled: true })
 
     const results = await searchRssFeeds({ topic_id: topic1.id })
     const found = results.find(r => r.id === feed1.id)
@@ -95,9 +95,9 @@ describe('search.generated', () => {
       topic_id: topic3.id,
       title: `Disabled Primary ${random}`,
     })
-    await updateRssFeedById(topic1Feed.id, { enabled: true })
-    await updateRssFeedById(topic2Feed.id, { enabled: true })
-    await updateRssFeedById(disabledFeed.id, { enabled: false })
+    await updateRssFeedById(topic1Feed.id, { is_enabled: true })
+    await updateRssFeedById(topic2Feed.id, { is_enabled: true })
+    await updateRssFeedById(disabledFeed.id, { is_enabled: false })
 
     const results = await searchPrimaryEnabledRssFeedIdsByTopicIds([
       topic1.id,
@@ -121,9 +121,9 @@ describe('search.generated', () => {
       topic_id: topic.id,
       title: `Test Feed ${random}`,
     })
-    await updateRssFeedById(feed.id, { enabled: false })
+    await updateRssFeedById(feed.id, { is_enabled: false })
 
-    const results = await searchRssFeeds({ enabled: false })
+    const results = await searchRssFeeds({ is_enabled: false })
     const found = results.find(r => r.id === feed.id)
     expect(found).toBeDefined()
     expect(found!.is_enabled).toBe(false)
@@ -148,10 +148,10 @@ describe('search.generated', () => {
       topic_id: topic2.id,
       title: `Test Feed 2 ${random}`,
     })
-    await updateRssFeedById(feed1.id, { enabled: true })
-    await updateRssFeedById(feed2.id, { enabled: false })
+    await updateRssFeedById(feed1.id, { is_enabled: true })
+    await updateRssFeedById(feed2.id, { is_enabled: false })
 
-    const results = await searchRssFeeds({ enabled: null })
+    const results = await searchRssFeeds({ is_enabled: null })
     const found1 = results.find(r => r.id === feed1.id)
     const found2 = results.find(r => r.id === feed2.id)
     expect(found1).toBeDefined()
@@ -169,7 +169,7 @@ describe('search.generated', () => {
       topic_id: topic.id,
       title: `Hidden Feed ${random}`,
     })
-    await updateRssFeedById(feed.id, { enabled: true, discoverable: false })
+    await updateRssFeedById(feed.id, { is_enabled: true, discoverable: false })
 
     const discoverableResults = await searchRssFeeds({ topic_id: topic.id, discoverable: true })
     expect(discoverableResults.find(r => r.id === feed.id)).toBeUndefined()
@@ -257,10 +257,10 @@ describe('search.generated', () => {
       topic_id: topicArticle.id,
       title: `Article Feed ${random}`,
     })
-    await updateRssFeedById(podcastFeed.id, { enabled: true, feed_type: 'podcast' })
-    await updateRssFeedById(articleFeed.id, { enabled: true, feed_type: 'article' })
+    await updateRssFeedById(podcastFeed.id, { is_enabled: true, feed_type: 'podcast' })
+    await updateRssFeedById(articleFeed.id, { is_enabled: true, feed_type: 'article' })
 
-    const results = await searchRssFeeds({ feed_type: 'podcast', enabled: null })
+    const results = await searchRssFeeds({ feed_type: 'podcast', is_enabled: null })
     const found = results.find(r => r.id === podcastFeed.id)
     const notFound = results.find(r => r.id === articleFeed.id)
     expect(found).toBeDefined()
@@ -281,16 +281,16 @@ describe('search.generated', () => {
       topic_id: topic.id,
       title: `Category Feed ${random}`,
     })
-    await updateRssFeedById(feed.id, { enabled: true })
+    await updateRssFeedById(feed.id, { is_enabled: true })
     // Upsert the category — the service resolves topic_id via the slug JOIN when a topic's slug matches the category text
     await upsertRssFeedCategories(feed.id, [categorySlug])
 
-    const matched = await searchRssFeeds({ category_topic_id: categoryTopic.id, enabled: null })
+    const matched = await searchRssFeeds({ category_topic_id: categoryTopic.id, is_enabled: null })
     expect(matched.find(r => r.id === feed.id)).toBeDefined()
 
     const unmatched = await searchRssFeeds({
       category_topic_id: '00000000-0000-7000-8000-000000000099',
-      enabled: null,
+      is_enabled: null,
     })
     expect(unmatched.find(r => r.id === feed.id)).toBeUndefined()
   }, 30_000)

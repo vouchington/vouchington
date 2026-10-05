@@ -12,7 +12,7 @@ export async function checkDomainBlacklisted(domain: string): Promise<boolean> {
     const { rows } = await read(sql`/* checkDomainBlacklisted */
       SELECT 1 FROM url_hostnames
       WHERE hostname = ${normalizedDomain}
-        AND (crawlable = FALSE OR blocked = TRUE)
+        AND (is_crawlable = FALSE OR is_blocked = TRUE)
       LIMIT 1
     `)
     return rows.length > 0
@@ -28,7 +28,7 @@ export async function checkDomainBlacklisted(domain: string): Promise<boolean> {
     ) OR EXISTS (
       SELECT 1 FROM url_hostnames
       WHERE hostname = ${normalizedDomain}
-        AND (crawlable = FALSE OR blocked = TRUE)
+        AND (is_crawlable = FALSE OR is_blocked = TRUE)
     )
     LIMIT 1
   `)

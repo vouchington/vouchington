@@ -110,7 +110,7 @@ describe('deleted community image setters and copyright response flows', () => {
     const review = await reviewCopyrightCounterNotice({
       submissionId: counterNotice.submission.id,
       currentUser: restricted.moderator,
-      accepted: false,
+      is_accepted: false,
       rationale: 'The statutory counter-notice fields were incomplete.',
     })
     expect(review.deadlineId).toBeNull()
@@ -161,7 +161,7 @@ describe('deleted community image setters and copyright response flows', () => {
       const incident = (
         await getCopyrightRepeatInfringerAccount(fixture.actorUserId)
       ).incidents.find(row => row.copyright_notice_id === restricted.noticeId)
-      if (!incident?.operative) throw new Error('Confirmed setter incident missing')
+      if (!incident?.is_operative) throw new Error('Confirmed setter incident missing')
 
       const counterNotice = await createCopyrightCounterNotice(
         setter,
@@ -193,7 +193,7 @@ describe('deleted community image setters and copyright response flows', () => {
       const review = await reviewCopyrightCounterNotice({
         submissionId: counterNotice.submission.id,
         currentUser: restricted.moderator,
-        accepted: true,
+        is_accepted: true,
         rationale: 'The structured counter-notice is formally complete.',
       })
       if (!review.deadlineId) throw new Error('Counter-notice deadline missing')

@@ -8,7 +8,7 @@ export type SearchRssFeedsOptions = {
   publisher_type_ids?: string[]
   publisher_type_match?: 'any' | 'all'
   current_user_id?: string
-  enabled?: boolean | null
+  is_enabled?: boolean | null
   discoverable?: boolean | null
   text_search_query?: string
   limit?: number

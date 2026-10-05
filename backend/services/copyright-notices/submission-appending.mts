@@ -22,11 +22,11 @@ export async function appendCopyrightNoticeSubmission(input: {
   const { rows } =
     await transaction<CopyrightNoticeSubmissionRecord>(sql`/* appendCopyrightNoticeSubmission */
       INSERT INTO copyright_notice_submissions (
-        copyright_notice_id, kind, received_at, source_kind, submitted_by_user_id, body_ciphertext
+        copyright_notice_id, kind, received_at, source_kind, submitted_by_id, body_ciphertext
       ) VALUES (
         ${input.noticeId}, ${input.kind}, ${input.receivedAt}, ${input.sourceKind}, ${input.submittedByUserId}, ${input.bodyCiphertext}
       )
-      RETURNING id, copyright_notice_id, kind, received_at, source_kind, submitted_by_user_id, body_ciphertext
+      RETURNING id, copyright_notice_id, kind, received_at, source_kind, submitted_by_id, body_ciphertext
     `)
   const submission = rows[0]
   assert(submission, 500, 'Failed to append copyright notice submission')

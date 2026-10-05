@@ -27,7 +27,7 @@ export async function deactivateCommunityPromptsForUser(
         cap.id,
         cap.community_id,
         cap.created_by_id,
-        cap.slot_allocated,
+        cap.is_slot_allocated,
         cap.activated_at,
         cap.deactivated_at,
         cap.deleted_at,
@@ -42,7 +42,7 @@ export async function deactivateCommunityPromptsForUser(
       JOIN agent_prompts ap ON ap.id = cap.id
       WHERE cap.created_by_id = ${userId}
         AND cap.community_id = ${communityId}
-        AND cap.slot_allocated = true
+        AND cap.is_slot_allocated = true
         AND cap.deleted_at IS NULL
         AND ap.deleted_at IS NULL
       `,
@@ -55,12 +55,12 @@ export async function deactivateCommunityPromptsForUser(
   await query(
     sql`/* deactivateCommunityPromptsForUser */
       UPDATE community_agent_prompts
-      SET slot_allocated = false,
+      SET is_slot_allocated = false,
           activated_at = NULL,
           deactivated_at = CURRENT_TIMESTAMP
       WHERE created_by_id = ${userId}
         AND community_id = ${communityId}
-        AND slot_allocated = true
+        AND is_slot_allocated = true
         AND deleted_at IS NULL
       `,
   )
@@ -77,7 +77,7 @@ export async function deactivateCommunityPromptsForUser(
         snapshotCommunityAgentPrompt(prompt),
         {
           ...snapshotCommunityAgentPrompt(prompt),
-          slot_allocated: false,
+          is_slot_allocated: false,
           activated_at: null,
           deactivated_at: deactivatedAt,
         },

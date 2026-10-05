@@ -38,8 +38,8 @@ interface CreateCommunityInput {
   list_type?: CommunityListType | null
   member_roster_visibility?: CommunityMemberRosterVisibility
   post_approval_required_at?: boolean
-  allow_review_posts?: boolean
-  allow_data_point_posts?: boolean
+  should_allow_review_posts?: boolean
+  should_allow_data_point_posts?: boolean
   member_invites_allowed_at?: boolean
   cf_turnstile_response?: string
 }
@@ -58,7 +58,7 @@ export function updateCommunity(
 }
 export function updateCommunityPostTypeSettings(
   idOrSlug: string,
-  input: { allow_review_posts?: boolean; allow_data_point_posts?: boolean },
+  input: { should_allow_review_posts?: boolean; should_allow_data_point_posts?: boolean },
 ): Promise<CommunityPostTypeSettingsResponseBody> {
   return clientApi.patch<CommunityPostTypeSettingsResponseBody>(
     `/api/v1/communities/${idOrSlug}/post-type-settings`,

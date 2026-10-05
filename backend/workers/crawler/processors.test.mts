@@ -78,7 +78,7 @@ describe('crawler processor', () => {
         id: 'crawl-1',
         url_id: 'url-1',
         created_at: new Date(),
-        crawler_id: 'crawler-1',
+        hostname_crawler_configuration_id: 'crawler-1',
         last_modified_at: null,
         etag: null,
         html_sha256: null,
@@ -98,7 +98,7 @@ describe('crawler processor', () => {
         embed_metadata: null,
         embed_oembed_url: null,
         embed_oembed_resolved_at: null,
-        lang: null,
+        language: null,
       } satisfies CrawlBasic),
     ).toEqual({
       url_id: 'url-1',
@@ -156,7 +156,7 @@ describe('crawler processor', () => {
             job.data as {
               crawl_timeout_ms?: number
               ensure_crawler_for_redirects?: boolean
-              ignore_robots_txt?: boolean
+              should_ignore_robots_txt?: boolean
               max_response_size_bytes?: number
               preserve_http_redirects?: boolean
               skip_canonical_url?: boolean
@@ -167,7 +167,7 @@ describe('crawler processor', () => {
           ).crawl_timeout_ms === 10_000 &&
           (job.data as { ensure_crawler_for_redirects?: boolean }).ensure_crawler_for_redirects ===
             true &&
-          (job.data as { ignore_robots_txt?: boolean }).ignore_robots_txt === true &&
+          (job.data as { should_ignore_robots_txt?: boolean }).should_ignore_robots_txt === true &&
           (job.data as { max_response_size_bytes?: number }).max_response_size_bytes ===
             256 * 1024 &&
           (job.data as { preserve_http_redirects?: boolean }).preserve_http_redirects === true &&

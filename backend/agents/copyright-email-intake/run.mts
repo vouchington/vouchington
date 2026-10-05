@@ -42,7 +42,7 @@ export async function runCopyrightEmailIntakeAgent(
     contentType: 'copyright-submission',
   })
   const inputSha256 = createHash('sha256').update(input).digest()
-  const safetyIdentifier = createHash('sha256').update(intake.ses_message_id).digest('hex')
+  const safetyIdentifier = createHash('sha256').update(intake.amazon_ses_message_id).digest('hex')
   const response = await callRecordingAgentResponseUsage(() => callModel(input, safetyIdentifier), {
     agentSlug: 'copyright-email-intake',
   })
@@ -83,8 +83,8 @@ export function parseCopyrightEmailIntakeOutput(text: string): Record<string, un
     !isOptionalString(parsed.claimant_contact, 4096) ||
     !isOptionalString(parsed.claimant_email, 254) ||
     !isOptionalString(parsed.work_description, 50_000) ||
-    !isOptionalBoolean(parsed.good_faith_belief) ||
-    !isOptionalBoolean(parsed.accuracy_authority_under_penalty_of_perjury) ||
+    !isOptionalBoolean(parsed.has_good_faith_belief) ||
+    !isOptionalBoolean(parsed.has_accuracy_authority_under_penalty_of_perjury) ||
     !isOptionalString(parsed.electronic_signature, 500) ||
     !isStringArray(parsed.target_urls, 20, 2048) ||
     !isSourceEvidence(parsed.source_evidence) ||
@@ -115,8 +115,8 @@ const SOURCE_FIELDS = new Set([
   'claimant_contact',
   'claimant_email',
   'work_description',
-  'good_faith_belief',
-  'accuracy_authority_under_penalty_of_perjury',
+  'has_good_faith_belief',
+  'has_accuracy_authority_under_penalty_of_perjury',
   'electronic_signature',
   'target_url',
 ])

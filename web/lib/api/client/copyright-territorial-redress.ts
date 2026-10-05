@@ -70,7 +70,7 @@ export function referCopyrightEuDisputeSettlement(
     body_name: string
     referred_at: string
     referred_by_party: 'poster' | 'notifier'
-    referred_by_user_id?: string
+    referred_by_id?: string
   },
 ): Promise<unknown> {
   return clientApi.post(`${noticePath('eu_dsa', noticeId)}/dispute-settlements`, input)

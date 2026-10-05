@@ -25,7 +25,7 @@ describe('territorial complaint email admission', () => {
     expect(admitted.noticeId).toBe(scene.noticeId)
     const records = await readTestTerritorialComplaintEmailRecords(scene.noticeId)
     expect(records.requests).toHaveLength(1)
-    expect(records.requests[0]).toMatchObject({ submitted_by_user_id: null })
+    expect(records.requests[0]).toMatchObject({ submitted_by_id: null })
     expect(records.requests[0]?.received_at.getTime()).toBe(email.receivedAt.getTime())
     expect(records.submissions).toEqual([
       expect.objectContaining({
@@ -43,7 +43,7 @@ describe('territorial complaint email admission', () => {
       }),
     ).rejects.toMatchObject({ status: 409 })
     await expect(readTestTerritorialComplaintEmailRecords(scene.noticeId)).resolves.toMatchObject({
-      requests: [{ submitted_by_user_id: null }],
+      requests: [{ submitted_by_id: null }],
       submissions: [{ id: admitted.submissionId, kind: 'complaint' }],
     })
   })
@@ -59,7 +59,7 @@ describe('territorial complaint email admission', () => {
     })
     const timelyRecords = await readTestTerritorialComplaintEmailRecords(timelyCase.noticeId)
     expect(timelyRecords.requests).toMatchObject([
-      { submitted_by_user_id: null, received_at: timelyEmail.receivedAt },
+      { submitted_by_id: null, received_at: timelyEmail.receivedAt },
     ])
     expect(timelyRecords.submissions).toMatchObject([
       { id: admitted.submissionId, kind: 'complaint', received_at: timelyEmail.receivedAt },

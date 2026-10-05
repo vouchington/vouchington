@@ -23,10 +23,10 @@ export async function acceptAndInsertAppleObservation(
   if (rowCount !== 1) return null
   const { rows } = await query(sql`/* insertAppleMembershipObservation */
     INSERT INTO membership_provider_observations (
-      provider, environment, application_id, membership_provider_evidence_id,
+      provider, environment, application_id, membership_provider_evidence_record_id,
       membership_provider_lineage_id, membership_provider_product_id, membership_product_id,
       provider_revision, provider_order, terminal_at, source_kind, effective_at, expires_at,
-      cancelled_at, expired_at, auto_renews
+      cancelled_at, expired_at, should_auto_renew
     ) VALUES (
       'apple_app_store', ${context.environment}, ${context.applicationId}, ${evidenceId},
       ${context.lineageId}, ${mapping.membershipProviderProductId}, ${mapping.membershipProductId},

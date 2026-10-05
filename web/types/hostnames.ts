@@ -6,9 +6,9 @@ export interface Hostname {
   id: string
   hostname: string
   topic_id: string | null
-  blocked?: boolean
-  crawlable?: boolean | null
-  link_rel_follow?: boolean | null
+  is_blocked?: boolean
+  is_crawlable?: boolean | null
+  should_follow_link_rel?: boolean | null
 }
 
 interface HostnameRef {

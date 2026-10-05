@@ -60,7 +60,7 @@ export async function* streamEntitiesWithPendingReportsBatches(): AsyncGenerator
 
       SELECT 'url_hostname' AS entity_type, mr.hostname_id::text AS entity_id
       FROM moderation_reports mr
-      JOIN url_hostnames uh ON uh.id = mr.hostname_id AND uh.blocked IS NOT TRUE
+      JOIN url_hostnames uh ON uh.id = mr.hostname_id AND uh.is_blocked IS NOT TRUE
       WHERE mr.hostname_id IS NOT NULL
         AND mr.reviewed_at IS NULL
         AND mr.id >= ${windowStartId}

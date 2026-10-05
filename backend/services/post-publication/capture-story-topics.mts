@@ -76,7 +76,7 @@ async function recordStoryTopicPublicationChangeBatch(
     'post_topics_changed',
   ])
   const workByStoryId = new Map(
-    work.flatMap(row => (row.story_id ? [[row.story_id, row.id] as const] : [])),
+    work.flatMap(row => (row.story_identity_id ? [[row.story_identity_id, row.id] as const] : [])),
   )
   await retainPostPublicationImpacts(query, workByStoryId, batch)
   return work

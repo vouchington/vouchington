@@ -249,7 +249,7 @@ describe('buildPublicPostEligibilityFilter — persisted publication state', () 
     await expect(isPubliclyEligible(deleted.postId)).resolves.toBe(false)
   })
 
-  it('resolves a nested reply chain against its direct root_id target and emits it exactly once', async () => {
+  it('resolves a nested reply chain against its direct root_post_id target and emits it exactly once', async () => {
     const suffix = randomSuffix()
     const author = await createTestUser({ username: `public-nested-${suffix}` })
     if (!author) throw new Error('Failed to create test author')
@@ -261,11 +261,11 @@ describe('buildPublicPostEligibilityFilter — persisted publication state', () 
         markdown: 'public',
         ...overrides,
       })
-    // The DB permits a "root" whose own root_id is itself non-null (no flat-tree constraint):
-    // topRootId <- midId <- replyId, where replyId.root_id points at midId, not topRootId.
-    // COALESCE(candidate_post.root_id, candidate_post.id) resolves replyId's access post to
-    // exactly one row — whatever replyId.root_id names — the same single-row resolution the
-    // pre-fix UNION ALL branch 2 used (`candidate_post.root_id = eligible_root_posts.id`, against
+    // The DB permits a "root" whose own root_post_id is itself non-null (no flat-tree constraint):
+    // topRootId <- midId <- replyId, where replyId.root_post_id points at midId, not topRootId.
+    // COALESCE(candidate_post.root_post_id, candidate_post.id) resolves replyId's access post to
+    // exactly one row — whatever replyId.root_post_id names — the same single-row resolution the
+    // pre-fix UNION ALL branch 2 used (`candidate_post.root_post_id = eligible_root_posts.id`, against
     // any row, not only true top-level ones). It must not walk the chain transitively to
     // topRootId, and it must never emit replyId more than once.
     const topRootId = await createPost()
@@ -274,7 +274,7 @@ describe('buildPublicPostEligibilityFilter — persisted publication state', () 
     await expect(isPubliclyEligible(replyId)).resolves.toBe(true)
     await expect(countPostOccurrencesInPublicEligibilityView(replyId)).resolves.toBe(1)
 
-    // Rejecting the direct root_id target (midId) removes eligibility...
+    // Rejecting the direct root_post_id target (midId) removes eligibility...
     await setTestPostClearanceStatus(midId, 'rejected', author.id)
     await expect(isPubliclyEligible(replyId)).resolves.toBe(false)
     await expect(countPostOccurrencesInPublicEligibilityView(replyId)).resolves.toBe(0)
@@ -282,7 +282,7 @@ describe('buildPublicPostEligibilityFilter — persisted publication state', () 
     await expect(isPubliclyEligible(replyId)).resolves.toBe(true)
 
     // ...but rejecting the transitive top-level ancestor (topRootId) does not: resolution stops
-    // at replyId.root_id (midId) and never consults topRootId.
+    // at replyId.root_post_id (midId) and never consults topRootId.
     await setTestPostClearanceStatus(topRootId, 'rejected', author.id)
     await expect(isPubliclyEligible(replyId)).resolves.toBe(true)
     await expect(countPostOccurrencesInPublicEligibilityView(replyId)).resolves.toBe(1)

@@ -6,11 +6,11 @@ Durable high-water marks advanced only after a reconciliation dispatcher process
 
 Not partitioned — growth: bounded.
 
-| Column              | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                           |
-| ------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------- |
-| `queue_name`        | `text`                     | no       |                     |          |           |           | Stable queue-domain identifier owning this high-water mark.                       |
-| `completed_through` | `timestamp with time zone` | no       |                     |          |           |           | Latest source timestamp whose complete candidate set was successfully reconciled. |
-| `updated_at`        | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                   |
+| Column                  | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                           |
+| ----------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------- |
+| `queue_name`            | `text`                     | no       |                     |          |           |           | Stable queue-domain identifier owning this high-water mark.                       |
+| `reconciled_through_at` | `timestamp with time zone` | no       |                     |          |           |           | Latest source timestamp whose complete candidate set was successfully reconciled. |
+| `updated_at`            | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                   |
 
 **Primary key:** `PRIMARY KEY (queue_name)`
 

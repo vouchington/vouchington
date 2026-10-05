@@ -33,7 +33,7 @@ interface UserProfileHeaderProps {
     | 'account_type'
     | 'display_account'
     | 'verification_status'
-    | 'verified_badge_visible'
+    | 'is_verified_badge_visible'
     | 'verified_display_name'
   > & { roles?: readonly string[] }
   metrics?: Pick<UserMetrics, 'count'>
@@ -103,7 +103,7 @@ export function UserProfileHeader({
               </Link>
             )}
             <UserAccountBadge accountType={user.account_type} />
-            {user.verification_status === 'verified' && user.verified_badge_visible && (
+            {user.verification_status === 'verified' && user.is_verified_badge_visible && (
               <IdentityVerifiedBadge />
             )}
           </div>

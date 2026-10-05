@@ -247,7 +247,7 @@ async function getAutomodPerformance(
       LEFT JOIN community_agent_prompts cap ON cap.id = am.prompt_id
       LEFT JOIN posts p ON p.id = am.post_id
       WHERE am.id >= ${periodStartUuid}::uuid
-        AND am.flagged = TRUE
+        AND am.is_flagged = TRUE
         AND am.deleted_at IS NULL
       UNION ALL
       SELECT
@@ -319,7 +319,7 @@ async function getAutomodPerformance(
     auto_removes AS (
       SELECT COUNT(*)::INT AS count
       FROM moderator_actions ma
-      JOIN users u ON u.id = ma.actor_id
+      JOIN users u ON u.id = ma.actor_user_id
       WHERE ma.id >= ${periodStartUuid}::uuid
         AND ma.action_type IN ('remove', 'reject')
         AND u.username = ${MODERATION_SYSTEM_USERNAME}
@@ -361,68 +361,68 @@ async function getModeratorWorkload(
   const { rows } = await read(sql`/* getModerationModeratorWorkload */
     WITH actions AS (
       SELECT
-        ma.actor_id,
+        ma.actor_user_id,
         ma.action_type::TEXT AS action_type,
         uuid_extract_timestamp(ma.id) AS created_at
       FROM moderator_actions ma
-      JOIN users u ON u.id = ma.actor_id
+      JOIN users u ON u.id = ma.actor_user_id
       WHERE ma.id >= ${periodStartUuid}::uuid
-        AND ma.actor_id IS NOT NULL
+        AND ma.actor_user_id IS NOT NULL
         AND ma.action_type = ANY(${MODERATION_ANALYTICS_ACTION_TYPES}::moderator_action_types[])
         AND (u.username IS NULL OR u.username NOT IN (${MODERATION_SYSTEM_USERNAME}, ${BAN_EVASION_SYSTEM_USERNAME}, ${RSS_FEED_AUTO_UPDATER_USERNAME}))
         AND (${communityId}::uuid IS NULL OR ma.community_id = ${communityId}::uuid)
     ),
     actor_totals AS (
-      SELECT actor_id, COUNT(*)::INT AS total
+      SELECT actor_user_id, COUNT(*)::INT AS total
       FROM actions
-      GROUP BY actor_id
+      GROUP BY actor_user_id
       ORDER BY total DESC
       LIMIT ${leaderboardPageSize}
     ),
     actor_counts AS (
       SELECT
-        a.actor_id,
+        a.actor_user_id,
         json_object_agg(a.action_type, a.count ORDER BY a.action_type) AS counts
       FROM (
-        SELECT actor_id, action_type, COUNT(*)::INT AS count
+        SELECT actor_user_id, action_type, COUNT(*)::INT AS count
         FROM actions
-        WHERE actor_id IN (SELECT actor_id FROM actor_totals)
-        GROUP BY actor_id, action_type
+        WHERE actor_user_id IN (SELECT actor_user_id FROM actor_totals)
+        GROUP BY actor_user_id, action_type
       ) a
-      GROUP BY a.actor_id
+      GROUP BY a.actor_user_id
     ),
     weekly AS (
       SELECT
-        actor_id,
+        actor_user_id,
         DATE(date_trunc('week', created_at)) AS week,
         action_type,
         COUNT(*)::INT AS count
       FROM actions
-      WHERE actor_id IN (SELECT actor_id FROM actor_totals)
-      GROUP BY actor_id, week, action_type
+      WHERE actor_user_id IN (SELECT actor_user_id FROM actor_totals)
+      GROUP BY actor_user_id, week, action_type
     ),
     weekly_json AS (
       SELECT
-        actor_id,
+        actor_user_id,
         json_agg(json_build_object('date', week::TEXT, 'type', action_type, 'count', count) ORDER BY week ASC, action_type ASC) AS weekly_counts
       FROM weekly
-      GROUP BY actor_id
+      GROUP BY actor_user_id
     )
     SELECT COALESCE(
       json_agg(
         json_build_object(
-          'actor_id', at.actor_id,
+          'actor_user_id', at.actor_user_id,
           'total', at.total,
           'counts', COALESCE(ac.counts, '{}'::json),
           'weekly_counts', COALESCE(wj.weekly_counts, '[]'::json)
         )
-        ORDER BY at.total DESC, at.actor_id ASC
+        ORDER BY at.total DESC, at.actor_user_id ASC
       ),
       '[]'::json
     ) AS moderators
     FROM actor_totals at
-    LEFT JOIN actor_counts ac ON ac.actor_id = at.actor_id
-    LEFT JOIN weekly_json wj ON wj.actor_id = at.actor_id
+    LEFT JOIN actor_counts ac ON ac.actor_user_id = at.actor_user_id
+    LEFT JOIN weekly_json wj ON wj.actor_user_id = at.actor_user_id
   `)
 
   const row = rows[0]!

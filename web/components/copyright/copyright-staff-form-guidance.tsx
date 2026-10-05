@@ -6,7 +6,7 @@ const ELEMENT_LABELS: Record<CopyrightFormGuidance['elements'][number]['element'
   work_identification: 'Identification of the work',
   material_identification: 'Identification of the material',
   contact_information: 'Contact information',
-  good_faith_statement: 'Good-faith statement',
+  has_good_faith_statement: 'Good-faith statement',
   accuracy_authority_statement: 'Accuracy and authority statement',
 }
 

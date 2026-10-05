@@ -47,14 +47,14 @@ describe('moderator vacation routes', () => {
       await request.authenticateAs(moderator)
       await request
         .patch(`/api/v1/communities/${community.slug}/moderator-vacation`)
-        .send({ suppress_community_digests_while_on_vacation: true })
-        .expect(200, { suppress_community_digests_while_on_vacation: true })
+        .send({ should_suppress_community_digests_while_on_vacation: true })
+        .expect(200, { should_suppress_community_digests_while_on_vacation: true })
       const response = await request
         .get(`/api/v1/communities/${community.slug}/moderator-vacation`)
         .expect(200)
       expect(response.body).toEqual({
         vacation: null,
-        suppress_community_digests_while_on_vacation: true,
+        should_suppress_community_digests_while_on_vacation: true,
       })
     })
 
@@ -63,7 +63,7 @@ describe('moderator vacation routes', () => {
       await request.authenticateAs(moderator)
       await request
         .patch(`/api/v1/communities/${community.slug}/moderator-vacation`)
-        .send({ suppress_community_digests_while_on_vacation: 'yes' })
+        .send({ should_suppress_community_digests_while_on_vacation: 'yes' })
         .expect(422)
     })
   })
@@ -132,7 +132,7 @@ describe('moderator vacation routes', () => {
       expect(res.body.vacation.user_id).toBe(mod.id)
       expect(res.body.vacation.community_id).toBe(comm.id)
       expect(res.body.vacation.ends_at).toBeNull()
-      expect(res.body.suppress_community_digests_while_on_vacation).toBe(false)
+      expect(res.body.should_suppress_community_digests_while_on_vacation).toBe(false)
     })
 
     it('preserves the digest suppression preference in the shared response', async () => {
@@ -144,7 +144,7 @@ describe('moderator vacation routes', () => {
       await request.authenticateAs(mod)
       await request
         .patch(`/api/v1/communities/${comm.slug}/moderator-vacation`)
-        .send({ suppress_community_digests_while_on_vacation: true })
+        .send({ should_suppress_community_digests_while_on_vacation: true })
         .expect(200)
       const response = await request
         .put(`/api/v1/communities/${comm.slug}/moderator-vacation`)
@@ -153,7 +153,7 @@ describe('moderator vacation routes', () => {
 
       expect(response.body).toMatchObject({
         vacation: { user_id: mod.id, community_id: comm.id },
-        suppress_community_digests_while_on_vacation: true,
+        should_suppress_community_digests_while_on_vacation: true,
       })
     })
 

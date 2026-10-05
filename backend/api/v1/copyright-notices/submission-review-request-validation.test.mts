@@ -47,13 +47,13 @@ function appealReview(restrictionId: string) {
   }
 }
 
-const counterReview = { accepted: false, rationale: 'The counter-notice is incomplete.' }
+const counterReview = { is_accepted: false, rationale: 'The counter-notice is incomplete.' }
 
 function legalHold(targetId: string) {
   return {
     rationale: 'Verified qualifying CCB filing.',
-    from_original_claimant: true,
-    same_material: true,
+    is_from_original_claimant: true,
+    is_same_material: true,
     proceeding_kind: 'ccb',
     ccb_claim_kind: 'claim',
     commenced_at: '2026-07-01T12:00:00.000Z',
@@ -199,9 +199,9 @@ describe('copyright submission review request contracts', () => {
 
       const accepted = await staff
         .post(url)
-        .send({ ...counterReview, accepted: 'yes', injected: true })
+        .send({ ...counterReview, is_accepted: 'yes', injected: true })
         .expect(422)
-      expect(accepted.body.message).toBe('accepted must be a boolean')
+      expect(accepted.body.message).toBe('is_accepted must be a boolean')
     })
 
     it('reviews a counter-notice for a valid request and records nothing for a rejected one', async () => {
@@ -255,9 +255,9 @@ describe('copyright submission review request contracts', () => {
       expect(kind.body.message).toBe('proceeding_kind is invalid')
       const same = await staff
         .post(url)
-        .send({ ...body, same_material: 'yes' })
+        .send({ ...body, is_same_material: 'yes' })
         .expect(422)
-      expect(same.body.message).toBe('same_material is required')
+      expect(same.body.message).toBe('is_same_material is required')
       const targets = await staff
         .post(url)
         .send({ ...body, target_ids: ['nope'] })

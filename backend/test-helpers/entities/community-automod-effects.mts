@@ -6,10 +6,10 @@ export async function readTestCommunityPostReviewHistory(postId: string) {
   const { rows } = await read<{
     action: string
     actor_user_id: string
-    platform_override: boolean
+    is_platform_override: boolean
   }>(
     sql`/* readTestCommunityPostReviewHistory */
-    SELECT change_type AS action, changed_by_id AS actor_user_id, platform_override FROM community_post_review_changes
+    SELECT change_type AS action, changed_by_id AS actor_user_id, is_platform_override FROM community_post_review_changes
     WHERE post_id = ${postId} ORDER BY id`,
   )
   return rows
@@ -50,6 +50,6 @@ export async function deactivateTestCommunityAgentPromptInTransaction(
 ): Promise<void> {
   await query(sql`/* deactivateTestCommunityAgentPromptInTransaction */
     UPDATE community_agent_prompts
-    SET slot_allocated = false, activated_at = NULL, deactivated_at = now()
+    SET is_slot_allocated = false, activated_at = NULL, deactivated_at = now()
     WHERE id = ${promptId}`)
 }

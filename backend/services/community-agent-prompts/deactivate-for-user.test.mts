@@ -39,10 +39,10 @@ describe('deactivate-for-user', () => {
         getCommunityAgentPrompt(p1.id),
         getCommunityAgentPrompt(p2.id),
       ])
-      expect(r1!.slot_allocated).toBe(false)
+      expect(r1!.is_slot_allocated).toBe(false)
       expect(r1!.deactivated_at).not.toBeNull()
       expect(r1!.activated_at).toBeNull()
-      expect(r2!.slot_allocated).toBe(false)
+      expect(r2!.is_slot_allocated).toBe(false)
       expect(r2!.deactivated_at).not.toBeNull()
     })
 
@@ -56,7 +56,7 @@ describe('deactivate-for-user', () => {
       await deactivateCommunityPromptsForUser(user.id, user.id, c.id)
 
       const fetched = await getCommunityAgentPrompt(unallocated.id)
-      expect(fetched!.slot_allocated).toBe(false)
+      expect(fetched!.is_slot_allocated).toBe(false)
       expect(fetched!.deactivated_at).toBeNull()
     })
 
@@ -74,7 +74,7 @@ describe('deactivate-for-user', () => {
 
       // promptInA should be unaffected
       const fetched = await getCommunityAgentPrompt(promptInA.id)
-      expect(fetched!.slot_allocated).toBe(true)
+      expect(fetched!.is_slot_allocated).toBe(true)
     })
 
     it('does not affect prompts owned by other users', async () => {
@@ -89,7 +89,7 @@ describe('deactivate-for-user', () => {
       await deactivateCommunityPromptsForUser(user.id, user.id, c.id)
 
       const fetched = await getCommunityAgentPrompt(promptByOther.id)
-      expect(fetched!.slot_allocated).toBe(true)
+      expect(fetched!.is_slot_allocated).toBe(true)
     })
 
     it('is a no-op for user with no prompts in community', async () => {

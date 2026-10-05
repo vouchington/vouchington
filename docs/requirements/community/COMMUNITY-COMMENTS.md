@@ -10,7 +10,7 @@ different community from its parent.
 - Replies inherit the immediate parent's `community_id`.
 - Comment descendants only include `post_type='comment'`.
 
-Global-to-community cross-posts are community-scoped `discussion` posts with `parent_id` pointing to
+Global-to-community cross-posts are community-scoped `discussion` posts with `parent_post_id` pointing to
 the public global source post. They are not comments and must not appear in the source post's comment
 tree.
 
@@ -20,7 +20,7 @@ tree.
 
 When creating a comment (`post_type: 'comment'`):
 
-- `parent_id` is required.
+- `parent_post_id` is required.
 - `community_id` is rejected because the parent determines scope.
 - `broadcast` and `privacy` are forced to `everyone/public`.
 

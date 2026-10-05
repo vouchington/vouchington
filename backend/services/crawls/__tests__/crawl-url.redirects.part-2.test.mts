@@ -39,7 +39,7 @@ describe('crawl-url.redirects', () => {
         hostname_id: url1!.hostname.id,
         crawler_type: 'fetch',
       })
-      await updateUrlHostname(url1!.hostname.id, { crawlable: true })
+      await updateUrlHostname(url1!.hostname.id, { is_crawlable: true })
 
       let callCount = 0
       fetchCrawlerHtml.mockImplementation(() => {
@@ -67,7 +67,7 @@ describe('crawl-url.redirects', () => {
         hostname_id: url1!.hostname.id,
         crawler_type: 'fetch',
       })
-      await updateUrlHostname(url1!.hostname.id, { crawlable: true })
+      await updateUrlHostname(url1!.hostname.id, { is_crawlable: true })
 
       let callCount = 0
       fetchCrawlerHtml.mockImplementation(options => {
@@ -99,7 +99,7 @@ describe('crawl-url.redirects', () => {
         hostname_id: url!.hostname.id,
         crawler_type: 'fetch',
       })
-      await updateUrlHostname(url!.hostname.id, { crawlable: true })
+      await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
 
       fetchCrawlerHtml.mockResolvedValueOnce(createMockCrawlerResult(301, null, url!.url))
 
@@ -122,7 +122,7 @@ describe('crawl-url.redirects', () => {
         hostname_id: url!.hostname.id,
         crawler_type: 'fetch',
       })
-      await updateUrlHostname(url!.hostname.id, { crawlable: true })
+      await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
 
       fetchCrawlerHtml.mockResolvedValueOnce(
         createMockCrawlerResult(301, null, `http://${hostname}/self#section`),
@@ -151,7 +151,7 @@ describe('crawl-url.redirects', () => {
         hostname_id: url1!.hostname.id,
         crawler_type: 'fetch',
       })
-      await updateUrlHostname(url1!.hostname.id, { crawlable: true })
+      await updateUrlHostname(url1!.hostname.id, { is_crawlable: true })
 
       fetchCrawlerHtml.mockResolvedValueOnce(
         createMockCrawlerResult(301, null, `https://${hostname}/new`),

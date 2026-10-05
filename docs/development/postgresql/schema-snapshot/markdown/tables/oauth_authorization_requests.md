@@ -13,7 +13,7 @@ Not partitioned — growth: bounded.
 | `user_id`              | `uuid`                     | no       |                              |          |           |           | Authenticated user who owns the consent decision.                         |
 | `browser_binding_hash` | `text`                     | no       |                              |          |           |           | Purpose-bound hash binding the request to one browser device and session. |
 | `redirect_uri`         | `text`                     | no       |                              |          |           |           | Validated callback URI for this authorization request.                    |
-| `state`                | `text`                     | no       |                              |          |           |           | Opaque client state returned unchanged to the callback.                   |
+| `client_state`         | `text`                     | no       |                              |          |           |           | Opaque client state returned unchanged to the callback.                   |
 | `resource`             | `text`                     | no       |                              |          |           |           | Protected resource audience requested by the client.                      |
 | `scopes`               | `api_scopes[]`             | no       |                              |          |           |           | Canonical scopes presented for user consent.                              |
 | `code_challenge`       | `text`                     | no       |                              |          |           |           | Base64url SHA-256 PKCE challenge for the authorization code.              |
@@ -32,11 +32,11 @@ _none_
 
 - `oauth_authorization_requests_browser_binding_hash_check`: `CHECK ((char_length(browser_binding_hash) = 64))`
 - `oauth_authorization_requests_check`: `CHECK ((num_nonnulls(approved_at, denied_at) <= 1))`
+- `oauth_authorization_requests_client_state_check`: `CHECK (((char_length(client_state) >= 1) AND (char_length(client_state) <= 1024)))`
 - `oauth_authorization_requests_code_challenge_check`: `CHECK ((code_challenge ~ '^[A-Za-z0-9_-]{43}$'::text))`
 - `oauth_authorization_requests_redirect_uri_check`: `CHECK (((char_length(redirect_uri) >= 1) AND (char_length(redirect_uri) <= 2048)))`
 - `oauth_authorization_requests_resource_check`: `CHECK (((char_length(resource) >= 1) AND (char_length(resource) <= 2048)))`
 - `oauth_authorization_requests_scopes_check`: `CHECK ((cardinality(scopes) > 0))`
-- `oauth_authorization_requests_state_check`: `CHECK (((char_length(state) >= 1) AND (char_length(state) <= 1024)))`
 
 **Foreign keys:**
 

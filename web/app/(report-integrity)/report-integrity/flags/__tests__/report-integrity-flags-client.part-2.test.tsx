@@ -16,7 +16,7 @@ describe('ReportIntegrityFlagsClient — rendering', () => {
     render(
       <ReportIntegrityFlagsClient
         initialData={makeInitialData([
-          makeFlag({ reporter_count: 12, new_account_reporter_pct: 0.75 }),
+          makeFlag({ reporter_count: 12, new_account_reporter_percent: 0.75 }),
         ])}
         initialStatus='pending'
       />,

@@ -5,14 +5,14 @@ export type TestHostnameDnsStats = {
   consecutive_dns_failures: number
   last_dns_failure_at: Date | null
   dns_disabled_at: Date | null
-  crawlable: boolean | null
+  is_crawlable: boolean | null
 }
 
 export async function getTestHostnameDnsStats(
   hostnameId: string,
 ): Promise<TestHostnameDnsStats | undefined> {
   const { rows } = await read(sql`/* getTestHostnameDnsStats */
-    SELECT consecutive_dns_failures, last_dns_failure_at, dns_disabled_at, crawlable
+    SELECT consecutive_dns_failures, last_dns_failure_at, dns_disabled_at, is_crawlable
     FROM url_hostnames
     WHERE id = ${hostnameId}
     LIMIT 1

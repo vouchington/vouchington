@@ -74,7 +74,7 @@ export async function getFriendTrustedHostnames(
       fu.friend_voter_ids
     FROM friend_upvotes fu
     JOIN url_hostnames h ON h.id = fu.hostname_id
-    WHERE h.blocked IS NOT TRUE
+    WHERE h.is_blocked IS NOT TRUE
     ${cursorWhere}
     ORDER BY fu.friend_upvote_count DESC, h.id DESC
     LIMIT $${values.length}`,

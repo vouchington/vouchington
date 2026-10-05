@@ -10,7 +10,7 @@ import type { PrivateUser } from '@services/users/types'
 const REQUIRED_APPEAL_FIELDS = [
   'id',
   'case_id',
-  'appellant_id',
+  'appellant_user_id',
   'user_warning_id',
   'community_ban_id',
   'post_id',

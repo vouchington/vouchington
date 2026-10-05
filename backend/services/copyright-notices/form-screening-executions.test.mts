@@ -279,7 +279,7 @@ describe('current copyright form screening execution', () => {
     await reviewCopyrightFormIntake({
       intakeId: notice.intake.id,
       currentUser: { ...user, roles: ['moderator'] },
-      accepted: true,
+      is_accepted: true,
       rationale: 'Human statutory review.',
     })
     const aggregate = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
@@ -287,7 +287,7 @@ describe('current copyright form screening execution', () => {
       supersedes_assessment_id: previous.id,
       copyright_notice_form_screening_id: null,
       assessed_by_id: user.id,
-      substantially_compliant: true,
+      is_substantially_compliant: true,
     })
     await expect(
       countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),

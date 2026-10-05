@@ -20,7 +20,7 @@ export async function drainPendingStoryPostRelatedUrlProjectionCrawlEffects(
       SELECT generation, url_id
       FROM story_post_related_url_projection_receipts
       WHERE post_id = $1 AND generation < $2
-        AND crawl_required = TRUE AND effects_dispatched_at IS NULL
+        AND should_crawl = TRUE AND effects_dispatched_at IS NULL
       ORDER BY generation, url_id
       LIMIT $3`,
     [work.post_id, work.generation, CRAWL_EFFECT_PAGE_SIZE],
@@ -42,7 +42,7 @@ export async function drainPendingStoryPostRelatedUrlProjectionCrawlEffects(
       FROM unnest($2::bigint[], $3::uuid[]) AS input(generation, url_id)
       WHERE receipt.post_id = $1
         AND receipt.generation = input.generation AND receipt.url_id = input.url_id
-        AND receipt.crawl_required = TRUE AND receipt.effects_dispatched_at IS NULL
+        AND receipt.should_crawl = TRUE AND receipt.effects_dispatched_at IS NULL
         AND EXISTS (
           SELECT 1 FROM story_post_related_url_projection_jobs work
           WHERE work.post_id = $1 AND work.generation = $4 AND work.lease_token = $5
@@ -113,7 +113,7 @@ export async function lockAndFindBlockedProjectionUrlIds(
       SELECT DISTINCT suffix.url_id
       FROM hostname_suffixes suffix
       JOIN url_hostnames candidate ON candidate.hostname = suffix.hostname
-      WHERE candidate.blocked = TRUE`,
+      WHERE candidate.is_blocked = TRUE`,
     [urlIds],
   )
   const blockedUrlIds = new Set<string>()
@@ -142,8 +142,8 @@ export async function recordProjectionCrawlRequirements(
     `/* recordStoryPostRelatedUrlProjectionCrawlRequirements */
       UPDATE story_post_related_url_projection_receipts receipt
       SET
-        eligible = CASE WHEN input.blocked THEN FALSE ELSE receipt.eligible END,
-        crawl_required = COALESCE(receipt.crawl_required, input.crawl_required),
+        is_eligible = CASE WHEN input.blocked THEN FALSE ELSE receipt.is_eligible END,
+        should_crawl = COALESCE(receipt.should_crawl, input.should_crawl),
         relation_written_at = CASE
           WHEN input.blocked THEN CURRENT_TIMESTAMP
           ELSE receipt.relation_written_at
@@ -153,7 +153,7 @@ export async function recordProjectionCrawlRequirements(
           ELSE receipt.effects_dispatched_at
         END
       FROM unnest($3::uuid[], $4::boolean[], $5::boolean[])
-        AS input(url_id, crawl_required, blocked)
+        AS input(url_id, should_crawl, blocked)
       WHERE receipt.post_id = $1 AND receipt.generation = $2
         AND receipt.url_id = input.url_id`,
     [work.post_id, work.generation, urlIds, crawlRequired, blocked],

@@ -18,8 +18,8 @@ const baseTopic = {
   name: 'Test Topic',
   slug: 'test-topic',
   topic_type: 'topic' as const,
-  noindex: false,
-  allow_reviews: true,
+  is_noindexed: false,
+  should_allow_reviews: true,
   markdown: '',
   aliases: [],
   created_at: '2026-01-01T00:00:00.000Z',
@@ -62,7 +62,7 @@ describe('topic factory functions', () => {
     it('calls notFound when reviews are not allowed', async () => {
       vi.mocked(getTopic).mockResolvedValue({
         ...baseTopicData,
-        topic: { ...baseTopic, allow_reviews: false },
+        topic: { ...baseTopic, should_allow_reviews: false },
       } as never)
 
       await expect(
@@ -76,7 +76,7 @@ describe('topic factory functions', () => {
     it('returns noindex metadata when reviews are not allowed', async () => {
       vi.mocked(getTopic).mockResolvedValue({
         ...baseTopicData,
-        topic: { ...baseTopic, allow_reviews: false },
+        topic: { ...baseTopic, should_allow_reviews: false },
       } as never)
 
       const metadata = await generateMetadata({ params: Promise.resolve({ id: 'topic-1' }) })

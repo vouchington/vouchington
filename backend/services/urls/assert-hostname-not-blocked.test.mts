@@ -21,7 +21,7 @@ describe('assert-hostname-not-blocked', () => {
     const random = Math.random().toString(36).slice(2, 10)
     const hostnameId = await insertTestUrlHostname({
       hostname: `blocked-${random}.example.com`,
-      blocked: true,
+      is_blocked: true,
     })
     const urlId = await insertTestUrl({
       url: `https://blocked-${random}.example.com/page`,
@@ -43,7 +43,7 @@ describe('assert-hostname-not-blocked', () => {
     const random = Math.random().toString(36).slice(2, 10)
     const hostnameId = await insertTestUrlHostname({
       hostname: `blocked-penalty-${random}.example.com`,
-      blocked: true,
+      is_blocked: true,
     })
     const urlId = await insertTestUrl({
       url: `https://blocked-penalty-${random}.example.com/page`,

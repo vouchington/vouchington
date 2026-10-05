@@ -51,7 +51,7 @@ export function discoverPublicPostReaders(ctx: SharedContext): string[] {
     if (!content || !content.includes('sql')) continue
     const referencesPostRows =
       /\b(?:FROM|JOIN)\s+(?:view_)?posts\b/i.test(content) ||
-      /\bposts?\.(?:id|root_id|deleted_at|approved_at|archived_at|privacy|broadcast|post_type|community_id)\b/.test(
+      /\bposts?\.(?:id|root_post_id|deleted_at|approved_at|archived_at|privacy|broadcast|post_type|community_id)\b/.test(
         content,
       ) ||
       content.includes('story_posts')

@@ -64,7 +64,7 @@ describe('getPostFeedIds hostname filtering', () => {
     const random = Math.random().toString(36).slice(2, 10)
     const hostnameId = await insertTestUrlHostname({
       hostname: `siteblocked-${random}.example.com`,
-      blocked: true,
+      is_blocked: true,
     })
     const urlId = await insertTestUrl({
       url: `https://siteblocked-${random}.example.com/article`,

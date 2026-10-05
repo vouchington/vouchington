@@ -12,7 +12,7 @@ Not partitioned — growth: unbounded.
 | `landing_page_item_id` | `uuid`                                 | no       |                              |          |           |           | The topic_group item this member belongs to.                                     |
 | `member_type`          | `user_landing_page_group_member_types` | no       |                              |          |           |           | The type of group member: review or referral_link.                               |
 | `sort_order`           | `integer`                              | no       | `0`                          |          |           |           | Display order within the group.                                                  |
-| `review_id`            | `uuid`                                 | yes      |                              |          |           |           | Reference to a review post; set when member_type is review.                      |
+| `review_post_id`       | `uuid`                                 | yes      |                              |          |           |           | Reference to a review post; set when member_type is review.                      |
 | `referral_link_id`     | `uuid`                                 | yes      |                              |          |           |           | Reference to user_referral_program_links; set when member_type is referral_link. |
 | `created_at`           | `timestamp with time zone`             | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                  |
 | `updated_at`           | `timestamp with time zone`             | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                  |
@@ -24,19 +24,19 @@ _none_
 
 **Check constraints:**
 
-- `user_landing_page_group_members_check`: `CHECK ((((member_type = 'review'::user_landing_page_group_member_types) AND (review_id IS NOT NULL) AND (referral_link_id IS NULL)) OR ((member_type = 'referral_link'::user_landing_page_group_member_types) AND (review_id IS NULL) AND (referral_link_id IS NOT NULL))))`
+- `user_landing_page_group_members_check`: `CHECK ((((member_type = 'review'::user_landing_page_group_member_types) AND (review_post_id IS NOT NULL) AND (referral_link_id IS NULL)) OR ((member_type = 'referral_link'::user_landing_page_group_member_types) AND (review_post_id IS NULL) AND (referral_link_id IS NOT NULL))))`
 
 **Foreign keys:**
 
 - `user_landing_page_group_members_landing_page_item_id_fkey`: `FOREIGN KEY (landing_page_item_id) REFERENCES user_landing_page_items(id) ON DELETE CASCADE`
 - `user_landing_page_group_members_referral_link_id_fkey`: `FOREIGN KEY (referral_link_id) REFERENCES user_referral_program_links(id) ON DELETE CASCADE`
-- `user_landing_page_group_members_review_id_fkey`: `FOREIGN KEY (review_id) REFERENCES posts(id) ON DELETE CASCADE`
+- `user_landing_page_group_members_review_post_id_fkey`: `FOREIGN KEY (review_post_id) REFERENCES posts(id) ON DELETE CASCADE`
 
 **Indexes:**
 
 - `idx_user_landing_page_group_members__item_sort`: `CREATE INDEX idx_user_landing_page_group_members__item_sort ON public.user_landing_page_group_members USING btree (landing_page_item_id, sort_order, id)`
 - `idx_user_landing_page_group_members__referral_link_id`: `CREATE INDEX idx_user_landing_page_group_members__referral_link_id ON public.user_landing_page_group_members USING btree (referral_link_id) WHERE (referral_link_id IS NOT NULL)`
-- `idx_user_landing_page_group_members__review_id`: `CREATE INDEX idx_user_landing_page_group_members__review_id ON public.user_landing_page_group_members USING btree (review_id) WHERE (review_id IS NOT NULL)`
+- `idx_user_landing_page_group_members__review_id`: `CREATE INDEX idx_user_landing_page_group_members__review_id ON public.user_landing_page_group_members USING btree (review_post_id) WHERE (review_post_id IS NOT NULL)`
 - `user_landing_page_group_members_pkey`: `CREATE UNIQUE INDEX user_landing_page_group_members_pkey ON public.user_landing_page_group_members USING btree (id)`
 
 **Triggers:**

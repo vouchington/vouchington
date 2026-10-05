@@ -14,12 +14,12 @@ describe('parse-hostnames', () => {
     roles: [],
   } as unknown as Parameters<typeof parseHostnamesSearchParams>[1]
 
-  it('parseHostnamesSearchParams defaults blocked=false for anonymous users', async () => {
+  it('parseHostnamesSearchParams defaults is_blocked=false for anonymous users', async () => {
     const result = await parseHostnamesSearchParams({}, null)
     expect(result.query).toBeUndefined()
     expect(result.hostname).toBeUndefined()
-    expect(result.blocked).toBe(false)
-    expect(result.crawlable).toBeUndefined()
+    expect(result.is_blocked).toBe(false)
+    expect(result.is_crawlable).toBeUndefined()
     expect(result.limit).toBe(50)
     expect(result).not.toHaveProperty('topic_ids')
   })
@@ -59,27 +59,33 @@ describe('parse-hostnames', () => {
     expect(result.hostname).toBe('example.com')
   })
 
-  it('parseHostnamesSearchParams forces blocked=false for anonymous users ignoring query param', async () => {
-    const result = await parseHostnamesSearchParams({ blocked: '1', crawlable: '0' }, null)
-    expect(result.blocked).toBe(false)
-    expect(result.crawlable).toBeUndefined()
+  it('parseHostnamesSearchParams forces is_blocked=false for anonymous users ignoring query param', async () => {
+    const result = await parseHostnamesSearchParams({ is_blocked: '1', is_crawlable: '0' }, null)
+    expect(result.is_blocked).toBe(false)
+    expect(result.is_crawlable).toBeUndefined()
   })
 
-  it('parseHostnamesSearchParams forces blocked=false for non-admin users ignoring query param', async () => {
-    const result = await parseHostnamesSearchParams({ blocked: '1', crawlable: '0' }, regularUser)
-    expect(result.blocked).toBe(false)
-    expect(result.crawlable).toBeUndefined()
+  it('parseHostnamesSearchParams forces is_blocked=false for non-admin users ignoring query param', async () => {
+    const result = await parseHostnamesSearchParams(
+      { is_blocked: '1', is_crawlable: '0' },
+      regularUser,
+    )
+    expect(result.is_blocked).toBe(false)
+    expect(result.is_crawlable).toBeUndefined()
   })
 
-  it('parseHostnamesSearchParams parses blocked/crawlable for admin users', async () => {
-    const result = await parseHostnamesSearchParams({ blocked: '1', crawlable: '0' }, adminUser)
-    expect(result.blocked).toBe(true)
-    expect(result.crawlable).toBe(false)
+  it('parseHostnamesSearchParams parses is_blocked/is_crawlable for admin users', async () => {
+    const result = await parseHostnamesSearchParams(
+      { is_blocked: '1', is_crawlable: '0' },
+      adminUser,
+    )
+    expect(result.is_blocked).toBe(true)
+    expect(result.is_crawlable).toBe(false)
   })
 
-  it('parseHostnamesSearchParams treats blocked=null as undefined for admin users', async () => {
-    const result = await parseHostnamesSearchParams({ blocked: 'null' }, adminUser)
-    expect(result.blocked).toBeUndefined()
+  it('parseHostnamesSearchParams treats is_blocked=null as undefined for admin users', async () => {
+    const result = await parseHostnamesSearchParams({ is_blocked: 'null' }, adminUser)
+    expect(result.is_blocked).toBeUndefined()
   })
 
   it('parseHostnamesSearchParams parses limit', async () => {

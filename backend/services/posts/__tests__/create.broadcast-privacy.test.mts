@@ -104,7 +104,7 @@ describe('create.broadcast-privacy', () => {
       const comment = await createPost(creator, WEB_PROVENANCE, {
         markdown: 'comment',
         post_type: 'comment',
-        parent_id: parent.id,
+        parent_post_id: parent.id,
         broadcast: 'followers',
         privacy: 'private',
       })
@@ -123,7 +123,7 @@ describe('create.broadcast-privacy', () => {
         createPost(creator, WEB_PROVENANCE, {
           markdown: 'comment',
           post_type: 'comment',
-          parent_id: parent.id,
+          parent_post_id: parent.id,
           community_id: null,
         } as Parameters<typeof createPost>[2] & { community_id: null }),
       ).rejects.toThrow('Comments inherit community scope from their parent')
@@ -147,7 +147,7 @@ describe('create.broadcast-privacy', () => {
       const comment = await createPost(creator, WEB_PROVENANCE, {
         markdown: 'anon comment',
         post_type: 'comment',
-        parent_id: parent.id,
+        parent_post_id: parent.id,
         is_anonymous: true,
       })
       const fetched = await getPostByAny(comment.id)

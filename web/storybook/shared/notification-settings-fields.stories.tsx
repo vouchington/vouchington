@@ -12,9 +12,9 @@ import type {
 } from '@/components/my/notification-settings-types'
 
 const settings: NotificationSettingsState = {
-  engagement_emails_enabled: true,
+  is_engagement_emails_enabled: true,
   news_digest_frequency: 'weekly',
-  moderation_emails_enabled: true,
+  is_moderation_emails_enabled: true,
   community_digest_frequency: 'daily',
   moderation_email_cadence: 'selected_days',
   moderation_email_days_of_week: [1, 3, 5],

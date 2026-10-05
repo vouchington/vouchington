@@ -68,7 +68,7 @@ function communityInvite(body: unknown) {
       invited_email: email || null,
       invited_by_id: 'story-user',
       accepted_at: null,
-      accepted_by_user_id: null,
+      accepted_by_id: null,
       declined_at: null,
       revoked_at: null,
       created_at: storyMutationAt,

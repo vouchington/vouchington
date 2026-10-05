@@ -29,7 +29,7 @@ describe('topic.rewards-program-status', () => {
         // Create the rewards program extension row
         await request
           .patch(`/api/v1/topics/${rewardsProgramId}/rewards-program`)
-          .send({ company_id: null })
+          .send({ company_topic_id: null })
           .expect(200)
 
         // Set rewards_program_id on the status topic itself
@@ -138,11 +138,11 @@ describe('topic.rewards-program-status', () => {
         // Create the rewards program extension rows
         await request
           .patch(`/api/v1/topics/${rewardsProgramId}/rewards-program`)
-          .send({ company_id: null })
+          .send({ company_topic_id: null })
           .expect(200)
         await request
           .patch(`/api/v1/topics/${otherRewardsProgramId}/rewards-program`)
-          .send({ company_id: null })
+          .send({ company_topic_id: null })
           .expect(200)
 
         // Set rewards_program_id on each status topic via the topic update endpoint

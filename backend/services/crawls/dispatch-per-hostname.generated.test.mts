@@ -39,7 +39,7 @@ describe('dispatch-per-hostname.generated', () => {
     const random = Math.random().toString(36).slice(2, 15)
     const hostnameValue = `dispatch-not-crawlable-${random}.example.com`
     const url = await addUrl(user.id, `https://${hostnameValue}/test`)
-    await updateUrlHostname(url!.hostname.id, { crawlable: false })
+    await updateUrlHostname(url!.hostname.id, { is_crawlable: false })
 
     const result = await dispatchCrawlUrlsPerHostname(url!.hostname.id)
 
@@ -58,7 +58,7 @@ describe('dispatch-per-hostname.generated', () => {
     const random = Math.random().toString(36).slice(2, 15)
     const hostnameValue = `dispatch-attempt-threshold-${random}.example.com`
     const url = await addUrl(user.id, `https://${hostnameValue}/test`)
-    await updateUrlHostname(url!.hostname.id, { crawlable: true })
+    await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
     await setUrlHostnameAttemptThresholdHoursForTest(url!.hostname.id, 2)
     const crawler = await createCrawler(user, {
       hostname_id: url!.hostname.id,
@@ -79,7 +79,7 @@ describe('dispatch-per-hostname.generated', () => {
     })
     const url = await getUrlById(feed.rss_feed_url_id)
     expect(url).toBeTruthy()
-    await updateUrlHostname(url!.hostname.id, { crawlable: true })
+    await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
 
     const result = await dispatchCrawlUrlsPerHostname(url!.hostname.id)
 
@@ -94,7 +94,7 @@ describe('dispatch-per-hostname.generated', () => {
     })
     const url = await insertTestUrlDirect(user.id, `https://${fixture.hostname}/ref/${random}`)
     expect(url).toBeTruthy()
-    await updateUrlHostname(url!.hostname.id, { crawlable: true })
+    await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
     await insertTestUserReferralProgramLink({
       userId: user.id,
       referralProgramId: fixture.referralProgramId,
@@ -114,7 +114,7 @@ describe('dispatch-per-hostname.generated', () => {
     })
     const url = await insertTestUrlDirect(user.id, `https://${fixture.hostname}/inactive/${random}`)
     expect(url).toBeTruthy()
-    await updateUrlHostname(url!.hostname.id, { crawlable: true })
+    await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
     const linkId = await insertTestUserReferralProgramLink({
       userId: user.id,
       referralProgramId: fixture.referralProgramId,
@@ -132,20 +132,20 @@ describe('dispatch-per-hostname.generated', () => {
     const random1 = Math.random().toString(36).slice(2, 15)
     const crawlableHostname = `dispatch-query-crawlable-${random1}.example.com`
     const url1 = await addUrl(user.id, `https://${crawlableHostname}/test`)
-    await updateUrlHostname(url1!.hostname.id, { crawlable: true })
+    await updateUrlHostname(url1!.hostname.id, { is_crawlable: true })
 
     // Create blocked hostname
     const random2 = Math.random().toString(36).slice(2, 15)
     const blockedHostname = `dispatch-query-blocked-${random2}.example.com`
     const url2 = await addUrl(user.id, `https://${blockedHostname}/test`)
-    await updateUrlHostname(url2!.hostname.id, { crawlable: true })
+    await updateUrlHostname(url2!.hostname.id, { is_crawlable: true })
     await updateUrlHostnameBlocked(url2!.hostname.id, true)
 
     // Create non-crawlable hostname
     const random3 = Math.random().toString(36).slice(2, 15)
     const nonCrawlableHostname = `dispatch-query-non-crawlable-${random3}.example.com`
     const url3 = await addUrl(user.id, `https://${nonCrawlableHostname}/test`)
-    await updateUrlHostname(url3!.hostname.id, { crawlable: false })
+    await updateUrlHostname(url3!.hostname.id, { is_crawlable: false })
 
     // Query directly to verify correct filtering (same query used by dispatchCrawlHostnames)
     const result = await getCrawlableHostnames([

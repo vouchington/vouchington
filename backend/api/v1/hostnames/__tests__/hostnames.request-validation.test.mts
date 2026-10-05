@@ -33,7 +33,7 @@ describe('hostname routes - request contract validation', () => {
 
     it.each([
       ['a non-string hostname', { hostname: 5 }],
-      ['a non-boolean blocked flag', { hostname: 'ok.example.com', blocked: 'yes' }],
+      ['a non-boolean blocked flag', { hostname: 'ok.example.com', is_blocked: 'yes' }],
       ['an unknown field', { hostname: 'ok.example.com', extra: true }],
     ])('returns 422 for %s without upserting anything', async (_name, body) => {
       const request = createRequest()
@@ -69,12 +69,12 @@ describe('hostname routes - request contract validation', () => {
     it('returns 422 for a malformed id', async () => {
       const request = createRequest()
       await request.authenticateAs(admin)
-      await request.patch('/api/v1/hostnames/not-a-uuid').send({ crawlable: false }).expect(422)
+      await request.patch('/api/v1/hostnames/not-a-uuid').send({ is_crawlable: false }).expect(422)
     })
 
     it.each([
-      ['a non-boolean flag', { crawlable: 'no' }],
-      ['an unknown field', { crawlable: false, extra: 1 }],
+      ['a non-boolean flag', { is_crawlable: 'no' }],
+      ['an unknown field', { is_crawlable: false, extra: 1 }],
       ['a non-array status code list', { unreliable_status_codes: 'x' }],
     ])('returns 422 for %s and leaves the hostname unchanged', async (_name, body) => {
       const hostnameId = await insertTestUrlHostname({ hostname: randomHostname('patch-invalid') })
@@ -82,15 +82,15 @@ describe('hostname routes - request contract validation', () => {
       await request.authenticateAs(admin)
       await request.patch(`/api/v1/hostnames/${hostnameId}`).send(body).expect(422)
       const detail = await request.get(`/api/v1/hostnames/${hostnameId}`).expect(200)
-      expect(detail.body.hostname.crawlable).not.toBe(false)
+      expect(detail.body.hostname.is_crawlable).not.toBe(false)
     })
 
     it('reports a missing hostname only after the body validates', async () => {
       const request = createRequest()
       await request.authenticateAs(admin)
       const missing = '00000000-0000-4000-8000-000000000000'
-      await request.patch(`/api/v1/hostnames/${missing}`).send({ crawlable: 'no' }).expect(422)
-      await request.patch(`/api/v1/hostnames/${missing}`).send({ crawlable: false }).expect(404)
+      await request.patch(`/api/v1/hostnames/${missing}`).send({ is_crawlable: 'no' }).expect(422)
+      await request.patch(`/api/v1/hostnames/${missing}`).send({ is_crawlable: false }).expect(404)
     })
   })
 
@@ -98,7 +98,7 @@ describe('hostname routes - request contract validation', () => {
     it.each([
       ['an unknown topic_match', 'topic_match=sometimes'],
       ['a non-boolean include_descendants', 'include_descendants=maybe'],
-      ['a non-boolean crawlable', 'crawlable=maybe'],
+      ['a non-boolean crawlable', 'is_crawlable=maybe'],
     ])('returns 422 for %s', async (_name, query) => {
       await createRequest().get(`/api/v1/hostnames?${query}`).expect(422)
     })

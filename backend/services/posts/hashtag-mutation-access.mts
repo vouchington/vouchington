@@ -25,7 +25,7 @@ export async function resolveHashtagMutation(
   assertNotSuspended(currentUser)
   const post = await getPostByAny(postId, { readOnly: false })
   assert(post && !post.deleted_at && !BLOCKED_POST_TYPES.has(post.post_type), 404, 'Post not found')
-  const root = post.root_id ? await getPostByAny(post.root_id, { readOnly: false }) : post
+  const root = post.root_post_id ? await getPostByAny(post.root_post_id, { readOnly: false }) : post
   assert(root && !BLOCKED_POST_TYPES.has(root.post_type), 404, 'Post not found')
   assert(await canViewPost(currentUser, post, { readOnly: false }), 404, 'Post not found')
   assert(currentUserCanUpdatePost(currentUser, post), 403, 'Forbidden')

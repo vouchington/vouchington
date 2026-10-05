@@ -90,14 +90,14 @@ describe('delete', () => {
       })
     })
 
-    it('delete frees an allocated slot (slot_allocated → false)', async () => {
+    it('delete frees an allocated slot (is_slot_allocated → false)', async () => {
       const p = await insertTestCommunityAgentPrompt({
         communityId: community.id,
         createdById: owner.id,
         slotAllocated: true,
       })
       // Verify it was allocated before delete
-      expect((await getCommunityAgentPrompt(p.id))?.slot_allocated).toBe(true)
+      expect((await getCommunityAgentPrompt(p.id))?.is_slot_allocated).toBe(true)
 
       await deleteCommunityAgentPrompt(owner, p.id)
       // After delete the prompt is soft-deleted (not visible via get)

@@ -23,7 +23,7 @@ export async function verifyActivityPubInboxDelivery(
       AND processing_at IS NOT NULL
       AND verified_at IS NULL
       AND remote_actor_id IS NULL
-      AND deferred_until IS NULL
+      AND earliest_retry_at IS NULL
       AND failed_at IS NULL
   `)
   return mutationResult(result.rowCount)
@@ -42,7 +42,7 @@ export async function admitActivityPubInboxDeliverySender(
       AND verified_at IS NOT NULL
       AND remote_actor_id IS NOT NULL
       AND sender_allowed_at IS NULL
-      AND deferred_until IS NULL
+      AND earliest_retry_at IS NULL
       AND failed_at IS NULL
   `)
   return mutationResult(result.rowCount)
@@ -58,7 +58,7 @@ export async function deferActivityPubInboxDelivery(
     SET processing_attempt_id = uuidv7(),
         processing_at = NULL,
         enqueued_at = NULL,
-        deferred_until = ${deferredUntil},
+        earliest_retry_at = ${deferredUntil},
         last_error = 'Sender hostname rate limited'
     WHERE id = ${deliveryId}
       AND processing_attempt_id = ${processingAttemptId}
@@ -66,7 +66,7 @@ export async function deferActivityPubInboxDelivery(
       AND verified_at IS NOT NULL
       AND remote_actor_id IS NOT NULL
       AND sender_allowed_at IS NULL
-      AND deferred_until IS NULL
+      AND earliest_retry_at IS NULL
       AND failed_at IS NULL
     RETURNING id, processing_attempt_id
   `)

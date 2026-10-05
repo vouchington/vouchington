@@ -67,7 +67,7 @@ export async function* streamEntitiesMissingJudgementBatches(): AsyncGenerator<
           mr.hostname_id::text AS entity_id,
           mr.id AS triggering_report_id
         FROM moderation_reports mr
-        JOIN url_hostnames uh ON uh.id = mr.hostname_id AND uh.blocked IS NOT TRUE
+        JOIN url_hostnames uh ON uh.id = mr.hostname_id AND uh.is_blocked IS NOT TRUE
         WHERE mr.hostname_id IS NOT NULL
           AND NOT EXISTS (
             SELECT 1 FROM moderation_report_judgements j WHERE j.hostname_id = mr.hostname_id

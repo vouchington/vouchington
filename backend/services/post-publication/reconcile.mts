@@ -77,13 +77,13 @@ export async function reconcilePostPublicationDirtyWork(
     !orphanReceiptPage.hasMore &&
     !topicPage.hasMore &&
     work.cursor_key_id === null &&
-    work.rss_feed_id &&
+    work.rss_feed_identity_id &&
     work.reasons.some(
       reason =>
         reason === 'rss_feed_discoverability_changed' || reason === 'rss_feed_enablement_changed',
     )
   )
-    await retainRssFeedNotificationImpacts(work.id, work.rss_feed_id)
+    await retainRssFeedNotificationImpacts(work.id, work.rss_feed_identity_id)
   const retainedKeyPage =
     !hasMorePosts && !orphanReceiptPage.hasMore && !topicPage.hasMore && !hasIncompleteSnapshots
       ? await listPostPublicationIdentityKeys(work, limit)
@@ -137,7 +137,7 @@ async function listOrphanReceiptPostIds(
       ))
     ORDER BY receipt.post_identity_id
     LIMIT $3`,
-    [work.post_id, work.id, limit + 1],
+    [work.post_identity_id, work.id, limit + 1],
   )
   return {
     ids: rows.slice(0, limit).map(row => row.post_id),

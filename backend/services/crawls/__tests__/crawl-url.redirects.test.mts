@@ -26,7 +26,7 @@ describe('crawl-url.redirects', () => {
         hostname_id: originalUrl!.hostname.id,
         crawler_type: 'fetch',
       })
-      await updateUrlHostname(originalUrl!.hostname.id, { crawlable: true })
+      await updateUrlHostname(originalUrl!.hostname.id, { is_crawlable: true })
 
       fetchCrawlerHtml.mockResolvedValueOnce(
         createMockCrawlerResult(301, null, `https://${hostname}/new`),
@@ -52,7 +52,7 @@ describe('crawl-url.redirects', () => {
         hostname_id: originalUrl!.hostname.id,
         crawler_type: 'fetch',
       })
-      await updateUrlHostname(originalUrl!.hostname.id, { crawlable: true })
+      await updateUrlHostname(originalUrl!.hostname.id, { is_crawlable: true })
 
       fetchCrawlerHtml.mockResolvedValueOnce(
         createMockCrawlerResult(308, null, `https://${hostname}/new`),
@@ -79,7 +79,7 @@ describe('crawl-url.redirects', () => {
         hostname_id: originalUrl!.hostname.id,
         crawler_type: 'fetch',
       })
-      await updateUrlHostname(originalUrl!.hostname.id, { crawlable: true })
+      await updateUrlHostname(originalUrl!.hostname.id, { is_crawlable: true })
 
       fetchCrawlerHtml.mockResolvedValueOnce(
         createMockCrawlerResult(302, null, `https://${hostname}/temporary-target`),
@@ -107,7 +107,7 @@ describe('crawl-url.redirects', () => {
         hostname_id: originalUrl!.hostname.id,
         crawler_type: 'fetch',
       })
-      await updateUrlHostname(originalUrl!.hostname.id, { crawlable: true })
+      await updateUrlHostname(originalUrl!.hostname.id, { is_crawlable: true })
 
       fetchCrawlerHtml.mockResolvedValueOnce(
         createMockCrawlerResult(302, null, `https://${targetHostname}/feed-page`),
@@ -135,7 +135,7 @@ describe('crawl-url.redirects', () => {
         hostname_id: originalUrl!.hostname.id,
         crawler_type: 'fetch',
       })
-      await updateUrlHostname(originalUrl!.hostname.id, { crawlable: true })
+      await updateUrlHostname(originalUrl!.hostname.id, { is_crawlable: true })
 
       fetchCrawlerHtml.mockResolvedValueOnce(createMockCrawlerResult(302, null, '/feed-page'))
       fetchCrawlerHtml.mockResolvedValueOnce(createMockCrawlerResult(200, null, null))
@@ -160,7 +160,7 @@ describe('crawl-url.redirects', () => {
         hostname_id: originalUrl!.hostname.id,
         crawler_type: 'fetch',
       })
-      await updateUrlHostname(originalUrl!.hostname.id, { crawlable: true })
+      await updateUrlHostname(originalUrl!.hostname.id, { is_crawlable: true })
 
       fetchCrawlerHtml.mockResolvedValueOnce(
         createMockCrawlerResult(307, null, `https://${hostname}/temporary`),
@@ -187,7 +187,7 @@ describe('crawl-url.redirects', () => {
         hostname_id: originalUrl!.hostname.id,
         crawler_type: 'fetch',
       })
-      await updateUrlHostname(originalUrl!.hostname.id, { crawlable: true })
+      await updateUrlHostname(originalUrl!.hostname.id, { is_crawlable: true })
 
       // Advance the clock at the explicit redirect boundary. A fresh deadline at hop 2 would let
       // the second fetch run; carrying hop 1's 100ms deadline rejects before that fetch.

@@ -17,7 +17,7 @@ function buildLifecycleFields(
     expired_at: null,
     past_due_at: null,
     paused_at: null,
-    cancel_at_period_end: false,
+    should_cancel_at_period_end: false,
     ...overrides,
   }
 }

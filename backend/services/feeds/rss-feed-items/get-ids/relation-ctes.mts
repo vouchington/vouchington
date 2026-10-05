@@ -170,6 +170,6 @@ function buildExcludedHostnamesCTE(currentUserId: string | undefined): SQLStatem
     : sql`excluded_hostname_ids AS (
             SELECT id AS hostname_id
             FROM url_hostnames
-            WHERE blocked = TRUE
+            WHERE is_blocked = TRUE
           )`
 }

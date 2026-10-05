@@ -15,7 +15,7 @@ type CommentAncestorPage = {
   startNextId: string | null
 }
 
-export type CommentAncestorTarget = { id: string; root_id: string | null }
+export type CommentAncestorTarget = { id: string; root_post_id: string | null }
 
 export async function getCommentAncestorPage({
   limit,
@@ -26,7 +26,7 @@ export async function getCommentAncestorPage({
   startId?: string
   target: CommentAncestorTarget
 }): Promise<CommentAncestorPage & { rootId: string; targetId: string }> {
-  const rootId = target.root_id ?? target.id
+  const rootId = target.root_post_id ?? target.id
   const maxReturnedDepth = startId ? limit - 1 : limit
   const { rows } = await read(
     buildCommentAncestorPageQuery({
@@ -49,7 +49,7 @@ export async function getCommentAncestorPage({
     nextId: sentinel && sentinel.id !== rootId ? sentinel.id : null,
     rootId,
     startId: deepest?.id ?? null,
-    startNextId: deepest?.parent_id ?? null,
+    startNextId: deepest?.parent_post_id ?? null,
     targetId: target.id,
   }
 }
@@ -61,7 +61,7 @@ export async function getCommentAncestorTargetByAny(
   const isSlugValue = isSlug(idOrSlug)
   if (!isId && !isSlugValue) throw createError(422, `Invalid post identifier: ${idOrSlug}`)
   const query = sql`/* getCommentAncestorTargetByAny */
-    SELECT posts.id, posts.root_id FROM posts WHERE posts.id = `
+    SELECT posts.id, posts.root_post_id FROM posts WHERE posts.id = `
   query.append(
     isId
       ? sql`${idOrSlug}`
@@ -85,25 +85,25 @@ export function buildCommentAncestorPageQuery({
 }): SQLStatement {
   return sql`/* buildCommentAncestorPageQuery */
     WITH RECURSIVE ancestor_window AS (
-      SELECT posts.id, posts.post_type, posts.root_id, posts.parent_id, posts.community_id, posts.deleted_at, posts.created_at, posts.votes_score_sort, 0 AS depth
+      SELECT posts.id, posts.post_type, posts.root_post_id, posts.parent_post_id, posts.community_id, posts.deleted_at, posts.created_at, posts.votes_score_sort, 0 AS depth
       FROM posts WHERE posts.id = ${startId}
-        AND (posts.id = ${rootId} OR posts.root_id = ${rootId})
+        AND (posts.id = ${rootId} OR posts.root_post_id = ${rootId})
       UNION ALL
-      SELECT posts.id, posts.post_type, posts.root_id, posts.parent_id, posts.community_id, posts.deleted_at, posts.created_at, posts.votes_score_sort, ancestor_window.depth + 1
-      FROM posts JOIN ancestor_window ON ancestor_window.parent_id = posts.id
+      SELECT posts.id, posts.post_type, posts.root_post_id, posts.parent_post_id, posts.community_id, posts.deleted_at, posts.created_at, posts.votes_score_sort, ancestor_window.depth + 1
+      FROM posts JOIN ancestor_window ON ancestor_window.parent_post_id = posts.id
       WHERE ancestor_window.post_type = 'comment'
-        AND (posts.id = ${rootId} OR posts.root_id = ${rootId})
+        AND (posts.id = ${rootId} OR posts.root_post_id = ${rootId})
         AND ancestor_window.depth < ${maxReturnedDepth + 1}
     ), root AS (
-      SELECT posts.id, posts.post_type, posts.root_id, posts.parent_id, posts.community_id, posts.deleted_at, posts.created_at, posts.votes_score_sort
+      SELECT posts.id, posts.post_type, posts.root_post_id, posts.parent_post_id, posts.community_id, posts.deleted_at, posts.created_at, posts.votes_score_sort
       FROM posts WHERE posts.id = ${rootId}
     )
-    SELECT 'post' AS __entity_type, root.id, root.post_type, root.root_id, root.parent_id, root.community_id,
+    SELECT 'post' AS __entity_type, root.id, root.post_type, root.root_post_id, root.parent_post_id, root.community_id,
       root.deleted_at, root.created_at, 0 AS depth, root.votes_score_sort AS vote_score,
       TRUE AS is_root FROM root
     UNION ALL
     SELECT 'post' AS __entity_type, ancestor_window.id, ancestor_window.post_type,
-      ancestor_window.root_id, ancestor_window.parent_id, ancestor_window.community_id, ancestor_window.deleted_at,
+      ancestor_window.root_post_id, ancestor_window.parent_post_id, ancestor_window.community_id, ancestor_window.deleted_at,
       ancestor_window.created_at, ancestor_window.depth,
       ancestor_window.votes_score_sort AS vote_score, FALSE AS is_root
     FROM ancestor_window WHERE ancestor_window.id != ${rootId}

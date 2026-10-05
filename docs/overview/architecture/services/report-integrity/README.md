@@ -16,15 +16,15 @@ row is created for moderator review. Admins can penalise confirmed bad-faith rep
 
 ## Key functions
 
-| Function                                         | Description                                                                                                                   |
-| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| `detectMassReportCampaign(entityType, entityId)` | Count distinct pending reporters in window; return `{ flagged, reporter_count, new_account_reporter_pct, reporter_user_ids }` |
-| `createReportIntegrityFlag(...)`                 | Insert flag and its reporter rows in one statement with `ON CONFLICT DO NOTHING` dedup                                        |
-| `applyReportAbusePenalty(adminId, flagId)`       | Atomically resolve + insert penalties; return the updated flag; stamp `bad_faith_reporter_at`; invalidate JWTs                |
-| `getReportIntegrityFlagByIdFromPrimary(id)`      | Exact primary-pool flag read for post-mutation reconciliation                                                                 |
-| `getReportAbusePenalties(options)`               | Scoped-cursor penalty ledger with status, user, and source-flag filters                                                       |
-| `getReportAbusePenaltyByIdFromPrimary(id)`       | Exact primary-pool penalty read for post-mutation reconciliation                                                              |
-| `revokeReportAbusePenalty(adminId, penaltyId)`   | Revoke penalty; clear `bad_faith_reporter_at` if last active penalty                                                          |
+| Function                                         | Description                                                                                                                       |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| `detectMassReportCampaign(entityType, entityId)` | Count distinct pending reporters in window; return `{ flagged, reporter_count, new_account_reporter_percent, reporter_user_ids }` |
+| `createReportIntegrityFlag(...)`                 | Insert flag and its reporter rows in one statement with `ON CONFLICT DO NOTHING` dedup                                            |
+| `applyReportAbusePenalty(adminId, flagId)`       | Atomically resolve + insert penalties; return the updated flag; stamp `bad_faith_reporter_at`; invalidate JWTs                    |
+| `getReportIntegrityFlagByIdFromPrimary(id)`      | Exact primary-pool flag read for post-mutation reconciliation                                                                     |
+| `getReportAbusePenalties(options)`               | Scoped-cursor penalty ledger with status, user, and source-flag filters                                                           |
+| `getReportAbusePenaltyByIdFromPrimary(id)`       | Exact primary-pool penalty read for post-mutation reconciliation                                                                  |
+| `revokeReportAbusePenalty(adminId, penaltyId)`   | Revoke penalty; clear `bad_faith_reporter_at` if last active penalty                                                              |
 
 Flag and penalty cursors bind the `id DESC` boundary to their resource and complete normalized
 filter set and reject unscoped simple cursors. Revocation

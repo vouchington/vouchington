@@ -23,7 +23,7 @@ type QueuedCase = {
       rationale: string | null
       guidance: { summary: string; suggested_action: string } | null
     } | null
-    review: { accepted: boolean; reviewed_at: string; reviewed_by_id: string | null } | null
+    review: { is_accepted: boolean; reviewed_at: string; reviewed_by_id: string | null } | null
   } | null
 }
 
@@ -73,7 +73,7 @@ describe('copyright staff case form review after the decision', () => {
 
     await request
       .post(`/api/v1/copyright-form-intakes/${notice.intake.id}/reviews`)
-      .send({ accepted: true, rationale: 'The signed notice is complete.' })
+      .send({ is_accepted: true, rationale: 'The signed notice is complete.' })
       .expect(200)
     // The intake review no longer queues the case, so a later deadline keeps it in front of staff.
     await insertOpenCopyrightCounterNoticeDeadline({
@@ -88,7 +88,7 @@ describe('copyright staff case form review after the decision', () => {
     expect(reviewed.form_review).toEqual({
       ...unreviewed.form_review,
       review: {
-        accepted: true,
+        is_accepted: true,
         reviewed_at: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
         reviewed_by_id: moderator.id,
       },
@@ -119,7 +119,7 @@ describe('copyright staff case form review after the decision', () => {
 
     expect(formReview?.screening?.guidance).not.toBeNull()
     expect(formReview?.review).toEqual({
-      accepted: false,
+      is_accepted: false,
       reviewed_at: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
       reviewed_by_id: null,
     })

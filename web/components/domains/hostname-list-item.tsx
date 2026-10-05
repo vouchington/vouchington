@@ -51,12 +51,12 @@ export function HostnameListItem({
                 size='xs'
               />
             )}
-            {isAdmin && hostname.blocked && (
+            {isAdmin && hostname.is_blocked && (
               <span className='rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive'>
                 {t('extracted.domains.hostnameListItem.blocked_18f2a094')}
               </span>
             )}
-            {isAdmin && hostname.crawlable === false && (
+            {isAdmin && hostname.is_crawlable === false && (
               <span className='rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground'>
                 {t('extracted.domains.hostnameListItem.notCrawlable_7171ab3b')}
               </span>

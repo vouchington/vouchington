@@ -135,7 +135,7 @@ describe('trending, referral, search and reference-data read tools over MCP HTTP
     const token = await issueCredential(kind, user, READ)
     const word = createRandomString(10).toLowerCase()
     const hostname = `e2e-web-${word}.example.com`
-    const hostnameId = await insertTestUrlHostname({ hostname, crawlable: true })
+    const hostnameId = await insertTestUrlHostname({ hostname, is_crawlable: true })
     const urlId = await insertTestUrl({ url: `https://${hostname}/${word}`, hostnameId })
 
     const page = await readTool(token, 'search_web', { query: word })

@@ -140,10 +140,10 @@ describe('copyright submission request contracts', () => {
     })
 
     it.each([
-      ['good_faith_belief', { good_faith_belief: false }],
+      ['has_good_faith_belief', { has_good_faith_belief: false }],
       [
-        'accuracy_authority_under_penalty_of_perjury',
-        { accuracy_authority_under_penalty_of_perjury: 'yes' },
+        'has_accuracy_authority_under_penalty_of_perjury',
+        { has_accuracy_authority_under_penalty_of_perjury: 'yes' },
       ],
     ])('keeps the field-named 422 for an unaccepted %s', async (field, override) => {
       const { claimant, form } = await createCopyrightFormFixture()

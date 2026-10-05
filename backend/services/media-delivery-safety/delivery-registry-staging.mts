@@ -22,7 +22,7 @@ export async function stagePostImagePlacementDeliveryRecords(
     WHERE binding.post_id = ${postId} AND placement.retired_at IS NULL
       AND placement.copyright_withheld_at IS NULL AND image.deleted_at IS NULL
       AND image.upload_completed_at IS NOT NULL AND image.quarantine_pending_at IS NULL
-      AND image.openai_omni_moderation_flagged = FALSE
+      AND image.is_flagged_by_openai_omni_moderation = FALSE
       AND image.openai_omni_moderation_results IS NOT NULL
       AND image.openai_omni_moderation_created_at IS NOT NULL
     ON CONFLICT (delivery_key) DO UPDATE

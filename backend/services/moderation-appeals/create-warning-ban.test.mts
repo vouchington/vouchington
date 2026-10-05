@@ -37,7 +37,7 @@ describe('createModerationAppeal warning and ban targets', () => {
       const { appeal, isDuplicate } = await createModerationAppeal(appellant, WEB_PROVENANCE, input)
 
       expect(isDuplicate).toBe(false)
-      expect(appeal.appellant_id).toBe(appellant.id)
+      expect(appeal.appellant_user_id).toBe(appellant.id)
       expect(appeal.user_warning_id).toBe(warning.id)
       expect(appeal.status).toBe('pending')
       expect(appeal.appeal_reason).toBe('I did not spam, this was legitimate content.')

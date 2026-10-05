@@ -74,7 +74,7 @@ function createDeleteResult(
     deletedThisImage: true,
     imageRollback: {
       openai_omni_moderation_results: null,
-      openai_omni_moderation_flagged: null,
+      is_flagged_by_openai_omni_moderation: null,
       openai_omni_moderation_created_at: null,
     },
     retiredPlacements: [],

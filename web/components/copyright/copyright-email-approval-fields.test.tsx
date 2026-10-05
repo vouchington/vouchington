@@ -11,8 +11,8 @@ function draft(overrides: Partial<CopyrightEmailApprovalDraft> = {}): CopyrightE
     claimant_email: '',
     work_description: '',
     electronic_signature: '',
-    good_faith_belief: false,
-    accuracy_authority_under_penalty_of_perjury: false,
+    has_good_faith_belief: false,
+    has_accuracy_authority_under_penalty_of_perjury: false,
     targets: [
       {
         id: 'target-1',
@@ -69,7 +69,7 @@ describe('CopyrightEmailApprovalFields', () => {
     expect(onChange).toHaveBeenCalled()
     rerender(
       <CopyrightEmailApprovalFields
-        draft={draft({ good_faith_belief: true })}
+        draft={draft({ has_good_faith_belief: true })}
         onChange={onChange}
       />,
     )

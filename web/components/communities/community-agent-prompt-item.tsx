@@ -78,15 +78,15 @@ export function CommunityAgentPromptItem({ prompt, communitySlug, onPromptUpdate
   async function handleToggleAllocation() {
     startPending(async () => {
       try {
-        if (prompt.slot_allocated) {
+        if (prompt.is_slot_allocated) {
           await deallocateCommunityAgentPromptSlot(communitySlug, prompt.id)
-          onPromptUpdated?.({ ...prompt, slot_allocated: false, activated_at: null })
+          onPromptUpdated?.({ ...prompt, is_slot_allocated: false, activated_at: null })
           onSuccess(t('extracted.communities.communityAgentPromptItem.slotDeallocated_b7497458'))
         } else {
           await allocateCommunityAgentPromptSlot(communitySlug, prompt.id)
           onPromptUpdated?.({
             ...prompt,
-            slot_allocated: true,
+            is_slot_allocated: true,
             activated_at: prompt.activated_at ?? new Date().toISOString(),
           })
           onSuccess(t('extracted.communities.communityAgentPromptItem.slotAllocated_417c6c1d'))

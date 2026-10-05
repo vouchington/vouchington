@@ -128,7 +128,7 @@ export async function insertCommunityMembershipAndGetVacationSuppression(
   const { rows } = await write<{ suppress: boolean }>(
     `/* insertCommunityMembershipAndGetVacationSuppression */ INSERT INTO community_members
       (community_id, user_id, role) VALUES ($1, $2, 'owner')
-      RETURNING suppress_community_digests_while_on_vacation AS suppress`,
+      RETURNING should_suppress_community_digests_while_on_vacation AS suppress`,
     [communityId, userId],
   )
   return rows[0]?.suppress ?? false

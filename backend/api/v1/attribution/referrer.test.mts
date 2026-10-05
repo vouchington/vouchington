@@ -55,7 +55,7 @@ describe('referrer', () => {
 
       const rows = await getSessionReferralAttributions(sid)
       expect(rows).toHaveLength(1)
-      expect(rows[0].referrer_id).toBe(referrer!.id)
+      expect(rows[0].referrer_user_id).toBe(referrer!.id)
       expect(rows[0].landing_url).toBe(landingUrl)
     })
 
@@ -76,7 +76,7 @@ describe('referrer', () => {
 
       const rows = await getSessionReferralAttributions(sid)
       expect(rows).toHaveLength(1)
-      expect(rows[0].referrer_id).toBe(referrer!.id)
+      expect(rows[0].referrer_user_id).toBe(referrer!.id)
     })
 
     it('returns 200 for unknown referrer (no enumeration)', async () => {
@@ -245,7 +245,7 @@ describe('referrer', () => {
       expect(rows).toHaveLength(0)
     })
 
-    it('preserves attribution record with null referrer_id when referrer account is deleted', async () => {
+    it('preserves attribution record with null referrer_user_id when referrer account is deleted', async () => {
       const tempReferrer = await createTestUserDirect()
 
       const request = createRequest()
@@ -259,13 +259,13 @@ describe('referrer', () => {
 
       let rows = await getSessionReferralAttributions(sid)
       expect(rows).toHaveLength(1)
-      expect(rows[0].referrer_id).toBe(tempReferrer!.id)
+      expect(rows[0].referrer_user_id).toBe(tempReferrer!.id)
 
       // Hard-delete the referrer to trigger ON DELETE SET NULL on the FK constraint
       await hardDeleteTestUser(tempReferrer!.id)
       rows = await getSessionReferralAttributions(sid)
       expect(rows).toHaveLength(1)
-      expect(rows[0].referrer_id).toBeNull()
+      expect(rows[0].referrer_user_id).toBeNull()
     })
 
     it('stores user_id for signed-in users', async () => {
@@ -281,7 +281,7 @@ describe('referrer', () => {
 
       const rows = await getSessionReferralAttributions(sid)
       expect(rows).toHaveLength(1)
-      expect(rows[0].referrer_id).toBe(referrer!.id)
+      expect(rows[0].referrer_user_id).toBe(referrer!.id)
       expect(rows[0].user_id).toBe(signedInUser!.id)
       expect(rows[0].landing_url).toBe(landingUrl)
     })

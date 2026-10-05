@@ -20,8 +20,8 @@ export const instanceTopic = {
   markdown: 'A community-run Mastodon instance.',
   aliases: [],
   topic_type: 'fediverse_instance',
-  noindex: false,
-  allow_reviews: true,
+  is_noindexed: false,
+  should_allow_reviews: true,
   created_at: '2026-01-01T00:00:00Z',
   hostname_id: hostnameId,
   hostname: {
@@ -47,7 +47,7 @@ export const instanceAttributes = {
   nodeinfo_software_version: '4.4.0',
   total_users: 1200,
   monthly_active_users: 340,
-  open_registrations: true,
+  is_open_for_registrations: true,
   nodeinfo_raw: null,
   integration_status: 'approved',
 }
@@ -57,7 +57,7 @@ export const publicInstanceAttributes = {
   nodeinfo_software_version: instanceAttributes.nodeinfo_software_version,
   total_users: instanceAttributes.total_users,
   monthly_active_users: instanceAttributes.monthly_active_users,
-  open_registrations: instanceAttributes.open_registrations,
+  is_open_for_registrations: instanceAttributes.is_open_for_registrations,
 }
 
 export const unclassifiedTopic = makeInstanceTopic({
@@ -78,7 +78,7 @@ export const unclassifiedAttributes = {
   nodeinfo_software_version: null,
   total_users: null,
   monthly_active_users: null,
-  open_registrations: false,
+  is_open_for_registrations: false,
   nodeinfo_raw: null,
   integration_status: 'pending',
 }
@@ -88,7 +88,7 @@ export const publicUnclassifiedAttributes = {
   nodeinfo_software_version: unclassifiedAttributes.nodeinfo_software_version,
   total_users: unclassifiedAttributes.total_users,
   monthly_active_users: unclassifiedAttributes.monthly_active_users,
-  open_registrations: unclassifiedAttributes.open_registrations,
+  is_open_for_registrations: unclassifiedAttributes.is_open_for_registrations,
 }
 export const unknownRegistrationsAttributes = {
   software: 'lemmy',
@@ -96,7 +96,7 @@ export const unknownRegistrationsAttributes = {
   nodeinfo_software_version: '0.19.12',
   total_users: 500,
   monthly_active_users: 80,
-  open_registrations: null,
+  is_open_for_registrations: null,
   nodeinfo_raw: null,
   integration_status: 'approved',
 }
@@ -106,7 +106,7 @@ export const publicUnknownRegistrationsAttributes = {
   nodeinfo_software_version: unknownRegistrationsAttributes.nodeinfo_software_version,
   total_users: unknownRegistrationsAttributes.total_users,
   monthly_active_users: unknownRegistrationsAttributes.monthly_active_users,
-  open_registrations: unknownRegistrationsAttributes.open_registrations,
+  is_open_for_registrations: unknownRegistrationsAttributes.is_open_for_registrations,
 }
 export const topicElection = {
   __entity_type: 'topic_election',

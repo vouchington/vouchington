@@ -14,8 +14,8 @@ export type CommentRow = {
   __entity_type: 'post'
   id: string
   post_type: string
-  root_id: string | null
-  parent_id: string | null
+  root_post_id: string | null
+  parent_post_id: string | null
   deleted_at: Date | null
   created_at: Date | null
   community_id: string | null
@@ -27,8 +27,8 @@ export type CommentNode = {
   __entity_type: 'post'
   id: string
   post_type: string
-  root_id: string | null
-  parent_id: string | null
+  root_post_id: string | null
+  parent_post_id: string | null
   deleted_at: Date | null
   community_id: string | null
   children: CommentNode[]

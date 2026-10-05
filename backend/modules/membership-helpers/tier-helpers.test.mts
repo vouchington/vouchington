@@ -23,7 +23,7 @@ function makeMembership(overrides: Partial<Membership> = {}): Membership {
     expired_at: null,
     past_due_at: null,
     paused_at: null,
-    cancel_at_period_end: false,
+    should_cancel_at_period_end: false,
     latest_change_id: null,
     created_at: new Date(),
     updated_at: new Date(),

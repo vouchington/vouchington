@@ -24,7 +24,7 @@ describe('my card suspension policy', () => {
     await request.authenticateAs(user)
     const created = await request
       .post('/api/v1/my/cards')
-      .send({ card_id: originalCatalogCardId })
+      .send({ card_topic_id: originalCatalogCardId })
       .expect(201)
     const cardId = created.body.card.id as string
 
@@ -35,7 +35,7 @@ describe('my card suspension policy', () => {
     expect(read.body.results.map((card: { id: string }) => card.id)).toContain(cardId)
 
     for (const response of [
-      await request.post('/api/v1/my/cards').send({ card_id: attemptedCatalogCardId }),
+      await request.post('/api/v1/my/cards').send({ card_topic_id: attemptedCatalogCardId }),
       await request.patch(`/api/v1/my/cards/${cardId}`).send({ note: 'suspended edit' }),
       await request.delete(`/api/v1/my/cards/${cardId}`),
     ]) {

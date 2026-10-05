@@ -7,13 +7,13 @@ describe('buildLandingPageInsertRows', () => {
     const result = buildLandingPageInsertRows(
       [
         { type: 'profile_link', profile_link_id: 'profile' },
-        { type: 'review', review_id: 'review' },
+        { type: 'review', review_post_id: 'review' },
         { type: 'referral_link', referral_link_id: 'referral' },
         {
           type: 'topic_group',
           topic_id: 'topic',
           entries: [
-            { type: 'review', review_id: 'group-review' },
+            { type: 'review', review_post_id: 'group-review' },
             { type: 'referral_link', referral_link_id: 'group-referral' },
           ],
         },

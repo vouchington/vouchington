@@ -40,7 +40,7 @@ export function VerifiedDisplayPreferencesCard({
     await runWithLoadingId('update-preferences', async () => {
       try {
         await updateMyIdentityVerificationDisplayPreferences({
-          verified_badge_visible: badgeVisible,
+          is_verified_badge_visible: badgeVisible,
           public_verified_name_display: nameDisplay,
         })
         onSuccess(

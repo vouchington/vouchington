@@ -1,7 +1,7 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_admission_reservations (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
-  actor_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  actor_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   idempotency_key UUID NOT NULL,
   intent_sha256 TEXT NOT NULL,
   route post_admission_routes NOT NULL,
@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS post_admission_reservations (
   committed_at TIMESTAMPTZ,
   expires_at TIMESTAMPTZ,
   retention_expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '48 hours'),
-  CONSTRAINT post_admission_reservations_actor_key_unique UNIQUE (actor_id, idempotency_key),
+  CONSTRAINT post_admission_reservations_actor_key_unique UNIQUE (actor_user_id, idempotency_key),
   CONSTRAINT post_admission_reservations_intent_sha256_check CHECK (
     char_length(intent_sha256) = 64 AND intent_sha256 = LOWER(intent_sha256)
   ),
@@ -53,7 +53,7 @@ CREATE INDEX IF NOT EXISTS idx_post_admission_reservations__retention
 ON post_admission_reservations (retention_expires_at, id);
 
 COMMENT ON TABLE post_admission_reservations IS 'Durable actor-bound idempotency and admission records for authored posts; committed replays remain available for a rolling 48-hour client window plus bounded clock-skew safety.';
-COMMENT ON COLUMN post_admission_reservations.actor_id IS 'Authenticated actor that owns the idempotency key and its replay record.';
+COMMENT ON COLUMN post_admission_reservations.actor_user_id IS 'Authenticated actor that owns the idempotency key and its replay record.';
 COMMENT ON COLUMN post_admission_reservations.idempotency_key IS 'Client-supplied UUID reused only to replay the same actor request.';
 COMMENT ON COLUMN post_admission_reservations.intent_sha256 IS 'SHA-256 of the canonical request intent. Different intent with the same actor and idempotency key is rejected.';
 COMMENT ON COLUMN post_admission_reservations.route IS 'Mutation route recorded for audit and replay metadata.';

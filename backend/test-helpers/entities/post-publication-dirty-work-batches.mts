@@ -28,7 +28,7 @@ export async function insertTestPostTopicAliasSourceBatch(options: {
   await write(
     `/* insertTestPostTopicAliasSourceBatch */
     INSERT INTO post_topic_alias_sources
-      (post_id, topic_alias_id, contributor_id, source, authored_token)
+      (post_id, topic_alias_id, contributor_user_id, source, authored_token)
     SELECT post_id, $2::uuid, $3::uuid, 'explicit', '#bounded-alias'
     FROM UNNEST($1::uuid[]) AS post_id`,
     [options.postIds, options.topicAliasId, options.contributorId],

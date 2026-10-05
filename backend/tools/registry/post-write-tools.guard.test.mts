@@ -55,7 +55,7 @@ describe('post MCP write guards — real services', () => {
     [{ post_type: 'review', markdown: 'Short' }, 'Review'],
     [{ post_type: 'data_point' }, 'data_point_vertical'],
     [{ post_type: 'link' }, 'url or url_id'],
-    [{ post_type: 'comment' }, 'parent_id'],
+    [{ post_type: 'comment' }, 'parent_post_id'],
     [{ slug: 'custom' }, 'Only admins'],
     [{ post_type: 'discussion', structured_data: {} }, 'only allowed for data_point'],
   ])('enforces the shared per-type rule for %j', async (fields, message) => {
@@ -83,10 +83,10 @@ describe('post MCP write guards — real services', () => {
       await callStructuredMcpTool(
         user,
         'create_post',
-        input({ post_type: 'comment', parent_id: id }),
+        input({ post_type: 'comment', parent_post_id: id }),
         SCOPES,
       ),
-    ).toMatchObject({ post: { post_type: 'comment', parent_id: id } })
+    ).toMatchObject({ post: { post_type: 'comment', parent_post_id: id } })
   })
 
   it.each(['update_post', 'delete_post'])(
@@ -122,7 +122,7 @@ describe('post MCP write guards — real services', () => {
       await callRejectedMcpTool(
         user,
         'create_post',
-        input({ post_type: 'comment', parent_id: comment }),
+        input({ post_type: 'comment', parent_post_id: comment }),
         SCOPES,
       ),
     ).toContain('Post not found')
@@ -152,7 +152,7 @@ describe('post MCP write guards — real services', () => {
       await callRejectedMcpTool(
         user,
         'create_post',
-        input({ post_type: 'comment', parent_id: comment }),
+        input({ post_type: 'comment', parent_post_id: comment }),
         SCOPES,
       ),
     ).toContain('Post not found')
@@ -253,7 +253,7 @@ describe('post MCP write guards — real services', () => {
         await callRejectedMcpTool(
           user,
           'create_post',
-          input({ post_type: 'comment', parent_id: id }),
+          input({ post_type: 'comment', parent_post_id: id }),
           SCOPES,
         ),
       ).toContain('Post not found')
@@ -288,7 +288,7 @@ describe('post MCP write guards — real services', () => {
       })
       const args =
         name === 'create_post'
-          ? input({ post_type: 'comment', parent_id: comment })
+          ? input({ post_type: 'comment', parent_post_id: comment })
           : { id: comment, ...(name === 'update_post' ? { markdown: 'Changed' } : {}) }
       expect(
         await withConcurrentPostPrivacyChangeForTest(root, () =>

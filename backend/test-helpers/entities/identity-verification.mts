@@ -31,7 +31,7 @@ export async function setUserVerificationFields(
   await write(sql`/* setUserVerificationFields */
     UPDATE users
     SET verification_status = COALESCE(${fields.verificationStatus ?? null}::identity_verification_statuses, verification_status),
-        verified_badge_visible = COALESCE(${fields.verifiedBadgeVisible ?? null}, verified_badge_visible),
+        is_verified_badge_visible = COALESCE(${fields.verifiedBadgeVisible ?? null}, is_verified_badge_visible),
         public_verified_name_display = COALESCE(${fields.publicVerifiedNameDisplay ?? null}::public_verified_name_displays, public_verified_name_display),
         verified_first_name = CASE WHEN ${fields.verifiedFirstName !== undefined} THEN ${fields.verifiedFirstName ?? null} ELSE verified_first_name END,
         verified_last_name_initial = CASE WHEN ${fields.verifiedLastNameInitial !== undefined} THEN ${fields.verifiedLastNameInitial ?? null} ELSE verified_last_name_initial END,
@@ -76,7 +76,7 @@ export async function getUserVerificationState(userId: string): Promise<{
   verification_status: string
   verification_provider: string | null
   verification_completed_at: Date | null
-  verified_badge_visible: boolean
+  is_verified_badge_visible: boolean
   public_verified_name_display: string
   pending_verification_session_id: string | null
   pending_checkout_session_id: string | null
@@ -86,7 +86,7 @@ export async function getUserVerificationState(userId: string): Promise<{
 } | null> {
   const { rows } = await read(sql`/* getUserVerificationState */
     SELECT verification_status, verification_provider, verification_completed_at,
-           verified_badge_visible, public_verified_name_display,
+           is_verified_badge_visible, public_verified_name_display,
            pending_verification_session_id, pending_checkout_session_id,
            verified_first_name, verified_last_name_initial, verified_full_name
     FROM users
@@ -98,7 +98,7 @@ export async function getUserVerificationState(userId: string): Promise<{
           verification_status: string
           verification_provider: string | null
           verification_completed_at: Date | null
-          verified_badge_visible: boolean
+          is_verified_badge_visible: boolean
           public_verified_name_display: string
           pending_verification_session_id: string | null
           pending_checkout_session_id: string | null
@@ -125,7 +125,7 @@ export async function countVerifiedIdentities(userId: string): Promise<number> {
 export type IdentityVerificationAttemptState = {
   checkout_session_id: string | null
   consumed_at: Date | null
-  grant_entitlement_id: string | null
+  grant_entitlement_attempt_id: string | null
   granted_by_id: string | null
   id: string
   released_at: Date | null
@@ -137,7 +137,7 @@ export async function getIdentityVerificationAttemptStates(
   userId: string,
 ): Promise<IdentityVerificationAttemptState[]> {
   const { rows } = await read(sql`/* getIdentityVerificationAttemptStates */
-    SELECT id, source, grant_entitlement_id, granted_by_id, checkout_session_id, released_at, consumed_at
+    SELECT id, source, grant_entitlement_attempt_id, granted_by_id, checkout_session_id, released_at, consumed_at
     FROM identity_verification_attempts
     WHERE user_id = ${userId}
     ORDER BY id

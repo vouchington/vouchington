@@ -36,6 +36,6 @@ export function setSuppressCommunityDigestsWhileOnVacation(
 ): Promise<ModeratorVacationDigestPreferenceResponseBody> {
   return clientApi.patch<ModeratorVacationDigestPreferenceResponseBody>(
     `/api/v1/communities/${encodeURIComponent(communitySlug)}/moderator-vacation`,
-    { suppress_community_digests_while_on_vacation: suppress },
+    { should_suppress_community_digests_while_on_vacation: suppress },
   )
 }

@@ -78,7 +78,7 @@ describe('GET /api/v1/my/notifications', () => {
     const reply = await createTestPost({
       user: replier,
       post_type: 'comment',
-      parent_id: root.id,
+      parent_post_id: root.id,
       title: '',
       markdown: 'Reply body',
     })
@@ -101,7 +101,7 @@ describe('GET /api/v1/my/notifications', () => {
     const reply = await createTestPost({
       user: replier,
       post_type: 'comment',
-      parent_id: root.id,
+      parent_post_id: root.id,
       title: '',
       markdown: 'Date validation reply',
     })
@@ -129,7 +129,7 @@ describe('GET /api/v1/my/notifications', () => {
     const reply = await createTestPost({
       user: replier,
       post_type: 'comment',
-      parent_id: root.id,
+      parent_post_id: root.id,
       title: '',
       markdown: 'Reply body',
     })
@@ -156,7 +156,7 @@ describe('GET /api/v1/my/notifications', () => {
     const reply = await createTestPost({
       user: replier,
       post_type: 'comment',
-      parent_id: root.id,
+      parent_post_id: root.id,
       title: '',
       markdown: 'Reply body',
     })
@@ -187,7 +187,7 @@ describe('GET /api/v1/my/notifications', () => {
     const reply = await createTestPost({
       user: replier,
       post_type: 'comment',
-      parent_id: root.id,
+      parent_post_id: root.id,
       title: '',
       markdown: 'Reply body',
     })

@@ -110,7 +110,7 @@ export async function getRssFeedItemFeedIds(
     published_at: row.published_at as Date,
     story_id: (row.story_id as string | null) ?? null,
     delivery_type: row.delivery_type as 'direct' | 'share',
-    ...(row.shared_by_user_id ? { shared_by_user_id: row.shared_by_user_id as string } : {}),
+    ...(row.shared_by_id ? { shared_by_id: row.shared_by_id as string } : {}),
     ...(row.shared_at ? { shared_at: row.shared_at as Date } : {}),
   }))
 

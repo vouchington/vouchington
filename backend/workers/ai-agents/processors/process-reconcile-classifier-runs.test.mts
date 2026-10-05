@@ -258,7 +258,7 @@ describe('classifier run recovery sweep: incomplete runs', () => {
       completed_at: null,
     })
     expect(await getPostClassifierLocalOutcomeFacts(run.runId)).toMatchObject({
-      flagged: expect.any(Boolean),
+      is_flagged: expect.any(Boolean),
       detector: expect.any(String),
     })
     const alarms = sentryCaptureMessageMock.mock.calls.filter(

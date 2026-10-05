@@ -9,8 +9,8 @@ export type RewardsProgramStatusTopic = {
 export type IndividualRewardsProgramStatus = {
   id: string
   rewards_program_status_id: string
-  since: string | null
-  until: string | null
+  started_on: string | null
+  expires_on: string | null
   rewards_program_status: RewardsProgramStatusTopic
 }
 

@@ -123,7 +123,7 @@ describe('moderation-training feedback', () => {
     })
     await expect(
       getTestPostPublicationDirtyWorkForScope({ type: 'post', id: promptPostId }),
-    ).resolves.toMatchObject({ post_id: promptPostId })
+    ).resolves.toMatchObject({ post_identity_id: promptPostId })
 
     const keepPromptPostId = await insertTestPost({
       title: `Prompt keep removed ${random}`,

@@ -1,3 +1,5 @@
+import { runIsolatedDatabaseCase } from '../../../test-helpers/vitest-isolated-database-case.mts'
+import { getIsolatedDatabaseCaseMode } from '../../../test-helpers/vitest-isolated-database-cases.mts'
 import { getClassifiersWorkLimit } from './work-limits.mts'
 import { beforeAll, describe, expect, it } from 'vitest'
 import {
@@ -7,6 +9,7 @@ import {
 } from '../../test-helpers/data-stores/psql/classifier-comparison-plans.mts'
 import {
   insertCompletedEmptyBatches,
+  rssItemSubject,
   seedGlobalDecision,
   seedMoment,
 } from '../../test-helpers/data-stores/psql/classifier-comparison-seeding.mts'
@@ -64,8 +67,11 @@ describe('classifier human vote comparison query plan', () => {
   const captured = {} as Record<(typeof FILTERS)[number], CapturedTestQuery>
 
   beforeAll(async () => {
+    if (!process.env.VITEST_ISOLATED_DATABASE_CASE) return
     const target = await activatedFixture()
     const bystander = await activatedFixture()
+    const scoped = await activatedFixture()
+    const rss = await activatedFixture()
     // The target classifier has more batches in the window than the cap and older batches before
     // it, and another classifier fills the same window; the report may read none of the excess.
     await insertCompletedEmptyBatches(
@@ -78,40 +84,68 @@ describe('classifier human vote comparison query plan', () => {
     for (const [index, probability] of [0.1, 0.5, 0.9].entries()) {
       await seedGlobalDecision(target, { probability, at: seedMoment(2 + index / 100) })
     }
-    await analyzeClassifierComparisonPlanTables()
     const base = { classifierId: target.classifierId, ...WINDOW }
     captured.classifier = await captureReportQuery(base)
-    captured.community = await captureReportQuery({ ...base, communityId: target.communityId })
+    await insertCompletedEmptyBatches(
+      scoped,
+      getClassifiersWorkLimit('comparison_max_batches') + 100,
+      seedMoment(0),
+      { communityId: scoped.communityId },
+    )
+    await insertCompletedEmptyBatches(
+      rss,
+      getClassifiersWorkLimit('comparison_max_batches') + 100,
+      seedMoment(0),
+      { subject: rssItemSubject(rss) },
+    )
+    await analyzeClassifierComparisonPlanTables()
+    captured.community = await captureReportQuery({
+      classifierId: scoped.classifierId,
+      ...WINDOW,
+      communityId: scoped.communityId,
+    })
     captured.post = await captureReportQuery({ ...base, postId: target.postId })
     captured.rssFeedItem = await captureReportQuery({
-      ...base,
-      rssFeedItemId: target.rssFeedItemId,
+      classifierId: rss.classifierId,
+      ...WINDOW,
+      rssFeedItemId: rss.rssFeedItemId,
     })
   })
 
   describe.each(PLAN_MODES)('in %s mode', planCacheMode => {
-    it.each(FILTERS)('bounds the batch scan by the id window with the %s filter', async filter => {
-      const plan = await explainCapturedTestQuery(
-        `classifier-comparison-${filter}`,
-        captured[filter],
-        planCacheMode,
-        analyzeClassifierComparisonPlanTables,
-        PLAN_SETTINGS,
-      )
+    it.each(FILTERS)(
+      'bounds the batch scan by the id window with the %s filter',
+      async filter => {
+        const caseId = `classifier-comparison-${planCacheMode}-${filter}` as const
+        if (getIsolatedDatabaseCaseMode(caseId) === 'parent') {
+          await runIsolatedDatabaseCase(caseId)
+          return
+        }
+        const plan = await explainCapturedTestQuery(
+          `classifier-comparison-${filter}`,
+          captured[filter],
+          planCacheMode,
+          analyzeClassifierComparisonPlanTables,
+          PLAN_SETTINGS,
+        )
 
-      const scans = summarizeComparisonBatchScans(plan)
+        const scans = summarizeComparisonBatchScans(plan)
 
-      // One scan per report, over an index that leads with a filter column (never an id-first
-      // unique index, which would walk every classifier's batches), bounded above and below by the
-      // id window and stopping at the batch cap however many other batches the table holds.
-      expect(scans.length).toBeGreaterThan(0)
-      for (const scan of scans) {
-        expect(scan.nodeType).toBe('Index Scan')
-        expect(ALLOWED_INDEXES[filter]).toContain(scan.indexName)
-        expect(scan.condition).toMatch(/\bid >= /)
-        expect(scan.condition).toMatch(/\bid < /)
-        expect(scan.work).toBeLessThanOrEqual(getClassifiersWorkLimit('comparison_max_batches') + 1)
-      }
-    })
+        // One scan per report, over an index that leads with a filter column (never an id-first
+        // unique index, which would walk every classifier's batches), bounded above and below by the
+        // id window and stopping at the batch cap however many other batches the table holds.
+        expect(scans.length).toBeGreaterThan(0)
+        for (const scan of scans) {
+          expect(scan.nodeType).toBe('Index Scan')
+          expect(ALLOWED_INDEXES[filter]).toContain(scan.indexName)
+          expect(scan.condition).toMatch(/\bid >= /)
+          expect(scan.condition).toMatch(/\bid < /)
+          expect(scan.work).toBeLessThanOrEqual(
+            getClassifiersWorkLimit('comparison_max_batches') + 1,
+          )
+        }
+      },
+      240_000,
+    )
   })
 })

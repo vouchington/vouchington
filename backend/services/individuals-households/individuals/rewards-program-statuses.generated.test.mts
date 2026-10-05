@@ -100,17 +100,17 @@ describe('rewards-program-statuses.generated', () => {
       createdById: user.id,
     })
     const created = await createIndividualRewardsProgramStatus(user, user, statusId)
-    const since = '2024-01-01'
-    const until = '2024-12-31'
+    const started_on = '2024-01-01'
+    const expires_on = '2024-12-31'
 
     const updated = await updateIndividualRewardsProgramStatusById(user, user, created.id, {
-      since,
-      until,
+      started_on,
+      expires_on,
     })
 
     expect(updated).toBeDefined()
-    expect(updated.since).toBe(since)
-    expect(updated.until).toBe(until)
+    expect(updated.started_on).toBe(started_on)
+    expect(updated.expires_on).toBe(expires_on)
     expect(updated.rewards_program_status).toBeDefined()
     expect(updated.rewards_program_status.id).toBe(statusId)
   })
@@ -118,7 +118,7 @@ describe('rewards-program-statuses.generated', () => {
   it('updateIndividualRewardsProgramStatusById - throws 404 for unknown id', async () => {
     await expect(
       updateIndividualRewardsProgramStatusById(user, user, '00000000-0000-7000-8000-000000000000', {
-        since: '2024-01-01',
+        started_on: '2024-01-01',
       }),
     ).rejects.toThrow(Error)
   })
@@ -135,18 +135,18 @@ describe('rewards-program-statuses.generated', () => {
     ).rejects.toThrow(Error)
   })
 
-  it('updateIndividualRewardsProgramStatusById - throws 422 when since > until', async () => {
+  it('updateIndividualRewardsProgramStatusById - throws 422 when started_on > expires_on', async () => {
     const statusId = await insertTestRewardsProgramStatus({ createdById: user.id })
     const created = await createIndividualRewardsProgramStatus(user, user, statusId)
     await expect(
       updateIndividualRewardsProgramStatusById(user, user, created.id, {
-        since: '2024-12-31',
-        until: '2024-01-01',
+        started_on: '2024-12-31',
+        expires_on: '2024-01-01',
       }),
     ).rejects.toThrow(Error)
   })
 
-  it.each(['since', 'until'] as const)(
+  it.each(['started_on', 'expires_on'] as const)(
     'updateIndividualRewardsProgramStatusById - rejects impossible %s calendar dates',
     async field => {
       const statusId = await insertTestRewardsProgramStatus({ createdById: user.id })
@@ -157,7 +157,7 @@ describe('rewards-program-statuses.generated', () => {
           user,
           user,
           created.id,
-          field === 'since' ? { since: '2026-02-31' } : { until: '2026-02-31' },
+          field === 'started_on' ? { started_on: '2026-02-31' } : { expires_on: '2026-02-31' },
         ),
       ).rejects.toMatchObject({ status: 422 })
     },

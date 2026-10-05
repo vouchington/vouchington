@@ -4,7 +4,7 @@ import { definePlanStatisticsRefresh, type PlanStatisticsRefresh } from '../quer
 
 type TestHousehold = {
   id: string
-  owner_id: string
+  owner_user_id: string
   updated_at?: string
 }
 
@@ -18,7 +18,7 @@ type DeletedTestHousehold = Pick<TestHousehold, 'id'>
 export async function deleteOwnedHouseholdsForTestUser(userId: string): Promise<number> {
   const { rows } = await write<DeletedTestHousehold>(sql`/* deleteOwnedHouseholdsForTestUser */
     DELETE FROM households
-    WHERE owner_id = ${userId}
+    WHERE owner_user_id = ${userId}
     RETURNING id
   `)
   return rows.length
@@ -27,7 +27,7 @@ export async function deleteOwnedHouseholdsForTestUser(userId: string): Promise<
 export async function deleteTestHouseholdsForOwners(ownerIds: string[]): Promise<void> {
   await write(sql`/* deleteTestHouseholdsForOwners */
     DELETE FROM households
-    WHERE owner_id = ANY(${ownerIds}::uuid[])
+    WHERE owner_user_id = ANY(${ownerIds}::uuid[])
   `)
 }
 
@@ -36,9 +36,9 @@ export async function insertTestHousehold(
   updatedAt = new Date(),
 ): Promise<TestHousehold> {
   const { rows } = await write<TestHousehold>(sql`/* insertTestHousehold */
-    INSERT INTO households (owner_id, updated_at)
+    INSERT INTO households (owner_user_id, updated_at)
     VALUES (${ownerId}, ${updatedAt})
-    RETURNING id, owner_id
+    RETURNING id, owner_user_id
   `)
   return rows[0]!
 }
@@ -70,10 +70,10 @@ export async function insertTestHouseholdsForOwner(
   count: number,
 ): Promise<TestHousehold[]> {
   const { rows } = await write<TestHousehold>(sql`/* insertTestHouseholdsForOwner */
-    INSERT INTO households (owner_id, updated_at)
+    INSERT INTO households (owner_user_id, updated_at)
     SELECT ${ownerId}, CURRENT_TIMESTAMP - ordinal * INTERVAL '1 microsecond'
     FROM generate_series(1, ${count}) ordinal
-    RETURNING id, owner_id
+    RETURNING id, owner_user_id
   `)
   return rows
 }
@@ -120,10 +120,10 @@ export async function insertTestHouseholdsAtPreciseTimestamps(
   timestamps: string[],
 ): Promise<TestHousehold[]> {
   const { rows } = await write<TestHousehold>(sql`/* insertTestHouseholdsAtPreciseTimestamps */
-    INSERT INTO households (owner_id, updated_at)
+    INSERT INTO households (owner_user_id, updated_at)
     SELECT ${ownerId}, timestamp::timestamptz
     FROM unnest(${timestamps}::text[]) timestamp
-    RETURNING id, owner_id,
+    RETURNING id, owner_user_id,
       to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS updated_at
   `)
   return rows

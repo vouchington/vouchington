@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS activitypub_inbox_deliveries (
   processing_at TIMESTAMPTZ,
   verified_at TIMESTAMPTZ,
   sender_allowed_at TIMESTAMPTZ,
-  deferred_until TIMESTAMPTZ,
+  earliest_retry_at TIMESTAMPTZ,
   failed_at TIMESTAMPTZ,
   first_failed_at TIMESTAMPTZ,
   retention_expires_at TIMESTAMPTZ,
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS activitypub_inbox_deliveries (
     sender_allowed_at IS NULL OR (verified_at IS NOT NULL AND remote_actor_id IS NOT NULL)
   ),
   CONSTRAINT activitypub_inbox_deliveries__deferral_state_valid CHECK (
-    deferred_until IS NULL OR (
+    earliest_retry_at IS NULL OR (
       verified_at IS NOT NULL
       AND remote_actor_id IS NOT NULL
       AND processing_at IS NULL
@@ -50,12 +50,12 @@ CREATE TABLE IF NOT EXISTS activitypub_inbox_deliveries (
   CONSTRAINT activitypub_inbox_deliveries__failure_state_valid CHECK (
     failed_at IS NULL OR (
       processing_at IS NOT NULL
-      AND deferred_until IS NULL
+      AND earliest_retry_at IS NULL
       AND last_error IS NOT NULL
     )
   ),
   CONSTRAINT activitypub_inbox_deliveries__terminal_diagnostics_present CHECK (
-    (deferred_until IS NULL AND failed_at IS NULL) OR last_error IS NOT NULL
+    (earliest_retry_at IS NULL AND failed_at IS NULL) OR last_error IS NOT NULL
   ),
   CONSTRAINT activitypub_inbox_deliveries__last_error_bounded CHECK (last_error IS NULL OR LENGTH(last_error) <= 1000),
   CONSTRAINT activitypub_inbox_deliveries__failed_requires_first_failed CHECK (failed_at IS NULL OR first_failed_at IS NOT NULL),
@@ -77,7 +77,7 @@ EXECUTE FUNCTION fn_update_updated_at();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_activitypub_inbox_deliveries__recovery
-  ON activitypub_inbox_deliveries (failed_at, deferred_until, processing_at, enqueued_at, received_at, id);
+  ON activitypub_inbox_deliveries (failed_at, earliest_retry_at, processing_at, enqueued_at, received_at, id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_activitypub_inbox_deliveries__remote_actor_id
   ON activitypub_inbox_deliveries (remote_actor_id) WHERE remote_actor_id IS NOT NULL;
@@ -102,7 +102,7 @@ COMMENT ON COLUMN activitypub_inbox_deliveries.enqueued_at IS 'Latest dispatch l
 COMMENT ON COLUMN activitypub_inbox_deliveries.processing_at IS 'Active worker lease timestamp; non-final retryable failures release it and stale crashes recover after thirty minutes.';
 COMMENT ON COLUMN activitypub_inbox_deliveries.verified_at IS 'When the worker first verified the exact request signature and actor match; always paired with remote_actor_id.';
 COMMENT ON COLUMN activitypub_inbox_deliveries.sender_allowed_at IS 'Set after the sender-hostname delivery rate limit admits this envelope; retries do not charge the sender again.';
-COMMENT ON COLUMN activitypub_inbox_deliveries.deferred_until IS 'Earliest retry time after a valid sender exceeds its hostname delivery allowance.';
+COMMENT ON COLUMN activitypub_inbox_deliveries.earliest_retry_at IS 'Earliest retry time after a valid sender exceeds its hostname delivery allowance.';
 COMMENT ON COLUMN activitypub_inbox_deliveries.failed_at IS 'Set only after the queue exhausts retryable operational attempts. Manual backfill clears it and rotates the fencing token.';
 COMMENT ON COLUMN activitypub_inbox_deliveries.first_failed_at IS 'Immutable timestamp of the first retry-exhausting operational failure; survives rearm to anchor sticky retention.';
 COMMENT ON COLUMN activitypub_inbox_deliveries.retention_expires_at IS 'Maximum retention deadline for an unverified or previously failed durable delivery.';

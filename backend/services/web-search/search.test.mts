@@ -17,7 +17,7 @@ describe('searchWeb', () => {
     const token = randomUUID().replace(/-/g, '')
     const hostnameId = await insertTestUrlHostname({
       hostname: `web-search-${randomUUID()}.com`,
-      crawlable: true,
+      is_crawlable: true,
     })
     const urlId = await insertTestUrl({
       url: `https://web-search-${randomUUID()}.com/${token}`,
@@ -50,7 +50,7 @@ describe('searchWeb', () => {
     const token = randomUUID().replace(/-/g, '')
     const hostnameId = await insertTestUrlHostname({
       hostname: `web-search-url-${randomUUID()}.com`,
-      crawlable: true,
+      is_crawlable: true,
     })
     const urlId = await insertTestUrl({
       url: `https://web-search-url-${randomUUID()}.com/path/${token}/page`,
@@ -69,7 +69,7 @@ describe('searchWeb', () => {
     const token = randomUUID().replace(/-/g, '')
     const contentHostnameId = await insertTestUrlHostname({
       hostname: `web-search-rank-content-${randomUUID()}.com`,
-      crawlable: true,
+      is_crawlable: true,
     })
     const contentUrlId = await insertTestUrl({
       url: `https://web-search-rank-content-${randomUUID()}.com/page`,
@@ -92,7 +92,7 @@ describe('searchWeb', () => {
 
     const urlHostnameId = await insertTestUrlHostname({
       hostname: `web-search-rank-url-${randomUUID()}.com`,
-      crawlable: true,
+      is_crawlable: true,
     })
     await insertTestUrl({
       url: `https://web-search-rank-url-${randomUUID()}.com/${token}/only-url`,
@@ -113,8 +113,8 @@ describe('searchWeb', () => {
     const token = randomUUID().replace(/-/g, '')
     const blockedHostnameId = await insertTestUrlHostname({
       hostname: `web-search-blocked-${randomUUID()}.com`,
-      crawlable: true,
-      blocked: true,
+      is_crawlable: true,
+      is_blocked: true,
     })
     const urlId = await insertTestUrl({
       url: `https://web-search-blocked-${randomUUID()}.com/${token}/page`,
@@ -144,7 +144,7 @@ describe('searchWeb', () => {
     const token = randomUUID().replace(/-/g, '')
     const hostnameId = await insertTestUrlHostname({
       hostname: `web-search-nocrawl-${randomUUID()}.com`,
-      crawlable: false,
+      is_crawlable: false,
     })
     const urlId = await insertTestUrl({
       url: `https://web-search-nocrawl-${randomUUID()}.com/${token}/page`,
@@ -175,7 +175,7 @@ describe('searchWeb', () => {
     const token = randomUUID().replace(/-/g, '')
     const hostnameId = await insertTestUrlHostname({
       hostname: `web-search-dedup-${randomUUID()}.com`,
-      crawlable: true,
+      is_crawlable: true,
     })
     const urlId = await insertTestUrl({
       url: `https://web-search-dedup-${randomUUID()}.com/${token}/path`,
@@ -219,7 +219,7 @@ describe('searchWeb', () => {
     const token = randomUUID().replace(/-/g, '')
     const hostnameId = await insertTestUrlHostname({
       hostname: `web-search-pageinfo-${randomUUID()}.com`,
-      crawlable: true,
+      is_crawlable: true,
     })
     await insertTestUrl({
       url: `https://web-search-pageinfo-${randomUUID()}.com/${token}/page`,

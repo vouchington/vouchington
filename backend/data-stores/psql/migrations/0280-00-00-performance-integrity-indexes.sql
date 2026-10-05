@@ -3,8 +3,8 @@
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_feed_shares__sharer__post__id_desc
-  ON post_feed_shares (shared_by_user_id, post_id, id DESC);
+  ON post_feed_shares (shared_by_id, post_id, id DESC);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_item_feed_shares__sharer__item__id_desc
-  ON rss_feed_item_feed_shares (shared_by_user_id, rss_feed_item_id, id DESC);
+  ON rss_feed_item_feed_shares (shared_by_id, rss_feed_item_id, id DESC);

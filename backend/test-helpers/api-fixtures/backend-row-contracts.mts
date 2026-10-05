@@ -126,7 +126,7 @@ export function assertBackendRowContracts(program: Program): void {
     }
     const consumed = {
       id: 'string',
-      root_id: 'string | null',
+      root_post_id: 'string | null',
       community_id: 'string | null',
       title: 'string',
       markdown: 'string',

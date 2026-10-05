@@ -71,7 +71,7 @@ app.route('/api/v1/communities/:idOrSlug/modlog').get(async (ctx: Context) => {
 
   const actorIds: string[] = []
   for (const r of result.results) {
-    if (r.actor_id !== null) actorIds.push(r.actor_id)
+    if (r.actor_user_id !== null) actorIds.push(r.actor_user_id)
   }
   const actors = await getUserPublicByAnyCachedBatch(actorIds).then(us =>
     us.reduce<Record<string, unknown>>((acc, u) => {

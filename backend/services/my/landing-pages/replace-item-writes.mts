@@ -28,7 +28,7 @@ async function insertLandingPageItemsAndGroupMembers(
 ): Promise<void> {
   await query(sql`/* replaceMyLandingPageItems:insertItems */
       INSERT INTO user_landing_page_items (
-        landing_page_id, item_type, sort_order, profile_link_id, review_id,
+        landing_page_id, item_type, sort_order, profile_link_id, review_post_id,
         referral_link_id, topic_id, link_label, url_id
       )
       SELECT
@@ -36,7 +36,7 @@ async function insertLandingPageItemsAndGroupMembers(
         input.item_type::user_landing_page_item_types,
         input.sort_order,
         input.profile_link_id,
-        input.review_id,
+        input.review_post_id,
         input.referral_link_id,
         input.topic_id,
         input.link_label,
@@ -51,20 +51,20 @@ async function insertLandingPageItemsAndGroupMembers(
         ${itemRows.map(row => row.linkLabel)}::text[],
         ${itemRows.map(row => row.urlId)}::uuid[]
       ) AS input(
-        item_type, sort_order, profile_link_id, review_id, referral_link_id,
+        item_type, sort_order, profile_link_id, review_post_id, referral_link_id,
         topic_id, link_label, url_id
       )
     `)
 
   await query(sql`/* replaceMyLandingPageItems:insertGroupMembers */
       INSERT INTO user_landing_page_group_members (
-        landing_page_item_id, member_type, sort_order, review_id, referral_link_id
+        landing_page_item_id, member_type, sort_order, review_post_id, referral_link_id
       )
       SELECT
         item.id,
         input.member_type::user_landing_page_group_member_types,
         input.sort_order,
-        input.review_id,
+        input.review_post_id,
         input.referral_link_id
       FROM UNNEST(
         ${groupMemberRows.map(row => row.parentSortOrder)}::integer[],
@@ -72,7 +72,7 @@ async function insertLandingPageItemsAndGroupMembers(
         ${groupMemberRows.map(row => row.sortOrder)}::integer[],
         ${groupMemberRows.map(row => row.reviewId)}::uuid[],
         ${groupMemberRows.map(row => row.referralLinkId)}::uuid[]
-      ) AS input(parent_sort_order, member_type, sort_order, review_id, referral_link_id)
+      ) AS input(parent_sort_order, member_type, sort_order, review_post_id, referral_link_id)
       JOIN user_landing_page_items item
         ON item.landing_page_id = ${pageId}::uuid
        AND item.sort_order = input.parent_sort_order

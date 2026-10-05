@@ -18,5 +18,5 @@ Admins can update feed metadata plus append state changes:
 
 Admins may also set operator-only fetch policy fields:
 
-- `ignore_robots_txt`: `true`, `false`, or `null`
+- `should_ignore_robots_txt`: `true`, `false`, or `null`
 - `unreliable_status_codes`: array of 4xx status codes to retry instead of soft-deleting, `[]` to explicitly disable inherited hostname retry exceptions, or `null` to inherit from the hostname

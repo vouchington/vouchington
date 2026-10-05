@@ -50,7 +50,7 @@ async function recoverUrlEffect(urlId: string): Promise<void> {
   const url = await getUrlById(urlId, { readOnly: false })
   if (!url) return
   await invalidate.urls(url.url)
-  if (url.hostname.blocked || url.hostname.crawlable === false) return
+  if (url.hostname.is_blocked || url.hostname.is_crawlable === false) return
   await getOrCreateCrawlerForHostname(null, url.hostname.id)
   await enqueueBulkCrawlUrls([{ urlId }])
 }

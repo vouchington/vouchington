@@ -9,7 +9,7 @@ import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 /**
- * Recreates the compliant assessment of a durable accepted form or email review that a post-commit
+ * Recreates the compliant assessment of a durable is_accepted form or email review that a post-commit
  * interruption lost, so the enforcement sweep sees every durable compliant notice decision.
  */
 export async function recoverMissingDecisionAssessments(
@@ -36,7 +36,7 @@ export async function recoverMissingDecisionAssessments(
           ON intake.id = review.copyright_notice_form_intake_id
         JOIN copyright_notice_submissions submission
           ON submission.id = intake.copyright_notice_submission_id
-        WHERE review.accepted
+        WHERE review.is_accepted
         UNION ALL
         SELECT submission.id AS submission_id, submission.copyright_notice_id,
           review.reviewed_by_id AS assessed_by_id, NULL::uuid AS screening_id, 2 AS priority
@@ -76,7 +76,7 @@ export async function recoverMissingDecisionAssessments(
     ), inserted AS (
       INSERT INTO copyright_notice_submission_assessments (
         copyright_notice_submission_id, assessed_at, assessed_by_id,
-        substantially_compliant, copyright_notice_form_screening_id
+        is_substantially_compliant, copyright_notice_form_screening_id
       )
       SELECT submission_id, CURRENT_TIMESTAMP, assessed_by_id, true, screening_id
       FROM candidates

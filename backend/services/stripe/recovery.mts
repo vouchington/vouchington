@@ -6,7 +6,7 @@ export type RecoverableStripeEvent = {
   stripeEventRecordId: string
   processingAttemptId: string
   stripeSubscriptionId: string | null
-  livemode: boolean
+  isLiveMode: boolean
 }
 
 export async function claimRecoverableStripeEvents(): Promise<RecoverableStripeEvent[]> {
@@ -44,20 +44,20 @@ export async function claimRecoverableStripeEvents(): Promise<RecoverableStripeE
         failed_at = NULL
     FROM candidates
     WHERE event.id = candidates.id
-    RETURNING event.id, event.processing_attempt_id, event.subscription_id, event.livemode
+    RETURNING event.id, event.processing_attempt_id, event.subscription_id, event.is_live_mode
   `)
   return rows.map(row => {
     const typed = row as {
       id: string
       processing_attempt_id: string
       subscription_id: string | null
-      livemode: boolean
+      is_live_mode: boolean
     }
     return {
       stripeEventRecordId: typed.id,
       processingAttemptId: typed.processing_attempt_id,
       stripeSubscriptionId: typed.subscription_id,
-      livemode: typed.livemode,
+      isLiveMode: typed.is_live_mode,
     }
   })
 }

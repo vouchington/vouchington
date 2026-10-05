@@ -133,8 +133,8 @@ a stronger invariant. The typed registry owns the rationale and trigger.
 - Durable entities and content: `communities`, `conversations`, `image_placements`,
   `image_surface_placement_activations`, `image_surface_placements`, `images`, `user_lists`,
   `media_placements`, `podcast_shows`,
-  `remote_actors`, `retained_api_key_identities`, `retained_topic_identities`,
-  `retained_user_identities`, `rss_feeds`, `topics`, `url_hostnames`, `urls`, `users`. The three
+  `remote_actors`, `retained_api_key_identities`, `retained_membership_identities`, `retained_topic_identities`,
+  `retained_user_identities`, `rss_feeds`, `topics`, `url_hostnames`, `urls`, `users`. The four
   unpartitioned retained-owner families remain selective through UUID primary keys and bounded
   orphan cleanup; reconsider partitioning at the registry's documented growth threshold rather
   than introducing partition overhead before measurement.

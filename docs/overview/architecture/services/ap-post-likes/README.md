@@ -7,11 +7,11 @@ Backed by `post_activitypub_like_tallies` and `activitypub_post_likes` (migratio
 See `docs/overview/architecture/fediverse-federation.md`'s Like reuse-mapping row:
 `post_votes.user_id` has no polymorphic slot for a non-`users` actor (no polymorphic
 relationships — see `data-stores/psql/AGENTS.md`), and a remote actor must never move local
-`votes_score_net` ranking. `post_activitypub_like_tallies.ap_likes_score`/`ap_likes_count` are trigger-maintained from
+`votes_score_net` ranking. `post_activitypub_like_tallies.activitypub_likes_score`/`activitypub_likes_count` are trigger-maintained from
 `activitypub_post_likes` by `fn_project_activitypub_post_likes` — nothing in this package writes `post_activitypub_like_tallies` directly.
 
 - `recordLike(postId, remoteActorId, likeApId)` — upserts the active Like row for
-  `(postId, remoteActorId)`. Idempotent: a redelivered Like with the same `like_ap_id` is a no-op
+  `(postId, remoteActorId)`. Idempotent: a redelivered Like with the same `like_activitypub_id` is a no-op
   write; a prior Undo's soft-deleted row is resurrected (`deleted_at` cleared) rather than
   inserting a duplicate — see the doc comment in `record-like.mts` for why a plain
   `INSERT ... ON CONFLICT` cannot do this against a partial unique index, and how the CTE-based
@@ -19,7 +19,7 @@ relationships — see `data-stores/psql/AGENTS.md`), and a remote actor must nev
 - `undoLike(postId, remoteActorId)` — soft-deletes the active Like row for
   `(postId, remoteActorId)`, if one exists. No-ops when there is none — an out-of-order
   Undo-before-Like, or a redelivered Undo.
-- `getApPostLikesTally(postId)` — reads the trigger-maintained `{ ap_likes_score, ap_likes_count }`
+- `getApPostLikesTally(postId)` — reads the trigger-maintained `{ activitypub_likes_score, activitypub_likes_count }`
   tally from `post_activitypub_like_tallies`. Returns `null` when no remote actor has ever liked the post — `post_activitypub_like_tallies`
   is lazily created on first Like, so `null` means zero, not an error.
 

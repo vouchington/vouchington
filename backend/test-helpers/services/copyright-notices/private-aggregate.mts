@@ -147,7 +147,7 @@ async function selectLifecycleChanges(
       change.copyright_notice_action_intent_id, change.copyright_notice_email_intake_id,
       change.copyright_notice_delivery_intent_id, change.media_delivery_registry_key,
       change.copyright_notice_guest_capability_id, change.review_action,
-      rationale.review_rationale_ciphertext, change.counter_notice_accepted,
+      rationale.review_rationale_ciphertext, change.is_counter_notice_accepted,
       change.recovery_source, change.replay_reason, change.created_at
     FROM copyright_notice_lifecycle_changes change
     LEFT JOIN copyright_notice_lifecycle_change_rationales rationale ON rationale.id = change.review_rationale_id

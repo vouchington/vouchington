@@ -37,8 +37,8 @@ function buildSearchFilters(
 ): ReturnType<typeof sql>[] {
   const filters: ReturnType<typeof sql>[] = []
   appendTextFilter(filters, options)
-  appendBooleanFilter(filters, 'blocked', options.blocked)
-  appendBooleanFilter(filters, 'crawlable', options.crawlable)
+  appendBooleanFilter(filters, 'is_blocked', options.is_blocked)
+  appendBooleanFilter(filters, 'is_crawlable', options.is_crawlable)
   appendTopicFilters(filters, options, effectiveTopicIds)
   appendCursorFilter(filters, options)
   return filters
@@ -56,13 +56,13 @@ function appendTextFilter(
 
 function appendBooleanFilter(
   filters: ReturnType<typeof sql>[],
-  field: 'blocked' | 'crawlable',
-  value: SearchUrlHostnamesOptions['blocked'],
+  field: 'is_blocked' | 'is_crawlable',
+  value: SearchUrlHostnamesOptions['is_blocked'],
 ): void {
   if (value === true || value === 1 || value === '1') {
-    filters.push(field === 'blocked' ? sql`blocked = TRUE` : sql`crawlable = TRUE`)
+    filters.push(field === 'is_blocked' ? sql`is_blocked = TRUE` : sql`is_crawlable = TRUE`)
   } else if (value === false || value === 0 || value === '0') {
-    filters.push(field === 'blocked' ? sql`(blocked IS NOT TRUE)` : sql`crawlable = FALSE`)
+    filters.push(field === 'is_blocked' ? sql`(is_blocked IS NOT TRUE)` : sql`is_crawlable = FALSE`)
   }
 }
 
@@ -78,7 +78,7 @@ function appendTopicFilters(
   }
   if (topic_match === 'all' && effectiveTopicIds.length > 1) {
     filters.push(sql`(
-      SELECT COUNT(DISTINCT topic_descendants.root_id)
+      SELECT COUNT(DISTINCT topic_descendants.root_post_id)
       FROM topic_descendants
       WHERE topic_descendants.topic_id = view_url_hostnames.topic_id
     ) = ${effectiveTopicIds.length}`)

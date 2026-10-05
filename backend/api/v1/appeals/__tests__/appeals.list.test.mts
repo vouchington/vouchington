@@ -69,7 +69,7 @@ describe('GET /api/v1/appeals — list behavior', () => {
     expect(Array.isArray(response.body.appeals)).toBe(true)
     // Staff should see appeals from multiple users
     const appellantIds = new Set(
-      response.body.appeals.map((a: { appellant_id: string }) => a.appellant_id),
+      response.body.appeals.map((a: { appellant_user_id: string }) => a.appellant_user_id),
     )
     expect(appellantIds.size).toBeGreaterThan(1)
 
@@ -100,19 +100,19 @@ describe('GET /api/v1/appeals — list behavior', () => {
     expect(enrichedAppeal.target_context.created_at).toEqual(expect.any(String))
   })
 
-  it('non-staff member only sees own appeals (redacted — no appellant_id field)', async () => {
+  it('non-staff member only sees own appeals (redacted — no appellant_user_id field)', async () => {
     const request = createRequest()
     await request.authenticateAs(appellant)
     const response = await request.get('/api/v1/appeals').expect(200)
     expect(response.body.appeals).toBeDefined()
-    // Non-staff responses are redacted: appellant_id is stripped, only own appeals returned
+    // Non-staff responses are redacted: appellant_user_id is stripped, only own appeals returned
     const returnedIds = response.body.appeals.map((a: { id: string }) => a.id)
     for (const id of appellantAppealIds) {
       expect(returnedIds).toContain(id)
     }
-    // Confirm appellant_id is not exposed in redacted response
+    // Confirm appellant_user_id is not exposed in redacted response
     for (const appeal of response.body.appeals) {
-      expect(appeal.appellant_id).toBeUndefined()
+      expect(appeal.appellant_user_id).toBeUndefined()
       expect(appeal.staff_context).toBeUndefined()
     }
     const rawJson = JSON.stringify(response.body)
@@ -183,7 +183,7 @@ describe('GET /api/v1/appeals — list behavior', () => {
     expect(returnedIds).toContain(staffAppeal.id)
     // All returned appeals must belong to staff
     for (const appeal of response.body.appeals) {
-      expect(appeal.appellant_id).toBe(staff.id)
+      expect(appeal.appellant_user_id).toBe(staff.id)
     }
   })
 

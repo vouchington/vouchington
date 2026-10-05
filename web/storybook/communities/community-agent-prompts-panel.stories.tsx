@@ -31,7 +31,7 @@ const prompt: CommunityAgentPrompt = {
     'Flag posts that push a credit card referral link without a personal review or application data point.',
   model_name: 'gpt-4.1-mini',
   model_provider: 'openai',
-  slot_allocated: true,
+  is_slot_allocated: true,
   activated_at: '2026-04-02T15:00:00.000Z',
   deactivated_at: null,
   created_at: '2026-04-02T15:00:00.000Z',

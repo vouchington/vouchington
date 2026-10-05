@@ -136,7 +136,7 @@ describe('GET /api/v1/search', () => {
         userId: user.id,
         authoredToken: `#${alias}`,
       }),
-      insertTestUrlHostname({ hostname: `${suffix}.example.com`, crawlable: true }),
+      insertTestUrlHostname({ hostname: `${suffix}.example.com`, is_crawlable: true }),
     ])
 
     const request = createRequest()

@@ -28,13 +28,13 @@ describe('cards.generated', () => {
 
     expect(card).toEqual({
       id: card.id,
-      card_id: cardId,
+      card_topic_id: cardId,
       opened_on: null,
       closed_on: null,
       credit_limit: null,
       received_sign_up_bonus_on: null,
       is_authorized_user: false,
-      authorized_user_of_id: null,
+      authorized_user_of_card_id: null,
       note: null,
       card: { id: cardId, name: cardName, slug: expect.any(String) },
       authorized_user_of_card: null,
@@ -62,7 +62,7 @@ describe('cards.generated', () => {
 
     const updated = await updateIndividualCardById(parentUser, parentUser, child.id, {
       is_authorized_user: true,
-      authorized_user_of_id: parent.id,
+      authorized_user_of_card_id: parent.id,
     })
 
     expect(updated.authorized_user_of_card).toEqual({
@@ -162,7 +162,7 @@ describe('cards.generated', () => {
     const individualCard = await createIndividualCard(user, user, cardId)
 
     expect(individualCard).toBeDefined()
-    expect(individualCard.card_id).toBe(cardId)
+    expect(individualCard.card_topic_id).toBe(cardId)
     expect(individualCard).not.toHaveProperty('individual_id')
     expect(individualCard.card).toBeDefined()
     expect(individualCard.card.id).toBe(cardId)
@@ -196,7 +196,7 @@ describe('cards.generated', () => {
 
     expect(retrieved).toBeDefined()
     expect(retrieved?.id).toBe(created.id)
-    expect(retrieved?.card_id).toBe(cardId)
+    expect(retrieved?.card_topic_id).toBe(cardId)
   })
 
   it('updateIndividualCardById - updates card details', async () => {
@@ -250,7 +250,7 @@ describe('cards.generated', () => {
     ).rejects.toThrow(Error)
   })
 
-  it('createIndividualCard - throws 422 for invalid card_id', async () => {
+  it('createIndividualCard - throws 422 for invalid card_topic_id', async () => {
     await expect(
       createIndividualCard(user, user, '00000000-0000-7000-8000-000000000000'),
     ).rejects.toThrow(Error)
@@ -273,18 +273,18 @@ describe('cards.generated', () => {
     ).rejects.toMatchObject({ status: 422 })
   })
 
-  it('updateIndividualCardById - throws 422 for authorized_user_of_id not owned by user', async () => {
+  it('updateIndividualCardById - throws 422 for authorized_user_of_card_id not owned by user', async () => {
     const cardId = await insertTestCard({ createdById: user.id })
     const created = await createIndividualCard(user, user, cardId)
     await expect(
       updateIndividualCardById(user, user, created.id, {
         is_authorized_user: true,
-        authorized_user_of_id: '00000000-0000-7000-8000-000000000000',
+        authorized_user_of_card_id: '00000000-0000-7000-8000-000000000000',
       }),
     ).rejects.toThrow(Error)
   })
 
-  it('updateIndividualCardById - throws 422 when is_authorized_user is false but authorized_user_of_id is set', async () => {
+  it('updateIndividualCardById - throws 422 when is_authorized_user is false but authorized_user_of_card_id is set', async () => {
     const cardId1 = await insertTestCard({ createdById: user.id })
     const cardId2 = await insertTestCard({ createdById: user.id })
     const card1 = await createIndividualCard(user, user, cardId1)
@@ -292,7 +292,7 @@ describe('cards.generated', () => {
     await expect(
       updateIndividualCardById(user, user, card1.id, {
         is_authorized_user: false,
-        authorized_user_of_id: card2.id,
+        authorized_user_of_card_id: card2.id,
       }),
     ).rejects.toThrow(Error)
   })

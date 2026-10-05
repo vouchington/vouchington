@@ -97,7 +97,7 @@ export async function createInstanceInTransaction(
           nodeinfo_software_version,
           total_users,
           monthly_active_users,
-          open_registrations,
+          is_open_for_registrations,
           nodeinfo_raw
         )
         VALUES (
@@ -107,7 +107,7 @@ export async function createInstanceInTransaction(
           ${metadata?.nodeinfo_software_version ?? null},
           ${metadata?.total_users ?? null},
           ${metadata?.monthly_active_users ?? null},
-          ${metadata?.open_registrations ?? null},
+          ${metadata?.is_open_for_registrations ?? null},
           ${metadata?.nodeinfo_raw ? JSON.stringify(metadata.nodeinfo_raw) : null}::jsonb
         )
       `,

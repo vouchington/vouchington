@@ -10,9 +10,9 @@ import {
 } from '@/lib/api/client/email-preferences'
 
 const defaultPreferences: EmailPreferences = {
-  engagement_emails_enabled: true,
+  is_engagement_emails_enabled: true,
   news_digest_frequency: 'weekly',
-  moderation_emails_enabled: true,
+  is_moderation_emails_enabled: true,
   community_digest_frequency: 'weekly',
   moderation_email_cadence: 'daily',
   moderation_email_days_of_week: [1, 2, 3, 4, 5],
@@ -145,17 +145,19 @@ describe('NotificationSettingsForm loading', () => {
     await waitFor(() => expect(getMyEmailPreferences).toHaveBeenCalledTimes(1))
     fireEvent.click(screen.getByLabelText('Community moderation summary'))
     await waitFor(() =>
-      expect(updateMyEmailPreferences).toHaveBeenCalledWith({ moderation_emails_enabled: false }),
+      expect(updateMyEmailPreferences).toHaveBeenCalledWith({
+        is_moderation_emails_enabled: false,
+      }),
     )
     await act(async () => {
-      load.resolve(response({ ...defaultPreferences, moderation_emails_enabled: true }))
+      load.resolve(response({ ...defaultPreferences, is_moderation_emails_enabled: true }))
       await load.promise
     })
 
     fireEvent.click(screen.getByLabelText('Community moderation summary'))
     await waitFor(() =>
       expect(updateMyEmailPreferences).toHaveBeenLastCalledWith({
-        moderation_emails_enabled: true,
+        is_moderation_emails_enabled: true,
       }),
     )
   })

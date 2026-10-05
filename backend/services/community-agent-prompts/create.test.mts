@@ -27,7 +27,7 @@ describe('create', () => {
       expect(prompt.prompt).toBe('Flag spam content')
       expect(prompt.model_name).toBe('gpt-5.4-nano')
       expect(prompt.model_provider).toBe('openai')
-      expect(prompt.slot_allocated).toBe(false)
+      expect(prompt.is_slot_allocated).toBe(false)
       expect(prompt.activated_at).toBeNull()
       expect(prompt.deactivated_at).toBeNull()
       expect(prompt.deleted_at).toBeNull()

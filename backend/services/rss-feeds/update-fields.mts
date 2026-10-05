@@ -18,19 +18,19 @@ export async function buildRssFeedUpdateFields(
   await appendTopicSet(sets, changes, options)
   appendTitleSet(sets, changes)
   if ('etag' in changes) sets.push(sql`etag = ${changes.etag}`)
-  if (changes.enabled !== undefined) {
-    stateChanges.push({ kind: 'enablement', enabled: changes.enabled })
+  if (changes.is_enabled !== undefined) {
+    stateChanges.push({ kind: 'enablement', is_enabled: changes.is_enabled })
   }
   if (changes.discoverable !== undefined) {
-    stateChanges.push({ kind: 'discoverability', enabled: changes.discoverable })
+    stateChanges.push({ kind: 'discoverability', is_enabled: changes.discoverable })
   }
   appendTimestampSets(sets, changes)
   if (changes.feed_type !== undefined) sets.push(sql`feed_type = ${changes.feed_type}`)
   if (changes.declared_language !== undefined) {
     sets.push(sql`declared_language = ${changes.declared_language ?? null}`)
   }
-  if (changes.ignore_robots_txt !== undefined) {
-    sets.push(sql`ignore_robots_txt = ${changes.ignore_robots_txt}`)
+  if (changes.should_ignore_robots_txt !== undefined) {
+    sets.push(sql`should_ignore_robots_txt = ${changes.should_ignore_robots_txt}`)
   }
   if (changes.unreliable_status_codes !== undefined) {
     sets.push(sql`unreliable_status_codes = ${changes.unreliable_status_codes}`)

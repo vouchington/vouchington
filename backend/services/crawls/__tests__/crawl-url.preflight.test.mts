@@ -266,7 +266,7 @@ async function seedPreviousCrawl(options: {
     hostname_id: url!.hostname.id,
     crawler_type: 'fetch',
   })
-  await updateUrlHostname(url!.hostname.id, { crawlable: true })
+  await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
   const previousCrawl = await createCrawl(url!.id, crawler.id, {
     etag: options.etag,
     last_modified_at: options.lastModifiedAt,

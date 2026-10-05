@@ -174,7 +174,7 @@ describe('communities client', () => {
 
   it('updates community post type settings', async () => {
     const response = makeCommunityResponse({
-      community: makeCommunity({ id: 'community-1', allow_review_posts: true }),
+      community: makeCommunity({ id: 'community-1', should_allow_review_posts: true }),
       communityMetrics: null,
     })
 
@@ -183,11 +183,11 @@ describe('communities client', () => {
       response,
       call: () =>
         updateCommunityPostTypeSettings('my-community', {
-          allow_review_posts: true,
+          should_allow_review_posts: true,
         }),
       expectedArgs: [
         '/api/v1/communities/my-community/post-type-settings',
-        { allow_review_posts: true },
+        { should_allow_review_posts: true },
       ],
     })
   })

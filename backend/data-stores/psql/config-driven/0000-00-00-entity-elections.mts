@@ -52,7 +52,7 @@ function createVoteTableSql(config: VoteSchemaConfig): string {
   ip_address INET,
   device_id UUID,
   session_id UUID,
-  user_agent_id UUID REFERENCES user_agent_strings ON DELETE SET NULL,
+  user_agent_string_id UUID REFERENCES user_agent_strings ON DELETE SET NULL,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 ) PARTITION BY RANGE (${config.entityIdColumn});`
 }

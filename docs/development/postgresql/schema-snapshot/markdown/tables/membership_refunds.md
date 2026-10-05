@@ -21,7 +21,7 @@ Not partitioned — growth: unbounded.
 | `amount_minor_units`        | `bigint`                    | no       |                              |          |           |           | This receipt amount in the currency minor unit.                                                      |
 | `currency_code`             | `text`                      | no       |                              |          |           |           | Lowercase ISO currency code reported by Stripe.                                                      |
 | `reason`                    | `membership_refund_reasons` | no       |                              |          |           |           | Categorized reason for the refund.                                                                   |
-| `revoked_access`            | `boolean`                   | no       | `false`                      |          |           |           | Whether this refund also revoked membership access.                                                  |
+| `has_revoked_access`        | `boolean`                   | no       | `false`                      |          |           |           | Whether this refund also revoked membership access.                                                  |
 | `issued_by_id`              | `uuid`                      | yes      |                              |          |           |           | Retained user identity of the issuing administrator; outlives the live account and never authorizes. |
 | `source`                    | `membership_refund_sources` | no       |                              |          |           |           | Whether the refund was administrator initiated or dashboard reconciled.                              |
 | `stripe_event_id`           | `text`                      | yes      |                              |          |           |           | Stripe event that created this reconciliation receipt.                                               |
@@ -45,6 +45,7 @@ _none_
 - `fk_membership_refunds__administrator_request`: `FOREIGN KEY (membership_operation_id, stripe_idempotency_key) REFERENCES membership_administrator_refund_operation_requests(membership_operation_id, administrator_request_key) ON DELETE RESTRICT`
 - `fk_membership_refunds__operation_source`: `FOREIGN KEY (membership_operation_id, membership_source_id) REFERENCES membership_operations(id, membership_source_id) ON DELETE RESTRICT`
 - `membership_refunds_issued_by_id_fkey`: `FOREIGN KEY (issued_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
+- `membership_refunds_membership_id_fkey`: `FOREIGN KEY (membership_id) REFERENCES retained_membership_identities(id) ON DELETE RESTRICT`
 - `membership_refunds_membership_source_id_fkey`: `FOREIGN KEY (membership_source_id) REFERENCES membership_sources(id) ON DELETE RESTRICT`
 - `membership_refunds_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 

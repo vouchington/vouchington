@@ -14,7 +14,7 @@ CREATE TABLE copyright_trusted_flaggers (
   user_id uuid REFERENCES users(id) ON DELETE SET NULL,
   awarding_coordinator_name text NOT NULL CHECK (char_length(awarding_coordinator_name) BETWEEN 1 AND 200),
   awarding_member_state text NOT NULL CHECK (awarding_member_state ~ '^[A-Z]{2}$'),
-  awarded_at date NOT NULL,
+  awarded_on date NOT NULL,
   award_reference text CHECK (award_reference IS NULL OR char_length(award_reference) BETWEEN 1 AND 2048),
   area_of_expertise copyright_trusted_flagger_expertise_areas NOT NULL CHECK (area_of_expertise IN ('intellectual_property', 'other')),
   area_description text NOT NULL CHECK (char_length(area_description) BETWEEN 1 AND 500),
@@ -69,7 +69,7 @@ COMMENT ON COLUMN copyright_trusted_flaggers.name IS 'Entity name as published i
 COMMENT ON COLUMN copyright_trusted_flaggers.user_id IS 'Live signed-in account whose EU notices can match; null after account deletion and never inferred from email.';
 COMMENT ON COLUMN copyright_trusted_flaggers.awarding_coordinator_name IS 'Digital Services Coordinator that awarded the designation.';
 COMMENT ON COLUMN copyright_trusted_flaggers.awarding_member_state IS 'Uppercase two-letter Member State code of the awarding coordinator.';
-COMMENT ON COLUMN copyright_trusted_flaggers.awarded_at IS 'Date the coordinator awarded the designation.';
+COMMENT ON COLUMN copyright_trusted_flaggers.awarded_on IS 'Date the coordinator awarded the designation.';
 COMMENT ON COLUMN copyright_trusted_flaggers.award_reference IS 'Optional published award URL or document identifier.';
 COMMENT ON COLUMN copyright_trusted_flaggers.area_of_expertise IS 'Closed platform category for the designated expertise; only intellectual_property is in area for copyright notices.';
 COMMENT ON COLUMN copyright_trusted_flaggers.area_description IS 'Designation wording for the area of expertise.';

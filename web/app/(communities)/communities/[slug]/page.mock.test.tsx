@@ -51,8 +51,8 @@ const communityData = {
     slug: 'rewards',
     markdown: null,
     archived_at: null,
-    allow_review_posts: true,
-    allow_data_point_posts: false,
+    should_allow_review_posts: true,
+    should_allow_data_point_posts: false,
   },
   membership: { removed_at: null },
 }

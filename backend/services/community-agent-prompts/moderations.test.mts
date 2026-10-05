@@ -53,7 +53,7 @@ describe('moderations', () => {
       expect(r).toBeDefined()
       expect(r.post_id).toBe(postId)
       expect(r.community_prompt_id).toBe(prompt.id)
-      expect(r.flagged).toBe(true)
+      expect(r.is_flagged).toBe(true)
       expect(r.results).toEqual({
         flagged: true,
         confidence_score: 0.93,
@@ -87,7 +87,7 @@ describe('moderations', () => {
         expect(typeof r.id).toBe('string')
         expect(typeof r.post_id).toBe('string')
         expect(typeof r.community_prompt_id).toBe('string')
-        expect(typeof r.flagged).toBe('boolean')
+        expect(typeof r.is_flagged).toBe('boolean')
         expect(r.results).toBeDefined()
         expect(r.created_at).toBeInstanceOf(Date)
       }

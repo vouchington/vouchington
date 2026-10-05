@@ -33,7 +33,7 @@ import { normalizeHostname } from '@ts-shared/utils/urls'
 
 type UpsertHostnameBody = {
   hostname: string
-  blocked?: boolean
+  is_blocked?: boolean
 }
 
 // POST /api/v1/hostnames - Admin: upsert a hostname by string and optionally block it
@@ -48,7 +48,7 @@ app.route('/api/v1/hostnames').post(async (ctx: Context) => {
   const hostname = normalizeHostname(rawHostname)
   ctx.assert(hostname, 422, 'Invalid hostname')
 
-  if (body.blocked === true) {
+  if (body.is_blocked === true) {
     const { id, result } = await upsertAndBlockHostname(currentUser.id, hostname)
     ctx.json({ id, hostname, ...result })
     return

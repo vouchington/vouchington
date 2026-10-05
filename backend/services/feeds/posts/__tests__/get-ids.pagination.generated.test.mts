@@ -109,7 +109,7 @@ describe('getPostFeedIds (pagination)', () => {
     )
 
     expect(sharedPost).toBeDefined()
-    expect(sharedPost?.shared_by_user_id).toBe(sharer.id)
+    expect(sharedPost?.shared_by_id).toBe(sharer.id)
     expect(sharedPost?.post_type).toBe(post.post_type)
   })
 })

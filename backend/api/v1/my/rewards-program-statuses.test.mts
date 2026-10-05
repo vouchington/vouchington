@@ -185,11 +185,11 @@ describe('PATCH /api/v1/my/rewards-program-statuses/:id', () => {
     await request
       .patch('/api/v1/my/rewards-program-statuses/some-id')
       .set('Content-Type', 'text/plain')
-      .send('since=2024-01-01')
+      .send('started_on=2024-01-01')
       .expect(415)
   })
 
-  it('returns 422 for non-string since', async () => {
+  it('returns 422 for non-string started_on', async () => {
     const statusId = await insertTestRewardsProgramStatus({ createdById: user.id })
     const request = createRequest()
     await request.authenticateAs(user)
@@ -200,7 +200,7 @@ describe('PATCH /api/v1/my/rewards-program-statuses/:id', () => {
       .expect(201)
     await request
       .patch(`/api/v1/my/rewards-program-statuses/${created.body.rewards_program_status.id}`)
-      .send({ since: 999 })
+      .send({ started_on: 999 })
       .expect(422)
   })
 
@@ -216,7 +216,7 @@ describe('PATCH /api/v1/my/rewards-program-statuses/:id', () => {
 
     await request
       .patch(`/api/v1/my/rewards-program-statuses/${created.body.rewards_program_status.id}`)
-      .send({ until: '2026-02-31' })
+      .send({ expires_on: '2026-02-31' })
       .expect(422)
   })
 })

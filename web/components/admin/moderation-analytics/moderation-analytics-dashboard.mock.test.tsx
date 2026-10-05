@@ -204,7 +204,7 @@ function makeMetrics(overrides: Partial<ModerationAnalytics> = {}): ModerationAn
     moderator_workload: {
       moderators: [
         {
-          actor_id: 'user-1',
+          actor_user_id: 'user-1',
           total: 9,
           counts: { approve: 2, remove: 7 },
           weekly_counts: [],

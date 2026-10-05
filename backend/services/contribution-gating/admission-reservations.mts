@@ -35,9 +35,9 @@ export async function claimContributionAdmission<T>(
   await using query = await beginTransaction()
 
   await query(sql`/* claimContributionAdmission.insert */
-      INSERT INTO post_admission_reservations (actor_id, idempotency_key, intent_sha256, route, scope, source, post_type, policy_revision)
+      INSERT INTO post_admission_reservations (actor_user_id, idempotency_key, intent_sha256, route, scope, source, post_type, policy_revision)
       VALUES (${actorId}, ${idempotencyKey}, ${intentSha256}, ${audit.route}, ${contributionAdmissionScopeCategory(audit.scope)}, ${audit.source}, ${audit.postType}, ${audit.policyRevision})
-      ON CONFLICT (actor_id, idempotency_key) DO NOTHING`)
+      ON CONFLICT (actor_user_id, idempotency_key) DO NOTHING`)
   const reservation = await query<{
     id: string
     intent_sha256: string
@@ -50,7 +50,7 @@ export async function claimContributionAdmission<T>(
         COALESCE(replay_metadata->>'finalization', 'pending') <> 'complete' AS finalization_pending,
         COALESCE(expires_at <= clock_timestamp(), false) AS expired
       FROM post_admission_reservations
-      WHERE actor_id = ${actorId} AND idempotency_key = ${idempotencyKey} FOR UPDATE`)
+      WHERE actor_user_id = ${actorId} AND idempotency_key = ${idempotencyKey} FOR UPDATE`)
   const row = reservation.rows[0]
   if (!row) throw new Error('Contribution admission reservation was not returned')
   let reservationId = row.id
@@ -64,7 +64,7 @@ export async function claimContributionAdmission<T>(
     const replacement = await query<{
       id: string
     }>(sql`/* claimContributionAdmission.insertReplacement */
-        INSERT INTO post_admission_reservations (actor_id, idempotency_key, intent_sha256, route, scope, source, post_type, policy_revision)
+        INSERT INTO post_admission_reservations (actor_user_id, idempotency_key, intent_sha256, route, scope, source, post_type, policy_revision)
         VALUES (${actorId}, ${idempotencyKey}, ${intentSha256}, ${audit.route}, ${contributionAdmissionScopeCategory(audit.scope)}, ${audit.source}, ${audit.postType}, ${audit.policyRevision})
         RETURNING id`)
     reservationId = replacement.rows[0]?.id ?? ''

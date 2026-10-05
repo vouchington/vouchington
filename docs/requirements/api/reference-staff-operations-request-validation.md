@@ -104,7 +104,7 @@ Same status, different order:
 
 - `GET /reports` runs its filter contract before the cursor decode. Every cursor error was already
   `422`.
-- A malformed or repeated id filter (`community_id`, `actor_id` on the modlog, `cluster` on reports,
+- A malformed or repeated id filter (`community_id`, `actor_user_id` on the modlog, `cluster` on reports,
   `verification` on OAuth clients, `mapping` on top hashtags) was already `422` and is now the
   contract's `422`. A repeated `q` on top hashtags is still ignored.
 

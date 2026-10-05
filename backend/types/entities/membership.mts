@@ -19,7 +19,7 @@ export type Membership = {
   expired_at: Date | null
   past_due_at: Date | null
   paused_at: Date | null
-  cancel_at_period_end: boolean
+  should_cancel_at_period_end: boolean
   latest_change_id: string | null
   created_at: Date
   updated_at: Date

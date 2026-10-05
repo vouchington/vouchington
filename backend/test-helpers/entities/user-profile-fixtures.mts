@@ -95,7 +95,7 @@ export async function createUserProfileFixture({
   const comment = await createTestPost({
     user: owner,
     post_type: 'comment',
-    parent_id: discussion!.id,
+    parent_post_id: discussion!.id,
     markdown: 'User-authored comment for profile metrics',
   })
 

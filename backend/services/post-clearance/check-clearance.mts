@@ -50,7 +50,7 @@ async function applyClearanceDecision(
     `/* checkPostClearance */
       WITH current_version AS (
         SELECT version.id AS version_id, post.id AS post_id,
-          latest_change.platform_override
+          latest_change.is_platform_override
         FROM posts post
         JOIN post_moderation_versions version
           ON version.post_id = post.id
@@ -95,7 +95,7 @@ async function applyClearanceDecision(
             FILTER (WHERE latest_dispositions.disposition IN ('review', 'reject')) AS signal_sources
         FROM current_version
         JOIN latest_dispositions ON true
-        WHERE current_version.platform_override IS NOT TRUE
+        WHERE current_version.is_platform_override IS NOT TRUE
         GROUP BY current_version.post_id
         HAVING count(*) = 2
       ),

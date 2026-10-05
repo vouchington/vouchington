@@ -42,18 +42,18 @@ describe('hostnames client', () => {
     const response = { blocked_hostname_ids: ['hostname-1'], affected_user_ids: [] }
     mockPatch.mockResolvedValueOnce(response)
 
-    const result = await updateHostname('hostname-1', { blocked: true })
+    const result = await updateHostname('hostname-1', { is_blocked: true })
 
-    expect(mockPatch).toHaveBeenCalledWith('/api/v1/hostnames/hostname-1', { blocked: true })
+    expect(mockPatch).toHaveBeenCalledWith('/api/v1/hostnames/hostname-1', { is_blocked: true })
     expect(result).toBe(response)
   })
 
   it('returns null after non-blocking hostname updates', async () => {
     mockPatch.mockResolvedValueOnce(undefined)
 
-    const result = await updateHostname('hostname-1', { crawlable: false })
+    const result = await updateHostname('hostname-1', { is_crawlable: false })
 
-    expect(mockPatch).toHaveBeenCalledWith('/api/v1/hostnames/hostname-1', { crawlable: false })
+    expect(mockPatch).toHaveBeenCalledWith('/api/v1/hostnames/hostname-1', { is_crawlable: false })
     expect(result).toBeNull()
   })
 
@@ -61,11 +61,11 @@ describe('hostnames client', () => {
     const response = { id: 'hostname-1', result: null }
     mockPost.mockResolvedValueOnce(response)
 
-    const result = await createHostname({ hostname: 'example.com', blocked: true })
+    const result = await createHostname({ hostname: 'example.com', is_blocked: true })
 
     expect(mockPost).toHaveBeenCalledWith('/api/v1/hostnames', {
       hostname: 'example.com',
-      blocked: true,
+      is_blocked: true,
     })
     expect(result).toBe(response)
   })

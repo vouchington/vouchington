@@ -25,7 +25,7 @@ describe('RSS feed discoverability top-hashtag refresh', () => {
     await expect(
       setRssFeedDiscoverabilityAsSystem({
         rssFeedId: feed.id,
-        enabled: false,
+        is_enabled: false,
         reason: 'test: automatic suppression',
       }),
     ).resolves.toBe('updated')
@@ -35,7 +35,7 @@ describe('RSS feed discoverability top-hashtag refresh', () => {
     await expect(
       setRssFeedDiscoverabilityAsSystem({
         rssFeedId: feed.id,
-        enabled: false,
+        is_enabled: false,
         reason: 'test: unchanged automatic suppression',
       }),
     ).resolves.toBe('noop')
@@ -44,7 +44,7 @@ describe('RSS feed discoverability top-hashtag refresh', () => {
     const administrator = await createTestUser({ administrator: true })
     await setRssFeedDiscoverabilityAsCurrentUser(administrator, {
       rssFeedId: feed.id,
-      enabled: true,
+      is_enabled: true,
       reason: 'test: human lock',
     })
     refreshTopHashtags.mockClear()
@@ -52,7 +52,7 @@ describe('RSS feed discoverability top-hashtag refresh', () => {
     await expect(
       setRssFeedDiscoverabilityAsSystem({
         rssFeedId: feed.id,
-        enabled: false,
+        is_enabled: false,
         reason: 'test: automatic suppression after human lock',
       }),
     ).resolves.toBe('skipped:human-locked')
@@ -77,7 +77,7 @@ describe('RSS feed discoverability top-hashtag refresh', () => {
       setRssFeedDiscoverabilityAsSystem(
         {
           rssFeedId: feed.id,
-          enabled: false,
+          is_enabled: false,
           reason: 'test: transaction-scoped automatic suppression',
         },
         { query },
@@ -137,7 +137,7 @@ describe('RSS feed discoverability top-hashtag refresh', () => {
     await assertFeedPublicationLockPrecedesStateRowRead(rssFeedId =>
       setRssFeedDiscoverabilityAsCurrentUser(administrator, {
         rssFeedId,
-        enabled: false,
+        is_enabled: false,
         reason: 'test: publication lock order',
       }),
     )
@@ -148,7 +148,7 @@ describe('RSS feed discoverability top-hashtag refresh', () => {
     await assertFeedPublicationLockPrecedesStateRowRead(rssFeedId =>
       setRssFeedDiscoverabilityAsSystem({
         rssFeedId,
-        enabled: false,
+        is_enabled: false,
         reason: 'test: publication lock order',
       }),
     )

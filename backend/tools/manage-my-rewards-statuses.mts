@@ -7,7 +7,7 @@ import { createManageEntityTool } from './create-manage-entity-tool.mts'
 
 export default createManageEntityTool<
   { rewards_program_status_id: string },
-  { since?: string; until?: string }
+  { started_on?: string; expires_on?: string }
 >({
   toolName: 'manage_my_rewards_statuses',
   description:
@@ -19,11 +19,11 @@ export default createManageEntityTool<
     },
   },
   updateProperties: {
-    since: {
+    started_on: {
       type: 'string',
       description: 'Date the status started in YYYY-MM-DD format',
     },
-    until: {
+    expires_on: {
       type: 'string',
       description: 'Date the status ends in YYYY-MM-DD format',
     },
@@ -32,8 +32,8 @@ export default createManageEntityTool<
     createIndividualRewardsProgramStatus(user, user, args.rewards_program_status_id as string),
   updateFn: (user, args) =>
     updateIndividualRewardsProgramStatusById(user, user, args.id, {
-      since: args.since as string | undefined,
-      until: args.until as string | undefined,
+      started_on: args.started_on as string | undefined,
+      expires_on: args.expires_on as string | undefined,
     }),
   removeFn: (user, id) => deleteIndividualRewardsProgramStatusById(user, user, id),
   entity: 'IndividualRewardsProgramStatus',

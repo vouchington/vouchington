@@ -169,7 +169,7 @@ describe('post publication retained identity keys', () => {
     )
     await authorChangeQuery.commit()
     await setTestPostPublicationDirtyWorkTopicCursor({
-      column: 'author_user_id',
+      column: 'author_identity_id',
       scopeId: user.id,
       cursorTopicId: post.id,
     })
@@ -181,25 +181,25 @@ describe('post publication retained identity keys', () => {
       100,
     )
     await replacementAuthorChangeQuery.commit()
-    await expectDeletionTopicCursorReset(user.id, 'author_user_id')
+    await expectDeletionTopicCursorReset(user.id, 'author_identity_id')
     await using rssChangeQuery = await beginTransaction()
     await recordRssFeedHardDeletePublicationChange(rssChangeQuery, user.id)
     await rssChangeQuery.commit()
     await setTestPostPublicationDirtyWorkTopicCursor({
-      column: 'rss_feed_id',
+      column: 'rss_feed_identity_id',
       scopeId: user.id,
       cursorTopicId: post.id,
     })
     await using replacementRssChangeQuery = await beginTransaction()
     await recordRssFeedHardDeletePublicationChange(replacementRssChangeQuery, user.id)
     await replacementRssChangeQuery.commit()
-    await expectDeletionTopicCursorReset(user.id, 'rss_feed_id')
+    await expectDeletionTopicCursorReset(user.id, 'rss_feed_identity_id')
   })
 })
 
 async function expectDeletionTopicCursorReset(
   scopeId: string,
-  column: 'author_user_id' | 'rss_feed_id',
+  column: 'author_identity_id' | 'rss_feed_identity_id',
 ): Promise<void> {
   const cursor = await getTestPostPublicationDirtyWorkTopicCursor({ column, scopeId })
   expect(cursor).toEqual(

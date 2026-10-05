@@ -42,7 +42,7 @@ export async function getReportResolutionContext(
     LEFT JOIN posts root_post
       ON r.post_id IS NOT NULL
       AND target_post.post_type = 'comment'
-      AND root_post.id = target_post.root_id
+      AND root_post.id = target_post.root_post_id
     WHERE r.id = ${reportId}
     LIMIT 1
   `,

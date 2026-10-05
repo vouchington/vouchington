@@ -6,17 +6,17 @@ Append-only audit history for community publication decisions and platform overr
 
 RANGE partitioned on `id` (children: default, no retention owner, access class: target-scoped, growth: unbounded).
 
-| Column              | Type                                 | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                    |
-| ------------------- | ------------------------------------ | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------------------- |
-| `id`                | `uuid`                               | no       | `uuidv7()`                   |          |           |           |                                                                                                            |
-| `community_id`      | `uuid`                               | no       |                              |          |           |           | Community whose publication decision changed.                                                              |
-| `post_id`           | `uuid`                               | no       |                              |          |           |           | Community post whose publication decision changed.                                                         |
-| `changed_by_id`     | `uuid`                               | yes      |                              |          |           |           | Moderator or platform staff member who performed the action; retained even after the live user is deleted. |
-| `change_type`       | `community_post_review_change_types` | no       |                              |          |           |           | Publication action recorded by this immutable audit event.                                                 |
-| `platform_override` | `boolean`                            | no       |                              |          |           |           | True when the action was exercised with global administrator or site-moderator authority.                  |
-| `reason_code`       | `text`                               | yes      |                              |          |           |           | Public-safe stable reason code; platform overrides require one in service validation.                      |
-| `private_note`      | `text`                               | yes      |                              |          |           |           | Private platform-staff context, never exposed to community moderators or public clients.                   |
-| `created_at`        | `timestamp with time zone`           | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                            |
+| Column                 | Type                                 | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                    |
+| ---------------------- | ------------------------------------ | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------------------- |
+| `id`                   | `uuid`                               | no       | `uuidv7()`                   |          |           |           |                                                                                                            |
+| `community_id`         | `uuid`                               | no       |                              |          |           |           | Community whose publication decision changed.                                                              |
+| `post_id`              | `uuid`                               | no       |                              |          |           |           | Community post whose publication decision changed.                                                         |
+| `changed_by_id`        | `uuid`                               | yes      |                              |          |           |           | Moderator or platform staff member who performed the action; retained even after the live user is deleted. |
+| `change_type`          | `community_post_review_change_types` | no       |                              |          |           |           | Publication action recorded by this immutable audit event.                                                 |
+| `is_platform_override` | `boolean`                            | no       |                              |          |           |           | True when the action was exercised with global administrator or site-moderator authority.                  |
+| `reason_code`          | `text`                               | yes      |                              |          |           |           | Public-safe stable reason code; platform overrides require one in service validation.                      |
+| `private_note`         | `text`                               | yes      |                              |          |           |           | Private platform-staff context, never exposed to community moderators or public clients.                   |
+| `created_at`           | `timestamp with time zone`           | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                            |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -25,8 +25,8 @@ _none_
 
 **Check constraints:**
 
-- `community_post_review_changes_check`: `CHECK ((platform_override OR (private_note IS NULL)))`
-- `community_post_review_changes_check1`: `CHECK (((NOT platform_override) OR ((changed_by_id IS NOT NULL) AND (reason_code IS NOT NULL))))`
+- `community_post_review_changes_check`: `CHECK ((is_platform_override OR (private_note IS NULL)))`
+- `community_post_review_changes_check1`: `CHECK (((NOT is_platform_override) OR ((changed_by_id IS NOT NULL) AND (reason_code IS NOT NULL))))`
 - `community_post_review_changes_private_note_check`: `CHECK (((private_note IS NULL) OR (char_length(private_note) <= 4000)))`
 - `community_post_review_changes_reason_code_check`: `CHECK (((reason_code IS NULL) OR ((char_length(reason_code) >= 1) AND (char_length(reason_code) <= 100))))`
 

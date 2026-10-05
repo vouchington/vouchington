@@ -74,13 +74,13 @@ The backend coalesces concurrent requests and caches each range for 10 seconds. 
 
 ### Network Effects
 
-| KPI                  | Description                                     |
-| -------------------- | ----------------------------------------------- |
-| Referral coefficient | Attributions per referring user (`referrer_id`) |
-| Topic coverage rate  | % of topics with ≥ 5 reviews                    |
-| Landing page visits  | Visit count in period                           |
-| Landing page signups | New users in period (global, not LP-attributed) |
-| LP conversion rate   | New users / landing page visits                 |
+| KPI                  | Description                                          |
+| -------------------- | ---------------------------------------------------- |
+| Referral coefficient | Attributions per referring user (`referrer_user_id`) |
+| Topic coverage rate  | % of topics with ≥ 5 reviews                         |
+| Landing page visits  | Visit count in period                                |
+| Landing page signups | New users in period (global, not LP-attributed)      |
+| LP conversion rate   | New users / landing page visits                      |
 
 **Feedback loop:** Low referral coefficient → incentivize sharing. Low coverage → focus content seeding.
 

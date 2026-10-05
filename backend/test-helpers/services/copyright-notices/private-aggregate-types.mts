@@ -53,7 +53,7 @@ export type CopyrightLifecycleEventRecord = {
   copyright_notice_guest_capability_id: string | null
   review_action: CopyrightHumanReviewAction | null
   review_rationale_ciphertext: string | null
-  counter_notice_accepted: boolean | null
+  is_counter_notice_accepted: boolean | null
   recovery_source: 'durable_review' | 'durable_decision' | null
   replay_reason: 'operator_replay' | null
   created_at: Date
@@ -87,7 +87,7 @@ export type CopyrightCounterNoticeReviewRecord = {
   copyright_notice_deadline_id: string | null
   reviewed_at: Date
   reviewed_by_id: string | null
-  accepted: boolean
+  is_accepted: boolean
   rationale_ciphertext: string
 }
 

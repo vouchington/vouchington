@@ -67,10 +67,10 @@ export async function terminalizeKnownGooglePlaySource(options: {
   )
   const { rows } = await query<{ id: string }>(sql`/* insertGooglePlayPermanentLookupObservation */
     INSERT INTO membership_provider_observations (
-      provider, environment, application_id, membership_provider_evidence_id,
+      provider, environment, application_id, membership_provider_evidence_record_id,
       membership_provider_lineage_id, membership_provider_product_id, membership_product_id,
       provider_revision, provider_order, terminal_at, source_kind, effective_at, expires_at,
-      expired_at, auto_renews
+      expired_at, should_auto_renew
     ) VALUES (
       'google_play', ${context.environment}, ${context.applicationId}, ${context.evidenceId},
       ${known.lineageId}, ${known.membershipProviderProductId}, ${known.membershipProductId},

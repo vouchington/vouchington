@@ -115,13 +115,13 @@ describe('update', () => {
         status: 'cancelled',
       })
 
-      expect(result?.previous.cancel_at_period_end).toBe(true)
-      expect(result?.current.cancel_at_period_end).toBe(false)
+      expect(result?.previous.should_cancel_at_period_end).toBe(true)
+      expect(result?.current.should_cancel_at_period_end).toBe(false)
       expect(result?.current.status).toBe('cancelled')
 
       const raw = await getTestMembershipRaw(membership.id)
       expect(raw!.status).toBe('cancelled')
-      expect(raw!.cancel_at_period_end).toBe(false)
+      expect(raw!.should_cancel_at_period_end).toBe(false)
     })
 
     it('ignores explicit scheduled cancellation when the event status is terminal', async () => {
@@ -136,11 +136,11 @@ describe('update', () => {
 
       expect(result?.previous.status).toBe('active')
       expect(result?.current.status).toBe('cancelled')
-      expect(result?.current.cancel_at_period_end).toBe(false)
+      expect(result?.current.should_cancel_at_period_end).toBe(false)
 
       const raw = await getTestMembershipRaw(membership.id)
       expect(raw!.status).toBe('cancelled')
-      expect(raw!.cancel_at_period_end).toBe(false)
+      expect(raw!.should_cancel_at_period_end).toBe(false)
     })
 
     it('returns null for a missing membership', async () => {
@@ -167,7 +167,7 @@ describe('update', () => {
   })
 
   describe('cancelMembership', () => {
-    it('sets cancel_at_period_end and records change', async () => {
+    it('sets should_cancel_at_period_end and records change', async () => {
       const cancelUser = await createTestUser()
       const sku = await createTestSku()
       const membership = await createMembership({
@@ -185,7 +185,7 @@ describe('update', () => {
 
       const raw = await getTestMembershipRaw(membership.id)
       expect(raw!.cancelled_at).toBeNull()
-      expect(raw!.cancel_at_period_end).toBe(true)
+      expect(raw!.should_cancel_at_period_end).toBe(true)
       expect(raw!.source_auto_renews).toBe(false)
       expect(raw!.status).toBe('active')
 
@@ -239,7 +239,7 @@ describe('update', () => {
       expect(change.change_type).toBe('cancellation')
       expect(change.from_plan).toBe('pro')
       expect(change.to_plan).toBe('pro')
-      expect(change.cancel_at_period_end).toBe(true)
+      expect(change.should_cancel_at_period_end).toBe(true)
       expect(change.cancelled_at).toBeNull()
       expect(change.expired_at).toBeNull()
       expect(change.past_due_at).toBeNull()
@@ -259,7 +259,7 @@ describe('update', () => {
 
       const history = await getMembershipHistory(pastDueUser.id)
       expect(history[0].change_type).toBe('cancellation')
-      expect(history[0].cancel_at_period_end).toBe(true)
+      expect(history[0].should_cancel_at_period_end).toBe(true)
       expect(history[0].past_due_at).toBeInstanceOf(Date)
     })
   })

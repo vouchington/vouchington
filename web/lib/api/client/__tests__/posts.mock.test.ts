@@ -102,7 +102,7 @@ describe('posts client', () => {
           post_type: 'discussion',
           title: 'Community post',
           markdown: 'Hello',
-          root_id: null,
+          root_post_id: null,
           created_by_id: 'user-1',
           created_at: '2026-01-01T00:00:00.000Z',
           updated_at: '2026-01-01T00:00:00.000Z',

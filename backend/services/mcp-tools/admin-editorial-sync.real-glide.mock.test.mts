@@ -45,7 +45,7 @@ describe('registered article sync on an owned real queue namespace', () => {
         }),
         expect.objectContaining({
           action_type: 'article_sync_run',
-          operation_request_id: history[0]?.id,
+          operation_request_action_id: history[0]?.id,
           metadata: expect.objectContaining({ phase: 'finished', outcome: 'succeeded' }),
         }),
       ])
@@ -59,7 +59,7 @@ describe('registered article sync on an owned real queue namespace', () => {
       expect(after).toHaveLength(4)
       expect(after.slice(0, 2)).toEqual(history)
       expect(after[3]).toMatchObject({
-        operation_request_id: after[2]?.id,
+        operation_request_action_id: after[2]?.id,
         metadata: expect.objectContaining({ phase: 'finished', outcome: 'failed' }),
       })
       expect((await articleSync.getJob(jobId))?.data).toEqual({ userId: admin.id })

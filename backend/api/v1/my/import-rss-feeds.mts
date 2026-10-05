@@ -19,9 +19,9 @@ const MAX_IMPORT_ITEMS = 500
 const MAX_OPML_IMPORT_BYTES = '2mb'
 
 type ImportRssFeedsRequest =
-  | { opml: string; follow?: boolean }
-  | { csv: string; follow?: boolean }
-  | { urls: string[]; follow?: boolean }
+  | { opml: string; should_follow_imported_feeds?: boolean }
+  | { csv: string; should_follow_imported_feeds?: boolean }
+  | { urls: string[]; should_follow_imported_feeds?: boolean }
 
 function parseImportUrls(ctx: Context, body: ImportRssFeedsRequest): string[] {
   if ('opml' in body) return Array.from(parseOpmlOutlines(body.opml), o => o.xmlUrl)
@@ -48,13 +48,16 @@ app.route('/api/v1/my/import/rss-feeds').post(async (ctx: Context) => {
   const body = await parseJsonBody<ImportRssFeedsRequest>(ctx, MAX_OPML_IMPORT_BYTES)
   validateRequestContract(ctx, 'POST:/api/v1/my/import/rss-feeds', { body })
 
-  const follow = body.follow ?? !isAdminUser(currentUser)
+  const should_follow_imported_feeds =
+    body.should_follow_imported_feeds ?? !isAdminUser(currentUser)
   // The schema fixes which source key is present and its type; counts are semantic checks.
   const urls = parseImportUrls(ctx, body)
   ctx.assert(urls.length > 0, 400, 'At least one URL is required')
   ctx.assert(urls.length <= MAX_IMPORT_ITEMS, 400, `Maximum ${MAX_IMPORT_ITEMS} URLs per import`)
 
-  const submitted = await submitRssFeedImport(currentUser, provenance, urls, { follow })
+  const submitted = await submitRssFeedImport(currentUser, provenance, urls, {
+    should_follow_imported_feeds,
+  })
   await enqueueBulkUserRssFeedImportRows(
     submitted.rowIds.map(rowId => ({ importId: submitted.import.id, rowId })),
   )

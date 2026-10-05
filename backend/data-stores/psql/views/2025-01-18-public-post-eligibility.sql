@@ -6,11 +6,11 @@
 -- re-scan of the whole posts table per row instead of an ordinary parameterized index lookup.
 -- See #10785.
 --
--- root_post is reached via `root_post.id = COALESCE(candidate_post.root_id, candidate_post.id)`,
+-- root_post is reached via `root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)`,
 -- so every root-scoped predicate below reads a bare root_post.<col> — root_post is always
--- present, never NULL, because a top-level post (root_id IS NULL) joins root_post to itself.
+-- present, never NULL, because a top-level post (root_post_id IS NULL) joins root_post to itself.
 --
--- A LEFT JOIN on the plain, un-wrapped `root_post.id = candidate_post.root_id` (with every
+-- A LEFT JOIN on the plain, un-wrapped `root_post.id = candidate_post.root_post_id` (with every
 -- root-scoped predicate instead wrapped as COALESCE(root_post.<col>, candidate_post.<col>)) was
 -- also considered. It keeps the correlated per-candidate join from #10785 index-driven (confirmed
 -- via EXPLAIN against view_community_metrics.post_count: 15.442ms for 5 communities), but the
@@ -27,7 +27,7 @@
 CREATE OR REPLACE VIEW view_public_post_eligibility AS
   SELECT candidate_post.id AS post_id, candidate_post.post_type
   FROM posts candidate_post
-  JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_id, candidate_post.id)
+  JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
   LEFT JOIN user_suspensions root_suspension
     ON root_suspension.user_id = root_post.created_by_id
    AND root_suspension.lifted_at IS NULL

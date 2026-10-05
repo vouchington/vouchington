@@ -12,7 +12,7 @@ export async function getCommunityModmailInbox(
   const query = sql`/* getCommunityModmailInbox */
     SELECT
       id, channel_type, title, community_id, subject_user_id,
-      assigned_mod_id, assigned_at, resolved_at, resolved_by_id,
+      assigned_moderator_user_id, assigned_at, resolved_at, resolved_by_id,
       created_by_id, created_at, updated_at,
       to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_timestamp
     FROM conversations
@@ -39,7 +39,7 @@ export async function getMyModmailThreads(
   const query = sql`/* getMyModmailThreads */
     SELECT
       id, channel_type, title, community_id, subject_user_id,
-      assigned_mod_id, assigned_at, resolved_at, resolved_by_id,
+      assigned_moderator_user_id, assigned_at, resolved_at, resolved_by_id,
       created_by_id, created_at, updated_at,
       to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_timestamp
     FROM conversations
@@ -85,7 +85,7 @@ export async function getModmailThread(conversationId: string): Promise<ModmailT
   const { rows } = await read(sql`/* getModmailThread */
     SELECT
       id, channel_type, title, community_id, subject_user_id,
-      assigned_mod_id, assigned_at, resolved_at, resolved_by_id,
+      assigned_moderator_user_id, assigned_at, resolved_at, resolved_by_id,
       created_by_id, created_at, updated_at
     FROM conversations
     WHERE id = ${conversationId}

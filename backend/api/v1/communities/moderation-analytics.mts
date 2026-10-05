@@ -57,7 +57,7 @@ app.route('/api/v1/communities/:idOrSlug/moderation-analytics').get(async (ctx: 
   })
 
   metrics.moderator_workload.users = await getModeratorUsers(
-    metrics.moderator_workload.moderators.map(m => m.actor_id),
+    metrics.moderator_workload.moderators.map(m => m.actor_user_id),
   )
 
   ctx.json(metrics)

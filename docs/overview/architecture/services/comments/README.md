@@ -14,7 +14,7 @@ However, deleted comments should have all relevant information scrubbed (e.g. no
 Drafts (unpublished posts) are never returned by querying the post descendants and ancestors.
 Drafts will be queried by a separate query.
 
-Descendants and Ancestors should only return `id`, `post_type`, `parent_id`, `root_id`, `deleted_at`, and `community_id` similar to [Posts Search](../posts/search/README.md).
+Descendants and Ancestors should only return `id`, `post_type`, `parent_post_id`, `root_post_id`, `deleted_at`, and `community_id` similar to [Posts Search](../posts/search/README.md).
 The comment content themselves will be fetched by the caller via `getPostByAnyCachedBatch`, which does not return data for deleted posts.
 
 Tree/subtree traversal logic also belongs here. API routes should not rebuild comment graphs or BFS
@@ -26,7 +26,7 @@ Comments inherit `posts.community_id` from their parent/root. Top-level comments
 global; comments on community posts are community-scoped. Comments no longer choose or filter by a
 community independently of the post they are replying to.
 
-Cross-post discussions from global posts into communities also use `parent_id`, so descendant
+Cross-post discussions from global posts into communities also use `parent_post_id`, so descendant
 queries explicitly filter to `post_type='comment'`.
 
 ## Querying the Post Descendants
@@ -38,7 +38,7 @@ You can still query comments via [Posts Search](../posts/search/README.md).
 
 Filter Options;
 
-- `root_id: <UUID>` - the root post or comment to build the descendants from
+- `root_post_id: <UUID>` - the root post or comment to build the descendants from
 - `max_depth: Number` - the max depth of comments to return
 
 ### Pagination

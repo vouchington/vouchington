@@ -182,7 +182,7 @@ describe('curated-aside-items service', () => {
       topicId,
       title: 'Disabled Curated Source',
     })
-    await updateRssFeedById(sourceId, { enabled: false })
+    await updateRssFeedById(sourceId, { is_enabled: false })
 
     await expect(createCuratedItem(admin, 'source', sourceId, 27000)).rejects.toThrow(
       'source entity not found',
@@ -196,7 +196,7 @@ describe('curated-aside-items service', () => {
       title: 'Later Disabled Source',
     })
     const item = await createCuratedItem(admin, 'source', sourceId, 27000)
-    await updateRssFeedById(sourceId, { enabled: false })
+    await updateRssFeedById(sourceId, { is_enabled: false })
 
     const items = await listCuratedItems('source')
     expect(items.find(i => i.id === item.id)?.entity_data).toBeNull()

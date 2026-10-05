@@ -7,13 +7,13 @@
   "results": [
     {
       "authorized_user_of_card": null,
-      "authorized_user_of_id": null,
+      "authorized_user_of_card_id": null,
       "card": {
         "id": "00000000-0000-7000-8000-000000000711",
         "name": "Sapphire Reserve",
         "slug": "sapphire-reserve"
       },
-      "card_id": "00000000-0000-7000-8000-000000000711",
+      "card_topic_id": "00000000-0000-7000-8000-000000000711",
       "closed_on": null,
       "credit_limit": {
         "amount": 2500000,

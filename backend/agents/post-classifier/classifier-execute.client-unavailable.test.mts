@@ -84,7 +84,7 @@ describe('post classifier execution when the provider client cannot be built', (
         completed_at: null,
       })
       expect(await getPostClassifierLocalOutcomeFacts(input.run.runId)).toMatchObject({
-        flagged: true,
+        is_flagged: true,
         classification: 'ai',
         detector: 'test-detector',
         detector_model_version: 'test-model',

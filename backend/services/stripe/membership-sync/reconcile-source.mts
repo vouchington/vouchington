@@ -177,7 +177,7 @@ async function syncExistingMembership(
       const expiryChanged =
         updated.previous.expires_at?.getTime() !== updated.current.expires_at?.getTime()
       const cancelAtPeriodEndChanged =
-        updated.previous.cancel_at_period_end !== updated.current.cancel_at_period_end
+        updated.previous.should_cancel_at_period_end !== updated.current.should_cancel_at_period_end
       if (!changeType && !expiryChanged && !cancelAtPeriodEndChanged) return false
       await recordMembershipChangeIfNeeded({
         membershipId: membership.id,

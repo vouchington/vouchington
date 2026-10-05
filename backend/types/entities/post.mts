@@ -26,8 +26,8 @@ export type Post = {
   markdown: string
   ai_summary_markdown: string
   html?: string
-  parent_id?: string | null
-  root_id: string | null
+  parent_post_id?: string | null
+  root_post_id: string | null
   created_by_id: string | null
   created_by?: BasicUser | null
   updated_by?: BasicUser | null
@@ -155,8 +155,8 @@ export type CreatePostUpdates = {
   slug?: string
   url_id?: string
   url?: string
-  root_id?: string
-  parent_id?: string
+  root_post_id?: string
+  parent_post_id?: string
   broadcast?: PostBroadcast
   privacy?: PostPrivacy
   is_anonymous?: boolean

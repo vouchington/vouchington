@@ -106,7 +106,7 @@ CREATE UNIQUE INDEX idx_copyright_restrictions__one_active_per_target ON copyrig
 CREATE TABLE copyright_notice_submissions (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE CASCADE,
-  submitted_by_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+  submitted_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
   kind copyright_notice_submission_kinds NOT NULL CHECK (kind IN ('notice', 'supplement', 'appeal', 'counter_notice', 'withdrawal', 'court_or_ccb_hold', 'complaint')),
   received_at timestamptz NOT NULL,
   source_kind copyright_notice_submission_source_kinds NOT NULL CHECK (source_kind IN ('signed_in_form', 'guest_form', 'email', 'staff')),
@@ -153,7 +153,7 @@ CREATE TABLE copyright_notice_submission_assessments (
   supersedes_assessment_id uuid CONSTRAINT uq_copyrigh_notice_submissi_assessmen__supersedes_assessment_id UNIQUE,
   assessed_at timestamptz NOT NULL,
   assessed_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
-  substantially_compliant boolean NOT NULL,
+  is_substantially_compliant boolean NOT NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_copyright_assessments__parent_notice
@@ -199,12 +199,12 @@ CREATE TABLE copyright_notice_legal_hold_assessments (
   copyright_notice_submission_id uuid NOT NULL,
   assessed_at timestamptz NOT NULL,
   assessed_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
-  from_original_claimant boolean NOT NULL,
+  is_from_original_claimant boolean NOT NULL,
   proceeding_kind copyright_notice_legal_hold_assessment_proceeding_kinds CHECK (proceeding_kind IN ('federal_court', 'ccb')),
   ccb_claim_kind copyright_notice_legal_hold_assessment_ccb_claim_kinds CHECK (ccb_claim_kind IN ('claim', 'counterclaim')),
   commenced_at timestamptz,
   received_by_designated_agent_at timestamptz,
-  same_material boolean NOT NULL,
+  is_same_material boolean NOT NULL,
   rationale_ciphertext text NOT NULL CONSTRAINT chk_copyright_notice_legal_hold_assessmen__rationale_ciphertext CHECK (char_length(rationale_ciphertext) BETWEEN 1 AND 65536),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -346,16 +346,16 @@ CREATE TABLE copyright_notice_lifecycle_changes (
   copyright_notice_guest_capability_id uuid,
   review_action copyright_review_actions CHECK (review_action IN ('confirm', 'reverse')),
   review_rationale_id uuid CHECK (review_rationale_id IS NULL OR review_rationale_id = id),
-  counter_notice_accepted boolean,
+  is_counter_notice_accepted boolean,
   recovery_source copyright_notice_lifecycle_change_recovery_sources CHECK (recovery_source IN ('durable_review', 'durable_decision')),
   replay_reason copyright_notice_lifecycle_change_replay_reasons CHECK (replay_reason = 'operator_replay'),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CHECK ((review_action IS NULL AND review_rationale_id IS NULL)
     OR (change_type = 'mandatory_human_review_completed' AND review_action IS NOT NULL AND review_rationale_id IS NOT NULL)),
-  CHECK (counter_notice_accepted IS NULL OR change_type = 'counter_notice_reviewed'),
+  CHECK (is_counter_notice_accepted IS NULL OR change_type = 'counter_notice_reviewed'),
   CHECK (recovery_source IS NULL OR change_type = 'submission_assessed'),
   CHECK (replay_reason IS NULL OR change_type IN ('copyright_action_replayed', 'media_delivery_registry_replayed')),
-  CHECK ((change_type = 'counter_notice_reviewed') = (counter_notice_accepted IS NOT NULL)),
+  CHECK ((change_type = 'counter_notice_reviewed') = (is_counter_notice_accepted IS NOT NULL)),
   CHECK ((change_type = 'mandatory_human_review_completed') = (review_action IS NOT NULL)),
   CHECK (change_type <> 'media_delivery_registry_replayed' OR replay_reason IS NOT NULL),
   -- A replayed reply to a declined email intake belongs to no case; every other event names one.
@@ -541,7 +541,7 @@ CREATE INDEX idx_copyright_restrictions__human_reviewer ON copyright_restriction
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_submissions__notice_received ON copyright_notice_submissions(copyright_notice_id, received_at, id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX idx_copyright_notice_submissions__submitted_by ON copyright_notice_submissions(submitted_by_user_id) WHERE submitted_by_user_id IS NOT NULL;
+CREATE INDEX idx_copyright_notice_submissions__submitted_by ON copyright_notice_submissions(submitted_by_id) WHERE submitted_by_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_submissions__guest_capability ON copyright_notice_submissions(copyright_notice_guest_capability_id, copyright_notice_id) WHERE copyright_notice_guest_capability_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -712,8 +712,8 @@ BEGIN
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'copyright legal receipt records are retained' USING ERRCODE = 'check_violation';
   END IF;
-  IF OLD.submitted_by_user_id IS NOT NULL
-    AND NEW.submitted_by_user_id IS NULL
+  IF OLD.submitted_by_id IS NOT NULL
+    AND NEW.submitted_by_id IS NULL
     AND ROW(
       OLD.id,
       OLD.copyright_notice_id,
@@ -1033,7 +1033,7 @@ COMMENT ON COLUMN copyright_restrictions.human_reviewed_by_id IS 'Staff reviewer
 
 COMMENT ON TABLE copyright_notice_submissions IS 'Immutable receipt provenance. Statutory timing always starts from the assessed submission received_at, never parser or approval time.';
 COMMENT ON COLUMN copyright_notice_submissions.copyright_notice_id IS 'Legal case to which this immutable inbound submission belongs.';
-COMMENT ON COLUMN copyright_notice_submissions.submitted_by_user_id IS 'Authenticated submitting account for a form, appeal, or counter-notice; NULL for email/guest sources or after account deletion.';
+COMMENT ON COLUMN copyright_notice_submissions.submitted_by_id IS 'Authenticated submitting account for a form, appeal, or counter-notice; NULL for email/guest sources or after account deletion.';
 COMMENT ON COLUMN copyright_notice_submissions.kind IS 'Submission role: allegation, supplement, ordinary appeal, statutory counter-notice, withdrawal, or proceeding notice.';
 COMMENT ON COLUMN copyright_notice_submissions.received_at IS 'Immutable provider or form receipt timestamp for this exact submission.';
 COMMENT ON COLUMN copyright_notice_submissions.source_kind IS 'Authenticated form, guest form, email, or staff-recorded source channel.';
@@ -1045,7 +1045,7 @@ COMMENT ON COLUMN copyright_notice_submission_assessments.copyright_notice_submi
 COMMENT ON COLUMN copyright_notice_submission_assessments.supersedes_assessment_id IS 'Prior assessment corrected by this append-only assessment; NULL for the first assessment.';
 COMMENT ON COLUMN copyright_notice_submission_assessments.assessed_at IS 'When deterministic validation or a moderator recorded this assessment.';
 COMMENT ON COLUMN copyright_notice_submission_assessments.assessed_by_id IS 'Staff assessor; NULL denotes deterministic validation.';
-COMMENT ON COLUMN copyright_notice_submission_assessments.substantially_compliant IS 'Whether this exact submission contains the required elements for its legal procedure.';
+COMMENT ON COLUMN copyright_notice_submission_assessments.is_substantially_compliant IS 'Whether this exact submission contains the required elements for its legal procedure.';
 
 COMMENT ON TABLE copyright_notice_counter_notice_assessment_targets IS 'Exact hosted targets covered by a substantially compliant statutory counter-notice assessment.';
 COMMENT ON COLUMN copyright_notice_counter_notice_assessment_targets.copyright_notice_submission_assessment_id IS 'Counter-notice compliance assessment whose scope is recorded.';
@@ -1055,12 +1055,12 @@ COMMENT ON TABLE copyright_notice_legal_hold_assessments IS 'Append-only staff a
 COMMENT ON COLUMN copyright_notice_legal_hold_assessments.copyright_notice_submission_id IS 'Immutable court or CCB submission evaluated by this assessment.';
 COMMENT ON COLUMN copyright_notice_legal_hold_assessments.assessed_at IS 'When staff completed the legal-hold qualification assessment.';
 COMMENT ON COLUMN copyright_notice_legal_hold_assessments.assessed_by_id IS 'Staff user responsible for the legal-hold assessment.';
-COMMENT ON COLUMN copyright_notice_legal_hold_assessments.from_original_claimant IS 'Whether the filing came from the claimant that sent the original allegation.';
+COMMENT ON COLUMN copyright_notice_legal_hold_assessments.is_from_original_claimant IS 'Whether the filing came from the claimant that sent the original allegation.';
 COMMENT ON COLUMN copyright_notice_legal_hold_assessments.proceeding_kind IS 'Commenced federal-court action or qualifying CCB 17 USC 1507(d) proceeding; NULL for a threat or unsupported filing.';
 COMMENT ON COLUMN copyright_notice_legal_hold_assessments.ccb_claim_kind IS 'CCB claim or counterclaim category required by 17 USC 1507(d); NULL for non-CCB submissions.';
 COMMENT ON COLUMN copyright_notice_legal_hold_assessments.commenced_at IS 'When the qualifying proceeding was commenced, not when it was merely threatened.';
 COMMENT ON COLUMN copyright_notice_legal_hold_assessments.received_by_designated_agent_at IS 'When the designated agent received proof of the commenced proceeding; NULL when delivered elsewhere or not proven.';
-COMMENT ON COLUMN copyright_notice_legal_hold_assessments.same_material IS 'Whether the proceeding identifies the same hosted material governed by the proposed restoration.';
+COMMENT ON COLUMN copyright_notice_legal_hold_assessments.is_same_material IS 'Whether the proceeding identifies the same hosted material governed by the proposed restoration.';
 
 COMMENT ON TABLE copyright_notice_legal_hold_assessment_targets IS 'Exact allegation targets covered by a legal-hold assessment; unrelated targets remain independently restorable.';
 COMMENT ON COLUMN copyright_notice_legal_hold_assessment_targets.copyright_notice_legal_hold_assessment_id IS 'Legal-hold assessment whose material scope is recorded.';
@@ -1120,7 +1120,7 @@ COMMENT ON COLUMN copyright_notice_lifecycle_changes.media_delivery_registry_key
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.copyright_notice_guest_capability_id IS 'Guest capability issued or revoked by this event; the actor is NULL when a withdrawal revoked it.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.review_action IS 'Human review outcome stored on a mandatory-review event.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.review_rationale_id IS 'Required parent-identified encrypted rationale companion for mandatory human review; member timelines expose no ciphertext.';
-COMMENT ON COLUMN copyright_notice_lifecycle_changes.counter_notice_accepted IS 'Whether the counter-notice review accepted the counter-notice.';
+COMMENT ON COLUMN copyright_notice_lifecycle_changes.is_counter_notice_accepted IS 'Whether the counter-notice review accepted the counter-notice.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.recovery_source IS 'Durable record used to recover an assessed submission.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.replay_reason IS 'Why an operator replayed a failed action or registry record.';
 

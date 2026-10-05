@@ -12,7 +12,7 @@ export function flagColumns(flag: string, reporters: string): string {
   ${flag}.rss_feed_item_id,
   ${flag}.flag_type,
   ${flag}.reporter_count,
-  ${flag}.new_account_reporter_pct,
+  ${flag}.new_account_reporter_percent,
   ${flag}.details || jsonb_build_object('reporter_user_ids', COALESCE((
     SELECT jsonb_agg(reporter.user_id ORDER BY reporter.user_id)
     FROM ${reporters} reporter

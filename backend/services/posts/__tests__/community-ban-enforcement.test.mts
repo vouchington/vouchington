@@ -70,7 +70,7 @@ describe('community ban enforcement — post creation', () => {
         createPost(user!, WEB_PROVENANCE, {
           markdown: 'banned comment',
           post_type: 'comment',
-          parent_id: postId,
+          parent_post_id: postId,
         }),
       ).rejects.toMatchObject({
         status: 403,

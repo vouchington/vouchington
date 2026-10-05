@@ -32,7 +32,7 @@ export async function* streamCopyrightCounterNotices(userId: string): CopyrightE
 
 /**
  * Only the user's own signed-in form submissions: staff-recorded submissions carry the staff
- * member's id in `submitted_by_user_id`, so the source filter keeps a moderator's export free of
+ * member's id in `submitted_by_id`, so the source filter keeps a moderator's export free of
  * other people's filings. A body the retention sweep erased comes back as null.
  */
 async function* streamOwnSubmissions<Body>(
@@ -45,7 +45,7 @@ async function* streamOwnSubmissions<Body>(
     SELECT submission.id AS submission_id, submission.copyright_notice_id AS notice_id,
       submission.received_at, submission.body_ciphertext
     FROM copyright_notice_submissions submission
-    WHERE submission.submitted_by_user_id = ${userId}
+    WHERE submission.submitted_by_id = ${userId}
       AND submission.source_kind = 'signed_in_form' AND submission.kind = ${kind}
     ORDER BY submission.id
   `)) {

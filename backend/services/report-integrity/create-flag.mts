@@ -20,7 +20,7 @@ export type ReportIntegrityFlag = {
   rss_feed_item_id: string | null
   flag_type: ReportIntegrityFlagType
   reporter_count: number
-  new_account_reporter_pct: number
+  new_account_reporter_percent: number
   details: Record<string, unknown>
   resolved_at: Date | null
   resolved_by_id: string | null
@@ -50,7 +50,7 @@ export async function createReportIntegrityFlag(
     WITH inserted AS (
       INSERT INTO report_integrity_flags (`
   query.append(fkColumn)
-  query.append(sql`, flag_type, reporter_count, new_account_reporter_pct, details)
+  query.append(sql`, flag_type, reporter_count, new_account_reporter_percent, details)
       VALUES (${entityId}::uuid, 'mass_report_suspected', ${reporterCount}, ${newAccountReporterPct}, ${JSON.stringify(details)}::jsonb)
       ON CONFLICT (`)
   query.append(fkColumn)

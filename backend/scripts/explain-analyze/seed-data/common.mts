@@ -91,10 +91,10 @@ export function seedFreshRelationId(index: number): string {
 }
 
 // seedComments (comments-and-recently-viewed.mts) builds a 3-level comment tree under one root
-// post, each level's parent_id/root_id pointing at the previous tier or the root itself. Every
+// post, each level's parent_post_id/root_post_id pointing at the previous tier or the root itself. Every
 // tier therefore needs a timestamp strictly after everything it references, so tiers chain 1
 // second apart off the root post's own real-clock timestamp, satisfying posts'
-// CHECK (parent_id IS NULL OR id > parent_id) / CHECK (root_id IS NULL OR id > root_id).
+// CHECK (parent_post_id IS NULL OR id > parent_post_id) / CHECK (root_post_id IS NULL OR id > root_post_id).
 export function commentSeedTimestampMs(rootPostIndex: number, tier: 1 | 2 | 3): number {
   return postSeedTimestampMs(rootPostIndex) + tier * 1000
 }

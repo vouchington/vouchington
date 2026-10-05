@@ -46,7 +46,7 @@ let ownedRobotsTxtHostnames: string[] = []
 async function createTestUrl(hostname: string, pathname: string) {
   const url = await addUrl(user.id, `https://${hostname}${pathname}`)
   expect(url).toBeTruthy()
-  await updateUrlHostname(url!.hostname.id, { crawlable: true })
+  await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
   return url!
 }
 
@@ -136,7 +136,7 @@ describe('dispatch-tier-urls', () => {
     const feed = await insertTestRssFeedDirect({})
     const rssUrl = await getUrlById(feed.rss_feed_url_id)
     expect(rssUrl).toBeTruthy()
-    await updateUrlHostname(rssUrl!.hostname.id, { crawlable: true })
+    await updateUrlHostname(rssUrl!.hostname.id, { is_crawlable: true })
     await createTestUserProfileLink(user.id, rssUrl!.id)
 
     const referral = await createReferralProgramFixture({
@@ -153,7 +153,7 @@ describe('dispatch-tier-urls', () => {
     )
     expect(activeReferralUrl).toBeTruthy()
     expect(inactiveReferralUrl).toBeTruthy()
-    await updateUrlHostname(activeReferralUrl!.hostname.id, { crawlable: true })
+    await updateUrlHostname(activeReferralUrl!.hostname.id, { is_crawlable: true })
     await createTestUserProfileLink(user.id, activeReferralUrl!.id)
     await createTestUserProfileLink(user.id, inactiveReferralUrl!.id)
     await insertTestUserReferralProgramLink({

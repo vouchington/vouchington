@@ -30,7 +30,7 @@ export async function selectCopyrightDeliveryIntents(
     await query<CopyrightDeliveryIntentRecord>(sql`/* selectCopyrightDeliveryIntents */
     SELECT id, copyright_notice_id, copyright_notice_submission_id,
       copyright_notice_correspondence_message_id, recipient_user_id, recipient_role, delivery_kind,
-      channel, state, ses_message_id, delivery_attempt_count
+      channel, state, amazon_ses_message_id, delivery_attempt_count
     FROM copyright_notice_delivery_intents
     WHERE copyright_notice_id = ${noticeId}
     ORDER BY id

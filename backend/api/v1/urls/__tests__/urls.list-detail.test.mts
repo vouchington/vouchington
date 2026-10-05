@@ -67,7 +67,7 @@ describe('index', () => {
         expect(url).toBeDefined()
         expect(url.hostname.blocked).toBeUndefined()
         expect(url.hostname.crawlable).toBeUndefined()
-        expect(url.hostname.link_rel_follow).toBeUndefined()
+        expect(url.hostname.should_follow_link_rel).toBeUndefined()
         expect(url.hostname.votes_score_net).toBeUndefined()
         expect(url.hostname.votes_count_up).toBeUndefined()
         expect(url.hostname.votes_count_down).toBeUndefined()
@@ -271,7 +271,7 @@ describe('index', () => {
         const random = Math.random().toString(36).slice(2, 8)
         const hostnameId = await insertTestUrlHostname({
           hostname: `blocked-url-${random}.example.com`,
-          blocked: true,
+          is_blocked: true,
         })
         const urlId = await insertTestUrl({
           url: `https://blocked-url-${random}.example.com/page`,

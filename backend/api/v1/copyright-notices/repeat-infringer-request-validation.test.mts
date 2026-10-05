@@ -11,7 +11,7 @@ const REVIEWS = '/api/v1/copyright-repeat-infringer-reviews'
 const ACCOUNTS = '/api/v1/copyright-repeat-infringer-accounts'
 
 type Staff = ReturnType<typeof createRequest>
-type Account = { incident_id: string; operative: boolean; open_review_id: string | null }
+type Account = { incident_id: string; is_operative: boolean; open_review_id: string | null }
 
 async function readAccount(staff: Staff, noticeId: string): Promise<Account> {
   const response = await staff.get(`${NOTICES}/${noticeId}/repeat-infringer-accounts`).expect(200)
@@ -31,7 +31,7 @@ async function repeatInfringerFixture() {
   const administrator = createRequest()
   await administrator.authenticateAs(admin)
   const account = await readAccount(staff, noticeId)
-  if (!account.operative || !account.open_review_id) throw new Error('repeat infringer fixture')
+  if (!account.is_operative || !account.open_review_id) throw new Error('repeat infringer fixture')
   return { poster, noticeId, account, reviewId: account.open_review_id, staff, administrator }
 }
 
@@ -64,10 +64,10 @@ describe('repeat-infringer request contracts', () => {
     await staff.post(`${INCIDENTS}/not-a-uuid/dispositions`).send(body).expect(422)
     const missing = await staff.post(url).send({ disposition: 'duplicate' }).expect(422)
     expect(missing.body.message).toBe('rationale is required')
-    expect((await readAccount(staff, noticeId)).operative).toBe(true)
+    expect((await readAccount(staff, noticeId)).is_operative).toBe(true)
 
     await staff.post(url).send(body).expect(200)
-    expect((await readAccount(staff, noticeId)).operative).toBe(false)
+    expect((await readAccount(staff, noticeId)).is_operative).toBe(false)
   })
 
   it('rejects an unknown key or malformed id on an outcome before recording it', async () => {

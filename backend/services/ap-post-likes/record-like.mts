@@ -15,7 +15,7 @@ import sql from 'sql-template-strings'
 // (repeated Like/Undo cycles can leave more than one soft-deleted row behind; `LIMIT 1 FOR UPDATE`
 // locks and resurrects only the latest, leaving earlier cycles as history). The INSERT only fires
 // when nothing was resurrected, falling through to the ordinary `ON CONFLICT ... DO UPDATE` for
-// the already-active-row case — a redelivered Like carrying the same or an updated `like_ap_id`.
+// the already-active-row case — a redelivered Like carrying the same or an updated `like_activitypub_id`.
 export async function recordLike(
   postId: string,
   remoteActorId: string,
@@ -36,14 +36,14 @@ export async function recordLike(
     ),
     resurrect AS (
       UPDATE activitypub_post_likes
-      SET deleted_at = NULL, like_ap_id = ${likeApId}
+      SET deleted_at = NULL, like_activitypub_id = ${likeApId}
       WHERE id IN (SELECT id FROM target)
       RETURNING id
     )
-    INSERT INTO activitypub_post_likes (post_id, remote_actor_id, like_ap_id)
+    INSERT INTO activitypub_post_likes (post_id, remote_actor_id, like_activitypub_id)
     SELECT ${postId}, ${remoteActorId}, ${likeApId}
     WHERE NOT EXISTS (SELECT 1 FROM resurrect)
     ON CONFLICT (post_id, remote_actor_id) WHERE deleted_at IS NULL
-    DO UPDATE SET like_ap_id = EXCLUDED.like_ap_id
+    DO UPDATE SET like_activitypub_id = EXCLUDED.like_activitypub_id
   `)
 }

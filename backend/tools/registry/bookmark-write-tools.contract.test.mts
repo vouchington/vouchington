@@ -90,7 +90,7 @@ describe('set_bookmark and remove_bookmark contract — real DB', () => {
     const caller = await createCaller()
     const hostnameId = await insertTestUrlHostname({
       hostname: `bookmark-${crypto.randomUUID().replaceAll('-', '')}.example`,
-      blocked: true,
+      is_blocked: true,
     })
 
     await callRejectedMcpTool(

@@ -31,8 +31,8 @@ CREATE TABLE IF NOT EXISTS report_integrity_flags (
   rss_feed_item_id uuid REFERENCES rss_feed_items ON DELETE CASCADE,
   flag_type        report_integrity_flag_types NOT NULL DEFAULT 'mass_report_suspected',
   reporter_count   int NOT NULL,
-  new_account_reporter_pct double precision NOT NULL
-    CHECK (new_account_reporter_pct >= 0 AND new_account_reporter_pct <= 1),
+  new_account_reporter_percent double precision NOT NULL
+    CHECK (new_account_reporter_percent >= 0 AND new_account_reporter_percent <= 1),
   details          jsonb NOT NULL DEFAULT '{}',
   resolved_at      timestamptz,
   resolved_by_id   uuid REFERENCES users ON DELETE SET NULL,
@@ -100,7 +100,7 @@ COMMENT ON COLUMN report_integrity_flags.hostname_id IS 'Flagged URL hostname, i
 COMMENT ON COLUMN report_integrity_flags.rss_feed_item_id IS 'Flagged RSS feed item, if this flag targets an RSS item.';
 COMMENT ON COLUMN report_integrity_flags.flag_type IS 'Type of integrity violation detected.';
 COMMENT ON COLUMN report_integrity_flags.reporter_count IS 'Number of distinct reporters who filed pending reports on this entity within the detection window.';
-COMMENT ON COLUMN report_integrity_flags.new_account_reporter_pct IS 'Percentage (0-1) of those reporters whose accounts are considered new (< NEW_ACCOUNT_AGE_DAYS old).';
+COMMENT ON COLUMN report_integrity_flags.new_account_reporter_percent IS 'Percentage (0-1) of those reporters whose accounts are considered new (< NEW_ACCOUNT_AGE_DAYS old).';
 COMMENT ON COLUMN report_integrity_flags.details IS 'JSON details about the detected anomaly including thresholds used. Reporter ids live in report_integrity_flag_reporters.';
 COMMENT ON COLUMN report_integrity_flags.resolved_at IS 'When a moderator resolved this flag.';
 COMMENT ON COLUMN report_integrity_flags.resolved_by_id IS 'Moderator who resolved this flag.';

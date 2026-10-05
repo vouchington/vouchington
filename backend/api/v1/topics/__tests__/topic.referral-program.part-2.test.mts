@@ -43,7 +43,7 @@ describe('topic.referral-program', () => {
 
         await adminRequest
           .patch(`/api/v1/topics/${topicId}/referral-program`)
-          .send({ company_id: null })
+          .send({ company_topic_id: null })
           .expect(200)
 
         // Link first

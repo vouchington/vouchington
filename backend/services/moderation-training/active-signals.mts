@@ -76,7 +76,7 @@ export async function hasOtherActiveAutomodSignals(input: {
       WHERE p.id = ${input.postId}
         AND p.community_id = ${input.communityId}
         AND p.deleted_at IS NULL
-        AND am.flagged IS TRUE
+        AND am.is_flagged IS TRUE
         AND am.deleted_at IS NULL
         AND am.input_sha256 IS NOT DISTINCT FROM p.llm_moderation_content_sha256
         AND cap.id IS NULL
@@ -98,7 +98,7 @@ export async function hasOtherActiveAutomodSignals(input: {
       WHERE p.id = ${input.postId}
         AND cap.community_id = ${input.communityId}
         AND p.deleted_at IS NULL
-        AND am.flagged IS TRUE
+        AND am.is_flagged IS TRUE
         AND am.deleted_at IS NULL
         AND am.input_sha256 IS NOT DISTINCT FROM p.llm_moderation_content_sha256
         AND cpr.automod_action = 'unpublish'
@@ -110,7 +110,7 @@ export async function hasOtherActiveAutomodSignals(input: {
           JOIN community_agent_prompts newer_cap ON newer_cap.id = newer_am.prompt_id
           WHERE newer_am.post_id = am.post_id
             AND newer_cap.community_id = cap.community_id
-            AND newer_am.flagged IS TRUE
+            AND newer_am.is_flagged IS TRUE
             AND newer_am.deleted_at IS NULL
             AND newer_am.input_sha256 IS NOT DISTINCT FROM p.llm_moderation_content_sha256
             AND (newer_am.created_at, newer_am.id) > (am.created_at, am.id)

@@ -41,7 +41,7 @@ describe('searchTopHashtags community eligibility', () => {
         user: commenter!,
         title: `Approved community comment ${index} ${suffix}`,
         post_type: 'comment',
-        parent_id: rootPost.id,
+        parent_post_id: rootPost.id,
         community_id: community.id,
         privacy: 'public',
         broadcast: 'everyone',

@@ -121,7 +121,7 @@ describe('POST /api/v1/appeals CAPTCHA', () => {
         status: 'pending',
       })
       expect(await getModerationAppealByIdFromPrimary(response.body.appeal.id)).toMatchObject({
-        appellant_id: member.id,
+        appellant_user_id: member.id,
       })
       expect(mockFetch).toHaveBeenCalled()
     } finally {

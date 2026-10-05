@@ -96,7 +96,7 @@ describe.each(['appeal', 'dispute'] as const)('registered %s staff reads', kind 
           id,
           status: 'pending',
           staff_context: expect.any(Object),
-          appellant_id: expect.any(String),
+          appellant_user_id: expect.any(String),
           appeal_reason: expect.stringContaining('<external-content'),
         },
       },

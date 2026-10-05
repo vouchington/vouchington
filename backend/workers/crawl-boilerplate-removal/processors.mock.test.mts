@@ -45,7 +45,7 @@ describe('processBoilerplateRemoval', () => {
       `https://${hostname}/blog/post-1`,
       `https://${hostname}/blog/post-2`,
     ])
-    await updateUrlHostname(urls[0]!.hostname.id, { crawlable: true })
+    await updateUrlHostname(urls[0]!.hostname.id, { is_crawlable: true })
     const crawler = await createCrawler(user, {
       hostname_id: urls[0]!.hostname.id,
       crawler_type: 'fetch',

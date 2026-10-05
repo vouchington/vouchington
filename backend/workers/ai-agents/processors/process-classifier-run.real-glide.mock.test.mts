@@ -114,7 +114,7 @@ describe('classifier run processor (real GlideMQ)', () => {
       },
     ])
     await expect(getPostClassifierLocalOutcomeFacts(run.runId)).resolves.toMatchObject({
-      flagged: expect.any(Boolean),
+      is_flagged: expect.any(Boolean),
     })
   })
 

@@ -6,12 +6,12 @@ Extension table for topics of type rewards_program. Links program to its parent 
 
 Not partitioned — growth: unbounded.
 
-| Column       | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                    |
-| ------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ---------------------------------------------------------- |
-| `topic_id`   | `uuid`                     | no       |                     |          |           |           | The topic that is a rewards program (PK, 1:1 with topics). |
-| `company_id` | `uuid`                     | yes      |                     |          |           |           | The company topic that operates this rewards program.      |
-| `created_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                            |
-| `updated_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                            |
+| Column             | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                    |
+| ------------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ---------------------------------------------------------- |
+| `topic_id`         | `uuid`                     | no       |                     |          |           |           | The topic that is a rewards program (PK, 1:1 with topics). |
+| `company_topic_id` | `uuid`                     | yes      |                     |          |           |           | The company topic that operates this rewards program.      |
+| `created_at`       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                            |
+| `updated_at`       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                            |
 
 **Primary key:** `PRIMARY KEY (topic_id)`
 
@@ -23,12 +23,12 @@ _none_
 
 **Foreign keys:**
 
-- `rewards_program_topics_company_id_fkey`: `FOREIGN KEY (company_id) REFERENCES topics(id) ON DELETE CASCADE`
+- `rewards_program_topics_company_topic_id_fkey`: `FOREIGN KEY (company_topic_id) REFERENCES topics(id) ON DELETE CASCADE`
 - `rewards_program_topics_topic_id_fkey`: `FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE CASCADE`
 
 **Indexes:**
 
-- `idx_rewards_program_topics__company_id`: `CREATE INDEX idx_rewards_program_topics__company_id ON public.rewards_program_topics USING btree (company_id) WHERE (company_id IS NOT NULL)`
+- `idx_rewards_program_topics__company_id`: `CREATE INDEX idx_rewards_program_topics__company_id ON public.rewards_program_topics USING btree (company_topic_id) WHERE (company_topic_id IS NOT NULL)`
 - `rewards_program_topics_pkey`: `CREATE UNIQUE INDEX rewards_program_topics_pkey ON public.rewards_program_topics USING btree (topic_id)`
 
 **Triggers:**

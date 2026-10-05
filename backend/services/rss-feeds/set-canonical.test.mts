@@ -20,7 +20,7 @@ describe('set-canonical', () => {
       topic_id: topic.id,
       title: `Set Canonical Feed ${suffix} ${random}`,
     })
-    await updateRssFeedById(feed.id, { enabled: true })
+    await updateRssFeedById(feed.id, { is_enabled: true })
     return feed
   }
 

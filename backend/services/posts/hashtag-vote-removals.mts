@@ -19,7 +19,7 @@ export async function getRemovedPositivePostHashtagRelations(
     WHERE relation.subject_id = ${postId}
       AND NOT EXISTS (SELECT 1 FROM post_topic_alias_sources source
         WHERE source.post_id = relation.subject_id AND source.topic_alias_id = relation.object_id
-          AND source.contributor_id = ${contributorId})`)
+          AND source.contributor_user_id = ${contributorId})`)
   const { rows } = await write<{ id: string }>(query, options)
   return rows
 }

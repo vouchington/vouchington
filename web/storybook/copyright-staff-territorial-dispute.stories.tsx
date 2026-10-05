@@ -42,7 +42,7 @@ const item = makeCopyrightStaffQueueItem({
         body_name: 'Example Dispute Body',
         referred_at: '2026-10-01T10:00:00Z',
         referred_by_party: 'poster',
-        referred_by_user_id: '019f0000-0000-7000-8000-000000000196',
+        referred_by_id: '019f0000-0000-7000-8000-000000000196',
         outcome: null,
       },
     ],

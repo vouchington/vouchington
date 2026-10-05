@@ -76,7 +76,7 @@ describe('mapNodeInfoDocument', () => {
       nodeinfo_software_version: '4.2.1',
       total_users: 12_345,
       monthly_active_users: 6_789,
-      open_registrations: true,
+      is_open_for_registrations: true,
       nodeinfo_raw: {
         version: '2.0',
         software: { name: 'mastodon', version: '4.2.1' },
@@ -97,7 +97,7 @@ describe('mapNodeInfoDocument', () => {
     expect(metadata.total_users).toBeNull()
     expect(metadata.monthly_active_users).toBeNull()
     expect(metadata.software).toBe('lemmy')
-    expect(metadata.open_registrations).toBe(false)
+    expect(metadata.is_open_for_registrations).toBe(false)
   })
 
   it('degrades usage.users fields to null individually when only one is present', () => {
@@ -126,7 +126,7 @@ describe('mapNodeInfoDocument', () => {
       nodeinfo_software_version: null,
       total_users: null,
       monthly_active_users: null,
-      open_registrations: null,
+      is_open_for_registrations: null,
       nodeinfo_raw: null,
     })
 
@@ -148,7 +148,7 @@ describe('mapNodeInfoDocument', () => {
       nodeinfo_software_version: null,
       total_users: null,
       monthly_active_users: null,
-      open_registrations: null,
+      is_open_for_registrations: null,
       nodeinfo_raw: {
         software: { name: 42, version: null },
         protocols: 'activitypub',

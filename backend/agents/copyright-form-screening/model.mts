@@ -69,7 +69,7 @@ invalidity; otherwise return "not_obviously_invalid", including when legal merit
 
 guidance.summary briefly restates the claim. guidance.elements reports each 17 U.S.C. 512(c)(3)(A)
 element exactly once: signature, work_identification, material_identification, contact_information,
-good_faith_statement, and accuracy_authority_statement. Contact details and the signature are
+has_good_faith_statement, and accuracy_authority_statement. Contact details and the signature are
 withheld from you; the has_* and statement booleans are authoritative for whether they were given.
 Mark an element "missing" or "unclear" with a short gap; otherwise "present" with a null gap.
 guidance.risk_notes lists possible fair use, abuse signals, or a claimant who appears not to own or

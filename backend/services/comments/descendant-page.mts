@@ -16,10 +16,10 @@ export type CommentDescendantsPage = { ids: string[]; pageInfo: PageInfo }
  */
 export async function getCommentDescendantsPage(
   currentUser: PrivateUser | null,
-  post: { id: string; root_id: string | null },
+  post: { id: string; root_post_id: string | null },
   options: { limit: number; after?: string },
 ): Promise<CommentDescendantsPage> {
-  const rootId = post.root_id ?? post.id
+  const rootId = post.root_post_id ?? post.id
   const scope = `comment-descendants:${rootId}:${post.id}`
   const afterId = options.after
     ? decodeScopedUuidCursor(options.after, scope, 'Invalid cursor format').id

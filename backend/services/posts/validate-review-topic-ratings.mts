@@ -49,7 +49,7 @@ export async function assertReviewTopicsAllowReviews(topicIds: string[]): Promis
       AND topics.deleted_at IS NULL
       AND topics.merged_into_topic_id IS NULL
     WHERE topics.id IS NULL
-      OR topics.allow_reviews = FALSE
+      OR topics.should_allow_reviews = FALSE
     LIMIT 1
   `)
   const invalidTopic = rows[0]

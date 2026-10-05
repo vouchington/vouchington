@@ -6,7 +6,7 @@ const baseRow: StripeEventRow = {
   id: '01912345-1234-7234-8234-123456789abc',
   stripe_event_id: 'evt_test_record',
   event_type: 'invoice.paid',
-  livemode: false,
+  is_live_mode: false,
   api_version: '2025-09-30.clover',
   stripe_created_at: new Date('2026-01-01T00:00:00.000Z'),
   customer_id: 'cus_test_record',

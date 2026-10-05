@@ -64,7 +64,7 @@ function makePostsResponse() {
         title: 'Dev tooling landscape',
         post_type: 'discussion',
         markdown: 'Some markdown',
-        root_id: null,
+        root_post_id: null,
       },
     },
     posts_metrics: {},

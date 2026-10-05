@@ -23,8 +23,8 @@ export type CopyrightEmailApprovalDraft = {
   claimant_contact: string
   claimant_email: string
   work_description: string
-  good_faith_belief: boolean
-  accuracy_authority_under_penalty_of_perjury: boolean
+  has_good_faith_belief: boolean
+  has_accuracy_authority_under_penalty_of_perjury: boolean
   electronic_signature: string
   targets: CopyrightEmailApprovalTarget[]
 }
@@ -54,9 +54,9 @@ export function createCopyrightEmailApprovalDraft(
     claimant_contact: stringValue(output?.claimant_contact),
     claimant_email: stringValue(output?.claimant_email),
     work_description: stringValue(output?.work_description),
-    good_faith_belief: output?.good_faith_belief === true,
-    accuracy_authority_under_penalty_of_perjury:
-      output?.accuracy_authority_under_penalty_of_perjury === true,
+    has_good_faith_belief: output?.has_good_faith_belief === true,
+    has_accuracy_authority_under_penalty_of_perjury:
+      output?.has_accuracy_authority_under_penalty_of_perjury === true,
     electronic_signature: stringValue(output?.electronic_signature),
     targets: (targetUrls.length > 0 ? targetUrls : ['']).map(blankTarget),
   }
@@ -121,8 +121,8 @@ export function isCompleteCopyrightEmailApprovalDraft(draft: CopyrightEmailAppro
     draft.claimant_email.trim() &&
     draft.work_description.trim() &&
     draft.electronic_signature.trim() &&
-    draft.good_faith_belief &&
-    draft.accuracy_authority_under_penalty_of_perjury &&
+    draft.has_good_faith_belief &&
+    draft.has_accuracy_authority_under_penalty_of_perjury &&
     draft.targets.length > 0 &&
     draft.targets.length <= MAX_EMAIL_APPROVAL_TARGETS &&
     draft.targets.every(

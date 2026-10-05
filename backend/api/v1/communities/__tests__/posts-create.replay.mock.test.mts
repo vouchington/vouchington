@@ -36,7 +36,7 @@ describe('POST /api/v1/communities/:idOrSlug/posts replay', () => {
     const topicSuffix = crypto.randomUUID()
     const community = await insertTestCommunity({
       createdById: user.id,
-      allow_review_posts: true,
+      should_allow_review_posts: true,
     })
     const membership = await insertTestCommunityMember({
       communityId: community.id,
@@ -70,7 +70,7 @@ describe('POST /api/v1/communities/:idOrSlug/posts replay', () => {
     await updateCommunityPostTypeSettings(
       user,
       community.id,
-      { allow_review_posts: false },
+      { should_allow_review_posts: false },
       membership,
     )
     await softDeleteTopic(topicId, user.id)

@@ -87,7 +87,7 @@ export async function insertTestPost(data: {
     INSERT INTO posts (
       id,
       post_type, title, markdown, created_by_id,
-      root_id, parent_id, community_id, broadcast, privacy, is_anonymous,
+      root_post_id, parent_post_id, community_id, broadcast, privacy, is_anonymous,
       bedrock_nova_multimodal_v1_content_sha256,
       llm_moderation_content_sha256,
       created_via

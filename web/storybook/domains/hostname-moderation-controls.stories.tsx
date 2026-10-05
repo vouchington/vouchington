@@ -25,9 +25,9 @@ const blockedHost = hostnames[1]!
 export const Crawlable: Story = {
   args: {
     hostnameId: openHost.id,
-    blocked: openHost.blocked,
-    crawlable: openHost.crawlable,
-    linkRelFollow: openHost.link_rel_follow,
+    blocked: openHost.is_blocked,
+    crawlable: openHost.is_crawlable,
+    linkRelFollow: openHost.should_follow_link_rel,
   },
   render: args => (
     <StoryFrame>

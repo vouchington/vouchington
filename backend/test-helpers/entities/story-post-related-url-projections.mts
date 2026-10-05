@@ -17,22 +17,22 @@ export async function getTestStoryPostProjectionReceiptState(
 ): Promise<{
   crawlRequired: boolean | null
   effectsDispatchedAt: Date | null
-  eligible: boolean
+  is_eligible: boolean
 }> {
   const { rows } = await write<{
-    crawl_required: boolean | null
+    should_crawl: boolean | null
     effects_dispatched_at: Date | null
-    eligible: boolean
+    is_eligible: boolean
   }>(sql`/* getTestStoryPostProjectionReceiptState */
-    SELECT crawl_required, effects_dispatched_at, eligible
+    SELECT should_crawl, effects_dispatched_at, is_eligible
     FROM story_post_related_url_projection_receipts
     WHERE post_id = ${postId} AND generation = ${generation} AND url_id = ${urlId}
   `)
   if (!rows[0]) throw new Error('Expected a story post projection receipt')
   return {
-    crawlRequired: rows[0].crawl_required,
+    crawlRequired: rows[0].should_crawl,
     effectsDispatchedAt: rows[0].effects_dispatched_at,
-    eligible: rows[0].eligible,
+    is_eligible: rows[0].is_eligible,
   }
 }
 

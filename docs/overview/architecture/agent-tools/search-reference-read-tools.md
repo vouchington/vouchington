@@ -40,7 +40,7 @@ uses.
 
 ## Referral programs and links
 
-`get_topic_referral_program` takes a topic UUID or slug and returns `{ topic_id, company_id,
+`get_topic_referral_program` takes a topic UUID or slug and returns `{ topic_id, company_topic_id,
 enabled_at, disabled_at }`, with the dates as ISO text. It answers `Topic not found`, `Topic is not
 a referral program` or `Referral program attributes not found` instead of failing.
 

@@ -32,7 +32,7 @@ describe('post-schema-helpers', () => {
             markdown: 'Great discussion',
             created_at: '2026-03-01T12:00:00.000Z',
             updated_at: '2026-03-01T12:00:00.000Z',
-            root_id: null,
+            root_post_id: null,
             created_by_id: 'user1',
             created_by: {
               account_type: null,
@@ -82,7 +82,7 @@ describe('post-schema-helpers', () => {
             markdown: 'Anonymous reply',
             created_at: '2026-03-01T13:00:00.000Z',
             updated_at: '2026-03-01T13:00:00.000Z',
-            root_id: null,
+            root_post_id: null,
             created_by_id: 'user2',
             created_by: {
               account_type: null,
@@ -139,7 +139,7 @@ describe('post-schema-helpers', () => {
           markdown: `Comment ${i}`,
           created_at: '2026-03-01T12:00:00.000Z',
           updated_at: '2026-03-01T12:00:00.000Z',
-          root_id: null,
+          root_post_id: null,
           created_by_id: `user${i}`,
           created_by: {
             account_type: null,
@@ -191,7 +191,7 @@ describe('post-schema-helpers', () => {
             markdown: 'Valid comment',
             created_at: '2026-03-01T12:00:00.000Z',
             updated_at: '2026-03-01T12:00:00.000Z',
-            root_id: null,
+            root_post_id: null,
             created_by_id: 'user1',
             created_by: {
               account_type: null,
@@ -219,7 +219,7 @@ describe('post-schema-helpers', () => {
             markdown: '',
             created_at: '2026-03-01T13:00:00.000Z',
             updated_at: '2026-03-01T13:00:00.000Z',
-            root_id: null,
+            root_post_id: null,
             created_by_id: 'user2',
             created_by: {
               account_type: null,

@@ -5,12 +5,12 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_publication_dirty_work (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
-  post_id UUID,
-  author_user_id UUID,
-  community_id UUID,
-  rss_feed_id UUID,
-  topic_alias_id UUID,
-  story_id UUID,
+  post_identity_id UUID,
+  author_identity_id UUID,
+  community_identity_id UUID,
+  rss_feed_identity_id UUID,
+  topic_alias_identity_id UUID,
+  story_identity_id UUID,
   reasons post_publication_reasons[] NOT NULL CHECK (cardinality(reasons) > 0),
   generation BIGINT NOT NULL DEFAULT 1 CHECK (generation > 0),
   cursor_post_id UUID,
@@ -22,23 +22,29 @@ CREATE TABLE IF NOT EXISTS post_publication_dirty_work (
   cursor_updated_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CHECK (num_nonnulls(post_id, author_user_id, community_id, rss_feed_id, topic_alias_id, story_id) = 1),
+  CHECK (num_nonnulls(post_identity_id, author_identity_id, community_identity_id, rss_feed_identity_id, topic_alias_identity_id, story_identity_id) = 1),
   CHECK ((lease_token IS NULL) = (leased_at IS NULL)),
   CHECK ((lease_token IS NULL) = (lease_expires_at IS NULL))
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS uq_post_publication_dirty_work__post_id
-  ON post_publication_dirty_work (post_id) WHERE post_id IS NOT NULL;
+  ON post_publication_dirty_work (post_identity_id) WHERE post_identity_id IS NOT NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS uq_post_publication_dirty_work__author_user_id
-  ON post_publication_dirty_work (author_user_id) WHERE author_user_id IS NOT NULL;
+  ON post_publication_dirty_work (author_identity_id) WHERE author_identity_id IS NOT NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS uq_post_publication_dirty_work__community_id
-  ON post_publication_dirty_work (community_id) WHERE community_id IS NOT NULL;
+  ON post_publication_dirty_work (community_identity_id) WHERE community_identity_id IS NOT NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS uq_post_publication_dirty_work__rss_feed_id
-  ON post_publication_dirty_work (rss_feed_id) WHERE rss_feed_id IS NOT NULL;
+  ON post_publication_dirty_work (rss_feed_identity_id) WHERE rss_feed_identity_id IS NOT NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS uq_post_publication_dirty_work__topic_alias_id
-  ON post_publication_dirty_work (topic_alias_id) WHERE topic_alias_id IS NOT NULL;
+  ON post_publication_dirty_work (topic_alias_identity_id) WHERE topic_alias_identity_id IS NOT NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS uq_post_publication_dirty_work__story_id
-  ON post_publication_dirty_work (story_id) WHERE story_id IS NOT NULL;
+  ON post_publication_dirty_work (story_identity_id) WHERE story_identity_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_post_publication_dirty_work__lease_expires_at_id
   ON post_publication_dirty_work (lease_expires_at, id);
 
@@ -104,12 +110,12 @@ BEFORE UPDATE ON post_publication_dirty_work
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 COMMENT ON TABLE post_publication_dirty_work IS 'One de-duplicated current-state publication repair scope. A generation and lease token fence stale workers; exact acknowledgement deletes completed work.';
-COMMENT ON COLUMN post_publication_dirty_work.post_id IS 'Exact post repair scope, referencing durable post identity rather than the nullable live entity.';
-COMMENT ON COLUMN post_publication_dirty_work.author_user_id IS 'Exact author repair scope, referencing durable author identity rather than the nullable live entity.';
-COMMENT ON COLUMN post_publication_dirty_work.community_id IS 'Exact community repair scope, referencing durable community identity rather than the nullable live entity.';
-COMMENT ON COLUMN post_publication_dirty_work.rss_feed_id IS 'Exact rss_feed repair scope, referencing durable rss_feed identity rather than the nullable live entity.';
-COMMENT ON COLUMN post_publication_dirty_work.topic_alias_id IS 'Exact topic_alias repair scope, referencing durable topic_alias identity rather than the nullable live entity.';
-COMMENT ON COLUMN post_publication_dirty_work.story_id IS 'Exact story repair scope, referencing durable story identity rather than the nullable live entity.';
+COMMENT ON COLUMN post_publication_dirty_work.post_identity_id IS 'Exact post repair scope, referencing durable post identity rather than the nullable live entity.';
+COMMENT ON COLUMN post_publication_dirty_work.author_identity_id IS 'Exact author repair scope, referencing durable author identity rather than the nullable live entity.';
+COMMENT ON COLUMN post_publication_dirty_work.community_identity_id IS 'Exact community repair scope, referencing durable community identity rather than the nullable live entity.';
+COMMENT ON COLUMN post_publication_dirty_work.rss_feed_identity_id IS 'Exact rss_feed repair scope, referencing durable rss_feed identity rather than the nullable live entity.';
+COMMENT ON COLUMN post_publication_dirty_work.topic_alias_identity_id IS 'Exact topic_alias repair scope, referencing durable topic_alias identity rather than the nullable live entity.';
+COMMENT ON COLUMN post_publication_dirty_work.story_identity_id IS 'Exact story repair scope, referencing durable story identity rather than the nullable live entity.';
 COMMENT ON COLUMN post_publication_dirty_work.reasons IS 'Finite set of coalesced eligibility-change reasons requiring the same current-state repair.';
 COMMENT ON COLUMN post_publication_dirty_work.generation IS 'Monotonic compare-and-set generation incremented whenever the scope becomes dirty again.';
 COMMENT ON COLUMN post_publication_dirty_work.cursor_post_id IS 'Last post UUID completed by the current generation; NULL starts or restarts post expansion.';

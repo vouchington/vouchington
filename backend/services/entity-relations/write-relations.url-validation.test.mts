@@ -30,7 +30,7 @@ describe('writeEntityRelations (url validation)', () => {
     const random = Math.random().toString(36).slice(2, 10)
     const hostnameId = await insertTestUrlHostname({
       hostname: `write-relations-blocked-${random}.example.com`,
-      blocked: true,
+      is_blocked: true,
     })
     const urlId = await insertTestUrl({
       url: `https://write-relations-blocked-${random}.example.com/article`,

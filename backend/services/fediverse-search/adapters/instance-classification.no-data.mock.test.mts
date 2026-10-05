@@ -58,7 +58,7 @@ describe('classifyFediverseInstance', () => {
         nodeinfo_software_version: '4.2.1',
         total_users: 1000,
         monthly_active_users: 250,
-        open_registrations: true,
+        is_open_for_registrations: true,
         nodeinfo_raw: NODEINFO_DOCUMENT,
       },
     })

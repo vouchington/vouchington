@@ -69,7 +69,10 @@ describe('ImportExportManager — file import and stream', () => {
     Object.defineProperty(input, 'files', { value: [file] })
     fireEvent.change(input)
     await waitFor(() => {
-      expect(mockImportRssFeeds).toHaveBeenCalledWith({ csv: csvContent, follow: true })
+      expect(mockImportRssFeeds).toHaveBeenCalledWith({
+        csv: csvContent,
+        should_follow_imported_feeds: true,
+      })
     })
   })
 
@@ -104,14 +107,19 @@ describe('ImportExportManager — file import and stream', () => {
 
   it('accepts a file when its encoded JSON request body is exactly 2 MiB', async () => {
     render(<ImportExportManager feedType='article' />)
-    const wrapperBytes = new TextEncoder().encode(JSON.stringify({ opml: '', follow: true })).length
+    const wrapperBytes = new TextEncoder().encode(
+      JSON.stringify({ opml: '', should_follow_imported_feeds: true }),
+    ).length
     const fileContent = 'x'.repeat(2 * 1024 * 1024 - wrapperBytes)
     const file = new File([fileContent], 'feeds.xml', { type: 'text/xml' })
     const input = document.querySelector('input[type="file"]') as HTMLInputElement
     Object.defineProperty(input, 'files', { value: [file] })
     fireEvent.change(input)
     await waitFor(() => {
-      expect(mockImportRssFeeds).toHaveBeenCalledWith({ opml: fileContent, follow: true })
+      expect(mockImportRssFeeds).toHaveBeenCalledWith({
+        opml: fileContent,
+        should_follow_imported_feeds: true,
+      })
     })
   })
 

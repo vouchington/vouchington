@@ -56,7 +56,7 @@ describe('searchModeratorActions', () => {
     })
     expect(results.length).toBeGreaterThanOrEqual(3)
     for (const r of results) {
-      expect(r.actor_id).toBe(actor.id)
+      expect(r.actor_user_id).toBe(actor.id)
     }
   })
 

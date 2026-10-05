@@ -17,7 +17,7 @@ export async function searchTopHostnames(
     Math.min(100, Number.isFinite(options.limit) ? (options.limit as number) : 25),
   )
   const values: unknown[] = []
-  const filters: string[] = ['blocked IS NOT TRUE', 'votes_count_up > 0']
+  const filters: string[] = ['is_blocked IS NOT TRUE', 'votes_count_up > 0']
 
   if (options.topic_id) {
     filters.push(`topic_id = $${values.push(options.topic_id)}`)

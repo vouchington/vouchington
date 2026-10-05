@@ -20,8 +20,8 @@ export type PostNotificationSnapshot = {
   clearance_status: string
   is_content_eligible: boolean
   is_manual_send_content_eligible: boolean
-  parent_id: string | null
-  root_id: string | null
+  parent_post_id: string | null
+  root_post_id: string | null
   root_created_by_id: string | null
   root_broadcast: string
   root_privacy: string
@@ -57,8 +57,8 @@ export async function getPostNotificationSnapshot(
       }),
     ).append(sql` AND posts.post_type <> 'comment'
       AS is_manual_send_content_eligible,
-      posts.parent_id,
-      posts.root_id,
+      posts.parent_post_id,
+      posts.root_post_id,
       root_posts.created_by_id AS root_created_by_id,
       root_posts.broadcast AS root_broadcast,
       root_posts.privacy AS root_privacy,
@@ -69,7 +69,7 @@ export async function getPostNotificationSnapshot(
     LEFT JOIN users ON users.id = posts.created_by_id
     LEFT JOIN post_clearance_changes clearance
       ON clearance.id = posts.latest_clearance_change_id
-    LEFT JOIN posts root_posts ON root_posts.id = COALESCE(posts.root_id, posts.id)
+    LEFT JOIN posts root_posts ON root_posts.id = COALESCE(posts.root_post_id, posts.id)
     LEFT JOIN post_slugs root_slugs ON root_slugs.post_id = root_posts.id
     WHERE posts.id = ${postId}
     LIMIT 1

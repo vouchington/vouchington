@@ -107,7 +107,7 @@ async function getEligibleNotification(
           WHERE cm.community_id = c.id AND cm.user_id = n.user_id AND cm.removed_at IS NULL))) AS community_slug
     FROM notifications n
     LEFT JOIN posts candidate_post ON candidate_post.id = n.publication_post_id
-    LEFT JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_id, candidate_post.id)
+    LEFT JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
     WHERE n.user_id = ${intent.user_id} AND n.id = ${intent.notification_id} AND n.deleted_at IS NULL
       AND (n.entity_type <> 'post'
         OR (n.delivery_type <> 'manual_send'

@@ -41,7 +41,7 @@ export async function getReferralClickLog(
     FROM session_referral_attributions sra
     LEFT JOIN users ON users.id = sra.user_id
       AND users.deleted_at IS NULL
-    WHERE sra.referrer_id = ${referrerId}
+    WHERE sra.referrer_user_id = ${referrerId}
   `
 
   if (afterId) {

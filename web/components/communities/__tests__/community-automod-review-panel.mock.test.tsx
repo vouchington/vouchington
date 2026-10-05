@@ -43,7 +43,7 @@ function automodAction(overrides: Partial<CommunityAutomodAction> = {}): Communi
     created_at: '2026-06-01T12:00:00.000Z',
     action_at: '2026-06-01T12:05:00.000Z',
     confidence_score: 0.42,
-    flagged: true,
+    is_flagged: true,
     categories: ['self-promotion'],
     model_output: {},
     current_state: 'rejected',

@@ -14,15 +14,15 @@ describe('PATCH /api/v1/my/identity-verification/display-preferences', () => {
 
     const response = await request
       .patch(path)
-      .send({ verified_badge_visible: false, public_verified_name_display: 'first_name' })
+      .send({ is_verified_badge_visible: false, public_verified_name_display: 'first_name' })
       .expect(200)
-    expect(response.body.verified_badge_visible).toBe(false)
+    expect(response.body.is_verified_badge_visible).toBe(false)
     expect(response.body.public_verified_name_display).toBe('first_name')
   })
 
   it('rejects a user who is not identity verified', async () => {
     const request = createRequest()
     await request.authenticateAs(await createTestUser())
-    await request.patch(path).send({ verified_badge_visible: false }).expect(422)
+    await request.patch(path).send({ is_verified_badge_visible: false }).expect(422)
   })
 })

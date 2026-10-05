@@ -48,7 +48,7 @@ function page(ids: string[], cursor: string | null): PostsResponseBody {
         {
           id,
           post_type: id === 'root' ? 'discussion' : 'comment',
-          root_id: id === 'root' ? null : 'root',
+          root_post_id: id === 'root' ? null : 'root',
           markdown: id,
           created_at: '2026-01-01T00:00:00Z',
           updated_at: '2026-01-01T00:00:00Z',

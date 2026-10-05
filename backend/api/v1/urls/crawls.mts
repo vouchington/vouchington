@@ -40,7 +40,7 @@ app.route('/api/v1/urls/:id/crawls').get(async ctx => {
   if (!url) return ctx.throw(404, 'URL not found')
 
   const canSeeModeration = currentUserCanFilterHostnameModeration(currentUser)
-  if (url.hostname?.blocked && !canSeeModeration) return ctx.throw(404, 'URL not found')
+  if (url.hostname?.is_blocked && !canSeeModeration) return ctx.throw(404, 'URL not found')
 
   const canViewHeaders = currentUserCanTriggerCrawl(currentUser)
   const searchOptions = {

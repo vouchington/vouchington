@@ -11,7 +11,7 @@ gate; reCAPTCHA is monitor-only by default and only ever rejects when explicitly
 `assessRecaptchaToken({ currentUser, token, expectedAction, ip })` runs the **last** anti-abuse
 check on a request, after auth → authorization → rate limit → honeypot → Turnstile. It is wired
 into `POST /api/v1/posts` and `POST /api/v1/communities/:idOrSlug/posts` (`create_post` for
-top-level posts, `create_comment` when a `parent_id` is present).
+top-level posts, `create_comment` when a `parent_post_id` is present).
 
 ### Decision flow
 

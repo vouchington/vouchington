@@ -92,7 +92,7 @@ describe('setPostImages clearance rollback', () => {
       changed_by_id: creator.id,
       public_reason_code: 'platform_policy',
       private_note: 'Internal platform decision',
-      platform_override: true,
+      is_platform_override: true,
     })
     expect(restoredDecision!.id).not.toBe(decisionBefore!.id)
     await checkPostClearance(postId)
@@ -200,7 +200,7 @@ describe('setPostImages clearance rollback', () => {
     expect(restoredDecision).toMatchObject({
       changed_by_id: moderationSystem.id,
       public_reason_code: 'deterministic_policy_block',
-      platform_override: false,
+      is_platform_override: false,
     })
     expect(restoredDecision!.id).not.toBe(rejectedDecision!.id)
     await expect(getLatestPostClearanceTransparencyCategories(postId)).resolves.toEqual([])

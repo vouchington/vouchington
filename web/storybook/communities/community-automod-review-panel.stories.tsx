@@ -42,7 +42,7 @@ const action: CommunityAutomodAction = {
   created_at: review.created_at,
   action_at: '2026-05-11T18:05:00.000Z',
   confidence_score: 0.64,
-  flagged: true,
+  is_flagged: true,
   categories: ['referral', 'promotional'],
   model_output: null,
   current_state: 'rejected',

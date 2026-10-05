@@ -78,7 +78,7 @@ export async function retainCurrentPostPublicationKeys(
       break
     case 'rss_feed':
       await retainCurrentRssFeedPublicationKeys(query, [
-        { id: dirtyWorkId, rss_feed_id: scope.rssFeedId },
+        { id: dirtyWorkId, rss_feed_identity_id: scope.rssFeedId },
       ])
       return
     case 'post':

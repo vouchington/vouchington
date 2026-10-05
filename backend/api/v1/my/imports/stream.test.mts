@@ -115,7 +115,7 @@ describe('GET /api/v1/imports/:batchId/stream', () => {
       user,
       WEB_PROVENANCE,
       ['https://user-rss-stream-test.example.com/rss'],
-      { follow: true },
+      { should_follow_imported_feeds: true },
     )
 
     const request = createRequest()
@@ -165,7 +165,7 @@ describe('GET /api/v1/imports/:batchId/stream', () => {
       user,
       WEB_PROVENANCE,
       ['https://completed-user-rss-stream-test.example.com/rss'],
-      { follow: true },
+      { should_follow_imported_feeds: true },
     )
     await updateRssFeedImportRowCompleted(submitted.rowIds[0]!, 'source_created', rssFeed.id)
 

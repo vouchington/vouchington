@@ -13,7 +13,7 @@ const getRssFeedItemByIdCachedBatch =
   caches.rss_feed_items.cacheGetByAnyBatch(getRssFeedItemsByIdBatch)
 
 async function updateDisabledAt(rssFeedId: string) {
-  await updateRssFeedById(rssFeedId, { enabled: false })
+  await updateRssFeedById(rssFeedId, { is_enabled: false })
 }
 
 describe('search.generated (basic)', () => {

@@ -257,9 +257,10 @@ CREATE OR REPLACE TRIGGER trigger_classifier_candidate_thresholds_effective
   ON classifier_candidate_thresholds
   FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_candidate_effective_thresholds();
 
-CREATE OR REPLACE FUNCTION fn_classifier_audit_actor_was_deleted(actor_id UUID)
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE FUNCTION fn_classifier_audit_actor_was_deleted(actor_user_id UUID)
 RETURNS BOOLEAN LANGUAGE sql VOLATILE AS $$
-  SELECT actor_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM users WHERE id = actor_id)
+  SELECT actor_user_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM users WHERE id = actor_user_id)
 $$;
 
 CREATE OR REPLACE FUNCTION fn_reject_classifier_candidate_threshold_lifecycle()
@@ -656,8 +657,9 @@ CREATE INDEX IF NOT EXISTS idx_topic_classifier_results__classifier_kind
 CREATE INDEX IF NOT EXISTS idx_topic_classifier_results__threshold
   ON topic_classifier_results (threshold_id, topic_id DESC);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS classifier_topic_vote_applications (
-  shared_actor_id UUID NOT NULL REFERENCES users ON DELETE RESTRICT,
+  shared_actor_user_id UUID NOT NULL REFERENCES users ON DELETE RESTRICT,
   topic_id UUID NOT NULL REFERENCES topics ON DELETE CASCADE,
   post_id UUID REFERENCES posts ON DELETE CASCADE,
   rss_feed_item_id UUID REFERENCES rss_feed_items ON DELETE CASCADE,
@@ -668,7 +670,7 @@ CREATE TABLE IF NOT EXISTS classifier_topic_vote_applications (
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT uq_classifier_topic_vote_applications__actor_topic_subject
-    UNIQUE NULLS NOT DISTINCT (shared_actor_id, topic_id, post_id, rss_feed_item_id),
+    UNIQUE NULLS NOT DISTINCT (shared_actor_user_id, topic_id, post_id, rss_feed_item_id),
   CONSTRAINT chk_classifier_topic_vote_applications__one_subject CHECK (
     num_nonnulls(post_id, rss_feed_item_id) = 1
   ),
@@ -1018,7 +1020,7 @@ COMMENT ON COLUMN topic_classifier_results.scope_category IS 'Decision scope cop
 COMMENT ON COLUMN topic_classifier_results.scope_community_id IS 'Immutable community provenance copied from the owning batch.';
 
 COMMENT ON TABLE classifier_topic_vote_applications IS 'Durable per-actor, per-topic application receipts that serialize classifier vote updates and reject stale batch replays.';
-COMMENT ON COLUMN classifier_topic_vote_applications.shared_actor_id IS 'Shared classifier system actor whose topic vote this receipt serializes.';
+COMMENT ON COLUMN classifier_topic_vote_applications.shared_actor_user_id IS 'Shared classifier system actor whose topic vote this receipt serializes.';
 COMMENT ON COLUMN classifier_topic_vote_applications.topic_id IS 'Topic whose shared-actor vote was applied.';
 COMMENT ON COLUMN classifier_topic_vote_applications.post_id IS 'Classified post subject; mutually exclusive with rss_feed_item_id.';
 COMMENT ON COLUMN classifier_topic_vote_applications.rss_feed_item_id IS 'Classified RSS item subject; mutually exclusive with post_id.';

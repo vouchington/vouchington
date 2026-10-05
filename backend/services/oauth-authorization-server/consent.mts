@@ -141,7 +141,7 @@ async function lockAuthorizationRequest(
   query: TransactionQuery,
 ): Promise<AuthorizationRequestRow | null> {
   const result = await query<AuthorizationRequestRow>(
-    `/* lockAuthorizationRequest */ SELECT request.id, request.client_id, request.user_id, request.redirect_uri, request.state,
+    `/* lockAuthorizationRequest */ SELECT request.id, request.client_id, request.user_id, request.redirect_uri, request.client_state,
        request.resource, request.scopes::text[] AS scopes, request.code_challenge, client.owner_user_id,
        client.scopes::text[] AS client_scopes
      FROM oauth_authorization_requests AS request
@@ -180,11 +180,11 @@ async function upsertGrant(
 }
 
 function buildAuthorizationRedirect(
-  request: Pick<AuthorizationRequestRow, 'redirect_uri' | 'state'>,
+  request: Pick<AuthorizationRequestRow, 'redirect_uri' | 'client_state'>,
   result: { code: string } | { error: string },
 ): string {
   return buildOAuthAuthorizationResponseUrl(request.redirect_uri, {
     ...result,
-    state: request.state,
+    state: request.client_state,
   })
 }

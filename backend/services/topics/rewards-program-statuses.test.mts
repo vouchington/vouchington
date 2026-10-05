@@ -32,7 +32,7 @@ describe('rewards-program-statuses', () => {
       id: rewardsProgramId,
       topic_type: 'rewards_program' as const,
     } as unknown as Topic
-    await updateRewardsProgramAttributes(user, rewardsProgramTopic, { company_id: null })
+    await updateRewardsProgramAttributes(user, rewardsProgramTopic, { company_topic_id: null })
 
     statusId = await insertTestTopic({
       name: `Test Status ${randomSuffix}`,

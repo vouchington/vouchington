@@ -11,7 +11,7 @@ export function buildResolvedPostMention(
     title?: string | null
     post_type: string
     slug?: string | null
-    root_id?: string | null
+    root_post_id?: string | null
   }
 
   if (post.post_type === 'comment') {
@@ -19,7 +19,7 @@ export function buildResolvedPostMention(
       | { id: string; slug?: string | null; title?: string | null; post_type: string }
       | null
       | undefined
-    const rootPathId = rootPost?.slug || rootPost?.id || post.root_id || post.id
+    const rootPathId = rootPost?.slug || rootPost?.id || post.root_post_id || post.id
     const rootRouteType = rootPost
       ? getPostRouteSegment(rootPost.post_type)
       : extractRouteSegmentFromRaw(mention) || getPostRouteSegment('discussion')

@@ -22,7 +22,7 @@ describe('create.generated', () => {
     expect(crawl).toBeDefined()
     expect(crawl.__entity_type).toBe('crawl')
     expect(crawl.url_id).toBe(url!.id)
-    expect(crawl.crawler_id).toBe(crawler.id)
+    expect(crawl.hostname_crawler_configuration_id).toBe(crawler.id)
     expect(crawl.id).toBeDefined()
     expect(crawl.created_at).toBeInstanceOf(Date)
     expect(crawl.response_status_code).toBe(200)

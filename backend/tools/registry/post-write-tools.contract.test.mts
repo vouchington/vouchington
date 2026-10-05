@@ -47,11 +47,11 @@ describe('post and comment MCP writes — real services', () => {
     const reply = await callStructuredMcpTool(
       user,
       'create_post',
-      input({ post_type: 'comment', parent_id: post.id }),
+      input({ post_type: 'comment', parent_post_id: post.id }),
       SCOPES,
     )
     const comment = reply.post as { id: string }
-    expect(reply.post).toMatchObject({ post_type: 'comment', parent_id: post.id })
+    expect(reply.post).toMatchObject({ post_type: 'comment', parent_post_id: post.id })
     expect(
       await callStructuredMcpTool(
         user,

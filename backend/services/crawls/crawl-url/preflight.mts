@@ -42,7 +42,11 @@ export async function loadCrawlPreflight(
   if (!hostname) {
     return null
   }
-  if (hostname.blocked || hostname.crawlable === false || isLocalHostname(hostname.hostname)) {
+  if (
+    hostname.is_blocked ||
+    hostname.is_crawlable === false ||
+    isLocalHostname(hostname.hostname)
+  ) {
     return null
   }
 

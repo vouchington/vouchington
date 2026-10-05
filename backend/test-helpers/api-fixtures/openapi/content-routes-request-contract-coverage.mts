@@ -46,7 +46,7 @@ export const QUERY_CARRIERS: Readonly<Record<string, readonly string[]>> = {
     'limit',
     'media_type',
   ],
-  'GET:/api/v1/hostnames': ['after', 'blocked', 'crawlable', 'hostname', 'limit'],
+  'GET:/api/v1/hostnames': ['after', 'hostname', 'is_blocked', 'is_crawlable', 'limit'],
   'GET:/api/v1/households': ['access', 'after', 'limit'],
   'GET:/api/v1/households/:id/memberships': ['after', 'limit'],
   'GET:/api/v1/lists': ['after', 'limit'],

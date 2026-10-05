@@ -14,7 +14,7 @@ export type CopyrightStaffTerritorialCase = {
   complaints: Array<{
     id: string
     filed_by: 'notifier' | 'poster' | 'reviewer'
-    submitted_by_user_id: string | null
+    submitted_by_id: string | null
     received_at: string
     explanation: string
     informed_at: string | null
@@ -33,7 +33,7 @@ export type CopyrightStaffTerritorialCase = {
     body_name: string
     referred_at: string
     referred_by_party: 'poster' | 'notifier'
-    referred_by_user_id: string | null
+    referred_by_id: string | null
     outcome: { result: string; decided_at: string; implemented_at: string | null } | null
   }>
   acknowledgment: {

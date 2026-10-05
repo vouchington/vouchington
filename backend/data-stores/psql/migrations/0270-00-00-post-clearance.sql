@@ -15,6 +15,7 @@ BEGIN
   END IF;
 END $$;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_clearance_changes (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   post_id UUID NOT NULL REFERENCES posts ON DELETE CASCADE,
@@ -24,15 +25,15 @@ CREATE TABLE IF NOT EXISTS post_clearance_changes (
     public_reason_code IS NULL OR char_length(public_reason_code) BETWEEN 1 AND 100
   ),
   private_note TEXT CHECK (private_note IS NULL OR char_length(private_note) <= 4000),
-  platform_override BOOLEAN NOT NULL DEFAULT FALSE,
+  is_platform_override BOOLEAN NOT NULL DEFAULT FALSE,
   metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
   is_creation_moderation_bypass BOOLEAN NOT NULL DEFAULT FALSE,
   moderation_transparency_categories moderation_transparency_categories[] NOT NULL DEFAULT '{}',
   moderation_transparency_community_id UUID,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CHECK (jsonb_typeof(metadata) = 'object'),
-  CHECK (NOT platform_override OR (changed_by_id IS NOT NULL AND public_reason_code IS NOT NULL)),
-  CHECK (private_note IS NULL OR platform_override),
+  CHECK (NOT is_platform_override OR (changed_by_id IS NOT NULL AND public_reason_code IS NOT NULL)),
+  CHECK (private_note IS NULL OR is_platform_override),
   CHECK (moderation_transparency_categories IN (
     '{}', '{openai_omni}', '{spam_detection}', '{post_clearance_reject}',
     '{openai_omni,spam_detection}'
@@ -94,7 +95,7 @@ COMMENT ON COLUMN post_clearance_changes.change_type IS 'Type of clearance trans
 COMMENT ON COLUMN post_clearance_changes.changed_by_id IS 'User or admin who initiated the change; references the retained user identity so the audit row survives user deletion.';
 COMMENT ON COLUMN post_clearance_changes.public_reason_code IS 'Stable provider-neutral reason safe to expose to the affected author.';
 COMMENT ON COLUMN post_clearance_changes.private_note IS 'Private staff note; never returned in public or author post contracts.';
-COMMENT ON COLUMN post_clearance_changes.platform_override IS 'True when platform moderation staff intentionally overrode automated or community state.';
+COMMENT ON COLUMN post_clearance_changes.is_platform_override IS 'True when platform moderation staff intentionally overrode automated or community state.';
 COMMENT ON COLUMN post_clearance_changes.metadata IS 'Structured metadata about the clearance transition.';
 COMMENT ON COLUMN post_clearance_changes.moderation_transparency_categories IS 'Immutable automated-source categories stamped at rejection time for aggregate-only moderation transparency.';
 COMMENT ON COLUMN post_clearance_changes.moderation_transparency_community_id IS 'Immutable community scope stamped from the post for global-transparency exclusion.';

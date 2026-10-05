@@ -20,7 +20,7 @@ function noticeInput(): CopyrightEuNoticeInput {
   return {
     notifier_name: 'Notifying artist',
     notifier_email: `artist-${suffix}@example.test`,
-    good_faith_statement: true,
+    has_good_faith_statement: true,
     contact: 'Reply to the notifying artist',
     content_description: 'Photograph',
     grounds: 'The hosted use reproduces the photograph.',

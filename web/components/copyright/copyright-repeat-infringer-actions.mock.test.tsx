@@ -34,7 +34,7 @@ describe('CopyrightRepeatInfringerActions', () => {
         {
           account_user_id: 'account-1',
           incident_id: 'incident-1',
-          operative: true,
+          is_operative: true,
           open_review_id: 'review-1',
           termination_in_effect: false,
         },
@@ -67,7 +67,7 @@ describe('CopyrightRepeatInfringerActions', () => {
         {
           account_user_id: 'account-1',
           incident_id: 'incident-1',
-          operative: true,
+          is_operative: true,
           open_review_id: 'review-1',
           termination_in_effect: true,
         },
@@ -116,7 +116,7 @@ describe('CopyrightRepeatInfringerActions', () => {
         {
           account_user_id: 'account-1',
           incident_id: 'incident-1',
-          operative: false,
+          is_operative: false,
           open_review_id: null,
           termination_in_effect: false,
         },

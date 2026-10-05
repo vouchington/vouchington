@@ -47,7 +47,7 @@ export async function expireElapsedMemberships(
       )
       UPDATE memberships membership
       SET expired_at = membership.expires_at, cancelled_at = NULL, past_due_at = NULL,
-        paused_at = NULL, cancel_at_period_end = false
+        paused_at = NULL, should_cancel_at_period_end = false
       FROM membership_sources source
       WHERE membership.id IN (SELECT id FROM candidates)
         AND source.id = membership.membership_source_id AND source.source_kind = 'admin_grant'
@@ -70,7 +70,7 @@ export async function expireElapsedMemberships(
       await query(sql`/* expireElapsedMemberships: close source */
         UPDATE membership_source_states
         SET cancelled_at = NULL, expired_at = ${membership.expires_at},
-          past_due_at = NULL, paused_at = NULL, auto_renews = false, updated_at = CURRENT_TIMESTAMP
+          past_due_at = NULL, paused_at = NULL, should_auto_renew = false, updated_at = CURRENT_TIMESTAMP
         WHERE membership_source_id = ${membership.membership_source_id}`)
       // eslint-disable-next-line no-await-in-loop
       await query(sql`/* expireElapsedMemberships: close activation */

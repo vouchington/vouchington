@@ -77,7 +77,7 @@ describe('SES copyright inbound routing while intake is switched off', () => {
     const createIntake = vi.fn<typeof createCopyrightEmailIntake>().mockResolvedValue({
       intake: {
         id: 'intake-id',
-        ses_message_id: data.sesMessageId,
+        amazon_ses_message_id: data.sesMessageId,
         received_at: new Date(),
         raw_storage_key: 'email/ses-copyright-message/original.eml',
         raw_sha256: Buffer.alloc(32, 7),
@@ -186,7 +186,7 @@ describe('SES copyright inbound routing while intake is switched off', () => {
     }
     const intake = {
       id: 'failed-intake-id',
-      ses_message_id: data.sesMessageId,
+      amazon_ses_message_id: data.sesMessageId,
       received_at: new Date(),
       raw_storage_key: 'email/ses-malformed-copyright/evidence.eml',
       raw_sha256: Buffer.alloc(32, 8),

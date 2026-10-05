@@ -13,7 +13,7 @@ import {
 } from '@services/individuals-households'
 import type { Money } from '@ts-shared/money'
 
-type CreateCardRequest = { card_id: string }
+type CreateCardRequest = { card_topic_id: string }
 
 type UpdateCardRequest = {
   opened_on?: string | null
@@ -21,7 +21,7 @@ type UpdateCardRequest = {
   received_sign_up_bonus_on?: string | null
   credit_limit?: Money | null
   is_authorized_user?: boolean
-  authorized_user_of_id?: string | null
+  authorized_user_of_card_id?: string | null
   note?: string | null
 }
 
@@ -50,7 +50,7 @@ app.route('/api/v1/my/cards').post(async (ctx: Context) => {
   const body = (await ctx.request.json('10kb')) as CreateCardRequest
   validateRequestContract(ctx, 'POST:/api/v1/my/cards', { body })
 
-  const card = await createIndividualCard(currentUser, currentUser, body.card_id)
+  const card = await createIndividualCard(currentUser, currentUser, body.card_topic_id)
 
   ctx.setStatus(201)
   ctx.json({ card })
@@ -69,7 +69,7 @@ app.route('/api/v1/my/cards/:id').patch(async (ctx: Context) => {
     received_sign_up_bonus_on: body.received_sign_up_bonus_on,
     credit_limit: body.credit_limit,
     is_authorized_user: body.is_authorized_user,
-    authorized_user_of_id: body.authorized_user_of_id,
+    authorized_user_of_card_id: body.authorized_user_of_card_id,
     note: body.note,
   })
 

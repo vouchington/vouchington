@@ -25,7 +25,7 @@ describe('FediverseInstanceMetadata', () => {
           nodeinfo_software_version: '4.4.0',
           total_users: 1200,
           monthly_active_users: 340,
-          open_registrations: true,
+          is_open_for_registrations: true,
         }}
         hostnameElection={{
           __entity_type: 'hostname_election',

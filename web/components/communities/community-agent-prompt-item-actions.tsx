@@ -68,7 +68,7 @@ export function CommunityAgentPromptItemActions({
         onClick={onToggleAllocation}
         disabled={disabled}
       >
-        {prompt.slot_allocated ? 'Deallocate' : 'Allocate'}
+        {prompt.is_slot_allocated ? 'Deallocate' : 'Allocate'}
       </Button>
       <Button
         size='touchSm'

@@ -66,7 +66,7 @@ describe('detectMassReportCampaign', () => {
     })
   }, 60_000)
 
-  it('computes new_account_reporter_pct as reporters-fraction from fresh accounts', async () => {
+  it('computes new_account_reporter_percent as reporters-fraction from fresh accounts', async () => {
     const freshTarget = await createTestUserDirect({ username: randomUsername() })
     const count = MASS_REPORT_THRESHOLD + 1
 
@@ -83,6 +83,6 @@ describe('detectMassReportCampaign', () => {
     const result = await detectMassReportCampaign('user', freshTarget.id)
     expect(result.flagged).toBe(true)
     // All reporters are brand new → pct should be 1.0 (or close, depending on test timing)
-    expect(result.new_account_reporter_pct).toBeGreaterThan(0)
+    expect(result.new_account_reporter_percent).toBeGreaterThan(0)
   }, 60_000)
 })

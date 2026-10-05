@@ -10,7 +10,7 @@ Not partitioned — growth: unbounded.
 | -------------------------------------- | ------------------------------------------ | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | `id`                                   | `uuid`                                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                 |
 | `copyright_notice_id`                  | `uuid`                                     | no       |                              |          |           |           | Legal case to which this immutable inbound submission belongs.                                                                  |
-| `submitted_by_user_id`                 | `uuid`                                     | yes      |                              |          |           |           | Authenticated submitting account for a form, appeal, or counter-notice; NULL for email/guest sources or after account deletion. |
+| `submitted_by_id`                      | `uuid`                                     | yes      |                              |          |           |           | Authenticated submitting account for a form, appeal, or counter-notice; NULL for email/guest sources or after account deletion. |
 | `kind`                                 | `copyright_notice_submission_kinds`        | no       |                              |          |           |           | Submission role: allegation, supplement, ordinary appeal, statutory counter-notice, withdrawal, or proceeding notice.           |
 | `received_at`                          | `timestamp with time zone`                 | no       |                              |          |           |           | Immutable provider or form receipt timestamp for this exact submission.                                                         |
 | `source_kind`                          | `copyright_notice_submission_source_kinds` | no       |                              |          |           |           | Authenticated form, guest form, email, or staff-recorded source channel.                                                        |
@@ -35,7 +35,7 @@ Not partitioned — growth: unbounded.
 **Foreign keys:**
 
 - `copyright_notice_submissions_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE CASCADE`
-- `copyright_notice_submissions_submitted_by_user_id_fkey`: `FOREIGN KEY (submitted_by_user_id) REFERENCES users(id) ON DELETE SET NULL`
+- `copyright_notice_submissions_submitted_by_id_fkey`: `FOREIGN KEY (submitted_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `copyright_submission_guest_capability_fk`: `FOREIGN KEY (copyright_notice_guest_capability_id, copyright_notice_id) REFERENCES copyright_notice_guest_capabilities(id, copyright_notice_id) ON DELETE RESTRICT`
 
 **Indexes:**
@@ -45,7 +45,7 @@ Not partitioned — growth: unbounded.
 - `idx_copyright_notice_submissions__guest_capability`: `CREATE INDEX idx_copyright_notice_submissions__guest_capability ON public.copyright_notice_submissions USING btree (copyright_notice_guest_capability_id, copyright_notice_id) WHERE (copyright_notice_guest_capability_id IS NOT NULL)`
 - `idx_copyright_notice_submissions__notice_received`: `CREATE INDEX idx_copyright_notice_submissions__notice_received ON public.copyright_notice_submissions USING btree (copyright_notice_id, received_at, id)`
 - `idx_copyright_notice_submissions__one_guest_court_hold`: `CREATE UNIQUE INDEX idx_copyright_notice_submissions__one_guest_court_hold ON public.copyright_notice_submissions USING btree (copyright_notice_guest_capability_id) WHERE ((kind = 'court_or_ccb_hold'::copyright_notice_submission_kinds) AND (copyright_notice_guest_capability_id IS NOT NULL))`
-- `idx_copyright_notice_submissions__submitted_by`: `CREATE INDEX idx_copyright_notice_submissions__submitted_by ON public.copyright_notice_submissions USING btree (submitted_by_user_id) WHERE (submitted_by_user_id IS NOT NULL)`
+- `idx_copyright_notice_submissions__submitted_by`: `CREATE INDEX idx_copyright_notice_submissions__submitted_by ON public.copyright_notice_submissions USING btree (submitted_by_id) WHERE (submitted_by_id IS NOT NULL)`
 
 **Triggers:**
 

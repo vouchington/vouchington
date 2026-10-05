@@ -46,22 +46,22 @@ app.route('/api/v1/communities/:idOrSlug/moderator-vacation').patch(async (ctx: 
     'Forbidden',
   )
   const body = await parseJsonBody<{
-    suppress_community_digests_while_on_vacation?: unknown
+    should_suppress_community_digests_while_on_vacation?: unknown
   }>(ctx)
   validateRequestContract(ctx, 'PATCH:/api/v1/communities/:idOrSlug/moderator-vacation', {
     path: ctx.params,
     body,
   })
   ctx.assert(
-    typeof body.suppress_community_digests_while_on_vacation === 'boolean',
+    typeof body.should_suppress_community_digests_while_on_vacation === 'boolean',
     422,
-    'suppress_community_digests_while_on_vacation must be a boolean',
+    'should_suppress_community_digests_while_on_vacation must be a boolean',
   )
   const suppress = await setSuppressCommunityDigestsWhileOnVacation(currentUser.id, {
     communityId: community.id,
-    suppress: body.suppress_community_digests_while_on_vacation,
+    suppress: body.should_suppress_community_digests_while_on_vacation,
   })
-  ctx.json({ suppress_community_digests_while_on_vacation: suppress })
+  ctx.json({ should_suppress_community_digests_while_on_vacation: suppress })
 })
 
 // PUT /api/v1/communities/:idOrSlug/moderator-vacation

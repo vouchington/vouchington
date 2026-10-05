@@ -7,11 +7,14 @@ import type { UpdateHostnameBody } from './hostname-update-types.mts'
  */
 export function readHostnameChanges(body: UpdateHostnameBody): UpdateHostnameBody {
   const changes: UpdateHostnameBody = {}
-  if (body.blocked !== undefined) changes.blocked = body.blocked
-  if (body.crawlable !== undefined) changes.crawlable = body.crawlable
-  if (body.skip_web_risk !== undefined) changes.skip_web_risk = body.skip_web_risk
-  if (body.link_rel_follow !== undefined) changes.link_rel_follow = body.link_rel_follow
-  if (body.ignore_robots_txt !== undefined) changes.ignore_robots_txt = body.ignore_robots_txt
+  if (body.is_blocked !== undefined) changes.is_blocked = body.is_blocked
+  if (body.is_crawlable !== undefined) changes.is_crawlable = body.is_crawlable
+  if (body.should_skip_web_risk !== undefined)
+    changes.should_skip_web_risk = body.should_skip_web_risk
+  if (body.should_follow_link_rel !== undefined)
+    changes.should_follow_link_rel = body.should_follow_link_rel
+  if (body.should_ignore_robots_txt !== undefined)
+    changes.should_ignore_robots_txt = body.should_ignore_robots_txt
   if ('unreliable_status_codes' in body) {
     changes.unreliable_status_codes = readOptionalUnreliableStatusCodes(
       body.unreliable_status_codes,

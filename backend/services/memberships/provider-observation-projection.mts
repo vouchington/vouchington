@@ -138,7 +138,7 @@ async function projectAdvancedProviderObservation(
     expiredAt: membership.expired_at,
     pastDueAt: membership.past_due_at,
     pausedAt: membership.paused_at,
-    cancelAtPeriodEnd: membership.cancel_at_period_end,
+    cancelAtPeriodEnd: membership.should_cancel_at_period_end,
     membershipProviderEvidenceId: observation.membershipProviderEvidenceId,
     query,
   })

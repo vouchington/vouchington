@@ -15,12 +15,12 @@ export const CORRESPONDENCE_REJECTION = `POST:${BASE}/:id/correspondence-rejecti
 /** Closed JSON bodies and the keys each one requires. */
 export const REQUIRED_KEYS: Record<string, string[]> = {
   [APPROVAL]: [
-    'accuracy_authority_under_penalty_of_perjury',
     'claimant_contact',
     'claimant_display_name',
     'claimant_email',
     'electronic_signature',
-    'good_faith_belief',
+    'has_accuracy_authority_under_penalty_of_perjury',
+    'has_good_faith_belief',
     'jurisdiction',
     'rationale',
     'targets',
@@ -49,7 +49,7 @@ export const ENUMS: Record<string, { field: string; values: string[] }> = {
 
 /** Body fields that only the literal `true` satisfies: an unaccepted declaration is never valid. */
 export const ATTESTATIONS: Record<string, string[]> = {
-  [APPROVAL]: ['accuracy_authority_under_penalty_of_perjury', 'good_faith_belief'],
+  [APPROVAL]: ['has_accuracy_authority_under_penalty_of_perjury', 'has_good_faith_belief'],
   [CORRESPONDENCE]: [
     'consent_to_federal_jurisdiction',
     'consent_to_service_of_process',

@@ -61,7 +61,7 @@ describe('Households API Routes', () => {
       const createResponse = await ownerRequest.post('/api/v1/households').send({}).expect(201)
       const householdId = createResponse.body.household.id as string
 
-      expect(createResponse.body.household.owner_id).toBe(owner!.id)
+      expect(createResponse.body.household.owner_user_id).toBe(owner!.id)
 
       const getResponse = await ownerRequest.get(`/api/v1/households/${householdId}`).expect(200)
       expect(getResponse.body.household.id).toBe(householdId)

@@ -16,7 +16,7 @@ describe('PATCH /api/v1/communities/:idOrSlug/post-type-settings', () => {
 
     await request
       .patch(`/api/v1/communities/${community.slug}/post-type-settings`)
-      .send({ allow_review_posts: true })
+      .send({ should_allow_review_posts: true })
       .expect(401)
   })
 
@@ -33,7 +33,7 @@ describe('PATCH /api/v1/communities/:idOrSlug/post-type-settings', () => {
 
     await request
       .patch(`/api/v1/communities/${community.slug}/post-type-settings`)
-      .send({ allow_review_posts: true })
+      .send({ should_allow_review_posts: true })
       .expect(403)
   })
 
@@ -54,13 +54,13 @@ describe('PATCH /api/v1/communities/:idOrSlug/post-type-settings', () => {
 
     const response = await request
       .patch(`/api/v1/communities/${community.slug}/post-type-settings`)
-      .send({ allow_review_posts: true, allow_data_point_posts: true })
+      .send({ should_allow_review_posts: true, should_allow_data_point_posts: true })
       .expect(200)
 
     expect(response.body.community).toMatchObject({
       id: community.id,
-      allow_review_posts: true,
-      allow_data_point_posts: true,
+      should_allow_review_posts: true,
+      should_allow_data_point_posts: true,
     })
   })
 
@@ -73,7 +73,7 @@ describe('PATCH /api/v1/communities/:idOrSlug/post-type-settings', () => {
 
     await request
       .patch(`/api/v1/communities/${community.slug}/post-type-settings`)
-      .send({ allow_review_posts: 'yes' })
+      .send({ should_allow_review_posts: 'yes' })
       .expect(422)
   })
 
@@ -87,7 +87,7 @@ describe('PATCH /api/v1/communities/:idOrSlug/post-type-settings', () => {
 
     await request
       .patch(`/api/v1/communities/${community.slug}/post-type-settings`)
-      .send({ allow_review_posts: true })
+      .send({ should_allow_review_posts: true })
       .expect(403)
   })
 })

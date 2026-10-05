@@ -47,7 +47,7 @@ function passkeyPost(endpoint: string, body: unknown): unknown | undefined {
         id: 'passkey-story',
         name: textField(body, 'name') || 'Story passkey',
         device_type: 'multiDevice',
-        backed_up: true,
+        is_backed_up: true,
         created_at: storyTimestamp,
         last_used_at: null,
       },

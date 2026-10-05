@@ -40,7 +40,7 @@ export function imageDeliveryAuthorityProof(): ReturnType<typeof sql> {
       WHERE image.id = authority.image_id
         AND image.deleted_at IS NULL AND image.upload_completed_at IS NOT NULL
         AND image.quarantine_pending_at IS NULL
-        AND image.openai_omni_moderation_flagged = FALSE
+        AND image.is_flagged_by_openai_omni_moderation = FALSE
         AND image.openai_omni_moderation_results IS NOT NULL
         AND image.openai_omni_moderation_created_at IS NOT NULL
         AND EXISTS (
@@ -79,7 +79,7 @@ export function imageDeliveryAuthorityProof(): ReturnType<typeof sql> {
                         ON scope.copyright_notice_legal_hold_assessment_id = hold.id
                       WHERE submission.copyright_notice_id = target.copyright_notice_id
                         AND scope.copyright_notice_target_id = target.id
-                        AND hold.from_original_claimant AND hold.same_material
+                        AND hold.is_from_original_claimant AND hold.is_same_material
                         AND hold.proceeding_kind IS NOT NULL AND hold.commenced_at IS NOT NULL
                         AND hold.received_by_designated_agent_at <= CURRENT_TIMESTAMP
                         AND NOT EXISTS (SELECT 1 FROM copyright_notice_legal_hold_resolutions resolution

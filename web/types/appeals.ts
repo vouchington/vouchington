@@ -66,7 +66,7 @@ export interface ModerationAppeal {
   updated_at: string
   target_context: ModerationAppealTargetContext | null
   // Staff-only fields (omitted in redacted tier)
-  appellant_id?: string
+  appellant_user_id?: string
   appeal_reason?: string
   ai_public_response?: string | null
   ai_internal_response?: string | null

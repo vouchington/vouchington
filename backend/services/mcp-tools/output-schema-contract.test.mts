@@ -30,7 +30,7 @@ describe('MCP output schema contract — real DB', () => {
   beforeAll(async () => {
     user = { ...(await createTestUser()), membership_plan: null }
     const cardId = await insertTestCard({ createdById: user.id })
-    const card = (await manageMyCardsTool.function(user)({ action: 'add', card_id: cardId }))
+    const card = (await manageMyCardsTool.function(user)({ action: 'add', card_topic_id: cardId }))
       .result as { id: string }
     await manageMyCardsTool.function(user)({
       action: 'update',
@@ -54,8 +54,8 @@ describe('MCP output schema contract — real DB', () => {
     await manageMyRewardsStatusesTool.function(user)({
       action: 'update',
       id: status.id,
-      since: '2024-01-01',
-      until: '2024-12-31',
+      started_on: '2024-01-01',
+      expires_on: '2024-12-31',
     })
     await manageMySpendingTool.function(user)({
       action: 'add',

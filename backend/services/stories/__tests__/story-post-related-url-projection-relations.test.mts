@@ -85,7 +85,7 @@ describe('story post related URL projection relations', () => {
     try {
       const sourceRows = await getStoryPostRelatedUrlProjectionSourcePageForWork(work)
       const decisions = await decideStoryPostRelatedUrlProjectionRows(work, sourceRows)
-      expect(decisions).toEqual([expect.objectContaining({ eligible: true })])
+      expect(decisions).toEqual([expect.objectContaining({ is_eligible: true })])
       await expect(stageStoryPostRelatedUrlProjectionReceipts(work, decisions)).resolves.toBe(true)
       await updateUrlHostnameBlocked(url.hostname.id, true)
 
@@ -93,7 +93,7 @@ describe('story post related URL projection relations', () => {
       await expect(getPostRelatedUrlIds(post.id)).resolves.toEqual([])
       await expect(
         getTestStoryPostProjectionReceiptState(post.id, work.generation, url.id),
-      ).resolves.toMatchObject({ eligible: false })
+      ).resolves.toMatchObject({ is_eligible: false })
     } finally {
       await releaseStoryPostRelatedUrlProjectionWork(work)
       await drainProjection(post.id)
@@ -107,7 +107,7 @@ describe('story post related URL projection relations', () => {
     try {
       const sourceRows = await getStoryPostRelatedUrlProjectionSourcePageForWork(work)
       const decisions = await decideStoryPostRelatedUrlProjectionRows(work, sourceRows)
-      expect(decisions).toEqual([expect.objectContaining({ eligible: true })])
+      expect(decisions).toEqual([expect.objectContaining({ is_eligible: true })])
       await expect(stageStoryPostRelatedUrlProjectionReceipts(work, decisions)).resolves.toBe(true)
       const parsedUrl = new URL(url.url)
       await createReferralProgramFixture({
@@ -120,7 +120,7 @@ describe('story post related URL projection relations', () => {
       await expect(getPostRelatedUrlIds(post.id)).resolves.toEqual([])
       await expect(
         getTestStoryPostProjectionReceiptState(post.id, work.generation, url.id),
-      ).resolves.toMatchObject({ eligible: false })
+      ).resolves.toMatchObject({ is_eligible: false })
     } finally {
       await releaseStoryPostRelatedUrlProjectionWork(work)
       await drainProjection(post.id)

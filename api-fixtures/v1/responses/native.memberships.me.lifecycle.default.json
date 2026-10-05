@@ -42,7 +42,6 @@
   "sources": [
     {
       "access_ends_at": "2027-01-01T00:00:00.000Z",
-      "auto_renews": false,
       "effective_at": "2026-09-10T00:00:00.000Z",
       "id": "00000000-0000-7000-8000-000000000813",
       "is_effective": false,
@@ -50,11 +49,11 @@
       "plan": "plus",
       "provider": "stripe",
       "renewal": null,
+      "should_auto_renew": false,
       "status": "revoked"
     },
     {
       "access_ends_at": "2027-02-01T00:00:00.000Z",
-      "auto_renews": true,
       "effective_at": "2027-01-01T00:00:00.000Z",
       "id": "00000000-0000-7000-8000-000000000812",
       "is_effective": false,
@@ -66,6 +65,7 @@
         "price": null,
         "product_id": "00000000-0000-7000-8000-000000000701"
       },
+      "should_auto_renew": true,
       "status": "active"
     }
   ]

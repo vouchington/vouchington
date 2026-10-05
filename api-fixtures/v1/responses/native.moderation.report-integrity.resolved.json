@@ -14,7 +14,7 @@
       "flag_type": "mass_report_suspected",
       "hostname_id": null,
       "id": "report-flag-2",
-      "new_account_reporter_pct": 0.2,
+      "new_account_reporter_percent": 0.2,
       "post_id": null,
       "reported_user_id": "user-1",
       "reporter_count": 4,

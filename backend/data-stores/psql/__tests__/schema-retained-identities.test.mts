@@ -6,6 +6,11 @@ import {
 import { onGracefulShutdown, read } from '../index.mts'
 
 const liveRoots = [
+  [
+    'memberships',
+    'retained_membership_identities',
+    'trigger_memberships_register_retained_identity',
+  ],
   ['users', 'retained_user_identities', 'trigger_register_retained_user_identity'],
   ['api_keys', 'retained_api_key_identities', 'trigger_register_retained_api_key_identity'],
   ['topics', 'retained_topic_identities', 'trigger_register_retained_topic_identity'],
@@ -30,13 +35,13 @@ describe('concrete retained entity identities', () => {
         confdeltype::text AS delete_action
       FROM pg_constraint WHERE contype = 'f' AND conrelid IN
         ('users'::regclass, 'api_keys'::regclass, 'topics'::regclass, 'posts'::regclass,
-         'rss_feed_items'::regclass)`)
+         'rss_feed_items'::regclass, 'memberships'::regclass)`)
     const { rows: triggers } = await read<{ owner: string; trigger_name: string }>(
       `/* readRetainedIdentityLiveTriggers */
       SELECT tgrelid::regclass::text AS owner, tgname AS trigger_name FROM pg_trigger
       WHERE NOT tgisinternal AND tgrelid IN
         ('users'::regclass, 'api_keys'::regclass, 'topics'::regclass, 'posts'::regclass,
-         'rss_feed_items'::regclass)`,
+         'rss_feed_items'::regclass, 'memberships'::regclass)`,
     )
     for (const [live, root, trigger] of liveRoots) {
       expect(constraints).toContainEqual({ owner: live, target: root, delete_action: 'r' })

@@ -159,7 +159,7 @@ export async function editTestCommunityRule(promptId: string, text: string): Pro
 export async function deactivateTestCommunityPrompt(promptId: string): Promise<void> {
   await write(sql`/* deactivateTestCommunityPrompt */
     UPDATE community_agent_prompts
-    SET slot_allocated = false, activated_at = NULL, deactivated_at = now()
+    SET is_slot_allocated = false, activated_at = NULL, deactivated_at = now()
     WHERE id = ${promptId}
   `)
 }
@@ -188,10 +188,10 @@ export async function setTestCommunityPostReviewPlatformOverride(
 /** The per-prompt projection rows C8 wrote for a post, by prompt, with the digest they cover. */
 export async function readCommunityModerationProjection(
   postId: string,
-): Promise<Array<{ prompt_id: string; flagged: boolean; input_sha256: Buffer }>> {
-  const { rows } = await read<{ prompt_id: string; flagged: boolean; input_sha256: Buffer }>(sql`
+): Promise<Array<{ prompt_id: string; is_flagged: boolean; input_sha256: Buffer }>> {
+  const { rows } = await read<{ prompt_id: string; is_flagged: boolean; input_sha256: Buffer }>(sql`
     /* readCommunityModerationProjection */
-    SELECT prompt_id, flagged, input_sha256 FROM agent_moderations
+    SELECT prompt_id, is_flagged, input_sha256 FROM agent_moderations
     WHERE post_id = ${postId} ORDER BY prompt_id
   `)
   return rows

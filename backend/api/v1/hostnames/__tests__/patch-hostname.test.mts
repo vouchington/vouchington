@@ -18,20 +18,20 @@ describe('PATCH /api/v1/hostnames/:id', () => {
     await addUserRole(adminUser!.id, 'administrator')
     hostnameId = await insertTestUrlHostname({
       hostname: `patch-test-${Date.now()}.example.com`,
-      blocked: false,
-      crawlable: true,
+      is_blocked: false,
+      is_crawlable: true,
     })
   })
 
   it('returns 401 when unauthenticated', async () => {
     const request = createRequest()
-    await request.patch(`/api/v1/hostnames/${hostnameId}`).send({ crawlable: false }).expect(401)
+    await request.patch(`/api/v1/hostnames/${hostnameId}`).send({ is_crawlable: false }).expect(401)
   })
 
   it('returns 403 when authenticated as non-admin', async () => {
     const request = createRequest()
     await request.authenticateAs(regularUser!)
-    await request.patch(`/api/v1/hostnames/${hostnameId}`).send({ crawlable: false }).expect(403)
+    await request.patch(`/api/v1/hostnames/${hostnameId}`).send({ is_crawlable: false }).expect(403)
   })
 
   it('returns 415 when content-type is not json', async () => {
@@ -43,7 +43,7 @@ describe('PATCH /api/v1/hostnames/:id', () => {
   it('returns 422 when id is not a UUID', async () => {
     const request = createRequest()
     await request.authenticateAs(adminUser!)
-    await request.patch('/api/v1/hostnames/not-a-uuid').send({ crawlable: false }).expect(422)
+    await request.patch('/api/v1/hostnames/not-a-uuid').send({ is_crawlable: false }).expect(422)
   })
 
   it('returns 404 when hostname does not exist', async () => {
@@ -51,7 +51,7 @@ describe('PATCH /api/v1/hostnames/:id', () => {
     await request.authenticateAs(adminUser!)
     await request
       .patch('/api/v1/hostnames/00000000-0000-0000-0000-000000000000')
-      .send({ crawlable: false })
+      .send({ is_crawlable: false })
       .expect(404)
   })
 
@@ -67,64 +67,67 @@ describe('PATCH /api/v1/hostnames/:id', () => {
   it('updates crawlable and returns 204', async () => {
     const id = await insertTestUrlHostname({
       hostname: `patch-crawlable-${Date.now()}.example.com`,
-      blocked: false,
-      crawlable: true,
+      is_blocked: false,
+      is_crawlable: true,
     })
     const request = createRequest()
     await request.authenticateAs(adminUser!)
-    await request.patch(`/api/v1/hostnames/${id}`).send({ crawlable: false }).expect(204)
+    await request.patch(`/api/v1/hostnames/${id}`).send({ is_crawlable: false }).expect(204)
   })
 
   it('invalidates cached hostname detail after a flag update', async () => {
     const hostname = `patch-cache-${Date.now()}.example.com`
     const id = await insertTestUrlHostname({
       hostname,
-      blocked: false,
-      crawlable: true,
+      is_blocked: false,
+      is_crawlable: true,
     })
     const request = createRequest()
     await request.authenticateAs(adminUser!)
 
     const before = await request.get(`/api/v1/hostnames/${hostname}`).expect(200)
-    expect(before.body.hostname.crawlable).toBe(true)
+    expect(before.body.hostname.is_crawlable).toBe(true)
 
-    await request.patch(`/api/v1/hostnames/${id}`).send({ crawlable: false }).expect(204)
+    await request.patch(`/api/v1/hostnames/${id}`).send({ is_crawlable: false }).expect(204)
 
     const after = await request.get(`/api/v1/hostnames/${hostname}`).expect(200)
-    expect(after.body.hostname.crawlable).toBe(false)
+    expect(after.body.hostname.is_crawlable).toBe(false)
   })
 
-  it('updates link_rel_follow and returns 204', async () => {
+  it('updates should_follow_link_rel and returns 204', async () => {
     const id = await insertTestUrlHostname({
       hostname: `patch-linkrel-${Date.now()}.example.com`,
-      blocked: false,
-      crawlable: true,
+      is_blocked: false,
+      is_crawlable: true,
     })
     const request = createRequest()
     await request.authenticateAs(adminUser!)
-    await request.patch(`/api/v1/hostnames/${id}`).send({ link_rel_follow: true }).expect(204)
+    await request
+      .patch(`/api/v1/hostnames/${id}`)
+      .send({ should_follow_link_rel: true })
+      .expect(204)
   })
 
-  it('returns 422 when blocked:true is combined with other fields', async () => {
+  it('returns 422 when is_blocked:true is combined with other fields', async () => {
     const request = createRequest()
     await request.authenticateAs(adminUser!)
     await request
       .patch(`/api/v1/hostnames/${hostnameId}`)
-      .send({ blocked: true, crawlable: false })
+      .send({ is_blocked: true, is_crawlable: false })
       .expect(422)
   })
 
   it('blocks hostname and returns result object', async () => {
     const id = await insertTestUrlHostname({
       hostname: `patch-block-${Date.now()}.example.com`,
-      blocked: false,
-      crawlable: true,
+      is_blocked: false,
+      is_crawlable: true,
     })
     const request = createRequest()
     await request.authenticateAs(adminUser!)
     const response = await request
       .patch(`/api/v1/hostnames/${id}`)
-      .send({ blocked: true })
+      .send({ is_blocked: true })
       .expect(200)
     expect(typeof response.body.blocked_hostname_count).toBe('number')
     expect(typeof response.body.soft_deleted_relation_count).toBe('number')
@@ -135,54 +138,57 @@ describe('PATCH /api/v1/hostnames/:id', () => {
     const suffix = `${Date.now()}.example.com`
     const id = await insertTestUrlHostname({
       hostname: `patch-block-cache-${suffix}`,
-      blocked: false,
-      crawlable: true,
+      is_blocked: false,
+      is_crawlable: true,
     })
     const subdomain = `sub.patch-block-cache-${suffix}`
     await insertTestUrlHostname({
       hostname: subdomain,
-      blocked: false,
-      crawlable: true,
+      is_blocked: false,
+      is_crawlable: true,
     })
     const request = createRequest()
     await request.authenticateAs(adminUser!)
 
     const before = await request.get(`/api/v1/hostnames/${subdomain}`).expect(200)
-    expect(before.body.hostname.blocked).toBe(false)
+    expect(before.body.hostname.is_blocked).toBe(false)
 
-    await request.patch(`/api/v1/hostnames/${id}`).send({ blocked: true }).expect(200)
+    await request.patch(`/api/v1/hostnames/${id}`).send({ is_blocked: true }).expect(200)
 
     const after = await request.get(`/api/v1/hostnames/${subdomain}`).expect(200)
-    expect(after.body.hostname.blocked).toBe(true)
+    expect(after.body.hostname.is_blocked).toBe(true)
   })
 
   it('unblocks hostname and returns 204', async () => {
     const id = await insertTestUrlHostname({
       hostname: `patch-unblock-${Date.now()}.example.com`,
-      blocked: true,
-      crawlable: true,
+      is_blocked: true,
+      is_crawlable: true,
     })
     const request = createRequest()
     await request.authenticateAs(adminUser!)
-    await request.patch(`/api/v1/hostnames/${id}`).send({ blocked: false }).expect(204)
+    await request.patch(`/api/v1/hostnames/${id}`).send({ is_blocked: false }).expect(204)
   })
 
-  it('updates ignore_robots_txt and returns 204', async () => {
+  it('updates should_ignore_robots_txt and returns 204', async () => {
     const id = await insertTestUrlHostname({
       hostname: `patch-ignore-robots-${Date.now()}.example.com`,
-      blocked: false,
-      crawlable: true,
+      is_blocked: false,
+      is_crawlable: true,
     })
     const request = createRequest()
     await request.authenticateAs(adminUser!)
-    await request.patch(`/api/v1/hostnames/${id}`).send({ ignore_robots_txt: true }).expect(204)
+    await request
+      .patch(`/api/v1/hostnames/${id}`)
+      .send({ should_ignore_robots_txt: true })
+      .expect(204)
   })
 
   it('updates unreliable_status_codes and returns 204', async () => {
     const id = await insertTestUrlHostname({
       hostname: `patch-unreliable-status-${Date.now()}.example.com`,
-      blocked: false,
-      crawlable: true,
+      is_blocked: false,
+      is_crawlable: true,
     })
     const request = createRequest()
     await request.authenticateAs(adminUser!)
@@ -197,8 +203,8 @@ describe('PATCH /api/v1/hostnames/:id', () => {
   it('clears unreliable_status_codes and returns 204', async () => {
     const id = await insertTestUrlHostname({
       hostname: `patch-clear-unreliable-status-${Date.now()}.example.com`,
-      blocked: false,
-      crawlable: true,
+      is_blocked: false,
+      is_crawlable: true,
     })
     const request = createRequest()
     await request.authenticateAs(adminUser!)
@@ -217,8 +223,8 @@ describe('PATCH /api/v1/hostnames/:id', () => {
   it('returns 400 when unreliable_status_codes contains a non-4xx status', async () => {
     const id = await insertTestUrlHostname({
       hostname: `patch-bad-unreliable-status-${Date.now()}.example.com`,
-      blocked: false,
-      crawlable: true,
+      is_blocked: false,
+      is_crawlable: true,
     })
     const request = createRequest()
     await request.authenticateAs(adminUser!)

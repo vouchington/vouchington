@@ -90,7 +90,7 @@ export function PasskeyList({
                   >
                     {passkey.name}
                   </span>
-                  {passkey.backed_up && (
+                  {passkey.is_backed_up && (
                     <span className='rounded bg-green-500/10 px-1.5 py-0.5 text-xs font-medium text-green-600 dark:text-green-400'>
                       {t('extracted.passkeyManager.passkeyList.backedUp_2f2ccea1')}
                     </span>

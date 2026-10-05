@@ -94,8 +94,8 @@ type TopicBasic = {
   html?: string
   aliases: string[]
   topic_type: TopicTypes
-  noindex: boolean
-  allow_reviews: boolean
+  is_noindexed: boolean
+  should_allow_reviews: boolean
   created_at: Date
   hostname_id: string | null
   hostname?: PublicViewHostname | null

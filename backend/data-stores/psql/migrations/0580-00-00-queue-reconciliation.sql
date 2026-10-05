@@ -1,6 +1,7 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS queue_reconciliation_checkpoints (
   queue_name TEXT PRIMARY KEY,
-  completed_through TIMESTAMPTZ NOT NULL,
+  reconciled_through_at TIMESTAMPTZ NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CHECK (queue_name = TRIM(queue_name) AND char_length(queue_name) BETWEEN 1 AND 100)
 );
@@ -24,4 +25,4 @@ ON urls (updated_at, id);
 
 COMMENT ON TABLE queue_reconciliation_checkpoints IS 'Durable high-water marks advanced only after a reconciliation dispatcher processes every candidate.';
 COMMENT ON COLUMN queue_reconciliation_checkpoints.queue_name IS 'Stable queue-domain identifier owning this high-water mark.';
-COMMENT ON COLUMN queue_reconciliation_checkpoints.completed_through IS 'Latest source timestamp whose complete candidate set was successfully reconciled.';
+COMMENT ON COLUMN queue_reconciliation_checkpoints.reconciled_through_at IS 'Latest source timestamp whose complete candidate set was successfully reconciled.';

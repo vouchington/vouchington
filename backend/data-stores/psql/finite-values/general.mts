@@ -94,6 +94,7 @@ export const GENERAL_FINITE_VALUES = {
     'post',
     'rss_feed_item',
     'image',
+    'membership',
     'image_placement_binding',
   ],
   user_deletion_external_work_kinds: [

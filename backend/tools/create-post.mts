@@ -43,7 +43,7 @@ const tool: Tool<Args, { success: true; post: McpPost }> = {
     name: 'create_post',
     type: 'function',
     description:
-      'Create a post, or reply with post_type comment and parent_id. Send community_id for a community root post. Story and topic recommendation posts use dedicated workflows. Reuse the UUID idempotency_key with the same body to retry safely.',
+      'Create a post, or reply with post_type comment and parent_post_id. Send community_id for a community root post. Story and topic recommendation posts use dedicated workflows. Reuse the UUID idempotency_key with the same body to retry safely.',
     parameters: {
       ...parameters,
       properties: {
@@ -120,7 +120,7 @@ const tool: Tool<Args, { success: true; post: McpPost }> = {
         assertCanCreateAdminOnlyPostType(user, postType)
         assertOfficialAccountCanCreatePost(user, body.post_type)
         await validateCreatePostInput(user, body, membershipPlan)
-        if (body.parent_id) await loadWritablePost(user, body.parent_id, false)
+        if (body.parent_post_id) await loadWritablePost(user, body.parent_post_id, false)
       },
       execute: query =>
         executePreparedContribution<AdmittedPost>(query, async () => {

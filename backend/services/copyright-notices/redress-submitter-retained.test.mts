@@ -46,9 +46,9 @@ describe('retained submitter attribution for EU redress', () => {
     const requestIds = [notifierRequest.id, posterRequest.id, reviewerRequest.id]
     expect(new Set(requestIds).size).toBe(3)
     await expect(Promise.all(requestIds.map(readTestEuRedressAttribution))).resolves.toEqual([
-      { submitted_by_user_id: scene.notifier.id, filed_by: 'notifier' },
-      { submitted_by_user_id: scene.poster.id, filed_by: 'poster' },
-      { submitted_by_user_id: reviewer.id, filed_by: 'reviewer' },
+      { submitted_by_id: scene.notifier.id, filed_by: 'notifier' },
+      { submitted_by_id: scene.poster.id, filed_by: 'poster' },
+      { submitted_by_id: reviewer.id, filed_by: 'reviewer' },
     ])
 
     const notifierSession = createRequest()
@@ -67,9 +67,9 @@ describe('retained submitter attribution for EU redress', () => {
     expect(await hasTestRetainedIdentityRoot('user', reviewer.id)).toBe(true)
     const retained = await Promise.all(requestIds.map(readTestEuRedressAttribution))
     expect(retained).toEqual([
-      { submitted_by_user_id: scene.notifier.id, filed_by: 'notifier' },
-      { submitted_by_user_id: scene.poster.id, filed_by: 'poster' },
-      { submitted_by_user_id: reviewer.id, filed_by: 'reviewer' },
+      { submitted_by_id: scene.notifier.id, filed_by: 'notifier' },
+      { submitted_by_id: scene.poster.id, filed_by: 'poster' },
+      { submitted_by_id: reviewer.id, filed_by: 'reviewer' },
     ])
     await notifierSession.get(`/api/v1/copyright-notices/${noticeId}/participant`).expect(401)
     await reviewerSession.get(`/api/v1/copyright-notices/${noticeId}/participant`).expect(401)
@@ -85,7 +85,7 @@ describe('retained submitter attribution for EU redress', () => {
     expect(admitted.noticeId).toBe(scene.noticeId)
     const attribution = await readTestEuRedressAttributions(scene.noticeId)
     expect(attribution).toHaveLength(1)
-    expect(attribution[0]).toMatchObject({ submitted_by_user_id: null, filed_by: 'notifier' })
+    expect(attribution[0]).toMatchObject({ submitted_by_id: null, filed_by: 'notifier' })
     await expect(
       admitTestGuestTerritorialComplaintEmail({
         currentUser: scene.staff,

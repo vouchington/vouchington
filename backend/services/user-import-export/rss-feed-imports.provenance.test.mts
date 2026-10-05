@@ -56,7 +56,9 @@ describe('user RSS feed import provenance', () => {
 
   async function submitAndProcess(provenance: ContentProvenance) {
     const createSource = createRealSource()
-    const created = await submitRssFeedImport(user, provenance, [newFeedUrl()], { follow: false })
+    const created = await submitRssFeedImport(user, provenance, [newFeedUrl()], {
+      should_follow_imported_feeds: false,
+    })
     await processRssFeedImportRow(created.import.id, created.rowIds[0]!, {
       createSourceFromUrlImpl: createSource,
     })
@@ -92,8 +94,8 @@ describe('user RSS feed import provenance', () => {
     const mcp: ContentProvenance = { createdVia: 'mcp', oauthClientId }
     const createSource = createRealSource()
     const [webImport, mcpImport] = await Promise.all([
-      submitRssFeedImport(user, web, [newFeedUrl()], { follow: false }),
-      submitRssFeedImport(user, mcp, [newFeedUrl()], { follow: false }),
+      submitRssFeedImport(user, web, [newFeedUrl()], { should_follow_imported_feeds: false }),
+      submitRssFeedImport(user, mcp, [newFeedUrl()], { should_follow_imported_feeds: false }),
     ])
 
     await Promise.all(
@@ -134,7 +136,7 @@ describe('user RSS feed import provenance', () => {
       user,
       { createdVia: 'api', oauthClientId },
       [newFeedUrl()],
-      { follow: false },
+      { should_follow_imported_feeds: false },
     )
 
     await expect(

@@ -10,10 +10,10 @@
       "deleted_at": null,
       "deleted_by_id": null,
       "id": "prompt-1",
+      "is_slot_allocated": true,
       "model_name": "gpt-5.4-nano",
       "model_provider": "openai",
       "prompt": "Welcome new members.",
-      "slot_allocated": true,
       "updated_at": "2026-01-01T00:00:00Z"
     }
   ],

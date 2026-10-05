@@ -18,9 +18,9 @@ export default function DomainModerationPanel({ hostname }: Props) {
       </h2>
       <HostnameModerationControls
         hostnameId={hostname.id}
-        blocked={hostname.blocked}
-        crawlable={hostname.crawlable}
-        linkRelFollow={hostname.link_rel_follow}
+        blocked={hostname.is_blocked}
+        crawlable={hostname.is_crawlable}
+        linkRelFollow={hostname.should_follow_link_rel}
       />
     </section>
   )

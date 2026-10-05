@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto'
+import { getIsolatedDatabaseCaseMode } from '../../../../../test-helpers/vitest-isolated-database-cases.mts'
+import { runIsolatedDatabaseCase } from '../../../../../test-helpers/vitest-isolated-database-case.mts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Job, Worker } from 'glide-mq'
 import {
@@ -49,10 +51,10 @@ describe('openai moderation single worker', () => {
 
     const moderation = (await getPostModerationData(postId)) as {
       openai_omni_moderation_created_at: Date | null
-      openai_omni_moderation_flagged: boolean | null
+      is_flagged_by_openai_omni_moderation: boolean | null
     }
     expect(moderation.openai_omni_moderation_created_at).toBeInstanceOf(Date)
-    expect(moderation.openai_omni_moderation_flagged).toBe(false)
+    expect(moderation.is_flagged_by_openai_omni_moderation).toBe(false)
 
     const notificationJobs = await readAllQueueJobs(notifications)
     expect(
@@ -120,6 +122,10 @@ describe('openai moderation single worker', () => {
   })
 
   it('requeues due source work and moves deadline-exhausted posts to review', async () => {
+    if (getIsolatedDatabaseCaseMode('openai-moderation-reconciliation') === 'parent') {
+      await runIsolatedDatabaseCase('openai-moderation-reconciliation')
+      return
+    }
     const creator = await createTestUser()
     expect(creator).toBeTruthy()
     const duePostId = await insertTestPost({
@@ -156,6 +162,10 @@ describe('openai moderation single worker', () => {
   })
 
   it('runs image quarantine reconciliation jobs', async () => {
+    if (getIsolatedDatabaseCaseMode('openai-image-quarantine-reconciliation') === 'parent') {
+      await runIsolatedDatabaseCase('openai-image-quarantine-reconciliation')
+      return
+    }
     await expect(
       handleOpenAIModerationOmniSingleJob(
         makeJob('reconcile_image_quarantines', randomUUID()),
@@ -181,7 +191,7 @@ describe('openai moderation single worker', () => {
     ).rejects.toThrow('OPENAI_API_KEY is not set')
     await expect(getTestPostModerationRetryDelayMinutes(postId, 'openai_omni')).resolves.toBe(5)
     await expect(getPostModerationData(postId)).resolves.toMatchObject({
-      openai_omni_moderation_flagged: null,
+      is_flagged_by_openai_omni_moderation: null,
     })
   })
 

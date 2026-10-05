@@ -50,8 +50,8 @@ type DeletedPostLookup = {
   id: string
   post_type: PostType
   created_at: Date
-  root_id: string | null
-  parent_id: string | null
+  root_post_id: string | null
+  parent_post_id: string | null
   created_by_id: string | null
   community_id: string | null
   review_topic_ratings?: Array<{ topic_id: string }> | null
@@ -73,8 +73,8 @@ export const getDeletedPostByAny = async (
       posts.id,
       posts.post_type,
       posts.created_at,
-      posts.root_id,
-      posts.parent_id,
+      posts.root_post_id,
+      posts.parent_post_id,
       posts.created_by_id,
       posts.community_id,
       CASE WHEN posts.post_type = 'review' THEN (
@@ -109,8 +109,8 @@ export const getDeletedPostByAny = async (
     id: row.id,
     post_type: row.post_type,
     created_at: row.created_at,
-    root_id: row.root_id,
-    parent_id: row.parent_id,
+    root_post_id: row.root_post_id,
+    parent_post_id: row.parent_post_id,
     created_by_id: row.created_by_id,
     community_id: row.community_id,
     review_topic_ratings: row.review_topic_ratings ?? null,

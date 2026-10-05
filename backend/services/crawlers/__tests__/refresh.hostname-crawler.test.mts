@@ -26,11 +26,11 @@ describe('refresh.hostname-crawler', () => {
       `https://crawler-blocked-${random}.example.com/page`,
     )
 
-    await updateUrlHostname(url!.hostname.id, { crawlable: true })
+    await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
     await updateUrlHostnameBlocked(url!.hostname.id, true)
 
     const result = await refreshHostnameCrawler(url!.hostname.id)
-    expect(result.crawler_id).toBeNull()
+    expect(result.hostname_crawler_configuration_id).toBeNull()
     expect(result.url_ids_to_crawl).toHaveLength(0)
     expect(result.urls_considered).toBe(0)
   })
@@ -41,10 +41,10 @@ describe('refresh.hostname-crawler', () => {
       `https://crawler-noncrawlable-${random}.example.com/page`,
     )
 
-    await updateUrlHostname(url!.hostname.id, { crawlable: false })
+    await updateUrlHostname(url!.hostname.id, { is_crawlable: false })
 
     const result = await refreshHostnameCrawler(url!.hostname.id)
-    expect(result.crawler_id).toBeNull()
+    expect(result.hostname_crawler_configuration_id).toBeNull()
     expect(result.url_ids_to_crawl).toHaveLength(0)
   })
 
@@ -58,10 +58,10 @@ describe('refresh.hostname-crawler', () => {
       insertTestUrl({ url: `${base}/page2`, hostnameId }),
       insertTestUrl({ url: `${base}/page3`, hostnameId }),
     ])
-    await updateUrlHostname(hostnameId, { crawlable: true })
+    await updateUrlHostname(hostnameId, { is_crawlable: true })
 
     const result = await refreshHostnameCrawler(hostnameId)
-    expect(result.crawler_id).not.toBeNull()
+    expect(result.hostname_crawler_configuration_id).not.toBeNull()
     expect(result.url_ids_to_crawl.length).toBeGreaterThan(0)
   })
 })

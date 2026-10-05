@@ -68,7 +68,7 @@ See also: [Entity × Action Matrix](../ENTITY-ACTION-MATRIX.md) — maps each ro
 - Domains & Sources:
   - Routes:
     - `/domains` - search all domains (hostnames) with trust badges; administrators also see blocked/crawlable filters and status badges
-    - `/domain/:idOrHostname` - domain detail page (existing, now with trust badge and vote summary); administrators also see admin details (blocked, crawlable, link_rel_follow) and associated crawlers
+    - `/domain/:idOrHostname` - domain detail page (existing, now with trust badge and vote summary); administrators also see admin details (blocked, crawlable, should_follow_link_rel) and associated crawlers
     - `/domains/compare?ids=id1,id2[,...]` - compare up to 10 domains side-by-side
     - `/sources` - topics that have an associated RSS Feed (RSS Feed = Source)
       - When clicking a topic from this page, go to `/:topic-type/:id/latest`

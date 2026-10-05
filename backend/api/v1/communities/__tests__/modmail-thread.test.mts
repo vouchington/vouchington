@@ -217,9 +217,9 @@ describe('modmail thread API', () => {
       await request.authenticateAs(mod)
       const response = await request
         .patch(`/api/v1/communities/${community.slug}/modmail/${threadId}`)
-        .send({ assigned_mod_id: mod.id })
+        .send({ assigned_moderator_user_id: mod.id })
         .expect(200)
-      expect(response.body.thread.assigned_mod_id).toBe(mod.id)
+      expect(response.body.thread.assigned_moderator_user_id).toBe(mod.id)
     })
 
     it('allows mod to resolve the thread', async () => {

@@ -39,7 +39,7 @@ export async function createGuestTerritorialComplaintFromEmail(
   const { rows: existing } = await transaction(sql`
     /* createGuestTerritorialComplaintFromEmail:existing */
     SELECT id FROM copyright_territorial_redress_requests
-    WHERE copyright_territorial_decision_id = ${parent.id} AND submitted_by_user_id IS NULL
+    WHERE copyright_territorial_decision_id = ${parent.id} AND submitted_by_id IS NULL
   `)
   assert(!existing[0], 409, 'A guest complaint already exists for this decision')
   const window = await getTerritorialInformedWindow(
@@ -56,7 +56,7 @@ export async function createGuestTerritorialComplaintFromEmail(
   await transaction(sql`/* createGuestTerritorialComplaintFromEmail:request */
     INSERT INTO copyright_territorial_redress_requests (
       copyright_notice_id, jurisdiction, copyright_territorial_decision_id,
-      submitted_by_user_id, filed_by, idempotency_key, explanation_ciphertext, received_at
+      submitted_by_id, filed_by, idempotency_key, explanation_ciphertext, received_at
     ) VALUES (
       ${input.noticeId}, 'eu_dsa', ${parent.id}, NULL, 'notifier', ${input.submissionId},
       ${encryptSecret(body, `${territorialLabels('eu_dsa').redressPurpose}:${input.submissionId}`)},

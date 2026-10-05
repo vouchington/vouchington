@@ -15,7 +15,7 @@ async function getActors(actorIds: string[]) {
 export const adminModerationObservabilityTools = [
   createAdminTool<{
     community_id?: string
-    actor_id?: string
+    actor_user_id?: string
     action_type?: (typeof MODERATOR_ACTION_TYPES)[number]
     after?: string
     limit?: number
@@ -27,7 +27,7 @@ export const adminModerationObservabilityTools = [
     parameters: adminInput({
       ...PAGE_INPUT,
       community_id: UUID_INPUT,
-      actor_id: UUID_INPUT,
+      actor_user_id: UUID_INPUT,
       action_type: { type: 'string', enum: MODERATOR_ACTION_TYPES },
     }),
     outputSchema: adminRouteOutputSchema({ method: 'GET', path: '/api/v1/admin/modlog' }),
@@ -35,7 +35,7 @@ export const adminModerationObservabilityTools = [
     run: async (_user, args) => {
       const result = await searchModeratorActions({
         communityId: args.community_id,
-        actorId: args.actor_id,
+        actorId: args.actor_user_id,
         actionType: args.action_type,
         after: args.after,
         limit: args.limit ?? 25,
@@ -44,7 +44,9 @@ export const adminModerationObservabilityTools = [
         results: result.results.map(row => ({ __entity_type: 'moderator_action', id: row.id })),
         page_info: result.page_info,
         moderator_actions: Object.fromEntries(result.results.map(row => [row.id, row])),
-        users: await getActors(result.results.flatMap(row => (row.actor_id ? [row.actor_id] : []))),
+        users: await getActors(
+          result.results.flatMap(row => (row.actor_user_id ? [row.actor_user_id] : [])),
+        ),
       }
     },
   }),
@@ -64,7 +66,7 @@ export const adminModerationObservabilityTools = [
     run: async (_user, args) => {
       const metrics = await getModerationAnalytics(args.range ?? '30d', { type: 'global' })
       metrics.moderator_workload.users = await getActors(
-        metrics.moderator_workload.moderators.map(row => row.actor_id),
+        metrics.moderator_workload.moderators.map(row => row.actor_user_id),
       )
       return metrics
     },

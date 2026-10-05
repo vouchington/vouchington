@@ -54,7 +54,7 @@ async function currentUserCanViewCommunityPost(
       AND cm.removed_at IS NULL
     LEFT JOIN community_post_reviews cpr
       ON cpr.community_id = c.id
-      AND cpr.post_id = COALESCE(p.root_id, p.id)
+      AND cpr.post_id = COALESCE(p.root_post_id, p.id)
     WHERE p.id = ${post.id}
       AND p.community_id = ${post.community_id}
     LIMIT 1

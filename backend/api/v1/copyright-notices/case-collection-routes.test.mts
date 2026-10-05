@@ -38,7 +38,7 @@ describe('EU case collection continuation', () => {
     expect(eu.dispute_settlements).toHaveLength(25)
     expect(eu.dispute_settlements_page_info.has_next_page).toBe(true)
     expect(eu.dispute_settlements[0].outcome.result).toBe('decided_for_platform')
-    expect(JSON.stringify(eu.dispute_settlements)).not.toContain('referred_by_user_id')
+    expect(JSON.stringify(eu.dispute_settlements)).not.toContain('referred_by_id')
 
     const endpoint = `/api/v1/copyright-notices/${noticeId}/eu-dispute-settlements`
     const rest = await participant
@@ -61,7 +61,7 @@ describe('EU case collection continuation', () => {
       .expect(200)
     expect(audit.body.copyright_eu_dispute_settlements[0]).toMatchObject({
       referred_by_party: 'notifier',
-      referred_by_user_id: scene.notifier.id,
+      referred_by_id: scene.notifier.id,
     })
     await participant.get(endpoint).query({ after: audit.body.page_info.end_cursor }).expect(400)
     await staff

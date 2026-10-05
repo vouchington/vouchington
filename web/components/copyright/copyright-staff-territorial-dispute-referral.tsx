@@ -65,7 +65,7 @@ export function CopyrightStaffTerritorialReferralFields({
               body_name: bodyName.trim(),
               referred_at: new Date(referredAt).toISOString(),
               referred_by_party: referredByParty,
-              ...(referredByUserId ? { referred_by_user_id: referredByUserId } : {}),
+              ...(referredByUserId ? { referred_by_id: referredByUserId } : {}),
             }),
           'Dispute settlement referral recorded.',
         )

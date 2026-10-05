@@ -153,7 +153,7 @@ describe('post publication reconciliation processor', () => {
 
   it('uses the topic-alias scope lock for alias-owned dirty work', async () => {
     const aliasId = '00000000-0000-7000-8000-000000000007'
-    const aliasWork = { ...work, post_id: null, topic_alias_id: aliasId }
+    const aliasWork = { ...work, post_identity_id: null, topic_alias_identity_id: aliasId }
     const dependencies = makeDependencies(makeResult({ processed: 0, posts: [] }))
     dependencies.listAvailablePostPublicationDirtyWork.mockResolvedValueOnce([aliasWork])
     dependencies.claimPostPublicationDirtyWork.mockResolvedValueOnce(aliasWork)
@@ -170,7 +170,7 @@ describe('post publication reconciliation processor', () => {
 
   it('uses the story scope lock for story-owned dirty work', async () => {
     const storyId = '00000000-0000-7000-8000-000000000007'
-    const storyWork = { ...work, post_id: null, story_id: storyId }
+    const storyWork = { ...work, post_identity_id: null, story_identity_id: storyId }
     const dependencies = makeDependencies(makeResult({ processed: 0, posts: [] }))
     dependencies.listAvailablePostPublicationDirtyWork.mockResolvedValueOnce([storyWork])
     dependencies.claimPostPublicationDirtyWork.mockResolvedValueOnce(storyWork)

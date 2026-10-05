@@ -28,7 +28,7 @@ export async function softDeleteAndScrubUserProfile(
         verification_status = DEFAULT,
         verification_provider = NULL,
         verification_completed_at = NULL,
-        verified_badge_visible = DEFAULT,
+        is_verified_badge_visible = DEFAULT,
         public_verified_name_display = DEFAULT,
         verified_first_name = NULL,
         verified_last_name_initial = NULL,

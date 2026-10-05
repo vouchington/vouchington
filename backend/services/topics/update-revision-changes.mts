@@ -20,10 +20,16 @@ export function buildTopicRevisionChanges(
     revisionChanges.topic_type = { before: topic.topic_type, after: changes.topic_type }
   if (changes.markdown !== undefined && changes.markdown !== topic.markdown)
     revisionChanges.markdown = { before: topic.markdown, after: changes.markdown }
-  if (changes.noindex !== undefined && changes.noindex !== topic.noindex)
-    revisionChanges.noindex = { before: topic.noindex, after: changes.noindex }
-  if (changes.allow_reviews !== undefined && changes.allow_reviews !== topic.allow_reviews)
-    revisionChanges.allow_reviews = { before: topic.allow_reviews, after: changes.allow_reviews }
+  if (changes.is_noindexed !== undefined && changes.is_noindexed !== topic.is_noindexed)
+    revisionChanges.is_noindexed = { before: topic.is_noindexed, after: changes.is_noindexed }
+  if (
+    changes.should_allow_reviews !== undefined &&
+    changes.should_allow_reviews !== topic.should_allow_reviews
+  )
+    revisionChanges.should_allow_reviews = {
+      before: topic.should_allow_reviews,
+      after: changes.should_allow_reviews,
+    }
   if (changes.logo_image_id !== undefined && changes.logo_image_id !== topic.logo_image_id)
     revisionChanges.logo_image_id = { before: topic.logo_image_id, after: changes.logo_image_id }
   if (changes.hero_image_id !== undefined && changes.hero_image_id !== topic.hero_image_id)

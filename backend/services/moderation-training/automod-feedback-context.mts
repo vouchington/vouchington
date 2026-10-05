@@ -21,7 +21,7 @@ export async function getAutomodFeedbackContext(
       LEFT JOIN community_post_reviews cpr ON cpr.post_id = p.id AND cpr.community_id = ${communityId}
       WHERE am.id = ${id}
         AND p.deleted_at IS NULL
-        AND am.flagged IS TRUE
+        AND am.is_flagged IS TRUE
         AND am.deleted_at IS NULL
         AND am.input_sha256 IS NOT DISTINCT FROM p.llm_moderation_content_sha256
         AND (
@@ -37,7 +37,7 @@ export async function getAutomodFeedbackContext(
               JOIN community_agent_prompts newer_cap ON newer_cap.id = newer_am.prompt_id
               WHERE newer_am.post_id = am.post_id
                 AND newer_cap.community_id = cap.community_id
-                AND newer_am.flagged IS TRUE
+                AND newer_am.is_flagged IS TRUE
                 AND newer_am.deleted_at IS NULL
                 AND newer_am.input_sha256 IS NOT DISTINCT FROM p.llm_moderation_content_sha256
                 AND (newer_am.created_at, newer_am.id) > (am.created_at, am.id)

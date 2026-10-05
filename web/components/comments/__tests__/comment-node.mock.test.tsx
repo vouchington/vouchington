@@ -49,7 +49,7 @@ describe('CommentNode', () => {
     mockAuthState.currentUser = { id: 'viewer-1' }
     mockAuthState.isAuthenticated = true
     const child = makeNode(
-      makePost({ id: 'c2', parent_id: 'c1', created_by_id: 'user-2', slug: 'c2' }),
+      makePost({ id: 'c2', parent_post_id: 'c1', created_by_id: 'user-2', slug: 'c2' }),
     )
     render(
       <CommentNode

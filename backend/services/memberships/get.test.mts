@@ -233,7 +233,7 @@ describe('get', () => {
       expect(result[0]!.user_id).toBe(histUser.id)
       expect(result[0]!.change_type).toBe('admin_grant')
       expect(result[0]!.to_plan).toBe('plus')
-      expect(result[0]!.cancel_at_period_end).toBe(false)
+      expect(result[0]!.should_cancel_at_period_end).toBe(false)
     })
   })
 

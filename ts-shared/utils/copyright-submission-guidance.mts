@@ -2,16 +2,16 @@
 export const COPYRIGHT_COUNTER_NOTICE_GUIDANCE_ELEMENTS = [
   'signature',
   'material_identification',
-  'good_faith_statement',
+  'has_good_faith_statement',
   'contact_and_jurisdiction_consent',
 ] as const
 
 export const COPYRIGHT_LEGAL_HOLD_GUIDANCE_CRITERIA = [
-  'from_original_claimant',
+  'is_from_original_claimant',
   'proceeding_kind',
   'commenced_at',
   'received_by_designated_agent_at',
-  'same_material',
+  'is_same_material',
 ] as const
 
 export const COPYRIGHT_COUNTER_NOTICE_RISK_KINDS = [

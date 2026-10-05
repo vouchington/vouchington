@@ -113,7 +113,7 @@ describe('paused Stripe membership coexistence', () => {
       expired_at: null,
       past_due_at: null,
       paused_at: expect.any(Date),
-      cancel_at_period_end: true,
+      should_cancel_at_period_end: true,
       source_expires_at: new Date('2020-01-01T00:00:00.000Z'),
       source_expired_at: null,
       source_paused_at: expect.any(Date),

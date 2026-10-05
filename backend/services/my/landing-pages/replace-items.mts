@@ -64,9 +64,9 @@ export async function replaceMyLandingPageItems(
       continue
     }
     if (item.type === 'review') {
-      validateUUID(item.review_id)
-      assert(reviewsById.has(item.review_id), 400, 'Invalid review_id')
-      assertNoDuplicateSelection('review', item.review_id, seenSelections)
+      validateUUID(item.review_post_id)
+      assert(reviewsById.has(item.review_post_id), 400, 'Invalid review_post_id')
+      assertNoDuplicateSelection('review', item.review_post_id, seenSelections)
       continue
     }
     if (item.type === 'referral_link') {
@@ -90,15 +90,15 @@ export async function replaceMyLandingPageItems(
 
     for (const entry of item.entries) {
       if (entry.type === 'review') {
-        validateUUID(entry.review_id)
-        const review = reviewsById.get(entry.review_id)
-        assert(review, 400, 'Invalid review_id')
+        validateUUID(entry.review_post_id)
+        const review = reviewsById.get(entry.review_post_id)
+        assert(review, 400, 'Invalid review_post_id')
         assert(
           review.review_topic_ratings.some(topic => topic.topic_id === item.topic_id),
           400,
           'Review does not match the selected topic',
         )
-        assertNoDuplicateSelection('review', entry.review_id, seenSelections)
+        assertNoDuplicateSelection('review', entry.review_post_id, seenSelections)
         continue
       }
 

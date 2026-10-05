@@ -76,10 +76,10 @@ describe('Google Web Risk checks', () => {
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
-  it('skips Google calls when a parent hostname has skip_web_risk enabled', async () => {
+  it('skips Google calls when a parent hostname has should_skip_web_risk enabled', async () => {
     const domain = `skip-${crypto.randomUUID()}.test`
     const hostnameMap = await upsertUrlHostnames(null, [domain])
-    await updateUrlHostname(hostnameMap.get(domain)!, { skip_web_risk: true })
+    await updateUrlHostname(hostnameMap.get(domain)!, { should_skip_web_risk: true })
 
     await assertUrlAllowedByWebRisk(`https://www.${domain}/safe`)
 
@@ -167,7 +167,7 @@ describe('Google Web Risk checks', () => {
     })
 
     const blocked = await getUrlHostnameByAny(domain)
-    expect(blocked?.blocked).toBe(true)
+    expect(blocked?.is_blocked).toBe(true)
     expect(blocked?.hostname).toBe(domain)
 
     const audit = await getWebRiskHostnameAuditForTest(domain)

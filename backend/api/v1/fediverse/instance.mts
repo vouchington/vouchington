@@ -37,7 +37,7 @@ function toPublicFediverseInstanceAttributes(
     nodeinfo_software_version: attributes.nodeinfo_software_version,
     total_users: attributes.total_users,
     monthly_active_users: attributes.monthly_active_users,
-    open_registrations: attributes.open_registrations,
+    is_open_for_registrations: attributes.is_open_for_registrations,
   }
 }
 

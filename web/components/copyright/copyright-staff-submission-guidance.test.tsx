@@ -12,7 +12,7 @@ describe('CopyrightStaffSubmissionGuidance', () => {
           elements: [
             { element: 'signature', status: 'present', gap: null },
             { element: 'material_identification', status: 'unclear', gap: 'Compare the image ID.' },
-            { element: 'good_faith_statement', status: 'present', gap: null },
+            { element: 'has_good_faith_statement', status: 'present', gap: null },
             { element: 'contact_and_jurisdiction_consent', status: 'present', gap: null },
           ],
           risk_notes: [{ kind: 'material_mismatch', note: 'The image IDs may differ.' }],
@@ -35,7 +35,7 @@ describe('CopyrightStaffSubmissionGuidance', () => {
         guidance={{
           summary: 'The filing names a proceeding.',
           criteria: [
-            { criterion: 'from_original_claimant', status: 'unclear', gap: 'Check the sender.' },
+            { criterion: 'is_from_original_claimant', status: 'unclear', gap: 'Check the sender.' },
             { criterion: 'proceeding_kind', status: 'present', gap: null },
             { criterion: 'commenced_at', status: 'present', gap: null },
             {
@@ -43,7 +43,7 @@ describe('CopyrightStaffSubmissionGuidance', () => {
               status: 'missing',
               gap: 'No receipt date is given.',
             },
-            { criterion: 'same_material', status: 'unclear', gap: 'Compare the images.' },
+            { criterion: 'is_same_material', status: 'unclear', gap: 'Compare the images.' },
           ],
           risk_notes: [{ kind: 'timing_gap', note: 'Check when the agent received proof.' }],
         }}

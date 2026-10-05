@@ -134,7 +134,7 @@ export interface CommunityAgentPrompt {
   prompt: string
   model_name: string
   model_provider: string
-  slot_allocated: boolean
+  is_slot_allocated: boolean
   activated_at: string | null
   deactivated_at: string | null
   created_at: string
@@ -159,7 +159,7 @@ export interface CommunityModmailThread {
   title: string
   community_id: string
   subject_user_id: string | null
-  assigned_mod_id: string | null
+  assigned_moderator_user_id: string | null
   assigned_at: string | null
   resolved_at: string | null
   resolved_by_id: string | null

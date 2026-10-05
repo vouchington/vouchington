@@ -55,8 +55,8 @@ const draft: CopyrightEmailApprovalDraft = {
   claimant_contact: '',
   claimant_email: '',
   work_description: '',
-  good_faith_belief: false,
-  accuracy_authority_under_penalty_of_perjury: false,
+  has_good_faith_belief: false,
+  has_accuracy_authority_under_penalty_of_perjury: false,
   electronic_signature: '',
   targets: [baseTarget, { ...baseTarget, id: 'second', group_id: 'group-2' }],
 }

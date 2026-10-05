@@ -11,7 +11,7 @@ Not partitioned — growth: unbounded.
 | `id`                                   | `uuid`                                 | no       | `uuidv7()`                   |          |           |           |                                                                                                                                    |
 | `created_via`                          | `content_creation_channels`            | no       |                              |          |           |           | Immutable channel that created the row; NULL for rows written before content provenance tracking.                                  |
 | `created_via_oauth_client_id`          | `uuid`                                 | yes      |                              |          |           |           | Immutable OAuth client that created the row through the API or MCP; NULL for session, API-key, and system writes.                  |
-| `appellant_id`                         | `uuid`                                 | no       |                              |          |           |           | The user who filed the appeal.                                                                                                     |
+| `appellant_user_id`                    | `uuid`                                 | no       |                              |          |           |           | The user who filed the appeal.                                                                                                     |
 | `user_warning_id`                      | `uuid`                                 | yes      |                              |          |           |           | The warning being appealed; exactly one of user_warning_id, community_ban_id, post_id, user_suspension_id must be set.             |
 | `community_ban_id`                     | `uuid`                                 | yes      |                              |          |           |           | The ban being appealed; exactly one of user_warning_id, community_ban_id, post_id, user_suspension_id must be set.                 |
 | `post_id`                              | `uuid`                                 | yes      |                              |          |           |           | The removed post being appealed; exactly one of user_warning_id, community_ban_id, post_id, user_suspension_id must be set.        |
@@ -61,7 +61,7 @@ _none_
 
 - `fk_moderation_appeals__user_suspension_id`: `FOREIGN KEY (user_suspension_id) REFERENCES user_suspensions(id) ON DELETE CASCADE`
 - `fk_moderation_appeals_latest_lifecycle_change_id`: `FOREIGN KEY (latest_lifecycle_change_id) REFERENCES moderation_appeal_lifecycle_changes(id) ON DELETE SET NULL`
-- `moderation_appeals_appellant_id_fkey`: `FOREIGN KEY (appellant_id) REFERENCES users(id) ON DELETE CASCADE`
+- `moderation_appeals_appellant_user_id_fkey`: `FOREIGN KEY (appellant_user_id) REFERENCES users(id) ON DELETE CASCADE`
 - `moderation_appeals_approved_by_id_fkey`: `FOREIGN KEY (approved_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `moderation_appeals_case_id_fkey`: `FOREIGN KEY (case_id) REFERENCES moderation_cases(id) ON DELETE CASCADE`
 - `moderation_appeals_community_ban_id_fkey`: `FOREIGN KEY (community_ban_id) REFERENCES community_bans(id) ON DELETE CASCADE`
@@ -75,16 +75,16 @@ _none_
 
 **Indexes:**
 
-- `idx_moderation_appeals__appellant`: `CREATE INDEX idx_moderation_appeals__appellant ON public.moderation_appeals USING btree (appellant_id, id DESC)`
+- `idx_moderation_appeals__appellant`: `CREATE INDEX idx_moderation_appeals__appellant ON public.moderation_appeals USING btree (appellant_user_id, id DESC)`
 - `idx_moderation_appeals__case_id`: `CREATE INDEX idx_moderation_appeals__case_id ON public.moderation_appeals USING btree (case_id)`
 - `idx_moderation_appeals__community_ban`: `CREATE INDEX idx_moderation_appeals__community_ban ON public.moderation_appeals USING btree (community_ban_id) WHERE (community_ban_id IS NOT NULL)`
 - `idx_moderation_appeals__community_id`: `CREATE INDEX idx_moderation_appeals__community_id ON public.moderation_appeals USING btree (community_id) WHERE (community_id IS NOT NULL)`
 - `idx_moderation_appeals__created_via_oauth_client_id`: `CREATE INDEX idx_moderation_appeals__created_via_oauth_client_id ON public.moderation_appeals USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)`
 - `idx_moderation_appeals__latest_lifecycle_change_id`: `CREATE INDEX idx_moderation_appeals__latest_lifecycle_change_id ON public.moderation_appeals USING btree (latest_lifecycle_change_id) WHERE (latest_lifecycle_change_id IS NOT NULL)`
-- `idx_moderation_appeals__one_open_ban`: `CREATE UNIQUE INDEX idx_moderation_appeals__one_open_ban ON public.moderation_appeals USING btree (appellant_id, community_ban_id) WHERE ((resolved_at IS NULL) AND (community_ban_id IS NOT NULL))`
-- `idx_moderation_appeals__one_open_post`: `CREATE UNIQUE INDEX idx_moderation_appeals__one_open_post ON public.moderation_appeals USING btree (appellant_id, post_id, post_removal_kind) WHERE ((resolved_at IS NULL) AND (post_id IS NOT NULL))`
-- `idx_moderation_appeals__one_open_suspension`: `CREATE UNIQUE INDEX idx_moderation_appeals__one_open_suspension ON public.moderation_appeals USING btree (appellant_id, user_suspension_id) WHERE ((resolved_at IS NULL) AND (user_suspension_id IS NOT NULL))`
-- `idx_moderation_appeals__one_open_warning`: `CREATE UNIQUE INDEX idx_moderation_appeals__one_open_warning ON public.moderation_appeals USING btree (appellant_id, user_warning_id) WHERE ((resolved_at IS NULL) AND (user_warning_id IS NOT NULL))`
+- `idx_moderation_appeals__one_open_ban`: `CREATE UNIQUE INDEX idx_moderation_appeals__one_open_ban ON public.moderation_appeals USING btree (appellant_user_id, community_ban_id) WHERE ((resolved_at IS NULL) AND (community_ban_id IS NOT NULL))`
+- `idx_moderation_appeals__one_open_post`: `CREATE UNIQUE INDEX idx_moderation_appeals__one_open_post ON public.moderation_appeals USING btree (appellant_user_id, post_id, post_removal_kind) WHERE ((resolved_at IS NULL) AND (post_id IS NOT NULL))`
+- `idx_moderation_appeals__one_open_suspension`: `CREATE UNIQUE INDEX idx_moderation_appeals__one_open_suspension ON public.moderation_appeals USING btree (appellant_user_id, user_suspension_id) WHERE ((resolved_at IS NULL) AND (user_suspension_id IS NOT NULL))`
+- `idx_moderation_appeals__one_open_warning`: `CREATE UNIQUE INDEX idx_moderation_appeals__one_open_warning ON public.moderation_appeals USING btree (appellant_user_id, user_warning_id) WHERE ((resolved_at IS NULL) AND (user_warning_id IS NOT NULL))`
 - `idx_moderation_appeals__original_decided_by_id`: `CREATE INDEX idx_moderation_appeals__original_decided_by_id ON public.moderation_appeals USING btree (original_decided_by_id) WHERE (original_decided_by_id IS NOT NULL)`
 - `idx_moderation_appeals__post_id`: `CREATE INDEX idx_moderation_appeals__post_id ON public.moderation_appeals USING btree (post_id) WHERE (post_id IS NOT NULL)`
 - `idx_moderation_appeals__status_created`: `CREATE INDEX idx_moderation_appeals__status_created ON public.moderation_appeals USING btree (resolved_at, id DESC)`

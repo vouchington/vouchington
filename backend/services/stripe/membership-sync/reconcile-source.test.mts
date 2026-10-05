@@ -152,12 +152,12 @@ describe('reconcileStripeMembershipSource', () => {
       id: retained.id,
       sku_id: replacementSku.id,
       effective_at: currentPeriodStart,
-      cancel_at_period_end: true,
+      should_cancel_at_period_end: true,
       projection_ended_at: null,
     })
     await expect(getTestMembershipSourceState(retained.id)).resolves.toMatchObject({
       effective_at: observedEffectiveAt,
-      auto_renews: false,
+      should_auto_renew: false,
     })
     await expect(getMembershipByUserId(member.id)).resolves.toMatchObject({
       id: retained.id,

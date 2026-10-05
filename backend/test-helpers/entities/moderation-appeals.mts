@@ -53,7 +53,7 @@ export async function insertTestModerationAppeal(
     ),
     new_appeal AS (
       INSERT INTO moderation_appeals (
-        appellant_id,
+        appellant_user_id,
         user_warning_id,
         user_suspension_id,
         community_id,

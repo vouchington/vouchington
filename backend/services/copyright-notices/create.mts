@@ -30,7 +30,7 @@ export async function createCopyrightNoticeAggregateInTransaction(
   await Promise.all([
     transaction(sql`/* createCopyrightNoticeAggregate:submission */
       INSERT INTO copyright_notice_submissions (
-        copyright_notice_id, submitted_by_user_id, kind, received_at, source_kind, body_ciphertext
+        copyright_notice_id, submitted_by_id, kind, received_at, source_kind, body_ciphertext
       ) VALUES (
         ${notice.id}, ${input.claimantUserId}, 'notice', ${input.receivedAt},
         ${input.initialSubmission.sourceKind}, ${input.initialSubmission.bodyCiphertext}

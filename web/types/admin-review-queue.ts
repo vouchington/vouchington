@@ -8,7 +8,7 @@ export interface AdminReviewQueuePost {
   post_type: string
   created_by_id: string | null
   created_at: string
-  root_id: string | null
+  root_post_id: string | null
   root_post_type: string | null
   root_slug: string | null
   clearance_status: 'rejected' | 'in_review' | 'approved' | 'pending'

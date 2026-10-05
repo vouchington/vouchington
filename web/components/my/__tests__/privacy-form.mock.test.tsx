@@ -100,7 +100,9 @@ describe('PrivacyForm', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Enable marketing' }))
     await waitFor(() =>
-      expect(updateMyUser).toHaveBeenCalledWith('user-1', { third_party_marketing: true }),
+      expect(updateMyUser).toHaveBeenCalledWith('user-1', {
+        should_receive_third_party_marketing: true,
+      }),
     )
 
     fireEvent.click(screen.getByRole('button', { name: 'Restrict processing' }))
@@ -134,7 +136,7 @@ describe('PrivacyForm', () => {
     await waitFor(() =>
       expect(mockOnError).toHaveBeenCalledWith(expect.any(Error), {
         fallback: 'Failed to update privacy setting',
-        tags: { form: 'my-privacy', field: 'third_party_marketing' },
+        tags: { form: 'my-privacy', field: 'should_receive_third_party_marketing' },
       }),
     )
   })

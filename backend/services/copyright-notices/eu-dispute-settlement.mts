@@ -55,10 +55,10 @@ export async function recordEuDisputeSettlementReferral(
     assert(
       input.referredByUserId === parent.requester_user_id,
       422,
-      'referred_by_user_id must name the notifier',
+      'referred_by_id must name the notifier',
     )
   } else {
-    assert(input.referredByUserId, 422, 'referred_by_user_id must name a poster')
+    assert(input.referredByUserId, 422, 'referred_by_id must name a poster')
     const { rows: posters } = await transaction<{ is_poster: boolean }>(sql`
       /* recordEuDisputeSettlementReferral:poster */
       SELECT EXISTS (
@@ -69,13 +69,13 @@ export async function recordEuDisputeSettlementReferral(
           AND post.created_by_id = ${input.referredByUserId}
       ) AS is_poster
     `)
-    assert(posters[0]?.is_poster, 422, 'referred_by_user_id must name a poster')
+    assert(posters[0]?.is_poster, 422, 'referred_by_id must name a poster')
   }
   const { rows: referrals } = await transaction<EuDisputeSettlementReferral>(sql`
     /* recordEuDisputeSettlementReferral */
     INSERT INTO copyright_eu_dispute_settlement_referrals (
       copyright_notice_id, jurisdiction, copyright_territorial_decision_id, body_name,
-      referred_at, referred_by_party, referred_by_user_id, recorded_by_id
+      referred_at, referred_by_party, referred_by_id, recorded_by_id
     ) VALUES (
       ${noticeId}, 'eu_dsa', ${parent.id}, ${bodyName}, ${input.referredAt},
       ${input.referredByParty}, ${input.referredByUserId}, ${currentUser.id}

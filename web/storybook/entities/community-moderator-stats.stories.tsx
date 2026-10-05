@@ -20,17 +20,17 @@ const withStatsData: CommunityModeratorStatsResponseBody = {
   window: 30,
   stats: [
     {
-      actor_id: 'user-mod-1',
+      actor_user_id: 'user-mod-1',
       total: 12,
       counts: { remove: 5, approve: 4, ban: 2, resolve_report: 1 },
     },
     {
-      actor_id: 'user-mod-2',
+      actor_user_id: 'user-mod-2',
       total: 7,
       counts: { remove: 3, approve: 3, ban: 1 },
     },
     {
-      actor_id: 'user-mod-3',
+      actor_user_id: 'user-mod-3',
       total: 2,
       counts: { approve: 2 },
     },
@@ -88,12 +88,12 @@ const withOtherActionsData: CommunityModeratorStatsResponseBody = {
   window: 30,
   stats: [
     {
-      actor_id: 'user-mod-1',
+      actor_user_id: 'user-mod-1',
       total: 12,
       counts: { remove: 2, approve: 1, warn: 5, lock: 2, pin: 1 },
     },
     {
-      actor_id: 'user-mod-2',
+      actor_user_id: 'user-mod-2',
       total: 7,
       counts: { remove: 3, approve: 3, ban: 1 },
     },

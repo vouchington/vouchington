@@ -32,7 +32,7 @@ export async function resolveAppealTargetSuspension(
   const { rows: suspDupRows } = await read<{ id: string }>(
     sql`/* resolveAppealTargetSuspension:checkDuplicate */
     SELECT id FROM moderation_appeals
-    WHERE appellant_id = ${currentUser.id}
+    WHERE appellant_user_id = ${currentUser.id}
       AND user_suspension_id = ${suspensionId}
       AND resolved_at IS NULL
     LIMIT 1

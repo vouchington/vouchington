@@ -41,8 +41,8 @@ export async function appendCopyrightSubmissionAssessmentInTransaction(
         AND n.jurisdiction = 'us_dmca'
         AND char_length(n.claimant_contact_ciphertext) > 0
         AND char_length(btrim(n.work_description)) > 0
-        AND intake.good_faith_belief
-        AND intake.accuracy_authority_under_penalty_of_perjury
+        AND intake.has_good_faith_belief
+        AND intake.has_accuracy_authority_under_penalty_of_perjury
         AND char_length(intake.electronic_signature_ciphertext) > 0
         AND EXISTS (
           SELECT 1 FROM copyright_notice_targets target
@@ -126,13 +126,13 @@ export async function appendCopyrightSubmissionAssessmentInTransaction(
   )
   const { rows } = await transaction(sql`/* appendCopyrightSubmissionAssessment */
     INSERT INTO copyright_notice_submission_assessments (
-      copyright_notice_submission_id, assessed_at, assessed_by_id, substantially_compliant,
+      copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant,
       supersedes_assessment_id, copyright_notice_form_screening_id
     ) VALUES (
       ${input.submissionId}, ${input.assessedAt}, ${input.currentUser?.id ?? null}, ${input.substantiallyCompliant},
       ${input.supersedesAssessmentId ?? null}, ${input.copyrightFormScreeningId ?? null}
     )
-    RETURNING id, copyright_notice_submission_id, assessed_at, assessed_by_id, substantially_compliant,
+    RETURNING id, copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant,
       supersedes_assessment_id, copyright_notice_form_screening_id
   `)
   const assessment = rows[0] as CopyrightNoticeSubmissionAssessmentRecord | undefined

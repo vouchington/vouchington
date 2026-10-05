@@ -11,8 +11,8 @@ Not partitioned — growth: unbounded.
 | `id`                        | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                      |
 | `individual_id`             | `uuid`                     | no       |                              |          |           |           | The individual who holds this status.                                |
 | `rewards_program_status_id` | `uuid`                     | no       |                              |          |           |           | The specific tier status (references rewards_program_status_topics). |
-| `since`                     | `date`                     | yes      |                              |          |           |           | Date the status was earned or started.                               |
-| `until`                     | `date`                     | yes      |                              |          |           |           | Date the status expires. NULL if ongoing.                            |
+| `started_on`                | `date`                     | yes      |                              |          |           |           | Date the status was earned or started.                               |
+| `expires_on`                | `date`                     | yes      |                              |          |           |           | Date the status expires. NULL if ongoing.                            |
 | `created_at`                | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                      |
 | `updated_at`                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                      |
 
@@ -23,7 +23,7 @@ _none_
 
 **Check constraints:**
 
-- `individual_rewards_program_statuses_check`: `CHECK (((since IS NULL) OR (until IS NULL) OR (since <= until)))`
+- `individual_rewards_program_statuses_check`: `CHECK (((started_on IS NULL) OR (expires_on IS NULL) OR (started_on <= expires_on)))`
 
 **Foreign keys:**
 

@@ -4,7 +4,7 @@
     "ai_internal_response": "Partial reduction recommended.",
     "ai_public_response": "We reviewed your appeal.",
     "appeal_reason": "Please review this again.",
-    "appellant_id": "user-1",
+    "appellant_user_id": "user-1",
     "approved_at": "2026-06-01T12:10:00.000Z",
     "approved_by_id": "admin-1",
     "case_id": "case-1",

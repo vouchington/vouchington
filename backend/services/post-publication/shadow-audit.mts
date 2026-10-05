@@ -123,9 +123,9 @@ async function listShadowAuditCandidates(
     )
   compare.append(sql` OR EXISTS (
         SELECT 1 FROM post_publication_dirty_work work
-        LEFT JOIN post_publication_post_identities scope_post ON scope_post.id = work.post_id
-        LEFT JOIN post_publication_author_identities scope_author ON scope_author.id = work.author_user_id
-        LEFT JOIN post_publication_community_identities scope_community ON scope_community.id = work.community_id
+        LEFT JOIN post_publication_post_identities scope_post ON scope_post.id = work.post_identity_id
+        LEFT JOIN post_publication_author_identities scope_author ON scope_author.id = work.author_identity_id
+        LEFT JOIN post_publication_community_identities scope_community ON scope_community.id = work.community_identity_id
         LEFT JOIN post_publication_dirty_work_keys retained ON retained.dirty_work_id = work.id
         LEFT JOIN post_publication_post_identities retained_post ON retained_post.id = retained.impact_post_identity_id
         LEFT JOIN post_publication_community_identities retained_community ON retained_community.id = retained.impact_community_identity_id
@@ -137,7 +137,7 @@ async function listShadowAuditCandidates(
       )) AS is_discrepant
     FROM source_page
     LEFT JOIN posts candidate ON candidate.id = source_page.post_id
-    LEFT JOIN posts root ON root.id = COALESCE(candidate.root_id, candidate.id)
+    LEFT JOIN posts root ON root.id = COALESCE(candidate.root_post_id, candidate.id)
     LEFT JOIN post_publication_projection_receipts receipt ON receipt.post_identity_id = source_page.id
     ORDER BY source_page.id`)
   const { rows } = await executor<ShadowAuditCandidate>(compare)

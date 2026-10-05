@@ -101,8 +101,8 @@ export function NewsItemClusterListRow({
       }
       storyItemActionContexts={storyItemActionContexts}
       sharedByUser={
-        cluster.primaryResult.shared_by_user_id
-          ? allUsers[cluster.primaryResult.shared_by_user_id]
+        cluster.primaryResult.shared_by_id
+          ? allUsers[cluster.primaryResult.shared_by_id]
           : undefined
       }
       sharedAt={cluster.primaryResult.shared_at}

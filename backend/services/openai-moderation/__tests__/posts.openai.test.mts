@@ -59,7 +59,7 @@ describe('posts.openai', () => {
       const moderationData = (await getPostModerationData(post.id)) as {
         openai_omni_moderation_content_sha256: Buffer
         openai_omni_moderation_input_sha256: Buffer
-        openai_omni_moderation_flagged: boolean
+        is_flagged_by_openai_omni_moderation: boolean
         openai_omni_moderation_results: { flagged_categories: string[] }
         openai_omni_moderation_created_at: Date
       } | null
@@ -67,14 +67,14 @@ describe('posts.openai', () => {
       expect(moderationData).toBeDefined()
       expect(moderationData!.openai_omni_moderation_content_sha256).toBeInstanceOf(Buffer)
       expect(moderationData!.openai_omni_moderation_input_sha256).toBeInstanceOf(Buffer)
-      expect(typeof moderationData!.openai_omni_moderation_flagged).toBe('boolean')
+      expect(typeof moderationData!.is_flagged_by_openai_omni_moderation).toBe('boolean')
       expect(moderationData!.openai_omni_moderation_results).toBeDefined()
       expect(moderationData!.openai_omni_moderation_created_at).toBeInstanceOf(Date)
       expect(moderationData!.openai_omni_moderation_content_sha256).toEqual(result.content_sha256)
       expect(moderationData!.openai_omni_moderation_input_sha256).toEqual(result.content_sha256)
 
       const flagged = moderationResults.some(result => result.flagged)
-      expect(moderationData!.openai_omni_moderation_flagged).toBe(flagged)
+      expect(moderationData!.is_flagged_by_openai_omni_moderation).toBe(flagged)
       expect(moderationData!.openai_omni_moderation_results).toEqual({
         flagged_categories: moderationResults
           .flatMap(result =>

@@ -52,8 +52,8 @@ export const preparePostWithCommunityReviews = async (
     })
     const options = { query }
     if (delegated) await assertDelegatedPostActorActive(creator.id, options)
-    if (delegated && input.community_id && input.parent_id) {
-      const source = await getPostByAny(input.parent_id, options)
+    if (delegated && input.community_id && input.parent_post_id) {
+      const source = await getPostByAny(input.parent_post_id, options)
       if (source?.community_id)
         throw createHttpError(422, 'Only global posts can be discussed in a community')
     }
@@ -61,9 +61,9 @@ export const preparePostWithCommunityReviews = async (
       await lockDelegatedPostCommunity(query, input.community_id, creator.id)
       await assertDelegatedCommunityPostAllowed(input.community_id, defaults.postType, options)
     }
-    if (delegated && input.parent_id) {
-      await lockDelegatedPostThread(query, input.parent_id, creator.id)
-      const parent = await loadWritablePost(creator, input.parent_id, false, options)
+    if (delegated && input.parent_post_id) {
+      await lockDelegatedPostThread(query, input.parent_post_id, creator.id)
+      const parent = await loadWritablePost(creator, input.parent_post_id, false, options)
       if (parent.community_id)
         await assertDelegatedCommunityPostAllowed(parent.community_id, defaults.postType, options)
     }
@@ -150,7 +150,7 @@ export const preparePostWithCommunityReviews = async (
       insertedPost.id,
       creator.id,
       scope.communityId,
-      insertedPost.root_id,
+      insertedPost.root_post_id,
     )
     return getPostByAny(insertedPost.id, options)
   }

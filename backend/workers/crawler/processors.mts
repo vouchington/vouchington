@@ -23,7 +23,7 @@ export async function processCrawlerJob(job: Job): Promise<unknown> {
       const crawlTimeoutMs =
         typeof job.data?.crawl_timeout_ms === 'number' ? job.data.crawl_timeout_ms : undefined
       const ensureCrawlerForRedirects = job.data?.ensure_crawler_for_redirects === true
-      const ignoreRobotsTxt = job.data?.ignore_robots_txt === true
+      const ignoreRobotsTxt = job.data?.should_ignore_robots_txt === true
       const maxResponseSizeBytes =
         typeof job.data?.max_response_size_bytes === 'number'
           ? job.data.max_response_size_bytes

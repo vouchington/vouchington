@@ -10,7 +10,7 @@ import type { TerritorialCopyrightJurisdiction } from './territorial-fields.mts'
 export type CopyrightTerritorialStaffComplaint = {
   id: string
   filed_by: 'notifier' | 'poster' | 'reviewer'
-  submitted_by_user_id: string | null
+  submitted_by_id: string | null
   received_at: Date
   explanation: string
   informed_at: Date | null
@@ -43,7 +43,7 @@ export async function selectTerritorialStaffComplaints(
     }
   const statement = sql`/* selectTerritorialStaffComplaints */
     SELECT request.id, request.idempotency_key, request.filed_by,
-      request.submitted_by_user_id, request.received_at, request.explanation_ciphertext,
+      request.submitted_by_id, request.received_at, request.explanation_ciphertext,
       redress_decision.id AS redress_decision_id, redress_decision.decided_at AS redress_decided_at,
       redress_decision.staff_disposition, redress_decision.rationale_ciphertext
     FROM copyright_territorial_redress_requests request
@@ -56,7 +56,7 @@ export async function selectTerritorialStaffComplaints(
     id: string
     idempotency_key: string
     filed_by: CopyrightTerritorialStaffComplaint['filed_by']
-    submitted_by_user_id: string | null
+    submitted_by_id: string | null
     received_at: Date
     explanation_ciphertext: string
     redress_decision_id: string | null
@@ -76,7 +76,7 @@ export async function selectTerritorialStaffComplaints(
               decidedAt,
               notifier: row.filed_by === 'notifier',
               posterUserId:
-                row.filed_by === 'poster' ? (row.submitted_by_user_id ?? undefined) : undefined,
+                row.filed_by === 'poster' ? (row.submitted_by_id ?? undefined) : undefined,
             },
             query,
           ),
@@ -88,7 +88,7 @@ export async function selectTerritorialStaffComplaints(
     result.push({
       id: row.id,
       filed_by: row.filed_by,
-      submitted_by_user_id: row.submitted_by_user_id,
+      submitted_by_id: row.submitted_by_id,
       received_at: row.received_at,
       explanation: decryptCopyrightText(
         row.explanation_ciphertext,

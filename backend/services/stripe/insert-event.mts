@@ -11,7 +11,7 @@ function stripeEventColumns() {
     id,
     stripe_event_id,
     event_type,
-    livemode,
+    is_live_mode,
     api_version,
     stripe_created_at,
     customer_id,
@@ -46,7 +46,7 @@ export async function insertStripeEvent(event: Stripe.Event): Promise<InsertStri
       INSERT INTO stripe_events (
         stripe_event_id,
         event_type,
-        livemode,
+        is_live_mode,
         api_version,
         stripe_created_at,
         customer_id,

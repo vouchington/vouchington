@@ -14,7 +14,7 @@ const contracts = [
     checklist: [
       'signature',
       'material_identification',
-      'good_faith_statement',
+      'has_good_faith_statement',
       'contact_and_jurisdiction_consent',
     ],
     riskKind: 'material_mismatch',
@@ -26,11 +26,11 @@ const contracts = [
     listKey: 'criteria',
     itemKey: 'criterion',
     checklist: [
-      'from_original_claimant',
+      'is_from_original_claimant',
       'proceeding_kind',
       'commenced_at',
       'received_by_designated_agent_at',
-      'same_material',
+      'is_same_material',
     ],
     riskKind: 'claimant_mismatch',
     error: 'Invalid copyright legal-hold guidance',

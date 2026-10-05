@@ -4,7 +4,7 @@ import sql from 'sql-template-strings'
 import type { PostClassifierConfiguration } from './run-configuration.mts'
 
 export type PostClassifierLocalOutcome = {
-  flagged: boolean
+  is_flagged: boolean
   reason: string
   confidenceScore: number
   confidenceThreshold: number
@@ -14,7 +14,7 @@ export type PostClassifierLocalOutcome = {
 }
 
 type LocalOutcomeRow = {
-  flagged: boolean
+  is_flagged: boolean
   reason: string
   confidence_score: number
   confidence_threshold: number
@@ -57,10 +57,10 @@ export async function persistPostClassifierLocalOutcome(
   if (!local) throw new Error('post classifier local outcome is not enabled by its run')
   await query(sql`/* persistPostClassifierLocalOutcome */
     INSERT INTO post_classifier_local_outcomes (
-      run_id, local_topic_id, flagged, reason, confidence_score, confidence_threshold,
+      run_id, local_topic_id, is_flagged, reason, confidence_score, confidence_threshold,
       classification, detector, detector_model_version
     ) VALUES (
-      ${lease.runId}, ${local.topicId}, ${outcome.flagged}, ${outcome.reason},
+      ${lease.runId}, ${local.topicId}, ${outcome.is_flagged}, ${outcome.reason},
       ${outcome.confidenceScore}, ${outcome.confidenceThreshold}, ${outcome.classification},
       ${outcome.detector}, ${outcome.detectorModelVersion}
     )
@@ -72,14 +72,14 @@ export async function readPostClassifierLocalOutcome(
   runId: string,
 ): Promise<PostClassifierLocalOutcome | null> {
   const { rows } = await query<LocalOutcomeRow>(sql`/* readPostClassifierLocalOutcome */
-    SELECT flagged, reason, confidence_score, confidence_threshold, classification, detector,
+    SELECT is_flagged, reason, confidence_score, confidence_threshold, classification, detector,
       detector_model_version
     FROM post_classifier_local_outcomes WHERE run_id = ${runId}
   `)
   const row = rows[0]
   if (!row) return null
   return {
-    flagged: row.flagged,
+    is_flagged: row.is_flagged,
     reason: row.reason,
     confidenceScore: row.confidence_score,
     confidenceThreshold: row.confidence_threshold,

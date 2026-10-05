@@ -71,7 +71,7 @@ export async function seedTopicMetricsBenchmark({
     `),
     write(`
       /* benchmarkTopicMetricsDisabledFeed */
-      INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, enabled, reason)
+      INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason)
       SELECT 'enablement'::rss_feed_setting_change_types, id, FALSE, 'topic metrics benchmark ineligible feed'
       FROM rss_feeds
       WHERE topic_id = (

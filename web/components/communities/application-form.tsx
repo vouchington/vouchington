@@ -107,7 +107,7 @@ export function ApplicationForm({ communitySlug, questions }: ApplicationFormPro
         >
           <Label htmlFor={question.id}>
             {question.question}
-            {question.required && (
+            {question.is_required && (
               <span className='ml-1 text-destructive'>
                 {t('extracted.communities.applicationForm.text_684888c0')}
               </span>
@@ -120,7 +120,7 @@ export function ApplicationForm({ communitySlug, questions }: ApplicationFormPro
               value={(answers[question.id] as string) ?? ''}
               onChange={e => setAnswer(question.id, e.target.value)}
               placeholder={t('extracted.communities.applicationForm.yourAnswer_d0e869b7')}
-              required={question.required}
+              required={question.is_required}
             />
           )}
 
@@ -131,7 +131,7 @@ export function ApplicationForm({ communitySlug, questions }: ApplicationFormPro
               onChange={e => setAnswer(question.id, e.target.value)}
               rows={4}
               placeholder={t('extracted.communities.applicationForm.writeYourAnswer_10a15f8f')}
-              required={question.required}
+              required={question.is_required}
             />
           )}
 

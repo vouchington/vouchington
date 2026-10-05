@@ -21,7 +21,7 @@ export const VOTE_SCHEMA_CONFIGS: VoteSchemaConfig[] = [
     entityIdColumn: 'post_id',
     entityKeyColumns: ['id'],
     entitySortColumns: ['id DESC'],
-    voteAdditionalColumns: ['post_id UUID NOT NULL', 'outbound_ap_like_activity_id UUID'],
+    voteAdditionalColumns: ['post_id UUID NOT NULL', 'outbound_activitypub_like_activity_id UUID'],
     voteTableConstraints: ['FOREIGN KEY (post_id) REFERENCES posts (id) ON DELETE CASCADE'],
     deletedAtFilter: true,
     voteScoreConstraint: 'CHECK (score IS NULL OR score BETWEEN -2 AND 2)',

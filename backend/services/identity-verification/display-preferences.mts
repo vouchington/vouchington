@@ -4,7 +4,7 @@ import { invalidate } from '@services/entity-cache/invalidate'
 import type { PublicVerifiedNameDisplay } from '@voucha/types/entities/user'
 
 type DisplayPreferencesInput = {
-  verified_badge_visible?: boolean
+  is_verified_badge_visible?: boolean
   public_verified_name_display?: PublicVerifiedNameDisplay
 }
 
@@ -23,7 +23,7 @@ export async function updateDisplayPreferences(
   dependencies?: Partial<DisplayPreferencesDependencies>,
 ): Promise<void> {
   if (
-    input.verified_badge_visible === undefined &&
+    input.is_verified_badge_visible === undefined &&
     input.public_verified_name_display === undefined
   ) {
     return
@@ -33,7 +33,7 @@ export async function updateDisplayPreferences(
   await using transaction = await begin()
   const { rowCount } = await transaction(sql`/* updateDisplayPreferences */
       UPDATE users
-      SET verified_badge_visible = COALESCE(${input.verified_badge_visible ?? null}, verified_badge_visible),
+      SET is_verified_badge_visible = COALESCE(${input.is_verified_badge_visible ?? null}, is_verified_badge_visible),
           public_verified_name_display = COALESCE(${input.public_verified_name_display ?? null}, public_verified_name_display)
       WHERE id = ${userId}
         AND deleted_at IS NULL

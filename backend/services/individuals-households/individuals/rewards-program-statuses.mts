@@ -12,7 +12,10 @@ import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
 
-type UpdateIndividualRewardsProgramStatusData = { since?: string | null; until?: string | null }
+type UpdateIndividualRewardsProgramStatusData = {
+  started_on?: string | null
+  expires_on?: string | null
+}
 
 export async function getIndividualRewardsProgramStatusById(
   currentUser: PrivateUser | null,
@@ -25,8 +28,8 @@ export async function getIndividualRewardsProgramStatusById(
   const individual = await getOrCreateIndividual(user)
   const { rows } = await read<RewardsProgramStatusRow>(
     sql`/* getIndividualRewardsProgramStatusById */
-    SELECT individual_rewards_program_statuses.id, individual_rewards_program_statuses.since::TEXT AS since,
-      individual_rewards_program_statuses.until::TEXT AS until, individual_rewards_program_statuses.rewards_program_status_id,
+    SELECT individual_rewards_program_statuses.id, individual_rewards_program_statuses.started_on::TEXT AS started_on,
+      individual_rewards_program_statuses.expires_on::TEXT AS expires_on, individual_rewards_program_statuses.rewards_program_status_id,
       view_topics.name AS rewards_program_status_name, view_topics.slug AS rewards_program_status_slug
     FROM individual_rewards_program_statuses JOIN view_topics ON view_topics.id = individual_rewards_program_statuses.rewards_program_status_id
     WHERE individual_rewards_program_statuses.id = ${id} AND individual_id = ${individual.id} LIMIT 1`,
@@ -73,21 +76,21 @@ export async function updateIndividualRewardsProgramStatusById(
   const individual = await getOrCreateIndividual(user)
   const sets: string[] = []
   const values: unknown[] = []
-  if (data.since !== undefined) {
-    assertValidRewardsProgramStatusDate(data.since, 'since')
-    sets.push(`since = $${values.push(data.since)}`)
+  if (data.started_on !== undefined) {
+    assertValidRewardsProgramStatusDate(data.started_on, 'started_on')
+    sets.push(`started_on = $${values.push(data.started_on)}`)
   }
-  if (data.until !== undefined) {
-    assertValidRewardsProgramStatusDate(data.until, 'until')
-    sets.push(`until = $${values.push(data.until)}`)
+  if (data.expires_on !== undefined) {
+    assertValidRewardsProgramStatusDate(data.expires_on, 'expires_on')
+    sets.push(`expires_on = $${values.push(data.expires_on)}`)
   }
   if (
-    data.since !== undefined &&
-    data.since !== null &&
-    data.until !== undefined &&
-    data.until !== null
+    data.started_on !== undefined &&
+    data.started_on !== null &&
+    data.expires_on !== undefined &&
+    data.expires_on !== null
   )
-    assert(data.since <= data.until, 422, 'since must be <= until')
+    assert(data.started_on <= data.expires_on, 422, 'started_on must be <= expires_on')
   assert(sets.length > 0, 422, 'No valid fields provided')
   let rows: { id: string }[]
   try {
@@ -96,7 +99,8 @@ export async function updateIndividualRewardsProgramStatusById(
       values,
     ))
   } catch (err) {
-    if ((err as { code?: string }).code === '23514') assert(false, 422, 'since must be <= until')
+    if ((err as { code?: string }).code === '23514')
+      assert(false, 422, 'started_on must be <= expires_on')
     throw err
   }
   assert(rows[0], 404, 'Not found')

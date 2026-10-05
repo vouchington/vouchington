@@ -8,7 +8,7 @@
     "flag_type": "mass_report_suspected",
     "hostname_id": null,
     "id": "report-flag-1",
-    "new_account_reporter_pct": 0.6,
+    "new_account_reporter_percent": 0.6,
     "post_id": "post-1",
     "reported_user_id": null,
     "reporter_count": 5,

@@ -31,8 +31,8 @@ export const searchParentPathsNeedingBoilerplateRemoval = async (
       FROM urls u
       JOIN url_hostnames h ON h.id = u.hostname_id
       JOIN crawls c ON c.url_id = u.id
-      WHERE (h.blocked IS NULL OR h.blocked = false)
-        AND (h.crawlable IS NULL OR h.crawlable = true)
+      WHERE (h.is_blocked IS NULL OR h.is_blocked = false)
+        AND (h.is_crawlable IS NULL OR h.is_crawlable = true)
         AND c.response_status_code = 200
         AND c.completed_at >= ${recentCutoffDate}
         AND c.html_sha256 IS NOT NULL

@@ -123,14 +123,14 @@ export async function resolveModerationAppealAccept(
     staffUserId,
     'resolve_appeal',
     appealId,
-    updated.appellant_id,
+    updated.appellant_user_id,
     updated.community_id,
     { query },
   )
   await query.commit()
   const postCommitWork: Promise<unknown>[] = [maybeResolveCase(updated.case_id, staffUserId)]
   if (updated.user_suspension_id) {
-    postCommitWork.push(invalidate.users(updated.appellant_id))
+    postCommitWork.push(invalidate.users(updated.appellant_user_id))
   }
   if (updated.user_suspension_id || updated.post_id) {
     void enqueueRefreshTopHashtags()

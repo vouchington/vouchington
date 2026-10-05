@@ -156,7 +156,7 @@ describe('ManageSourceClient — feed actions', () => {
     })
   })
 
-  it('clicking Disable calls updateRssFeed with enabled: false and dispatches result', async () => {
+  it('clicking Disable calls updateRssFeed with is_enabled: false and dispatches result', async () => {
     render(
       <ManageSourceClient
         id='topic-1'
@@ -170,7 +170,7 @@ describe('ManageSourceClient — feed actions', () => {
     await waitFor(() => {
       expect(mockUpdateRssFeed).toHaveBeenCalledWith(
         'feed-1',
-        expect.objectContaining({ enabled: false }),
+        expect.objectContaining({ is_enabled: false }),
       )
     })
   })

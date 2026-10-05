@@ -48,7 +48,7 @@ async function handleToggle(state: ManageSourceState, dispatch: (action: Action)
   dispatch({ toggling: true })
   try {
     const result = await updateRssFeed(state.rssFeed.id, {
-      enabled: !state.rssFeed.is_enabled,
+      is_enabled: !state.rssFeed.is_enabled,
     })
     dispatch({ rssFeed: result.rss_feed as ManageSourceRssFeed })
     onSuccess(state.rssFeed.is_enabled ? 'Source disabled' : 'Source enabled')

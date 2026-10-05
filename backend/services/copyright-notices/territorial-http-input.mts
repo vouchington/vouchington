@@ -70,7 +70,7 @@ export function parseEuTerritorialNoticeBody(
   const notifierName = assertBoundedText(body.notifier_name, 200, 'notifier_name is required')
   const notifierEmail = assertBoundedText(body.notifier_email, 254, 'notifier_email is required')
   assert(isEmailAddress(notifierEmail), 422, 'notifier_email must be an email address')
-  assert(body.good_faith_statement === true, 422, 'good_faith_statement must be true')
+  assert(body.has_good_faith_statement === true, 422, 'has_good_faith_statement must be true')
   return { ...base, notifierName, notifierEmail, goodFaithStatement: true }
 }
 

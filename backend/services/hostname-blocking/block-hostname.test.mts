@@ -54,13 +54,13 @@ describe('block-hostname', () => {
 
     it('sets blocked=true, blocked_at, blocked_by_id on the target hostname', async () => {
       const hostname = randomHostname()
-      const hostnameId = await insertTestUrlHostname({ hostname, blocked: false })
+      const hostnameId = await insertTestUrlHostname({ hostname, is_blocked: false })
 
       await blockHostname(admin.id, hostnameId)
 
       const row = await getTestHostnameRow(hostnameId)
       expect(row).toBeDefined()
-      expect(row!.blocked).toBe(true)
+      expect(row!.is_blocked).toBe(true)
       expect(row!.blocked_at).toBeInstanceOf(Date)
       expect(row!.blocked_by_id).toBe(admin.id)
     }, 60_000)
@@ -83,9 +83,9 @@ describe('block-hostname', () => {
         getTestHostnameRow(sub1Id),
         getTestHostnameRow(sub2Id),
       ])
-      expect(baseRow!.blocked).toBe(true)
-      expect(sub1Row!.blocked).toBe(true)
-      expect(sub2Row!.blocked).toBe(true)
+      expect(baseRow!.is_blocked).toBe(true)
+      expect(sub1Row!.is_blocked).toBe(true)
+      expect(sub2Row!.is_blocked).toBe(true)
     }, 60_000)
 
     it('returns correct blocked_hostname_count including subdomains', async () => {
@@ -103,7 +103,7 @@ describe('block-hostname', () => {
 
     it('soft-deletes post->related->url entity relations for the blocked hostname', async () => {
       const hostname = randomHostname()
-      const hostnameId = await insertTestUrlHostname({ hostname, crawlable: false })
+      const hostnameId = await insertTestUrlHostname({ hostname, is_crawlable: false })
 
       const creator = (await createTestUserDirect({
         username: `bh-creator-${rand()}`,
@@ -137,8 +137,8 @@ describe('block-hostname', () => {
       const hostname = randomHostname()
       const subdomain = `news.${hostname}`
       const [hostnameId] = await Promise.all([
-        insertTestUrlHostname({ hostname, crawlable: false }),
-        insertTestUrlHostname({ hostname: subdomain, crawlable: false }),
+        insertTestUrlHostname({ hostname, is_crawlable: false }),
+        insertTestUrlHostname({ hostname: subdomain, is_crawlable: false }),
       ])
       const creator = (await createTestUserDirect({
         username: `bh-capture-${rand()}`,
@@ -182,7 +182,7 @@ describe('block-hostname', () => {
 
     it('captures every affected post across bounded hostname relation batches', async () => {
       const hostname = randomHostname()
-      const hostnameId = await insertTestUrlHostname({ hostname, crawlable: false })
+      const hostnameId = await insertTestUrlHostname({ hostname, is_crawlable: false })
       const creator = (await createTestUserDirect({
         username: `bh-batch-${rand()}`,
       })) as PrivateUser
@@ -206,7 +206,7 @@ describe('block-hostname', () => {
 
     it('applies a 20% vote weight penalty to users who created the relations', async () => {
       const hostname = randomHostname()
-      const hostnameId = await insertTestUrlHostname({ hostname, crawlable: false })
+      const hostnameId = await insertTestUrlHostname({ hostname, is_crawlable: false })
 
       const creator = (await createTestUserDirect({
         username: `bh-penalize-${rand()}`,
@@ -234,7 +234,7 @@ describe('block-hostname', () => {
 
     it('is idempotent: re-blocking does not create duplicate penalties', async () => {
       const hostname = randomHostname()
-      const hostnameId = await insertTestUrlHostname({ hostname, crawlable: false })
+      const hostnameId = await insertTestUrlHostname({ hostname, is_crawlable: false })
 
       const creator = (await createTestUserDirect({ username: `bh-idem-${rand()}` })) as PrivateUser
       const postId = await insertTestPost({

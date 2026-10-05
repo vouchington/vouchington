@@ -5,7 +5,7 @@ export type RssFeedImportBody = {
   urls?: string[]
   opml?: string
   csv?: string
-  follow?: boolean
+  should_follow_imported_feeds?: boolean
 }
 
 export class RssFeedImportValidationError extends Error {

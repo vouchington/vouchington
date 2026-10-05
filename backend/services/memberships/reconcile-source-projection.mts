@@ -13,7 +13,7 @@ export type CreatedMembership = {
   expired_at: Date | null
   past_due_at: Date | null
   paused_at: Date | null
-  cancel_at_period_end: boolean
+  should_cancel_at_period_end: boolean
   projected: boolean
 }
 
@@ -54,14 +54,14 @@ export async function reconcileSourceProjection(
       expired_at = CASE WHEN ${status} = 'expired' THEN COALESCE(expired_at, ${options.terminalEffectiveAt}::timestamptz, CURRENT_TIMESTAMP) ELSE NULL END,
       past_due_at = CASE WHEN ${status} = 'past_due' THEN COALESCE(past_due_at, ${options.transitionEffectiveAt}::timestamptz, CURRENT_TIMESTAMP) ELSE NULL END,
       paused_at = CASE WHEN ${status} = 'paused' THEN COALESCE(paused_at, ${options.transitionEffectiveAt}::timestamptz, CURRENT_TIMESTAMP) ELSE NULL END,
-      cancel_at_period_end = ${cancelAtPeriodEnd},
+      should_cancel_at_period_end = ${cancelAtPeriodEnd},
       projection_ended_at = CASE
         WHEN ${options.reactivateProjection} THEN NULL
         ELSE projection_ended_at
       END,
       updated_at = CURRENT_TIMESTAMP
     WHERE id = ${prior.id} AND membership_source_id = ${prior.membership_source_id}
-    RETURNING cancelled_at, expired_at, past_due_at, paused_at, cancel_at_period_end`)
+    RETURNING cancelled_at, expired_at, past_due_at, paused_at, should_cancel_at_period_end`)
   const current = rows[0] as Omit<CreatedMembership, 'id' | 'grantId' | 'projected'>
   const previousStatus = getStatus(prior)
   const changeType = classifyMembershipProjectionChange(
@@ -83,7 +83,7 @@ export async function reconcileSourceProjection(
       expiredAt: current.expired_at,
       pastDueAt: current.past_due_at,
       pausedAt: current.paused_at,
-      cancelAtPeriodEnd: current.cancel_at_period_end,
+      cancelAtPeriodEnd: current.should_cancel_at_period_end,
       membershipProviderEvidenceId: options.membershipProviderEvidenceId ?? null,
       stripeEventId: options.stripeEventId,
       query,
@@ -99,7 +99,7 @@ export async function reconcileSourceProjection(
       (options.reactivateProjection && prior.projection_ended_at !== null) ||
       prior.membership_product_id !== options.productId ||
       previousStatus !== status ||
-      prior.cancel_at_period_end !== current.cancel_at_period_end ||
+      prior.should_cancel_at_period_end !== current.should_cancel_at_period_end ||
       expiryChanged,
   }
 }

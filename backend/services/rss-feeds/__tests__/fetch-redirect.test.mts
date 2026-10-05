@@ -47,7 +47,7 @@ describe('fetchRssFeed redirect persistence failures', () => {
       rssFeedUrl: feedUrl,
       homePageUrl: `https://${hostname}/`,
     })
-    await updateRssFeedById(feed.id, { ignore_robots_txt: true })
+    await updateRssFeedById(feed.id, { should_ignore_robots_txt: true })
     return { ...feed, feedUrl }
   }
 

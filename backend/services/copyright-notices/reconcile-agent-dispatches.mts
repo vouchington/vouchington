@@ -102,7 +102,7 @@ function buildPendingCopyrightAgentDispatchesQuery() {
         FROM copyright_notice_submission_assessments assessment
         WHERE assessment.copyright_notice_submission_id = submission.id
           AND assessment.assessed_by_id IS NULL
-          AND assessment.substantially_compliant
+          AND assessment.is_substantially_compliant
           AND assessment.copyright_notice_form_screening_id = screening.id
           AND NOT EXISTS (
             SELECT 1 FROM copyright_notice_submission_assessments newer
@@ -110,7 +110,7 @@ function buildPendingCopyrightAgentDispatchesQuery() {
           )
       ) assessment ON true
       LEFT JOIN LATERAL (
-        SELECT assessment.id, assessment.copyright_notice_form_screening_id, assessment.substantially_compliant
+        SELECT assessment.id, assessment.copyright_notice_form_screening_id, assessment.is_substantially_compliant
         FROM copyright_notice_submission_assessments assessment
         WHERE assessment.copyright_notice_submission_id = submission.id
           AND NOT EXISTS (
@@ -122,8 +122,8 @@ function buildPendingCopyrightAgentDispatchesQuery() {
         AND notice.jurisdiction = 'us_dmca'
         AND char_length(notice.claimant_contact_ciphertext) > 0
         AND char_length(btrim(notice.work_description)) > 0
-        AND intake.good_faith_belief
-        AND intake.accuracy_authority_under_penalty_of_perjury
+        AND intake.has_good_faith_belief
+        AND intake.has_accuracy_authority_under_penalty_of_perjury
         AND char_length(intake.electronic_signature_ciphertext) > 0
         AND EXISTS (
           SELECT 1 FROM copyright_notice_targets target
@@ -150,7 +150,7 @@ function buildPendingCopyrightAgentDispatchesQuery() {
         )
         AND (current_assessment.id IS NULL OR (
           current_assessment.copyright_notice_form_screening_id IS NOT NULL
-          AND current_assessment.substantially_compliant
+          AND current_assessment.is_substantially_compliant
         ))
         AND (
           assessment.id IS NULL OR EXISTS (

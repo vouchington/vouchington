@@ -12,7 +12,10 @@ describe('recordLike', () => {
 
     await recordLike(post.id, remoteActor.id, `https://remote.example/activities/${remoteActor.id}`)
 
-    expect(await getApPostLikesTally(post.id)).toEqual({ ap_likes_score: 1, ap_likes_count: 1 })
+    expect(await getApPostLikesTally(post.id)).toEqual({
+      activitypub_likes_score: 1,
+      activitypub_likes_count: 1,
+    })
   })
 
   it('is idempotent for a redelivered Like carrying the same activity id', async () => {
@@ -23,7 +26,10 @@ describe('recordLike', () => {
     await recordLike(post.id, remoteActor.id, likeApId)
     await recordLike(post.id, remoteActor.id, likeApId)
 
-    expect(await getApPostLikesTally(post.id)).toEqual({ ap_likes_score: 1, ap_likes_count: 1 })
+    expect(await getApPostLikesTally(post.id)).toEqual({
+      activitypub_likes_score: 1,
+      activitypub_likes_count: 1,
+    })
   })
 
   it('tallies one like per distinct remote actor', async () => {
@@ -34,7 +40,10 @@ describe('recordLike', () => {
     await recordLike(post.id, first.id, `https://remote.example/activities/${first.id}`)
     await recordLike(post.id, second.id, `https://remote.example/activities/${second.id}`)
 
-    expect(await getApPostLikesTally(post.id)).toEqual({ ap_likes_score: 2, ap_likes_count: 2 })
+    expect(await getApPostLikesTally(post.id)).toEqual({
+      activitypub_likes_score: 2,
+      activitypub_likes_count: 2,
+    })
   })
 
   it('resurrects the soft-deleted row instead of inserting a duplicate after an Undo', async () => {
@@ -47,7 +56,10 @@ describe('recordLike', () => {
       `https://remote.example/activities/${remoteActor.id}-first-like`,
     )
     await undoLike(post.id, remoteActor.id)
-    expect(await getApPostLikesTally(post.id)).toEqual({ ap_likes_score: 0, ap_likes_count: 0 })
+    expect(await getApPostLikesTally(post.id)).toEqual({
+      activitypub_likes_score: 0,
+      activitypub_likes_count: 0,
+    })
 
     await recordLike(
       post.id,
@@ -55,7 +67,10 @@ describe('recordLike', () => {
       `https://remote.example/activities/${remoteActor.id}-second-like`,
     )
 
-    expect(await getApPostLikesTally(post.id)).toEqual({ ap_likes_score: 1, ap_likes_count: 1 })
+    expect(await getApPostLikesTally(post.id)).toEqual({
+      activitypub_likes_score: 1,
+      activitypub_likes_count: 1,
+    })
   })
 
   it('survives repeated Like/Undo cycles from the same actor without conflicting on stale soft-deleted rows', async () => {
@@ -76,6 +91,9 @@ describe('recordLike', () => {
       `https://remote.example/activities/${remoteActor.id}-final`,
     )
 
-    expect(await getApPostLikesTally(post.id)).toEqual({ ap_likes_score: 1, ap_likes_count: 1 })
+    expect(await getApPostLikesTally(post.id)).toEqual({
+      activitypub_likes_score: 1,
+      activitypub_likes_count: 1,
+    })
   })
 })

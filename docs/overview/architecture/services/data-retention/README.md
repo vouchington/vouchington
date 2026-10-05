@@ -30,12 +30,13 @@ boundaries, and an ineligible user releases it without deletion.
   reference even while a live relation still exists; a later authoritative vote deletion can
   capture that tuple again. Each family uses its own transaction and never locks a parent root.
 - `cleanupRetainedIdentityRoots()` — one cursor-bounded, `SKIP LOCKED` page per concrete user,
-  topic, post, RSS-item, image, and API key owner family on each scheduled run. A root is deleted only when its
+  topic, post, RSS-item, image, membership, and API key owner family on each scheduled run. A root is deleted only when its
   live row and all durable request, audit, membership lineage, publication, notification, or retained-relation references are absent; this is separate
   from publication-bridge cleanup and does not expire audit history. Every foreign key that targets a
   retained root, including the staff actor on post clearance changes and moderation dispositions and
   the grant owner on OAuth server events, must be listed in `ROOT_FAMILIES`; a catalog-backed test
   fails when one is missing. OAuth server events are append-only, so they keep their user root for good.
+  Membership roots remain while a live membership or any membership change, refund, or administrator refund request references them.
   MCP call audit rows are append-only too, so they keep the API key root that names the key for
   good, and the key's account can still be deleted.
 - `cleanupRetainedMediaBindings()` — one separate cursor-bounded page of immutable image placement

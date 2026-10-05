@@ -21,7 +21,7 @@ describe('statement public facts and durable provenance', () => {
     await reviewCopyrightFormIntake({
       intakeId: notice.intake.id,
       currentUser: moderator,
-      accepted: true,
+      is_accepted: true,
       rationale: privateRationale,
     })
     const caseId = notice.intake.copyright_notice_id

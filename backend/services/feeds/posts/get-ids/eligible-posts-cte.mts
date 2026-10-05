@@ -66,7 +66,7 @@ export function appendEligiblePostsSelect(
       .append(sql` AS hot_score`)
   query.append(sql`
       FROM posts
-      JOIN posts root_post ON root_post.id = COALESCE(posts.root_id, posts.id)
+      JOIN posts root_post ON root_post.id = COALESCE(posts.root_post_id, posts.id)
       WHERE 1 = 1`)
   if (targetPostId) query.append(sql` AND posts.id = `).append(targetPostId)
   query.append(sql`

@@ -75,7 +75,7 @@ export type RecentAutomodAction = {
   created_at: Date
   action_at: Date
   confidence_score: number | null
-  flagged: boolean
+  is_flagged: boolean
   categories: string[]
   model_output: unknown
   current_state: 'rejected' | 'in_review' | 'unpublished'

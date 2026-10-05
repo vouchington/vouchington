@@ -61,8 +61,8 @@ export const REWARDS_STATUSES_DECLARATIONS = [
     nativeRewardsStatusesUpdateFull,
     context =>
       context.client.my.updateMyRewardsProgramStatus('00000000-0000-7000-8000-000000000741', {
-        since: '2025-02-01',
-        until: '2026-12-31',
+        started_on: '2025-02-01',
+        expires_on: '2026-12-31',
       }),
   ),
   defineWebApiFixture<RewardsProgramStatusResponseBody>()(
@@ -70,8 +70,8 @@ export const REWARDS_STATUSES_DECLARATIONS = [
     nativeRewardsStatusesUpdateClearDates,
     context =>
       context.client.my.updateMyRewardsProgramStatus('00000000-0000-7000-8000-000000000741', {
-        since: null,
-        until: null,
+        started_on: null,
+        expires_on: null,
       }),
   ),
   defineWebApiFixture<null>()(

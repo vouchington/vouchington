@@ -68,7 +68,11 @@ describe('HouseholdManager rendering and mutations', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockCreate.mockResolvedValue({
-      household: { id: 'owned-created', owner_id: 'user-1', updated_at: '2026-07-02T00:00:00Z' },
+      household: {
+        id: 'owned-created',
+        owner_user_id: 'user-1',
+        updated_at: '2026-07-02T00:00:00Z',
+      },
     })
     mockGetMemberships.mockResolvedValue({ results: [], page_info: terminalPageInfo })
     mockGetHouseholds.mockResolvedValue({ results: [], page_info: terminalPageInfo })
@@ -81,7 +85,7 @@ describe('HouseholdManager rendering and mutations', () => {
         initialSections={[
           makeSection({ membershipLoadError: true, memberships: [] }),
           makeSection({
-            household: { id: 'shared', owner_id: 'user-2', updated_at: '2026-07-01' },
+            household: { id: 'shared', owner_user_id: 'user-2', updated_at: '2026-07-01' },
             isOwner: false,
             memberships: [makeMembership({ id: 'shared-member' })],
           }),
@@ -136,14 +140,14 @@ describe('HouseholdManager rendering and mutations', () => {
 
   it('creates with an empty body, preserves shared sections, and deduplicates requests', async () => {
     const pending = deferred<{
-      household: { id: string; owner_id: string; updated_at: string }
+      household: { id: string; owner_user_id: string; updated_at: string }
     }>()
     mockCreate.mockReturnValueOnce(pending.promise)
     render(
       <HouseholdManager
         initialSections={[
           makeSection({
-            household: { id: 'shared', owner_id: 'user-2', updated_at: '2026-07-01' },
+            household: { id: 'shared', owner_user_id: 'user-2', updated_at: '2026-07-01' },
             isOwner: false,
           }),
         ]}
@@ -157,7 +161,7 @@ describe('HouseholdManager rendering and mutations', () => {
 
     await act(async () => {
       pending.resolve({
-        household: { id: 'created', owner_id: 'user-1', updated_at: '2026-07-02' },
+        household: { id: 'created', owner_user_id: 'user-1', updated_at: '2026-07-02' },
       })
     })
     expect(screen.getByRole('heading', { name: 'Your household' })).toBeVisible()
@@ -170,7 +174,7 @@ describe('HouseholdManager rendering and mutations', () => {
       <HouseholdManager
         initialSections={[
           makeSection({
-            household: { id: 'shared', owner_id: 'user-2', updated_at: '2026-07-01' },
+            household: { id: 'shared', owner_user_id: 'user-2', updated_at: '2026-07-01' },
             isOwner: false,
           }),
         ]}

@@ -31,7 +31,7 @@ export async function acceptMembershipProviderEvidence(
   const evidence = await resolveMembershipProviderEvidence(dependencies, membership, query)
   const cancelAtPeriodEnd = isTerminalMembershipStatus(status)
     ? false
-    : (evidence?.cancelAtPeriodEnd ?? membership.cancel_at_period_end)
+    : (evidence?.cancelAtPeriodEnd ?? membership.should_cancel_at_period_end)
   return {
     membership: await setMembershipProjectionCancelAtPeriodEnd(
       membership,

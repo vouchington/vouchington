@@ -29,7 +29,7 @@
   "moderator_workload": {
     "moderators": [
       {
-        "actor_id": "admin-1",
+        "actor_user_id": "admin-1",
         "counts": {
           "remove": 2,
           "warn": 1

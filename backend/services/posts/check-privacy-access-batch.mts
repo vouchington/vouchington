@@ -28,7 +28,7 @@ export async function canViewPostsBatch(
     SELECT candidate_post.id AS post_id
     FROM input
     JOIN posts candidate_post ON candidate_post.id = input.post_id
-    JOIN posts access_post ON access_post.id = COALESCE(candidate_post.root_id, candidate_post.id)
+    JOIN posts access_post ON access_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
     WHERE `.append(eligibility)
   const { rows } = options.query
     ? await options.query<{ post_id: string }>(query)

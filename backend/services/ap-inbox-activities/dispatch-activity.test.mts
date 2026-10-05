@@ -132,7 +132,10 @@ describe('dispatchInboundActivity', () => {
       object: getPostUri(post.id),
     })
 
-    expect(await getApPostLikesTally(post.id)).toEqual({ ap_likes_score: 1, ap_likes_count: 1 })
+    expect(await getApPostLikesTally(post.id)).toEqual({
+      activitypub_likes_score: 1,
+      activitypub_likes_count: 1,
+    })
   })
 
   it('removes the Like for an Undo(Like) activity', async () => {
@@ -144,7 +147,10 @@ describe('dispatchInboundActivity', () => {
       actor: remoteActor.actor_uri,
       object: getPostUri(post.id),
     })
-    expect(await getApPostLikesTally(post.id)).toEqual({ ap_likes_score: 1, ap_likes_count: 1 })
+    expect(await getApPostLikesTally(post.id)).toEqual({
+      activitypub_likes_score: 1,
+      activitypub_likes_count: 1,
+    })
 
     await dispatchInboundActivity(remoteActor, {
       id: `https://remote.example/activities/${randomSuffix()}`,
@@ -153,7 +159,10 @@ describe('dispatchInboundActivity', () => {
       object: { type: 'Like', object: getPostUri(post.id) },
     })
 
-    expect(await getApPostLikesTally(post.id)).toEqual({ ap_likes_score: 0, ap_likes_count: 0 })
+    expect(await getApPostLikesTally(post.id)).toEqual({
+      activitypub_likes_score: 0,
+      activitypub_likes_count: 0,
+    })
   })
 
   it('does not record a Like when the object is not a local post URI', async () => {

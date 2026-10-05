@@ -64,7 +64,7 @@ export async function applyPostClassifierEffects(
 
 function getPositiveTopicIds(lease: Lease, outcomes: Outcomes): string[] {
   const positiveTopicIds = new Set<string>()
-  if (outcomes.local?.flagged) {
+  if (outcomes.local?.is_flagged) {
     const local = lease.resolved.configuration.local
     if (!local) throw new Error('post classifier run local outcome is not configured')
     positiveTopicIds.add(local.topicId)

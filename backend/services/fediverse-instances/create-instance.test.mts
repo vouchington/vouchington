@@ -253,7 +253,7 @@ describe('createInstanceFromHostname', () => {
       nodeinfo_software_version: null,
       total_users: null,
       monthly_active_users: null,
-      open_registrations: null,
+      is_open_for_registrations: null,
       nodeinfo_raw: null,
       integration_status: 'pending',
     })

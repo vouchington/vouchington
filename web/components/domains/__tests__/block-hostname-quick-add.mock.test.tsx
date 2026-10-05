@@ -85,7 +85,7 @@ describe('BlockHostnameQuickAdd', () => {
     })
   })
 
-  it('calls createHostname with blocked:true after confirmation', async () => {
+  it('calls createHostname with is_blocked:true after confirmation', async () => {
     render(<BlockHostnameQuickAdd isAdmin />)
     const input = screen.getByRole('textbox', { name: 'Hostname to block' })
     fireEvent.change(input, { target: { value: 'example.com' } })
@@ -93,7 +93,10 @@ describe('BlockHostnameQuickAdd', () => {
     await waitFor(() => screen.getByRole('alertdialog'))
     fireEvent.click(screen.getByRole('button', { name: 'Block hostname' }))
     await waitFor(() => {
-      expect(mocks.createHostname).toHaveBeenCalledWith({ hostname: 'example.com', blocked: true })
+      expect(mocks.createHostname).toHaveBeenCalledWith({
+        hostname: 'example.com',
+        is_blocked: true,
+      })
     })
   })
 

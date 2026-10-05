@@ -145,7 +145,7 @@ async function insertClassifierRun<C>(
     sql`/* reserveClassifierRun.insert */
     INSERT INTO classifier_runs (
       classifier_id, post_id, rss_feed_item_id, input_sha256, configuration_json,
-      configuration_sha256, shared_actor_id, decision_batch_id
+      configuration_sha256, shared_actor_user_id, decision_batch_id
     ) VALUES (
       (SELECT id FROM classifiers WHERE slug = ${slug}), ${subject.postId}, ${subject.rssFeedItemId},
       ${current.inputSha256}, ${resolved.configurationJson}::jsonb, ${resolved.configurationSha256},

@@ -129,19 +129,19 @@ CREATE TABLE IF NOT EXISTS users (
 
   -- user profile
   markdown TEXT NOT NULL DEFAULT '',
-  hn_discussions BOOLEAN NOT NULL DEFAULT FALSE,
+  should_import_hacker_news_discussions BOOLEAN NOT NULL DEFAULT FALSE,
 
   -- user settings
   -- TRUE = opt-in
   -- FALSE = opt-out
   -- NULL = not set
-  third_party_marketing BOOLEAN DEFAULT NULL,
-  engagement_emails_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  should_receive_third_party_marketing BOOLEAN DEFAULT NULL,
+  is_engagement_emails_enabled BOOLEAN NOT NULL DEFAULT TRUE,
   news_digest_frequency digest_frequencies NOT NULL DEFAULT 'weekly' CHECK (news_digest_frequency IN ('none', 'daily', 'weekly')),
-  moderation_emails_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  is_moderation_emails_enabled BOOLEAN NOT NULL DEFAULT TRUE,
   -- Per-user opt-in to ActivityPub federation (Phase C). Default FALSE: federation exposes a
   -- public AP actor (/ap/users/:id) and accepts inbound follows, so it must never be silently on.
-  fediverse_federation_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+  is_fediverse_federation_enabled BOOLEAN NOT NULL DEFAULT FALSE,
   community_digest_frequency digest_frequencies NOT NULL DEFAULT 'weekly' CHECK (community_digest_frequency IN ('none', 'daily', 'weekly')),
   moderation_email_cadence moderation_email_cadences NOT NULL DEFAULT 'daily',
   moderation_email_days_of_week SMALLINT[] NOT NULL DEFAULT ARRAY[1, 2, 3, 4, 5]::SMALLINT[] CHECK (
@@ -192,7 +192,7 @@ CREATE TABLE IF NOT EXISTS users (
   ),
 
   -- referral attribution
-  referrer_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  referrer_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
 
   -- GDPR right to restrict processing
   processing_restricted_at TIMESTAMPTZ,
@@ -203,7 +203,7 @@ CREATE TABLE IF NOT EXISTS users (
   verification_status identity_verification_statuses NOT NULL DEFAULT 'unverified',
   verification_provider identity_verification_providers,
   verification_completed_at TIMESTAMPTZ,
-  verified_badge_visible BOOLEAN NOT NULL DEFAULT TRUE,
+  is_verified_badge_visible BOOLEAN NOT NULL DEFAULT TRUE,
   public_verified_name_display public_verified_name_displays NOT NULL DEFAULT 'hidden',
   verified_first_name TEXT,
   verified_last_name_initial TEXT,
@@ -248,7 +248,7 @@ WHERE username IS NOT NULL;
 
 -- partial index for referral attribution queries
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_users__referrer_id ON users (referrer_id) WHERE referrer_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_users__referrer_id ON users (referrer_user_id) WHERE referrer_user_id IS NOT NULL;
 
 -- soft-deleted users lookup
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -270,15 +270,15 @@ CREATE INDEX IF NOT EXISTS idx_users__lingua_rs_pending
 
 COMMENT ON TABLE users IS 'User accounts. Core identity table for all registered users.';
 COMMENT ON COLUMN users.platform_account_kind IS 'Reserved platform identity: official for people, system for automation, NULL for members and the deleted tombstone.';
-COMMENT ON COLUMN users.hn_discussions IS 'Whether this user opts in to Hacker News discussion imports.';
+COMMENT ON COLUMN users.should_import_hacker_news_discussions IS 'Whether this user opts in to Hacker News discussion imports.';
 COMMENT ON COLUMN users.use_display_name_from IS 'Which source to use for the displayed name (username, facebook, x, etc.).';
 COMMENT ON COLUMN users.username IS 'Unique username chosen by the user. NULL if not yet set. Case-insensitive (stored lowercase).';
 COMMENT ON COLUMN users.markdown IS 'User profile bio in markdown format.';
-COMMENT ON COLUMN users.third_party_marketing IS 'Marketing opt-in/out: TRUE=opted in, FALSE=opted out, NULL=not set.';
-COMMENT ON COLUMN users.engagement_emails_enabled IS 'Whether the user receives engagement recommendation emails.';
+COMMENT ON COLUMN users.should_receive_third_party_marketing IS 'Marketing opt-in/out: TRUE=opted in, FALSE=opted out, NULL=not set.';
+COMMENT ON COLUMN users.is_engagement_emails_enabled IS 'Whether the user receives engagement recommendation emails.';
 COMMENT ON COLUMN users.news_digest_frequency IS 'Frequency for first-party news digest emails.';
-COMMENT ON COLUMN users.moderation_emails_enabled IS 'Whether the user receives community moderation summary emails.';
-COMMENT ON COLUMN users.fediverse_federation_enabled IS 'Per-user opt-in to ActivityPub federation (Phase C). Default FALSE; when TRUE, a public AP actor is exposed at /ap/users/:id and inbound follows are auto-accepted.';
+COMMENT ON COLUMN users.is_moderation_emails_enabled IS 'Whether the user receives community moderation summary emails.';
+COMMENT ON COLUMN users.is_fediverse_federation_enabled IS 'Per-user opt-in to ActivityPub federation (Phase C). Default FALSE; when TRUE, a public AP actor is exposed at /ap/users/:id and inbound follows are auto-accepted.';
 COMMENT ON COLUMN users.community_digest_frequency IS 'Frequency for community digest emails.';
 COMMENT ON COLUMN users.moderation_email_cadence IS 'Cadence for community moderation summary emails.';
 COMMENT ON COLUMN users.moderation_email_days_of_week IS 'Days of week for selected-day moderation email cadence, 1=Monday and 7=Sunday.';
@@ -303,13 +303,13 @@ COMMENT ON COLUMN users.vote_weight_admin_set_at IS 'When an admin last manually
 COMMENT ON COLUMN users.vote_weight_recalculated_at IS 'When the vote weight was last recalculated automatically. NULL if never recalculated.';
 COMMENT ON COLUMN users.votes_snapshot_xmax IS 'Upper transaction-ID boundary of the PostgreSQL snapshot used for the persisted vote-stat aggregate.';
 COMMENT ON COLUMN users.votes_snapshot_xip_count IS 'Number of transactions still in progress in that vote-stat snapshot; lower is newer when the snapshot xmax is equal.';
-COMMENT ON COLUMN users.referrer_id IS 'The user who referred this user, for referral attribution.';
+COMMENT ON COLUMN users.referrer_user_id IS 'The user who referred this user, for referral attribution.';
 COMMENT ON COLUMN users.processing_restricted_at IS 'When data processing was restricted for this user (GDPR right to restrict processing). NULL means no restriction.';
 COMMENT ON COLUMN users.bad_faith_reporter_at IS 'Set when the user has an active report-abuse penalty; cleared when all penalties are revoked. Used by computeTrustTier to lower trust tier.';
 COMMENT ON COLUMN users.verification_status IS 'Current lifecycle state of the user''s identity verification.';
 COMMENT ON COLUMN users.verification_provider IS 'Provider used for verification, set once payment is initiated.';
 COMMENT ON COLUMN users.verification_completed_at IS 'Timestamp when verification reached a terminal state (verified, failed, or duplicate_id).';
-COMMENT ON COLUMN users.verified_badge_visible IS 'Whether to display the ID-verified badge on this user''s public profile.';
+COMMENT ON COLUMN users.is_verified_badge_visible IS 'Whether to display the ID-verified badge on this user''s public profile.';
 COMMENT ON COLUMN users.public_verified_name_display IS 'How much of the legal name to show publicly.';
 COMMENT ON COLUMN users.verified_first_name IS 'Verified legal first name, private unless user opts in.';
 COMMENT ON COLUMN users.verified_last_name_initial IS 'Single initial of verified last name, private unless user opts in.';
@@ -787,7 +787,7 @@ CREATE TABLE IF NOT EXISTS user_passkeys (
   public_key BYTEA NOT NULL,
   counter BIGINT NOT NULL DEFAULT 0,
   device_type passkey_device_types NOT NULL,
-  backed_up BOOLEAN NOT NULL DEFAULT FALSE,
+  is_backed_up BOOLEAN NOT NULL DEFAULT FALSE,
   transports TEXT[],
   name TEXT NOT NULL CHECK (char_length(name) >= 1 AND char_length(name) <= 100 AND TRIM(name) = name),
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -810,7 +810,7 @@ COMMENT ON COLUMN user_passkeys.credential_id IS 'WebAuthn credential ID, unique
 COMMENT ON COLUMN user_passkeys.public_key IS 'Public key bytes for signature verification.';
 COMMENT ON COLUMN user_passkeys.counter IS 'Signature counter for detecting cloned authenticators.';
 COMMENT ON COLUMN user_passkeys.device_type IS 'Whether the passkey is single-device or multi-device (synced).';
-COMMENT ON COLUMN user_passkeys.backed_up IS 'Whether the passkey is backed up to the cloud by the authenticator.';
+COMMENT ON COLUMN user_passkeys.is_backed_up IS 'Whether the passkey is backed up to the cloud by the authenticator.';
 COMMENT ON COLUMN user_passkeys.transports IS 'Supported transport methods (usb, ble, nfc, internal, etc.).';
 COMMENT ON COLUMN user_passkeys.name IS 'User-chosen display name for this passkey (1-100 chars).';
 COMMENT ON COLUMN user_passkeys.last_used_at IS 'When this passkey was last used for authentication.';
@@ -824,13 +824,13 @@ CREATE TABLE IF NOT EXISTS session_referral_attributions (
   id           UUID        PRIMARY KEY DEFAULT uuidv7(),
   session_id   UUID        NOT NULL,
   -- ON DELETE SET NULL: preserve attribution history even if the referrer deletes their account.
-  -- A null referrer_id means "referred by a deleted user" — the event still counts for analytics.
-  referrer_id  UUID        REFERENCES users(id) ON DELETE SET NULL,
+  -- A null referrer_user_id means "referred by a deleted user" — the event still counts for analytics.
+  referrer_user_id  UUID        REFERENCES users(id) ON DELETE SET NULL,
   -- ON DELETE SET NULL: preserve attribution records even if the attributed user deletes their account
   user_id      UUID        REFERENCES users(id) ON DELETE SET NULL,
   landing_url  TEXT        NOT NULL,
   CHECK (char_length(landing_url) <= 2048),
-  CHECK (referrer_id != user_id),
+  CHECK (referrer_user_id != user_id),
 
   -- UTM tracking parameters
   utm_source   TEXT,
@@ -852,8 +852,8 @@ CREATE INDEX IF NOT EXISTS idx_session_referral_attributions__session_id_id
   ON session_referral_attributions (session_id, id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_session_referral_attributions__referrer_id
-  ON session_referral_attributions (referrer_id)
-  WHERE referrer_id IS NOT NULL;
+  ON session_referral_attributions (referrer_user_id)
+  WHERE referrer_user_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_session_referral_attributions__user_id
   ON session_referral_attributions (user_id)
@@ -861,7 +861,7 @@ CREATE INDEX IF NOT EXISTS idx_session_referral_attributions__user_id
 
 COMMENT ON TABLE session_referral_attributions IS 'Tracks which user referred a session, linking anonymous sessions to referrers for attribution. RANGE-partitioned by id with a default partition only; split later by adding explicit range partitions.';
 COMMENT ON COLUMN session_referral_attributions.session_id IS 'The anonymous session that was referred. Not a FK — sessions live outside PostgreSQL.';
-COMMENT ON COLUMN session_referral_attributions.referrer_id IS 'The user who referred this session. NULL if the referrer deleted their account.';
+COMMENT ON COLUMN session_referral_attributions.referrer_user_id IS 'The user who referred this session. NULL if the referrer deleted their account.';
 COMMENT ON COLUMN session_referral_attributions.user_id IS 'The user who signed up from this referral. NULL until signup or if user deletes account.';
 COMMENT ON COLUMN session_referral_attributions.landing_url IS 'The URL the referred session landed on (max 2048 chars).';
 COMMENT ON COLUMN session_referral_attributions.utm_source IS 'UTM source parameter from the referral URL (e.g. google, newsletter).';

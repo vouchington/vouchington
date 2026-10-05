@@ -113,7 +113,7 @@ describe('posts', () => {
       const moderationData = (await getPostModerationData(post2.id)) as {
         openai_omni_moderation_content_sha256: Buffer
         openai_omni_moderation_input_sha256: Buffer
-        openai_omni_moderation_flagged: boolean
+        is_flagged_by_openai_omni_moderation: boolean
         openai_omni_moderation_results: { flagged_categories: string[] }
         openai_omni_moderation_created_at: Date
       } | null
@@ -145,13 +145,13 @@ describe('posts', () => {
       const moderationData = (await getPostModerationData(post.id)) as {
         openai_omni_moderation_content_sha256: Buffer
         openai_omni_moderation_input_sha256: Buffer
-        openai_omni_moderation_flagged: boolean
+        is_flagged_by_openai_omni_moderation: boolean
         openai_omni_moderation_results: { flagged_categories: string[] }
         openai_omni_moderation_created_at: Date
       } | null
 
       expect(moderationData).toBeDefined()
-      expect(moderationData!.openai_omni_moderation_flagged).toBe(false)
+      expect(moderationData!.is_flagged_by_openai_omni_moderation).toBe(false)
       expect(moderationData!.openai_omni_moderation_results).toEqual({ flagged_categories: [] })
     })
 
@@ -210,12 +210,12 @@ describe('posts', () => {
       expect(createOpenAIModeration).toHaveBeenCalledTimes(1)
 
       const moderationData = (await getPostModerationData(post.id)) as {
-        openai_omni_moderation_flagged: boolean
+        is_flagged_by_openai_omni_moderation: boolean
         openai_omni_moderation_results: { flagged_categories: string[] }
       } | null
 
       expect(moderationData).toBeDefined()
-      expect(moderationData!.openai_omni_moderation_flagged).toBe(true)
+      expect(moderationData!.is_flagged_by_openai_omni_moderation).toBe(true)
       expect(moderationData!.openai_omni_moderation_results).toEqual({ flagged_categories: [] })
     })
   })

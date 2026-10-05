@@ -17,7 +17,7 @@ type ImageUploadStateRow = {
   deleted_at: Date | null
   quarantine_pending_at: Date | null
   openai_omni_moderation_created_at: Date | null
-  openai_omni_moderation_flagged: boolean | null
+  is_flagged_by_openai_omni_moderation: boolean | null
 }
 
 export function deriveUploadStatus(row: {
@@ -42,7 +42,7 @@ export async function getImageUploadState(
     SELECT images.id, images.created_by_id, images.upload_started_at, images.upload_completed_at,
            images.upload_failed_at, images.upload_error, images.deleted_at,
            images.quarantine_pending_at, images.openai_omni_moderation_created_at,
-           images.openai_omni_moderation_flagged
+           images.is_flagged_by_openai_omni_moderation
     FROM images
     JOIN users uploader ON uploader.id = images.created_by_id AND uploader.deleted_at IS NULL
     WHERE images.id = $1
@@ -61,7 +61,7 @@ export async function getImageUploadState(
   const blocked =
     row.deleted_at !== null ||
     row.quarantine_pending_at !== null ||
-    row.openai_omni_moderation_flagged === true
+    row.is_flagged_by_openai_omni_moderation === true
   // ready requires: metadata extraction done (complete), moderation run (created_at non-null),
   // and not blocked.
   // Race window: extract-metadata sets upload_completed_at before enqueuing moderation.

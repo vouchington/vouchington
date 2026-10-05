@@ -147,7 +147,7 @@ describe('createMembership provider-source reuse', () => {
         getMembershipProviderEvidence: async membership => {
           expect(membership.id).toBe(first.id)
           return {
-            membershipProviderEvidenceId: observation.membership_provider_evidence_id,
+            membershipProviderEvidenceId: observation.membership_provider_evidence_record_id,
           }
         },
       },
@@ -156,11 +156,11 @@ describe('createMembership provider-source reuse', () => {
     await expect(getMembershipHistory(user.id)).resolves.toEqual([
       expect.objectContaining({
         change_type: 'renewal',
-        membership_provider_evidence_id: observation.membership_provider_evidence_id,
+        membership_provider_evidence_record_id: observation.membership_provider_evidence_record_id,
       }),
       expect.objectContaining({
         change_type: 'renewal',
-        membership_provider_evidence_id: null,
+        membership_provider_evidence_record_id: null,
       }),
     ])
   })

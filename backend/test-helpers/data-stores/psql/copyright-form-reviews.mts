@@ -5,15 +5,15 @@ import sql from 'sql-template-strings'
 
 /** Seeds the durable post-review crash boundary without invoking its downstream effects. */
 export async function createTestCopyrightFormIntakeReview(
-  input: { intakeId: string; moderatorId: string; accepted: boolean },
+  input: { intakeId: string; moderatorId: string; is_accepted: boolean },
   options: QueryOptions = {},
 ): Promise<void> {
   const query = options.query ?? write
   await query(sql`/* createTestCopyrightFormIntakeReview */
     INSERT INTO copyright_notice_form_intake_reviews (
-      copyright_notice_form_intake_id, reviewed_at, reviewed_by_id, accepted, rationale_ciphertext
+      copyright_notice_form_intake_id, reviewed_at, reviewed_by_id, is_accepted, rationale_ciphertext
     ) VALUES (
-      ${input.intakeId}, CURRENT_TIMESTAMP, ${input.moderatorId}, ${input.accepted},
+      ${input.intakeId}, CURRENT_TIMESTAMP, ${input.moderatorId}, ${input.is_accepted},
       ${encryptSecret('test rejection', `copyright-form-review:${input.intakeId}`)}
     )
   `)
@@ -29,7 +29,10 @@ export async function createTestCopyrightFormRejectionByErasedModerator(input: {
   moderatorId: string
 }): Promise<void> {
   await using transaction = await beginTransaction()
-  await createTestCopyrightFormIntakeReview({ ...input, accepted: false }, { query: transaction })
+  await createTestCopyrightFormIntakeReview(
+    { ...input, is_accepted: false },
+    { query: transaction },
+  )
   const { rowCount } = await transaction(sql`
     /* createTestCopyrightFormRejectionByErasedModerator:erase */
     DELETE FROM users WHERE id = ${input.moderatorId}

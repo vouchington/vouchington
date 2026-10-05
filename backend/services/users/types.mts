@@ -77,18 +77,18 @@ export type UpdateUserOptions = {
   direct_messages_audience?: UserPrivacyAudience
   default_post_broadcast?: 'everyone' | 'users' | 'followers' | 'mutual_followers'
   default_post_privacy?: 'public' | 'private'
-  engagement_emails_enabled?: boolean
+  is_engagement_emails_enabled?: boolean
   news_digest_frequency?: 'none' | 'daily' | 'weekly'
-  moderation_emails_enabled?: boolean
+  is_moderation_emails_enabled?: boolean
   community_digest_frequency?: 'none' | 'daily' | 'weekly'
   moderation_email_cadence?: 'daily' | 'selected_days' | 'weekly'
   moderation_email_days_of_week?: number[]
   moderation_email_time_of_day?: string
   moderation_email_timezone?: string
   processing_restricted_at?: boolean
-  third_party_marketing?: boolean
-  hn_discussions?: boolean
+  should_receive_third_party_marketing?: boolean
+  should_import_hacker_news_discussions?: boolean
   country?: string | null
   ui_locale?: string | null
-  fediverse_federation_enabled?: boolean
+  is_fediverse_federation_enabled?: boolean
 }

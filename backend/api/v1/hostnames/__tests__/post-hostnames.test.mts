@@ -110,13 +110,13 @@ describe('POST /api/v1/hostnames', () => {
     expect(first.body.id).toBe(second.body.id)
   })
 
-  it('creates and immediately blocks when blocked:true is passed', async () => {
+  it('creates and immediately blocks when is_blocked:true is passed', async () => {
     const request = createRequest()
     await request.authenticateAs(adminUser!)
     const hostname = `block-new-${Date.now()}.example.com`
     const response = await request
       .post('/api/v1/hostnames')
-      .send({ hostname, blocked: true })
+      .send({ hostname, is_blocked: true })
       .expect(200)
 
     expect(response.body.id).toBeTruthy()
@@ -133,16 +133,16 @@ describe('POST /api/v1/hostnames', () => {
     const subdomain = `sub.${hostname}`
     await insertTestUrlHostname({
       hostname: subdomain,
-      blocked: false,
-      crawlable: true,
+      is_blocked: false,
+      is_crawlable: true,
     })
 
     const before = await request.get(`/api/v1/hostnames/${subdomain}`).expect(200)
-    expect(before.body.hostname.blocked).toBe(false)
+    expect(before.body.hostname.is_blocked).toBe(false)
 
-    await request.post('/api/v1/hostnames').send({ hostname, blocked: true }).expect(200)
+    await request.post('/api/v1/hostnames').send({ hostname, is_blocked: true }).expect(200)
 
     const after = await request.get(`/api/v1/hostnames/${subdomain}`).expect(200)
-    expect(after.body.hostname.blocked).toBe(true)
+    expect(after.body.hostname.is_blocked).toBe(true)
   })
 })

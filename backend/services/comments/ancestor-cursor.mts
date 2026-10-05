@@ -9,7 +9,7 @@ type CommentAncestorCursor = {
   id: string
   next_id: string
   role: 'end' | 'start'
-  root_id: string
+  root_post_id: string
   target_id: string
   v: 1
 }
@@ -21,7 +21,7 @@ export function encodeCommentAncestorCursor(cursor: Omit<CommentAncestorCursor, 
 
 export function decodeCommentAncestorCursor(
   encoded: string,
-  expected: Pick<CommentAncestorCursor, 'root_id' | 'target_id'>,
+  expected: Pick<CommentAncestorCursor, 'root_post_id' | 'target_id'>,
 ): CommentAncestorCursor {
   const [payload, signature, extra] = encoded.split('.')
   if (!payload || !signature || extra !== undefined || !hasValidSignature(payload, signature)) {
@@ -36,7 +36,7 @@ export function decodeCommentAncestorCursor(
   }
   if (!isCommentAncestorCursor(parsed)) throw createError(400, 'Invalid ancestor cursor')
   if (parsed.role !== 'end') throw createError(400, 'Invalid ancestor cursor')
-  if (parsed.target_id !== expected.target_id || parsed.root_id !== expected.root_id) {
+  if (parsed.target_id !== expected.target_id || parsed.root_post_id !== expected.root_post_id) {
     throw createError(400, 'Invalid ancestor cursor')
   }
   return parsed
@@ -59,8 +59,8 @@ function isCommentAncestorCursor(value: unknown): value is CommentAncestorCursor
     typeof cursor.next_id === 'string' &&
     isUUID(cursor.next_id) &&
     (cursor.role === 'end' || cursor.role === 'start') &&
-    typeof cursor.root_id === 'string' &&
-    isUUID(cursor.root_id) &&
+    typeof cursor.root_post_id === 'string' &&
+    isUUID(cursor.root_post_id) &&
     typeof cursor.target_id === 'string' &&
     isUUID(cursor.target_id)
   )

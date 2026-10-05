@@ -17,7 +17,7 @@ export type CrawlBasic = {
   url_id: string
   id: string
   created_at: Date
-  crawler_id: string | null
+  hostname_crawler_configuration_id: string | null
   last_modified_at: Date | null
   etag: string | null
   html_sha256: Buffer | null
@@ -37,5 +37,5 @@ export type CrawlBasic = {
   embed_metadata: ResolvedEmbed | null
   embed_oembed_url: string | null
   embed_oembed_resolved_at: Date | null
-  lang: string | null
+  language: string | null
 }

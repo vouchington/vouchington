@@ -24,12 +24,18 @@ export function postWriteParameters(
     Object.entries(properties).filter(
       ([name]) =>
         !['hp_website', 'hp_phone', 'cf_turnstile_response', 'recaptcha_token'].includes(name) &&
-        !(operation.startsWith('POST:') && name === 'root_id') &&
+        !(operation.startsWith('POST:') && name === 'root_post_id') &&
         !(
           operation.startsWith('PATCH:') &&
-          ['images', 'post_type', 'parent_id', 'root_id', 'community_id', 'url', 'url_id'].includes(
-            name,
-          )
+          [
+            'images',
+            'post_type',
+            'parent_post_id',
+            'root_post_id',
+            'community_id',
+            'url',
+            'url_id',
+          ].includes(name)
         ),
     ),
   )

@@ -9,7 +9,7 @@
           "tool": {
             "name": "create_post",
             "title": "Create Post or Comment",
-            "description": "Create a post, or reply with post_type comment and parent_id. Send community_id for a community root post. Story and topic recommendation posts use dedicated workflows. Reuse the UUID idempotency_key with the same body to retry safely.",
+            "description": "Create a post, or reply with post_type comment and parent_post_id. Send community_id for a community root post. Story and topic recommendation posts use dedicated workflows. Reuse the UUID idempotency_key with the same body to retry safely.",
             "inputSchema": {
               "additionalProperties": false,
               "properties": {
@@ -91,7 +91,7 @@
                 "markdown": {
                   "type": "string"
                 },
-                "parent_id": {
+                "parent_post_id": {
                   "type": "string"
                 },
                 "post_type": {
@@ -190,7 +190,7 @@
                     "markdown": {
                       "type": "string"
                     },
-                    "parent_id": {
+                    "parent_post_id": {
                       "anyOf": [
                         {
                           "type": "null"
@@ -200,7 +200,7 @@
                         }
                       ]
                     },
-                    "root_id": {
+                    "root_post_id": {
                       "anyOf": [
                         {
                           "type": "null"
@@ -236,8 +236,8 @@
                     "post_type",
                     "title",
                     "markdown",
-                    "parent_id",
-                    "root_id",
+                    "parent_post_id",
+                    "root_post_id",
                     "created_by_id",
                     "is_anonymous",
                     "created_at",
@@ -402,7 +402,7 @@
                     "markdown": {
                       "type": "string"
                     },
-                    "parent_id": {
+                    "parent_post_id": {
                       "anyOf": [
                         {
                           "type": "null"
@@ -412,7 +412,7 @@
                         }
                       ]
                     },
-                    "root_id": {
+                    "root_post_id": {
                       "anyOf": [
                         {
                           "type": "null"
@@ -448,8 +448,8 @@
                     "post_type",
                     "title",
                     "markdown",
-                    "parent_id",
-                    "root_id",
+                    "parent_post_id",
+                    "root_post_id",
                     "created_by_id",
                     "is_anonymous",
                     "created_at",
@@ -720,6 +720,19 @@
                                 }
                               ]
                             },
+                            "is_verified_badge_visible": {
+                              "anyOf": [
+                                {
+                                  "const": false
+                                },
+                                {
+                                  "const": true
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
                             "markdown": {
                               "anyOf": [
                                 {
@@ -829,19 +842,6 @@
                                 },
                                 {
                                   "const": "verified"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "verified_badge_visible": {
-                              "anyOf": [
-                                {
-                                  "const": false
-                                },
-                                {
-                                  "const": true
                                 },
                                 {
                                   "type": "null"
@@ -1000,7 +1000,7 @@
                     "markdown": {
                       "type": "string"
                     },
-                    "parent_id": {
+                    "parent_post_id": {
                       "anyOf": [
                         {
                           "type": "null"
@@ -1192,7 +1192,7 @@
                         }
                       ]
                     },
-                    "root_id": {
+                    "root_post_id": {
                       "anyOf": [
                         {
                           "type": "null"
@@ -1442,6 +1442,19 @@
                                 }
                               ]
                             },
+                            "is_verified_badge_visible": {
+                              "anyOf": [
+                                {
+                                  "const": false
+                                },
+                                {
+                                  "const": true
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
                             "markdown": {
                               "anyOf": [
                                 {
@@ -1557,19 +1570,6 @@
                                 }
                               ]
                             },
-                            "verified_badge_visible": {
-                              "anyOf": [
-                                {
-                                  "const": false
-                                },
-                                {
-                                  "const": true
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
                             "verified_display_name": {
                               "anyOf": [
                                 {
@@ -1634,7 +1634,7 @@
                     "post_type",
                     "privacy",
                     "rejected_at",
-                    "root_id",
+                    "root_post_id",
                     "title",
                     "topic_recommendation",
                     "updated_at",
@@ -2702,7 +2702,10 @@
                       "enum": ["daily", "none", "weekly"],
                       "type": "string"
                     },
-                    "engagement_emails_enabled": {
+                    "is_engagement_emails_enabled": {
+                      "type": "boolean"
+                    },
+                    "is_moderation_emails_enabled": {
                       "type": "boolean"
                     },
                     "moderation_email_cadence": {
@@ -2728,9 +2731,6 @@
                         }
                       ]
                     },
-                    "moderation_emails_enabled": {
-                      "type": "boolean"
-                    },
                     "news_digest_frequency": {
                       "enum": ["daily", "none", "weekly"],
                       "type": "string"
@@ -2738,12 +2738,12 @@
                   },
                   "required": [
                     "community_digest_frequency",
-                    "engagement_emails_enabled",
+                    "is_engagement_emails_enabled",
+                    "is_moderation_emails_enabled",
                     "moderation_email_cadence",
                     "moderation_email_days_of_week",
                     "moderation_email_time_of_day",
                     "moderation_email_timezone",
-                    "moderation_emails_enabled",
                     "news_digest_frequency"
                   ],
                   "type": "object"
@@ -3223,7 +3223,7 @@
                         }
                       ]
                     },
-                    "hn_discussions": {
+                    "should_import_hacker_news_discussions": {
                       "type": "boolean"
                     }
                   },
@@ -3239,7 +3239,7 @@
                     "default_post_privacy",
                     "country",
                     "ui_locale",
-                    "hn_discussions"
+                    "should_import_hacker_news_discussions"
                   ],
                   "additionalProperties": false
                 }
@@ -3923,6 +3923,19 @@
                                       }
                                     ]
                                   },
+                                  "is_verified_badge_visible": {
+                                    "anyOf": [
+                                      {
+                                        "const": false
+                                      },
+                                      {
+                                        "const": true
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
                                   "markdown": {
                                     "anyOf": [
                                       {
@@ -4036,19 +4049,6 @@
                                       },
                                       {
                                         "const": "verified"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
-                                  },
-                                  "verified_badge_visible": {
-                                    "anyOf": [
-                                      {
-                                        "const": false
-                                      },
-                                      {
-                                        "const": true
                                       },
                                       {
                                         "type": "null"
@@ -4207,7 +4207,7 @@
                           "markdown": {
                             "type": "string"
                           },
-                          "parent_id": {
+                          "parent_post_id": {
                             "anyOf": [
                               {
                                 "type": "null"
@@ -4399,7 +4399,7 @@
                               }
                             ]
                           },
-                          "root_id": {
+                          "root_post_id": {
                             "anyOf": [
                               {
                                 "type": "null"
@@ -4649,6 +4649,19 @@
                                       }
                                     ]
                                   },
+                                  "is_verified_badge_visible": {
+                                    "anyOf": [
+                                      {
+                                        "const": false
+                                      },
+                                      {
+                                        "const": true
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
                                   "markdown": {
                                     "anyOf": [
                                       {
@@ -4768,19 +4781,6 @@
                                       }
                                     ]
                                   },
-                                  "verified_badge_visible": {
-                                    "anyOf": [
-                                      {
-                                        "const": false
-                                      },
-                                      {
-                                        "const": true
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
-                                  },
                                   "verified_display_name": {
                                     "anyOf": [
                                       {
@@ -4845,7 +4845,7 @@
                           "post_type",
                           "privacy",
                           "rejected_at",
-                          "root_id",
+                          "root_post_id",
                           "title",
                           "topic_recommendation",
                           "updated_at",
@@ -5180,7 +5180,7 @@
                     "topic_id": {
                       "type": "string"
                     },
-                    "company_id": {
+                    "company_topic_id": {
                       "anyOf": [
                         {
                           "type": "null"
@@ -5211,7 +5211,13 @@
                       ]
                     }
                   },
-                  "required": ["success", "topic_id", "company_id", "enabled_at", "disabled_at"],
+                  "required": [
+                    "success",
+                    "topic_id",
+                    "company_topic_id",
+                    "enabled_at",
+                    "disabled_at"
+                  ],
                   "additionalProperties": false
                 },
                 {
@@ -7580,7 +7586,7 @@
                           "markdown": {
                             "type": "string"
                           },
-                          "parent_id": {
+                          "parent_post_id": {
                             "anyOf": [
                               {
                                 "type": "null"
@@ -7590,7 +7596,7 @@
                               }
                             ]
                           },
-                          "root_id": {
+                          "root_post_id": {
                             "anyOf": [
                               {
                                 "type": "null"
@@ -7626,8 +7632,8 @@
                           "post_type",
                           "title",
                           "markdown",
-                          "parent_id",
-                          "root_id",
+                          "parent_post_id",
+                          "root_post_id",
                           "created_by_id",
                           "is_anonymous",
                           "created_at",
@@ -7759,7 +7765,7 @@
                           "markdown": {
                             "type": "string"
                           },
-                          "parent_id": {
+                          "parent_post_id": {
                             "anyOf": [
                               {
                                 "type": "null"
@@ -7769,7 +7775,7 @@
                               }
                             ]
                           },
-                          "root_id": {
+                          "root_post_id": {
                             "anyOf": [
                               {
                                 "type": "null"
@@ -7805,8 +7811,8 @@
                           "post_type",
                           "title",
                           "markdown",
-                          "parent_id",
-                          "root_id",
+                          "parent_post_id",
+                          "root_post_id",
                           "created_by_id",
                           "is_anonymous",
                           "created_at",
@@ -7954,10 +7960,10 @@
                             }
                           ]
                         },
-                        "allow_review_posts": {
+                        "should_allow_review_posts": {
                           "type": "boolean"
                         },
-                        "allow_data_point_posts": {
+                        "should_allow_data_point_posts": {
                           "type": "boolean"
                         },
                         "archived_at": {
@@ -7985,8 +7991,8 @@
                         "rules_markdown",
                         "member_roster_visibility",
                         "list_type",
-                        "allow_review_posts",
-                        "allow_data_point_posts",
+                        "should_allow_review_posts",
+                        "should_allow_data_point_posts",
                         "archived_at",
                         "created_at",
                         "updated_at"
@@ -8639,7 +8645,7 @@
                               }
                             ]
                           },
-                          "authorized_user_of_id": {
+                          "authorized_user_of_card_id": {
                             "anyOf": [
                               {
                                 "type": "null"
@@ -8665,7 +8671,7 @@
                             "required": ["id", "name", "slug"],
                             "type": "object"
                           },
-                          "card_id": {
+                          "card_topic_id": {
                             "type": "string"
                           },
                           "closed_on": {
@@ -8740,9 +8746,9 @@
                         },
                         "required": [
                           "authorized_user_of_card",
-                          "authorized_user_of_id",
+                          "authorized_user_of_card_id",
                           "card",
-                          "card_id",
+                          "card_topic_id",
                           "closed_on",
                           "credit_limit",
                           "id",
@@ -9027,7 +9033,7 @@
                           }
                         ]
                       },
-                      "authorized_user_of_id": {
+                      "authorized_user_of_card_id": {
                         "anyOf": [
                           {
                             "type": "null"
@@ -9053,7 +9059,7 @@
                         "required": ["id", "name", "slug"],
                         "type": "object"
                       },
-                      "card_id": {
+                      "card_topic_id": {
                         "type": "string"
                       },
                       "closed_on": {
@@ -9128,9 +9134,9 @@
                     },
                     "required": [
                       "authorized_user_of_card",
-                      "authorized_user_of_id",
+                      "authorized_user_of_card_id",
                       "card",
-                      "card_id",
+                      "card_topic_id",
                       "closed_on",
                       "credit_limit",
                       "id",
@@ -9274,6 +9280,16 @@
                   "items": {
                     "additionalProperties": false,
                     "properties": {
+                      "expires_on": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      },
                       "id": {
                         "type": "string"
                       },
@@ -9296,17 +9312,7 @@
                       "rewards_program_status_id": {
                         "type": "string"
                       },
-                      "since": {
-                        "anyOf": [
-                          {
-                            "type": "null"
-                          },
-                          {
-                            "type": "string"
-                          }
-                        ]
-                      },
-                      "until": {
+                      "started_on": {
                         "anyOf": [
                           {
                             "type": "null"
@@ -9318,11 +9324,11 @@
                       }
                     },
                     "required": [
+                      "expires_on",
                       "id",
                       "rewards_program_status",
                       "rewards_program_status_id",
-                      "since",
-                      "until"
+                      "started_on"
                     ],
                     "type": "object"
                   },
@@ -9806,6 +9812,16 @@
                       "items": {
                         "additionalProperties": false,
                         "properties": {
+                          "expires_on": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
                           "id": {
                             "type": "string"
                           },
@@ -9828,17 +9844,7 @@
                           "rewards_program_status_id": {
                             "type": "string"
                           },
-                          "since": {
-                            "anyOf": [
-                              {
-                                "type": "null"
-                              },
-                              {
-                                "type": "string"
-                              }
-                            ]
-                          },
-                          "until": {
+                          "started_on": {
                             "anyOf": [
                               {
                                 "type": "null"
@@ -9850,11 +9856,11 @@
                           }
                         },
                         "required": [
+                          "expires_on",
                           "id",
                           "rewards_program_status",
                           "rewards_program_status_id",
-                          "since",
-                          "until"
+                          "started_on"
                         ],
                         "type": "object"
                       },
@@ -10051,7 +10057,7 @@
           "tool": {
             "name": "get_post_ancestors",
             "title": "Get Post Ancestors",
-            "description": "Get the parent chain of a comment by its UUID or slug, ordered from the thread root down to its direct parent and not including the comment itself. A root post has no ancestors. A deleted comment in the chain is left out, so a parent_id can name a comment that is not listed. A comment whose thread is not fully public, or that is deleted or missing, returns { success: false, error: \"Post not found\" }.",
+            "description": "Get the parent chain of a comment by its UUID or slug, ordered from the thread root down to its direct parent and not including the comment itself. A root post has no ancestors. A deleted comment in the chain is left out, so a parent_post_id can name a comment that is not listed. A comment whose thread is not fully public, or that is deleted or missing, returns { success: false, error: \"Post not found\" }.",
             "inputSchema": {
               "type": "object",
               "properties": {
@@ -10109,7 +10115,7 @@
                           "markdown": {
                             "type": "string"
                           },
-                          "parent_id": {
+                          "parent_post_id": {
                             "anyOf": [
                               {
                                 "type": "null"
@@ -10119,7 +10125,7 @@
                               }
                             ]
                           },
-                          "root_id": {
+                          "root_post_id": {
                             "anyOf": [
                               {
                                 "type": "null"
@@ -10155,8 +10161,8 @@
                           "post_type",
                           "title",
                           "markdown",
-                          "parent_id",
-                          "root_id",
+                          "parent_post_id",
+                          "root_post_id",
                           "created_by_id",
                           "is_anonymous",
                           "created_at",
@@ -10205,7 +10211,7 @@
           "tool": {
             "name": "get_post_descendants",
             "title": "Get Post Descendants",
-            "description": "Get the replies below a post by its UUID or slug, in id order, one cursor page at a time. Pass page_info.end_cursor as after to read the next page while page_info.has_next_page is true. A reply the public cannot see hides its whole subtree. A deleted reply is left out but the replies below it still appear, so a parent_id can name a reply that is not listed. A post that is not fully public, or that is deleted or missing, returns { success: false, error: \"Post not found\" }. A malformed or foreign cursor returns { success: false, error: \"Invalid cursor\" }. A page too large to return is refused, so lower the limit and try again.",
+            "description": "Get the replies below a post by its UUID or slug, in id order, one cursor page at a time. Pass page_info.end_cursor as after to read the next page while page_info.has_next_page is true. A reply the public cannot see hides its whole subtree. A deleted reply is left out but the replies below it still appear, so a parent_post_id can name a reply that is not listed. A post that is not fully public, or that is deleted or missing, returns { success: false, error: \"Post not found\" }. A malformed or foreign cursor returns { success: false, error: \"Invalid cursor\" }. A page too large to return is refused, so lower the limit and try again.",
             "inputSchema": {
               "type": "object",
               "properties": {
@@ -10273,7 +10279,7 @@
                           "markdown": {
                             "type": "string"
                           },
-                          "parent_id": {
+                          "parent_post_id": {
                             "anyOf": [
                               {
                                 "type": "null"
@@ -10283,7 +10289,7 @@
                               }
                             ]
                           },
-                          "root_id": {
+                          "root_post_id": {
                             "anyOf": [
                               {
                                 "type": "null"
@@ -10319,8 +10325,8 @@
                           "post_type",
                           "title",
                           "markdown",
-                          "parent_id",
-                          "root_id",
+                          "parent_post_id",
+                          "root_post_id",
                           "created_by_id",
                           "is_anonymous",
                           "created_at",
@@ -10455,7 +10461,7 @@
                         "markdown": {
                           "type": "string"
                         },
-                        "parent_id": {
+                        "parent_post_id": {
                           "anyOf": [
                             {
                               "type": "null"
@@ -10465,7 +10471,7 @@
                             }
                           ]
                         },
-                        "root_id": {
+                        "root_post_id": {
                           "anyOf": [
                             {
                               "type": "null"
@@ -10501,8 +10507,8 @@
                         "post_type",
                         "title",
                         "markdown",
-                        "parent_id",
-                        "root_id",
+                        "parent_post_id",
+                        "root_post_id",
                         "created_by_id",
                         "is_anonymous",
                         "created_at",
@@ -11898,7 +11904,7 @@
                             }
                           ]
                         },
-                        "verified_badge_visible": {
+                        "is_verified_badge_visible": {
                           "anyOf": [
                             {
                               "const": false
@@ -11943,7 +11949,7 @@
                         "username",
                         "markdown",
                         "verification_status",
-                        "verified_badge_visible",
+                        "is_verified_badge_visible",
                         "verified_display_name",
                         "account_type"
                       ],
@@ -12002,7 +12008,7 @@
                   "type": "string",
                   "description": "Required for update and remove actions."
                 },
-                "card_id": {
+                "card_topic_id": {
                   "type": "string",
                   "description": "The topic UUID of the card to add (required for action=add)"
                 },
@@ -12067,7 +12073,7 @@
                   "type": "boolean",
                   "description": "Whether the user is an authorized user on this card"
                 },
-                "authorized_user_of_id": {
+                "authorized_user_of_card_id": {
                   "anyOf": [
                     {
                       "type": "string"
@@ -12156,7 +12162,7 @@
                             }
                           ]
                         },
-                        "authorized_user_of_id": {
+                        "authorized_user_of_card_id": {
                           "anyOf": [
                             {
                               "type": "null"
@@ -12182,7 +12188,7 @@
                           "required": ["id", "name", "slug"],
                           "type": "object"
                         },
-                        "card_id": {
+                        "card_topic_id": {
                           "type": "string"
                         },
                         "closed_on": {
@@ -12257,9 +12263,9 @@
                       },
                       "required": [
                         "authorized_user_of_card",
-                        "authorized_user_of_id",
+                        "authorized_user_of_card_id",
                         "card",
-                        "card_id",
+                        "card_topic_id",
                         "closed_on",
                         "credit_limit",
                         "id",
@@ -12496,11 +12502,11 @@
                   "type": "string",
                   "description": "The topic UUID of the rewards program status to add (required for action=add)"
                 },
-                "since": {
+                "started_on": {
                   "type": "string",
                   "description": "Date the status started in YYYY-MM-DD format"
                 },
-                "until": {
+                "expires_on": {
                   "type": "string",
                   "description": "Date the status ends in YYYY-MM-DD format"
                 }
@@ -12518,6 +12524,16 @@
                     {
                       "additionalProperties": false,
                       "properties": {
+                        "expires_on": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
                         "id": {
                           "type": "string"
                         },
@@ -12540,17 +12556,7 @@
                         "rewards_program_status_id": {
                           "type": "string"
                         },
-                        "since": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "until": {
+                        "started_on": {
                           "anyOf": [
                             {
                               "type": "null"
@@ -12562,11 +12568,11 @@
                         }
                       },
                       "required": [
+                        "expires_on",
                         "id",
                         "rewards_program_status",
                         "rewards_program_status_id",
-                        "since",
-                        "until"
+                        "started_on"
                       ],
                       "type": "object"
                     },
@@ -13479,10 +13485,10 @@
                                   }
                                 ]
                               },
-                              "allow_review_posts": {
+                              "should_allow_review_posts": {
                                 "type": "boolean"
                               },
-                              "allow_data_point_posts": {
+                              "should_allow_data_point_posts": {
                                 "type": "boolean"
                               },
                               "archived_at": {
@@ -13510,8 +13516,8 @@
                               "rules_markdown",
                               "member_roster_visibility",
                               "list_type",
-                              "allow_review_posts",
-                              "allow_data_point_posts",
+                              "should_allow_review_posts",
+                              "should_allow_data_point_posts",
                               "archived_at",
                               "created_at",
                               "updated_at"
@@ -14326,7 +14332,7 @@
                               }
                             ]
                           },
-                          "verified_badge_visible": {
+                          "is_verified_badge_visible": {
                             "anyOf": [
                               {
                                 "const": false
@@ -14371,7 +14377,7 @@
                           "username",
                           "markdown",
                           "verification_status",
-                          "verified_badge_visible",
+                          "is_verified_badge_visible",
                           "verified_display_name",
                           "account_type"
                         ],
@@ -14836,7 +14842,7 @@
             "inputSchema": {
               "type": "object",
               "properties": {
-                "engagement_emails_enabled": {
+                "is_engagement_emails_enabled": {
                   "type": "boolean",
                   "description": "Whether to receive setup recommendation emails."
                 },
@@ -14845,7 +14851,7 @@
                   "enum": ["none", "daily", "weekly"],
                   "description": "How often to receive the news digest."
                 },
-                "moderation_emails_enabled": {
+                "is_moderation_emails_enabled": {
                   "type": "boolean",
                   "description": "Whether to receive community moderation summary emails."
                 },
@@ -14898,7 +14904,10 @@
                       "enum": ["daily", "none", "weekly"],
                       "type": "string"
                     },
-                    "engagement_emails_enabled": {
+                    "is_engagement_emails_enabled": {
+                      "type": "boolean"
+                    },
+                    "is_moderation_emails_enabled": {
                       "type": "boolean"
                     },
                     "moderation_email_cadence": {
@@ -14924,9 +14933,6 @@
                         }
                       ]
                     },
-                    "moderation_emails_enabled": {
-                      "type": "boolean"
-                    },
                     "news_digest_frequency": {
                       "enum": ["daily", "none", "weekly"],
                       "type": "string"
@@ -14934,12 +14940,12 @@
                   },
                   "required": [
                     "community_digest_frequency",
-                    "engagement_emails_enabled",
+                    "is_engagement_emails_enabled",
+                    "is_moderation_emails_enabled",
                     "moderation_email_cadence",
                     "moderation_email_days_of_week",
                     "moderation_email_time_of_day",
                     "moderation_email_timezone",
-                    "moderation_emails_enabled",
                     "news_digest_frequency"
                   ],
                   "type": "object"
@@ -15313,7 +15319,7 @@
                   ],
                   "description": "A supported interface locale, or null to use the default."
                 },
-                "hn_discussions": {
+                "should_import_hacker_news_discussions": {
                   "type": "boolean",
                   "description": "Whether post and article pages show related Hacker News discussions."
                 }
@@ -15386,7 +15392,7 @@
                         }
                       ]
                     },
-                    "hn_discussions": {
+                    "should_import_hacker_news_discussions": {
                       "type": "boolean"
                     }
                   },
@@ -15402,7 +15408,7 @@
                     "default_post_privacy",
                     "country",
                     "ui_locale",
-                    "hn_discussions"
+                    "should_import_hacker_news_discussions"
                   ],
                   "additionalProperties": false
                 }
@@ -16049,6 +16055,19 @@
                                 }
                               ]
                             },
+                            "is_verified_badge_visible": {
+                              "anyOf": [
+                                {
+                                  "const": false
+                                },
+                                {
+                                  "const": true
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
                             "markdown": {
                               "anyOf": [
                                 {
@@ -16158,19 +16177,6 @@
                                 },
                                 {
                                   "const": "verified"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "verified_badge_visible": {
-                              "anyOf": [
-                                {
-                                  "const": false
-                                },
-                                {
-                                  "const": true
                                 },
                                 {
                                   "type": "null"
@@ -16329,7 +16335,7 @@
                     "markdown": {
                       "type": "string"
                     },
-                    "parent_id": {
+                    "parent_post_id": {
                       "anyOf": [
                         {
                           "type": "null"
@@ -16521,7 +16527,7 @@
                         }
                       ]
                     },
-                    "root_id": {
+                    "root_post_id": {
                       "anyOf": [
                         {
                           "type": "null"
@@ -16771,6 +16777,19 @@
                                 }
                               ]
                             },
+                            "is_verified_badge_visible": {
+                              "anyOf": [
+                                {
+                                  "const": false
+                                },
+                                {
+                                  "const": true
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
                             "markdown": {
                               "anyOf": [
                                 {
@@ -16886,19 +16905,6 @@
                                 }
                               ]
                             },
-                            "verified_badge_visible": {
-                              "anyOf": [
-                                {
-                                  "const": false
-                                },
-                                {
-                                  "const": true
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
                             "verified_display_name": {
                               "anyOf": [
                                 {
@@ -16963,7 +16969,7 @@
                     "post_type",
                     "privacy",
                     "rejected_at",
-                    "root_id",
+                    "root_post_id",
                     "title",
                     "topic_recommendation",
                     "updated_at",
@@ -18004,6 +18010,19 @@
                                       }
                                     ]
                                   },
+                                  "is_verified_badge_visible": {
+                                    "anyOf": [
+                                      {
+                                        "const": false
+                                      },
+                                      {
+                                        "const": true
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
                                   "markdown": {
                                     "anyOf": [
                                       {
@@ -18119,19 +18138,6 @@
                                       },
                                       {
                                         "const": "verified"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
-                                  },
-                                  "verified_badge_visible": {
-                                    "anyOf": [
-                                      {
-                                        "const": false
-                                      },
-                                      {
-                                        "const": true
                                       },
                                       {
                                         "type": "null"
@@ -18216,6 +18222,19 @@
                                       }
                                     ]
                                   },
+                                  "is_verified_badge_visible": {
+                                    "anyOf": [
+                                      {
+                                        "const": false
+                                      },
+                                      {
+                                        "const": true
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
                                   "markdown": {
                                     "anyOf": [
                                       {
@@ -18331,19 +18350,6 @@
                                       },
                                       {
                                         "const": "verified"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
-                                  },
-                                  "verified_badge_visible": {
-                                    "anyOf": [
-                                      {
-                                        "const": false
-                                      },
-                                      {
-                                        "const": true
                                       },
                                       {
                                         "type": "null"
@@ -18462,6 +18468,19 @@
                                       }
                                     ]
                                   },
+                                  "is_verified_badge_visible": {
+                                    "anyOf": [
+                                      {
+                                        "const": false
+                                      },
+                                      {
+                                        "const": true
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
                                   "markdown": {
                                     "anyOf": [
                                       {
@@ -18577,19 +18596,6 @@
                                       },
                                       {
                                         "const": "verified"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
-                                  },
-                                  "verified_badge_visible": {
-                                    "anyOf": [
-                                      {
-                                        "const": false
-                                      },
-                                      {
-                                        "const": true
                                       },
                                       {
                                         "type": "null"
@@ -18709,6 +18715,19 @@
                                       }
                                     ]
                                   },
+                                  "is_verified_badge_visible": {
+                                    "anyOf": [
+                                      {
+                                        "const": false
+                                      },
+                                      {
+                                        "const": true
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
                                   "markdown": {
                                     "anyOf": [
                                       {
@@ -18824,19 +18843,6 @@
                                       },
                                       {
                                         "const": "verified"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
-                                  },
-                                  "verified_badge_visible": {
-                                    "anyOf": [
-                                      {
-                                        "const": false
-                                      },
-                                      {
-                                        "const": true
                                       },
                                       {
                                         "type": "null"
@@ -18921,6 +18927,19 @@
                                       }
                                     ]
                                   },
+                                  "is_verified_badge_visible": {
+                                    "anyOf": [
+                                      {
+                                        "const": false
+                                      },
+                                      {
+                                        "const": true
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
                                   "markdown": {
                                     "anyOf": [
                                       {
@@ -19036,19 +19055,6 @@
                                       },
                                       {
                                         "const": "verified"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
-                                  },
-                                  "verified_badge_visible": {
-                                    "anyOf": [
-                                      {
-                                        "const": false
-                                      },
-                                      {
-                                        "const": true
                                       },
                                       {
                                         "type": "null"
@@ -19167,6 +19173,19 @@
                                       }
                                     ]
                                   },
+                                  "is_verified_badge_visible": {
+                                    "anyOf": [
+                                      {
+                                        "const": false
+                                      },
+                                      {
+                                        "const": true
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
                                   "markdown": {
                                     "anyOf": [
                                       {
@@ -19282,19 +19301,6 @@
                                       },
                                       {
                                         "const": "verified"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
-                                  },
-                                  "verified_badge_visible": {
-                                    "anyOf": [
-                                      {
-                                        "const": false
-                                      },
-                                      {
-                                        "const": true
                                       },
                                       {
                                         "type": "null"
@@ -19449,6 +19455,19 @@
                                 }
                               ]
                             },
+                            "is_verified_badge_visible": {
+                              "anyOf": [
+                                {
+                                  "const": false
+                                },
+                                {
+                                  "const": true
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
                             "markdown": {
                               "anyOf": [
                                 {
@@ -19560,19 +19579,6 @@
                                 },
                                 {
                                   "const": "verified"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "verified_badge_visible": {
-                              "anyOf": [
-                                {
-                                  "const": false
-                                },
-                                {
-                                  "const": true
                                 },
                                 {
                                   "type": "null"
@@ -19657,6 +19663,19 @@
                                 }
                               ]
                             },
+                            "is_verified_badge_visible": {
+                              "anyOf": [
+                                {
+                                  "const": false
+                                },
+                                {
+                                  "const": true
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
                             "markdown": {
                               "anyOf": [
                                 {
@@ -19768,19 +19787,6 @@
                                 },
                                 {
                                   "const": "verified"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "verified_badge_visible": {
-                              "anyOf": [
-                                {
-                                  "const": false
-                                },
-                                {
-                                  "const": true
                                 },
                                 {
                                   "type": "null"
@@ -19899,6 +19905,19 @@
                                 }
                               ]
                             },
+                            "is_verified_badge_visible": {
+                              "anyOf": [
+                                {
+                                  "const": false
+                                },
+                                {
+                                  "const": true
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
                             "markdown": {
                               "anyOf": [
                                 {
@@ -20010,19 +20029,6 @@
                                 },
                                 {
                                   "const": "verified"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "verified_badge_visible": {
-                              "anyOf": [
-                                {
-                                  "const": false
-                                },
-                                {
-                                  "const": true
                                 },
                                 {
                                   "type": "null"
@@ -20237,6 +20243,19 @@
                                 }
                               ]
                             },
+                            "is_verified_badge_visible": {
+                              "anyOf": [
+                                {
+                                  "const": false
+                                },
+                                {
+                                  "const": true
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
                             "markdown": {
                               "anyOf": [
                                 {
@@ -20348,19 +20367,6 @@
                                 },
                                 {
                                   "const": "verified"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "verified_badge_visible": {
-                              "anyOf": [
-                                {
-                                  "const": false
-                                },
-                                {
-                                  "const": true
                                 },
                                 {
                                   "type": "null"
@@ -20445,6 +20451,19 @@
                                 }
                               ]
                             },
+                            "is_verified_badge_visible": {
+                              "anyOf": [
+                                {
+                                  "const": false
+                                },
+                                {
+                                  "const": true
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
                             "markdown": {
                               "anyOf": [
                                 {
@@ -20556,19 +20575,6 @@
                                 },
                                 {
                                   "const": "verified"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "verified_badge_visible": {
-                              "anyOf": [
-                                {
-                                  "const": false
-                                },
-                                {
-                                  "const": true
                                 },
                                 {
                                   "type": "null"
@@ -20687,6 +20693,19 @@
                                 }
                               ]
                             },
+                            "is_verified_badge_visible": {
+                              "anyOf": [
+                                {
+                                  "const": false
+                                },
+                                {
+                                  "const": true
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
                             "markdown": {
                               "anyOf": [
                                 {
@@ -20798,19 +20817,6 @@
                                 },
                                 {
                                   "const": "verified"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "verified_badge_visible": {
-                              "anyOf": [
-                                {
-                                  "const": false
-                                },
-                                {
-                                  "const": true
                                 },
                                 {
                                   "type": "null"
@@ -20985,6 +20991,19 @@
                                 }
                               ]
                             },
+                            "is_verified_badge_visible": {
+                              "anyOf": [
+                                {
+                                  "const": false
+                                },
+                                {
+                                  "const": true
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
                             "markdown": {
                               "anyOf": [
                                 {
@@ -21096,19 +21115,6 @@
                                 },
                                 {
                                   "const": "verified"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "verified_badge_visible": {
-                              "anyOf": [
-                                {
-                                  "const": false
-                                },
-                                {
-                                  "const": true
                                 },
                                 {
                                   "type": "null"
@@ -21193,6 +21199,19 @@
                                 }
                               ]
                             },
+                            "is_verified_badge_visible": {
+                              "anyOf": [
+                                {
+                                  "const": false
+                                },
+                                {
+                                  "const": true
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
                             "markdown": {
                               "anyOf": [
                                 {
@@ -21304,19 +21323,6 @@
                                 },
                                 {
                                   "const": "verified"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "verified_badge_visible": {
-                              "anyOf": [
-                                {
-                                  "const": false
-                                },
-                                {
-                                  "const": true
                                 },
                                 {
                                   "type": "null"
@@ -21435,6 +21441,19 @@
                                 }
                               ]
                             },
+                            "is_verified_badge_visible": {
+                              "anyOf": [
+                                {
+                                  "const": false
+                                },
+                                {
+                                  "const": true
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
                             "markdown": {
                               "anyOf": [
                                 {
@@ -21546,19 +21565,6 @@
                                 },
                                 {
                                   "const": "verified"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "verified_badge_visible": {
-                              "anyOf": [
-                                {
-                                  "const": false
-                                },
-                                {
-                                  "const": true
                                 },
                                 {
                                   "type": "null"
@@ -23221,7 +23227,7 @@
                                                           },
                                                           "type": "array"
                                                         },
-                                                        "flagged": {
+                                                        "is_flagged": {
                                                           "type": "boolean"
                                                         },
                                                         "slug": {
@@ -23236,7 +23242,7 @@
                                                           ]
                                                         }
                                                       },
-                                                      "required": ["flagged", "slug"],
+                                                      "required": ["is_flagged", "slug"],
                                                       "type": "object"
                                                     },
                                                     "type": "array"
@@ -23252,11 +23258,11 @@
                                                             },
                                                             "type": "array"
                                                           },
-                                                          "flagged": {
+                                                          "is_flagged": {
                                                             "type": "boolean"
                                                           }
                                                         },
-                                                        "required": ["flagged"],
+                                                        "required": ["is_flagged"],
                                                         "type": "object"
                                                       },
                                                       {
@@ -23947,7 +23953,7 @@
                                                     },
                                                     "type": "array"
                                                   },
-                                                  "flagged": {
+                                                  "is_flagged": {
                                                     "type": "boolean"
                                                   },
                                                   "slug": {
@@ -23962,7 +23968,7 @@
                                                     ]
                                                   }
                                                 },
-                                                "required": ["flagged", "slug"],
+                                                "required": ["is_flagged", "slug"],
                                                 "type": "object"
                                               },
                                               "type": "array"
@@ -23978,11 +23984,11 @@
                                                       },
                                                       "type": "array"
                                                     },
-                                                    "flagged": {
+                                                    "is_flagged": {
                                                       "type": "boolean"
                                                     }
                                                   },
-                                                  "required": ["flagged"],
+                                                  "required": ["is_flagged"],
                                                   "type": "object"
                                                 },
                                                 {
@@ -24406,7 +24412,7 @@
                                               },
                                               "type": "array"
                                             },
-                                            "flagged": {
+                                            "is_flagged": {
                                               "type": "boolean"
                                             },
                                             "slug": {
@@ -24421,7 +24427,7 @@
                                               ]
                                             }
                                           },
-                                          "required": ["flagged", "slug"],
+                                          "required": ["is_flagged", "slug"],
                                           "type": "object"
                                         },
                                         "type": "array"
@@ -24437,11 +24443,11 @@
                                                 },
                                                 "type": "array"
                                               },
-                                              "flagged": {
+                                              "is_flagged": {
                                                 "type": "boolean"
                                               }
                                             },
-                                            "required": ["flagged"],
+                                            "required": ["is_flagged"],
                                             "type": "object"
                                           },
                                           {
@@ -24821,7 +24827,7 @@
                                               },
                                               "type": "array"
                                             },
-                                            "flagged": {
+                                            "is_flagged": {
                                               "type": "boolean"
                                             },
                                             "slug": {
@@ -24836,7 +24842,7 @@
                                               ]
                                             }
                                           },
-                                          "required": ["flagged", "slug"],
+                                          "required": ["is_flagged", "slug"],
                                           "type": "object"
                                         },
                                         "type": "array"
@@ -24852,11 +24858,11 @@
                                                 },
                                                 "type": "array"
                                               },
-                                              "flagged": {
+                                              "is_flagged": {
                                                 "type": "boolean"
                                               }
                                             },
-                                            "required": ["flagged"],
+                                            "required": ["is_flagged"],
                                             "type": "object"
                                           },
                                           {
@@ -25346,7 +25352,7 @@
                                                           },
                                                           "type": "array"
                                                         },
-                                                        "flagged": {
+                                                        "is_flagged": {
                                                           "type": "boolean"
                                                         },
                                                         "slug": {
@@ -25361,7 +25367,7 @@
                                                           ]
                                                         }
                                                       },
-                                                      "required": ["flagged", "slug"],
+                                                      "required": ["is_flagged", "slug"],
                                                       "type": "object"
                                                     },
                                                     "type": "array"
@@ -25377,11 +25383,11 @@
                                                             },
                                                             "type": "array"
                                                           },
-                                                          "flagged": {
+                                                          "is_flagged": {
                                                             "type": "boolean"
                                                           }
                                                         },
-                                                        "required": ["flagged"],
+                                                        "required": ["is_flagged"],
                                                         "type": "object"
                                                       },
                                                       {
@@ -26072,7 +26078,7 @@
                                                     },
                                                     "type": "array"
                                                   },
-                                                  "flagged": {
+                                                  "is_flagged": {
                                                     "type": "boolean"
                                                   },
                                                   "slug": {
@@ -26087,7 +26093,7 @@
                                                     ]
                                                   }
                                                 },
-                                                "required": ["flagged", "slug"],
+                                                "required": ["is_flagged", "slug"],
                                                 "type": "object"
                                               },
                                               "type": "array"
@@ -26103,11 +26109,11 @@
                                                       },
                                                       "type": "array"
                                                     },
-                                                    "flagged": {
+                                                    "is_flagged": {
                                                       "type": "boolean"
                                                     }
                                                   },
-                                                  "required": ["flagged"],
+                                                  "required": ["is_flagged"],
                                                   "type": "object"
                                                 },
                                                 {
@@ -26531,7 +26537,7 @@
                                               },
                                               "type": "array"
                                             },
-                                            "flagged": {
+                                            "is_flagged": {
                                               "type": "boolean"
                                             },
                                             "slug": {
@@ -26546,7 +26552,7 @@
                                               ]
                                             }
                                           },
-                                          "required": ["flagged", "slug"],
+                                          "required": ["is_flagged", "slug"],
                                           "type": "object"
                                         },
                                         "type": "array"
@@ -26562,11 +26568,11 @@
                                                 },
                                                 "type": "array"
                                               },
-                                              "flagged": {
+                                              "is_flagged": {
                                                 "type": "boolean"
                                               }
                                             },
-                                            "required": ["flagged"],
+                                            "required": ["is_flagged"],
                                             "type": "object"
                                           },
                                           {
@@ -26946,7 +26952,7 @@
                                               },
                                               "type": "array"
                                             },
-                                            "flagged": {
+                                            "is_flagged": {
                                               "type": "boolean"
                                             },
                                             "slug": {
@@ -26961,7 +26967,7 @@
                                               ]
                                             }
                                           },
-                                          "required": ["flagged", "slug"],
+                                          "required": ["is_flagged", "slug"],
                                           "type": "object"
                                         },
                                         "type": "array"
@@ -26977,11 +26983,11 @@
                                                 },
                                                 "type": "array"
                                               },
-                                              "flagged": {
+                                              "is_flagged": {
                                                 "type": "boolean"
                                               }
                                             },
-                                            "required": ["flagged"],
+                                            "required": ["is_flagged"],
                                             "type": "object"
                                           },
                                           {
@@ -27611,7 +27617,7 @@
                       "post_type": {
                         "type": "string"
                       },
-                      "root_id": {
+                      "root_post_id": {
                         "anyOf": [
                           {
                             "type": "null"
@@ -27676,7 +27682,7 @@
                       "media_reveal",
                       "moderation_summary",
                       "post_type",
-                      "root_id",
+                      "root_post_id",
                       "root_post_type",
                       "root_slug",
                       "slug",
@@ -29723,9 +29729,6 @@
                         }
                       ]
                     },
-                    "engagement_emails_enabled": {
-                      "type": "boolean"
-                    },
                     "facebook_account": {
                       "anyOf": [
                         {
@@ -29762,9 +29765,6 @@
                           "type": "null"
                         }
                       ]
-                    },
-                    "fediverse_federation_enabled": {
-                      "type": "boolean"
                     },
                     "followers_visibility": {
                       "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
@@ -29848,9 +29848,6 @@
                         }
                       ]
                     },
-                    "hn_discussions": {
-                      "type": "boolean"
-                    },
                     "id": {
                       "type": "string"
                     },
@@ -29861,6 +29858,28 @@
                         },
                         {
                           "type": "string"
+                        }
+                      ]
+                    },
+                    "is_engagement_emails_enabled": {
+                      "type": "boolean"
+                    },
+                    "is_fediverse_federation_enabled": {
+                      "type": "boolean"
+                    },
+                    "is_moderation_emails_enabled": {
+                      "type": "boolean"
+                    },
+                    "is_verified_badge_visible": {
+                      "anyOf": [
+                        {
+                          "const": false
+                        },
+                        {
+                          "const": true
+                        },
+                        {
+                          "type": "null"
                         }
                       ]
                     },
@@ -29999,9 +30018,6 @@
                         }
                       ]
                     },
-                    "moderation_emails_enabled": {
-                      "type": "boolean"
-                    },
                     "news_digest_frequency": {
                       "enum": ["daily", "none", "weekly"],
                       "type": "string"
@@ -30087,6 +30103,22 @@
                       "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
                       "type": "string"
                     },
+                    "should_import_hacker_news_discussions": {
+                      "type": "boolean"
+                    },
+                    "should_receive_third_party_marketing": {
+                      "anyOf": [
+                        {
+                          "const": false
+                        },
+                        {
+                          "const": true
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "spending_categories_visibility": {
                       "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
                       "type": "string"
@@ -30118,19 +30150,6 @@
                         },
                         {
                           "type": "string"
-                        }
-                      ]
-                    },
-                    "third_party_marketing": {
-                      "anyOf": [
-                        {
-                          "const": false
-                        },
-                        {
-                          "const": true
-                        },
-                        {
-                          "type": "null"
                         }
                       ]
                     },
@@ -30235,19 +30254,6 @@
                         }
                       ]
                     },
-                    "verified_badge_visible": {
-                      "anyOf": [
-                        {
-                          "const": false
-                        },
-                        {
-                          "const": true
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
                     "verified_display_name": {
                       "anyOf": [
                         {
@@ -30336,17 +30342,17 @@
                     "default_post_broadcast",
                     "default_post_privacy",
                     "direct_messages_audience",
-                    "engagement_emails_enabled",
-                    "fediverse_federation_enabled",
                     "followers_visibility",
                     "follows_visibility",
                     "id",
+                    "is_engagement_emails_enabled",
+                    "is_fediverse_federation_enabled",
+                    "is_moderation_emails_enabled",
                     "likes_visibility",
                     "moderation_email_cadence",
                     "moderation_email_days_of_week",
                     "moderation_email_time_of_day",
                     "moderation_email_timezone",
-                    "moderation_emails_enabled",
                     "news_digest_frequency",
                     "rewards_program_statuses_visibility",
                     "roles",
@@ -30537,9 +30543,6 @@
                         }
                       ]
                     },
-                    "engagement_emails_enabled": {
-                      "type": "boolean"
-                    },
                     "facebook_account": {
                       "anyOf": [
                         {
@@ -30576,9 +30579,6 @@
                           "type": "null"
                         }
                       ]
-                    },
-                    "fediverse_federation_enabled": {
-                      "type": "boolean"
                     },
                     "followers_visibility": {
                       "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
@@ -30662,9 +30662,6 @@
                         }
                       ]
                     },
-                    "hn_discussions": {
-                      "type": "boolean"
-                    },
                     "id": {
                       "type": "string"
                     },
@@ -30675,6 +30672,28 @@
                         },
                         {
                           "type": "string"
+                        }
+                      ]
+                    },
+                    "is_engagement_emails_enabled": {
+                      "type": "boolean"
+                    },
+                    "is_fediverse_federation_enabled": {
+                      "type": "boolean"
+                    },
+                    "is_moderation_emails_enabled": {
+                      "type": "boolean"
+                    },
+                    "is_verified_badge_visible": {
+                      "anyOf": [
+                        {
+                          "const": false
+                        },
+                        {
+                          "const": true
+                        },
+                        {
+                          "type": "null"
                         }
                       ]
                     },
@@ -30813,9 +30832,6 @@
                         }
                       ]
                     },
-                    "moderation_emails_enabled": {
-                      "type": "boolean"
-                    },
                     "news_digest_frequency": {
                       "enum": ["daily", "none", "weekly"],
                       "type": "string"
@@ -30901,6 +30917,22 @@
                       "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
                       "type": "string"
                     },
+                    "should_import_hacker_news_discussions": {
+                      "type": "boolean"
+                    },
+                    "should_receive_third_party_marketing": {
+                      "anyOf": [
+                        {
+                          "const": false
+                        },
+                        {
+                          "const": true
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "spending_categories_visibility": {
                       "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
                       "type": "string"
@@ -30932,19 +30964,6 @@
                         },
                         {
                           "type": "string"
-                        }
-                      ]
-                    },
-                    "third_party_marketing": {
-                      "anyOf": [
-                        {
-                          "const": false
-                        },
-                        {
-                          "const": true
-                        },
-                        {
-                          "type": "null"
                         }
                       ]
                     },
@@ -31049,19 +31068,6 @@
                         }
                       ]
                     },
-                    "verified_badge_visible": {
-                      "anyOf": [
-                        {
-                          "const": false
-                        },
-                        {
-                          "const": true
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
                     "verified_display_name": {
                       "anyOf": [
                         {
@@ -31150,17 +31156,17 @@
                     "default_post_broadcast",
                     "default_post_privacy",
                     "direct_messages_audience",
-                    "engagement_emails_enabled",
-                    "fediverse_federation_enabled",
                     "followers_visibility",
                     "follows_visibility",
                     "id",
+                    "is_engagement_emails_enabled",
+                    "is_fediverse_federation_enabled",
+                    "is_moderation_emails_enabled",
                     "likes_visibility",
                     "moderation_email_cadence",
                     "moderation_email_days_of_week",
                     "moderation_email_time_of_day",
                     "moderation_email_timezone",
-                    "moderation_emails_enabled",
                     "news_digest_frequency",
                     "rewards_program_statuses_visibility",
                     "roles",
@@ -31382,7 +31388,7 @@
                       "id": {
                         "type": "string"
                       },
-                      "new_account_reporter_pct": {
+                      "new_account_reporter_percent": {
                         "type": "number"
                       },
                       "post_id": {
@@ -31458,7 +31464,7 @@
                       "flag_type",
                       "hostname_id",
                       "id",
-                      "new_account_reporter_pct",
+                      "new_account_reporter_percent",
                       "post_id",
                       "reported_user_id",
                       "reporter_count",
@@ -31548,7 +31554,7 @@
                     "id": {
                       "type": "string"
                     },
-                    "new_account_reporter_pct": {
+                    "new_account_reporter_percent": {
                       "type": "number"
                     },
                     "post_id": {
@@ -31624,7 +31630,7 @@
                     "flag_type",
                     "hostname_id",
                     "id",
-                    "new_account_reporter_pct",
+                    "new_account_reporter_percent",
                     "post_id",
                     "reported_user_id",
                     "reporter_count",
@@ -31878,7 +31884,7 @@
                     "id": {
                       "type": "string"
                     },
-                    "new_account_reporter_pct": {
+                    "new_account_reporter_percent": {
                       "type": "number"
                     },
                     "post_id": {
@@ -31954,7 +31960,7 @@
                     "flag_type",
                     "hostname_id",
                     "id",
-                    "new_account_reporter_pct",
+                    "new_account_reporter_percent",
                     "post_id",
                     "reported_user_id",
                     "reporter_count",
@@ -33129,7 +33135,7 @@
                   "type": "string",
                   "format": "uuid"
                 },
-                "actor_id": {
+                "actor_user_id": {
                   "type": "string",
                   "format": "uuid"
                 },
@@ -33429,7 +33435,7 @@
                       "items": {
                         "additionalProperties": false,
                         "properties": {
-                          "actor_id": {
+                          "actor_user_id": {
                             "type": "string"
                           },
                           "counts": {
@@ -33462,7 +33468,7 @@
                             "type": "array"
                           }
                         },
-                        "required": ["actor_id", "counts", "total", "weekly_counts"],
+                        "required": ["actor_user_id", "counts", "total", "weekly_counts"],
                         "type": "object"
                       },
                       "type": "array"
@@ -33886,7 +33892,7 @@
                                           "element": {
                                             "enum": [
                                               "contact_and_jurisdiction_consent",
-                                              "good_faith_statement",
+                                              "has_good_faith_statement",
                                               "material_identification",
                                               "signature"
                                             ],
@@ -34100,7 +34106,7 @@
                                   {
                                     "additionalProperties": false,
                                     "properties": {
-                                      "accepted": {
+                                      "is_accepted": {
                                         "type": "boolean"
                                       },
                                       "reviewed_at": {
@@ -34117,7 +34123,7 @@
                                         ]
                                       }
                                     },
-                                    "required": ["accepted", "reviewed_at", "reviewed_by_id"],
+                                    "required": ["is_accepted", "reviewed_at", "reviewed_by_id"],
                                     "type": "object"
                                   },
                                   {
@@ -34143,7 +34149,7 @@
                                                       "enum": [
                                                         "accuracy_authority_statement",
                                                         "contact_information",
-                                                        "good_faith_statement",
+                                                        "has_good_faith_statement",
                                                         "material_identification",
                                                         "signature",
                                                         "work_identification"
@@ -34318,11 +34324,14 @@
                                         }
                                       ]
                                     },
-                                    "from_original_claimant": {
-                                      "type": "boolean"
-                                    },
                                     "id": {
                                       "type": "string"
+                                    },
+                                    "is_from_original_claimant": {
+                                      "type": "boolean"
+                                    },
+                                    "is_same_material": {
+                                      "type": "boolean"
                                     },
                                     "proceeding_kind": {
                                       "anyOf": [
@@ -34353,9 +34362,6 @@
                                     "resolved": {
                                       "type": "boolean"
                                     },
-                                    "same_material": {
-                                      "type": "boolean"
-                                    },
                                     "target_ids": {
                                       "items": {
                                         "type": "string"
@@ -34366,13 +34372,13 @@
                                   "required": [
                                     "ccb_claim_kind",
                                     "commenced_at",
-                                    "from_original_claimant",
                                     "id",
+                                    "is_from_original_claimant",
+                                    "is_same_material",
                                     "proceeding_kind",
                                     "qualifying",
                                     "received_by_designated_agent_at",
                                     "resolved",
-                                    "same_material",
                                     "target_ids"
                                   ],
                                   "type": "object"
@@ -34394,10 +34400,10 @@
                                           "criterion": {
                                             "enum": [
                                               "commenced_at",
-                                              "from_original_claimant",
+                                              "is_from_original_claimant",
+                                              "is_same_material",
                                               "proceeding_kind",
-                                              "received_by_designated_agent_at",
-                                              "same_material"
+                                              "received_by_designated_agent_at"
                                             ],
                                             "type": "string"
                                           },
@@ -34801,7 +34807,7 @@
                                 "received_at": {
                                   "type": "string"
                                 },
-                                "submitted_by_user_id": {
+                                "submitted_by_id": {
                                   "anyOf": [
                                     {
                                       "type": "null"
@@ -34829,7 +34835,7 @@
                                 "id",
                                 "informed_at",
                                 "received_at",
-                                "submitted_by_user_id",
+                                "submitted_by_id",
                                 "window_ends_at"
                               ],
                               "type": "object"
@@ -34951,11 +34957,7 @@
                                 "referred_at": {
                                   "type": "string"
                                 },
-                                "referred_by_party": {
-                                  "enum": ["notifier", "poster"],
-                                  "type": "string"
-                                },
-                                "referred_by_user_id": {
+                                "referred_by_id": {
                                   "anyOf": [
                                     {
                                       "type": "null"
@@ -34964,6 +34966,10 @@
                                       "type": "string"
                                     }
                                   ]
+                                },
+                                "referred_by_party": {
+                                  "enum": ["notifier", "poster"],
+                                  "type": "string"
                                 }
                               },
                               "required": [
@@ -34971,8 +34977,8 @@
                                 "id",
                                 "outcome",
                                 "referred_at",
-                                "referred_by_party",
-                                "referred_by_user_id"
+                                "referred_by_id",
+                                "referred_by_party"
                               ],
                               "type": "object"
                             },
@@ -35412,6 +35418,9 @@
                       "incident_id": {
                         "type": "string"
                       },
+                      "is_operative": {
+                        "type": "boolean"
+                      },
                       "open_review_id": {
                         "anyOf": [
                           {
@@ -35422,9 +35431,6 @@
                           }
                         ]
                       },
-                      "operative": {
-                        "type": "boolean"
-                      },
                       "termination_in_effect": {
                         "type": "boolean"
                       }
@@ -35432,8 +35438,8 @@
                     "required": [
                       "account_user_id",
                       "incident_id",
+                      "is_operative",
                       "open_review_id",
-                      "operative",
                       "termination_in_effect"
                     ],
                     "type": "object"
@@ -36551,7 +36557,7 @@
                               }
                             ]
                           },
-                          "appellant_id": {
+                          "appellant_user_id": {
                             "type": "string"
                           },
                           "approved_at": {
@@ -37163,7 +37169,7 @@
                           "ai_internal_response",
                           "ai_public_response",
                           "appeal_reason",
-                          "appellant_id",
+                          "appellant_user_id",
                           "approved_at",
                           "approved_by_id",
                           "case_id",
@@ -37723,7 +37729,7 @@
                             }
                           ]
                         },
-                        "appellant_id": {
+                        "appellant_user_id": {
                           "type": "string"
                         },
                         "approved_at": {
@@ -38335,7 +38341,7 @@
                         "ai_internal_response",
                         "ai_public_response",
                         "appeal_reason",
-                        "appellant_id",
+                        "appellant_user_id",
                         "approved_at",
                         "approved_by_id",
                         "case_id",
@@ -39979,7 +39985,7 @@
                         }
                       ]
                     },
-                    "appellant_id": {
+                    "appellant_user_id": {
                       "type": "string"
                     },
                     "approved_at": {
@@ -40585,7 +40591,7 @@
                     "ai_internal_response",
                     "ai_public_response",
                     "appeal_reason",
-                    "appellant_id",
+                    "appellant_user_id",
                     "approved_at",
                     "approved_by_id",
                     "case_id",
@@ -40701,7 +40707,7 @@
                         }
                       ]
                     },
-                    "appellant_id": {
+                    "appellant_user_id": {
                       "type": "string"
                     },
                     "approved_at": {
@@ -41307,7 +41313,7 @@
                     "ai_internal_response",
                     "ai_public_response",
                     "appeal_reason",
-                    "appellant_id",
+                    "appellant_user_id",
                     "approved_at",
                     "approved_by_id",
                     "case_id",
@@ -41423,7 +41429,7 @@
                         }
                       ]
                     },
-                    "appellant_id": {
+                    "appellant_user_id": {
                       "type": "string"
                     },
                     "approved_at": {
@@ -42029,7 +42035,7 @@
                     "ai_internal_response",
                     "ai_public_response",
                     "appeal_reason",
-                    "appellant_id",
+                    "appellant_user_id",
                     "approved_at",
                     "approved_by_id",
                     "case_id",
@@ -44898,7 +44904,7 @@
                         }
                       ]
                     },
-                    "appellant_id": {
+                    "appellant_user_id": {
                       "type": "string"
                     },
                     "approved_at": {
@@ -45504,7 +45510,7 @@
                     "ai_internal_response",
                     "ai_public_response",
                     "appeal_reason",
-                    "appellant_id",
+                    "appellant_user_id",
                     "approved_at",
                     "approved_by_id",
                     "case_id",

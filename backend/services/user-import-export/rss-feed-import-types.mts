@@ -32,7 +32,7 @@ export type UserRssFeedImportBatchRow = {
   user_id: string
   created_via: ContentCreationChannel
   created_via_oauth_client_id: string | null
-  follow: boolean
+  should_follow_imported_feeds: boolean
   total_rows: number
   completed_rows: number
   failed_rows: number

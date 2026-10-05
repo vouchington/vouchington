@@ -27,7 +27,7 @@ export function appendLifecycleSetClauses(
     setClauses.push(sql`expired_at = NULL`)
     setClauses.push(sql`past_due_at = NULL`)
     setClauses.push(sql`paused_at = NULL`)
-    setClauses.push(sql`cancel_at_period_end = false`)
+    setClauses.push(sql`should_cancel_at_period_end = false`)
     return
   }
   if (status === 'expired') {
@@ -37,7 +37,7 @@ export function appendLifecycleSetClauses(
     )
     setClauses.push(sql`past_due_at = NULL`)
     setClauses.push(sql`paused_at = NULL`)
-    setClauses.push(sql`cancel_at_period_end = false`)
+    setClauses.push(sql`should_cancel_at_period_end = false`)
     return
   }
   if (status === 'past_due') {

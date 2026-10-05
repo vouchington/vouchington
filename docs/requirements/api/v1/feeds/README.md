@@ -28,7 +28,7 @@ Query parameters:
 
 Response includes: `results`, `page_info`, `posts`, `posts_metrics`, `post_elections`, `bookmarks`, `election_votes` (streamed).
 Each `result` row has its own feed-event `id`, the underlying `entity_id`, `delivery_type`
-(`direct` or `share`), and optional `shared_by_user_id` / `shared_at` fields for shared rows. The
+(`direct` or `share`), and optional `shared_by_id` / `shared_at` fields for shared rows. The
 stream also includes a `users` map for shared-by attribution.
 
 ## GET /api/v1/feeds/rss_feed_items/:feed_type
@@ -49,7 +49,7 @@ Query parameters:
 
 Response includes: `results`, `page_info`, `rss_feed_items`, `rss_feed_item_embeds`, `rss_feed_item_elections`, `bookmarks`, `election_votes` (streamed). The item-keyed embed sidecar carries backend-selected display text and authorized image/player projections; complete raw crawl metadata and oEmbed provenance are administrator-only.
 Each `result` row has its own feed-event `id`, the underlying `entity_id`, `delivery_type`
-(`direct` or `share`), and optional `shared_by_user_id` / `shared_at` fields for shared rows. The
+(`direct` or `share`), and optional `shared_by_id` / `shared_at` fields for shared rows. The
 stream also includes a `users` map for shared-by attribution. `story_member_pages` maps each direct story to at most three eligible related IDs and a continuation `page_info`; the selected primary is excluded, and shares remain standalone. Related peers can come from outside the feed request's follow, community, or search filters.
 
 ## Performance

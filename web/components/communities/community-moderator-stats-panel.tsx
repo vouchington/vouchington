@@ -140,9 +140,9 @@ export function CommunityModeratorStatsPanel({ communitySlug, initialData }: Pro
               <tbody>
                 {data.stats.map(stat => (
                   <ModeratorStatsRow
-                    key={stat.actor_id}
+                    key={stat.actor_user_id}
                     stat={stat}
-                    user={data.users[stat.actor_id] as PublicUser | undefined}
+                    user={data.users[stat.actor_user_id] as PublicUser | undefined}
                   />
                 ))}
               </tbody>
@@ -160,7 +160,7 @@ interface RowProps {
 }
 
 function ModeratorStatsRow({ stat, user }: RowProps) {
-  const username = user?.username ?? stat.actor_id.slice(0, 8)
+  const username = user?.username ?? stat.actor_user_id.slice(0, 8)
   const displayedSum = DISPLAYED_ACTION_TYPES.reduce(
     (sum, { key }) => sum + (stat.counts[key] ?? 0),
     0,

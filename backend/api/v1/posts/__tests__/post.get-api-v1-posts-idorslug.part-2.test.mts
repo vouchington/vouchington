@@ -62,7 +62,7 @@ describe('post', () => {
         const communityPost = await createCommunityPostFixture(postOwner, community.id)
         const comment = await createCommunityPostFixture(postOwner, community.id, {
           post_type: 'comment',
-          parent_id: communityPost.id,
+          parent_post_id: communityPost.id,
         })
 
         const request = createRequest()

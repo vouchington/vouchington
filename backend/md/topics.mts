@@ -67,7 +67,7 @@ app.route('/md/topics').get(async (ctx: Context) => {
 
   for (const topic of topics) {
     if (!topic) continue
-    if (topic.noindex) continue
+    if (topic.is_noindexed) continue
     const slug = getTopicTypeSlug(topic.topic_type)
     const url = `${siteOrigin}/${slug}/${topic.slug}`
     const m = metricsMap.get(topic.id)
@@ -95,7 +95,7 @@ app.route('/md/topics/:idOrSlug').get(async (ctx: Context) => {
     404,
     'Topic not found',
   )
-  ctx.assert(!topic.noindex, 404, 'Topic not found')
+  ctx.assert(!topic.is_noindexed, 404, 'Topic not found')
 
   ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`)
 

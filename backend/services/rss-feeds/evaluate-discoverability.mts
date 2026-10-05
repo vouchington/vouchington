@@ -29,7 +29,7 @@ export async function evaluateRssFeedDiscoverability(
   if (publisherTypeSlug === 'aggregator' || publisherTypeSlug === 'forum') {
     return setRssFeedDiscoverabilityAsSystem({
       rssFeedId,
-      enabled: false,
+      is_enabled: false,
       overrideHumanLock: true,
       reason: `auto: publisher_type=${publisherTypeSlug}`,
     })
@@ -40,7 +40,7 @@ export async function evaluateRssFeedDiscoverability(
   if (score >= thresholds.make_discoverable_min_net_score) {
     return setRssFeedDiscoverabilityAsSystem({
       rssFeedId,
-      enabled: true,
+      is_enabled: true,
       reason: `auto: net_score=${score}`,
     })
   }
@@ -50,7 +50,7 @@ export async function evaluateRssFeedDiscoverability(
     if (subscriptions >= thresholds.make_discoverable_min_subscriptions) {
       return setRssFeedDiscoverabilityAsSystem({
         rssFeedId,
-        enabled: true,
+        is_enabled: true,
         reason: `auto: net_score=${score}, subs=${subscriptions}`,
       })
     }
@@ -59,7 +59,7 @@ export async function evaluateRssFeedDiscoverability(
   if (score <= thresholds.make_undiscoverable_max_net_score) {
     return setRssFeedDiscoverabilityAsSystem({
       rssFeedId,
-      enabled: false,
+      is_enabled: false,
       reason: `auto: net_score=${score}`,
     })
   }

@@ -6,7 +6,7 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_email_intakes (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  ses_message_id text NOT NULL UNIQUE CHECK (char_length(ses_message_id) BETWEEN 1 AND 512),
+  amazon_ses_message_id text NOT NULL UNIQUE CHECK (char_length(amazon_ses_message_id) BETWEEN 1 AND 512),
   received_at timestamptz NOT NULL,
   raw_storage_key text NOT NULL CHECK (char_length(raw_storage_key) BETWEEN 1 AND 1024),
   raw_sha256 bytea NOT NULL CHECK (octet_length(raw_sha256) = 32),
@@ -126,7 +126,7 @@ COMMENT ON COLUMN copyright_notice_email_intakes.raw_storage_key IS 'Private imm
 COMMENT ON TABLE copyright_notice_email_intake_attachments IS 'Private parsed attachment metadata; attachment bytes remain preserved inside the original MIME object until a moderator admits them as case evidence.';
 COMMENT ON TABLE copyright_notice_email_intake_recommendations IS 'Immutable agent extraction and recommendation. It is advisory only and cannot impose a copyright restriction.';
 COMMENT ON TABLE copyright_notice_email_intake_reviews IS 'Append-only staff decision on an email intake: approval into a case, rejection, or closure as legal process with no reply. This row is the audit record of the decision. A moderator must review before an email can create or affect a copyright case.';
-COMMENT ON COLUMN copyright_notice_email_intakes.ses_message_id IS 'Stable SES delivery identifier used for replay-safe admission.';
+COMMENT ON COLUMN copyright_notice_email_intakes.amazon_ses_message_id IS 'Stable SES delivery identifier used for replay-safe admission.';
 COMMENT ON COLUMN copyright_notice_email_intakes.received_at IS 'Timestamp assigned by the inbound email delivery.';
 COMMENT ON COLUMN copyright_notice_email_intakes.raw_sha256 IS 'SHA-256 digest of the preserved original RFC 5322 message.';
 COMMENT ON COLUMN copyright_notice_email_intakes.raw_media_type_id IS 'Media type of the preserved original message.';

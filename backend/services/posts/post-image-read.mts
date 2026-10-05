@@ -18,7 +18,7 @@ export async function getPostImages(postId: string): Promise<PostImagePlacement[
       AND images.deleted_at IS NULL
       AND images.upload_completed_at IS NOT NULL
       AND images.quarantine_pending_at IS NULL
-      AND images.openai_omni_moderation_flagged = FALSE
+      AND images.is_flagged_by_openai_omni_moderation = FALSE
       AND images.openai_omni_moderation_results IS NOT NULL
       AND images.openai_omni_moderation_created_at IS NOT NULL
     WHERE pi.post_id = ${postId}

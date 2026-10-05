@@ -49,7 +49,7 @@ describe('crawl-url.ssrf', () => {
 
       const url = await addUrl(user!.id, `https://${hostname}/page`)
       await createCrawler(user!, { hostname_id: url!.hostname.id, crawler_type: 'fetch' })
-      await updateUrlHostname(url!.hostname.id, { crawlable: true })
+      await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
 
       resolveSafeCrawlerAddresses.mockRejectedValueOnce(
         new CrawlerSsrfError(`https://${hostname}/page`, 'DNS resolved to private IP: 10.0.0.1'),
@@ -70,7 +70,7 @@ describe('crawl-url.ssrf', () => {
 
       const url = await addUrl(user!.id, `https://${hostname}/page`)
       await createCrawler(user!, { hostname_id: url!.hostname.id, crawler_type: 'fetch' })
-      await updateUrlHostname(url!.hostname.id, { crawlable: true })
+      await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
 
       resolveSafeCrawlerAddresses.mockRejectedValueOnce(
         new CrawlerSsrfError(`https://${hostname}/page`, 'IP address is private: 192.168.1.1'),
@@ -92,7 +92,7 @@ describe('crawl-url.ssrf', () => {
 
       const url = await addUrl(user!.id, `https://${hostname}/page`)
       await createCrawler(user!, { hostname_id: url!.hostname.id, crawler_type: 'fetch' })
-      await updateUrlHostname(url!.hostname.id, { crawlable: true })
+      await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
 
       resolveSafeCrawlerAddresses.mockRejectedValueOnce(
         new CrawlerSsrfError(`https://${hostname}/page`, 'test'),

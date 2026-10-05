@@ -105,7 +105,7 @@ export function CardEditFormView({
             setEditForm(f => ({
               ...f,
               is_authorized_user: checked === true,
-              ...(checked !== true ? { authorized_user_of_id: '' } : {}),
+              ...(checked !== true ? { authorized_user_of_card_id: '' } : {}),
             }))
           }
         />

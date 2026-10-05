@@ -11,7 +11,7 @@ export async function seedCommunity() {
 export async function insertQuestion(communityId: string, orderIndex = 0): Promise<string> {
   const { rows } = await write(
     `/* insertCommunityApplicationQuestion */
-      INSERT INTO community_application_questions (community_id, question, order_index, required)
+      INSERT INTO community_application_questions (community_id, question, order_index, is_required)
       VALUES ($1, 'Question', $2, false)
       RETURNING id`,
     [communityId, orderIndex],

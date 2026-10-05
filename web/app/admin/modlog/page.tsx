@@ -17,7 +17,7 @@ export const metadata: Metadata = createNoIndexMetadata('Mod Log | Admin')
 export default async function AdminModlogPage({
   searchParams,
 }: {
-  searchParams: Promise<{ after?: string; community_id?: string; actor_id?: string }>
+  searchParams: Promise<{ after?: string; community_id?: string; actor_user_id?: string }>
 }) {
   const t = await getTranslations()
   await requireAdmin()
@@ -27,7 +27,7 @@ export default async function AdminModlogPage({
     searchParams: {
       after: params.after,
       community_id: params.community_id,
-      actor_id: params.actor_id,
+      actor_user_id: params.actor_user_id,
       limit: 25,
     },
   })
@@ -92,7 +92,7 @@ export default async function AdminModlogPage({
             {data.results.map(result => {
               const action = data.moderator_actions[result.id]
               if (!action) return null
-              const actor = action.actor_id ? data.users[action.actor_id] : null
+              const actor = action.actor_user_id ? data.users[action.actor_user_id] : null
               return (
                 <tr
                   key={action.id}
@@ -107,7 +107,7 @@ export default async function AdminModlogPage({
                   <td className='px-4 py-3 text-sm'>
                     {actor?.username
                       ? `@${actor.username}`
-                      : (action.actor_id ?? t('extracted.modlog.page.system_7a4d2e63'))}
+                      : (action.actor_user_id ?? t('extracted.modlog.page.system_7a4d2e63'))}
                   </td>
                   <td className='px-4 py-3 text-sm font-mono text-xs'>{action.action_type}</td>
                   <td className='px-4 py-3 text-sm text-muted-foreground'>
@@ -132,12 +132,12 @@ export default async function AdminModlogPage({
 }
 
 function buildPageUrl(
-  params: { community_id?: string; actor_id?: string },
+  params: { community_id?: string; actor_user_id?: string },
   after: string | undefined,
 ): string {
   const searchParams = new URLSearchParams()
   if (params.community_id) searchParams.set('community_id', params.community_id)
-  if (params.actor_id) searchParams.set('actor_id', params.actor_id)
+  if (params.actor_user_id) searchParams.set('actor_user_id', params.actor_user_id)
   if (after) searchParams.set('after', after)
   const qs = searchParams.toString()
   return qs ? `/admin/modlog?${qs}` : '/admin/modlog'

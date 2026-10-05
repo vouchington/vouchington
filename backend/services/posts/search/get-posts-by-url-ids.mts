@@ -56,7 +56,7 @@ export async function getPostIdsByUrlIds(
       FROM "relation__post__related__url" rel
       INNER JOIN canonical_urls cu ON cu.id = rel.object_id
       INNER JOIN posts ON posts.id = rel.subject_id
-      INNER JOIN posts root_post ON root_post.id = COALESCE(posts.root_id, posts.id)
+      INNER JOIN posts root_post ON root_post.id = COALESCE(posts.root_post_id, posts.id)
       WHERE rel.deleted_at IS NULL
         AND rel.votes_score_net > 0
         AND posts.deleted_at IS NULL
@@ -73,7 +73,7 @@ export async function getPostIdsByUrlIds(
         posts.id AS post_id
       FROM posts
       INNER JOIN canonical_urls cu ON cu.id = posts.url_id
-      INNER JOIN posts root_post ON root_post.id = COALESCE(posts.root_id, posts.id)
+      INNER JOIN posts root_post ON root_post.id = COALESCE(posts.root_post_id, posts.id)
       WHERE posts.post_type = 'link'
         AND posts.deleted_at IS NULL
   `)

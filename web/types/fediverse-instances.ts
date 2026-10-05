@@ -8,7 +8,7 @@ export interface FediverseInstanceAttributes {
   nodeinfo_software_version: string | null
   total_users: number | null
   monthly_active_users: number | null
-  open_registrations: boolean | null
+  is_open_for_registrations: boolean | null
 }
 
 export type FediverseInstancesResponse = Omit<

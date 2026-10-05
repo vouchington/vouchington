@@ -26,7 +26,7 @@ export async function seedComments(): Promise<void> {
     }
     await query(
       `/* seedExplainData */ INSERT INTO posts (
-        id, post_type, created_by_id, markdown, parent_id, root_id,
+        id, post_type, created_by_id, markdown, parent_post_id, root_post_id,
         bedrock_nova_multimodal_v1_content_sha256,
         llm_moderation_content_sha256,
         created_via
@@ -47,7 +47,7 @@ export async function seedComments(): Promise<void> {
     }
     await query(
       `/* seedExplainData */ INSERT INTO posts (
-        id, post_type, created_by_id, markdown, parent_id, root_id,
+        id, post_type, created_by_id, markdown, parent_post_id, root_post_id,
         bedrock_nova_multimodal_v1_content_sha256,
         llm_moderation_content_sha256,
         created_via
@@ -68,7 +68,7 @@ export async function seedComments(): Promise<void> {
     }
     await query(
       `/* seedExplainData */ INSERT INTO posts (
-        id, post_type, created_by_id, markdown, parent_id, root_id,
+        id, post_type, created_by_id, markdown, parent_post_id, root_post_id,
         bedrock_nova_multimodal_v1_content_sha256,
         llm_moderation_content_sha256,
         created_via

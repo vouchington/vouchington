@@ -82,7 +82,7 @@ async function getReviewsByIds(
 async function getGroupMemberRows(groupItemIds: string[]) {
   if (groupItemIds.length === 0) return []
   const { rows } = await read(sql`/* getGroupMemberRows */
-    SELECT id, landing_page_item_id, member_type, review_id, referral_link_id
+    SELECT id, landing_page_item_id, member_type, review_post_id, referral_link_id
     FROM user_landing_page_group_members
     WHERE landing_page_item_id = ANY(${groupItemIds}::uuid[])
     ORDER BY sort_order ASC, id ASC
@@ -91,7 +91,7 @@ async function getGroupMemberRows(groupItemIds: string[]) {
     id: string
     landing_page_item_id: string
     member_type: 'review' | 'referral_link'
-    review_id: string | null
+    review_post_id: string | null
     referral_link_id: string | null
   }>
 }
@@ -103,7 +103,7 @@ export async function resolveLandingPageWithItems(
   const itemRows = await getLandingPageItemRows(page.id)
   const groupRows = itemRows.filter(item => item.item_type === 'topic_group')
   const groupMembers = await getGroupMemberRows(groupRows.map(group => group.id))
-  const reviewIds = itemRows.flatMap(item => (item.review_id ? [item.review_id] : []))
+  const reviewIds = itemRows.flatMap(item => (item.review_post_id ? [item.review_post_id] : []))
   const referralLinkIds = itemRows.flatMap(item =>
     item.referral_link_id ? [item.referral_link_id] : [],
   )
@@ -118,7 +118,7 @@ export async function resolveLandingPageWithItems(
       [
         ...new Set([
           ...reviewIds,
-          ...groupMembers.flatMap(member => (member.review_id ? [member.review_id] : [])),
+          ...groupMembers.flatMap(member => (member.review_post_id ? [member.review_post_id] : [])),
         ]),
       ],
       publicOnly,
@@ -140,8 +140,8 @@ export async function resolveLandingPageWithItems(
   const groupMembersByItemId = new Map<string, LandingPageTopicGroupEntry[]>()
   for (const member of groupMembers) {
     const entries = groupMembersByItemId.get(member.landing_page_item_id) ?? []
-    if (member.member_type === 'review' && member.review_id) {
-      const review = reviews.get(member.review_id)
+    if (member.member_type === 'review' && member.review_post_id) {
+      const review = reviews.get(member.review_post_id)
       if (review) entries.push({ id: member.id, type: 'review', review })
     }
     if (member.member_type === 'referral_link' && member.referral_link_id) {
@@ -158,8 +158,8 @@ export async function resolveLandingPageWithItems(
       if (profileLink) items.push({ id: item.id, type: 'profile_link', profile_link: profileLink })
       continue
     }
-    if (item.item_type === 'review' && item.review_id) {
-      const review = reviews.get(item.review_id)
+    if (item.item_type === 'review' && item.review_post_id) {
+      const review = reviews.get(item.review_post_id)
       if (review) items.push({ id: item.id, type: 'review', review })
       continue
     }

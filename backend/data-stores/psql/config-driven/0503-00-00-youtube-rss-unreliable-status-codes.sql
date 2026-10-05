@@ -26,7 +26,7 @@ parent_policy AS (
     hostname,
     REPLACE(REPLACE(REPLACE(hostname, chr(92), chr(92) || chr(92)), '%', chr(92) || '%'), '_', chr(92) || '_') AS hostname_like
   FROM url_hostnames
-  WHERE blocked = TRUE
+  WHERE is_blocked = TRUE
 ),
 inherited AS (
   SELECT
@@ -36,17 +36,17 @@ inherited AS (
       FROM parent_policy parent
       WHERE missing.hostname = parent.hostname
         OR missing.hostname LIKE '%.' || parent.hostname_like ESCAPE chr(92)
-    ) AS blocked,
-    FALSE AS skip_web_risk
+    ) AS is_blocked,
+    FALSE AS should_skip_web_risk
   FROM missing
 ),
 inserted AS (
-  INSERT INTO url_hostnames (hostname, crawlable, blocked, skip_web_risk, unreliable_status_codes)
-  SELECT hostname, TRUE, blocked, skip_web_risk, ARRAY[404]::SMALLINT[]
+  INSERT INTO url_hostnames (hostname, is_crawlable, is_blocked, should_skip_web_risk, unreliable_status_codes)
+  SELECT hostname, TRUE, is_blocked, should_skip_web_risk, ARRAY[404]::SMALLINT[]
   FROM inherited
   ORDER BY inherited.hostname
   ON CONFLICT (hostname) DO NOTHING
-  RETURNING id, blocked
+  RETURNING id, is_blocked
 ),
 updated AS (
   UPDATE url_hostnames
@@ -59,7 +59,7 @@ inherited_blocks AS (
   INSERT INTO url_hostname_blocks (url_hostname_id, blocked_source)
   SELECT id, 'parent_hostname'
   FROM inserted
-  WHERE blocked = TRUE
+  WHERE is_blocked = TRUE
     AND NOT EXISTS (
       SELECT 1
       FROM url_hostname_blocks

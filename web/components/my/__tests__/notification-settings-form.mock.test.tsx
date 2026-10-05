@@ -6,18 +6,16 @@ import {
   updateMyEmailPreferences,
   type EmailPreferences,
 } from '@/lib/api/client/email-preferences'
-
 const defaultPreferences: EmailPreferences = {
-  engagement_emails_enabled: true,
+  is_engagement_emails_enabled: true,
   news_digest_frequency: 'weekly',
-  moderation_emails_enabled: true,
+  is_moderation_emails_enabled: true,
   community_digest_frequency: 'weekly',
   moderation_email_cadence: 'daily',
   moderation_email_days_of_week: [1, 2, 3, 4, 5],
   moderation_email_time_of_day: '09:00',
   moderation_email_timezone: 'America/Los_Angeles',
 }
-
 const { mockOnError, mockOnSuccess } = vi.hoisted(() => ({
   mockOnError: vi.fn<VitestLooseMock>(),
   mockOnSuccess: vi.fn<VitestLooseMock>(),
@@ -78,13 +76,13 @@ describe('NotificationSettingsForm', () => {
     [
       'engagement',
       () => fireEvent.click(screen.getByLabelText('Engagement emails')),
-      { engagement_emails_enabled: false },
+      { is_engagement_emails_enabled: false },
     ],
     ['news digest', () => select('News digest', 'Daily'), { news_digest_frequency: 'daily' }],
     [
       'moderation',
       () => fireEvent.click(screen.getByLabelText('Community moderation summary')),
-      { moderation_emails_enabled: false },
+      { is_moderation_emails_enabled: false },
     ],
     [
       'community digest',
@@ -140,7 +138,7 @@ describe('NotificationSettingsForm', () => {
     expect(updateMyEmailPreferences).toHaveBeenCalledTimes(1)
     expect(screen.getByLabelText('Engagement emails')).toBeDisabled()
     expect(screen.getByLabelText('News digest')).not.toBeDisabled()
-    request.resolve(response({ ...defaultPreferences, engagement_emails_enabled: false }))
+    request.resolve(response({ ...defaultPreferences, is_engagement_emails_enabled: false }))
     await waitFor(() => expect(screen.getByLabelText('Engagement emails')).not.toBeDisabled())
   })
 
@@ -156,14 +154,14 @@ describe('NotificationSettingsForm', () => {
     await select('News digest', 'Daily')
 
     expect(updateMyEmailPreferences).toHaveBeenNthCalledWith(1, {
-      engagement_emails_enabled: false,
+      is_engagement_emails_enabled: false,
     })
     expect(updateMyEmailPreferences).toHaveBeenNthCalledWith(2, { news_digest_frequency: 'daily' })
     expect(screen.getByLabelText('Engagement emails')).toBeDisabled()
     expect(screen.getByLabelText('News digest')).toBeDisabled()
     news.resolve(response({ ...defaultPreferences, news_digest_frequency: 'daily' }))
     await waitFor(() => expect(screen.getByLabelText('News digest')).toHaveTextContent('Daily'))
-    engagement.resolve(response({ ...defaultPreferences, engagement_emails_enabled: false }))
+    engagement.resolve(response({ ...defaultPreferences, is_engagement_emails_enabled: false }))
 
     await waitFor(() => expect(screen.getByLabelText('Engagement emails')).not.toBeChecked())
     expect(screen.getByLabelText('News digest')).toHaveTextContent('Daily')
@@ -176,10 +174,12 @@ describe('NotificationSettingsForm', () => {
 
     fireEvent.click(screen.getByLabelText('Engagement emails'))
     await waitFor(() =>
-      expect(updateMyEmailPreferences).toHaveBeenCalledWith({ engagement_emails_enabled: false }),
+      expect(updateMyEmailPreferences).toHaveBeenCalledWith({
+        is_engagement_emails_enabled: false,
+      }),
     )
     await waitFor(() => expect(screen.getByLabelText('Engagement emails')).not.toBeChecked())
-    load.resolve(response({ ...defaultPreferences, engagement_emails_enabled: true }))
+    load.resolve(response({ ...defaultPreferences, is_engagement_emails_enabled: true }))
     await waitFor(() => expect(screen.getByLabelText('Engagement emails')).not.toBeChecked())
   })
 
@@ -196,7 +196,7 @@ describe('NotificationSettingsForm', () => {
     expect(screen.getByLabelText('News digest')).toHaveTextContent('Daily')
     expect(mockOnError).toHaveBeenCalledWith(expect.any(Error), {
       fallback: 'Failed to update notification setting',
-      tags: { form: 'my-notification-settings', field: 'engagement_emails_enabled' },
+      tags: { form: 'my-notification-settings', field: 'is_engagement_emails_enabled' },
     })
   })
 

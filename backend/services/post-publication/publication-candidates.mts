@@ -6,8 +6,8 @@ import { publicationEligibilityFingerprintSql } from './fingerprint.mts'
 
 export type ReconciliationPost = {
   id: string
-  parent_id: string | null
-  root_id: string | null
+  parent_post_id: string | null
+  root_post_id: string | null
   created_by_id: string | null
   community_id: string | null
   post_type: string
@@ -28,20 +28,20 @@ export async function listPublicationCandidates(
       SELECT candidate.id
       FROM post_publication_dirty_work_keys retained
       JOIN post_publication_post_identities identity ON identity.id = retained.impact_post_identity_id
-      JOIN posts candidate ON candidate.id = identity.post_id OR candidate.root_id = identity.post_id
+      JOIN posts candidate ON candidate.id = identity.post_id OR candidate.root_post_id = identity.post_id
       WHERE retained.dirty_work_id = ${work.id} AND retained.impact_post_identity_id IS NOT NULL
       UNION
       SELECT candidate.id
       FROM post_publication_dirty_work_keys retained
       JOIN post_publication_community_identities identity ON identity.id = retained.impact_community_identity_id
-      JOIN posts root ON root.community_id = identity.community_id AND root.root_id IS NULL
-      JOIN posts candidate ON candidate.id = root.id OR candidate.root_id = root.id
+      JOIN posts root ON root.community_id = identity.community_id AND root.root_post_id IS NULL
+      JOIN posts candidate ON candidate.id = root.id OR candidate.root_post_id = root.id
       WHERE retained.dirty_work_id = ${work.id} AND retained.impact_community_identity_id IS NOT NULL
       UNION SELECT post_id FROM live_scope WHERE post_id IS NOT NULL
       UNION
       SELECT candidate.id
       FROM posts candidate
-      JOIN posts root ON root.id = COALESCE(candidate.root_id, candidate.id) CROSS JOIN live_scope scope
+      JOIN posts root ON root.id = COALESCE(candidate.root_post_id, candidate.id) CROSS JOIN live_scope scope
       WHERE (scope.post_id IS NOT NULL AND (candidate.id = scope.post_id OR root.id = scope.post_id))
          OR (scope.author_user_id IS NOT NULL AND (candidate.created_by_id = scope.author_user_id OR root.created_by_id = scope.author_user_id))
          OR (scope.community_id IS NOT NULL AND root.community_id = scope.community_id)
@@ -69,12 +69,12 @@ export async function listPublicationCandidates(
     : sql`/* listPublicationCandidates */ WITH RECURSIVE live_scope AS (
       SELECT post.post_id, author.user_id AS author_user_id, community.community_id, feed.rss_feed_id, alias.topic_alias_id, story.story_id
       FROM post_publication_dirty_work work
-      LEFT JOIN post_publication_post_identities post ON post.id = work.post_id
-      LEFT JOIN post_publication_author_identities author ON author.id = work.author_user_id
-      LEFT JOIN post_publication_community_identities community ON community.id = work.community_id
-      LEFT JOIN post_publication_rss_feed_identities feed ON feed.id = work.rss_feed_id
-      LEFT JOIN post_publication_topic_alias_identities alias ON alias.id = work.topic_alias_id
-      LEFT JOIN post_publication_story_identities story ON story.id = work.story_id
+      LEFT JOIN post_publication_post_identities post ON post.id = work.post_identity_id
+      LEFT JOIN post_publication_author_identities author ON author.id = work.author_identity_id
+      LEFT JOIN post_publication_community_identities community ON community.id = work.community_identity_id
+      LEFT JOIN post_publication_rss_feed_identities feed ON feed.id = work.rss_feed_identity_id
+      LEFT JOIN post_publication_topic_alias_identities alias ON alias.id = work.topic_alias_identity_id
+      LEFT JOIN post_publication_story_identities story ON story.id = work.story_identity_id
       WHERE work.id = ${work.id} AND work.generation = ${work.generation}
     ), directly_scoped_posts AS (`
   query.append(scopedPosts)
@@ -84,10 +84,10 @@ export async function listPublicationCandidates(
       SELECT id FROM directly_scoped_posts
       UNION
       SELECT child.id FROM posts child
-      JOIN scoped_posts ancestor ON child.parent_id = ancestor.id
+      JOIN scoped_posts ancestor ON child.parent_post_id = ancestor.id
       WHERE child.post_type = 'comment'
     )`)
-  query.append(sql` SELECT candidate.id, candidate.parent_id, candidate.root_id,
+  query.append(sql` SELECT candidate.id, candidate.parent_post_id, candidate.root_post_id,
       candidate.created_by_id,
       candidate.community_id, candidate.post_type,
       to_char(candidate.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS sitemap_day, `)
@@ -96,7 +96,7 @@ export async function listPublicationCandidates(
   query.append(buildPublicPostEligibilityFilter('candidate', 'root')).append(sql`) AS is_public
     FROM scoped_posts scoped
     JOIN posts candidate ON candidate.id = scoped.id
-    JOIN posts root ON root.id = COALESCE(candidate.root_id, candidate.id)`)
+    JOIN posts root ON root.id = COALESCE(candidate.root_post_id, candidate.id)`)
   if (!selectedPostIds)
     query.append(
       sql` WHERE (${work.cursor_post_id}::uuid IS NULL OR candidate.id > ${work.cursor_post_id}::uuid)`,

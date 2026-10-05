@@ -64,16 +64,16 @@ export async function setApplicationQuestions(
   await write(
     sql`/* setApplicationQuestions */
       INSERT INTO community_application_questions (
-        community_id, question, field_type, options, order_index, required
+        community_id, question, field_type, options, order_index, is_required
       )
-      SELECT ${communityId}, question, field_type, options::jsonb, order_index, required
+      SELECT ${communityId}, question, field_type, options::jsonb, order_index, is_required
       FROM UNNEST(
         ${questions.map(q => q.question)}::text[],
         ${questions.map(q => q.field_type)}::community_application_question_field_types[],
         ${questions.map(q => (q.options ? JSON.stringify(q.options) : null))}::jsonb[],
         ${questions.map((_, i) => i)}::smallint[],
-        ${questions.map(q => q.required ?? true)}::boolean[]
-      ) AS t(question, field_type, options, order_index, required)
+        ${questions.map(q => q.is_required ?? true)}::boolean[]
+      ) AS t(question, field_type, options, order_index, is_required)
       `,
     options,
   )

@@ -16,8 +16,8 @@ export const ROOT_FAMILIES = {
     references: [
       ['users', 'id'],
       ['images', 'created_by_id'],
-      ['image_surface_placement_activations', 'bound_by_user_id'],
-      ['image_surface_placement_activations', 'uploaded_by_user_id'],
+      ['image_surface_placement_activations', 'bound_by_id'],
+      ['image_surface_placement_activations', 'uploaded_by_id'],
       ['user_deletion_requests', 'user_id'],
       ['user_deletion_requests', 'requested_by_id'],
       ['post_publication_author_identities', 'id'],
@@ -46,10 +46,19 @@ export const ROOT_FAMILIES = {
       ['user_legal_preservation_holds', 'released_by_id'],
       ['copyright_notice_targets', 'surface_owner_user_id'],
       ['copyright_territorial_notice_receipts', 'requester_user_id'],
-      ['copyright_territorial_redress_requests', 'submitted_by_user_id'],
+      ['copyright_territorial_redress_requests', 'submitted_by_id'],
       ['copyright_trusted_flaggers', 'created_by_id'],
       ['copyright_trusted_flagger_changes', 'changed_by_id'],
       ...retainedRelationReferences('user'),
+    ],
+  },
+  membership: {
+    table: 'retained_membership_identities',
+    references: [
+      ['memberships', 'id'],
+      ['membership_changes', 'membership_id'],
+      ['membership_refunds', 'membership_id'],
+      ['membership_administrator_refund_operation_requests', 'membership_id'],
     ],
   },
   api_key: {

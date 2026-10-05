@@ -1,7 +1,7 @@
 import sql from 'sql-template-strings'
 
 export const APPEAL_SELECT = sql`
-  ma.id, ma.case_id, ma.appellant_id, ma.user_warning_id, ma.community_ban_id, ma.post_id, ma.user_suspension_id, ma.community_id, ma.post_removal_kind,
+  ma.id, ma.case_id, ma.appellant_user_id, ma.user_warning_id, ma.community_ban_id, ma.post_id, ma.user_suspension_id, ma.community_id, ma.post_removal_kind,
   ma.appeal_reason,
   CASE
     WHEN ma.resolved_at IS NULL THEN 'pending'
@@ -50,7 +50,7 @@ export const APPEAL_SELECT = sql`
   END AS target_context,
   jsonb_build_object(
     'appellant', jsonb_build_object(
-      'id', ma.appellant_id,
+      'id', ma.appellant_user_id,
       'username', appellant.username,
       'verified_display_name', appellant.verified_display_name,
       'profile_image_id', appellant.profile_image_id
@@ -71,7 +71,7 @@ export const APPEAL_SELECT = sql`
 `
 
 export const APPEAL_JOINS = sql`
-  LEFT JOIN view_users_public appellant ON appellant.id = ma.appellant_id
+  LEFT JOIN view_users_public appellant ON appellant.id = ma.appellant_user_id
   LEFT JOIN user_warnings uw ON uw.id = ma.user_warning_id
   LEFT JOIN communities wc ON wc.id = uw.community_id
   LEFT JOIN community_bans cb ON cb.id = ma.community_ban_id

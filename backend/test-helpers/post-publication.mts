@@ -5,7 +5,7 @@ export async function getPostIdsByCandidateRootFilter(filter: SQLStatement): Pro
   const query = sql`/* getPostIdsByCandidateRootFilter */
     SELECT candidate_post.id
     FROM posts candidate_post
-    JOIN posts access_post ON access_post.id = COALESCE(candidate_post.root_id, candidate_post.id)
+    JOIN posts access_post ON access_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
     WHERE `.append(filter)
   const { rows } = await read<{ id: string }>(query)
   return rows.map(row => row.id)

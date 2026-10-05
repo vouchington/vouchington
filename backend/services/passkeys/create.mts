@@ -16,7 +16,7 @@ export async function createPasskey(
   await using query = await beginTransaction()
   await query(sql`/* createPasskey */ SELECT fn_lock_active_user_for_mutation(${userId})`)
   const { rows } = await query<PublicPasskey>(sql`/* createPasskey */
-      INSERT INTO user_passkeys (user_id, credential_id, public_key, counter, device_type, backed_up, transports, name)
+      INSERT INTO user_passkeys (user_id, credential_id, public_key, counter, device_type, is_backed_up, transports, name)
       VALUES (
         ${userId},
         ${credential.id},
@@ -27,7 +27,7 @@ export async function createPasskey(
         ${credential.transports ?? null},
         ${name}
       )
-      RETURNING id, name, device_type, backed_up, created_at, last_used_at
+      RETURNING id, name, device_type, is_backed_up, created_at, last_used_at
     `)
   await query.commit()
   const passkey = rows[0]

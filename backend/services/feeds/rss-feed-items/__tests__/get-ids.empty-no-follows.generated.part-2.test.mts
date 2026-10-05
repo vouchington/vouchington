@@ -166,7 +166,7 @@ describe('getRssFeedItemFeedIds', () => {
     )
 
     expect(sharedItem).toBeDefined()
-    expect(sharedItem?.shared_by_user_id).toBe(sharer.id)
+    expect(sharedItem?.shared_by_id).toBe(sharer.id)
     expect(sharedItem?.story_id).toBeNull()
   })
 

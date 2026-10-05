@@ -116,8 +116,8 @@ describe('routes — user and admin', () => {
     const hostname = `web-api-ua-${randomUUID()}.example.com`
     hostnameId = await insertTestUrlHostname({
       hostname,
-      blocked: false,
-      crawlable: true,
+      is_blocked: false,
+      is_crawlable: true,
     })
     urlId = await insertTestUrl({
       url: `https://${hostname}/path`,

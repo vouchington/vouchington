@@ -65,12 +65,12 @@ describe('manage_my_rewards_statuses tool — real DB', () => {
     const result = await execute({
       action: 'update',
       id: added.id,
-      since: '2024-01-01',
-      until: '2024-12-31',
+      started_on: '2024-01-01',
+      expires_on: '2024-12-31',
     })
     expect(result.success).toBe(true)
-    expect((result.result as { since: string }).since).toContain('2024-01-01')
-    expect((result.result as { until: string }).until).toContain('2024-12-31')
+    expect((result.result as { started_on: string }).started_on).toContain('2024-01-01')
+    expect((result.result as { expires_on: string }).expires_on).toContain('2024-12-31')
   })
 
   it('remove deletes the status', async () => {
@@ -112,7 +112,7 @@ describe('manage_my_rewards_statuses tool — real DB', () => {
         action === 'add'
           ? execute({ action, rewards_program_status_id: statusId })
           : action === 'update'
-            ? execute({ action, id: existing.id, since: '2026-01-01' })
+            ? execute({ action, id: existing.id, started_on: '2026-01-01' })
             : execute({ action, id: existing.id })
 
       await expect(mutation).rejects.toMatchObject({ status: 403, code: ACCOUNT_SUSPENDED })

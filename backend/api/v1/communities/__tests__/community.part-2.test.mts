@@ -111,8 +111,6 @@ describe('community', () => {
         const shown = await request.get(`/api/v1/communities/${community.slug}`).expect(200)
 
         const expectedKeys = [
-          'allow_data_point_posts',
-          'allow_review_posts',
           'archived_at',
           'archived_by_id',
           'automod_action',
@@ -134,6 +132,8 @@ describe('community', () => {
           'profile_image_id',
           'profile_image_placement',
           'rules_markdown',
+          'should_allow_data_point_posts',
+          'should_allow_review_posts',
           'slug',
           'trusted_at',
           'updated_at',

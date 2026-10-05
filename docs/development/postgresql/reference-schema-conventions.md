@@ -37,3 +37,10 @@ decodes JavaScript arrays, while SQL storage and intermediate writes retain enum
 vocabularies use first-sight lookup rows. MIME references share `media_types`.
 See [constraints and validation](reference-constraints-and-validation.md) and the
 [finite enum ripple checklist](../finite-enum-ripple-checklist.md).
+
+Current scalar columns use target-specific FK names, `_at` timestamps, `_on` dates, and
+`is_`/`has_`/`can_`/`should_` boolean predicates. A rename preserves its current meaning: renewal
+settings use `should_auto_renew` and `should_cancel_at_period_end`; review outcomes use
+`is_accepted`. This naming pass does not invent lifecycle timestamps or change review history.
+First-party API fields follow the same names. Provider payloads, encrypted replay evidence,
+OAuth `state`, and HTML attributes retain their external protocol spelling at their boundaries.

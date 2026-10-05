@@ -62,7 +62,7 @@ export const webCommunityModeratorAnalyticsApiFixtureCases: ApiFixtureCase[] = [
     status: 200,
     body: {
       window: 30,
-      stats: [{ actor_id: user.id, total: 3, counts: { approve: 2, remove: 1 } }],
+      stats: [{ actor_user_id: user.id, total: 3, counts: { approve: 2, remove: 1 } }],
       users: { [user.id]: user },
     },
     consumers: ['web', 'swift-core', 'swift-ui', 'dotnet-core'],
@@ -79,7 +79,7 @@ export const webCommunityModeratorAnalyticsApiFixtureCases: ApiFixtureCase[] = [
     auth: 'fixture-user',
     status: 200,
     body: {
-      suppress_community_digests_while_on_vacation: false,
+      should_suppress_community_digests_while_on_vacation: false,
       vacation: {
         community_id: community.id,
         user_id: user.id,

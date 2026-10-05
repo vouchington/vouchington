@@ -14,13 +14,13 @@ describe('money summaries', () => {
     seedMessages('es', esMessages)
     const card: IndividualCard = {
       id: 'card-1',
-      card_id: 'topic-1',
+      card_topic_id: 'topic-1',
       opened_on: null,
       closed_on: null,
       received_sign_up_bonus_on: null,
       credit_limit: { amount: 1_000_000, currency: 'usd' },
       is_authorized_user: false,
-      authorized_user_of_id: null,
+      authorized_user_of_card_id: null,
       note: null,
       authorized_user_of_card: null,
       card: { id: 'topic-1', name: 'Travel Card', slug: 'travel-card' },

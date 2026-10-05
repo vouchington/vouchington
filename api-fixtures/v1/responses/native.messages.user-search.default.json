@@ -12,6 +12,7 @@
         "name": "Bob Brown"
       },
       "id": "00000000-0000-7000-8000-000000000003",
+      "is_verified_badge_visible": null,
       "lingua_rs_detected_language": null,
       "markdown": "Bio text for Bob",
       "profile_image_id": null,
@@ -20,13 +21,13 @@
       "use_display_name_from": "google",
       "username": "bob",
       "verification_status": null,
-      "verified_badge_visible": null,
       "verified_display_name": null
     },
     {
       "__entity_type": "user",
       "account_type": null,
       "id": "00000000-0000-7000-8000-000000000004",
+      "is_verified_badge_visible": null,
       "lingua_rs_detected_language": null,
       "markdown": null,
       "profile_image_id": "image-bonnie",
@@ -35,7 +36,6 @@
       "use_display_name_from": "username",
       "username": "bonnie",
       "verification_status": null,
-      "verified_badge_visible": null,
       "verified_display_name": null
     }
   ]

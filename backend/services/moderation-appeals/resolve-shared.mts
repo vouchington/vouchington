@@ -14,7 +14,7 @@ import { logAppealResolution } from './resolution-modlog.mts'
 import type { ModerationAppealResponse } from './types.mts'
 
 export const APPEAL_RETURNING = sql`
-  id, case_id, appellant_id, user_warning_id, community_ban_id, post_id, user_suspension_id, community_id, post_removal_kind,
+  id, case_id, appellant_user_id, user_warning_id, community_ban_id, post_id, user_suspension_id, community_id, post_removal_kind,
   appeal_reason,
   CASE
     WHEN resolved_at IS NULL THEN 'pending'
@@ -101,7 +101,7 @@ export async function finalizeDeliveredModerationAppeal(
     staffUserId,
     resolution.modlogAction,
     appealId,
-    row.appellant_id,
+    row.appellant_user_id,
     row.community_id,
     { query },
   )

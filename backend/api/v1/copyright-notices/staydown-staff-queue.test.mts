@@ -43,7 +43,7 @@ async function createMatchedCase() {
   await staff.authenticateAs(moderator)
   await staff
     .post(`/api/v1/copyright-form-intakes/${notice.intake.id}/reviews`)
-    .send({ accepted: true, rationale: 'The signed notice is complete.' })
+    .send({ is_accepted: true, rationale: 'The signed notice is complete.' })
     .expect(200)
   const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
   const imageId = aggregate!.targets[0]!.image_id

@@ -64,7 +64,7 @@ request behaves exactly as before.
 - A counter-notice review body that carries `recommendation_id` or `manual_fallback_reason` now
   returns `422`. The route never read either key; only the appeal review does.
 - A missing or over-long `rationale`, a malformed `decisions` entry, `recommendation_id`, or
-  `manual_fallback_reason`, a non-boolean `accepted`, `from_original_claimant`, or `same_material`, a
+  `manual_fallback_reason`, a non-boolean `accepted`, `is_from_original_claimant`, or `is_same_material`, a
   `proceeding_kind` or `ccb_claim_kind` outside its values, a malformed date, a missing `commenced_at`
   or CCB claim kind, a `target_ids` list that is empty, over twenty, not UUIDs, or not distinct, and
   a malformed path id keep their existing status and message. An unknown submission stays the

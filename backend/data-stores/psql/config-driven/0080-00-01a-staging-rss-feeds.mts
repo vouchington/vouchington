@@ -104,7 +104,7 @@ function feedStatements(feed: StagingRssFeed): string[] {
   const topicName = sourceTopicName(feed)
   const sha256 = createTopicEmbeddingContent({ name: topicName }).content_sha256.toString('hex')
   const changeInsert = (kind: 'enablement' | 'discoverability', id: string): string => `
-INSERT INTO rss_feed_setting_changes (id, rss_feed_id, change_type, enabled, changed_by_id, reason)
+INSERT INTO rss_feed_setting_changes (id, rss_feed_id, change_type, is_enabled, changed_by_id, reason)
 SELECT ${lit(id)}, f.id, ${lit(kind)}::rss_feed_setting_change_types, TRUE,
   (SELECT u.id FROM users u
     WHERE u.username = ${lit(AUTO_UPDATER_USERNAME)} AND u.platform_account_kind = 'system'),
@@ -116,7 +116,7 @@ ON CONFLICT DO NOTHING;`
 
   return [
     `
-INSERT INTO url_hostnames (id, hostname, crawlable)
+INSERT INTO url_hostnames (id, hostname, is_crawlable)
 SELECT ${lit(ids.hostname)}, ${lit(feed.hostname)}, TRUE
 WHERE NOT EXISTS (SELECT 1 FROM url_hostnames WHERE hostname = ${lit(feed.hostname)})
 ON CONFLICT DO NOTHING;`,

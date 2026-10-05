@@ -10,7 +10,7 @@ export type AgentModerationResult = {
   prompt_id: string
   agent_id: string
   moderator_slug: string | null
-  flagged: boolean
+  is_flagged: boolean
   results: AgentModerationStoredResults
   input_sha256: string
   created_at: Date
@@ -30,7 +30,7 @@ export async function searchPostModerationsByPostIds(
         am.prompt_id,
         am.agent_id,
         encode(am.input_sha256, 'hex') AS input_sha256,
-        am.flagged,
+        am.is_flagged,
         am.results,
         am.created_at,
         am.updated_at,
@@ -41,7 +41,7 @@ export async function searchPostModerationsByPostIds(
       WHERE am.post_id = ANY(${postIds}::uuid[])
         AND am.deleted_at IS NULL
     )
-    SELECT id, post_id, prompt_id, agent_id, input_sha256, flagged, results, created_at, updated_at, moderator_slug
+    SELECT id, post_id, prompt_id, agent_id, input_sha256, is_flagged, results, created_at, updated_at, moderator_slug
     FROM ranked
     WHERE rn <= ${MAX_MODERATIONS_PER_POST}
     ORDER BY post_id, id DESC
@@ -67,7 +67,7 @@ export async function searchPostModerationsByAgent(
       am.prompt_id,
       am.agent_id,
       encode(am.input_sha256, 'hex') AS input_sha256,
-      am.flagged,
+      am.is_flagged,
       am.results,
       am.created_at,
       am.updated_at,

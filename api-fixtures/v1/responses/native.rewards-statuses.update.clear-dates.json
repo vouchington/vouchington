@@ -1,5 +1,6 @@
 {
   "rewards_program_status": {
+    "expires_on": null,
     "id": "00000000-0000-7000-8000-000000000741",
     "rewards_program_status": {
       "id": "00000000-0000-7000-8000-000000000751",
@@ -7,7 +8,6 @@
       "slug": "gold"
     },
     "rewards_program_status_id": "00000000-0000-7000-8000-000000000751",
-    "since": null,
-    "until": null
+    "started_on": null
   }
 }

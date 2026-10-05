@@ -60,7 +60,7 @@ export async function getClassifierBorrowedVoteFacts(
     /* getClassifierBorrowedVoteFacts */
     SELECT
       (SELECT COUNT(*)::int FROM classifier_topic_vote_applications
-        WHERE batch_id = ${batchId} AND shared_actor_id = ${actorId} AND topic_id = ${topicId}) AS receipts,
+        WHERE batch_id = ${batchId} AND shared_actor_user_id = ${actorId} AND topic_id = ${topicId}) AS receipts,
       (SELECT COUNT(*)::int FROM topic_votes
         WHERE user_id = ${actorId} AND topic_id = ${topicId}) AS votes
   `)

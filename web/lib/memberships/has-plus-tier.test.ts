@@ -18,7 +18,7 @@ function makeMembership(overrides?: Partial<SubscriptionMembership>): Subscripti
     expired_at: null,
     past_due_at: null,
     paused_at: null,
-    cancel_at_period_end: false,
+    should_cancel_at_period_end: false,
     latest_change_id: null,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',

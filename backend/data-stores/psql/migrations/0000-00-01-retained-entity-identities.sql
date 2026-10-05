@@ -4,6 +4,13 @@ CREATE TABLE IF NOT EXISTS retained_user_identities (
 );
 COMMENT ON TABLE retained_user_identities IS 'Concrete user identity owner that outlives the live row while durable references remain; never authorizes actions.';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS retained_membership_identities (
+  id UUID PRIMARY KEY
+);
+COMMENT ON TABLE retained_membership_identities IS 'Concrete membership identity retained while durable ledger references remain; never authorizes membership access.';
+COMMENT ON COLUMN retained_membership_identities.id IS 'UUIDv7 identity registered with the live membership projection and retained after it is deleted.';
+
 CREATE TABLE IF NOT EXISTS retained_api_key_identities (
   id UUID PRIMARY KEY
 );
@@ -64,7 +71,7 @@ FOR EACH ROW
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS retained_identity_cleanup_progress (
-  family retained_identity_cleanup_families PRIMARY KEY CHECK (family IN ('user', 'api_key', 'topic', 'post', 'rss_feed_item', 'image', 'image_placement_binding')),
+  family retained_identity_cleanup_families PRIMARY KEY CHECK (family IN ('user', 'api_key', 'topic', 'post', 'rss_feed_item', 'image', 'membership', 'image_placement_binding')),
   cursor_identity_id UUID,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -73,11 +80,11 @@ COMMENT ON COLUMN retained_identity_cleanup_progress.family IS 'Concrete retaine
 COMMENT ON COLUMN retained_identity_cleanup_progress.cursor_identity_id IS 'Last scanned identity, not a durable relationship to that identity.';
 
 INSERT INTO retained_identity_cleanup_progress (family)
-VALUES ('user'), ('api_key'), ('topic'), ('post'), ('rss_feed_item'), ('image'), ('image_placement_binding')
+VALUES ('user'), ('api_key'), ('topic'), ('post'), ('rss_feed_item'), ('image'), ('membership'), ('image_placement_binding')
 ON CONFLICT (family) DO NOTHING;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TYPE retained_identity_families AS ENUM ('user', 'api_key', 'topic', 'post', 'rss_feed_item', 'image');
+CREATE TYPE retained_identity_families AS ENUM ('user', 'api_key', 'topic', 'post', 'rss_feed_item', 'image', 'membership');
 COMMENT ON TYPE retained_identity_families IS 'Concrete identity owners supported by the shared ownership fence; never authorization.';
 
 CREATE OR REPLACE FUNCTION fn_ensure_retained_identity(family retained_identity_families, identity_id UUID)
@@ -106,12 +113,13 @@ BEGIN
 END;
 $$;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_ensure_retained_actor_identity()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
-DECLARE actor_id UUID := (to_jsonb(NEW) ->> TG_ARGV[0])::uuid;
+DECLARE actor_user_id UUID := (to_jsonb(NEW) ->> TG_ARGV[0])::uuid;
 BEGIN
-  IF actor_id IS NOT NULL THEN
-    PERFORM fn_ensure_retained_identity('user', actor_id);
+  IF actor_user_id IS NOT NULL THEN
+    PERFORM fn_ensure_retained_identity('user', actor_user_id);
   END IF;
   RETURN NEW;
 END;

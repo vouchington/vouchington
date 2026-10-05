@@ -21,7 +21,7 @@ The topic aside (`TopicActionsAside`) includes quick-action Contribute links. Ea
 
 | Link               | Hidden when                                              | Pre-fill on create page                                                                           |
 | ------------------ | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| Write a Review     | `allow_reviews === false`                                | First review row seeded with topic id + name; rating starts at 0                                  |
+| Write a Review     | `should_allow_reviews === false`                         | First review row seeded with topic id + name; rating starts at 0                                  |
 | Share a Data Point | `topic_type !== 'card' && topic_type !== 'bank_account'` | Vertical pre-selected (`credit_card` or `bank_account`); topic autocomplete seeded                |
 | Start a Discussion | Never hidden                                             | Categories field pre-populated with the topic; writes `relation__post__category__topic` on submit |
 

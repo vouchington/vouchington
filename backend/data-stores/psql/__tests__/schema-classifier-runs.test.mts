@@ -90,7 +90,7 @@ describe('classifier run schema', () => {
     for (const assignment of [
       { input_sha256: Buffer.alloc(32, 3) },
       { configuration_sha256: Buffer.alloc(32, 4) },
-      { shared_actor_id: randomUUID() },
+      { shared_actor_user_id: randomUUID() },
       { community_identity_id: randomUUID() },
       { classifier_id: randomUUID() },
       { decision_batch_id: randomUUID() },

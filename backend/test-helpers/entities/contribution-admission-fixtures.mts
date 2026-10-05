@@ -12,7 +12,7 @@ export async function getContributionAdmissionConsumptionModeForTest(input: {
     SELECT c.consumption_mode
     FROM post_admission_quota_consumptions c
     INNER JOIN post_admission_reservations r ON r.id = c.reservation_id
-    WHERE r.actor_id = ${input.actorId} AND r.idempotency_key = ${input.idempotencyKey}`)
+    WHERE r.actor_user_id = ${input.actorId} AND r.idempotency_key = ${input.idempotencyKey}`)
   return rows[0]?.consumption_mode ?? null
 }
 
@@ -26,7 +26,7 @@ export async function insertContributionAdmissionReservationForTest(input: {
   const { rows } = await write<{
     id: string
   }>(sql`/* insertContributionAdmissionReservationForTest */
-    INSERT INTO post_admission_reservations (actor_id, idempotency_key, intent_sha256, route, scope, source, post_type, policy_revision)
+    INSERT INTO post_admission_reservations (actor_user_id, idempotency_key, intent_sha256, route, scope, source, post_type, policy_revision)
     VALUES (${input.actorId}, ${randomUUID()}, ${createHash('sha256').update(randomUUID()).digest('hex')}, 'internal', 'internal', 'discussion', 'discussion', 'test')
     RETURNING id`)
   const reservationId = rows[0]?.id
@@ -40,7 +40,7 @@ export async function insertLegacyContributionAdmissionConsumptionForTest(input:
 }): Promise<void> {
   const reservationId = await insertContributionAdmissionReservationForTest(input)
   await write(sql`/* insertLegacyContributionAdmissionConsumptionForTest */
-    INSERT INTO post_admission_quota_consumptions (reservation_id, actor_id, source)
+    INSERT INTO post_admission_quota_consumptions (reservation_id, actor_user_id, source)
     VALUES (${reservationId}, ${input.actorId}, ${input.source})`)
 }
 
@@ -83,7 +83,7 @@ export async function insertTestCommittedAdmissionReservation(input: {
     id: string
   }>(sql`/* insertTestCommittedAdmissionReservation */
     INSERT INTO post_admission_reservations (
-      actor_id, idempotency_key, intent_sha256, route, scope, source, post_type, policy_revision,
+      actor_user_id, idempotency_key, intent_sha256, route, scope, source, post_type, policy_revision,
       state, response, replay_metadata, committed_post_id, committed_status, committed_at,
       expires_at, retention_expires_at
     )

@@ -28,7 +28,7 @@ export function heldCopyrightDeadlineSql(): SQLStatement {
             ON resolution.copyright_notice_legal_hold_assessment_id = hold.id
           WHERE filing.copyright_notice_id = deadline.copyright_notice_id
             AND hold_target.copyright_notice_target_id = deadline_target.copyright_notice_target_id
-            AND resolution.id IS NULL AND hold.from_original_claimant AND hold.same_material
+            AND resolution.id IS NULL AND hold.is_from_original_claimant AND hold.is_same_material
             AND hold.proceeding_kind IS NOT NULL AND hold.commenced_at IS NOT NULL
             AND hold.received_by_designated_agent_at IS NOT NULL
             AND hold.received_by_designated_agent_at <= hold.assessed_at

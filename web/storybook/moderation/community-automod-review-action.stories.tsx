@@ -27,7 +27,7 @@ const sampleAction: CommunityAutomodAction = {
   created_at: '2026-06-01T00:00:00.000Z',
   action_at: '2026-06-01T00:05:00.000Z',
   confidence_score: 0.82,
-  flagged: true,
+  is_flagged: true,
   categories: ['spam', 'promotional'],
   model_output: null,
   current_state: 'rejected',

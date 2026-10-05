@@ -179,7 +179,7 @@ function noticeFields(
     return base
   }
   assert('notifierName' in request, 422, 'notifier_name is required')
-  assert(request.goodFaithStatement, 422, 'good_faith_statement must be true')
+  assert(request.goodFaithStatement, 422, 'has_good_faith_statement must be true')
   const notifierEmail = assertBoundedText(request.notifierEmail, 254, 'notifier_email is required')
   assert(isEmailAddress(notifierEmail), 422, 'notifier_email must be an email address')
   return {

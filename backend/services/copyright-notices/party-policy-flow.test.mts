@@ -46,11 +46,11 @@ async function expectChannels(
   return intents
 }
 
-async function expectIncident(noticeId: string, userId: string, operative: boolean) {
+async function expectIncident(noticeId: string, userId: string, is_operative: boolean) {
   const account = await getCopyrightRepeatInfringerAccount(userId)
-  const operativeIncident = expect.objectContaining({ operative: true })
+  const operativeIncident = expect.objectContaining({ is_operative: true })
   expect(account.incidents.filter(row => row.copyright_notice_id === noticeId)).toEqual(
-    operative ? [operativeIncident] : [],
+    is_operative ? [operativeIncident] : [],
   )
 }
 

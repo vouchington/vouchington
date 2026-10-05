@@ -22,7 +22,7 @@ export async function getAdministratorRefundContext(
     SELECT request.membership_id AS "membershipId", request.issued_by_id AS "issuedById",
       request.provider_payment_reference AS "providerPaymentReference",
       request.provider_subscription_reference AS "providerSubscriptionReference", request.reason,
-      request.cancel_requested AS "cancelRequested", request.request_fingerprint AS "requestFingerprint",
+      request.is_cancel_requested AS "cancelRequested", request.request_fingerprint AS "requestFingerprint",
       request.administrator_request_key AS "administratorRequestKey",
       request.note, operation.membership_source_id AS "membershipSourceId", membership.user_id AS "userId"
     FROM membership_operations operation

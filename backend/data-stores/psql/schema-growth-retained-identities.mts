@@ -16,6 +16,7 @@ const COMPANION_ID_POLICIES = [
 
 export const RETAINED_ID_POLICIES = [
   ['retained_user_identities', sharedParentUuidv7('users')],
+  ['retained_membership_identities', sharedParentUuidv7('memberships')],
   ['retained_api_key_identities', sharedParentUuidv7('api_keys')],
   ['retained_topic_identities', sharedParentUuidv7('topics')],
   ['retained_post_identities', sharedParentUuidv7('posts')],

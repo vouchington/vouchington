@@ -15,13 +15,13 @@ describe('dispatchCrawlHostnames', () => {
     // Create both hostnames as crawlable and not blocked
     await insertTestUrlHostname({
       hostname: blockedHostname,
-      crawlable: true,
-      blocked: false,
+      is_crawlable: true,
+      is_blocked: false,
     })
     await insertTestUrlHostname({
       hostname: crawlableHostname,
-      crawlable: true,
-      blocked: false,
+      is_crawlable: true,
+      is_blocked: false,
     })
     // Add one to the domain blacklist
     await insertTestDomainBlacklist(blockedHostname)
@@ -43,8 +43,8 @@ describe('dispatchCrawlHostnames', () => {
 
     await insertTestUrlHostname({
       hostname,
-      crawlable: true,
-      blocked: true,
+      is_crawlable: true,
+      is_blocked: true,
     })
     // Verify the blocked hostname is excluded
     expect(await isHostnameDispatchable(hostname)).toBe(false)
@@ -56,8 +56,8 @@ describe('dispatchCrawlHostnames', () => {
 
     await insertTestUrlHostname({
       hostname,
-      crawlable: false,
-      blocked: false,
+      is_crawlable: false,
+      is_blocked: false,
     })
     // Verify the uncrawlable hostname is excluded
     expect(await isHostnameDispatchable(hostname)).toBe(false)

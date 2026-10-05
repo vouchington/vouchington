@@ -85,11 +85,11 @@ export async function deleteRssFeedsByIds(feedIds: string[]): Promise<void> {
 
 export async function ensureTestRssFeedEnabled(feedId: string): Promise<void> {
   await write(sql`/* ensureTestRssFeedEnabled */
-    INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, enabled, reason)
+    INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason)
     VALUES ('enablement', ${feedId}, TRUE, 'qa seed recovery')
   `)
   await write(sql`/* ensureTestRssFeedEnabled */
-    INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, enabled, reason)
+    INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason)
     VALUES ('discoverability', ${feedId}, TRUE, 'qa seed recovery')
   `)
 }
@@ -104,7 +104,7 @@ export async function updateRssFeedTiming(feedId: string, lastFetchedAt: Date): 
     WHERE id = ${feedId}
   `)
   await write(sql`/* updateRssFeedTiming */
-    INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, enabled, reason)
+    INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason)
     VALUES ('enablement', ${feedId}, TRUE, 'test helper timing update')
   `)
 }
@@ -157,11 +157,11 @@ export async function insertTestRssFeedWithUrlId(data: {
     RETURNING id
   `)
   await write(sql`/* insertTestRssFeedWithUrlId */
-    INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, enabled, reason)
+    INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason)
     VALUES ('enablement', ${rows[0].id}, TRUE, 'test helper initial state')
   `)
   await write(sql`/* insertTestRssFeedWithUrlId */
-    INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, enabled, reason)
+    INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason)
     VALUES ('discoverability', ${rows[0].id}, TRUE, 'test helper initial state')
   `)
   return { id: rows[0].id as string, rssFeedUrlId: rssFeedUrlObj!.id as string }

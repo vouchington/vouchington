@@ -17,7 +17,7 @@ export interface ReportIntegrityFlag {
   rss_feed_item_id: string | null
   flag_type: ReportIntegrityFlagType
   reporter_count: number
-  new_account_reporter_pct: number
+  new_account_reporter_percent: number
   details: Record<string, unknown>
   resolved_at: string | null
   resolved_by_id: string | null

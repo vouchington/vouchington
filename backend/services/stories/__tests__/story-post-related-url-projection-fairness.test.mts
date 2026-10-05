@@ -1,10 +1,12 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   createTestUserDirect,
   insertTestStory,
   insertTestStoryRssFeedItemsBatch,
   insertTestUrlDirect,
 } from '@voucha/test-helpers'
+import { runIsolatedDatabaseCase } from '../../../../test-helpers/vitest-isolated-database-case.mts'
+import { getIsolatedDatabaseCaseMode } from '../../../../test-helpers/vitest-isolated-database-cases.mts'
 import { createStoryPost } from '../story-posts.mts'
 import { reconcileStoryPostRelatedUrlProjection } from '../story-post-related-url-projection.mts'
 import { upsertSystemUser } from '@services/users/system-users'
@@ -14,11 +16,12 @@ import {
 } from '../story-post-related-url-projection-work.mts'
 
 describe('story post related URL projection fairness', () => {
-  beforeAll(async () => {
-    await upsertSystemUser('story-teller')
-  })
-
   it('rotates dispatcher claims across pending posts', async () => {
+    if (getIsolatedDatabaseCaseMode('story-projection-dispatcher-fairness') === 'parent') {
+      await runIsolatedDatabaseCase('story-projection-dispatcher-fairness')
+      return
+    }
+    await upsertSystemUser('story-teller')
     const postIds = new Set([
       await createPendingProjectionPost('first'),
       await createPendingProjectionPost('second'),
@@ -39,7 +42,7 @@ describe('story post related URL projection fairness', () => {
     ])
     expect(new Set(claimedPostIds)).toEqual(postIds)
     await Promise.all([...postIds].map(drainProjection))
-  })
+  }, 240_000)
 })
 
 async function createPendingProjectionPost(label: string): Promise<string> {

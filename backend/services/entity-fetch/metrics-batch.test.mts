@@ -104,8 +104,8 @@ describe('metrics-batch', () => {
       await createTestPost({
         user: fixture.owner,
         post_type: 'comment',
-        parent_id: privateDiscussion!.id,
-        root_id: privateDiscussion!.id,
+        parent_post_id: privateDiscussion!.id,
+        root_post_id: privateDiscussion!.id,
         markdown: 'Hidden comment',
       })
 

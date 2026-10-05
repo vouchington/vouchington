@@ -1,8 +1,6 @@
 {
   "community": {
     "__entity_type": "community",
-    "allow_data_point_posts": false,
-    "allow_review_posts": false,
     "archived_at": null,
     "archived_by_id": null,
     "automod_action": "record_only",
@@ -32,6 +30,8 @@
       "placement_revision": 2
     },
     "rules_markdown": null,
+    "should_allow_data_point_posts": false,
+    "should_allow_review_posts": false,
     "slug": "test-community",
     "trusted_at": null,
     "updated_at": "2026-01-01T00:00:00Z",

@@ -43,8 +43,8 @@ CREATE TABLE IF NOT EXISTS story_post_related_url_projection_receipts (
   generation BIGINT NOT NULL,
   url_id UUID NOT NULL,
   source_item_id UUID NOT NULL,
-  eligible BOOLEAN NOT NULL,
-  crawl_required BOOLEAN,
+  is_eligible BOOLEAN NOT NULL,
+  should_crawl BOOLEAN,
   relation_written_at TIMESTAMPTZ,
   effects_dispatched_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -154,7 +154,7 @@ COMMENT ON COLUMN story_post_related_url_projection_receipts.post_id IS 'Story p
 COMMENT ON COLUMN story_post_related_url_projection_receipts.generation IS 'Projection generation that owns this receipt.';
 COMMENT ON COLUMN story_post_related_url_projection_receipts.url_id IS 'Candidate URL evaluated for projection.';
 COMMENT ON COLUMN story_post_related_url_projection_receipts.source_item_id IS 'RSS feed item that supplied the candidate URL.';
-COMMENT ON COLUMN story_post_related_url_projection_receipts.eligible IS 'Whether pre-write safety screening admitted this URL for projection.';
-COMMENT ON COLUMN story_post_related_url_projection_receipts.crawl_required IS 'Whether activating this URL relation requires one durable post-commit crawl dispatch; NULL means the relation write has not yet decided.';
+COMMENT ON COLUMN story_post_related_url_projection_receipts.is_eligible IS 'Whether pre-write safety screening admitted this URL for projection.';
+COMMENT ON COLUMN story_post_related_url_projection_receipts.should_crawl IS 'Whether activating this URL relation requires one durable post-commit crawl dispatch; NULL means the relation write has not yet decided.';
 COMMENT ON COLUMN story_post_related_url_projection_receipts.relation_written_at IS 'Time the related URL relation write committed.';
 COMMENT ON COLUMN story_post_related_url_projection_receipts.effects_dispatched_at IS 'Time the post-commit crawl dispatch completed.';

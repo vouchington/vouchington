@@ -9,5 +9,5 @@ export type CommunityMemberVacation = {
 
 export type CommunityMemberVacationSettings = {
   vacation: CommunityMemberVacation | null
-  suppress_community_digests_while_on_vacation: boolean
+  should_suppress_community_digests_while_on_vacation: boolean
 }

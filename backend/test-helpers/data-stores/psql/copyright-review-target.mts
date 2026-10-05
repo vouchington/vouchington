@@ -54,7 +54,7 @@ export async function insertOpenCopyrightDeadline(input: {
       ) RETURNING id
     ), assessment AS (
       INSERT INTO copyright_notice_submission_assessments (
-        copyright_notice_submission_id, assessed_at, assessed_by_id, substantially_compliant
+        copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant
       )
       SELECT id, CURRENT_TIMESTAMP, ${input.actorUserId}, true FROM submission
       RETURNING id, copyright_notice_submission_id
@@ -73,7 +73,7 @@ export async function insertOpenCopyrightDeadline(input: {
     ), review AS (
       INSERT INTO copyright_notice_counter_notice_reviews (
         copyright_notice_submission_id, copyright_notice_submission_assessment_id,
-        copyright_notice_deadline_id, reviewed_at, reviewed_by_id, accepted, rationale_ciphertext
+        copyright_notice_deadline_id, reviewed_at, reviewed_by_id, is_accepted, rationale_ciphertext
       )
       SELECT assessment.copyright_notice_submission_id, assessment.id, deadline.id,
         CURRENT_TIMESTAMP, ${input.actorUserId}, true, ${`rationale-${randomUUID()}`}
@@ -112,8 +112,8 @@ export async function insertAssessedCopyrightLegalHold(input: {
   const { rows } = await write<{ id: string }>(sql`/* insertAssessedCopyrightLegalHold */
     WITH assessment AS (
       INSERT INTO copyright_notice_legal_hold_assessments (
-        copyright_notice_submission_id, assessed_at, assessed_by_id, from_original_claimant,
-        proceeding_kind, commenced_at, received_by_designated_agent_at, same_material, rationale_ciphertext
+        copyright_notice_submission_id, assessed_at, assessed_by_id, is_from_original_claimant,
+        proceeding_kind, commenced_at, received_by_designated_agent_at, is_same_material, rationale_ciphertext
       ) VALUES (${submissionId}, CURRENT_TIMESTAMP, ${input.actorUserId}, ${qualifies},
         'federal_court', ${input.receivedAt}, ${input.agentReceivedAt ?? input.receivedAt}, true, ${`rationale-${randomUUID()}`})
       RETURNING id

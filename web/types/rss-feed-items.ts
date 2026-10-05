@@ -134,7 +134,7 @@ type RssFeedItemSearchResult = PaginatedResult<'rss_feed_item'> & {
   story_id: string | null
   entity_id?: string
   delivery_type?: 'direct' | 'share'
-  shared_by_user_id?: string
+  shared_by_id?: string
   shared_at?: string
 }
 

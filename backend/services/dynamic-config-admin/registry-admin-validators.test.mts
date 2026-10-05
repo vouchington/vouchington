@@ -5,7 +5,7 @@ import { RSS_FEED_CRAWL_MAX_VALUES } from '@services/rss-feeds/crawl-config'
 
 const VALID_RSS_FEED_CRAWL_FIELDS = {
   enabled: true,
-  ignore_robots_txt: true,
+  should_ignore_robots_txt: true,
   tier1_sla_ms: 1,
   tier2_sla_ms: 2,
   tier3_sla_ms: 3,

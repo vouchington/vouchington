@@ -56,7 +56,7 @@ export type MembershipRefund = {
   admin_request_fingerprint: string | null
   amount: StripeMoney
   reason: MembershipRefundReason
-  revoked_access: boolean
+  has_revoked_access: boolean
   issued_by_id: string | null
   source: MembershipRefundSource
   stripe_event_id: string | null
@@ -93,10 +93,10 @@ export type MembershipChange = {
   expired_at: Date | null
   past_due_at: Date | null
   paused_at: Date | null
-  cancel_at_period_end: boolean
+  should_cancel_at_period_end: boolean
   changed_by_id: string | null
   note: string | null
   stripe_event_id: string | null
-  membership_provider_evidence_id: string | null
+  membership_provider_evidence_record_id: string | null
   created_at: Date
 }

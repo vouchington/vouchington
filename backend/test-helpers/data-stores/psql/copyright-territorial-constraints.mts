@@ -62,7 +62,7 @@ async function insertReceipt(
   const { rows } = await transaction<{ id: string }>(sql`/* insertTerritorialReceipt */
     INSERT INTO copyright_territorial_notice_receipts (
       copyright_notice_id, jurisdiction, copyright_jurisdiction_policy_approval_id,
-      requester_user_id, requester_identity_sha256, idempotency_key, request_sha256, hosted_use_url, grounds_ciphertext, notifier_email_ciphertext, good_faith_statement
+      requester_user_id, requester_identity_sha256, idempotency_key, request_sha256, hosted_use_url, grounds_ciphertext, notifier_email_ciphertext, has_good_faith_statement
     ) VALUES (
       ${fixture.noticeId}, ${jurisdiction}, ${fixture.approvalId}, ${fixture.userId}, ${randomBytes(32)},
       ${randomUUID()}, ${randomBytes(32)}, 'https://example.test/use', 'grounds', ${jurisdiction === 'eu_dsa' ? 'notifier@example.test' : null}, ${jurisdiction === 'eu_dsa' ? true : null}

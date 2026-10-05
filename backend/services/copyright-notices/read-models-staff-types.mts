@@ -58,7 +58,7 @@ export type CopyrightStaffCase = {
     } | null
     /** The recorded moderator decision; null while the intake awaits review. */
     review: {
-      accepted: boolean
+      is_accepted: boolean
       reviewed_at: Date
       /** Null once the reviewing moderator's account is erased. */
       reviewed_by_id: string | null
@@ -94,12 +94,12 @@ export type CopyrightStaffCase = {
     guidance: CopyrightLegalHoldGuidance | null
     assessment: {
       id: string
-      from_original_claimant: boolean
+      is_from_original_claimant: boolean
       proceeding_kind: FiniteValue<'copyright_notice_legal_hold_assessment_proceeding_kinds'> | null
       ccb_claim_kind: FiniteValue<'copyright_notice_legal_hold_assessment_ccb_claim_kinds'> | null
       commenced_at: Date | null
       received_by_designated_agent_at: Date | null
-      same_material: boolean
+      is_same_material: boolean
       target_ids: string[]
       qualifying: boolean
       resolved: boolean

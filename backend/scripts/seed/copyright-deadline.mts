@@ -34,7 +34,7 @@ export async function seedCopyrightDeadline(input: {
   await using transaction = await beginTransaction()
   await transaction(sql`/* seedCopyrightDeadline:formReview */
     INSERT INTO copyright_notice_form_intake_reviews (
-      copyright_notice_form_intake_id, reviewed_at, reviewed_by_id, accepted, rationale_ciphertext
+      copyright_notice_form_intake_id, reviewed_at, reviewed_by_id, is_accepted, rationale_ciphertext
     ) VALUES (
       ${input.intakeId}, CURRENT_TIMESTAMP - INTERVAL '21 days', ${input.reviewerId}, true,
       ${encryptSecret('Complete notice from a named claimant.', `copyright-form-review:${input.intakeId}`)}
@@ -55,7 +55,7 @@ export async function seedCopyrightDeadline(input: {
     `)
     await transaction(sql`/* seedCopyrightDeadline:assessment */
       INSERT INTO copyright_notice_submission_assessments (
-        id, copyright_notice_submission_id, assessed_at, assessed_by_id, substantially_compliant
+        id, copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant
       ) VALUES (
         ${ASSESSMENT_ID}, ${SUBMISSION_ID}, CURRENT_TIMESTAMP - INTERVAL '19 days',
         ${input.reviewerId}, true
@@ -74,7 +74,7 @@ export async function seedCopyrightDeadline(input: {
     await transaction(sql`/* seedCopyrightDeadline:counterNoticeReview */
       INSERT INTO copyright_notice_counter_notice_reviews (
         copyright_notice_submission_id, copyright_notice_submission_assessment_id,
-        copyright_notice_deadline_id, reviewed_at, reviewed_by_id, accepted, rationale_ciphertext
+        copyright_notice_deadline_id, reviewed_at, reviewed_by_id, is_accepted, rationale_ciphertext
       ) VALUES (
         ${SUBMISSION_ID}, ${ASSESSMENT_ID}, ${DEADLINE_ID}, CURRENT_TIMESTAMP - INTERVAL '19 days',
         ${input.reviewerId}, true,

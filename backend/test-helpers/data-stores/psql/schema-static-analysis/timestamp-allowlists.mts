@@ -183,7 +183,10 @@ export const ALLOWED_MISSING_UPDATED_AT = new Map<string, string>([
     'activitypub_inbox_activities',
     'Append-only replay-dedup ledger; rows are inserted once by the inbox receiver and never updated.',
   ],
-  ['activitypub_post_likes', 'Undo/resurrect toggles deleted_at; redelivery refreshes like_ap_id.'],
+  [
+    'activitypub_post_likes',
+    'Undo/resurrect toggles deleted_at; redelivery refreshes like_activitypub_id.',
+  ],
   ['bluesky_follow_records', 'Redelivery refreshes record_uri; unfollow deletes the row.'],
 ])
 /* v8 ignore stop */

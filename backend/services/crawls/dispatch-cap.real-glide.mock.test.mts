@@ -26,7 +26,7 @@ describe('bounded crawl URL dispatch', () => {
     const owner = await createTestUser()
     const hostname = `bounded-tier-${randomUUID()}.example.com`
     const host = (await insertTestUrlDirect(owner.id, `https://${hostname}/base`))!.hostname
-    await updateUrlHostname(host.id, { crawlable: true })
+    await updateUrlHostname(host.id, { is_crawlable: true })
     await setTestRobotsTxtCache(hostname, 'User-agent: *\nAllow: /')
     const post = await createTestPost({ user: owner })
     const time = new Date(Date.UTC(2020, 0, 1) + Math.floor(Math.random() * 30_000_000_000))
@@ -67,7 +67,7 @@ describe('bounded crawl URL dispatch', () => {
       urls.push((await insertTestUrlDirect(owner.id, `https://${hostname}/${index}`))!)
     }
     const hostnameId = urls[0]!.hostname.id
-    await updateUrlHostname(hostnameId, { crawlable: true })
+    await updateUrlHostname(hostnameId, { is_crawlable: true })
     await updateUrlHostnameBlocked(hostnameId, false)
     overrideDynamicConfigFieldsForTest(crawlDispatchConfig, { batch_size: 1, max_rows_per_run: 1 })
     const savedCursors: CrawlDispatchCursor[] = []

@@ -49,7 +49,7 @@ export async function activateOldestQueuedGrant(
       SET effective_at = activated.started_at,
         expires_at = activated.started_at + candidate.remaining_duration,
         cancelled_at = NULL, expired_at = NULL, past_due_at = NULL, paused_at = NULL,
-        auto_renews = false, updated_at = CURRENT_TIMESTAMP
+        should_auto_renew = false, updated_at = CURRENT_TIMESTAMP
       FROM candidate INNER JOIN activated ON activated.membership_grant_id = candidate.id
       WHERE source_state.membership_source_id = candidate.membership_source_id
       RETURNING candidate.id AS membership_grant_id, candidate.membership_source_id,
@@ -75,7 +75,7 @@ export async function activateOldestQueuedGrant(
   const { rows: memberships } = await query(sql`/* activateOldestQueuedGrant: project grant */
     INSERT INTO memberships (
       user_id, membership_source_id, membership_product_id, effective_at, expires_at,
-      cancelled_at, expired_at, past_due_at, paused_at, cancel_at_period_end
+      cancelled_at, expired_at, past_due_at, paused_at, should_cancel_at_period_end
     ) VALUES (
       ${userId}, ${grant.membership_source_id}, ${grant.membership_product_id},
       ${grant.effective_at}, ${grant.expires_at}, NULL, NULL, NULL, NULL, false

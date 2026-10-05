@@ -26,8 +26,8 @@ export type Community = {
   list_type: CommunityListType | null
   member_invites_allowed_at: Date | null
   post_approval_required_at: Date | null
-  allow_review_posts: boolean
-  allow_data_point_posts: boolean
+  should_allow_review_posts: boolean
+  should_allow_data_point_posts: boolean
   automod_action: CommunityAutomodAction
   trusted_at: Date | null
   profile_image_id: string | null
@@ -67,7 +67,7 @@ export type CommunityApplicationQuestion = {
   field_type: 'short_text' | 'long_text' | 'single_select' | 'multi_select' | 'checkbox'
   options: string[] | null
   order_index: number
-  required: boolean
+  is_required: boolean
   created_at: Date
   deleted_at: Date | null
 }
@@ -96,7 +96,7 @@ export type CommunityInvite = {
   invited_email: string | null
   invited_by_id: string
   accepted_at: Date | null
-  accepted_by_user_id: string | null
+  accepted_by_id: string | null
   declined_at: Date | null
   revoked_at: Date | null
   created_at: Date

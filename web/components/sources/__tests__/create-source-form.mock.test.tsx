@@ -123,7 +123,7 @@ describe('CreateSourceForm', () => {
     await waitFor(() => {
       expect(vi.mocked(importExportApi.importRssFeeds)).toHaveBeenCalledWith({
         urls: ['https://a.com/feed.xml', 'https://b.com/feed.xml'],
-        follow: true,
+        should_follow_imported_feeds: true,
       })
     })
     await waitFor(() => {

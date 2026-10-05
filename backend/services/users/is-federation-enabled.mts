@@ -11,13 +11,13 @@ export async function isFederationEnabledForUser(
 ): Promise<boolean> {
   const run = options.query ?? read
   const { rows } = await run<{
-    fediverse_federation_enabled: boolean
+    is_fediverse_federation_enabled: boolean
   }>(sql`/* isFederationEnabledForUser */
-    SELECT fediverse_federation_enabled
+    SELECT is_fediverse_federation_enabled
     FROM users
     WHERE id = ${userId}
       AND deleted_at IS NULL
       AND platform_account_kind IS NULL
   `)
-  return rows[0]?.fediverse_federation_enabled ?? false
+  return rows[0]?.is_fediverse_federation_enabled ?? false
 }

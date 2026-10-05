@@ -46,7 +46,7 @@ export async function createModerationAppeal(
     ),
     upserted AS (
       INSERT INTO moderation_appeals (
-        appellant_id,
+        appellant_user_id,
         user_warning_id,
         community_ban_id,
         post_id,
@@ -73,14 +73,14 @@ export async function createModerationAppeal(
         ${provenance.createdVia},
         ${provenance.oauthClientId}
       )
-      ON CONFLICT (appellant_id, user_warning_id)
+      ON CONFLICT (appellant_user_id, user_warning_id)
       WHERE resolved_at IS NULL AND user_warning_id IS NOT NULL
       DO UPDATE SET
         appeal_reason = EXCLUDED.appeal_reason,
         updated_at = CURRENT_TIMESTAMP
       RETURNING
         (xmax = 0) AS inserted,
-        id, case_id, appellant_id, user_warning_id, community_ban_id, post_id, user_suspension_id, community_id, post_removal_kind,
+        id, case_id, appellant_user_id, user_warning_id, community_ban_id, post_id, user_suspension_id, community_id, post_removal_kind,
         appeal_reason,
         CASE
           WHEN resolved_at IS NULL THEN 'pending'
@@ -112,7 +112,7 @@ export async function createModerationAppeal(
     )
     SELECT
       inserted,
-      id, case_id, appellant_id, user_warning_id, community_ban_id, post_id, user_suspension_id, community_id, post_removal_kind,
+      id, case_id, appellant_user_id, user_warning_id, community_ban_id, post_id, user_suspension_id, community_id, post_removal_kind,
       appeal_reason, status, recommended_action, ai_public_response, ai_internal_response,
       model, ai_drafted_at, public_response, internal_notes, drafted_at, edited_at, edited_by_id,
       approved_at, approved_by_id, sent_at, resolved_at, resolved_by_id,
@@ -130,7 +130,7 @@ export async function createModerationAppeal(
     if (pgErr.code === '23505' && pgErr.constraint && duplicateConstraints.has(pgErr.constraint)) {
       const duplicateQuery = sql`/* createModerationAppeal:conflict */
         SELECT id FROM moderation_appeals
-        WHERE appellant_id = ${currentUser.id}
+        WHERE appellant_user_id = ${currentUser.id}
           AND resolved_at IS NULL
       `
       if (userWarningId) {

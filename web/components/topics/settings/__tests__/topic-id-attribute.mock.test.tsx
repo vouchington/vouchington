@@ -43,10 +43,10 @@ describe('TopicIdAttribute topicTypes filter', () => {
     expect(capturedTopicTypes[0]).toEqual(['rewards_program_status'])
   })
 
-  it('passes undefined (unfiltered) for company_id', () => {
+  it('passes undefined (unfiltered) for company_topic_id', () => {
     render(
       <TopicIdAttribute
-        fieldId='company_id'
+        fieldId='company_topic_id'
         label='Company'
         value={null}
         onChange={vi.fn<VitestLooseMock>()}
@@ -59,8 +59,8 @@ describe('TopicIdAttribute topicTypes filter', () => {
     expect(topicReferenceFieldTypes.rewards_program_id).toEqual(['rewards_program'])
     expect(topicReferenceFieldTypes.referral_program_id).toEqual(['referral_program'])
     expect(topicReferenceFieldTypes.lifetime_version_id).toEqual(['rewards_program_status'])
-    expect(topicReferenceFieldTypes.company_id).toBeNull()
-    expect(topicReferenceFieldTypes.bank_id).toBeNull()
-    expect(topicReferenceFieldTypes.brand_id).toBeNull()
+    expect(topicReferenceFieldTypes.company_topic_id).toBeNull()
+    expect(topicReferenceFieldTypes.bank_topic_id).toBeNull()
+    expect(topicReferenceFieldTypes.brand_topic_id).toBeNull()
   })
 })

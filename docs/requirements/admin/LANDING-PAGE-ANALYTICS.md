@@ -25,9 +25,9 @@ Three-stage funnel: **Visits → Clicks → Signups**
 
 - **Visits**: Total page visits from the analytics store's `web_page_view` (`page_kind = 'landing_page'`)
 - **Clicks**: Total item clicks from the analytics store's `web_click` (`page_kind = 'landing_page'`, `target_kind = 'item'`)
-- **Signups**: Users who signed up via the landing page owner's referral (`users.referrer_id = landingPage.user_id`)
+- **Signups**: Users who signed up via the landing page owner's referral (`users.referrer_user_id = landingPage.user_id`)
 
-Note: Signups are tracked at the user level (not per landing page), since `users.referrer_id` attributes signups to the referring user regardless of which specific landing page was visited. Admin analytics must use the landing page owner's user id, not the administrator viewing the page.
+Note: Signups are tracked at the user level (not per landing page), since `users.referrer_user_id` attributes signups to the referring user regardless of which specific landing page was visited. Admin analytics must use the landing page owner's user id, not the administrator viewing the page.
 
 ## UTM Tracking
 
@@ -48,7 +48,7 @@ Administrators can view analytics for any user's landing pages. Other staff role
 | `web_page_view`                 | Page visit events with UTM params (`page_kind = 'landing_page'`)             | Analytics store (`@data-stores/analytics`) |
 | `web_click`                     | Per-item click events (`page_kind = 'landing_page'`, `target_kind = 'item'`) | Analytics store (`@data-stores/analytics`) |
 | `session_referral_attributions` | Session-to-referrer mapping                                                  | PostgreSQL, not partitioned                |
-| `users.referrer_id`             | Signup attribution                                                           | PostgreSQL, N/A                            |
+| `users.referrer_user_id`        | Signup attribution                                                           | PostgreSQL, N/A                            |
 
 ## UI Location
 

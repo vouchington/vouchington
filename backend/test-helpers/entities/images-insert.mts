@@ -8,7 +8,7 @@ export async function insertTestImage(userId: string): Promise<string> {
   const { rows } = await write(sql`
     INSERT INTO images (
       created_by_id, sha_256, upload_started_at, upload_completed_at, data, s3_key,
-      openai_omni_moderation_results, openai_omni_moderation_flagged, openai_omni_moderation_created_at
+      openai_omni_moderation_results, is_flagged_by_openai_omni_moderation, openai_omni_moderation_created_at
     )
     VALUES (${userId}, ${sha256}, NOW(), NOW(), '{}', ${s3Key}, '[]'::jsonb, false, NOW())
     RETURNING id
@@ -24,7 +24,7 @@ export async function insertTestImageWithSha256(
   const { rows } = await write(sql`
     INSERT INTO images (
       created_by_id, sha_256, upload_started_at, upload_completed_at, data, s3_key,
-      openai_omni_moderation_results, openai_omni_moderation_flagged, openai_omni_moderation_created_at
+      openai_omni_moderation_results, is_flagged_by_openai_omni_moderation, openai_omni_moderation_created_at
     )
     VALUES (${userId}, ${sha256}, NOW(), NOW(), '{}', ${s3Key}, '[]'::jsonb, false, NOW())
     RETURNING id

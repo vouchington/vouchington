@@ -15,7 +15,10 @@ import PreferencesPage from './page'
 
 describe('PreferencesPage', () => {
   it('renders the shared settings header above the preferences form', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'user-1', hn_discussions: false })
+    mockGetCurrentUser.mockResolvedValue({
+      id: 'user-1',
+      should_import_hacker_news_discussions: false,
+    })
     render(await PreferencesPage())
 
     expect(screen.getByText('Display')).toBeInTheDocument()

@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS moderation_appeals (
   created_via content_creation_channels NOT NULL,
   created_via_oauth_client_id UUID,
   CONSTRAINT moderation_appeals_created_via_oauth_client_id_check CHECK (created_via_oauth_client_id IS NULL OR (created_via IS NOT NULL AND created_via IN ('api', 'mcp'))),
-  appellant_id uuid NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  appellant_user_id uuid NOT NULL REFERENCES users (id) ON DELETE CASCADE,
 
   -- Exactly one of these must be non-null (the thing being appealed)
   -- guardrails-disable-next-line uuid-must-be-key
@@ -120,22 +120,22 @@ CREATE INDEX IF NOT EXISTS idx_moderation_appeals__status_created
 -- One open appeal per (appellant, target) — partial unique indexes
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_moderation_appeals__one_open_warning
-  ON moderation_appeals (appellant_id, user_warning_id)
+  ON moderation_appeals (appellant_user_id, user_warning_id)
   WHERE resolved_at IS NULL AND user_warning_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_moderation_appeals__one_open_ban
-  ON moderation_appeals (appellant_id, community_ban_id)
+  ON moderation_appeals (appellant_user_id, community_ban_id)
   WHERE resolved_at IS NULL AND community_ban_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_moderation_appeals__one_open_post
-  ON moderation_appeals (appellant_id, post_id, post_removal_kind)
+  ON moderation_appeals (appellant_user_id, post_id, post_removal_kind)
   WHERE resolved_at IS NULL AND post_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_moderation_appeals__one_open_suspension
-  ON moderation_appeals (appellant_id, user_suspension_id)
+  ON moderation_appeals (appellant_user_id, user_suspension_id)
   WHERE resolved_at IS NULL AND user_suspension_id IS NOT NULL;
 
 -- FK-backing indexes
@@ -161,7 +161,7 @@ CREATE INDEX IF NOT EXISTS idx_moderation_appeals__user_suspension_id
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_appeals__appellant
-  ON moderation_appeals (appellant_id, id DESC);
+  ON moderation_appeals (appellant_user_id, id DESC);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_appeals__community_id
@@ -304,7 +304,7 @@ CREATE INDEX IF NOT EXISTS idx_moderator_actions__moderation_appeal_id
   WHERE moderation_appeal_id IS NOT NULL;
 
 COMMENT ON TABLE moderation_appeals IS 'Appeals filed by users against moderation actions (warnings, bans, post removals, platform suspensions). Goes through an AI-assisted draft + human-approval workflow before any response is delivered.';
-COMMENT ON COLUMN moderation_appeals.appellant_id IS 'The user who filed the appeal.';
+COMMENT ON COLUMN moderation_appeals.appellant_user_id IS 'The user who filed the appeal.';
 COMMENT ON COLUMN moderation_appeals.user_warning_id IS 'The warning being appealed; exactly one of user_warning_id, community_ban_id, post_id, user_suspension_id must be set.';
 COMMENT ON COLUMN moderation_appeals.community_ban_id IS 'The ban being appealed; exactly one of user_warning_id, community_ban_id, post_id, user_suspension_id must be set.';
 COMMENT ON COLUMN moderation_appeals.post_id IS 'The removed post being appealed; exactly one of user_warning_id, community_ban_id, post_id, user_suspension_id must be set.';

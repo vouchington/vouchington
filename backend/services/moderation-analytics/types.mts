@@ -55,7 +55,7 @@ export type AutomodPerformanceMetrics = {
 
 export type ModeratorWorkloadMetrics = {
   moderators: {
-    actor_id: string
+    actor_user_id: string
     total: number
     counts: Record<string, number>
     weekly_counts: DailyTypedCountDataPoint[]

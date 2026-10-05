@@ -35,7 +35,7 @@ export async function insertPostFeedShares(
     INSERT INTO post_feed_shares (
       recipient_user_id,
       id,
-      shared_by_user_id,
+      shared_by_id,
       post_id,
       sort_at
     )
@@ -85,7 +85,7 @@ export async function insertPostManualSendNotifications(
       id,
       entity_type,
       delivery_type,
-      sent_by_user_id,
+      sent_by_id,
       post_id,
       title,
       body,

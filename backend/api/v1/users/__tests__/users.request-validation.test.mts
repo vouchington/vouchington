@@ -181,7 +181,7 @@ describe('user routes - request contract validation', () => {
     it.each([
       ['an unknown field', { extra: true }],
       ['an unknown visibility', { follows_visibility: 'secret' }],
-      ['a string boolean', { engagement_emails_enabled: 'yes' }],
+      ['a string boolean', { is_engagement_emails_enabled: 'yes' }],
       ['a numeric username', { username: 5 }],
       ['an array body', []],
     ])('returns 422 for %s without changing the user', async (_name, body) => {
@@ -207,7 +207,7 @@ describe('user routes - request contract validation', () => {
       await request.authenticateAs(owner)
       const response = await request
         .patch(`/api/v1/users/${owner.id}`)
-        .send({ engagement_emails_enabled: false })
+        .send({ is_engagement_emails_enabled: false })
         .expect(200)
       expect(response.body.user.id).toBe(owner.id)
     })
@@ -217,7 +217,7 @@ describe('user routes - request contract validation', () => {
       await request.authenticateAs(stranger)
       await request
         .patch(`/api/v1/users/${owner.id}`)
-        .send({ engagement_emails_enabled: false })
+        .send({ is_engagement_emails_enabled: false })
         .expect(403)
     })
   })

@@ -35,7 +35,7 @@ function makeReviewPost(overrides?: Partial<Post>): Post {
     post_type: 'review',
     title: 'My Review',
     markdown: '',
-    root_id: null,
+    root_post_id: null,
     created_by_id: 'user-1',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),

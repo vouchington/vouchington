@@ -31,10 +31,10 @@
     "locked_at": null,
     "locked_by_id": null,
     "markdown": "Recommendation body",
-    "parent_id": null,
+    "parent_post_id": null,
     "post_type": "topic_recommendation",
     "privacy": "public",
-    "root_id": null,
+    "root_post_id": null,
     "slug": null,
     "title": "Native recommendation",
     "topic_recommendation": {

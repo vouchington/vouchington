@@ -49,11 +49,11 @@ describe('referral-programs', () => {
     } as unknown as Topic
 
     const attributes = await updateReferralProgramAttributes(user, topic, {
-      company_id: companyTopicId,
+      company_topic_id: companyTopicId,
     })
 
     assert.ok(attributes)
-    assert.equal(attributes.company_id, companyTopicId)
+    assert.equal(attributes.company_topic_id, companyTopicId)
   })
 
   it('getReferralProgramAttributes returns existing attributes', async () => {
@@ -65,7 +65,7 @@ describe('referral-programs', () => {
     const attributes = await getReferralProgramAttributes(topic)
 
     assert.ok(attributes)
-    assert.equal(attributes.company_id, companyTopicId)
+    assert.equal(attributes.company_topic_id, companyTopicId)
   })
 
   it('updateReferralProgramAttributes updates existing attributes', async () => {
@@ -75,11 +75,11 @@ describe('referral-programs', () => {
     } as unknown as Topic
 
     const attributes = await updateReferralProgramAttributes(user, topic, {
-      company_id: null,
+      company_topic_id: null,
     })
 
     assert.ok(attributes)
-    assert.equal(attributes.company_id, null)
+    assert.equal(attributes.company_topic_id, null)
   })
 
   it('updateReferralProgramAttributes rejects unauthenticated users', async () => {
@@ -89,7 +89,7 @@ describe('referral-programs', () => {
     } as unknown as Topic
 
     try {
-      await updateReferralProgramAttributes(null, topic, { company_id: companyTopicId })
+      await updateReferralProgramAttributes(null, topic, { company_topic_id: companyTopicId })
       assert.fail('Should have thrown')
     } catch (err: unknown) {
       assert.ok(err && typeof err === 'object' && 'status' in err)
@@ -104,7 +104,9 @@ describe('referral-programs', () => {
     } as unknown as Topic
 
     try {
-      await updateReferralProgramAttributes(user, nonReferralTopic, { company_id: companyTopicId })
+      await updateReferralProgramAttributes(user, nonReferralTopic, {
+        company_topic_id: companyTopicId,
+      })
       assert.fail('Should have thrown')
     } catch (err: unknown) {
       assert.ok(err && typeof err === 'object' && 'status' in err)

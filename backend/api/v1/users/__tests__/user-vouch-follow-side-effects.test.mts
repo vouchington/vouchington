@@ -27,8 +27,8 @@ describe('user vouch follow side effects', () => {
       'relation__user__follow__user',
       voter.id,
       target.id,
-    )) as Array<{ outbound_ap_follow_activity_id: string }>
-    const originalActivityId = relations[0]?.outbound_ap_follow_activity_id
+    )) as Array<{ outbound_activitypub_follow_activity_id: string }>
+    const originalActivityId = relations[0]?.outbound_activitypub_follow_activity_id
     expect(originalActivityId).toBeDefined()
 
     await upsertUserVouchElectionVotes(voter.id, [{ entityId: target.id, score: -2 }])

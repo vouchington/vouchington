@@ -40,7 +40,7 @@ app.route('/api/v1/admin/moderation-analytics').get(async (ctx: Context) => {
   const metrics = await getModerationAnalytics(range, { type: 'global' })
 
   metrics.moderator_workload.users = await getModeratorUsers(
-    metrics.moderator_workload.moderators.map(m => m.actor_id),
+    metrics.moderator_workload.moderators.map(m => m.actor_user_id),
   )
 
   ctx.json(apiResponse('GET:/api/v1/admin/moderation-analytics', metrics))

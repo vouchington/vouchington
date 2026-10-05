@@ -58,7 +58,7 @@ async function replayRejectedReview(screenFirst: boolean) {
   await createTestCopyrightFormIntakeReview({
     intakeId: notice.intake.id,
     moderatorId: moderator.id,
-    accepted: false,
+    is_accepted: false,
   })
   await expectRecoverableFormReview(notice.intake.id)
   await recoverRejectedCopyrightFormReviewEffect(notice.intake.id)
@@ -154,7 +154,7 @@ describe('copyright form-screening recovery', () => {
     const { moderator, aggregate, notice } = await replayRejectedReview(true)
     expect(aggregate?.assessments.at(-1)).toMatchObject({
       assessed_by_id: moderator.id,
-      substantially_compliant: false,
+      is_substantially_compliant: false,
     })
     expect(aggregate?.restrictions).toEqual(
       expect.arrayContaining([expect.objectContaining({ human_review_action: 'reverse' })]),
@@ -190,7 +190,7 @@ describe('copyright form-screening recovery', () => {
     expect(aggregate?.assessments).toEqual([
       expect.objectContaining({
         assessed_by_id: moderator.id,
-        substantially_compliant: false,
+        is_substantially_compliant: false,
       }),
     ])
     await expectNoFormEffect(notice.intake.copyright_notice_submission_id)

@@ -32,7 +32,7 @@ export default async function IdentityVerificationPage() {
       </div>
       <IdentityVerificationContent
         verificationStatus={data.verification_status}
-        verifiedBadgeVisible={data.verified_badge_visible}
+        verifiedBadgeVisible={data.is_verified_badge_visible}
         publicVerifiedNameDisplay={data.public_verified_name_display}
         verificationFee={formatVerificationFee(uiLocale)}
       />

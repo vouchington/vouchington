@@ -36,8 +36,8 @@ export async function searchWeb(options: WebSearchOptions): Promise<WebSearchRes
       JOIN crawls ON crawls.id = crawl_chunks.crawl_id
       JOIN urls ON urls.id = crawls.url_id
       JOIN url_hostnames ON url_hostnames.id = urls.hostname_id
-      WHERE url_hostnames.blocked = false
-        AND url_hostnames.crawlable = true
+      WHERE url_hostnames.is_blocked = false
+        AND url_hostnames.is_crawlable = true
         AND crawls.embeddings_generated_at IS NOT NULL
         AND crawls.response_status_code = 200
         AND crawls.completed_at IS NOT NULL
@@ -52,8 +52,8 @@ export async function searchWeb(options: WebSearchOptions): Promise<WebSearchRes
       FROM urls
       JOIN url_hostnames ON url_hostnames.id = urls.hostname_id
       WHERE urls.url ILIKE ${likeQuery}
-        AND url_hostnames.blocked = false
-        AND url_hostnames.crawlable = true
+        AND url_hostnames.is_blocked = false
+        AND url_hostnames.is_crawlable = true
         AND NOT EXISTS (
           SELECT 1 FROM content WHERE content.url_id = urls.id
         )

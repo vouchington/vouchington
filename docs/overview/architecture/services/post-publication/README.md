@@ -62,7 +62,9 @@ previous-receipt retention pages have independent durable cursors on the same at
 [`identity-source-paging.mts`](../../../../../backend/services/post-publication/identity-source-paging.mts) advances one source branch and its native
 indexed row key, limiting physical rows before mapping or filtering identities. Duplicate identities,
 deleted relations and aliases with no topic still advance source progress. Slug pages order by the
-slug within their exact post scope; this prevents generic plans from choosing a creation-time index
+slug within their exact post scope. The predicate uses scalar post equality and a direct slug
+range, so the generic plan can seek both columns of the composite index instead of applying a
+redundant leading-key tuple bound as a filter. This prevents choosing a creation-time index
 and sorting every slug for a high-fanout post. Relational insertion
 deduplicates their retained keys. Feed progress includes item/feed keys and an exhausted-item marker.
 Native item pages use capped source-existence probes, so source-less stories advance a whole item

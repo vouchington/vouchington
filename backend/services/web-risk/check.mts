@@ -55,7 +55,7 @@ export async function assertUrlAllowedByWebRisk(url: string): Promise<void> {
   if (!hasWebRiskApiKey()) return
 
   const policy = await getHostnamePolicy(parsed.hostname)
-  if (policy.skip_web_risk) return
+  if (policy.should_skip_web_risk) return
   if (await hasCleanCachedVerdict(parsed)) return
   if (await isProviderCoolingDown()) return
   if (await isLocallyRateLimited()) return
@@ -80,7 +80,7 @@ export async function assertUrlAllowedByWebRisk(url: string): Promise<void> {
 
   const blockedDomain = getRegistrableDomain(parsed.hostname)
   const blockPolicy = await getHostnamePolicy(blockedDomain)
-  if (blockPolicy.skip_web_risk) return
+  if (blockPolicy.should_skip_web_risk) return
 
   await blockWebRiskDomain(blockedDomain, parsed.toString(), threat)
   throw createHttpError(400, `Domain is blocked: ${blockedDomain}`)

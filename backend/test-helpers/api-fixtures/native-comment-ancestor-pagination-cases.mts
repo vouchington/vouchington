@@ -12,9 +12,9 @@ const boundedAncestorComments = Array.from({ length: 8 }, (_, index) =>
   completeNativePost({
     id: `bounded-ancestor-comment-${index}`,
     markdown: `Bounded ancestor comment ${index}`,
-    parent_id: index === 0 ? boundedAncestorRoot.id : `bounded-ancestor-comment-${index - 1}`,
+    parent_post_id: index === 0 ? boundedAncestorRoot.id : `bounded-ancestor-comment-${index - 1}`,
     post_type: 'comment',
-    root_id: boundedAncestorRoot.id,
+    root_post_id: boundedAncestorRoot.id,
     slug: null,
     title: '',
   }),

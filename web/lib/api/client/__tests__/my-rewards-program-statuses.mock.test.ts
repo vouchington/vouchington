@@ -23,11 +23,11 @@ describe('rewards program status client helpers', () => {
   it('encodes status identifiers as one path segment', async () => {
     mockedClientApi.patch.mockResolvedValueOnce({ rewards_program_status: {} } as never)
     mockedClientApi.delete.mockResolvedValueOnce(undefined)
-    await updateMyRewardsProgramStatus('status ?#%', { since: '2026-01-01' })
+    await updateMyRewardsProgramStatus('status ?#%', { started_on: '2026-01-01' })
     await deleteMyRewardsProgramStatus('status ?#%')
     expect(mockedClientApi.patch).toHaveBeenCalledWith(
       '/api/v1/my/rewards-program-statuses/status%20%3F%23%25',
-      { since: '2026-01-01' },
+      { started_on: '2026-01-01' },
     )
     expect(mockedClientApi.delete).toHaveBeenCalledWith(
       '/api/v1/my/rewards-program-statuses/status%20%3F%23%25',

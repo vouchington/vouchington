@@ -116,14 +116,14 @@ describe('modmail client api helpers', () => {
   })
 
   describe('assignModmailThread', () => {
-    it('PATCHes /api/v1/communities/:slug/modmail/:conversationId with assigned_mod_id', async () => {
-      const thread = { id: 'conv-1', assigned_mod_id: 'mod-1' }
+    it('PATCHes /api/v1/communities/:slug/modmail/:conversationId with assigned_moderator_user_id', async () => {
+      const thread = { id: 'conv-1', assigned_moderator_user_id: 'mod-1' }
       mockPatch.mockResolvedValueOnce({ thread })
 
       await assignModmailThread('my-community', 'conv-1', 'mod-1')
 
       expect(mockPatch).toHaveBeenCalledWith('/api/v1/communities/my-community/modmail/conv-1', {
-        assigned_mod_id: 'mod-1',
+        assigned_moderator_user_id: 'mod-1',
       })
     })
   })

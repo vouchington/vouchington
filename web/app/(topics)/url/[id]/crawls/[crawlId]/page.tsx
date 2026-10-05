@@ -34,7 +34,9 @@ export default async function CrawlDetailPage({
   const { crawl, og_image_sideload } = data
 
   const hasMetaData =
-    Object.keys(crawl.meta_tags ?? {}).length > 0 || !!crawl.lang || crawl.embed_metadata != null
+    Object.keys(crawl.meta_tags ?? {}).length > 0 ||
+    !!crawl.language ||
+    crawl.embed_metadata != null
 
   const urlPath = urlHref(id)
   const breadcrumbItems = buildBreadcrumbsForPath(urlPath, {
@@ -107,7 +109,7 @@ export default async function CrawlDetailPage({
         <CrawlMetaTags
           t={t}
           meta={crawl.meta_tags ?? {}}
-          lang={crawl.lang ?? null}
+          lang={crawl.language ?? null}
           ogImageSideload={og_image_sideload ?? null}
           embedMetadata={crawl.embed_metadata ?? null}
           crawlTitle={crawl.title ?? null}

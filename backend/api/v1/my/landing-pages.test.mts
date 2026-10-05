@@ -73,7 +73,7 @@ describe('Landing pages API', () => {
             type: 'topic_group',
             topic_id: topicId,
             entries: [
-              { type: 'review', review_id: reviewId },
+              { type: 'review', review_post_id: reviewId },
               { type: 'referral_link', referral_link_id: referralLinkId },
             ],
           },
