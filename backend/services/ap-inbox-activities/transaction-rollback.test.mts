@@ -9,7 +9,10 @@ import {
 import { createTestPost, withForcedTransactionRollbackForTest } from '@voucha/test-helpers'
 import { dispatchInboundActivity } from './dispatch-activity.mts'
 import { recordInboxActivity } from './record-activity.mts'
-import { createFederatedUser, createRemoteActorFixture } from './test-fixtures.mts'
+import {
+  createFederatedUser,
+  createRemoteActorFixture,
+} from '@voucha/test-helpers/ap-inbox-activity-fixtures'
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
 const followRelation = () =>

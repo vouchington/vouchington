@@ -3,7 +3,7 @@ import { createTestPost } from '@voucha/test-helpers'
 import { recordLike } from './record-like.mts'
 import { undoLike } from './undo-like.mts'
 import { getApPostLikesTally } from './get-tally.mts'
-import { createRemoteActorFixture } from './test-fixtures.mts'
+import { createRemoteActorFixture } from '@voucha/test-helpers/ap-post-likes-fixtures'
 
 describe('undoLike', () => {
   it('soft-deletes the active Like, dropping the tally to zero', async () => {

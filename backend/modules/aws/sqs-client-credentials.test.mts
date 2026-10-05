@@ -1,5 +1,5 @@
 import { describe } from 'vitest'
-import { registerClientCredentialEnvCases } from './client-credential-env-cases.mts'
+import { registerClientCredentialEnvCases } from '@voucha/test-helpers/aws-client-credential-env-cases'
 import { getSqsClientCredentials } from './sqs.mts'
 
 const ENV_KEYS = [

@@ -10,7 +10,7 @@ import {
   createFederatedUser,
   waitForDeliverActivityJobs,
   acceptJobsFor,
-} from './test-fixtures.mts'
+} from '@voucha/test-helpers/ap-inbox-activity-fixtures'
 import { activitypubDelivery } from '@queues/activitypub-delivery/queues'
 import {
   getEntityRelationDeletionState,

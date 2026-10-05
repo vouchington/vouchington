@@ -1,13 +1,10 @@
 import { expect, vi } from 'vitest'
-import type { SendResult } from 'web-push'
-import {
-  createTestUserDirect,
-  getTestNotificationPushReceipt,
-  getTestNotificationPushIntentLeaseExpiry,
-} from '@voucha/test-helpers'
-import { createFollowNotification } from '@services/notifications/create-follow-notification'
-import { upsertWebPushSubscription } from '@services/notifications/push-subscriptions'
-import { claimNotificationPushIntent } from './push-intents.mts'
+import { createTestUserDirect } from './entities/users-direct.mts'
+import { getTestNotificationPushIntentLeaseExpiry } from './entities/notification-push-intents.mts'
+import { getTestNotificationPushReceipt } from './notifications.mts'
+import { createFollowNotification } from '../services/notifications/create-follow-notification.mts'
+import { upsertWebPushSubscription } from '../services/notifications/push-subscriptions.mts'
+import { claimNotificationPushIntent } from '../services/notifications-push/push-intents.mts'
 
 export async function createDelivery(leaseSeconds = 120, endpointCount = 2) {
   const [recipient, follower] = await Promise.all([createTestUserDirect(), createTestUserDirect()])
@@ -61,6 +58,6 @@ export async function waitForDeliveredEndpoint(
   })
 }
 
-export function successfulSendResult(): SendResult {
+export function successfulSendResult() {
   return { statusCode: 201, body: '', headers: {} }
 }

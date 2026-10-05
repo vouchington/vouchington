@@ -3690,9 +3690,6 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../users
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -3719,12 +3716,6 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
     devDependencies:
-      '@modules/http-signatures':
-        specifier: workspace:^
-        version: link:../../modules/http-signatures
-      '@services/remote-actors':
-        specifier: workspace:^
-        version: link:../remote-actors
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers

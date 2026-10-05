@@ -16,7 +16,7 @@ import {
   expireActivityPubInboxDeliveries,
   type ActivityPubInboxEnvelope,
 } from './index.mts'
-import { createRemoteActorFixture } from './test-fixtures.mts'
+import { createRemoteActorFixture } from '@voucha/test-helpers/ap-inbox-activity-fixtures'
 import { runIsolatedDatabaseCase } from '../../../test-helpers/vitest-isolated-database-case.mts'
 import { getIsolatedDatabaseCaseMode } from '../../../test-helpers/vitest-isolated-database-cases.mts'
 

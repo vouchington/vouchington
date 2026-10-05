@@ -17,7 +17,7 @@ import {
 import {
   makeJsonResponse,
   VALID_REMOTE_ACTOR_PUBLIC_KEY_PEM,
-} from '@services/remote-actors/test-fixtures'
+} from '@voucha/test-helpers/remote-actor-fixtures'
 
 const FOLLOW_RELATION = {
   subjectType: 'remote_actor',
