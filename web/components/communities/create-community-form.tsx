@@ -89,7 +89,12 @@ export function CreateCommunityForm() {
       className='space-y-6'
     >
       {error && (
-        <div className='rounded-md bg-destructive/10 p-3 text-sm text-destructive'>{error}</div>
+        <div
+          role='alert'
+          className='rounded-md bg-destructive/10 p-3 text-sm text-destructive'
+        >
+          {error}
+        </div>
       )}
 
       <div className='space-y-2'>
@@ -102,10 +107,14 @@ export function CreateCommunityForm() {
           onChange={e => setName(e.target.value)}
           placeholder={t('extracted.communities.createCommunityForm.myAwesomeCommunity_1ede3c3e')}
           required
+          aria-invalid={nameTooShort ? 'true' : undefined}
+          aria-describedby={nameTooShort ? 'create-community-name-error' : undefined}
           data-pw='create-community-name-input'
         />
         {nameTooShort && (
           <p
+            id='create-community-name-error'
+            role='alert'
             className='text-xs text-destructive'
             data-pw='create-community-name-error'
           >

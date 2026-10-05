@@ -58,20 +58,29 @@ describe('CreateCommunityForm', () => {
     expect(screen.getByRole('button', { name: 'Create Community' })).toBeDisabled()
   })
 
-  it('shows a validation error when name has fewer than 3 words', async () => {
+  it('announces a short community name on the name field', async () => {
     render(<CreateCommunityForm />)
-    fireEvent.change(screen.getByLabelText('Community Name'), {
+    const nameInput = screen.getByLabelText('Community Name')
+    fireEvent.change(nameInput, {
       target: { value: 'Only Two' },
     })
-    expect(await screen.findByText('Community name must have at least 3 words')).toBeInTheDocument()
+    const nameError = await screen.findByRole('alert')
+    expect(nameError).toHaveTextContent('Community name must have at least 3 words')
+    expect(nameError).toHaveAttribute('id', 'create-community-name-error')
+    expect(nameInput).toHaveAttribute('aria-invalid', 'true')
+    expect(nameInput).toHaveAttribute('aria-describedby', 'create-community-name-error')
   })
 
   it('submit button is enabled when name has 3 or more words', () => {
     render(<CreateCommunityForm />)
-    fireEvent.change(screen.getByLabelText('Community Name'), {
+    const nameInput = screen.getByLabelText('Community Name')
+    fireEvent.change(nameInput, {
       target: { value: 'My New Community' },
     })
     expect(screen.getByRole('button', { name: 'Create Community' })).toBeEnabled()
+    expect(nameInput).not.toHaveAttribute('aria-invalid')
+    expect(nameInput).not.toHaveAttribute('aria-describedby')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
   it('keeps the submit button disabled after success while routing', async () => {
@@ -115,9 +124,7 @@ describe('CreateCommunityForm', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: 'Create Community' }))
 
-    await waitFor(() => {
-      expect(screen.getByText('Slug "foo" is already taken')).toBeInTheDocument()
-    })
+    expect(await screen.findByRole('alert')).toHaveTextContent('Slug "foo" is already taken')
   })
 
   it('opens the username dialog instead of showing a banner on IDENTITY_REQUIRED', async () => {
