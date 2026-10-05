@@ -11437,6 +11437,9 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
     devDependencies:
+      '@services/follower-distributions':
+        specifier: workspace:^
+        version: link:../services/follower-distributions
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5
