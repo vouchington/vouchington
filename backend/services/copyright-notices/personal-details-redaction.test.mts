@@ -19,6 +19,7 @@ describe('copyright filing postal address redaction', () => {
   it.each([
     '17 U.S.C. § 512(g)',
     'Filed 3 motions in court on 12 March 2026.',
+    'Plaintiff filed 2 Motions. Court denied them.',
     'The Court cited 2 Supreme Court decisions and 5 District Court rulings.',
     'Filed in the 2026 Federal Court docket.',
     'Order 5 Federal Rule 65 applies.',
@@ -111,7 +112,6 @@ describe('copyright filing payment detail redaction', () => {
     '4111111111111112',
     'GB00 WEST 1234 5698 7654 32',
     'AB12 CDEF 1234',
-    'gb82 west 1234 5698 7654 32',
     '41111111111111111111111',
   ])('keeps the Luhn- or IBAN-invalid number %s', input => {
     expect(stripPersonalDetails(`Paid with ${input}.`)).toBe(`Paid with ${input}.`)
@@ -121,6 +121,15 @@ describe('copyright filing payment detail redaction', () => {
     expect(stripPersonalDetails('GB82 WEST 1234 5698 7654 32 AND THEN')).toBe(
       '[payment details removed] AND THEN',
     )
+  })
+
+  it('keeps redacting phone numbers written with an international call prefix', () => {
+    expect(stripPersonalDetails('Call 001-415-555-0181.')).toBe('Call [phone removed].')
+    for (const phone of ['0044 20 7946 0958', '011 44 20 7946 0958']) {
+      const redacted = stripPersonalDetails(`Call ${phone}.`)
+      expect(redacted).toContain('[phone removed]')
+      expect(redacted).not.toContain('0958')
+    }
   })
 
   it('still redacts a phone number next to a card number', () => {

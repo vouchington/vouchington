@@ -33,7 +33,10 @@ const streetType = [
   String.raw`(?<!\b(?:${tribunalWords})\s+)(?:court\b|ct\b\.?)`,
   String.raw`(?:suite|apt)\b\.?\s*#?\s*(?=[\w-]*\d)[\w-]+`,
 ].join('|')
-const streetNameWord = String.raw`(?-i:[A-Z][\w'’.-]*|\d{1,3}(?:st|nd|rd|th))`
+// A dot is only allowed on a short abbreviation ("N.", "St."), so a name never runs across the
+// end of a sentence such as "filed 2 Motions. Court denied". The leading `[A-Z]` is factored out
+// of the alternation on purpose: V8 loses `(?-i:...)` for branches that share a leading class.
+const streetNameWord = String.raw`(?-i:[A-Z](?:[A-Za-z]{0,2}\.|[\w'’-]*)|\d{1,3}(?:st|nd|rd|th))`
 
 /** Street number, street name, and street-type word, then an optional unit and locality. */
 export const streetAddress = String.raw`(?<![\w#$./:-])\d{1,5}\s+(?:${streetNameWord}\s+){1,4}?(?:${streetType})${unit}${locality}`
@@ -55,6 +58,8 @@ const dateValue = [
 // otherwise claim the date alone. At most three plain words may sit between label and date.
 export const dateOfBirth = String.raw`(?<dobLabel>(?<![\w])(?:DOB|D\.O\.B\.|date\s+of\s+birth|birth\s*date|born)(?![a-z])[\s:]*(?:[a-z]+\s+){0,3}?)(?:${dateValue})\b`
 
-// Card numbers are checked with Luhn and IBANs with mod-97 by the caller.
-export const cardNumber = String.raw`(?<![\w-])\d(?:[ -]?\d){12,18}(?![\w-])`
+// Card numbers are checked with Luhn and IBANs with mod-97 by the caller. A card is 13-19
+// contiguous digits or a printed grouping (4-4-4-4, 4-4-4-4-3, 4-4-4-1, 4-6-4, 4-6-5), so phone
+// numbers such as "0044 20 7946 0958" never enter this branch and keep their phone redaction.
+export const cardNumber = String.raw`(?<![\w-])(?:\d{13,19}|\d{4}(?:[ -]\d{4}){3}(?:[ -]\d{1,3})?|\d{4}(?:[ -]\d{4}){2}[ -]\d|\d{4}[ -]\d{6}[ -]\d{4,5})(?![\w-])`
 export const ibanNumber = String.raw`(?-i:(?<![\w])[A-Z]{2}\d{2}(?: ?[A-Z\d]{4})(?: ?(?=[A-Z]{0,3}\d)[A-Z\d]{4}){1,6}(?: ?(?=[A-Z]{0,2}\d)[A-Z\d]{1,3})?(?![\w]))`
