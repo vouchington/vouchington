@@ -1,0 +1,41 @@
+id: route-admin-jsx-tags
+language: Tsx
+severity: hint
+message: JSX final-name fact for route-admin policy
+rule:
+  any:
+    - all:
+        - kind: jsx_opening_element
+        - has:
+            field: name
+            any:
+              - all:
+                  - kind: identifier
+                  - pattern: $JSX_NAME
+              - all:
+                  - kind: member_expression
+                  - has:
+                      field: property
+                      pattern: $JSX_NAME
+    - all:
+        - kind: jsx_self_closing_element
+        - has:
+            field: name
+            any:
+              - all:
+                  - kind: identifier
+                  - pattern: $JSX_NAME
+              - all:
+                  - kind: member_expression
+                  - has:
+                      field: property
+                      pattern: $JSX_NAME
+examples:
+  - code: |
+      return <Layout.PageWithAside />
+    isValid: false
+    file: web/components/route-page.tsx
+  - code: |
+      return <Layout:PageWithAside />
+    isValid: true
+    file: web/components/route-page.tsx

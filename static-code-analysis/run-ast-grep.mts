@@ -34,5 +34,9 @@ const statuses = [
   scanTrackedBackendPackageManifests(),
   runAstGrepExamples(pack),
   runAstGrepExamples({ rules: 'ast-grep-rules', config: 'sgconfig.yml' }),
+  runAstGrepExamples({
+    rules: 'static-code-analysis/repo-file-policy/ast-grep-queries',
+    config: 'sgconfig.yml',
+  }),
 ]
 process.exitCode = statuses.find(status => status !== 0) ?? 0

@@ -1,0 +1,35 @@
+id: route-admin-function-bodies
+language: Tsx
+severity: hint
+message: function body fact for route-admin policy
+rule:
+  any:
+    - all:
+        - kind: function_declaration
+        - has:
+            field: name
+            pattern: $FUNCTION_NAME
+        - has:
+            field: body
+            all:
+              - kind: statement_block
+              - pattern: $FUNCTION_BODY
+    - all:
+        - kind: generator_function_declaration
+        - has:
+            field: name
+            pattern: $FUNCTION_NAME
+        - has:
+            field: body
+            all:
+              - kind: statement_block
+              - pattern: $FUNCTION_BODY
+examples:
+  - code: |
+      function routePage() { return null }
+    isValid: false
+    file: web/lib/routes/route-page.tsx
+  - code: |
+      function routePage(): void;
+    isValid: true
+    file: web/lib/routes/route-page.tsx

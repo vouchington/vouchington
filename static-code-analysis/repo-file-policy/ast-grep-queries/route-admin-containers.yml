@@ -1,0 +1,27 @@
+id: route-admin-containers
+language: Tsx
+severity: hint
+message: statement-container fact for route-admin policy
+rule:
+  any:
+    - all:
+        - kind: statement_block
+        - pattern: $CONTAINER
+    - all:
+        - kind: if_statement
+        - pattern: $CONTAINER
+    - all:
+        - kind: switch_statement
+        - pattern: $CONTAINER
+    - all:
+        - kind: labeled_statement
+        - pattern: $CONTAINER
+examples:
+  - code: |
+      if (enabled) { run() }
+    isValid: false
+    file: web/lib/routes/route-page.tsx
+  - code: |
+      const enabled = true
+    isValid: true
+    file: web/lib/routes/route-page.tsx

@@ -1,0 +1,34 @@
+id: route-admin-function-declarations
+language: Tsx
+severity: hint
+message: function declaration fact for route-admin policy
+rule:
+  any:
+    - all:
+        - kind: function_declaration
+        - has:
+            field: name
+            pattern: $FUNCTION_NAME
+    - all:
+        - kind: generator_function_declaration
+        - has:
+            field: name
+            pattern: $FUNCTION_NAME
+    - all:
+        - kind: function_signature
+        - has:
+            field: name
+            pattern: $FUNCTION_NAME
+examples:
+  - code: |
+      function routePage() {}
+    isValid: false
+    file: web/lib/routes/route-page.tsx
+  - code: |
+      function routePage(): void;
+    isValid: false
+    file: web/lib/routes/route-page.tsx
+  - code: |
+      const routePage = () => {}
+    isValid: true
+    file: web/lib/routes/route-page.tsx
