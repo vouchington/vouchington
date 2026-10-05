@@ -165,7 +165,7 @@ export async function withGoogleWebRiskTest(
       await Promise.all(fixtures.splice(0).map(owned => owned.cleanup()))
     } finally {
       fetchSpy?.mockRestore()
-      for (const restore of restores.splice(0).reverse()) restore()
+      for (const restore of restores.splice(0).toReversed()) restore()
       vi.unstubAllEnvs()
     }
   }
