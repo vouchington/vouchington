@@ -156,7 +156,7 @@ describe('POST /api/v1/my/import/rss-feeds — CSV via JSON body', () => {
     const response = await request
       .post('/api/v1/my/import/rss-feeds')
       .set('Content-Type', 'application/json')
-      .send({ urls: ['https://example.com/rss', '   ', ''], follow: true })
+      .send({ urls: ['https://example.com/rss', '   ', ''], should_follow_imported_feeds: true })
       .expect(201)
 
     expect(response.body.import).toBeDefined()
@@ -168,7 +168,7 @@ describe('POST /api/v1/my/import/rss-feeds — CSV via JSON body', () => {
     await request
       .post('/api/v1/my/import/rss-feeds')
       .set('Content-Type', 'application/json')
-      .send({ follow: true })
+      .send({ should_follow_imported_feeds: true })
       .expect(422)
   })
 })

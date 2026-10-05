@@ -188,8 +188,8 @@ export async function setTestCommunityPostReviewPlatformOverride(
 /** The per-prompt projection rows C8 wrote for a post, by prompt, with the digest they cover. */
 export async function readCommunityModerationProjection(
   postId: string,
-): Promise<Array<{ prompt_id: string; flagged: boolean; input_sha256: Buffer }>> {
-  const { rows } = await read<{ prompt_id: string; flagged: boolean; input_sha256: Buffer }>(sql`
+): Promise<Array<{ prompt_id: string; is_flagged: boolean; input_sha256: Buffer }>> {
+  const { rows } = await read<{ prompt_id: string; is_flagged: boolean; input_sha256: Buffer }>(sql`
     /* readCommunityModerationProjection */
     SELECT prompt_id, is_flagged, input_sha256 FROM agent_moderations
     WHERE post_id = ${postId} ORDER BY prompt_id

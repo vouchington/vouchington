@@ -150,16 +150,20 @@ export async function insertCompletedEmptyBatches(
   fixture: ComparisonFixture,
   count: number,
   startAt: Date,
+  options: { subject?: TopicRelationSubject; communityId?: string } = {},
 ): Promise<string[]> {
   const ids = Array.from({ length: count }, (_, index) =>
     uuidv7({ msecs: startAt.getTime() + index }),
   )
   await write(sql`/* insertClassifierFixtureEmptyBatches */
     INSERT INTO classifier_decision_batches (
-      id, classifier_id, prompt_version_id, post_id, scope_category
+      id, classifier_id, prompt_version_id, post_id, rss_feed_item_id,
+      scope_category, scope_community_id
     )
-    SELECT batch_id, ${fixture.classifierId}, ${fixture.promptVersionId}, ${fixture.postId},
-      'global'
+    SELECT batch_id, ${fixture.classifierId}, ${fixture.promptVersionId},
+      ${(options.subject ?? postSubject(fixture)).postId},
+      ${(options.subject ?? postSubject(fixture)).rssFeedItemId},
+      ${options.communityId ? 'community_ai' : 'global'}, ${options.communityId ?? null}
     FROM unnest(${ids}::uuid[]) AS batch_id
   `)
   await write(sql`/* completeClassifierFixtureEmptyBatches */

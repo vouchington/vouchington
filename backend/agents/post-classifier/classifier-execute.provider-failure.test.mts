@@ -97,7 +97,7 @@ describe('post classifier provider failures (real receipts, real client)', () =>
         provider_attempts_started: 1,
       })
       expect(await getPostClassifierLocalOutcomeFacts(input.run.runId)).toMatchObject({
-        flagged: true,
+        is_flagged: true,
         classification: 'ai',
         detector: 'test-detector',
       })

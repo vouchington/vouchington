@@ -103,11 +103,12 @@ export async function getTestPostPublicationDirtyWorkGenerationForAuthor(
 }
 
 export async function setTestPostPublicationDirtyWorkTopicCursor(params: {
-  column: 'author_user_id' | 'rss_feed_id'
+  column: 'author_identity_id' | 'rss_feed_identity_id'
   scopeId: string
   cursorTopicId: string
 }): Promise<void> {
-  const column = params.column === 'author_user_id' ? sql`author_user_id` : sql`rss_feed_id`
+  const column =
+    params.column === 'author_identity_id' ? sql`author_identity_id` : sql`rss_feed_identity_id`
   const statement = sql`
     /* setTestPostPublicationDirtyWorkTopicCursor */
     UPDATE post_publication_dirty_work
@@ -119,10 +120,11 @@ export async function setTestPostPublicationDirtyWorkTopicCursor(params: {
 }
 
 export async function getTestPostPublicationDirtyWorkTopicCursor(params: {
-  column: 'author_user_id' | 'rss_feed_id'
+  column: 'author_identity_id' | 'rss_feed_identity_id'
   scopeId: string
 }): Promise<{ generation: string; cursor_topic_id: string | null } | undefined> {
-  const column = params.column === 'author_user_id' ? sql`author_user_id` : sql`rss_feed_id`
+  const column =
+    params.column === 'author_identity_id' ? sql`author_identity_id` : sql`rss_feed_identity_id`
   const statement = sql`
     /* getTestPostPublicationDirtyWorkTopicCursor */
     SELECT generation, cursor_topic_id

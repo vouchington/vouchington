@@ -14,8 +14,8 @@ describe('deleteOfficialReferralLink', () => {
   let testHostname: string
 
   beforeAll(async () => {
-    // Ensure the @voucha system user exists
-    await upsertSystemUser('voucha')
+    // Ensure the @voucha official account exists
+    await upsertSystemUser('voucha', 'official')
 
     const adminUser = await createTestUser({ administrator: true })
     if (!adminUser) throw new Error('Failed to create admin user')

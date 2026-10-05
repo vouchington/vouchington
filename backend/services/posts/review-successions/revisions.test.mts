@@ -12,7 +12,10 @@ import {
 } from '@voucha/test-helpers'
 import { getPostByAny } from '../get.mts'
 import { updatePost } from '../update.mts'
-import { streamEntityReconciliationCandidateBatches } from '@services/entity-listener-reconciliation/reconciliation'
+import {
+  streamEntityReconciliationCandidateBatches,
+  type EntityReconciliationCandidate,
+} from '@services/entity-listener-reconciliation/reconciliation'
 import { reconcileReviewSuccessionsForPostIds } from './index.mts'
 import { listReviewSuccessionsForPostIds } from './list.mts'
 
@@ -75,11 +78,21 @@ describe('review succession post revisions', () => {
 
     const revisionIds = new Set(restored.map(revision => revision.id))
     const candidates = []
-    for await (const batch of streamEntityReconciliationCandidateBatches({
-      start: windowStart,
-      end: new Date(Date.now() + 60_000),
-    })) {
-      candidates.push(...batch.filter(candidate => revisionIds.has(candidate.changeId ?? '')))
+    const window = { start: windowStart, end: new Date(Date.now() + 60_000) }
+    let after: EntityReconciliationCandidate | undefined
+    let hasMore = true
+    const onComplete = (result: { hasMore: boolean }) => {
+      hasMore = result.hasMore
+    }
+    while (hasMore) {
+      hasMore = false
+      for await (const batch of streamEntityReconciliationCandidateBatches(window, {
+        after,
+        onComplete,
+      })) {
+        after = batch.at(-1)
+        candidates.push(...batch.filter(candidate => revisionIds.has(candidate.changeId ?? '')))
+      }
     }
     expect(candidates).toHaveLength(2)
     for (const candidate of candidates) {

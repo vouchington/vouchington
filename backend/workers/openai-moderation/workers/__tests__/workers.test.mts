@@ -162,6 +162,10 @@ describe('openai moderation single worker', () => {
   })
 
   it('runs image quarantine reconciliation jobs', async () => {
+    if (getIsolatedDatabaseCaseMode('openai-image-quarantine-reconciliation') === 'parent') {
+      await runIsolatedDatabaseCase('openai-image-quarantine-reconciliation')
+      return
+    }
     await expect(
       handleOpenAIModerationOmniSingleJob(
         makeJob('reconcile_image_quarantines', randomUUID()),

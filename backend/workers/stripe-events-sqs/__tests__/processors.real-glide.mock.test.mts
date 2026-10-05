@@ -105,7 +105,7 @@ describe('processStripeEventsSqsMessage', () => {
       stripeEventRecordId: stored!.id,
       processingAttemptId: stored!.processing_attempt_id,
       stripeSubscriptionId: subscriptionId,
-      livemode: true,
+      isLiveMode: true,
     })
     expect(jobs[0]?.opts.deduplication).toEqual({ id: jobId, mode: 'simple' })
     expect(jobs[0]?.opts.ordering).toEqual({
@@ -121,7 +121,7 @@ describe('processStripeEventsSqsMessage', () => {
     createdRecordIds.push(stored!.id)
 
     const [job] = await findStripeEventJobsFor(stored!.id)
-    expect(job?.data).toMatchObject({ stripeSubscriptionId: null, livemode: false })
+    expect(job?.data).toMatchObject({ stripeSubscriptionId: null, isLiveMode: false })
     expect(job?.opts.ordering).toBeUndefined()
   })
 

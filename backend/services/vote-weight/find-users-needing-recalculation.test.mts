@@ -15,6 +15,16 @@ import { adminSetVoteWeight } from './admin-set.mts'
 
 const randomUsername = () => `test-vw-find-${randomBytes(4).toString('hex')}`
 
+async function createOwnedTestUser() {
+  const users = await Promise.all([
+    createTestUserDirect({ username: randomUsername() }),
+    createTestUserDirect({ username: randomUsername() }),
+  ])
+  if (!users[0] || !users[1]) throw new Error('Expected owned vote-weight fixtures')
+  const [earlier, later] = users.toSorted((a, b) => a!.id.localeCompare(b!.id))
+  return { user: later!, afterId: earlier!.id }
+}
+
 // Note: the 7-day, 30-day, 1-year, 2-year, and 5-year threshold branches all require
 // users whose account UUIDs encode a timestamp that far in the past. Since UUIDv7 IDs
 // encode the current creation time, these thresholds cannot be integration-tested with
@@ -33,30 +43,30 @@ describe('findUsersNeedingVoteWeightRecalculation', () => {
   }, 60_000)
 
   it('excludes a user with vote_weight_admin_set_at set', async () => {
-    const user = await createTestUserDirect({ username: randomUsername() })
+    const { user, afterId } = await createOwnedTestUser()
     await adminSetVoteWeight(user!.id, user!.id, 5)
-    const { userIds } = await findUsersNeedingVoteWeightRecalculation(null, 10_000)
+    const { userIds } = await findUsersNeedingVoteWeightRecalculation(afterId, 10_000)
     expect(userIds).not.toContain(user!.id)
   }, 60_000)
 
   it('excludes a recently recalculated user (no age threshold crossed)', async () => {
-    const user = await createTestUserDirect({ username: randomUsername() })
+    const { user, afterId } = await createOwnedTestUser()
     await setTestUserVoteWeightRecalculatedAt(user!.id, new Date(Date.now() - 120_000))
-    const { userIds } = await findUsersNeedingVoteWeightRecalculation(null, 10_000)
+    const { userIds } = await findUsersNeedingVoteWeightRecalculation(afterId, 10_000)
     expect(userIds).not.toContain(user!.id)
   }, 60_000)
 
   it('includes a user after a finite grant expires', async () => {
-    const user = await createTestUserDirect({ username: randomUsername() })
+    const { user, afterId } = await createOwnedTestUser()
     const membership = await createTestMembership({ user_id: user!.id, plan: 'plus' })
     await setTestUserVoteWeightRecalculatedAt(user!.id, new Date(Date.now() - 120_000))
     await updateTestMembershipExpiresAt(membership.id, new Date(Date.now() - 60_000))
-    const { userIds } = await findUsersNeedingVoteWeightRecalculation(null, 10_000)
+    const { userIds } = await findUsersNeedingVoteWeightRecalculation(afterId, 10_000)
     expect(userIds).toContain(user!.id)
   }, 60_000)
 
   it('does not include a user for an elapsed direct provider term', async () => {
-    const user = await createTestUserDirect({ username: randomUsername() })
+    const { user, afterId } = await createOwnedTestUser()
     const membership = await createTestMembership({
       user_id: user!.id,
       plan: 'plus',
@@ -65,13 +75,13 @@ describe('findUsersNeedingVoteWeightRecalculation', () => {
     await updateTestMembershipExpiresAt(membership.id, new Date(Date.now() - 60_000))
     await setTestUserVoteWeightRecalculatedAt(user!.id, new Date(Date.now() - 120_000))
 
-    const { userIds } = await findUsersNeedingVoteWeightRecalculation(null, 10_000)
+    const { userIds } = await findUsersNeedingVoteWeightRecalculation(afterId, 10_000)
 
     expect(userIds).not.toContain(user!.id)
   }, 60_000)
 
   it('includes a user when current family evidence is rejected after recalculation', async () => {
-    const user = await createTestUserDirect({ username: randomUsername() })
+    const { user, afterId } = await createOwnedTestUser()
     const sku = await createTestSku({
       plan: 'plus',
       provider_application_id: `vote-weight-rejected-family-${randomUUID()}`,
@@ -86,13 +96,13 @@ describe('findUsersNeedingVoteWeightRecalculation', () => {
     await setTestUserVoteWeightRecalculatedAt(user!.id, new Date(Date.now() - 60_000))
     await rejectTestMembershipProviderEvidence(family.id)
 
-    const { userIds } = await findUsersNeedingVoteWeightRecalculation(null, 10_000)
+    const { userIds } = await findUsersNeedingVoteWeightRecalculation(afterId, 10_000)
 
     expect(userIds).toContain(user!.id)
   }, 60_000)
 
   it('includes a user when family source authority is paused after recalculation', async () => {
-    const user = await createTestUserDirect({ username: randomUsername() })
+    const { user, afterId } = await createOwnedTestUser()
     await setTestUserVoteWeightRecalculatedAt(user!.id, new Date(Date.now() - 60_000))
     const sku = await createTestSku({
       plan: 'plus',
@@ -107,13 +117,13 @@ describe('findUsersNeedingVoteWeightRecalculation', () => {
       userId: user!.id,
     })
 
-    const { userIds } = await findUsersNeedingVoteWeightRecalculation(null, 10_000)
+    const { userIds } = await findUsersNeedingVoteWeightRecalculation(afterId, 10_000)
 
     expect(userIds).toContain(user!.id)
   }, 60_000)
 
   it('includes a user when a newly observed family expiry was already elapsed', async () => {
-    const user = await createTestUserDirect({ username: randomUsername() })
+    const { user, afterId } = await createOwnedTestUser()
     await setTestUserVoteWeightRecalculatedAt(user!.id, new Date(Date.now() - 60_000))
     const sku = await createTestSku({
       plan: 'plus',
@@ -129,13 +139,13 @@ describe('findUsersNeedingVoteWeightRecalculation', () => {
       userId: user!.id,
     })
 
-    const { userIds } = await findUsersNeedingVoteWeightRecalculation(null, 10_000)
+    const { userIds } = await findUsersNeedingVoteWeightRecalculation(afterId, 10_000)
 
     expect(userIds).toContain(user!.id)
   }, 60_000)
 
   it('includes a user when an observed family source becomes effective', async () => {
-    const user = await createTestUserDirect({ username: randomUsername() })
+    const { user, afterId } = await createOwnedTestUser()
     const sku = await createTestSku({
       plan: 'plus',
       provider_application_id: `vote-weight-effective-family-${randomUUID()}`,
@@ -151,13 +161,13 @@ describe('findUsersNeedingVoteWeightRecalculation', () => {
     await setTestMembershipSourceStateUpdatedAt(family.id, new Date(Date.now() - 180_000))
     await setTestUserVoteWeightRecalculatedAt(user!.id, new Date(Date.now() - 90_000))
 
-    const { userIds } = await findUsersNeedingVoteWeightRecalculation(null, 10_000)
+    const { userIds } = await findUsersNeedingVoteWeightRecalculation(afterId, 10_000)
 
     expect(userIds).toContain(user!.id)
   }, 60_000)
 
   it('includes a user when a family projection expires before its source', async () => {
-    const user = await createTestUserDirect({ username: randomUsername() })
+    const { user, afterId } = await createOwnedTestUser()
     const sku = await createTestSku({
       plan: 'plus',
       provider_application_id: `vote-weight-projection-family-${randomUUID()}`,
@@ -175,7 +185,7 @@ describe('findUsersNeedingVoteWeightRecalculation', () => {
     await setTestMembershipSourceStateUpdatedAt(family.id, new Date(Date.now() - 180_000))
     await setTestUserVoteWeightRecalculatedAt(user!.id, new Date(Date.now() - 90_000))
 
-    const { userIds } = await findUsersNeedingVoteWeightRecalculation(null, 10_000)
+    const { userIds } = await findUsersNeedingVoteWeightRecalculation(afterId, 10_000)
 
     expect(userIds).toContain(user!.id)
   }, 60_000)

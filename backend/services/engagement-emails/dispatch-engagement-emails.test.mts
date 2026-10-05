@@ -1,3 +1,5 @@
+import { runIsolatedDatabaseCase } from '../../../test-helpers/vitest-isolated-database-case.mts'
+import { getIsolatedDatabaseCaseMode } from '../../../test-helpers/vitest-isolated-database-cases.mts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createTestUser,
@@ -26,6 +28,10 @@ describe('dispatchEngagementEmails', () => {
   })
 
   it('dispatches follow-topic recommendations based on missing topic follows, not signup age', async () => {
+    if (getIsolatedDatabaseCaseMode('engagement-email-dispatch-1') === 'parent') {
+      await runIsolatedDatabaseCase('engagement-email-dispatch-1')
+      return
+    }
     const random = Math.random().toString(36).slice(2, 10)
     const admin = await createTestUser({ administrator: true })
     const user = await createTestUserWithAge(12 * 60 * 60 * 1000)
@@ -46,9 +52,13 @@ describe('dispatchEngagementEmails', () => {
     await expect(dispatchEngagementEmails()).resolves.toBeUndefined()
 
     await expect(claimEngagementEmailSend(user.id, 'follow_topics')).resolves.toBe(false)
-  })
+  }, 240_000)
 
   it('dispatches follow-news-sources recommendations to eligible users', async () => {
+    if (getIsolatedDatabaseCaseMode('engagement-email-dispatch-2') === 'parent') {
+      await runIsolatedDatabaseCase('engagement-email-dispatch-2')
+      return
+    }
     const random = Math.random().toString(36).slice(2, 10)
     const admin = await createTestUser({ administrator: true })
     const user = await createTestUserWithAge(3.5 * 24 * 60 * 60 * 1000)
@@ -73,9 +83,13 @@ describe('dispatchEngagementEmails', () => {
     await dispatchEngagementEmails()
 
     await expect(claimEngagementEmailSend(user.id, 'follow_news_sources')).resolves.toBe(false)
-  })
+  }, 240_000)
 
   it('dispatches follow-topic recommendations to eligible users', async () => {
+    if (getIsolatedDatabaseCaseMode('engagement-email-dispatch-3') === 'parent') {
+      await runIsolatedDatabaseCase('engagement-email-dispatch-3')
+      return
+    }
     const random = Math.random().toString(36).slice(2, 10)
     const admin = await createTestUser({ administrator: true })
     const user = await createTestUserWithAge(1.5 * 24 * 60 * 60 * 1000)
@@ -96,9 +110,13 @@ describe('dispatchEngagementEmails', () => {
     await dispatchEngagementEmails()
 
     await expect(claimEngagementEmailSend(user.id, 'follow_topics')).resolves.toBe(false)
-  })
+  }, 240_000)
 
   it('dispatches referral-link recommendations to eligible users', async () => {
+    if (getIsolatedDatabaseCaseMode('engagement-email-dispatch-4') === 'parent') {
+      await runIsolatedDatabaseCase('engagement-email-dispatch-4')
+      return
+    }
     const random = Math.random().toString(36).slice(2, 10)
     const admin = await createTestUser({ administrator: true })
     const user = await createTestUserWithAge(2.5 * 24 * 60 * 60 * 1000)
@@ -126,18 +144,26 @@ describe('dispatchEngagementEmails', () => {
     await dispatchEngagementEmails()
 
     await expect(claimEngagementEmailSend(user.id, 'post_referral_link')).resolves.toBe(false)
-  })
+  }, 240_000)
 
   it('claims follow-topic recipients with no recommendations so later users can be considered', async () => {
+    if (getIsolatedDatabaseCaseMode('engagement-email-dispatch-5') === 'parent') {
+      await runIsolatedDatabaseCase('engagement-email-dispatch-5')
+      return
+    }
     const user = await createTestUserWithAge(1.5 * 24 * 60 * 60 * 1000)
 
     await dispatchEngagementEmails()
 
     await expect(hasEngagementEmailSent(user.id, 'follow_topics')).resolves.toBe(false)
     await expect(claimEngagementEmailSend(user.id, 'follow_topics')).resolves.toBe(false)
-  })
+  }, 240_000)
 
   it('claims follow-news-source recipients with no recommendations so later users can be considered', async () => {
+    if (getIsolatedDatabaseCaseMode('engagement-email-dispatch-6') === 'parent') {
+      await runIsolatedDatabaseCase('engagement-email-dispatch-6')
+      return
+    }
     const user = await createTestUserWithAge(3.5 * 24 * 60 * 60 * 1000)
     const admin = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 10)
@@ -159,7 +185,7 @@ describe('dispatchEngagementEmails', () => {
 
     await expect(hasEngagementEmailSent(user.id, 'follow_news_sources')).resolves.toBe(false)
     await expect(claimEngagementEmailSend(user.id, 'follow_news_sources')).resolves.toBe(false)
-  })
+  }, 240_000)
 
   it('builds follow-topic items from recommendation order', () => {
     vi.stubEnv('SITE_ORIGIN', 'https://app.example.test')
