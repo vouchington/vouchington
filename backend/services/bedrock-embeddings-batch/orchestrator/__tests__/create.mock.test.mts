@@ -11,7 +11,7 @@ import {
   getTestBatchEntities,
   getTestBatchSummary,
 } from '@voucha/test-helpers/entities/bedrock-embeddings-batches'
-import { createBatch } from './create.mts'
+import { createBatch } from '../create.mts'
 
 vi.mock<typeof import('@modules/aws/s3-bedrock-batch')>(
   import('@modules/aws/s3-bedrock-batch'),
