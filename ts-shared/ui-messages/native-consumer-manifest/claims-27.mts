@@ -3,9 +3,7 @@ import type { NativeConsumerManifestEntry } from './types.mts'
 /** Canonical credential-management claims, kept in code-point key order. */
 export const NATIVE_CONSUMER_MANIFEST_CLAIMS_27 = [
   { key: 'native.credentials.action', consumers: ['dotnet', 'swift'] },
-  { key: 'native.credentials.adminAudience', consumers: ['dotnet', 'swift'] },
   { key: 'native.credentials.apiAudience', consumers: ['dotnet', 'swift'] },
-  { key: 'native.credentials.audience', consumers: ['dotnet', 'swift'] },
   { key: 'native.credentials.catalogLoadFailed', consumers: ['dotnet', 'swift'] },
   { key: 'native.credentials.chooseScopes', consumers: ['dotnet', 'swift'] },
   { key: 'native.credentials.connectedApps', consumers: ['dotnet', 'swift'] },

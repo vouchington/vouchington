@@ -98,8 +98,6 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_10 = [
   { key: 'native.swift.chat.unableToPersistOnDeviceResponse', consumers: ['swift'] },
   { key: 'native.swift.chat.unableToSendMessage', consumers: ['swift'] },
   { key: 'native.swift.chat.you', consumers: ['swift'] },
-  { key: 'native.swift.chatMessageBubble.subagentSteps', consumers: ['swift'] },
-  { key: 'native.swift.chatMessageBubble.subagentText', consumers: ['dotnet', 'swift'] },
   { key: 'native.swift.chatMessageBubble.toolCalls', consumers: ['swift'] },
   { key: 'native.swift.chatMessageBubble.toolResults', consumers: ['swift'] },
   { key: 'native.swift.commentThread.ancestorChain', consumers: ['dotnet', 'swift'] },

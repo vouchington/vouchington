@@ -49,7 +49,6 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_04 = [
   { key: 'native.dotnet.chatConversation.openAiHosted', consumers: ['dotnet'] },
   { key: 'native.dotnet.chatConversation.responseInterrupted', consumers: ['dotnet'] },
   { key: 'native.dotnet.chatConversation.setUpWindowsModel', consumers: ['dotnet'] },
-  { key: 'native.dotnet.chatConversation.subagentStep', consumers: ['dotnet'] },
   { key: 'native.dotnet.chatConversation.toolCall', consumers: ['dotnet'] },
   { key: 'native.dotnet.chatConversation.toolResult', consumers: ['dotnet'] },
   { key: 'native.dotnet.chatConversation.windowsModelDisabled', consumers: ['dotnet'] },
