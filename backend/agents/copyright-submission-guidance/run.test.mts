@@ -117,7 +117,7 @@ describe('copyright submission guidance agent', () => {
     for (const sentinel of [
       'Sentinel Name',
       'Sentinel Terrace',
-      '555',
+      '+1 (555) 010-0100',
       'Sentinel Signature',
       'Sentinel Claimant Display',
       'Sentinel Claimant Signature',
