@@ -502,7 +502,7 @@ CREATE TABLE copyright_notice_action_attempt_results (
   attempt_id uuid PRIMARY KEY REFERENCES copyright_notice_action_attempts(id) ON DELETE CASCADE,
   completed_at timestamptz,
   stale_at timestamptz,
-  blocked_at timestamptz,
+  blocked_at timestamptz, -- moderation-history-guard-allow: immutable action-attempt outcome; restriction state stays in copyright_restrictions.
   failed_at timestamptz,
   abandoned_at timestamptz,
   CHECK (num_nonnulls(completed_at, stale_at, blocked_at, failed_at, abandoned_at) = 1)

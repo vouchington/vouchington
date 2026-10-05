@@ -1,9 +1,14 @@
 import { read, write } from '@data-stores/psql'
-import type { InsertTestOAuthAuthorizationOptions } from './oauth-authorizations.mts'
+
+type TestOAuthExchangeAttemptOptions = {
+  exchangeAttempts?: number
+  exchangeClaimId?: string
+  updatedAt?: Date
+}
 
 export async function seedTestOAuthExchangeAttempts(
   authorizationId: string,
-  options: InsertTestOAuthAuthorizationOptions,
+  options: TestOAuthExchangeAttemptOptions,
 ): Promise<void> {
   const count = Math.max(options.exchangeAttempts ?? 0, options.exchangeClaimId ? 1 : 0)
   if (count === 0) return

@@ -55,6 +55,7 @@ export async function prepareRenewalPriceIncreaseNotification(
       price_minor_units, currency_code, effective_at
     ) SELECT membership_id, membership_provider_observation_id, membership_provider_product_id,
       price_minor_units, currency_code, effective_at FROM candidate
+    ORDER BY membership_id ASC NULLS LAST
     ON CONFLICT (membership_id) DO UPDATE SET
       membership_provider_observation_id = EXCLUDED.membership_provider_observation_id,
       membership_provider_product_id = EXCLUDED.membership_provider_product_id,
