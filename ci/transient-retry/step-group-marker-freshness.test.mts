@@ -48,6 +48,35 @@ function stepHeaderGroups(yamlPath: string): string[][] {
   )
 }
 
+const externalActionWorkflowRoots = [
+  '../../.github/workflows/',
+  '../../.github/actions/',
+  '../../ci/no-mistakes-workflows/',
+]
+
+function collectExternalActionUsesPrefixes(moduleUrl: string): Set<string> {
+  const prefixes = new Set<string>()
+  for (const relativeRoot of externalActionWorkflowRoots) {
+    addExternalActionUsesPrefixes(new URL(relativeRoot, moduleUrl), prefixes)
+  }
+  return prefixes
+}
+
+function addExternalActionUsesPrefixes(directory: URL, prefixes: Set<string>): void {
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    if (entry.isDirectory()) {
+      addExternalActionUsesPrefixes(new URL(`${entry.name}/`, directory), prefixes)
+      continue
+    }
+    if (!entry.name.endsWith('.yml') && !entry.name.endsWith('.yaml')) continue
+    const contents = readFileSync(new URL(entry.name, directory), 'utf8')
+    for (const match of contents.matchAll(/^[ \t]*(?:-[ \t]+)?uses:[ \t]+([^ \t#]+)@/gm)) {
+      const action = match[1]
+      if (action !== undefined && !action.startsWith('./')) prefixes.add(`${action}@`)
+    }
+  }
+}
+
 // Freshness + no duplicate: the expected jobs must contain a marker, and at most one step per job
 // may match it. Two identical `run:`
 // steps would both satisfy `header !== marker` as false and so both get excluded from the prefix
@@ -134,6 +163,8 @@ describe('step-group-marker-freshness', () => {
     // Every '##[group]Run ' literal declared anywhere in this directory's *.mts sources must be one
     // of the markers asserted above — so adding a new step-header marker with no guard row fails
     // this test instead of failing silently the way the original PR #10604 markers did.
+    // A third-party action header is only a prefix ending in `@`. Table A checks exact repo-owned
+    // `run:` and local `uses:` steps, so that prefix is accepted while a workflow still invokes it.
     const tableAMarkers = new Set([
       cloudflareWorkerTscStepMarker,
       oxlintTypeAwareStepMarker,
@@ -142,6 +173,8 @@ describe('step-group-marker-freshness', () => {
 
     const sourceDir = new URL('.', import.meta.url)
     const markerLiteralPattern = /'(##\[group\]Run [^']*)'/g
+    const stepGroupRunPrefix = '##[group]Run '
+    const externalActionUsesPrefixes = collectExternalActionUsesPrefixes(import.meta.url)
 
     it('every declared ##[group]Run marker is covered by Table A', () => {
       const uncovered: string[] = []
@@ -154,9 +187,12 @@ describe('step-group-marker-freshness', () => {
         const contents = readFileSync(new URL(entry.name, sourceDir), 'utf8')
         for (const match of contents.matchAll(markerLiteralPattern)) {
           const marker = match[1]
-          if (!tableAMarkers.has(marker)) {
-            uncovered.push(`${entry.name}: ${marker}`)
-          }
+          if (marker === undefined || tableAMarkers.has(marker)) continue
+          const actionPrefix = marker.startsWith(stepGroupRunPrefix)
+            ? marker.slice(stepGroupRunPrefix.length)
+            : ''
+          if (actionPrefix.endsWith('@') && externalActionUsesPrefixes.has(actionPrefix)) continue
+          uncovered.push(`${entry.name}: ${marker}`)
         }
       }
 

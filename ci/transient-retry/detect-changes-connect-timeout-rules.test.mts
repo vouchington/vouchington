@@ -6,11 +6,20 @@ import { RULES, type WorkflowRunContext } from './rules.mts'
 const detectChangesJobName = 'changes / detect-changes'
 const connectTimeoutAnnotation = 'Connect Timeout Error'
 const ruleId = 'detect-changes-paths-filter-github-connect-timeout'
+// Generated at runtime so the fixture does not embed a Git SHA or an exact action pin.
+// The classifier accepts any paths-filter or checkout ref.
+const pathsFilterActionSha = '0'.repeat(40)
+const otherPathsFilterActionSha = 'a'.repeat(40)
+const checkoutActionSha = 'b'.repeat(40)
+
+function pathsFilterStepHeader(sha: string): string {
+  return `##[group]Run dorny/paths-filter@${sha}`
+}
 
 // Trimmed from Cloudflare Worker run 37302066554, job changes / detect-changes.
-// The paths-filter token line is omitted. The action SHA is real log text, not a matcher pin.
+// The paths-filter token line is omitted. Action refs are synthetic.
 const pathsFilterConnectTimeoutLog = [
-  '2026-10-05T11:18:45.7039308Z ##[group]Run dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d',
+  `2026-10-05T11:18:45.7039308Z ${pathsFilterStepHeader(pathsFilterActionSha)}`,
   '2026-10-05T11:18:45.7039849Z with:',
   '2026-10-05T11:18:45.7040132Z   filters: .github/ci-path-filters.yml',
   '2026-10-05T11:18:45.7042958Z   list-files: none',
@@ -57,8 +66,8 @@ describe('detect-changes-paths-filter-github-connect-timeout', () => {
 
   it('matches after the paths-filter action SHA changes', async () => {
     const log = pathsFilterConnectTimeoutLog.replace(
-      'ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d',
-      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      pathsFilterActionSha,
+      otherPathsFilterActionSha,
     )
     await expect(decide(makeCtx({ failedJobLogs: logsFor(log) }), RULES)).resolves.toMatchObject({
       decision: 'rerun',
@@ -108,7 +117,7 @@ describe('detect-changes-paths-filter-github-connect-timeout', () => {
 
   it('does not match a connect timeout before listFiles starts', async () => {
     const log = [
-      '##[group]Run dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d',
+      pathsFilterStepHeader(pathsFilterActionSha),
       '##[error]Connect Timeout Error',
     ].join('\n')
     await expect(decide(makeCtx({ failedJobLogs: logsFor(log) }), RULES)).resolves.toEqual({
@@ -119,7 +128,7 @@ describe('detect-changes-paths-filter-github-connect-timeout', () => {
 
   it('does not match a connect timeout in a different step', async () => {
     const log = [
-      '##[group]Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1',
+      `##[group]Run actions/checkout@${checkoutActionSha}`,
       '##[error]Connect Timeout Error',
       pathsFilterConnectTimeoutLog.replace(
         '##[error]Connect Timeout Error',
