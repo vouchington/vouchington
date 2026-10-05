@@ -52,17 +52,18 @@ describe('CopyrightNoticeForm', () => {
     mockNav.reset()
   })
 
-  it('discloses the current public profile before submission', () => {
+  it('discloses what a case shows about the filer before submission', () => {
     render(<CopyrightNoticeForm />)
 
     expect(screen.getByRole('link', { name: 'profile' })).toHaveAttribute(
       'href',
       '/user/current-claimant',
     )
-    expect(screen.getByText(/public profile to signed-in members/i)).toBeInTheDocument()
+    expect(screen.getByText(/never show the legal name you give in a notice/i)).toBeInTheDocument()
     expect(
-      screen.getByText(/legal name, contact details, and signature stay private/i),
+      screen.getByText(/public profile name and a link to your profile on accepted cases/i),
     ).toBeInTheDocument()
+    expect(screen.getByText(/contact details and signature stay private/i)).toBeInTheDocument()
   })
 
   it('warns about §512(f) misrepresentation liability above the submit button', () => {

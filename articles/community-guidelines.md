@@ -62,7 +62,7 @@ Do not target people because of protected characteristics, private personal info
 
 Signed-in users can report posts, comments, user profiles, RSS feed items, and domains. Reports create moderation queue items for review. They do not automatically remove material.
 
-Moderators may use automated checks, AI-assisted judgement, community moderation tools, and human review. AI recommendations are advisory. Human moderators make final enforcement decisions for escalated cases.
+Moderators may use automated checks, AI-assisted judgement, community moderation tools, and human review. Automated checks can reject a post or remove an image before a person reviews it. AI recommendations on reports are advisory, and human moderators make final enforcement decisions for escalated cases.
 
 ## Copyright Reports
 
@@ -70,15 +70,16 @@ Copyright reports follow a separate legal process. They are not ordinary moderat
 the US copyright process is active, anyone can submit a structured notice through the form, with or
 without signing in, or send a notice by email to the designated agent, and an affected poster can
 appeal or submit a counter-notice. CAPTCHA helps prevent abuse. It does not decide whether a claim
-is legally valid. A copyright moderator reviews every notice. An AI agent may assist, but it does
-not decide.
+is legally valid. A copyright moderator makes every copyright decision. AI tools summarize notices
+for moderators; they do not decide.
 
 Do not submit false, misleading, or abusive copyright notices or counter-notices. Voucha may take
 account action for repeated abuse after human review. Repeat infringement is handled under the
 repeat-infringer policy in Section 10 of the Terms of Service. Accepted copyright case records are
 visible to signed-in members. When a signed-in member filed the notice, a record shows that
-member's current public profile if it still exists. Records do not reveal legal names, contact
-details, signatures, raw correspondence, evidence, moderator rationale, or agent analysis.
+member's current public profile if it still exists. Records do not reveal the legal name given in a
+notice, contact details, signatures, raw correspondence, evidence, moderator rationale, or agent
+analysis.
 
 See [Copyright and the DMCA on Voucha](./copyright-and-dmca.md) and
 [How Copyright Complaints Work](./copyright-complaints.md) for more detail on the copyright process.

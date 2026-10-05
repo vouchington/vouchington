@@ -19,12 +19,16 @@ export default function RepeatInfringerPolicyPage() {
           A copyright incident counts against an account when a copyright moderator confirms a
           restriction on that account&apos;s post, including on appeal.
         </li>
+        <li>Restrictions confirmed under EU or UK notices also count.</li>
         <li>Confirmed restrictions from one notice count as one incident.</li>
         <li>
           An incident stops counting when a copyright moderator reverses every confirmed restriction
           behind it or records that the notice was withdrawn, a duplicate, or abusive.
         </li>
-        <li>Restoring material after a counter-notice does not remove an incident.</li>
+        <li>
+          If we restore material because the person who filed the notice did not file a court action
+          after a valid counter-notice, that incident no longer counts.
+        </li>
       </ul>
       <h2 className='text-xl font-semibold'>Review and termination</h2>
       <ul className='list-disc space-y-1 pl-5'>

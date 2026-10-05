@@ -14,7 +14,7 @@ Voucha respects copyright. If someone posts your work without permission, you ca
 
 ## Where Things Stand
 
-Our copyright process handles US claims under the Digital Millennium Copyright Act (DMCA). It opens once our designated agent is registered with the US Copyright Office. Until then, we don't accept copyright notices. The designated agent status page, `/copyright/designated-agent`, shows the current status and will list the agent's contact details once they're published.
+Our copyright process handles US claims under the Digital Millennium Copyright Act (DMCA). It opens when we launch copyright intake. Until then, we don't accept copyright notices. The designated agent status page, `/copyright/designated-agent`, shows the current status of our US Copyright Office registration and will list the agent's contact details once they're published.
 
 ## What the Process Covers
 
@@ -22,7 +22,7 @@ Right now the process covers images in Voucha posts. A notice names each image b
 
 ## A Person Reviews Every Notice
 
-We may use automated tools to screen or summarize a notice, and automatic provisional withholding may hide an image pending review. A person reviews the decision. Each notice explains whether automated tools assisted or imposed a provisional restriction. We don't act on a notice that's missing required information.
+A moderator makes every copyright decision. AI tools summarize notices for moderators; they do not decide. If we ever let a system restrict material before a moderator reviews it, we will update this policy first. Each notice to a poster explains whether automated tools assisted. We don't act on a notice that's missing required information.
 
 A case records a claim. It doesn't mean the poster infringed anything, and it doesn't prove that the person who filed it owns the work.
 
@@ -35,7 +35,7 @@ A case records a claim. It doesn't mean the poster infringed anything, and it do
 
 ## What Other Members Can See
 
-Signed-in members can see accepted cases: the dates, the post link, whether the image is hidden, and the claimant's current public Voucha profile. Case pages never show anyone's legal name, email, mailing address, signature, or the evidence behind a case.
+Signed-in members can see accepted cases: the dates, the post link, whether the image is hidden, and, when a signed-in member filed the notice, that member's public profile name and a link to their profile. We never show the legal name given in a notice. Case pages also never show anyone's email, mailing address, signature, or the evidence behind a case.
 
 ## If Your Image Was Taken Down
 

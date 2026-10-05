@@ -77,7 +77,7 @@ We use your information to operate Voucha, including:
 
 ### Content Moderation
 
-Voucha uses automated tools, including OpenAI's API, to help moderate submitted content for policy violations. **We use OpenAI solely for moderation purposes. We do not sell your data to AI companies, and your content is not used to train AI models.**
+Voucha uses automated tools, including OpenAI's API, to help moderate submitted content for policy violations. Automated screening can reject a flagged post and remove a flagged image before a person reviews it. AI agents and human moderators review content after that screening. See [How Moderation Works](./how-moderation-works.md) for the layers of review. Copyright notices follow a separate process, described below. **We use OpenAI solely for moderation purposes. We do not sell your data to AI companies, and your content is not used to train AI models.**
 
 ### Copyright Process
 
@@ -86,11 +86,12 @@ appeals, counter-notices, email correspondence, and supporting evidence to asses
 copyright case. This can include names, contact details, signatures, hosted-use URLs, descriptions
 of copyrighted work, the original email, attachments, and correspondence metadata.
 
-A copyright moderator reviews each notice and makes every decision on it. An AI agent assists the
-moderator: it screens form notices for spam or obvious invalidity, structures emailed notices, gives
-the moderator a recommendation, and may draft a message that a moderator must approve before it is
-sent. The agent does not decide whether a notice is valid. It cannot restrict material, open a
-case, or send a message on its own.
+A copyright moderator makes every copyright decision. AI tools summarize notices for moderators;
+they do not decide. An AI agent screens form notices for spam or obvious invalidity, structures
+emailed notices, gives the moderator a recommendation, and may draft a message that a moderator must
+approve before it is sent. The agent cannot restrict material, open a case, or send a message on its
+own. If we ever let a system restrict material before a moderator reviews it, we will update this
+policy first.
 
 When a notice leads to a restriction, the affected poster receives a notice that names the case.
 That notice does not include the claimant's contact details or signature. If you submit a US
@@ -104,9 +105,17 @@ restriction status, and a timeline of event types and dates. They link to the af
 when the viewer could otherwise see that post, and the post shows its author as usual. When a
 signed-in member filed the notice and still has a public profile, the record shows that member's
 current public profile name and links to their profile. A notice sent by email, or from an account
-that has since been deleted, shows no claimant profile. Case records never show legal names,
-contact details, signatures, raw email, evidence, moderator rationale, or agent analysis. Other
-private case data is restricted to case participants where appropriate and to authorized staff.
+that has since been deleted, shows no claimant profile. Case records never show the legal name given
+in a notice, contact details, signatures, raw email, evidence, moderator rationale, or agent
+analysis. Other private case data is restricted to case participants where appropriate and to
+authorized staff.
+
+If the GDPR applies to you, we rely on these legal bases for copyright processing:
+
+- **Legal obligation (Article 6(1)(c)):** only for handling notices under EU or Member State law,
+  such as Digital Services Act Article 16 and 17 notices and statements of reasons.
+- **Legitimate interests (Article 6(1)(f)):** US DMCA notices and counter-notices, protecting rights
+  holders, enforcing our Terms of Service, and keeping records for legal process or possible claims.
 
 See [Copyright and the DMCA on Voucha](./copyright-and-dmca.md) and
 [How Copyright Complaints Work](./copyright-complaints.md) for more detail on the copyright process.
@@ -192,21 +201,20 @@ Each of these providers has their own privacy policy. We select providers who ma
 - **Billing records** — retained as required by financial regulations (typically 7 years); the email address associated with your Stripe customer record is redacted when you delete your account
 - **Security logs** — retained for up to 12 months
 - **Vote integrity flags** — retained for the life of the account; anonymized upon account deletion
-- **Copyright case records and evidence** — we have not set fixed retention periods. We keep
-  notices, appeals, counter-notices, correspondence, evidence, and case decisions at least while any
-  of these applies:
-  - the case, a staff review, or a statutory deadline, such as a counter-notice restoration window,
-    is still open;
-  - a legal hold, court action, or Copyright Claims Board proceeding is unresolved;
-  - the record shows how we handled a notice, counter-notice, or restoration under 17 U.S.C.
-    §512(g), or supports an incident that still counts under our repeat-infringer policy under 17
-    U.S.C. §512(i); or
-  - a civil copyright claim about the material could still be brought. The limit is generally three
-    years after the claim accrues (17 U.S.C. §507(b)).
+- **Copyright case records and evidence** — we keep US copyright notices, appeals, counter-notices,
+  correspondence, evidence, and case decisions for three years after the case's last activity. This
+  follows the general limit for civil copyright claims (17 U.S.C. §507(b)). The three years do not
+  start while any of these is open:
+  - the case, a staff review, or a statutory deadline, such as a counter-notice restoration window;
+  - a restriction that is still in force;
+  - a legal hold, court action, or Copyright Claims Board proceeding that is unresolved; or
+  - an incident that still counts under our repeat-infringer policy under 17 U.S.C. §512(i).
 
-  Deleting your account does not delete copyright case records. We do not delete copyright evidence
-  automatically: deletion needs an approved retention policy and a separate human decision. We do
-  not publish private evidence or correspondence.
+  After that, we delete the evidence and the personal data in the case, such as names, contact
+  details, signatures, and message text. We keep a minimal record for the repeat-infringer policy:
+  that we received the notice, our decisions, the dates, and the repeat-infringer facts. Deleting
+  your account does not delete copyright case records. We do not publish private evidence or
+  correspondence.
 
 ---
 
@@ -214,7 +222,7 @@ Each of these providers has their own privacy policy. We select providers who ma
 
 ### Access
 
-You may request a copy of your personal data at any time from your account settings. We will prepare a downloadable archive (ZIP file) containing your profile, posts, votes, and bookmarks. Exports are typically ready within a few minutes.
+You may request a copy of your personal data at any time from your account settings. We will prepare a downloadable archive (ZIP file) of CSV files with your account data, described under Data Export below. Exports are typically ready within a few minutes.
 
 ### Correction
 
@@ -222,7 +230,13 @@ You may update your account information, username, and profile at any time from 
 
 ### Deletion
 
-You may delete your account at any time from your account settings, except while a copyright matter blocks it. Deletion is refused while your account has a copyright incident that still counts under our repeat-infringer policy, or while a qualifying court or Copyright Claims Board hold on one of your posts is unresolved. Otherwise, account deletion is immediate and irreversible. Upon deletion:
+You may delete your account at any time from your account settings, except in these cases, where we refuse deletion:
+
+- while your account has a copyright incident that still counts under our repeat-infringer policy;
+- while a qualifying court or Copyright Claims Board hold on one of your posts is unresolved; or
+- while we must preserve records because of legal process.
+
+Otherwise, account deletion is immediate and irreversible. Upon deletion:
 
 - Your email, phone number, and linked social accounts are permanently removed
 - Your posts remain on the platform attributed to [deleted]
@@ -232,12 +246,11 @@ To delete your account, go to Settings and confirm by typing "delete my account.
 
 ### Data Export (Portability)
 
-Your data export contains:
+Your data export is a ZIP file of CSV files, grouped here by category:
 
-- `profile.csv` — username, display preferences, bio, settings, created date
-- `posts.csv` — all posts created by you
-- `votes.csv` — all votes you cast
-- `bookmarks.csv` — saves, follows, hides, and other bookmarks
+- **Profile and sign-in** — `profile.csv` (username, display preferences, bio, settings, created date), `emails.csv`, `phones.csv`, `oauth-accounts.csv` (connected sign-in providers), `passkeys.csv` (passkey details, never private keys), and `consents.csv` (your consent records)
+- **Content and activity** — `posts.csv` (all posts created by you), `votes.csv` (all votes you cast), `bookmarks.csv` (saves, follows, hides, and other bookmarks), `entity-relations.csv` (follows, mutes, blocks, and similar signals), `followed-rss-feeds.csv`, `followed-topics.csv`, and `referral-attributions.csv`
+- **Copyright records** — `copyright-notices-filed.csv`, `copyright-appeals.csv`, and `copyright-counter-notices.csv` (what you submitted yourself), `copyright-cases.csv` (accepted cases you are part of, as members see them), and `copyright-repeat-infringer-incidents.csv` and `copyright-repeat-infringer-reviews.csv` (repeat-infringer records about your account). Text that the retention period has erased shows as erased.
 
 Download links expire after 7 days. You can request a new export at any time.
 
@@ -247,7 +260,7 @@ You can opt out of analytics and non-essential cookie processing using the cooki
 
 ### GDPR and CCPA
 
-If you are in the European Economic Area, you have rights under GDPR including the right to access, rectification, erasure, restriction of processing, data portability, and the right to object. If you are in California, you have rights under CCPA including the right to know, delete, and opt-out of sale of personal information. **Voucha does not sell personal information.**
+If you are in the European Economic Area, you have rights under GDPR including the right to access, rectification, erasure, restriction of processing, data portability, and the right to object. You also have the right to lodge a complaint with a supervisory authority, such as the data protection authority where you live or work, or where you believe a violation occurred. If you are in California, you have rights under CCPA including the right to know, delete, and opt-out of sale of personal information. **Voucha does not sell personal information.**
 
 To exercise any of these rights, contact us at team@voucha.ai or use the self-service tools in your account settings.
 

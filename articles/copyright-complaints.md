@@ -12,7 +12,7 @@ topics:
 
 This guide covers how to file a copyright notice, how to respond if your image is taken down, and what happens at each step. For the policy itself, read [Copyright and the DMCA on Voucha](./copyright-and-dmca.md).
 
-Our copyright process handles US claims under the DMCA. It opens once our designated agent is registered. The status page at `/copyright/designated-agent` shows whether it's open yet.
+Our copyright process handles US claims under the DMCA. It opens when we launch copyright intake. The status page at `/copyright/designated-agent` shows the current status of our designated agent.
 
 ## Before You File Anything
 
@@ -36,12 +36,12 @@ Use the form at `/copyright/notices/new`. You don't need to sign in. The form as
 
 Once the designated agent's contact details are published on `/copyright/designated-agent`, you can also send a written notice there. Use that route if you can't open the image yourself.
 
-**Your privacy:** if we accept your notice and you filed while signed in, signed-in members can see the case with your current public Voucha profile. If you filed without signing in, the case shows no profile for you. Your legal name, contact details and signature aren't shown on the case.
+**Your privacy:** if we accept your notice and you filed while signed in, signed-in members can see your public profile name and a link to your profile on the case. If you filed without signing in, the case shows no profile for you. We never show the legal name you give in a notice, and your contact details and signature aren't shown on the case.
 
 ## What Happens After a Notice
 
 1. **We confirm we got it.** We email you a receipt.
-2. **A moderator reviews it.** Automated tools may assist or provisionally withhold an image pending review, but a person reviews the decision. We don't act on a notice that's missing required information. If something is missing, the moderator emails you at the address on your notice to ask for it.
+2. **A moderator reviews it.** A moderator makes every copyright decision. AI tools summarize notices for moderators; they do not decide. We don't act on a notice that's missing required information. If something is missing, the moderator emails you at the address on your notice to ask for it.
 3. **If we accept it,** the image is hidden in that post for everyone. The rest of the post stays up, and other posts aren't changed. The poster gets an email and an in-app notice with the reasons and redress routes, and you receive a decision email. The case appears at `/copyright/notices`.
 
 A case records a claim. It doesn't decide who owns the work or whether anyone infringed.
