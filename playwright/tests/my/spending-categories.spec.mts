@@ -35,7 +35,7 @@ test.describe('My Spending Categories', () => {
   })
 
   test('displays page heading', async ({ page }) => {
-    await assertManagerHeading(page, 'spending-categories-heading', 'Spending Categories')
+    await assertManagerHeading(page, 'settings-page-header-title', 'Spending Categories')
   })
 
   test('displays seeded spending category', async ({ page }) => {
@@ -67,7 +67,7 @@ test.describe('My Spending Categories', () => {
   test('responsive layout on mobile', async ({ page }) => {
     await useIphoneSeViewport(page)
     await navigateTo(page, '/my/spending-categories')
-    await assertManagerHeading(page, 'spending-categories-heading', 'Spending Categories')
+    await assertManagerHeading(page, 'settings-page-header-title', 'Spending Categories')
     await assertSeededName(page, 'spending-category-name', 'Groceries')
   })
 })

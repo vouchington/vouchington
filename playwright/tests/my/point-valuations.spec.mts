@@ -22,7 +22,7 @@ test.describe('My Point Valuations', () => {
   })
 
   test('displays page heading', async ({ page }) => {
-    await assertManagerHeading(page, 'point-valuations-heading', 'Point Valuations')
+    await assertManagerHeading(page, 'settings-page-header-title', 'Point Valuations')
   })
 
   test('displays seeded point valuation', async ({ page }) => {
@@ -53,7 +53,7 @@ test.describe('My Point Valuations', () => {
   test('responsive layout on mobile', async ({ page }) => {
     await useIphoneSeViewport(page)
     await navigateTo(page, '/my/rewards-program-point-valuations')
-    await assertManagerHeading(page, 'point-valuations-heading', 'Point Valuations')
+    await assertManagerHeading(page, 'settings-page-header-title', 'Point Valuations')
     await assertSeededName(page, 'point-valuation-program-name', 'Chase Ultimate Rewards')
   })
 })

@@ -1,12 +1,13 @@
 export const dynamic = 'force-dynamic'
 
 import type { Metadata } from 'next'
-import { createNoIndexMetadata } from '@/lib/seo/metadata'
+import { SettingsPageHeader } from '@/components/my/settings-page-header'
+import { SpendingCategoriesManager } from '@/components/my/spending-categories-manager'
 import { getMySpendingCategories } from '@/lib/api/server'
+import { getTranslations } from '@/lib/i18n/get-translations'
+import { createNoIndexMetadata } from '@/lib/seo/metadata'
 
 export const metadata: Metadata = createNoIndexMetadata('Spending Categories')
-import { SpendingCategoriesManager } from '@/components/my/spending-categories-manager'
-import { getTranslations } from '@/lib/i18n/get-translations'
 
 export default async function SpendingCategoriesPage() {
   const t = await getTranslations()
@@ -14,17 +15,12 @@ export default async function SpendingCategoriesPage() {
 
   return (
     <div className='space-y-6'>
-      <div>
-        <h1
-          className='text-2xl font-bold'
-          data-pw='spending-categories-heading'
-        >
-          {t('extracted.spendingCategories.page.spendingCategories_3ed30dfb')}
-        </h1>
-        <p className='text-sm text-muted-foreground'>
-          {t('extracted.spendingCategories.page.manageYourSpendingCategoriesAndAmounts_72fd1919')}
-        </p>
-      </div>
+      <SettingsPageHeader
+        title={t('extracted.spendingCategories.page.spendingCategories_3ed30dfb')}
+        description={t(
+          'extracted.spendingCategories.page.manageYourSpendingCategoriesAndAmounts_72fd1919',
+        )}
+      />
 
       <SpendingCategoriesManager initialData={data} />
     </div>
