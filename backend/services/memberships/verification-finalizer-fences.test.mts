@@ -1,5 +1,4 @@
 import { randomUUID } from 'node:crypto'
-import { beginTransaction } from '@data-stores/psql'
 import {
   createTestUser,
   expireTestMembershipVerificationLease,
@@ -12,40 +11,37 @@ import {
   createMembershipVerification,
   getMembershipVerification,
 } from './verifications.mts'
-import { getContext as googleContext } from './google/verification-context.mts'
-import { getContext as microsoftContext } from './microsoft/verification-persistence.mts'
-import * as google from './google/verification-persistence.mts'
 import * as microsoft from './microsoft/verification-outcomes.mts'
-import { deferPendingGooglePlayVerification } from './google/verification-finalization.mts'
-import { getClaimedAppleVerification } from './apple/process-verification-context.mts'
-import { finalizeAppleVerification } from './apple/process-verification-finalize.mts'
-
-const providers = [
-  { provider: 'google_play', context: googleContext, outcomes: google },
-  { provider: 'microsoft_store', context: microsoftContext, outcomes: microsoft },
-] as const
+import {
+  getTestClaimedProviderVerificationContext,
+  finalizeTestClaimedProviderVerification,
+  deferTestPendingGoogleVerification,
+  getTestClaimedAppleVerificationContext,
+  finalizeTestClaimedAppleVerification,
+} from '@voucha/test-helpers/membership-verification-finalizers'
 
 describe('membership verification finalizer ownership', () => {
-  it.each(providers)(
-    '$provider rolls back stale finalizers and preserves the successor',
-    async entry => {
-      const fixture = await pendingVerification(entry.provider)
-      const context = await (async () => {
-        await using query = await beginTransaction()
-        return await entry.context(fixture.verification.id, fixture.claim.leaseToken, query)
-      })()
+  it.each(['google_play', 'microsoft_store'] as const)(
+    '%s rolls back stale finalizers and preserves the successor',
+    async provider => {
+      const fixture = await pendingVerification(provider)
+      const context = await getTestClaimedProviderVerificationContext(
+        provider,
+        fixture.verification.id,
+        fixture.claim.leaseToken,
+      )
       if (!context) throw new Error('Expected claimed provider context')
       const successor = await takeOver(fixture.verification.id)
 
       for (const disposition of ['verify', 'reject'] as const) {
-        await (async () => {
-          await using query = await beginTransaction()
-          const completion =
-            disposition === 'verify'
-              ? entry.outcomes.finalizeVerified(context, fixture.claim.leaseToken, query)
-              : entry.outcomes.reject(context, fixture.claim.leaseToken, 'invalid_evidence', query)
-          await expect(completion).rejects.toThrow('claim was superseded')
-        })()
+        await expect(
+          finalizeTestClaimedProviderVerification(
+            provider,
+            context,
+            fixture.claim.leaseToken,
+            disposition,
+          ),
+        ).rejects.toThrow('claim was superseded')
         await expect(
           getMembershipVerification(fixture.user.id, fixture.verification.id),
         ).resolves.toMatchObject({
@@ -72,18 +68,16 @@ describe('membership verification finalizer ownership', () => {
 
   it('preserves the successor when a stale Google worker defers pending work', async () => {
     const fixture = await pendingVerification('google_play')
-    const context = await (async () => {
-      await using query = await beginTransaction()
-      return await googleContext(fixture.verification.id, fixture.claim.leaseToken, query)
-    })()
+    const context = await getTestClaimedProviderVerificationContext(
+      'google_play',
+      fixture.verification.id,
+      fixture.claim.leaseToken,
+    )
     if (!context) throw new Error('Expected claimed Google context')
     const successor = await takeOver(fixture.verification.id)
-    await (async () => {
-      await using query = await beginTransaction()
-      await expect(
-        deferPendingGooglePlayVerification(context, fixture.claim.leaseToken, query),
-      ).rejects.toThrow('claim was superseded')
-    })()
+    await expect(
+      deferTestPendingGoogleVerification(context, fixture.claim.leaseToken),
+    ).rejects.toThrow('claim was superseded')
     await expect(
       getTestMembershipVerificationProcessingState(fixture.verification.id),
     ).resolves.toMatchObject({ lease_token: successor.leaseToken, last_error: null })
@@ -115,22 +109,15 @@ describe('membership verification finalizer ownership', () => {
 
   it('rejects an Apple finalizer after successor takeover', async () => {
     const fixture = await pendingVerification('apple_app_store')
-    const context = await (async () => {
-      await using query = await beginTransaction()
-      return await getClaimedAppleVerification(
-        fixture.verification.id,
-        fixture.claim.leaseToken,
-        query,
-      )
-    })()
+    const context = await getTestClaimedAppleVerificationContext(
+      fixture.verification.id,
+      fixture.claim.leaseToken,
+    )
     if (!context) throw new Error('Expected claimed Apple context')
     const successor = await takeOver(fixture.verification.id)
-    await (async () => {
-      await using query = await beginTransaction()
-      await expect(
-        finalizeAppleVerification(context, fixture.claim.leaseToken, 'verified', 'verified', query),
-      ).rejects.toThrow('claim was superseded')
-    })()
+    await expect(
+      finalizeTestClaimedAppleVerification(context, fixture.claim.leaseToken),
+    ).rejects.toThrow('claim was superseded')
     await expect(
       getMembershipVerification(fixture.user.id, fixture.verification.id),
     ).resolves.toMatchObject({ status: 'pending' })
