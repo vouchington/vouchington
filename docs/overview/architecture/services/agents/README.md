@@ -8,6 +8,7 @@ CRUD and prompt management for retained AI agents.
 
 - `createSystemAgent(params)` — creates a new system agent
 - `getAgentBySystemUserId(systemUserId)` — retrieves an agent by system user ID
+- `getAgentModeratorConfig(agentId)` — reads retained moderator identity metadata; may be removed after intended-use review because production use is unconfirmed
 
 ## Related
 

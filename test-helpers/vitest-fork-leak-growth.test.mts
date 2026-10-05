@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import {
-  getExistingPsqlPoolMetrics,
-  registerPsqlPoolMetricsForTestEnvironment,
-} from '@data-stores/psql/pool-metrics'
+import { registerPsqlPoolMetricsForTestEnvironment } from '@data-stores/psql/pool-metrics'
 import { createForkLeakDetector } from 'vouchington-tooling/vitest-diagnostics'
-import { formatForkLeakDiagnostics } from './vitest-fork-leak-diagnostics.mts'
+import {
+  formatForkLeakDiagnostics,
+  getRegisteredPsqlPoolMetrics,
+} from './vitest-fork-leak-diagnostics.mts'
 
 const TYPE = 'TCPSocketWrap'
 
@@ -161,7 +161,7 @@ describe('fork leak growth checkpoint detection', () => {
       ),
     ).toBe(true)
 
-    expect(getExistingPsqlPoolMetrics()).toEqual({
+    expect(getRegisteredPsqlPoolMetrics()).toEqual({
       write: { total: 20, idle: 17, nonIdleOrConnecting: 3, waiting: 2 },
       read: { total: 8, idle: 8, nonIdleOrConnecting: 0, waiting: 0 },
       advisoryLock: { total: 4, idle: 1, nonIdleOrConnecting: 3, waiting: 3 },
@@ -169,7 +169,7 @@ describe('fork leak growth checkpoint detection', () => {
   })
 
   it('does not install or replace PostgreSQL metrics outside the test environment', () => {
-    const originalMetrics = getExistingPsqlPoolMetrics()
+    const originalMetrics = getRegisteredPsqlPoolMetrics()
     const registered = registerPsqlPoolMetricsForTestEnvironment(
       {
         write: fakePsqlPool(99, 0, 99),
@@ -180,6 +180,6 @@ describe('fork leak growth checkpoint detection', () => {
     )
 
     expect(registered).toBe(false)
-    expect(getExistingPsqlPoolMetrics()).toEqual(originalMetrics)
+    expect(getRegisteredPsqlPoolMetrics()).toEqual(originalMetrics)
   })
 })

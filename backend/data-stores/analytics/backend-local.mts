@@ -17,15 +17,10 @@ interface BufferedRecord {
   serialized: string
 }
 
-type AppendLocalFile = (filePath: string, data: string) => Promise<void>
-
 const buffer: BufferedRecord[] = []
 let bufferedBytes = 0
 let flushTimer: ReturnType<typeof setTimeout> | null = null
 let activeFlushPromise: Promise<void> | null = null
-let appendLocalFile: AppendLocalFile = (filePath, data) =>
-  fs.promises.appendFile(filePath, data, 'utf8')
-
 function scheduleFlush() {
   if (flushTimer !== null) return
   flushTimer = setTimeout(() => {
@@ -70,14 +65,6 @@ export function flush(): Promise<void> {
   return activeFlushPromise
 }
 
-export function setLocalAppendFileForTest(appendFile: AppendLocalFile): () => void {
-  const previousAppendLocalFile = appendLocalFile
-  appendLocalFile = appendFile
-  return () => {
-    appendLocalFile = previousAppendLocalFile
-  }
-}
-
 async function drainBufferedRecords(): Promise<void> {
   let firstError: unknown
   let hasError = false
@@ -115,7 +102,7 @@ async function flushBufferedRecords(): Promise<void> {
       const filePath = getPartitionPath(table, date)
       const dir = path.dirname(filePath)
       await fs.promises.mkdir(dir, { recursive: true })
-      await appendLocalFile(filePath, `${lines.join('\n')}\n`)
+      await fs.promises.appendFile(filePath, `${lines.join('\n')}\n`, 'utf8')
     }),
   )
 }

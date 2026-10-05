@@ -71,6 +71,7 @@ export function getOptionalRequestClientInfo(): Readonly<RequestClientInfo> | un
   return requestContextStorage.getStore()?.clientInfo ?? undefined
 }
 
+/** @public Documented accessor for the immutable request client context. */
 export function getRequestClientInfo(): Readonly<RequestClientInfo> {
   const value = getOptionalRequestClientInfo()
   if (!value) throw new Error('Request client information accessed outside a request')

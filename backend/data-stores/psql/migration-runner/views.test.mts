@@ -12,7 +12,6 @@ import {
   buildDropViewStatement,
   buildDropViewsStatement,
   extractViewDeclarations,
-  extractViewNames,
 } from './view-sql.mts'
 
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
@@ -33,7 +32,7 @@ describe('migration runner views', () => {
 
   it('extracts created view names while ignoring comments and string literals', () => {
     expect(
-      extractViewNames(`
+      extractViewDeclarations(`
         -- CREATE OR REPLACE VIEW ignored_line AS SELECT 1;
         SELECT 'CREATE OR REPLACE VIEW ignored_string AS SELECT 1';
         SELECT 'don''t CREATE OR REPLACE VIEW ignored_escaped_string AS SELECT 1';
@@ -42,7 +41,7 @@ describe('migration runner views', () => {
         CREATE OR REPLACE TEMP VIEW "quoted schema"."quoted.view" AS SELECT 2;
         CREATE OR REPLACE VIEW "quoted "" identifier" AS SELECT 3;
         CREATE OR REPLACE RECURSIVE VIEW recursive_view(x) AS SELECT 3 AS x;
-      `),
+      `).map(declaration => declaration.name),
     ).toEqual([
       'public.visible_view',
       '"quoted schema"."quoted.view"',
@@ -65,8 +64,8 @@ describe('migration runner views', () => {
   })
 
   it('returns empty array for SQL that cannot be parsed', () => {
-    // Exercises the try-catch around parseSync in extractViewNames
-    expect(extractViewNames('CREATE TABLE (')).toEqual([])
+    // Exercises the try-catch around parseSync in extractViewDeclarations.
+    expect(extractViewDeclarations('CREATE TABLE (')).toEqual([])
   })
 
   it('builds restricted typed drop statements', () => {

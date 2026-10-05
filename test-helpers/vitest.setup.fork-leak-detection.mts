@@ -3,10 +3,12 @@
    growth baseline, so it cannot be wrapped in a describe block. */
 import { afterEach } from 'vitest'
 import { waitForResourceCloseCallbacks } from 'vouchington-tooling/vitest-diagnostics'
-import { formatForkLeakDiagnostics } from './vitest-fork-leak-diagnostics.mts'
+import {
+  formatForkLeakDiagnostics,
+  getRegisteredPsqlPoolMetrics,
+} from './vitest-fork-leak-diagnostics.mts'
 import { getForkLeakDetector } from './vitest-fork-leak-detection.mts'
 import { countResourcesByType } from './vitest-process-resources.mts'
-import { getExistingPsqlPoolMetrics } from '@data-stores/psql/pool-metrics'
 
 // Escape hatch for a run where the heuristic misfires — see docs/development/ci.md.
 const detectionDisabled = process.env.VITEST_FORK_LEAK_DETECTION === 'off'
@@ -27,7 +29,7 @@ afterEach(async context => {
   if (verdicts.length > 0) {
     throw new Error(
       verdicts
-        .map(verdict => formatForkLeakDiagnostics(verdict, counts, getExistingPsqlPoolMetrics()))
+        .map(verdict => formatForkLeakDiagnostics(verdict, counts, getRegisteredPsqlPoolMetrics()))
         .join('\n\n'),
     )
   }

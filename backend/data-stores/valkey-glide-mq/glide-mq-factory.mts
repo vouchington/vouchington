@@ -42,6 +42,7 @@ export function createWorker<D = unknown, R = unknown>(
   registerGlideMQInstance(worker)
   return worker
 }
+/** @public Documented GlideMQ factory contract. */
 export function createFlowProducer(): FlowProducer {
   const fp = new FlowProducer({
     connection: workerQueueConnection,

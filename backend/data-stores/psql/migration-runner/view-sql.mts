@@ -69,10 +69,6 @@ export function extractViewDeclarations(sql: string): ManagedViewDeclaration[] {
   return declarations
 }
 
-export function extractViewNames(sql: string): string[] {
-  return extractViewDeclarations(sql).map(declaration => declaration.name)
-}
-
 export function buildDropViewStatement(declaration: ManagedViewDeclaration): string {
   return `DROP ${declaration.type.toUpperCase()} IF EXISTS ${declaration.name};`
 }

@@ -33,6 +33,7 @@ async function fetchConversationById(query: typeof read, id: string): Promise<Co
   return rows[0] || null
 }
 
+/** @public May be removed after intended-use review; production use is unconfirmed. */
 export async function getConversationByCreatedByAndTitle(
   createdById: string,
   title: string,

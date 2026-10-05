@@ -46,6 +46,7 @@ export async function getActiveAgentsByType(agent_type: AgentType): Promise<Agen
   return rows
 }
 
+/** @public May be removed after intended-use review; production use is unconfirmed. */
 export async function getAgentModeratorConfig(agent_id: string): Promise<AgentModerator | null> {
   const { rows } = await read<AgentModerator>(sql`/* getAgentModeratorConfig */
     SELECT

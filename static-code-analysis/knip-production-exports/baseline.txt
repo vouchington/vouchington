@@ -2,14 +2,8 @@ exports backend/agents/classifiers/execute-single-call.mts executeSingleCallClas
 exports backend/agents/classifiers/execute.mts executeClassifierDecision
 exports backend/agents/classifiers/safe-content.mts sanitizeClassifierExternalContent
 exports backend/agents/conversation-title/generate-title.mts generateChatTitle
-exports backend/data-stores/analytics/backend-firehose.mts setFirehoseRecordBatchSenderForTest
-exports backend/data-stores/analytics/backend-firehose.mts setFirehoseRetryDelayForTest
-exports backend/data-stores/analytics/backend-firehose.mts setFirehoseRetryWaitForTest
-exports backend/data-stores/analytics/backend-local.mts setLocalAppendFileForTest
 exports backend/data-stores/graceful-shutdown/index.mts isGracefulShutdownValkeyRegistered
 exports backend/data-stores/psql/migration-runner/index-sql.mts extractIndexShapes
-exports backend/data-stores/psql/migration-runner/view-sql.mts extractViewNames
-exports backend/data-stores/psql/pool-metrics.mts getExistingPsqlPoolMetrics
 exports backend/data-stores/psql/pool-stats-sampler.mts stopPoolStatsSampler
 exports backend/data-stores/psql/schema-growth-registry.mts NON_DEFAULT_ID_EXCEPTIONS
 exports backend/data-stores/psql/schema-growth-registry.mts STATIC_IDENTITY_EXCEPTIONS
@@ -18,10 +12,8 @@ exports backend/data-stores/psql/schema-growth-retained-identities.mts RETAINED_
 exports backend/data-stores/valkey-core/app-integration.mts getValkeyAnalyticsPromiseForTest
 exports backend/data-stores/valkey-core/app-integration.mts resetValkeyAnalyticsLoaderForTest
 exports backend/data-stores/valkey-glide-mq/get-queue-stats-cached.mts clearQueueStatsCacheForTesting
-exports backend/data-stores/valkey-glide-mq/glide-mq-factory.mts createFlowProducer
 exports backend/data-stores/valkey/clients.mts closeDynamicConfigValkeySubscriptionClient
 exports backend/data-stores/valkey/jwt-stale.mts clearJwtStale
-exports backend/data-stores/valkey/jwt-stale.mts isJwtStale
 exports backend/entrypoints/api/dashboard-auth.mts createIsAdminDashboardRequest
 exports backend/entrypoints/api/shutdown.mts registerApiShutdownCallbacks
 exports backend/entrypoints/api/valkey-admin-command.mts parseValkeyAdminCommand
@@ -38,11 +30,6 @@ exports backend/entrypoints/worker-io/index.mts reportWorkerLoadFailure
 exports backend/modules/activitypub-uris/actor-uris.mts getActorInboxUri
 exports backend/modules/api-egress-proxy/transport.mts resetApiEgressProxyTransportForTest
 exports backend/modules/aws/client-credential-env-cases.mts registerClientCredentialEnvCases
-exports backend/modules/csv/parse-csv.mts stripBom
-exports backend/modules/membership-helpers/tier-helpers.mts hasProTier
-exports backend/modules/on-error/error-codes.mts AGENT_RESPONSE_DISABLED
-exports backend/modules/on-error/error-codes.mts AGENT_RESPONSE_MAX_CONCURRENT
-exports backend/modules/on-error/error-codes.mts AGENT_RESPONSE_QUOTA_EXCEEDED
 exports backend/modules/on-error/error-codes.mts AUTH_REQUIRED
 exports backend/modules/on-error/error-codes.mts BAD_GATEWAY
 exports backend/modules/on-error/error-codes.mts INTERNAL_ERROR
@@ -53,7 +40,6 @@ exports backend/modules/on-error/error-codes.mts RATE_LIMIT
 exports backend/modules/openai-utils/rate-limit.mts isOpenAIServerError
 exports backend/modules/openai-utils/response-errors.mts describeOpenAIUpstreamFailure
 exports backend/modules/pagination/query-contract.mts composeQueryContracts
-exports backend/modules/request-client-info/index.mts getRequestClientInfo
 exports backend/modules/scheduled-job-manifest/index.mts validateScheduledJobManifests
 exports backend/modules/stripe/operations.mts cancelSubscriptionImmediatelyOperation
 exports backend/modules/stripe/operations.mts createRefundOperation
@@ -65,7 +51,6 @@ exports backend/modules/utils/http-dispatchers.mts resetHttpDispatchersForTest
 exports backend/modules/utils/image-origin.mts getSideloadImageUrlPrefix
 exports backend/modules/utils/search.mts createGetSearchParameters
 exports backend/modules/utils/search.mts getTypesFromQuery
-exports backend/modules/worker-queue-inventory/index.mts policyManagedGlideQueueNames
 exports backend/queues/ban-evasion/enqueues.mts enqueueDetectBanEvasionAfterPostEmbedding
 exports backend/queues/bluesky-follow-propagation/enqueues.mts enqueueReconcileBlueskyFollow
 exports backend/queues/emails/payload/job-payload.mts emailJobContractCoversCanonicalTypes
@@ -74,7 +59,6 @@ exports backend/queues/entity-listeners/enqueues/topics.mts enqueueOnTopicDelete
 exports backend/queues/entity-listeners/payload/job-payload.mts entityJobContractCoversCanonicalTypes
 exports backend/services/agents/get.mts getActiveAgentsByType
 exports backend/services/agents/get.mts getAgentBySystemUserId
-exports backend/services/agents/get.mts getAgentModeratorConfig
 exports backend/services/ai-usage/daily-total.mts clearDailyAiCostTotalCacheForTesting
 exports backend/services/analytics/cache.mts trackCacheCall
 exports backend/services/ap-inbox-activities/test-fixtures.mts acceptJobsFor
@@ -105,7 +89,6 @@ exports backend/services/communities/publications/access.mts getPublicationRevie
 exports backend/services/communities/search.test-suites.mts communitySearchSplitSuiteNames
 exports backend/services/community-member-vacations/manage.mts getMyCommunityVacation
 exports backend/services/contribution-gating/limits.mts getContributionLimitActionForPostType
-exports backend/services/conversations-messages/conversations.mts getConversationByCreatedByAndTitle
 exports backend/services/conversations-messages/create.mts createConversationMessage
 exports backend/services/conversations-messages/update-message.mts updateConversationMessageContent
 exports backend/services/copyright-notices/appeal-recommendations.mts copyrightAppealRecommendations

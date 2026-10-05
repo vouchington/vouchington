@@ -9,7 +9,7 @@ import { getFirehoseCredentials, hasFirehoseCredentials } from './credentials.mt
 
 export type { PutRecordBatchCommandInput, PutRecordBatchCommandOutput }
 
-/* v8 ignore start -- thin AWS SDK proxy wrapper; higher-level Firehose writer tests inject the sender. */
+/* v8 ignore start -- thin AWS SDK proxy wrapper; higher-level Firehose writer tests mock this provider boundary. */
 let firehoseClient: FirehoseClient | undefined
 
 export const FirehoseDeliveryClient = new Proxy({} as FirehoseClient, {
