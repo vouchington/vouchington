@@ -84,8 +84,7 @@ escaping of the text block, and a structured result counts both copies. An overs
 an `isError` result that asks the caller to narrow the query or lower the limit.
 
 Every tool on this server declares an output schema; the catalog test fails for one that does not.
-A tool without one would return only the `text` block, unvalidated. See
-[MCP Tools service](../../../../overview/architecture/services/mcp-tools/README.md#structured-tool-results).
+See [MCP Tools service](../../../../overview/architecture/services/mcp-tools/README.md#structured-tool-results).
 
 The [post and story read tools](../../../../overview/architecture/services/mcp-tools/read-tools.md)
 (`get_post`, `get_post_ancestors`, `get_post_descendants`, `get_story`, each requiring the
@@ -144,7 +143,7 @@ read public data as a signed-out reader would, so a private community never appe
 `get_my_referral_links` returns only the caller's own links. Web snippets are external content.
 
 [Community, report, dispute and appeal tools](../../../../overview/architecture/agent-tools/community-report-appeal-write-tools.md)
-follow REST guards.
+reuse the REST guards, and the dispute and appeal reads are owner-only.
 
 ### Paged results
 

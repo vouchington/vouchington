@@ -64,17 +64,15 @@ with an open case from the same user updates it and returns `is_duplicate: true`
 
 ## Guards
 
-Each tool calls the same domain policy as its REST route, so a refusal matches REST. MCP adds no
+Each write tool calls the same domain policy as its REST route, so a refusal matches REST. MCP adds no
 restriction and relaxes none.
 
-| Tool                       | REST-equivalent refusals                                                                                                                                                     |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `create_community`         | Username required, community creation quotas (`CONTRIBUTION_QUOTA_EXCEEDED`), name and slug rules, taken slug `CONFLICT`.                                                    |
-| `join_community`           | Already a member `CONFLICT`; private, archived, banned or member-limited community `FORBIDDEN`. No idempotency key: a repeated join is `CONFLICT`.                           |
-| `leave_community`          | Not a member `NOT_FOUND`; owner `INVALID_INPUT`; archived community `FORBIDDEN`. `DELETE` is idempotent.                                                                     |
-| `apply_to_community`       | Banned `FORBIDDEN`; archived or already pending or a member `CONFLICT`; public community or answers the questions reject `INVALID_INPUT`.                                    |
-| `create_review_dispute`    | Unknown post `NOT_FOUND`; not a review, no rating for the topic, or over 4000 characters `INVALID_INPUT`; removed post `INVALID_INPUT`; no verified topic claim `FORBIDDEN`. |
-| `create_moderation_appeal` | Missing or revoked warning or lifted ban `NOT_FOUND`; not the caller's `FORBIDDEN`; post not removed or reason over 4000 characters `INVALID_INPUT`.                         |
+- `create_community`: Username required, community creation quotas (`CONTRIBUTION_QUOTA_EXCEEDED`), name and slug rules, taken slug `CONFLICT`.
+- `join_community`: Already a member `CONFLICT`; private, archived, banned or member-limited community `FORBIDDEN`. No idempotency key: a repeated join is `CONFLICT`.
+- `leave_community`: Not a member `NOT_FOUND`; owner `INVALID_INPUT`; archived community `FORBIDDEN`. `DELETE` is idempotent.
+- `apply_to_community`: Banned `FORBIDDEN`; archived or already pending or a member `CONFLICT`; public community or answers the questions reject `INVALID_INPUT`.
+- `create_review_dispute`: Unknown post `NOT_FOUND`; not a review, no rating for the topic, or over 4000 characters `INVALID_INPUT`; removed post `INVALID_INPUT`; no verified topic claim `FORBIDDEN`.
+- `create_moderation_appeal`: Missing or revoked warning or lifted ban `NOT_FOUND`; not the caller's `FORBIDDEN`; post not removed or reason over 4000 characters `INVALID_INPUT`.
 
 Over MCP, HTTP 422 and 410 report as `INVALID_INPUT`, and `IDENTITY_REQUIRED` and `COMMUNITY_BANNED`
 report as `FORBIDDEN`, because the MCP error mapping has no more specific code for them.
