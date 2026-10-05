@@ -55,7 +55,11 @@ export async function readContentProvenanceCatalog(
     LEFT JOIN pg_index idx
       ON idx.indexrelid = to_regclass('idx_' || table_class.relname || '__created_via_oauth_client_id')
     LEFT JOIN pg_trigger trg
-      ON trg.tgrelid = table_class.oid AND trg.tgname = table_class.relname || '_content_provenance_immutable'
+      ON trg.tgrelid = table_class.oid AND trg.tgname = CASE table_class.relname
+        WHEN 'user_referral_program_links' THEN 'trigger_user_referra_program_links_content_provenance_immutable'
+        WHEN 'user_rss_feed_import_batches' THEN 'trigger_user_rss_feed_impor_batche_content_provenance_immutable'
+        ELSE 'trigger_' || table_class.relname || '_content_provenance_immutable'
+      END
     ORDER BY table_class.relname`)
   return rows
 }
