@@ -1,5 +1,9 @@
 /** Global worker sweeps must not consume or count another suite's fixtures. */
 export const workerSweepIsolatedCases = {
+  'images-abandoned-upload-cleanup': {
+    file: 'backend/workers/images/workers/images.test.mts',
+    fullName: 'images worker > cleans abandoned uploads from the worker job',
+  },
   'topic-alias-standalone-drain': {
     file: 'backend/services/rss-feeds/__tests__/topic-alias-category-mapping-reconciliation.test.mts',
     fullName:
