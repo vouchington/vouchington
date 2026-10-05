@@ -23,9 +23,11 @@ Staff or other affiliated people may use separate non-role personal accounts for
 | Personal referral-link endorsement                | ❌ Blocked                   | Endorsement          |
 | Official Voucha referral link (admin-only)        | ✅ Allowed                   | Platform             |
 | Admin moderation vote                             | ✅ Allowed                   | Internal tooling     |
-| Moderator agent: tag post + move to review queue  | ✅ Allowed                   | Structural           |
+| Moderation classifier: review queue or unpublish  | ✅ Allowed                   | Moderation           |
 | Following / commenting / reporting                | ✅ Not restricted            | Social               |
 
-The restriction is enforced at HTTP and authorization guards and, for topic and post votes, inside the service-level writers: `upsertTopicElectionVotes` and `upsertPostElectionVotes` reject any non-null score from a platform account with `403` (including a neutral `0`) and still accept a clear (`score: null`). Adding an RSS feed or fediverse instance as a platform account creates the source and keeps the RSS follow, but casts no automatic +1 vote. The relation writers have no such check. The [platform-account writer audit](platform-account-writer-audit.md) lists every non-HTTP writer that casts a vote or writes an entity relation as a platform account, whether the restriction applies and why, and the mismatches with this table (M1 to M3 are resolved; M4 remains).
+The community moderation classifier sends a flagged post to the review queue or unpublishes it, per the community's `automod_action` (`record_only`, `review_queue` or `unpublish`); it writes no relation or vote. Tagging stays under the entity-relations row above.
+
+The restriction is enforced at HTTP and authorization guards and, for topic and post votes, inside the service-level writers: `upsertTopicElectionVotes` and `upsertPostElectionVotes` reject any non-null score from a platform account with `403` (including a neutral `0`) and still accept a clear (`score: null`). Adding an RSS feed or fediverse instance as a platform account creates the source and keeps the RSS follow, but casts no automatic +1 vote. The relation writers have no such check. The [platform-account writer audit](platform-account-writer-audit.md) lists every non-HTTP writer that casts a vote or writes an entity relation as a platform account, whether the restriction applies and why, and the mismatches with this table (M1 to M4 are resolved).
 
 Classifier and AI accounts vote only on entity relations, never on topic or post elections.

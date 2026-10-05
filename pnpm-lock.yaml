@@ -7428,25 +7428,6 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
-  backend/services/moderators:
-    dependencies:
-      '@data-stores/psql':
-        specifier: workspace:^
-        version: link:../../data-stores/psql
-      '@services/moderator-actions':
-        specifier: workspace:^
-        version: link:../moderator-actions
-      '@services/posts':
-        specifier: workspace:^
-        version: link:../posts
-      '@services/users':
-        specifier: workspace:^
-        version: link:../users
-    devDependencies:
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
-
   backend/services/modmail:
     dependencies:
       '@data-stores/psql':
