@@ -8,13 +8,13 @@ import {
 } from '@voucha/test-helpers'
 import { readCopyrightNoticeTargetId } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import {
-  admitCopyrightEmailCorrespondence,
   createCopyrightEmailIntake,
   createCopyrightFormIntake,
   prepareCopyrightEmailDelivery,
   recordCopyrightEmailParse,
   reviewCopyrightAppeal,
 } from './index.mts'
+import { admitCopyrightEmailCorrespondence } from './email-correspondence-admission.mts'
 import {
   appendCopyrightFormScreening,
   applyNonSpamSignedInCopyrightFormScreening,

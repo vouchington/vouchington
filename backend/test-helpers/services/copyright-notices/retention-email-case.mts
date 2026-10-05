@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID } from 'node:crypto'
-import { promoteCopyrightEmailIntake } from '../../../services/copyright-notices/index.mts'
+import { promoteCopyrightEmailIntake } from '../../../services/copyright-notices/email-promotion.mts'
 import {
   getCopyrightRepeatInfringerAccount,
   recordCopyrightRepeatInfringerDisposition,

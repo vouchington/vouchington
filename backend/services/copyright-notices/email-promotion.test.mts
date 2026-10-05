@@ -18,9 +18,9 @@ import {
   markCopyrightDeliveryIntentFailed,
   markCopyrightDeliveryIntentSent,
   prepareCopyrightEmailDelivery,
-  promoteCopyrightEmailIntake,
-  rejectCopyrightEmailIntake,
 } from './index.mts'
+import { promoteCopyrightEmailIntake } from './email-promotion.mts'
+import { rejectCopyrightEmailIntake } from './email-rejection.mts'
 import { createParsedCopyrightEmailIntake } from './email-intake-test-fixtures.mts'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 

@@ -84,14 +84,6 @@ export function parseCopyrightSimilarityCandidateLimit(value: unknown): number |
   return limit
 }
 
-export function parseNullableCopyrightDate(value: unknown, field: string): Date | null {
-  if (value === null || value === undefined) return null
-  assert(typeof value === 'string', 422, `${field} must be an ISO date or null`)
-  const parsed = new Date(value)
-  assert(!Number.isNaN(parsed.getTime()), 422, `${field} must be an ISO date or null`)
-  return parsed
-}
-
 export function parseNullableCopyrightEnum<const T extends readonly string[]>(
   value: unknown,
   allowed: T,

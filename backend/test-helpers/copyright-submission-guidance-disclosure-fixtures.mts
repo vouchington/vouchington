@@ -4,10 +4,10 @@ import { createTestLiftNotice } from './copyright-administrator-lift-fixtures.mt
 import { getTestPrivateUserById } from './entities/users.mts'
 import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from './services/copyright-notices/email-ses-verdicts.mts'
 import {
-  admitCopyrightEmailCorrespondence,
   createCopyrightEmailIntake,
   recordCopyrightEmailParse,
 } from '../services/copyright-notices/index.mts'
+import { admitCopyrightEmailCorrespondence } from '../services/copyright-notices/email-correspondence-admission.mts'
 import { linkCopyrightEmailIntakeToNotice } from '../services/copyright-notices/email-threading.mts'
 import { createCopyrightPosterNoticesInTransaction } from '../services/copyright-notices/restriction-poster-notices.mts'
 import type { CopyrightRestorationCause } from '../services/copyright-notices/statement-of-reasons.mts'

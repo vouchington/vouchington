@@ -1,7 +1,7 @@
 import { expect } from 'vitest'
 import { createRequest } from './api/server.mts'
 import type { PrivateUser } from '../services/users/types.mts'
-import { admitCopyrightEmailCorrespondence } from '../services/copyright-notices/index.mts'
+import { admitCopyrightEmailCorrespondence } from '../services/copyright-notices/email-correspondence-admission.mts'
 import { createTestGuestEuCase } from './copyright-eu-guest-cases.mts'
 import { createTestThreadedTerritorialComplaintEmail } from './copyright-territorial-complaint-email.mts'
 

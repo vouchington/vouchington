@@ -13,8 +13,8 @@ import { copyrightEmailIntakePurpose } from './email-intakes.mts'
 import {
   readCopyrightReviewTargetBreaches,
   recordCopyrightEmailIntakeLegalProcess,
-  rejectCopyrightEmailIntake,
 } from './index.mts'
+import { rejectCopyrightEmailIntake } from './email-rejection.mts'
 
 const HOUR_MS = 60 * 60 * 1000
 

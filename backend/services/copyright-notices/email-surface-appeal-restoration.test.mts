@@ -9,12 +9,12 @@ import {
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import {
-  admitCopyrightEmailCorrespondence,
   createCopyrightEmailIntake,
   processCopyrightActionIntent,
   recordCopyrightEmailParse,
   reviewCopyrightAppeal,
 } from './index.mts'
+import { admitCopyrightEmailCorrespondence } from './email-correspondence-admission.mts'
 import { linkCopyrightEmailIntakeToNotice } from './email-threading.mts'
 
 describe('email appeal restoration for a surface image', () => {

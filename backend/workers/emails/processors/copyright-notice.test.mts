@@ -11,8 +11,8 @@ import {
   createCopyrightEmailIntake,
   createCopyrightFormIntake,
   recordCopyrightEmailParse,
-  rejectCopyrightEmailIntake,
 } from '@services/copyright-notices'
+import { rejectCopyrightEmailIntake } from '@services/copyright-notices/email-rejection'
 import { processSendCopyrightNoticeEmail } from './copyright-notice.mts'
 import { readTestCopyrightResponseFailure } from '@voucha/test-helpers/copyright-lease-fencing'
 import { readCopyrightEmailIntakeResponses } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'

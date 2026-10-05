@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
   parseCopyrightSimilarityCandidateLimit,
-  parseNullableCopyrightDate,
   parseNullableCopyrightEnum,
 } from './moderator-http-input.mts'
 
@@ -12,19 +11,6 @@ describe('copyright moderator HTTP parsers', () => {
     expect(parseCopyrightSimilarityCandidateLimit('0')).toBeUndefined()
     expect(parseCopyrightSimilarityCandidateLimit('51')).toBeUndefined()
     expect(parseCopyrightSimilarityCandidateLimit(10)).toBeUndefined()
-  })
-
-  it('parses nullable ISO dates', () => {
-    expect(parseNullableCopyrightDate(null, 'commenced_at')).toBeNull()
-    expect(parseNullableCopyrightDate('2026-07-01T12:00:00.000Z', 'commenced_at')).toEqual(
-      new Date('2026-07-01T12:00:00.000Z'),
-    )
-    expect(() => parseNullableCopyrightDate(1, 'commenced_at')).toThrow(
-      'commenced_at must be an ISO date or null',
-    )
-    expect(() => parseNullableCopyrightDate('not-a-date', 'commenced_at')).toThrow(
-      'commenced_at must be an ISO date or null',
-    )
   })
 
   it('parses nullable closed enums', () => {

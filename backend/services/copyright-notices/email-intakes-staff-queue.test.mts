@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { getIsolatedDatabaseCaseMode } from '../../../test-helpers/vitest-isolated-database-cases.mts'
 import { runIsolatedDatabaseCase } from '../../../test-helpers/vitest-isolated-database-case.mts'
-import { rejectCopyrightEmailIntake } from './index.mts'
+import { rejectCopyrightEmailIntake } from './email-rejection.mts'
 import { searchCopyrightStaffEmailIntakes } from './read-models-staff-email-intakes.mts'
 import {
   createParsedCopyrightEmailIntake,
