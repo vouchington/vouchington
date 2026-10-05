@@ -16,6 +16,10 @@ export type StoredPostOpenAIModeration = {
   results: StoredOpenAIModerationResults
 }
 
+/**
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/openai-moderation/README.md`.
+ */
 export async function getStoredPostOpenAIModeration(
   postId: string,
   options?: QueryOptions,

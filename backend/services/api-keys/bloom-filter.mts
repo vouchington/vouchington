@@ -102,6 +102,9 @@ export async function warmUpApiKeyBloomFilter(): Promise<void> {
 
 /**
  * Delete the API key bloom filter, any building key, and the ready marker.
+ *
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/api-keys/README.md`.
  */
 export async function deleteApiKeyBloomFilter(): Promise<void> {
   await getApiKeyBloomFilter().deleteWithAdditionalKeys([BLOOM_READY_KEY])

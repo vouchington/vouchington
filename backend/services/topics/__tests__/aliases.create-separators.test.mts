@@ -1,6 +1,6 @@
 import { it, expect, describe } from 'vitest'
 import { createTopicAliases } from '../aliases.mts'
-import { getTopicAliases } from '../get-topic-aliases.mts'
+import { getTopicAliasesForTest } from '@voucha/test-helpers/topic-aliases'
 import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
 
 describe('createTopicAliases — string separators', () => {
@@ -13,7 +13,7 @@ describe('createTopicAliases — string separators', () => {
       createdById: user!.id,
     })
     await createTopicAliases(topicId, `alias1-${random}\nalias2-${random}\nalias3-${random}`)
-    const { results: aliases } = await getTopicAliases(topicId)
+    const { results: aliases } = await getTopicAliasesForTest(topicId)
 
     expect(aliases).toContain(`alias1-${random}`)
     expect(aliases).toContain(`alias2-${random}`)
@@ -29,7 +29,7 @@ describe('createTopicAliases — string separators', () => {
       createdById: user!.id,
     })
     await createTopicAliases(topicId, `alias1-${random}\r\nalias2-${random}\r\nalias3-${random}`)
-    const { results: aliases } = await getTopicAliases(topicId)
+    const { results: aliases } = await getTopicAliasesForTest(topicId)
 
     expect(aliases).toContain(`alias1-${random}`)
     expect(aliases).toContain(`alias2-${random}`)

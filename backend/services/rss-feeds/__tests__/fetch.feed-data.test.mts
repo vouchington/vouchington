@@ -10,7 +10,7 @@ import { createRssFeed } from '../create.mts'
 import { updateRssFeedById } from '../update.mts'
 import { getRssFeedById } from '../get.mts'
 import {
-  getLatestRssFeedCrawlForFeed,
+  getLatestRssFeedCrawlForFeedWithOptions,
   insertRssFeedCrawl,
   parseRssLastModifiedHeader,
 } from '../crawls.mts'
@@ -153,7 +153,7 @@ describe('fetch.feed-data', () => {
     expect(updatedItem!.data.chapters_type).toBe('application/json+chapters')
   }, 30_000)
 
-  it('getLatestRssFeedCrawlForFeed returns feed_data_sha256 after fetch', async () => {
+  it('getLatestRssFeedCrawlForFeedWithOptions returns feed_data_sha256 after fetch', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const topic = await createTestTopic({
       name: `Topic ${random}`,
@@ -169,11 +169,11 @@ describe('fetch.feed-data', () => {
     })
     await updateRssFeedById(feed.id, { is_enabled: true })
 
-    const before = await getLatestRssFeedCrawlForFeed(feed.id)
+    const before = await getLatestRssFeedCrawlForFeedWithOptions(feed.id, { includeFeedData: true })
     expect(before).toBeNull()
 
     await fetchRssFeedForTest(feed.id, 0)
-    const after = await getLatestRssFeedCrawlForFeed(feed.id)
+    const after = await getLatestRssFeedCrawlForFeedWithOptions(feed.id, { includeFeedData: true })
     expect(after).not.toBeNull()
     expect(Buffer.isBuffer(after!.feed_data_sha256)).toBe(true)
   }, 30_000)

@@ -143,6 +143,10 @@ async function retireStripeCatalogMappings(
     )
   }
 }
+/**
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/memberships/README.md`.
+ */
 export async function isStripeMembershipCatalogReady(
   context: StripeCatalogContext = DEFAULT_STRIPE_CATALOG_CONTEXT,
 ): Promise<boolean> {

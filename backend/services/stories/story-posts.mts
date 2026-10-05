@@ -64,6 +64,10 @@ export async function prepareStoryPost(
   }
 }
 
+/**
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `backend/services/stories/AGENTS.md`.
+ */
 export async function createStoryPost(
   storyId: string,
   initiatedBy: PrivateUser,

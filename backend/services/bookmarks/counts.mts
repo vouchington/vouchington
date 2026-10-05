@@ -111,6 +111,18 @@ const getEntityBookmarkCounts =
     return output
   }
 
+/**
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/overview/architecture/bookmarks.md`.
+ */
 export const getTopicBookmarkCounts = getEntityBookmarkCounts('topic')
+/**
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/overview/architecture/bookmarks.md`.
+ */
 export const getPostBookmarkCounts = getEntityBookmarkCounts('post')
+/**
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/overview/architecture/bookmarks.md`.
+ */
 export const getRssFeedBookmarkCounts = getEntityBookmarkCounts('rss_feed')

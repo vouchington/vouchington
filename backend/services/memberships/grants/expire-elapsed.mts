@@ -9,6 +9,10 @@ import { activateOldestQueuedGrant } from './activate-queued.mts'
 
 export type MembershipExpiryResult = { expired: number; hasMore: boolean }
 
+/**
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/memberships/README.md`.
+ */
 export async function expireElapsedMembershipsForUser(userId: string): Promise<number> {
   await using query = await beginTransaction()
   const { expired } = await expireElapsedMemberships(userId, query)

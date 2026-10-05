@@ -1,4 +1,8 @@
 // Authentication & Authorization
+/**
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/overview/architecture/reference-error-handling-error-response-contract.md`.
+ */
 export const AUTH_REQUIRED = 'AUTH_REQUIRED'
 export const FORBIDDEN = 'FORBIDDEN'
 export const ACCOUNT_SUSPENDED = 'ACCOUNT_SUSPENDED'
@@ -18,6 +22,10 @@ export const MFA_REAUTH_REQUIRED = 'MFA_REAUTH_REQUIRED'
 
 // Validation
 export const INVALID_INPUT = 'INVALID_INPUT'
+/**
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/overview/architecture/reference-error-handling-error-response-contract.md`.
+ */
 export const INVALID_CONTENT_TYPE = 'INVALID_CONTENT_TYPE'
 export const SYNC_EXPORT_TOO_LARGE = 'SYNC_EXPORT_TOO_LARGE'
 
@@ -49,13 +57,25 @@ export const POST_CONTENT_EDIT_WINDOW_EXPIRED = 'POST_CONTENT_EDIT_WINDOW_EXPIRE
 export const POST_THREAD_LOCKED = 'POST_THREAD_LOCKED'
 
 // Rate limiting
+/**
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/overview/architecture/reference-error-handling-error-response-contract.md`.
+ */
 export const RATE_LIMIT = 'RATE_LIMIT'
 
 // User creation
 export const USER_CREATION_RACE = 'USER_CREATION_RACE'
 
 // Server errors
+/**
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/overview/architecture/reference-error-handling-error-response-contract.md`.
+ */
 export const INTERNAL_ERROR = 'INTERNAL_ERROR'
+/**
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/overview/architecture/reference-error-handling-error-response-contract.md`.
+ */
 export const BAD_GATEWAY = 'BAD_GATEWAY'
 export const SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE'
 

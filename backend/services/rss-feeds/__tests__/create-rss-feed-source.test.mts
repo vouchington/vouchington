@@ -3,7 +3,7 @@ import { createRssFeedSource } from '../create-source-helpers.mts'
 import { createRssFeedUrlId } from '../rss-feed-url-id.mts'
 import { upsertUrlHostnames } from '@services/urls-hostnames/upsert'
 import { getTopicByAny } from '@services/topics/get'
-import { getTopicAliases } from '@services/topics/get-topic-aliases'
+import { getTopicAliasRecords } from '@services/topics/get-topic-aliases'
 import { getRssFeedByTopicId } from '@services/rss-feeds/get'
 import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
 import { ValkeyBloomFilter } from '@data-stores/valkey'
@@ -75,7 +75,8 @@ describe('createRssFeedSource', () => {
       createdById: null,
     })
 
-    await expect(getTopicAliases(result!.topicId)).resolves.toMatchObject({ results: [slug] })
+    const { results } = await getTopicAliasRecords(result!.topicId)
+    expect(results.map(record => record.alias)).toEqual([slug])
   })
 
   it('returns null on duplicate — idempotent on same rssFeedUrlId', async () => {

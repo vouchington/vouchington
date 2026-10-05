@@ -9,7 +9,7 @@ import {
 } from '@voucha/test-helpers'
 import { describe, expect, it, vi } from 'vitest'
 import { createTopicAliases } from './aliases.mts'
-import { getTopicAliases } from './get-topic-aliases.mts'
+import { getTopicAliasesForTest } from '@voucha/test-helpers/topic-aliases'
 import { getTopicByAny, getTopicByAnyWithRedirect, getTopicBySlug } from './get.mts'
 import { mergeTopicAliases } from './merge-aliases.mts'
 import { getTopicIds } from './search/get-ids.mts'
@@ -69,11 +69,11 @@ describe('mergeTopicAliases', () => {
     expect(merge.destination_topic_id).toBe(destination.id)
     expect(merge.destination_topic.id).toBe(destination.id)
     expect(merge.moved_aliases).toEqual(expect.arrayContaining([source.slug, sourceAlias]))
-    await expect(getTopicAliases(source.id)).resolves.toEqual({
+    await expect(getTopicAliasesForTest(source.id)).resolves.toEqual({
       results: [],
       hasNextPage: false,
     })
-    const { results: destinationAliases } = await getTopicAliases(destination.id)
+    const { results: destinationAliases } = await getTopicAliasesForTest(destination.id)
     expect(destinationAliases).toEqual(expect.arrayContaining([source.slug, sourceAlias]))
 
     const redirectedSource = await getTopicByAnyWithRedirect(source.id)

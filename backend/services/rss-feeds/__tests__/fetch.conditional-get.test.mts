@@ -6,7 +6,7 @@ import type { checkRssFeedCrawlable } from '../fetch-robots-check.mts'
 import { fetchRssFeed } from '../fetch.mts'
 import { createRssFeed } from '../create.mts'
 import { updateRssFeedById } from '../update.mts'
-import { getLatestRssFeedCrawlForFeed, insertRssFeedCrawl } from '../crawls.mts'
+import { getLatestRssFeedCrawlForFeedWithOptions, insertRssFeedCrawl } from '../crawls.mts'
 import { searchRssFeedItems } from '@services/rss-feed-items/search'
 import { createTestTopic, WEB_PROVENANCE } from '@voucha/test-helpers'
 
@@ -36,7 +36,7 @@ describe('fetch.conditional-get', () => {
     mockCheckRssFeedCrawlable.mockResolvedValue(true)
   })
 
-  it('getLatestRssFeedCrawlForFeed ignores sha256-only crawls that cannot replay a body', async () => {
+  it('getLatestRssFeedCrawlForFeedWithOptions ignores sha256-only crawls that cannot replay a body', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const topic = await createTestTopic({
       name: `Topic sha256-only ${random}`,
@@ -57,7 +57,9 @@ describe('fetch.conditional-get', () => {
       feed_data_sha256: fixtureContentSha256,
     })
 
-    await expect(getLatestRssFeedCrawlForFeed(feed.id)).resolves.toBeNull()
+    await expect(
+      getLatestRssFeedCrawlForFeedWithOptions(feed.id, { includeFeedData: true }),
+    ).resolves.toBeNull()
   }, 30_000)
 
   it('fetchRssFeed withholds validators and stores items when the crawl body is gone', async () => {

@@ -43,6 +43,10 @@ export async function invalidateMembershipProductCaches(): Promise<void> {
   await ValkeyCache.invalidateMany(Object.values(MEMBERSHIP_PRODUCT_CACHE_PREFIXES))
 }
 
+/**
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/memberships/README.md`.
+ */
 export async function getActivePlans(
   context: StripeCatalogContext = DEFAULT_STRIPE_CATALOG_CONTEXT,
 ): Promise<Map<MembershipPlanSlug, MembershipSku[]>> {

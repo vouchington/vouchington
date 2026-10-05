@@ -20,6 +20,9 @@ export type CreateLinkPostInput = {
  * Create a link post that links a single external URL.
  * Any non-blocked URL is valid (no discoverability gate).
  * The URL may be resolved from a raw href via addUrl inside the post transaction.
+ *
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/requirements/content/stories.md`.
  */
 export async function createLinkPost(
   creator: PrivateUser,

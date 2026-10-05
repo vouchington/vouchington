@@ -2,6 +2,10 @@ import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { Agent, AgentType, AgentModerator } from './types.mts'
 
+/**
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/agents/README.md`.
+ */
 export async function getAgentBySystemUserId(system_user_id: string): Promise<Agent | null> {
   const { rows } = await read<Agent>(sql`/* getAgentBySystemUserId */
     SELECT

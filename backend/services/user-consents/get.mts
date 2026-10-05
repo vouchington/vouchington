@@ -12,6 +12,10 @@ export async function getActiveConsents(userId: string): Promise<UserConsent[]> 
   return rows as UserConsent[]
 }
 
+/**
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/user-consents/README.md`.
+ */
 export async function hasActiveConsent(userId: string, consentType: ConsentType): Promise<boolean> {
   const { rows } = await read(sql`/* hasActiveConsent */
     SELECT 1

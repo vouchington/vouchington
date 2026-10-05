@@ -1,7 +1,7 @@
 import { it, expect, describe } from 'vitest'
 import { createTopicAliases, unlinkTopicAlias } from '../aliases.mts'
 import { searchTopicAliases } from '../search-topic-aliases.mts'
-import { getTopicAliases } from '../get-topic-aliases.mts'
+import { getTopicAliasesForTest } from '@voucha/test-helpers/topic-aliases'
 import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
 import { getTopicByAny } from '../get.mts'
 import { getTopicIdByAnyCached } from '@services/entity-cache/lookups'
@@ -102,7 +102,7 @@ describe('unlinkTopicAlias', () => {
     await expect(unlinkTopicAlias(alias!.id, { expectedTopicId: topicId })).rejects.toMatchObject({
       status: 409,
     })
-    await expect(getTopicAliases(topicId)).resolves.toMatchObject({
+    await expect(getTopicAliasesForTest(topicId)).resolves.toMatchObject({
       results: expect.arrayContaining([slug]),
     })
   })
@@ -120,7 +120,7 @@ describe('unlinkTopicAlias', () => {
       expectedTopicId: topicId,
     })
 
-    const { results: aliases } = await getTopicAliases(topicId)
+    const { results: aliases } = await getTopicAliasesForTest(topicId)
 
     expect(aliases).not.toContain(`alias1-${random}`)
     expect(aliases).toContain(`alias2-${random}`)

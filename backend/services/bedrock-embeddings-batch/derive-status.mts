@@ -21,6 +21,10 @@ type LifecycleColumn =
   | 'failed_at'
   | 'cancelled_at'
 
+/**
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/bedrock-embeddings-batch/README.md`.
+ */
 export function deriveBedrockBatchStatus(row: Lifecycle): BedrockBatchStatus {
   if (row.completed_at) return 'completed'
   if (row.failed_at) return 'failed'

@@ -34,6 +34,10 @@ function assertReason(reason: string | null | undefined): void {
   assert(reason === undefined || reason === null || reason.length <= 1000, 400, 'reason too long')
 }
 
+/**
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/fediverse-instances/README.md`.
+ */
 export async function getLatestIntegrationStatusChange(
   topicId: string,
   options: QueryOptions = {},

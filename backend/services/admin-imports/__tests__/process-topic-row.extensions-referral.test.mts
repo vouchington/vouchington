@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
-import { getTopicAliases } from '@services/topics/get-topic-aliases'
+import { getTopicAliasesForTest } from '@voucha/test-helpers/topic-aliases'
 import { getSpendingCategoryAttributes } from '@services/topics/spending-categories'
 import { getRetailerAttributes } from '@services/topics/retailers'
 import { getTopicParents } from '@services/topics/hierarchy'
@@ -44,7 +44,7 @@ describe('process-topic-row (extensions and referral)', () => {
 
     const topicId = await processTopicRow(admin, row)
 
-    const { results: aliases } = await getTopicAliases(topicId)
+    const { results: aliases } = await getTopicAliasesForTest(topicId)
     expect(aliases).toContain(`alt name ${suffix}`)
     expect(aliases).toContain(`another name ${suffix}`)
   })

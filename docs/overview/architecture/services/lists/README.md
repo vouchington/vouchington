@@ -7,7 +7,7 @@ User-curated named collections of RSS feed items and posts.
 ## Key exports
 
 - `createList(currentUserId, { name, description?, visibility? })` — create a new list
-- `getList(listId)` — fetch a list by ID (returns soft-deleted lists; caller must check visibility)
+- `getList(listId)` — fetch an active list by ID (`removed_at IS NULL`); caller must check visibility
 - `updateList(currentUserId, listId, { name?, description?, visibility? })` — update list fields
 - `softDeleteList(currentUserId, listId)` — soft-delete a list (sets removed_at)
 - `searchUserLists(ownerUserId, { limit?, after? })` — paginated list of a user's active lists

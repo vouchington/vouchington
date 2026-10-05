@@ -1,16 +1,25 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { it, expect, describe } from 'vitest'
-import { parseRssFeedItemsFromXml } from './clean.mts'
+import { parseFeedDocument } from '@vouchington/rss-parser'
+import { buildBoundedRssFeedItemsFromFeed } from './clean.mts'
+import type { ParsedFeed } from './types.mts'
 import {
   extractMediaDescription,
   extractMediaStarRating,
   extractMediaStatistics,
 } from '@services/rss-feed-items/media-community'
 
-describe('parseRssFeedItemsFromXml', () => {
+describe('parseFeedDocument and buildBoundedRssFeedItemsFromFeed', () => {
   const __dirname = import.meta.dirname
   const fixturesDir = path.resolve(__dirname, 'fixtures/feed-cleaning')
+
+  function parseUncappedRssFeed(xml: Buffer) {
+    const { feed } = parseFeedDocument(xml)
+    return buildBoundedRssFeedItemsFromFeed(feed as ParsedFeed, undefined, {
+      maxItems: Number.POSITIVE_INFINITY,
+    }).items
+  }
 
   function loadFixture(fileName: string): Buffer {
     return readFileSync(path.resolve(fixturesDir, fileName))
@@ -26,7 +35,7 @@ describe('parseRssFeedItemsFromXml', () => {
       <title>Item</title>
     </item>
   </channel></rss>`
-    const result = parseRssFeedItemsFromXml(Buffer.from(rss, 'utf8'))
+    const result = parseUncappedRssFeed(Buffer.from(rss, 'utf8'))
     expect(result).toHaveLength(1)
     expect(result[0]).toMatchObject({
       link: 'https://example.com/i',
@@ -51,7 +60,7 @@ describe('parseRssFeedItemsFromXml', () => {
       <updated>2024-01-01T00:00:00Z</updated>
     </entry>
   </feed>`
-    const result = parseRssFeedItemsFromXml(Buffer.from(atom, 'utf8'))
+    const result = parseUncappedRssFeed(Buffer.from(atom, 'utf8'))
     expect(result).toHaveLength(1)
     expect(result[0]).toMatchObject({
       link: 'https://example.com/atom-item',
@@ -63,7 +72,7 @@ describe('parseRssFeedItemsFromXml', () => {
   })
 
   it('extracts audio media fields from podcast RSS', () => {
-    const items = parseRssFeedItemsFromXml(loadFixture('podcast-rss.xml'))
+    const items = parseUncappedRssFeed(loadFixture('podcast-rss.xml'))
 
     expect(items).toHaveLength(2)
     const [ep42] = items
@@ -76,7 +85,7 @@ describe('parseRssFeedItemsFromXml', () => {
   })
 
   it('extracts video media fields from YouTube Atom feed', () => {
-    const items = parseRssFeedItemsFromXml(loadFixture('youtube-atom.xml'))
+    const items = parseUncappedRssFeed(loadFixture('youtube-atom.xml'))
 
     expect(items).toHaveLength(2)
     const [vid1] = items
@@ -130,7 +139,7 @@ describe('parseRssFeedItemsFromXml', () => {
   })
 
   it('sets media_type=article for plain article items', () => {
-    const items = parseRssFeedItemsFromXml(loadFixture('rss-with-share.xml'))
+    const items = parseUncappedRssFeed(loadFixture('rss-with-share.xml'))
 
     expect(items.length).toBeGreaterThan(0)
     for (const item of items) {
@@ -153,7 +162,7 @@ describe('parseRssFeedItemsFromXml', () => {
       </item>
     </channel>
   </rss>`
-    const result = parseRssFeedItemsFromXml(Buffer.from(rss, 'utf8'))
+    const result = parseUncappedRssFeed(Buffer.from(rss, 'utf8'))
     expect(result).toHaveLength(1)
     expect(result[0].isoDate).toBe('2025-10-15T15:35:00+00:00')
     expect(result[0].pubDate).toBeUndefined()
@@ -177,7 +186,7 @@ describe('parseRssFeedItemsFromXml', () => {
       <dc:date>2025-03-20T10:00:00Z</dc:date>
     </item>
   </rdf:RDF>`
-    const result = parseRssFeedItemsFromXml(Buffer.from(rdf, 'utf8'))
+    const result = parseUncappedRssFeed(Buffer.from(rdf, 'utf8'))
     expect(result).toHaveLength(1)
     expect(result[0].isoDate).toBe('2025-03-20T10:00:00Z')
   })

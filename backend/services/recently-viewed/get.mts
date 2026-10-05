@@ -3,6 +3,10 @@ import assert from 'http-assert'
 import type { RecentlyViewedEntityType } from './types.mts'
 import { searchRecentlyViewed } from './store.mts'
 
+/**
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/recently-viewed/README.md`.
+ */
 export async function getRecentlyViewedIds(
   sessionId: string,
   userId: string | null,

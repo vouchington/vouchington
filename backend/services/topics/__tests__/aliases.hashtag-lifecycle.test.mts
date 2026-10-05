@@ -6,7 +6,7 @@ import {
   linkTopicAlias,
   unlinkTopicAlias,
 } from '../aliases.mts'
-import { getTopicAliases } from '../get-topic-aliases.mts'
+import { getTopicAliasesForTest } from '@voucha/test-helpers/topic-aliases'
 import { getTopicByAny } from '../get.mts'
 import { updateTopic } from '../update.mts'
 
@@ -38,7 +38,7 @@ describe('topic alias hashtag lifecycle', () => {
     const topic = await getTopicByAny(topicId)
     const nextSlug = `slug-alias-next-${suffix}`
     await updateTopic(user!, topic!, { slug: nextSlug })
-    const { results } = await getTopicAliases(topicId)
+    const { results } = await getTopicAliasesForTest(topicId)
 
     expect(results).toEqual(expect.arrayContaining([`slug-alias-${suffix}`, nextSlug]))
   })
@@ -76,7 +76,7 @@ describe('topic alias hashtag lifecycle', () => {
     const linked = await linkTopicAlias(destinationTopicId, alias!.id)
 
     expect(linked).toMatchObject({ id: alias!.id, topic_id: destinationTopicId })
-    await expect(getTopicAliases(deletedTopicId)).resolves.toMatchObject({ results: [] })
+    await expect(getTopicAliasesForTest(deletedTopicId)).resolves.toMatchObject({ results: [] })
   })
 
   it('does not reclaim an alias from another active topic', async () => {
@@ -97,7 +97,7 @@ describe('topic alias hashtag lifecycle', () => {
     await expect(linkTopicAlias(destinationTopicId, alias!.id)).rejects.toMatchObject({
       status: 409,
     })
-    await expect(getTopicAliases(ownerTopicId)).resolves.toMatchObject({
+    await expect(getTopicAliasesForTest(ownerTopicId)).resolves.toMatchObject({
       results: expect.arrayContaining([`active-owner-${suffix}`]),
     })
   })

@@ -9,6 +9,10 @@ interface TrackCacheCallOptions {
   duration: number
 }
 
+/**
+ * @public Documented contract; production use is unconfirmed and this export may be
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/analytics/README.md`.
+ */
 export function trackCacheCall({
   cacheName,
   batch,
