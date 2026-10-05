@@ -151,10 +151,10 @@ The init sites are `backend/modules/on-error/sentry.mts` (shared by the API serv
 worker entrypoint), `web/sentry-server-options.ts`, `web/sentry-edge-options.ts`,
 `web/sentry-client-options.ts`, `lambdas/shared/sentry.mts` and `cloudflare-worker/src/sentry.mts`.
 Each site's options test asserts the shared policy, typed against the SDK's `dataCollection`
-option so a misspelled key fails type-checking. If a Lambda is deployed with the
-`--import @sentry/aws-serverless/awslambda-auto` preload, that preload calls `init()` with default
-options, but `initSentry()` replaces the client at module load, before any invocation. Every
-data-collection gate reads the current client (`getClient()`) per request, so the policy applies.
+option so a misspelled key fails type-checking. Lambdas start Sentry only through `initSentry()` at
+module load; there is no `awslambda-auto` preload (see the
+[image-resize README](../../overview/infrastructure/lambdas/image-resize/README.md#sentry-error-monitoring)).
+Every data-collection gate reads the current client (`getClient()`) per request.
 
 `httpBodies` gates only the SDK's own body capture (`integrations/http/server-subscription.js` in
 `@sentry/core`, `integrations/httpServer.js` in `@sentry/cloudflare`). `requestdata.js` still
