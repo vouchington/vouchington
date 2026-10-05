@@ -55,4 +55,5 @@ Not partitioned — growth: bounded.
 - `post_admission_reservations_pkey`: `CREATE UNIQUE INDEX post_admission_reservations_pkey ON public.post_admission_reservations USING btree (id)`
 
 **Triggers:**
-_none_
+
+- `trg_post_admission_reservations__updated_at`: `CREATE TRIGGER trg_post_admission_reservations__updated_at BEFORE UPDATE ON public.post_admission_reservations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

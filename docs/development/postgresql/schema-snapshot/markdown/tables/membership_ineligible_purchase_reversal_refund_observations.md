@@ -6,14 +6,13 @@ Immutable succeeded Stripe refunds observed while reconciling one reversal case 
 
 Not partitioned — growth: unbounded.
 
-| Column                                                   | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                         |
-| -------------------------------------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------- |
-| `membership_ineligible_purchase_reversal_refund_scan_id` | `uuid`                     | no       |                     |          |           |           | Case-target scan that observed this succeeded Stripe refund.                    |
-| `stripe_refund_id`                                       | `text`                     | no       |                     |          |           |           | Immutable Stripe refund identifier.                                             |
-| `amount_minor_units`                                     | `bigint`                   | no       |                     |          |           |           | Succeeded Stripe refund amount in the smallest currency unit.                   |
-| `currency_code`                                          | `text`                     | no       |                     |          |           |           | Stripe refund currency, required by trigger to match the owning scan.           |
-| `observed_at`                                            | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | Time this succeeded refund was first committed locally.                         |
-| `updated_at`                                             | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | Immutable insertion timestamp retained for the repository timestamp convention. |
+| Column                                                   | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                               |
+| -------------------------------------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------- |
+| `membership_ineligible_purchase_reversal_refund_scan_id` | `uuid`                     | no       |                     |          |           |           | Case-target scan that observed this succeeded Stripe refund.          |
+| `stripe_refund_id`                                       | `text`                     | no       |                     |          |           |           | Immutable Stripe refund identifier.                                   |
+| `amount_minor_units`                                     | `bigint`                   | no       |                     |          |           |           | Succeeded Stripe refund amount in the smallest currency unit.         |
+| `currency_code`                                          | `text`                     | no       |                     |          |           |           | Stripe refund currency, required by trigger to match the owning scan. |
+| `observed_at`                                            | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | Time this succeeded refund was first committed locally.               |
 
 **Primary key:** `PRIMARY KEY (membership_ineligible_purchase_reversal_refund_scan_id, stripe_refund_id)`
 

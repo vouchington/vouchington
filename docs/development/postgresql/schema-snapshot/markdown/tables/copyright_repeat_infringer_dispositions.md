@@ -15,7 +15,6 @@ Not partitioned — growth: unbounded.
 | `recorded_at`                            | `timestamp with time zone`                     | no       |                              |          |           |           | Time the moderator recorded the disposition.                               |
 | `recorded_by_id`                         | `uuid`                                         | yes      |                              |          |           |           | Moderator who recorded the disposition. Null after that account is erased. |
 | `created_at`                             | `timestamp with time zone`                     | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                            |
-| `updated_at`                             | `timestamp with time zone`                     | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                            |
 
 **Primary key:** `PRIMARY KEY (id)`
 

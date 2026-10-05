@@ -29,4 +29,5 @@ _none_
 - `retained_identity_cleanup_progress_pkey`: `CREATE UNIQUE INDEX retained_identity_cleanup_progress_pkey ON public.retained_identity_cleanup_progress USING btree (family)`
 
 **Triggers:**
-_none_
+
+- `trg_retained_identity_cleanup_progress__updated_at`: `CREATE TRIGGER trg_retained_identity_cleanup_progress__updated_at BEFORE UPDATE ON public.retained_identity_cleanup_progress FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

@@ -11,7 +11,6 @@ Not partitioned — growth: unbounded.
 | `referral_program_topic_id`                    | `uuid`                     | no       |                     |          |           |           | The referral program (topic).                    |
 | `referral_program_link_validation_rule_set_id` | `uuid`                     | no       |                     |          |           |           | The validation rule set applied to this program. |
 | `created_at`                                   | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                  |
-| `updated_at`                                   | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                  |
 
 **Primary key:** `PRIMARY KEY (referral_program_topic_id, referral_program_link_validation_rule_set_id)`
 

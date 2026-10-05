@@ -10,7 +10,6 @@ Not partitioned — growth: bounded.
 | ------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ---------------------------------------------------- |
 | `id`         | `bigint`                   | no       |                     | always   |           |           |                                                      |
 | `created_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                      |
-| `updated_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                      |
 | `mime_type`  | `text`                     | no       |                     |          |           |           | Lowercase MIME type string (e.g. text/html). Unique. |
 
 **Primary key:** `PRIMARY KEY (id)`

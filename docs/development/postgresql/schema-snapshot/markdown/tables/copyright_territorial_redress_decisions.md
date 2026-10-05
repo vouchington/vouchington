@@ -15,7 +15,6 @@ Not partitioned — growth: unbounded.
 | `staff_disposition`                        | `copyright_territorial_redress_decision_staff_dispositions` | no       |                              |          |           |           | Staff outcome: maintain or revoke. The system does not choose it.         |
 | `rationale_ciphertext`                     | `text`                                                      | no       |                              |          |           |           | Encrypted staff-supplied rationale for the disposition.                   |
 | `created_at`                               | `timestamp with time zone`                                  | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                           |
-| `updated_at`                               | `timestamp with time zone`                                  | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                           |
 
 **Primary key:** `PRIMARY KEY (id)`
 

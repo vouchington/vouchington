@@ -21,7 +21,6 @@ Not partitioned — growth: unbounded.
 | `is_same_material`                | `boolean`                                                 | no       |                              |          |           |           | Whether the proceeding identifies the same hosted material governed by the proposed restoration.                     |
 | `rationale_ciphertext`            | `text`                                                    | no       |                              |          |           |           | Encrypted moderator rationale supporting the immutable legal-hold qualification assessment.                          |
 | `created_at`                      | `timestamp with time zone`                                | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                      |
-| `updated_at`                      | `timestamp with time zone`                                | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                      |
 
 **Primary key:** `PRIMARY KEY (id)`
 

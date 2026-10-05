@@ -16,7 +16,6 @@ Not partitioned — growth: unbounded.
 | `copyright_restriction_id`                  | `uuid`                                     | yes      |                              |          |           |           | Restriction a counter-notice restoration or appeal reversed. Set only for the two reversal outcomes, and at most one event per restriction.                           |
 | `recorded_at`                               | `timestamp with time zone`                 | no       |                              |          |           |           | Time the decision that created this evidence was made.                                                                                                                |
 | `created_at`                                | `timestamp with time zone`                 | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                                       |
-| `updated_at`                                | `timestamp with time zone`                 | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                                                       |
 
 **Primary key:** `PRIMARY KEY (id)`
 

@@ -16,7 +16,6 @@ RANGE partitioned on `batch_id` (children: default, no retention owner, access c
 | `effective_lower_threshold` | `numeric(5,4)`             | no       |                                    |          |           |           | Captured lower decision bound after prompt-default inheritance. |
 | `effective_upper_threshold` | `numeric(5,4)`             | no       |                                    |          |           |           | Captured upper decision bound after prompt-default inheritance. |
 | `created_at`                | `timestamp with time zone` | yes      | `uuid_extract_timestamp(batch_id)` |          | virtual   |           |                                                                 |
-| `updated_at`                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`                |          |           |           |                                                                 |
 
 **Primary key:** `PRIMARY KEY (batch_id, candidate_id)`
 

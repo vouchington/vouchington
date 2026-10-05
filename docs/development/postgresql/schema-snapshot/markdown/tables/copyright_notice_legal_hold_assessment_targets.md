@@ -12,7 +12,6 @@ Not partitioned — growth: unbounded.
 | `copyright_notice_legal_hold_assessment_id` | `uuid`                     | no       |                     |          |           |           | Legal-hold assessment whose material scope is recorded.                                                     |
 | `copyright_notice_target_id`                | `uuid`                     | no       |                     |          |           |           | Exact hosted target covered by the assessed proceeding.                                                     |
 | `created_at`                                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                             |
-| `updated_at`                                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                             |
 
 **Primary key:** `PRIMARY KEY (copyright_notice_legal_hold_assessment_id, copyright_notice_target_id)`
 

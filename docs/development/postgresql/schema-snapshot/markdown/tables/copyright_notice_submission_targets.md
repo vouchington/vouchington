@@ -13,7 +13,6 @@ Not partitioned — growth: unbounded.
 | `copyright_notice_submission_id` | `uuid`                     | no       |                              |          |           |           | Appeal or counter-notice whose scope is being recorded.                                                     |
 | `copyright_notice_target_id`     | `uuid`                     | no       |                              |          |           |           | Exact case target selected by the affected poster.                                                          |
 | `created_at`                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                             |
-| `updated_at`                     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                             |
 
 **Primary key:** `PRIMARY KEY (id)`
 

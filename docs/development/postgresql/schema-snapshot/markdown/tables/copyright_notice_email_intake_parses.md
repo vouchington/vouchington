@@ -19,7 +19,6 @@ Not partitioned — growth: unbounded.
 | `reply_references_ciphertext`      | `text`                                         | yes      |                              |          |           |           | Encrypted bounded RFC reply references retained for case-scoped correspondence threading. |
 | `error_ciphertext`                 | `text`                                         | yes      |                              |          |           |           | Encrypted bounded parser failure for moderator review; raw parser output is not retained. |
 | `created_at`                       | `timestamp with time zone`                     | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                           |
-| `updated_at`                       | `timestamp with time zone`                     | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                           |
 
 **Primary key:** `PRIMARY KEY (id)`
 

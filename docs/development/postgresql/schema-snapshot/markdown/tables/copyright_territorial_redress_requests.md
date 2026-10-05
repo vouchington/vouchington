@@ -18,7 +18,6 @@ Not partitioned — growth: unbounded.
 | `explanation_ciphertext`            | `text`                              | no       |                              |          |           |           | Encrypted explanation supplied by the participant.                                                                  |
 | `received_at`                       | `timestamp with time zone`          | no       | `CURRENT_TIMESTAMP`          |          |           |           | When Voucha stored this redress request.                                                                            |
 | `created_at`                        | `timestamp with time zone`          | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                     |
-| `updated_at`                        | `timestamp with time zone`          | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                     |
 
 **Primary key:** `PRIMARY KEY (id)`
 

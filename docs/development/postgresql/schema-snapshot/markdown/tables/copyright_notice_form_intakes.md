@@ -19,7 +19,6 @@ Not partitioned — growth: unbounded.
 | `has_accuracy_authority_under_penalty_of_perjury` | `boolean`                  | no       |                              |          |           |           | Claimant affirmation of accuracy and authority under penalty of perjury.                       |
 | `electronic_signature_ciphertext`                 | `text`                     | no       |                              |          |           |           | Encrypted claimant electronic signature.                                                       |
 | `created_at`                                      | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                |
-| `updated_at`                                      | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                |
 
 **Primary key:** `PRIMARY KEY (id)`
 

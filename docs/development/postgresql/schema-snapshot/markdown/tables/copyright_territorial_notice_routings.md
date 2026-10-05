@@ -12,7 +12,6 @@ Not partitioned — growth: unbounded.
 | `destination`                             | `copyright_territorial_notice_routing_destinations` | no       |                     |          |           |           | Queue that received the notice. Constrained to staff_queue. |
 | `routed_at`                               | `timestamp with time zone`                          | no       | `CURRENT_TIMESTAMP` |          |           |           | When the receipt was routed to the staff queue.             |
 | `created_at`                              | `timestamp with time zone`                          | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                             |
-| `updated_at`                              | `timestamp with time zone`                          | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                             |
 
 **Primary key:** `PRIMARY KEY (copyright_territorial_notice_receipt_id)`
 

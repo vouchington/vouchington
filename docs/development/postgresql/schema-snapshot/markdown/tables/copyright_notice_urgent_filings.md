@@ -11,7 +11,6 @@ Not partitioned — growth: unbounded.
 | `copyright_notice_submission_id` | `uuid`                     | no       |                                                          |          |           |           | The filing classified as urgent. Classification does not itself block restoration.                              |
 | `classified_at`                  | `timestamp with time zone` | no       |                                                          |          |           |           | Instant a potentially operative filing was classified urgent. Classification does not itself block restoration. |
 | `created_at`                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(copyright_notice_submission_id)` |          | virtual   |           |                                                                                                                 |
-| `updated_at`                     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`                                      |          |           |           |                                                                                                                 |
 
 **Primary key:** `PRIMARY KEY (copyright_notice_submission_id)`
 

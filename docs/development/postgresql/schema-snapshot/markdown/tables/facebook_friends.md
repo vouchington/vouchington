@@ -6,12 +6,13 @@ Facebook friend relationships between Facebook user IDs.
 
 Not partitioned — growth: unbounded.
 
-| Column               | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                  |
-| -------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ---------------------------------------- |
-| `facebook_user_id`   | `text`                     | no       |                     |          |           |           | The Facebook user ID of the source user. |
-| `facebook_friend_id` | `text`                     | no       |                     |          |           |           | The Facebook user ID of the friend.      |
-| `created_at`         | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                          |
-| `updated_at`         | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                          |
+| Column               | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                                               |
+| -------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `facebook_user_id`   | `text`                     | no       |                     |          |           |           | The Facebook user ID of the source user.                                                                                              |
+| `facebook_friend_id` | `text`                     | no       |                     |          |           |           | The Facebook user ID of the friend.                                                                                                   |
+| `created_at`         | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                                       |
+| `last_observed_at`   | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | Database timestamp of the latest provider friend-sync observation; stale observations are removed against the exact sync-start clock. |
+| `updated_at`         | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                                       |
 
 **Primary key:** `PRIMARY KEY (facebook_user_id, facebook_friend_id)`
 

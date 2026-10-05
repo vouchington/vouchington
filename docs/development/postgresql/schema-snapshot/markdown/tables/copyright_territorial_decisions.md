@@ -20,7 +20,6 @@ Not partitioned — growth: unbounded.
 | `rationale_ciphertext`                      | `text`                                                  | no       |                              |          |           |           | Encrypted staff-only rationale; never included in participant notices.                                        |
 | `public_explanation_ciphertext`             | `text`                                                  | no       |                              |          |           |           | Encrypted staff-written public explanation for poster and notifier statements; must contain no personal data. |
 | `created_at`                                | `timestamp with time zone`                              | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                               |
-| `updated_at`                                | `timestamp with time zone`                              | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                               |
 
 **Primary key:** `PRIMARY KEY (id)`
 

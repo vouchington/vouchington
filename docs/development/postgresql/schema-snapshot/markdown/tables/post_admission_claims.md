@@ -32,4 +32,5 @@ _none_
 - `post_admission_claims_pkey`: `CREATE UNIQUE INDEX post_admission_claims_pkey ON public.post_admission_claims USING btree (reservation_id)`
 
 **Triggers:**
-_none_
+
+- `trg_post_admission_claims__updated_at`: `CREATE TRIGGER trg_post_admission_claims__updated_at BEFORE UPDATE ON public.post_admission_claims FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

@@ -21,7 +21,6 @@ Not partitioned — growth: unbounded.
 | `spam_verdict`          | `email_security_verdicts`  | no       |                              |          |           |           | SES spam verdict from the X-SES-Spam-Verdict header SES added at receipt; unknown when SES reported none. Advisory risk signal only.                                                                                              |
 | `virus_verdict`         | `email_security_verdicts`  | no       |                              |          |           |           | SES malware verdict from the X-SES-Virus-Verdict header SES added at receipt; unknown when SES reported none. A fail quarantines the original message so staff cannot download it.                                                |
 | `created_at`            | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                                                                                                   |
-| `updated_at`            | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                                                                                                                   |
 
 **Primary key:** `PRIMARY KEY (id)`
 

@@ -189,6 +189,8 @@ Rolling 30-day top-hashtag recommendations from public posts and discoverable RS
 
 ## `view_community_list_items`
 
+Community list content projection; callers enforce list visibility and row access.
+
 ```sql
  SELECT community_list_topics.id,
     community_list_topics.community_id,
@@ -243,6 +245,8 @@ UNION ALL
 
 ## `view_community_metrics`
 
+Community activity metrics for authorized community reads.
+
 ```sql
  SELECT 'community_metrics'::text AS __entity_type,
     c.id,
@@ -272,6 +276,8 @@ UNION ALL
 
 ## `view_current_paid_memberships`
 
+Current paid membership entitlement projection; retained identities alone grant no access.
+
 ```sql
  SELECT DISTINCT ON (m.user_id) m.user_id,
     product.plan
@@ -291,6 +297,8 @@ UNION ALL
 ```
 
 ## `view_embedded_topics`
+
+Compact topic references embedded in current entity responses.
 
 ```sql
  SELECT 'topic'::text AS __entity_type,
@@ -330,6 +338,8 @@ UNION ALL
 ```
 
 ## `view_embedded_users`
+
+Compact public user references without private account fields.
 
 ```sql
  SELECT 'user'::text AS __entity_type,
@@ -649,6 +659,8 @@ UNION ALL
 
 ## `view_memberships`
 
+Membership projection for authorized owner and staff account reads.
+
 ```sql
  SELECT 'membership'::text AS __entity_type,
     m.id,
@@ -711,6 +723,8 @@ UNION ALL
 
 ## `view_post_clearance_status`
 
+Current post clearance derived from moderation lifecycle facts.
+
 ```sql
  SELECT posts.id AS post_id,
     posts.latest_clearance_change_id,
@@ -730,6 +744,8 @@ UNION ALL
 ```
 
 ## `view_posts`
+
+Current post response projection; callers enforce publication, deletion and audience access.
 
 ```sql
  SELECT 'post'::text AS __entity_type,
@@ -913,6 +929,8 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
 
 ## `view_rss_feed_current_states`
 
+Current RSS discoverability settings derived from immutable setting changes.
+
 ```sql
  SELECT id AS rss_feed_id,
     is_enabled,
@@ -921,6 +939,8 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
 ```
 
 ## `view_rss_feed_items`
+
+RSS item response projection; callers enforce feed and item visibility.
 
 ```sql
  SELECT 'rss_feed_item'::text AS __entity_type,
@@ -1000,6 +1020,8 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
 
 ## `view_rss_feeds`
 
+RSS feed response projection with current discoverability and topic references.
+
 ```sql
  SELECT 'rss_feed'::text AS __entity_type,
     rss_feeds.id,
@@ -1053,6 +1075,8 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
 
 ## `view_topic_metrics`
 
+Topic activity metrics for current topic reads.
+
 ```sql
  SELECT 'topic_metrics'::text AS __entity_type,
     topic_id AS id,
@@ -1104,6 +1128,8 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
 
 ## `view_topics`
 
+Current topic response projection; callers enforce topic lifecycle and visibility.
+
 ```sql
  SELECT 'topic'::text AS __entity_type,
     topics.id,
@@ -1151,6 +1177,8 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
 
 ## `view_url_hostnames`
 
+Hostname response projection; callers restrict moderation filters and private capabilities.
+
 ```sql
  SELECT 'hostname'::text AS __entity_type,
     id,
@@ -1168,6 +1196,8 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
 
 ## `view_urls`
 
+URL response projection; callers enforce URL visibility and paid crawl-history access.
+
 ```sql
  SELECT 'url'::text AS __entity_type,
     urls.id,
@@ -1181,6 +1211,8 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
 ```
 
 ## `view_user_list_items`
+
+User list content projection; callers enforce list ownership and audience access.
 
 ```sql
  SELECT li.id,
@@ -1207,6 +1239,8 @@ UNION ALL
 
 ## `view_user_metrics`
 
+User activity metrics for public profile reads.
+
 ```sql
  SELECT 'user_metrics'::text AS __entity_type,
     id,
@@ -1219,6 +1253,8 @@ UNION ALL
 ```
 
 ## `view_users_private`
+
+Private account projection for the authenticated owner or explicitly authorized staff; never a public user response.
 
 ```sql
  SELECT 'user'::text AS __entity_type,
@@ -1337,6 +1373,8 @@ UNION ALL
 ```
 
 ## `view_users_public`
+
+Public user profile projection excluding private account and authentication fields.
 
 ```sql
  SELECT e.__entity_type,

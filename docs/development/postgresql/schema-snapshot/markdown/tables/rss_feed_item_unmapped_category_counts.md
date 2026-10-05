@@ -29,4 +29,5 @@ _none_
 - `rss_feed_item_unmapped_category_counts_pkey`: `CREATE UNIQUE INDEX rss_feed_item_unmapped_category_counts_pkey ON public.rss_feed_item_unmapped_category_counts USING btree (category_text)`
 
 **Triggers:**
-_none_
+
+- `trg_rss_feed_item_unmapped_category_counts__updated_at`: `CREATE TRIGGER trg_rss_feed_item_unmapped_category_counts__updated_at BEFORE UPDATE ON public.rss_feed_item_unmapped_category_counts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

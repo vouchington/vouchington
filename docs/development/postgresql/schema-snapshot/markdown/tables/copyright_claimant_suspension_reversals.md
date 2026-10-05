@@ -12,7 +12,6 @@ Not partitioned — growth: unbounded.
 | `copyright_restriction_id` | `uuid`                     | no       |                              |          |           |           | Automatic restriction that was reversed. At most one marker per restriction.            |
 | `reversed_at`              | `timestamp with time zone` | no       |                              |          |           |           | Time the reversal was decided; the restore delivery that lifts the restriction follows. |
 | `created_at`               | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                         |
-| `updated_at`               | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                         |
 
 **Primary key:** `PRIMARY KEY (id)`
 

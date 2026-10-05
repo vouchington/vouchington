@@ -17,7 +17,6 @@ Not partitioned — growth: unbounded.
 | `body_ciphertext`                      | `text`                                     | no       |                              |          |           |           | Authenticated ciphertext of the private structured submission or preserved message body.                                        |
 | `copyright_notice_guest_capability_id` | `uuid`                                     | yes      |                              |          |           |           | Guest capability that filed this in-case guest submission; NULL for every other source. One court or CCB hold per capability.   |
 | `created_at`                           | `timestamp with time zone`                 | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                 |
-| `updated_at`                           | `timestamp with time zone`                 | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                 |
 
 **Primary key:** `PRIMARY KEY (id)`
 

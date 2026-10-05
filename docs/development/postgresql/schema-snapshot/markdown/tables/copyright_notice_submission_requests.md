@@ -14,7 +14,6 @@ Not partitioned — growth: unbounded.
 | `idempotency_key`                | `uuid`                     | no       |                              |          |           |           | Caller-generated UUID preventing duplicate response admission. |
 | `request_sha256`                 | `bytea`                    | no       |                              |          |           |           | Digest used to reject conflicting reuse of an idempotency key. |
 | `created_at`                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                |
-| `updated_at`                     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                |
 
 **Primary key:** `PRIMARY KEY (id)`
 

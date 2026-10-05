@@ -22,7 +22,6 @@ Not partitioned — growth: unbounded.
 | `has_good_faith_statement`                  | `boolean`                  | yes      |                              |          |           |           | EU notifier good-faith declaration, required true; absent for UK.                                                                                   |
 | `received_at`                               | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | When Voucha stored this notice receipt.                                                                                                             |
 | `created_at`                                | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                     |
-| `updated_at`                                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                                     |
 
 **Primary key:** `PRIMARY KEY (id)`
 

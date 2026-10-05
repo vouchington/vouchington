@@ -14,7 +14,6 @@ Not partitioned — growth: unbounded.
 | `approved_at`    | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | When an operator approved this policy version.                                 |
 | `approved_by_id` | `uuid`                     | yes      |                              |          |           |           | Operator who approved this policy version. Null after that account is deleted. |
 | `created_at`     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                |
-| `updated_at`     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -42,4 +41,3 @@ Not partitioned — growth: unbounded.
 **Triggers:**
 
 - `trigger_copyright_jurisdiction_policy_approvals_immutable`: `CREATE TRIGGER trigger_copyright_jurisdiction_policy_approvals_immutable BEFORE DELETE OR UPDATE ON public.copyright_jurisdiction_policy_approvals FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
-- `trigger_copyright_jurisdiction_policy_approvals_updated_at`: `CREATE TRIGGER trigger_copyright_jurisdiction_policy_approvals_updated_at BEFORE UPDATE ON public.copyright_jurisdiction_policy_approvals FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

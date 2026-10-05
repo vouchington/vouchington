@@ -43,4 +43,5 @@ _none_
 - `idx_crawl_chunks__search_vector`: `CREATE INDEX idx_crawl_chunks__search_vector ON ONLY public.crawl_chunks USING gin (search_vector)`
 
 **Triggers:**
-_none_
+
+- `trg_crawl_chunks__updated_at`: `CREATE TRIGGER trg_crawl_chunks__updated_at BEFORE UPDATE ON public.crawl_chunks FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

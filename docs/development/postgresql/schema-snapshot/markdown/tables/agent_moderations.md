@@ -73,6 +73,7 @@ _none_
 
 **Triggers:**
 
+- `trg_agent_moderations__updated_at`: `CREATE TRIGGER trg_agent_moderations__updated_at BEFORE UPDATE ON public.agent_moderations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
 - `trigger_moderation_transparency_agent_delete_rollup`: `CREATE TRIGGER trigger_moderation_transparency_agent_delete_rollup AFTER DELETE ON public.agent_moderations REFERENCING OLD TABLE AS deleted_agent_moderations FOR EACH STATEMENT EXECUTE FUNCTION fn_project_moderation_transparency_agent_delete_rollup()`
 - `trigger_moderation_transparency_agent_projection_guard`: `CREATE TRIGGER trigger_moderation_transparency_agent_projection_guard BEFORE UPDATE OF id, agent_id, prompt_id, moderation_transparency_category, moderation_transparency_community_id ON public.agent_moderations FOR EACH ROW EXECUTE FUNCTION fn_reject_agent_moderation_transparency_projection()`
 - `trigger_moderation_transparency_agent_rollup`: `CREATE TRIGGER trigger_moderation_transparency_agent_rollup AFTER INSERT ON public.agent_moderations REFERENCING NEW TABLE AS new_agent_moderations FOR EACH STATEMENT EXECUTE FUNCTION fn_project_moderation_transparency_agent_insert_rollup()`

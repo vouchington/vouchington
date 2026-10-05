@@ -32,4 +32,5 @@ _none_
 - `topic_alias_category_mapping_reconciliations_pkey`: `CREATE UNIQUE INDEX topic_alias_category_mapping_reconciliations_pkey ON public.topic_alias_category_mapping_reconciliations USING btree (topic_alias_id)`
 
 **Triggers:**
-_none_
+
+- `trg_topic_alias_category_mapping_reconciliations__updated_at`: `CREATE TRIGGER trg_topic_alias_category_mapping_reconciliations__updated_at BEFORE UPDATE ON public.topic_alias_category_mapping_reconciliations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

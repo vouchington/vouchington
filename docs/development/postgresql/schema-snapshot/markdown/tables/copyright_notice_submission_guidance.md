@@ -15,7 +15,6 @@ Not partitioned — growth: unbounded.
 | `model`                          | `text`                     | no       |                              |          |           |           | Model identifier recorded for guidance provenance.                             |
 | `guidance_ciphertext`            | `text`                     | no       |                              |          |           |           | Encrypted, bounded advisory output visible only to authorized staff.           |
 | `created_at`                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                |
-| `updated_at`                     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                |
 
 **Primary key:** `PRIMARY KEY (id)`
 

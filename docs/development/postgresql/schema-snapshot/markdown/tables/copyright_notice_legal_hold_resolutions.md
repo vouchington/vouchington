@@ -16,7 +16,6 @@ Not partitioned — growth: unbounded.
 | `resolution_kind`                           | `copyright_notice_legal_hold_resolution_kinds` | no       |                              |          |           |           | Why the hold ended: dismissed, proceeding ended, or superseded by a corrected assessment.                   |
 | `rationale_ciphertext`                      | `text`                                         | no       |                              |          |           |           | Authenticated ciphertext of private staff rationale and supporting references.                              |
 | `created_at`                                | `timestamp with time zone`                     | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                             |
-| `updated_at`                                | `timestamp with time zone`                     | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                             |
 
 **Primary key:** `PRIMARY KEY (id)`
 

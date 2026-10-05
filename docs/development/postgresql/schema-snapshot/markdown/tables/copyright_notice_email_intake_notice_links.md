@@ -15,7 +15,6 @@ Not partitioned — growth: unbounded.
 | `link_kind`                                       | `copyright_notice_email_intake_link_kinds` | no       |                              |          |           |           | Whether the email opened the case or matched its thread.  |
 | `matched_reference_lookup`                        | `text`                                     | yes      |                              |          |           |           | Keyed digest that caused thread correlation.              |
 | `created_at`                                      | `timestamp with time zone`                 | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                           |
-| `updated_at`                                      | `timestamp with time zone`                 | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                           |
 
 **Primary key:** `PRIMARY KEY (id)`
 

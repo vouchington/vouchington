@@ -16,7 +16,6 @@ Not partitioned — growth: unbounded.
 | `recommendation`                 | `copyright_notice_appeal_recommendation_outcomes` | no       |                              |          |           |           | Bounded advisory disposition for a moderator; no worker acts on it.       |
 | `rationale_ciphertext`           | `text`                                            | no       |                              |          |           |           | Encrypted bounded agent rationale visible only to authorized staff.       |
 | `created_at`                     | `timestamp with time zone`                        | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                           |
-| `updated_at`                     | `timestamp with time zone`                        | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                           |
 
 **Primary key:** `PRIMARY KEY (id)`
 

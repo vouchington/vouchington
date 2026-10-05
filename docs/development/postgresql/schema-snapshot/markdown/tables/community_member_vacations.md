@@ -34,4 +34,5 @@ _none_
 - `idx_community_member_vacations__user_id`: `CREATE INDEX idx_community_member_vacations__user_id ON public.community_member_vacations USING btree (user_id) WHERE (user_id IS NOT NULL)`
 
 **Triggers:**
-_none_
+
+- `trg_community_member_vacations__updated_at`: `CREATE TRIGGER trg_community_member_vacations__updated_at BEFORE UPDATE ON public.community_member_vacations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

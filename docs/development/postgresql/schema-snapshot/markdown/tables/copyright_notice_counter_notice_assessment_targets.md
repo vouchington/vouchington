@@ -12,7 +12,6 @@ Not partitioned — growth: unbounded.
 | `copyright_notice_submission_assessment_id` | `uuid`                     | no       |                     |          |           |           | Counter-notice compliance assessment whose scope is recorded.                                               |
 | `copyright_notice_target_id`                | `uuid`                     | no       |                     |          |           |           | Exact hosted target the counter-notice asks to restore.                                                     |
 | `created_at`                                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                             |
-| `updated_at`                                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                             |
 
 **Primary key:** `PRIMARY KEY (copyright_notice_submission_assessment_id, copyright_notice_target_id)`
 

@@ -21,7 +21,6 @@ Not partitioned — growth: unbounded.
 | `reported_at`                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | When this transparency report was recorded.                                   |
 | `reported_by_id`             | `uuid`                     | yes      |                              |          |           |           | User who recorded the report. Null after that account is deleted.             |
 | `created_at`                 | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                               |
-| `updated_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                               |
 
 **Primary key:** `PRIMARY KEY (id)`
 
