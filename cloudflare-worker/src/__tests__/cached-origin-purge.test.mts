@@ -14,7 +14,11 @@ describe('CachedOrigin.purge', () => {
         props: { audience: 'anon', isRsc: false },
         waitUntil: () => {},
         passThroughOnException: () => {},
-        cache: { purge: purgeSpy },
+        cache: {
+          purge: purgeSpy,
+          invalidate: () =>
+            Promise.reject(new Error('Workers Cache invalidate is unused by purge')),
+        },
       },
       {},
     )

@@ -3,7 +3,8 @@ import type { CacheContext, CachePurgeResult } from '@cloudflare/workers-types/i
 import type { CachedOriginProps, Env } from '../../src/types.mts'
 import { MemoryCache } from './cache.mts'
 
-export type MockCacheContext = Pick<CacheContext, 'purge'>
+// CacheContext requires purge() and invalidate(). This worker deletes cached responses through purge().
+export type MockCacheContext = Pick<CacheContext, 'purge' | 'invalidate'>
 
 export interface EdgeExecutionContext {
   waitUntil: (promise: Promise<unknown>) => void
