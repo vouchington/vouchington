@@ -1574,6 +1574,7 @@ rules:
     rule: postgres-lock-ordering
     scope: repository
     options:
+      importSpecifier: '@data-stores/psql'
       include:
         - backend/**/*.mts
         - backend/**/*.ts
@@ -1587,6 +1588,7 @@ rules:
     rule: postgres-conflict-ordering
     scope: repository
     options:
+      importSpecifier: '@data-stores/psql'
       schemaCatalogPath: backend/data-stores/psql/schema-snapshot/schema.json
       sqlInclude:
         - backend/data-stores/psql/config-driven/**/*.sql
@@ -1614,6 +1616,7 @@ rules:
     rule: postgres-lock-ordering
     scope: repository
     options:
+      importSpecifier: '@data-stores/psql'
       schemaCatalogPath: backend/data-stores/psql/schema-snapshot/schema.json
       sqlInclude:
         - backend/data-stores/psql/config-driven/**/*.sql
@@ -1647,6 +1650,7 @@ rules:
     rule: postgres-no-generated-column-writes
     scope: repository
     options:
+      importSpecifier: '@data-stores/psql'
       # 0.46.1 peels DO $tag$ bodies for pairing engines. This rule may still
       # skip chr()-encoded statements. extraGeneratedColumns stays only for
       # config-driven tables whose DDL is TypeScript.
@@ -1824,6 +1828,7 @@ rules:
     rule: postgres-idempotent-insert
     scope: repository
     options:
+      importSpecifier: '@data-stores/psql'
       sqlInclude:
         - backend/data-stores/psql/config-driven/**/*.sql
       include:
@@ -1843,6 +1848,7 @@ rules:
     rule: postgres-no-offset
     scope: repository
     options:
+      importSpecifier: '@data-stores/psql'
       include:
         - backend/**/*.{ts,mts}
       exclude:
@@ -1855,6 +1861,7 @@ rules:
     rule: postgres-require-query-annotation
     scope: repository
     options:
+      importSpecifier: '@data-stores/psql'
       include:
         - backend/**/*.{ts,mts}
       exclude:
@@ -1867,6 +1874,7 @@ rules:
     rule: postgres-sql-shape-policy
     scope: repository
     options:
+      importSpecifier: '@data-stores/psql'
       sqlInclude:
         - backend/data-stores/psql/config-driven/**/*.sql
       include:
@@ -1885,6 +1893,7 @@ rules:
     rule: postgres-required-predicates
     scope: repository
     options:
+      importSpecifier: '@data-stores/psql'
       include:
         - backend/**/*.{ts,mts,js}
       exclude:

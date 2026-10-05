@@ -20,6 +20,7 @@
     "no-mistakes/postgres-no-manual-transaction": [
       "error",
       {
+        "importSpecifier": "@data-stores/psql",
         "owners": [
           "backend/data-stores/psql/explain-analyze.mts",
           "backend/test-helpers/postgres-advisory-lock.mts",
@@ -28,7 +29,10 @@
         ]
       }
     ],
-    "no-mistakes/postgres-no-unbounded-query-fanout": "error",
+    "no-mistakes/postgres-no-unbounded-query-fanout": [
+      "error",
+      { "importSpecifier": "@data-stores/psql" }
+    ],
     "no-console": "off",
     "no-void": "off",
     "no-await-in-loop": "off"
