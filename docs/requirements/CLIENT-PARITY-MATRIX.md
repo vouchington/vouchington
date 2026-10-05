@@ -206,8 +206,10 @@ decision tools use the separate exact OAuth `copyright-notices:write` grant, whi
 `copyright-notices:read`, and the default-off `copyright.mcpDecisionTools` switch. Umbrella grants
 cover neither copyright grant. These 17 staff tools remain admin MCP only: they introduce no
 native tool-manifest capability or native staff screen. Consent and credential pickers use the
-generated scope catalog and retain explicit selection for exact grants. Email approval/admission
-uses server-owned recommendation fields rather than caller contact details; replies are fixed.
+generated scope catalog and retain explicit selection for exact grants. Email approval takes the
+same caller-stated notice form as the staff REST route, with the recommendation as guidance only;
+admission uses server-owned recommendation fields rather than caller contact details; replies are
+fixed.
 The [admin API contract](api/v1/admin/README.md#mcp-clients) owns tool scope and exclusions, and
 the [runbook](../runbooks/copyright-notices.md#copyright-mcp-decision-tools) owns developer-only
 REST enablement and MCP disablement.
