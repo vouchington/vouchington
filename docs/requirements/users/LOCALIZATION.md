@@ -327,6 +327,9 @@ key) across every consumer at once, not just the catalogs.
 - Community about text uses `CommunityAboutCopy` on the community card and the community about
   aside. It resolves `default_language` before `lingua_rs_detected_language` and sets `lang`/`dir`
   on that paragraph. The aside's empty-description label is UI copy and stays unmarked.
+- Topic about text uses `TopicAboutCopy` on the topic card. Topics have no declared language, so
+  the excerpt sets `lang`/`dir` from `lingua_rs_detected_language`. The topic description aside
+  passes that same detected language to `MarkdownContent`. Blank about text is omitted.
 - APIs that project post titles or markdown retain nullable `declared_language` and
   `lingua_rs_detected_language`; shared API fixtures stage that contract before the linked native
   client change. Swift and .NET apply language and direction at the content leaf.

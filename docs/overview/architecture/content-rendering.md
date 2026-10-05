@@ -223,6 +223,11 @@ Community about text is a separate plain-text boundary, `CommunityAboutCopy`. It
 declared-then-detected rule with `default_language` and `lingua_rs_detected_language`, on both the
 community card and the community about aside. It is not a post-content boundary.
 
+Topic card excerpts use `TopicAboutCopy`. Topics have no declared language, so the excerpt sets
+`lang` and `dir` from `lingua_rs_detected_language` and keeps the 200-character card truncation.
+The topic description aside passes that detected language to `MarkdownContent`. Blank about text is
+omitted. It is not a post-content boundary.
+
 Moderation report labels retain `target_label` for system-owned fallbacks. Post/comment authored
 fragments travel separately as `target_content`; comment prefixes and deleted/private fallbacks
 stay outside the authored boundary. Inputs, ARIA interpolation, metadata/routes, image alt text,
