@@ -4,7 +4,10 @@ import {
   cloudflareWorkerCancelledBeforeJobSignalRule,
   workflowCancelledWithoutFailureSignalRule,
 } from './ci-cancelled-rules.mts'
-import { detectChangesPathsFilterGithub5xxRule } from './detect-changes-rules.mts'
+import {
+  detectChangesPathsFilterGithub5xxRule,
+  detectChangesPathsFilterGithubConnectTimeoutRule,
+} from './detect-changes-rules.mts'
 import { gitleaksInstallReleasesDownloadFlakeRule } from './gitleaks-rules.mts'
 import {
   lintLinksGithub5xxRule,
@@ -30,6 +33,7 @@ export const RULES: TransientRetryRule[] = [
   lintLinksGithub5xxRule,
   lintLinksSetupLycheeDownloadFlakeRule,
   detectChangesPathsFilterGithub5xxRule,
+  detectChangesPathsFilterGithubConnectTimeoutRule,
   gitleaksInstallReleasesDownloadFlakeRule,
   planCompletionSetupNodeToolCacheTimeoutRule,
   mainBackendImageRegistryLayerBlobNotFoundRule,
