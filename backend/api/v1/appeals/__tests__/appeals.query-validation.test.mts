@@ -44,10 +44,11 @@ describe('GET /api/v1/appeals/:id query contract', () => {
     appealId = appeal.id
   })
 
-  const get = async (viewer: PrivateUser, query: string) => {
+  const detailPath = (query: string) => `/api/v1/appeals/${appealId}${query}`
+  const signedIn = async (viewer: PrivateUser) => {
     const request = createRequest()
     await request.authenticateAs(viewer)
-    return request.get(`/api/v1/appeals/${appealId}${query}`)
+    return request
   }
 
   describe.each([
@@ -56,14 +57,15 @@ describe('GET /api/v1/appeals/:id query contract', () => {
     ['staff', () => staff],
   ])('for %s', (_label, viewer) => {
     it.each(invalidValues)('answers 422 for consistency as %s', async (_valueLabel, query) => {
-      const response = await (await get(viewer(), `?${query}`)).expect(422)
+      const request = await signedIn(viewer())
+      const response = await request.get(detailPath(`?${query}`)).expect(422)
       expect(response.text).toContain('Invalid request query')
     })
   })
 
   it('serves a non-staff appellant the redacted appeal and ignores consistency=primary', async () => {
     for (const query of ['', '?consistency=primary']) {
-      const response = await (await get(appellant, query)).expect(200)
+      const response = await (await signedIn(appellant)).get(detailPath(query)).expect(200)
       expect(response.body.appeal.id).toBe(appealId)
       expect(JSON.stringify(response.body)).not.toContain('"staff_context"')
     }
@@ -71,13 +73,13 @@ describe('GET /api/v1/appeals/:id query contract', () => {
 
   it('keeps the 403 for a non-owner viewer who sends a valid or omitted consistency', async () => {
     for (const query of ['', '?consistency=primary']) {
-      await (await get(otherUser, query)).expect(403)
+      await (await signedIn(otherUser)).get(detailPath(query)).expect(403)
     }
   })
 
   it('serves staff the full appeal with or without consistency=primary', async () => {
     for (const query of ['', '?consistency=primary']) {
-      const response = await (await get(staff, query)).expect(200)
+      const response = await (await signedIn(staff)).get(detailPath(query)).expect(200)
       expect(response.body.appeal.id).toBe(appealId)
       expect(response.body.appeal.staff_context).toBeDefined()
     }
