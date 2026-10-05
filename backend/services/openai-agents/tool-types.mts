@@ -55,6 +55,11 @@ export type ToolApiEndpoint = {
 export type ToolOutputSchema = { type: 'object'; [keyword: string]: unknown }
 
 export type ToolMeta = {
+  // Copyright decision tools are absent from MCP discovery and resolution while the audited
+  // operator switch is off. Other surfaces ignore this marker.
+  switch?: 'copyright.mcpDecisionTools'
+  // The validated rationale of a copyright decision call is encrypted in its MCP audit row.
+  auditRationale?: true
   // Which surfaces this tool is exposed on. Defaults to ['internal'] when absent.
   surfaces: readonly ToolSurface[]
   // Human-readable name that MCP clients display instead of the snake_case tool name.

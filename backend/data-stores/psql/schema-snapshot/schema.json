@@ -51,6 +51,7 @@
         "cards:write",
         "communities:read",
         "copyright-notices:read",
+        "copyright-notices:write",
         "data-points:read",
         "domain-ratings:read",
         "editorial:read",
@@ -45916,7 +45917,8 @@
     "mcp_call_audit_events": {
       "checkConstraints": {
         "mcp_call_audit_events_check": "CHECK (((tool_name IS NULL) OR (jsonrpc_method = 'tools/call'::text)))",
-        "mcp_call_audit_events_check1": "CHECK ((num_nonnulls(oauth_client_id, api_key_id) = 1))",
+        "mcp_call_audit_events_check1": "CHECK (((copyright_rationale_ciphertext IS NULL) OR ((surface = 'admin_mcp'::mcp_call_audit_event_surfaces) AND (jsonrpc_method = 'tools/call'::text) AND (outcome = 'accepted'::mcp_call_audit_event_outcomes) AND (tool_name IS NOT NULL))))",
+        "mcp_call_audit_events_check2": "CHECK ((num_nonnulls(oauth_client_id, api_key_id) = 1))",
         "mcp_call_audit_events_jsonrpc_method_check": "CHECK ((jsonrpc_method ~ '^[A-Za-z][A-Za-z0-9_./-]{0,63}$'::text))",
         "mcp_call_audit_events_outcome_check": "CHECK ((outcome = ANY (ARRAY['accepted'::mcp_call_audit_event_outcomes, 'tool_error'::mcp_call_audit_event_outcomes, 'invalid_request'::mcp_call_audit_event_outcomes, 'invalid_arguments'::mcp_call_audit_event_outcomes, 'not_found'::mcp_call_audit_event_outcomes, 'role_denied'::mcp_call_audit_event_outcomes, 'plan_denied'::mcp_call_audit_event_outcomes, 'scopes_undeclared'::mcp_call_audit_event_outcomes, 'insufficient_scope'::mcp_call_audit_event_outcomes, 'rate_limited'::mcp_call_audit_event_outcomes])))",
         "mcp_call_audit_events_resource_check": "CHECK (((char_length(resource) >= 1) AND (char_length(resource) <= 2048)))",
@@ -45945,6 +45947,17 @@
           "nullable": true,
           "ordinalPosition": 6,
           "type": "uuid"
+        },
+        "copyright_rationale_ciphertext": {
+          "collation": null,
+          "comment": "Encrypted validated rationale for an admitted administrator copyright decision call, bound to this audit row id. No general argument or result text is stored.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11,
+          "type": "text"
         },
         "correlation_id": {
           "collation": null,
@@ -45998,7 +46011,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
         },
         "outcome": {
@@ -46046,7 +46059,7 @@
           "type": "text"
         }
       },
-      "comment": "Append-only durable audit of MCP calls made with a verified OAuth access token or user API key; one row per JSON-RPC message, plus a tool_error follow-up row for an admitted tool call that failed. Arguments, results, tokens, keys, and headers are never stored.",
+      "comment": "Append-only durable audit of MCP calls made with a verified OAuth access token or user API key; one row per JSON-RPC message, plus a tool_error follow-up row for an admitted tool call that failed. Only validated copyright decision rationales are encrypted; arbitrary arguments, results, tokens, keys, and headers are never stored.",
       "foreignKeys": {
         "mcp_call_audit_events_actor_user_id_fkey": {
           "columns": ["actor_user_id"],

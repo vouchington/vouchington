@@ -112,6 +112,14 @@ export const ADMIN_RESOURCE_DEFINITIONS = {
     surfaces: ['oauth'],
     requiresExactGrant: true,
   },
+  'copyright-notices:write': {
+    action: 'write',
+    audience: 'admin',
+    resource: 'copyright-notices',
+    surfaces: ['oauth'],
+    requires: 'copyright-notices:read',
+    requiresExactGrant: true,
+  },
   'analytics:read': {
     action: 'read',
     audience: 'admin',

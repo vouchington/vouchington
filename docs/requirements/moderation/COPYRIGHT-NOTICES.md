@@ -560,6 +560,23 @@ participant case detail, public notice, and repeat-infringer accounts under the 
 detail contains neither raw MIME nor parsed message or parser-error text. The read tools retain
 the staff REST lists' opaque pagination and do not perform a legal decision.
 
+A separate exact OAuth `copyright-notices:write` grant requires that read grant and enables none
+of the 17 staff decision tools until the default-off `copyright.mcpDecisionTools` switch is on.
+Admin umbrella scopes do not substitute for the exact grants. Only a developer using the audited
+REST configuration route can enable the switch; MCP may disable it. The
+[admin API contract](../api/v1/admin/README.md#mcp-clients) owns the supported intake, case and
+repeat-infringer decisions, replays and guest revocation, and the excluded EU/UK, territorial,
+statement-of-reasons and other decisions. No tool issues a guest capability.
+
+Email approval and correspondence admission build inputs from the latest stored recommendation,
+with no caller contact or reply fields. Missing required declarations or ambiguous/missing hosted
+images refuse admission; email rejection uses fixed text and queues no reply without a parsed
+sender. Each write requires a rationale; path-only operations retain it only in the encrypted
+per-call audit, under existing append-only retention and key rotation, without a new read or
+decryption API. The [runbook](../../runbooks/copyright-notices.md#copyright-mcp-decision-tools)
+owns enablement and the [MCP audit contract](../../overview/architecture/services/mcp-tools/README.md#mcp-audit-log)
+owns audit behavior.
+
 The web uses Turnstile for each notice, appeal, and counter-notice form. Native clients use the
 attestation route described by the CAPTCHA boundary. CAPTCHA is an intake abuse control, not a
 legal-validity or merits assessment.

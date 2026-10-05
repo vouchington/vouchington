@@ -10,6 +10,12 @@ import { testClaimantCanViewCopyrightImage } from '@voucha/test-helpers/copyrigh
 import { resolveCopyrightImagePlacement } from './placement-resolution.mts'
 
 describe('copyright image placement resolution', () => {
+  it('resolves a story image to its canonical story URL', async () => {
+    const fixture = await createTestCopyrightImageFixture('post-image', { postType: 'story' })
+    const resolved = await resolveCopyrightImagePlacement(fixture.selector)
+    expect(new URL(resolved.hostedUseUrl).pathname).toMatch(/^\/story\//)
+  })
+
   it.each(TEST_COPYRIGHT_IMAGE_KINDS)(
     'resolves a live %s image to its current placement',
     async kind => {

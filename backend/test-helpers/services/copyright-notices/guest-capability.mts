@@ -8,10 +8,10 @@ import {
 } from '../../entities/index.mts'
 import type { PrivateUser } from '../../../services/users/types.mts'
 import {
-  admitCopyrightEmailCorrespondence,
   createCopyrightEmailIntake,
   recordCopyrightEmailParse,
 } from '../../../services/copyright-notices/index.mts'
+import { admitCopyrightEmailCorrespondence } from '../../../services/copyright-notices/email-correspondence-admission.mts'
 import { linkCopyrightEmailIntakeToNotice } from '../../../services/copyright-notices/email-threading.mts'
 import { createCopyrightNoticeAggregate } from './create-notice-aggregate.mts'
 

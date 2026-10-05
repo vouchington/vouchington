@@ -1,6 +1,5 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import {
-  admitCopyrightEmailCorrespondence,
   appendCopyrightLegalHoldAssessment,
   copyrightAppealRecommendations,
   createCopyrightCounterNotice,
@@ -11,6 +10,7 @@ import {
   reviewCopyrightAppeal,
   reviewCopyrightCounterNotice,
 } from '../../../services/copyright-notices/index.mts'
+import { admitCopyrightEmailCorrespondence } from '../../../services/copyright-notices/email-correspondence-admission.mts'
 import { claimCopyrightDeliveryIntent } from '../../../services/copyright-notices/delivery-intents.mts'
 import { linkCopyrightEmailIntakeToNotice } from '../../../services/copyright-notices/email-threading.mts'
 import { insertEncryptedCopyrightHoldSubmission } from '../../data-stores/psql/copyright-hold-submission.mts'

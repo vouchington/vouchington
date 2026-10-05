@@ -9,9 +9,9 @@ import {
 import {
   createCopyrightEmailIntake,
   getCopyrightStaffEmailIntake,
-  promoteCopyrightEmailIntake,
   recordCopyrightEmailParse,
 } from './index.mts'
+import { promoteCopyrightEmailIntake } from './email-promotion.mts'
 
 describe('copyright email intake threading', () => {
   it('does not let an early reply open a separate initial case before its root is linked', async () => {

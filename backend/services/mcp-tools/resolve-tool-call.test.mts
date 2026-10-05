@@ -5,7 +5,7 @@ import { ALL_TOOLS } from '@voucha/tools/registry/index'
 import type { Tool } from '@services/openai-agents/tool-types'
 import type { PrivateUser } from '@services/users/types'
 import { callMcpTool } from './call-tool.mts'
-import { USER_MCP_SERVER_CONFIG } from './config.mts'
+import { ADMIN_MCP_SERVER_CONFIG, USER_MCP_SERVER_CONFIG } from './config.mts'
 import { listMcpToolsForUser } from './list-tools.mts'
 import { authorizeMcpTool } from './resolve-tool-call.mts'
 
@@ -61,6 +61,52 @@ describe('authorizeMcpTool', () => {
     expect(authorize(scopedTool, ['mcp.user:write'])).toEqual({
       status: 'allowed',
       tool: scopedTool,
+    })
+  })
+
+  it('checks role, plan and the copyright switch before exact scopes', () => {
+    const tool = fixtureTool(
+      'copyright_gate_fixture',
+      {
+        surfaces: ['admin_mcp'],
+        plan: 'pro',
+        switch: 'copyright.mcpDecisionTools',
+        requiredScopes: { admin_mcp: ['copyright-notices:write'] },
+      },
+      { administrator: true },
+    )
+    const staff = { ...user, roles: ['administrator'], membership_plan: 'pro' as const }
+    const exact = ['copyright-notices:read', 'copyright-notices:write'] as const
+    expect(authorizeMcpTool(tool, user, exact, ADMIN_MCP_SERVER_CONFIG, false)).toEqual({
+      status: 'role_denied',
+    })
+    expect(
+      authorizeMcpTool(
+        tool,
+        { ...staff, membership_plan: null },
+        exact,
+        ADMIN_MCP_SERVER_CONFIG,
+        false,
+      ),
+    ).toEqual({ status: 'plan_denied' })
+    expect(authorizeMcpTool(tool, staff, exact, ADMIN_MCP_SERVER_CONFIG, false)).toEqual({
+      status: 'not_found',
+    })
+    expect(authorizeMcpTool(tool, staff, [], ADMIN_MCP_SERVER_CONFIG, false)).toEqual({
+      status: 'not_found',
+    })
+    expect(
+      authorizeMcpTool(
+        tool,
+        staff,
+        ['mcp.admin:read', 'mcp.admin:write'],
+        ADMIN_MCP_SERVER_CONFIG,
+        true,
+      ),
+    ).toEqual({ status: 'insufficient_scope', requiredScopes: ['copyright-notices:write'] })
+    expect(authorizeMcpTool(tool, staff, exact, ADMIN_MCP_SERVER_CONFIG, true)).toEqual({
+      status: 'allowed',
+      tool,
     })
   })
 

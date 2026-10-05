@@ -12,8 +12,8 @@ import {
   createOutboundCopyrightCorrespondence,
   markCopyrightDeliveryIntentSent,
   recordCopyrightEmailParse,
-  rejectCopyrightEmailIntake,
 } from './index.mts'
+import { rejectCopyrightEmailIntake } from './email-rejection.mts'
 import { claimCopyrightDeliveryIntent } from './delivery-intents.mts'
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 

@@ -18,6 +18,7 @@ type UserForToolAuthorization = {
 }
 
 export type McpToolAuthorization =
+  | { status: 'not_found' }
   | { status: 'role_denied' }
   | { status: 'plan_denied' }
   | { status: 'scopes_undeclared' }
@@ -32,9 +33,13 @@ export function authorizeMcpTool(
   user: UserForToolAuthorization,
   grantedScopes: readonly ApiScope[],
   config: McpServerConfig,
+  copyrightDecisionToolsEnabled = false,
 ): McpToolAuthorization {
   if (!isToolAllowedForUser(tool, user)) return { status: 'role_denied' }
   if (!isToolAllowedForPlan(tool, user)) return { status: 'plan_denied' }
+  if (tool.meta?.switch === 'copyright.mcpDecisionTools' && !copyrightDecisionToolsEnabled) {
+    return { status: 'not_found' }
+  }
   const requiredScopes = getToolRequiredScopes(tool, config.surface)
   if (requiredScopes == null) return { status: 'scopes_undeclared' }
   if (!hasEveryScope(grantedScopes, requiredScopes)) {
@@ -48,12 +53,13 @@ export function resolveMcpToolCall(
   user: UserForToolAuthorization,
   grantedScopes: readonly ApiScope[],
   config: McpServerConfig,
+  copyrightDecisionToolsEnabled = false,
 ): McpToolCallResolution {
   const tool = listToolsForSurface(config.surface, ALL_TOOLS).find(
     candidate => candidate.schema.name === toolName,
   )
   if (!tool || !isToolMcpEligible(tool)) return { status: 'not_found' }
-  return authorizeMcpTool(tool, user, grantedScopes, config)
+  return authorizeMcpTool(tool, user, grantedScopes, config, copyrightDecisionToolsEnabled)
 }
 
 // Returns the scopes to request on step-up when a single tools/call fails only on scope. The union
@@ -64,10 +70,17 @@ export function findMcpStepUpScopes(
   user: UserForToolAuthorization,
   grantedScopes: readonly ApiScope[],
   config: McpServerConfig,
+  copyrightDecisionToolsEnabled = false,
 ): ApiScope[] | null {
   const request = CallToolRequestSchema.safeParse(parsedBody)
   if (!request.success) return null
-  const resolution = resolveMcpToolCall(request.data.params.name, user, grantedScopes, config)
+  const resolution = resolveMcpToolCall(
+    request.data.params.name,
+    user,
+    grantedScopes,
+    config,
+    copyrightDecisionToolsEnabled,
+  )
   if (resolution.status !== 'insufficient_scope') return null
   return withScopePrerequisites([...grantedScopes, ...resolution.requiredScopes])
 }

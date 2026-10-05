@@ -1,5 +1,4 @@
 export { assertCopyrightIntakeEnabled, isCopyrightIntakeEnabled } from './activation.mts'
-export { resolveCopyrightImagePlacement } from './placement-resolution.mts'
 export { liftCopyrightRestrictionWithoutSetter } from './restriction-lifts.mts'
 export { currentUserCanLiftCopyrightRestriction } from './authorization.mts'
 export { createCopyrightFormIntake, createCopyrightGuestIdentity } from './form-intakes.mts'
@@ -16,14 +15,7 @@ export { createCopyrightEmailIntake } from './email-intakes.mts'
 export type { CopyrightEmailSesVerdict, CopyrightEmailSesVerdicts } from './email-ses-verdicts.mts'
 export { loadCopyrightEmailRawEvidence } from './email-raw-evidence.mts'
 export { recordCopyrightEmailParse } from './email-intake-parses.mts'
-export {
-  admitCopyrightEmailCorrespondence,
-  rejectCopyrightEmailCorrespondence,
-} from './email-correspondence-admission.mts'
-export { promoteCopyrightEmailIntake } from './email-promotion.mts'
-export { rejectCopyrightEmailIntake } from './email-rejection.mts'
 export { recordCopyrightEmailIntakeLegalProcess } from './email-legal-process.mts'
-export { replayFailedCopyrightEmailIntakeReply } from './email-intake-reply-replay.mts'
 export {
   getCopyrightStaffEmailIntake,
   getCopyrightParticipantNoticeDetail,
@@ -83,7 +75,6 @@ export {
   markCopyrightDeliveryIntentSent,
   markCopyrightDeliveryIntentEmailSent,
   markCopyrightDeliveryIntentBouncedBySesMessageId,
-  replayFailedCopyrightDeliveryIntent,
   searchRecoverableCopyrightDeliveryIntentIds,
 } from './delivery-intents.mts'
 export {

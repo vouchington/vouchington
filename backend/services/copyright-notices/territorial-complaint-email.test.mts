@@ -10,7 +10,10 @@ import { createTestEuParticipantCase } from '@voucha/test-helpers/copyright-eu-p
 import { createTestGuestEuCase } from '@voucha/test-helpers/copyright-eu-guest-cases'
 import { createTestHistoricalEuDecisionWindow } from '@voucha/test-helpers/copyright-territorial-historical-window'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
-import { admitCopyrightEmailCorrespondence, rejectCopyrightEmailCorrespondence } from './index.mts'
+import {
+  admitCopyrightEmailCorrespondence,
+  rejectCopyrightEmailCorrespondence,
+} from './email-correspondence-admission.mts'
 
 describe('territorial complaint email admission', () => {
   useCopyrightIntakeEnvironment()

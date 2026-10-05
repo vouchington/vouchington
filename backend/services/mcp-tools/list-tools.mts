@@ -44,11 +44,16 @@ export function listMcpToolsForUser(
   user: UserForListing,
   permissions: readonly ApiScope[],
   config: McpServerConfig,
+  copyrightDecisionToolsEnabled = false,
 ): McpToolShape[] {
   const tools: McpToolShape[] = []
   for (const tool of listToolsForSurface(config.surface, ALL_TOOLS)) {
     if (!isToolMcpEligible(tool)) continue
-    if (authorizeMcpTool(tool, user, permissions, config).status !== 'allowed') continue
+    if (
+      authorizeMcpTool(tool, user, permissions, config, copyrightDecisionToolsEnabled).status !==
+      'allowed'
+    )
+      continue
     tools.push(toolToMcpTool(tool, config.surface))
   }
   return tools

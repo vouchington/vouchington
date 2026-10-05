@@ -7,11 +7,8 @@ import {
 } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { readTestCopyrightDeliveryIntentState } from '@voucha/test-helpers/copyright-lease-fencing'
 import { declineTestCopyrightEmailIntake } from '@voucha/test-helpers/services/copyright-notices/declined-email-intake'
-import {
-  markCopyrightDeliveryIntentSent,
-  prepareCopyrightEmailDelivery,
-  replayFailedCopyrightDeliveryIntent,
-} from './index.mts'
+import { markCopyrightDeliveryIntentSent, prepareCopyrightEmailDelivery } from './index.mts'
+import { replayFailedCopyrightDeliveryIntent } from './delivery-intents.mts'
 import { findOutboundCopyrightEmailThreadMatch } from './email-threading-outbound.mts'
 
 const rationale = 'INTERNAL-RATIONALE staff-only reasoning that must never reach the sender'

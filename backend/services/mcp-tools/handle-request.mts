@@ -11,6 +11,7 @@ import type { ApiScope } from '@modules/scopes'
 import type { McpHttpResponse } from './http-response.mts'
 
 type McpRequestContext = {
+  copyrightDecisionToolsEnabled?: boolean
   user: BasicUser & {
     membership_plan: 'plus' | 'pro' | null
   }
@@ -32,7 +33,12 @@ export async function handleMcpHttpRequest(ctx: McpRequestContext): Promise<McpH
   )
 
   server.setRequestHandler(ListToolsRequestSchema, () => {
-    const tools = listMcpToolsForUser(ctx.user, ctx.permissions, ctx.config)
+    const tools = listMcpToolsForUser(
+      ctx.user,
+      ctx.permissions,
+      ctx.config,
+      ctx.copyrightDecisionToolsEnabled,
+    )
     return Promise.resolve({ tools })
   })
 
@@ -43,6 +49,7 @@ export async function handleMcpHttpRequest(ctx: McpRequestContext): Promise<McpH
       ctx.user,
       ctx.permissions,
       ctx.config,
+      ctx.copyrightDecisionToolsEnabled,
     )
     if (result.isError) await ctx.onToolError?.(request.params.name)
     return result

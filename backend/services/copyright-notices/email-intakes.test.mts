@@ -13,11 +13,11 @@ import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/co
 import {
   createCopyrightEmailIntake,
   prepareCopyrightEmailDelivery,
-  promoteCopyrightEmailIntake,
   recordCopyrightEmailParse,
-  rejectCopyrightEmailIntake,
   searchRecoverableCopyrightDeliveryIntentIds,
 } from './index.mts'
+import { promoteCopyrightEmailIntake } from './email-promotion.mts'
+import { rejectCopyrightEmailIntake } from './email-rejection.mts'
 import { appendCopyrightEmailIntakeRecommendation } from './email-recommendations.mts'
 import { getCopyrightEmailIntakeForAgent } from './email-intake-parses.mts'
 import { createParsedCopyrightEmailIntake } from './email-intake-test-fixtures.mts'

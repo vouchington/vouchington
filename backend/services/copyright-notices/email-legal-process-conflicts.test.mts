@@ -10,11 +10,9 @@ import {
   readCopyrightEmailIntakeReviewRecord,
 } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import { createParsedCopyrightEmailIntake } from './email-intake-test-fixtures.mts'
-import {
-  promoteCopyrightEmailIntake,
-  recordCopyrightEmailIntakeLegalProcess,
-  rejectCopyrightEmailIntake,
-} from './index.mts'
+import { recordCopyrightEmailIntakeLegalProcess } from './index.mts'
+import { promoteCopyrightEmailIntake } from './email-promotion.mts'
+import { rejectCopyrightEmailIntake } from './email-rejection.mts'
 
 async function createModerator() {
   const record = await createTestUser()

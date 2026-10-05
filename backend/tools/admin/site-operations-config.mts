@@ -73,6 +73,13 @@ const update = createAdminTool<{ namespace: string; config: Record<string, unkno
     openWorldHint: false,
   },
   run: async (user, args) => {
+    assert(
+      args.namespace !== 'copyright' ||
+        !Object.hasOwn(args.config, 'mcpDecisionTools') ||
+        args.config.mcpDecisionTools === false,
+      403,
+      'Copyright MCP decision tools must be enabled outside MCP',
+    )
     try {
       const result = await updateDynamicConfigNamespace(user, args.namespace, args.config)
       assert(result, 404, 'Dynamic config namespace not found')

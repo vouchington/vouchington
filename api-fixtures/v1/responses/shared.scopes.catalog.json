@@ -109,6 +109,15 @@
       "surfaces": ["oauth"]
     },
     {
+      "action": "write",
+      "audience": "admin",
+      "description_key": null,
+      "requires": "copyright-notices:read",
+      "resource": "copyright-notices",
+      "scope": "copyright-notices:write",
+      "surfaces": ["oauth"]
+    },
+    {
       "action": "read",
       "audience": "user",
       "description_key": null,

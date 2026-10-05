@@ -8,11 +8,8 @@ import {
   createParsedCopyrightEmailIntake,
   createUnparsedCopyrightEmailIntake,
 } from './email-intake-test-fixtures.mts'
-import {
-  prepareCopyrightEmailDelivery,
-  recordCopyrightEmailParse,
-  rejectCopyrightEmailIntake,
-} from './index.mts'
+import { prepareCopyrightEmailDelivery, recordCopyrightEmailParse } from './index.mts'
+import { rejectCopyrightEmailIntake } from './email-rejection.mts'
 
 type Moderator = Parameters<typeof rejectCopyrightEmailIntake>[0]['currentUser']
 type Decision = Pick<

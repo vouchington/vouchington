@@ -64,6 +64,7 @@
     "@services/review-disputes": "workspace:^",
     "@services/rss-feed-items": "workspace:^",
     "@services/rss-feeds": "workspace:^",
+    "@services/runtime-request-validation": "workspace:^",
     "@services/search-params": "workspace:^",
     "@services/stories": "workspace:^",
     "@services/topic-claims": "workspace:^",

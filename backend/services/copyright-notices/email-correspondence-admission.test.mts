@@ -9,13 +9,15 @@ import {
 import { readTestPendingCopyrightAgentDispatches } from '@voucha/test-helpers/services/copyright-notices/pending-agent-dispatches'
 import { decryptSecret } from '@modules/token-secrets'
 import {
-  admitCopyrightEmailCorrespondence,
   createCopyrightEmailIntake,
   prepareCopyrightEmailDelivery,
   recordCopyrightEmailParse,
-  rejectCopyrightEmailCorrespondence,
   reviewCopyrightCounterNotice,
 } from './index.mts'
+import {
+  admitCopyrightEmailCorrespondence,
+  rejectCopyrightEmailCorrespondence,
+} from './email-correspondence-admission.mts'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
 import { linkCopyrightEmailIntakeToNotice } from './email-threading.mts'
 import { copyrightSubmissionPurpose } from './submissions.mts'

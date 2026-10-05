@@ -82,6 +82,7 @@ describe('copyright dynamic-config namespace', () => {
     const current = await request.get(path).expect(200)
     expect(current.body.namespace.config).toEqual({
       automaticProvisionalWithholding: false,
+      mcpDecisionTools: false,
       reviewTargetMinutes: 0,
       evidenceRetentionDeletion: false,
       evidenceRetentionDays: 0,
@@ -95,6 +96,14 @@ describe('copyright dynamic-config namespace', () => {
       automaticWithholdingClaimantDailyCap: -1,
       automaticWithholdingPosterDailyCap: -1,
     })
+    expect(current.body.namespace.fields).toContainEqual(
+      expect.objectContaining({
+        name: 'mcpDecisionTools',
+        type: 'boolean',
+        value: false,
+        default_value: false,
+      }),
+    )
     expect(await getAutomaticWithholdingThresholds()).toBeNull()
     const moderatorRequest = createRequest()
     await moderatorRequest.authenticateAs(moderator)

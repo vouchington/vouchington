@@ -38,8 +38,15 @@ export async function callMcpTool(
   user: UserForCall,
   permissions: readonly ApiScope[],
   config: McpServerConfig,
+  copyrightDecisionToolsEnabled = false,
 ): Promise<CallToolResult> {
-  const resolution = resolveMcpToolCall(toolName, user, permissions, config)
+  const resolution = resolveMcpToolCall(
+    toolName,
+    user,
+    permissions,
+    config,
+    copyrightDecisionToolsEnabled,
+  )
   if (resolution.status !== 'allowed') throw toMcpToolCallError(resolution, toolName)
   const { tool } = resolution
 

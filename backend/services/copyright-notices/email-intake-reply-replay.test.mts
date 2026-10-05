@@ -12,11 +12,8 @@ import {
   bounceTestCopyrightEmailIntakeReply,
   declineTestCopyrightEmailIntake,
 } from '@voucha/test-helpers/services/copyright-notices/declined-email-intake'
-import {
-  markCopyrightDeliveryIntentSent,
-  prepareCopyrightEmailDelivery,
-  replayFailedCopyrightEmailIntakeReply,
-} from './index.mts'
+import { markCopyrightDeliveryIntentSent, prepareCopyrightEmailDelivery } from './index.mts'
+import { replayFailedCopyrightEmailIntakeReply } from './email-intake-reply-replay.mts'
 
 async function createStaff(role = 'moderator') {
   const user = await createTestUser()

@@ -52,6 +52,10 @@ export const copyrightRegistryEntry = defineDynamicConfigNamespace({
       description:
         'First UTC day after the DSA Article 19 exemption. Empty means unset and prevents any public statement submission, even if the switch is on.',
     },
+    mcpDecisionTools: {
+      description:
+        'Expose administrator copyright decision tools through MCP. Off by default; the existing REST staff workflow remains available.',
+    },
     automaticWithholdingMinTrustTier: {
       description:
         'Lowest claimant trust tier whose clear-screened notice may be withheld automatically. -1 means unset: every gate must be set before any automatic withholding happens, and an unset gate sends the notice to a moderator.',

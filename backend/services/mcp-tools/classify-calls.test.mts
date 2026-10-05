@@ -101,6 +101,49 @@ describe('classifyMcpCalls', () => {
     ])
   })
 
+  it('omits the registered tool name and rationale while copyright decisions are off', () => {
+    expect(
+      classifyMcpCalls(
+        call('review_copyright_form_intake', {
+          id: '00000000-0000-7000-8000-000000000121',
+          is_accepted: true,
+          rationale: 'Sensitive staff rationale',
+        }),
+        admin,
+        ['copyright-notices:read', 'copyright-notices:write'],
+        ADMIN_MCP_SERVER_CONFIG,
+        false,
+      ),
+    ).toEqual([{ jsonrpcMethod: 'tools/call', toolName: null, outcome: 'not_found' }])
+  })
+
+  it.each([
+    { rationale: '' },
+    { rationale: '   ' },
+    { rationale: 7 },
+    {},
+    { rationale: 'Sensitive staff rationale', unknown_argument: 'Sensitive caller input' },
+  ])('retains no plaintext rationale when copyright arguments are invalid: %j', fields => {
+    const events = classifyMcpCalls(
+      call('review_copyright_form_intake', {
+        id: '00000000-0000-7000-8000-000000000121',
+        is_accepted: true,
+        ...fields,
+      }),
+      admin,
+      ['copyright-notices:read', 'copyright-notices:write'],
+      ADMIN_MCP_SERVER_CONFIG,
+      true,
+    )
+    expect(events).toEqual([
+      {
+        jsonrpcMethod: 'tools/call',
+        toolName: 'review_copyright_form_intake',
+        outcome: 'invalid_arguments',
+      },
+    ])
+  })
+
   it('records a tools/call without a usable name as an invalid request', () => {
     expect(classify(call(42))).toEqual([
       { jsonrpcMethod: 'tools/call', toolName: null, outcome: 'invalid_request' },
