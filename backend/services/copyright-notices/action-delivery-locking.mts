@@ -40,10 +40,10 @@ export async function getCopyrightActionPlacementKey(
   const { rows } = await query<{ placement_id: string }>(sql`
     /* getCopyrightActionPlacementKey */
     SELECT target.placement_id
-    FROM copyright_notice_action_intents intent
+    FROM copyright_notice_action_work_items intent
     JOIN copyright_restrictions restriction ON restriction.id = intent.copyright_restriction_id
     JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
-    WHERE intent.id = ${intentId} AND intent.state = 'claimed' AND intent.lease_token = ${leaseToken}
+    WHERE intent.id = ${intentId} AND intent.state = 'claimed' AND intent.lease_token = ${leaseToken} AND intent.lease_expires_at > clock_timestamp()
   `)
   return rows[0]?.placement_id ?? null
 }
@@ -55,7 +55,7 @@ export async function lockCopyrightActionDelivery(
 ): Promise<LockedCopyrightActionDelivery | null> {
   const statement = copyrightActionDeliveryFacts()
   statement.append(sql`/* lockCopyrightActionDelivery */
-    WHERE intent.id = ${intentId} AND intent.state = 'claimed' AND intent.lease_token = ${leaseToken}
+    WHERE intent.id = ${intentId} AND intent.state = 'claimed' AND intent.lease_token = ${leaseToken} AND intent.lease_expires_at > clock_timestamp()
     FOR UPDATE OF intent, restriction, target`)
   const { rows } = await query<CopyrightActionFacts>(statement)
   const locked = rows[0]
@@ -142,11 +142,12 @@ export async function completeCopyrightActionIntentInTransaction(input: {
   failureMessage?: string
   query: TransactionQuery
 }): Promise<void> {
-  await input.query(sql`/* completeCopyrightActionIntentInTransaction */
-    UPDATE copyright_notice_action_intents
-    SET state = ${input.outcome}, completed_at = ${input.completedAt},
+  const { rowCount } = await input.query(sql`/* completeCopyrightActionIntentInTransaction */
+    UPDATE copyright_notice_action_work_items
+    SET completed_at = ${input.completedAt},
       completed_at_reason = ${input.outcome}, failure_message = ${input.failureMessage ?? null},
-      next_attempt_at = NULL
-    WHERE id = ${input.intentId} AND state = 'claimed' AND lease_token = ${input.leaseToken}
+      available_at = NULL
+    WHERE id = ${input.intentId} AND state = 'claimed' AND lease_token = ${input.leaseToken} AND lease_expires_at > clock_timestamp()
   `)
+  if (rowCount !== 1) throw new Error('Copyright action lease expired before completion')
 }

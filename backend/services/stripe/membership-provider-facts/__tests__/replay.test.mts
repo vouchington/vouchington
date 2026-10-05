@@ -1,12 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import type Stripe from 'stripe'
-import {
-  createTestSku,
-  createTestUser,
-  getTestMembershipSourceState,
-  setStripeEventReceivedAtForTest,
-} from '@voucha/test-helpers'
+import { createTestSku, createTestUser, getTestMembershipSourceState } from '@voucha/test-helpers'
 import { createMembership } from '@services/memberships'
 import { insertStripeEvent } from '../../insert-event.mts'
 import { recordStripeMembershipProviderFacts } from '../../membership-provider-facts.mts'
@@ -27,9 +22,10 @@ describe('Stripe membership provider evidence replay', () => {
     })
     const acceptedEvent = makeStripeEvent(`evt_accepted_${randomUUID()}`, subscriptionId, 200)
     const staleEvent = makeStripeEvent(`evt_stale_${randomUUID()}`, subscriptionId, 100)
-    await Promise.all([insertStripeEvent(acceptedEvent), insertStripeEvent(staleEvent)])
-    await setStripeEventReceivedAtForTest(acceptedEvent.id, new Date('2030-01-01T00:00:01.000Z'))
-    await setStripeEventReceivedAtForTest(staleEvent.id, new Date('2030-01-01T00:00:00.000Z'))
+    await Promise.all([
+      insertStripeEvent(acceptedEvent, new Date('2030-01-01T00:00:01.000Z')),
+      insertStripeEvent(staleEvent, new Date('2030-01-01T00:00:00.000Z')),
+    ])
     const observedAt = new Date('2030-01-01T00:00:02.000Z')
     const activeSubscription = makeSubscription(subscriptionId, sku.stripe_price_id, 'active')
     await recordStripeMembershipProviderFacts({

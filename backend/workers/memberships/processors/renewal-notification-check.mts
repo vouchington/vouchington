@@ -1,5 +1,8 @@
 import { getMembershipWorkLimits } from '@services/memberships/work-limits'
-import { getUsersApproachingRenewalWithPriceIncrease } from '@services/memberships'
+import {
+  getUsersApproachingRenewalWithPriceIncrease,
+  prepareRenewalPriceIncreaseNotification,
+} from '@services/memberships'
 import {
   enqueueBulkSendRenewalPriceIncreaseEmail,
   enqueueRenewalNotificationCheck,
@@ -15,14 +18,28 @@ export async function processRenewalNotificationCheckDispatcher(
     const users = await getUsersApproachingRenewalWithPriceIncrease(afterId, batchSize)
     if (users.length === 0) return { hasMore: false }
 
-    // oxlint-disable-next-line no-await-in-loop -- bounds concurrent fan-out to one page.
-    await enqueueBulkSendRenewalPriceIncreaseEmail(
-      users.map(u => ({
-        userId: u.user_id,
-        membershipId: u.membership_id,
-        membershipProviderObservationId: u.membership_provider_observation_id,
-      })),
+    // oxlint-disable-next-line no-await-in-loop -- prepare one bounded page before enqueue.
+    const prepared = await Promise.all(
+      users.map(async user => {
+        const generation = await prepareRenewalPriceIncreaseNotification(
+          user.membership_id,
+          user.user_id,
+          user.membership_provider_observation_id,
+        )
+        return generation
+          ? [
+              {
+                userId: user.user_id,
+                membershipId: user.membership_id,
+                membershipProviderObservationId: user.membership_provider_observation_id,
+                generation,
+              },
+            ]
+          : []
+      }),
     )
+    // oxlint-disable-next-line no-await-in-loop -- keyset progress waits for this page's admission.
+    await enqueueBulkSendRenewalPriceIncreaseEmail(prepared.flat())
     if (users.length < batchSize) return { hasMore: false }
     afterId = users.at(-1)!.membership_id
   }

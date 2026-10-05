@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS post_publication_dirty_work (
   lease_token UUID,
   leased_at TIMESTAMPTZ,
   lease_expires_at TIMESTAMPTZ,
-  cursor_updated_at TIMESTAMPTZ,
+  cursor_advanced_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CHECK (num_nonnulls(post_identity_id, author_identity_id, community_identity_id, rss_feed_identity_id, topic_alias_identity_id, story_identity_id) = 1),
@@ -124,7 +124,7 @@ COMMENT ON COLUMN post_publication_dirty_work.cursor_key_id IS 'Last retained-ke
 COMMENT ON COLUMN post_publication_dirty_work.lease_token IS 'Worker ownership token rotated by each successful lease claim.';
 COMMENT ON COLUMN post_publication_dirty_work.leased_at IS 'Timestamp when the current worker lease was acquired.';
 COMMENT ON COLUMN post_publication_dirty_work.lease_expires_at IS 'Timestamp after which another worker may claim this generation.';
-COMMENT ON COLUMN post_publication_dirty_work.cursor_updated_at IS 'Timestamp of the latest generation-fenced cursor checkpoint.';
+COMMENT ON COLUMN post_publication_dirty_work.cursor_advanced_at IS 'Timestamp of the latest generation-fenced cursor checkpoint.';
 COMMENT ON TABLE post_publication_dirty_work_keys IS 'Typed retained tombstone keys for pending publication repair. Rows cascade on exact-generation acknowledgement.';
 COMMENT ON COLUMN post_publication_dirty_work_keys.dirty_work_id IS 'Owning repair scope; exact acknowledgement cascades removal of its retained keys.';
 COMMENT ON COLUMN post_publication_dirty_work_keys.post_type IS 'Exact sitemap post type retained for a sitemap target.';

@@ -1,3 +1,7 @@
+import {
+  readTestCopyrightDeliveryAttempts,
+  rewriteTestCopyrightDeliveryAttempt,
+} from '@voucha/test-helpers/copyright-attempt-history'
 import { countCopyrightActiveRestrictionsForNotice } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { describe, expect, it } from 'vitest'
 import {
@@ -68,6 +72,13 @@ describe('copyright queue lease fencing', () => {
         error: 'late',
       }),
     ).toBe(false)
+    expect(await readTestCopyrightDeliveryAttempts(intent.id)).toEqual([
+      { attempt_number: 1, generation: '1', sent: false, failed: false, abandoned: true },
+      { attempt_number: 2, generation: '1', sent: true, failed: false, abandoned: false },
+    ])
+    await expect(rewriteTestCopyrightDeliveryAttempt(intent.id)).rejects.toMatchObject({
+      code: '23514',
+    })
   })
 
   it('rejects the reclaimed intake reply owner completion and failure', async () => {
@@ -113,7 +124,7 @@ describe('copyright queue lease fencing', () => {
     )
     expect(await readTestCopyrightResponseFailure(intentId)).toEqual({
       state: 'pending',
-      leaseToken: expect.any(String),
+      leaseToken: null,
       claimedAt: null,
       attempts: 1,
       nextAttemptAt: expect.any(Date),
@@ -131,7 +142,9 @@ describe('copyright queue lease fencing', () => {
     const later = new Date(now.getTime() + 16 * 60 * 1000)
     const current = (await claimCopyrightActionIntent(intent.id, later))!
     expect(current.lease_token).not.toBe(old.lease_token)
-    await completeTestCopyrightActionClaim(intent.id, old.lease_token, later)
+    await expect(
+      completeTestCopyrightActionClaim(intent.id, old.lease_token, later),
+    ).rejects.toThrow('lease expired')
     expect(
       await failCopyrightActionIntent({
         intentId: intent.id,

@@ -131,8 +131,7 @@ examples describe the review baseline, rather than the current generated snapsho
     `conv`→`conversation`, `msg`→`message`, `uniq`→`unique`, `fk`→`foreign_key`
 
   Standard acronyms stay (url, rss, api, ip, s3, dns, sha, uri, utm, pem, arn, did, sku, eu, uk, ai,
-  llm, faq, css, ui, mta, xip, v1, txt). `activitypub_distribution_checkpoints` (becoming
-  `activitypub_distribution_work_items`, decision 17) already uses the long form, next to `ap_*`.
+  llm, faq, css, ui, mta, xip, v1, txt). `activitypub_distribution_work_items` (decision 17) already uses the long form, next to `ap_*`.
 
   When the full words would push a name past 63 bytes, choose a shorter name made of full words; don't
   abbreviate. For example, `fn_reject_mipr_case_op_context` becomes
@@ -152,7 +151,7 @@ examples describe the review baseline, rather than the current generated snapsho
   - Valid: `comm_app_answers` for `community_application_answers`; `ord_line_itms` for
     `order_line_items`.
   - Errors: an initialism (`cli` for `community_list_items`); a dropped word
-    (`copyright_notice_intents` for `copyright_notice_action_intents`); a word under 3 letters
+    (`copyright_notice_intents` for `copyright_notice_action_work_items`); a word under 3 letters
     (`comm_app_q`).
 
   A shortened word must not be a denylisted token, even though it expands: `user_mod_notes` for
@@ -202,8 +201,8 @@ examples describe the review baseline, rather than the current generated snapsho
 
 - `timestamptz` columns end in `_at` (1,303 of 1,308 already do). The 5 others:
   `ap_inbox_deliveries.deferred_until`→`earliest_retry_at`,
-  `community_activity_digest_dispatch_windows.window_start`/`window_end`→`window_starts_at`/`window_ends_at`,
-  `queue_reconciliation_checkpoints.completed_through`→`reconciled_through_at`, and
+  `community_activity_digest_work_items.window_start`/`window_end`→`window_starts_at`/`window_ends_at`,
+  `entity_listener_reconciliation_cursors.completed_through`→`reconciled_through_at`, and
   `ses_bounce_events.ses_timestamp`→`occurred_at` (the R4 `_events` shape).
 - `date` columns are named `day` or end in `_on`: `individual_rewards_program_statuses.since`/`until`
   →`started_on`/`expires_on`, and their API v1 fields rename with them.
@@ -268,7 +267,7 @@ examples describe the review baseline, rather than the current generated snapsho
   `privacy_types` = `privacy_types`) merge when they mean the same thing.
 - **Lifecycle timestamps are the facts; status is never stored beside them.** 10 tables store
   both, and the two have to be kept in sync by large CHECKs (a 5-branch CHECK ties
-  `copyright_notice_delivery_intents.state` to 5 timestamps).
+  `copyright_notice_delivery_work_items.state` to 5 timestamps).
   - **Every row reaches a final state:** keep the timestamps, and make status an enum-typed
     `STORED` generated column,
     `GENERATED ALWAYS AS (CASE WHEN bounced_at IS NOT NULL THEN 'bounced' WHEN failed_at IS NOT NULL THEN 'failed' WHEN sent_at IS NOT NULL THEN 'sent' WHEN claimed_at IS NOT NULL THEN 'claimed' ELSE 'pending' END) STORED`.
@@ -276,9 +275,9 @@ examples describe the review baseline, rather than the current generated snapsho
     requires `sent_at`). A final state with no timestamp today gets one (`rejected_at`,
     `expired_at`, `stale_at`). A time-based state (`expires_at < now()`) can't be generated,
     because generation expressions must be immutable, so the sweeper writes `expired_at`.
-    - Final: `copyright_notice_delivery_intents` (which also holds the one reply to each declined
+    - Final: `copyright_notice_delivery_work_items` (which also holds the one reply to each declined
       email intake), `notification_push_intents`, `notification_push_intent_subscription_receipts`.
-    - Final, with a retry loop: `copyright_notice_action_intents` (`blocked`/`failed` → `pending`),
+    - Final, with a retry loop: `copyright_notice_action_work_items` (`blocked`/`failed` → `pending`),
       `oauth_authorizations` (`exchanging` → `callback_received`), `post_admission_reservations`
       (`retryable_failed` → `in_progress`). The final outcomes become timestamps and a generated
       status. Each retry becomes a row in an `_attempts` ledger (R4) instead of rewinding the
@@ -389,7 +388,7 @@ This extends the prelaunch relational-storage rule.
     a comment.
 - **State kept per relation is keyed by an enum generated from the same metadata.** The
   entity-relations generator emits `CREATE TYPE elected_entity_relations AS ENUM (…)`, one label
-  per elected relation table name. `retained_relation_identity_cleanup_progress.entity_relation` uses
+  per elected relation table name. `retained_relation_identity_cleanup_cursors.entity_relation` uses
   `elected_entity_relations`. The cleanup job inserts its own row
   with `ON CONFLICT DO NOTHING` instead of throwing "Missing retained relation cleanup cursor",
   so no seed is needed. A new enum value can't be used in the transaction that adds it, so after
@@ -493,6 +492,10 @@ Queue details (decision 16):
   `<entity>_<job>_work_items`: pk = the entity id (plus `generation` when a re-enqueue can race a
   running worker), FK → the entity ON DELETE CASCADE, the lease and outcome timestamps, a partial
   claim index on open rows, and retention pruning. No shared polymorphic leases table.
+- Copyright action and notification intents are work rows retained for legal references and exact
+  replay. Explicit replay advances their generation and clears only current-cycle outcome facts;
+  immutable numbered executions and results preserve every earlier outcome. Form screening keeps
+  current worker ownership in its child work row and historical execution identity in its attempt.
 - **One vocabulary.** `lease_token uuid`, `leased_at`, `lease_expires_at`, `attempt_count`,
   `available_at`, `generation` (only where needed). Retries that need their own record are
   `_attempts` rows with `attempt_number`. Every renew, complete or fail writes

@@ -6,22 +6,14 @@ export async function makeStripeEventRecoverableForTest(
   mode: 'unstarted' | 'stale' | 'failed',
 ): Promise<void> {
   await write(sql`/* makeStripeEventRecoverableForTest */
-    UPDATE stripe_events
+    UPDATE stripe_event_processing_work_items
     SET dispatched_at = NOW() - INTERVAL '31 minutes',
-        processing_started_at = CASE
+        leased_at = CASE
           WHEN ${mode} = 'stale' THEN NOW() - INTERVAL '31 minutes'
           ELSE NULL
         END,
+        lease_expires_at = CASE WHEN ${mode} = 'stale' THEN NOW() - INTERVAL '1 minute' ELSE NULL END,
         failed_at = CASE WHEN ${mode} = 'failed' THEN NOW() ELSE NULL END
-    WHERE id = ${id}
+    WHERE stripe_event_id = ${id}
   `)
-}
-
-export async function setStripeEventReceivedAtForTest(
-  stripeEventId: string,
-  receivedAt: Date,
-): Promise<void> {
-  await write(sql`/* setStripeEventReceivedAtForTest */
-    UPDATE stripe_events SET received_at = ${receivedAt}
-    WHERE stripe_event_id = ${stripeEventId}`)
 }

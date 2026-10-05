@@ -16,7 +16,7 @@ CREATE INDEX idx_notifications__copyright_notice
 CREATE TABLE copyright_notice_delivery_recipients (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_delivery_intent_id uuid NOT NULL CONSTRAINT uq_copyright_notice_delivery_recipients__intent_id UNIQUE
-    CONSTRAINT fk_copyright_notice_delivery_recipients__intent REFERENCES copyright_notice_delivery_intents(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_copyright_notice_delivery_recipients__intent REFERENCES copyright_notice_delivery_work_items(id) ON DELETE RESTRICT,
   email_ciphertext text NOT NULL CHECK (char_length(email_ciphertext) BETWEEN 1 AND 1048576),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL);
 
@@ -45,7 +45,7 @@ RETURNS boolean LANGUAGE sql STABLE AS $$
         WHERE target.copyright_notice_id = notice.id AND char_length(btrim(target.hosted_use_url)) > 0
       )
       AND EXISTS (
-        SELECT 1 FROM copyright_notice_delivery_intents receipt
+        SELECT 1 FROM copyright_notice_delivery_work_items receipt
         JOIN copyright_notice_delivery_recipients recipient ON recipient.copyright_notice_delivery_intent_id = receipt.id
         WHERE receipt.copyright_notice_id = notice.id AND receipt.recipient_role = 'claimant'
           AND receipt.channel = 'email' AND receipt.delivery_kind = 'claimant_receipt'
@@ -91,12 +91,12 @@ FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
 -- Email has no safe body outside the immutable correspondence record, or the immutable reply
 -- body of a declined email intake. Keep that relationship enforceable at the database boundary
 -- rather than relying on a worker convention.
-ALTER TABLE copyright_notice_delivery_intents
+ALTER TABLE copyright_notice_delivery_work_items
   ADD CONSTRAINT copyright_delivery_intents_email_correspondence
   CHECK (channel <> 'email' OR copyright_notice_correspondence_message_id IS NOT NULL
     OR copyright_notice_email_intake_id IS NOT NULL)
   NOT VALID;
-ALTER TABLE copyright_notice_delivery_intents
+ALTER TABLE copyright_notice_delivery_work_items
   VALIDATE CONSTRAINT copyright_delivery_intents_email_correspondence;
 
 COMMENT ON COLUMN notifications.copyright_notice_id IS 'Private copyright case associated with a member notification; the notification body contains no claimant or evidence data.';

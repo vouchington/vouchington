@@ -44,7 +44,7 @@ export async function createTestUnreadableCopyrightResponse(): Promise<string> {
   const intake = await createParsedCopyrightEmailIntake()
   const id = uuidv7()
   await write(sql`/* createTestUnreadableCopyrightResponse */
-    INSERT INTO copyright_notice_delivery_intents (
+    INSERT INTO copyright_notice_delivery_work_items (
       id, copyright_notice_email_intake_id, recipient_role, delivery_kind, channel,
       idempotency_key, body_ciphertext
     ) VALUES (
@@ -66,28 +66,28 @@ export async function readTestCopyrightResponseFailure(responseId: string) {
   const { rows } = await read<{
     state: string
     lease_token: string | null
-    claimed_at: Date | null
-    delivery_attempt_count: number
-    next_attempt_at: Date | null
+    leased_at: Date | null
+    attempt_count: number
+    available_at: Date | null
     failure_ciphertext: string
   }>(sql`/* readTestCopyrightResponseFailure */
-    SELECT state, lease_token, claimed_at, delivery_attempt_count, next_attempt_at, failure_ciphertext
-    FROM copyright_notice_delivery_intents WHERE id = ${responseId}
+    SELECT state, lease_token, leased_at, attempt_count, available_at, failure_ciphertext
+    FROM copyright_notice_delivery_work_items WHERE id = ${responseId}
   `)
   const row = rows[0]!
   return {
     state: row.state,
     leaseToken: row.lease_token,
-    claimedAt: row.claimed_at,
-    attempts: row.delivery_attempt_count,
-    nextAttemptAt: row.next_attempt_at,
+    claimedAt: row.leased_at,
+    attempts: row.attempt_count,
+    nextAttemptAt: row.available_at,
     failure: decryptSecret(row.failure_ciphertext, `copyright-delivery:${responseId}`),
   }
 }
 
 export async function readTestCopyrightDeliveryIntentState(intentId: string): Promise<string> {
   const { rows } = await read<{ state: string }>(sql`/* readTestCopyrightDeliveryIntentState */
-    SELECT state FROM copyright_notice_delivery_intents WHERE id = ${intentId}
+    SELECT state FROM copyright_notice_delivery_work_items WHERE id = ${intentId}
   `)
   return rows[0]!.state
 }

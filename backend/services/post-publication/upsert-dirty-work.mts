@@ -38,7 +38,7 @@ export async function upsertPostPublicationDirtyWork(
     SET reasons = ARRAY(SELECT reason FROM unnest(post_publication_dirty_work.reasons || EXCLUDED.reasons)
       AS merged(reason) GROUP BY reason ORDER BY reason::text),
       generation = post_publication_dirty_work.generation + 1,
-      cursor_post_id = NULL, cursor_topic_id = NULL, cursor_key_id = NULL, cursor_updated_at = NULL,
+      cursor_post_id = NULL, cursor_topic_id = NULL, cursor_key_id = NULL, cursor_advanced_at = NULL,
       lease_token = NULL, leased_at = NULL, lease_expires_at = NULL
     RETURNING id, post_identity_id, author_identity_id, community_identity_id, rss_feed_identity_id, topic_alias_identity_id, story_identity_id, reasons::text[] AS reasons,
       generation, cursor_post_id, cursor_topic_id, cursor_key_id, lease_token, leased_at, lease_expires_at

@@ -139,8 +139,8 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   orphan cleanup; reconsider partitioning at the registry's documented growth threshold rather
   than introducing partition overhead before measurement.
 - Audit and workflow history: `admin_import_batches`, `admin_import_rows`,
-  `activitypub_distribution_checkpoints`, `activitypub_inbox_activities`,
-  `community_activity_digest_dispatch_windows`, `community_agent_prompt_revisions`,
+  `activitypub_distribution_work_items`, `activitypub_inbox_activities`,
+  `community_activity_digest_work_items`, `community_agent_prompt_revisions`,
   `copyright_automatic_withholding_refusals`, `copyright_claimant_misuse_events`,
   `copyright_claimant_suspension_reversals`, `copyright_eu_dispute_settlement_outcomes`,
   `copyright_eu_dispute_settlement_referrals`, `copyright_eu_supervised_complaints`,
@@ -148,12 +148,14 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `copyright_dsa_statement_submission_attempts`,
   `copyright_trusted_flaggers`, `copyright_trusted_flagger_changes`,
   `copyright_trusted_flagger_matches`,
-  `copyright_legal_hold_restrictions`, `copyright_notice_action_intents`,
+  `copyright_legal_hold_restrictions`, `copyright_notice_action_work_items`,
   `copyright_notice_appeal_recommendations`, `copyright_notice_submission_guidance`,
   `copyright_notice_appeal_reviews`, `copyright_notice_correspondence_messages`,
   `copyright_notice_counter_notice_assessment_targets`,
   `copyright_notice_counter_notice_reviews`, `copyright_notice_deadlines`,
-  `copyright_notice_delivery_intents`, `copyright_notice_delivery_recipients`,
+  `copyright_notice_action_attempts`, `copyright_notice_action_attempt_results`,
+  `copyright_notice_delivery_attempts`, `copyright_notice_delivery_attempt_results`,
+  `copyright_notice_delivery_work_items`, `copyright_notice_delivery_recipients`,
   `copyright_notice_email_correspondence_reviews`, `copyright_notice_email_intake_attachments`,
   `copyright_notice_email_intake_notice_links`,
   `copyright_notice_email_intake_parses`,
@@ -225,7 +227,7 @@ a stronger invariant. The typed registry owns the rationale and trigger.
 - Global idempotency keys: `ai_usage_provider_response_keys`. Partitioning cannot preserve the
   response-ID primary key's global uniqueness; reconsider only if the replacement enforces that
   invariant across every ledger partition.
-- Work queue (drains to empty): `activitypub_inbox_deliveries`. Rows are deleted on success and rejection.
+- Work queue (drains to empty): `activitypub_inbox_delivery_work_items`. Rows are deleted on success and rejection.
   Unverified envelopes expire after one hour; operational failures expire seven days after their
   immutable first failure. A five-minute cleanup deletes at most 10,000 rows per run in locked
   batches, so table size remains bounded work rather than retained history.

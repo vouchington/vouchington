@@ -39,7 +39,7 @@ export async function createCopyrightEmailIntakeRow(): Promise<string> {
 function insertReply(overrides: Partial<ReplyRow>) {
   const row = { ...validReply, ...overrides }
   return write<{ id: string }>(sql`/* insertCopyrightEmailIntakeReplyRow */
-    INSERT INTO copyright_notice_delivery_intents (
+    INSERT INTO copyright_notice_delivery_work_items (
       copyright_notice_id, copyright_notice_email_intake_id, recipient_role, delivery_kind, channel,
       idempotency_key, body_ciphertext
     ) VALUES (
@@ -74,17 +74,17 @@ export const rejectSameReplyKindForIntake = (intakeId: string) => insertReply({ 
 
 export const rejectReplyIntakeReassignment = (intentId: string, otherIntakeId: string) =>
   write(sql`/* rejectCopyrightReplyIntakeReassignment */
-    UPDATE copyright_notice_delivery_intents SET copyright_notice_email_intake_id = ${otherIntakeId}
+    UPDATE copyright_notice_delivery_work_items SET copyright_notice_email_intake_id = ${otherIntakeId}
     WHERE id = ${intentId}`)
 
 export const rejectReplyBodyMutation = (intentId: string) =>
   write(sql`/* rejectCopyrightReplyBodyMutation */
-    UPDATE copyright_notice_delivery_intents SET body_ciphertext = 'v1:changed'
+    UPDATE copyright_notice_delivery_work_items SET body_ciphertext = 'v1:changed'
     WHERE id = ${intentId}`)
 
 export const rejectReplyDeletion = (intentId: string) =>
   write(sql`/* rejectCopyrightReplyDeletion */
-    DELETE FROM copyright_notice_delivery_intents WHERE id = ${intentId}`)
+    DELETE FROM copyright_notice_delivery_work_items WHERE id = ${intentId}`)
 
 export async function createCopyrightEmailIntakeReceiptRow(intakeId: string): Promise<string> {
   const { rows } = await insertReply({ intakeId, kind: 'email_intake_received' })

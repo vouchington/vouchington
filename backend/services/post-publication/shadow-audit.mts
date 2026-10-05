@@ -11,12 +11,10 @@ export type { PostPublicationShadowAuditResult } from './shadow-audit-result.mts
 import { recordPostPublicationShadowRepair } from './record-shadow-repair.mts'
 import type { ShadowAuditCandidate } from './shadow-audit-types.mts'
 
-const SHADOW_AUDIT_CHECKPOINT = 'post-publication-shadow'
 /** Bounded operator audit: dry runs are read-only; repairs record post transitions before advancing the checkpoint. */
 export async function runPostPublicationShadowAudit(options: {
   dryRun: boolean
   limit?: number
-  checkpointName?: string
   /** Read-only streaming cursor. Dry runs never read or mutate the durable checkpoint. */
   cursor?: string | null
 }): Promise<PostPublicationShadowAuditResult> {
@@ -25,10 +23,9 @@ export async function runPostPublicationShadowAudit(options: {
   const limit = options.limit ?? POST_PUBLICATION_SHADOW_AUDIT_PAGE_SIZE
   if (!Number.isSafeInteger(limit) || limit < 1)
     throw new TypeError('Post publication shadow audit limit must be positive')
-  const checkpointName = options.checkpointName ?? SHADOW_AUDIT_CHECKPOINT
   if (options.dryRun) return inspectPostPublicationShadowAudit(limit, options.cursor ?? null)
   await using query = await beginTransaction()
-  const result = await repairPostPublicationShadowAudit(query, limit, checkpointName)
+  const result = await repairPostPublicationShadowAudit(query, limit)
   await query.commit()
   return result
 }
@@ -43,10 +40,9 @@ async function inspectPostPublicationShadowAudit(
 async function repairPostPublicationShadowAudit(
   query: TransactionQuery,
   limit: number,
-  checkpointName: string,
 ): Promise<PostPublicationShadowAuditResult> {
   // ast-grep-ignore: no-three-sequential-awaits -- the checkpoint lock must precede reads, repairs, and checkpoint advancement in this transaction
-  const checkpoint = await getShadowAuditCheckpoint(query, true, checkpointName)
+  const checkpoint = await getShadowAuditCheckpoint(query)
   const candidates = await listShadowAuditCandidates(query, checkpoint, limit)
   await candidates
     .filter(candidate => candidate.is_discrepant)
@@ -54,10 +50,8 @@ async function repairPostPublicationShadowAudit(
       (pending, candidate) => pending.then(() => retainShadowAuditCandidate(query, candidate)),
       Promise.resolve(),
     )
-  if (candidates.length === limit)
-    await advanceShadowAuditCheckpoint(query, candidates.at(-1)!.id, checkpointName)
-  else if (candidates.length > 0 || checkpoint)
-    await resetShadowAuditCheckpoint(query, checkpointName)
+  if (candidates.length === limit) await advanceShadowAuditCheckpoint(query, candidates.at(-1)!.id)
+  else if (candidates.length > 0 || checkpoint) await resetShadowAuditCheckpoint(query)
   return makeShadowAuditResult(false, candidates, limit)
 }
 
@@ -68,29 +62,22 @@ async function retainShadowAuditCandidate(
   await recordPostPublicationShadowRepair(query, candidate.id)
 }
 
-async function resetShadowAuditCheckpoint(
-  query: TransactionQuery,
-  checkpointName: string,
-): Promise<void> {
+async function resetShadowAuditCheckpoint(query: TransactionQuery): Promise<void> {
   await query(
     `/* resetPostPublicationShadowAuditCheckpoint */
-    UPDATE post_publication_reconciliation_audit_checkpoints
-    SET cursor_post_id = NULL WHERE checkpoint_name = $1`,
-    [checkpointName],
+    UPDATE post_publication_reconciliation_audit_cursors
+    SET cursor_post_id = NULL WHERE is_singleton`,
   )
 }
 
-async function getShadowAuditCheckpoint(
-  query?: TransactionQuery,
-  lock = false,
-  checkpointName = SHADOW_AUDIT_CHECKPOINT,
-): Promise<string | null> {
-  const executor = query ?? write
-  const { rows } = await executor<{ cursor_post_id: string | null }>(
+async function getShadowAuditCheckpoint(query: TransactionQuery): Promise<string | null> {
+  await query(`/* ensurePostPublicationShadowAuditCursor */
+    INSERT INTO post_publication_reconciliation_audit_cursors (is_singleton)
+    VALUES (TRUE) ON CONFLICT DO NOTHING`)
+  const { rows } = await query<{ cursor_post_id: string | null }>(
     `/* getPostPublicationShadowAuditCheckpoint */
-    SELECT cursor_post_id FROM post_publication_reconciliation_audit_checkpoints
-    WHERE checkpoint_name = $1${lock ? ' FOR UPDATE' : ''}`,
-    [checkpointName],
+    SELECT cursor_post_id FROM post_publication_reconciliation_audit_cursors
+    WHERE is_singleton FOR UPDATE`,
   )
   return rows[0]?.cursor_post_id ?? null
 }
@@ -147,15 +134,14 @@ async function listShadowAuditCandidates(
 async function advanceShadowAuditCheckpoint(
   query: TransactionQuery,
   cursorPostId: string,
-  checkpointName: string,
 ): Promise<void> {
   await query(
     `/* advancePostPublicationShadowAuditCheckpoint */
-    INSERT INTO post_publication_reconciliation_audit_checkpoints (checkpoint_name, cursor_post_id)
-    VALUES ($1, $2) ON CONFLICT (checkpoint_name) DO UPDATE
+    INSERT INTO post_publication_reconciliation_audit_cursors (is_singleton, cursor_post_id)
+    VALUES (TRUE, $1) ON CONFLICT (is_singleton) DO UPDATE
     SET cursor_post_id = GREATEST(
-      post_publication_reconciliation_audit_checkpoints.cursor_post_id, EXCLUDED.cursor_post_id
+      post_publication_reconciliation_audit_cursors.cursor_post_id, EXCLUDED.cursor_post_id
     )`,
-    [checkpointName, cursorPostId],
+    [cursorPostId],
   )
 }

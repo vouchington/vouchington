@@ -9,18 +9,27 @@ import {
 export async function cleanupPostPublicationIdentityBridges(limit = 100): Promise<{
   scanned: number
   deleted: number
-  family: PublicationIdentityBridgeFamily
+  family: PublicationIdentityBridgeFamily | null
   candidates: string[]
 }> {
   publicationPageLimit(limit)
   const budget = Math.min(limit, 100)
   await using query = await beginTransaction()
+  await query(
+    `/* ensurePublicationIdentityBridgeCleanupCursors */
+      INSERT INTO post_publication_identity_bridge_cleanup_cursors (family)
+      SELECT unnest(enum_range(NULL::post_publication_identity_bridge_families))
+      ON CONFLICT DO NOTHING`,
+  )
   const { rows: progress } = await query<{
     family: PublicationIdentityBridgeFamily
     cursor_identity_id: string | null
   }>(
-    `/* lockPublicationIdentityBridgeCleanupProgress */ SELECT family, cursor_identity_id FROM post_publication_identity_bridge_cleanup_progress WHERE singleton FOR UPDATE`,
+    `/* lockPublicationIdentityBridgeCleanupCursor */ SELECT family, cursor_identity_id
+      FROM post_publication_identity_bridge_cleanup_cursors
+      ORDER BY updated_at, family LIMIT 1 FOR UPDATE SKIP LOCKED`,
   )
+  if (!progress[0]) return { scanned: 0, deleted: 0, family: null, candidates: [] }
   const { family, cursor_identity_id: cursor } = progress[0]!
   const { table, keyColumn, workColumn } = PUBLICATION_IDENTITY_BRIDGES[family]
   const { rows: candidates } = await query<{ id: string }>(
@@ -57,14 +66,11 @@ export async function cleanupPostPublicationIdentityBridges(limit = 100): Promis
       AND ${references}`,
     [candidates.map(row => row.id), family],
   )
-  const families = Object.keys(PUBLICATION_IDENTITY_BRIDGES) as PublicationIdentityBridgeFamily[]
   const complete = candidates.length < budget
   await query(
-    `/* checkpointPublicationIdentityBridgeCleanup */ UPDATE post_publication_identity_bridge_cleanup_progress SET family=$1, cursor_identity_id=$2 WHERE singleton`,
-    [
-      complete ? families[(families.indexOf(family) + 1) % families.length] : family,
-      complete ? null : candidates.at(-1)!.id,
-    ],
+    `/* checkpointPublicationIdentityBridgeCleanup */ UPDATE post_publication_identity_bridge_cleanup_cursors
+      SET cursor_identity_id=$2 WHERE family=$1`,
+    [family, complete ? null : candidates.at(-1)!.id],
   )
   await query.commit()
   return {

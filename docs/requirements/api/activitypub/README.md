@@ -73,7 +73,7 @@ gates on `isFederationEnabledForUser` and returns `404` for an opted-out or none
   When `activitypub-inbox.async_delivery_enabled` is false, the synchronous path above remains the rollout
   fallback and preserves its existing response statuses. When enabled, the request path stays
   network-free for unknown actors: after the header/body/digest/allowlist/rate-limit preflight it
-  writes the exact request bytes and signed header envelope to `activitypub_inbox_deliveries`, attempts an
+  writes the exact request bytes and signed header envelope to `activitypub_inbox_delivery_work_items`, attempts an
   awaited enqueue, and returns `202` once PostgreSQL is durable even if that first enqueue fails.
   If the signing `keyId` already has a local `remote_actors` row, the API verifies the signature
   against that cached key (a self-contained DB read plus crypto) and rejects invalid signatures
@@ -91,7 +91,7 @@ gates on `isFederationEnabledForUser` and returns `404` for an opted-out or none
     R[POST inbox] --> P[Network-free preflight]
     P --> C{Cached signer?}
     C -->|yes, invalid| X401[401 no row]
-    C -->|yes, valid| D[(activitypub_inbox_deliveries)]
+    C -->|yes, valid| D[(activitypub_inbox_delivery_work_items)]
     C -->|unknown| D
     D --> Q[activitypub-inbox queue]
     Q --> V[Fetch unknown actor and verify]

@@ -11,14 +11,14 @@ import type { InsertStripeEventResult } from './events-types.mts'
 export async function ingestStripeEvent(event: Stripe.Event): Promise<InsertStripeEventResult> {
   const storedEvent = await insertStripeEvent(event)
   if (storedEvent.is_new || storedEvent.status === 'received' || storedEvent.status === 'failed') {
-    const processingAttemptId =
+    const leaseToken =
       storedEvent.status === 'failed'
         ? await restartFailedStripeEventAttempt(storedEvent.id)
-        : storedEvent.processing_attempt_id
-    if (processingAttemptId) {
+        : storedEvent.lease_token
+    if (leaseToken) {
       await enqueueProcessStripeEvent({
         stripeEventRecordId: storedEvent.id,
-        processingAttemptId,
+        leaseToken,
         stripeSubscriptionId: storedEvent.subscription_id,
         isLiveMode: storedEvent.is_live_mode,
       })

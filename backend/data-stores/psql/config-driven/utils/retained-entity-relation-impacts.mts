@@ -26,7 +26,7 @@ COMMENT ON TABLE ${retained} IS 'Concrete retained identity for an elected relat
 COMMENT ON COLUMN ${retained}.subject_id IS 'Concrete subject root paired with this retained relation identifier.';`
   })
   const cleanupProgress = `-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TABLE IF NOT EXISTS retained_relation_identity_cleanup_progress (
+CREATE TABLE IF NOT EXISTS retained_relation_identity_cleanup_cursors (
   entity_relation elected_entity_relations PRIMARY KEY,
   cursor_subject_id UUID,
   cursor_relation_id UUID,
@@ -39,19 +39,19 @@ DO $$
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_trigger
-    WHERE tgrelid = 'retained_relation_identity_cleanup_progress'::regclass
-      AND tgname = '${getElectionTriggerName('retained_relation_identity_cleanup_progress', 'updated_at')}'
+    WHERE tgrelid = 'retained_relation_identity_cleanup_cursors'::regclass
+      AND tgname = '${getElectionTriggerName('retained_relation_identity_cleanup_cursors', 'updated_at')}'
   ) THEN
-    CREATE TRIGGER ${getElectionTriggerName('retained_relation_identity_cleanup_progress', 'updated_at')}
-    BEFORE UPDATE ON retained_relation_identity_cleanup_progress
+    CREATE TRIGGER ${getElectionTriggerName('retained_relation_identity_cleanup_cursors', 'updated_at')}
+    BEFORE UPDATE ON retained_relation_identity_cleanup_cursors
     FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
   END IF;
 END $$;
 
-COMMENT ON TABLE retained_relation_identity_cleanup_progress IS 'One operational keyset cursor per metadata-declared elected relation family.';
-COMMENT ON COLUMN retained_relation_identity_cleanup_progress.entity_relation IS 'Metadata family selector for cleanup, not a persisted relation reference.';
-COMMENT ON COLUMN retained_relation_identity_cleanup_progress.cursor_subject_id IS 'Last scanned subject position, not a durable relationship.';
-COMMENT ON COLUMN retained_relation_identity_cleanup_progress.cursor_relation_id IS 'Last scanned relation position, not a durable relationship.';`
+COMMENT ON TABLE retained_relation_identity_cleanup_cursors IS 'One operational keyset cursor per metadata-declared elected relation family.';
+COMMENT ON COLUMN retained_relation_identity_cleanup_cursors.entity_relation IS 'Metadata family selector for cleanup, not a persisted relation reference.';
+COMMENT ON COLUMN retained_relation_identity_cleanup_cursors.cursor_subject_id IS 'Last scanned subject position, not a durable relationship.';
+COMMENT ON COLUMN retained_relation_identity_cleanup_cursors.cursor_relation_id IS 'Last scanned relation position, not a durable relationship.';`
   const targetColumns = electionRelations.map(getEntityRelationIntegrityTargetColumn)
   const impactCreator = `CREATE TABLE IF NOT EXISTS user_deletion_relation_impacts (
   id UUID PRIMARY KEY DEFAULT uuidv7(),

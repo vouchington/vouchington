@@ -52,7 +52,7 @@ export async function readTestInformationRequestIntents(
   }>(sql`/* readTestInformationRequestIntents */
     SELECT intent.id, intent.state, recipient.email_ciphertext, intent.recipient_role, intent.channel,
       intent.copyright_notice_correspondence_message_id
-    FROM copyright_notice_delivery_intents intent
+    FROM copyright_notice_delivery_work_items intent
     JOIN copyright_notice_delivery_recipients recipient
       ON recipient.copyright_notice_delivery_intent_id = intent.id
     WHERE intent.copyright_notice_id = ${noticeId}

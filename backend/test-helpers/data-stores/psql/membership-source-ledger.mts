@@ -155,7 +155,7 @@ export async function getMembershipRenewalNotificationIdentity(): Promise<
       ON kcu.constraint_schema = tc.constraint_schema AND kcu.constraint_name = tc.constraint_name
     INNER JOIN information_schema.constraint_column_usage ccu
       ON ccu.constraint_schema = tc.constraint_schema AND ccu.constraint_name = tc.constraint_name
-    WHERE tc.constraint_schema = 'public' AND tc.table_name = 'memberships' AND tc.constraint_type = 'FOREIGN KEY'
-      AND kcu.column_name = 'renewal_price_increase_notified_observation_id'`)
+    WHERE tc.constraint_schema = 'public' AND tc.table_name = 'membership_renewal_price_increase_notification_work_items' AND tc.constraint_type = 'FOREIGN KEY'
+      AND kcu.column_name = 'membership_provider_observation_id'`)
   return rows
 }

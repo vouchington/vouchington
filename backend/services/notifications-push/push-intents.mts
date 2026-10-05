@@ -48,12 +48,7 @@ export async function claimNotificationPushIntent(
       RETURNING 1
     )
     UPDATE notification_push_intents push_intent
-    SET status = (CASE
-          WHEN EXISTS (SELECT 1 FROM claimed_notification) THEN 'pending'
-          WHEN notification_state.deleted_at IS NOT NULL THEN 'suppressed'
-          ELSE 'delivered'
-        END)::notification_push_intent_statuses,
-        lease_token = CASE
+    SET lease_token = CASE
           WHEN EXISTS (SELECT 1 FROM claimed_notification) THEN uuidv7()
         END,
         leased_at = CASE
@@ -102,7 +97,7 @@ export async function markNotificationPushIntentSuppressed(
 ): Promise<boolean> {
   const { rowCount } = await write(sql`/* markNotificationPushIntentSuppressed */
     UPDATE notification_push_intents
-    SET status = 'suppressed', suppressed_at = CURRENT_TIMESTAMP,
+    SET suppressed_at = CURRENT_TIMESTAMP,
         lease_token = NULL, leased_at = NULL, lease_expires_at = NULL
     WHERE user_id = ${intent.user_id} AND notification_id = ${intent.notification_id}
       AND lease_token = ${intent.lease_token} AND lease_expires_at > CURRENT_TIMESTAMP
@@ -127,7 +122,7 @@ export async function markNotificationPushIntentDelivered(
       FOR UPDATE OF notification
     ), completed AS (
       UPDATE notification_push_intents
-      SET status = 'delivered', delivered_at = CURRENT_TIMESTAMP,
+      SET delivered_at = CURRENT_TIMESTAMP,
           lease_token = NULL, leased_at = NULL, lease_expires_at = NULL
       FROM notification_lock
       WHERE user_id = ${intent.user_id} AND notification_id = ${intent.notification_id}

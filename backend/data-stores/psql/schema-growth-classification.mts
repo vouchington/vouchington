@@ -21,7 +21,10 @@ export const EXPLICIT_BOUNDED_TABLES = new Map<string, string>([
     'Authorization rows expire after ten minutes and data retention deletes terminal or expired rows, bounding cardinality to recent OAuth traffic.',
   ],
   ['migrations', 'The migration ledger has exactly one row per checked-in migration.'],
-  ['queue_reconciliation_checkpoints', 'One durable high-water mark per queue domain.'],
+  [
+    'entity_listener_reconciliation_cursors',
+    'A checked singleton bounds the dispatcher high-water mark to one row.',
+  ],
   [
     'openai_background_responses',
     'Rows are deleted by the compare-and-set claim as soon as usage is recorded, or by the sweeper reconciler once reconciled, bounding cardinality to recently in-flight background responses.',
@@ -35,10 +38,6 @@ export const EXPLICIT_BOUNDED_TABLES = new Map<string, string>([
     'Committed replays expire after 48 hours, abandoned reservations are pruned after 48 hours, and bounded cleanup deletes both classes, bounding cardinality to recent admission traffic.',
   ],
   ['activitypub_inbox_delivery_storage_counters', 'Primary key permits one row.'],
-  [
-    'retained_identity_cleanup_progress',
-    'One bounded cleanup cursor for each of six concrete retained identity families.',
-  ],
 ])
 type NonDefaultIdException = { policy: 'uuidv7' | 'natural-or-provider'; rationale: string }
 const naturalOrProviderId = (rationale: string): NonDefaultIdException => ({
@@ -83,9 +82,9 @@ const INDEFINITE_ENTITY_AND_CONTENT_TABLES = [
 const INDEFINITE_AUDIT_AND_WORKFLOW_TABLES = [
   'admin_import_batches',
   'admin_import_rows',
-  'activitypub_distribution_checkpoints',
+  'activitypub_distribution_work_items',
   'activitypub_inbox_activities',
-  'community_activity_digest_dispatch_windows',
+  'community_activity_digest_work_items',
   'community_agent_prompt_revisions',
   'dynamic_configuration_revisions',
   'follower_distribution_deliveries',
@@ -179,7 +178,7 @@ export function buildUnboundedUnpartitionedTables(
     ),
     ...RETAINED_RELATION_GROWTH_POLICIES,
     [
-      'activitypub_inbox_deliveries',
+      'activitypub_inbox_delivery_work_items',
       'Bounded ActivityPub inbox delivery queue: terminal outcomes delete rows, unverified rows expire after one hour, operational failures expire seven days after their immutable first failure, and bounded cleanup removes expired rows. Size tracks recent inbox backlog, not retained history.',
     ],
     [

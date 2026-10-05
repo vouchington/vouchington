@@ -47,12 +47,12 @@ export async function runContributionAdmission<T>(
   )
   if (claim.kind !== 'claimed') return claim
   const leaseKeeper = startAdmissionLeaseKeeper(() =>
-    renewContributionAdmissionLeaseFromWritePool(claim.reservationId, claim.leaseId),
+    renewContributionAdmissionLeaseFromWritePool(claim.reservationId, claim.leaseToken),
   )
   let committedResult: { kind: 'created'; response: T } | undefined
   let commitMayHaveSucceeded = false
   const cleanupRejectedAdmission = () =>
-    cleanupRejectedContributionAdmission(claim.reservationId, claim.leaseId)
+    cleanupRejectedContributionAdmission(claim.reservationId, claim.leaseToken)
   try {
     if (!(await leaseKeeper.ensureOwned())) return { kind: 'in_progress', retryAfterSeconds: 1 }
     try {
@@ -60,7 +60,9 @@ export async function runContributionAdmission<T>(
     } catch (err) {
       throw new RejectedContributionAdmissionPreconditionError(err)
     }
-    if (!(await renewContributionAdmissionLeaseFromWritePool(claim.reservationId, claim.leaseId)))
+    if (
+      !(await renewContributionAdmissionLeaseFromWritePool(claim.reservationId, claim.leaseToken))
+    )
       return { kind: 'in_progress', retryAfterSeconds: 1 }
     if (input.policy && input.source && !input.capacityExempt) {
       const { policy, source } = input
@@ -91,7 +93,7 @@ export async function runContributionAdmission<T>(
     const committedAt = await renewContributionAdmissionLease(
       query,
       claim.reservationId,
-      claim.leaseId,
+      claim.leaseToken,
     )
     if (!committedAt) throw new LostContributionAdmissionLeaseError()
     if (input.policy && input.source && !input.capacityExempt)
@@ -107,7 +109,7 @@ export async function runContributionAdmission<T>(
       WITH terminal AS (
         SELECT ${committedAt}::timestamptz AS committed_at
       )
-      UPDATE post_admission_reservations r SET state = 'committed', response = ${JSON.stringify(response)}::jsonb,
+      UPDATE post_admission_reservations r SET response = ${JSON.stringify(response)}::jsonb,
         replay_metadata = ${JSON.stringify({ route: audit.route, scope: audit.scope, finalization: 'pending' })}::jsonb,
         committed_post_id = ${committedContributionPostId(response)}, committed_status = 'created',
         committed_at = terminal.committed_at,
@@ -115,6 +117,10 @@ export async function runContributionAdmission<T>(
         retention_expires_at = terminal.committed_at + ${CONTRIBUTION_ADMISSION_REPLAY_RETENTION_MINUTES} * INTERVAL '1 minute'
       FROM terminal
       WHERE r.id = ${claim.reservationId}`)
+    await query(sql`/* runContributionAdmission.recordAttemptResult */
+      INSERT INTO post_admission_attempt_results (post_admission_attempt_id, committed_at)
+      SELECT id, ${committedAt} FROM post_admission_attempts
+      WHERE reservation_id = ${claim.reservationId} AND lease_token = ${claim.leaseToken}`)
     commitMayHaveSucceeded = true
     const result = { kind: 'created', response } as const
 
@@ -123,7 +129,7 @@ export async function runContributionAdmission<T>(
       committedResult = result
       const published = await publishFinalizedContributionResponse<T>({
         reservationId: claim.reservationId,
-        leaseId: claim.leaseId,
+        leaseToken: claim.leaseToken,
       })
       if (published.kind !== 'published') {
         if (input.callerCanReplayIdempotencyIdentity === false)
@@ -165,7 +171,7 @@ export async function runContributionAdmission<T>(
       await cleanupRejectedAdmission()
       throw err
     }
-    await markContributionAdmissionRetryableFailure(claim.reservationId, claim.leaseId, err)
+    await markContributionAdmissionRetryableFailure(claim.reservationId, claim.leaseToken, err)
     throw err
   } finally {
     await leaseKeeper.stop()

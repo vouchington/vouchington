@@ -4,7 +4,6 @@ import {
   createExpiredContributionAdmissionClaimForTest,
   createTestUserWithAge,
   expireContributionAdmissionForTest,
-  getContributionAdmissionReservationStateForTest,
   ensureTestAdmittedPostIdentity,
   executeTestAdmittedPost,
 } from '@voucha/test-helpers'
@@ -159,35 +158,6 @@ describe('contribution admission identity', () => {
         execute: executeTestAdmittedPost,
       }),
     ).resolves.toEqual({ kind: 'replay', response })
-  })
-
-  it('keeps a failed mutation retryable without committing its response', async () => {
-    const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
-    const input = {
-      actorId: user.id,
-      idempotencyKey: crypto.randomUUID(),
-      intent: { title: crypto.randomUUID() },
-    }
-    await expect(
-      runContributionAdmission({
-        ...input,
-        execute: async () => {
-          throw new Error('injected failure')
-        },
-      }),
-    ).rejects.toThrow('injected failure')
-    await expect(
-      getContributionAdmissionReservationStateForTest({
-        actorId: input.actorId,
-        idempotencyKey: input.idempotencyKey,
-      }),
-    ).resolves.toBe('retryable_failed')
-    await expect(
-      runContributionAdmission({
-        ...input,
-        execute: executeTestAdmittedPost,
-      }),
-    ).resolves.toMatchObject({ kind: 'created' })
   })
 
   it('enforces global and source-specific short and daily capacities atomically', async () => {

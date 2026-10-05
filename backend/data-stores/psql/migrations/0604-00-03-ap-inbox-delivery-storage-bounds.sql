@@ -1,12 +1,12 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS activitypub_inbox_delivery_storage_counters (
-  singleton BOOLEAN PRIMARY KEY DEFAULT TRUE,
+  is_singleton BOOLEAN PRIMARY KEY DEFAULT TRUE,
   retained_rows BIGINT NOT NULL,
   retained_raw_body_bytes BIGINT NOT NULL,
   unverified_rows BIGINT NOT NULL,
   unverified_raw_body_bytes BIGINT NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT activitypub_inbox_delivery_storage_counters__singleton CHECK (singleton),
+  CONSTRAINT activitypub_inbox_delivery_storage_counters__is_singleton CHECK (is_singleton),
   CONSTRAINT activitypub_inbox_delivery_storage_counters__nonnegative CHECK (
     retained_rows >= 0
     AND retained_raw_body_bytes >= 0
@@ -21,7 +21,7 @@ BEFORE UPDATE ON activitypub_inbox_delivery_storage_counters
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 INSERT INTO activitypub_inbox_delivery_storage_counters (
-  singleton,
+  is_singleton,
   retained_rows,
   retained_raw_body_bytes,
   unverified_rows,
@@ -53,7 +53,7 @@ BEGIN
       retained_raw_body_bytes = retained_raw_body_bytes + retained_bytes_delta,
       unverified_rows = unverified_rows + unverified_rows_delta,
       unverified_raw_body_bytes = unverified_raw_body_bytes + unverified_bytes_delta
-  WHERE singleton
+  WHERE is_singleton
     AND (unverified_rows_delta <= 0 OR unverified_rows + unverified_rows_delta <= 10000)
     AND (
       unverified_bytes_delta <= 0
@@ -67,7 +67,7 @@ BEGIN
 
   SELECT * INTO counters
   FROM activitypub_inbox_delivery_storage_counters
-  WHERE singleton;
+  WHERE is_singleton;
   IF NOT FOUND THEN
     RAISE EXCEPTION USING
       ERRCODE = '55000',
@@ -75,7 +75,7 @@ BEGIN
   END IF;
   RAISE EXCEPTION USING
     ERRCODE = '23514',
-    CONSTRAINT = 'activitypub_inbox_deliveries_unverified_capacity',
+    CONSTRAINT = 'activitypub_inbox_delivery_work_items_unverified_capacity',
     MESSAGE = 'ActivityPub inbox unverified storage capacity exceeded',
     DETAIL = json_build_object(
       'unverifiedRows', counters.unverified_rows,
@@ -110,7 +110,7 @@ BEGIN
   SET retained_raw_body_bytes = retained_raw_body_bytes + retained_bytes_delta,
       unverified_rows = unverified_rows + unverified_rows_delta,
       unverified_raw_body_bytes = unverified_raw_body_bytes + unverified_bytes_delta
-  WHERE singleton
+  WHERE is_singleton
     AND (unverified_rows_delta <= 0 OR unverified_rows + unverified_rows_delta <= 10000)
     AND (
       unverified_bytes_delta <= 0
@@ -124,7 +124,7 @@ BEGIN
 
   SELECT * INTO counters
   FROM activitypub_inbox_delivery_storage_counters
-  WHERE singleton;
+  WHERE is_singleton;
   IF NOT FOUND THEN
     RAISE EXCEPTION USING
       ERRCODE = '55000',
@@ -132,7 +132,7 @@ BEGIN
   END IF;
   RAISE EXCEPTION USING
     ERRCODE = '23514',
-    CONSTRAINT = 'activitypub_inbox_deliveries_unverified_capacity',
+    CONSTRAINT = 'activitypub_inbox_delivery_work_items_unverified_capacity',
     MESSAGE = 'ActivityPub inbox unverified storage capacity exceeded',
     DETAIL = json_build_object(
       'unverifiedRows', counters.unverified_rows,
@@ -166,7 +166,7 @@ BEGIN
       retained_raw_body_bytes = retained_raw_body_bytes - retained_bytes_delta,
       unverified_rows = unverified_rows - unverified_rows_delta,
       unverified_raw_body_bytes = unverified_raw_body_bytes - unverified_bytes_delta
-  WHERE singleton;
+  WHERE is_singleton;
 
   IF NOT FOUND THEN
     RAISE EXCEPTION USING
@@ -178,28 +178,28 @@ END;
 $$;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trigger_activitypub_inbox_deliveries_storage_after_insert
-AFTER INSERT ON activitypub_inbox_deliveries
+CREATE OR REPLACE TRIGGER trigger_activitypub_inbox_work_items_storage_after_insert
+AFTER INSERT ON activitypub_inbox_delivery_work_items
 REFERENCING NEW TABLE AS inserted_deliveries
 FOR EACH STATEMENT
 EXECUTE FUNCTION fn_project_activitypub_inbox_delivery_storage_after_insert();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trigger_activitypub_inbox_deliveries_storage_after_update
-AFTER UPDATE ON activitypub_inbox_deliveries
+CREATE OR REPLACE TRIGGER trigger_activitypub_inbox_work_items_storage_after_update
+AFTER UPDATE ON activitypub_inbox_delivery_work_items
 REFERENCING OLD TABLE AS previous_deliveries NEW TABLE AS updated_deliveries
 FOR EACH STATEMENT
 EXECUTE FUNCTION fn_project_activitypub_inbox_delivery_storage_after_update();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trigger_activitypub_inbox_deliveries_storage_after_delete
-AFTER DELETE ON activitypub_inbox_deliveries
+CREATE OR REPLACE TRIGGER trigger_activitypub_inbox_work_items_storage_after_delete
+AFTER DELETE ON activitypub_inbox_delivery_work_items
 REFERENCING OLD TABLE AS deleted_deliveries
 FOR EACH STATEMENT
 EXECUTE FUNCTION fn_project_activitypub_inbox_delivery_storage_after_delete();
 
 COMMENT ON TABLE activitypub_inbox_delivery_storage_counters IS 'Transactionally maintained singleton ledger for retained and unverified ActivityPub inbox row and raw-body byte totals.';
-COMMENT ON COLUMN activitypub_inbox_delivery_storage_counters.singleton IS 'Always true; enforces the ledger has at most one aggregate row.';
+COMMENT ON COLUMN activitypub_inbox_delivery_storage_counters.is_singleton IS 'Always true; enforces the ledger has at most one aggregate row.';
 COMMENT ON COLUMN activitypub_inbox_delivery_storage_counters.retained_rows IS 'Exact number of all durable ActivityPub inbox delivery rows currently retained.';
 COMMENT ON COLUMN activitypub_inbox_delivery_storage_counters.retained_raw_body_bytes IS 'Exact sum of raw request-body bytes across all retained ActivityPub inbox deliveries.';
 COMMENT ON COLUMN activitypub_inbox_delivery_storage_counters.unverified_rows IS 'Exact number of retained ActivityPub inbox deliveries that have not been verified.';

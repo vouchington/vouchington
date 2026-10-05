@@ -85,7 +85,7 @@ export async function readCopyrightEmailIntakeResponses(intakeId: string): Promi
     state: string
   }>(sql`/* readCopyrightEmailIntakeResponses */
     SELECT id, delivery_kind, state
-    FROM copyright_notice_delivery_intents
+    FROM copyright_notice_delivery_work_items
     WHERE copyright_notice_email_intake_id = ${intakeId}`)
   return rows
 }

@@ -49,13 +49,13 @@ export function completeMembershipVerificationWithoutResult(
   verificationId: string,
 ): Promise<WriteResult> {
   return write(sql`/* rejectMembershipVerificationTerminalWithoutResultCode */
-    UPDATE membership_verifications SET verified_at = CURRENT_TIMESTAMP, next_processing_at = NULL WHERE id = ${verificationId}`)
+    UPDATE membership_verifications SET verified_at = CURRENT_TIMESTAMP WHERE id = ${verificationId}`)
 }
 
 export function completeMembershipVerification(verificationId: string): Promise<WriteResult> {
   return write(sql`/* completeMembershipVerification */
     UPDATE membership_verifications
-    SET verified_at = CURRENT_TIMESTAMP, result_code = 'verified', next_processing_at = NULL
+    SET verified_at = CURRENT_TIMESTAMP, result_code = 'verified'
     WHERE id = ${verificationId}`)
 }
 
@@ -68,9 +68,9 @@ export function setUnstableMembershipVerificationResult(
 
 export function claimCompletedMembershipVerification(verificationId: string): Promise<WriteResult> {
   return write(sql`/* rejectCompletedMembershipVerificationClaim */
-    UPDATE membership_verifications
-    SET processing_claim_token = ${randomUUID()}, processing_claimed_at = CURRENT_TIMESTAMP
-    WHERE id = ${verificationId}`)
+    UPDATE membership_verification_processing_work_items
+    SET lease_token = ${randomUUID()}, leased_at = CURRENT_TIMESTAMP, lease_expires_at = CURRENT_TIMESTAMP + INTERVAL '30 minutes'
+    WHERE membership_verification_id = ${verificationId}`)
 }
 
 export function createCrossOwnerMembershipVerification(

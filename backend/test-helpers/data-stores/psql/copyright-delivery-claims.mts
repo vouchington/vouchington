@@ -11,9 +11,10 @@ export async function expireTestCopyrightDeliveryIntentClaim(
   deliveryAttemptCount: number,
 ): Promise<void> {
   const { rowCount } = await write(sql`/* expireTestCopyrightDeliveryIntentClaim */
-    UPDATE copyright_notice_delivery_intents
-    SET claimed_at = CURRENT_TIMESTAMP - INTERVAL '16 minutes',
-      delivery_attempt_count = ${deliveryAttemptCount}
+    UPDATE copyright_notice_delivery_work_items
+    SET leased_at = clock_timestamp() - INTERVAL '16 minutes',
+      lease_expires_at = clock_timestamp() - INTERVAL '1 minute',
+      attempt_count = ${deliveryAttemptCount}
     WHERE id = ${intentId} AND state = 'claimed'`)
   assert.equal(rowCount, 1, `delivery intent ${intentId} is not claimed`)
 }

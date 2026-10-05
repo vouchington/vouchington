@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_microsoft_store_credentials (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -12,24 +13,22 @@ CREATE TABLE IF NOT EXISTS membership_microsoft_store_credentials (
   purchase_issued_at TIMESTAMPTZ NOT NULL, purchase_expires_at TIMESTAMPTZ NOT NULL,
   collection_item_id TEXT, last_verified_end_at TIMESTAMPTZ, last_verified_at TIMESTAMPTZ,
   next_reconciliation_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  processing_claim_token UUID, processing_claimed_at TIMESTAMPTZ, processing_attempts INTEGER NOT NULL DEFAULT 0,
-  last_error TEXT, created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CHECK (char_length(application_id) BETWEEN 1 AND 255 AND application_id = TRIM(application_id)),
   CHECK (publisher_user_id = user_id::TEXT), CONSTRAINT chk_membersh_microsof_store_credenti__encrypted_collections_key CHECK (octet_length(encrypted_collections_key) BETWEEN 1 AND 65536),
-  CONSTRAINT chk_membershi_microsoft_store_credentia__encrypted_purchase_key CHECK (octet_length(encrypted_purchase_key) BETWEEN 1 AND 65536), CONSTRAINT chk_membership_microsoft_store_credentials__processing_attempts CHECK (processing_attempts >= 0),
-  CHECK ((processing_claim_token IS NULL) = (processing_claimed_at IS NULL))
+  CONSTRAINT chk_membershi_microsoft_store_credentia__encrypted_purchase_key CHECK (octet_length(encrypted_purchase_key) BETWEEN 1 AND 65536)
 );
 CREATE OR REPLACE TRIGGER trigger_membership_microsoft_store_credentials_updated_at BEFORE UPDATE ON membership_microsoft_store_credentials FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_microsoft_store_credentials__user_context ON membership_microsoft_store_credentials (user_id, environment, application_id);
-CREATE INDEX IF NOT EXISTS idx_membership_microsoft_store_credentials__due ON membership_microsoft_store_credentials (next_reconciliation_at, id) WHERE processing_claim_token IS NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_membership_microsoft_store_credentials__due ON membership_microsoft_store_credentials (next_reconciliation_at, id);
 CREATE INDEX IF NOT EXISTS idx_membership_verifications__pending_microsoft_source_recovery ON membership_verifications (user_id, environment, application_id, request_fingerprint) WHERE provider = 'microsoft_store' AND verified_at IS NULL AND conflicted_at IS NULL AND rejected_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_microsoft_store_recovery_cursors (
-  id membership_microsoft_store_recovery_families PRIMARY KEY, last_source_id UUID, sweep_upper_bound_id UUID,
+  is_singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (is_singleton), cursor_source_id UUID, sweep_upper_bound_source_id UUID,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CHECK (id = 'active_sources')
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE OR REPLACE TRIGGER trigger_membership_microsoft_store_recovery_cursors_updated_at BEFORE UPDATE ON membership_microsoft_store_recovery_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 COMMENT ON TABLE membership_microsoft_store_credentials IS 'Encrypted account-scoped Microsoft Store ID keys, usable to reconcile every Microsoft recurrence for the same user, environment, and application.';
@@ -49,10 +48,7 @@ COMMENT ON COLUMN membership_microsoft_store_credentials.collection_item_id IS '
 COMMENT ON COLUMN membership_microsoft_store_credentials.last_verified_end_at IS 'Last authoritative paid-through time observed from Store recurrence state.';
 COMMENT ON COLUMN membership_microsoft_store_credentials.last_verified_at IS 'Time of the most recent successful authoritative Store query.';
 COMMENT ON COLUMN membership_microsoft_store_credentials.next_reconciliation_at IS 'Earliest time this credential becomes due for reconciliation.';
-COMMENT ON COLUMN membership_microsoft_store_credentials.processing_claim_token IS 'Ephemeral fencing token for an active reconciliation claim.';
-COMMENT ON COLUMN membership_microsoft_store_credentials.processing_claimed_at IS 'Time the current reconciliation claim was acquired.';
-COMMENT ON COLUMN membership_microsoft_store_credentials.processing_attempts IS 'Number of unsuccessful reconciliation attempts in the current cycle.';
-COMMENT ON COLUMN membership_microsoft_store_credentials.last_error IS 'Last retryable reconciliation error for operator diagnosis.';
 COMMENT ON TABLE membership_microsoft_store_recovery_cursors IS 'Single durable high-water mark for Microsoft Store active-source recovery.';
-COMMENT ON COLUMN membership_microsoft_store_recovery_cursors.last_source_id IS 'Last source UUID scanned in the current keyset recovery pass.';
-COMMENT ON COLUMN membership_microsoft_store_recovery_cursors.sweep_upper_bound_id IS 'Frozen UUIDv7 upper bound for one finite active-source recovery sweep.';
+COMMENT ON COLUMN membership_microsoft_store_recovery_cursors.is_singleton IS 'One compare-and-set cursor for the active-source recovery job.';
+COMMENT ON COLUMN membership_microsoft_store_recovery_cursors.cursor_source_id IS 'Last source UUID scanned in the current keyset recovery pass.';
+COMMENT ON COLUMN membership_microsoft_store_recovery_cursors.sweep_upper_bound_source_id IS 'Frozen UUIDv7 upper bound for one finite active-source recovery sweep.';

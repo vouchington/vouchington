@@ -19,15 +19,15 @@ export type ProcessDurableInboxResult =
   | {
       outcome: 'deferred'
       deliveryId: string
-      processingAttemptId: string
+      leaseToken: string
       deferredUntil: Date
     }
 
 export async function processDurableActivityPubInboxDelivery(
   deliveryId: string,
-  processingAttemptId: string,
+  leaseToken: string,
 ): Promise<ProcessDurableInboxResult> {
-  const claimed = await activityPubInboxDeliveryTransitions.claim(deliveryId, processingAttemptId)
+  const claimed = await activityPubInboxDeliveryTransitions.claim(deliveryId, leaseToken)
   if (claimed.outcome === 'stale') return { outcome: 'stale' }
   const delivery = claimed.value
 
@@ -67,13 +67,8 @@ export async function processDurableActivityPubInboxDelivery(
   }
   if (
     !delivery.verifiedAt &&
-    (
-      await activityPubInboxDeliveryTransitions.verify(
-        deliveryId,
-        processingAttemptId,
-        remoteActor.id,
-      )
-    ).outcome === 'stale'
+    (await activityPubInboxDeliveryTransitions.verify(deliveryId, leaseToken, remoteActor.id))
+      .outcome === 'stale'
   ) {
     return { outcome: 'stale' }
   }
@@ -87,15 +82,15 @@ export async function processDurableActivityPubInboxDelivery(
       const deferredUntil = new Date(Date.now() + getActivityPubInboxWindowSeconds() * 1000)
       const deferred = await activityPubInboxDeliveryTransitions.defer(
         deliveryId,
-        processingAttemptId,
+        leaseToken,
         deferredUntil,
       )
       if (deferred.outcome === 'stale') return { outcome: 'stale' }
       return { outcome: 'deferred', ...deferred.value, deferredUntil }
     }
     if (
-      (await activityPubInboxDeliveryTransitions.admitSender(deliveryId, processingAttemptId))
-        .outcome === 'stale'
+      (await activityPubInboxDeliveryTransitions.admitSender(deliveryId, leaseToken)).outcome ===
+      'stale'
     ) {
       return { outcome: 'stale' }
     }
@@ -103,7 +98,7 @@ export async function processDurableActivityPubInboxDelivery(
 
   const completed = await recordAndDispatchInboundActivity(remoteActor, activity, {
     deliveryId,
-    processingAttemptId,
+    leaseToken,
   })
   if (completed.outcome === 'stale') return { outcome: 'stale' }
   const { duplicate } = completed

@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS follower_distributions (
   audience follower_distribution_audiences NOT NULL,
   post_id UUID REFERENCES posts(id) ON DELETE CASCADE,
   rss_feed_item_id UUID REFERENCES rss_feed_items(id) ON DELETE CASCADE,
-  last_processed_recipient_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  cursor_recipient_id UUID,
   completed_at TIMESTAMPTZ,
   failed_at TIMESTAMPTZ,
   failure_reason TEXT CHECK (failure_reason IS NULL OR length(failure_reason) <= 1000),
@@ -76,11 +76,6 @@ ON follower_distributions (rss_feed_item_id)
 WHERE rss_feed_item_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_follower_distributions__last_processed_recipient_user_id
-ON follower_distributions (last_processed_recipient_user_id)
-WHERE last_processed_recipient_user_id IS NOT NULL;
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_follower_distributions_updated_at
 BEFORE UPDATE ON follower_distributions
 FOR EACH ROW
@@ -113,7 +108,7 @@ COMMENT ON COLUMN follower_distributions.action IS 'Manual follower distribution
 COMMENT ON COLUMN follower_distributions.audience IS 'Whether the distribution targets all followers or a selected subset.';
 COMMENT ON COLUMN follower_distributions.post_id IS 'Post target for post share/send distributions.';
 COMMENT ON COLUMN follower_distributions.rss_feed_item_id IS 'RSS feed item target for RSS share/send distributions.';
-COMMENT ON COLUMN follower_distributions.last_processed_recipient_user_id IS 'Keyset cursor for chunk continuation.';
+COMMENT ON COLUMN follower_distributions.cursor_recipient_id IS 'Last processed recipient UUIDv7 in ascending recipient order; no FK preserves this keyset position when the recipient is deleted.';
 COMMENT ON COLUMN follower_distributions.completed_at IS 'When all intended recipients have been processed.';
 COMMENT ON COLUMN follower_distributions.failed_at IS 'When processing stopped because the distribution target became invalid.';
 COMMENT ON COLUMN follower_distributions.failure_reason IS 'Human-readable failure reason for stopped distributions.';

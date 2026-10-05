@@ -3,14 +3,16 @@ import {
   getCommunityActivityDigestDispatchData,
 } from '@queues/notifications/enqueues'
 import {
-  markCommunityActivityDigestDispatchWindowEnqueued,
-  prepareCommunityActivityDigestDispatchWindows,
+  claimCommunityActivityDigestWorkItem,
+  releaseCommunityActivityDigestWorkItem,
+  prepareCommunityActivityDigestWorkItems,
 } from '@services/notifications/community-activity-digest-dispatch'
 
 type Dependencies = {
   enqueueCommunityActivityDigestDispatch: typeof enqueueCommunityActivityDigestDispatch
-  prepareCommunityActivityDigestDispatchWindows: typeof prepareCommunityActivityDigestDispatchWindows
-  markCommunityActivityDigestDispatchWindowEnqueued: typeof markCommunityActivityDigestDispatchWindowEnqueued
+  prepareCommunityActivityDigestWorkItems: typeof prepareCommunityActivityDigestWorkItems
+  claimCommunityActivityDigestWorkItem: typeof claimCommunityActivityDigestWorkItem
+  releaseCommunityActivityDigestWorkItem: typeof releaseCommunityActivityDigestWorkItem
 }
 
 export async function processCommunityActivityDigestScheduleTick(
@@ -18,8 +20,7 @@ export async function processCommunityActivityDigestScheduleTick(
   dependencies?: Partial<Dependencies>,
 ): Promise<void> {
   const prepare =
-    dependencies?.prepareCommunityActivityDigestDispatchWindows ??
-    prepareCommunityActivityDigestDispatchWindows
+    dependencies?.prepareCommunityActivityDigestWorkItems ?? prepareCommunityActivityDigestWorkItems
   const target = getCommunityActivityDigestDispatchData()
   const windows = await prepare(new Date(target.windowStart))
   await enqueueWindowsInOrder(windows, dependencies)
@@ -42,11 +43,19 @@ async function enqueueAndMarkWindow(
   const enqueue =
     dependencies?.enqueueCommunityActivityDigestDispatch ?? enqueueCommunityActivityDigestDispatch
   const mark =
-    dependencies?.markCommunityActivityDigestDispatchWindowEnqueued ??
-    markCommunityActivityDigestDispatchWindowEnqueued
-  await enqueue({
-    windowStart: window.windowStart.toISOString(),
-    windowEnd: window.windowEnd.toISOString(),
-  })
-  await mark(window.windowStart)
+    dependencies?.claimCommunityActivityDigestWorkItem ?? claimCommunityActivityDigestWorkItem
+  const leaseToken = await mark(window.windowStart)
+  if (!leaseToken) return
+  try {
+    await enqueue({
+      windowStart: window.windowStart.toISOString(),
+      windowEnd: window.windowEnd.toISOString(),
+      leaseToken,
+    })
+  } catch (err) {
+    const release =
+      dependencies?.releaseCommunityActivityDigestWorkItem ?? releaseCommunityActivityDigestWorkItem
+    await release(window.windowStart, leaseToken)
+    throw err
+  }
 }

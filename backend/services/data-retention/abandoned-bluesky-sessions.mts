@@ -164,7 +164,7 @@ async function expireExactAuthorizations(
     FOR UPDATE`)
   const updateStatement = sql`/* expireBlueskyAuthorizations:update */
     UPDATE bluesky_link_authorizations
-    SET status = 'expired', handle = NULL
+    SET expired_at = clock_timestamp(), handle = NULL
     WHERE id = ANY(${authorizationIds}::uuid[])
       AND status = ANY(${statuses}::bluesky_link_authorization_statuses[])
       AND (`

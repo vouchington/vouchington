@@ -8,13 +8,14 @@ export async function getClaimedRefundReconciliationLease(
   dispatch: RefundReconciliationDispatch,
 ): Promise<RefundReconciliationLease | null> {
   const { rows } = await write(sql`/* getClaimedRefundReconciliationLease */
-    SELECT id, execution_claim_token AS "leaseToken", reconciliation_attempt_ordinal AS "attemptOrdinal",
+    SELECT operation.id, work.lease_token AS "leaseToken", reconciliation_attempt_ordinal AS "attemptOrdinal",
       provider, environment AS "providerEnvironment", application_id AS "providerApplicationId",
       provider_refund_id AS "providerRefundId", remaining_refundable_minor_units::TEXT AS "amountMinorUnits",
       currency_code AS currency
-    FROM membership_operations
-    WHERE id = ${dispatch.id} AND completed_at IS NULL
-      AND execution_claim_token = ${dispatch.leaseToken}
+    FROM membership_operations operation
+    JOIN membership_operation_execution_work_items work ON work.membership_operation_id = operation.id
+    WHERE operation.id = ${dispatch.id} AND completed_at IS NULL
+      AND work.lease_token = ${dispatch.leaseToken} AND work.lease_expires_at > clock_timestamp()
   `)
   const row = rows[0] as ReconciliationLeaseRow | undefined
   return row ? mapLease(row) : null

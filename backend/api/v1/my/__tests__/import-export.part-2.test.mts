@@ -137,7 +137,7 @@ describe('POST /api/v1/my/import/topics', () => {
       getTopicImportRequestForTest(administrator.id, existingTopic.id),
     ).resolves.toBeNull()
 
-    await discardRejectedContributionAdmission(claim.reservationId, claim.leaseId)
+    await discardRejectedContributionAdmission(claim.reservationId, claim.leaseToken)
     const owner = await admitImportedTopicRecommendation(
       administrator,
       WEB_PROVENANCE,

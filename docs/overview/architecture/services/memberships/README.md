@@ -11,11 +11,18 @@ Business logic for user memberships (plans, billing, admin grants).
 - `membership_provider_evidence_records` and `membership_provider_observations` — encrypted, bounded provider evidence and immutable ordered observations, including provider-authoritative current and next-renewal price snapshots plus an irreversible-lineage terminal clock
 - `membership_purchase_intents` and `membership_verifications` — owner-scoped replay identities for
   provider launches and encrypted evidence; bounded launch windows serialize distinct purchase
-  keys, while pending verifications carry a lease token and next processing time so queue loss is
-  recoverable from PostgreSQL
+  keys; `membership_verification_processing_work_items` carries their lease and retry availability,
+  so queue loss is recoverable without mutating verification identity or terminal result
 - `membership_sources`, grants, and activation periods — immutable entitlement lineages with one effective projection per user
 - `memberships` / `membership_changes` — live lifecycle projection and append-only canonical-product audit history; `projection_ended_at` retires a projection without deleting its retained historical ID
-- `membership_refunds` and `stripe_events` remain retained Stripe-adapter tables while their active callers are migrated; they are not the final provider-neutral ledger
+- `membership_refunds` retains provider receipt facts. `stripe_events` is an append-only inbound
+  event log; `stripe_event_processing_work_items` owns its queue dispatch, lease and outcome
+- `membership_operations` retains provider operation identity and outcomes, with execution leases
+  and retry availability in `membership_operation_execution_work_items`. Completion deletes work
+  atomically while immutable refund attempts and receipts remain
+- `membership_google_play_acknowledgements` retains the encrypted purchase obligation and terminal
+  result; its child work row owns the retry lease. Every retry refetches authoritative provider state
+  before an acknowledgement side effect
 - Recipient and actor ids on `membership_sources`, `membership_changes`, grants, refunds, and
   administrator refund requests are restrictive foreign keys to `retained_user_identities`, so
   lineage and audit rows survive account deletion without authorizing the deleted user; the
@@ -50,7 +57,7 @@ public JSON shape. Catalog data never authorizes a request; domain services rema
 | Provider non-consumption                           | Claimed row has no terminal timestamp                             | The foundation adapter releases the claim and defers the row five minutes                | Claim-token equality on release                             | `verifications.test.mts`                         |
 | Provider consumption followed by DB-commit failure | Reserved for the provider adapter's terminal-state implementation | Provider adapter reconciles from encrypted evidence and its durable provider observation | Provider evidence identity and adapter-specific receipt key | Provider adapter tests                           |
 | Durable commit followed by reply loss              | Terminal timestamp is present although the queue reply is unknown | Repeated delivery sees the terminal row and does nothing                                 | Terminal lifecycle predicates exclude the row               | `verifications.test.mts`                         |
-| Retry/reconciliation                               | `next_processing_at` is due and no fresh lease exists             | Five-minute dispatcher scans at most 500 rows                                            | Lease token plus durable verification ID                    | `verification-recovery.test.mts`                 |
+| Retry/reconciliation                               | `available_at` is due and no fresh lease exists                   | Five-minute dispatcher scans at most 500 rows                                            | Lease token plus durable verification ID                    | `verification-recovery.test.mts`                 |
 | TTL expiry                                         | Queue job is missing while the pending row remains                | Recovery re-enqueues from PostgreSQL                                                     | Real GlideMQ dedupes the stable verification job identity   | `verification-recovery.real-glide.mock.test.mts` |
 | Orphan cleanup                                     | A claim is older than 30 minutes                                  | A later worker atomically replaces the stale lease                                       | UUID claim token fences stale finalizers                    | `verifications.mts`                              |
 | Normal terminal removal                            | One terminal timestamp is set and queue history is removed        | Terminal verification is retained for owner reads and audit                              | Terminal row is excluded from recovery                      | `verifications.mts`                              |
@@ -92,6 +99,13 @@ a price. Only direct, automatically renewing sources with authoritative renewal 
 family access and admin grants never receive payer renewal email.
 An observation may remain as audit history if its evidence is rejected later, but renewal discovery,
 claiming, and the final delivery attempt all require that evidence to remain verified and unrejected.
+`membership_renewal_price_increase_notification_work_items` owns the exact five-field observation
+snapshot, generation, lease, and delivery outcome. Preparation commits a generation before queue
+admission; jobs carry it and every worker transition requires that generation and the exact live
+lease token. A changed snapshot waits for a live sender to complete or expire. The pre-send attempt
+marker prevents a duplicate after an ambiguous external result. Direct-source fallback restoration
+transfers the complete work row atomically, preserving its generation, lease deadline and outcome;
+the membership projection itself carries no notification state.
 
 Refund requests must match exactly one refundable invoice payment. When both a Stripe charge ID and
 payment-intent ID are supplied, both identifiers must belong to the same refundable payment record;

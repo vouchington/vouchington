@@ -1,6 +1,6 @@
 export type RecoverableActivityPubInboxDelivery = {
   deliveryId: string
-  processingAttemptId: string
+  leaseToken: string
 }
 
 export type ActivityPubInboxCapacityExceeded = {

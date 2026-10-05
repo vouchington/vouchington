@@ -19,7 +19,7 @@ export {
   pruneExpiredContributionAdmissions,
 } from './admission-reservation-maintenance.mts'
 
-type State = 'in_progress' | 'committed' | 'retryable_failed' | 'expired'
+type State = 'in_progress' | 'committed'
 
 export async function claimContributionAdmission<T>(
   actorId: string,
@@ -27,7 +27,7 @@ export async function claimContributionAdmission<T>(
   intent: unknown,
   audit: ContributionAdmissionAudit,
 ): Promise<
-  | { kind: 'claimed'; reservationId: string; leaseId: string }
+  | { kind: 'claimed'; reservationId: string; leaseToken: string }
   | { kind: 'replay'; response: T }
   | { kind: 'in_progress'; retryAfterSeconds: number }
 > {
@@ -83,9 +83,9 @@ export async function claimContributionAdmission<T>(
   }
   const liveClaim = await query<{ retry_after_seconds: string }>(
     sql`/* claimContributionAdmission.liveClaim */
-      SELECT GREATEST(1, CEIL(EXTRACT(EPOCH FROM expires_at - clock_timestamp())))::integer::text AS retry_after_seconds
+      SELECT GREATEST(1, CEIL(EXTRACT(EPOCH FROM lease_expires_at - clock_timestamp())))::integer::text AS retry_after_seconds
       FROM post_admission_claims
-      WHERE reservation_id = ${reservationId} AND expires_at > NOW()`,
+      WHERE reservation_id = ${reservationId} AND lease_expires_at > clock_timestamp()`,
   )
   const liveClaimRetryAfterSeconds = parseClaimRetryAfterSeconds(
     liveClaim.rows[0]?.retry_after_seconds,
@@ -101,19 +101,25 @@ export async function claimContributionAdmission<T>(
     await query.commit()
     return { kind: 'replay', response: row.response as T }
   }
-  const leaseId = randomUUID()
+  await query(sql`/* claimContributionAdmission.abandonExpiredAttempt */
+    INSERT INTO post_admission_attempt_results (post_admission_attempt_id, abandoned_at)
+    SELECT attempt.id, clock_timestamp() FROM post_admission_attempts attempt
+    JOIN post_admission_claims claim ON claim.reservation_id = attempt.reservation_id AND claim.lease_token = attempt.lease_token
+    WHERE claim.reservation_id = ${reservationId} AND claim.lease_expires_at <= clock_timestamp()
+    ON CONFLICT (post_admission_attempt_id) DO NOTHING`)
+  const leaseToken = randomUUID()
   const claim = await query<{
     reservation_id: string
   }>(sql`/* claimContributionAdmission.claim */
-      INSERT INTO post_admission_claims (reservation_id, lease_id, expires_at) VALUES (${reservationId}, ${leaseId}, NOW() + ${CONTRIBUTION_ADMISSION_CLAIM_SECONDS} * INTERVAL '1 second')
-      ON CONFLICT (reservation_id) DO UPDATE SET lease_id = EXCLUDED.lease_id, expires_at = EXCLUDED.expires_at
-      WHERE post_admission_claims.expires_at <= NOW() RETURNING reservation_id`)
+      INSERT INTO post_admission_claims (reservation_id, lease_token, leased_at, lease_expires_at) VALUES (${reservationId}, ${leaseToken}, clock_timestamp(), clock_timestamp() + ${CONTRIBUTION_ADMISSION_CLAIM_SECONDS} * INTERVAL '1 second')
+      ON CONFLICT (reservation_id) DO UPDATE SET lease_token = EXCLUDED.lease_token, leased_at = EXCLUDED.leased_at, lease_expires_at = EXCLUDED.lease_expires_at
+      WHERE post_admission_claims.lease_expires_at <= clock_timestamp() RETURNING reservation_id`)
   if (claim.rowCount !== 1) {
     const contendedClaim = await query<{ retry_after_seconds: string }>(
       sql`/* claimContributionAdmission.contendedClaim */
-        SELECT GREATEST(1, CEIL(EXTRACT(EPOCH FROM expires_at - clock_timestamp())))::integer::text AS retry_after_seconds
+        SELECT GREATEST(1, CEIL(EXTRACT(EPOCH FROM lease_expires_at - clock_timestamp())))::integer::text AS retry_after_seconds
         FROM post_admission_claims
-        WHERE reservation_id = ${reservationId} AND expires_at > NOW()`,
+        WHERE reservation_id = ${reservationId} AND lease_expires_at > clock_timestamp()`,
     )
     await query.commit()
     return {
@@ -122,13 +128,17 @@ export async function claimContributionAdmission<T>(
         parseClaimRetryAfterSeconds(contendedClaim.rows[0]?.retry_after_seconds) ?? 1,
     }
   }
+  await query(sql`/* claimContributionAdmission.recordAttempt */
+    INSERT INTO post_admission_attempts (reservation_id, attempt_number, lease_token, started_at)
+    SELECT ${reservationId}, COALESCE(MAX(attempt_number), 0) + 1, ${leaseToken}, clock_timestamp()
+    FROM post_admission_attempts WHERE reservation_id = ${reservationId}`)
   await query(sql`/* claimContributionAdmission.mark */
       UPDATE post_admission_reservations
-      SET state = 'in_progress', route = ${audit.route}, scope = ${contributionAdmissionScopeCategory(audit.scope)}, source = ${audit.source},
-        post_type = ${audit.postType}, policy_revision = ${audit.policyRevision}, retryable_failure = NULL, retention_expires_at = NOW() + INTERVAL '48 hours'
+      SET route = ${audit.route}, scope = ${contributionAdmissionScopeCategory(audit.scope)}, source = ${audit.source},
+        post_type = ${audit.postType}, policy_revision = ${audit.policyRevision}, retention_expires_at = NOW() + INTERVAL '48 hours'
       WHERE id = ${reservationId}`)
   await query.commit()
-  return { kind: 'claimed', reservationId, leaseId }
+  return { kind: 'claimed', reservationId, leaseToken }
 }
 
 function parseClaimRetryAfterSeconds(retryAfterSecondsValue: string | undefined): number | null {

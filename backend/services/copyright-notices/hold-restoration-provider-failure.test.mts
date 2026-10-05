@@ -45,7 +45,7 @@ async function exhaustedRestoreWithSibling() {
   }
   const before = await getCopyrightNoticePrivateAggregate(scene.notice.id)
   const failed = before?.actionIntents.find(intent => intent.id === scene.restore.id)
-  expect(failed).toMatchObject({ state: 'failed', delivery_attempt_count: 5 })
+  expect(failed).toMatchObject({ state: 'failed', attempt_count: 5 })
   const other = before?.targets.find(target => target.id !== scene.target.id)
   const restriction = before?.restrictions.find(row => row.copyright_notice_target_id === other?.id)
   if (!other || !restriction) throw new Error('Second restriction fixture disappeared')
@@ -150,7 +150,7 @@ describe('automatic hold restoration preserves provider failures', () => {
     const after = await getCopyrightNoticePrivateAggregate(scene.notice.id)
     expect(after?.actionIntents.find(intent => intent.id === scene.restore.id)).toMatchObject({
       state: 'pending',
-      delivery_attempt_count: 0,
+      attempt_count: 0,
     })
     expect(
       after?.lifecycleEvents.filter(event => event.change_type === 'copyright_action_replayed'),

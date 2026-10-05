@@ -58,7 +58,7 @@ export async function createCopyrightNoticeSchemaFixture(): Promise<CopyrightNot
         FROM target CROSS JOIN assessment
       RETURNING id
     ), intent AS (
-      INSERT INTO copyright_notice_action_intents (copyright_restriction_id, expected_placement_revision, action)
+      INSERT INTO copyright_notice_action_work_items (copyright_restriction_id, expected_placement_revision, action)
       SELECT id, 1, 'withhold' FROM restriction
       RETURNING id
     )
@@ -167,7 +167,7 @@ export async function readCopyrightActionIntentRevision(
   const { rows } = await read<{
     expected_placement_revision: number
   }>(sql`/* readCopyrightIntentRevision */
-    SELECT expected_placement_revision FROM copyright_notice_action_intents
+    SELECT expected_placement_revision FROM copyright_notice_action_work_items
     WHERE id = ${fixture.actionIntentId}`)
   return rows[0]!.expected_placement_revision
 }

@@ -80,7 +80,7 @@ export async function rejectCopyrightEmailIntake(input: {
     sql`/* rejectCopyrightEmailIntake:existing */
       SELECT review.decision, response.id AS response_id
       FROM copyright_notice_email_intake_reviews review
-      LEFT JOIN copyright_notice_delivery_intents response
+      LEFT JOIN copyright_notice_delivery_work_items response
         ON response.copyright_notice_email_intake_id = review.copyright_notice_email_intake_id
         AND response.delivery_kind IN ('email_intake_rejected', 'email_intake_needs_information')
       WHERE review.copyright_notice_email_intake_id = ${input.intakeId}`,

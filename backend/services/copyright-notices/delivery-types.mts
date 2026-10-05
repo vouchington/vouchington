@@ -28,7 +28,7 @@ export type CopyrightDeliveryIntentRecord = {
   channel: FiniteValue<'copyright_notice_delivery_intent_channels'>
   state: FiniteValue<'copyright_notice_delivery_intent_states'>
   amazon_ses_message_id: string | null
-  delivery_attempt_count: number
+  attempt_count: number
 }
 
 export type CopyrightDeliveryRecipientRecord = {

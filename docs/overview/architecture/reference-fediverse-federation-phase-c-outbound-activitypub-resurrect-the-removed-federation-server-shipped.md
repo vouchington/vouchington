@@ -94,7 +94,7 @@ rejections delete the pending row and raw bytes.
 
 ```mermaid
 flowchart LR
-  API[Inbox network-free preflight] --> DB[(activitypub_inbox_deliveries)]
+  API[Inbox network-free preflight] --> DB[(activitypub_inbox_delivery_work_items)]
   DB --> Q[activitypub-inbox]
   Q --> W[Actor fetch and received-time verification]
   W --> D[Sender limit, dedup, dispatch]

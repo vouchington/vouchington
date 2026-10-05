@@ -49,7 +49,7 @@ describe('contribution admission failure cleanup', () => {
     ).rejects.toBe(error)
     await expect(
       getContributionAdmissionReservationStateForTest({ actorId: user.id, idempotencyKey }),
-    ).resolves.toBe('retryable_failed')
+    ).resolves.toBe('in_progress')
   })
 
   it('discards a rejected precondition before the mutation begins', async () => {

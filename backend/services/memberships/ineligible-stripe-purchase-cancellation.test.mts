@@ -38,7 +38,7 @@ describe('claimIneligiblePurchaseCancellationOperation', () => {
     await expect(claimIneligiblePurchaseReversals(options, [], snapshot)).resolves.toEqual({
       cancellation: {
         completed: true,
-        executionClaimToken: null,
+        leaseToken: null,
         id: initial.cancellation!.id,
         idempotencyKey: initial.cancellation!.idempotencyKey,
       },

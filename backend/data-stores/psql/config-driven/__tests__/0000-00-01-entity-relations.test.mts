@@ -35,7 +35,7 @@ describe('user-subject entity relation tables', () => {
     expect(sql).toContain('CREATE OR REPLACE VIEW view_entity_relation_votes AS')
     expect(sql).toContain('CREATE TYPE elected_entity_relations AS ENUM')
     expect(sql).toContain('entity_relation elected_entity_relations PRIMARY KEY')
-    expect(sql).not.toContain('INSERT INTO retained_relation_identity_cleanup_progress')
+    expect(sql).not.toContain('INSERT INTO retained_relation_identity_cleanup_cursors')
     for (const metadata of electionRelations) {
       const voteTable = getEntityRelationVoteTableName(metadata)
       expect(sql).toContain(`CREATE TABLE IF NOT EXISTS ${voteTable} (`)

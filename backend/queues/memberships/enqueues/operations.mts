@@ -47,7 +47,7 @@ const enqueueBulkSendRenewalPriceIncreaseEmailJobs = createBulkEnqueueFunction<
     data,
     opts: {
       deduplication: {
-        id: `processSendRenewalPriceIncreaseEmail__${data.membershipId}__${data.membershipProviderObservationId}`,
+        id: `processSendRenewalPriceIncreaseEmail__${data.membershipId}__${data.membershipProviderObservationId}__${data.generation}`,
         mode: 'debounce' as const,
         ttl: 86_400_000,
       },

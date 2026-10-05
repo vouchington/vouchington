@@ -14,7 +14,7 @@ export async function selectCopyrightActionIntents(
 ): Promise<CopyrightActionIntentRecord[]> {
   const { rows } =
     await query<CopyrightActionIntentRecord>(sql`/* getCopyrightNoticePrivateAggregate:actionIntents */
-    SELECT i.* FROM copyright_notice_action_intents i
+    SELECT i.* FROM copyright_notice_action_work_items i
     JOIN copyright_restrictions r ON r.id = i.copyright_restriction_id
     JOIN copyright_notice_targets t ON t.id = r.copyright_notice_target_id
     WHERE t.copyright_notice_id = ${noticeId} ORDER BY i.id
@@ -30,8 +30,8 @@ export async function selectCopyrightDeliveryIntents(
     await query<CopyrightDeliveryIntentRecord>(sql`/* selectCopyrightDeliveryIntents */
     SELECT id, copyright_notice_id, copyright_notice_submission_id,
       copyright_notice_correspondence_message_id, recipient_user_id, recipient_role, delivery_kind,
-      channel, state, amazon_ses_message_id, delivery_attempt_count
-    FROM copyright_notice_delivery_intents
+      channel, state, amazon_ses_message_id, attempt_count
+    FROM copyright_notice_delivery_work_items
     WHERE copyright_notice_id = ${noticeId}
     ORDER BY id
   `)

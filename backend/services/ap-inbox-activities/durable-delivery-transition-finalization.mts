@@ -4,17 +4,18 @@ import type { ActivityPubInboxTransitionResult } from './durable-delivery-transi
 
 export async function releaseActivityPubInboxDelivery(
   deliveryId: string,
-  processingAttemptId: string,
+  leaseToken: string,
   error: unknown,
 ): Promise<ActivityPubInboxTransitionResult> {
   const result = await write(sql`/* releaseActivityPubInboxDelivery */
-    UPDATE activitypub_inbox_deliveries
-    SET processing_at = NULL,
+    UPDATE activitypub_inbox_delivery_work_items
+    SET leased_at = NULL, lease_expires_at = NULL,
         last_error = ${boundedErrorMessage(error)}
     WHERE id = ${deliveryId}
-      AND processing_attempt_id = ${processingAttemptId}
-      AND processing_at IS NOT NULL
-      AND earliest_retry_at IS NULL
+      AND lease_token = ${leaseToken}
+      AND leased_at IS NOT NULL
+      AND lease_expires_at > clock_timestamp()
+      AND available_at IS NULL
       AND failed_at IS NULL
   `)
   return mutationResult(result.rowCount)
@@ -22,11 +23,11 @@ export async function releaseActivityPubInboxDelivery(
 
 export async function exhaustActivityPubInboxDelivery(
   deliveryId: string,
-  processingAttemptId: string,
+  leaseToken: string,
   error: unknown,
 ): Promise<ActivityPubInboxTransitionResult> {
   const result = await write(sql`/* exhaustActivityPubInboxDelivery */
-    UPDATE activitypub_inbox_deliveries
+    UPDATE activitypub_inbox_delivery_work_items
     SET failed_at = CURRENT_TIMESTAMP,
         first_failed_at = COALESCE(first_failed_at, CURRENT_TIMESTAMP),
         retention_expires_at = LEAST(
@@ -38,9 +39,10 @@ export async function exhaustActivityPubInboxDelivery(
         ),
         last_error = ${boundedErrorMessage(error)}
     WHERE id = ${deliveryId}
-      AND processing_attempt_id = ${processingAttemptId}
-      AND processing_at IS NOT NULL
-      AND earliest_retry_at IS NULL
+      AND lease_token = ${leaseToken}
+      AND leased_at IS NOT NULL
+      AND lease_expires_at > clock_timestamp()
+      AND available_at IS NULL
       AND failed_at IS NULL
   `)
   return mutationResult(result.rowCount)
@@ -48,14 +50,15 @@ export async function exhaustActivityPubInboxDelivery(
 
 export async function rejectActivityPubInboxDelivery(
   deliveryId: string,
-  processingAttemptId: string,
+  leaseToken: string,
 ): Promise<ActivityPubInboxTransitionResult> {
   const result = await write(sql`/* rejectActivityPubInboxDelivery */
-    DELETE FROM activitypub_inbox_deliveries
+    DELETE FROM activitypub_inbox_delivery_work_items
     WHERE id = ${deliveryId}
-      AND processing_attempt_id = ${processingAttemptId}
-      AND processing_at IS NOT NULL
-      AND earliest_retry_at IS NULL
+      AND lease_token = ${leaseToken}
+      AND leased_at IS NOT NULL
+      AND lease_expires_at > clock_timestamp()
+      AND available_at IS NULL
       AND failed_at IS NULL
   `)
   return mutationResult(result.rowCount)
@@ -63,19 +66,20 @@ export async function rejectActivityPubInboxDelivery(
 
 export async function completeActivityPubInboxDelivery(
   deliveryId: string,
-  processingAttemptId: string,
+  leaseToken: string,
   options: QueryOptions = {},
 ): Promise<ActivityPubInboxTransitionResult> {
   const result = await write(
     sql`/* completeActivityPubInboxDelivery */
-      DELETE FROM activitypub_inbox_deliveries
+      DELETE FROM activitypub_inbox_delivery_work_items
       WHERE id = ${deliveryId}
-        AND processing_attempt_id = ${processingAttemptId}
-        AND processing_at IS NOT NULL
+        AND lease_token = ${leaseToken}
+        AND leased_at IS NOT NULL
+      AND lease_expires_at > clock_timestamp()
         AND verified_at IS NOT NULL
         AND remote_actor_id IS NOT NULL
         AND sender_allowed_at IS NOT NULL
-        AND earliest_retry_at IS NULL
+        AND available_at IS NULL
         AND failed_at IS NULL
     `,
     options,

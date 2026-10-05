@@ -52,6 +52,6 @@ describe('ActivityPub inbox recovery processors', () => {
 function makeDeliveries(count: number) {
   return Array.from({ length: count }, () => ({
     deliveryId: randomUUID(),
-    processingAttemptId: randomUUID(),
+    leaseToken: randomUUID(),
   }))
 }

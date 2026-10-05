@@ -2,14 +2,14 @@
 export const FINITE_COLUMN_CONTRACTS_2 = [
   ['copyright_eu_transparency_reports', 'jurisdiction', 'copyright_jurisdictions', false],
   ['copyright_jurisdiction_policy_approvals', 'jurisdiction', 'copyright_jurisdictions', false],
-  ['copyright_notice_action_intents', 'action', 'copyright_notice_action_intent_actions', false],
+  ['copyright_notice_action_work_items', 'action', 'copyright_notice_action_intent_actions', false],
   [
-    'copyright_notice_action_intents',
+    'copyright_notice_action_work_items',
     'completed_at_reason',
     'copyright_notice_action_intent_states',
     false,
   ],
-  ['copyright_notice_action_intents', 'state', 'copyright_notice_action_intent_states', false],
+  ['copyright_notice_action_work_items', 'state', 'copyright_notice_action_intent_states', false],
   [
     'copyright_notice_appeal_recommendations',
     'recommendation',
@@ -36,19 +36,29 @@ export const FINITE_COLUMN_CONTRACTS_2 = [
     false,
   ],
   [
-    'copyright_notice_delivery_intents',
+    'copyright_notice_delivery_work_items',
     'channel',
     'copyright_notice_delivery_intent_channels',
     false,
   ],
-  ['copyright_notice_delivery_intents', 'delivery_kind', 'copyright_notice_delivery_kinds', false],
   [
-    'copyright_notice_delivery_intents',
+    'copyright_notice_delivery_work_items',
+    'delivery_kind',
+    'copyright_notice_delivery_kinds',
+    false,
+  ],
+  [
+    'copyright_notice_delivery_work_items',
     'recipient_role',
     'copyright_notice_delivery_intent_recipient_roles',
     false,
   ],
-  ['copyright_notice_delivery_intents', 'state', 'copyright_notice_delivery_intent_states', false],
+  [
+    'copyright_notice_delivery_work_items',
+    'state',
+    'copyright_notice_delivery_intent_states',
+    false,
+  ],
   [
     'copyright_notice_email_correspondence_reviews',
     'action',

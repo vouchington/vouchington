@@ -44,7 +44,7 @@ Job queue for membership lifecycle events.
 - `expireElapsedMemberships` (dispatcher, priority 100): every minute expires elapsed
   administrator grants and promotes the next FIFO grant.
 - `processRenewalNotificationCheck` (dispatcher, priority 100): finds users approaching renewal
-  with a price increase and bulk-enqueues emails.
+  with a price increase, prepares generation-fenced notification work, and bulk-enqueues its IDs and generations.
 - `processSendRenewalPriceIncreaseEmail` (worker, priority 10): sends the price-increase email.
 - `reconcileStripeMembershipCatalog` (dispatcher, priority 100): verifies and atomically publishes
   the four versioned Stripe membership prices.

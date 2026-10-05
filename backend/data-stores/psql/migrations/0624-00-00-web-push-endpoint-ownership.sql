@@ -30,13 +30,16 @@ CREATE TABLE notification_push_intent_subscription_receipts (
   CONSTRAINT notification_push_receipts_subscription_fkey FOREIGN KEY (user_id, subscription_id)
     REFERENCES web_push_subscriptions (user_id, id) ON UPDATE CASCADE ON DELETE CASCADE,
   endpoint TEXT NOT NULL,
-  status notification_push_endpoint_statuses NOT NULL DEFAULT 'pending',
+  status notification_push_endpoint_statuses GENERATED ALWAYS AS (
+    CASE WHEN delivered_at IS NOT NULL THEN 'delivered'::notification_push_endpoint_statuses
+      WHEN permanently_failed_at IS NOT NULL THEN 'permanently_failed'::notification_push_endpoint_statuses
+      ELSE 'pending'::notification_push_endpoint_statuses END
+  ) STORED NOT NULL,
   delivered_at TIMESTAMPTZ,
   permanently_failed_at TIMESTAMPTZ,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (user_id, notification_id, subscription_id),
-  CHECK ((status = 'delivered') = (delivered_at IS NOT NULL)),
-  CHECK ((status = 'permanently_failed') = (permanently_failed_at IS NOT NULL))
+  CHECK (num_nonnulls(delivered_at, permanently_failed_at) <= 1)
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -150,19 +153,15 @@ FOR EACH ROW EXECUTE FUNCTION fn_reject_web_push_endpoint_owner_subscription();
 CREATE OR REPLACE FUNCTION fn_project_capture_notification_push_intent() RETURNS TRIGGER AS $$
 BEGIN
   IF TG_OP = 'UPDATE' THEN
-    DELETE FROM notification_push_intent_subscription_receipts
+    -- A new notification UUID is a new effect generation. Delete the old cascading
+    -- work and receipts rather than rewinding terminal facts on a surviving intent.
+    DELETE FROM notification_push_intents
     WHERE user_id = NEW.user_id AND notification_id IN (OLD.id, NEW.id);
   END IF;
 
   INSERT INTO notification_push_intents (user_id, notification_id)
   VALUES (NEW.user_id, NEW.id)
-  ON CONFLICT (user_id, notification_id) DO UPDATE
-  SET status = 'pending',
-      lease_token = NULL,
-      leased_at = NULL,
-      lease_expires_at = NULL,
-      suppressed_at = NULL,
-      delivered_at = NULL;
+  ON CONFLICT (user_id, notification_id) DO NOTHING;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;

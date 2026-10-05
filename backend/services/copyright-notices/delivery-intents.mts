@@ -56,24 +56,25 @@ export async function claimCopyrightDeliveryIntent(
   const { rows } =
     await write<ClaimedCopyrightDeliveryIntent>(sql`/* claimCopyrightDeliveryIntent */
     WITH exhausted AS (
-      UPDATE copyright_notice_delivery_intents
-      SET state = 'failed', claimed_at = NULL, failed_at = CURRENT_TIMESTAMP, next_attempt_at = NULL
+      UPDATE copyright_notice_delivery_work_items
+      SET leased_at = NULL, failed_at = CURRENT_TIMESTAMP, available_at = clock_timestamp()
       WHERE id = ${intentId}
         AND state = 'claimed'
-        AND claimed_at < CURRENT_TIMESTAMP - ${COPYRIGHT_NOTICES_DELIVERY_LEASE_MINUTES}::integer * INTERVAL '1 minute'
-        AND delivery_attempt_count >= 5
+        AND lease_expires_at <= clock_timestamp()
+        AND attempt_count >= 5
     )
-    UPDATE copyright_notice_delivery_intents
-    SET lease_token = uuidv7(), state = 'claimed', claimed_at = CURRENT_TIMESTAMP,
-      delivery_attempted_at = CURRENT_TIMESTAMP, next_attempt_at = NULL,
-      delivery_attempt_count = delivery_attempt_count + 1, failure_ciphertext = NULL
+    UPDATE copyright_notice_delivery_work_items
+    SET lease_token = uuidv7(), leased_at = clock_timestamp(),
+      lease_expires_at = clock_timestamp() + ${COPYRIGHT_NOTICES_DELIVERY_LEASE_MINUTES} * INTERVAL '1 minute',
+      delivery_attempted_at = CURRENT_TIMESTAMP, available_at = clock_timestamp(),
+      attempt_count = attempt_count + 1, failure_ciphertext = NULL
     WHERE id = ${intentId}
-      AND delivery_attempt_count < 5
-      AND ((state = 'pending' AND (next_attempt_at IS NULL OR next_attempt_at <= CURRENT_TIMESTAMP))
-        OR (state = 'claimed' AND claimed_at < CURRENT_TIMESTAMP - ${COPYRIGHT_NOTICES_DELIVERY_LEASE_MINUTES}::integer * INTERVAL '1 minute'))
+      AND attempt_count < 5
+      AND ((state = 'pending' AND (available_at IS NULL OR available_at <= CURRENT_TIMESTAMP))
+        OR (state = 'claimed' AND lease_expires_at <= clock_timestamp()))
     RETURNING id, lease_token, copyright_notice_id, copyright_notice_email_intake_id,
       copyright_notice_submission_id, copyright_notice_correspondence_message_id, recipient_user_id,
-      recipient_role, delivery_kind, target_path, channel, state, amazon_ses_message_id, delivery_attempt_count,
+      recipient_role, delivery_kind, target_path, channel, state, amazon_ses_message_id, attempt_count,
       body_ciphertext
   `)
   return rows[0] ?? null
@@ -85,10 +86,10 @@ export async function markCopyrightDeliveryIntentSent(input: {
   sesMessageId?: string
 }): Promise<boolean> {
   const { rows } = await write(sql`/* markCopyrightDeliveryIntentSent */
-    UPDATE copyright_notice_delivery_intents
-    SET state = 'sent', sent_at = CURRENT_TIMESTAMP,
+    UPDATE copyright_notice_delivery_work_items
+    SET sent_at = CURRENT_TIMESTAMP,
       amazon_ses_message_id = ${input.sesMessageId ?? null}
-    WHERE id = ${input.intentId} AND state = 'claimed' AND lease_token = ${input.leaseToken}
+    WHERE id = ${input.intentId} AND state = 'claimed' AND lease_token = ${input.leaseToken} AND lease_expires_at > clock_timestamp()
     RETURNING id
   `)
   return rows.length === 1
@@ -102,10 +103,10 @@ export async function markCopyrightDeliveryIntentEmailSent(input: {
 }): Promise<boolean> {
   await using transaction = await beginTransaction()
   const { rows } = await transaction(sql`/* markCopyrightDeliveryIntentEmailSent:intent */
-    UPDATE copyright_notice_delivery_intents
-    SET state = 'sent', sent_at = CURRENT_TIMESTAMP,
+    UPDATE copyright_notice_delivery_work_items
+    SET sent_at = CURRENT_TIMESTAMP,
       amazon_ses_message_id = ${input.sesMessageId}
-    WHERE id = ${input.intentId} AND state = 'claimed' AND lease_token = ${input.leaseToken} AND channel = 'email'
+    WHERE id = ${input.intentId} AND state = 'claimed' AND lease_token = ${input.leaseToken} AND lease_expires_at > clock_timestamp() AND channel = 'email'
       AND copyright_notice_correspondence_message_id = ${input.correspondenceId}
     RETURNING id
   `)
@@ -128,14 +129,14 @@ export async function markCopyrightDeliveryIntentFailed(input: {
 }): Promise<boolean> {
   const boundedError = input.error.slice(0, 10_000)
   const { rows } = await write(sql`/* markCopyrightDeliveryIntentFailed */
-    UPDATE copyright_notice_delivery_intents
-    SET state = (CASE WHEN delivery_attempt_count >= 5 THEN 'failed' ELSE 'pending' END)::copyright_notice_delivery_intent_states,
-      claimed_at = NULL,
-      failed_at = CASE WHEN delivery_attempt_count >= 5 THEN CURRENT_TIMESTAMP ELSE NULL END,
-      next_attempt_at = CASE WHEN delivery_attempt_count >= 5 THEN NULL
-        ELSE CURRENT_TIMESTAMP + make_interval(mins => (2 ^ (delivery_attempt_count - 1))::integer) END,
+    UPDATE copyright_notice_delivery_work_items
+    SET
+      leased_at = NULL,
+      failed_at = CASE WHEN attempt_count >= 5 THEN CURRENT_TIMESTAMP ELSE NULL END,
+      available_at = CASE WHEN attempt_count >= 5 THEN clock_timestamp()
+        ELSE clock_timestamp() + make_interval(mins => (2 ^ (attempt_count - 1))::integer) END,
       failure_ciphertext = ${encryptSecret(boundedError, `copyright-delivery:${input.intentId}`)}
-    WHERE id = ${input.intentId} AND state = 'claimed' AND lease_token = ${input.leaseToken}
+    WHERE id = ${input.intentId} AND state = 'claimed' AND lease_token = ${input.leaseToken} AND lease_expires_at > clock_timestamp()
     RETURNING id
   `)
   return rows.length === 1
@@ -148,7 +149,7 @@ export async function markCopyrightDeliveryIntentBouncedBySesMessageId(input: {
   const { rows } = await write<CopyrightDeliveryRecipientRecord & { intent_id: string }>(
     sql`/* markCopyrightDeliveryIntentBouncedBySesMessageId:recipients */
       SELECT intent.id AS intent_id, recipient.copyright_notice_delivery_intent_id, recipient.email_ciphertext
-      FROM copyright_notice_delivery_intents intent
+      FROM copyright_notice_delivery_work_items intent
       JOIN copyright_notice_delivery_recipients recipient
         ON recipient.copyright_notice_delivery_intent_id = intent.id
       WHERE intent.amazon_ses_message_id = ${input.sesMessageId} AND intent.state = 'sent'`,
@@ -163,8 +164,8 @@ export async function markCopyrightDeliveryIntentBouncedBySesMessageId(input: {
   })
   if (intentIds.length === 0) return 0
   const { rowCount } = await write(sql`/* markCopyrightDeliveryIntentBouncedBySesMessageId:update */
-    UPDATE copyright_notice_delivery_intents
-    SET state = 'bounced', bounced_at = CURRENT_TIMESTAMP
+    UPDATE copyright_notice_delivery_work_items
+    SET bounced_at = CURRENT_TIMESTAMP
     WHERE id = ANY(${intentIds}::uuid[]) AND state = 'sent'
   `)
   return rowCount ?? 0
@@ -191,7 +192,7 @@ async function insertCopyrightDeliveryIntent(
   )
   const { rows } =
     await transaction<CopyrightDeliveryIntentRecord>(sql`/* createCopyrightDeliveryIntent */
-    INSERT INTO copyright_notice_delivery_intents (
+    INSERT INTO copyright_notice_delivery_work_items (
       copyright_notice_id, copyright_notice_submission_id, copyright_notice_correspondence_message_id,
       recipient_user_id, recipient_role, delivery_kind, target_path, channel, idempotency_key
     ) SELECT ${input.noticeId}, ${input.submissionId}, ${input.correspondenceId},
@@ -208,7 +209,7 @@ async function insertCopyrightDeliveryIntent(
     ON CONFLICT (idempotency_key) DO NOTHING
     RETURNING id, lease_token, copyright_notice_id, copyright_notice_submission_id,
       copyright_notice_correspondence_message_id, recipient_user_id, recipient_role, delivery_kind, target_path,
-      channel, state, amazon_ses_message_id, delivery_attempt_count
+      channel, state, amazon_ses_message_id, attempt_count
   `)
   const intent = rows[0]
   if (intent) {
@@ -219,8 +220,8 @@ async function insertCopyrightDeliveryIntent(
     await transaction<CopyrightDeliveryIntentRecord>(sql`/* createCopyrightDeliveryIntent:existing */
     SELECT id, lease_token, copyright_notice_id, copyright_notice_submission_id,
       copyright_notice_correspondence_message_id, recipient_user_id, recipient_role, delivery_kind, target_path,
-      channel, state, amazon_ses_message_id, delivery_attempt_count
-    FROM copyright_notice_delivery_intents
+      channel, state, amazon_ses_message_id, attempt_count
+    FROM copyright_notice_delivery_work_items
     WHERE idempotency_key = ${input.idempotencyKey}
   `)
   const existing = existingRows[0]
@@ -284,8 +285,6 @@ export async function recordCopyrightDeliveryRecipient(input: {
 export function searchRecoverableCopyrightDeliveryIntentIds(
   options: CopyrightSweepPageOptions & { channel: CopyrightDeliveryIntentRecord['channel'] },
 ): Promise<CopyrightSweepIdPage> {
-  const COPYRIGHT_NOTICES_DELIVERY_LEASE_MINUTES =
-    getCopyrightNoticesWorkLimit('delivery_lease_minutes')
   return queryCopyrightSweepIdPage(
     options,
     'Invalid copyright delivery intent cursor',
@@ -293,11 +292,11 @@ export function searchRecoverableCopyrightDeliveryIntentIds(
     'rowId',
     sql`/* searchRecoverableCopyrightDeliveryIntentIds */
       SELECT id
-      FROM copyright_notice_delivery_intents
+      FROM copyright_notice_delivery_work_items
       WHERE channel = ${options.channel}
         AND (
-          (state = 'pending' AND (next_attempt_at IS NULL OR next_attempt_at <= CURRENT_TIMESTAMP))
-          OR (state = 'claimed' AND claimed_at < CURRENT_TIMESTAMP - ${COPYRIGHT_NOTICES_DELIVERY_LEASE_MINUTES}::integer * INTERVAL '1 minute')
+          (state = 'pending' AND (available_at IS NULL OR available_at <= CURRENT_TIMESTAMP))
+          OR (state = 'claimed' AND lease_expires_at <= clock_timestamp())
         )`,
     statement => read(statement),
   )
@@ -341,9 +340,9 @@ async function resetFailedCopyrightDeliveryIntent(
   await using transaction = await beginTransaction()
   const { rows } = await transaction<{ id: string; copyright_notice_id: string | null }>(
     sql`/* replayFailedCopyrightDeliveryIntent */
-    UPDATE copyright_notice_delivery_intents
-    SET state = 'pending', claimed_at = NULL, failed_at = NULL, next_attempt_at = NULL,
-      delivery_attempt_count = 0, failure_ciphertext = NULL
+    UPDATE copyright_notice_delivery_work_items
+    SET leased_at = NULL, failed_at = NULL, available_at = clock_timestamp(),
+      attempt_count = 0, failure_ciphertext = NULL
     WHERE `.append(scope).append(sql` AND state = 'failed'
     RETURNING id, copyright_notice_id`),
   )

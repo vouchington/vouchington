@@ -22,7 +22,12 @@ authentication or account connection:
 3. The ID-only `oauth-authorization-exchange` queue claims the row with a fenced UUID. Provider
    calls have a 30-second end-to-end abort budget below the 60-second claim lease, and provider
    account persistence plus `completion_ready` commit in the same transaction. Five failed durable
-   claims terminate as `rejected` so bad codes cannot starve recovery.
+   claims terminate as `rejected` so bad codes cannot starve recovery. Authorization status is
+   generated from lifecycle timestamps. Each claim appends an immutable numbered exchange attempt;
+   releasing, superseding, rejecting, expiring, or completing it appends one immutable result.
+   `oauth_authorization_current_records` projects the active `exchanging` state and total attempt
+   count without resetting parent lifecycle facts. Recovery measures the latest attempt's start
+   time, and exact claim fencing protects its successor from stale completion or release.
 4. `completeOAuthAuthorization` validates the initiating device/session, completion token source,
    native proof when applicable, and connection owner. It durably records one authentication,
    MFA, or connection result before a non-MFA session is minted, so a rollback cannot leave an

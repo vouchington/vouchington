@@ -10,10 +10,13 @@ export async function cleanupPostPublicationIdentitySnapshots(
   if (!Number.isSafeInteger(limit) || limit < 1)
     throw new TypeError('Snapshot cleanup limit must be positive')
   await using query = await beginTransaction()
+  await query(sql`/* ensurePublicationSnapshotCleanupCursor */
+    INSERT INTO post_publication_identity_snapshot_cleanup_cursors (is_singleton)
+    VALUES (TRUE) ON CONFLICT DO NOTHING`)
   const { rows: progress } = await query<{
     cursor_snapshot_id: string | null
   }>(sql`/* lockPublicationSnapshotCleanupProgress */
-    SELECT cursor_snapshot_id FROM post_publication_identity_cleanup_progress WHERE singleton FOR UPDATE`)
+    SELECT cursor_snapshot_id FROM post_publication_identity_snapshot_cleanup_cursors WHERE is_singleton FOR UPDATE`)
   const cursor = progress[0]!.cursor_snapshot_id
   const candidateStatement = sql`/* listPublicationSnapshotCleanupHeaderPage */
     SELECT snapshot.id FROM post_publication_identity_snapshots snapshot
@@ -56,8 +59,8 @@ export async function cleanupPostPublicationIdentitySnapshots(
     firstRemaining === undefined && candidates.length < limit
       ? null
       : (processed.at(-1)?.id ?? cursor)
-  await query(sql`/* checkpointPublicationSnapshotCleanupSweep */ UPDATE post_publication_identity_cleanup_progress
-      SET cursor_snapshot_id = ${nextCursor} WHERE singleton`)
+  await query(sql`/* checkpointPublicationSnapshotCleanupSweep */ UPDATE post_publication_identity_snapshot_cleanup_cursors
+      SET cursor_snapshot_id = ${nextCursor} WHERE is_singleton`)
   await query.commit()
   return { keys: keys ?? 0, snapshots: snapshots ?? 0, scanned: candidates.length }
 }

@@ -15,12 +15,13 @@ import { getPrivateUserByAny } from '@services/users'
 export async function processSendRenewalPriceIncreaseEmail(
   data: ProcessSendRenewalPriceIncreaseEmailData,
 ): Promise<unknown> {
-  const claimToken = await claimRenewalPriceIncreaseNotification(
+  const claim = await claimRenewalPriceIncreaseNotification(
     data.membershipId,
     data.userId,
     data.membershipProviderObservationId,
+    data.generation,
   )
-  if (!claimToken) return null
+  if (!claim) return null
 
   let result: unknown
   let deliveryAttempted = false
@@ -32,7 +33,7 @@ export async function processSendRenewalPriceIncreaseEmail(
         data.membershipId,
         data.userId,
         data.membershipProviderObservationId,
-        claimToken,
+        claim,
       ),
     ])
     if (!user || !emailAddress || !renewal) {
@@ -40,7 +41,7 @@ export async function processSendRenewalPriceIncreaseEmail(
         data.membershipId,
         data.userId,
         data.membershipProviderObservationId,
-        claimToken,
+        claim,
       )
       return null
     }
@@ -59,14 +60,14 @@ export async function processSendRenewalPriceIncreaseEmail(
       data.membershipId,
       data.userId,
       data.membershipProviderObservationId,
-      claimToken,
+      claim,
     )
     if (!deliveryAttempted) {
       await releaseRenewalPriceIncreaseNotification(
         data.membershipId,
         data.userId,
         data.membershipProviderObservationId,
-        claimToken,
+        claim,
       )
       return null
     }
@@ -82,7 +83,7 @@ export async function processSendRenewalPriceIncreaseEmail(
         data.membershipId,
         data.userId,
         data.membershipProviderObservationId,
-        claimToken,
+        claim,
       )
     }
     throw err
@@ -92,7 +93,7 @@ export async function processSendRenewalPriceIncreaseEmail(
     data.membershipId,
     data.userId,
     data.membershipProviderObservationId,
-    claimToken,
+    claim,
   )
   return result
 }

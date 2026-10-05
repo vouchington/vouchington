@@ -21,13 +21,13 @@ export async function getTestGooglePlayAcknowledgementId(
 }
 
 export async function getTestGooglePlayAcknowledgementRecoveryCursor(): Promise<string | null> {
-  const { rows } = await write<{ last_evidence_id: string | null }>(sql`
+  const { rows } = await write<{ cursor_evidence_id: string | null }>(sql`
     /* getTestGooglePlayAcknowledgementRecoveryCursor */
-    SELECT last_evidence_id
+    SELECT cursor_evidence_id
     FROM membership_google_play_recovery_cursors
-    WHERE id = 'acknowledgements'
+    WHERE recovery_sweep = 'acknowledgements'
   `)
-  return rows[0]?.last_evidence_id ?? null
+  return rows[0]?.cursor_evidence_id ?? null
 }
 
 export async function makeTestGooglePlayAcknowledgementDue(
@@ -35,9 +35,9 @@ export async function makeTestGooglePlayAcknowledgementDue(
 ): Promise<void> {
   await write(sql`
     /* makeTestGooglePlayAcknowledgementDue */
-    UPDATE membership_google_play_acknowledgements
-    SET next_attempt_at = CURRENT_TIMESTAMP
-    WHERE id = ${acknowledgementId}
+    UPDATE membership_google_play_acknowledgement_work_items
+    SET available_at = CURRENT_TIMESTAMP
+    WHERE membership_google_play_acknowledgement_id = ${acknowledgementId}
   `)
 }
 

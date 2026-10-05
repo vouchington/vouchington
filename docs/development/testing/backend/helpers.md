@@ -457,7 +457,7 @@ cannot advance the clock past it. `expireTestCopyrightDeliveryIntentClaim(id, at
 `@voucha/test-helpers/data-stores/psql/copyright-delivery-claims` ages one owned claimed row's lease
 and sets its attempt count, so a test can assert the sweep lists it and the next claim reclaims or
 fails it. It covers case deliveries and replies to declined email intakes alike, because both are
-rows of `copyright_notice_delivery_intents`.
+rows of `copyright_notice_delivery_work_items`.
 
 `declineTestCopyrightEmailIntake()` and `bounceTestCopyrightEmailIntakeReply(intentId)` from
 `@voucha/test-helpers/services/copyright-notices/declined-email-intake` create a parsed intake and

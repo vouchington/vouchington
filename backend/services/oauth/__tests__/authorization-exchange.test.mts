@@ -6,6 +6,7 @@ import {
   insertTestOAuthAuthorization,
   markTestOAuthAuthorizationExchanging,
 } from '@voucha/test-helpers/entities/oauth-authorizations'
+import { getTestOAuthExchangeAttempts } from '@voucha/test-helpers/entities/oauth-exchange-attempts'
 import { completeTestOAuthAuthorizationWhileRecoveryWaits } from '@voucha/test-helpers/entities/oauth-authorization-recovery'
 import {
   deleteTestOAuthAccount,
@@ -139,6 +140,26 @@ describe('OAuth authorization exchange recovery', () => {
     })
 
     await releaseOAuthAuthorizationExchangeClaim(flowId, claimed!.exchange_claim_id)
+    const retried = await claimOAuthAuthorizationExchange(flowId)
+    expect(retried!.exchange_claim_id).not.toBe(claimed!.exchange_claim_id)
+    await releaseOAuthAuthorizationExchangeClaim(flowId, claimed!.exchange_claim_id)
+    expect(await getTestOAuthAuthorization(flowId)).toMatchObject({
+      status: 'exchanging',
+      exchange_claim_id: retried!.exchange_claim_id,
+    })
+    await releaseOAuthAuthorizationExchangeClaim(flowId, retried!.exchange_claim_id)
+    expect(await getTestOAuthExchangeAttempts(flowId)).toMatchObject([
+      {
+        attempt_number: 1,
+        exchange_claim_id: claimed!.exchange_claim_id,
+        failed_at: expect.any(Date),
+      },
+      {
+        attempt_number: 2,
+        exchange_claim_id: retried!.exchange_claim_id,
+        failed_at: expect.any(Date),
+      },
+    ])
 
     expect(await getTestOAuthAuthorization(flowId)).toMatchObject({
       status: 'callback_received',
@@ -147,7 +168,7 @@ describe('OAuth authorization exchange recovery', () => {
   })
 
   it('durably rejects a claimed exchange after the attempt budget is exhausted', async () => {
-    const flowId = await insertCallbackReceivedAuthorization(5)
+    const flowId = await insertCallbackReceivedAuthorization(4)
     const claimId = randomUUID()
     await markTestOAuthAuthorizationExchanging(flowId, claimId)
 

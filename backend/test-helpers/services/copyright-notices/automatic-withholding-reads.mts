@@ -36,7 +36,7 @@ export async function readTestClaimantSuspensionReversal(
     SELECT EXISTS (
       SELECT 1 FROM copyright_claimant_suspension_reversals WHERE copyright_restriction_id = ${restrictionId}
     ) AS recorded, (
-      SELECT count(*)::int FROM copyright_notice_action_intents
+      SELECT count(*)::int FROM copyright_notice_action_work_items
       WHERE copyright_restriction_id = ${restrictionId} AND action = 'restore'
     ) AS restore_intents
   `)

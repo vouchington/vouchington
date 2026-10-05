@@ -1,3 +1,4 @@
+import type { RenewalPriceIncreaseNotificationClaim } from './renewal-check.mts'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -5,7 +6,7 @@ export async function markRenewalPriceIncreaseNotificationDeliveryAttempted(
   membershipId: string,
   userId: string,
   membershipProviderObservationId: string,
-  claimToken: string,
+  claim: RenewalPriceIncreaseNotificationClaim,
 ): Promise<boolean> {
   const { rows } = await write(sql`/* markRenewalPriceIncreaseNotificationDeliveryAttempted */
     WITH target AS MATERIALIZED (
@@ -14,8 +15,9 @@ export async function markRenewalPriceIncreaseNotificationDeliveryAttempted(
       CROSS JOIN LATERAL (
         SELECT projection.id
         FROM memberships projection
+        JOIN membership_renewal_price_increase_notification_work_items candidate_work ON candidate_work.membership_id = projection.id
         WHERE projection.membership_source_id = original.membership_source_id
-          AND projection.renewal_price_increase_claim_token = ${claimToken}
+          AND candidate_work.lease_token = ${claim.leaseToken} AND candidate_work.generation = ${claim.generation}::bigint
         ORDER BY projection.projection_ended_at IS NULL DESC,
           projection.projection_ended_at DESC NULLS LAST, projection.id DESC
         LIMIT 1
@@ -23,8 +25,8 @@ export async function markRenewalPriceIncreaseNotificationDeliveryAttempted(
       WHERE original.id = ${membershipId}
       LIMIT 1
     )
-    UPDATE memberships m SET renewal_price_increase_delivery_attempted_at = CURRENT_TIMESTAMP
-    FROM target, membership_source_states state
+    UPDATE membership_renewal_price_increase_notification_work_items work SET delivery_attempted_at = clock_timestamp()
+    FROM target, memberships m, membership_source_states state
     INNER JOIN membership_provider_observations observation
       ON observation.id = state.membership_provider_observation_id
       AND observation.membership_provider_lineage_id = state.membership_provider_lineage_id
@@ -39,9 +41,10 @@ export async function markRenewalPriceIncreaseNotificationDeliveryAttempted(
       ON renewal_product.id = observation.renewal_membership_product_id
       AND renewal_product.plan = current_product.plan
       AND renewal_product.billing_interval = current_product.billing_interval
-    WHERE m.id = target.id AND m.user_id = ${userId}
-      AND m.renewal_price_increase_notified_observation_id = ${membershipProviderObservationId}
-      AND m.renewal_price_increase_claim_token = ${claimToken}
+    WHERE work.membership_id = m.id AND m.id = target.id AND m.user_id = ${userId}
+      AND work.membership_provider_observation_id = ${membershipProviderObservationId}
+      AND work.lease_token = ${claim.leaseToken}
+      AND work.generation = ${claim.generation}::bigint AND work.lease_expires_at > clock_timestamp()
       AND observation.id = ${membershipProviderObservationId}
       AND state.membership_source_id = m.membership_source_id
       AND state.membership_product_id = m.membership_product_id
@@ -57,13 +60,13 @@ export async function markRenewalPriceIncreaseNotificationDeliveryAttempted(
       AND observation.renewal_effective_at <= CURRENT_TIMESTAMP + INTERVAL '30 days'
       AND observation.renewal_price_currency_code = observation.observed_price_currency_code
       AND observation.renewal_price_minor_units > observation.observed_price_minor_units
-      AND m.renewal_price_increase_notified_provider_product_id = observation.renewal_membership_provider_product_id
-      AND m.renewal_price_increase_notified_minor_units = observation.renewal_price_minor_units
-      AND m.renewal_price_increase_notified_currency_code = observation.renewal_price_currency_code
-      AND m.renewal_price_increase_notified_effective_at = observation.renewal_effective_at
-      AND m.renewal_price_increase_notified_at IS NULL
-      AND m.renewal_price_increase_delivery_attempted_at IS NULL
-    RETURNING m.id
+      AND work.membership_provider_product_id = observation.renewal_membership_provider_product_id
+      AND work.price_minor_units = observation.renewal_price_minor_units
+      AND work.currency_code = observation.renewal_price_currency_code
+      AND work.effective_at = observation.renewal_effective_at
+      AND work.completed_at IS NULL
+      AND work.delivery_attempted_at IS NULL
+    RETURNING work.membership_id AS id
   `)
   return rows.length > 0
 }
@@ -72,7 +75,7 @@ export async function markRenewalPriceIncreaseNotificationDelivered(
   membershipId: string,
   userId: string,
   membershipProviderObservationId: string,
-  claimToken: string,
+  claim: RenewalPriceIncreaseNotificationClaim,
 ): Promise<boolean> {
   const { rows } = await write(sql`/* markRenewalPriceIncreaseNotificationDelivered */
     WITH target AS MATERIALIZED (
@@ -81,8 +84,9 @@ export async function markRenewalPriceIncreaseNotificationDelivered(
       CROSS JOIN LATERAL (
         SELECT projection.id
         FROM memberships projection
+        JOIN membership_renewal_price_increase_notification_work_items candidate_work ON candidate_work.membership_id = projection.id
         WHERE projection.membership_source_id = original.membership_source_id
-          AND projection.renewal_price_increase_claim_token = ${claimToken}
+          AND candidate_work.lease_token = ${claim.leaseToken} AND candidate_work.generation = ${claim.generation}::bigint
         ORDER BY projection.projection_ended_at IS NULL DESC,
           projection.projection_ended_at DESC NULLS LAST, projection.id DESC
         LIMIT 1
@@ -90,15 +94,16 @@ export async function markRenewalPriceIncreaseNotificationDelivered(
       WHERE original.id = ${membershipId}
       LIMIT 1
     )
-    UPDATE memberships SET renewal_price_increase_notified_at = CURRENT_TIMESTAMP,
-      renewal_price_increase_claim_token = NULL, renewal_price_increase_claimed_at = NULL
-    FROM target
-    WHERE memberships.id = target.id AND memberships.user_id = ${userId}
-      AND renewal_price_increase_notified_observation_id = ${membershipProviderObservationId}
-      AND renewal_price_increase_claim_token = ${claimToken}
-      AND renewal_price_increase_notified_at IS NULL
-      AND renewal_price_increase_delivery_attempted_at IS NOT NULL
-    RETURNING memberships.id
+    UPDATE membership_renewal_price_increase_notification_work_items work SET completed_at = clock_timestamp(),
+      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL
+    FROM target, memberships m
+    WHERE work.membership_id = target.id AND m.id = target.id AND m.user_id = ${userId}
+      AND work.membership_provider_observation_id = ${membershipProviderObservationId}
+      AND work.lease_token = ${claim.leaseToken}
+      AND work.generation = ${claim.generation}::bigint AND work.lease_expires_at > clock_timestamp()
+      AND work.completed_at IS NULL
+      AND work.delivery_attempted_at IS NOT NULL
+    RETURNING work.membership_id AS id
   `)
   return rows.length > 0
 }
@@ -107,7 +112,7 @@ export async function releaseRenewalPriceIncreaseNotification(
   membershipId: string,
   userId: string,
   membershipProviderObservationId: string,
-  claimToken: string,
+  claim: RenewalPriceIncreaseNotificationClaim,
 ): Promise<void> {
   await write(sql`/* releaseRenewalPriceIncreaseNotification */
     WITH target AS MATERIALIZED (
@@ -116,8 +121,9 @@ export async function releaseRenewalPriceIncreaseNotification(
       CROSS JOIN LATERAL (
         SELECT projection.id
         FROM memberships projection
+        JOIN membership_renewal_price_increase_notification_work_items candidate_work ON candidate_work.membership_id = projection.id
         WHERE projection.membership_source_id = original.membership_source_id
-          AND projection.renewal_price_increase_claim_token = ${claimToken}
+          AND candidate_work.lease_token = ${claim.leaseToken} AND candidate_work.generation = ${claim.generation}::bigint
         ORDER BY projection.projection_ended_at IS NULL DESC,
           projection.projection_ended_at DESC NULLS LAST, projection.id DESC
         LIMIT 1
@@ -125,20 +131,14 @@ export async function releaseRenewalPriceIncreaseNotification(
       WHERE original.id = ${membershipId}
       LIMIT 1
     )
-    UPDATE memberships SET renewal_price_increase_notified_observation_id = NULL,
-      renewal_price_increase_notified_provider_product_id = NULL,
-      renewal_price_increase_notified_minor_units = NULL,
-      renewal_price_increase_notified_currency_code = NULL,
-      renewal_price_increase_notified_effective_at = NULL,
-      renewal_price_increase_notified_at = NULL,
-      renewal_price_increase_claim_token = NULL,
-      renewal_price_increase_claimed_at = NULL,
-      renewal_price_increase_delivery_attempted_at = NULL
-    FROM target
-    WHERE memberships.id = target.id AND memberships.user_id = ${userId}
-      AND renewal_price_increase_notified_observation_id = ${membershipProviderObservationId}
-      AND renewal_price_increase_claim_token = ${claimToken}
-      AND renewal_price_increase_notified_at IS NULL
-      AND renewal_price_increase_delivery_attempted_at IS NULL
+    UPDATE membership_renewal_price_increase_notification_work_items work
+    SET lease_token = NULL, leased_at = NULL, lease_expires_at = NULL
+    FROM target, memberships m
+    WHERE work.membership_id = target.id AND m.id = target.id AND m.user_id = ${userId}
+      AND work.membership_provider_observation_id = ${membershipProviderObservationId}
+      AND work.lease_token = ${claim.leaseToken}
+      AND work.generation = ${claim.generation}::bigint AND work.lease_expires_at > clock_timestamp()
+      AND work.completed_at IS NULL
+      AND work.delivery_attempted_at IS NULL
   `)
 }

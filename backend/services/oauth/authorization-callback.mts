@@ -58,7 +58,7 @@ export async function receiveOAuthAuthorizationCallback(options: {
   async function receiveCallbackInTransaction(): Promise<ReceiveOAuthAuthorizationCallbackTransactionResult> {
     const { rows } = await query(
       `/* receiveOAuthAuthorizationCallback */ SELECT *
-       FROM oauth_authorizations
+       FROM oauth_authorization_current_records
        WHERE state_hash = $1 AND provider = $2
        FOR UPDATE`,
       [hashOAuthAuthorizationState(options.state), options.provider],
@@ -69,7 +69,7 @@ export async function receiveOAuthAuthorizationCallback(options: {
       if (authorization.status !== 'completed') {
         await query(
           `/* receiveOAuthAuthorizationCallback */ UPDATE oauth_authorizations
-           SET status = 'expired',
+           SET expired_at = CASE WHEN rejected_at IS NULL THEN COALESCE(expired_at, clock_timestamp()) ELSE expired_at END,
                callback_code_ciphertext = NULL,
                completion_token_ciphertext = NULL
            WHERE id = $1`,
@@ -85,7 +85,7 @@ export async function receiveOAuthAuthorizationCallback(options: {
     if (options.error) {
       await query(
         `/* receiveOAuthAuthorizationCallback */ UPDATE oauth_authorizations
-         SET status = 'rejected',
+         SET rejected_at = COALESCE(rejected_at, clock_timestamp()),
              callback_error = $2,
              completion_token_hash = $3,
              completion_token_ciphertext = $4,
@@ -103,8 +103,7 @@ export async function receiveOAuthAuthorizationCallback(options: {
 
     await query(
       `/* receiveOAuthAuthorizationCallback */ UPDATE oauth_authorizations
-       SET status = 'callback_received',
-           callback_code_ciphertext = $2,
+       SET            callback_code_ciphertext = $2,
            completion_token_hash = $3,
            completion_token_ciphertext = $4,
            callback_received_at = CURRENT_TIMESTAMP

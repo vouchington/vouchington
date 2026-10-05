@@ -94,7 +94,7 @@ it('runs', () => {})`,
     ])
     expect(result.exitCode).not.toBe(0)
     expect(result.output).toContain(
-      'rearmFailedActivityPubInboxDeliveries on activitypub_inbox_deliveries',
+      'rearmFailedActivityPubInboxDeliveries on activitypub_inbox_delivery_work_items',
     )
   })
 
@@ -203,20 +203,20 @@ it('uses owned bounds', () => {
       'notification_push_intents',
       `{ kind: 'cursor', id: 'unrelated-id' }`,
     ],
-    ['cleanupRetainedIdentityRoots', 'retained_identity_cleanup_progress', `{ kind: 'global' }`],
+    ['cleanupRetainedIdentityRoots', 'retained_identity_cleanup_cursors', `{ kind: 'global' }`],
     [
       'cleanupRetainedIdentityRoots',
-      'retained_identity_cleanup_progress',
+      'retained_identity_cleanup_cursors',
       `{ kind: 'ids', ids: [] }`,
     ],
     [
       'cleanupRetainedRelationIdentities',
-      'retained_relation_identity_cleanup_progress',
+      'retained_relation_identity_cleanup_cursors',
       `{ kind: 'global' }`,
     ],
     [
       'cleanupRetainedRelationIdentities',
-      'retained_relation_identity_cleanup_progress',
+      'retained_relation_identity_cleanup_cursors',
       `{ kind: 'ids', ids: [] }`,
     ],
   ] as const)('rejects %s calls with %s scope', async (operation, table, scope) => {

@@ -6,7 +6,8 @@ import {
   createTestUser,
 } from '@voucha/test-helpers'
 import { createMembership } from '../../create.mts'
-import { claimRenewalPriceIncreaseNotification } from '../../renewal-check.mts'
+
+import { claimTestRenewalPriceIncreaseNotification as claimRenewalPriceIncreaseNotification } from '@voucha/test-helpers/renewal-notification-claims'
 import {
   markRenewalPriceIncreaseNotificationDelivered,
   markRenewalPriceIncreaseNotificationDeliveryAttempted,
@@ -87,7 +88,10 @@ describe('renewal notification source replacement', () => {
       renewal.user.id,
       renewal.observation.membership_provider_observation_id,
     )
-    expect(claimToken).toEqual(expect.any(String))
+    expect(claimToken).toMatchObject({
+      leaseToken: expect.any(String),
+      generation: expect.any(String),
+    })
     await expect(
       markRenewalPriceIncreaseNotificationDeliveryAttempted(
         renewal.membership.id,
@@ -129,7 +133,10 @@ describe('renewal notification source replacement', () => {
       renewal.user.id,
       renewal.observation.membership_provider_observation_id,
     )
-    expect(claimToken).toEqual(expect.any(String))
+    expect(claimToken).toMatchObject({
+      leaseToken: expect.any(String),
+      generation: expect.any(String),
+    })
     await replaceMembershipSource(renewal)
 
     await expect(

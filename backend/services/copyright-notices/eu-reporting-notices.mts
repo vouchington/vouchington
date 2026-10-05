@@ -74,7 +74,7 @@ export async function readDsaCopyrightNoticeFigures(
       FROM acted_notice
       JOIN LATERAL (
         SELECT min(intent.completed_at) AS completed_at
-        FROM copyright_notice_action_intents intent
+        FROM copyright_notice_action_work_items intent
         WHERE intent.copyright_notice_id = acted_notice.notice_id
           AND intent.action = 'withhold' AND intent.state = 'completed'
       ) first_withhold ON first_withhold.completed_at IS NOT NULL

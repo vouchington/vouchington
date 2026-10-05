@@ -32,7 +32,7 @@ describe('CORE_BACKFILLS', () => {
       queue_name: 'post-publication',
       job_name: 'processShadowAuditPostPublication',
       description: expect.stringContaining('dry run'),
-      source_table: 'posts,post_publication_reconciliation_audit_checkpoints',
+      source_table: 'posts,post_publication_reconciliation_audit_cursors',
     })
     expect(typeof backfill?.trigger).toBe('function')
   })

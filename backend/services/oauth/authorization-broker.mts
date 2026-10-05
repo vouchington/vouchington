@@ -130,7 +130,7 @@ async function supersedeWebAuthentication(
   )
   await query(
     `/* supersedeWebAuthentication */ UPDATE oauth_authorizations
-     SET status = 'rejected',
+     SET rejected_at = COALESCE(rejected_at, clock_timestamp()),
          callback_error = 'authorization_superseded',
          callback_code_ciphertext = NULL,
          completion_token_hash = NULL,

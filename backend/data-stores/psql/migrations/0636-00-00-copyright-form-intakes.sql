@@ -43,8 +43,8 @@ CREATE TABLE copyright_notice_form_screening_attempts (
   attempt_number integer NOT NULL CHECK (attempt_number > 0),
   copyright_notice_form_screening_id uuid,
   started_at timestamptz NOT NULL DEFAULT clock_timestamp(),
-  lease_token uuid NOT NULL DEFAULT uuidv7(),
-  claimed_at timestamptz,
+  execution_token uuid NOT NULL DEFAULT uuidv7(),
+  execution_started_at timestamptz,
   completed_at timestamptz,
   failed_at timestamptz,
   state copyright_notice_form_screening_attempt_states GENERATED ALWAYS AS (
@@ -56,11 +56,12 @@ CREATE TABLE copyright_notice_form_screening_attempts (
   CONSTRAINT uq_copyri_notice_form_screen_attempt__intake_id__attempt_number UNIQUE (copyright_notice_form_intake_id, attempt_number),
   CONSTRAINT fk_copyright_notice_form_screening_attempts__intake__screening FOREIGN KEY (copyright_notice_form_intake_id, copyright_notice_form_screening_id)
     REFERENCES copyright_notice_form_screenings(copyright_notice_form_intake_id, id) ON DELETE RESTRICT,
+  UNIQUE (copyright_notice_form_intake_id, id),
   CHECK ((completed_at IS NULL) = (copyright_notice_form_screening_id IS NULL)),
   CHECK (num_nonnulls(completed_at, failed_at) <= 1),
   CHECK (completed_at IS NULL OR completed_at >= started_at),
   CHECK (failed_at IS NULL OR failed_at >= started_at),
-  CHECK (claimed_at IS NULL OR claimed_at >= started_at)
+  CHECK (execution_started_at IS NULL OR execution_started_at >= started_at)
 );
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_form_screening_attempts__result ON copyright_notice_form_screening_attempts(copyright_notice_form_screening_id) WHERE copyright_notice_form_screening_id IS NOT NULL;
@@ -71,10 +72,10 @@ CREATE INDEX idx_copyright_notice_form_screening_attempts__latest ON copyright_n
 CREATE FUNCTION fn_reject_copyright_screening_attempt_rewind() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' OR OLD.completed_at IS NOT NULL OR OLD.failed_at IS NOT NULL
-    OR (to_jsonb(NEW) - ARRAY['claimed_at', 'completed_at', 'failed_at', 'copyright_notice_form_screening_id', 'state', 'lease_token'])
-      IS DISTINCT FROM (to_jsonb(OLD) - ARRAY['claimed_at', 'completed_at', 'failed_at', 'copyright_notice_form_screening_id', 'state', 'lease_token'])
-    OR (OLD.claimed_at IS NOT NULL AND NEW.claimed_at IS DISTINCT FROM OLD.claimed_at)
-    OR (OLD.lease_token IS DISTINCT FROM NEW.lease_token AND (OLD.claimed_at IS NOT NULL OR NEW.claimed_at IS NULL)) THEN
+    OR (to_jsonb(NEW) - ARRAY['execution_started_at', 'completed_at', 'failed_at', 'copyright_notice_form_screening_id', 'state', 'execution_token'])
+      IS DISTINCT FROM (to_jsonb(OLD) - ARRAY['execution_started_at', 'completed_at', 'failed_at', 'copyright_notice_form_screening_id', 'state', 'execution_token'])
+    OR (OLD.execution_started_at IS NOT NULL AND NEW.execution_started_at IS DISTINCT FROM OLD.execution_started_at)
+    OR (OLD.execution_token IS DISTINCT FROM NEW.execution_token AND (OLD.execution_started_at IS NOT NULL OR NEW.execution_started_at IS NULL)) THEN
     RAISE EXCEPTION 'copyright screening attempts cannot be rewritten or restarted' USING ERRCODE = '23514';
   END IF;
   RETURN NEW;
@@ -83,6 +84,48 @@ $$;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_screening_attempts_monotonic BEFORE UPDATE OR DELETE ON copyright_notice_form_screening_attempts
 FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_screening_attempt_rewind();
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE copyright_notice_form_screening_work_items (
+  copyright_notice_form_intake_id uuid PRIMARY KEY REFERENCES copyright_notice_form_intakes(id) ON DELETE CASCADE,
+  attempt_id uuid NOT NULL,
+  FOREIGN KEY (copyright_notice_form_intake_id, attempt_id)
+    REFERENCES copyright_notice_form_screening_attempts(copyright_notice_form_intake_id, id) ON DELETE CASCADE,
+  lease_token uuid,
+  leased_at timestamptz,
+  lease_expires_at timestamptz,
+  attempt_count integer NOT NULL DEFAULT 0 CHECK (attempt_count BETWEEN 0 AND 1),
+  available_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  CHECK ((lease_token IS NULL AND leased_at IS NULL AND lease_expires_at IS NULL)
+    OR (lease_token IS NOT NULL AND leased_at IS NOT NULL AND lease_expires_at > leased_at))
+);
+CREATE INDEX idx_copyright_form_screening_work__available
+  ON copyright_notice_form_screening_work_items(available_at, copyright_notice_form_intake_id) WHERE lease_token IS NULL;
+CREATE INDEX idx_copyright_form_screening_work__expired
+  ON copyright_notice_form_screening_work_items(lease_expires_at, copyright_notice_form_intake_id) WHERE lease_token IS NOT NULL;
+COMMENT ON TABLE copyright_notice_form_screening_work_items IS 'One current screening task; terminal attempts delete work while numbered screening history remains.';
+COMMENT ON COLUMN copyright_notice_form_screening_work_items.copyright_notice_form_intake_id IS 'Concrete intake whose current screening is executed.';
+COMMENT ON COLUMN copyright_notice_form_screening_work_items.attempt_id IS 'Exact numbered execution; replacement invalidates prior work.';
+COMMENT ON COLUMN copyright_notice_form_screening_work_items.lease_token IS 'Opaque worker ownership token, not an entity reference.';
+COMMENT ON COLUMN copyright_notice_form_screening_work_items.leased_at IS 'Database time this screening claim began.';
+COMMENT ON COLUMN copyright_notice_form_screening_work_items.lease_expires_at IS 'Deadline after which current output cannot finalize.';
+COMMENT ON COLUMN copyright_notice_form_screening_work_items.attempt_count IS 'Claims of this exact numbered attempt; retries create a new immutable attempt.';
+COMMENT ON COLUMN copyright_notice_form_screening_work_items.available_at IS 'Earliest idle screening claim time.';
+CREATE FUNCTION fn_schedule_copyright_form_screening_work() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF TG_OP = 'INSERT' AND NEW.completed_at IS NULL AND NEW.failed_at IS NULL THEN
+    INSERT INTO copyright_notice_form_screening_work_items(copyright_notice_form_intake_id, attempt_id)
+      VALUES (NEW.copyright_notice_form_intake_id, NEW.id)
+    ON CONFLICT (copyright_notice_form_intake_id) DO UPDATE SET attempt_id = EXCLUDED.attempt_id,
+      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL, attempt_count = 0, available_at = clock_timestamp();
+  ELSIF NEW.completed_at IS NOT NULL OR NEW.failed_at IS NOT NULL THEN
+    DELETE FROM copyright_notice_form_screening_work_items WHERE attempt_id = NEW.id;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_copyright_form_screening_work AFTER INSERT OR UPDATE ON copyright_notice_form_screening_attempts
+FOR EACH ROW EXECUTE FUNCTION fn_schedule_copyright_form_screening_work();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_form_intake_reviews (
@@ -138,9 +181,9 @@ COMMENT ON TABLE copyright_notice_form_screening_attempts IS 'One monotonic row 
 COMMENT ON COLUMN copyright_notice_form_screening_attempts.copyright_notice_form_intake_id IS 'Concrete intake whose screening attempts share the form-review fence.';
 COMMENT ON COLUMN copyright_notice_form_screening_attempts.attempt_number IS 'Monotonic intake-local attempt number; retries append rather than reset earlier attempts.';
 COMMENT ON COLUMN copyright_notice_form_screening_attempts.copyright_notice_form_screening_id IS 'Immutable result selected on successful completion of this attempt.';
-COMMENT ON COLUMN copyright_notice_form_screening_attempts.lease_token IS 'Opaque equality-only worker ownership token for this attempt.';
+COMMENT ON COLUMN copyright_notice_form_screening_attempts.execution_token IS 'Opaque equality-only worker ownership token for this attempt.';
 COMMENT ON COLUMN copyright_notice_form_screening_attempts.started_at IS 'Time the attempt removed automatic authority.';
-COMMENT ON COLUMN copyright_notice_form_screening_attempts.claimed_at IS 'First provider claim; an expired claim is failed and replaced by a new attempt.';
+COMMENT ON COLUMN copyright_notice_form_screening_attempts.execution_started_at IS 'First provider claim; an expired claim is failed and replaced by a new attempt.';
 COMMENT ON COLUMN copyright_notice_form_screening_attempts.completed_at IS 'Successful terminal completion time.';
 COMMENT ON COLUMN copyright_notice_form_screening_attempts.failed_at IS 'Failed or superseded terminal completion time.';
 COMMENT ON COLUMN copyright_notice_form_screening_attempts.state IS 'Current attempt state derived from its terminal facts.';

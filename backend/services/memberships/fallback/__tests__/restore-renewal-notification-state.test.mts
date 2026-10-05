@@ -10,10 +10,8 @@ import {
 import { createMembership, grantMembership } from '../../create.mts'
 import { getMembershipByUserId } from '../../get.mts'
 import { expireElapsedMembershipsForUser } from '../../grants/expire-elapsed.mts'
-import {
-  claimRenewalPriceIncreaseNotification,
-  getUsersApproachingRenewalWithPriceIncrease,
-} from '../../renewal-check.mts'
+import { getUsersApproachingRenewalWithPriceIncrease } from '../../renewal-check.mts'
+import { claimTestRenewalPriceIncreaseNotification as claimRenewalPriceIncreaseNotification } from '@voucha/test-helpers/renewal-notification-claims'
 import { getCurrentRenewalPriceIncreaseDetails } from '../../renewal-price-increase-details.mts'
 import {
   markRenewalPriceIncreaseNotificationDelivered,
@@ -59,7 +57,10 @@ describe('direct fallback renewal notification state', () => {
       user.id,
       observation.membership_provider_observation_id,
     )
-    expect(claimToken).toEqual(expect.any(String))
+    expect(claimToken).toMatchObject({
+      leaseToken: expect.any(String),
+      generation: expect.any(String),
+    })
 
     async function restore() {
       await endTestMembershipProjection(direct.id)

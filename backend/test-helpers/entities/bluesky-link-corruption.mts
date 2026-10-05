@@ -23,5 +23,7 @@ export async function setTestBlueskyLinkAuthorizationStatus(
   status: 'callback_claimed' | 'handoff_ready',
 ): Promise<void> {
   await write(sql`/* setTestBlueskyLinkAuthorizationStatus */
-    UPDATE bluesky_link_authorizations SET status = ${status} WHERE id = ${flowId}`)
+    UPDATE bluesky_link_authorizations
+    SET handoff_ready_at = CASE WHEN ${status} = 'handoff_ready' THEN CURRENT_TIMESTAMP END
+    WHERE id = ${flowId}`)
 }

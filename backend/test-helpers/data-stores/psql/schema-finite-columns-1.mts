@@ -8,7 +8,7 @@ export const FINITE_COLUMN_CONTRACTS_1 = [
     false,
   ],
   ['ai_usage_records', 'pricing_status', 'ai_usage_record_pricing_statuses', false],
-  ['activitypub_inbox_deliveries', 'request_method', 'http_request_methods', false],
+  ['activitypub_inbox_delivery_work_items', 'request_method', 'http_request_methods', false],
   ['api_keys', 'scopes', 'api_scopes', true],
   ['bluesky_link_authorizations', 'callback_mode', 'oauth_callback_modes', false],
   ['bluesky_link_authorizations', 'status', 'bluesky_link_authorization_statuses', false],

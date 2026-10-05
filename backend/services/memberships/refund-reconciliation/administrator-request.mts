@@ -26,13 +26,13 @@ export async function claimAdministratorRefundRequest(
       membership_source_id, membership_provider_lineage_id, membership_lineage_binding_id,
       provider, environment, application_id, operation_kind, idempotency_key,
       qualifying_allocation_minor_units, remaining_refundable_minor_units, currency_code,
-      period_started_at, period_ends_at, reconciliation_due_at
+      period_started_at, period_ends_at
     )
     SELECT source.id, lineage.id, binding.id,
       lineage.provider, lineage.environment, lineage.application_id,
       'administrator_refund', ${request.idempotencyKey}::text AS idempotency_key,
       ${request.amount.amount}, ${request.amount.amount}, ${request.amount.currency},
-      ${request.periodStartedAt}, ${request.periodEndsAt}, CURRENT_TIMESTAMP
+      ${request.periodStartedAt}, ${request.periodEndsAt}
     FROM memberships membership
     INNER JOIN membership_sources source ON source.id = membership.membership_source_id
     INNER JOIN membership_provider_lineages lineage

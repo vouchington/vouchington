@@ -23,9 +23,9 @@ export async function createCopyrightClaimantDecisionNoticeInTransaction(
     already_rejected: boolean
     later_restricted: boolean
   }>(sql`/* createCopyrightClaimantDecisionNoticeInTransaction:recipient */
-    SELECT claimant_user_id, EXISTS (SELECT 1 FROM copyright_notice_delivery_intents
+    SELECT claimant_user_id, EXISTS (SELECT 1 FROM copyright_notice_delivery_work_items
       WHERE idempotency_key IN (${`copyright-decision:${input.noticeId}:not_accepted:claimant`}, ${`copyright-decision:${input.noticeId}:not_accepted:claimant:email`})) AS already_rejected,
-      EXISTS (SELECT 1 FROM copyright_notice_delivery_intents restricted_intent
+      EXISTS (SELECT 1 FROM copyright_notice_delivery_work_items restricted_intent
         WHERE restricted_intent.idempotency_key IN (
           ${`copyright-decision:${input.noticeId}:restricted:claimant`},
           ${`copyright-decision:${input.noticeId}:restricted:claimant:email`}

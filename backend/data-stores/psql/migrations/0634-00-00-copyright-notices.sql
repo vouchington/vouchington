@@ -451,50 +451,130 @@ COMMENT ON COLUMN copyright_notice_lifecycle_change_rationales.copyright_notice_
 COMMENT ON COLUMN copyright_notice_lifecycle_change_rationales.review_rationale_ciphertext IS 'Private review rationale; only the controlled retention workflow can erase it.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TABLE copyright_notice_action_intents (
+CREATE TABLE copyright_notice_action_work_items (
   copyright_notice_id uuid NOT NULL,
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  state copyright_notice_action_intent_states NOT NULL DEFAULT 'pending' CHECK (state IN ('pending', 'claimed', 'completed', 'stale', 'blocked', 'failed')),
-  delivery_attempt_count integer NOT NULL DEFAULT 0 CHECK (delivery_attempt_count BETWEEN 0 AND 5),
+  state copyright_notice_action_intent_states GENERATED ALWAYS AS (CASE WHEN completed_at IS NOT NULL THEN completed_at_reason WHEN leased_at IS NOT NULL THEN 'claimed'::copyright_notice_action_intent_states ELSE 'pending'::copyright_notice_action_intent_states END) STORED NOT NULL,
+  attempt_count integer NOT NULL DEFAULT 0 CHECK (attempt_count BETWEEN 0 AND 5),
+  generation bigint NOT NULL DEFAULT 1 CHECK (generation >= 1),
   lease_token uuid,
-  claimed_at timestamptz,
+  lease_expires_at timestamptz,
+  leased_at timestamptz,
   completed_at_reason copyright_notice_action_intent_states CHECK (completed_at_reason IS NULL OR completed_at_reason IN ('completed', 'stale', 'blocked', 'failed')),
   failure_message text CHECK (failure_message IS NULL OR char_length(failure_message) BETWEEN 1 AND 4096),
-  next_attempt_at timestamptz,
+  available_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   copyright_restriction_id uuid NOT NULL,
-  copyright_notice_deadline_id uuid CONSTRAINT fk_copyright_notice_action_intents__deadline REFERENCES copyright_notice_deadlines(id) ON DELETE RESTRICT,
+  copyright_notice_deadline_id uuid CONSTRAINT fk_copyright_notice_action_work_items__deadline REFERENCES copyright_notice_deadlines(id) ON DELETE RESTRICT,
   expected_placement_revision integer NOT NULL CONSTRAINT chk_copyrigh_notice_action_intents__expected_placement_revision CHECK (expected_placement_revision >= 0),
   action copyright_notice_action_intent_actions NOT NULL CHECK (action IN ('withhold', 'restore')),
   completed_at timestamptz,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT uq_copyright_notice_action_intents__restriction_revision_action UNIQUE (copyright_restriction_id, expected_placement_revision, action),
+  CHECK ((lease_token IS NULL AND leased_at IS NULL AND lease_expires_at IS NULL)
+    OR (lease_token IS NOT NULL AND leased_at IS NOT NULL AND lease_expires_at > leased_at)),
+  CONSTRAINT uq_copyright_action_work__restriction_revision_action UNIQUE (copyright_restriction_id, expected_placement_revision, action),
   CHECK (copyright_notice_deadline_id IS NULL OR action = 'restore'),
+  CHECK ((completed_at IS NULL) = (completed_at_reason IS NULL)),
   CONSTRAINT copyright_action_intents_delivery_state CHECK (
-    (state = 'pending' AND completed_at IS NULL AND completed_at_reason IS NULL AND claimed_at IS NULL)
-    OR (state = 'claimed' AND completed_at IS NULL AND completed_at_reason IS NULL AND claimed_at IS NOT NULL)
+    (state = 'pending' AND completed_at IS NULL AND completed_at_reason IS NULL AND leased_at IS NULL)
+    OR (state = 'claimed' AND completed_at IS NULL AND completed_at_reason IS NULL AND leased_at IS NOT NULL)
     OR (state IN ('completed', 'stale', 'blocked', 'failed')
-      AND completed_at IS NOT NULL AND completed_at_reason = state AND next_attempt_at IS NULL)
-  ),
-  CONSTRAINT copyright_action_intents_retry_schedule CHECK (
-    ((state = 'pending' AND (delivery_attempt_count = 0 OR next_attempt_at IS NOT NULL)) OR state <> 'pending')
-    AND (state <> 'claimed' OR next_attempt_at IS NULL)
+      AND completed_at IS NOT NULL AND completed_at_reason = state )
   ),
   CONSTRAINT fk_copyright_action_intents__parent_notice
     FOREIGN KEY (copyright_notice_id, copyright_restriction_id)
     REFERENCES copyright_restrictions(copyright_notice_id, id) ON DELETE CASCADE,
   UNIQUE (copyright_notice_id, id)
 );
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE copyright_notice_action_attempts (
+  id uuid PRIMARY KEY DEFAULT uuidv7(),
+  work_item_id uuid NOT NULL REFERENCES copyright_notice_action_work_items(id) ON DELETE CASCADE,
+  generation bigint NOT NULL CHECK (generation >= 1),
+  attempt_number integer NOT NULL CHECK (attempt_number >= 1),
+  lease_token uuid NOT NULL,
+  started_at timestamptz NOT NULL,
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  UNIQUE(work_item_id, attempt_number), UNIQUE(work_item_id, lease_token)
+);
+CREATE TABLE copyright_notice_action_attempt_results (
+  attempt_id uuid PRIMARY KEY REFERENCES copyright_notice_action_attempts(id) ON DELETE CASCADE,
+  completed_at timestamptz,
+  stale_at timestamptz,
+  blocked_at timestamptz,
+  failed_at timestamptz,
+  abandoned_at timestamptz,
+  CHECK (num_nonnulls(completed_at, stale_at, blocked_at, failed_at, abandoned_at) = 1)
+);
+CREATE TRIGGER trigger_copyright_action_attempts_immutable BEFORE UPDATE OR DELETE ON copyright_notice_action_attempts
+FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+CREATE TRIGGER trigger_copyright_action_attempt_results_immutable BEFORE UPDATE OR DELETE ON copyright_notice_action_attempt_results
+FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+COMMENT ON TABLE copyright_notice_action_attempts IS 'Immutable numbered executions across all explicit replay generations; legal work retention owns this history.';
+COMMENT ON COLUMN copyright_notice_action_attempts.work_item_id IS 'Concrete copyright delivery work whose execution this records.';
+COMMENT ON COLUMN copyright_notice_action_attempts.generation IS 'Replay generation captured before external execution.';
+COMMENT ON COLUMN copyright_notice_action_attempts.attempt_number IS 'Monotonically increasing ordinal across retries and replay generations.';
+COMMENT ON COLUMN copyright_notice_action_attempts.lease_token IS 'Opaque execution ownership token, not an entity reference.';
+COMMENT ON COLUMN copyright_notice_action_attempts.started_at IS 'Database time this execution acquired its lease.';
+COMMENT ON TABLE copyright_notice_action_attempt_results IS 'Exactly one immutable terminal result for each claimed execution, including abandonment on takeover.';
+COMMENT ON COLUMN copyright_notice_action_attempt_results.attempt_id IS 'Execution finalized by this immutable result.';
+COMMENT ON COLUMN copyright_notice_action_attempt_results.completed_at IS 'Database time this execution ended as completed.';
+COMMENT ON COLUMN copyright_notice_action_attempt_results.stale_at IS 'Database time this execution ended as stale.';
+COMMENT ON COLUMN copyright_notice_action_attempt_results.blocked_at IS 'Database time this execution ended as blocked.';
+COMMENT ON COLUMN copyright_notice_action_attempt_results.failed_at IS 'Database time this execution ended as failed.';
+COMMENT ON COLUMN copyright_notice_action_attempt_results.abandoned_at IS 'Database time this execution ended as abandoned.';
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE FUNCTION fn_prepare_copyright_action_work() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  NEW.available_at := COALESCE(NEW.available_at, clock_timestamp());
+  IF TG_OP = 'UPDATE' AND (OLD.completed_at_reason IN ('blocked', 'failed') AND NEW.completed_at IS NULL) THEN NEW.generation := OLD.generation + 1; END IF;
+  IF NEW.completed_at IS NOT NULL OR NEW.leased_at IS NULL THEN
+    NEW.lease_token := NULL; NEW.leased_at := NULL; NEW.lease_expires_at := NULL;
+  ELSE
+    NEW.lease_token := COALESCE(NEW.lease_token, uuidv7());
+    NEW.lease_expires_at := COALESCE(NEW.lease_expires_at, NEW.leased_at + interval '5 minutes');
+  END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_00_copyright_action_work_lease BEFORE INSERT OR UPDATE ON copyright_notice_action_work_items
+FOR EACH ROW EXECUTE FUNCTION fn_prepare_copyright_action_work();
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE FUNCTION fn_record_copyright_action_attempt() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF TG_OP = 'UPDATE' AND OLD.lease_token IS NOT NULL
+    AND OLD.lease_token IS DISTINCT FROM NEW.lease_token THEN
+    INSERT INTO copyright_notice_action_attempt_results(attempt_id, completed_at, stale_at, blocked_at, failed_at, abandoned_at)
+    SELECT id, CASE WHEN NEW.completed_at_reason = 'completed' THEN clock_timestamp() ELSE NULL END, CASE WHEN NEW.completed_at_reason = 'stale' THEN clock_timestamp() ELSE NULL END, CASE WHEN NEW.completed_at_reason = 'blocked' THEN clock_timestamp() ELSE NULL END, CASE WHEN NEW.completed_at_reason = 'failed' OR (NEW.lease_token IS NULL AND NEW.failure_message IS NOT NULL AND NOT (NEW.completed_at IS NOT NULL)) THEN clock_timestamp() ELSE NULL END, CASE WHEN (NEW.completed_at_reason = 'completed' OR NEW.completed_at_reason = 'stale' OR NEW.completed_at_reason = 'blocked' OR NEW.completed_at_reason = 'failed' OR NEW.lease_token IS NULL AND NEW.failure_message IS NOT NULL) IS NOT TRUE THEN clock_timestamp() ELSE NULL END
+    FROM copyright_notice_action_attempts WHERE work_item_id = OLD.id AND lease_token = OLD.lease_token
+    ON CONFLICT (attempt_id) DO NOTHING;
+  END IF;
+  IF NEW.lease_token IS NOT NULL AND (TG_OP = 'INSERT' OR NEW.lease_token IS DISTINCT FROM OLD.lease_token) THEN
+    INSERT INTO copyright_notice_action_attempts(work_item_id, generation, attempt_number, lease_token, started_at)
+      SELECT NEW.id, NEW.generation, COALESCE(MAX(attempt_number), 0) + 1, NEW.lease_token, NEW.leased_at
+      FROM copyright_notice_action_attempts WHERE work_item_id = NEW.id;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_copyright_action_work_attempt AFTER INSERT OR UPDATE ON copyright_notice_action_work_items
+FOR EACH ROW EXECUTE FUNCTION fn_record_copyright_action_attempt();
+CREATE INDEX idx_copyright_action_work__available ON copyright_notice_action_work_items(available_at, id) WHERE lease_token IS NULL AND state = 'pending';
+CREATE INDEX idx_copyright_action_work__expired ON copyright_notice_action_work_items(lease_expires_at, id) WHERE lease_token IS NOT NULL;
+COMMENT ON COLUMN copyright_notice_action_work_items.generation IS 'Explicit replay cycle; clearing failed or blocked current-cycle outcomes increments it while execution history remains immutable.';
+COMMENT ON COLUMN copyright_notice_action_work_items.lease_expires_at IS 'Current worker ownership deadline; every owner mutation checks it.';
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_update_copyright_action_intents_scope
-  BEFORE INSERT ON copyright_notice_action_intents FOR EACH ROW
+  BEFORE INSERT ON copyright_notice_action_work_items FOR EACH ROW
   EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_restrictions', 'copyright_restriction_id');
-COMMENT ON COLUMN copyright_notice_action_intents.copyright_notice_id IS 'Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion.';
+COMMENT ON COLUMN copyright_notice_action_work_items.copyright_notice_id IS 'Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion.';
 
 ALTER TABLE copyright_notice_lifecycle_changes
   ADD CONSTRAINT copyright_lifecycle_event_action_intent_fk
   FOREIGN KEY (copyright_notice_id, copyright_notice_action_intent_id)
-  REFERENCES copyright_notice_action_intents(copyright_notice_id, id) ON DELETE RESTRICT NOT VALID;
+  REFERENCES copyright_notice_action_work_items(copyright_notice_id, id) ON DELETE RESTRICT NOT VALID;
 ALTER TABLE copyright_notice_lifecycle_changes
   VALIDATE CONSTRAINT copyright_lifecycle_event_action_intent_fk;
 
@@ -505,7 +585,7 @@ BEGIN
 
   -- A NULL notice pairs only with an email-intake reply, which is the one intent with no notice.
   IF NEW.copyright_notice_delivery_intent_id IS NOT NULL AND NOT EXISTS (
-    SELECT 1 FROM copyright_notice_delivery_intents source
+    SELECT 1 FROM copyright_notice_delivery_work_items source
     WHERE source.id = NEW.copyright_notice_delivery_intent_id
       AND source.copyright_notice_id IS NOT DISTINCT FROM NEW.copyright_notice_id
   ) THEN RAISE EXCEPTION 'lifecycle delivery intent belongs to another notice' USING ERRCODE = 'check_violation'; END IF;
@@ -605,9 +685,9 @@ CREATE INDEX idx_copyright_notice_lifecycle_changes__media_registry ON copyright
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_lifecycle_changes__guest_capability ON copyright_notice_lifecycle_changes(copyright_notice_guest_capability_id, copyright_notice_id) WHERE copyright_notice_guest_capability_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX idx_copyright_notice_action_intents__pending ON copyright_notice_action_intents(id) WHERE completed_at IS NULL;
+CREATE INDEX idx_copyright_notice_action_work_items__pending ON copyright_notice_action_work_items(id) WHERE completed_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX idx_copyright_notice_action_intents__deadline ON copyright_notice_action_intents(copyright_notice_deadline_id) WHERE copyright_notice_deadline_id IS NOT NULL;
+CREATE INDEX idx_copyright_notice_action_work_items__deadline ON copyright_notice_action_work_items(copyright_notice_deadline_id) WHERE copyright_notice_deadline_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notices__claimant_user ON copyright_notices(claimant_user_id) WHERE claimant_user_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -889,9 +969,9 @@ END;
 $$;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TRIGGER trigger_copyright_action_intents_guard BEFORE UPDATE OR DELETE ON copyright_notice_action_intents FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_action_intent();
+CREATE TRIGGER trigger_copyright_action_intents_guard BEFORE UPDATE OR DELETE ON copyright_notice_action_work_items FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_action_intent();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TRIGGER trigger_copyright_action_intents_updated_at BEFORE UPDATE ON copyright_notice_action_intents FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+CREATE TRIGGER trigger_copyright_action_intents_updated_at BEFORE UPDATE ON copyright_notice_action_work_items FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_copyright_deadline()
@@ -1122,19 +1202,19 @@ COMMENT ON COLUMN copyright_notice_lifecycle_changes.is_counter_notice_accepted 
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.recovery_source IS 'Durable record used to recover an assessed submission.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.replay_reason IS 'Why an operator replayed a failed action or registry record.';
 
-COMMENT ON TABLE copyright_notice_action_intents IS 'Revision-fenced delivery action intent; workers must not apply a stale placement revision.';
-COMMENT ON COLUMN copyright_notice_action_intents.copyright_restriction_id IS 'Independent legal restriction this delivery action implements.';
-COMMENT ON COLUMN copyright_notice_action_intents.copyright_notice_deadline_id IS 'Counter-notice deadline authorizing a statutory restoration; NULL for withholds and non-statutory restores.';
-COMMENT ON COLUMN copyright_notice_action_intents.expected_placement_revision IS 'Revision fence that must still match before delivery state changes.';
-COMMENT ON COLUMN copyright_notice_action_intents.action IS 'Requested reversible delivery transition: withhold or restore.';
-COMMENT ON COLUMN copyright_notice_action_intents.completed_at IS 'One-way timestamp set only after the fenced delivery transition is durably confirmed.';
+COMMENT ON TABLE copyright_notice_action_work_items IS 'Revision-fenced delivery action intent; workers must not apply a stale placement revision.';
+COMMENT ON COLUMN copyright_notice_action_work_items.copyright_restriction_id IS 'Independent legal restriction this delivery action implements.';
+COMMENT ON COLUMN copyright_notice_action_work_items.copyright_notice_deadline_id IS 'Counter-notice deadline authorizing a statutory restoration; NULL for withholds and non-statutory restores.';
+COMMENT ON COLUMN copyright_notice_action_work_items.expected_placement_revision IS 'Revision fence that must still match before delivery state changes.';
+COMMENT ON COLUMN copyright_notice_action_work_items.action IS 'Requested reversible delivery transition: withhold or restore.';
+COMMENT ON COLUMN copyright_notice_action_work_items.completed_at IS 'One-way timestamp set only after the fenced delivery transition is durably confirmed.';
 
 -- Current indexes for fresh schema bootstrap.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_copyright_notices__received_id
   ON copyright_notices (received_at, id);
 
-COMMENT ON COLUMN copyright_notice_action_intents.lease_token IS 'Opaque worker ownership token rotated on each claim or reclaim; completion and failure compare it for equality. It identifies no durable row.';
+COMMENT ON COLUMN copyright_notice_action_work_items.lease_token IS 'Opaque worker ownership token rotated on each claim or reclaim; completion and failure compare it for equality. It identifies no durable row.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_ensure_copyright_notice_lifecycle_changes_actor BEFORE INSERT ON copyright_notice_lifecycle_changes FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id');

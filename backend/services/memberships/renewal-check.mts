@@ -10,7 +10,6 @@ export async function getUsersApproachingRenewalWithPriceIncrease(
   afterId?: string,
   batchSize = getMembershipWorkLimits().batchSize,
 ): Promise<RenewalPriceIncreaseUser[]> {
-  const MEMBERSHIPS_RENEWAL_CLAIM_HOURS = getMembershipWorkLimit('renewal_claim_hours')
   const { rows } = await read(sql`/* getUsersApproachingRenewalWithPriceIncrease */
     SELECT m.user_id, m.id AS membership_id,
       observation.id AS membership_provider_observation_id,
@@ -20,6 +19,7 @@ export async function getUsersApproachingRenewalWithPriceIncrease(
       product.plan, product.billing_interval AS interval,
       observation.renewal_effective_at AS expires_at
     FROM memberships m
+    LEFT JOIN membership_renewal_price_increase_notification_work_items work ON work.membership_id = m.id
     INNER JOIN membership_source_states state
       ON state.membership_source_id = m.membership_source_id
       AND state.membership_product_id = m.membership_product_id
@@ -54,46 +54,44 @@ export async function getUsersApproachingRenewalWithPriceIncrease(
       AND observation.renewal_price_currency_code = observation.observed_price_currency_code
       AND observation.renewal_price_minor_units > observation.observed_price_minor_units
       AND (
-        ((m.renewal_price_increase_claimed_at IS NULL
-          OR m.renewal_price_increase_delivery_attempted_at IS NOT NULL
-          OR m.renewal_price_increase_claimed_at < CURRENT_TIMESTAMP - ${MEMBERSHIPS_RENEWAL_CLAIM_HOURS}::integer * INTERVAL '1 hour') AND
-          (m.renewal_price_increase_notified_provider_product_id,
-          m.renewal_price_increase_notified_minor_units,
-          m.renewal_price_increase_notified_currency_code,
-          m.renewal_price_increase_notified_effective_at)
+        ((work.leased_at IS NULL
+          OR work.lease_expires_at <= clock_timestamp()) AND
+          (work.membership_provider_product_id,
+          work.price_minor_units,
+          work.currency_code,
+          work.effective_at)
         IS DISTINCT FROM
         (observation.renewal_membership_provider_product_id,
           observation.renewal_price_minor_units,
           observation.renewal_price_currency_code,
           observation.renewal_effective_at))
-        OR (m.renewal_price_increase_notified_at IS NULL
-          AND m.renewal_price_increase_delivery_attempted_at IS NULL
-          AND (m.renewal_price_increase_claimed_at IS NULL
-            OR m.renewal_price_increase_claimed_at < CURRENT_TIMESTAMP - ${MEMBERSHIPS_RENEWAL_CLAIM_HOURS}::integer * INTERVAL '1 hour'))
+        OR (work.completed_at IS NULL
+          AND work.delivery_attempted_at IS NULL
+          AND (work.leased_at IS NULL
+            OR work.lease_expires_at <= clock_timestamp()))
       )
     ORDER BY m.id LIMIT ${batchSize}
   `)
   return rows.map(renewalPriceIncreaseUser)
 }
 
+export type RenewalPriceIncreaseNotificationClaim = { leaseToken: string; generation: string }
+export { prepareRenewalPriceIncreaseNotification } from './renewal-notification-prepare.mts'
+
 export async function claimRenewalPriceIncreaseNotification(
   membershipId: string,
   userId: string,
   membershipProviderObservationId: string,
-): Promise<string | null> {
-  const MEMBERSHIPS_RENEWAL_CLAIM_HOURS = getMembershipWorkLimit('renewal_claim_hours')
-  const { rows } = await write(sql`/* claimRenewalPriceIncreaseNotification */
-    UPDATE memberships m
-    SET renewal_price_increase_notified_observation_id = observation.id,
-      renewal_price_increase_notified_provider_product_id = observation.renewal_membership_provider_product_id,
-      renewal_price_increase_notified_minor_units = observation.renewal_price_minor_units,
-      renewal_price_increase_notified_currency_code = observation.renewal_price_currency_code,
-      renewal_price_increase_notified_effective_at = observation.renewal_effective_at,
-      renewal_price_increase_notified_at = NULL,
-      renewal_price_increase_claim_token = uuidv7(),
-      renewal_price_increase_claimed_at = CURRENT_TIMESTAMP,
-      renewal_price_increase_delivery_attempted_at = NULL
-    FROM membership_source_states state
+  generation: string,
+): Promise<RenewalPriceIncreaseNotificationClaim | null> {
+  const leaseHours = getMembershipWorkLimit('renewal_claim_hours')
+  const { rows } =
+    await write<RenewalPriceIncreaseNotificationClaim>(sql`/* claimRenewalPriceIncreaseNotification */
+    WITH candidate AS (
+      SELECT m.id
+    FROM memberships m
+    INNER JOIN membership_renewal_price_increase_notification_work_items work ON work.membership_id = m.id
+    CROSS JOIN membership_source_states state
     INNER JOIN membership_provider_observations observation
       ON observation.id = state.membership_provider_observation_id
       AND observation.membership_provider_lineage_id = state.membership_provider_lineage_id
@@ -125,28 +123,25 @@ export async function claimRenewalPriceIncreaseNotification(
       AND observation.renewal_effective_at <= CURRENT_TIMESTAMP + INTERVAL '30 days'
       AND observation.renewal_price_currency_code = observation.observed_price_currency_code
       AND observation.renewal_price_minor_units > observation.observed_price_minor_units
-      AND (
-        ((m.renewal_price_increase_claimed_at IS NULL
-          OR m.renewal_price_increase_delivery_attempted_at IS NOT NULL
-          OR m.renewal_price_increase_claimed_at < CURRENT_TIMESTAMP - ${MEMBERSHIPS_RENEWAL_CLAIM_HOURS}::integer * INTERVAL '1 hour') AND
-          (m.renewal_price_increase_notified_provider_product_id,
-          m.renewal_price_increase_notified_minor_units,
-          m.renewal_price_increase_notified_currency_code,
-          m.renewal_price_increase_notified_effective_at)
-        IS DISTINCT FROM
-        (observation.renewal_membership_provider_product_id,
-          observation.renewal_price_minor_units,
-          observation.renewal_price_currency_code,
-          observation.renewal_effective_at))
-        OR (m.renewal_price_increase_notified_at IS NULL
-          AND m.renewal_price_increase_delivery_attempted_at IS NULL
-          AND (m.renewal_price_increase_claimed_at IS NULL
-            OR m.renewal_price_increase_claimed_at < CURRENT_TIMESTAMP - ${MEMBERSHIPS_RENEWAL_CLAIM_HOURS}::integer * INTERVAL '1 hour'))
-      )
-    RETURNING m.renewal_price_increase_claim_token
+        AND work.generation = ${generation}::bigint
+        AND work.membership_provider_observation_id = observation.id
+        AND work.membership_provider_product_id = observation.renewal_membership_provider_product_id
+        AND work.price_minor_units = observation.renewal_price_minor_units
+        AND work.currency_code = observation.renewal_price_currency_code
+        AND work.effective_at = observation.renewal_effective_at
+        AND work.completed_at IS NULL AND work.delivery_attempted_at IS NULL
+        AND work.available_at <= clock_timestamp()
+        AND (work.lease_token IS NULL OR work.lease_expires_at <= clock_timestamp())
+      FOR UPDATE OF m
+    )
+    UPDATE membership_renewal_price_increase_notification_work_items work
+    SET lease_token = uuidv7(), leased_at = clock_timestamp(),
+      lease_expires_at = clock_timestamp() + ${leaseHours}::integer * INTERVAL '1 hour',
+      attempt_count = attempt_count + 1
+    FROM candidate WHERE work.membership_id = candidate.id AND work.generation = ${generation}::bigint
+      AND work.completed_at IS NULL AND work.delivery_attempted_at IS NULL
+      AND (work.lease_token IS NULL OR work.lease_expires_at <= clock_timestamp())
+    RETURNING work.lease_token AS "leaseToken", work.generation::text AS generation
   `)
-  return (
-    (rows[0] as { renewal_price_increase_claim_token: string } | undefined)
-      ?.renewal_price_increase_claim_token ?? null
-  )
+  return rows[0] ?? null
 }

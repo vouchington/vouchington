@@ -107,7 +107,7 @@ describe('Stripe membership provider fact snapshots', () => {
       true,
       500,
     )
-    await Promise.all([pastDueEvent, activeEvent].map(insertStripeEvent))
+    await Promise.all([pastDueEvent, activeEvent].map(event => insertStripeEvent(event)))
     const membership = await createMembership({
       userId: user.id,
       plan: 'plus',

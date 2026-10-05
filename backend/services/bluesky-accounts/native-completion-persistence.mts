@@ -125,7 +125,7 @@ export async function persistNativeBlueskyLinkCompletion(
       } else {
         await query(sql`/* createNativeBlueskyLinkCompletion:handoffReady */
           UPDATE bluesky_link_authorizations
-          SET status = 'handoff_ready'
+          SET handoff_ready_at = clock_timestamp()
           WHERE id = ${input.flowId} AND status = 'callback_claimed'`)
         outcome = userState
       }
@@ -157,7 +157,7 @@ async function rejectNativeAuthorization(
       RETURNING link_authorization_id
     )
     UPDATE bluesky_link_authorizations
-    SET status = 'rejected', handle = NULL
+    SET rejected_at = clock_timestamp(), handle = NULL
     WHERE id = ${input.flowId}
       AND user_id = ${input.userId}
       AND status IN ('callback_claimed', 'handoff_ready')`)

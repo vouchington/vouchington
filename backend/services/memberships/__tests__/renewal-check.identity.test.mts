@@ -1,16 +1,15 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
+  ageTestMembershipRenewalPriceIncreaseClaim,
   attachTestStripeProductionProviderObservation,
   createTestSku,
   createTestUser,
   retireTestMembershipProviderProduct,
 } from '@voucha/test-helpers'
 import { createMembership } from '../create.mts'
-import {
-  claimRenewalPriceIncreaseNotification,
-  getUsersApproachingRenewalWithPriceIncrease,
-} from '../renewal-check.mts'
+import { getUsersApproachingRenewalWithPriceIncrease } from '../renewal-check.mts'
+import { claimTestRenewalPriceIncreaseNotification as claimRenewalPriceIncreaseNotification } from '@voucha/test-helpers/renewal-notification-claims'
 import {
   markRenewalPriceIncreaseNotificationDelivered,
   markRenewalPriceIncreaseNotificationDeliveryAttempted,
@@ -69,7 +68,10 @@ async function deliverRenewal(
     userId,
     observationId,
   )
-  expect(claimToken).toEqual(expect.any(String))
+  expect(claimToken).toMatchObject({
+    leaseToken: expect.any(String),
+    generation: expect.any(String),
+  })
   await expect(
     markRenewalPriceIncreaseNotificationDeliveryAttempted(
       membershipId,
@@ -168,7 +170,7 @@ describe('renewal notification identity', () => {
     )
   })
 
-  it('allows a different renewal after an ambiguous prior delivery attempt', async () => {
+  it('preserves a live attempted send and permits a different renewal after lease expiry', async () => {
     const applicationId = `renewal-${randomUUID()}`
     const currentSku = await createPlusSku(500, applicationId)
     const firstTarget = await createPlusSku(800, applicationId)
@@ -205,6 +207,21 @@ describe('renewal notification identity', () => {
         user.id,
         second.membership_provider_observation_id,
       ),
-    ).resolves.toEqual(expect.any(String))
+    ).resolves.toBeNull()
+    await ageTestMembershipRenewalPriceIncreaseClaim(first.membership.id)
+    const successor = await claimRenewalPriceIncreaseNotification(
+      first.membership.id,
+      user.id,
+      second.membership_provider_observation_id,
+    )
+    expect(successor).toMatchObject({ leaseToken: expect.any(String), generation: '2' })
+    await expect(
+      markRenewalPriceIncreaseNotificationDelivered(
+        first.membership.id,
+        user.id,
+        first.membership_provider_observation_id,
+        firstToken!,
+      ),
+    ).resolves.toBe(false)
   })
 })

@@ -79,7 +79,7 @@ export function enqueueRecoverStripeEvents(): EnqueueReturnType {
 }
 
 function stripeEventJobId(data: ProcessStripeEventData): string {
-  return `stripe-event__${data.stripeEventRecordId}__${data.processingAttemptId}`
+  return `stripe-event__${data.stripeEventRecordId}__${data.leaseToken}`
 }
 
 function getStripeEventOrdering(data: ProcessStripeEventData): Partial<JobOptions> {

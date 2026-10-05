@@ -2,12 +2,12 @@ import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 type ActivityPubInboxVerificationConstraintName =
-  | 'activitypub_inbox_deliveries__deferral_state_valid'
-  | 'activitypub_inbox_deliveries__failure_state_valid'
-  | 'activitypub_inbox_deliveries__sender_requires_verification'
-  | 'activitypub_inbox_deliveries__terminal_diagnostics_present'
-  | 'activitypub_inbox_deliveries__verified_actor_paired'
-  | 'activitypub_inbox_deliveries_remote_actor_id_fkey'
+  | 'activitypub_inbox_work_items__deferral_state_valid'
+  | 'activitypub_inbox_work_items__failure_state_valid'
+  | 'activitypub_inbox_work_items__sender_requires_verification'
+  | 'activitypub_inbox_work_items__terminal_diagnostics_present'
+  | 'activitypub_inbox_work_items__verified_actor_paired'
+  | 'activitypub_inbox_delivery_work_items_remote_actor_id_fkey'
 
 type ActivityPubInboxVerificationConstraintForTest = {
   constraintName: ActivityPubInboxVerificationConstraintName
@@ -27,14 +27,14 @@ export async function getActivityPubInboxVerificationConstraintsForTest(): Promi
            pg_get_constraintdef(c.oid) AS definition,
            CASE c.confdeltype WHEN 'r' THEN 'RESTRICT' WHEN 'a' THEN 'NO ACTION' ELSE NULL END AS delete_action
     FROM pg_constraint c
-    WHERE c.conrelid = 'activitypub_inbox_deliveries'::regclass
+    WHERE c.conrelid = 'activitypub_inbox_delivery_work_items'::regclass
       AND c.conname IN (
-        'activitypub_inbox_deliveries__deferral_state_valid',
-        'activitypub_inbox_deliveries__failure_state_valid',
-        'activitypub_inbox_deliveries__sender_requires_verification',
-        'activitypub_inbox_deliveries__terminal_diagnostics_present',
-        'activitypub_inbox_deliveries__verified_actor_paired',
-        'activitypub_inbox_deliveries_remote_actor_id_fkey'
+        'activitypub_inbox_work_items__deferral_state_valid',
+        'activitypub_inbox_work_items__failure_state_valid',
+        'activitypub_inbox_work_items__sender_requires_verification',
+        'activitypub_inbox_work_items__terminal_diagnostics_present',
+        'activitypub_inbox_work_items__verified_actor_paired',
+        'activitypub_inbox_delivery_work_items_remote_actor_id_fkey'
       )
   `)
 
@@ -50,13 +50,14 @@ export async function makeActivityPubInboxDeliveryRecoverableForTest(
   mode: 'unstarted' | 'stale',
 ): Promise<void> {
   await write(sql`/* makeActivityPubInboxDeliveryRecoverableForTest */
-    UPDATE activitypub_inbox_deliveries
-    SET enqueued_at = NOW() - INTERVAL '31 minutes',
+    UPDATE activitypub_inbox_delivery_work_items
+    SET dispatched_at = NOW() - INTERVAL '31 minutes',
         received_at = NOW() - INTERVAL '31 minutes',
-        processing_at = CASE
+        leased_at = CASE
           WHEN ${mode} = 'stale' THEN NOW() - INTERVAL '31 minutes'
           ELSE NULL
-        END
+        END,
+        lease_expires_at = CASE WHEN ${mode} = 'stale' THEN NOW() - INTERVAL '1 minute' ELSE NULL END
     WHERE id = ${deliveryId}
   `)
 }
@@ -65,7 +66,7 @@ export async function ageActivityPubInboxDeliveryReceivedAtForTest(
   deliveryId: string,
 ): Promise<void> {
   await write(sql`/* ageActivityPubInboxDeliveryReceivedAtForTest */
-    UPDATE activitypub_inbox_deliveries
+    UPDATE activitypub_inbox_delivery_work_items
     SET received_at = NOW() - INTERVAL '31 minutes'
     WHERE id = ${deliveryId}
   `)
@@ -79,7 +80,7 @@ export async function activityPubInboxDeliveryExistsOnPrimaryForTest(
   }>(sql`/* activityPubInboxDeliveryExistsOnPrimaryForTest */
     SELECT EXISTS (
       SELECT 1
-      FROM activitypub_inbox_deliveries
+      FROM activitypub_inbox_delivery_work_items
       WHERE claimed_activity_id = ${claimedActivityId}
     ) AS exists
   `)
@@ -104,7 +105,7 @@ export async function setActivityPubInboxStorageCountersForTest(
         retained_raw_body_bytes = ${unverifiedRawBodyBytes},
         unverified_rows = ${unverifiedRows},
         unverified_raw_body_bytes = ${unverifiedRawBodyBytes}
-    WHERE singleton
+    WHERE is_singleton
   `)
 }
 
@@ -113,30 +114,30 @@ export async function resetActivityPubInboxDeliveryStorageForTest(
 ): Promise<void> {
   await write(sql`/* ensureActivityPubInboxStorageCounterForTest */
     INSERT INTO activitypub_inbox_delivery_storage_counters (
-      singleton, retained_rows, retained_raw_body_bytes, unverified_rows, unverified_raw_body_bytes
+      is_singleton, retained_rows, retained_raw_body_bytes, unverified_rows, unverified_raw_body_bytes
     )
     SELECT TRUE,
            COUNT(*),
            COALESCE(SUM(OCTET_LENGTH(raw_body)), 0),
            COUNT(*) FILTER (WHERE verified_at IS NULL),
            COALESCE(SUM(OCTET_LENGTH(raw_body)) FILTER (WHERE verified_at IS NULL), 0)
-    FROM activitypub_inbox_deliveries
-    ON CONFLICT (singleton) DO NOTHING
+    FROM activitypub_inbox_delivery_work_items
+    ON CONFLICT (is_singleton) DO NOTHING
   `)
   await write(sql`/* resetActivityPubInboxDeliveryStorageForTest */
-    DELETE FROM activitypub_inbox_deliveries
+    DELETE FROM activitypub_inbox_delivery_work_items
   `)
   if (options.removeCounterSingleton) {
     await write(sql`/* removeActivityPubInboxStorageCounterForTest */
-      DELETE FROM activitypub_inbox_delivery_storage_counters WHERE singleton
+      DELETE FROM activitypub_inbox_delivery_storage_counters WHERE is_singleton
     `)
     return
   }
   await write(sql`/* restoreActivityPubInboxStorageCounterForTest */
     INSERT INTO activitypub_inbox_delivery_storage_counters (
-      singleton, retained_rows, retained_raw_body_bytes, unverified_rows, unverified_raw_body_bytes
+      is_singleton, retained_rows, retained_raw_body_bytes, unverified_rows, unverified_raw_body_bytes
     ) VALUES (TRUE, 0, 0, 0, 0)
-    ON CONFLICT (singleton) DO UPDATE
+    ON CONFLICT (is_singleton) DO UPDATE
     SET retained_rows = 0,
         retained_raw_body_bytes = 0,
         unverified_rows = 0,

@@ -44,7 +44,9 @@ describe('terminal Stripe membership provider facts', () => {
       subscriptionId,
       300,
     )
-    await Promise.all([terminalEvent, staleEvent, newerEvent].map(insertStripeEvent))
+    await Promise.all(
+      [terminalEvent, staleEvent, newerEvent].map(event => insertStripeEvent(event)),
+    )
     const membership = await createMembership({
       userId: user.id,
       plan: 'plus',
@@ -123,7 +125,7 @@ describe('terminal Stripe membership provider facts', () => {
       subscriptionId,
       200,
     )
-    await Promise.all([unpaidEvent, recoveredEvent].map(insertStripeEvent))
+    await Promise.all([unpaidEvent, recoveredEvent].map(event => insertStripeEvent(event)))
     const membership = await createMembership({
       userId: user.id,
       plan: 'plus',

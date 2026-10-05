@@ -29,7 +29,7 @@ export async function selectCopyrightParticipantStatements(
     body_ciphertext: string
   }>(sql`/* selectCopyrightParticipantStatements */
     SELECT intent.id, intent.delivery_kind, intent.state, intent.sent_at, correspondence.id AS correspondence_id, correspondence.body_ciphertext
-    FROM copyright_notice_delivery_intents intent
+    FROM copyright_notice_delivery_work_items intent
     JOIN copyright_notice_correspondence_messages correspondence ON correspondence.id = intent.copyright_notice_correspondence_message_id
     WHERE intent.copyright_notice_id = ${noticeId} AND intent.channel = 'email'
       AND ((intent.recipient_role = 'poster' AND intent.recipient_user_id = ${userId}

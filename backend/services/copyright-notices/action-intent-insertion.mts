@@ -11,7 +11,7 @@ export async function insertCopyrightActionIntent(
   action: 'withhold' | 'restore',
 ): Promise<CopyrightActionIntentRecord> {
   await query(sql`/* insertCopyrightActionIntent */
-    INSERT INTO copyright_notice_action_intents (
+    INSERT INTO copyright_notice_action_work_items (
       copyright_restriction_id, copyright_notice_deadline_id, expected_placement_revision, action
     ) VALUES (${restrictionId}, NULL, ${placementRevision}, ${action})
     ON CONFLICT (copyright_restriction_id, expected_placement_revision, action) DO NOTHING
@@ -19,9 +19,9 @@ export async function insertCopyrightActionIntent(
   const { rows } = await query<CopyrightActionIntentRecord>(sql`
     /* insertCopyrightActionIntent:read */
     SELECT id, copyright_restriction_id, copyright_notice_deadline_id,
-      expected_placement_revision, action, state, delivery_attempt_count, claimed_at,
-      completed_at, completed_at_reason, failure_message, next_attempt_at, lease_token
-    FROM copyright_notice_action_intents
+      expected_placement_revision, action, state, attempt_count, leased_at,
+      completed_at, completed_at_reason, failure_message, available_at, lease_token
+    FROM copyright_notice_action_work_items
     WHERE copyright_restriction_id = ${restrictionId}
       AND expected_placement_revision = ${placementRevision} AND action = ${action}
   `)

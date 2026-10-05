@@ -55,11 +55,11 @@ export const ALLOWED_TOKEN_CURSOR_PROTOCOL_ID = new Map<string, string>([
     'Session id allocated before token issuance so replay reuses it; no row exists yet.',
   ],
   [
-    'activitypub_distribution_checkpoints.activity_id',
+    'activitypub_distribution_work_items.activity_id',
     'Stable ActivityPub activity identity used as a protocol cursor key.',
   ],
   [
-    'activitypub_distribution_checkpoints.last_remote_actor_id',
+    'activitypub_distribution_work_items.cursor_remote_actor_id',
     'Traversal cursor position; deleting the actor must not rewind a completed cursor.',
   ],
   [

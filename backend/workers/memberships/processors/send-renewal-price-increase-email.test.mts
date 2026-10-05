@@ -10,6 +10,7 @@ import {
   retireTestMembershipProviderProduct,
   updateTestMembershipExpiresAt,
 } from '@voucha/test-helpers'
+import { prepareRenewalPriceIncreaseNotification } from '@services/memberships'
 import { processSendRenewalPriceIncreaseEmail } from './send-renewal-price-increase-email.mts'
 
 describe('processSendRenewalPriceIncreaseEmail', () => {
@@ -50,7 +51,13 @@ describe('processSendRenewalPriceIncreaseEmail', () => {
       renewal_effective_at: expiresAt,
     })
 
+    const generation = await prepareRenewalPriceIncreaseNotification(
+      membership.id,
+      user!.id,
+      observation.membership_provider_observation_id,
+    )
     const data = {
+      generation: generation!,
       userId: user!.id,
       membershipId: membership.id,
       membershipProviderObservationId: observation.membership_provider_observation_id,
@@ -112,7 +119,13 @@ describe('processSendRenewalPriceIncreaseEmail', () => {
       renewal_membership_provider_product_id: newSku.membership_provider_product_id,
       renewal_effective_at: expiresAt,
     })
+    const generation = await prepareRenewalPriceIncreaseNotification(
+      membership.id,
+      user!.id,
+      observation.membership_provider_observation_id,
+    )
     const data = {
+      generation: generation!,
       userId: user!.id,
       membershipId: membership.id,
       membershipProviderObservationId: observation.membership_provider_observation_id,
@@ -163,7 +176,13 @@ describe('processSendRenewalPriceIncreaseEmail', () => {
       renewal_membership_provider_product_id: newSku.membership_provider_product_id,
       renewal_effective_at: expiresAt,
     })
+    const generation = await prepareRenewalPriceIncreaseNotification(
+      membership.id,
+      user!.id,
+      observation.membership_provider_observation_id,
+    )
     const data = {
+      generation: generation!,
       userId: user!.id,
       membershipId: membership.id,
       membershipProviderObservationId: observation.membership_provider_observation_id,

@@ -14,10 +14,10 @@ import type {
 import type { createCommunityActivityDigestBatch } from '@services/notifications/community-activity-digest'
 import { getCommunityActivityDigestDispatchData } from '@queues/notifications/enqueues/community-activity-digest'
 import type {
-  markCommunityActivityDigestDispatchWindowCompleted,
-  markCommunityActivityDigestDispatchWindowEnqueued,
-  prepareCommunityActivityDigestDispatchWindows,
-  refreshCommunityActivityDigestDispatchWindowActivity,
+  completeCommunityActivityDigestWorkItem,
+  claimCommunityActivityDigestWorkItem,
+  prepareCommunityActivityDigestWorkItems,
+  renewCommunityActivityDigestWorkItem,
 } from '@services/notifications/community-activity-digest-dispatch'
 
 const mockEnqueueBulkDeliverNotificationPushIntents =
@@ -26,17 +26,15 @@ const mockEnqueueCommunityActivityDigestBatch = vi.fn<typeof enqueueCommunityAct
 const mockEnqueueCommunityActivityDigestDispatch =
   vi.fn<typeof enqueueCommunityActivityDigestDispatch>()
 const mockCreateCommunityActivityDigestBatch = vi.fn<typeof createCommunityActivityDigestBatch>()
-const mockPrepareDispatchWindows = vi.fn<typeof prepareCommunityActivityDigestDispatchWindows>()
-const mockMarkDispatchWindowEnqueued =
-  vi.fn<typeof markCommunityActivityDigestDispatchWindowEnqueued>()
-const mockMarkDispatchWindowCompleted =
-  vi.fn<typeof markCommunityActivityDigestDispatchWindowCompleted>()
-const mockRefreshDispatchWindowActivity =
-  vi.fn<typeof refreshCommunityActivityDigestDispatchWindowActivity>()
+const mockPrepareDispatchWindows = vi.fn<typeof prepareCommunityActivityDigestWorkItems>()
+const mockMarkDispatchWindowEnqueued = vi.fn<typeof claimCommunityActivityDigestWorkItem>()
+const mockMarkDispatchWindowCompleted = vi.fn<typeof completeCommunityActivityDigestWorkItem>()
+const mockRefreshDispatchWindowActivity = vi.fn<typeof renewCommunityActivityDigestWorkItem>()
 
 describe('community activity digest processors', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockRefreshDispatchWindowActivity.mockResolvedValue(true)
     vi.useRealTimers()
   })
 
@@ -58,13 +56,18 @@ describe('community activity digest processors', () => {
       {
         windowStart: '2026-06-29T00:00:00.000Z',
         windowEnd: '2026-07-06T00:00:00.000Z',
+        leaseToken: 'digest-lease',
       },
-      { enqueueCommunityActivityDigestBatch: mockEnqueueCommunityActivityDigestBatch },
+      {
+        enqueueCommunityActivityDigestBatch: mockEnqueueCommunityActivityDigestBatch,
+        renewCommunityActivityDigestWorkItem: mockRefreshDispatchWindowActivity,
+      },
     )
 
     expect(mockEnqueueCommunityActivityDigestBatch).toHaveBeenCalledWith({
       windowStart: '2026-06-29T00:00:00.000Z',
       windowEnd: '2026-07-06T00:00:00.000Z',
+      leaseToken: 'digest-lease',
     })
   })
 
@@ -83,14 +86,14 @@ describe('community activity digest processors', () => {
           windowEnd: new Date('2026-07-13T00:00:00.000Z'),
         },
       ])
-      mockMarkDispatchWindowEnqueued.mockResolvedValue(undefined)
+      mockMarkDispatchWindowEnqueued.mockResolvedValue('digest-lease')
 
       await processCommunityActivityDigestScheduleTick(
         {},
         {
           enqueueCommunityActivityDigestDispatch: mockEnqueueCommunityActivityDigestDispatch,
-          prepareCommunityActivityDigestDispatchWindows: mockPrepareDispatchWindows,
-          markCommunityActivityDigestDispatchWindowEnqueued: mockMarkDispatchWindowEnqueued,
+          prepareCommunityActivityDigestWorkItems: mockPrepareDispatchWindows,
+          claimCommunityActivityDigestWorkItem: mockMarkDispatchWindowEnqueued,
         },
       )
 
@@ -109,6 +112,7 @@ describe('community activity digest processors', () => {
     const data: CommunityActivityDigestBatchData = {
       windowStart: '2026-07-06T00:00:00.000Z',
       windowEnd: '2026-07-13T00:00:00.000Z',
+      leaseToken: 'digest-lease',
     }
     mockCreateCommunityActivityDigestBatch.mockResolvedValue({
       created: [{ userId: 'user-1', notificationId: 'notification-1' }],
@@ -121,8 +125,8 @@ describe('community activity digest processors', () => {
       createCommunityActivityDigestBatch: mockCreateCommunityActivityDigestBatch,
       enqueueBulkDeliverNotificationPushIntents: mockEnqueueBulkDeliverNotificationPushIntents,
       enqueueCommunityActivityDigestBatch: mockEnqueueCommunityActivityDigestBatch,
-      markCommunityActivityDigestDispatchWindowCompleted: mockMarkDispatchWindowCompleted,
-      refreshCommunityActivityDigestDispatchWindowActivity: mockRefreshDispatchWindowActivity,
+      completeCommunityActivityDigestWorkItem: mockMarkDispatchWindowCompleted,
+      renewCommunityActivityDigestWorkItem: mockRefreshDispatchWindowActivity,
     })
 
     expect(mockCreateCommunityActivityDigestBatch).toHaveBeenCalledWith({
@@ -138,7 +142,10 @@ describe('community activity digest processors', () => {
       afterUserId: 'user-1',
     })
     expect(mockMarkDispatchWindowCompleted).not.toHaveBeenCalled()
-    expect(mockRefreshDispatchWindowActivity).toHaveBeenCalledWith(new Date(data.windowStart))
+    expect(mockRefreshDispatchWindowActivity).toHaveBeenCalledWith(
+      new Date(data.windowStart),
+      data.leaseToken,
+    )
   })
 
   it('marks the durable window complete after the final empty batch', async () => {
@@ -149,14 +156,15 @@ describe('community activity digest processors', () => {
       {
         windowStart: '2026-07-06T00:00:00.000Z',
         windowEnd: '2026-07-13T00:00:00.000Z',
+        leaseToken: 'digest-lease',
         afterUserId: 'user-0',
       },
       {
         createCommunityActivityDigestBatch: mockCreateCommunityActivityDigestBatch,
         enqueueBulkDeliverNotificationPushIntents: mockEnqueueBulkDeliverNotificationPushIntents,
         enqueueCommunityActivityDigestBatch: mockEnqueueCommunityActivityDigestBatch,
-        markCommunityActivityDigestDispatchWindowCompleted: mockMarkDispatchWindowCompleted,
-        refreshCommunityActivityDigestDispatchWindowActivity: mockRefreshDispatchWindowActivity,
+        completeCommunityActivityDigestWorkItem: mockMarkDispatchWindowCompleted,
+        renewCommunityActivityDigestWorkItem: mockRefreshDispatchWindowActivity,
       },
     )
 
@@ -164,6 +172,7 @@ describe('community activity digest processors', () => {
     expect(mockEnqueueCommunityActivityDigestBatch).not.toHaveBeenCalled()
     expect(mockMarkDispatchWindowCompleted).toHaveBeenCalledWith(
       new Date('2026-07-06T00:00:00.000Z'),
+      'digest-lease',
     )
   })
 })

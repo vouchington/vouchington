@@ -38,12 +38,12 @@ describe('membership verifications', () => {
     const state = await getTestMembershipVerificationProcessingState(verificationId)
 
     expect(state).toMatchObject({
-      processing_claim_token: null,
-      processing_claimed_at: null,
-      processing_attempts: 1,
+      lease_token: null,
+      leased_at: null,
+      attempt_count: 1,
       last_error: 'provider_adapter_unavailable',
     })
-    expect(state?.next_processing_at?.getTime()).toBeGreaterThan(Date.now())
+    expect(state?.available_at?.getTime()).toBeGreaterThan(Date.now())
     await expect(findRecoverableMembershipVerificationIds()).resolves.not.toContain(verificationId)
   })
 })

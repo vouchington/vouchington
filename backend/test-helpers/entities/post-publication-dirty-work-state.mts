@@ -1,27 +1,26 @@
 import { read, write, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
-export async function getTestPostPublicationShadowAuditCheckpoint(
-  checkpointName: string,
-): Promise<string | null | undefined> {
+export async function getTestPostPublicationShadowAuditCheckpoint(): Promise<
+  string | null | undefined
+> {
   const { rows } = await read<{ cursor_post_id: string | null }>(sql`
     /* getTestPostPublicationShadowAuditCheckpoint */
     SELECT cursor_post_id
-    FROM post_publication_reconciliation_audit_checkpoints
-    WHERE checkpoint_name = ${checkpointName}
+    FROM post_publication_reconciliation_audit_cursors
+    WHERE is_singleton
   `)
   return rows[0]?.cursor_post_id
 }
 
 export async function setTestPostPublicationShadowAuditCheckpoint(
-  checkpointName: string,
   cursorPostId: string | null,
 ): Promise<void> {
   await write(sql`
     /* setTestPostPublicationShadowAuditCheckpoint */
-    INSERT INTO post_publication_reconciliation_audit_checkpoints (checkpoint_name, cursor_post_id)
-    VALUES (${checkpointName}, ${cursorPostId})
-    ON CONFLICT (checkpoint_name) DO UPDATE SET cursor_post_id = EXCLUDED.cursor_post_id
+    INSERT INTO post_publication_reconciliation_audit_cursors (is_singleton, cursor_post_id)
+    VALUES (TRUE, ${cursorPostId})
+    ON CONFLICT (is_singleton) DO UPDATE SET cursor_post_id = EXCLUDED.cursor_post_id
   `)
 }
 

@@ -97,7 +97,7 @@ export function claimTestMembershipOperation(
   claimToken = randomUUID(),
 ): Promise<QueryResult> {
   return write(
-    sql`/* claimImmutableTestOperation */ UPDATE membership_operations SET execution_claim_token = ${claimToken}, execution_claimed_at = CURRENT_TIMESTAMP WHERE id = ${operationId}`,
+    sql`/* claimImmutableTestOperation */ UPDATE membership_operation_execution_work_items SET lease_token = ${claimToken}, leased_at = clock_timestamp(), lease_expires_at = clock_timestamp() + INTERVAL '5 minutes', attempt_count = attempt_count + 1 WHERE membership_operation_id = ${operationId}`,
   )
 }
 
@@ -120,7 +120,7 @@ export function attemptTestMembershipOperationTransition(
       )
     case 'complete':
       return write(
-        sql`/* completeTestMembershipOperation */ UPDATE membership_operations SET completed_at = CURRENT_TIMESTAMP, execution_claim_token = NULL, execution_claimed_at = NULL WHERE id = ${operationId}`,
+        sql`/* completeTestMembershipOperation */ UPDATE membership_operations SET completed_at = CURRENT_TIMESTAMP WHERE id = ${operationId}`,
       )
     case 'resetCompletion':
       return write(
@@ -128,11 +128,11 @@ export function attemptTestMembershipOperationTransition(
       )
     case 'failWithoutMessage':
       return write(
-        sql`/* failTestMembershipOperationWithoutMessage */ UPDATE membership_operations SET failed_at = CURRENT_TIMESTAMP, execution_claim_token = NULL, execution_claimed_at = NULL WHERE id = ${operationId}`,
+        sql`/* failTestMembershipOperationWithoutMessage */ UPDATE membership_operations SET failed_at = CURRENT_TIMESTAMP WHERE id = ${operationId}`,
       )
     case 'failWithMessage':
       return write(
-        sql`/* failTestMembershipOperationWithMessage */ UPDATE membership_operations SET failed_at = CURRENT_TIMESTAMP, failure_message = 'provider request failed', execution_claim_token = NULL, execution_claimed_at = NULL WHERE id = ${operationId}`,
+        sql`/* failTestMembershipOperationWithMessage */ UPDATE membership_operations SET failed_at = CURRENT_TIMESTAMP, failure_message = 'provider request failed' WHERE id = ${operationId}`,
       )
   }
 }
@@ -145,7 +145,7 @@ export function attemptTestRefundMembershipOperationTransition(
   switch (transition) {
     case 'claimWithoutTimestamp':
       return write(
-        sql`/* rejectTestRefundOperationClaim */ UPDATE membership_operations SET execution_claim_token = ${randomUUID()} WHERE id = ${operationId}`,
+        sql`/* rejectTestRefundOperationClaim */ UPDATE membership_operation_execution_work_items SET lease_token = ${randomUUID()} WHERE membership_operation_id = ${operationId}`,
       )
     case 'providerRefund':
       return write(
@@ -153,7 +153,7 @@ export function attemptTestRefundMembershipOperationTransition(
       )
     case 'fail':
       return write(
-        sql`/* failTestRefundOperation */ UPDATE membership_operations SET failed_at = CURRENT_TIMESTAMP, failure_message = 'provider request failed', execution_claim_token = NULL, execution_claimed_at = NULL WHERE id = ${operationId}`,
+        sql`/* failTestRefundOperation */ UPDATE membership_operations SET failed_at = CURRENT_TIMESTAMP, failure_message = 'provider request failed' WHERE id = ${operationId}`,
       )
     case 'remainingRefundable':
       return write(

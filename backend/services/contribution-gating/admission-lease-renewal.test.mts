@@ -30,7 +30,7 @@ describe('contribution admission lease renewal', () => {
     const renewedAt = await renewContributionAdmissionLease(
       query,
       claim.reservationId,
-      claim.leaseId,
+      claim.leaseToken,
     )
     await query.commit()
     expect(renewedAt).toBeInstanceOf(Date)
@@ -54,18 +54,18 @@ describe('contribution admission lease renewal', () => {
     if (claim.kind !== 'claimed') return
 
     await expect(
-      renewExpiredContributionAdmissionLease(claim.reservationId, claim.leaseId),
+      renewExpiredContributionAdmissionLease(claim.reservationId, claim.leaseToken),
     ).resolves.toBeNull()
   })
 })
 
 async function renewExpiredContributionAdmissionLease(
   reservationId: string,
-  leaseId: string,
+  leaseToken: string,
 ): Promise<Date | null> {
   await using query = await beginTransaction()
   await expireContributionAdmissionClaimDuringTransactionForTest(query, reservationId)
-  const result = renewContributionAdmissionLease(query, reservationId, leaseId)
+  const result = renewContributionAdmissionLease(query, reservationId, leaseToken)
 
   await query.commit()
   return await result

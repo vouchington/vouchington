@@ -34,8 +34,8 @@ is distinguishable and means the message was not accepted.
 The engagement onboarding processors use
 `user_engagement_email_sends.delivery_attempted_at`, with `claimed_at` recording dispatcher
 ownership and `sent_at` recording provider acceptance. Renewal price-increase delivery uses
-`memberships.renewal_price_increase_delivery_attempted_at` before SES and
-`memberships.renewal_price_increase_notified_at` afterward. Neither flow clears its attempt marker
+`membership_renewal_price_increase_notification_work_items.delivery_attempted_at` before SES and
+`membership_renewal_price_increase_notification_work_items.completed_at` afterward. Neither flow clears its attempt marker
 on provider failure, so a queue retry is terminally skipped. These markers make the individual
 sends at-most-once; they do not make external delivery exactly-once or make the email queues
 automatically backfillable.

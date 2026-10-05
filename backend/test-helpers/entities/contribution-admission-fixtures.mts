@@ -84,13 +84,13 @@ export async function insertTestCommittedAdmissionReservation(input: {
   }>(sql`/* insertTestCommittedAdmissionReservation */
     INSERT INTO post_admission_reservations (
       actor_user_id, idempotency_key, intent_sha256, route, scope, source, post_type, policy_revision,
-      state, response, replay_metadata, committed_post_id, committed_status, committed_at,
+      response, replay_metadata, committed_post_id, committed_status, committed_at,
       expires_at, retention_expires_at
     )
     VALUES (
       ${input.actorId}, ${randomUUID()}, ${createHash('sha256').update(randomUUID()).digest('hex')},
       'internal', 'internal', 'discussion', 'discussion', 'test',
-      'committed', ${JSON.stringify({ post: { id: input.postId } })}::jsonb,
+      ${JSON.stringify({ post: { id: input.postId } })}::jsonb,
       '{"route":"test","scope":"test"}'::jsonb, ${input.postId}, 'created', NOW(),
       NOW() + INTERVAL '48 hours', NOW() + INTERVAL '48 hours'
     )

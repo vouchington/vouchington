@@ -2,7 +2,6 @@ import { createAsyncGeneratorFromCursor, write } from '@data-stores/psql'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 
-const CHECKPOINT_NAME = 'entity-listeners'
 import { getEntityReconciliationLimits } from './work-limits.mts'
 import type { CursorRunResult } from '@data-stores/psql/bounded-cursor-api'
 const OVERLAP_MS = 5 * 60_000
@@ -34,12 +33,11 @@ export type EntityReconciliationWindow = {
 export async function getEntityReconciliationWindow(
   intervalSeconds: number,
   now = new Date(),
-  checkpointName = CHECKPOINT_NAME,
 ): Promise<EntityReconciliationWindow> {
   const { rows } = await write(sql`/* getEntityReconciliationWindow */
     SELECT reconciled_through_at
-    FROM queue_reconciliation_checkpoints
-    WHERE queue_name = ${checkpointName}
+    FROM entity_listener_reconciliation_cursors
+    WHERE is_singleton
   `)
   const end = new Date(now.getTime() - REPLICA_LAG_MARGIN_MS)
   const completedThrough = (rows[0] as { reconciled_through_at: Date } | undefined)
@@ -148,16 +146,13 @@ function isPostContentChange(changes?: Record<string, unknown>): boolean {
   )
 }
 
-export async function advanceEntityReconciliationCheckpoint(
-  completedThrough: Date,
-  checkpointName = CHECKPOINT_NAME,
-): Promise<void> {
+export async function advanceEntityReconciliationCheckpoint(completedThrough: Date): Promise<void> {
   await write(sql`/* advanceEntityReconciliationCheckpoint */
-    INSERT INTO queue_reconciliation_checkpoints (queue_name, reconciled_through_at)
-    VALUES (${checkpointName}, ${completedThrough})
-    ON CONFLICT (queue_name) DO UPDATE
+    INSERT INTO entity_listener_reconciliation_cursors (is_singleton, reconciled_through_at)
+    VALUES (TRUE, ${completedThrough})
+    ON CONFLICT (is_singleton) DO UPDATE
     SET reconciled_through_at = GREATEST(
-      queue_reconciliation_checkpoints.reconciled_through_at,
+      entity_listener_reconciliation_cursors.reconciled_through_at,
       EXCLUDED.reconciled_through_at
     )
   `)

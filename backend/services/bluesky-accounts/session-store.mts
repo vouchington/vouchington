@@ -153,7 +153,7 @@ async function persistAuthorizedSession(
   if (authorizationRow.status === 'pending') {
     await query(sql`/* BlueskySessionStore.set:claimAuthorization */
       UPDATE bluesky_link_authorizations
-      SET status = 'callback_claimed', claimed_did = ${did}
+      SET callback_claimed_at = clock_timestamp(), claimed_did = ${did}
       WHERE id = ${authorization.authorizationId} AND status = 'pending'`)
   }
 }

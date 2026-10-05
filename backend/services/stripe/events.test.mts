@@ -114,7 +114,7 @@ describe('events', () => {
       expect(inserted.subscription_id).toBe('sub_test_123')
       expect(inserted.status).toBe('received')
       expect(inserted.received_at).toBeInstanceOf(Date)
-      expect(inserted.processing_started_at).toBeNull()
+      expect(inserted.leased_at).toBeNull()
       expect(inserted.processed_at).toBeNull()
       expect(inserted.ignored_at).toBeNull()
       expect(inserted.failed_at).toBeNull()
@@ -165,27 +165,27 @@ describe('events', () => {
       })
 
       const inserted = await insertStripeEvent(event)
-      const processing = await markStripeEventProcessing(inserted.stripe_event_id)
+      const processing = await markStripeEventProcessing(inserted.id, inserted.lease_token)
       expect(processing?.status).toBe('processing')
-      expect(processing?.processing_started_at).toBeInstanceOf(Date)
-      expect(processing?.processing_attempts).toBe(1)
+      expect(processing?.leased_at).toBeInstanceOf(Date)
+      expect(processing?.attempt_count).toBe(1)
 
-      await markStripeEventFailed(inserted.stripe_event_id, 'test failure')
+      await markStripeEventFailed(inserted.id, 'test failure', inserted.lease_token)
       const failed = await getStripeEventByStripeEventId(inserted.stripe_event_id)
       expect(failed?.status).toBe('failed')
       expect(failed?.failed_at).toBeInstanceOf(Date)
       expect(failed?.last_error_message).toBe('test failure')
 
       const retryAttemptId = await restartFailedStripeEventAttempt(inserted.id)
-      expect(retryAttemptId).not.toBe(inserted.processing_attempt_id)
+      expect(retryAttemptId).not.toBe(inserted.lease_token)
       const retried = await markStripeEventProcessing(inserted.id, retryAttemptId!)
       expect(retried?.status).toBe('processing')
-      expect(retried?.processing_attempts).toBe(2)
+      expect(retried?.attempt_count).toBe(2)
       expect(retried?.failed_at).toBeNull()
       expect(retried?.last_error_at).toBeNull()
       expect(retried?.last_error_message).toBeNull()
 
-      await markStripeEventCompleted(inserted.stripe_event_id, 'processed')
+      await markStripeEventCompleted(inserted.id, 'processed', retryAttemptId!)
       const processed = await getStripeEventByStripeEventId(inserted.stripe_event_id)
       expect(processed?.status).toBe('processed')
       expect(processed?.processed_at).not.toBeNull()
@@ -202,8 +202,8 @@ describe('events', () => {
       })
 
       const inserted = await insertStripeEvent(event)
-      await markStripeEventProcessing(inserted.stripe_event_id)
-      await markStripeEventCompleted(inserted.stripe_event_id, 'ignored')
+      await markStripeEventProcessing(inserted.id, inserted.lease_token)
+      await markStripeEventCompleted(inserted.id, 'ignored', inserted.lease_token)
 
       const ignored = await getStripeEventByStripeEventId(inserted.stripe_event_id)
       expect(ignored?.status).toBe('ignored')
@@ -221,8 +221,9 @@ describe('events', () => {
       })
 
       const inserted = await insertStripeEvent(event)
-      await markStripeEventCompleted(inserted.stripe_event_id, 'processed')
-      const processing = await markStripeEventProcessing(inserted.stripe_event_id)
+      await markStripeEventProcessing(inserted.id, inserted.lease_token)
+      await markStripeEventCompleted(inserted.id, 'processed', inserted.lease_token)
+      const processing = await markStripeEventProcessing(inserted.id, inserted.lease_token)
 
       expect(processing).toBeNull()
     })
@@ -236,8 +237,9 @@ describe('events', () => {
       })
 
       const inserted = await insertStripeEvent(event)
-      await markStripeEventCompleted(inserted.stripe_event_id, 'processed')
-      await markStripeEventFailed(inserted.stripe_event_id, 'late failure')
+      await markStripeEventProcessing(inserted.id, inserted.lease_token)
+      await markStripeEventCompleted(inserted.id, 'processed', inserted.lease_token)
+      await markStripeEventFailed(inserted.id, 'late failure', inserted.lease_token)
 
       const completed = await getStripeEventByStripeEventId(inserted.stripe_event_id)
       expect(completed?.status).toBe('processed')
@@ -261,13 +263,16 @@ describe('events', () => {
       })
 
       const ignored = await insertStripeEvent(ignoredEvent)
-      await markStripeEventCompleted(ignored.stripe_event_id, 'ignored')
+      await markStripeEventProcessing(ignored.id, ignored.lease_token)
+      await markStripeEventCompleted(ignored.id, 'ignored', ignored.lease_token)
 
       const processing = await insertStripeEvent(processingEvent)
-      await markStripeEventProcessing(processing.stripe_event_id)
+      await markStripeEventProcessing(processing.id, processing.lease_token)
 
-      await expect(markStripeEventProcessing(ignored.stripe_event_id)).resolves.toBeNull()
-      await expect(markStripeEventProcessing(processing.stripe_event_id)).resolves.toBeNull()
+      await expect(markStripeEventProcessing(ignored.id, ignored.lease_token)).resolves.toBeNull()
+      await expect(
+        markStripeEventProcessing(processing.id, processing.lease_token),
+      ).resolves.toBeNull()
     })
   })
 

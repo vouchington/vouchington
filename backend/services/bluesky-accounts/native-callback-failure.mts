@@ -84,7 +84,7 @@ export async function resolveNativeBlueskyCallbackFailure(
       if (rowCount) {
         await query(sql`/* resolveNativeBlueskyCallbackFailure:handoffReady */
           UPDATE bluesky_link_authorizations
-          SET status = 'handoff_ready'
+          SET handoff_ready_at = clock_timestamp()
           WHERE id = ${flowId} AND status = 'callback_claimed'`)
         result = 'completed'
       }
@@ -102,7 +102,7 @@ export async function resolveNativeBlueskyCallbackFailure(
       }
       await query(sql`/* resolveNativeBlueskyCallbackFailure:reject */
         UPDATE bluesky_link_authorizations
-        SET status = 'rejected', handle = NULL
+        SET rejected_at = clock_timestamp(), handle = NULL
         WHERE id = ${flowId}
           AND status IN ('pending', 'callback_claimed', 'handoff_ready')`)
     }

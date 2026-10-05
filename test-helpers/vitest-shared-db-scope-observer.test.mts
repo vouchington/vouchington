@@ -33,12 +33,12 @@ describe('shared database scope observer', () => {
       expect(events).toEqual([
         {
           operation: 'cleanupRetainedIdentityRoots',
-          table: 'retained_identity_cleanup_progress',
+          table: 'retained_identity_cleanup_cursors',
           scope: { kind: 'ids', ids: ['root'] },
         },
         {
           operation: 'cleanupRetainedRelationIdentities',
-          table: 'retained_relation_identity_cleanup_progress',
+          table: 'retained_relation_identity_cleanup_cursors',
           scope: { kind: 'global' },
         },
       ])

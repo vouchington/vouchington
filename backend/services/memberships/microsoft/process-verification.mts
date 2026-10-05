@@ -20,20 +20,20 @@ export async function processMicrosoftStoreMembershipVerification(
   if (!claim) return
   try {
     await using initial = await beginTransaction()
-    const context = await getContext(claim.id, claim.processingClaimToken, initial)
+    const context = await getContext(claim.id, claim.leaseToken, initial)
     if (!context) return
     if (context.evidenceRejectedAt)
       return await reject(
         context,
-        claim.processingClaimToken,
+        claim.leaseToken,
         context.evidenceRejectionReason ?? 'invalid_evidence',
         initial,
       )
     const evidence = decryptEvidence(context)
     if (!evidence || evidence.publisherUserId !== context.userId || expired(evidence))
-      return await reject(context, claim.processingClaimToken, 'invalid_evidence', initial)
+      return await reject(context, claim.leaseToken, 'invalid_evidence', initial)
     const mapping = await getMapping(context, evidence, initial)
-    if (!mapping) return await reject(context, claim.processingClaimToken, 'wrong_product', initial)
+    if (!mapping) return await reject(context, claim.leaseToken, 'wrong_product', initial)
     await initial.commit()
 
     const client = dependencies.client ?? createConfiguredMicrosoftStoreClient()
@@ -59,8 +59,8 @@ export async function processMicrosoftStoreMembershipVerification(
       if (selection.kind === 'lag')
         throw new Error('Microsoft Store Collections/Recurrence response lag')
       await using rejected = await beginTransaction()
-      const fresh = await getContext(claim.id, claim.processingClaimToken, rejected)
-      if (fresh) await reject(fresh, claim.processingClaimToken, 'invalid_evidence', rejected)
+      const fresh = await getContext(claim.id, claim.leaseToken, rejected)
+      if (fresh) await reject(fresh, claim.leaseToken, 'invalid_evidence', rejected)
       return
     }
     const result = verifyMicrosoftStoreAuthoritativeState({
@@ -74,13 +74,12 @@ export async function processMicrosoftStoreMembershipVerification(
       recurrence: selection.recurrence,
     })
     await using finalize = await beginTransaction()
-    const fresh = await getContext(claim.id, claim.processingClaimToken, finalize)
+    const fresh = await getContext(claim.id, claim.leaseToken, finalize)
     if (!fresh) return
-    if (!result.accepted)
-      return await reject(fresh, claim.processingClaimToken, result.reasonCode, finalize)
+    if (!result.accepted) return await reject(fresh, claim.leaseToken, result.reasonCode, finalize)
     await commitAcceptedMicrosoftStoreVerification({
       context: fresh,
-      token: claim.processingClaimToken,
+      token: claim.leaseToken,
       mapping,
       evidence,
       observation: result.observation,
@@ -90,14 +89,14 @@ export async function processMicrosoftStoreMembershipVerification(
   } catch (err) {
     if (err instanceof MicrosoftStoreResponseError && err.invalidStoreIdKey) {
       await using query = await beginTransaction()
-      const context = await getContext(claim.id, claim.processingClaimToken, query)
-      if (context) await reject(context, claim.processingClaimToken, 'invalid_evidence', query)
+      const context = await getContext(claim.id, claim.leaseToken, query)
+      if (context) await reject(context, claim.leaseToken, 'invalid_evidence', query)
       return
     }
     if (err instanceof DirectMembershipSourceRejectedError)
-      return terminalizeConflict(claim.id, claim.processingClaimToken, 'competing_direct_source')
+      return terminalizeConflict(claim.id, claim.leaseToken, 'competing_direct_source')
     if (err instanceof ProviderMembershipSourceConflictError)
-      return terminalizeConflict(claim.id, claim.processingClaimToken, 'wrong_account')
-    await defer(claim.id, claim.processingClaimToken, err)
+      return terminalizeConflict(claim.id, claim.leaseToken, 'wrong_account')
+    await defer(claim.id, claim.leaseToken, err)
   }
 }

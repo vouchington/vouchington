@@ -1,5 +1,9 @@
 // Continuation of the explicit unbounded table list. Keep both halves under the file line cap.
 export const EXTRA_UNBOUNDED_TABLES_CONTINUED = [
+  'copyright_notice_action_attempts',
+  'copyright_notice_action_attempt_results',
+  'copyright_notice_delivery_attempts',
+  'copyright_notice_delivery_attempt_results',
   'oauth_clients',
   'oauth_authorization_server_events',
   'oauth_grants',

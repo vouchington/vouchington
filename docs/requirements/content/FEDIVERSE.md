@@ -68,7 +68,7 @@ Full technical design: [Fediverse Federation architecture](../../overview/archit
   cutover's reachability requirement. When enabled, the API
   performs network-free preflight, verifies a cached signer locally when one exists (rejecting
   invalid signatures before any durable row), persists the exact raw signed envelope in
-  `activitypub_inbox_deliveries`, awaits the initial enqueue attempt, and returns `202` once PostgreSQL is
+  `activitypub_inbox_delivery_work_items`, awaits the initial enqueue attempt, and returns `202` once PostgreSQL is
   durable. The I/O worker fetches unknown actors, verifies freshness relative to receipt time, checks the
   signed actor, applies sender limits when the row is not already admitted, and deduplicates/dispatches `Follow`/`Undo(Follow)` onto the
   remote-origin bookmarks relation and `Like`/`Undo(Like)` onto the isolated

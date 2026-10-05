@@ -77,7 +77,7 @@ export async function rejectBlueskyLinkAuthorization(
 ): Promise<void> {
   await write(sql`/* rejectBlueskyLinkAuthorization */
     UPDATE bluesky_link_authorizations
-    SET status = 'rejected', handle = NULL
+    SET rejected_at = clock_timestamp(), handle = NULL
     WHERE id = ${authorizationId}
       AND user_id = ${userId}
       AND status = 'pending'`)

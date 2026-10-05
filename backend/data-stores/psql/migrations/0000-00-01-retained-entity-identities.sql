@@ -81,27 +81,40 @@ FOR EACH ROW
   WHEN (ROW(OLD.placement_id, OLD.image_id, OLD.binding_family) IS DISTINCT FROM ROW(NEW.placement_id, NEW.image_id, NEW.binding_family)) EXECUTE FUNCTION fn_reject_mutation();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TABLE IF NOT EXISTS retained_identity_cleanup_progress (
-  family retained_identity_cleanup_families PRIMARY KEY CHECK (family IN ('user', 'api_key', 'topic', 'post', 'rss_feed_item', 'image', 'membership', 'image_placement_binding')),
+CREATE TYPE retained_identity_families AS ENUM ('user', 'api_key', 'topic', 'post', 'rss_feed_item', 'membership');
+COMMENT ON TYPE retained_identity_families IS 'Concrete identity owners supported by the shared ownership fence; image identity requires its uploader and uses a separate creator.';
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS retained_identity_cleanup_cursors (
+  family retained_identity_families PRIMARY KEY,
   cursor_identity_id UUID,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trg_retained_identity_cleanup_progress__updated_at
-BEFORE UPDATE ON retained_identity_cleanup_progress
+CREATE OR REPLACE TRIGGER trg_retained_identity_cleanup_cursors__updated_at
+BEFORE UPDATE ON retained_identity_cleanup_cursors
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
-COMMENT ON TABLE retained_identity_cleanup_progress IS 'One operational keyset cursor per concrete retained root family.';
-COMMENT ON COLUMN retained_identity_cleanup_progress.family IS 'Concrete retained root family selected by the cleanup worker.';
-COMMENT ON COLUMN retained_identity_cleanup_progress.cursor_identity_id IS 'Last scanned identity, not a durable relationship to that identity.';
-
-INSERT INTO retained_identity_cleanup_progress (family)
-VALUES ('user'), ('api_key'), ('topic'), ('post'), ('rss_feed_item'), ('image'), ('membership'), ('image_placement_binding')
-ON CONFLICT (family) DO NOTHING;
+COMMENT ON TABLE retained_identity_cleanup_cursors IS 'One operational keyset cursor per concrete retained root family.';
+COMMENT ON COLUMN retained_identity_cleanup_cursors.family IS 'Concrete retained root family selected by the cleanup worker.';
+COMMENT ON COLUMN retained_identity_cleanup_cursors.cursor_identity_id IS 'Last scanned identity, not a durable relationship to that identity.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TYPE retained_identity_families AS ENUM ('user', 'api_key', 'topic', 'post', 'rss_feed_item', 'membership');
-COMMENT ON TYPE retained_identity_families IS 'Concrete identity owners supported by the shared ownership fence; image identity requires its uploader and uses a separate creator.';
+CREATE TABLE IF NOT EXISTS retained_image_placement_binding_cleanup_cursors (
+  is_singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (is_singleton),
+  cursor_placement_id UUID,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trg_retained_image_placemen_binding_cleanup_cursors__updated_at
+BEFORE UPDATE ON retained_image_placement_binding_cleanup_cursors
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+COMMENT ON TABLE retained_image_placement_binding_cleanup_cursors IS 'Independent bounded sweep of placement bindings; bindings are not root identity owners.';
+COMMENT ON COLUMN retained_image_placement_binding_cleanup_cursors.is_singleton IS 'One cyclic cleanup job sweeps placement bindings.';
+COMMENT ON COLUMN retained_image_placement_binding_cleanup_cursors.cursor_placement_id IS 'Last placement UUIDv7 examined in ascending order; no FK preserves position after cleanup deletes a binding.';
+
+
 
 CREATE OR REPLACE FUNCTION fn_ensure_retained_identity(family retained_identity_families, identity_id UUID)
 RETURNS VOID LANGUAGE plpgsql AS $$

@@ -31,7 +31,7 @@ describe('ActivityPub inbox worker attempt routing', () => {
       rearmFailedDeliveries,
       cleanupExpiredDeliveries,
     }
-    const data = { deliveryId: randomUUID(), processingAttemptId: randomUUID() }
+    const data = { deliveryId: randomUUID(), leaseToken: randomUUID() }
 
     await processActivityPubInboxJob(makeJob('processDelivery', data, 1, 2), processors)
     await processActivityPubInboxJob(makeJob('recoverDeliveries', data), processors)
@@ -45,7 +45,7 @@ describe('ActivityPub inbox worker attempt routing', () => {
   })
 
   it('rejects unknown jobs before invoking a processor', () => {
-    const data = { deliveryId: randomUUID(), processingAttemptId: randomUUID() }
+    const data = { deliveryId: randomUUID(), leaseToken: randomUUID() }
 
     expect(() => processActivityPubInboxJob(makeJob('unknown', data))).toThrow(
       'Unknown ActivityPub inbox job: unknown',

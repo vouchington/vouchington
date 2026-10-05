@@ -32,7 +32,7 @@ describe('ActivityPub inbox processor sender rate limit', () => {
 
     await processDelivery(delivery, { isFinalAttempt: false })
 
-    expect(await claimTestDelivery(delivery.deliveryId, delivery.processingAttemptId)).toBeNull()
+    expect(await claimTestDelivery(delivery.deliveryId, delivery.leaseToken)).toBeNull()
     const jobs = await readAllQueueJobs(activitypubInbox)
     expect(
       jobs.some(
@@ -53,7 +53,7 @@ describe('ActivityPub inbox processor sender rate limit', () => {
     const actor = await createApprovedRemoteActor()
     const delivery = await createSignedDelivery(actor)
     onTestFinished(async () => {
-      await rejectTestDelivery(delivery.deliveryId, delivery.processingAttemptId)
+      await rejectTestDelivery(delivery.deliveryId, delivery.leaseToken)
     })
 
     expect(

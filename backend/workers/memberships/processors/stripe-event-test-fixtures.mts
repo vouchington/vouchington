@@ -46,13 +46,13 @@ export function createTestStripeSubscription({
 
 export function toJobData(storedEvent: {
   id: string
-  processing_attempt_id: string
+  lease_token: string
   subscription_id: string | null
   is_live_mode: boolean
 }) {
   return {
     stripeEventRecordId: storedEvent.id,
-    processingAttemptId: storedEvent.processing_attempt_id,
+    leaseToken: storedEvent.lease_token,
     stripeSubscriptionId: storedEvent.subscription_id,
     isLiveMode: storedEvent.is_live_mode,
   }

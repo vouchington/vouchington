@@ -194,7 +194,7 @@ describe('family collision reversal ledger', () => {
         reversals: [
           expect.objectContaining({
             completed: true,
-            executionClaimToken: null,
+            leaseToken: null,
             hasReceipt: true,
             id: initial.reversals[0]!.id,
             target: expect.objectContaining({ amountMinorUnits: 900 }),

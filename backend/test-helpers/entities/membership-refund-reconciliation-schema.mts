@@ -2,13 +2,15 @@ import { createTestRetainedMembershipIdentity } from './retained-identities.mts'
 import { read, write } from '@data-stores/psql'
 import { randomUUID } from 'node:crypto'
 import sql from 'sql-template-strings'
-
+import {
+  leaseDueRefundReconciliation,
+  scheduleRefundReconciliationRetry,
+} from '../../services/memberships/refund-reconciliation/ledger.mts'
 export type TestAdministratorRefundOperation = {
   applicationId: string
   id: string
   membershipSourceId: string
 }
-
 export async function createTestAdministratorRefundOperation(): Promise<TestAdministratorRefundOperation> {
   const applicationId = `administrator-refund-${randomUUID()}`
   const { rows } = await write<{
@@ -33,34 +35,31 @@ export async function createTestAdministratorRefundOperation(): Promise<TestAdmi
       membership_source_id, membership_provider_lineage_id, membership_lineage_binding_id,
       provider, environment, application_id, operation_kind, idempotency_key,
       qualifying_allocation_minor_units, remaining_refundable_minor_units, currency_code,
-      period_started_at, period_ends_at, reconciliation_due_at
+      period_started_at, period_ends_at
     )
     SELECT source.id, source.membership_provider_lineage_id, binding.id,
       'stripe', 'test', ${applicationId}, 'administrator_refund', ${`operation-${randomUUID()}`},
-      100, 100, 'usd', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+      100, 100, 'usd', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
     FROM source INNER JOIN binding
       ON binding.membership_provider_lineage_id = source.membership_provider_lineage_id
     RETURNING id, membership_source_id AS "membershipSourceId"`)
   return { applicationId, ...rows[0]! }
 }
-
 export async function claimTestAdministratorRefundOperation(operationId: string): Promise<number> {
-  const result = await write(sql`/* claimTestAdministratorRefundOperation */
-    UPDATE membership_operations
-    SET execution_claim_token = ${randomUUID()}, execution_claimed_at = CURRENT_TIMESTAMP,
-      reconciliation_attempt_ordinal = reconciliation_attempt_ordinal + 1
-    WHERE id = ${operationId}`)
-  return result.rowCount ?? 0
+  const lease = await leaseDueRefundReconciliation(operationId)
+  return lease ? 1 : 0
 }
-
 export async function scheduleTestAdministratorRefundRetry(operationId: string): Promise<number> {
-  const result = await write(sql`/* scheduleTestAdministratorRefundRetry */
-    UPDATE membership_operations
-    SET failed_at = CURRENT_TIMESTAMP, failure_message = 'provider outcome pending',
-      reconciliation_due_at = CURRENT_TIMESTAMP + INTERVAL '5 minutes',
-      execution_claim_token = NULL, execution_claimed_at = NULL
-    WHERE id = ${operationId}`)
-  return result.rowCount ?? 0
+  const { rows } = await read<{
+    lease_token: string
+  }>(sql`/* scheduleTestAdministratorRefundRetry */
+    SELECT lease_token FROM membership_operation_execution_work_items WHERE membership_operation_id = ${operationId}`)
+  await scheduleRefundReconciliationRetry(
+    { id: operationId, leaseToken: rows[0]!.lease_token },
+    new Date(Date.now() + 300_000),
+    'provider outcome pending',
+  )
+  return 1
 }
 
 export async function getTestAdministratorRefundRetryState(operationId: string) {
@@ -69,8 +68,10 @@ export async function getTestAdministratorRefundRetryState(operationId: string) 
     reconciliationDueAt: Date
   }>(sql`/* getTestAdministratorRefundRetryState */
     SELECT reconciliation_attempt_ordinal AS "reconciliationAttemptOrdinal",
-      reconciliation_due_at AS "reconciliationDueAt"
-    FROM membership_operations WHERE id = ${operationId}`)
+      work.available_at AS "reconciliationDueAt"
+    FROM membership_operations operation
+    JOIN membership_operation_execution_work_items work ON work.membership_operation_id = operation.id
+    WHERE operation.id = ${operationId}`)
   return rows[0]
 }
 
@@ -78,12 +79,12 @@ export async function hasExpectedTestMembershipOperationReconciliationDueIndex()
   const { rows } = await read<{ indexdef: string }>(
     `/* getTestMembershipOperationReconciliationDueIndex */
       SELECT indexdef FROM pg_indexes
-      WHERE schemaname = 'public' AND tablename = 'membership_operations'
-        AND indexname = 'idx_membership_operations__reconciliation_due'`,
+      WHERE schemaname = 'public' AND tablename = 'membership_operation_execution_work_items'
+        AND indexname = 'idx_membership_operation_work_items__available'`,
   )
   return (
     rows[0]?.indexdef ===
-    'CREATE INDEX idx_membership_operations__reconciliation_due ON public.membership_operations USING btree (reconciliation_due_at, id) WHERE ((completed_at IS NULL) AND (reconciliation_due_at IS NOT NULL))'
+    'CREATE INDEX idx_membership_operation_work_items__available ON public.membership_operation_execution_work_items USING btree (available_at, membership_operation_id) WHERE (lease_token IS NULL)'
   )
 }
 

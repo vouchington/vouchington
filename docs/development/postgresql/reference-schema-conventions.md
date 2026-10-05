@@ -51,3 +51,25 @@ parents receive comments for their tables, joined identifiers and vote tallies; 
 purpose and privacy boundary. The live convention guard retains these checks while #1864 blocks the
 replacement analyzer rules. See [R2](../postgres-schema-rules.md#r2--columns-say-their-type-and-target) and
 [R7](../postgres-schema-rules.md#r7--every-table-column-and-view-has-a-comment).
+
+Cleanup and reconciliation jobs create their own `_cursors` rows. Concrete sweep families use enum
+keys; single-job sweeps use checked `is_singleton` keys. Publication bridge cleanup advances the
+least recently advanced unlocked family independently instead of rotating a family inside one row.
+Retained root cleanup uses the seven `retained_identity_families`; placement binding cleanup has its
+own singleton because a binding is a placement/image pair, not a root identity owner. Cursor UUIDs
+retain their keyset positions after the swept rows are deleted. Tests for singleton checkpoints run
+in disposable databases instead of introducing free-text cursor keys.
+
+Bluesky authorizations and notification push effects derive their enum status from lifecycle facts.
+When notification aggregation replaces its UUID, capture creates a fresh push effect and removes
+the former generation's work and endpoint receipts; it does not clear terminal facts on a surviving
+intent. Microsoft Store source recovery creates verification work; credentials retain account
+evidence without unused processing-claim metadata.
+
+Worker ownership uses UUID `lease_token`, database `leased_at` and `lease_expires_at`,
+`attempt_count` and `available_at`. Every owner update also requires a live deadline. Entity records
+that survive their jobs use concrete per-entity child work rows; copyright action and notification
+intents are themselves work rows and retain their IDs for legal references. Explicit copyright replay
+advances generation while immutable attempt/result rows preserve prior outcomes. Screening's
+historical execution token is distinct from its current child worker lease. Media projection work
+keeps the same exact authority generation used by the edge's conditional write.

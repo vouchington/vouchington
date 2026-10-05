@@ -60,15 +60,15 @@ export async function getCopyrightEmailCorrespondence(intentId: string): Promise
     channel: 'email'
     state: import('./delivery-types.mts').CopyrightDeliveryIntentRecord['state']
     amazon_ses_message_id: string | null
-    delivery_attempt_count: number
+    attempt_count: number
     body_ciphertext: string
   }>(sql`/* getCopyrightEmailCorrespondence */
       SELECT intent.id, intent.lease_token, intent.copyright_notice_id, intent.copyright_notice_submission_id,
         intent.copyright_notice_correspondence_message_id, intent.recipient_user_id,
         intent.recipient_role, intent.delivery_kind, intent.target_path, intent.channel, intent.state, intent.amazon_ses_message_id,
-        intent.delivery_attempt_count,
+        intent.attempt_count,
         correspondence.body_ciphertext
-      FROM copyright_notice_delivery_intents intent
+      FROM copyright_notice_delivery_work_items intent
       JOIN copyright_notice_correspondence_messages correspondence
         ON correspondence.id = intent.copyright_notice_correspondence_message_id
       WHERE intent.id = ${intentId} AND intent.channel = 'email'

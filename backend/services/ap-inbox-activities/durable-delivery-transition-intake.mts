@@ -1,4 +1,10 @@
-import type { FiniteValue } from '@data-stores/psql/finite-values/index'
+import {
+  mapIdentity,
+  mapDelivery,
+  type DeliveryIdentityRow,
+  type DeliveryRow,
+} from './durable-delivery-intake-mapping.mts'
+import { getApInboxActivitiesWorkLimit } from './work-limits.mts'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type {
@@ -6,13 +12,10 @@ import type {
   ActivityPubInboxEnvelope,
   ActivityPubInboxTransitionResult,
 } from './durable-delivery-transition-contract.mts'
-import type {
-  ActivityPubInboxAcceptResult,
-  RecoverableActivityPubInboxDelivery,
-} from './durable-delivery-capacity-contract.mts'
+import type { ActivityPubInboxAcceptResult } from './durable-delivery-capacity-contract.mts'
 import { ACTIVITYPUB_INBOX_STORAGE_POLICY } from '@modules/activitypub-inbox-storage-policy'
 
-const UNVERIFIED_CAPACITY_CONSTRAINT = 'activitypub_inbox_deliveries_unverified_capacity'
+const UNVERIFIED_CAPACITY_CONSTRAINT = 'activitypub_inbox_delivery_work_items_unverified_capacity'
 
 export async function acceptActivityPubInboxDelivery(
   envelope: ActivityPubInboxEnvelope,
@@ -21,7 +24,7 @@ export async function acceptActivityPubInboxDelivery(
   const verifiedAt = verifiedRemoteActorId ? new Date() : null
   try {
     const { rows } = await write(sql`/* acceptActivityPubInboxDelivery */
-      INSERT INTO activitypub_inbox_deliveries (
+      INSERT INTO activitypub_inbox_delivery_work_items (
         request_method, request_target, expected_host, signature_header, digest_header, date_header,
         content_type_header, raw_body, claimed_activity_id, claimed_activity_type,
         claimed_actor_uri, sender_hostname, remote_actor_id, verified_at, sender_allowed_at
@@ -32,7 +35,7 @@ export async function acceptActivityPubInboxDelivery(
         ${envelope.claimedActivityType}, ${envelope.claimedActorUri}, ${envelope.senderHostname},
         ${verifiedRemoteActorId ?? null}, ${verifiedAt}, ${verifiedAt}
       )
-      RETURNING id, processing_attempt_id
+      RETURNING id, lease_token
     `)
     const row = rows[0] as DeliveryIdentityRow
     return { outcome: 'applied', value: mapIdentity(row) }
@@ -51,37 +54,40 @@ export function mapActivityPubInboxCapacityErrorOrThrow(
 
 export async function acknowledgeActivityPubInboxDeliveryEnqueue(
   deliveryId: string,
-  processingAttemptId: string,
+  leaseToken: string,
 ): Promise<ActivityPubInboxTransitionResult> {
   const result = await write(sql`/* acknowledgeActivityPubInboxDeliveryEnqueue */
-    UPDATE activitypub_inbox_deliveries
-    SET enqueued_at = CURRENT_TIMESTAMP
+    UPDATE activitypub_inbox_delivery_work_items
+    SET dispatched_at = CURRENT_TIMESTAMP
     WHERE id = ${deliveryId}
-      AND processing_attempt_id = ${processingAttemptId}
+      AND lease_token = ${leaseToken}
       AND failed_at IS NULL
-      AND earliest_retry_at IS NULL
+      AND available_at IS NULL
   `)
   return mutationResult(result.rowCount)
 }
 
 export async function claimActivityPubInboxDelivery(
   deliveryId: string,
-  processingAttemptId: string,
+  leaseToken: string,
 ): Promise<ActivityPubInboxTransitionResult<ActivityPubInboxDelivery>> {
+  const duration = getApInboxActivitiesWorkLimit('processing_timeout_minutes')
   const { rows } = await write(sql`/* claimActivityPubInboxDelivery */
-    UPDATE activitypub_inbox_deliveries
-    SET processing_at = CURRENT_TIMESTAMP,
-        earliest_retry_at = NULL,
+    UPDATE activitypub_inbox_delivery_work_items
+    SET leased_at = clock_timestamp(),
+        lease_expires_at = clock_timestamp() + ${duration}::integer * INTERVAL '1 minute',
+        attempt_count = attempt_count + 1,
+        available_at = NULL,
         last_error = NULL
     WHERE id = ${deliveryId}
-      AND processing_attempt_id = ${processingAttemptId}
-      AND processing_at IS NULL
+      AND lease_token = ${leaseToken}
+      AND leased_at IS NULL
       AND failed_at IS NULL
       AND (retention_expires_at IS NULL OR retention_expires_at > CURRENT_TIMESTAMP)
-      AND (earliest_retry_at IS NULL OR earliest_retry_at <= CURRENT_TIMESTAMP)
+      AND (available_at IS NULL OR available_at <= CURRENT_TIMESTAMP)
     RETURNING id, request_method, request_target, expected_host, signature_header, digest_header,
               date_header, content_type_header, raw_body, claimed_activity_id,
-              claimed_activity_type, claimed_actor_uri, sender_hostname, processing_attempt_id,
+              claimed_activity_type, claimed_actor_uri, sender_hostname, lease_token,
               remote_actor_id, received_at, verified_at, sender_allowed_at
   `)
   const row = rows[0] as DeliveryRow | undefined
@@ -145,54 +151,6 @@ type CapacityDetail = {
   unverifiedRawBodyBytes: number
   attemptedRows: number
   attemptedRawBodyBytes: number
-}
-
-type DeliveryIdentityRow = { id: string; processing_attempt_id: string }
-
-type DeliveryRow = DeliveryIdentityRow & {
-  request_method: FiniteValue<'http_request_methods'>
-  request_target: string
-  expected_host: string
-  signature_header: string
-  digest_header: string
-  date_header: string
-  content_type_header: string | null
-  raw_body: Buffer
-  claimed_activity_id: string
-  claimed_activity_type: string
-  claimed_actor_uri: string
-  sender_hostname: string
-  remote_actor_id: string | null
-  received_at: Date
-  verified_at: Date | null
-  sender_allowed_at: Date | null
-}
-
-function mapIdentity(row: DeliveryIdentityRow): RecoverableActivityPubInboxDelivery {
-  return { deliveryId: row.id, processingAttemptId: row.processing_attempt_id }
-}
-
-function mapDelivery(row: DeliveryRow): ActivityPubInboxDelivery {
-  return {
-    id: row.id,
-    requestMethod: row.request_method,
-    requestTarget: row.request_target,
-    expectedHost: row.expected_host,
-    signatureHeader: row.signature_header,
-    digestHeader: row.digest_header,
-    dateHeader: row.date_header,
-    contentTypeHeader: row.content_type_header ?? undefined,
-    rawBody: row.raw_body,
-    claimedActivityId: row.claimed_activity_id,
-    claimedActivityType: row.claimed_activity_type,
-    claimedActorUri: row.claimed_actor_uri,
-    senderHostname: row.sender_hostname,
-    processingAttemptId: row.processing_attempt_id,
-    remoteActorId: row.remote_actor_id,
-    receivedAt: row.received_at,
-    verifiedAt: row.verified_at,
-    senderAllowedAt: row.sender_allowed_at,
-  }
 }
 
 function mutationResult(rowCount: number | null): ActivityPubInboxTransitionResult {

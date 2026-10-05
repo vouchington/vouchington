@@ -104,9 +104,9 @@ export async function readTerritorialDecisionReopeningFacts(
             WHERE submission.copyright_notice_id = ${noticeId}) AS assessment_count,
           (SELECT count(*)::integer FROM copyright_notice_targets target
             WHERE target.copyright_notice_id = ${noticeId}) AS target_count,
-          (SELECT count(*)::integer FROM copyright_notice_action_intents intent
+          (SELECT count(*)::integer FROM copyright_notice_action_work_items intent
             WHERE intent.copyright_notice_id = ${noticeId} AND intent.action = 'withhold') AS withhold_intent_count,
-          (SELECT count(*)::integer FROM copyright_notice_action_intents intent
+          (SELECT count(*)::integer FROM copyright_notice_action_work_items intent
             WHERE intent.copyright_notice_id = ${noticeId} AND intent.action = 'restore') AS restore_intent_count,
           (SELECT count(*)::integer FROM copyright_repeat_infringer_incidents incident
             WHERE incident.copyright_notice_id = ${noticeId} AND incident.is_operative) AS operative_incident_count
@@ -129,7 +129,7 @@ export async function readTerritorialDecisionReopeningFacts(
         /* readTerritorialDecisionReopeningFacts:messages */
         SELECT DISTINCT intent.delivery_kind, intent.recipient_role, intent.recipient_user_id,
           intent.channel, correspondence.id AS correspondence_id, correspondence.body_ciphertext
-        FROM copyright_notice_delivery_intents intent
+        FROM copyright_notice_delivery_work_items intent
         JOIN copyright_notice_correspondence_messages correspondence
           ON correspondence.id = intent.copyright_notice_correspondence_message_id
         WHERE intent.copyright_notice_id = ${noticeId}

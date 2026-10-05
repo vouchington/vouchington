@@ -19,7 +19,7 @@ reconciler holds back only the `email` and `form-screening` dispatches while the
 layers must use these boundaries instead of treating a generic content report or ordinary appeal as
 a statutory notice.
 
-Delivery obligations are durable `copyright_notice_delivery_intents` rows. Claimant addresses are
+Delivery obligations are durable `copyright_notice_delivery_work_items` rows. Claimant addresses are
 re-encrypted into an intent-scoped private recipient record, while poster addresses resolve from
 the affected member's current verified address only at send time. Every legal email references an
 immutable deterministic correspondence body; SES acceptance records its MessageId and sets the
@@ -173,3 +173,14 @@ revision and safety must still permit restoration. Other active restrictions ret
 
 The durable workflow is documented in
 [`COPYRIGHT-NOTICES.md`](../../../../requirements/moderation/COPYRIGHT-NOTICES.md).
+
+Action and notification delivery rows are `copyright_notice_action_work_items` and
+`copyright_notice_delivery_work_items`. Their generated state reads current-generation outcome
+facts and lease occupancy; expiry controls takeover rather than changing generated state with
+wall-clock time. Every claim rotates a UUID token and records an immutable numbered execution.
+One immutable result records success, failure, blockage or abandonment. Explicit operator replay
+increments the work generation and clears only its current-cycle outcomes; all earlier executions
+and legal lifecycle changes remain. Accepted mail can later bounce, retaining both timestamps.
+Form screening keeps its numbered historical execution separately from
+`copyright_notice_form_screening_work_items`; late worker output requires the current token and
+live deadline, and terminal screening removes only current work.

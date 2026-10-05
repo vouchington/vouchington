@@ -1,4 +1,4 @@
-import { getMembershipWorkLimit } from '@services/memberships/work-limits'
+import { deferClaimedMembershipVerification } from '../verification-work.mts'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { projectVerifiedProviderMembershipObservation } from '../provider-observation-projection.mts'
@@ -70,15 +70,15 @@ export async function deferPendingGooglePlayVerification(
   token: string,
   query: GooglePlayTransaction,
 ): Promise<void> {
-  const MEMBERSHIPS_VERIFICATION_RETRY_MINUTES = getMembershipWorkLimit(
-    'verification_retry_minutes',
+  if (
+    !(await deferClaimedMembershipVerification(
+      context.verificationId,
+      token,
+      'purchase_pending',
+      query,
+    ))
   )
-  await query(sql`/* deferPendingGooglePlayVerification */
-    UPDATE membership_verifications SET processing_claim_token = NULL,
-      processing_claimed_at = NULL, next_processing_at = CURRENT_TIMESTAMP + ${MEMBERSHIPS_VERIFICATION_RETRY_MINUTES}::integer * INTERVAL '1 minute',
-      last_error = 'purchase_pending'
-    WHERE id = ${context.verificationId} AND processing_claim_token = ${token}
-      AND verified_at IS NULL AND conflicted_at IS NULL AND rejected_at IS NULL`)
+    throw new Error('Google Play verification claim was superseded')
   await query.commit()
 }
 

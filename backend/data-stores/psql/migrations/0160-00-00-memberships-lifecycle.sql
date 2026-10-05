@@ -236,20 +236,60 @@ CREATE TABLE IF NOT EXISTS membership_verifications (
   membership_purchase_intent_id UUID, membership_provider_evidence_record_id UUID NOT NULL,
   provider membership_provider_kinds NOT NULL, environment membership_provider_environments NOT NULL, application_id TEXT NOT NULL,
   verified_at TIMESTAMPTZ, conflicted_at TIMESTAMPTZ, rejected_at TIMESTAMPTZ, result_code membership_verification_result_codes,
-  processing_claim_token UUID, processing_claimed_at TIMESTAMPTZ, processing_attempts INTEGER NOT NULL DEFAULT 0, next_processing_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, last_error TEXT,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CHECK (provider <> 'admin'), CHECK (char_length(application_id) BETWEEN 1 AND 255 AND application_id = TRIM(application_id)),
   CHECK (num_nonnulls(verified_at, conflicted_at, rejected_at) <= 1),
   CHECK ((num_nonnulls(verified_at, conflicted_at, rejected_at) = 0) = (result_code IS NULL)),
-  CHECK ((processing_claim_token IS NULL) = (processing_claimed_at IS NULL)),
-  CHECK (processing_attempts >= 0),
-  CHECK (last_error IS NULL OR char_length(last_error) BETWEEN 1 AND 1000),
-  CHECK (processing_claimed_at IS NULL OR num_nonnulls(verified_at, conflicted_at, rejected_at) = 0),
-  CHECK (num_nonnulls(verified_at, conflicted_at, rejected_at) = 0 OR next_processing_at IS NULL),
   CONSTRAINT fk_membership_verifications__purchase_intent_context FOREIGN KEY (membership_purchase_intent_id, user_id, provider, environment, application_id) REFERENCES membership_purchase_intents(id, user_id, provider, environment, application_id) ON DELETE RESTRICT,
   CONSTRAINT fk_membership_verifications__evidence_context FOREIGN KEY (membership_provider_evidence_record_id, provider, environment, application_id) REFERENCES membership_provider_evidence_records(id, provider, environment, application_id) ON DELETE RESTRICT
 );
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS membership_verification_processing_work_items (
+  membership_verification_id UUID PRIMARY KEY REFERENCES membership_verifications(id) ON DELETE CASCADE,
+  lease_token UUID, leased_at TIMESTAMPTZ, lease_expires_at TIMESTAMPTZ,
+  attempt_count INTEGER NOT NULL DEFAULT 0 CHECK (attempt_count >= 0),
+  available_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  completed_at TIMESTAMPTZ, last_error TEXT CHECK (last_error IS NULL OR char_length(last_error) BETWEEN 1 AND 1000),
+  CHECK (num_nonnulls(lease_token, leased_at, lease_expires_at) IN (0, 3)),
+  CHECK (lease_expires_at IS NULL OR lease_expires_at > leased_at),
+  CHECK (completed_at IS NULL OR lease_token IS NULL)
+);
+COMMENT ON TABLE membership_verification_processing_work_items IS 'One pending provider-verification task per durable verification record; terminal work remains until verification retention removes its parent.';
+COMMENT ON COLUMN membership_verification_processing_work_items.membership_verification_id IS 'Durable verification whose provider adapter must run.';
+COMMENT ON COLUMN membership_verification_processing_work_items.lease_token IS 'Fencing token of the current provider verification worker.';
+COMMENT ON COLUMN membership_verification_processing_work_items.leased_at IS 'Time this processing lease was acquired.';
+COMMENT ON COLUMN membership_verification_processing_work_items.lease_expires_at IS 'Deadline after which current worker results are rejected.';
+COMMENT ON COLUMN membership_verification_processing_work_items.attempt_count IS 'Number of successful claims, including retry claims.';
+COMMENT ON COLUMN membership_verification_processing_work_items.available_at IS 'Earliest time the provider task may be claimed.';
+COMMENT ON COLUMN membership_verification_processing_work_items.completed_at IS 'When provider processing produced a final verification outcome.';
+COMMENT ON COLUMN membership_verification_processing_work_items.last_error IS 'Bounded diagnostic for the latest deferred provider attempt.';
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE FUNCTION fn_create_membership_verification_processing_work() RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  INSERT INTO membership_verification_processing_work_items (membership_verification_id, completed_at)
+    VALUES (NEW.id, COALESCE(NEW.verified_at, NEW.conflicted_at, NEW.rejected_at));
+  RETURN NEW;
+END;
+$$;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TRIGGER trigger_membership_verifications_processing_work AFTER INSERT ON membership_verifications
+FOR EACH ROW EXECUTE FUNCTION fn_create_membership_verification_processing_work();
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE FUNCTION fn_complete_membership_verification_processing_work() RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  IF num_nonnulls(NEW.verified_at, NEW.conflicted_at, NEW.rejected_at) = 1 THEN
+    UPDATE membership_verification_processing_work_items
+    SET completed_at = COALESCE(completed_at, NEW.verified_at, NEW.conflicted_at, NEW.rejected_at),
+      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL
+    WHERE membership_verification_id = NEW.id;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TRIGGER trigger_membership_verifications_complete_processing_work AFTER UPDATE OF verified_at, conflicted_at, rejected_at ON membership_verifications
+FOR EACH ROW EXECUTE FUNCTION fn_complete_membership_verification_processing_work();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_membership_verifications_updated_at BEFORE UPDATE ON membership_verifications FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -261,9 +301,9 @@ CREATE INDEX IF NOT EXISTS idx_membership_verifications__purchase_intent_id ON m
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_verifications__evidence_id ON membership_verifications (membership_provider_evidence_record_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_verifications__processing_claim_token ON membership_verifications (processing_claim_token) WHERE processing_claim_token IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_membership_verification_processing_work_items__lease_token ON membership_verification_processing_work_items (lease_token) WHERE lease_token IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_membership_verifications__pending_processing ON membership_verifications (next_processing_at, id) WHERE verified_at IS NULL AND conflicted_at IS NULL AND rejected_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_membership_verification_processing_work_items__claim ON membership_verification_processing_work_items (available_at, membership_verification_id) WHERE completed_at IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_sources (
@@ -385,20 +425,8 @@ CREATE TABLE IF NOT EXISTS memberships (
   membership_product_id UUID NOT NULL REFERENCES membership_products(id) ON DELETE RESTRICT,
   effective_at TIMESTAMPTZ NOT NULL, expires_at TIMESTAMPTZ, cancelled_at TIMESTAMPTZ, expired_at TIMESTAMPTZ, past_due_at TIMESTAMPTZ, paused_at TIMESTAMPTZ,
   should_cancel_at_period_end BOOLEAN NOT NULL DEFAULT false, latest_change_id UUID,
-  renewal_price_increase_notified_observation_id UUID REFERENCES membership_provider_observations(id) ON DELETE RESTRICT,
-  renewal_price_increase_notified_provider_product_id UUID,
-  renewal_price_increase_notified_minor_units BIGINT, renewal_price_increase_notified_currency_code TEXT REFERENCES currencies(code) ON DELETE RESTRICT,
-  renewal_price_increase_notified_effective_at TIMESTAMPTZ,
-  renewal_price_increase_notified_at TIMESTAMPTZ, renewal_price_increase_claim_token UUID, renewal_price_increase_claimed_at TIMESTAMPTZ, renewal_price_increase_delivery_attempted_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL, updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, projection_ended_at TIMESTAMPTZ,
   CHECK (num_nonnulls(cancelled_at, expired_at, past_due_at, paused_at) <= 1),
-  CHECK (num_nonnulls(renewal_price_increase_notified_observation_id, renewal_price_increase_notified_provider_product_id, renewal_price_increase_notified_minor_units, renewal_price_increase_notified_currency_code, renewal_price_increase_notified_effective_at) IN (0, 5)),
-  CHECK (renewal_price_increase_notified_minor_units IS NULL OR renewal_price_increase_notified_minor_units BETWEEN 0 AND 9007199254740991),
-  CHECK (renewal_price_increase_notified_at IS NULL OR renewal_price_increase_delivery_attempted_at IS NOT NULL),
-  CHECK ((renewal_price_increase_claim_token IS NULL) = (renewal_price_increase_claimed_at IS NULL)),
-  CHECK (renewal_price_increase_claimed_at IS NULL OR renewal_price_increase_notified_observation_id IS NOT NULL),
-  CHECK (renewal_price_increase_delivery_attempted_at IS NULL OR renewal_price_increase_notified_observation_id IS NOT NULL),
-  CONSTRAINT fk_memberships__renewal_observation_snapshot FOREIGN KEY (renewal_price_increase_notified_observation_id, renewal_price_increase_notified_provider_product_id, renewal_price_increase_notified_minor_units, renewal_price_increase_notified_currency_code, renewal_price_increase_notified_effective_at) REFERENCES membership_provider_observations(id, renewal_membership_provider_product_id, renewal_price_minor_units, renewal_price_currency_code, renewal_effective_at) ON DELETE RESTRICT,
   CONSTRAINT fk_memberships__source_user FOREIGN KEY (membership_source_id, user_id) REFERENCES membership_sources(id, user_id) ON DELETE RESTRICT
 );
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -415,13 +443,9 @@ CREATE INDEX IF NOT EXISTS idx_memberships__source_id ON memberships (membership
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_memberships__product_id ON memberships (membership_product_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_memberships__renewal_provider_product_id ON memberships (renewal_price_increase_notified_provider_product_id) WHERE renewal_price_increase_notified_provider_product_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_memberships__renewal_observation_id ON memberships (renewal_price_increase_notified_observation_id) WHERE renewal_price_increase_notified_observation_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_memberships__renewal_currency_code ON memberships (renewal_price_increase_notified_currency_code) WHERE renewal_price_increase_notified_currency_code IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_memberships__renewal_claim_token ON memberships (renewal_price_increase_claim_token) WHERE renewal_price_increase_claim_token IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_memberships__expires_at ON memberships (expires_at, id) WHERE projection_ended_at IS NULL AND expires_at IS NOT NULL;
 
@@ -461,6 +485,57 @@ DO $$ BEGIN ALTER TABLE memberships ADD CONSTRAINT fk_memberships_latest_change_
 CREATE INDEX IF NOT EXISTS idx_memberships__latest_change_id ON memberships (latest_change_id) WHERE latest_change_id IS NOT NULL;
 
 -- A membership change owns exactly one replayable handoff to its derived entitlement consumers.
+CREATE TABLE membership_renewal_price_increase_notification_work_items (
+  membership_id UUID PRIMARY KEY REFERENCES memberships ON DELETE CASCADE,
+  generation BIGINT NOT NULL DEFAULT 1 CHECK (generation >= 1),
+  membership_provider_observation_id UUID NOT NULL,
+  membership_provider_product_id UUID NOT NULL,
+  price_minor_units BIGINT NOT NULL CHECK (price_minor_units BETWEEN 0 AND 9007199254740991),
+  currency_code TEXT NOT NULL REFERENCES currencies(code) ON DELETE RESTRICT,
+  effective_at TIMESTAMPTZ NOT NULL,
+  lease_token UUID, leased_at TIMESTAMPTZ, lease_expires_at TIMESTAMPTZ,
+  attempt_count INTEGER NOT NULL DEFAULT 0 CHECK (attempt_count >= 0),
+  available_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+  delivery_attempted_at TIMESTAMPTZ, completed_at TIMESTAMPTZ,
+  CHECK (num_nonnulls(lease_token, leased_at, lease_expires_at) IN (0, 3)),
+  CHECK (lease_expires_at IS NULL OR lease_expires_at > leased_at),
+  CHECK (completed_at IS NULL OR delivery_attempted_at IS NOT NULL),
+  CHECK (completed_at IS NULL OR lease_token IS NULL),
+  CONSTRAINT fk_membership_renewal_notification_work__observation_snapshot FOREIGN KEY (
+    membership_provider_observation_id, membership_provider_product_id,
+    price_minor_units, currency_code, effective_at
+  ) REFERENCES membership_provider_observations (
+    id, renewal_membership_provider_product_id, renewal_price_minor_units,
+    renewal_price_currency_code, renewal_effective_at
+  ) ON DELETE RESTRICT
+);
+CREATE INDEX idx_membership_renewal_notification_work__observation
+ON membership_renewal_price_increase_notification_work_items (membership_provider_observation_id);
+CREATE INDEX idx_membership_renewal_notification_work__provider_product
+ON membership_renewal_price_increase_notification_work_items (membership_provider_product_id);
+CREATE INDEX idx_membership_renewal_notification_work__currency
+ON membership_renewal_price_increase_notification_work_items (currency_code);
+CREATE UNIQUE INDEX idx_membership_renewal_notification_work__lease_token
+ON membership_renewal_price_increase_notification_work_items (lease_token) WHERE lease_token IS NOT NULL;
+CREATE INDEX idx_membership_renewal_notification_work__available
+ON membership_renewal_price_increase_notification_work_items (available_at, membership_id)
+WHERE completed_at IS NULL AND delivery_attempted_at IS NULL;
+COMMENT ON TABLE membership_renewal_price_increase_notification_work_items IS 'Generation-fenced renewal price notices; exact delivered or ambiguously attempted snapshots remain for duplicate suppression until membership retention removes them.';
+COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.membership_id IS 'Membership projection that currently owns the notice; fallback restoration transfers the entire work row atomically.';
+COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.generation IS 'Monotone snapshot generation; retries and fallback transfer preserve it, while a changed provider snapshot advances it.';
+COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.membership_provider_observation_id IS 'Immutable authoritative observation that supplied this notice snapshot.';
+COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.membership_provider_product_id IS 'Provider product in the exact renewal observation snapshot.';
+COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.price_minor_units IS 'Future renewal price in the currency minor unit.';
+COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.currency_code IS 'Currency of the future renewal price.';
+COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.effective_at IS 'When the observed future price takes effect.';
+COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.lease_token IS 'Opaque UUID fence for the current notice delivery owner.';
+COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.leased_at IS 'When the current notice delivery lease began.';
+COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.lease_expires_at IS 'Deadline after which an unattempted notice may be reclaimed.';
+COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.attempt_count IS 'Number of acquired delivery leases for this snapshot generation.';
+COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.available_at IS 'Earliest delivery time for this prepared notice.';
+COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.delivery_attempted_at IS 'Irreversible marker written before the external send; ambiguous sends of the same snapshot are never retried.';
+COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.completed_at IS 'When the current generation confirmed its delivery; retained with the snapshot for deduplication.';
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_entitlement_effects (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -489,16 +564,13 @@ CREATE TABLE IF NOT EXISTS membership_operations (
   membership_provider_lineage_id UUID NOT NULL,
   membership_lineage_binding_id UUID NOT NULL,
   provider_refund_id TEXT CONSTRAINT membership_operations__provider_refund_id_valid CHECK (provider_refund_id IS NULL OR (char_length(provider_refund_id) BETWEEN 1 AND 255 AND provider_refund_id = TRIM(provider_refund_id))),
-  execution_claim_token TEXT CONSTRAINT membership_operations_execution_claim_token_valid CHECK (execution_claim_token IS NULL OR char_length(execution_claim_token) = 36),
-  execution_claimed_at TIMESTAMPTZ,
-  CONSTRAINT membership_operations_execution_claim_pair_valid CHECK ((execution_claim_token IS NULL) = (execution_claimed_at IS NULL)),
   provider membership_provider_kinds NOT NULL, environment membership_provider_environments NOT NULL, application_id TEXT NOT NULL,
   operation_kind membership_operation_kinds NOT NULL, idempotency_key TEXT NOT NULL,
   qualifying_allocation_minor_units BIGINT CHECK (qualifying_allocation_minor_units BETWEEN 0 AND 9007199254740991),
   remaining_refundable_minor_units BIGINT CHECK (remaining_refundable_minor_units BETWEEN 0 AND 9007199254740991),
   currency_code TEXT REFERENCES currencies(code) ON DELETE RESTRICT,
   period_started_at TIMESTAMPTZ, period_ends_at TIMESTAMPTZ, collision_at TIMESTAMPTZ,
-  reconciliation_due_at TIMESTAMPTZ, reconciliation_attempt_ordinal INTEGER NOT NULL DEFAULT 0,
+  reconciliation_attempt_ordinal INTEGER NOT NULL DEFAULT 0,
   requested_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, completed_at TIMESTAMPTZ, failed_at TIMESTAMPTZ, failure_message TEXT,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CHECK (char_length(application_id) BETWEEN 1 AND 255 AND application_id = TRIM(application_id)),
@@ -520,8 +592,6 @@ CREATE TABLE IF NOT EXISTS membership_operations (
   ),
   CHECK (operation_kind <> 'administrator_refund' OR (period_started_at IS NULL AND period_ends_at IS NULL) OR (period_started_at IS NOT NULL AND period_ends_at IS NOT NULL)),
   CHECK (operation_kind <> 'administrator_refund' OR (qualifying_allocation_minor_units IS NOT NULL AND remaining_refundable_minor_units IS NOT NULL AND currency_code IS NOT NULL)),
-  CHECK (operation_kind <> 'administrator_refund' OR completed_at IS NOT NULL OR reconciliation_due_at IS NOT NULL),
-  CHECK (completed_at IS NULL OR reconciliation_due_at IS NULL),
   CHECK (num_nonnulls(completed_at, failed_at) <= 1),
   CHECK (completed_at IS NULL OR completed_at >= requested_at),
   CHECK (failed_at IS NULL OR failed_at >= requested_at),
@@ -551,13 +621,86 @@ CREATE INDEX IF NOT EXISTS idx_membership_operations__binding_id ON membership_o
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_operations__provider_refund ON membership_operations (provider, environment, application_id, provider_refund_id) WHERE provider_refund_id IS NOT NULL;
 COMMENT ON COLUMN membership_operations.provider_refund_id IS 'Latest Stripe refund identity, retained to reconcile non-terminal refund outcomes before retrying.';
-COMMENT ON COLUMN membership_operations.execution_claim_token IS 'Opaque lease token held by the current provider-operation attempt.';
-COMMENT ON COLUMN membership_operations.execution_claimed_at IS 'When the current provider-operation execution lease was acquired.';
 COMMENT ON COLUMN membership_operations.membership_lineage_binding_id IS 'Binding and owner captured when the provider operation was requested.';
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_operations__currency_code ON membership_operations (currency_code);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_membership_operations__reconciliation_due ON membership_operations (reconciliation_due_at, id) WHERE completed_at IS NULL AND reconciliation_due_at IS NOT NULL;
+CREATE TABLE membership_operation_execution_work_items (
+  membership_operation_id UUID PRIMARY KEY REFERENCES membership_operations ON DELETE CASCADE,
+  lease_token UUID, leased_at TIMESTAMPTZ, lease_expires_at TIMESTAMPTZ,
+  attempt_count INTEGER NOT NULL DEFAULT 0 CHECK (attempt_count >= 0),
+  available_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+  CHECK (num_nonnulls(lease_token, leased_at, lease_expires_at) IN (0, 3)),
+  CHECK (lease_expires_at IS NULL OR lease_expires_at > leased_at)
+);
+CREATE UNIQUE INDEX idx_membership_operation_work_items__lease_token
+ON membership_operation_execution_work_items (lease_token) WHERE lease_token IS NOT NULL;
+CREATE INDEX idx_membership_operation_work_items__available
+ON membership_operation_execution_work_items (available_at, membership_operation_id) WHERE lease_token IS NULL;
+CREATE INDEX idx_membership_operation_work_items__expired
+ON membership_operation_execution_work_items (lease_expires_at, membership_operation_id) WHERE lease_token IS NOT NULL;
+COMMENT ON TABLE membership_operation_execution_work_items IS 'Pending execution of a durable membership operation; terminal completion deletes the work while refund evidence and attempts remain.';
+COMMENT ON COLUMN membership_operation_execution_work_items.membership_operation_id IS 'Durable operation whose row lock serializes execution and reconciliation.';
+COMMENT ON COLUMN membership_operation_execution_work_items.lease_token IS 'Opaque UUID fence for the current provider execution owner.';
+COMMENT ON COLUMN membership_operation_execution_work_items.leased_at IS 'When the current execution owner acquired its lease.';
+COMMENT ON COLUMN membership_operation_execution_work_items.lease_expires_at IS 'Deadline after which recovery may replace the execution owner.';
+COMMENT ON COLUMN membership_operation_execution_work_items.attempt_count IS 'Monotone number of acquired execution leases.';
+COMMENT ON COLUMN membership_operation_execution_work_items.available_at IS 'Earliest permitted execution or refund reconciliation time.';
+
+CREATE FUNCTION fn_initialize_membership_operation_work()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.completed_at IS NULL THEN
+    INSERT INTO membership_operation_execution_work_items (membership_operation_id)
+    VALUES (NEW.id);
+  END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_membership_operations_initialize_work
+AFTER INSERT ON membership_operations
+FOR EACH ROW EXECUTE FUNCTION fn_initialize_membership_operation_work();
+COMMENT ON FUNCTION fn_initialize_membership_operation_work() IS 'Creates execution work with a new unfinished operation; replay of an existing completed operation cannot recreate work.';
+
+CREATE FUNCTION fn_finalize_membership_operation_work()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE current_token UUID;
+BEGIN
+  SELECT lease_token INTO current_token FROM membership_operation_execution_work_items
+  WHERE membership_operation_id = NEW.id;
+  IF NEW.completed_at IS NOT NULL THEN
+    DELETE FROM membership_operation_execution_work_items
+    WHERE membership_operation_id = NEW.id AND lease_token IS NOT DISTINCT FROM current_token;
+  ELSIF NEW.failed_at IS NOT NULL AND NEW.failed_at IS DISTINCT FROM OLD.failed_at THEN
+    UPDATE membership_operation_execution_work_items
+    SET lease_token = NULL, leased_at = NULL, lease_expires_at = NULL
+    WHERE membership_operation_id = NEW.id AND lease_token = current_token;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_membership_operations_finalize_work
+AFTER UPDATE ON membership_operations
+FOR EACH ROW EXECUTE FUNCTION fn_finalize_membership_operation_work();
+COMMENT ON FUNCTION fn_finalize_membership_operation_work() IS 'Atomically removes completed work or releases the current lease after a token-fenced retryable failure.';
+
+CREATE FUNCTION fn_guard_membership_operation_work_lease()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.membership_operation_id IS DISTINCT FROM OLD.membership_operation_id
+    OR NEW.attempt_count < OLD.attempt_count
+    OR (OLD.lease_token IS NOT NULL AND OLD.lease_expires_at > clock_timestamp()
+      AND NEW.lease_token IS NOT NULL AND NEW.lease_token IS DISTINCT FROM OLD.lease_token) THEN
+    RAISE EXCEPTION 'membership operations only allow claimed provider execution lifecycle transitions';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_membership_operation_work_items_guard
+BEFORE UPDATE ON membership_operation_execution_work_items
+FOR EACH ROW EXECUTE FUNCTION fn_guard_membership_operation_work_lease();
+COMMENT ON FUNCTION fn_guard_membership_operation_work_lease() IS 'Preserves operation ownership, monotone execution count, and an unexpired lease against token rotation.';
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_automatic_refund_receipts (
   id UUID PRIMARY KEY DEFAULT uuidv7(), membership_operation_id UUID NOT NULL CONSTRAINT fk_membership_automatic_refund_receipts__operation REFERENCES membership_operations(id) ON DELETE RESTRICT,
@@ -751,7 +894,10 @@ CREATE TABLE IF NOT EXISTS membership_refund_operation_attempt_metadata_scans (
 CREATE OR REPLACE FUNCTION fn_reject_membership_refund_metadata_scan_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE lease_matches BOOLEAN;
 BEGIN
-  SELECT operation.execution_claim_token = NEW.lease_token INTO lease_matches FROM membership_refund_operation_attempts attempt INNER JOIN membership_operations operation ON operation.id = attempt.membership_operation_id WHERE attempt.id = NEW.membership_refund_operation_attempt_id;
+  SELECT work.lease_token::text = NEW.lease_token AND work.lease_expires_at > clock_timestamp()
+  INTO lease_matches FROM membership_refund_operation_attempts attempt
+  INNER JOIN membership_operation_execution_work_items work ON work.membership_operation_id = attempt.membership_operation_id
+  WHERE attempt.id = NEW.membership_refund_operation_attempt_id;
   IF lease_matches IS DISTINCT FROM TRUE THEN RAISE EXCEPTION 'membership refund metadata scan lease is stale'; END IF;
   IF TG_OP = 'UPDATE' AND (OLD.completed_at IS NOT NULL OR NEW.created_at IS DISTINCT FROM OLD.created_at OR NEW.membership_refund_operation_attempt_id IS DISTINCT FROM OLD.membership_refund_operation_attempt_id OR (NEW.completed_at IS NOT NULL AND NEW.next_provider_refund_id IS NOT NULL)) THEN RAISE EXCEPTION 'membership refund metadata scan cannot be reopened or rewritten after completion'; END IF;
   RETURN NEW;
@@ -773,20 +919,39 @@ COMMENT ON COLUMN stripe_event_types.created_at IS 'When this provider value was
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS stripe_events (
   id UUID PRIMARY KEY DEFAULT uuidv7(), stripe_event_id TEXT NOT NULL, event_type TEXT NOT NULL REFERENCES stripe_event_types(id) ON DELETE RESTRICT, is_live_mode BOOLEAN NOT NULL DEFAULT false, api_version TEXT,
-  stripe_created_at TIMESTAMPTZ NOT NULL, customer_id TEXT, subscription_id TEXT, invoice_id TEXT, checkout_session_id TEXT,
-  received_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, processing_attempt_id UUID NOT NULL DEFAULT uuidv7(), dispatched_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  processing_started_at TIMESTAMPTZ, processing_attempts INT NOT NULL DEFAULT 0 CHECK (processing_attempts >= 0), processed_at TIMESTAMPTZ, ignored_at TIMESTAMPTZ, failed_at TIMESTAMPTZ,
-  last_error_at TIMESTAMPTZ, last_error_message TEXT, payload JSONB NOT NULL, created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  CHECK (num_nonnulls(processed_at, ignored_at, failed_at) <= 1)
+  occurred_at TIMESTAMPTZ NOT NULL, customer_id TEXT, subscription_id TEXT, invoice_id TEXT, checkout_session_id TEXT,
+  received_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, payload JSONB NOT NULL,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TRIGGER trigger_stripe_events_reject_mutation BEFORE UPDATE OR DELETE ON stripe_events FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS stripe_event_processing_work_items (
+  stripe_event_id UUID PRIMARY KEY REFERENCES stripe_events(id) ON DELETE CASCADE,
+  lease_token UUID NOT NULL DEFAULT uuidv7(), leased_at TIMESTAMPTZ, lease_expires_at TIMESTAMPTZ,
+  attempt_count INT NOT NULL DEFAULT 0 CHECK (attempt_count >= 0), available_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  dispatched_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  processed_at TIMESTAMPTZ, ignored_at TIMESTAMPTZ, failed_at TIMESTAMPTZ,
+  last_error_at TIMESTAMPTZ, last_error_message TEXT,
+  CHECK (num_nonnulls(processed_at, ignored_at, failed_at) <= 1),
+  CHECK ((leased_at IS NULL) = (lease_expires_at IS NULL)),
+  CHECK (lease_expires_at IS NULL OR lease_expires_at > leased_at)
+);
+COMMENT ON TABLE stripe_event_processing_work_items IS 'Processing and recovery state separate from immutable Stripe protocol events; retained with the event for exact replay.';
+COMMENT ON COLUMN stripe_event_processing_work_items.stripe_event_id IS 'Inbound event being processed; cascades with its protocol record.';
+COMMENT ON COLUMN stripe_event_processing_work_items.lease_token IS 'Fencing token for the current admitted processing generation.';
+COMMENT ON COLUMN stripe_event_processing_work_items.leased_at IS 'When this worker acquired its processing lease.';
+COMMENT ON COLUMN stripe_event_processing_work_items.lease_expires_at IS 'Deadline after which the worker cannot publish an outcome.';
+COMMENT ON COLUMN stripe_event_processing_work_items.attempt_count IS 'Number of acquired processing attempts.';
+COMMENT ON COLUMN stripe_event_processing_work_items.available_at IS 'Earliest time this event may be processed.';
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_stripe_events__event_type ON stripe_events (event_type, id DESC);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS uq_stripe_events__stripe_event_id ON stripe_events (stripe_event_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_stripe_events__processing_attempt_id ON stripe_events (processing_attempt_id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_stripe_event_processing_work_items__lease_token ON stripe_event_processing_work_items (lease_token);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_stripe_events__unfinished ON stripe_events (id DESC) WHERE processed_at IS NULL AND ignored_at IS NULL AND failed_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_stripe_event_processing_work_items__claim ON stripe_event_processing_work_items (available_at, stripe_event_id) WHERE processed_at IS NULL AND ignored_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_stripe_events__subscription_id ON stripe_events (subscription_id, id DESC) WHERE subscription_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -897,11 +1062,6 @@ COMMENT ON COLUMN membership_verifications.verified_at IS 'When verification com
 COMMENT ON COLUMN membership_verifications.conflicted_at IS 'When verification completed with an automatically managed conflict.';
 COMMENT ON COLUMN membership_verifications.rejected_at IS 'When verification completed with a rejection.';
 COMMENT ON COLUMN membership_verifications.result_code IS 'Stable terminal verification result code.';
-COMMENT ON COLUMN membership_verifications.processing_claim_token IS 'Lease token fencing the current verification processor.';
-COMMENT ON COLUMN membership_verifications.processing_claimed_at IS 'When the current processor claimed this verification.';
-COMMENT ON COLUMN membership_verifications.processing_attempts IS 'Number of durable verification processing attempts.';
-COMMENT ON COLUMN membership_verifications.next_processing_at IS 'When pending verification recovery may next process this request.';
-COMMENT ON COLUMN membership_verifications.last_error IS 'Bounded diagnostic from the most recent recoverable processing failure.';
 
 COMMENT ON TABLE membership_sources IS 'Stable entitlement sources that project provider or administrator access onto a user.';
 COMMENT ON COLUMN membership_sources.user_id IS 'Retained user identity of the current recipient; provider sources detach it during final account purge.';
@@ -953,15 +1113,6 @@ COMMENT ON COLUMN memberships.past_due_at IS 'When the projection entered a past
 COMMENT ON COLUMN memberships.paused_at IS 'When the projection entered a paused state.';
 COMMENT ON COLUMN memberships.should_cancel_at_period_end IS 'Whether cancellation takes effect after the current period.';
 COMMENT ON COLUMN memberships.latest_change_id IS 'Latest append-only audit row for this projection.';
-COMMENT ON COLUMN memberships.renewal_price_increase_notified_provider_product_id IS 'Provider product for the most recent renewal price notification.';
-COMMENT ON COLUMN memberships.renewal_price_increase_notified_observation_id IS 'Provider observation claimed for the most recent renewal price notification.';
-COMMENT ON COLUMN memberships.renewal_price_increase_notified_effective_at IS 'Effective time of the provider renewal price most recently notified.';
-COMMENT ON COLUMN memberships.renewal_price_increase_notified_minor_units IS 'Notified future renewal price in the currency minor unit.';
-COMMENT ON COLUMN memberships.renewal_price_increase_notified_currency_code IS 'Currency of the notified future renewal price.';
-COMMENT ON COLUMN memberships.renewal_price_increase_notified_at IS 'When the price notification was delivered.';
-COMMENT ON COLUMN memberships.renewal_price_increase_claim_token IS 'Fence identifying the worker that owns the current delivery claim.';
-COMMENT ON COLUMN memberships.renewal_price_increase_claimed_at IS 'When delivery of the price notification was claimed.';
-COMMENT ON COLUMN memberships.renewal_price_increase_delivery_attempted_at IS 'When delivery of the price notification was attempted.';
 COMMENT ON COLUMN memberships.projection_ended_at IS 'When this projection stopped being the user''s live membership projection; its historical ID remains retained.';
 
 COMMENT ON TABLE membership_changes IS 'Append-only audit log for membership projection changes.';
@@ -1006,7 +1157,6 @@ COMMENT ON COLUMN membership_operations.requested_at IS 'When the operation was 
 COMMENT ON COLUMN membership_operations.completed_at IS 'When the provider operation completed.';
 COMMENT ON COLUMN membership_operations.failed_at IS 'When the provider operation failed.';
 COMMENT ON COLUMN membership_operations.failure_message IS 'Bounded failure detail for the operation.';
-COMMENT ON COLUMN membership_operations.reconciliation_due_at IS 'Earliest time a non-terminal refund operation may be leased for durable reconciliation.';
 COMMENT ON COLUMN membership_operations.reconciliation_attempt_ordinal IS 'Monotonic ordinal allocated when a reconciliation lease is acquired.';
 
 COMMENT ON TABLE membership_automatic_refund_receipts IS 'Immutable receipts for automatic or collision-resolution provider refunds.';
@@ -1076,21 +1226,21 @@ COMMENT ON COLUMN stripe_events.stripe_event_id IS 'Unique Stripe event identity
 COMMENT ON COLUMN stripe_events.event_type IS 'Stripe event type.';
 COMMENT ON COLUMN stripe_events.is_live_mode IS 'Whether Stripe issued the event in live mode.';
 COMMENT ON COLUMN stripe_events.api_version IS 'Stripe API version that generated the event.';
-COMMENT ON COLUMN stripe_events.stripe_created_at IS 'When Stripe created the event.';
+COMMENT ON COLUMN stripe_events.occurred_at IS 'When Stripe created the event.';
 COMMENT ON COLUMN stripe_events.customer_id IS 'Optional Stripe Customer identity from the payload.';
 COMMENT ON COLUMN stripe_events.subscription_id IS 'Optional Stripe Subscription identity from the payload.';
 COMMENT ON COLUMN stripe_events.invoice_id IS 'Optional Stripe Invoice identity from the payload.';
 COMMENT ON COLUMN stripe_events.checkout_session_id IS 'Optional Stripe Checkout Session identity from the payload.';
 COMMENT ON COLUMN stripe_events.received_at IS 'When the event was durably received.';
-COMMENT ON COLUMN stripe_events.processing_attempt_id IS 'Fencing token for the current event processing attempt.';
-COMMENT ON COLUMN stripe_events.dispatched_at IS 'When the current processing attempt was dispatched.';
-COMMENT ON COLUMN stripe_events.processing_started_at IS 'When the current processing attempt began.';
-COMMENT ON COLUMN stripe_events.processing_attempts IS 'Number of processing attempts.';
-COMMENT ON COLUMN stripe_events.processed_at IS 'When processing completed successfully.';
-COMMENT ON COLUMN stripe_events.ignored_at IS 'When processing intentionally ignored the event.';
-COMMENT ON COLUMN stripe_events.failed_at IS 'When processing last failed.';
-COMMENT ON COLUMN stripe_events.last_error_at IS 'When the latest processing error occurred.';
-COMMENT ON COLUMN stripe_events.last_error_message IS 'Bounded latest processing error detail.';
+COMMENT ON COLUMN stripe_event_processing_work_items.lease_token IS 'Fencing token for the current event processing attempt.';
+COMMENT ON COLUMN stripe_event_processing_work_items.dispatched_at IS 'When the current processing attempt was dispatched.';
+COMMENT ON COLUMN stripe_event_processing_work_items.leased_at IS 'When the current processing attempt began.';
+COMMENT ON COLUMN stripe_event_processing_work_items.attempt_count IS 'Number of processing attempts.';
+COMMENT ON COLUMN stripe_event_processing_work_items.processed_at IS 'When processing completed successfully.';
+COMMENT ON COLUMN stripe_event_processing_work_items.ignored_at IS 'When processing intentionally ignored the event.';
+COMMENT ON COLUMN stripe_event_processing_work_items.failed_at IS 'When processing last failed.';
+COMMENT ON COLUMN stripe_event_processing_work_items.last_error_at IS 'When the latest processing error occurred.';
+COMMENT ON COLUMN stripe_event_processing_work_items.last_error_message IS 'Bounded latest processing error detail.';
 COMMENT ON COLUMN stripe_events.payload IS 'Full Stripe event payload stored as JSONB.';
 
 -- Current indexes for fresh schema bootstrap.

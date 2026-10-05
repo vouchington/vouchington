@@ -117,13 +117,12 @@ export async function persistClaimedNotificationPushOutcome(
       WHERE NOT ${isRetryableFailure}
     ), receipts AS (
       INSERT INTO notification_push_intent_subscription_receipts (
-        user_id, notification_id, subscription_id, endpoint, status, delivered_at, permanently_failed_at
+        user_id, notification_id, subscription_id, endpoint, delivered_at, permanently_failed_at
       )
       SELECT ${intent.user_id}::uuid AS user_id,
         ${intent.notification_id}::uuid AS notification_id,
         ${id}::uuid AS subscription_id,
         input.endpoint,
-        input.status,
         CASE WHEN input.status = 'delivered' THEN CURRENT_TIMESTAMP END,
         CASE WHEN input.status = 'permanently_failed' THEN CURRENT_TIMESTAMP END
       FROM terminal_input input
@@ -132,8 +131,7 @@ export async function persistClaimedNotificationPushOutcome(
         notification_id ASC NULLS LAST,
         subscription_id ASC NULLS LAST
       ON CONFLICT (user_id, notification_id, subscription_id) DO UPDATE
-      SET status = EXCLUDED.status,
-          delivered_at = EXCLUDED.delivered_at,
+      SET delivered_at = EXCLUDED.delivered_at,
           permanently_failed_at = EXCLUDED.permanently_failed_at
       WHERE notification_push_intent_subscription_receipts.status = 'pending'
       RETURNING endpoint, subscription_id, status

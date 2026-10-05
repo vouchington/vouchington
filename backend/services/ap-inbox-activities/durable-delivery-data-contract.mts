@@ -15,7 +15,7 @@ export type ActivityPubInboxEnvelope = {
 
 export type ActivityPubInboxDelivery = ActivityPubInboxEnvelope & {
   id: string
-  processingAttemptId: string
+  leaseToken: string
   remoteActorId: string | null
   receivedAt: Date
   verifiedAt: Date | null

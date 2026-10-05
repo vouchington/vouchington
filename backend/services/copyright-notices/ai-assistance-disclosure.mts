@@ -22,7 +22,7 @@ export async function copyrightInAppDecisionWasAiAssisted(intentId: string): Pro
   const { rows } = await read<{ assisted: boolean }>(sql`
     /* copyrightInAppDecisionWasAiAssisted */
     SELECT EXISTS (
-      SELECT 1 FROM copyright_notice_delivery_intents intent
+      SELECT 1 FROM copyright_notice_delivery_work_items intent
       JOIN copyright_notice_counter_notice_reviews review
         ON review.copyright_notice_submission_id = intent.copyright_notice_submission_id
       JOIN copyright_notice_submission_guidance guidance

@@ -1,11 +1,10 @@
-import { randomUUID } from 'node:crypto'
 import type { QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { createIneligiblePurchaseCancellationIdempotencyKey } from './ineligible-stripe-purchase-reversal-idempotency.mts'
 import { IneligiblePurchaseReversalInProgressError } from './ineligible-stripe-purchase-reversal-execution.mts'
 import type { ClaimedCancellation } from './ineligible-stripe-purchase-reversal-types.mts'
 
-const EXECUTION_CLAIM_TTL_SECONDS = 300
+import { claimMembershipOperationExecutionWork } from './operation-execution-work.mts'
 
 export async function claimIneligiblePurchaseCancellationOperation(
   membershipSourceId: string,
@@ -33,9 +32,7 @@ export async function claimIneligiblePurchaseCancellationOperation(
     ) ON CONFLICT (provider, environment, application_id, idempotency_key) DO NOTHING
   `)
   const { rows } = await query(sql`/* claimIneligiblePurchaseCancellation:lock */
-    SELECT operation.id, operation.completed_at IS NOT NULL AS completed,
-      operation.execution_claim_token AS "executionClaimToken",
-      operation.execution_claimed_at AS "executionClaimedAt"
+    SELECT operation.id, operation.completed_at IS NOT NULL AS completed
     FROM membership_operations operation
     WHERE operation.provider = 'stripe' AND operation.environment = ${providerEnvironment}
       AND operation.application_id = ${providerApplicationId} AND operation.idempotency_key = ${idempotencyKey}
@@ -45,27 +42,14 @@ export async function claimIneligiblePurchaseCancellationOperation(
   const row = rows[0] as
     | {
         completed: boolean
-        executionClaimToken: string | null
-        executionClaimedAt: Date | null
         id: string
       }
     | undefined
   if (!row) throw new Error(`Could not claim Stripe cancellation ${idempotencyKey}`)
   if (row.completed) {
-    return { completed: true, executionClaimToken: null, id: row.id, idempotencyKey }
+    return { completed: true, leaseToken: null, id: row.id, idempotencyKey }
   }
-  const executionClaimToken = randomUUID()
-  const { rows: claimedRows } = await query(sql`/* claimIneligiblePurchaseCancellation:execution */
-    UPDATE membership_operations
-    SET execution_claim_token = ${executionClaimToken}, execution_claimed_at = CURRENT_TIMESTAMP,
-      failed_at = NULL, failure_message = NULL
-    WHERE id = ${row.id} AND completed_at IS NULL
-      AND (
-        execution_claim_token IS NULL
-        OR execution_claimed_at < CURRENT_TIMESTAMP - make_interval(secs => ${EXECUTION_CLAIM_TTL_SECONDS})
-      )
-    RETURNING id
-  `)
-  if (claimedRows.length === 0) throw new IneligiblePurchaseReversalInProgressError(row.id)
-  return { completed: false, executionClaimToken, id: row.id, idempotencyKey }
+  const leaseToken = await claimMembershipOperationExecutionWork(row.id, query)
+  if (!leaseToken) throw new IneligiblePurchaseReversalInProgressError(row.id)
+  return { completed: false, leaseToken, id: row.id, idempotencyKey }
 }

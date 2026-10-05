@@ -145,12 +145,19 @@ async function cleanupRetainedIdentityFamily(
 ): Promise<RetainedIdentityCleanupPage> {
   const { table, references } = ROOT_FAMILIES[family]
   await using query = await beginTransaction()
+  if (!identityIds)
+    await query(
+      `/* ensureRetainedIdentityCleanupCursor */
+        INSERT INTO retained_identity_cleanup_cursors (family) VALUES ($1)
+        ON CONFLICT DO NOTHING`,
+      [family],
+    )
   const progress = identityIds
     ? null
     : (
         await query<{ cursor_identity_id: string | null }>(
           `/* lockRetainedIdentityCleanupProgress */
-          SELECT cursor_identity_id FROM retained_identity_cleanup_progress WHERE family = $1 FOR UPDATE`,
+          SELECT cursor_identity_id FROM retained_identity_cleanup_cursors WHERE family = $1 FOR UPDATE`,
           [family],
         )
       ).rows[0]
@@ -181,7 +188,7 @@ async function cleanupRetainedIdentityFamily(
   if (!identityIds)
     await query(
       `/* checkpointRetainedIdentityCleanup */
-      UPDATE retained_identity_cleanup_progress
+      UPDATE retained_identity_cleanup_cursors
       SET cursor_identity_id = $2 WHERE family = $1`,
       [family, hasMore ? page.at(-1)!.id : null],
     )

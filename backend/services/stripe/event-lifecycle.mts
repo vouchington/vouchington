@@ -2,46 +2,32 @@ import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export async function markStripeEventCompleted(
-  idOrStripeEventId: string,
+  id: string,
   status: 'processed' | 'ignored',
-  processingAttemptId?: string,
+  leaseToken: string,
 ): Promise<void> {
-  const query = sql`/* markStripeEventCompleted */
-    UPDATE stripe_events
-    SET processed_at = CASE WHEN ${status} = 'processed' THEN CURRENT_TIMESTAMP ELSE NULL END,
-      ignored_at = CASE WHEN ${status} = 'ignored' THEN CURRENT_TIMESTAMP ELSE NULL END,
-      failed_at = NULL,
-      last_error_at = NULL,
-      last_error_message = NULL
-    WHERE `
-  if (processingAttemptId) {
-    query.append(sql`id = ${idOrStripeEventId} AND processing_attempt_id = ${processingAttemptId}`)
-  } else {
-    query.append(sql`stripe_event_id = ${idOrStripeEventId}`)
-  }
-  await write(query)
+  await write(sql`/* markStripeEventCompleted */
+    UPDATE stripe_event_processing_work_items
+    SET processed_at = CASE WHEN ${status} = 'processed' THEN clock_timestamp() ELSE NULL END,
+        ignored_at = CASE WHEN ${status} = 'ignored' THEN clock_timestamp() ELSE NULL END,
+        leased_at = NULL, lease_expires_at = NULL, last_error_at = NULL, last_error_message = NULL
+    WHERE stripe_event_id = ${id} AND lease_token = ${leaseToken}
+      AND lease_expires_at > clock_timestamp() AND processed_at IS NULL AND ignored_at IS NULL
+  `)
 }
 
 export async function markStripeEventFailed(
-  idOrStripeEventId: string,
+  id: string,
   errorMessage: string,
-  processingAttemptId?: string,
+  leaseToken: string,
   terminal = true,
 ): Promise<void> {
-  const query = sql`/* markStripeEventFailed */
-    UPDATE stripe_events
-    SET failed_at = CASE WHEN ${terminal} THEN CURRENT_TIMESTAMP ELSE NULL END,
-      processing_started_at = NULL,
-      last_error_at = CURRENT_TIMESTAMP,
-      last_error_message = ${errorMessage.slice(0, 2000).trim()}
-    WHERE `
-  if (processingAttemptId) {
-    query.append(sql`id = ${idOrStripeEventId} AND processing_attempt_id = ${processingAttemptId}`)
-  } else {
-    query.append(sql`stripe_event_id = ${idOrStripeEventId}`)
-  }
-  query.append(sql` AND processed_at IS NULL
-      AND ignored_at IS NULL
+  await write(sql`/* markStripeEventFailed */
+    UPDATE stripe_event_processing_work_items
+    SET failed_at = CASE WHEN ${terminal} THEN clock_timestamp() ELSE NULL END,
+        leased_at = NULL, lease_expires_at = NULL,
+        last_error_at = clock_timestamp(), last_error_message = ${errorMessage.slice(0, 2000).trim()}
+    WHERE stripe_event_id = ${id} AND lease_token = ${leaseToken}
+      AND lease_expires_at > clock_timestamp() AND processed_at IS NULL AND ignored_at IS NULL
   `)
-  await write(query)
 }

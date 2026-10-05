@@ -29,7 +29,7 @@ export type ReversalTarget = {
 
 export type ClaimedReversal = {
   completed: boolean
-  executionClaimToken: string | null
+  leaseToken: string | null
   hasReceipt: boolean
   id: string
   idempotencyKey: string
@@ -39,7 +39,7 @@ export type ClaimedReversal = {
 
 export type ClaimedCancellation = {
   completed: boolean
-  executionClaimToken: string | null
+  leaseToken: string | null
   id: string
   idempotencyKey: string
 }

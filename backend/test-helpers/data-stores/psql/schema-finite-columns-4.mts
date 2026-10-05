@@ -31,14 +31,8 @@ export const FINITE_COLUMN_CONTRACTS_4 = [
   ],
   [
     'membership_google_play_recovery_cursors',
-    'id',
-    'membership_google_play_recovery_families',
-    false,
-  ],
-  [
-    'membership_microsoft_store_recovery_cursors',
-    'id',
-    'membership_microsoft_store_recovery_families',
+    'recovery_sweep',
+    'membership_google_play_recovery_sweeps',
     false,
   ],
   ['moderation_appeals', 'recommended_action', 'moderation_appeal_actions', false],

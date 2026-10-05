@@ -220,16 +220,10 @@ describe('ActivityPub inbox durable-delivery transition facade', () => {
     ).toEqual({ outcome: 'stale' })
 
     expect(
-      await activityPubInboxDeliveryTransitions.claim(
-        delivery.deliveryId,
-        delivery.processingAttemptId,
-      ),
+      await activityPubInboxDeliveryTransitions.claim(delivery.deliveryId, delivery.leaseToken),
     ).toMatchObject({ outcome: 'applied' })
     expect(
-      await activityPubInboxDeliveryTransitions.reject(
-        delivery.deliveryId,
-        delivery.processingAttemptId,
-      ),
+      await activityPubInboxDeliveryTransitions.reject(delivery.deliveryId, delivery.leaseToken),
     ).toMatchObject({ outcome: 'applied' })
   })
 
@@ -239,24 +233,18 @@ describe('ActivityPub inbox durable-delivery transition facade', () => {
       throw new Error('Test delivery unexpectedly exceeded capacity')
     const delivery = accepted.value
     expect(
-      await activityPubInboxDeliveryTransitions.claim(
-        delivery.deliveryId,
-        delivery.processingAttemptId,
-      ),
+      await activityPubInboxDeliveryTransitions.claim(delivery.deliveryId, delivery.leaseToken),
     ).toMatchObject({ outcome: 'applied' })
     expect(
       await activityPubInboxDeliveryTransitions.exhaust(
         delivery.deliveryId,
-        delivery.processingAttemptId,
+        delivery.leaseToken,
         new Error('retry attempts exhausted'),
       ),
     ).toMatchObject({ outcome: 'applied' })
 
     expect(
-      await activityPubInboxDeliveryTransitions.reject(
-        delivery.deliveryId,
-        delivery.processingAttemptId,
-      ),
+      await activityPubInboxDeliveryTransitions.reject(delivery.deliveryId, delivery.leaseToken),
     ).toEqual({ outcome: 'stale' })
 
     const rearmed = (await activityPubInboxDeliveryTransitions.rearm([delivery.deliveryId])).find(
@@ -264,11 +252,8 @@ describe('ActivityPub inbox durable-delivery transition facade', () => {
     )
     expect(rearmed).toBeDefined()
     if (!rearmed) return
-    await activityPubInboxDeliveryTransitions.claim(rearmed.deliveryId, rearmed.processingAttemptId)
-    await activityPubInboxDeliveryTransitions.reject(
-      rearmed.deliveryId,
-      rearmed.processingAttemptId,
-    )
+    await activityPubInboxDeliveryTransitions.claim(rearmed.deliveryId, rearmed.leaseToken)
+    await activityPubInboxDeliveryTransitions.reject(rearmed.deliveryId, rearmed.leaseToken)
   })
 })
 

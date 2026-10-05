@@ -20,7 +20,7 @@ export async function getAuthorizationForCompletion(
 ): Promise<CompletionRow> {
   const { rows } = await query(
     `/* getAuthorizationForCompletion */ SELECT *
-     FROM oauth_authorizations
+     FROM oauth_authorization_current_records
      WHERE id = $1
      FOR UPDATE`,
     [flowId],
@@ -118,8 +118,7 @@ export async function persistCompletionResult(
   const loginAttemptId = result.kind === 'mfa_required' ? result.loginAttemptId : null
   const { rowCount } = await query(
     `/* persistCompletionResult */ UPDATE oauth_authorizations
-     SET status = 'completed',
-         result_kind = $2,
+     SET result_kind = $2,
          result_user_id = $3,
          result_device_id = $4,
          result_session_id = $5,

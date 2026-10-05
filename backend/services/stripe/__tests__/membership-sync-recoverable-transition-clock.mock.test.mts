@@ -6,7 +6,6 @@ import {
   createTestUser,
   getTestMembershipGrant,
   getTestMembershipRaw,
-  setStripeEventReceivedAtForTest,
 } from '@voucha/test-helpers'
 import { grantMembership } from '@services/memberships'
 import { getStripeEventByStripeEventId } from '../events.mts'
@@ -65,8 +64,10 @@ describe('recoverable Stripe membership transition clocks', () => {
       const grant = await grantMembership(administrator.id, member.id, 'plus', grantSku.id, 30)
       expect(grant.queued).toBe(true)
       const eventId = `evt_recoverable_clock_${randomUUID()}`
-      await insertStripeEvent(makeSubscriptionEvent(eventId, subscriptionId))
-      await setStripeEventReceivedAtForTest(eventId, new Date('2024-01-01T00:00:00.000Z'))
+      await insertStripeEvent(
+        makeSubscriptionEvent(eventId, subscriptionId),
+        new Date('2024-01-01T00:00:00.000Z'),
+      )
       mockGetStripeCustomer.mockResolvedValue({ metadata: { userId: member.id } } as never)
       mockGetStripeSubscription.mockResolvedValue(
         makeSubscription(subscriptionId, directSku.stripe_price_id, stripeStatus),
@@ -96,8 +97,10 @@ describe('recoverable Stripe membership transition clocks', () => {
         stripeStatus === 'unpaid' ? rawDirect.cancelled_at : rawDirect.expired_at
       expect(directTransitionAt?.getTime()).toBeGreaterThanOrEqual(fetchStartedAt.getTime())
       const retryEventId = `evt_recoverable_clock_retry_${randomUUID()}`
-      await insertStripeEvent(makeSubscriptionEvent(retryEventId, subscriptionId))
-      await setStripeEventReceivedAtForTest(retryEventId, new Date('2024-01-02T00:00:00.000Z'))
+      await insertStripeEvent(
+        makeSubscriptionEvent(retryEventId, subscriptionId),
+        new Date('2024-01-02T00:00:00.000Z'),
+      )
 
       await ensureMembershipFromStripeSubscription(
         retryEventId,

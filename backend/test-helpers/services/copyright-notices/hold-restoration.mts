@@ -75,7 +75,7 @@ export async function replayTestFailedCopyrightActionBehindHoldFence(input: {
     replay = replayFailedCopyrightActionIntent(input)
     await waitForTestPostgresLockWaiter(pid, 'replayFailedCopyrightActionIntent:placementLock')
     await transaction(
-      sql`SELECT id FROM copyright_notice_action_intents WHERE id = ${input.intentId} FOR UPDATE NOWAIT`,
+      sql`SELECT id FROM copyright_notice_action_work_items WHERE id = ${input.intentId} FOR UPDATE NOWAIT`,
     )
     await transaction.commit()
   }
@@ -107,9 +107,9 @@ export async function supersedeTestCopyrightRestorationPlacementRevision(
   placementId: string,
 ): Promise<void> {
   await using transaction = await beginTransaction()
-  await transaction(sql`UPDATE media_placements SET revision = revision + 1, copyright_withheld_at = NULL
+  await transaction(sql`UPDATE media_placements SET revision = revision + 1, copyright_withheld_at = CASE WHEN copyright_withheld_at IS NULL THEN clock_timestamp() ELSE NULL END
     WHERE id = ${placementId}`)
-  await transaction(sql`UPDATE media_placements SET revision = revision + 1, copyright_withheld_at = CURRENT_TIMESTAMP
+  await transaction(sql`UPDATE media_placements SET revision = revision + 1, copyright_withheld_at = CASE WHEN copyright_withheld_at IS NULL THEN clock_timestamp() ELSE NULL END
     WHERE id = ${placementId}`)
   await transaction.commit()
 }

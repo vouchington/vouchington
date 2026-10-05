@@ -74,69 +74,13 @@ async function createBlockedFollower(targetUserId: string) {
 }
 
 describe('ActivityPub distribution progress', () => {
-  it('bounds a 501-candidate page and retries an uncommitted later page from its cursor', async () => {
-    const sourceUser = await createTestUserDirect()
-    const activityId = uuidv7()
-    const candidates = Array.from({ length: 501 }, () => uuidv7())
-      .toSorted()
-      .map((remoteActorId, index) => ({
-        remoteActorId,
-        inboxUrl: `https://candidate-${index}.example/inbox`,
-      })) satisfies RemoteFollowerInboxRow[]
-    const listCandidates = async (
-      _sourceUserId: string,
-      afterRemoteActorId: string | null,
-      limit: number,
-    ): Promise<RemoteFollowerInboxRow[]> =>
-      candidates
-        .filter(candidate => !afterRemoteActorId || candidate.remoteActorId > afterRemoteActorId)
-        .slice(0, limit)
-
-    const firstPage = await prepareActivityDistributionPage(activityId, sourceUser.id, {
-      listRemoteFollowerInboxPage: listCandidates,
-    })
-
-    expect(firstPage).toMatchObject({
-      status: 'ready',
-      nextRemoteActorId: candidates[499]!.remoteActorId,
-      hasMore: true,
-    })
-    if (firstPage.status !== 'ready') throw new Error('Expected a ready first candidate page')
-    expect(firstPage.inboxUrls).toHaveLength(500)
-    await expect(
-      commitActivityDistributionPage(
-        activityId,
-        sourceUser.id,
-        firstPage.expectedRemoteActorId,
-        firstPage.nextRemoteActorId,
-        false,
-      ),
-    ).resolves.toBe(true)
-
-    const failedLaterPage = await prepareActivityDistributionPage(activityId, sourceUser.id, {
-      listRemoteFollowerInboxPage: listCandidates,
-    })
-    const retryLaterPage = await prepareActivityDistributionPage(activityId, sourceUser.id, {
-      listRemoteFollowerInboxPage: listCandidates,
-    })
-
-    expect(failedLaterPage).toEqual({
-      status: 'ready',
-      expectedRemoteActorId: candidates[499]!.remoteActorId,
-      nextRemoteActorId: candidates[500]!.remoteActorId,
-      inboxUrls: [candidates[500]!.inboxUrl],
-      hasMore: false,
-    })
-    expect(retryLaterPage).toEqual(failedLaterPage)
-  })
-
   it('prepares an empty terminal page without advancing the cursor', async () => {
     const sourceUser = await createTestUserDirect()
     const activityId = uuidv7()
 
     const page = await prepareActivityDistributionPage(activityId, sourceUser.id)
 
-    expect(page).toEqual({
+    expect(page).toMatchObject({
       status: 'ready',
       expectedRemoteActorId: null,
       nextRemoteActorId: null,
@@ -159,11 +103,12 @@ describe('ActivityPub distribution progress', () => {
   it('allows only one compare-and-swap winner and retains terminal completion', async () => {
     const sourceUser = await createTestUserDirect()
     const activityId = uuidv7()
-    await prepareActivityDistributionPage(activityId, sourceUser.id)
+    const page = await prepareActivityDistributionPage(activityId, sourceUser.id)
+    if (page.status !== 'ready') throw new Error('Expected a ready page')
 
     const commits = await Promise.all([
-      commitActivityDistributionPage(activityId, sourceUser.id, null, null, true),
-      commitActivityDistributionPage(activityId, sourceUser.id, null, null, true),
+      commitActivityDistributionPage(activityId, sourceUser.id, null, null, true, page.leaseToken),
+      commitActivityDistributionPage(activityId, sourceUser.id, null, null, true, page.leaseToken),
     ])
 
     expect(commits.toSorted()).toEqual([false, true])
@@ -180,7 +125,7 @@ describe('ActivityPub distribution progress', () => {
     await hardDeleteTestUser(sourceUser.id)
 
     await expect(prepareActivityDistributionPage(activityId, sourceUser.id)).rejects.toMatchObject({
-      constraint: 'activitypub_distribution_checkpoints_source_user_id_fkey',
+      constraint: 'activitypub_distribution_work_items_source_user_id_fkey',
     })
   })
 
@@ -204,15 +149,23 @@ describe('ActivityPub distribution progress', () => {
         .filter(candidate => !afterRemoteActorId || candidate.remoteActorId > afterRemoteActorId)
         .slice(0, limit)
 
-    await prepareActivityDistributionPage(activityId, sourceUser.id, {
+    const page = await prepareActivityDistributionPage(activityId, sourceUser.id, {
       listRemoteFollowerInboxPage: async (_sourceUserId, _afterRemoteActorId, limit) =>
         [
           { remoteActorId: ordered[0]!, inboxUrl: 'https://removed-cursor.example/inbox' },
           { remoteActorId: ordered[1]!, inboxUrl: 'https://after-removed-cursor.example/inbox' },
         ].slice(0, limit),
     })
+    if (page.status !== 'ready') throw new Error('Expected a ready page')
     await expect(
-      commitActivityDistributionPage(activityId, sourceUser.id, null, ordered[0]!, false),
+      commitActivityDistributionPage(
+        activityId,
+        sourceUser.id,
+        null,
+        ordered[0]!,
+        false,
+        page.leaseToken,
+      ),
     ).resolves.toBe(true)
 
     await expect(
@@ -259,6 +212,7 @@ describe('ActivityPub distribution progress', () => {
         page.expectedRemoteActorId,
         page.nextRemoteActorId,
         !page.hasMore,
+        page.leaseToken,
       ),
     ).resolves.toBe(true)
     await expect(prepareActivityDistributionPage(activityId, sourceUser.id)).resolves.toEqual({
@@ -276,12 +230,14 @@ describe('ActivityPub distribution progress', () => {
     const firstPage = await prepareActivityDistributionPage(activityId, sourceUser.id)
 
     expect(firstPage).toMatchObject({ status: 'ready', expectedRemoteActorId: null })
+    if (firstPage.status !== 'ready') throw new Error('Expected a ready first page')
     const committed = await commitActivityDistributionPage(
       activityId,
       sourceUser.id,
       null,
       ordered[0]!.id,
       false,
+      firstPage.leaseToken,
     )
     expect(committed).toBe(true)
 

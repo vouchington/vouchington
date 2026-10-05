@@ -10,12 +10,14 @@ const FIVE_MINUTES_MS = 5 * 60 * 1000
 export type CommunityActivityDigestBatchData = {
   windowStart: string
   windowEnd: string
+  leaseToken: string
   afterUserId?: string
 }
 
 export type CommunityActivityDigestDispatchData = {
   windowStart: string
   windowEnd: string
+  leaseToken: string
 }
 
 const enqueueDispatchJob = createEnqueueFunction<
@@ -42,7 +44,7 @@ const enqueueBatchJob = createEnqueueFunction<
 
 export function getCommunityActivityDigestDispatchData(
   now = new Date(),
-): CommunityActivityDigestDispatchData {
+): Pick<CommunityActivityDigestDispatchData, 'windowStart' | 'windowEnd'> {
   const end = new Date(now)
   end.setUTCHours(0, 0, 0, 0)
   end.setUTCDate(end.getUTCDate() - ((end.getUTCDay() + 6) % 7))
@@ -52,7 +54,7 @@ export function getCommunityActivityDigestDispatchData(
 }
 
 export function enqueueCommunityActivityDigestDispatch(
-  data = getCommunityActivityDigestDispatchData(),
+  data: CommunityActivityDigestDispatchData,
 ): EnqueueReturnType {
   return enqueueDispatchJob(data, {
     attempts: 3,
@@ -61,7 +63,7 @@ export function enqueueCommunityActivityDigestDispatch(
     removeOnFail: 100,
     priority: PRIORITY_DEFAULT,
     deduplication: {
-      id: `processCommunityActivityDigestDispatch__${data.windowStart}`,
+      id: `processCommunityActivityDigestDispatch__${data.windowStart}__${data.leaseToken}`,
       mode: 'throttle',
       ttl: FIVE_MINUTES_MS,
     },
@@ -88,7 +90,7 @@ export function enqueueCommunityActivityDigestBatch(
     removeOnFail: 100,
     priority: PRIORITY_DEFAULT,
     deduplication: {
-      id: `processCommunityActivityDigestBatch__${data.windowStart}__${data.afterUserId ?? 'start'}`,
+      id: `processCommunityActivityDigestBatch__${data.windowStart}__${data.leaseToken}__${data.afterUserId ?? 'start'}`,
       mode: 'throttle',
       ttl: COMMUNITY_ACTIVITY_DIGEST_INACTIVITY_TIMEOUT_MS,
     },

@@ -99,11 +99,11 @@ describe('processStripeEventsSqsMessage', () => {
 
     const jobs = await findStripeEventJobsFor(stored!.id)
     expect(jobs).toHaveLength(1)
-    const jobId = `stripe-event__${stored!.id}__${stored!.processing_attempt_id}`
+    const jobId = `stripe-event__${stored!.id}__${stored!.lease_token}`
     expect(jobs[0]?.id).toBe(jobId)
     expect(jobs[0]?.data).toEqual({
       stripeEventRecordId: stored!.id,
-      processingAttemptId: stored!.processing_attempt_id,
+      processingAttemptId: stored!.lease_token,
       stripeSubscriptionId: subscriptionId,
       isLiveMode: true,
     })

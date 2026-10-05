@@ -227,15 +227,15 @@ describe('Apple membership verification processing', () => {
     })
 
     await expect(getTestMembershipVerificationProcessingState(fenced.id)).resolves.toMatchObject({
-      processing_claim_token: claimToken,
-      processing_attempts: 0,
+      lease_token: claimToken,
+      attempt_count: 0,
     })
     await expect(getTestMembershipVerificationProcessingState(retryable.id)).resolves.toMatchObject(
       {
-        processing_claim_token: null,
-        processing_attempts: 1,
+        lease_token: null,
+        attempt_count: 1,
         last_error: 'apple_verification_retry',
-        next_processing_at: expect.any(Date),
+        available_at: expect.any(Date),
       },
     )
   })

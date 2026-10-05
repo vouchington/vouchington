@@ -114,12 +114,11 @@ export async function recordMembershipRefundEvent(options: {
         )
       RETURNING attempt.membership_operation_id
     ), woken_operation AS (
-      UPDATE membership_operations operation
-      SET reconciliation_due_at = CURRENT_TIMESTAMP
+      UPDATE membership_operation_execution_work_items work
+      SET available_at = clock_timestamp()
       FROM matched_attempt
-      WHERE operation.id = matched_attempt.membership_operation_id
-        AND operation.completed_at IS NULL
-      RETURNING operation.id
+      WHERE work.membership_operation_id = matched_attempt.membership_operation_id
+      RETURNING work.membership_operation_id AS id
     )
     SELECT id FROM woken_operation
   `)

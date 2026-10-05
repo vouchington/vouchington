@@ -11,6 +11,16 @@ export interface TestBlueskyLinkAuthorizationRow {
   handle: string | null
 }
 
+export async function getTestBlueskyLinkAttachmentTime(
+  authorizationId: string,
+): Promise<string | null | undefined> {
+  const { rows } = await read<{ attached_at: string | null }>(sql`
+    /* getTestBlueskyLinkAttachmentTime */ SELECT attached_at::text AS attached_at
+    FROM bluesky_link_authorizations WHERE id = ${authorizationId}
+  `)
+  return rows[0]?.attached_at
+}
+
 export async function getTestBlueskyLinkAuthorizationRow(
   authorizationId: string,
 ): Promise<TestBlueskyLinkAuthorizationRow | null> {

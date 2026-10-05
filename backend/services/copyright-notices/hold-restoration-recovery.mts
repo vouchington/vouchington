@@ -21,7 +21,7 @@ export function searchBlockedCopyrightHoldRestorationNoticeIds(
     /* searchBlockedCopyrightHoldRestorationNoticeIds */
     WITH candidates AS (
       SELECT DISTINCT target.copyright_notice_id AS id
-      FROM copyright_notice_action_intents intent
+      FROM copyright_notice_action_work_items intent
       JOIN copyright_restrictions restriction ON restriction.id = intent.copyright_restriction_id
       JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
       WHERE intent.action = 'restore' AND intent.state = 'blocked'
@@ -50,7 +50,7 @@ export async function recoverBlockedCopyrightHoldRestorations(
   `)
   const { rows } = await transaction<{ id: string }>(sql`
     /* recoverBlockedCopyrightHoldRestorations:originalIntents */
-    SELECT intent.id FROM copyright_notice_action_intents intent
+    SELECT intent.id FROM copyright_notice_action_work_items intent
     JOIN copyright_restrictions restriction ON restriction.id = intent.copyright_restriction_id
     JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
     WHERE target.copyright_notice_id = ${noticeId} AND intent.action = 'restore'

@@ -34,7 +34,7 @@ export const POST_PUBLICATION_BACKFILLS: BackfillEntry[] = [
     queue_name: 'post-publication',
     job_name: 'processShadowAuditPostPublication',
     description: 'Run one checkpointed post-publication shadow repair page',
-    source_table: 'posts,post_publication_reconciliation_audit_checkpoints',
+    source_table: 'posts,post_publication_reconciliation_audit_cursors',
     trigger: createBackfillTrigger(async () => {
       const job = await enqueuePostPublicationShadowAudit(false)
       return job
@@ -45,7 +45,7 @@ export const POST_PUBLICATION_BACKFILLS: BackfillEntry[] = [
     queue_name: 'post-publication',
     job_name: 'processShadowAuditPostPublication',
     description: 'Start a bounded post-publication shadow-audit dry run without repair writes',
-    source_table: 'posts,post_publication_reconciliation_audit_checkpoints',
+    source_table: 'posts,post_publication_reconciliation_audit_cursors',
     trigger: createBackfillTrigger(async () => {
       const job = await enqueuePostPublicationShadowAudit(true)
       return job

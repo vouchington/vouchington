@@ -46,7 +46,7 @@ END;
 $$;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trigger_activitypub_inbox_deliveries_retention
-BEFORE INSERT OR UPDATE ON activitypub_inbox_deliveries
+CREATE OR REPLACE TRIGGER trigger_activitypub_inbox_work_items_retention
+BEFORE INSERT OR UPDATE ON activitypub_inbox_delivery_work_items
 FOR EACH ROW
 EXECUTE FUNCTION fn_project_activitypub_inbox_delivery_retention();

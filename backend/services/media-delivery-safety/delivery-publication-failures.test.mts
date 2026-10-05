@@ -102,11 +102,12 @@ describe('publication failure and recovery boundaries', () => {
           placement_revision: fixture.tuple.revision,
           image_id: fixture.tuple.imageId,
           generation: captured.generation,
+          lease_token: crypto.randomUUID(),
         },
         transaction,
       ),
     ).rejects.toThrow('generation changed')
-    expect(edge.invalidatePath).toHaveBeenCalledOnce()
+    expect(edge.invalidatePath).not.toHaveBeenCalled()
     expect(await getTestMediaDeliveryRecord(fixture.deliveryKey)).toMatchObject({
       state: 'pending',
       desired_state: 'allow',

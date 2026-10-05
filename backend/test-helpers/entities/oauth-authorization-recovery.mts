@@ -22,8 +22,7 @@ export async function completeTestOAuthAuthorizationWhileRecoveryWaits<T>(
     await transaction(
       `/* completeTestOAuthAuthorizationWhileRecoveryWaits:complete */
          UPDATE oauth_authorizations
-         SET status = 'completion_ready',
-             github_user_id = $2,
+         SET              github_user_id = $2,
              callback_code_ciphertext = NULL,
              exchange_claim_id = NULL,
              completion_ready_at = CURRENT_TIMESTAMP

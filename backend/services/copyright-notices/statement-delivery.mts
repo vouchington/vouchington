@@ -25,7 +25,7 @@ export async function createCopyrightStatementDeliveryInTransaction(
   const { rows } = await transaction<{
     idempotency_key: string
   }>(sql`/* createCopyrightStatementDeliveryInTransaction:existing */
-    SELECT idempotency_key FROM copyright_notice_delivery_intents
+    SELECT idempotency_key FROM copyright_notice_delivery_work_items
     WHERE idempotency_key IN (${input.key}, ${`${input.key}:email`})
   `)
   if (rows.length) return

@@ -11,7 +11,7 @@ export async function getCopyrightStatementInAppSummary(intentId: string): Promi
     body_ciphertext: string
   }>(sql`/* getCopyrightStatementInAppSummary */
     SELECT correspondence.id, correspondence.body_ciphertext
-    FROM copyright_notice_delivery_intents notification
+    FROM copyright_notice_delivery_work_items notification
     JOIN copyright_notice_correspondence_messages correspondence ON correspondence.id = notification.copyright_notice_correspondence_message_id
     WHERE notification.id = ${intentId}
   `)

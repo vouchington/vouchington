@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { read, write } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
 import { v7 as uuidv7 } from 'uuid'
+import { seedTestOAuthExchangeAttempts } from './oauth-exchange-attempts.mts'
 
 type TestOAuthAuthorizationProvider = 'facebook' | 'github' | 'x'
 type TestOAuthAuthorizationPurpose = 'authenticate' | 'connect'
@@ -70,16 +71,19 @@ export async function insertTestOAuthAuthorization(
     : null
   await write(
     `/* insertTestOAuthAuthorization */ INSERT INTO oauth_authorizations (
-       id, provider, purpose, callback_mode, status, initiating_user_id,
+       id, provider, purpose, callback_mode, rejected_at, expired_at, initiating_user_id,
        initiating_device_id, initiating_session_id, redirect_uri, state_hash,
        pkce_verifier_ciphertext, callback_code_ciphertext, callback_received_at,
-       exchange_attempts, exchange_claim_id, completion_proof_challenge,
+       exchange_started_at, exchange_claim_id, completion_proof_challenge,
        completion_token_hash, completion_token_ciphertext, facebook_user_id,
        github_user_id, x_user_id, result_kind, result_user_id, result_device_id,
        result_session_id, completion_ready_at, completed_at, expires_at, updated_at
      )
      VALUES (
-       $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'test-pkce-ciphertext',
+       $1, $2, $3, $4,
+       CASE WHEN $5::text = 'rejected' THEN $28::timestamptz END,
+       CASE WHEN $5::text = 'expired' THEN $28::timestamptz END,
+       $6, $7, $8, $9, $10, 'test-pkce-ciphertext',
        $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24,
        $25, $26, $27, $28
      )`,
@@ -98,7 +102,7 @@ export async function insertTestOAuthAuthorization(
         : createHash('sha256').update(randomUUID()).digest('hex'),
       options.callbackCodeCiphertext ?? null,
       options.callbackReceivedAt ?? null,
-      options.exchangeAttempts ?? 0,
+      options.exchangeClaimId ? (options.updatedAt ?? new Date()) : null,
       options.exchangeClaimId ?? null,
       options.completionProofChallenge ?? null,
       completionTokenHash,
@@ -116,6 +120,7 @@ export async function insertTestOAuthAuthorization(
       options.updatedAt ?? new Date(),
     ],
   )
+  await seedTestOAuthExchangeAttempts(id, options)
   return id
 }
 
@@ -127,7 +132,7 @@ export async function getTestOAuthAuthorization(
        id, status, callback_error, callback_code_ciphertext, completion_token_hash,
        completion_token_ciphertext, exchange_claim_id, facebook_user_id,
        github_user_id, x_user_id, result_kind, result_user_id, result_device_id, result_session_id
-     FROM oauth_authorizations
+     FROM oauth_authorization_current_records
      WHERE id = $1`,
     [authorizationId],
   )
@@ -140,8 +145,7 @@ export async function markTestOAuthAuthorizationExchanging(
 ): Promise<void> {
   await write(
     `/* markTestOAuthAuthorizationExchanging */ UPDATE oauth_authorizations
-     SET status = 'exchanging',
-         callback_code_ciphertext = 'test-callback-ciphertext',
+     SET callback_code_ciphertext = 'test-callback-ciphertext',
          callback_received_at = CURRENT_TIMESTAMP,
          exchange_claim_id = $2
      WHERE id = $1`,

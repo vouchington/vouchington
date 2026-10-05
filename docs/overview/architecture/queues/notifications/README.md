@@ -71,8 +71,8 @@ Glide Queue system for reconciling notifications and delivering browser push mes
   - Creates a `referral_click` notification for the referrer when someone clicks their referral link
   - Debounced 5 minutes, keyed on referrerId only — rapid clicks from different URLs collapse into one notification
   - Body shows the truncated landing URL
-- `processCommunityActivityDigestScheduleTick` runs Monday at 09:00 UTC. Each tick materializes every missing closed UTC-week window after the durable database cursor and requeues incomplete dispatches with no batch activity for an hour.
-- `processCommunityActivityDigestBatch` refreshes the window activity timestamp, advances a bounded user cursor, bulk-creates combined rows, queues push, schedules the next page, and marks the durable window complete only after its final page. Each `(windowStart, afterUserId)` cursor job is throttled for the recovery interval, bounding overlapping restarts; event-key uniqueness keeps notification rows idempotent.
+- `processCommunityActivityDigestScheduleTick` runs Monday at 09:00 UTC. Each tick materializes every missing closed UTC-week window after the durable database cursor and claims incomplete dispatch work whose batch-chain lease has expired. Failed queue admission releases only the current token. Completed rows retain the weekly high-water mark.
+- `processCommunityActivityDigestBatch` renews the current lease token, advances a bounded user cursor, bulk-creates combined rows, queues push, schedules the next page, and marks the durable window complete only after its final page. Each `(windowStart, leaseToken, afterUserId)` cursor job is throttled for the recovery interval, bounding repeated admissions within a chain; a successor token cannot be suppressed by an expired chain’s deduplication key. Stale tokens cannot create another batch or complete a successor. Event-key uniqueness keeps notification rows idempotent.
 
 ## DSA statement database
 
