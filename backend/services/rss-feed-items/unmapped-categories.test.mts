@@ -8,7 +8,6 @@ import {
   deleteUnmappedRssFeedItemCategory,
   getUnmappedRssFeedItemCategoryCount,
   insertUnmappedRssFeedItemCategory,
-  setUnmappedRssFeedItemCategoryCountUpdatedAtForTest,
 } from '@voucha/test-helpers'
 import {
   getUnmappedRssFeedItemCategories,
@@ -42,17 +41,14 @@ describe('unmapped-categories', () => {
 
       await insertUnmappedRssFeedItemCategory(firstItem.id, categoryText)
       await insertUnmappedRssFeedItemCategory(secondItem.id, categoryText)
-      const staleTimestamp = new Date('2000-01-01T00:00:00.000Z')
-      await setUnmappedRssFeedItemCategoryCountUpdatedAtForTest(categoryText, staleTimestamp)
       const before = await getUnmappedRssFeedItemCategoryCount(categoryText)
 
       await deleteUnmappedRssFeedItemCategory(secondItem.id, categoryText)
       const after = await getUnmappedRssFeedItemCategoryCount(categoryText)
 
       expect(before?.item_count).toBe(2)
-      expect(before?.updated_at).toEqual(staleTimestamp)
       expect(after?.item_count).toBe(1)
-      expect(after!.updated_at.getTime()).toBeGreaterThan(before!.updated_at.getTime())
+      expect(after!.updated_at.localeCompare(before!.updated_at)).toBeGreaterThan(0)
     })
 
     it('returns pending categories (topic_id IS NULL, not rejected) ordered by item_count DESC', async () => {

@@ -58,18 +58,6 @@ export async function getTopicAliasCategoryMappingDirtyRowForTest(
   return rows[0]
 }
 
-export async function prioritizeTopicAliasCategoryMappingDirtyRowForTest(
-  topicAliasId: string,
-): Promise<void> {
-  await write(
-    `/* prioritizeTopicAliasCategoryMappingDirtyRowForTest */
-      UPDATE topic_alias_category_mapping_reconciliations
-      SET updated_at = TIMESTAMPTZ '0001-01-01 00:00:00+00'
-      WHERE topic_alias_id = $1`,
-    [topicAliasId],
-  )
-}
-
 export async function acknowledgeTopicAliasCategoryMappingDirtyRowForTest(
   topicAliasId: string,
   generation: string,

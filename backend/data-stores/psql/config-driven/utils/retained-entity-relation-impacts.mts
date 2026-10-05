@@ -35,9 +35,18 @@ CREATE TABLE IF NOT EXISTS retained_relation_identity_cleanup_progress (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER ${getElectionTriggerName('retained_relation_identity_cleanup_progress', 'updated_at')}
-BEFORE UPDATE ON retained_relation_identity_cleanup_progress
-FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger
+    WHERE tgrelid = 'retained_relation_identity_cleanup_progress'::regclass
+      AND tgname = '${getElectionTriggerName('retained_relation_identity_cleanup_progress', 'updated_at')}'
+  ) THEN
+    CREATE TRIGGER ${getElectionTriggerName('retained_relation_identity_cleanup_progress', 'updated_at')}
+    BEFORE UPDATE ON retained_relation_identity_cleanup_progress
+    FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+  END IF;
+END $$;
 
 COMMENT ON TABLE retained_relation_identity_cleanup_progress IS 'One operational keyset cursor per metadata-declared elected relation family.';
 COMMENT ON COLUMN retained_relation_identity_cleanup_progress.entity_relation IS 'Metadata family selector for cleanup, not a persisted relation reference.';

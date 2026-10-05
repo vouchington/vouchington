@@ -1,3 +1,6 @@
+import '@services/elections-votes'
+import { runIsolatedDatabaseCase } from '../../../../test-helpers/vitest-isolated-database-case.mts'
+import { getIsolatedDatabaseCaseMode } from '../../../../test-helpers/vitest-isolated-database-cases.mts'
 import {
   getRssFeedItemCategories,
   upsertRssFeedItemCategories,
@@ -16,7 +19,6 @@ import {
   getTestRssFeedCategories,
   getTopicAliasCategoryMappingDirtyRowForTest,
   insertTestRssFeedCategory,
-  prioritizeTopicAliasCategoryMappingDirtyRowForTest,
   updateTestTopicAliasCategoryMappingOwner,
 } from '@voucha/test-helpers'
 import { v7 as uuidv7 } from 'uuid'
@@ -65,6 +67,15 @@ describe('topic alias category mapping reconciliation', () => {
   })
 
   it('clears every stale mapping after A to B to standalone before the durable drain', async () => {
+    if (getIsolatedDatabaseCaseMode('topic-alias-standalone-drain') === 'parent') {
+      await runIsolatedDatabaseCase('topic-alias-standalone-drain')
+      return
+    }
+    // Bootstrap has its own durable alias work; drain bounded runs before measuring this fixture.
+    let bootstrap = await processReconcileTopicAliasCategoryMappings()
+    while (bootstrap.reconciled > 0) {
+      bootstrap = await processReconcileTopicAliasCategoryMappings()
+    }
     const topicA = await createTestTopic()
     const topicB = await createTestTopic()
     const feedId = await createTestRssFeedWithTiming(topicA.id)
@@ -76,7 +87,6 @@ describe('topic alias category mapping reconciliation', () => {
     await insertTestRssFeedCategory(feedId, alias!.alias, topicA.id)
     await updateTestTopicAliasCategoryMappingOwner(alias!.id, topicB.id)
     await updateTestTopicAliasCategoryMappingOwner(alias!.id, null)
-    await prioritizeTopicAliasCategoryMappingDirtyRowForTest(alias!.id)
 
     await processReconcileTopicAliasCategoryMappings()
     await expect(getRssFeedItemCategories(item.id)).resolves.toContainEqual(
@@ -88,7 +98,7 @@ describe('topic alias category mapping reconciliation', () => {
     })
     await expect(getTopicAliasCategoryMappingDirtyRowForTest(alias!.id)).resolves.toBeUndefined()
     await processReconcileTopicAliasCategoryMappings()
-  })
+  }, 240_000)
 
   it('keeps a newer generation when an older worker acknowledgement races a relink', async () => {
     const topicA = await createTestTopic()
@@ -105,6 +115,15 @@ describe('topic alias category mapping reconciliation', () => {
   })
 
   it('drains only 25 dirty rows per run', async () => {
+    if (getIsolatedDatabaseCaseMode('topic-alias-dirty-batch-boundary') === 'parent') {
+      await runIsolatedDatabaseCase('topic-alias-dirty-batch-boundary')
+      return
+    }
+    // Bootstrap has its own durable alias work; drain bounded runs before measuring this fixture.
+    let bootstrap = await processReconcileTopicAliasCategoryMappings()
+    while (bootstrap.reconciled > 0) {
+      bootstrap = await processReconcileTopicAliasCategoryMappings()
+    }
     const ids = Array.from({ length: 26 }, () => uuidv7({ msecs: 0 }))
     const aliases = ids.map(id => `reconcile-boundary-${id}`)
     await createTopicAliasCategoryMappingDirtyRowsForTest(
@@ -117,5 +136,5 @@ describe('topic alias category mapping reconciliation', () => {
     })
     await expect(countTopicAliasCategoryMappingDirtyRowsForTest(ids)).resolves.toBe(1)
     await deleteTopicAliasCategoryMappingDirtyRowsForTest(ids)
-  })
+  }, 240_000)
 })

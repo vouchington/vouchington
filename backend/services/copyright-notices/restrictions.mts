@@ -132,6 +132,7 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   `)
   const restriction = rows[0]
   assert(restriction, 409, 'An active copyright restriction already exists for this target')
+  // ast-grep-ignore: no-three-sequential-awaits -- the fenced action intent and legal delivery obligations are ordered in one transaction.
   const actionIntent = await insertCopyrightActionIntent(
     transaction,
     restriction.id,
