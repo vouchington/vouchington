@@ -15,6 +15,9 @@ See also: [Moderation Policy Matrix](../requirements/moderation/MODERATION-POLIC
 - [Media Delivery Reset and Restore](./media-delivery-reset-restore.md) — Coordinated PostgreSQL,
   edge-registry, and CDN-cache reset/restore workflows, prohibited partial restores, and the
   evidence required before media-delivery workers resume.
+- [Media Delivery Edge Enforcement](./media-delivery-edge-enforcement.md) — Ordered two-apply
+  procedure, coverage query, and checks for turning registry publication and then edge enforcement
+  on in an environment.
 - [Copyright Notice Operations](./copyright-notices.md) — Legal intake triage, statutory deadline
   recovery, hold handling, and incident escalation. Staffed coverage and designated-agent approval
   remain activation gates.
