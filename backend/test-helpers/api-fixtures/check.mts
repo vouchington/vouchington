@@ -6,55 +6,57 @@ import { routeShape } from 'vouchington-tooling/api-contract-discovery'
 import { assertBackendRowContracts } from './backend-row-contracts.mts'
 import { getBackendProgramBuildCount, loadBackendProgram } from './backend-program.mts'
 import {
-  loadBackendQueryContracts,
-  loadBackendResponseContracts,
-  loadBackendRequestContracts,
+  loadBackendContractCatalog,
   loadBackendHeaderContracts,
-  loadRegisteredRouteCatalog,
+  loadBackendQueryContracts,
 } from './backend-contract-catalog.mts'
 import { buildOpenApiDocument } from './openapi/build-openapi-document.mts'
 import { writeOpenApi } from './openapi/write-openapi.mts'
 import { writeApiFixtures } from './write.mts'
 
 const start = performance.now()
-function reportPhase(name: string): void {
-  console.log(`${name} after ${((performance.now() - start) / 1000).toFixed(2)}s`)
+async function phase<Value>(name: string, run: () => Value | Promise<Value>): Promise<Value> {
+  const phaseStart = performance.now()
+  console.log(`::group::${name}`)
+  console.log(`${name} started after ${((phaseStart - start) / 1000).toFixed(2)}s`)
+  try {
+    return await run()
+  } finally {
+    console.log(
+      `${name} finished in ${((performance.now() - phaseStart) / 1000).toFixed(2)}s; total ${((performance.now() - start) / 1000).toFixed(2)}s`,
+    )
+    console.log('::endgroup::')
+  }
 }
 
-const loaded = loadBackendProgram()
-reportPhase('Backend program ready')
-assertBackendRowContracts(loaded.program)
-reportPhase('PostgreSQL row contracts verified')
+const loaded = await phase('Build backend program', () => loadBackendProgram())
+await phase('Verify PostgreSQL row contracts', () => assertBackendRowContracts(loaded.program))
 const builds = getBackendProgramBuildCount()
-
-// Fixture validation and OpenAPI share one full discovery rather than extracting responses twice.
-const discoveryOptions = { onRouteError: () => {} }
-const responses = loadBackendResponseContracts(undefined, discoveryOptions)
-const knownResponseRoutes = new Set(Object.keys(responses))
-await writeApiFixtures({ check: true, responseContracts: responses })
-reportPhase('Response fixtures verified')
-const queries = loadBackendQueryContracts(knownResponseRoutes)
-const document = buildOpenApiDocument(
-  responses,
-  loadBackendRequestContracts(undefined, discoveryOptions),
-  queries,
-  {
-    headerContracts: loadBackendHeaderContracts(knownResponseRoutes),
-    registeredRoutes: loadRegisteredRouteCatalog(),
-  },
+const catalog = await phase('Discover API contract catalog', () => loadBackendContractCatalog())
+await phase('Verify response fixtures', () =>
+  writeApiFixtures({ check: true, responseContracts: catalog.responses }),
 )
+const knownResponseRoutes = new Set(Object.keys(catalog.responses))
+const { document, queries, headers } = await phase('Build OpenAPI document', () => {
+  const queries = loadBackendQueryContracts(knownResponseRoutes)
+  const headers = loadBackendHeaderContracts(knownResponseRoutes)
+  const document = buildOpenApiDocument(catalog.responses, catalog.requests, queries, {
+    headerContracts: headers,
+    registeredRoutes: catalog.routes,
+  })
+  return { document, queries, headers }
+})
 assert.deepEqual(document['x-unavailable-routes'], [])
 assert.deepEqual(document['x-unavailable-request-routes'], [])
-reportPhase('OpenAPI contracts extracted')
 
-const registered = loadRegisteredRouteCatalog().map(
-  route => `${route.method}:${routeShape(route.routeTemplate)}`,
-)
+const registered = catalog.routes.map(route => `${route.method}:${routeShape(route.routeTemplate)}`)
 const generated = Object.entries(document.paths).flatMap(([route, item]) =>
   Object.keys(item).map(method => `${method.toUpperCase()}:${route.replace(/\{[^/]+\}/g, ':')}`),
 )
 assert.deepEqual([...new Set(generated)].toSorted(), [...new Set(registered)].toSorted())
 
+assert.equal(queries, catalog.queries, 'Query checks must reuse the discovered catalog')
+assert.equal(headers, catalog.headers, 'Header checks must reuse the discovered catalog')
 assert.deepEqual(queries['GET:/api/v1/topics/:id/prioritized-referral-links']?.parameters.all, {
   kind: 'boolean',
 })
@@ -80,8 +82,7 @@ assert.throws(
   /apiQuery references unknown response route/,
 )
 
-await writeOpenApi({ check: true, document })
-reportPhase('OpenAPI and request snapshots verified')
+await phase('Verify OpenAPI and request snapshots', () => writeOpenApi({ check: true, document }))
 assert.equal(
   getBackendProgramBuildCount(),
   builds,

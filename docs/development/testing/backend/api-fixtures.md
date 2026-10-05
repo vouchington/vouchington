@@ -16,6 +16,7 @@ registered-route completeness and PostgreSQL producer row types. Artifact assert
 the committed outputs after that job passes. Tiny compiler-host and bounded-settlement tests retain
 filesystem invalidation and retry coverage; Vitest does not repeatedly compile the full backend.
 The checker shares one full response extraction with fixture validation and OpenAPI generation.
+Its grouped phase logs report build, catalog, fixture and snapshot durations in CI. Query and header validation reuse the full catalog when their known response set covers its operations.
 Fixture selection preserves requested parameter spellings, exact response variants and explicit
 binary contracts; missing fixture contracts still fail validation.
 
