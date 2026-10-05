@@ -1,13 +1,16 @@
-import { describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   createTestUser,
   getTestCommunityMember,
   insertTestCommunity,
+  overrideDynamicConfigFieldsForTest,
   readTestContentProvenance,
   suspendTestUser,
   unsuspendTestUser,
 } from '@voucha/test-helpers'
+import { closeScopedDynamicConfigContext } from '@voucha/test-helpers/dynamic-config'
 import { createTestPlusMcpCaller } from '@voucha/test-helpers/mcp-plus-caller'
+import { contributionLimitConfig } from '@services/contribution-gating/limits-config'
 import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import {
   countTestCommunitiesCreatedBy,
@@ -29,8 +32,20 @@ const expectNothingWritten = async (userId: string) => {
 }
 const errorOf = async (caller: Parameters<typeof callRejectedMcpTool>[0], input: object) =>
   JSON.parse(await callRejectedMcpTool(caller, TOOL, input as never, SCOPES))
+// Tests raise every contribution limit, so a test about quota restores the Plus-plan production
+// shape: one community per short window.
+const withOneCommunityPerWindow = () =>
+  overrideDynamicConfigFieldsForTest(contributionLimitConfig, { community_plus_short_limit: 1 })
 
 describe('create_community — real store', () => {
+  beforeAll(async () => {
+    await contributionLimitConfig.waitForInitialization()
+    contributionLimitConfig.unsubscribe()
+  })
+  afterAll(async () => {
+    await closeScopedDynamicConfigContext([contributionLimitConfig])
+  })
+
   it('creates a community the credential owner owns and returns only facts', async () => {
     const caller = await createTestPlusMcpCaller()
 
@@ -73,11 +88,17 @@ describe('create_community — real store', () => {
   it('replays the first result for the same key and request, spending no quota', async () => {
     const caller = await createTestPlusMcpCaller()
     const input = args()
-    const first = await callStructuredMcpTool(caller, TOOL, input, SCOPES)
+    const restore = withOneCommunityPerWindow()
+    let first: Record<string, unknown>
+    let second: Record<string, unknown>
+    try {
+      first = await callStructuredMcpTool(caller, TOOL, input, SCOPES)
+      // One community per window, so a replay that spent quota would be refused.
+      second = await callStructuredMcpTool(caller, TOOL, input, SCOPES)
+    } finally {
+      restore()
+    }
     const attempts = await listTestMcpCreateAttempts(caller.id)
-
-    // The Plus plan allows one community an hour, so a replay that spent quota would be refused.
-    const second = await callStructuredMcpTool(caller, TOOL, input, SCOPES)
 
     expect(second).toEqual(first)
     expect(await listTestMcpCreateAttempts(caller.id)).toEqual(attempts)
@@ -107,11 +128,16 @@ describe('create_community — real store', () => {
 
   it('applies the web quota to a second community and frees the refused key', async () => {
     const caller = await createTestPlusMcpCaller()
-    await callStructuredMcpTool(caller, TOOL, args(), SCOPES)
+    const restore = withOneCommunityPerWindow()
+    try {
+      await callStructuredMcpTool(caller, TOOL, args(), SCOPES)
 
-    expect(await errorOf(caller, args())).toMatchObject({
-      error: { status: 429, code: 'CONTRIBUTION_QUOTA_EXCEEDED' },
-    })
+      expect(await errorOf(caller, args())).toMatchObject({
+        error: { status: 429, code: 'CONTRIBUTION_QUOTA_EXCEEDED' },
+      })
+    } finally {
+      restore()
+    }
 
     expect(await countTestCommunitiesCreatedBy(caller.id)).toBe(1)
     expect(await listTestMcpCreateAttempts(caller.id)).toHaveLength(1)
