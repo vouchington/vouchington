@@ -1904,6 +1904,8 @@ rules:
     scope: repository
     options:
       importSpecifier: '@data-stores/psql'
+      executorFactoryNames: [beginTransaction, beginBoundedTransaction]
+      executorTypeNames: [TransactionQuery, QueryExecutor]
       include:
         - backend/**/*.{ts,mts,js}
       exclude:
