@@ -112,6 +112,9 @@ export async function resolveCopyrightMcpHostedTarget(value: unknown) {
       OR (${route} = 'communities' AND (community.id = ${ownerId}::uuid OR community.slug = ${identifier})))
       AND `
   statement.append(imageSurfaceOwnerIsLiveSql())
+  statement.append(
+    sql` AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id)`,
+  )
   statement.append(sql` LIMIT 2`)
   const { rows } = await write<HostedTarget>(statement)
   assert(rows.length === 1, 422, 'Hosted target URL must identify exactly one live image')
