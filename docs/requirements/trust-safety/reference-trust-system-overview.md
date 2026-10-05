@@ -16,7 +16,7 @@ At launch, trust is simple and transparent.
 - **Domain/feed voting**: Users vote on RSS sources and domains, establishing community-level trust signals for content sources.
 - **Social graph follows**: Users follow other users, creating a social graph that powers referral link ranking and content discovery.
 - **Semantic trust choices**: Sentiment elections use Vouch, Like, Neutral, Dislike, and Disavow; narrower elections use Support/Oppose, Confirm/Dispute, or Accurate/Inaccurate.
-- **Official-account exclusion**: Accounts with any Voucha role, agent/system accounts, and reserved system users do not create community trust signals. They cannot write community reviews or data points, cannot cast public semantic trust choices, and are excluded from creator auto-votes and moderator negative choices.
+- **Official-account exclusion**: Platform accounts, meaning any non-null `account_type` (`official`, `system` or `ai_agent`), do not create community trust signals. `official` covers the reserved people and members holding the administrator or investor role; moderator-only and developer-only members are ordinary accounts for this rule. They cannot write community reviews or data points, cannot cast public semantic trust choices, and are excluded from creator auto-votes and moderator negative choices.
 
 ### What Trust Affects in Phase 1
 

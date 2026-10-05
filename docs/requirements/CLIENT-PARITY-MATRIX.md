@@ -33,8 +33,7 @@ parity is not delivered. Decoding `account_type`, rendering the author labels, a
 controls from every non-null `account_type` are tracked in
 [vouchington-clients#205](https://github.com/vouchington/vouchington-clients/issues/205). Until it
 lands, Swift cannot decode the signed-in identity fixture, native shows no author label, and native
-vote controls still appear for platform accounts. This does not change the delivered parity claims
-below.
+vote controls still appear for platform accounts.
 
 See also:
 
