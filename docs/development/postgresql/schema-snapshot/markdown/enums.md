@@ -824,15 +824,11 @@
 
 - `no_longer_eligible`
 
-## `membership_google_play_recovery_families`
+## `membership_google_play_recovery_sweeps`
 
 - `notifications`
 - `active_sources`
 - `acknowledgements`
-
-## `membership_microsoft_store_recovery_families`
-
-- `active_sources`
 
 ## `membership_operation_kinds`
 
@@ -1304,8 +1300,6 @@
 
 - `in_progress`
 - `committed`
-- `retryable_failed`
-- `expired`
 
 ## `post_admission_routes`
 
@@ -1353,7 +1347,7 @@
 - `spam_detection`
 - `staff`
 
-## `post_publication_identity_bridge_cleanup_families`
+## `post_publication_identity_bridge_families`
 
 - `post`
 - `community`
@@ -1444,17 +1438,6 @@
 
 - `dismissed`
 - `penalized`
-
-## `retained_identity_cleanup_families`
-
-- `user`
-- `api_key`
-- `topic`
-- `post`
-- `rss_feed_item`
-- `image`
-- `membership`
-- `image_placement_binding`
 
 ## `retained_identity_families`
 

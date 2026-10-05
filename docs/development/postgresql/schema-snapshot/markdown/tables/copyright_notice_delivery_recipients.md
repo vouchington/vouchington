@@ -25,7 +25,7 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `fk_copyright_notice_delivery_recipients__intent`: `FOREIGN KEY (copyright_notice_delivery_intent_id) REFERENCES copyright_notice_delivery_intents(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_delivery_recipients__intent`: `FOREIGN KEY (copyright_notice_delivery_intent_id) REFERENCES copyright_notice_delivery_work_items(id) ON DELETE RESTRICT`
 
 **Indexes:**
 

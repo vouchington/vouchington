@@ -6,28 +6,27 @@ Bounded Google Play notification, acknowledgement, and active-source recovery sc
 
 Not partitioned — growth: bounded.
 
-| Column                 | Type                                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                         |
-| ---------------------- | ------------------------------------------ | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------- |
-| `id`                   | `membership_google_play_recovery_families` | no       |                     |          |           |           |                                                                                                                 |
-| `last_evidence_id`     | `uuid`                                     | yes      |                     |          |           |           | Durable UUIDv7 keyset position within the current bounded recovery sweep.                                       |
-| `sweep_upper_bound_id` | `uuid`                                     | yes      |                     |          |           |           | Inclusive UUIDv7 high-water mark captured before a sweep so sustained inserts cannot starve older pending work. |
-| `updated_at`           | `timestamp with time zone`                 | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                 |
+| Column                          | Type                                     | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                         |
+| ------------------------------- | ---------------------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------- |
+| `recovery_sweep`                | `membership_google_play_recovery_sweeps` | no       |                     |          |           |           | Concrete recovery sweep sharing one compare-and-set cursor across dispatchers.                                  |
+| `cursor_evidence_id`            | `uuid`                                   | yes      |                     |          |           |           | Durable UUIDv7 keyset position within the current bounded recovery sweep.                                       |
+| `sweep_upper_bound_evidence_id` | `uuid`                                   | yes      |                     |          |           |           | Inclusive UUIDv7 high-water mark captured before a sweep so sustained inserts cannot starve older pending work. |
+| `updated_at`                    | `timestamp with time zone`               | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                 |
 
-**Primary key:** `PRIMARY KEY (id)`
+**Primary key:** `PRIMARY KEY (recovery_sweep)`
 
 **Unique constraints:**
 _none_
 
 **Check constraints:**
-
-- `membership_google_play_recovery_cursors_id_check`: `CHECK ((id = ANY (ARRAY['notifications'::membership_google_play_recovery_families, 'active_sources'::membership_google_play_recovery_families, 'acknowledgements'::membership_google_play_recovery_families])))`
+_none_
 
 **Foreign keys:**
 _none_
 
 **Indexes:**
 
-- `membership_google_play_recovery_cursors_pkey`: `CREATE UNIQUE INDEX membership_google_play_recovery_cursors_pkey ON public.membership_google_play_recovery_cursors USING btree (id)`
+- `membership_google_play_recovery_cursors_pkey`: `CREATE UNIQUE INDEX membership_google_play_recovery_cursors_pkey ON public.membership_google_play_recovery_cursors USING btree (recovery_sweep)`
 
 **Triggers:**
 

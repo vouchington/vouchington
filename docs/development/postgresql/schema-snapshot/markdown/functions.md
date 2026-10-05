@@ -18,6 +18,14 @@ CREATE OR REPLACE FUNCTION public.fn_classifier_audit_actor_was_deleted(actor_us
  LANGUAGE sql
 ```
 
+## `fn_complete_membership_verification_processing_work`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_complete_membership_verification_processing_work()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_copyright_retention_erasable_columns(table_name text)`
 
 ```sql
@@ -36,10 +44,26 @@ CREATE OR REPLACE FUNCTION public.fn_copyright_retention_erasure_permitted(table
  STABLE
 ```
 
+## `fn_create_google_play_acknowledgement_work`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_create_google_play_acknowledgement_work()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_create_media_delivery_generation_change`
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_create_media_delivery_generation_change()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_create_membership_verification_processing_work`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_create_membership_verification_processing_work()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -94,6 +118,14 @@ CREATE OR REPLACE FUNCTION public.fn_field_changes(before_fields jsonb, after_fi
  IMMUTABLE
 ```
 
+## `fn_finalize_membership_operation_work`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_finalize_membership_operation_work()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_guard_copyright_eu_dispute_settlement_outcome`
 
 ```sql
@@ -106,6 +138,14 @@ CREATE OR REPLACE FUNCTION public.fn_guard_copyright_eu_dispute_settlement_outco
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_guard_copyright_territorial_decision()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_membership_operation_work_lease`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_membership_operation_work_lease()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -126,6 +166,14 @@ CREATE OR REPLACE FUNCTION public.fn_immutable_array_to_string(p_array text[], p
  RETURNS text
  LANGUAGE sql
  IMMUTABLE
+```
+
+## `fn_initialize_membership_operation_work`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_initialize_membership_operation_work()
+ RETURNS trigger
+ LANGUAGE plpgsql
 ```
 
 ## `fn_lock_active_user_for_mutation(target_user_id uuid)`
@@ -192,6 +240,22 @@ CREATE OR REPLACE FUNCTION public.fn_notification_target_entity(notification_ent
  RETURNS jsonb
  LANGUAGE sql
  IMMUTABLE
+```
+
+## `fn_prepare_copyright_action_work`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_prepare_copyright_action_work()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_prepare_copyright_delivery_work`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_prepare_copyright_delivery_work()
+ RETURNS trigger
+ LANGUAGE plpgsql
 ```
 
 ## `fn_project_activitypub_inbox_delivery_retention`
@@ -422,6 +486,30 @@ CREATE OR REPLACE FUNCTION public.fn_project_user_profile_image_placement()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_project_user_profile_link_image_placement()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_record_copyright_action_attempt`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_record_copyright_action_attempt()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_record_copyright_delivery_attempt`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_record_copyright_delivery_attempt()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_record_oauth_authorization_exchange_transition`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_record_oauth_authorization_exchange_transition()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -993,6 +1081,22 @@ CREATE OR REPLACE FUNCTION public.fn_reverse_hostname_labels(p_hostname text)
  RETURNS text
  LANGUAGE sql
  IMMUTABLE STRICT
+```
+
+## `fn_schedule_copyright_form_screening_work`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_schedule_copyright_form_screening_work()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_schedule_media_delivery_projection`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_schedule_media_delivery_projection()
+ RETURNS trigger
+ LANGUAGE plpgsql
 ```
 
 ## `fn_sync_image_surface_placement(p_surface_kind image_surface_placement_surface_kinds, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)`

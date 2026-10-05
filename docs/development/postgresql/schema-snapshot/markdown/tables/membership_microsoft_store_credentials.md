@@ -25,10 +25,6 @@ Not partitioned — growth: unbounded.
 | `last_verified_end_at`          | `timestamp with time zone`         | yes      |                              |          |           |           | Last authoritative paid-through time observed from Store recurrence state.            |
 | `last_verified_at`              | `timestamp with time zone`         | yes      |                              |          |           |           | Time of the most recent successful authoritative Store query.                         |
 | `next_reconciliation_at`        | `timestamp with time zone`         | no       | `CURRENT_TIMESTAMP`          |          |           |           | Earliest time this credential becomes due for reconciliation.                         |
-| `processing_claim_token`        | `uuid`                             | yes      |                              |          |           |           | Ephemeral fencing token for an active reconciliation claim.                           |
-| `processing_claimed_at`         | `timestamp with time zone`         | yes      |                              |          |           |           | Time the current reconciliation claim was acquired.                                   |
-| `processing_attempts`           | `integer`                          | no       | `0`                          |          |           |           | Number of unsuccessful reconciliation attempts in the current cycle.                  |
-| `last_error`                    | `text`                             | yes      |                              |          |           |           | Last retryable reconciliation error for operator diagnosis.                           |
 | `created_at`                    | `timestamp with time zone`         | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                       |
 | `updated_at`                    | `timestamp with time zone`         | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                       |
 
@@ -43,10 +39,8 @@ _none_
 - `chk_members_microsof_store_credenti__purchase_key_lookup_sha256`: `CHECK ((purchase_key_lookup_sha256 ~ '^[a-f0-9]{64}$'::text))`
 - `chk_membersh_microsof_store_credenti__encrypted_collections_key`: `CHECK (((octet_length(encrypted_collections_key) >= 1) AND (octet_length(encrypted_collections_key) <= 65536)))`
 - `chk_membershi_microsoft_store_credentia__encrypted_purchase_key`: `CHECK (((octet_length(encrypted_purchase_key) >= 1) AND (octet_length(encrypted_purchase_key) <= 65536)))`
-- `chk_membership_microsoft_store_credentials__processing_attempts`: `CHECK ((processing_attempts >= 0))`
 - `membership_microsoft_store_credentials_application_id_check`: `CHECK ((((char_length(application_id) >= 1) AND (char_length(application_id) <= 255)) AND (application_id = TRIM(BOTH FROM application_id))))`
 - `membership_microsoft_store_credentials_check`: `CHECK ((publisher_user_id = (user_id)::text))`
-- `membership_microsoft_store_credentials_check1`: `CHECK (((processing_claim_token IS NULL) = (processing_claimed_at IS NULL)))`
 
 **Foreign keys:**
 
@@ -54,7 +48,7 @@ _none_
 
 **Indexes:**
 
-- `idx_membership_microsoft_store_credentials__due`: `CREATE INDEX idx_membership_microsoft_store_credentials__due ON public.membership_microsoft_store_credentials USING btree (next_reconciliation_at, id) WHERE (processing_claim_token IS NULL)`
+- `idx_membership_microsoft_store_credentials__due`: `CREATE INDEX idx_membership_microsoft_store_credentials__due ON public.membership_microsoft_store_credentials USING btree (next_reconciliation_at, id)`
 - `idx_membership_microsoft_store_credentials__user_context`: `CREATE UNIQUE INDEX idx_membership_microsoft_store_credentials__user_context ON public.membership_microsoft_store_credentials USING btree (user_id, environment, application_id)`
 - `membership_microsoft_store_credentials_pkey`: `CREATE UNIQUE INDEX membership_microsoft_store_credentials_pkey ON public.membership_microsoft_store_credentials USING btree (id)`
 

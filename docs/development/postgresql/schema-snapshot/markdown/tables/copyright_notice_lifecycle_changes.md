@@ -82,8 +82,8 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `copyright_lifecycle_event_action_intent_fk`: `FOREIGN KEY (copyright_notice_id, copyright_notice_action_intent_id) REFERENCES copyright_notice_action_intents(copyright_notice_id, id) ON DELETE RESTRICT`
-- `copyright_lifecycle_event_delivery_intent_fk`: `FOREIGN KEY (copyright_notice_delivery_intent_id) REFERENCES copyright_notice_delivery_intents(id) ON DELETE RESTRICT`
+- `copyright_lifecycle_event_action_intent_fk`: `FOREIGN KEY (copyright_notice_id, copyright_notice_action_intent_id) REFERENCES copyright_notice_action_work_items(copyright_notice_id, id) ON DELETE RESTRICT`
+- `copyright_lifecycle_event_delivery_intent_fk`: `FOREIGN KEY (copyright_notice_delivery_intent_id) REFERENCES copyright_notice_delivery_work_items(id) ON DELETE RESTRICT`
 - `copyright_lifecycle_event_email_intake_fk`: `FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
 - `copyright_lifecycle_event_guest_capability_fk`: `FOREIGN KEY (copyright_notice_guest_capability_id, copyright_notice_id) REFERENCES copyright_notice_guest_capabilities(id, copyright_notice_id) ON DELETE RESTRICT`
 - `copyright_lifecycle_event_media_registry_fk`: `FOREIGN KEY (media_delivery_registry_key) REFERENCES media_delivery_registry_records(delivery_key) ON DELETE RESTRICT`

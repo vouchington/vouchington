@@ -8,29 +8,29 @@ Not partitioned — growth: bounded.
 
 | Column                      | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                      |
 | --------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------- |
-| `singleton`                 | `boolean`                  | no       | `true`              |          |           |           | Always true; enforces the ledger has at most one aggregate row.                              |
+| `is_singleton`              | `boolean`                  | no       | `true`              |          |           |           | Always true; enforces the ledger has at most one aggregate row.                              |
 | `retained_rows`             | `bigint`                   | no       |                     |          |           |           | Exact number of all durable ActivityPub inbox delivery rows currently retained.              |
 | `retained_raw_body_bytes`   | `bigint`                   | no       |                     |          |           |           | Exact sum of raw request-body bytes across all retained ActivityPub inbox deliveries.        |
 | `unverified_rows`           | `bigint`                   | no       |                     |          |           |           | Exact number of retained ActivityPub inbox deliveries that have not been verified.           |
 | `unverified_raw_body_bytes` | `bigint`                   | no       |                     |          |           |           | Exact sum of raw request-body bytes across retained unverified ActivityPub inbox deliveries. |
 | `updated_at`                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                              |
 
-**Primary key:** `PRIMARY KEY (singleton)`
+**Primary key:** `PRIMARY KEY (is_singleton)`
 
 **Unique constraints:**
 _none_
 
 **Check constraints:**
 
+- `activitypub_inbox_delivery_storage_counters__is_singleton`: `CHECK (is_singleton)`
 - `activitypub_inbox_delivery_storage_counters__nonnegative`: `CHECK (((retained_rows >= 0) AND (retained_raw_body_bytes >= 0) AND (unverified_rows >= 0) AND (unverified_raw_body_bytes >= 0)))`
-- `activitypub_inbox_delivery_storage_counters__singleton`: `CHECK (singleton)`
 
 **Foreign keys:**
 _none_
 
 **Indexes:**
 
-- `activitypub_inbox_delivery_storage_counters_pkey`: `CREATE UNIQUE INDEX activitypub_inbox_delivery_storage_counters_pkey ON public.activitypub_inbox_delivery_storage_counters USING btree (singleton)`
+- `activitypub_inbox_delivery_storage_counters_pkey`: `CREATE UNIQUE INDEX activitypub_inbox_delivery_storage_counters_pkey ON public.activitypub_inbox_delivery_storage_counters USING btree (is_singleton)`
 
 **Triggers:**
 

@@ -6,20 +6,20 @@ Persisted manual follower share/send distribution intents processed by queued ch
 
 Not partitioned — growth: unbounded.
 
-| Column                             | Type                              | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                 |
-| ---------------------------------- | --------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------- |
-| `id`                               | `uuid`                            | no       | `uuidv7()`                   |          |           |           |                                                                         |
-| `sender_user_id`                   | `uuid`                            | no       |                              |          |           |           | User who requested the distribution.                                    |
-| `action`                           | `follower_distribution_actions`   | no       |                              |          |           |           | Manual follower distribution action: post/rss share or send.            |
-| `audience`                         | `follower_distribution_audiences` | no       |                              |          |           |           | Whether the distribution targets all followers or a selected subset.    |
-| `post_id`                          | `uuid`                            | yes      |                              |          |           |           | Post target for post share/send distributions.                          |
-| `rss_feed_item_id`                 | `uuid`                            | yes      |                              |          |           |           | RSS feed item target for RSS share/send distributions.                  |
-| `last_processed_recipient_user_id` | `uuid`                            | yes      |                              |          |           |           | Keyset cursor for chunk continuation.                                   |
-| `completed_at`                     | `timestamp with time zone`        | yes      |                              |          |           |           | When all intended recipients have been processed.                       |
-| `failed_at`                        | `timestamp with time zone`        | yes      |                              |          |           |           | When processing stopped because the distribution target became invalid. |
-| `failure_reason`                   | `text`                            | yes      |                              |          |           |           | Human-readable failure reason for stopped distributions.                |
-| `created_at`                       | `timestamp with time zone`        | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                         |
-| `updated_at`                       | `timestamp with time zone`        | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                         |
+| Column                | Type                              | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                           |
+| --------------------- | --------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                  | `uuid`                            | no       | `uuidv7()`                   |          |           |           |                                                                                                                                   |
+| `sender_user_id`      | `uuid`                            | no       |                              |          |           |           | User who requested the distribution.                                                                                              |
+| `action`              | `follower_distribution_actions`   | no       |                              |          |           |           | Manual follower distribution action: post/rss share or send.                                                                      |
+| `audience`            | `follower_distribution_audiences` | no       |                              |          |           |           | Whether the distribution targets all followers or a selected subset.                                                              |
+| `post_id`             | `uuid`                            | yes      |                              |          |           |           | Post target for post share/send distributions.                                                                                    |
+| `rss_feed_item_id`    | `uuid`                            | yes      |                              |          |           |           | RSS feed item target for RSS share/send distributions.                                                                            |
+| `cursor_recipient_id` | `uuid`                            | yes      |                              |          |           |           | Last processed recipient UUIDv7 in ascending recipient order; no FK preserves this keyset position when the recipient is deleted. |
+| `completed_at`        | `timestamp with time zone`        | yes      |                              |          |           |           | When all intended recipients have been processed.                                                                                 |
+| `failed_at`           | `timestamp with time zone`        | yes      |                              |          |           |           | When processing stopped because the distribution target became invalid.                                                           |
+| `failure_reason`      | `text`                            | yes      |                              |          |           |           | Human-readable failure reason for stopped distributions.                                                                          |
+| `created_at`          | `timestamp with time zone`        | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                   |
+| `updated_at`          | `timestamp with time zone`        | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                   |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -34,7 +34,6 @@ _none_
 
 **Foreign keys:**
 
-- `follower_distributions_last_processed_recipient_user_id_fkey`: `FOREIGN KEY (last_processed_recipient_user_id) REFERENCES users(id) ON DELETE SET NULL`
 - `follower_distributions_post_id_fkey`: `FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE`
 - `follower_distributions_rss_feed_item_id_fkey`: `FOREIGN KEY (rss_feed_item_id) REFERENCES rss_feed_items(id) ON DELETE CASCADE`
 - `follower_distributions_sender_user_id_fkey`: `FOREIGN KEY (sender_user_id) REFERENCES users(id) ON DELETE CASCADE`
@@ -43,7 +42,6 @@ _none_
 
 - `follower_distributions_pkey`: `CREATE UNIQUE INDEX follower_distributions_pkey ON public.follower_distributions USING btree (id)`
 - `idx_follower_distributions__incomplete`: `CREATE INDEX idx_follower_distributions__incomplete ON public.follower_distributions USING btree (id) WHERE ((completed_at IS NULL) AND (failed_at IS NULL))`
-- `idx_follower_distributions__last_processed_recipient_user_id`: `CREATE INDEX idx_follower_distributions__last_processed_recipient_user_id ON public.follower_distributions USING btree (last_processed_recipient_user_id) WHERE (last_processed_recipient_user_id IS NOT NULL)`
 - `idx_follower_distributions__post_id`: `CREATE INDEX idx_follower_distributions__post_id ON public.follower_distributions USING btree (post_id) WHERE (post_id IS NOT NULL)`
 - `idx_follower_distributions__rss_feed_item_id`: `CREATE INDEX idx_follower_distributions__rss_feed_item_id ON public.follower_distributions USING btree (rss_feed_item_id) WHERE (rss_feed_item_id IS NOT NULL)`
 - `idx_follower_distributions__sender_action_post`: `CREATE INDEX idx_follower_distributions__sender_action_post ON public.follower_distributions USING btree (sender_user_id, action, post_id, id DESC) WHERE ((post_id IS NOT NULL) AND (failed_at IS NULL))`

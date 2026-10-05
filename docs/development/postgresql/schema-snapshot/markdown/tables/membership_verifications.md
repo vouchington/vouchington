@@ -21,11 +21,6 @@ Not partitioned — growth: unbounded.
 | `conflicted_at`                          | `timestamp with time zone`             | yes      |                              |          |           |           | When verification completed with an automatically managed conflict.                        |
 | `rejected_at`                            | `timestamp with time zone`             | yes      |                              |          |           |           | When verification completed with a rejection.                                              |
 | `result_code`                            | `membership_verification_result_codes` | yes      |                              |          |           |           | Stable terminal verification result code.                                                  |
-| `processing_claim_token`                 | `uuid`                                 | yes      |                              |          |           |           | Lease token fencing the current verification processor.                                    |
-| `processing_claimed_at`                  | `timestamp with time zone`             | yes      |                              |          |           |           | When the current processor claimed this verification.                                      |
-| `processing_attempts`                    | `integer`                              | no       | `0`                          |          |           |           | Number of durable verification processing attempts.                                        |
-| `next_processing_at`                     | `timestamp with time zone`             | yes      | `CURRENT_TIMESTAMP`          |          |           |           | When pending verification recovery may next process this request.                          |
-| `last_error`                             | `text`                                 | yes      |                              |          |           |           | Bounded diagnostic from the most recent recoverable processing failure.                    |
 | `created_at`                             | `timestamp with time zone`             | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                            |
 | `updated_at`                             | `timestamp with time zone`             | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                            |
 
@@ -39,11 +34,6 @@ _none_
 - `membership_verifications_application_id_check`: `CHECK ((((char_length(application_id) >= 1) AND (char_length(application_id) <= 255)) AND (application_id = TRIM(BOTH FROM application_id))))`
 - `membership_verifications_check`: `CHECK ((num_nonnulls(verified_at, conflicted_at, rejected_at) <= 1))`
 - `membership_verifications_check1`: `CHECK (((num_nonnulls(verified_at, conflicted_at, rejected_at) = 0) = (result_code IS NULL)))`
-- `membership_verifications_check2`: `CHECK (((processing_claim_token IS NULL) = (processing_claimed_at IS NULL)))`
-- `membership_verifications_check3`: `CHECK (((processing_claimed_at IS NULL) OR (num_nonnulls(verified_at, conflicted_at, rejected_at) = 0)))`
-- `membership_verifications_check4`: `CHECK (((num_nonnulls(verified_at, conflicted_at, rejected_at) = 0) OR (next_processing_at IS NULL)))`
-- `membership_verifications_last_error_check`: `CHECK (((last_error IS NULL) OR ((char_length(last_error) >= 1) AND (char_length(last_error) <= 1000))))`
-- `membership_verifications_processing_attempts_check`: `CHECK ((processing_attempts >= 0))`
 - `membership_verifications_provider_check`: `CHECK ((provider <> 'admin'::membership_provider_kinds))`
 - `membership_verifications_request_fingerprint_check`: `CHECK ((request_fingerprint ~ '^[a-f0-9]{64}$'::text))`
 
@@ -57,8 +47,6 @@ _none_
 
 - `idx_membership_verifications__evidence_id`: `CREATE INDEX idx_membership_verifications__evidence_id ON public.membership_verifications USING btree (membership_provider_evidence_record_id)`
 - `idx_membership_verifications__pending_microsoft_source_recovery`: `CREATE INDEX idx_membership_verifications__pending_microsoft_source_recovery ON public.membership_verifications USING btree (user_id, environment, application_id, request_fingerprint) WHERE ((provider = 'microsoft_store'::membership_provider_kinds) AND (verified_at IS NULL) AND (conflicted_at IS NULL) AND (rejected_at IS NULL))`
-- `idx_membership_verifications__pending_processing`: `CREATE INDEX idx_membership_verifications__pending_processing ON public.membership_verifications USING btree (next_processing_at, id) WHERE ((verified_at IS NULL) AND (conflicted_at IS NULL) AND (rejected_at IS NULL))`
-- `idx_membership_verifications__processing_claim_token`: `CREATE UNIQUE INDEX idx_membership_verifications__processing_claim_token ON public.membership_verifications USING btree (processing_claim_token) WHERE (processing_claim_token IS NOT NULL)`
 - `idx_membership_verifications__purchase_intent_id`: `CREATE INDEX idx_membership_verifications__purchase_intent_id ON public.membership_verifications USING btree (membership_purchase_intent_id, id DESC) WHERE (membership_purchase_intent_id IS NOT NULL)`
 - `idx_membership_verifications__user_id`: `CREATE INDEX idx_membership_verifications__user_id ON public.membership_verifications USING btree (user_id, id DESC)`
 - `idx_membership_verifications__user_idempotency`: `CREATE UNIQUE INDEX idx_membership_verifications__user_idempotency ON public.membership_verifications USING btree (user_id, idempotency_key)`
@@ -66,4 +54,6 @@ _none_
 
 **Triggers:**
 
+- `trigger_membership_verifications_complete_processing_work`: `CREATE TRIGGER trigger_membership_verifications_complete_processing_work AFTER UPDATE OF verified_at, conflicted_at, rejected_at ON public.membership_verifications FOR EACH ROW EXECUTE FUNCTION fn_complete_membership_verification_processing_work()`
+- `trigger_membership_verifications_processing_work`: `CREATE TRIGGER trigger_membership_verifications_processing_work AFTER INSERT ON public.membership_verifications FOR EACH ROW EXECUTE FUNCTION fn_create_membership_verification_processing_work()`
 - `trigger_membership_verifications_updated_at`: `CREATE TRIGGER trigger_membership_verifications_updated_at BEFORE UPDATE ON public.membership_verifications FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

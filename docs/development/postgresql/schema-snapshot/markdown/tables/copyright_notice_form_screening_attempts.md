@@ -13,8 +13,8 @@ Not partitioned — growth: unbounded.
 | `attempt_number`                     | `integer`                                        | no       |                                                                                                                                                                                                                                                                                    |          |           |           | Monotonic intake-local attempt number; retries append rather than reset earlier attempts. |
 | `copyright_notice_form_screening_id` | `uuid`                                           | yes      |                                                                                                                                                                                                                                                                                    |          |           |           | Immutable result selected on successful completion of this attempt.                       |
 | `started_at`                         | `timestamp with time zone`                       | no       | `clock_timestamp()`                                                                                                                                                                                                                                                                |          |           |           | Time the attempt removed automatic authority.                                             |
-| `lease_token`                        | `uuid`                                           | no       | `uuidv7()`                                                                                                                                                                                                                                                                         |          |           |           | Opaque equality-only worker ownership token for this attempt.                             |
-| `claimed_at`                         | `timestamp with time zone`                       | yes      |                                                                                                                                                                                                                                                                                    |          |           |           | First provider claim; an expired claim is failed and replaced by a new attempt.           |
+| `execution_token`                    | `uuid`                                           | no       | `uuidv7()`                                                                                                                                                                                                                                                                         |          |           |           | Opaque equality-only worker ownership token for this attempt.                             |
+| `execution_started_at`               | `timestamp with time zone`                       | yes      |                                                                                                                                                                                                                                                                                    |          |           |           | First provider claim; an expired claim is failed and replaced by a new attempt.           |
 | `completed_at`                       | `timestamp with time zone`                       | yes      |                                                                                                                                                                                                                                                                                    |          |           |           | Successful terminal completion time.                                                      |
 | `failed_at`                          | `timestamp with time zone`                       | yes      |                                                                                                                                                                                                                                                                                    |          |           |           | Failed or superseded terminal completion time.                                            |
 | `state`                              | `copyright_notice_form_screening_attempt_states` | yes      | ` CASE     WHEN (completed_at IS NOT NULL) THEN 'completed'::copyright_notice_form_screening_attempt_states     WHEN (failed_at IS NOT NULL) THEN 'failed'::copyright_notice_form_screening_attempt_states     ELSE 'pending'::copyright_notice_form_screening_attempt_states END` |          | stored    |           | Current attempt state derived from its terminal facts.                                    |
@@ -24,6 +24,7 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
+- `copyright_notice_form_screeni_copyright_notice_form_intake__key`: `UNIQUE (copyright_notice_form_intake_id, id)`
 - `uq_copyri_notice_form_screen_attempt__intake_id__attempt_number`: `UNIQUE (copyright_notice_form_intake_id, attempt_number)`
 
 **Check constraints:**
@@ -33,7 +34,7 @@ Not partitioned — growth: unbounded.
 - `copyright_notice_form_screening_attempts_check1`: `CHECK ((num_nonnulls(completed_at, failed_at) <= 1))`
 - `copyright_notice_form_screening_attempts_check2`: `CHECK (((completed_at IS NULL) OR (completed_at >= started_at)))`
 - `copyright_notice_form_screening_attempts_check3`: `CHECK (((failed_at IS NULL) OR (failed_at >= started_at)))`
-- `copyright_notice_form_screening_attempts_check4`: `CHECK (((claimed_at IS NULL) OR (claimed_at >= started_at)))`
+- `copyright_notice_form_screening_attempts_check4`: `CHECK (((execution_started_at IS NULL) OR (execution_started_at >= started_at)))`
 
 **Foreign keys:**
 
@@ -42,6 +43,7 @@ Not partitioned — growth: unbounded.
 
 **Indexes:**
 
+- `copyright_notice_form_screeni_copyright_notice_form_intake__key`: `CREATE UNIQUE INDEX copyright_notice_form_screeni_copyright_notice_form_intake__key ON public.copyright_notice_form_screening_attempts USING btree (copyright_notice_form_intake_id, id)`
 - `copyright_notice_form_screening_attempts_pkey`: `CREATE UNIQUE INDEX copyright_notice_form_screening_attempts_pkey ON public.copyright_notice_form_screening_attempts USING btree (id)`
 - `idx_copyright_notice_form_screening_attempts__latest`: `CREATE INDEX idx_copyright_notice_form_screening_attempts__latest ON public.copyright_notice_form_screening_attempts USING btree (copyright_notice_form_intake_id, attempt_number DESC)`
 - `idx_copyright_notice_form_screening_attempts__result`: `CREATE INDEX idx_copyright_notice_form_screening_attempts__result ON public.copyright_notice_form_screening_attempts USING btree (copyright_notice_form_screening_id) WHERE (copyright_notice_form_screening_id IS NOT NULL)`
@@ -49,4 +51,5 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
+- `trigger_copyright_form_screening_work`: `CREATE TRIGGER trigger_copyright_form_screening_work AFTER INSERT OR UPDATE ON public.copyright_notice_form_screening_attempts FOR EACH ROW EXECUTE FUNCTION fn_schedule_copyright_form_screening_work()`
 - `trigger_copyright_screening_attempts_monotonic`: `CREATE TRIGGER trigger_copyright_screening_attempts_monotonic BEFORE DELETE OR UPDATE ON public.copyright_notice_form_screening_attempts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_screening_attempt_rewind()`
