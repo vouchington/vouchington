@@ -71,7 +71,7 @@ describe('entity-relation ordinary official voting', () => {
         .send({ choice: 'confirm' })
         .expect(204)
 
-      await expect(getEntityRelationElectionVote(account.id, relation.id)).resolves.toMatchObject({
+      await expect(getEntityRelationElectionVote(account.id, relation.id!)).resolves.toMatchObject({
         choice: 'confirm',
       })
     },
