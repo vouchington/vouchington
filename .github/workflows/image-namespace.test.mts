@@ -157,7 +157,8 @@ describe('validation image invariants', () => {
 type CallerJob = { uses?: string; permissions?: Record<string, string> }
 
 // Generic caller/callee wiring (one caller apiece, matching permissions) is enforced by
-// workflow-topology-policy-callers.mts and workflow-permissions-audit.mts. What those checks don't
+// the `workflow-topology-policy` rule (`exactCallerJobs`) in .no-mistakes.yml and
+// workflow-permissions-audit.mts. What those checks don't
 // say is which *specific* callee may hold the GHCR write credential -- that's pinned down here.
 function reusableCallers(calleePath: string): { id: string; job: CallerJob }[] {
   return readdirSync('.github/workflows')

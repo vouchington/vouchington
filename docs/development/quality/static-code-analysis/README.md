@@ -448,6 +448,17 @@ fan-in probe. Generic missing/over-cap job timeouts and step-exceeds-job checks 
 `github-actions-job-timeouts`. Workflow tests must not restate `timeout-minutes` literals; that is
 `github-actions-test-timeout-literals`.
 
+The workflow graph policy is the `workflow-topology-policy` rule (`GitHub Actions workflow topology
+stays within policy`). Its data lives in that rule's `options` in
+[`.no-mistakes.yml`](../../../../.no-mistakes.yml): `jobInventory`, `requiredJobs`,
+`requiredDirectEdges`, `exactCallerJobs`, `unlockedWorkflowReasons`, `concurrencyPolicy`, and
+`forbidConcurrencyGroupCollisions`. It reads `ci.workflowDirs`, so `ci/no-mistakes-workflows/` needs
+inventory and reason rows too. Add or change a workflow, job, caller, or `concurrency:` block
+together with its rows; `pnpm run no-mistakes` reports drift as `job inventory mismatch`,
+`workflow inventory missing`, `lock intent missing`, `concurrency scope mismatch`, and similar
+findings. See [reference-ci-workflow-topology-contracts.md](../../reference-ci-workflow-topology-contracts.md)
+and [GitHub Actions Concurrency Locks](../../ci/workflows/reference-github-actions-concurrency-locks.md).
+
 Repo-owned checks must skip gitignored and untracked files; see [AGENTS.md](../../../../static-code-analysis/AGENTS.md) for authoring rules. Generic filesystem rules such as backend alias mapping, config path references, local docs, shellcheck, extension policy, git identity mutation, lockfiles, package registry-only policy, workspace package.json coverage, queue/worker layout, Rust line-count, Rust no-inline-tests, AGENTS.md size checks, and the binding-aware Vitest and Playwright call boundaries for real timers, fixed sleeps, and integration-test mocks are rules in `no-mistakes check` (configured via [`.no-mistakes.yml`](../../../../.no-mistakes.yml)) and enforced in CI. Tracked `.patch` and `.diff` artifacts are banned by `banned-paths` in [`.no-mistakes.yml`](../../../../.no-mistakes.yml) (case-insensitive globs). Pnpm `patchedDependencies` and `allowUnusedPatches` remain covered by `no-mistakes`. Fix the underlying problem upstream or file and link a Vouchington issue labeled `dependencies` instead of carrying a local patch. Offline Markdown local-link validation runs in static-analysis CI so deleting or renaming tracked files cannot leave stale docs links until the standalone online link workflow runs.
 
 The lifecycle-scenario guard validates the Draft 2020-12 schema and code-owned family consumer

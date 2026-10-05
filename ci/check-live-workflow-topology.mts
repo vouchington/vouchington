@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { createWorkflowTopologyIndex, type WorkflowTopology } from 'no-mistakes'
+import type { WorkflowTopology } from 'no-mistakes'
 
 import {
   callerCalleePermissionMismatches,
@@ -12,7 +12,6 @@ import {
 } from '../.github/workflows/workflow-secrets-policy.mts'
 import { unprovisionedSecretsWithoutReadinessStep } from '../.github/workflows/workflow-secrets-readiness.mts'
 import { assertNoWorkflowViolations } from '../.github/test-helpers/workflow-fixtures.mts'
-import { evaluateWorkflowTopologyPolicy } from '../.github/workflows/workflow-topology-policy.mts'
 import { githubWorkflowPaths, loadRepoTopology } from './repo-topology.mts'
 import { writeJobsInventoryDoc } from './render-workflow-runner-inventory.mts'
 
@@ -23,9 +22,7 @@ export function liveTopologyAuditErrors(topology: WorkflowTopology): string[] {
     )
   }
 
-  const index = createWorkflowTopologyIndex(topology)
   return [
-    ...evaluateWorkflowTopologyPolicy(topology, index),
     ...callerCalleePermissionMismatches(topology),
     ...missingInventoryEntries(topology).map(
       name => `secret ${name} is referenced with no SECRET_INVENTORY entry`,
