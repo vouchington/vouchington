@@ -27,14 +27,14 @@ export const copyrightRegistryEntry = defineDynamicConfigNamespace({
     },
     evidenceRetentionDays: {
       description:
-        'Days a copyright case is kept after its last lifecycle event before the retention sweep may delete its evidence. 0 means unset: nothing is deleted even when the switch is on. Set only to a counsel-approved period.',
+        'Days a copyright case is kept after its last lifecycle event before the retention sweep may delete its evidence. 0 means unset: nothing is deleted even when the switch is on. Set only to an owner-approved period.',
       min_value: 0,
       max_value: 3650,
       integer: true,
     },
     staydownMatching: {
       description:
-        'Hash media a moderator confirmed as infringing and send later uploads of the same or a near-identical image to staff review. Never blocks, hides or delays an upload. Off until counsel decides Voucha is an online content-sharing service provider; read the copyright runbook before enabling.',
+        'Hash media a moderator confirmed as infringing and send later uploads of the same or a near-identical image to staff review. Never blocks, hides or delays an upload. Off until the owner decides Voucha is an online content-sharing service provider; read the copyright runbook before enabling.',
     },
     trustedFlaggerPriority: {
       description:

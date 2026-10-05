@@ -26,7 +26,7 @@ export const copyrightTimelineEventAudience = {
   counter_notice_received: 'member',
   counter_notice_reviewed: 'member',
   withdrawal_received: 'member',
-  // Borderline: staff-only until an owner or counsel decides otherwise. A received court or CCB
+  // Borderline: staff-only until the owner decides otherwise. A received court or CCB
   // hold explains to the poster why restoration did not happen, so a participant audience is the
   // likely follow-up.
   court_or_ccb_hold_received: 'staff',

@@ -9,7 +9,7 @@ Places a legal-process preservation hold on an account. Admin only. While the ho
 **Request body (JSON, 4kb):**
 
 - `reference` (required string, 1 to 500 characters after trimming) — a short matter identifier or
-  counsel's reference. It is encrypted at rest, shown only to administrators, and never logged or
+  matter reference. It is encrypted at rest, shown only to administrators, and never logged or
   copied to the moderator audit log.
 
 **Response (200):**

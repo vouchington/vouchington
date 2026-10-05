@@ -116,7 +116,7 @@ async function seedCopyrightFormCase(
       recommendation: 'not_obviously_invalid',
       rationale: 'No spam or abuse markers; the notice reads as a genuine ownership claim.',
       guidance: seed.guidance,
-      promptVersion: 'copyright-form-screening-v3',
+      promptVersion: 'copyright-form-screening-v4',
       model: 'dev-seed',
     })
   }

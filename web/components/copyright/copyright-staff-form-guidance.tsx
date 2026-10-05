@@ -20,7 +20,7 @@ const ACTION_LABELS: Record<CopyrightFormGuidance['suggested_action'], string> =
   approve_intake: 'Approve intake',
   request_information: 'Request information',
   reject_intake: 'Reject intake',
-  escalate_to_counsel: 'Escalate to counsel',
+  escalate_to_owner: 'Escalate to owner',
 }
 
 /** Advisory form guidance. It informs the moderator's review and never records a decision. */

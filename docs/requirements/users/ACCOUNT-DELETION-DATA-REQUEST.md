@@ -122,10 +122,10 @@ applies, so it does not tell the account holder that legal process exists. `dele
 path that sets `deleted_at`. The retention cron and the erasure phases act only on accounts that are
 already soft-deleted, so they have no second check.
 
-A preservation hold keeps an account's records while counsel decides what a subpoena requires (see
+A preservation hold keeps an account's records while the owner decides, on a lawyer's advice, what a subpoena requires (see
 the [§512(h) runbook](../../runbooks/copyright-notices.md#dmca-512h-subpoenas)). It stores who
 placed it, when, an encrypted short matter reference, and who released it and when. It has no
-duration or scope, because counsel decides both. Release writes the release columns once and the
+duration or scope, because the owner decides both. Release writes the release columns once and the
 row is never deleted, so the history persists. All three user references target
 `retained_user_identities` with `ON DELETE RESTRICT`: the history survives the account's hard
 delete, a released hold never blocks it, and the hold cannot be removed by deleting the user.

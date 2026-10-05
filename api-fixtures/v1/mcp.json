@@ -38124,7 +38124,7 @@
                                               "suggested_action": {
                                                 "enum": [
                                                   "approve_intake",
-                                                  "escalate_to_counsel",
+                                                  "escalate_to_owner",
                                                   "reject_intake",
                                                   "request_information"
                                                 ],
