@@ -12,6 +12,7 @@ export async function getTestCommunityActivityDigestWorkItems(): Promise<
     lease_token: string | null
     lease_expires_at: Date | null
     completed_at: Date | null
+    attempt_count: number
   }>
 > {
   const { rows } = await write<{
@@ -20,8 +21,9 @@ export async function getTestCommunityActivityDigestWorkItems(): Promise<
     lease_token: string | null
     lease_expires_at: Date | null
     completed_at: Date | null
+    attempt_count: number
   }>(sql`
-    SELECT window_starts_at, window_ends_at, lease_token, lease_expires_at, completed_at
+    SELECT window_starts_at, window_ends_at, lease_token, lease_expires_at, completed_at, attempt_count
     FROM community_activity_digest_work_items
     ORDER BY window_starts_at
   `)

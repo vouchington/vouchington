@@ -9,8 +9,35 @@ import {
 import { createCodedError } from '@modules/on-error/create-coded-error'
 import { DUPLICATE_TOPIC } from '@modules/on-error/error-codes'
 import { runContributionAdmission } from './admission.mts'
+import { getContributionAdmissionAttemptsForTest } from '@voucha/test-helpers/contribution-admission-attempts'
 
 describe('contribution admission failure cleanup', () => {
+  it('does not record a retryable failure after the precondition loses its lease', async () => {
+    const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
+    const input = {
+      actorId: user.id,
+      idempotencyKey: crypto.randomUUID(),
+      intent: { request: crypto.randomUUID() },
+    }
+    const failure = new Error('precondition failed after expiry')
+    await expect(
+      runContributionAdmission({
+        ...input,
+        beforeCapacity: async () => {
+          await expireContributionAdmissionClaimForTest(input)
+          throw failure
+        },
+        execute: executeTestAdmittedPost,
+      }),
+    ).rejects.toBe(failure)
+    await expect(getContributionAdmissionAttemptsForTest(input)).resolves.toEqual([
+      { attempt_number: 1, failure: null, committed: false, abandoned: false },
+    ])
+    await expect(getContributionAdmissionReservationStateForTest(input)).resolves.toBe(
+      'in_progress',
+    )
+  })
+
   it.each([
     ['status', createCodedError(409, 'duplicate topic', DUPLICATE_TOPIC)],
     ['statusCode', Object.assign(new Error('invalid mutation'), { statusCode: 422 })],

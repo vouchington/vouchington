@@ -1,5 +1,10 @@
 /** Job-level cursor assertions require their own database, rather than arbitrary cursor keys. */
 export const cursorIsolatedCases = {
+  'digest-work-admission-failure': {
+    file: 'backend/services/notifications/community-activity-digest-admission.real-glide.mock.test.mts',
+    fullName:
+      'community activity digest work items > releases the durable lease when queue admission fails',
+  },
   'digest-work-window-gaps': {
     file: 'backend/services/notifications/community-activity-digest-dispatch.test.mts',
     fullName:

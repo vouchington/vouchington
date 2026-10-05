@@ -97,3 +97,13 @@ export async function claimTestMembershipVerification(
     WHERE membership_verification_id = ${verificationId} AND lease_token IS NULL`)
   if (rowCount !== 1) throw new Error('Membership verification was not available for a test claim')
 }
+
+export async function expireTestMembershipVerificationLease(verificationId: string): Promise<void> {
+  const { rowCount } = await write(sql`/* expireTestMembershipVerificationLease */
+    UPDATE membership_verification_processing_work_items
+    SET leased_at = clock_timestamp() - INTERVAL '2 minutes',
+        lease_expires_at = clock_timestamp() - INTERVAL '1 minute'
+    WHERE membership_verification_id = ${verificationId}
+      AND lease_token IS NOT NULL AND completed_at IS NULL`)
+  if (rowCount !== 1) throw new Error('Membership verification has no active test lease')
+}

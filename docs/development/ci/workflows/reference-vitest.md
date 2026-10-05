@@ -9,6 +9,10 @@ its full suite and never runs for docs-only pull requests. `test-backend-unit`, 
 matrix. See [VITEST.md](VITEST.md) for the canonical project → workflow/job ownership table and
 [area test suites](../../ci.md#area-test-suites) for the trigger model.
 
+Backend shard coverage includes registered disposable-database cases. Coverage-enabled parent runs
+give each child a unique report directory; the shard merges those child reports with its parent
+LCOV before uploading the full artifact. Ordinary runs leave child coverage disabled.
+
 The all-route localization bounds project also runs independently for its catalog, web, extraction,
 and test/configuration inputs. The Tooling workflow passes `run_tooling: false` to
 `tests-tooling.yml` for a bounds-only run, so no regular tooling tests or coverage artifacts are
