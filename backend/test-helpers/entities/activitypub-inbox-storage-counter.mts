@@ -62,6 +62,7 @@ export async function measureActivityPubInboxOwnedStorageCounterForTest(
       DELETE FROM activitypub_inbox_deliveries WHERE id = ANY(${deliveryIds})
     `)
   } else {
+    // oxlint-disable-next-line no-mistakes/postgres-no-manual-transaction -- rewinds a savepoint inside the real transaction owner; it does not end the transaction.
     await transaction(sql`/* measureActivityPubInboxOwnedStorageCounterForTest */
       ROLLBACK TO SAVEPOINT activitypub_owned_storage_counter
     `)

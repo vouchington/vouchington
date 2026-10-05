@@ -549,6 +549,37 @@ not own our module layout and has no module default: a rule that omits both `imp
 to select no executor calls. Migration-only rules and `postgres-sql-statement-policy` do not take the
 option.
 
+Those same entries and configs also set `executorFactoryNames: [beginTransaction,
+beginBoundedTransaction]` and `executorTypeNames: [TransactionQuery, QueryExecutor]`. Without them
+`no-mistakes` finds executor calls only by the imported names `query`, `read`, and `write`, so SQL run
+through a transaction handle or an injected executor is invisible. With them it also scans:
+
+- a local bound to a configured factory call, such as `await using query = await beginTransaction()`,
+  within the declaring block; and
+- a parameter typed with a configured type, including a destructured parameter whose type literal
+  names the executor, within the declaring function.
+
+`no-mistakes` does not track a destructured factory result (`const { query } = await beginTransaction()`)
+or a name shadowed inside the scope. It matches factory and type imports only against the exact
+`importSpecifier`, so a parameter typed with an executor type imported from `@data-stores/psql/types` or
+a relative path is not scanned. Import the type from `@data-stores/psql` where the SQL needs the
+ordering and predicate rules, until the matcher accepts more than one module.
+
+Shapes that satisfy the ordering rules:
+
+- Multi-table locks use one clause per relation, in lock order: `FOR UPDATE OF a FOR UPDATE OF b`.
+  The rule reports a comma-separated list as unparseable; PostgreSQL treats the two forms alike.
+- A constant leading arbiter column (a bound parameter) gets a select alias that heads the
+  `ORDER BY`: `SELECT $1::uuid AS url_hostname_id, ... ORDER BY url_hostname_id, ...`. Positional
+  `ORDER BY 1` and `ORDER BY $1::uuid` are not mapped.
+- `ON CONFLICT` writes the partial-index predicate as the catalog does, each conjunct parenthesized:
+  `WHERE (a IS NOT NULL) AND (b IS NULL)`. A targetless `DO NOTHING` on a multi-row source names its
+  target.
+- A statement that provably touches one row (no `FROM`, or one primary-key lookup) carries
+  `/* deadlock-safe: <reason> */` inside the SQL. `postgres-lock-ordering` and
+  `postgres-conflict-ordering` report the executor call line, so a `no-mistakes-disable-next-line`
+  goes above the call; `postgres-required-predicates` reports the SQL string line.
+
 PostgreSQL final-state inventories in `repo-file-policy` load the tracked, versioned
 [`schema.json`](../../../../backend/data-stores/psql/schema-snapshot/schema.json) once and fail closed when it
 is missing, malformed, or stale-format. Migration authoring, deploy sequencing, inline directives,
