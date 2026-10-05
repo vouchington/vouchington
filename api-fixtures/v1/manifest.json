@@ -35908,7 +35908,7 @@
     },
     "GET:/api/v1/posts": {
       "bodyKind": "content",
-      "hash": "aef8d4ef84f079bbc86b6a25b06f8cd28e32f5ced0d935d3db5cdd34e1d93415",
+      "hash": "ff91ea497707af80a262af4f88a6c7f892d11d7caafac77ed36f179d28cd1338",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -37907,16 +37907,76 @@
           "PublicContentProvenance": {
             "additionalProperties": false,
             "properties": {
-              "app_name": {
+              "app": {
                 "required": true,
                 "schema": {
                   "type": "union",
                   "variants": [
                     {
-                      "type": "null"
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "verified"
+                          }
+                        }
+                      },
+                      "type": "object"
                     },
                     {
-                      "type": "string"
+                      "additionalProperties": false,
+                      "properties": {
+                        "hostname": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "hostname"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "key": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "known"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -44776,7 +44836,7 @@
     },
     "GET:/api/v1/stories/:id": {
       "bodyKind": "content",
-      "hash": "8044e46838bc2b81690bc3883fed5d061676e7c1633199a2265ced92ee093ee9",
+      "hash": "0858113a6bdb9900e5b6f13cbbea775aa3efcf314c1bf40cdc49e59c6f6232c7",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -46656,16 +46716,76 @@
           "PublicContentProvenance": {
             "additionalProperties": false,
             "properties": {
-              "app_name": {
+              "app": {
                 "required": true,
                 "schema": {
                   "type": "union",
                   "variants": [
                     {
-                      "type": "null"
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "verified"
+                          }
+                        }
+                      },
+                      "type": "object"
                     },
                     {
-                      "type": "string"
+                      "additionalProperties": false,
+                      "properties": {
+                        "hostname": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "hostname"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "key": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "known"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -58582,7 +58702,7 @@
     },
     "GET:/api/v1/users/:idOrSlug/posts/:listType": {
       "bodyKind": "content",
-      "hash": "c1d56c628d62059ad415abca580fcdce1e17ab05da06371b6d4c6c73faf51d98",
+      "hash": "92307305320bc2d8522c8f7903d5ee0fa8c39e2d3a0d2dacc4877bd695dad6e7",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -60008,16 +60128,76 @@
           "PublicContentProvenance": {
             "additionalProperties": false,
             "properties": {
-              "app_name": {
+              "app": {
                 "required": true,
                 "schema": {
                   "type": "union",
                   "variants": [
                     {
-                      "type": "null"
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "verified"
+                          }
+                        }
+                      },
+                      "type": "object"
                     },
                     {
-                      "type": "string"
+                      "additionalProperties": false,
+                      "properties": {
+                        "hostname": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "hostname"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "key": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "known"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -93180,7 +93360,7 @@
         "sort": "new"
       },
       "responseSchema": {
-        "hash": "18836e3933a1eec1c9ae7a113b92f0f2b4c1cb5e147ecf88eb810abc41155499",
+        "hash": "4968f60df60a579d076cfa7f5d6d1f4c94c9171203e9197ec31c67a354b464bc",
         "key": "native.users.profile.posts.provenance"
       },
       "route": {
@@ -93207,7 +93387,7 @@
         "sort": "new"
       },
       "responseSchema": {
-        "hash": "bd81288560bd82367e60945c01921b542dac85ac86d2bbf82732f27942c058be",
+        "hash": "02a42181768471ce67884108e8d8a3762fc6a7bc2a5cd8eb8fe4369c6210107d",
         "key": "native.users.profile.posts.staff-provenance"
       },
       "route": {

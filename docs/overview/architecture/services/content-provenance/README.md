@@ -9,10 +9,11 @@ This page covers how to call the service.
 
 ## Exports
 
-- `resolvePublicProvenanceLabel(createdVia, client)` returns `{ via, app_name }` for `api` and `mcp`
-  rows and `null` for every other channel. `app_name` follows the reviewed allowlist in
-  `@services/oauth-authorization-server/known-clients`, then the CIMD hostname, then a staff-verified
-  `client_name`, then `null`.
+- `resolvePublicProvenanceLabel(createdVia, client)` returns `{ via, app }` for `api` and `mcp` rows
+  and `null` for every other channel. `app` is `{ kind: 'known', key }` for the reviewed allowlist in
+  `@services/oauth-authorization-server/known-clients`, then `{ kind: 'hostname', hostname }` for the
+  CIMD hostname, then `{ kind: 'verified', client_id, client_name }` for a staff-verified client,
+  then `null`. It returns facts, and each client composes the wording.
 - `buildStaffProvenance(createdVia, client)` returns the raw channel and OAuth client for moderation
   staff.
 - `getPostProvenanceFacts(postIds)` reads `posts LEFT JOIN oauth_clients` for already-visible ids in

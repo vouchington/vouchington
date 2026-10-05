@@ -69,7 +69,11 @@
       "post_type": "discussion",
       "privacy": "public",
       "provenance": {
-        "app_name": "Fixture Agent",
+        "app": {
+          "client_id": "voucha_fixture_agent",
+          "client_name": "Fixture Agent",
+          "kind": "verified"
+        },
         "via": "mcp"
       },
       "rejected_at": null,

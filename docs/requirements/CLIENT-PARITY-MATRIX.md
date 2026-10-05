@@ -269,11 +269,15 @@ repository does not edit `vouchington-clients`.
 ## Post provenance label handoff
 
 #706 exposes how a post was written. `Post` responses carry `provenance` (`{ "via": "api" | "mcp",
-"app_name": string | null }`) for posts created through the API or MCP, and nothing for web, Swift,
-.NET or system posts. `app_name` is the reviewed display name of an allowlisted Client ID Metadata
-Document client, the metadata hostname of any other such client, the `client_name` of a staff-verified
-dynamically registered client, or `null` for everyone else. The field is computed on each read, so a
-rename or an unverify shows on the next request. A post marked anonymous hides `app_name` from every
+"app": App | null }`) for posts created through the API or MCP, and nothing for web, Swift, .NET or
+system posts. `app` is facts, never wording: `{ "kind": "known", "key" }` for an allowlisted Client ID
+Metadata Document client (a lowercase slug), `{ "kind": "hostname", "hostname" }` for any other such
+client, `{ "kind": "verified", "client_id", "client_name" }` for a staff-verified dynamically
+registered client, or `null` for everyone else. Clients compose the wording from their own copy:
+"via {client_name}" and "via {hostname}", "via API" or "via MCP" for `null`, and for `known` the
+display name looked up by `key` in the client catalog, falling back to the plain "via API" or "via
+MCP" label when the key has no copy, never the raw key. The field is computed on each read, so a
+rename or an unverify shows on the next request. A post marked anonymous sends `app: null` to every
 viewer who cannot see its author. Administrators and moderators also receive `staff_provenance`
 (`created_via` and, when the post came through an OAuth client, `oauth_client` with `client_id`,
 `client_name`, `metadata_url` and `verified`); the client is omitted for anonymous posts they

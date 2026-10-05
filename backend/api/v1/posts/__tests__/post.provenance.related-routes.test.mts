@@ -17,7 +17,10 @@ import {
   insertTestUrlHostname,
 } from '@voucha/test-helpers'
 import { insertContentProvenanceOAuthClient } from '@voucha/test-helpers/data-stores/psql/content-provenance'
-import { renameTestOAuthClient } from '@voucha/test-helpers/entities/oauth-client-management'
+import {
+  getTestOAuthClientPublicId,
+  renameTestOAuthClient,
+} from '@voucha/test-helpers/entities/oauth-client-management'
 
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import type { PrivateUser } from '@services/users/types'
@@ -26,13 +29,18 @@ const suffix = randomBytes(6).toString('hex')
 const APP_NAME = `Related Route Agent ${suffix}`
 
 let reader: PrivateUser
+let clientRowId: string
+let clientPublicId: string
 let feedId: string
 let postId: string
 let webPostId: string
 let communitySlug: string
 
 const expectLabels = (posts: Record<string, Record<string, unknown>>) => {
-  expect(posts[postId]!.provenance).toEqual({ via: 'mcp', app_name: APP_NAME })
+  expect(posts[postId]!.provenance).toEqual({
+    via: 'mcp',
+    app: { kind: 'verified', client_id: clientPublicId, client_name: APP_NAME },
+  })
   expect(posts[postId]).not.toHaveProperty('staff_provenance')
   expect(posts[webPostId]).toBeDefined()
   expect(posts[webPostId]).not.toHaveProperty('provenance')
@@ -45,11 +53,12 @@ describe('post provenance on routes that embed related or listed posts', () => {
       createTestUser({ administrator: true }),
     ])
     reader = await createTestUser()
-    const clientRowId = await insertContentProvenanceOAuthClient({
+    clientRowId = await insertContentProvenanceOAuthClient({
       verifiedAt: new Date(),
       verifiedById: admin.id,
     })
     await renameTestOAuthClient(clientRowId, APP_NAME)
+    clientPublicId = await getTestOAuthClientPublicId(clientRowId)
 
     feedId = await createTestRssFeedWithTiming((await createTestTopic()).id)
     await followRssFeed(reader, feedId)

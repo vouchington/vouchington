@@ -41,14 +41,29 @@ const profileMcpPost = completeNativePost({
   slug: 'profile-mcp',
   title: 'Profile post written through MCP',
   markdown: 'Written by an agent on behalf of the author',
-  provenance: { via: 'mcp', app_name: 'Fixture Agent' },
+  provenance: {
+    via: 'mcp',
+    app: { kind: 'verified', client_id: 'voucha_fixture_agent', client_name: 'Fixture Agent' },
+  },
 })
 const profileApiPost = completeNativePost({
   id: 'profile-api-1',
   slug: 'profile-api',
   title: 'Profile post written through the API',
   markdown: 'Written by an unnamed API client',
-  provenance: { via: 'api', app_name: null },
+  provenance: { via: 'api', app: null },
+})
+const profileHostnamePost = completeNativePost({
+  id: 'profile-hostname-1',
+  slug: 'profile-hostname',
+  title: 'Profile post written by a metadata-document client',
+  provenance: { via: 'api', app: { kind: 'hostname', hostname: 'agent.example' } },
+})
+const profileKnownPost = completeNativePost({
+  id: 'profile-known-1',
+  slug: 'profile-known',
+  title: 'Profile post written by a reviewed client',
+  provenance: { via: 'mcp', app: { kind: 'known', key: 'fixture-agent' } },
 })
 
 function profilePostFeedBody(
@@ -133,7 +148,13 @@ export const nativeUserProfilePostApiFixtureCases: ApiFixtureCase[] = [
     route: { routeTemplate: '/api/v1/posts' },
     auth: 'fixture-user',
     status: 200,
-    body: profilePostFeedBody([profileMcpPost, profileApiPost, profileDiscussionPost]),
+    body: profilePostFeedBody([
+      profileMcpPost,
+      profileApiPost,
+      profileHostnamePost,
+      profileKnownPost,
+      profileDiscussionPost,
+    ]),
     consumers: [],
     migratedFrom: [],
   },

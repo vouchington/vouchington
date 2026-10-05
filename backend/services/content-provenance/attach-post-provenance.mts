@@ -16,7 +16,7 @@ type ProvenancePost = Pick<Post, 'id' | 'is_anonymous' | 'created_by_id'>
  * copies of the given posts. Run it before `maskAnonymousPosts`, which hides the author id this
  * needs. The cached posts are never mutated.
  *
- * Anonymous posts keep their app name and OAuth client hidden from viewers who cannot see the
+ * Anonymous posts keep their app (`app: null`) and OAuth client hidden from viewers who cannot see the
  * author, because a named client can identify its owner. They still show the plain channel.
  */
 export async function attachPostProvenance<T extends ProvenancePost | null | undefined>(

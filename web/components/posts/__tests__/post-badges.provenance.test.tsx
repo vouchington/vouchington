@@ -20,6 +20,12 @@ const client = {
   verified: true,
 }
 
+const verifiedApp = {
+  kind: 'verified',
+  client_id: client.client_id,
+  client_name: client.client_name,
+} as const
+
 const withProvenance = (extra: Partial<Post>): Post => ({ ...basePost, ...extra })
 
 const detail = (post: Post) =>
@@ -39,7 +45,7 @@ const detail = (post: Post) =>
 
 describe('provenance on post cards', () => {
   it('shows the public label next to the post type', () => {
-    render(<PostCardBadges post={withProvenance({ provenance: { via: 'mcp', app_name: null } })} />)
+    render(<PostCardBadges post={withProvenance({ provenance: { via: 'mcp', app: null } })} />)
     expect(screen.getByText('via MCP')).toHaveAttribute('data-pw', 'post-provenance-badge')
   })
 
@@ -53,7 +59,7 @@ describe('provenance on post cards', () => {
     render(
       <PostCardBadges
         post={withProvenance({
-          provenance: { via: 'mcp', app_name: 'Fixture Agent' },
+          provenance: { via: 'mcp', app: verifiedApp },
           staff_provenance: { created_via: 'mcp', oauth_client: client },
         })}
       />,
@@ -66,7 +72,7 @@ describe('provenance on post cards', () => {
 
 describe('provenance on post detail', () => {
   it('shows the public label in the badge strip', () => {
-    detail(withProvenance({ provenance: { via: 'api', app_name: null } }))
+    detail(withProvenance({ provenance: { via: 'api', app: null } }))
     expect(screen.getByText('via API')).toBeInTheDocument()
     expect(screen.queryByText(/^Channel:/)).toBeNull()
   })
@@ -79,7 +85,7 @@ describe('provenance on post detail', () => {
   it('shows staff the channel, the raw OAuth client and its verification', () => {
     detail(
       withProvenance({
-        provenance: { via: 'mcp', app_name: 'Fixture Agent' },
+        provenance: { via: 'mcp', app: verifiedApp },
         staff_provenance: { created_via: 'mcp', oauth_client: client },
       }),
     )

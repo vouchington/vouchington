@@ -232,13 +232,52 @@
                     "provenance": {
                       "additionalProperties": false,
                       "properties": {
-                        "app_name": {
+                        "app": {
                           "anyOf": [
                             {
-                              "type": "null"
+                              "additionalProperties": false,
+                              "properties": {
+                                "client_id": {
+                                  "type": "string"
+                                },
+                                "client_name": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "const": "verified"
+                                }
+                              },
+                              "required": ["client_id", "client_name", "kind"],
+                              "type": "object"
                             },
                             {
-                              "type": "string"
+                              "additionalProperties": false,
+                              "properties": {
+                                "hostname": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "const": "hostname"
+                                }
+                              },
+                              "required": ["hostname", "kind"],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "key": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "const": "known"
+                                }
+                              },
+                              "required": ["key", "kind"],
+                              "type": "object"
+                            },
+                            {
+                              "type": "null"
                             }
                           ]
                         },
@@ -247,7 +286,7 @@
                           "type": "string"
                         }
                       },
-                      "required": ["app_name", "via"],
+                      "required": ["app", "via"],
                       "type": "object"
                     }
                   },
@@ -465,13 +504,52 @@
                     "provenance": {
                       "additionalProperties": false,
                       "properties": {
-                        "app_name": {
+                        "app": {
                           "anyOf": [
                             {
-                              "type": "null"
+                              "additionalProperties": false,
+                              "properties": {
+                                "client_id": {
+                                  "type": "string"
+                                },
+                                "client_name": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "const": "verified"
+                                }
+                              },
+                              "required": ["client_id", "client_name", "kind"],
+                              "type": "object"
                             },
                             {
-                              "type": "string"
+                              "additionalProperties": false,
+                              "properties": {
+                                "hostname": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "const": "hostname"
+                                }
+                              },
+                              "required": ["hostname", "kind"],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "key": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "const": "known"
+                                }
+                              },
+                              "required": ["key", "kind"],
+                              "type": "object"
+                            },
+                            {
+                              "type": "null"
                             }
                           ]
                         },
@@ -480,7 +558,7 @@
                           "type": "string"
                         }
                       },
-                      "required": ["app_name", "via"],
+                      "required": ["app", "via"],
                       "type": "object"
                     }
                   },
@@ -1152,13 +1230,52 @@
                     "provenance": {
                       "additionalProperties": false,
                       "properties": {
-                        "app_name": {
+                        "app": {
                           "anyOf": [
                             {
-                              "type": "null"
+                              "additionalProperties": false,
+                              "properties": {
+                                "client_id": {
+                                  "type": "string"
+                                },
+                                "client_name": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "const": "verified"
+                                }
+                              },
+                              "required": ["client_id", "client_name", "kind"],
+                              "type": "object"
                             },
                             {
-                              "type": "string"
+                              "additionalProperties": false,
+                              "properties": {
+                                "hostname": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "const": "hostname"
+                                }
+                              },
+                              "required": ["hostname", "kind"],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "key": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "const": "known"
+                                }
+                              },
+                              "required": ["key", "kind"],
+                              "type": "object"
+                            },
+                            {
+                              "type": "null"
                             }
                           ]
                         },
@@ -1167,7 +1284,7 @@
                           "type": "string"
                         }
                       },
-                      "required": ["app_name", "via"],
+                      "required": ["app", "via"],
                       "type": "object"
                     },
                     "rejected_at": {
@@ -4424,13 +4541,52 @@
                           "provenance": {
                             "additionalProperties": false,
                             "properties": {
-                              "app_name": {
+                              "app": {
                                 "anyOf": [
                                   {
-                                    "type": "null"
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "client_id": {
+                                        "type": "string"
+                                      },
+                                      "client_name": {
+                                        "type": "string"
+                                      },
+                                      "kind": {
+                                        "const": "verified"
+                                      }
+                                    },
+                                    "required": ["client_id", "client_name", "kind"],
+                                    "type": "object"
                                   },
                                   {
-                                    "type": "string"
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "hostname": {
+                                        "type": "string"
+                                      },
+                                      "kind": {
+                                        "const": "hostname"
+                                      }
+                                    },
+                                    "required": ["hostname", "kind"],
+                                    "type": "object"
+                                  },
+                                  {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "key": {
+                                        "type": "string"
+                                      },
+                                      "kind": {
+                                        "const": "known"
+                                      }
+                                    },
+                                    "required": ["key", "kind"],
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
                                   }
                                 ]
                               },
@@ -4439,7 +4595,7 @@
                                 "type": "string"
                               }
                             },
-                            "required": ["app_name", "via"],
+                            "required": ["app", "via"],
                             "type": "object"
                           },
                           "rejected_at": {
@@ -7805,13 +7961,52 @@
                           "provenance": {
                             "additionalProperties": false,
                             "properties": {
-                              "app_name": {
+                              "app": {
                                 "anyOf": [
                                   {
-                                    "type": "null"
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "client_id": {
+                                        "type": "string"
+                                      },
+                                      "client_name": {
+                                        "type": "string"
+                                      },
+                                      "kind": {
+                                        "const": "verified"
+                                      }
+                                    },
+                                    "required": ["client_id", "client_name", "kind"],
+                                    "type": "object"
                                   },
                                   {
-                                    "type": "string"
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "hostname": {
+                                        "type": "string"
+                                      },
+                                      "kind": {
+                                        "const": "hostname"
+                                      }
+                                    },
+                                    "required": ["hostname", "kind"],
+                                    "type": "object"
+                                  },
+                                  {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "key": {
+                                        "type": "string"
+                                      },
+                                      "kind": {
+                                        "const": "known"
+                                      }
+                                    },
+                                    "required": ["key", "kind"],
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
                                   }
                                 ]
                               },
@@ -7820,7 +8015,7 @@
                                 "type": "string"
                               }
                             },
-                            "required": ["app_name", "via"],
+                            "required": ["app", "via"],
                             "type": "object"
                           }
                         },
@@ -8005,13 +8200,52 @@
                           "provenance": {
                             "additionalProperties": false,
                             "properties": {
-                              "app_name": {
+                              "app": {
                                 "anyOf": [
                                   {
-                                    "type": "null"
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "client_id": {
+                                        "type": "string"
+                                      },
+                                      "client_name": {
+                                        "type": "string"
+                                      },
+                                      "kind": {
+                                        "const": "verified"
+                                      }
+                                    },
+                                    "required": ["client_id", "client_name", "kind"],
+                                    "type": "object"
                                   },
                                   {
-                                    "type": "string"
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "hostname": {
+                                        "type": "string"
+                                      },
+                                      "kind": {
+                                        "const": "hostname"
+                                      }
+                                    },
+                                    "required": ["hostname", "kind"],
+                                    "type": "object"
+                                  },
+                                  {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "key": {
+                                        "type": "string"
+                                      },
+                                      "kind": {
+                                        "const": "known"
+                                      }
+                                    },
+                                    "required": ["key", "kind"],
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
                                   }
                                 ]
                               },
@@ -8020,7 +8254,7 @@
                                 "type": "string"
                               }
                             },
-                            "required": ["app_name", "via"],
+                            "required": ["app", "via"],
                             "type": "object"
                           }
                         },
@@ -10376,13 +10610,52 @@
                           "provenance": {
                             "additionalProperties": false,
                             "properties": {
-                              "app_name": {
+                              "app": {
                                 "anyOf": [
                                   {
-                                    "type": "null"
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "client_id": {
+                                        "type": "string"
+                                      },
+                                      "client_name": {
+                                        "type": "string"
+                                      },
+                                      "kind": {
+                                        "const": "verified"
+                                      }
+                                    },
+                                    "required": ["client_id", "client_name", "kind"],
+                                    "type": "object"
                                   },
                                   {
-                                    "type": "string"
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "hostname": {
+                                        "type": "string"
+                                      },
+                                      "kind": {
+                                        "const": "hostname"
+                                      }
+                                    },
+                                    "required": ["hostname", "kind"],
+                                    "type": "object"
+                                  },
+                                  {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "key": {
+                                        "type": "string"
+                                      },
+                                      "kind": {
+                                        "const": "known"
+                                      }
+                                    },
+                                    "required": ["key", "kind"],
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
                                   }
                                 ]
                               },
@@ -10391,7 +10664,7 @@
                                 "type": "string"
                               }
                             },
-                            "required": ["app_name", "via"],
+                            "required": ["app", "via"],
                             "type": "object"
                           }
                         },
@@ -10561,13 +10834,52 @@
                           "provenance": {
                             "additionalProperties": false,
                             "properties": {
-                              "app_name": {
+                              "app": {
                                 "anyOf": [
                                   {
-                                    "type": "null"
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "client_id": {
+                                        "type": "string"
+                                      },
+                                      "client_name": {
+                                        "type": "string"
+                                      },
+                                      "kind": {
+                                        "const": "verified"
+                                      }
+                                    },
+                                    "required": ["client_id", "client_name", "kind"],
+                                    "type": "object"
                                   },
                                   {
-                                    "type": "string"
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "hostname": {
+                                        "type": "string"
+                                      },
+                                      "kind": {
+                                        "const": "hostname"
+                                      }
+                                    },
+                                    "required": ["hostname", "kind"],
+                                    "type": "object"
+                                  },
+                                  {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "key": {
+                                        "type": "string"
+                                      },
+                                      "kind": {
+                                        "const": "known"
+                                      }
+                                    },
+                                    "required": ["key", "kind"],
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
                                   }
                                 ]
                               },
@@ -10576,7 +10888,7 @@
                                 "type": "string"
                               }
                             },
-                            "required": ["app_name", "via"],
+                            "required": ["app", "via"],
                             "type": "object"
                           }
                         },
@@ -10764,13 +11076,52 @@
                         "provenance": {
                           "additionalProperties": false,
                           "properties": {
-                            "app_name": {
+                            "app": {
                               "anyOf": [
                                 {
-                                  "type": "null"
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "client_id": {
+                                      "type": "string"
+                                    },
+                                    "client_name": {
+                                      "type": "string"
+                                    },
+                                    "kind": {
+                                      "const": "verified"
+                                    }
+                                  },
+                                  "required": ["client_id", "client_name", "kind"],
+                                  "type": "object"
                                 },
                                 {
-                                  "type": "string"
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "hostname": {
+                                      "type": "string"
+                                    },
+                                    "kind": {
+                                      "const": "hostname"
+                                    }
+                                  },
+                                  "required": ["hostname", "kind"],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "key": {
+                                      "type": "string"
+                                    },
+                                    "kind": {
+                                      "const": "known"
+                                    }
+                                  },
+                                  "required": ["key", "kind"],
+                                  "type": "object"
+                                },
+                                {
+                                  "type": "null"
                                 }
                               ]
                             },
@@ -10779,7 +11130,7 @@
                               "type": "string"
                             }
                           },
-                          "required": ["app_name", "via"],
+                          "required": ["app", "via"],
                           "type": "object"
                         }
                       },
@@ -16727,13 +17078,52 @@
                     "provenance": {
                       "additionalProperties": false,
                       "properties": {
-                        "app_name": {
+                        "app": {
                           "anyOf": [
                             {
-                              "type": "null"
+                              "additionalProperties": false,
+                              "properties": {
+                                "client_id": {
+                                  "type": "string"
+                                },
+                                "client_name": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "const": "verified"
+                                }
+                              },
+                              "required": ["client_id", "client_name", "kind"],
+                              "type": "object"
                             },
                             {
-                              "type": "string"
+                              "additionalProperties": false,
+                              "properties": {
+                                "hostname": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "const": "hostname"
+                                }
+                              },
+                              "required": ["hostname", "kind"],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "key": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "const": "known"
+                                }
+                              },
+                              "required": ["key", "kind"],
+                              "type": "object"
+                            },
+                            {
+                              "type": "null"
                             }
                           ]
                         },
@@ -16742,7 +17132,7 @@
                           "type": "string"
                         }
                       },
-                      "required": ["app_name", "via"],
+                      "required": ["app", "via"],
                       "type": "object"
                     },
                     "rejected_at": {

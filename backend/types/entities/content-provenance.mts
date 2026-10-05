@@ -21,12 +21,24 @@ export const SYSTEM_PROVENANCE: ContentProvenance = Object.freeze({
   oauthClientId: null,
 })
 
-// What a public response may say about an API or MCP created row. `app_name` is the reviewed
-// display name, the metadata hostname or a staff-verified client name, or null for a plain
-// "via API" / "via MCP" label. Web, native and system rows never carry one.
+// The app a public response names for an API or MCP created row. Facts only, never copy: each
+// client composes its own wording, and the only names the server sends are the hostname and the
+// staff-verified registered name.
+export type PublicProvenanceApp =
+  // A client on the reviewed allowlist. `key` is a lowercase slug whose display copy lives in each
+  // client's localization catalog.
+  | { kind: 'known'; key: string }
+  // Any other Client ID Metadata Document client: the hostname of its `metadata_url`.
+  | { kind: 'hostname'; hostname: string }
+  // A dynamically registered client that staff verified. The registered name is data about the
+  // app, and staff verification is what makes it safe to show.
+  | { kind: 'verified'; client_id: string; client_name: string }
+
+// What a public response may say about an API or MCP created row. `app` is null for a plain
+// "via API" / "via MCP". Web, native and system rows never carry one.
 export type PublicContentProvenance = {
   via: OAuthContentCreationChannel
-  app_name: string | null
+  app: PublicProvenanceApp | null
 }
 
 // The raw record moderation staff see. `oauth_client` is absent when the author is hidden from
