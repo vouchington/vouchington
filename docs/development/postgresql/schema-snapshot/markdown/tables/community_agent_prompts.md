@@ -6,16 +6,16 @@ Extension table linking agent prompts to communities, with slot allocation and a
 
 Not partitioned — growth: unbounded.
 
-| Column           | Type                       | Nullable | Default | Identity | Generated | Collation | Comment                                                                                  |
-| ---------------- | -------------------------- | -------- | ------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------- |
-| `id`             | `uuid`                     | no       |         |          |           |           |                                                                                          |
-| `community_id`   | `uuid`                     | no       |         |          |           |           | The community this agent prompt belongs to.                                              |
-| `created_by_id`  | `uuid`                     | yes      |         |          |           |           |                                                                                          |
-| `slot_allocated` | `boolean`                  | no       | `false` |          |           |           | Whether this prompt has been allocated a slot for active use.                            |
-| `activated_at`   | `timestamp with time zone` | yes      |         |          |           |           | When the prompt was activated for community use. Mutually exclusive with deactivated_at. |
-| `deactivated_at` | `timestamp with time zone` | yes      |         |          |           |           | When the prompt was deactivated. Mutually exclusive with activated_at.                   |
-| `deleted_at`     | `timestamp with time zone` | yes      |         |          |           |           |                                                                                          |
-| `deleted_by_id`  | `uuid`                     | yes      |         |          |           |           |                                                                                          |
+| Column              | Type                       | Nullable | Default | Identity | Generated | Collation | Comment                                                                                  |
+| ------------------- | -------------------------- | -------- | ------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------- |
+| `id`                | `uuid`                     | no       |         |          |           |           |                                                                                          |
+| `community_id`      | `uuid`                     | no       |         |          |           |           | The community this agent prompt belongs to.                                              |
+| `created_by_id`     | `uuid`                     | yes      |         |          |           |           |                                                                                          |
+| `is_slot_allocated` | `boolean`                  | no       | `false` |          |           |           | Whether this prompt has been allocated a slot for active use.                            |
+| `activated_at`      | `timestamp with time zone` | yes      |         |          |           |           | When the prompt was activated for community use. Mutually exclusive with deactivated_at. |
+| `deactivated_at`    | `timestamp with time zone` | yes      |         |          |           |           | When the prompt was deactivated. Mutually exclusive with activated_at.                   |
+| `deleted_at`        | `timestamp with time zone` | yes      |         |          |           |           |                                                                                          |
+| `deleted_by_id`     | `uuid`                     | yes      |         |          |           |           |                                                                                          |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -37,11 +37,11 @@ Not partitioned — growth: unbounded.
 **Indexes:**
 
 - `community_agent_prompts_pkey`: `CREATE UNIQUE INDEX community_agent_prompts_pkey ON public.community_agent_prompts USING btree (id)`
-- `idx_community_agent_prompts__active`: `CREATE INDEX idx_community_agent_prompts__active ON public.community_agent_prompts USING btree (community_id) WHERE ((slot_allocated = true) AND (activated_at IS NOT NULL) AND (deactivated_at IS NULL) AND (deleted_at IS NULL))`
+- `idx_community_agent_prompts__active`: `CREATE INDEX idx_community_agent_prompts__active ON public.community_agent_prompts USING btree (community_id) WHERE ((is_slot_allocated = true) AND (activated_at IS NOT NULL) AND (deactivated_at IS NULL) AND (deleted_at IS NULL))`
 - `idx_community_agent_prompts__community_id`: `CREATE INDEX idx_community_agent_prompts__community_id ON public.community_agent_prompts USING btree (community_id) WHERE (deleted_at IS NULL)`
 - `idx_community_agent_prompts__community_id_bare`: `CREATE INDEX idx_community_agent_prompts__community_id_bare ON public.community_agent_prompts USING btree (community_id)`
 - `idx_community_agent_prompts__created_by_id`: `CREATE INDEX idx_community_agent_prompts__created_by_id ON public.community_agent_prompts USING btree (created_by_id)`
-- `idx_community_agent_prompts__created_by_id__slot`: `CREATE INDEX idx_community_agent_prompts__created_by_id__slot ON public.community_agent_prompts USING btree (created_by_id, slot_allocated) WHERE (deleted_at IS NULL)`
+- `idx_community_agent_prompts__created_by_id__slot`: `CREATE INDEX idx_community_agent_prompts__created_by_id__slot ON public.community_agent_prompts USING btree (created_by_id, is_slot_allocated) WHERE (deleted_at IS NULL)`
 - `uq_community_agent_prompts__id__community`: `CREATE UNIQUE INDEX uq_community_agent_prompts__id__community ON public.community_agent_prompts USING btree (id, community_id)`
 
 **Triggers:**

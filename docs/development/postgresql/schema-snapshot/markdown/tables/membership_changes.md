@@ -6,26 +6,26 @@ Append-only audit log for membership projection changes.
 
 Not partitioned — growth: unbounded.
 
-| Column                            | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                |
-| --------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------- |
-| `id`                              | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                        |
-| `membership_id`                   | `uuid`                     | no       |                              |          |           |           | Membership projection affected by this audit event.                                    |
-| `user_id`                         | `uuid`                     | no       |                              |          |           |           | Retained user identity whose membership projection changed; outlives the live account. |
-| `membership_source_id`            | `uuid`                     | yes      |                              |          |           |           | Source responsible for this change, when applicable.                                   |
-| `membership_grant_id`             | `uuid`                     | yes      |                              |          |           |           | Administrator grant responsible for this change, when applicable.                      |
-| `change_type`                     | `membership_change_types`  | no       |                              |          |           |           | Kind of membership lifecycle or source change.                                         |
-| `from_membership_product_id`      | `uuid`                     | yes      |                              |          |           |           | Canonical product before the change.                                                   |
-| `to_membership_product_id`        | `uuid`                     | yes      |                              |          |           |           | Canonical product after the change.                                                    |
-| `changed_by_id`                   | `uuid`                     | yes      |                              |          |           |           | Retained user identity of the actor; outlives the live account and never authorizes.   |
-| `note`                            | `text`                     | yes      |                              |          |           |           | Optional bounded note explaining the change.                                           |
-| `membership_provider_evidence_id` | `uuid`                     | yes      |                              |          |           |           | Verified provider evidence responsible for this change, when applicable.               |
-| `stripe_event_id`                 | `text`                     | yes      |                              |          |           |           | Temporary Stripe adapter event identity used for replay protection.                    |
-| `cancelled_at`                    | `timestamp with time zone` | yes      |                              |          |           |           | Cancellation timestamp snapshot after the change.                                      |
-| `expired_at`                      | `timestamp with time zone` | yes      |                              |          |           |           | Expiration timestamp snapshot after the change.                                        |
-| `past_due_at`                     | `timestamp with time zone` | yes      |                              |          |           |           | Past-due timestamp snapshot after the change.                                          |
-| `paused_at`                       | `timestamp with time zone` | yes      |                              |          |           |           | Pause timestamp snapshot after the change.                                             |
-| `cancel_at_period_end`            | `boolean`                  | no       | `false`                      |          |           |           | Cancellation-at-period-end snapshot after the change.                                  |
-| `created_at`                      | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                        |
+| Column                                   | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                |
+| ---------------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------- |
+| `id`                                     | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                        |
+| `membership_id`                          | `uuid`                     | no       |                              |          |           |           | Membership projection affected by this audit event.                                    |
+| `user_id`                                | `uuid`                     | no       |                              |          |           |           | Retained user identity whose membership projection changed; outlives the live account. |
+| `membership_source_id`                   | `uuid`                     | yes      |                              |          |           |           | Source responsible for this change, when applicable.                                   |
+| `membership_grant_id`                    | `uuid`                     | yes      |                              |          |           |           | Administrator grant responsible for this change, when applicable.                      |
+| `change_type`                            | `membership_change_types`  | no       |                              |          |           |           | Kind of membership lifecycle or source change.                                         |
+| `from_membership_product_id`             | `uuid`                     | yes      |                              |          |           |           | Canonical product before the change.                                                   |
+| `to_membership_product_id`               | `uuid`                     | yes      |                              |          |           |           | Canonical product after the change.                                                    |
+| `changed_by_id`                          | `uuid`                     | yes      |                              |          |           |           | Retained user identity of the actor; outlives the live account and never authorizes.   |
+| `note`                                   | `text`                     | yes      |                              |          |           |           | Optional bounded note explaining the change.                                           |
+| `membership_provider_evidence_record_id` | `uuid`                     | yes      |                              |          |           |           | Verified provider evidence responsible for this change, when applicable.               |
+| `stripe_event_id`                        | `text`                     | yes      |                              |          |           |           | Temporary Stripe adapter event identity used for replay protection.                    |
+| `cancelled_at`                           | `timestamp with time zone` | yes      |                              |          |           |           | Cancellation timestamp snapshot after the change.                                      |
+| `expired_at`                             | `timestamp with time zone` | yes      |                              |          |           |           | Expiration timestamp snapshot after the change.                                        |
+| `past_due_at`                            | `timestamp with time zone` | yes      |                              |          |           |           | Past-due timestamp snapshot after the change.                                          |
+| `paused_at`                              | `timestamp with time zone` | yes      |                              |          |           |           | Pause timestamp snapshot after the change.                                             |
+| `should_cancel_at_period_end`            | `boolean`                  | no       | `false`                      |          |           |           | Cancellation-at-period-end snapshot after the change.                                  |
+| `created_at`                             | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                        |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -42,7 +42,8 @@ _none_
 - `membership_changes_changed_by_id_fkey`: `FOREIGN KEY (changed_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 - `membership_changes_from_membership_product_id_fkey`: `FOREIGN KEY (from_membership_product_id) REFERENCES membership_products(id) ON DELETE RESTRICT`
 - `membership_changes_membership_grant_id_fkey`: `FOREIGN KEY (membership_grant_id) REFERENCES membership_grants(id) ON DELETE RESTRICT`
-- `membership_changes_membership_provider_evidence_id_fkey`: `FOREIGN KEY (membership_provider_evidence_id) REFERENCES membership_provider_evidence_records(id) ON DELETE RESTRICT`
+- `membership_changes_membership_id_fkey`: `FOREIGN KEY (membership_id) REFERENCES retained_membership_identities(id) ON DELETE RESTRICT`
+- `membership_changes_membership_provider_evidence_record_id_fkey`: `FOREIGN KEY (membership_provider_evidence_record_id) REFERENCES membership_provider_evidence_records(id) ON DELETE RESTRICT`
 - `membership_changes_membership_source_id_fkey`: `FOREIGN KEY (membership_source_id) REFERENCES membership_sources(id) ON DELETE RESTRICT`
 - `membership_changes_to_membership_product_id_fkey`: `FOREIGN KEY (to_membership_product_id) REFERENCES membership_products(id) ON DELETE RESTRICT`
 - `membership_changes_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
@@ -50,7 +51,7 @@ _none_
 **Indexes:**
 
 - `idx_membership_changes__changed_by_id`: `CREATE INDEX idx_membership_changes__changed_by_id ON public.membership_changes USING btree (changed_by_id) WHERE (changed_by_id IS NOT NULL)`
-- `idx_membership_changes__evidence_id`: `CREATE UNIQUE INDEX idx_membership_changes__evidence_id ON public.membership_changes USING btree (membership_provider_evidence_id) WHERE (membership_provider_evidence_id IS NOT NULL)`
+- `idx_membership_changes__evidence_id`: `CREATE UNIQUE INDEX idx_membership_changes__evidence_id ON public.membership_changes USING btree (membership_provider_evidence_record_id) WHERE (membership_provider_evidence_record_id IS NOT NULL)`
 - `idx_membership_changes__from_product_id`: `CREATE INDEX idx_membership_changes__from_product_id ON public.membership_changes USING btree (from_membership_product_id) WHERE (from_membership_product_id IS NOT NULL)`
 - `idx_membership_changes__grant_id`: `CREATE INDEX idx_membership_changes__grant_id ON public.membership_changes USING btree (membership_grant_id, id DESC) WHERE (membership_grant_id IS NOT NULL)`
 - `idx_membership_changes__membership_id`: `CREATE INDEX idx_membership_changes__membership_id ON public.membership_changes USING btree (membership_id, id DESC)`

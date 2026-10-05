@@ -1438,6 +1438,7 @@
 - `post`
 - `rss_feed_item`
 - `image`
+- `membership`
 - `image_placement_binding`
 
 ## `retained_identity_families`
@@ -1448,6 +1449,7 @@
 - `post`
 - `rss_feed_item`
 - `image`
+- `membership`
 
 ## `review_dispute_actions`
 

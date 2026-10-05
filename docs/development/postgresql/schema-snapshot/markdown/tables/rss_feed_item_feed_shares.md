@@ -10,7 +10,7 @@ RANGE partitioned on `recipient_user_id` (children: default, no retention owner,
 | ------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------- |
 | `recipient_user_id` | `uuid`                     | no       |                              |          |           |           | The user who receives this shared item in their feed; also the partition key. |
 | `id`                | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                               |
-| `shared_by_user_id` | `uuid`                     | no       |                              |          |           |           | The user who shared the RSS feed item.                                        |
+| `shared_by_id`      | `uuid`                     | no       |                              |          |           |           | The user who shared the RSS feed item.                                        |
 | `rss_feed_item_id`  | `uuid`                     | no       |                              |          |           |           | The RSS feed item that was shared.                                            |
 | `sort_at`           | `timestamp with time zone` | no       |                              |          |           |           | Timestamp used for sorting this share in the recipient's feed.                |
 | `created_at`        | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                               |
@@ -28,13 +28,13 @@ _none_
 
 - `rss_feed_item_feed_shares_recipient_user_id_fkey`: `FOREIGN KEY (recipient_user_id) REFERENCES users(id) ON DELETE CASCADE`
 - `rss_feed_item_feed_shares_rss_feed_item_id_fkey`: `FOREIGN KEY (rss_feed_item_id) REFERENCES rss_feed_items(id) ON DELETE CASCADE`
-- `rss_feed_item_feed_shares_shared_by_user_id_fkey`: `FOREIGN KEY (shared_by_user_id) REFERENCES users(id) ON DELETE CASCADE`
+- `rss_feed_item_feed_shares_shared_by_id_fkey`: `FOREIGN KEY (shared_by_id) REFERENCES users(id) ON DELETE CASCADE`
 
 **Indexes:**
 
 - `idx_rss_feed_item_feed_shares__item`: `CREATE INDEX idx_rss_feed_item_feed_shares__item ON ONLY public.rss_feed_item_feed_shares USING btree (rss_feed_item_id)`
 - `idx_rss_feed_item_feed_shares__recipient__sort`: `CREATE INDEX idx_rss_feed_item_feed_shares__recipient__sort ON ONLY public.rss_feed_item_feed_shares USING btree (recipient_user_id, sort_at DESC, id DESC)`
-- `idx_rss_feed_item_feed_shares__sharer__item__id_desc`: `CREATE INDEX idx_rss_feed_item_feed_shares__sharer__item__id_desc ON ONLY public.rss_feed_item_feed_shares USING btree (shared_by_user_id, rss_feed_item_id, id DESC)`
+- `idx_rss_feed_item_feed_shares__sharer__item__id_desc`: `CREATE INDEX idx_rss_feed_item_feed_shares__sharer__item__id_desc ON ONLY public.rss_feed_item_feed_shares USING btree (shared_by_id, rss_feed_item_id, id DESC)`
 - `rss_feed_item_feed_shares_pkey`: `CREATE UNIQUE INDEX rss_feed_item_feed_shares_pkey ON ONLY public.rss_feed_item_feed_shares USING btree (recipient_user_id, id)`
 
 **Triggers:**

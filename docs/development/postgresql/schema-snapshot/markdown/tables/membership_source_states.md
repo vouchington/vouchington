@@ -19,7 +19,7 @@ Not partitioned — growth: unbounded.
 | `expired_at`                         | `timestamp with time zone` | yes      |                     |          |           |           | When this projected source state reached terminal expiration.                    |
 | `past_due_at`                        | `timestamp with time zone` | yes      |                     |          |           |           | Projected past-due entry time.                                                   |
 | `paused_at`                          | `timestamp with time zone` | yes      |                     |          |           |           | When this projected source state was paused for a higher-precedence entitlement. |
-| `auto_renews`                        | `boolean`                  | no       | `false`             |          |           |           | Projected provider automatic-renewal setting.                                    |
+| `should_auto_renew`                  | `boolean`                  | no       | `false`             |          |           |           | Projected provider automatic-renewal setting.                                    |
 | `updated_at`                         | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                  |
 
 **Primary key:** `PRIMARY KEY (membership_source_id)`

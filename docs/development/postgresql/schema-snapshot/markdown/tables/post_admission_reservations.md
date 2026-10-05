@@ -9,7 +9,7 @@ Not partitioned — growth: bounded.
 | Column                 | Type                                | Nullable | Default                                            | Identity | Generated | Collation | Comment                                                                                                                                                     |
 | ---------------------- | ----------------------------------- | -------- | -------------------------------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`                   | `uuid`                              | no       | `uuidv7()`                                         |          |           |           |                                                                                                                                                             |
-| `actor_id`             | `uuid`                              | no       |                                                    |          |           |           | Authenticated actor that owns the idempotency key and its replay record.                                                                                    |
+| `actor_user_id`        | `uuid`                              | no       |                                                    |          |           |           | Authenticated actor that owns the idempotency key and its replay record.                                                                                    |
 | `idempotency_key`      | `uuid`                              | no       |                                                    |          |           |           | Client-supplied UUID reused only to replay the same actor request.                                                                                          |
 | `intent_sha256`        | `text`                              | no       |                                                    |          |           |           | SHA-256 of the canonical request intent. Different intent with the same actor and idempotency key is rejected.                                              |
 | `route`                | `post_admission_routes`             | no       |                                                    |          |           |           | Mutation route recorded for audit and replay metadata.                                                                                                      |
@@ -33,7 +33,7 @@ Not partitioned — growth: bounded.
 
 **Unique constraints:**
 
-- `post_admission_reservations_actor_key_unique`: `UNIQUE (actor_id, idempotency_key)`
+- `post_admission_reservations_actor_key_unique`: `UNIQUE (actor_user_id, idempotency_key)`
 
 **Check constraints:**
 
@@ -44,14 +44,14 @@ Not partitioned — growth: bounded.
 
 **Foreign keys:**
 
-- `post_admission_reservations_actor_id_fkey`: `FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE CASCADE`
+- `post_admission_reservations_actor_user_id_fkey`: `FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE CASCADE`
 - `post_admission_reservations_committed_post_id_fkey`: `FOREIGN KEY (committed_post_id) REFERENCES retained_post_identities(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
 - `idx_post_admission_reservations__committed_post_retention`: `CREATE INDEX idx_post_admission_reservations__committed_post_retention ON public.post_admission_reservations USING btree (committed_post_id, retention_expires_at) WHERE (committed_post_id IS NOT NULL)`
 - `idx_post_admission_reservations__retention`: `CREATE INDEX idx_post_admission_reservations__retention ON public.post_admission_reservations USING btree (retention_expires_at, id)`
-- `post_admission_reservations_actor_key_unique`: `CREATE UNIQUE INDEX post_admission_reservations_actor_key_unique ON public.post_admission_reservations USING btree (actor_id, idempotency_key)`
+- `post_admission_reservations_actor_key_unique`: `CREATE UNIQUE INDEX post_admission_reservations_actor_key_unique ON public.post_admission_reservations USING btree (actor_user_id, idempotency_key)`
 - `post_admission_reservations_pkey`: `CREATE UNIQUE INDEX post_admission_reservations_pkey ON public.post_admission_reservations USING btree (id)`
 
 **Triggers:**

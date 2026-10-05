@@ -14,7 +14,7 @@ Not partitioned — growth: unbounded.
 | `copyright_notice_deadline_id`              | `uuid`                     | yes      |                              |          |           |           | Restoration clock created for an accepted counter-notice. |
 | `reviewed_at`                               | `timestamp with time zone` | no       |                              |          |           |           | Time the moderator completed formal review.               |
 | `reviewed_by_id`                            | `uuid`                     | yes      |                              |          |           |           | Moderator who completed formal review.                    |
-| `accepted`                                  | `boolean`                  | no       |                              |          |           |           | Whether the counter-notice was formally compliant.        |
+| `is_accepted`                               | `boolean`                  | no       |                              |          |           |           | Whether the counter-notice was formally compliant.        |
 | `rationale_ciphertext`                      | `text`                     | no       |                              |          |           |           | Encrypted moderator rationale.                            |
 | `created_at`                                | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                           |
 | `updated_at`                                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                           |
@@ -30,7 +30,7 @@ Not partitioned — growth: unbounded.
 **Check constraints:**
 
 - `chk_copyrig_notice_counter_notice_reviews__rationale_ciphertext`: `CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 1048576)))`
-- `copyright_notice_counter_notice_reviews_check`: `CHECK ((accepted = (copyright_notice_deadline_id IS NOT NULL)))`
+- `copyright_notice_counter_notice_reviews_check`: `CHECK ((is_accepted = (copyright_notice_deadline_id IS NOT NULL)))`
 
 **Foreign keys:**
 

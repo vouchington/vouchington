@@ -12,7 +12,7 @@ Not partitioned — growth: unbounded.
 | `provider`                               | `membership_provider_kinds`        | no       |                              |          |           |           | Provider observed in the normalized entitlement.                                    |
 | `environment`                            | `membership_provider_environments` | no       |                              |          |           |           | Provider environment observed in the entitlement.                                   |
 | `application_id`                         | `text`                             | no       |                              |          |           |           | Provider application, bundle, or tenant identifier.                                 |
-| `membership_provider_evidence_id`        | `uuid`                             | no       |                              |          |           |           | Evidence record from which this observation was normalized.                         |
+| `membership_provider_evidence_record_id` | `uuid`                             | no       |                              |          |           |           | Evidence record from which this observation was normalized.                         |
 | `membership_provider_lineage_id`         | `uuid`                             | no       |                              |          |           |           | Provider lineage observed in the entitlement.                                       |
 | `membership_provider_product_id`         | `uuid`                             | no       |                              |          |           |           | Provider product identity observed in the entitlement.                              |
 | `membership_product_id`                  | `uuid`                             | no       |                              |          |           |           | Canonical product resolved from the provider product identity.                      |
@@ -32,7 +32,7 @@ Not partitioned — growth: unbounded.
 | `expired_at`                             | `timestamp with time zone`         | yes      |                              |          |           |           | When the provider reported expiration.                                              |
 | `past_due_at`                            | `timestamp with time zone`         | yes      |                              |          |           |           | When the provider reported the entitlement past due.                                |
 | `paused_at`                              | `timestamp with time zone`         | yes      |                              |          |           |           | When the provider reported the entitlement paused.                                  |
-| `auto_renews`                            | `boolean`                          | no       | `false`                      |          |           |           | Whether the provider reported automatic renewal enabled.                            |
+| `should_auto_renew`                      | `boolean`                          | no       | `false`                      |          |           |           | Whether the provider reported automatic renewal enabled.                            |
 | `created_at`                             | `timestamp with time zone`         | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                     |
 | `terminal_at`                            | `timestamp with time zone`         | yes      |                              |          |           |           | When the provider reported an irreversible terminal state for this lineage.         |
 
@@ -54,7 +54,7 @@ _none_
 - `membership_provider_observations_check5`: `CHECK (((paused_at IS NULL) OR (paused_at >= effective_at)))`
 - `membership_provider_observations_check6`: `CHECK ((num_nonnulls(cancelled_at, expired_at, past_due_at, paused_at) <= 1))`
 - `membership_provider_observations_check7`: `CHECK ((num_nonnulls(renewal_membership_provider_product_id, renewal_membership_product_id, renewal_price_minor_units, renewal_price_currency_code, renewal_effective_at) = ANY (ARRAY[0, 5])))`
-- `membership_provider_observations_check8`: `CHECK (((renewal_membership_provider_product_id IS NULL) OR (auto_renews AND (source_kind = 'direct'::membership_source_kinds))))`
+- `membership_provider_observations_check8`: `CHECK (((renewal_membership_provider_product_id IS NULL) OR (should_auto_renew AND (source_kind = 'direct'::membership_source_kinds))))`
 - `membership_provider_observations_check9`: `CHECK (((renewal_effective_at IS NULL) OR (renewal_effective_at >= effective_at)))`
 - `membership_provider_observations_provider_check`: `CHECK ((provider <> 'admin'::membership_provider_kinds))`
 - `membership_provider_observations_provider_order_check`: `CHECK ((provider_order >= 0))`
@@ -65,14 +65,14 @@ _none_
 
 - `fk_membership_provider_observatio__observed_price_currency_code`: `FOREIGN KEY (observed_price_currency_code) REFERENCES currencies(code) ON DELETE RESTRICT`
 - `fk_membership_provider_observation__renewal_price_currency_code`: `FOREIGN KEY (renewal_price_currency_code) REFERENCES currencies(code) ON DELETE RESTRICT`
-- `fk_membership_provider_observations__evidence_context`: `FOREIGN KEY (membership_provider_evidence_id, membership_provider_lineage_id, provider, environment, application_id) REFERENCES membership_provider_evidence_records(id, membership_provider_lineage_id, provider, environment, application_id) ON DELETE RESTRICT`
+- `fk_membership_provider_observations__evidence_context`: `FOREIGN KEY (membership_provider_evidence_record_id, membership_provider_lineage_id, provider, environment, application_id) REFERENCES membership_provider_evidence_records(id, membership_provider_lineage_id, provider, environment, application_id) ON DELETE RESTRICT`
 - `fk_membership_provider_observations__lineage_context`: `FOREIGN KEY (membership_provider_lineage_id, provider, environment, application_id) REFERENCES membership_provider_lineages(id, provider, environment, application_id) ON DELETE RESTRICT`
 - `fk_membership_provider_observations__product_context`: `FOREIGN KEY (membership_provider_product_id, membership_product_id, provider, environment, application_id) REFERENCES membership_provider_products(id, membership_product_id, provider, environment, application_id) ON DELETE RESTRICT`
 - `fk_membership_provider_observations__renewal_product_context`: `FOREIGN KEY (renewal_membership_provider_product_id, renewal_membership_product_id, provider, environment, application_id) REFERENCES membership_provider_products(id, membership_product_id, provider, environment, application_id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `idx_membership_provider_observations__evidence_id`: `CREATE UNIQUE INDEX idx_membership_provider_observations__evidence_id ON public.membership_provider_observations USING btree (membership_provider_evidence_id)`
+- `idx_membership_provider_observations__evidence_id`: `CREATE UNIQUE INDEX idx_membership_provider_observations__evidence_id ON public.membership_provider_observations USING btree (membership_provider_evidence_record_id)`
 - `idx_membership_provider_observations__id_lineage_product_kind`: `CREATE UNIQUE INDEX idx_membership_provider_observations__id_lineage_product_kind ON public.membership_provider_observations USING btree (id, membership_provider_lineage_id, membership_product_id, source_kind)`
 - `idx_membership_provider_observations__id_renewal_snapshot`: `CREATE UNIQUE INDEX idx_membership_provider_observations__id_renewal_snapshot ON public.membership_provider_observations USING btree (id, renewal_membership_provider_product_id, renewal_price_minor_units, renewal_price_currency_code, renewal_effective_at)`
 - `idx_membership_provider_observations__lineage_effective`: `CREATE INDEX idx_membership_provider_observations__lineage_effective ON public.membership_provider_observations USING btree (membership_provider_lineage_id, effective_at DESC, id DESC)`

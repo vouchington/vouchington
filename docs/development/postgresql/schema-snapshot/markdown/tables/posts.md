@@ -15,8 +15,8 @@ RANGE partitioned on `id` (children: default, no retention owner, access class: 
 | `title`                                           | `text`                      | no       | `''::text`                                                                                              |          |           |           | Post title (max 255 chars). At least one of title, markdown, or ai_summary_markdown must be non-empty.                                   |
 | `markdown`                                        | `text`                      | no       | `''::text`                                                                                              |          |           |           | Post body in markdown format.                                                                                                            |
 | `ai_summary_markdown`                             | `text`                      | no       | `''::text`                                                                                              |          |           |           | AI-generated summary in markdown. Separate from user-authored markdown. Only administrators can update this via updatePost().            |
-| `parent_id`                                       | `uuid`                      | yes      |                                                                                                         |          |           |           | Parent post for threaded comments. NULL for top-level posts.                                                                             |
-| `root_id`                                         | `uuid`                      | yes      |                                                                                                         |          |           |           | Root post of a comment thread. NULL for top-level posts.                                                                                 |
+| `parent_post_id`                                  | `uuid`                      | yes      |                                                                                                         |          |           |           | Parent post for threaded comments. NULL for top-level posts.                                                                             |
+| `root_post_id`                                    | `uuid`                      | yes      |                                                                                                         |          |           |           | Root post of a comment thread. NULL for top-level posts.                                                                                 |
 | `broadcast`                                       | `broadcast_types`           | no       | `'everyone'::broadcast_types`                                                                           |          |           |           | Audience for this post: everyone, users, followers, or mutual_followers.                                                                 |
 | `privacy`                                         | `privacy_types`             | no       | `'public'::privacy_types`                                                                               |          |           |           | Visibility: public or private.                                                                                                           |
 | `is_anonymous`                                    | `boolean`                   | no       | `false`                                                                                                 |          |           |           | Whether the author's identity is hidden from other users.                                                                                |
@@ -84,11 +84,11 @@ _none_
 - `posts_bedrock_nova_multimodal_v1_input_sha256_check`: `CHECK (((bedrock_nova_multimodal_v1_input_sha256 IS NULL) OR (octet_length(bedrock_nova_multimodal_v1_input_sha256) = 32)))`
 - `posts_bedrock_nova_multimodal_v1_input_token_count_check`: `CHECK (((bedrock_nova_multimodal_v1_input_token_count IS NULL) OR (bedrock_nova_multimodal_v1_input_token_count >= 0)))`
 - `posts_check`: `CHECK ((((title IS NOT NULL) AND (title <> ''::text)) OR ((markdown IS NOT NULL) AND (markdown <> ''::text)) OR ((ai_summary_markdown IS NOT NULL) AND (ai_summary_markdown <> ''::text))))`
-- `posts_check1`: `CHECK ((parent_id <> id))`
-- `posts_check2`: `CHECK ((NOT ((post_type = 'comment'::post_types) AND (parent_id IS NULL))))`
-- `posts_check3`: `CHECK (((parent_id IS NULL) OR (id > parent_id)))`
-- `posts_check4`: `CHECK ((root_id <> id))`
-- `posts_check5`: `CHECK (((root_id IS NULL) OR (id > root_id)))`
+- `posts_check1`: `CHECK ((parent_post_id <> id))`
+- `posts_check2`: `CHECK ((NOT ((post_type = 'comment'::post_types) AND (parent_post_id IS NULL))))`
+- `posts_check3`: `CHECK (((parent_post_id IS NULL) OR (id > parent_post_id)))`
+- `posts_check4`: `CHECK ((root_post_id <> id))`
+- `posts_check5`: `CHECK (((root_post_id IS NULL) OR (id > root_post_id)))`
 - `posts_check6`: `CHECK ((NOT ((broadcast = 'everyone'::broadcast_types) AND (privacy = 'private'::privacy_types))))`
 - `posts_check7`: `CHECK (((post_type <> 'comment'::post_types) OR ((broadcast = 'everyone'::broadcast_types) AND (privacy = 'public'::privacy_types))))`
 - `posts_created_via_oauth_client_id_check`: `CHECK (((created_via_oauth_client_id IS NULL) OR ((created_via IS NOT NULL) AND (created_via = ANY (ARRAY['api'::content_creation_channels, 'mcp'::content_creation_channels])))))`
@@ -113,8 +113,8 @@ _none_
 - `posts_deleted_by_id_fkey`: `FOREIGN KEY (deleted_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `posts_id_fkey`: `FOREIGN KEY (id) REFERENCES retained_post_identities(id) ON DELETE RESTRICT`
 - `posts_latest_clearance_change_id_fkey`: `FOREIGN KEY (latest_clearance_change_id) REFERENCES post_clearance_changes(id) ON DELETE SET NULL`
-- `posts_parent_id_fkey`: `FOREIGN KEY (parent_id) REFERENCES posts(id) ON DELETE CASCADE`
-- `posts_root_id_fkey`: `FOREIGN KEY (root_id) REFERENCES posts(id) ON DELETE CASCADE`
+- `posts_parent_post_id_fkey`: `FOREIGN KEY (parent_post_id) REFERENCES posts(id) ON DELETE CASCADE`
+- `posts_root_post_id_fkey`: `FOREIGN KEY (root_post_id) REFERENCES posts(id) ON DELETE CASCADE`
 - `posts_updated_by_id_fkey`: `FOREIGN KEY (updated_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `posts_url_id_fkey`: `FOREIGN KEY (url_id) REFERENCES urls(id) ON DELETE RESTRICT`
 
@@ -141,10 +141,10 @@ _none_
 - `idx_posts__id__post_type`: `CREATE INDEX idx_posts__id__post_type ON ONLY public.posts USING btree (id DESC, post_type) WHERE (deleted_at IS NULL)`
 - `idx_posts__latest_clearance_change_id`: `CREATE INDEX idx_posts__latest_clearance_change_id ON ONLY public.posts USING btree (latest_clearance_change_id) WHERE (latest_clearance_change_id IS NOT NULL)`
 - `idx_posts__lingua_rs_pending`: `CREATE INDEX idx_posts__lingua_rs_pending ON ONLY public.posts USING btree (id) WHERE (lingua_rs_input_sha256 IS NULL)`
-- `idx_posts__parent_id__id`: `CREATE INDEX idx_posts__parent_id__id ON ONLY public.posts USING btree (parent_id, id) WHERE (parent_id IS NOT NULL)`
+- `idx_posts__parent_id__id`: `CREATE INDEX idx_posts__parent_id__id ON ONLY public.posts USING btree (parent_post_id, id) WHERE (parent_post_id IS NOT NULL)`
 - `idx_posts__privacy_private`: `CREATE INDEX idx_posts__privacy_private ON ONLY public.posts USING btree (created_by_id, broadcast) WHERE ((privacy = 'private'::privacy_types) AND (deleted_at IS NULL))`
-- `idx_posts__root_id__community_id__id`: `CREATE INDEX idx_posts__root_id__community_id__id ON ONLY public.posts USING btree (root_id, community_id, id) WHERE (root_id IS NOT NULL)`
-- `idx_posts__root_id__id`: `CREATE INDEX idx_posts__root_id__id ON ONLY public.posts USING btree (root_id, id) WHERE (root_id IS NOT NULL)`
+- `idx_posts__root_id__community_id__id`: `CREATE INDEX idx_posts__root_id__community_id__id ON ONLY public.posts USING btree (root_post_id, community_id, id) WHERE (root_post_id IS NOT NULL)`
+- `idx_posts__root_id__id`: `CREATE INDEX idx_posts__root_id__id ON ONLY public.posts USING btree (root_post_id, id) WHERE (root_post_id IS NOT NULL)`
 - `idx_posts__root_post_visibility`: `CREATE INDEX idx_posts__root_post_visibility ON ONLY public.posts USING btree (id) INCLUDE (broadcast, created_by_id) WHERE (deleted_at IS NULL)`
 - `idx_posts__search_vector`: `CREATE INDEX idx_posts__search_vector ON ONLY public.posts USING gin (search_vector) WHERE (deleted_at IS NULL)`
 - `idx_posts__structured_data`: `CREATE INDEX idx_posts__structured_data ON ONLY public.posts USING gin (structured_data jsonb_path_ops) WHERE ((structured_data IS NOT NULL) AND (deleted_at IS NULL))`
@@ -161,6 +161,6 @@ _none_
 
 - `trigger_posts_content_provenance_immutable`: `CREATE TRIGGER trigger_posts_content_provenance_immutable AFTER UPDATE ON public.posts FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()`
 - `trigger_posts_creation_source_url_id_immutable`: `CREATE TRIGGER trigger_posts_creation_source_url_id_immutable BEFORE UPDATE OF creation_source_url_id ON public.posts FOR EACH ROW WHEN ((old.creation_source_url_id IS DISTINCT FROM new.creation_source_url_id)) EXECUTE FUNCTION fn_reject_mutation()`
-- `trigger_posts_updated_at`: `CREATE TRIGGER trigger_posts_updated_at BEFORE UPDATE OF post_type, title, markdown, ai_summary_markdown, parent_id, root_id, broadcast, privacy, is_anonymous, community_id, latest_clearance_change_id, approved_at, rejected_at, in_review_at, created_by_id, updated_by_id, deleted_at, deleted_by_id, archived_at, archived_by_id, data_point_vertical, structured_data, declared_language, bedrock_nova_multimodal_v1_input_sha256, bedrock_nova_multimodal_v1_embedding, bedrock_nova_multimodal_v1_embedding_created_at, bedrock_nova_multimodal_v1_input_token_count ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_posts_updated_at`: `CREATE TRIGGER trigger_posts_updated_at BEFORE UPDATE OF post_type, title, markdown, ai_summary_markdown, parent_post_id, root_post_id, broadcast, privacy, is_anonymous, community_id, latest_clearance_change_id, approved_at, rejected_at, in_review_at, created_by_id, updated_by_id, deleted_at, deleted_by_id, archived_at, archived_by_id, data_point_vertical, structured_data, declared_language, bedrock_nova_multimodal_v1_input_sha256, bedrock_nova_multimodal_v1_embedding, bedrock_nova_multimodal_v1_embedding_created_at, bedrock_nova_multimodal_v1_input_token_count ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
 - `trigger_register_retained_post_identity`: `CREATE TRIGGER trigger_register_retained_post_identity BEFORE INSERT ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('post')`
 - `trigger_sync_posts_search_vector`: `CREATE TRIGGER trigger_sync_posts_search_vector BEFORE INSERT OR UPDATE OF title, markdown ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_update_posts_search_vector()`

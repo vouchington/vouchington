@@ -19,7 +19,7 @@ _none_
 
 **Check constraints:**
 
-- `retained_identity_cleanup_progress_family_check`: `CHECK ((family = ANY (ARRAY['user'::retained_identity_cleanup_families, 'api_key'::retained_identity_cleanup_families, 'topic'::retained_identity_cleanup_families, 'post'::retained_identity_cleanup_families, 'rss_feed_item'::retained_identity_cleanup_families, 'image'::retained_identity_cleanup_families, 'image_placement_binding'::retained_identity_cleanup_families])))`
+- `retained_identity_cleanup_progress_family_check`: `CHECK ((family = ANY (ARRAY['user'::retained_identity_cleanup_families, 'api_key'::retained_identity_cleanup_families, 'topic'::retained_identity_cleanup_families, 'post'::retained_identity_cleanup_families, 'rss_feed_item'::retained_identity_cleanup_families, 'image'::retained_identity_cleanup_families, 'membership'::retained_identity_cleanup_families, 'image_placement_binding'::retained_identity_cleanup_families])))`
 
 **Foreign keys:**
 _none_

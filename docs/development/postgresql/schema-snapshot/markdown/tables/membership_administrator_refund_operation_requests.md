@@ -14,11 +14,11 @@ Not partitioned — growth: unbounded.
 | `membership_id`                   | `uuid`                      | no       |                              |          |           |           | Membership selected by the administrator when the request was submitted.                                |
 | `issued_by_id`                    | `uuid`                      | no       |                              |          |           |           | Retained user identity of the requesting administrator; outlives the live account and never authorizes. |
 | `provider_payment_reference`      | `text`                      | no       |                              |          |           |           | Provider payment reference selected as the refund target.                                               |
-| `provider_subscription_reference` | `text`                      | yes      |                              |          |           |           | Provider subscription selected for cancellation when cancel_requested is true.                          |
+| `provider_subscription_reference` | `text`                      | yes      |                              |          |           |           | Provider subscription selected for cancellation when is_cancel_requested is true.                       |
 | `amount_minor_units`              | `bigint`                    | no       |                              |          |           |           | Requested refund amount in the provider currency minor unit.                                            |
 | `currency_code`                   | `text`                      | no       |                              |          |           |           | ISO 4217 currency code requested for the refund.                                                        |
 | `reason`                          | `membership_refund_reasons` | no       |                              |          |           |           | Administrator-selected refund reason.                                                                   |
-| `cancel_requested`                | `boolean`                   | no       |                              |          |           |           | Whether the request also asks the provider subscription to be cancelled.                                |
+| `is_cancel_requested`             | `boolean`                   | no       |                              |          |           |           | Whether the request also asks the provider subscription to be cancelled.                                |
 | `request_fingerprint`             | `text`                      | no       |                              |          |           |           | SHA-256 fingerprint of the exact immutable administrator request payload.                               |
 | `note`                            | `text`                      | yes      |                              |          |           |           | Optional administrator note captured with the request.                                                  |
 | `created_at`                      | `timestamp with time zone`  | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                         |
@@ -36,12 +36,13 @@ Not partitioned — growth: unbounded.
 - `chk_membe_admin_refund_operat_reques__administrator_request_key`: `CHECK ((((char_length(administrator_request_key) >= 1) AND (char_length(administrator_request_key) <= 255)) AND (administrator_request_key = TRIM(BOTH FROM administrator_request_key))))`
 - `chk_members_adminis_refund_operati_request__request_fingerprint`: `CHECK ((char_length(request_fingerprint) = 64))`
 - `chk_members_adminis_refund_operati_requests__amount_minor_units`: `CHECK (((amount_minor_units >= 1) AND (amount_minor_units <= '9007199254740991'::bigint)))`
-- `membership_administrator_refund_operation_requests_check`: `CHECK ((((cancel_requested = false) AND (provider_subscription_reference IS NULL)) OR ((cancel_requested = true) AND ((char_length(provider_subscription_reference) >= 1) AND (char_length(provider_subscription_reference) <= 255)) AND (provider_subscription_reference = TRIM(BOTH FROM provider_subscription_reference)))))`
+- `membership_administrator_refund_operation_requests_check`: `CHECK ((((is_cancel_requested = false) AND (provider_subscription_reference IS NULL)) OR ((is_cancel_requested = true) AND ((char_length(provider_subscription_reference) >= 1) AND (char_length(provider_subscription_reference) <= 255)) AND (provider_subscription_reference = TRIM(BOTH FROM provider_subscription_reference)))))`
 - `membership_administrator_refund_operation_requests_note_check`: `CHECK (((note IS NULL) OR ((char_length(note) >= 1) AND (char_length(note) <= 1000))))`
 
 **Foreign keys:**
 
 - `fk_membershi_administr_refund_operation_requests__currency_code`: `FOREIGN KEY (currency_code) REFERENCES currencies(code) ON DELETE RESTRICT`
+- `fk_membership_administra_refund_operation_requests__membership`: `FOREIGN KEY (membership_id) REFERENCES retained_membership_identities(id) ON DELETE RESTRICT`
 - `fk_membership_administrato_refund_operation_requests__issued_by`: `FOREIGN KEY (issued_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 - `fk_membership_administrato_refund_operation_requests__operation`: `FOREIGN KEY (membership_operation_id) REFERENCES membership_operations(id) ON DELETE RESTRICT`
 

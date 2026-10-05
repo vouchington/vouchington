@@ -6,14 +6,14 @@ Append-only ledger of remote ActivityPub Like/Undo(Like) activity against local 
 
 Not partitioned — growth: unbounded.
 
-| Column            | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                                                                                                    |
-| ----------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`              | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                                                                                                            |
-| `post_id`         | `uuid`                     | no       |                              |          |           |           | The local post that was liked.                                                                                                                                                                                             |
-| `remote_actor_id` | `uuid`                     | no       |                              |          |           |           | The remote actor who sent the Like. One active row per (post_id, remote_actor_id) — see idx_activitypub_post_likes__post_remote_actor.                                                                                     |
-| `like_ap_id`      | `text`                     | no       |                              |          |           |           | The inbound Like activity's ActivityPub `id`. Unique while active — a second live Like from the same remote actor on the same post is rejected by idx_activitypub_post_likes__post_remote_actor before this could collide. |
-| `created_at`      | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                                                                                            |
-| `deleted_at`      | `timestamp with time zone` | yes      |                              |          |           |           | Set by an inbound Undo(Like). NULL while the like is active. A later re-Like from the same (post_id, remote_actor_id) resurrects this same row rather than inserting a new one — see fn_project_activitypub_post_likes.    |
+| Column                | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                                                                                                    |
+| --------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                  | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                                                                                                            |
+| `post_id`             | `uuid`                     | no       |                              |          |           |           | The local post that was liked.                                                                                                                                                                                             |
+| `remote_actor_id`     | `uuid`                     | no       |                              |          |           |           | The remote actor who sent the Like. One active row per (post_id, remote_actor_id) — see idx_activitypub_post_likes__post_remote_actor.                                                                                     |
+| `like_activitypub_id` | `text`                     | no       |                              |          |           |           | The inbound Like activity's ActivityPub `id`. Unique while active — a second live Like from the same remote actor on the same post is rejected by idx_activitypub_post_likes__post_remote_actor before this could collide. |
+| `created_at`          | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                                                                                            |
+| `deleted_at`          | `timestamp with time zone` | yes      |                              |          |           |           | Set by an inbound Undo(Like). NULL while the like is active. A later re-Like from the same (post_id, remote_actor_id) resurrects this same row rather than inserting a new one — see fn_project_activitypub_post_likes.    |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -22,7 +22,7 @@ _none_
 
 **Check constraints:**
 
-- `activitypub_post_likes_like_ap_id_check`: `CHECK (((char_length(like_ap_id) > 0) AND (char_length(like_ap_id) <= 2048)))`
+- `activitypub_post_likes_like_activitypub_id_check`: `CHECK (((char_length(like_activitypub_id) > 0) AND (char_length(like_activitypub_id) <= 2048)))`
 
 **Foreign keys:**
 
@@ -32,7 +32,7 @@ _none_
 **Indexes:**
 
 - `activitypub_post_likes_pkey`: `CREATE UNIQUE INDEX activitypub_post_likes_pkey ON public.activitypub_post_likes USING btree (id)`
-- `idx_activitypub_post_likes__like_activitypub_id`: `CREATE UNIQUE INDEX idx_activitypub_post_likes__like_activitypub_id ON public.activitypub_post_likes USING btree (like_ap_id) WHERE (deleted_at IS NULL)`
+- `idx_activitypub_post_likes__like_activitypub_id`: `CREATE UNIQUE INDEX idx_activitypub_post_likes__like_activitypub_id ON public.activitypub_post_likes USING btree (like_activitypub_id) WHERE (deleted_at IS NULL)`
 - `idx_activitypub_post_likes__post_id`: `CREATE INDEX idx_activitypub_post_likes__post_id ON public.activitypub_post_likes USING btree (post_id)`
 - `idx_activitypub_post_likes__post_remote_actor`: `CREATE UNIQUE INDEX idx_activitypub_post_likes__post_remote_actor ON public.activitypub_post_likes USING btree (post_id, remote_actor_id) WHERE (deleted_at IS NULL)`
 - `idx_activitypub_post_likes__remote_actor_id`: `CREATE INDEX idx_activitypub_post_likes__remote_actor_id ON public.activitypub_post_likes USING btree (remote_actor_id)`

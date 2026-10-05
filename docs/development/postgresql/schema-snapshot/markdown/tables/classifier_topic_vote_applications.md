@@ -6,24 +6,24 @@ Durable per-actor, per-topic application receipts that serialize classifier vote
 
 Not partitioned — growth: unbounded.
 
-| Column              | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                           |
-| ------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------- |
-| `shared_actor_id`   | `uuid`                     | no       |                     |          |           |           | Shared classifier system actor whose topic vote this receipt serializes.          |
-| `topic_id`          | `uuid`                     | no       |                     |          |           |           | Topic whose shared-actor vote was applied.                                        |
-| `post_id`           | `uuid`                     | yes      |                     |          |           |           | Classified post subject; mutually exclusive with rss_feed_item_id.                |
-| `rss_feed_item_id`  | `uuid`                     | yes      |                     |          |           |           | Classified RSS item subject; mutually exclusive with post_id.                     |
-| `classifier_id`     | `uuid`                     | no       |                     |          |           |           | Classifier copied from the owning decision batch for relational enforcement.      |
-| `prompt_version_id` | `uuid`                     | no       |                     |          |           |           | Prompt revision copied from the owning decision batch for relational enforcement. |
-| `batch_id`          | `uuid`                     | no       |                     |          |           |           | Newest applied decision batch for this actor, topic, and subject fence.           |
-| `result_id`         | `uuid`                     | no       |                     |          |           |           | Exact topic classifier result that produced the applied vote.                     |
-| `created_at`        | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                   |
-| `updated_at`        | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                   |
+| Column                 | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                           |
+| ---------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------- |
+| `shared_actor_user_id` | `uuid`                     | no       |                     |          |           |           | Shared classifier system actor whose topic vote this receipt serializes.          |
+| `topic_id`             | `uuid`                     | no       |                     |          |           |           | Topic whose shared-actor vote was applied.                                        |
+| `post_id`              | `uuid`                     | yes      |                     |          |           |           | Classified post subject; mutually exclusive with rss_feed_item_id.                |
+| `rss_feed_item_id`     | `uuid`                     | yes      |                     |          |           |           | Classified RSS item subject; mutually exclusive with post_id.                     |
+| `classifier_id`        | `uuid`                     | no       |                     |          |           |           | Classifier copied from the owning decision batch for relational enforcement.      |
+| `prompt_version_id`    | `uuid`                     | no       |                     |          |           |           | Prompt revision copied from the owning decision batch for relational enforcement. |
+| `batch_id`             | `uuid`                     | no       |                     |          |           |           | Newest applied decision batch for this actor, topic, and subject fence.           |
+| `result_id`            | `uuid`                     | no       |                     |          |           |           | Exact topic classifier result that produced the applied vote.                     |
+| `created_at`           | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                   |
+| `updated_at`           | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                   |
 
 **Primary key:** _none_
 
 **Unique constraints:**
 
-- `uq_classifier_topic_vote_applications__actor_topic_subject`: `UNIQUE NULLS NOT DISTINCT (shared_actor_id, topic_id, post_id, rss_feed_item_id)`
+- `uq_classifier_topic_vote_applications__actor_topic_subject`: `UNIQUE NULLS NOT DISTINCT (shared_actor_user_id, topic_id, post_id, rss_feed_item_id)`
 
 **Check constraints:**
 
@@ -33,7 +33,7 @@ Not partitioned — growth: unbounded.
 
 - `classifier_topic_vote_applications_post_id_fkey`: `FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE`
 - `classifier_topic_vote_applications_rss_feed_item_id_fkey`: `FOREIGN KEY (rss_feed_item_id) REFERENCES rss_feed_items(id) ON DELETE CASCADE`
-- `classifier_topic_vote_applications_shared_actor_id_fkey`: `FOREIGN KEY (shared_actor_id) REFERENCES users(id) ON DELETE RESTRICT`
+- `classifier_topic_vote_applications_shared_actor_user_id_fkey`: `FOREIGN KEY (shared_actor_user_id) REFERENCES users(id) ON DELETE RESTRICT`
 - `classifier_topic_vote_applications_topic_id_fkey`: `FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE CASCADE`
 - `fk_classifier_topic_vote_applications__batch_classifier`: `FOREIGN KEY (batch_id, classifier_id) REFERENCES classifier_decision_batches(id, classifier_id) ON DELETE CASCADE`
 - `fk_classifier_topic_vote_applications__batch_prompt`: `FOREIGN KEY (batch_id, prompt_version_id) REFERENCES classifier_decision_batches(id, prompt_version_id) ON DELETE CASCADE`
@@ -45,7 +45,7 @@ Not partitioned — growth: unbounded.
 - `idx_classifier_topic_vote_applications__post`: `CREATE INDEX idx_classifier_topic_vote_applications__post ON public.classifier_topic_vote_applications USING btree (post_id) WHERE (post_id IS NOT NULL)`
 - `idx_classifier_topic_vote_applications__rss_feed_item`: `CREATE INDEX idx_classifier_topic_vote_applications__rss_feed_item ON public.classifier_topic_vote_applications USING btree (rss_feed_item_id) WHERE (rss_feed_item_id IS NOT NULL)`
 - `idx_classifier_topic_vote_applications__topic`: `CREATE INDEX idx_classifier_topic_vote_applications__topic ON public.classifier_topic_vote_applications USING btree (topic_id)`
-- `uq_classifier_topic_vote_applications__actor_topic_subject`: `CREATE UNIQUE INDEX uq_classifier_topic_vote_applications__actor_topic_subject ON public.classifier_topic_vote_applications USING btree (shared_actor_id, topic_id, post_id, rss_feed_item_id) NULLS NOT DISTINCT`
+- `uq_classifier_topic_vote_applications__actor_topic_subject`: `CREATE UNIQUE INDEX uq_classifier_topic_vote_applications__actor_topic_subject ON public.classifier_topic_vote_applications USING btree (shared_actor_user_id, topic_id, post_id, rss_feed_item_id) NULLS NOT DISTINCT`
 
 **Triggers:**
 

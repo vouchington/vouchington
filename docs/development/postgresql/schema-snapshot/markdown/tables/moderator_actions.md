@@ -11,7 +11,7 @@ Not partitioned — growth: unbounded.
 | `id`                                   | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                    |
 | `community_id`                         | `uuid`                     | yes      |                              |          |           |           | Community scope; NULL for global/platform-level actions.                                           |
 | `moderation_transparency_community_id` | `uuid`                     | yes      |                              |          |           |           | Immutable community scope stamped at action creation for global-transparency exclusion.            |
-| `actor_id`                             | `uuid`                     | yes      |                              |          |           |           | Moderator/admin who took the action (ON DELETE SET NULL for audit persistence).                    |
+| `actor_user_id`                        | `uuid`                     | yes      |                              |          |           |           | Moderator/admin who took the action (ON DELETE SET NULL for audit persistence).                    |
 | `action_type`                          | `moderator_action_types`   | no       |                              |          |           |           | Type of moderation action taken.                                                                   |
 | `post_id`                              | `uuid`                     | yes      |                              |          |           |           | Target post or comment (ON DELETE SET NULL for audit persistence).                                 |
 | `target_user_id`                       | `uuid`                     | yes      |                              |          |           |           | Target user for bans, suspensions, warnings, member actions.                                       |
@@ -28,9 +28,9 @@ Not partitioned — growth: unbounded.
 | `agent_moderation_post_id`             | `uuid`                     | yes      |                              |          |           |           | Post owner required by the partitioned agent-moderation target foreign key.                        |
 | `oauth_client_id`                      | `uuid`                     | yes      |                              |          |           |           | Target OAuth client whose verification was changed.                                                |
 | `user_moderator_note_id`               | `uuid`                     | yes      |                              |          |           |           | Target staff note retained after soft deletion.                                                    |
-| `crawler_id`                           | `uuid`                     | yes      |                              |          |           |           | Target crawler created, edited, or deleted by staff.                                               |
+| `hostname_crawler_configuration_id`    | `uuid`                     | yes      |                              |          |           |           | Target crawler created, edited, or deleted by staff.                                               |
 | `topic_id`                             | `uuid`                     | yes      |                              |          |           |           | Target editorial topic assigned to an RSS category.                                                |
-| `operation_request_id`                 | `uuid`                     | yes      |                              |          |           |           | Requested audit row linked by an external-operation outcome; an absent outcome remains unresolved. |
+| `operation_request_action_id`          | `uuid`                     | yes      |                              |          |           |           | Requested audit row linked by an external-operation outcome; an absent outcome remains unresolved. |
 | `queue_name`                           | `text`                     | yes      |                              |          |           |           | Queue selected for a staff control operation.                                                      |
 | `scheduled_job_key`                    | `text`                     | yes      |                              |          |           |           | Scheduled-job catalog key selected for an immediate staff run.                                     |
 | `backfill_key`                         | `text`                     | yes      |                              |          |           |           | Backfill catalog key selected for an immediate staff run.                                          |
@@ -57,12 +57,12 @@ _none_
 - `fk_moderator_actions__oauth_client_id`: `FOREIGN KEY (oauth_client_id) REFERENCES oauth_clients(id) ON DELETE SET NULL`
 - `fk_moderator_actions__report_abuse_penalty_id`: `FOREIGN KEY (report_abuse_penalty_id) REFERENCES report_abuse_penalties(id) ON DELETE SET NULL`
 - `fk_moderator_actions__report_integrity_flag_id`: `FOREIGN KEY (report_integrity_flag_id) REFERENCES report_integrity_flags(id) ON DELETE SET NULL`
-- `moderator_actions_actor_id_fkey`: `FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE SET NULL`
+- `moderator_actions_actor_user_id_fkey`: `FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE SET NULL`
 - `moderator_actions_admin_import_batch_id_fkey`: `FOREIGN KEY (admin_import_batch_id) REFERENCES admin_import_batches(id) ON DELETE SET NULL`
 - `moderator_actions_community_application_id_fkey`: `FOREIGN KEY (community_application_id) REFERENCES community_applications(id) ON DELETE SET NULL`
 - `moderator_actions_community_id_fkey`: `FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE SET NULL`
-- `moderator_actions_crawler_id_fkey`: `FOREIGN KEY (crawler_id) REFERENCES hostname_crawler_configurations(id) ON DELETE SET NULL`
-- `moderator_actions_operation_request_id_fkey`: `FOREIGN KEY (operation_request_id) REFERENCES moderator_actions(id) ON DELETE SET NULL`
+- `moderator_actions_hostname_crawler_configuration_id_fkey`: `FOREIGN KEY (hostname_crawler_configuration_id) REFERENCES hostname_crawler_configurations(id) ON DELETE SET NULL`
+- `moderator_actions_operation_request_action_id_fkey`: `FOREIGN KEY (operation_request_action_id) REFERENCES moderator_actions(id) ON DELETE SET NULL`
 - `moderator_actions_post_id_fkey`: `FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE SET NULL`
 - `moderator_actions_report_id_fkey`: `FOREIGN KEY (report_id) REFERENCES moderation_reports(id) ON DELETE SET NULL`
 - `moderator_actions_review_dispute_id_fkey`: `FOREIGN KEY (review_dispute_id) REFERENCES review_disputes(id) ON DELETE SET NULL`
@@ -75,17 +75,17 @@ _none_
 
 **Indexes:**
 
-- `idx_moderator_actions__actor__id`: `CREATE INDEX idx_moderator_actions__actor__id ON public.moderator_actions USING btree (actor_id, id DESC)`
+- `idx_moderator_actions__actor__id`: `CREATE INDEX idx_moderator_actions__actor__id ON public.moderator_actions USING btree (actor_user_id, id DESC)`
 - `idx_moderator_actions__admin_import_batch_id`: `CREATE INDEX idx_moderator_actions__admin_import_batch_id ON public.moderator_actions USING btree (admin_import_batch_id) WHERE (admin_import_batch_id IS NOT NULL)`
 - `idx_moderator_actions__agent_moderation_id`: `CREATE INDEX idx_moderator_actions__agent_moderation_id ON public.moderator_actions USING btree (agent_moderation_id) WHERE (agent_moderation_id IS NOT NULL)`
 - `idx_moderator_actions__agent_moderation_target`: `CREATE INDEX idx_moderator_actions__agent_moderation_target ON public.moderator_actions USING btree (agent_moderation_post_id, agent_moderation_id)`
 - `idx_moderator_actions__community__id`: `CREATE INDEX idx_moderator_actions__community__id ON public.moderator_actions USING btree (community_id, id DESC)`
 - `idx_moderator_actions__community_application_id`: `CREATE INDEX idx_moderator_actions__community_application_id ON public.moderator_actions USING btree (community_application_id) WHERE (community_application_id IS NOT NULL)`
-- `idx_moderator_actions__crawler_id`: `CREATE INDEX idx_moderator_actions__crawler_id ON public.moderator_actions USING btree (crawler_id) WHERE (crawler_id IS NOT NULL)`
+- `idx_moderator_actions__crawler_id`: `CREATE INDEX idx_moderator_actions__crawler_id ON public.moderator_actions USING btree (hostname_crawler_configuration_id) WHERE (hostname_crawler_configuration_id IS NOT NULL)`
 - `idx_moderator_actions__id`: `CREATE INDEX idx_moderator_actions__id ON public.moderator_actions USING btree (id DESC)`
 - `idx_moderator_actions__moderation_appeal_id`: `CREATE INDEX idx_moderator_actions__moderation_appeal_id ON public.moderator_actions USING btree (moderation_appeal_id) WHERE (moderation_appeal_id IS NOT NULL)`
 - `idx_moderator_actions__oauth_client_id`: `CREATE INDEX idx_moderator_actions__oauth_client_id ON public.moderator_actions USING btree (oauth_client_id) WHERE (oauth_client_id IS NOT NULL)`
-- `idx_moderator_actions__operation_request_id`: `CREATE INDEX idx_moderator_actions__operation_request_id ON public.moderator_actions USING btree (operation_request_id) WHERE (operation_request_id IS NOT NULL)`
+- `idx_moderator_actions__operation_request_id`: `CREATE INDEX idx_moderator_actions__operation_request_id ON public.moderator_actions USING btree (operation_request_action_id) WHERE (operation_request_action_id IS NOT NULL)`
 - `idx_moderator_actions__post_id`: `CREATE INDEX idx_moderator_actions__post_id ON public.moderator_actions USING btree (post_id) WHERE (post_id IS NOT NULL)`
 - `idx_moderator_actions__report_abuse_penalty_id`: `CREATE INDEX idx_moderator_actions__report_abuse_penalty_id ON public.moderator_actions USING btree (report_abuse_penalty_id) WHERE (report_abuse_penalty_id IS NOT NULL)`
 - `idx_moderator_actions__report_id`: `CREATE INDEX idx_moderator_actions__report_id ON public.moderator_actions USING btree (report_id) WHERE (report_id IS NOT NULL)`

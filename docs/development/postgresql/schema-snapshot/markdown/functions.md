@@ -10,10 +10,10 @@ CREATE OR REPLACE FUNCTION public.fn_apply_moderation_transparency_daily_rollup(
  LANGUAGE plpgsql
 ```
 
-## `fn_classifier_audit_actor_was_deleted(actor_id uuid)`
+## `fn_classifier_audit_actor_was_deleted(actor_user_id uuid)`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_classifier_audit_actor_was_deleted(actor_id uuid)
+CREATE OR REPLACE FUNCTION public.fn_classifier_audit_actor_was_deleted(actor_user_id uuid)
  RETURNS boolean
  LANGUAGE sql
 ```

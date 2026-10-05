@@ -15,7 +15,7 @@ Not partitioned — growth: unbounded.
 | `action`                                          | `copyright_notice_email_correspondence_review_actions` | no       |                              |          |           |           | Pending, admitted, or rejected human-review outcome.              |
 | `kind`                                            | `copyright_notice_email_correspondence_review_kinds`   | yes      |                              |          |           |           | Moderator-classified legal meaning of the email.                  |
 | `copyright_notice_submission_id`                  | `uuid`                                                 | yes      |                              |          |           |           | Immutable submission created when the email is admitted.          |
-| `copyright_notice_correspondence_id`              | `uuid`                                                 | yes      |                              |          |           |           | Private inbound correspondence created when admitted.             |
+| `copyright_notice_correspondence_message_id`      | `uuid`                                                 | yes      |                              |          |           |           | Private inbound correspondence created when admitted.             |
 | `reviewed_at`                                     | `timestamp with time zone`                             | yes      |                              |          |           |           | Time a moderator made the terminal decision.                      |
 | `reviewed_by_id`                                  | `uuid`                                                 | yes      |                              |          |           |           | Moderator who made the terminal decision.                         |
 | `rationale_ciphertext`                            | `text`                                                 | yes      |                              |          |           |           | Encrypted moderator rationale.                                    |
@@ -27,7 +27,7 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `uq_copyright_notice_email_correspond_reviews__correspondence_id`: `UNIQUE (copyright_notice_correspondence_id)`
+- `uq_copyright_notice_email_correspond_reviews__correspondence_id`: `UNIQUE (copyright_notice_correspondence_message_id)`
 - `uq_copyright_notice_email_correspond_reviews__intake_id__action`: `UNIQUE (copyright_notice_email_intake_id, action)`
 - `uq_copyright_notice_email_correspondence_reviews__submission_id`: `UNIQUE (copyright_notice_submission_id)`
 
@@ -37,14 +37,14 @@ Not partitioned — growth: unbounded.
 - `chk_copyrig_notice_email_correspo_reviews__rationale_ciphertext`: `CHECK (((rationale_ciphertext IS NULL) OR ((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 65536))))`
 - `copyright_notice_email_correspondence_reviews_action_check`: `CHECK ((action = ANY (ARRAY['pending'::copyright_notice_email_correspondence_review_actions, 'admitted'::copyright_notice_email_correspondence_review_actions, 'rejected'::copyright_notice_email_correspondence_review_actions])))`
 - `copyright_notice_email_correspondence_reviews_check`: `CHECK ((((action = 'pending'::copyright_notice_email_correspondence_review_actions) AND (reviewed_at IS NULL) AND (reviewed_by_id IS NULL) AND (kind IS NULL)) OR ((action = ANY (ARRAY['admitted'::copyright_notice_email_correspondence_review_actions, 'rejected'::copyright_notice_email_correspondence_review_actions])) AND (reviewed_at IS NOT NULL) AND (reviewed_by_id IS NOT NULL) AND (kind IS NOT NULL))))`
-- `copyright_notice_email_correspondence_reviews_check1`: `CHECK (((action = 'admitted'::copyright_notice_email_correspondence_review_actions) = ((copyright_notice_submission_id IS NOT NULL) AND (copyright_notice_correspondence_id IS NOT NULL))))`
+- `copyright_notice_email_correspondence_reviews_check1`: `CHECK (((action = 'admitted'::copyright_notice_email_correspondence_review_actions) = ((copyright_notice_submission_id IS NOT NULL) AND (copyright_notice_correspondence_message_id IS NOT NULL))))`
 - `copyright_notice_email_correspondence_reviews_check2`: `CHECK (((action = 'pending'::copyright_notice_email_correspondence_review_actions) OR ((copyright_notice_email_intake_recommendation_id IS NULL) = (manual_fallback_reason_ciphertext IS NOT NULL))))`
 - `copyright_notice_email_correspondence_reviews_kind_check`: `CHECK ((kind = ANY (ARRAY['supplement'::copyright_notice_email_correspondence_review_kinds, 'appeal'::copyright_notice_email_correspondence_review_kinds, 'counter_notice'::copyright_notice_email_correspondence_review_kinds, 'withdrawal'::copyright_notice_email_correspondence_review_kinds, 'court_or_ccb_hold'::copyright_notice_email_correspondence_review_kinds, 'complaint'::copyright_notice_email_correspondence_review_kinds])))`
 
 **Foreign keys:**
 
 - `fk_copyright_email_corresp_reviews__recommendation_intake`: `FOREIGN KEY (copyright_notice_email_intake_id, copyright_notice_email_intake_recommendation_id) REFERENCES copyright_notice_email_intake_recommendations(copyright_notice_email_intake_id, id) ON DELETE RESTRICT`
-- `fk_copyright_notice_email_correspondenc_reviews__correspondence`: `FOREIGN KEY (copyright_notice_correspondence_id) REFERENCES copyright_notice_correspondence_messages(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_email_correspondenc_reviews__correspondence`: `FOREIGN KEY (copyright_notice_correspondence_message_id) REFERENCES copyright_notice_correspondence_messages(id) ON DELETE RESTRICT`
 - `fk_copyright_notice_email_correspondence_reviews__intake`: `FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
 - `fk_copyright_notice_email_correspondence_reviews__notice`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
 - `fk_copyright_notice_email_correspondence_reviews__reviewed_by`: `FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL`
@@ -57,7 +57,7 @@ Not partitioned — growth: unbounded.
 - `idx_copyright_notice_email_correspondence_reviews__notice`: `CREATE INDEX idx_copyright_notice_email_correspondence_reviews__notice ON public.copyright_notice_email_correspondence_reviews USING btree (copyright_notice_id, id)`
 - `idx_copyright_notice_email_correspondence_reviews__reviewer`: `CREATE INDEX idx_copyright_notice_email_correspondence_reviews__reviewer ON public.copyright_notice_email_correspondence_reviews USING btree (reviewed_by_id) WHERE (reviewed_by_id IS NOT NULL)`
 - `idx_copyright_notice_email_correspondence_reviews__terminal`: `CREATE UNIQUE INDEX idx_copyright_notice_email_correspondence_reviews__terminal ON public.copyright_notice_email_correspondence_reviews USING btree (copyright_notice_email_intake_id) WHERE (action = ANY (ARRAY['admitted'::copyright_notice_email_correspondence_review_actions, 'rejected'::copyright_notice_email_correspondence_review_actions]))`
-- `uq_copyright_notice_email_correspond_reviews__correspondence_id`: `CREATE UNIQUE INDEX uq_copyright_notice_email_correspond_reviews__correspondence_id ON public.copyright_notice_email_correspondence_reviews USING btree (copyright_notice_correspondence_id)`
+- `uq_copyright_notice_email_correspond_reviews__correspondence_id`: `CREATE UNIQUE INDEX uq_copyright_notice_email_correspond_reviews__correspondence_id ON public.copyright_notice_email_correspondence_reviews USING btree (copyright_notice_correspondence_message_id)`
 - `uq_copyright_notice_email_correspond_reviews__intake_id__action`: `CREATE UNIQUE INDEX uq_copyright_notice_email_correspond_reviews__intake_id__action ON public.copyright_notice_email_correspondence_reviews USING btree (copyright_notice_email_intake_id, action)`
 - `uq_copyright_notice_email_correspondence_reviews__submission_id`: `CREATE UNIQUE INDEX uq_copyright_notice_email_correspondence_reviews__submission_id ON public.copyright_notice_email_correspondence_reviews USING btree (copyright_notice_submission_id)`
 

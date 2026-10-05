@@ -6,16 +6,16 @@ Exact authored post hashtag tokens, keyed by canonical topic alias.
 
 Not partitioned — growth: unbounded.
 
-| Column           | Type                            | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                   |
-| ---------------- | ------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`             | `uuid`                          | no       | `uuidv7()`                   |          |           |           |                                                                                                                                           |
-| `post_id`        | `uuid`                          | no       |                              |          |           |           | The post containing this hashtag occurrence.                                                                                              |
-| `topic_alias_id` | `uuid`                          | no       |                              |          |           |           | The canonical hashtag alias referenced by the authored token.                                                                             |
-| `contributor_id` | `uuid`                          | no       |                              |          |           |           | The durable author identity used for hashtag contributor aggregation when a deleted account’s posts are reassigned to the tombstone user. |
-| `source`         | `post_topic_alias_source_types` | no       |                              |          |           |           | Where the hashtag was authored: title, markdown, or an explicit category.                                                                 |
-| `authored_token` | `text`                          | no       |                              |          |           |           | The exact authored hashtag token, including its original casing.                                                                          |
-| `created_at`     | `timestamp with time zone`      | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                           |
-| `updated_at`     | `timestamp with time zone`      | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                           |
+| Column                | Type                            | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                   |
+| --------------------- | ------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                  | `uuid`                          | no       | `uuidv7()`                   |          |           |           |                                                                                                                                           |
+| `post_id`             | `uuid`                          | no       |                              |          |           |           | The post containing this hashtag occurrence.                                                                                              |
+| `topic_alias_id`      | `uuid`                          | no       |                              |          |           |           | The canonical hashtag alias referenced by the authored token.                                                                             |
+| `contributor_user_id` | `uuid`                          | no       |                              |          |           |           | The durable author identity used for hashtag contributor aggregation when a deleted account’s posts are reassigned to the tombstone user. |
+| `source`              | `post_topic_alias_source_types` | no       |                              |          |           |           | Where the hashtag was authored: title, markdown, or an explicit category.                                                                 |
+| `authored_token`      | `text`                          | no       |                              |          |           |           | The exact authored hashtag token, including its original casing.                                                                          |
+| `created_at`          | `timestamp with time zone`      | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                           |
+| `updated_at`          | `timestamp with time zone`      | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                           |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -31,13 +31,13 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `post_topic_alias_sources_contributor_id_fkey`: `FOREIGN KEY (contributor_id) REFERENCES users(id) ON DELETE RESTRICT`
+- `post_topic_alias_sources_contributor_user_id_fkey`: `FOREIGN KEY (contributor_user_id) REFERENCES users(id) ON DELETE RESTRICT`
 - `post_topic_alias_sources_post_id_fkey`: `FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE`
 - `post_topic_alias_sources_topic_alias_id_fkey`: `FOREIGN KEY (topic_alias_id) REFERENCES topic_aliases(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `idx_post_topic_alias_sources__contributor_id`: `CREATE INDEX idx_post_topic_alias_sources__contributor_id ON public.post_topic_alias_sources USING btree (contributor_id)`
+- `idx_post_topic_alias_sources__contributor_id`: `CREATE INDEX idx_post_topic_alias_sources__contributor_id ON public.post_topic_alias_sources USING btree (contributor_user_id)`
 - `idx_post_topic_alias_sources__topic_alias_id`: `CREATE INDEX idx_post_topic_alias_sources__topic_alias_id ON public.post_topic_alias_sources USING btree (topic_alias_id, post_id DESC)`
 - `post_topic_alias_sources_pkey`: `CREATE UNIQUE INDEX post_topic_alias_sources_pkey ON public.post_topic_alias_sources USING btree (id)`
 - `post_topic_alias_sources_post_id_topic_alias_id_source_key`: `CREATE UNIQUE INDEX post_topic_alias_sources_post_id_topic_alias_id_source_key ON public.post_topic_alias_sources USING btree (post_id, topic_alias_id, source)`

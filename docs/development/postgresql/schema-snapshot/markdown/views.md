@@ -109,25 +109,25 @@ Rolling 30-day top-hashtag recommendations from public posts and discoverable RS
             source.post_id AS content_id,
             'post'::text AS content_kind,
             p.created_at AS content_published_at,
-            ('user:'::text || (source.contributor_id)::text) AS contributor_id
+            ('user:'::text || (source.contributor_user_id)::text) AS contributor_user_id
            FROM (((post_topic_alias_sources source
              JOIN posts p ON ((p.id = source.post_id)))
              JOIN view_public_post_eligibility eligibility ON ((eligibility.post_id = p.id)))
              JOIN relation__post__category__topic_alias relation ON (((relation.subject_id = source.post_id) AND (relation.object_id = source.topic_alias_id) AND (relation.deleted_at IS NULL) AND (relation.votes_score_net > (0)::double precision))))
           WHERE ((p.post_type <> 'topic_recommendation'::post_types) AND (EXISTS ( SELECT 1
                    FROM users contributor
-                  WHERE ((contributor.id = source.contributor_id) AND (contributor.platform_account_kind IS NULL) AND (contributor.deleted_at IS NULL)))) AND (EXISTS ( SELECT 1
+                  WHERE ((contributor.id = source.contributor_user_id) AND (contributor.platform_account_kind IS NULL) AND (contributor.deleted_at IS NULL)))) AND (EXISTS ( SELECT 1
                    FROM users post_creator
                   WHERE ((post_creator.id = p.created_by_id) AND (post_creator.platform_account_kind IS NULL)))) AND (NOT (EXISTS ( SELECT 1
                    FROM user_suspensions suspension
-                  WHERE ((suspension.user_id = source.contributor_id) AND (suspension.lifted_at IS NULL))))) AND (p.id >= uuidv7('-30 days'::interval)))
+                  WHERE ((suspension.user_id = source.contributor_user_id) AND (suspension.lifted_at IS NULL))))) AND (p.id >= uuidv7('-30 days'::interval)))
         ), eligible_rss_hashtags AS (
          SELECT category.topic_alias_id,
             category.category_text AS authored_token,
             category.rss_feed_item_id AS content_id,
             'rss_feed_item'::text AS content_kind,
             item.published_at AS content_published_at,
-            ('rss:'::text || (identity.url_hostname_id)::text) AS contributor_id
+            ('rss:'::text || (identity.url_hostname_id)::text) AS contributor_user_id
            FROM ((rss_feed_item_categories category
              JOIN rss_feed_items item ON ((item.id = category.rss_feed_item_id)))
              JOIN rss_feed_item_guids identity ON ((identity.id = item.id)))
@@ -144,7 +144,7 @@ Rolling 30-day top-hashtag recommendations from public posts and discoverable RS
             eligible_post_hashtags.content_id,
             eligible_post_hashtags.content_kind,
             eligible_post_hashtags.content_published_at,
-            eligible_post_hashtags.contributor_id
+            eligible_post_hashtags.contributor_user_id
            FROM eligible_post_hashtags
         UNION ALL
          SELECT eligible_rss_hashtags.topic_alias_id,
@@ -152,7 +152,7 @@ Rolling 30-day top-hashtag recommendations from public posts and discoverable RS
             eligible_rss_hashtags.content_id,
             eligible_rss_hashtags.content_kind,
             eligible_rss_hashtags.content_published_at,
-            eligible_rss_hashtags.contributor_id
+            eligible_rss_hashtags.contributor_user_id
            FROM eligible_rss_hashtags
         ), casing_frequency AS (
          SELECT occurrences.topic_alias_id,
@@ -170,7 +170,7 @@ Rolling 30-day top-hashtag recommendations from public posts and discoverable RS
         ), aggregate AS (
          SELECT occurrences.topic_alias_id,
             count(DISTINCT ((occurrences.content_kind || ':'::text) || (occurrences.content_id)::text)) AS item_count,
-            count(DISTINCT occurrences.contributor_id) AS contributor_count,
+            count(DISTINCT occurrences.contributor_user_id) AS contributor_count,
             max(occurrences.content_published_at) AS latest_content_at,
             (array_agg(occurrences.content_id ORDER BY occurrences.content_published_at DESC, occurrences.content_id DESC))[1] AS latest_content_id
            FROM occurrences
@@ -280,7 +280,7 @@ UNION ALL
      JOIN membership_sources source ON ((source.id = m.membership_source_id)))
      LEFT JOIN membership_source_states source_state ON ((source_state.membership_source_id = source.id)))
      LEFT JOIN membership_provider_observations observation ON ((observation.id = source_state.membership_provider_observation_id)))
-     LEFT JOIN membership_provider_evidence_records evidence ON ((evidence.id = observation.membership_provider_evidence_id)))
+     LEFT JOIN membership_provider_evidence_records evidence ON ((evidence.id = observation.membership_provider_evidence_record_id)))
   WHERE ((m.projection_ended_at IS NULL) AND (m.cancelled_at IS NULL) AND (m.expired_at IS NULL) AND (m.paused_at IS NULL) AND ((source.source_kind = 'direct'::membership_source_kinds) OR (m.expires_at IS NULL) OR (m.expires_at > CURRENT_TIMESTAMP)) AND ((source.source_kind <> 'family'::membership_source_kinds) OR ((source_state.cancelled_at IS NULL) AND (source_state.expired_at IS NULL) AND (source_state.past_due_at IS NULL) AND (source_state.paused_at IS NULL) AND (source_state.effective_at <= CURRENT_TIMESTAMP) AND ((source_state.expires_at IS NULL) OR (source_state.expires_at > CURRENT_TIMESTAMP)) AND (evidence.verified_at IS NOT NULL) AND (evidence.rejected_at IS NULL))))
   ORDER BY m.user_id,
         CASE product.plan
@@ -299,8 +299,8 @@ UNION ALL
     slug,
     markdown,
     topic_type,
-    noindex,
-    allow_reviews,
+    is_noindexed,
+    should_allow_reviews,
     created_at,
     hostname_id,
     homepage_url_id,
@@ -402,7 +402,7 @@ Current concrete relation vote ledgers combined for cross-family reads; writes t
     relation__user__category__topic__votes.ip_address,
     relation__user__category__topic__votes.device_id,
     relation__user__category__topic__votes.session_id,
-    relation__user__category__topic__votes.user_agent_id,
+    relation__user__category__topic__votes.user_agent_string_id,
     relation__user__category__topic__votes.created_at
    FROM relation__user__category__topic__votes
 UNION ALL
@@ -417,7 +417,7 @@ UNION ALL
     relation__post__category__topic__votes.ip_address,
     relation__post__category__topic__votes.device_id,
     relation__post__category__topic__votes.session_id,
-    relation__post__category__topic__votes.user_agent_id,
+    relation__post__category__topic__votes.user_agent_string_id,
     relation__post__category__topic__votes.created_at
    FROM relation__post__category__topic__votes
 UNION ALL
@@ -432,7 +432,7 @@ UNION ALL
     relation__post__category__topic_alias__votes.ip_address,
     relation__post__category__topic_alias__votes.device_id,
     relation__post__category__topic_alias__votes.session_id,
-    relation__post__category__topic_alias__votes.user_agent_id,
+    relation__post__category__topic_alias__votes.user_agent_string_id,
     relation__post__category__topic_alias__votes.created_at
    FROM relation__post__category__topic_alias__votes
 UNION ALL
@@ -447,7 +447,7 @@ UNION ALL
     relation__post__related__post__votes.ip_address,
     relation__post__related__post__votes.device_id,
     relation__post__related__post__votes.session_id,
-    relation__post__related__post__votes.user_agent_id,
+    relation__post__related__post__votes.user_agent_string_id,
     relation__post__related__post__votes.created_at
    FROM relation__post__related__post__votes
 UNION ALL
@@ -462,7 +462,7 @@ UNION ALL
     relation__post__related__url__votes.ip_address,
     relation__post__related__url__votes.device_id,
     relation__post__related__url__votes.session_id,
-    relation__post__related__url__votes.user_agent_id,
+    relation__post__related__url__votes.user_agent_string_id,
     relation__post__related__url__votes.created_at
    FROM relation__post__related__url__votes
 UNION ALL
@@ -477,7 +477,7 @@ UNION ALL
     relation__topic__related__topic__votes.ip_address,
     relation__topic__related__topic__votes.device_id,
     relation__topic__related__topic__votes.session_id,
-    relation__topic__related__topic__votes.user_agent_id,
+    relation__topic__related__topic__votes.user_agent_string_id,
     relation__topic__related__topic__votes.created_at
    FROM relation__topic__related__topic__votes
 UNION ALL
@@ -492,7 +492,7 @@ UNION ALL
     relation__topic__category__topic__votes.ip_address,
     relation__topic__category__topic__votes.device_id,
     relation__topic__category__topic__votes.session_id,
-    relation__topic__category__topic__votes.user_agent_id,
+    relation__topic__category__topic__votes.user_agent_string_id,
     relation__topic__category__topic__votes.created_at
    FROM relation__topic__category__topic__votes
 UNION ALL
@@ -507,7 +507,7 @@ UNION ALL
     relation__topic__publisher_type__topic__votes.ip_address,
     relation__topic__publisher_type__topic__votes.device_id,
     relation__topic__publisher_type__topic__votes.session_id,
-    relation__topic__publisher_type__topic__votes.user_agent_id,
+    relation__topic__publisher_type__topic__votes.user_agent_string_id,
     relation__topic__publisher_type__topic__votes.created_at
    FROM relation__topic__publisher_type__topic__votes
 UNION ALL
@@ -522,7 +522,7 @@ UNION ALL
     relation__topic__faq__post__votes.ip_address,
     relation__topic__faq__post__votes.device_id,
     relation__topic__faq__post__votes.session_id,
-    relation__topic__faq__post__votes.user_agent_id,
+    relation__topic__faq__post__votes.user_agent_string_id,
     relation__topic__faq__post__votes.created_at
    FROM relation__topic__faq__post__votes
 UNION ALL
@@ -537,7 +537,7 @@ UNION ALL
     relation__topic__related__post__votes.ip_address,
     relation__topic__related__post__votes.device_id,
     relation__topic__related__post__votes.session_id,
-    relation__topic__related__post__votes.user_agent_id,
+    relation__topic__related__post__votes.user_agent_string_id,
     relation__topic__related__post__votes.created_at
    FROM relation__topic__related__post__votes
 UNION ALL
@@ -552,7 +552,7 @@ UNION ALL
     relation__topic__related__url__votes.ip_address,
     relation__topic__related__url__votes.device_id,
     relation__topic__related__url__votes.session_id,
-    relation__topic__related__url__votes.user_agent_id,
+    relation__topic__related__url__votes.user_agent_string_id,
     relation__topic__related__url__votes.created_at
    FROM relation__topic__related__url__votes
 UNION ALL
@@ -567,7 +567,7 @@ UNION ALL
     relation__topic__faq__url__votes.ip_address,
     relation__topic__faq__url__votes.device_id,
     relation__topic__faq__url__votes.session_id,
-    relation__topic__faq__url__votes.user_agent_id,
+    relation__topic__faq__url__votes.user_agent_string_id,
     relation__topic__faq__url__votes.created_at
    FROM relation__topic__faq__url__votes
 UNION ALL
@@ -582,7 +582,7 @@ UNION ALL
     relation__topic__guide__url__votes.ip_address,
     relation__topic__guide__url__votes.device_id,
     relation__topic__guide__url__votes.session_id,
-    relation__topic__guide__url__votes.user_agent_id,
+    relation__topic__guide__url__votes.user_agent_string_id,
     relation__topic__guide__url__votes.created_at
    FROM relation__topic__guide__url__votes
 UNION ALL
@@ -597,7 +597,7 @@ UNION ALL
     relation__topic__landing_page__url__votes.ip_address,
     relation__topic__landing_page__url__votes.device_id,
     relation__topic__landing_page__url__votes.session_id,
-    relation__topic__landing_page__url__votes.user_agent_id,
+    relation__topic__landing_page__url__votes.user_agent_string_id,
     relation__topic__landing_page__url__votes.created_at
    FROM relation__topic__landing_page__url__votes
 UNION ALL
@@ -612,7 +612,7 @@ UNION ALL
     relation__topic__terms_of_service__url__votes.ip_address,
     relation__topic__terms_of_service__url__votes.device_id,
     relation__topic__terms_of_service__url__votes.session_id,
-    relation__topic__terms_of_service__url__votes.user_agent_id,
+    relation__topic__terms_of_service__url__votes.user_agent_string_id,
     relation__topic__terms_of_service__url__votes.created_at
    FROM relation__topic__terms_of_service__url__votes
 UNION ALL
@@ -627,7 +627,7 @@ UNION ALL
     relation__rss_feed_item__category__topic__votes.ip_address,
     relation__rss_feed_item__category__topic__votes.device_id,
     relation__rss_feed_item__category__topic__votes.session_id,
-    relation__rss_feed_item__category__topic__votes.user_agent_id,
+    relation__rss_feed_item__category__topic__votes.user_agent_string_id,
     relation__rss_feed_item__category__topic__votes.created_at
    FROM relation__rss_feed_item__category__topic__votes
 UNION ALL
@@ -642,7 +642,7 @@ UNION ALL
     relation__rss_feed_item__category__topic_alias__votes.ip_address,
     relation__rss_feed_item__category__topic_alias__votes.device_id,
     relation__rss_feed_item__category__topic_alias__votes.session_id,
-    relation__rss_feed_item__category__topic_alias__votes.user_agent_id,
+    relation__rss_feed_item__category__topic_alias__votes.user_agent_string_id,
     relation__rss_feed_item__category__topic_alias__votes.created_at
    FROM relation__rss_feed_item__category__topic_alias__votes;
 ```
@@ -678,7 +678,7 @@ UNION ALL
     m.expired_at,
     m.past_due_at,
     m.paused_at,
-    m.cancel_at_period_end,
+    m.should_cancel_at_period_end,
     m.latest_change_id,
     m.created_at,
     m.updated_at,
@@ -692,7 +692,7 @@ UNION ALL
      JOIN membership_sources source ON ((source.id = m.membership_source_id)))
      LEFT JOIN membership_source_states source_state ON ((source_state.membership_source_id = source.id)))
      LEFT JOIN membership_provider_observations observation ON ((observation.id = source_state.membership_provider_observation_id)))
-     LEFT JOIN membership_provider_evidence_records evidence ON ((evidence.id = observation.membership_provider_evidence_id)))
+     LEFT JOIN membership_provider_evidence_records evidence ON ((evidence.id = observation.membership_provider_evidence_record_id)))
      LEFT JOIN membership_grants membership_grant ON ((membership_grant.membership_source_id = source.id)))
      LEFT JOIN membership_provider_lineages lineage ON ((lineage.id = source.membership_provider_lineage_id)))
      LEFT JOIN LATERAL ( SELECT membership_provider_products.provider_product_id,
@@ -738,8 +738,8 @@ UNION ALL
     posts.title,
     posts.markdown,
     posts.ai_summary_markdown,
-    posts.root_id,
-    posts.parent_id,
+    posts.root_post_id,
+    posts.parent_post_id,
     posts.broadcast,
     posts.privacy,
     posts.is_anonymous,
@@ -817,7 +817,7 @@ UNION ALL
         CASE
             WHEN (openai_moderation.disposition IS NULL) THEN NULL::boolean
             ELSE (openai_moderation.disposition <> 'pass'::post_moderation_disposition_types)
-        END AS openai_omni_moderation_flagged,
+        END AS is_flagged_by_openai_omni_moderation,
     clearance.clearance_status,
     clearance.clearance_updated_at,
         CASE
@@ -883,7 +883,7 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
  SELECT candidate_post.id AS post_id,
     candidate_post.post_type
    FROM (((posts candidate_post
-     JOIN posts root_post ON ((root_post.id = COALESCE(candidate_post.root_id, candidate_post.id))))
+     JOIN posts root_post ON ((root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id))))
      LEFT JOIN user_suspensions root_suspension ON (((root_suspension.user_id = root_post.created_by_id) AND (root_suspension.lifted_at IS NULL))))
      LEFT JOIN user_suspensions candidate_suspension ON (((candidate_suspension.user_id = candidate_post.created_by_id) AND (candidate_suspension.lifted_at IS NULL))))
   WHERE ((candidate_post.deleted_at IS NULL) AND (candidate_post.approved_at IS NOT NULL) AND (candidate_post.archived_at IS NULL) AND (candidate_suspension.user_id IS NULL) AND (root_post.deleted_at IS NULL) AND (root_post.approved_at IS NOT NULL) AND (root_post.archived_at IS NULL) AND (root_post.privacy = 'public'::privacy_types) AND (root_post.broadcast = 'everyone'::broadcast_types) AND ((root_post.community_id IS NULL) OR (EXISTS ( WITH publication AS MATERIALIZED (
@@ -1011,7 +1011,7 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
     rss_feeds.last_fetched_at,
     rss_feeds.feed_type,
     rss_feeds.canonical_rss_feed_id,
-    json_build_object('__entity_type', 'url', 'id', feed_url.id, 'url', feed_url.url, 'pathname', feed_url.pathname, 'search_params', feed_url.search_params, 'canonical_url_id', feed_url.canonical_url_id, 'hostname', json_build_object('__entity_type', 'hostname', 'id', feed_hostname.id, 'hostname', feed_hostname.hostname, 'topic_id', feed_hostname.topic_id, 'blocked', feed_hostname.blocked, 'crawlable', feed_hostname.crawlable, 'link_rel_follow', feed_hostname.link_rel_follow)) AS rss_feed_url,
+    json_build_object('__entity_type', 'url', 'id', feed_url.id, 'url', feed_url.url, 'pathname', feed_url.pathname, 'search_params', feed_url.search_params, 'canonical_url_id', feed_url.canonical_url_id, 'hostname', json_build_object('__entity_type', 'hostname', 'id', feed_hostname.id, 'hostname', feed_hostname.hostname, 'topic_id', feed_hostname.topic_id, 'is_blocked', feed_hostname.is_blocked, 'is_crawlable', feed_hostname.is_crawlable, 'should_follow_link_rel', feed_hostname.should_follow_link_rel)) AS rss_feed_url,
         CASE
             WHEN (topic_hostname.hostname IS NULL) THEN NULL::json
             ELSE json_build_object('url', concat('https://', topic_hostname.hostname, '/'))
@@ -1111,8 +1111,8 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
     topics.slug,
     topics.markdown,
     topics.topic_type,
-    topics.noindex,
-    topics.allow_reviews,
+    topics.is_noindexed,
+    topics.should_allow_reviews,
     topics.created_at,
     topics.hostname_id,
     topics.homepage_url_id,
@@ -1155,10 +1155,10 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
  SELECT 'hostname'::text AS __entity_type,
     id,
     hostname,
-    blocked,
-    crawlable,
-    skip_web_risk,
-    link_rel_follow,
+    is_blocked,
+    is_crawlable,
+    should_skip_web_risk,
+    should_follow_link_rel,
     topic_id,
     votes_score_net,
     votes_count_up,
@@ -1255,8 +1255,8 @@ UNION ALL
     users.default_post_broadcast,
     users.default_post_privacy,
     users.processing_restricted_at,
-    users.third_party_marketing,
-    users.hn_discussions,
+    users.should_receive_third_party_marketing,
+    users.should_import_hacker_news_discussions,
     susp.suspended_at,
     susp.suspended_reason,
     susp.suspended_by_id,
@@ -1285,14 +1285,14 @@ UNION ALL
     users.verification_status,
     users.verification_provider,
     users.verification_completed_at,
-    users.verified_badge_visible,
+    users.is_verified_badge_visible,
     users.public_verified_name_display,
     users.verified_first_name,
     users.verified_last_name_initial,
     users.verified_full_name,
     users.pending_verification_session_id,
         CASE
-            WHEN ((users.verification_status = 'verified'::identity_verification_statuses) AND (users.verified_badge_visible = true)) THEN
+            WHEN ((users.verification_status = 'verified'::identity_verification_statuses) AND (users.is_verified_badge_visible = true)) THEN
             CASE users.public_verified_name_display
                 WHEN 'first_name'::public_verified_name_displays THEN users.verified_first_name
                 WHEN 'first_name_last_initial'::public_verified_name_displays THEN
@@ -1310,15 +1310,15 @@ UNION ALL
     users.lingua_rs_detected_language,
     users.direct_messages_audience,
     users.bad_faith_reporter_at,
-    users.engagement_emails_enabled,
+    users.is_engagement_emails_enabled,
     users.news_digest_frequency,
-    users.moderation_emails_enabled,
+    users.is_moderation_emails_enabled,
     users.community_digest_frequency,
     users.moderation_email_cadence,
     users.moderation_email_days_of_week,
     users.moderation_email_time_of_day,
     users.moderation_email_timezone,
-    users.fediverse_federation_enabled,
+    users.is_fediverse_federation_enabled,
     ( SELECT jsonb_build_object('did', bla.bluesky_did, 'handle', bla.handle) AS jsonb_build_object
            FROM bluesky_linked_accounts bla
           WHERE ((bla.user_id = users.id) AND (bla.disconnect_requested_at IS NULL))) AS bluesky_account
@@ -1350,19 +1350,19 @@ UNION ALL
     e.account_type,
     u.markdown,
         CASE
-            WHEN ((u.verification_status = 'verified'::identity_verification_statuses) AND (u.verified_badge_visible = true)) THEN u.verification_status
+            WHEN ((u.verification_status = 'verified'::identity_verification_statuses) AND (u.is_verified_badge_visible = true)) THEN u.verification_status
             ELSE NULL::identity_verification_statuses
         END AS verification_status,
         CASE
-            WHEN ((u.verification_status = 'verified'::identity_verification_statuses) AND (u.verified_badge_visible = true)) THEN u.verified_badge_visible
+            WHEN ((u.verification_status = 'verified'::identity_verification_statuses) AND (u.is_verified_badge_visible = true)) THEN u.is_verified_badge_visible
             ELSE NULL::boolean
-        END AS verified_badge_visible,
+        END AS is_verified_badge_visible,
         CASE
-            WHEN ((u.verification_status = 'verified'::identity_verification_statuses) AND (u.verified_badge_visible = true)) THEN u.public_verified_name_display
+            WHEN ((u.verification_status = 'verified'::identity_verification_statuses) AND (u.is_verified_badge_visible = true)) THEN u.public_verified_name_display
             ELSE NULL::public_verified_name_displays
         END AS public_verified_name_display,
         CASE
-            WHEN ((u.verification_status = 'verified'::identity_verification_statuses) AND (u.verified_badge_visible = true)) THEN
+            WHEN ((u.verification_status = 'verified'::identity_verification_statuses) AND (u.is_verified_badge_visible = true)) THEN
             CASE u.public_verified_name_display
                 WHEN 'first_name'::public_verified_name_displays THEN u.verified_first_name
                 WHEN 'first_name_last_initial'::public_verified_name_displays THEN

@@ -6,20 +6,20 @@ Append-only votes for the concrete relation__topic__guide__url elected relation.
 
 RANGE partitioned on `entity_relation_id` (children: default, no retention owner, access class: target-scoped, growth: unbounded).
 
-| Column               | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                   |
-| -------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------- |
-| `user_id`            | `uuid`                     | no       |                              |          |           |           |                                                                                           |
-| `subject_id`         | `uuid`                     | no       |                              |          |           |           | Authoritative subject paired with the concrete elected relation identifier.               |
-| `entity_relation_id` | `uuid`                     | no       |                              |          |           |           | Concrete elected relation identifier and UUIDv7 partition key.                            |
-| `id`                 | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                           |
-| `score`              | `smallint`                 | yes      |                              |          |           |           | Binary relation ballot or retained clear event; nullable events clear the current ballot. |
-| `score_is_neutral`   | `boolean`                  | no       | `false`                      |          |           |           | Explicit neutral provenance; binary relation vote producers leave this false.             |
-| `score_is_semantic`  | `boolean`                  | no       | `false`                      |          |           |           | Explicit semantic score provenance; binary relation vote producers leave this false.      |
-| `ip_address`         | `inet`                     | yes      |                              |          |           |           | Audit IP address captured with this ballot event.                                         |
-| `device_id`          | `uuid`                     | yes      |                              |          |           |           | Opaque client device token with no durable owner row.                                     |
-| `session_id`         | `uuid`                     | yes      |                              |          |           |           | Opaque client session token with no durable owner row.                                    |
-| `user_agent_id`      | `uuid`                     | yes      |                              |          |           |           | Shared bounded user-agent string captured with this ballot event.                         |
-| `created_at`         | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                           |
+| Column                 | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                   |
+| ---------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------- |
+| `user_id`              | `uuid`                     | no       |                              |          |           |           |                                                                                           |
+| `subject_id`           | `uuid`                     | no       |                              |          |           |           | Authoritative subject paired with the concrete elected relation identifier.               |
+| `entity_relation_id`   | `uuid`                     | no       |                              |          |           |           | Concrete elected relation identifier and UUIDv7 partition key.                            |
+| `id`                   | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                           |
+| `score`                | `smallint`                 | yes      |                              |          |           |           | Binary relation ballot or retained clear event; nullable events clear the current ballot. |
+| `score_is_neutral`     | `boolean`                  | no       | `false`                      |          |           |           | Explicit neutral provenance; binary relation vote producers leave this false.             |
+| `score_is_semantic`    | `boolean`                  | no       | `false`                      |          |           |           | Explicit semantic score provenance; binary relation vote producers leave this false.      |
+| `ip_address`           | `inet`                     | yes      |                              |          |           |           | Audit IP address captured with this ballot event.                                         |
+| `device_id`            | `uuid`                     | yes      |                              |          |           |           | Opaque client device token with no durable owner row.                                     |
+| `session_id`           | `uuid`                     | yes      |                              |          |           |           | Opaque client session token with no durable owner row.                                    |
+| `user_agent_string_id` | `uuid`                     | yes      |                              |          |           |           | Shared bounded user-agent string captured with this ballot event.                         |
+| `created_at`           | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                           |
 
 **Primary key:** `PRIMARY KEY (entity_relation_id, id)`
 
@@ -35,7 +35,7 @@ _none_
 **Foreign keys:**
 
 - `fk_relation__topic__guide__url__votes__subject_entity_relation`: `FOREIGN KEY (subject_id, entity_relation_id) REFERENCES relation__topic__guide__url(subject_id, id) ON DELETE CASCADE`
-- `relation__topic__guide__url__votes_user_agent_id_fkey`: `FOREIGN KEY (user_agent_id) REFERENCES user_agent_strings(id) ON DELETE SET NULL`
+- `relation__topic__guide__url__votes_user_agent_string_id_fkey`: `FOREIGN KEY (user_agent_string_id) REFERENCES user_agent_strings(id) ON DELETE SET NULL`
 - `relation__topic__guide__url__votes_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 
 **Indexes:**

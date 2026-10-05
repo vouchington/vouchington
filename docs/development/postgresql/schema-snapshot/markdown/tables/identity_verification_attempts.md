@@ -11,7 +11,7 @@ Not partitioned — growth: unbounded.
 | `id`                           | `uuid`                                  | no       | `uuidv7()`                   |          |           |           |                                                                                                                                                                     |
 | `user_id`                      | `uuid`                                  | no       |                              |          |           |           | Account that owns this entitlement or Checkout attempt.                                                                                                             |
 | `source`                       | `identity_verification_attempt_sources` | no       |                              |          |           |           | Whether the attempt was self-paid, included with membership, or funded by a support grant.                                                                          |
-| `grant_entitlement_id`         | `uuid`                                  | yes      |                              |          |           |           | Parent support-grant entitlement funding this Checkout attempt. Released child attempts retain their Checkout audit history.                                        |
+| `grant_entitlement_attempt_id` | `uuid`                                  | yes      |                              |          |           |           | Parent support-grant entitlement funding this Checkout attempt. Released child attempts retain their Checkout audit history.                                        |
 | `checkout_session_id`          | `text`                                  | yes      |                              |          |           |           | Stripe Checkout Session that funded this attempt.                                                                                                                   |
 | `checkout_claimed_at`          | `timestamp with time zone`              | yes      |                              |          |           |           | When the guarded user payment-pending transition durably claimed this exact Checkout. Reconciles acknowledgement loss without returning a concurrent loser session. |
 | `provider_session_id`          | `text`                                  | yes      |                              |          |           |           | Stripe Identity verification session created for this Checkout attempt.                                                                                             |
@@ -33,13 +33,13 @@ Not partitioned — growth: unbounded.
 
 **Check constraints:**
 
-- `identity_verification_attempts_check`: `CHECK ((((source = 'support_grant'::identity_verification_attempt_sources) AND (grant_entitlement_id IS NULL) AND (granted_by_id IS NOT NULL) AND (grant_note IS NOT NULL) AND (btrim(grant_note) <> ''::text)) OR ((source = 'support_grant'::identity_verification_attempt_sources) AND (grant_entitlement_id IS NOT NULL) AND (granted_by_id IS NULL) AND (grant_note IS NULL)) OR ((source <> 'support_grant'::identity_verification_attempt_sources) AND (grant_entitlement_id IS NULL) AND (granted_by_id IS NULL) AND (grant_note IS NULL))))`
+- `identity_verification_attempts_check`: `CHECK ((((source = 'support_grant'::identity_verification_attempt_sources) AND (grant_entitlement_attempt_id IS NULL) AND (granted_by_id IS NOT NULL) AND (grant_note IS NOT NULL) AND (btrim(grant_note) <> ''::text)) OR ((source = 'support_grant'::identity_verification_attempt_sources) AND (grant_entitlement_attempt_id IS NOT NULL) AND (granted_by_id IS NULL) AND (grant_note IS NULL)) OR ((source <> 'support_grant'::identity_verification_attempt_sources) AND (grant_entitlement_attempt_id IS NULL) AND (granted_by_id IS NULL) AND (grant_note IS NULL))))`
 - `identity_verification_attempts_check1`: `CHECK (((released_at IS NULL) OR (consumed_at IS NULL)))`
 - `identity_verification_attempts_check2`: `CHECK (((consumed_at IS NULL) OR (provider_creation_started_at IS NOT NULL)))`
 
 **Foreign keys:**
 
-- `identity_verification_attempts_grant_entitlement_id_fkey`: `FOREIGN KEY (grant_entitlement_id) REFERENCES identity_verification_attempts(id) ON DELETE RESTRICT`
+- `identity_verification_attempt_grant_entitlement_attempt_id_fkey`: `FOREIGN KEY (grant_entitlement_attempt_id) REFERENCES identity_verification_attempts(id) ON DELETE RESTRICT`
 - `identity_verification_attempts_granted_by_id_fkey`: `FOREIGN KEY (granted_by_id) REFERENCES users(id) ON DELETE RESTRICT`
 - `identity_verification_attempts_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
 
@@ -49,11 +49,11 @@ Not partitioned — growth: unbounded.
 - `identity_verification_attempts_pkey`: `CREATE UNIQUE INDEX identity_verification_attempts_pkey ON public.identity_verification_attempts USING btree (id)`
 - `identity_verification_attempts_provider_session_id_key`: `CREATE UNIQUE INDEX identity_verification_attempts_provider_session_id_key ON public.identity_verification_attempts USING btree (provider_session_id)`
 - `idx_identity_verification_attempts__checkout_session`: `CREATE INDEX idx_identity_verification_attempts__checkout_session ON public.identity_verification_attempts USING btree (checkout_session_id) WHERE (checkout_session_id IS NOT NULL)`
-- `idx_identity_verification_attempts__grant_entitlement`: `CREATE INDEX idx_identity_verification_attempts__grant_entitlement ON public.identity_verification_attempts USING btree (grant_entitlement_id) WHERE (grant_entitlement_id IS NOT NULL)`
+- `idx_identity_verification_attempts__grant_entitlement`: `CREATE INDEX idx_identity_verification_attempts__grant_entitlement ON public.identity_verification_attempts USING btree (grant_entitlement_attempt_id) WHERE (grant_entitlement_attempt_id IS NOT NULL)`
 - `idx_identity_verification_attempts__granted_by`: `CREATE INDEX idx_identity_verification_attempts__granted_by ON public.identity_verification_attempts USING btree (granted_by_id) WHERE (granted_by_id IS NOT NULL)`
 - `idx_identity_verification_attempts__user`: `CREATE INDEX idx_identity_verification_attempts__user ON public.identity_verification_attempts USING btree (user_id)`
 - `uq_identity_verification_attempts__included_active_or_consumed`: `CREATE UNIQUE INDEX uq_identity_verification_attempts__included_active_or_consumed ON public.identity_verification_attempts USING btree (user_id) WHERE ((source = 'membership_included'::identity_verification_attempt_sources) AND (released_at IS NULL) AND (user_id <> '00000000-0000-7000-8000-000000000000'::uuid))`
-- `uq_identity_verification_attempts__support_grant_active_child`: `CREATE UNIQUE INDEX uq_identity_verification_attempts__support_grant_active_child ON public.identity_verification_attempts USING btree (grant_entitlement_id) WHERE ((grant_entitlement_id IS NOT NULL) AND (released_at IS NULL))`
+- `uq_identity_verification_attempts__support_grant_active_child`: `CREATE UNIQUE INDEX uq_identity_verification_attempts__support_grant_active_child ON public.identity_verification_attempts USING btree (grant_entitlement_attempt_id) WHERE ((grant_entitlement_attempt_id IS NOT NULL) AND (released_at IS NULL))`
 
 **Triggers:**
 

@@ -14,7 +14,7 @@ Not partitioned — growth: unbounded.
 | `public_key`    | `bytea`                    | no       |                              |          |           |           | Public key bytes for signature verification.                        |
 | `counter`       | `bigint`                   | no       | `0`                          |          |           |           | Signature counter for detecting cloned authenticators.              |
 | `device_type`   | `passkey_device_types`     | no       |                              |          |           |           | Whether the passkey is single-device or multi-device (synced).      |
-| `backed_up`     | `boolean`                  | no       | `false`                      |          |           |           | Whether the passkey is backed up to the cloud by the authenticator. |
+| `is_backed_up`  | `boolean`                  | no       | `false`                      |          |           |           | Whether the passkey is backed up to the cloud by the authenticator. |
 | `transports`    | `text[]`                   | yes      |                              |          |           |           | Supported transport methods (usb, ble, nfc, internal, etc.).        |
 | `name`          | `text`                     | no       |                              |          |           |           | User-chosen display name for this passkey (1-100 chars).            |
 | `created_at`    | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                     |

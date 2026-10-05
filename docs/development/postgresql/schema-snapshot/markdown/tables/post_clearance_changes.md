@@ -14,7 +14,7 @@ RANGE partitioned on `id` (children: default, no retention owner, access class: 
 | `changed_by_id`                        | `uuid`                                 | yes      |                                              |          |           |           | User or admin who initiated the change; references the retained user identity so the audit row survives user deletion.    |
 | `public_reason_code`                   | `text`                                 | yes      |                                              |          |           |           | Stable provider-neutral reason safe to expose to the affected author.                                                     |
 | `private_note`                         | `text`                                 | yes      |                                              |          |           |           | Private staff note; never returned in public or author post contracts.                                                    |
-| `platform_override`                    | `boolean`                              | no       | `false`                                      |          |           |           | True when platform moderation staff intentionally overrode automated or community state.                                  |
+| `is_platform_override`                 | `boolean`                              | no       | `false`                                      |          |           |           | True when platform moderation staff intentionally overrode automated or community state.                                  |
 | `metadata`                             | `jsonb`                                | no       | `'{}'::jsonb`                                |          |           |           | Structured metadata about the clearance transition.                                                                       |
 | `is_creation_moderation_bypass`        | `boolean`                              | no       | `false`                                      |          |           |           | True only for an explicit administrator bypass decision at post creation; later clearance changes cannot erase this fact. |
 | `moderation_transparency_categories`   | `moderation_transparency_categories[]` | no       | `'{}'::moderation_transparency_categories[]` |          |           |           | Immutable automated-source categories stamped at rejection time for aggregate-only moderation transparency.               |
@@ -28,8 +28,8 @@ _none_
 
 **Check constraints:**
 
-- `post_clearance_changes_check`: `CHECK (((NOT platform_override) OR ((changed_by_id IS NOT NULL) AND (public_reason_code IS NOT NULL))))`
-- `post_clearance_changes_check1`: `CHECK (((private_note IS NULL) OR platform_override))`
+- `post_clearance_changes_check`: `CHECK (((NOT is_platform_override) OR ((changed_by_id IS NOT NULL) AND (public_reason_code IS NOT NULL))))`
+- `post_clearance_changes_check1`: `CHECK (((private_note IS NULL) OR is_platform_override))`
 - `post_clearance_changes_metadata_check`: `CHECK ((jsonb_typeof(metadata) = 'object'::text))`
 - `post_clearance_changes_moderation_transparency_categories_check`: `CHECK ((((((moderation_transparency_categories = '{}'::moderation_transparency_categories[]) OR (moderation_transparency_categories = '{openai_omni}'::moderation_transparency_categories[])) OR (moderation_transparency_categories = '{spam_detection}'::moderation_transparency_categories[])) OR (moderation_transparency_categories = '{post_clearance_reject}'::moderation_transparency_categories[])) OR (moderation_transparency_categories = '{openai_omni,spam_detection}'::moderation_transparency_categories[])))`
 - `post_clearance_changes_private_note_check`: `CHECK (((private_note IS NULL) OR (char_length(private_note) <= 4000)))`

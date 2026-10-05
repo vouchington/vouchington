@@ -6,12 +6,12 @@ A household owned by a user, grouping individuals for shared finance tracking.
 
 Not partitioned — growth: unbounded.
 
-| Column       | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                       |
-| ------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------- |
-| `id`         | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                               |
-| `owner_id`   | `uuid`                     | no       |                              |          |           |           | The user who owns and manages this household. |
-| `created_at` | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                               |
-| `updated_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                               |
+| Column          | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                       |
+| --------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------- |
+| `id`            | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                               |
+| `owner_user_id` | `uuid`                     | no       |                              |          |           |           | The user who owns and manages this household. |
+| `created_at`    | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                               |
+| `updated_at`    | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                               |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -23,12 +23,12 @@ _none_
 
 **Foreign keys:**
 
-- `households_owner_id_fkey`: `FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE`
+- `households_owner_user_id_fkey`: `FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE CASCADE`
 
 **Indexes:**
 
 - `households_pkey`: `CREATE UNIQUE INDEX households_pkey ON public.households USING btree (id)`
-- `idx_households__owner_updated_id`: `CREATE INDEX idx_households__owner_updated_id ON public.households USING btree (owner_id, updated_at DESC, id DESC)`
+- `idx_households__owner_updated_id`: `CREATE INDEX idx_households__owner_updated_id ON public.households USING btree (owner_user_id, updated_at DESC, id DESC)`
 
 **Triggers:**
 
