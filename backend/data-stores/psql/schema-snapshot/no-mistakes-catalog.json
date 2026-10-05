@@ -47,14 +47,19 @@
         "account-enforcement:vote-weight",
         "account-enforcement:write",
         "analytics:read",
+        "appeals:read",
+        "appeals:write",
         "bookmarks:read",
         "bookmarks:write",
         "cards:read",
         "cards:write",
         "communities:read",
+        "communities:write",
         "copyright-notices:read",
         "copyright-notices:write",
         "data-points:read",
+        "disputes:read",
+        "disputes:write",
         "domain-ratings:read",
         "editorial:read",
         "editorial:write",
@@ -90,6 +95,7 @@
         "reference-data:read",
         "referral-links:read",
         "referral-links:write",
+        "reports:write",
         "rewards-statuses:read",
         "rewards-statuses:write",
         "rss-feed-items:read",
@@ -127794,6 +127800,193 @@
         }
       },
       "uniqueConstraints": {}
+    },
+    "user_mcp_create_attempts": {
+      "checkConstraints": {
+        "user_mcp_create_attempts_intent_sha256_check": {
+          "definition": "CHECK (((char_length(intent_sha256) = 64) AND (intent_sha256 = lower(intent_sha256))))",
+          "validated": true
+        },
+        "user_mcp_create_attempts_response_check": {
+          "definition": "CHECK ((((response IS NULL) AND (completed_at IS NULL)) OR ((response IS NOT NULL) AND (completed_at IS NOT NULL) AND (jsonb_typeof(response) = 'object'::text) AND (octet_length((response)::text) <= 65536))))",
+          "validated": true
+        }
+      },
+      "columns": {
+        "claimed_at": {
+          "comment": "When the in-flight create claimed the key; an unfinished claim older than the lease may be taken over by a retry.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8
+        },
+        "completed_at": {
+          "comment": "When the create finished and its response was stored; null while the create is still running.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9
+        },
+        "created_at": {
+          "comment": null,
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6
+        },
+        "id": {
+          "comment": null,
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "idempotency_key": {
+          "comment": "Caller-supplied UUID identifying one exact create request for this credential owner.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        },
+        "intent_sha256": {
+          "comment": "SHA-256 of the canonical tool name and arguments; reusing the key with a different request is rejected.",
+          "dataType": "text",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4
+        },
+        "response": {
+          "comment": "Exact structured result the completed create returned, replayed on every retry of the same key and request.",
+          "dataType": "jsonb",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5
+        },
+        "updated_at": {
+          "comment": null,
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7
+        },
+        "user_id": {
+          "comment": "Credential owner who supplied this idempotency key; the replay is visible only to them.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        }
+      },
+      "comment": "Actor-owned exact response replays for the delegated MCP create tools that have no post to bind to (community, report, dispute, appeal and community application). One row per credential owner and idempotency key; the row stays so a retry of a completed create keeps returning the first result.",
+      "foreignKeys": {
+        "user_mcp_create_attempts_user_id_fkey": {
+          "columns": ["user_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "indexes": {
+        "user_mcp_create_attempts_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX user_mcp_create_attempts_pkey ON public.user_mcp_create_attempts USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "user_mcp_create_attempts_user_key_unique": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX user_mcp_create_attempts_user_key_unique ON public.user_mcp_create_attempts USING btree (user_id, idempotency_key)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "idempotency_key",
+              "descending": false,
+              "expression": "idempotency_key",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_user_mcp_create_attempts_updated_at": {
+          "definition": "CREATE TRIGGER trigger_user_mcp_create_attempts_updated_at BEFORE UPDATE ON public.user_mcp_create_attempts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        }
+      },
+      "uniqueConstraints": {
+        "user_mcp_create_attempts_user_key_unique": {
+          "columns": ["user_id", "idempotency_key"]
+        }
+      }
     },
     "user_metrics": {
       "checkConstraints": {},
