@@ -4738,6 +4738,12 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@queues/ai-agents':
+        specifier: workspace:^
+        version: link:../../queues/ai-agents
+      '@queues/emails':
+        specifier: workspace:^
+        version: link:../../queues/emails
       '@queues/images':
         specifier: workspace:^
         version: link:../../queues/images
@@ -4753,6 +4759,9 @@ importers:
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../entity-cache
+      '@services/entity-fetch':
+        specifier: workspace:^
+        version: link:../entity-fetch
       '@services/images':
         specifier: workspace:^
         version: link:../images
@@ -4768,6 +4777,9 @@ importers:
       '@services/posts':
         specifier: workspace:^
         version: link:../posts
+      '@services/runtime-request-validation':
+        specifier: workspace:^
+        version: link:../runtime-request-validation
       '@services/urls':
         specifier: workspace:^
         version: link:../urls
@@ -6824,6 +6836,9 @@ importers:
       '@services/communities':
         specifier: workspace:^
         version: link:../communities
+      '@services/copyright-notices':
+        specifier: workspace:^
+        version: link:../copyright-notices
       '@services/dynamic-config-admin':
         specifier: workspace:^
         version: link:../dynamic-config-admin
@@ -11309,6 +11324,9 @@ importers:
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../services/rss-feeds
+      '@services/runtime-request-validation':
+        specifier: workspace:^
+        version: link:../services/runtime-request-validation
       '@services/search-params':
         specifier: workspace:^
         version: link:../services/search-params

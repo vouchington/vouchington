@@ -33,6 +33,7 @@
     "@queues/ai-agents": "workspace:^",
     "@queues/article-sync": "workspace:^",
     "@services/communities": "workspace:^",
+    "@services/copyright-notices": "workspace:^",
     "@services/dynamic-config-admin": "workspace:^",
     "@services/elections-votes": "workspace:^",
     "@services/feeds": "workspace:^",

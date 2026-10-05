@@ -22,7 +22,7 @@ const POST_TYPE_PATHS = {
   discussion: 'discussion',
   link: 'link',
   review: 'review',
-  story: 'discussion',
+  story: 'story',
   topic_recommendation: 'topic-recommendations',
 } as const
 

@@ -195,7 +195,15 @@ retain that wire field. The SQL read projection resolves the public field explic
 The `copyright-notices:read` admin MCP grant exposes structured email intakes, guest-capability
 lists, participant case detail, and the existing review queue with contact redaction. Those tools
 are exclusive to the OAuth-only admin MCP; they do not add a native client surface. Copyright
-decision tools remain outside this read-only capability until the separately gated write layer.
+decision tools use the separate exact OAuth `copyright-notices:write` grant, which requires
+`copyright-notices:read`, and the default-off `copyright.mcpDecisionTools` switch. Umbrella grants
+cover neither copyright grant. These 17 staff tools remain admin MCP only: they introduce no
+native tool-manifest capability or native staff screen. Consent and credential pickers use the
+generated scope catalog and retain explicit selection for exact grants. Email approval/admission
+uses server-owned recommendation fields rather than caller contact details; replies are fixed.
+The [admin API contract](api/v1/admin/README.md#mcp-clients) owns tool scope and exclusions, and
+the [runbook](../runbooks/copyright-notices.md#copyright-mcp-decision-tools) owns developer-only
+REST enablement and MCP disablement.
 
 ### Client ID Metadata Document boundary
 
@@ -356,7 +364,7 @@ the staff moderation ops row stays full. Swift and .NET drop both decoder fields
 
 Financial scope consent (#1271): hosted OAuth consent and the web API-key picker describe financial profile and spending exact grants. Native clients have no consent screen; their shared `native.credentials.mcpUserFullAccess` copy now states that financial profile and spending require separate grants. Native presets must explicitly list financial scopes when they intend to access those resources.
 
-Admin MCP tools (#209): the admin server remains OAuth-only. Ordinary moderation, account enforcement, and site-operation reads can use matching admin umbrella grants; destructive approval, AI rerun, agent votes, account sanctions, operational writes, copyright, analytics, and editorial scopes require explicit grants and appear in hosted sensitive consent. Tools remain exclusive to `admin_mcp` and do not enter the native client tool manifest. The vote-ring penalty REST contract now requires `{ flag, penalized_user_count }`; web consumes that flag directly. Swift and .NET must regenerate their shared contracts and apply the returned flag before release; [clients #200](https://github.com/vouchington/vouchington-clients/issues/200) owns this pending parity work. The client implementation is prepared locally, with canonical staging and native toolchain/publication checks still blocked. MCP decisions skip training feedback until an independent staff/user action supplies evidence through the existing workflow.
+Admin MCP tools (#209): the admin server remains OAuth-only. Ordinary moderation, account enforcement, and site-operation reads can use matching admin umbrella grants; destructive approval, AI rerun, agent votes, account sanctions, operational writes, copyright, analytics, and editorial scopes require explicit grants and appear in hosted sensitive consent. Tools remain exclusive to `admin_mcp` and do not enter the native client tool manifest. The vote-ring penalty REST contract now requires `{ flag, penalized_user_count }`; web consumes that flag directly. Swift and .NET must regenerate their shared contracts and apply the returned flag before release; [clients #200](https://github.com/vouchington/vouchington-clients/issues/200) owns this pending parity work. The client implementation is prepared locally, with canonical staging and native toolchain/publication checks still blocked. Copyright MCP decisions additionally require the exact write grant and default-off switch described above; their required rationale uses the existing encrypted per-call audit, including path-only operations, without adding a rationale read API or changing append-only retention. MCP decisions skip training feedback until an independent staff/user action supplies evidence through the existing workflow.
 
 ## Manual crawl fanout count
 

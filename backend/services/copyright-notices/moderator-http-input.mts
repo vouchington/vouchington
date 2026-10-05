@@ -1,14 +1,11 @@
-import type { Context } from '@jongleberry/api-server'
+import assert from 'http-assert'
 import { isUUID } from '@modules/utils'
 import { isEmailAddress } from '@ts-shared/utils/validation-core'
 import { boundedString, parseCopyrightTargetIds } from './http-input.mts'
 
-export function parseCopyrightRecommendationId(
-  ctx: Context,
-  body: Record<string, unknown>,
-): string | null {
+export function parseCopyrightRecommendationId(body: Record<string, unknown>): string | null {
   const value = body.recommendation_id
-  ctx.assert(
+  assert(
     value === null || value === undefined || (typeof value === 'string' && isUUID(value)),
     422,
     'recommendation_id must be a UUID or null',
@@ -16,12 +13,9 @@ export function parseCopyrightRecommendationId(
   return (value as string | null | undefined) ?? null
 }
 
-export function parseCopyrightManualFallbackReason(
-  ctx: Context,
-  body: Record<string, unknown>,
-): string | null {
+export function parseCopyrightManualFallbackReason(body: Record<string, unknown>): string | null {
   const value = body.manual_fallback_reason
-  ctx.assert(
+  assert(
     value === null || value === undefined || boundedString(value, 10_000),
     422,
     'manual_fallback_reason must be a bounded string or null',
@@ -29,12 +23,9 @@ export function parseCopyrightManualFallbackReason(
   return (value as string | null | undefined) ?? null
 }
 
-export function parseCopyrightReplyEmail(
-  ctx: Context,
-  body: Record<string, unknown>,
-): string | null {
+export function parseCopyrightReplyEmail(body: Record<string, unknown>): string | null {
   const value = body.reply_email
-  ctx.assert(
+  assert(
     value === null || value === undefined || (boundedString(value, 254) && isEmailAddress(value)),
     422,
     'reply_email must be a valid email address or null',
@@ -42,12 +33,9 @@ export function parseCopyrightReplyEmail(
   return (value as string | null | undefined) ?? null
 }
 
-export function parseCopyrightCorrespondenceSubmission(
-  ctx: Context,
-  body: Record<string, unknown>,
-) {
+export function parseCopyrightCorrespondenceSubmission(body: Record<string, unknown>) {
   if (body.kind === 'appeal') {
-    ctx.assert(boundedString(body.appeal_reason, 10_000), 422, 'appeal_reason is required')
+    assert(boundedString(body.appeal_reason, 10_000), 422, 'appeal_reason is required')
     return {
       reason: body.appeal_reason,
       targetIds: parseCopyrightTargetIds(body.target_ids),
@@ -55,29 +43,25 @@ export function parseCopyrightCorrespondenceSubmission(
     }
   }
   if (body.kind === 'counter_notice') {
-    ctx.assert(boundedString(body.name, 200), 422, 'name is required')
-    ctx.assert(boundedString(body.address, 4096), 422, 'address is required')
-    ctx.assert(boundedString(body.telephone, 200), 422, 'telephone is required')
-    ctx.assert(
+    assert(boundedString(body.name, 200), 422, 'name is required')
+    assert(boundedString(body.address, 4096), 422, 'address is required')
+    assert(boundedString(body.telephone, 200), 422, 'telephone is required')
+    assert(
       body.consent_to_federal_jurisdiction === true,
       422,
       'consent_to_federal_jurisdiction must be accepted',
     )
-    ctx.assert(
+    assert(
       body.consent_to_service_of_process === true,
       422,
       'consent_to_service_of_process must be accepted',
     )
-    ctx.assert(
+    assert(
       body.good_faith_misidentification_under_penalty_of_perjury === true,
       422,
       'good_faith_misidentification_under_penalty_of_perjury must be accepted',
     )
-    ctx.assert(
-      boundedString(body.electronic_signature, 500),
-      422,
-      'electronic_signature is required',
-    )
+    assert(boundedString(body.electronic_signature, 500), 422, 'electronic_signature is required')
     return {
       name: body.name,
       address: body.address,
@@ -89,7 +73,7 @@ export function parseCopyrightCorrespondenceSubmission(
       targetIds: parseCopyrightTargetIds(body.target_ids),
     }
   }
-  ctx.assert(boundedString(body.submission_summary, 10_000), 422, 'submission_summary is required')
+  assert(boundedString(body.submission_summary, 10_000), 422, 'submission_summary is required')
   return { summary: body.submission_summary }
 }
 
@@ -100,25 +84,20 @@ export function parseCopyrightSimilarityCandidateLimit(value: unknown): number |
   return limit
 }
 
-export function parseNullableCopyrightDate(
-  ctx: Context,
-  value: unknown,
-  field: string,
-): Date | null {
+export function parseNullableCopyrightDate(value: unknown, field: string): Date | null {
   if (value === null || value === undefined) return null
-  ctx.assert(typeof value === 'string', 422, `${field} must be an ISO date or null`)
+  assert(typeof value === 'string', 422, `${field} must be an ISO date or null`)
   const parsed = new Date(value)
-  ctx.assert(!Number.isNaN(parsed.getTime()), 422, `${field} must be an ISO date or null`)
+  assert(!Number.isNaN(parsed.getTime()), 422, `${field} must be an ISO date or null`)
   return parsed
 }
 
 export function parseNullableCopyrightEnum<const T extends readonly string[]>(
-  ctx: Context,
   value: unknown,
   allowed: T,
   field: string,
 ): T[number] | null {
   if (value === null || value === undefined) return null
-  ctx.assert(typeof value === 'string' && allowed.includes(value), 422, `${field} is invalid`)
+  assert(typeof value === 'string' && allowed.includes(value), 422, `${field} is invalid`)
   return value as T[number]
 }

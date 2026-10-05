@@ -58,7 +58,9 @@ Each `tools/call` request re-enforces the same checks as `tools/list`:
 1. Tool surface must match the route config: `mcp` for `/api/v1/mcp`, `admin_mcp` for `/api/v1/admin/mcp`
 2. Role check (`isToolAllowedForUser`)
 3. Plan check (`isToolAllowedForPlan`)
-4. Scope check: every surfaced tool declares nonempty canonical required scopes; missing scopes
+4. Operator switch check: a disabled tool is `not_found`, with no tool name in its audit row and
+   no scope step-up. The request uses one switch snapshot for listing and calling.
+5. Scope check: every surfaced tool declares nonempty canonical required scopes; missing scopes
    hide the tool and reject direct calls.
 
 `authorizeMcpTool` in `resolve-tool-call.mts` is the single policy for both, so listing and calling
@@ -91,6 +93,19 @@ the normal untrusted-output wrapper runs. Structured email-intake detail omits r
 messages, parser errors, and contact-field evidence excerpts. Case detail uses the participant
 projection; decided cases need not remain in the review queue for that read.
 
+Copyright decision tools require the exact OAuth `copyright-notices:write` grant and its
+`copyright-notices:read` prerequisite; admin umbrella grants do not cover either. All 17 decisions
+also require `copyright.mcpDecisionTools`, which defaults off. A developer can enable it only
+through the dynamic-config REST route; the MCP config tool may disable it but cannot enable it,
+even for a developer. See the
+[operator runbook](../../../../runbooks/copyright-notices.md#copyright-mcp-decision-tools).
+
+Email approval and correspondence admission construct their REST-validated inputs from the
+latest stored recommendation. They accept no caller contact or reply fields; rejection uses fixed
+reply text and queues no reply without a parsed sender. Staff decision outputs retain their REST
+shapes. The [admin API page](../../../../requirements/api/v1/admin/README.md#mcp-clients)
+owns the supported and excluded decision groups.
+
 ## MCP audit log
 
 Every call a verified principal makes to the user or admin route writes an append-only
@@ -105,15 +120,16 @@ range-partitioned by UUIDv7 `id`, so `occurred_at` is a virtual column derived f
 | `resource`                               | Protected resource URL of the route called                                                                                                                             |
 | `surface`, `jsonrpc_method`, `tool_name` | `mcp` or `admin_mcp`, the allowlisted JSON-RPC method, and the registered tool name; `NULL` when there is nothing to record                                            |
 | `outcome`                                | `accepted`, `tool_error`, `invalid_request`, `invalid_arguments`, `not_found`, `role_denied`, `plan_denied`, `scopes_undeclared`, `insufficient_scope`, `rate_limited` |
+| `copyright_rationale_ciphertext`         | Typed encrypted rationale for an admitted, validated copyright decision call; bound to the audit event id                                                              |
 | `correlation_id`                         | Server-minted per request and returned as the `X-Correlation-Id` response header                                                                                       |
 
 - **One row per JSON-RPC message.** A batch writes its rows in order under one correlation id in a
   single insert; a batch above 25 messages is refused with `413` and one `invalid_request` row.
   Rejections before the body is read (role, scope, rate limit, unreadable body) write one row with a
   `NULL` method. An admitted tool call that then fails also writes a `tool_error` row.
-- **Redaction by construction.** The schema has no column for tokens, API keys, headers, arguments,
-  or results, and `tool_name` holds only names registered on the surface, never caller-supplied
-  text. Nothing is scrubbed after the fact.
+- **Redaction by construction.** Tokens, API keys, headers, arbitrary arguments, and results are
+  never logged. The sole typed text exception is the encrypted, validated copyright decision
+  rationale. `tool_name` holds only names registered on the surface, never caller-supplied text.
 - **Fail closed.** The write happens before the call, so if it fails the request ends `503` and the
   call never runs. The `tool_error` follow-up is best effort, because the call already ran.
 - **Unauthenticated requests write no row.** A request that fails authentication (`401`) or the
@@ -128,6 +144,12 @@ owner, so `api_key_id` targets `retained_api_key_identities` with `ON DELETE RES
 deletion removes the live key and never touches the audit row, and
 [retained-identity cleanup](../data-retention/README.md#key-exports) removes a key's root only when
 no audit row names it.
+
+Every copyright decision requires a rationale, including path-only delivery replay, action replay,
+guest revocation, and email-reply replay. Those operations store it only in the per-call audit and
+send no REST body. The encrypted field uses existing key rotation; audit rows keep the existing
+append-only retention behavior. This adds no rationale read or decryption API and no general
+argument/result logging.
 
 ## Related
 

@@ -23,6 +23,35 @@ identifiers belong in the private operations repository.
 
 These are product response targets, not representations of safe-harbor eligibility.
 
+## Copyright MCP decision tools
+
+`copyright.mcpDecisionTools` defaults to `false`. Enabling this capability is an operator decision;
+shipping the tools does not enable it. A user with the `developer` role must set it through
+`PATCH /api/v1/dynamic-config/namespaces/copyright`, which records the configuration change.
+The `update_dynamic_config_namespace` MCP tool refuses enablement even for a developer, so an
+agent cannot grant itself these decision tools. Setting the switch to `false` through MCP remains
+allowed for a caller otherwise authorized to update that namespace.
+
+Before enablement, review the
+[supported decision groups and exclusions](../requirements/api/v1/admin/README.md#mcp-clients).
+Authorize the administrator's OAuth client with exact `copyright-notices:write` and
+`copyright-notices:read` grants; an admin umbrella grant or API key is insufficient. While disabled,
+all 17 tools are hidden and calls return `Tool not found` without a scope step-up. Disabling the
+switch removes MCP decision access; it does not change the staff REST decision routes.
+
+Email approval and correspondence admission act on the latest stored recommendation and never
+accept caller contact details or reply text. Approval refuses incomplete statutory fields or URLs
+that identify zero or multiple available hosted images. Resolve ambiguous image selections in the
+staff web interface. Correspondence admission requires the requested kind to match the stored
+recommendation and the required fields for that kind. Email rejection uses fixed text and sends
+only to the parsed sender; with no parsed sender it queues no reply. Raw MIME, `.eml`, parsed
+messages, and parser errors remain unavailable through MCP reads.
+
+Every decision requires a rationale. Path-only replay and revocation operations retain it solely
+in the encrypted per-call MCP audit rather than a REST body. Existing append-only audit retention
+and encryption key rotation apply; there is no new rationale read or decryption API. See the
+[MCP audit contract](../overview/architecture/services/mcp-tools/README.md#mcp-audit-log).
+
 ## DSA statement database
 
 `copyright.dsaSorDatabase` defaults to `false`, and `copyright.dsaSorDatabaseFrom` defaults to

@@ -13,6 +13,13 @@ authorization decisions.
 
 Admin resource scopes are OAuth-only. Moderation, account enforcement, and site-operation ordinary reads/writes inherit matching `mcp.admin:*` grants. Explicit approval, AI-rerun, agent-vote, sanction, queue/config/job, copyright, analytics, and editorial capabilities set `requiresExactGrant`; neither an umbrella nor a sibling scope covers them. Writes retain their matching read prerequisite. The shared authorization request presents these exact grants through `sensitive_scopes`.
 
+`copyright-notices:write` is an exact admin-audience OAuth grant requiring
+`copyright-notices:read`; neither is implied by `mcp.admin:*`, and API keys cannot carry them.
+Granting write does not activate the tools: the separate default-off operator switch is governed
+by the [copyright runbook](../../../../../runbooks/copyright-notices.md#copyright-mcp-decision-tools).
+Consent and scope pickers consume the generated scope catalog rather than a separate copyright
+permission list.
+
 `listScopeCatalog()` projects the catalogue into the wire shape served by
 [`GET /api/v1/scopes`](../../../../../requirements/api/v1/scopes/README.md), so clients build pickers from data. Its
 nullable `description_key` is stable presentation metadata, not server-owned display text.

@@ -37,7 +37,7 @@ type TestCopyrightImageFixture = {
   ownerId: string
   actorUserId: string
   ownerKind: 'post' | 'user' | 'topic' | 'community'
-  detach: () => Promise<void>
+  detach: () => Promise<unknown>
 }
 export async function createTestCopyrightImageFixture(
   kind: TestCopyrightImageKind,
@@ -46,6 +46,7 @@ export async function createTestCopyrightImageFixture(
     actorAdministrator?: boolean
     actorModerator?: boolean
     actorWithEmail?: boolean
+    postType?: 'discussion' | 'story'
   } = {},
 ): Promise<TestCopyrightImageFixture> {
   const owner = await createTestUserDirect({
@@ -60,7 +61,8 @@ export async function createTestCopyrightImageFixture(
       title: `Copyright image ${crypto.randomUUID()}`,
       slug: `copyright-image-${crypto.randomUUID()}`,
       createdById: owner.id,
-      markdown: 'An image',
+      markdown: options.postType === 'story' ? '' : 'An image',
+      postType: options.postType,
     })
     await insertTestPostImage({ postId, imageId })
     const placement = await getTestPostImagePlacement(postId, imageId)
@@ -80,7 +82,7 @@ export async function createTestCopyrightImageFixture(
   let scope: Parameters<typeof getTestImageSurfacePlacements>[0]
   let ownerId: string
   let ownerKind: TestCopyrightImageFixture['ownerKind']
-  let detach: () => Promise<void>
+  let detach: () => Promise<unknown>
   if (kind === 'user-profile-image') {
     await setTestUserProfileImage(owner.id, imageId)
     selector = { surfaceKind: kind, userId: owner.id, imageId, hostedUseUrl }
@@ -98,9 +100,7 @@ export async function createTestCopyrightImageFixture(
     scope = { profileLinkId: link.id, surfaceKind: kind }
     ownerId = owner.id
     ownerKind = 'user'
-    detach = async () => {
-      await updateProfileLink(owner.id, link.id, { image_id: null })
-    }
+    detach = () => updateProfileLink(owner.id, link.id, { image_id: null })
   } else if (kind === 'topic-logo-image' || kind === 'topic-hero-image') {
     const suffix = crypto.randomUUID()
     const topicId = await insertTestTopic({

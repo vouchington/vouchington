@@ -10,6 +10,26 @@ import {
 } from '@services/dynamic-config-admin'
 
 describe('registered operations guard boundaries', () => {
+  it('prevents the MCP config tool from enabling copyright decisions', async () => {
+    const admin = await createTestUser({ administrator: true })
+    const user = { ...admin, membership_plan: null }
+    const before = await getDynamicConfigNamespace(admin, 'copyright')
+    const history = await listDynamicConfigNamespaceHistory(admin, 'copyright')
+    const result = await callMcpTool(
+      'update_dynamic_config_namespace',
+      { namespace: 'copyright', config: { mcpDecisionTools: true } },
+      user,
+      ['site-operations:read', 'site-operations:config'],
+      ADMIN_MCP_SERVER_CONFIG,
+    )
+    expect(result.isError).toBe(true)
+    const block = result.content[0]!
+    if (block.type !== 'text') throw new Error('Expected typed error')
+    expect(JSON.parse(block.text)).toMatchObject({ error: { status: 403 } })
+    expect(await getDynamicConfigNamespace(admin, 'copyright')).toEqual(before)
+    expect(await listDynamicConfigNamespaceHistory(admin, 'copyright')).toEqual(history)
+  })
+
   it.each([
     ['run_scheduled_job', 'site-operations:jobs'],
     ['run_backfill', 'site-operations:jobs'],

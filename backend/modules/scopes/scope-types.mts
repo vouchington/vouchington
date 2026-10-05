@@ -27,6 +27,7 @@ export type ApiScope =
   | 'site-operations:config'
   | 'site-operations:jobs'
   | 'copyright-notices:read'
+  | 'copyright-notices:write'
   | 'analytics:read'
   | 'editorial:read'
   | 'editorial:write'

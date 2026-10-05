@@ -1,10 +1,7 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { enqueueSendCopyrightNoticeEmail } from '@queues/emails/enqueues'
-import {
-  currentUserCanReviewCopyrightNotices,
-  replayFailedCopyrightEmailIntakeReply,
-} from '@services/copyright-notices'
+import { currentUserCanReviewCopyrightNotices } from '@services/copyright-notices'
+import { replayCopyrightEmailIntakeReplyAndEnqueue } from '@services/copyright-notices/copyright-mcp-write-actions'
 import { assertNotSuspended } from '@services/users'
 import { setPrivateNoStoreCacheHeaders } from '../../cache-headers.mts'
 import { apiNoRequestBody } from '../../response-contract.mts'
@@ -29,7 +26,5 @@ app.route('/api/v1/copyright-email-intakes/:id/reply/replays').post(async (ctx: 
   validateRequestContract(ctx, 'POST:/api/v1/copyright-email-intakes/:id/reply/replays', {
     path: ctx.params,
   })
-  const intentId = await replayFailedCopyrightEmailIntakeReply({ currentUser, intakeId })
-  if (intentId) void enqueueSendCopyrightNoticeEmail(intentId)
-  ctx.json({ replayed: intentId !== null })
+  ctx.json(await replayCopyrightEmailIntakeReplyAndEnqueue(currentUser, intakeId))
 })

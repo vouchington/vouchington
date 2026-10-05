@@ -82,6 +82,7 @@ describe('generated MCP catalog artifacts', () => {
         { id: 'mcp-catalog', roles: everyRole, membership_plan: 'pro' },
         everyScope,
         config,
+        true,
       )
       const registered = listToolsForSurface(config.surface, ALL_TOOLS)
         .filter(tool => isToolMcpEligible(tool))
@@ -92,6 +93,27 @@ describe('generated MCP catalog artifacts', () => {
       expect(server?.tools.map(entry => entry.tool)).toEqual(listed)
     },
   )
+
+  it('hides all 17 copyright decisions while preserving other admin tools when switched off', () => {
+    const caller = {
+      id: 'mcp-catalog',
+      roles: [...new Set(ALL_TOOLS.flatMap(tool => Object.keys(tool.roles ?? {})))],
+      membership_plan: 'pro' as const,
+    }
+    const scopes = Object.keys(SCOPE_DEFINITIONS) as ApiScope[]
+    const enabled = listMcpToolsForUser(caller, scopes, ADMIN_MCP_SERVER_CONFIG, true)
+    const disabled = listMcpToolsForUser(caller, scopes, ADMIN_MCP_SERVER_CONFIG, false)
+    const decisions = ALL_TOOLS.filter(
+      tool => tool.meta?.switch === 'copyright.mcpDecisionTools',
+    ).map(tool => tool.schema.name)
+    expect(decisions).toHaveLength(17)
+    expect(enabled.filter(tool => decisions.includes(tool.name)).map(tool => tool.name)).toEqual(
+      decisions,
+    )
+    expect(disabled.map(tool => tool.name)).toEqual(
+      enabled.filter(tool => !decisions.includes(tool.name)).map(tool => tool.name),
+    )
+  })
 
   it('names only REST equivalents that exist in the OpenAPI document', async () => {
     const openapi = JSON.parse(await readFile(OPENAPI_PATH, 'utf8')) as OpenApiPaths
