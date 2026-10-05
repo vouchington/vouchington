@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@data-stores/psql": "workspace:^",
-    "@modelcontextprotocol/sdk": "^1.31.0",
+    "@modelcontextprotocol/sdk": "^1.32.0",
     "@modules/on-error": "workspace:^",
     "@modules/scopes": "workspace:^",
     "@services/api-keys": "workspace:^",
