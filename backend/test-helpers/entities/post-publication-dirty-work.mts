@@ -34,7 +34,7 @@ export async function getTestPostPublicationDirtyWork(
   const { rows } = await read<TestPostPublicationDirtyWork>(
     sql`
     /* getTestPostPublicationDirtyWork */
-    SELECT id, post_id, author_user_id, community_id, rss_feed_id, topic_alias_id, story_id, reasons,
+    SELECT id, post_id, author_user_id, community_id, rss_feed_id, topic_alias_id, story_id, reasons::text[] AS reasons,
       generation, cursor_post_id, cursor_topic_id, cursor_key_id, lease_token, leased_at, lease_expires_at
     FROM post_publication_dirty_work
     WHERE id = ${dirtyWorkId}
@@ -61,7 +61,7 @@ export async function getTestPostPublicationDirtyWorkForScope(
               : sql`story_id = ${scope.id}`
   const statement = sql`
     /* getTestPostPublicationDirtyWorkForScope */
-    SELECT id, post_id, author_user_id, community_id, rss_feed_id, topic_alias_id, story_id, reasons,
+    SELECT id, post_id, author_user_id, community_id, rss_feed_id, topic_alias_id, story_id, reasons::text[] AS reasons,
       generation, cursor_post_id, cursor_topic_id, cursor_key_id, lease_token, leased_at, lease_expires_at
     FROM post_publication_dirty_work
     WHERE `

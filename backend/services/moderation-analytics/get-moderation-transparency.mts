@@ -1,3 +1,4 @@
+import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 import { write } from '@data-stores/psql'
 import {
   MODERATION_TRANSPARENCY_DELAY_MS,
@@ -49,7 +50,7 @@ export async function getModerationTransparency(
       date: string
       occurred_at: Date
       metric: ModerationTransparencyMetric
-      category: string
+      category: FiniteValue<'moderation_transparency_categories'>
       count: number
     }
     return {
@@ -105,7 +106,12 @@ export async function getCommunityModerationTransparency(
     ORDER BY day
   `)
   const rawBuckets = rows.map(row => {
-    const bucket = row as { date: string; occurred_at: Date; category: string; count: number }
+    const bucket = row as {
+      date: string
+      occurred_at: Date
+      category: FiniteValue<'moderation_transparency_categories'>
+      count: number
+    }
     return {
       date: bucket.date,
       occurred_at: bucket.occurred_at,

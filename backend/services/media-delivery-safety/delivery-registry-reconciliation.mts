@@ -86,7 +86,7 @@ export async function stageAllCurrentImagePlacementDeliveryRecords(
     ), intended AS (
       SELECT authority.*, CASE WHEN `
   statement.append(imageDeliveryAuthorityProof())
-  statement.append(sql` THEN 'allow' ELSE 'withheld' END AS desired_state
+  statement.append(sql` THEN 'allow'::media_delivery_desired_states ELSE 'withheld'::media_delivery_desired_states END AS desired_state
       FROM candidates authority
     ) SELECT intended.* FROM intended
       LEFT JOIN media_delivery_registry_current_records existing USING (delivery_key)

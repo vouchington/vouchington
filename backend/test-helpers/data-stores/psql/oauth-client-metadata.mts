@@ -14,7 +14,7 @@ export async function insertTestClientIdMetadataClient(input: {
      ) VALUES (
        $1, $1, nextval('oauth_client_metadata_refresh_generation_seq'), CURRENT_TIMESTAMP,
        CURRENT_TIMESTAMP + INTERVAL '5 minutes', $2, 'public', 'none', $3::text[],
-       ARRAY['authorization_code', 'refresh_token'], ARRAY['code'], $4::text[]
+       ARRAY['authorization_code', 'refresh_token']::oauth_grant_types[], ARRAY['code']::oauth_response_types[], $4::api_scopes[]
      )`,
     [input.clientId, input.clientName, input.redirectUris, input.scopes],
   )

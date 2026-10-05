@@ -1,41 +1,17 @@
-export type ModerationTrainingSourceType =
-  | 'agent_moderation'
-  | 'openai_omni'
-  | 'spam_detection'
-  | 'community_prompt'
-  | 'community_review'
-  | 'moderation_report'
-  | 'moderation_appeal'
-  | 'review_dispute'
-  | 'agent_moderation_vote'
-  | 'prompt_test_run'
+import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 
-export type ModerationTrainingEventType =
-  | 'automod_reviewed'
-  | 'manual_action_inferred'
-  | 'report_resolved'
-  | 'dispute_resolved'
-  | 'appeal_resolved'
-  | 'draft_edited'
-  | 'agent_accuracy_voted'
-  | 'prompt_test_labelled'
+export type ModerationTrainingSourceType = FiniteValue<'moderation_training_source_types'>
 
-export type ModerationTrainingLabel =
-  | 'true_positive'
-  | 'false_positive'
-  | 'false_negative_candidate'
-  | 'true_negative'
-  | 'accepted'
-  | 'edited'
-  | 'rejected'
-  | 'not_applicable'
+export type ModerationTrainingEventType = FiniteValue<'moderation_training_event_types'>
+
+export type ModerationTrainingLabel = FiniteValue<'moderation_training_labels'>
 
 export type ModerationTrainingFeedback = {
   id: string
   source_type: ModerationTrainingSourceType
   event_type: ModerationTrainingEventType
   label: ModerationTrainingLabel
-  human_action: string
+  human_action: FiniteValue<'moderation_training_human_actions'>
   reason_code: string | null
   note: string | null
   label_confidence: number
@@ -60,7 +36,7 @@ export type RecordModerationTrainingFeedbackInput = {
   sourceType: ModerationTrainingSourceType
   eventType: ModerationTrainingEventType
   label: ModerationTrainingLabel
-  humanAction: string
+  humanAction: FiniteValue<'moderation_training_human_actions'>
   reasonCode?: string | null
   note?: string | null
   labelConfidence?: number

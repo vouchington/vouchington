@@ -6,9 +6,10 @@
 -- store US restoration clocks, placement keys, or lifecycle metadata. No policy row is seeded: the
 -- contracts stay unavailable until a separate approval exists.
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS copyright_jurisdiction_policy_approvals (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  jurisdiction text NOT NULL,
+  jurisdiction copyright_jurisdictions NOT NULL,
   policy_version text NOT NULL,
   approved_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   approved_by_id uuid,
@@ -32,10 +33,11 @@ CREATE TABLE IF NOT EXISTS copyright_jurisdiction_policy_withdrawals (
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS copyright_territorial_notice_receipts (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL,
-  jurisdiction text NOT NULL,
+  jurisdiction copyright_jurisdictions NOT NULL,
   copyright_jurisdiction_policy_approval_id uuid NOT NULL,
   requester_user_id uuid,
   requester_identity_sha256 bytea NOT NULL,
@@ -69,10 +71,11 @@ CREATE TABLE IF NOT EXISTS copyright_territorial_notice_receipts (
   )
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS copyright_territorial_notice_routings (
   copyright_territorial_notice_receipt_id uuid PRIMARY KEY
     REFERENCES copyright_territorial_notice_receipts (id) ON DELETE RESTRICT,
-  destination text NOT NULL,
+  destination copyright_territorial_notice_routing_destinations NOT NULL,
   routed_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -101,16 +104,17 @@ CREATE TABLE IF NOT EXISTS copyright_territorial_notice_acknowledgments (
   )
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS copyright_territorial_decisions (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL,
-  jurisdiction text NOT NULL,
+  jurisdiction copyright_jurisdictions NOT NULL,
   decided_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   decided_by_id uuid,
-  outcome text NOT NULL,
+  outcome copyright_territorial_decision_outcomes NOT NULL,
   copyright_notice_submission_assessment_id uuid,
   supersedes_decision_id uuid UNIQUE,
-  automation_disclosure text NOT NULL,
+  automation_disclosure copyright_territorial_decision_automation_disclosures NOT NULL,
   rationale_ciphertext text NOT NULL,
   public_explanation_ciphertext text NOT NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -132,13 +136,14 @@ CREATE UNIQUE INDEX uq_copyright_territorial_decisions__original
   ON copyright_territorial_decisions (copyright_notice_id, jurisdiction)
   WHERE supersedes_decision_id IS NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS copyright_territorial_redress_requests (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL,
-  jurisdiction text NOT NULL,
+  jurisdiction copyright_jurisdictions NOT NULL,
   copyright_territorial_decision_id uuid NOT NULL,
   submitted_by_user_id uuid,
-  filed_by text NOT NULL,
+  filed_by copyright_territorial_party_roles NOT NULL,
   idempotency_key text NOT NULL,
   explanation_ciphertext text NOT NULL,
   received_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -167,13 +172,14 @@ CREATE UNIQUE INDEX uq_copyright_territorial_redress_requests__guest
   ON copyright_territorial_redress_requests (copyright_territorial_decision_id)
   WHERE submitted_by_user_id IS NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS copyright_territorial_redress_decisions (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_territorial_redress_request_id uuid NOT NULL UNIQUE
     REFERENCES copyright_territorial_redress_requests (id) ON DELETE RESTRICT,
   decided_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   decided_by_id uuid,
-  staff_disposition text NOT NULL,
+  staff_disposition copyright_territorial_redress_decision_staff_dispositions NOT NULL,
   rationale_ciphertext text NOT NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -185,10 +191,11 @@ CREATE TABLE IF NOT EXISTS copyright_territorial_redress_decisions (
   )
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS copyright_eu_supervised_complaints (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL,
-  jurisdiction text NOT NULL,
+  jurisdiction copyright_jurisdictions NOT NULL,
   recorded_by_id uuid,
   authority_reference text NOT NULL,
   explanation_ciphertext text NOT NULL,
@@ -207,14 +214,15 @@ CREATE TABLE IF NOT EXISTS copyright_eu_supervised_complaints (
   )
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS copyright_eu_dispute_settlement_referrals (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL,
-  jurisdiction text NOT NULL DEFAULT 'eu_dsa',
+  jurisdiction copyright_jurisdictions NOT NULL DEFAULT 'eu_dsa',
   copyright_territorial_decision_id uuid NOT NULL,
   body_name text NOT NULL,
   referred_at timestamptz NOT NULL,
-  referred_by_party text NOT NULL,
+  referred_by_party copyright_territorial_party_roles NOT NULL,
   referred_by_user_id uuid,
   recorded_by_id uuid,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -234,7 +242,7 @@ CREATE TABLE IF NOT EXISTS copyright_eu_dispute_settlement_outcomes (
   copyright_eu_dispute_settlement_referral_id uuid NOT NULL UNIQUE
     REFERENCES copyright_eu_dispute_settlement_referrals (id) ON DELETE RESTRICT,
   decided_at timestamptz NOT NULL,
-  result text NOT NULL,
+  result copyright_eu_dispute_settlement_results NOT NULL,
   implemented_at timestamptz,
   recorded_by_id uuid,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -250,7 +258,7 @@ CREATE TABLE IF NOT EXISTS copyright_eu_dispute_settlement_outcomes (
 CREATE TABLE IF NOT EXISTS copyright_territorial_escalations (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL,
-  jurisdiction text NOT NULL,
+  jurisdiction copyright_jurisdictions NOT NULL,
   copyright_territorial_notice_acknowledgment_id uuid UNIQUE
     REFERENCES copyright_territorial_notice_acknowledgments (id) ON DELETE RESTRICT,
   copyright_eu_supervised_complaint_id uuid UNIQUE
@@ -267,9 +275,10 @@ CREATE TABLE IF NOT EXISTS copyright_territorial_escalations (
   )
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS copyright_eu_transparency_reports (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  jurisdiction text NOT NULL,
+  jurisdiction copyright_jurisdictions NOT NULL,
   period_started_at timestamptz NOT NULL,
   period_ended_at timestamptz NOT NULL,
   receipt_count integer NOT NULL,

@@ -29,7 +29,7 @@ export async function getPostHashtagSourcesForTest(
       FROM post_topic_alias_sources source
       JOIN topic_aliases alias ON alias.id = source.topic_alias_id
       WHERE source.post_id = $1
-      ORDER BY source.source, alias.alias`,
+      ORDER BY source.source::text, alias.alias`,
     [postId],
   )
   return rows

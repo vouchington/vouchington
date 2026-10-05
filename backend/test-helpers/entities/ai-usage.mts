@@ -46,6 +46,10 @@ export async function insertTestAiUsageRecord(
   const resolvedCostMicrounits = pricingStatus === 'unpriced' ? null : costMicrounits
   const resolvedCurrencyCode = pricingStatus === 'unpriced' ? null : 'usd'
   const { rows } = await write<{ id: string }>(sql`/* insertTestAiUsageRecord */
+    WITH registered_tier AS (
+      INSERT INTO openai_service_tiers (id) VALUES (${serviceTier})
+      ON CONFLICT (id) DO NOTHING
+    )
     INSERT INTO ai_usage_records (
       id, community_id, post_id, classifier_run_id, latency_ms, agent_slug, model, service_tier,
       input_tokens, cached_input_tokens, output_tokens, pricing_status, cost_microunits,

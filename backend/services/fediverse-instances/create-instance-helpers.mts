@@ -8,7 +8,8 @@ import { createTopicRevision, computeTopicChanges } from '@services/topic-revisi
 import { getTopicByAny } from '@services/topics/get'
 import { finalizeCreatedTopic } from '@services/topics/create'
 import { finalizeClaimedTopicAliases } from '@services/topics/aliases'
-import * as topicAliasClaim from '@services/topics/claim-and-sync-alias'
+import { claimTopicAlias } from '@services/topics/claim-topic-alias'
+import { isTopicAliasOwnershipConflict } from '@services/topics/alias-errors'
 import type { TopicAlias } from '@services/topics/alias-types'
 import { findExistingInstanceByHostnameId } from './find-existing-instance.mts'
 import assert from 'http-assert'
@@ -83,7 +84,7 @@ export async function createInstanceInTransaction(
     )
     const topicId = topicRows[0].id as string
     const [claimedAlias] = await Promise.all([
-      topicAliasClaim.claimTopicAliasAndSync(topicId, slug, options),
+      claimTopicAlias(topicId, slug, options),
       linkHostnameToSourceTopic(topicId, hostnameId, options),
     ])
 
@@ -122,7 +123,7 @@ export async function createInstanceInTransaction(
     await query.commit()
     return result
   } catch (err) {
-    if (isUniqueViolation(err) || topicAliasClaim.isTopicAliasOwnershipConflict(err)) return null
+    if (isUniqueViolation(err) || isTopicAliasOwnershipConflict(err)) return null
     throw err
   }
 }

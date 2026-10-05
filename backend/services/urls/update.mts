@@ -2,7 +2,7 @@ import { write } from '@data-stores/psql'
 
 type UpdateUrlOptions = {
   canonical_url_id?: string
-  url_content_type_id?: string | number
+  media_type_id?: string | number
 }
 
 export const updateUrl = (id: string, options: UpdateUrlOptions) => {
@@ -14,8 +14,8 @@ export const updateUrl = (id: string, options: UpdateUrlOptions) => {
       case 'canonical_url_id':
         sets.push(`canonical_url_id = $${values.push(value)}`)
         break
-      case 'url_content_type_id':
-        sets.push(`url_content_type_id = $${values.push(value)}`)
+      case 'media_type_id':
+        sets.push(`media_type_id = $${values.push(value)}`)
         break
       default:
         break

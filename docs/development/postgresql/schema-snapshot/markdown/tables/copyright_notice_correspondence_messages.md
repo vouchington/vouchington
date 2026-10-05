@@ -6,22 +6,22 @@ Private inbound and outbound legal correspondence; agent-composed outbound text 
 
 Not partitioned — growth: unbounded.
 
-| Column                             | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                         |
-| ---------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------- |
-| `id`                               | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                 |
-| `copyright_notice_email_intake_id` | `uuid`                     | yes      |                              |          |           |           | Immutable original email intake containing the raw MIME evidence for an inbound correspondence. |
-| `copyright_notice_id`              | `uuid`                     | no       |                              |          |           |           | Legal case to which this correspondence belongs.                                                |
-| `copyright_notice_submission_id`   | `uuid`                     | yes      |                              |          |           |           | Inbound submission represented by this message; NULL for outbound correspondence.               |
-| `direction`                        | `text`                     | no       |                              |          |           |           | Inbound receipt or outbound legal communication.                                                |
-| `composition_kind`                 | `text`                     | no       |                              |          |           |           | Inbound source, deterministic template, human staff text, or agent-composed text.               |
-| `correspondence_kind`              | `text`                     | no       |                              |          |           |           | Purpose of the legal communication.                                                             |
-| `body_ciphertext`                  | `text`                     | no       |                              |          |           |           | Authenticated ciphertext of the private message body.                                           |
-| `drafted_by_id`                    | `uuid`                     | yes      |                              |          |           |           | Staff drafter for human-authored text; NULL for inbound, templates, or agent drafts.            |
-| `approved_at`                      | `timestamp with time zone` | yes      |                              |          |           |           | When staff approved agent-composed outbound text.                                               |
-| `approved_by_id`                   | `uuid`                     | yes      |                              |          |           |           | Staff user that approved agent-composed outbound text.                                          |
-| `sent_at`                          | `timestamp with time zone` | yes      |                              |          |           |           | One-way timestamp set after durable delivery intent is recorded.                                |
-| `created_at`                       | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                 |
-| `updated_at`                       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                 |
+| Column                             | Type                                                        | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                         |
+| ---------------------------------- | ----------------------------------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------- |
+| `id`                               | `uuid`                                                      | no       | `uuidv7()`                   |          |           |           |                                                                                                 |
+| `copyright_notice_email_intake_id` | `uuid`                                                      | yes      |                              |          |           |           | Immutable original email intake containing the raw MIME evidence for an inbound correspondence. |
+| `copyright_notice_id`              | `uuid`                                                      | no       |                              |          |           |           | Legal case to which this correspondence belongs.                                                |
+| `copyright_notice_submission_id`   | `uuid`                                                      | yes      |                              |          |           |           | Inbound submission represented by this message; NULL for outbound correspondence.               |
+| `direction`                        | `copyright_notice_correspondence_message_directions`        | no       |                              |          |           |           | Inbound receipt or outbound legal communication.                                                |
+| `composition_kind`                 | `copyright_notice_correspondence_message_composition_kinds` | no       |                              |          |           |           | Inbound source, deterministic template, human staff text, or agent-composed text.               |
+| `correspondence_kind`              | `copyright_notice_correspondence_kinds`                     | no       |                              |          |           |           | Purpose of the legal communication.                                                             |
+| `body_ciphertext`                  | `text`                                                      | no       |                              |          |           |           | Authenticated ciphertext of the private message body.                                           |
+| `drafted_by_id`                    | `uuid`                                                      | yes      |                              |          |           |           | Staff drafter for human-authored text; NULL for inbound, templates, or agent drafts.            |
+| `approved_at`                      | `timestamp with time zone`                                  | yes      |                              |          |           |           | When staff approved agent-composed outbound text.                                               |
+| `approved_by_id`                   | `uuid`                                                      | yes      |                              |          |           |           | Staff user that approved agent-composed outbound text.                                          |
+| `sent_at`                          | `timestamp with time zone`                                  | yes      |                              |          |           |           | One-way timestamp set after durable delivery intent is recorded.                                |
+| `created_at`                       | `timestamp with time zone`                                  | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                 |
+| `updated_at`                       | `timestamp with time zone`                                  | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                 |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -31,16 +31,16 @@ Not partitioned — growth: unbounded.
 
 **Check constraints:**
 
-- `copyright_correspondence_kind_check`: `CHECK ((correspondence_kind = ANY (ARRAY['receipt'::text, 'request_information'::text, 'restriction_notice'::text, 'decision_notice'::text, 'counter_notice_forwarding'::text, 'restoration_notice'::text, 'status_update'::text, 'inbound_message'::text])))`
+- `copyright_correspondence_kind_check`: `CHECK ((correspondence_kind = ANY (ARRAY['receipt'::copyright_notice_correspondence_kinds, 'request_information'::copyright_notice_correspondence_kinds, 'restriction_notice'::copyright_notice_correspondence_kinds, 'decision_notice'::copyright_notice_correspondence_kinds, 'counter_notice_forwarding'::copyright_notice_correspondence_kinds, 'restoration_notice'::copyright_notice_correspondence_kinds, 'status_update'::copyright_notice_correspondence_kinds, 'inbound_message'::copyright_notice_correspondence_kinds])))`
 - `copyright_notice_correspondence_messages_body_ciphertext_check`: `CHECK (((char_length(body_ciphertext) >= 1) AND (char_length(body_ciphertext) <= 1048576)))`
-- `copyright_notice_correspondence_messages_check`: `CHECK (((approved_at IS NULL) OR (composition_kind = 'agent'::text)))`
+- `copyright_notice_correspondence_messages_check`: `CHECK (((approved_at IS NULL) OR (composition_kind = 'agent'::copyright_notice_correspondence_message_composition_kinds)))`
 - `copyright_notice_correspondence_messages_check1`: `CHECK (((approved_at IS NOT NULL) OR (approved_by_id IS NULL)))`
-- `copyright_notice_correspondence_messages_check2`: `CHECK (((sent_at IS NULL) OR (composition_kind <> 'agent'::text) OR (approved_at IS NOT NULL)))`
-- `copyright_notice_correspondence_messages_check3`: `CHECK (((direction = 'outbound'::text) OR (sent_at IS NULL)))`
-- `copyright_notice_correspondence_messages_check4`: `CHECK (((composition_kind = 'staff'::text) OR (drafted_by_id IS NULL)))`
-- `copyright_notice_correspondence_messages_check5`: `CHECK ((((direction = 'inbound'::text) AND (composition_kind = 'inbound'::text) AND (copyright_notice_submission_id IS NOT NULL)) OR ((direction = 'outbound'::text) AND (composition_kind <> 'inbound'::text))))`
-- `copyright_notice_correspondence_messages_composition_kind_check`: `CHECK ((composition_kind = ANY (ARRAY['inbound'::text, 'deterministic_template'::text, 'staff'::text, 'agent'::text])))`
-- `copyright_notice_correspondence_messages_direction_check`: `CHECK ((direction = ANY (ARRAY['inbound'::text, 'outbound'::text])))`
+- `copyright_notice_correspondence_messages_check2`: `CHECK (((sent_at IS NULL) OR (composition_kind <> 'agent'::copyright_notice_correspondence_message_composition_kinds) OR (approved_at IS NOT NULL)))`
+- `copyright_notice_correspondence_messages_check3`: `CHECK (((direction = 'outbound'::copyright_notice_correspondence_message_directions) OR (sent_at IS NULL)))`
+- `copyright_notice_correspondence_messages_check4`: `CHECK (((composition_kind = 'staff'::copyright_notice_correspondence_message_composition_kinds) OR (drafted_by_id IS NULL)))`
+- `copyright_notice_correspondence_messages_check5`: `CHECK ((((direction = 'inbound'::copyright_notice_correspondence_message_directions) AND (composition_kind = 'inbound'::copyright_notice_correspondence_message_composition_kinds) AND (copyright_notice_submission_id IS NOT NULL)) OR ((direction = 'outbound'::copyright_notice_correspondence_message_directions) AND (composition_kind <> 'inbound'::copyright_notice_correspondence_message_composition_kinds))))`
+- `copyright_notice_correspondence_messages_composition_kind_check`: `CHECK ((composition_kind = ANY (ARRAY['inbound'::copyright_notice_correspondence_message_composition_kinds, 'deterministic_template'::copyright_notice_correspondence_message_composition_kinds, 'staff'::copyright_notice_correspondence_message_composition_kinds, 'agent'::copyright_notice_correspondence_message_composition_kinds])))`
+- `copyright_notice_correspondence_messages_direction_check`: `CHECK ((direction = ANY (ARRAY['inbound'::copyright_notice_correspondence_message_directions, 'outbound'::copyright_notice_correspondence_message_directions])))`
 
 **Foreign keys:**
 

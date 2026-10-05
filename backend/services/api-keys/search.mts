@@ -10,7 +10,7 @@ export async function searchApiKeys(
   const limit = options.limit ?? 25
   try {
     const query = sql`/* searchApiKeys */
-      SELECT id, user_id, prefix, type, label, permissions, created_at, last_used_at,
+      SELECT id, user_id, prefix, type, label, scopes::text[] AS permissions, created_at, last_used_at,
         revoked_at, expires_at, replaced_by_api_key_id, expiry_reminder_sent_at, updated_at
       FROM api_keys
       WHERE user_id = ${currentUserId}

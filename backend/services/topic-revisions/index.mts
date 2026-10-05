@@ -33,8 +33,7 @@ export type TopicRevision = {
   topic_id: string
   revision_type: RevisionType
   revised_by_id: string | null
-  revised_by_roles: string[]
-  changes: TopicRevisionChanges
+  revision_document: { revised_by_roles: string[]; changes: TopicRevisionChanges }
   created_at: Date
 }
 
@@ -58,14 +57,13 @@ export async function createTopicRevision(
       topic_id,
       revision_type,
       revised_by_id,
-      revised_by_roles,
-      changes
+      revision_document
     )
     VALUES (
       ${topicId},
       ${revisionType},
       ${revisedById},
-      COALESCE(
+      jsonb_build_object('revised_by_roles', COALESCE(
         (
           SELECT ARRAY_AGG(user_roles_types.slug)
           FROM user_roles
@@ -73,10 +71,9 @@ export async function createTopicRevision(
           WHERE user_roles.user_id = ${revisedById}
         ),
         ARRAY[]::TEXT[]
-      ),
-      ${JSON.stringify(changes)}
+      ), 'changes', ${JSON.stringify(changes)}::jsonb)
     )
-    RETURNING id, topic_id, revision_type, revised_by_id, revised_by_roles, changes, created_at`,
+    RETURNING id, topic_id, revision_type, revised_by_id, revision_document, created_at`,
     options,
   )
   return row
@@ -95,8 +92,8 @@ export async function getLatestTopicContentUpdate(
     JOIN view_embedded_users eu ON eu.id = tr.revised_by_id
     WHERE tr.topic_id = ${topicId}
       AND tr.revision_type IN ('create', 'update')
-      AND tr.changes ?| ARRAY['name', 'markdown']
-      AND tr.revised_by_roles @> ARRAY['administrator']::TEXT[]
+      AND (tr.revision_document->'changes') ?| ARRAY['name', 'markdown']
+      AND (tr.revision_document->'revised_by_roles') @> '["administrator"]'::jsonb
     ORDER BY tr.id DESC
     LIMIT 1`,
     options,

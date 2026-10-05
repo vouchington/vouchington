@@ -20,14 +20,14 @@ export const OAUTH_CLIENT_VERIFICATION_FILTERS: readonly OAuthClientVerification
 const OAUTH_CLIENT_VERIFICATION_LIST_SQL = {
   all: {
     first: `/* listOAuthClientsForVerification first */ SELECT id, client_id, client_name,
-         client_type, redirect_uris, scopes, owner_user_id, verified_at, verified_by_id, created_at
+         client_type, redirect_uris, scopes::text[] AS scopes, owner_user_id, verified_at, verified_by_id, created_at
        FROM oauth_clients
        WHERE metadata_url IS NULL
          AND revoked_at IS NULL
        ORDER BY id DESC
        LIMIT $1`,
     continuation: `/* listOAuthClientsForVerification continuation */ SELECT id, client_id,
-         client_name, client_type, redirect_uris, scopes, owner_user_id, verified_at,
+         client_name, client_type, redirect_uris, scopes::text[] AS scopes, owner_user_id, verified_at,
          verified_by_id, created_at
        FROM oauth_clients
        WHERE metadata_url IS NULL
@@ -38,7 +38,7 @@ const OAUTH_CLIENT_VERIFICATION_LIST_SQL = {
   },
   unverified: {
     first: `/* listOAuthClientsForVerification first */ SELECT id, client_id, client_name,
-         client_type, redirect_uris, scopes, owner_user_id, verified_at, verified_by_id, created_at
+         client_type, redirect_uris, scopes::text[] AS scopes, owner_user_id, verified_at, verified_by_id, created_at
        FROM oauth_clients
        WHERE metadata_url IS NULL
          AND revoked_at IS NULL
@@ -46,7 +46,7 @@ const OAUTH_CLIENT_VERIFICATION_LIST_SQL = {
        ORDER BY id DESC
        LIMIT $1`,
     continuation: `/* listOAuthClientsForVerification continuation */ SELECT id, client_id,
-         client_name, client_type, redirect_uris, scopes, owner_user_id, verified_at,
+         client_name, client_type, redirect_uris, scopes::text[] AS scopes, owner_user_id, verified_at,
          verified_by_id, created_at
        FROM oauth_clients
        WHERE metadata_url IS NULL
@@ -58,7 +58,7 @@ const OAUTH_CLIENT_VERIFICATION_LIST_SQL = {
   },
   verified: {
     first: `/* listOAuthClientsForVerification first */ SELECT id, client_id, client_name,
-         client_type, redirect_uris, scopes, owner_user_id, verified_at, verified_by_id, created_at
+         client_type, redirect_uris, scopes::text[] AS scopes, owner_user_id, verified_at, verified_by_id, created_at
        FROM oauth_clients
        WHERE metadata_url IS NULL
          AND revoked_at IS NULL
@@ -66,7 +66,7 @@ const OAUTH_CLIENT_VERIFICATION_LIST_SQL = {
        ORDER BY id DESC
        LIMIT $1`,
     continuation: `/* listOAuthClientsForVerification continuation */ SELECT id, client_id,
-         client_name, client_type, redirect_uris, scopes, owner_user_id, verified_at,
+         client_name, client_type, redirect_uris, scopes::text[] AS scopes, owner_user_id, verified_at,
          verified_by_id, created_at
        FROM oauth_clients
        WHERE metadata_url IS NULL
@@ -129,7 +129,7 @@ export async function verifyOAuthClient(
        AND redirect_uris = $4::text[]
        AND metadata_url IS NULL
        AND revoked_at IS NULL
-     RETURNING id, client_id, client_name, client_type, redirect_uris, scopes, owner_user_id,
+     RETURNING id, client_id, client_name, client_type, redirect_uris, scopes::text[] AS scopes, owner_user_id,
        verified_at, verified_by_id, created_at`,
     [id, currentUserId, reviewed.client_name, reviewed.redirect_uris],
   )

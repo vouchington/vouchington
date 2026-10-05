@@ -182,8 +182,13 @@ CREATE OR REPLACE VIEW view_posts AS
           WHERE ptrh.post_id = ptr.post_id
         ), '[]'::json),
         'topic_type', ptr.topic_type,
-        'example_referral_link', ptr.example_referral_link,
-        'landing_page_urls', ptr.landing_page_urls,
+        'example_referral_link', (SELECT url FROM urls WHERE id = ptr.example_referral_url_id),
+        'landing_page_urls', COALESCE((
+          SELECT ARRAY_AGG(urls.url ORDER BY submitted.sort_order)
+          FROM post_topic_recommendation_landing_page_urls submitted
+          JOIN urls ON urls.id = submitted.url_id
+          WHERE submitted.post_id = ptr.post_id
+        ), '{}'::TEXT[]),
         'approval_error_message', ptr.approval_error_message,
         'status', CASE
           WHEN ptr.reviewed_at IS NULL THEN 'pending'

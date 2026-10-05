@@ -2,16 +2,10 @@
 -- Coalesced pre-launch domain baseline.
 -- edited-in-place: pre-launch, never deployed to production
 -- Merged from: 0330-00-00-user-import-requests.sql, 0330-00-01-user-rss-feed-imports.sql
-DO $$
-BEGIN
-  CREATE TYPE user_import_request_entity_types AS ENUM ('topic', 'rss_feed');
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
-
 CREATE TABLE IF NOT EXISTS user_import_requests (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  entity_type user_import_request_entity_types NOT NULL,
+  entity_type import_entity_types NOT NULL,
   topic_id UUID REFERENCES topics(id) ON DELETE CASCADE,
   rss_feed_id UUID REFERENCES rss_feeds(id) ON DELETE CASCADE,
   topic_recommendation_post_id UUID REFERENCES post_topic_recommendations(post_id) ON DELETE CASCADE,
@@ -132,7 +126,6 @@ CREATE TABLE IF NOT EXISTS user_rss_feed_import_rows (
   batch_id UUID NOT NULL REFERENCES user_rss_feed_import_batches(id) ON DELETE CASCADE,
   row_index INT NOT NULL CHECK (row_index >= 0),
   input_url TEXT NOT NULL,
-  canonical_url TEXT,
   outcome user_rss_feed_import_row_outcomes,
   rss_feed_id UUID REFERENCES rss_feeds(id) ON DELETE SET NULL,
   completed_at TIMESTAMPTZ,
@@ -142,7 +135,6 @@ CREATE TABLE IF NOT EXISTS user_rss_feed_import_rows (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CHECK (input_url = TRIM(input_url)),
   CHECK (char_length(input_url) > 0),
-  CHECK (canonical_url IS NULL OR canonical_url = TRIM(canonical_url)),
   CONSTRAINT chk_user_rss_feed_import_rows__lifecycle CHECK (
     (outcome IS NULL AND completed_at IS NULL AND failed_at IS NULL)
     OR (
@@ -187,7 +179,6 @@ COMMENT ON TABLE user_rss_feed_import_rows IS 'Individual RSS feed import URLs a
 COMMENT ON COLUMN user_rss_feed_import_rows.batch_id IS 'The RSS feed import batch this row belongs to.';
 COMMENT ON COLUMN user_rss_feed_import_rows.row_index IS 'Zero-based position of the input URL in the submitted import.';
 COMMENT ON COLUMN user_rss_feed_import_rows.input_url IS 'Trimmed user-submitted RSS feed URL.';
-COMMENT ON COLUMN user_rss_feed_import_rows.canonical_url IS 'Validated canonical URL used for RSS feed lookup or creation.';
 COMMENT ON COLUMN user_rss_feed_import_rows.outcome IS 'Terminal per-row import result. NULL means pending or retrying.';
 COMMENT ON COLUMN user_rss_feed_import_rows.rss_feed_id IS 'RSS feed resolved or created for this row.';
 COMMENT ON COLUMN user_rss_feed_import_rows.completed_at IS 'When this row completed with a non-error outcome.';

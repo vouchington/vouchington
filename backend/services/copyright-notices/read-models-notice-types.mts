@@ -1,9 +1,10 @@
+import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 import type { PageInfo } from '@voucha/types/pagination'
 import type { CopyrightParticipantStatement } from './participant-statements.mts'
 
 export type CopyrightPublicNotice = {
   id: string
-  jurisdiction: 'us_dmca' | 'eu_dsa' | 'uk'
+  jurisdiction: Exclude<FiniteValue<'copyright_jurisdictions'>, 'other'>
   received_at: Date
   accepted_at: Date
   provisional_withholding_at: Date | null
@@ -29,7 +30,7 @@ export type CopyrightPublicNoticeDetail = CopyrightPublicNotice & {
 }
 
 export type CopyrightEuParticipantCase = {
-  outcome: 'restrict' | 'no_action' | null
+  outcome: FiniteValue<'copyright_territorial_decision_outcomes'> | null
   decided_at: Date | null
   informed_at: Date | null
   reopened_at: Date | null
@@ -40,10 +41,10 @@ export type CopyrightEuParticipantCase = {
       id: string
       received_at: Date
       explanation: string
-      filed_by: 'notifier' | 'poster' | 'reviewer'
+      filed_by: FiniteValue<'copyright_territorial_party_roles'>
     } | null
     decision: {
-      staff_disposition: 'maintain' | 'revoke'
+      staff_disposition: FiniteValue<'copyright_territorial_redress_decision_staff_dispositions'>
       rationale: string
       decided_at: Date
     } | null
@@ -53,7 +54,11 @@ export type CopyrightEuParticipantCase = {
     id: string
     body_name: string
     referred_at: Date
-    outcome: { result: string; decided_at: Date; implemented_at: Date | null } | null
+    outcome: {
+      result: FiniteValue<'copyright_eu_dispute_settlement_results'>
+      decided_at: Date
+      implemented_at: Date | null
+    } | null
   }>
 }
 
@@ -62,6 +67,11 @@ export type CopyrightParticipantNoticeDetail = Omit<CopyrightPublicNoticeDetail,
   statements: CopyrightParticipantStatement[]
   viewer_role: 'claimant' | 'poster' | 'staff'
   respondable_target_ids: string[]
-  submissions: Array<{ id: string; kind: string; received_at: Date; source_kind: string }>
+  submissions: Array<{
+    id: string
+    kind: FiniteValue<'copyright_notice_submission_kinds'>
+    received_at: Date
+    source_kind: FiniteValue<'copyright_notice_submission_source_kinds'>
+  }>
   eu?: CopyrightEuParticipantCase
 }

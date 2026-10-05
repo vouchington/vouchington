@@ -55,6 +55,10 @@ export async function insertTestVerifiedIdentity(
   sessionId: string,
 ): Promise<void> {
   await write(sql`/* insertTestVerifiedIdentity */
+    WITH registered_document_type AS (
+      INSERT INTO identity_document_types (id) VALUES ('passport')
+      ON CONFLICT (id) DO NOTHING
+    )
     INSERT INTO verified_identities (
       user_id, provider, provider_session_id, identity_fingerprint,
       issuing_country, document_type, verified_at, checkout_session_id

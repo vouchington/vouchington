@@ -6,24 +6,23 @@ User- and admin-created topic recommendations attached to posts, pending admin r
 
 RANGE partitioned on `post_id` (children: default, no retention owner, access class: target-scoped, growth: unbounded).
 
-| Column                   | Type                                    | Nullable | Default                                          | Identity | Generated | Collation | Comment                                                                                 |
-| ------------------------ | --------------------------------------- | -------- | ------------------------------------------------ | -------- | --------- | --------- | --------------------------------------------------------------------------------------- |
-| `post_id`                | `uuid`                                  | no       |                                                  |          |           |           | The post this topic recommendation is attached to (also primary key and partition key). |
-| `topic_title`            | `text`                                  | no       |                                                  |          |           |           | Proposed display name for the new topic.                                                |
-| `topic_slug`             | `text`                                  | no       |                                                  |          |           |           | Proposed URL slug for the new topic.                                                    |
-| `topic_markdown`         | `text`                                  | yes      |                                                  |          |           |           | Optional markdown description for the proposed topic.                                   |
-| `aliases`                | `text[]`                                | no       | `'{}'::text[]`                                   |          |           |           | Alternative names or aliases for the proposed topic.                                    |
-| `hostname_id`            | `uuid`                                  | yes      |                                                  |          |           |           | Primary hostname associated with this topic recommendation.                             |
-| `topic_type`             | `post_topic_recommendation_topic_types` | no       | `'topic'::post_topic_recommendation_topic_types` |          |           |           | The proposed topic type: topic (generic), referral_program, or card.                    |
-| `example_referral_link`  | `text`                                  | yes      |                                                  |          |           |           | For referral_program recommendations: an example referral URL submitted by the user.    |
-| `landing_page_urls`      | `text[]`                                | no       | `'{}'::text[]`                                   |          |           |           | For card recommendations: one or more landing-page URLs submitted by the user.          |
-| `approval_error_message` | `text`                                  | yes      |                                                  |          |           |           | Error message if automatic approval failed.                                             |
-| `reviewed_at`            | `timestamp with time zone`              | yes      |                                                  |          |           |           | When an admin reviewed this recommendation.                                             |
-| `reviewed_by_id`         | `uuid`                                  | yes      |                                                  |          |           |           | The admin who reviewed this recommendation.                                             |
-| `rejection_reason`       | `text`                                  | yes      |                                                  |          |           |           | Reason provided when rejecting the recommendation.                                      |
-| `created_topic_id`       | `uuid`                                  | yes      |                                                  |          |           |           | The topic created from this recommendation upon approval.                               |
-| `created_at`             | `timestamp with time zone`              | no       | `CURRENT_TIMESTAMP`                              |          |           |           |                                                                                         |
-| `updated_at`             | `timestamp with time zone`              | no       | `CURRENT_TIMESTAMP`                              |          |           |           |                                                                                         |
+| Column                    | Type                                    | Nullable | Default                                          | Identity | Generated | Collation | Comment                                                                                 |
+| ------------------------- | --------------------------------------- | -------- | ------------------------------------------------ | -------- | --------- | --------- | --------------------------------------------------------------------------------------- |
+| `post_id`                 | `uuid`                                  | no       |                                                  |          |           |           | The post this topic recommendation is attached to (also primary key and partition key). |
+| `topic_title`             | `text`                                  | no       |                                                  |          |           |           | Proposed display name for the new topic.                                                |
+| `topic_slug`              | `text`                                  | no       |                                                  |          |           |           | Proposed URL slug for the new topic.                                                    |
+| `topic_markdown`          | `text`                                  | yes      |                                                  |          |           |           | Optional markdown description for the proposed topic.                                   |
+| `aliases`                 | `text[]`                                | no       | `'{}'::text[]`                                   |          |           |           | Alternative names or aliases for the proposed topic.                                    |
+| `hostname_id`             | `uuid`                                  | yes      |                                                  |          |           |           | Primary hostname associated with this topic recommendation.                             |
+| `topic_type`              | `post_topic_recommendation_topic_types` | no       | `'topic'::post_topic_recommendation_topic_types` |          |           |           | The proposed topic type: topic (generic), referral_program, or card.                    |
+| `example_referral_url_id` | `uuid`                                  | yes      |                                                  |          |           |           | Normalized example referral URL; registered without crawl events.                       |
+| `approval_error_message`  | `text`                                  | yes      |                                                  |          |           |           | Error message if automatic approval failed.                                             |
+| `reviewed_at`             | `timestamp with time zone`              | yes      |                                                  |          |           |           | When an admin reviewed this recommendation.                                             |
+| `reviewed_by_id`          | `uuid`                                  | yes      |                                                  |          |           |           | The admin who reviewed this recommendation.                                             |
+| `rejection_reason`        | `text`                                  | yes      |                                                  |          |           |           | Reason provided when rejecting the recommendation.                                      |
+| `created_topic_id`        | `uuid`                                  | yes      |                                                  |          |           |           | The topic created from this recommendation upon approval.                               |
+| `created_at`              | `timestamp with time zone`              | no       | `CURRENT_TIMESTAMP`                              |          |           |           |                                                                                         |
+| `updated_at`              | `timestamp with time zone`              | no       | `CURRENT_TIMESTAMP`                              |          |           |           |                                                                                         |
 
 **Primary key:** `PRIMARY KEY (post_id)`
 
@@ -34,7 +33,6 @@ _none_
 
 - `post_topic_recommendations_approval_error_message_check`: `CHECK (((approval_error_message IS NULL) OR (approval_error_message = TRIM(BOTH FROM approval_error_message))))`
 - `post_topic_recommendations_check`: `CHECK ((((reviewed_at IS NULL) AND (reviewed_by_id IS NULL) AND (rejection_reason IS NULL) AND (created_topic_id IS NULL)) OR ((reviewed_at IS NOT NULL) AND (reviewed_by_id IS NOT NULL) AND (rejection_reason IS NULL) AND (created_topic_id IS NOT NULL)) OR ((reviewed_at IS NOT NULL) AND (reviewed_by_id IS NOT NULL) AND (created_topic_id IS NULL) AND ((rejection_reason IS NULL) OR (char_length(TRIM(BOTH FROM rejection_reason)) > 0)))))`
-- `post_topic_recommendations_example_referral_link_check`: `CHECK (((example_referral_link IS NULL) OR (example_referral_link = TRIM(BOTH FROM example_referral_link))))`
 - `post_topic_recommendations_rejection_reason_check`: `CHECK (((rejection_reason IS NULL) OR (rejection_reason = TRIM(BOTH FROM rejection_reason))))`
 - `post_topic_recommendations_topic_markdown_check`: `CHECK (((topic_markdown IS NULL) OR (topic_markdown = TRIM(BOTH FROM topic_markdown))))`
 - `post_topic_recommendations_topic_slug_check`: `CHECK ((topic_slug = lower(topic_slug)))`
@@ -46,6 +44,7 @@ _none_
 **Foreign keys:**
 
 - `post_topic_recommendations_created_topic_id_fkey`: `FOREIGN KEY (created_topic_id) REFERENCES topics(id) ON DELETE SET NULL`
+- `post_topic_recommendations_example_referral_url_id_fkey`: `FOREIGN KEY (example_referral_url_id) REFERENCES urls(id) ON DELETE RESTRICT`
 - `post_topic_recommendations_hostname_id_fkey`: `FOREIGN KEY (hostname_id) REFERENCES url_hostnames(id) ON DELETE SET NULL`
 - `post_topic_recommendations_post_id_fkey`: `FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE`
 - `post_topic_recommendations_reviewed_by_id_fkey`: `FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL`
@@ -53,6 +52,7 @@ _none_
 **Indexes:**
 
 - `idx_post_topic_recommendations__created_topic_id`: `CREATE INDEX idx_post_topic_recommendations__created_topic_id ON ONLY public.post_topic_recommendations USING btree (created_topic_id) WHERE (created_topic_id IS NOT NULL)`
+- `idx_post_topic_recommendations__example_referral_url_id`: `CREATE INDEX idx_post_topic_recommendations__example_referral_url_id ON ONLY public.post_topic_recommendations USING btree (example_referral_url_id)`
 - `idx_post_topic_recommendations__hostname_id`: `CREATE INDEX idx_post_topic_recommendations__hostname_id ON ONLY public.post_topic_recommendations USING btree (hostname_id) WHERE (hostname_id IS NOT NULL)`
 - `idx_post_topic_recommendations__reviewed_by_id`: `CREATE INDEX idx_post_topic_recommendations__reviewed_by_id ON ONLY public.post_topic_recommendations USING btree (reviewed_by_id, post_id DESC) WHERE (reviewed_by_id IS NOT NULL)`
 - `post_topic_recommendations_pkey`: `CREATE UNIQUE INDEX post_topic_recommendations_pkey ON ONLY public.post_topic_recommendations USING btree (post_id)`

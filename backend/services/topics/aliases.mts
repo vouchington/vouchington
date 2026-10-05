@@ -11,9 +11,7 @@ import type { TopicAlias, TopicAliasOptions } from './alias-types.mts'
 import { invalidatePostsForTopicAliases } from './invalidate-posts-for-topic-aliases.mts'
 import { recordTopicAliasPublicationChanges } from './publication-change.mts'
 export { unlinkTopicAlias } from './delete-topic-aliases.mts'
-export { updateTopicAliasesField } from './update-aliases-field.mts'
 export { createUnlinkedTopicAlias } from './create-unlinked-alias.mts'
-import { updateTopicAliasesField } from './update-aliases-field.mts'
 import { lockExistingTopicAliasPublicationScopes } from './alias-publication-locks.mts'
 import { runTopicAliasTransaction } from './alias-transaction.mts'
 
@@ -80,10 +78,6 @@ export async function linkTopicAlias(
         { aliasId: alias.id, alias: alias.alias, previousTopicId, nextTopicId: topicId },
       ])
     }
-    if (previousTopicId && previousTopicId !== topicId) {
-      await updateTopicAliasesField(previousTopicId, { query, skipSideEffects: true })
-    }
-    await updateTopicAliasesField(topicId, { query, skipSideEffects: true })
     if (options.revisedById) {
       await createTopicRevision(
         topicId,
@@ -179,7 +173,6 @@ export async function createTopicAliases(
         ]
       }),
     )
-    await updateTopicAliasesField(topicId, { query, skipSideEffects: true })
     if (revisedById) {
       await createTopicRevision(
         topicId,

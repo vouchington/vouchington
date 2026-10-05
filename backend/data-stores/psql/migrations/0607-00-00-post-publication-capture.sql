@@ -2,6 +2,7 @@
 -- Work rows are deleted after an exact-generation acknowledgement; retained keys cascade with
 -- that acknowledgement. There is deliberately no append-only publication-change ledger: the
 -- current dirty-work generation is the authoritative, de-duplicated repair request.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_publication_dirty_work (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   post_id UUID,
@@ -10,17 +11,7 @@ CREATE TABLE IF NOT EXISTS post_publication_dirty_work (
   rss_feed_id UUID,
   topic_alias_id UUID,
   story_id UUID,
-  reasons TEXT[] NOT NULL CHECK (
-    cardinality(reasons) > 0
-    AND reasons <@ ARRAY[
-      'post_created', 'post_updated', 'post_content_reset', 'post_audience_changed',
-      'post_archived', 'post_deleted', 'post_topics_changed', 'post_related_urls_changed',
-      'post_ratings_changed', 'post_clearance_changed', 'post_moderation_flag_changed',
-      'community_publication_changed', 'moderation_appeal_resolved', 'author_suspension_changed',
-      'author_deleted', 'community_visibility_changed', 'rss_feed_discoverability_changed',
-      'rss_feed_enablement_changed', 'rss_feed_source_changed'
-    ]::TEXT[]
-  ),
+  reasons post_publication_reasons[] NOT NULL CHECK (cardinality(reasons) > 0),
   generation BIGINT NOT NULL DEFAULT 1 CHECK (generation > 0),
   cursor_post_id UUID,
   cursor_topic_id UUID,

@@ -80,7 +80,7 @@ async function writePostClearanceStatus(
         SELECT p.id, $2::post_clearance_change_types, $3, $6, $7, $8, $5::jsonb, $10::boolean,
           CASE WHEN $9 IS NOT TRUE
               AND $2::post_clearance_change_types = 'reject' AND actor.username = $4
-            THEN ARRAY['post_clearance_reject']::text[] ELSE '{}'::text[] END
+            THEN ARRAY['post_clearance_reject']::moderation_transparency_categories[] ELSE '{}'::moderation_transparency_categories[] END
         FROM posts p
         LEFT JOIN users actor ON actor.id = $3
         WHERE p.id = $1

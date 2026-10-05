@@ -113,7 +113,7 @@ export async function persistClaimedNotificationPushOutcome(
       FOR UPDATE OF owner
     ), terminal_input AS (
       SELECT ${endpoint}::text AS endpoint,
-        ${terminalStatus}::notification_push_endpoint_status AS status
+        ${terminalStatus}::notification_push_endpoint_statuses AS status
       WHERE NOT ${isRetryableFailure}
     ), receipts AS (
       INSERT INTO notification_push_intent_subscription_receipts (

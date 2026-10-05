@@ -6,18 +6,18 @@ Canonical URL registry. All URLs in the system reference this table.
 
 Not partitioned — growth: unbounded.
 
-| Column                | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                 |
-| --------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------- |
-| `id`                  | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                         |
-| `url`                 | `text`                     | no       |                              |          |           |           | Full HTTPS URL (max 2083 chars). Unique, trimmed.                       |
-| `hostname_id`         | `uuid`                     | no       |                              |          |           |           | The hostname this URL belongs to.                                       |
-| `pathname`            | `text`                     | no       | `'/'::text`                  |          |           |           | URL pathname component (e.g. /path/to/page). Max 2048 chars.            |
-| `search_params`       | `jsonb`                    | no       |                              |          |           |           | URL query parameters stored as JSONB.                                   |
-| `url_content_type_id` | `bigint`                   | yes      |                              |          |           |           | Detected MIME content type of the URL.                                  |
-| `canonical_url_id`    | `uuid`                     | yes      |                              |          |           |           | Self-referencing FK to the canonical version of this URL, if different. |
-| `created_by_id`       | `uuid`                     | yes      |                              |          |           |           |                                                                         |
-| `created_at`          | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                         |
-| `updated_at`          | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                         |
+| Column             | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                 |
+| ------------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------- |
+| `id`               | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                         |
+| `url`              | `text`                     | no       |                              |          |           |           | Full HTTPS URL (max 2083 chars). Unique, trimmed.                       |
+| `hostname_id`      | `uuid`                     | no       |                              |          |           |           | The hostname this URL belongs to.                                       |
+| `pathname`         | `text`                     | no       | `'/'::text`                  |          |           |           | URL pathname component (e.g. /path/to/page). Max 2048 chars.            |
+| `search_params`    | `jsonb`                    | no       |                              |          |           |           | URL query parameters stored as JSONB.                                   |
+| `media_type_id`    | `bigint`                   | yes      |                              |          |           |           | Detected MIME content type of the URL.                                  |
+| `canonical_url_id` | `uuid`                     | yes      |                              |          |           |           | Self-referencing FK to the canonical version of this URL, if different. |
+| `created_by_id`    | `uuid`                     | yes      |                              |          |           |           |                                                                         |
+| `created_at`       | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                         |
+| `updated_at`       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                         |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -39,15 +39,15 @@ Not partitioned — growth: unbounded.
 - `urls_canonical_url_id_fkey`: `FOREIGN KEY (canonical_url_id) REFERENCES urls(id) ON DELETE SET NULL`
 - `urls_created_by_id_fkey`: `FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `urls_hostname_id_fkey`: `FOREIGN KEY (hostname_id) REFERENCES url_hostnames(id) ON DELETE CASCADE`
-- `urls_url_content_type_id_fkey`: `FOREIGN KEY (url_content_type_id) REFERENCES url_content_types(id) ON DELETE SET NULL`
+- `urls_media_type_id_fkey`: `FOREIGN KEY (media_type_id) REFERENCES media_types(id) ON DELETE SET NULL`
 
 **Indexes:**
 
 - `idx_urls__canonical_url_id`: `CREATE INDEX idx_urls__canonical_url_id ON public.urls USING btree (canonical_url_id) WHERE (canonical_url_id IS NOT NULL)`
 - `idx_urls__hostname_id`: `CREATE INDEX idx_urls__hostname_id ON public.urls USING btree (hostname_id)`
+- `idx_urls__media_type_id`: `CREATE INDEX idx_urls__media_type_id ON public.urls USING btree (media_type_id) WHERE (media_type_id IS NOT NULL)`
 - `idx_urls__updated_at_id_active`: `CREATE INDEX idx_urls__updated_at_id_active ON public.urls USING btree (updated_at, id)`
 - `idx_urls__url__text_pattern_ops`: `CREATE INDEX idx_urls__url__text_pattern_ops ON public.urls USING btree (url text_pattern_ops)`
-- `idx_urls__url_content_type_id`: `CREATE INDEX idx_urls__url_content_type_id ON public.urls USING btree (url_content_type_id) WHERE (url_content_type_id IS NOT NULL)`
 - `idx_urls__url_trgm`: `CREATE INDEX idx_urls__url_trgm ON public.urls USING gin (url gin_trgm_ops)`
 - `urls_pkey`: `CREATE UNIQUE INDEX urls_pkey ON public.urls USING btree (id)`
 - `urls_url_key`: `CREATE UNIQUE INDEX urls_url_key ON public.urls USING btree (url)`

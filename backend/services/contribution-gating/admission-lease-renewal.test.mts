@@ -16,8 +16,8 @@ describe('contribution admission lease renewal', () => {
       crypto.randomUUID(),
       { request: crypto.randomUUID() },
       {
-        route: 'test.lease-renewal',
-        scope: 'test',
+        route: 'posts.create',
+        scope: 'global',
         source: 'discussion',
         postType: 'discussion',
         policyRevision: 'test',
@@ -43,8 +43,8 @@ describe('contribution admission lease renewal', () => {
       crypto.randomUUID(),
       { request: crypto.randomUUID() },
       {
-        route: 'test.lease-renewal',
-        scope: 'test',
+        route: 'posts.create',
+        scope: 'global',
         source: 'discussion',
         postType: 'discussion',
         policyRevision: 'test',

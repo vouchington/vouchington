@@ -5,7 +5,7 @@ CREATE TABLE copyright_notice_appeal_recommendations (
   input_sha256 bytea NOT NULL CHECK (octet_length(input_sha256) = 32),
   prompt_version text NOT NULL CHECK (char_length(prompt_version) BETWEEN 1 AND 100),
   model text NOT NULL CHECK (char_length(model) BETWEEN 1 AND 255),
-  recommendation text NOT NULL CHECK (recommendation IN ('confirm', 'modify', 'reverse', 'uncertain')),
+  recommendation copyright_notice_appeal_recommendation_outcomes NOT NULL CHECK (recommendation IN ('confirm', 'modify', 'reverse', 'uncertain')),
   rationale_ciphertext text NOT NULL CHECK (char_length(rationale_ciphertext) BETWEEN 1 AND 1048576),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -38,7 +38,7 @@ export async function insertCopyrightNoticeTargetsInTransaction(
     WITH target_inputs AS (
       SELECT * FROM jsonb_to_recordset(${serializedTargets}::jsonb) AS target_input(
         placement_id uuid, placement_revision integer, image_id uuid,
-        binding_family text, hosted_use_url text
+        binding_family image_binding_families, hosted_use_url text
       )
     ), inserted_targets AS (
       INSERT INTO copyright_notice_targets (

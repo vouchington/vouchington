@@ -6,16 +6,16 @@ Immutable private association between an email intake and its admitted or matche
 
 Not partitioned — growth: unbounded.
 
-| Column                                            | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                   |
-| ------------------------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------- |
-| `id`                                              | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                           |
-| `copyright_notice_email_intake_id`                | `uuid`                     | no       |                              |          |           |           | Inbound email associated with the case.                   |
-| `copyright_notice_id`                             | `uuid`                     | no       |                              |          |           |           | Copyright case associated with the inbound email.         |
-| `copyright_notice_email_intake_recommendation_id` | `uuid`                     | yes      |                              |          |           |           | Agent recommendation retained as provenance for the link. |
-| `link_kind`                                       | `text`                     | no       |                              |          |           |           | Whether the email opened the case or matched its thread.  |
-| `matched_reference_lookup`                        | `text`                     | yes      |                              |          |           |           | Keyed digest that caused thread correlation.              |
-| `created_at`                                      | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                           |
-| `updated_at`                                      | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                           |
+| Column                                            | Type                                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                   |
+| ------------------------------------------------- | ------------------------------------------ | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------- |
+| `id`                                              | `uuid`                                     | no       | `uuidv7()`                   |          |           |           |                                                           |
+| `copyright_notice_email_intake_id`                | `uuid`                                     | no       |                              |          |           |           | Inbound email associated with the case.                   |
+| `copyright_notice_id`                             | `uuid`                                     | no       |                              |          |           |           | Copyright case associated with the inbound email.         |
+| `copyright_notice_email_intake_recommendation_id` | `uuid`                                     | yes      |                              |          |           |           | Agent recommendation retained as provenance for the link. |
+| `link_kind`                                       | `copyright_notice_email_intake_link_kinds` | no       |                              |          |           |           | Whether the email opened the case or matched its thread.  |
+| `matched_reference_lookup`                        | `text`                                     | yes      |                              |          |           |           | Keyed digest that caused thread correlation.              |
+| `created_at`                                      | `timestamp with time zone`                 | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                           |
+| `updated_at`                                      | `timestamp with time zone`                 | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                           |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -27,7 +27,7 @@ Not partitioned — growth: unbounded.
 **Check constraints:**
 
 - `copyright_notice_email_intake_no_matched_reference_lookup_check`: `CHECK (((matched_reference_lookup IS NULL) OR (char_length(matched_reference_lookup) = 64)))`
-- `copyright_notice_email_intake_notice_links_link_kind_check`: `CHECK ((link_kind = ANY (ARRAY['initial'::text, 'thread'::text])))`
+- `copyright_notice_email_intake_notice_links_link_kind_check`: `CHECK ((link_kind = ANY (ARRAY['initial'::copyright_notice_email_intake_link_kinds, 'thread'::copyright_notice_email_intake_link_kinds])))`
 
 **Foreign keys:**
 

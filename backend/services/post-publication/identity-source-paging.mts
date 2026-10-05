@@ -1,3 +1,4 @@
+import { FINITE_VALUES } from '@data-stores/psql/finite-values/index'
 import { listFeedRows } from './identity-feed-paging.mts'
 import { publicationPageLimit } from './page-limit.mts'
 import sql, { type SQLStatement } from 'sql-template-strings'
@@ -133,6 +134,7 @@ function sourceBranchSql(
           ['topic_alias_id', 'source'],
           cursor === null ? null : JSON.parse(cursor),
           1,
+          FINITE_VALUES.post_topic_alias_source_types[0],
         ),
       )
     statement
@@ -145,8 +147,7 @@ function sourceBranchSql(
     statement
       .append('SELECT slug FROM post_slugs CROSS JOIN native_bounds WHERE ')
       .append(nativeSourceRange('post_id', ['slug'], cursor === null ? null : [cursor], 0))
-      .append(sql` ORDER BY post_id, slug LIMIT `)
-      .append(publicationPageLimit(limit)).append(sql`)
+      .append(sql` ORDER BY slug LIMIT ${limit}`).append(sql`)
       SELECT 'post_slug'::text AS kind, NULL::text AS "uuidValue", slug AS "textValue", NULL::text AS "postType", NULL::text AS day, slug AS cursor FROM page ORDER BY slug`)
   } else {
     statement

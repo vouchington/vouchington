@@ -176,6 +176,7 @@ CREATE TABLE IF NOT EXISTS rss_feed_item_ids (
   UNIQUE (url_hostname_id, guid) INCLUDE (id)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS rss_feed_items (
   -- Shared with rss_feed_item_ids; the identity row is inserted first.
   id UUID PRIMARY KEY REFERENCES rss_feed_item_ids (id) ON DELETE CASCADE,
@@ -212,8 +213,7 @@ CREATE TABLE IF NOT EXISTS rss_feed_items (
   media_type rss_feed_item_media_types NOT NULL DEFAULT 'article',
   enclosure_url TEXT,
   CHECK (enclosure_url IS NULL OR char_length(enclosure_url) <= 2048),
-  enclosure_type TEXT,
-  CHECK (enclosure_type IS NULL OR char_length(enclosure_type) <= 255),
+  enclosure_media_type_id BIGINT REFERENCES media_types(id) ON DELETE RESTRICT,
   enclosure_length BIGINT,
   CHECK (enclosure_length IS NULL OR enclosure_length >= 0),
   duration_seconds INT,
@@ -370,7 +370,7 @@ COMMENT ON COLUMN rss_feed_items.url_id IS 'The canonical URL for this feed item
 COMMENT ON COLUMN rss_feed_items.data IS 'Raw JSONB dump of the parsed feed item data.';
 COMMENT ON COLUMN rss_feed_items.media_type IS 'Content type: article, audio, or video.';
 COMMENT ON COLUMN rss_feed_items.enclosure_url IS 'URL of the media enclosure (podcast audio, video file).';
-COMMENT ON COLUMN rss_feed_items.enclosure_type IS 'MIME type of the enclosure (e.g. audio/mpeg).';
+COMMENT ON COLUMN rss_feed_items.enclosure_media_type_id IS 'MIME type of the enclosure (e.g. audio/mpeg).';
 COMMENT ON COLUMN rss_feed_items.enclosure_length IS 'File size of the enclosure in bytes.';
 COMMENT ON COLUMN rss_feed_items.duration_seconds IS 'Duration of audio/video content in seconds.';
 COMMENT ON COLUMN rss_feed_items.thumbnail_url IS 'URL of a thumbnail image for the item.';
@@ -617,3 +617,5 @@ CREATE INDEX IF NOT EXISTS idx_rss_feed_items__story_id__id__url_id
 
 ALTER INDEX idx_rss_feed_items__story_id__id__url_id
   ATTACH PARTITION rss_feed_items_default_story_id_id_url_id_idx;
+
+CREATE INDEX idx_rss_feed_items__enclosure_media_type_id ON rss_feed_items (enclosure_media_type_id);

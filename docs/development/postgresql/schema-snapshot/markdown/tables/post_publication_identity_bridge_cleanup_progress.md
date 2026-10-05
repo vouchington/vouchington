@@ -6,12 +6,12 @@ Checked singleton rotates bounded identity bridge sweeps across concrete entity 
 
 Not partitioned — growth: bounded.
 
-| Column               | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                             |
-| -------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------- |
-| `singleton`          | `boolean`                  | no       | `true`              |          |           |           | One independent bridge cleanup cursor.                              |
-| `family`             | `text`                     | no       | `'post'::text`      |          |           |           | Current concrete table sweep, not an entity relationship.           |
-| `cursor_identity_id` | `uuid`                     | yes      |                     |          |           |           | Deletion-stable last raw candidate key, not an entity relationship. |
-| `updated_at`         | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | Last committed bounded bridge sweep.                                |
+| Column               | Type                                                | Nullable | Default                                                     | Identity | Generated | Collation | Comment                                                             |
+| -------------------- | --------------------------------------------------- | -------- | ----------------------------------------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------- |
+| `singleton`          | `boolean`                                           | no       | `true`                                                      |          |           |           | One independent bridge cleanup cursor.                              |
+| `family`             | `post_publication_identity_bridge_cleanup_families` | no       | `'post'::post_publication_identity_bridge_cleanup_families` |          |           |           | Current concrete table sweep, not an entity relationship.           |
+| `cursor_identity_id` | `uuid`                                              | yes      |                                                             |          |           |           | Deletion-stable last raw candidate key, not an entity relationship. |
+| `updated_at`         | `timestamp with time zone`                          | no       | `CURRENT_TIMESTAMP`                                         |          |           |           | Last committed bounded bridge sweep.                                |
 
 **Primary key:** `PRIMARY KEY (singleton)`
 
@@ -21,7 +21,7 @@ _none_
 **Check constraints:**
 
 - `post_publication_identity_bridge_cleanup_progre_singleton_check`: `CHECK (singleton)`
-- `post_publication_identity_bridge_cleanup_progress_family_check`: `CHECK ((family = ANY (ARRAY['post'::text, 'community'::text, 'rss_feed_item'::text, 'author'::text, 'rss_feed'::text, 'topic_alias'::text, 'story'::text])))`
+- `post_publication_identity_bridge_cleanup_progress_family_check`: `CHECK ((family = ANY (ARRAY['post'::post_publication_identity_bridge_cleanup_families, 'community'::post_publication_identity_bridge_cleanup_families, 'rss_feed_item'::post_publication_identity_bridge_cleanup_families, 'author'::post_publication_identity_bridge_cleanup_families, 'rss_feed'::post_publication_identity_bridge_cleanup_families, 'topic_alias'::post_publication_identity_bridge_cleanup_families, 'story'::post_publication_identity_bridge_cleanup_families])))`
 
 **Foreign keys:**
 _none_

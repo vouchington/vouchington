@@ -46,7 +46,7 @@ export async function upsertUrlRows(
         pathname,
         search_params,
         created_by_id,
-        url_content_type_id
+        media_type_id
       )
       SELECT
         input.url,
@@ -54,7 +54,7 @@ export async function upsertUrlRows(
         input.pathname,
         input.search_params,
         input.created_by_id,
-        input.url_content_type_id
+        input.media_type_id
       FROM unnest(
         $1::text[], $2::uuid[], $3::text[], $4::jsonb[], $5::uuid[], $6::bigint[]
       ) AS input(
@@ -63,14 +63,14 @@ export async function upsertUrlRows(
         pathname,
         search_params,
         created_by_id,
-        url_content_type_id
+        media_type_id
       )
       ORDER BY input.url
       ON CONFLICT (url)
       DO UPDATE
       SET
         hostname_id = EXCLUDED.hostname_id,
-        url_content_type_id = EXCLUDED.url_content_type_id
+        media_type_id = EXCLUDED.media_type_id
       RETURNING id, url, hostname_id, (xmax = 0) AS inserted
     `,
     [...values, contentTypeIds],

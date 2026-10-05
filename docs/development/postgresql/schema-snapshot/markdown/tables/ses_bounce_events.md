@@ -37,10 +37,12 @@ _none_
 - `ses_bounce_events_ses_message_id_check`: `CHECK (((ses_message_id IS NULL) OR ((char_length(ses_message_id) <= 1024) AND (TRIM(BOTH FROM ses_message_id) = ses_message_id))))`
 
 **Foreign keys:**
-_none_
+
+- `ses_bounce_events_bounce_sub_type_fkey`: `FOREIGN KEY (bounce_sub_type) REFERENCES ses_bounce_subtypes(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
+- `idx_ses_bounce_events__bounce_sub_type`: `CREATE INDEX idx_ses_bounce_events__bounce_sub_type ON public.ses_bounce_events USING btree (bounce_sub_type)`
 - `idx_ses_bounce_events__dedup_key`: `CREATE UNIQUE INDEX idx_ses_bounce_events__dedup_key ON public.ses_bounce_events USING btree (dedup_key) WHERE (dedup_key IS NOT NULL)`
 - `idx_ses_bounce_events__notification_type`: `CREATE INDEX idx_ses_bounce_events__notification_type ON public.ses_bounce_events USING btree (notification_type, id DESC)`
 - `idx_ses_bounce_events__recipients`: `CREATE INDEX idx_ses_bounce_events__recipients ON public.ses_bounce_events USING gin (recipients)`

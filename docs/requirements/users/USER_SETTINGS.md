@@ -13,7 +13,7 @@ Headers use `text-xs font-medium uppercase tracking-wide text-muted-foreground`.
 ## Identity
 
 - `username` - allow the user to select a username. Cannot select a used username.
-- `user_display_name_source` - allows the user to use a display name from one of their connected accounts, e.g. their facebook name, twitter handle, or their Voucha username
+- `user_display_name_sources` - allows the user to use a display name from one of their connected accounts, e.g. their facebook name, twitter handle, or their Voucha username
 - `profile_image_id` - allow the user to add or remove their profile avatar
 - `user_profile_image_source` - allows the user to select the source of their avatar image, e.g. their facebook profile image, twitter profile image, or their Voucha profile image.
 

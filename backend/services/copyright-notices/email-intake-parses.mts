@@ -1,3 +1,4 @@
+import { insertCopyrightEmailAttachments } from './email-intake-attachments.mts'
 import { beginTransaction } from '@data-stores/psql'
 import { isCopyrightIntakeEnabled } from './activation.mts'
 import { createCopyrightEmailIntakeResponseInTransaction } from './email-intake-reply.mts'
@@ -68,7 +69,7 @@ export async function recordCopyrightEmailParse(
     ) ON CONFLICT (copyright_notice_email_intake_id) DO NOTHING
   `)
   if (rowCount && input.status === 'succeeded' && input.attachments.length > 0) {
-    await insertAttachments(transaction, intake.id, input.attachments, purpose)
+    await insertCopyrightEmailAttachments(transaction, intake.id, input.attachments, purpose)
   }
   if (
     rowCount &&
@@ -109,7 +110,8 @@ export async function getCopyrightEmailIntakeForAgent(
   const { rows } = await transaction<CopyrightEmailIntake & ParseCiphertexts>(
     sql`/* getCopyrightEmailIntakeForAgent */
       SELECT intake.id, intake.ses_message_id, intake.received_at, intake.raw_storage_key,
-        intake.raw_sha256, intake.raw_mime_type, intake.raw_byte_size,
+        intake.raw_sha256, intake.raw_media_type_id,
+        (SELECT mime_type FROM media_types WHERE id = intake.raw_media_type_id) AS raw_mime_type, intake.raw_byte_size,
         parse.sender_email_ciphertext, parse.sender_name_ciphertext,
         parse.subject_ciphertext, parse.body_ciphertext
       FROM copyright_notice_email_intakes intake
@@ -124,7 +126,8 @@ export async function getCopyrightEmailIntakeForAgent(
   }
   const { rows: attachments } = await transaction<AttachmentCiphertexts>(
     sql`/* getCopyrightEmailIntakeForAgent:attachments */
-      SELECT filename_ciphertext, content_id_ciphertext, mime_type, byte_size, sha256
+      SELECT filename_ciphertext, content_id_ciphertext,
+        (SELECT mime_type FROM media_types WHERE id = media_type_id) AS mime_type, byte_size, sha256
       FROM copyright_notice_email_intake_attachments
       WHERE copyright_notice_email_intake_id = ${intake.id} ORDER BY ordinal`,
   )
@@ -163,35 +166,4 @@ function validateParseInput(input: CopyrightEmailParseInput): void {
     422,
     'Invalid attachment metadata',
   )
-}
-async function insertAttachments(
-  transaction: Awaited<ReturnType<typeof beginTransaction>>,
-  intakeId: string,
-  attachments: CopyrightEmailAttachmentInput[],
-  purpose: string,
-): Promise<void> {
-  const rows = JSON.stringify(
-    attachments.map((attachment, ordinal) => ({
-      ordinal,
-      filename_ciphertext: attachment.filename ? encryptSecret(attachment.filename, purpose) : null,
-      content_id_ciphertext: attachment.contentId
-        ? encryptSecret(attachment.contentId, purpose)
-        : null,
-      mime_type: attachment.mimeType,
-      byte_size: attachment.byteSize,
-      sha256: attachment.sha256.toString('hex'),
-    })),
-  )
-  await transaction(sql`/* recordCopyrightEmailParse:attachments */
-    INSERT INTO copyright_notice_email_intake_attachments (
-      copyright_notice_email_intake_id, ordinal, filename_ciphertext, content_id_ciphertext,
-      mime_type, byte_size, sha256
-    ) SELECT ${intakeId}, attachment.ordinal, attachment.filename_ciphertext,
-      attachment.content_id_ciphertext, attachment.mime_type, attachment.byte_size,
-      decode(attachment.sha256, 'hex')
-    FROM jsonb_to_recordset(${rows}::jsonb) AS attachment(
-      ordinal integer, filename_ciphertext text, content_id_ciphertext text, mime_type text,
-      byte_size integer, sha256 text
-    )
-  `)
 }

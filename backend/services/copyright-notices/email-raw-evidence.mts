@@ -64,7 +64,8 @@ export async function loadCopyrightEmailRawEvidence(
 async function getRawEvidenceRecord(intakeId: string): Promise<RawEvidenceRecord | null> {
   await using transaction = await beginTransaction()
   const { rows } = await transaction<RawEvidenceRecord>(sql`/* getCopyrightEmailRawEvidence */
-    SELECT raw_storage_key, raw_mime_type, raw_byte_size, raw_sha256, virus_verdict
+    SELECT raw_storage_key,
+      (SELECT mime_type FROM media_types WHERE id = raw_media_type_id) AS raw_mime_type, raw_byte_size, raw_sha256, virus_verdict
     FROM copyright_notice_email_intakes
     WHERE id = ${intakeId}
   `)

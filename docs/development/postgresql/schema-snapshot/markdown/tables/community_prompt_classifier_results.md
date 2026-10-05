@@ -6,23 +6,23 @@ Per-prompt classifier results for community moderation prompts, RANGE-partitione
 
 RANGE partitioned on `batch_id` (children: default, no retention owner, access class: target-scoped, growth: unbounded).
 
-| Column                      | Type                        | Nullable | Default                                         | Identity | Generated | Collation | Comment                                                                                            |
-| --------------------------- | --------------------------- | -------- | ----------------------------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------- |
-| `batch_id`                  | `uuid`                      | no       |                                                 |          |           |           | Logical decision batch that produced this result and the partition key.                            |
-| `id`                        | `uuid`                      | no       | `uuidv7()`                                      |          |           |           |                                                                                                    |
-| `community_prompt_id`       | `uuid`                      | no       |                                                 |          |           |           | Community moderation prompt scored by this result; its community must equal the batch scope.       |
-| `decision_call_id`          | `uuid`                      | no       |                                                 |          |           |           | Specific provider call that produced this result.                                                  |
-| `classifier_id`             | `uuid`                      | no       |                                                 |          |           |           | Classifier copied from the owning batch for relational enforcement.                                |
-| `candidate_kind`            | `classifier_candidate_kind` | no       | `'community_prompt'::classifier_candidate_kind` |          |           |           | Fixed community_prompt discriminator used only for the classifier-kind foreign key.                |
-| `prompt_version_id`         | `uuid`                      | no       |                                                 |          |           |           | Prompt revision copied from the owning batch for relational enforcement.                           |
-| `probability`               | `numeric`                   | no       |                                                 |          |           |           | Native per-prompt probability preserved without threshold mapping.                                 |
-| `effective_lower_threshold` | `numeric(5,4)`              | no       |                                                 |          |           |           | Prompt-revision lower boundary used for this immutable decision result.                            |
-| `effective_upper_threshold` | `numeric(5,4)`              | no       |                                                 |          |           |           | Prompt-revision upper boundary above which this prompt counts as flagged.                          |
-| `raw_response`              | `jsonb`                     | no       |                                                 |          |           |           | Full native structured-decision answer for audit and diagnostics.                                  |
-| `scope_category`            | `text`                      | no       | `'community_ai'::text`                          |          |           |           | Always community_ai, copied from the owning batch.                                                 |
-| `scope_community_id`        | `uuid`                      | no       |                                                 |          |           |           | Community provenance copied from the owning batch; deleting the community cascades to its results. |
-| `created_at`                | `timestamp with time zone`  | yes      | `uuid_extract_timestamp(id)`                    |          | virtual   |           |                                                                                                    |
-| `updated_at`                | `timestamp with time zone`  | no       | `CURRENT_TIMESTAMP`                             |          |           |           |                                                                                                    |
+| Column                      | Type                          | Nullable | Default                                          | Identity | Generated | Collation | Comment                                                                                            |
+| --------------------------- | ----------------------------- | -------- | ------------------------------------------------ | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------- |
+| `batch_id`                  | `uuid`                        | no       |                                                  |          |           |           | Logical decision batch that produced this result and the partition key.                            |
+| `id`                        | `uuid`                        | no       | `uuidv7()`                                       |          |           |           |                                                                                                    |
+| `community_prompt_id`       | `uuid`                        | no       |                                                  |          |           |           | Community moderation prompt scored by this result; its community must equal the batch scope.       |
+| `decision_call_id`          | `uuid`                        | no       |                                                  |          |           |           | Specific provider call that produced this result.                                                  |
+| `classifier_id`             | `uuid`                        | no       |                                                  |          |           |           | Classifier copied from the owning batch for relational enforcement.                                |
+| `candidate_kind`            | `classifier_candidate_kinds`  | no       | `'community_prompt'::classifier_candidate_kinds` |          |           |           | Fixed community_prompt discriminator used only for the classifier-kind foreign key.                |
+| `prompt_version_id`         | `uuid`                        | no       |                                                  |          |           |           | Prompt revision copied from the owning batch for relational enforcement.                           |
+| `probability`               | `numeric`                     | no       |                                                  |          |           |           | Native per-prompt probability preserved without threshold mapping.                                 |
+| `effective_lower_threshold` | `numeric(5,4)`                | no       |                                                  |          |           |           | Prompt-revision lower boundary used for this immutable decision result.                            |
+| `effective_upper_threshold` | `numeric(5,4)`                | no       |                                                  |          |           |           | Prompt-revision upper boundary above which this prompt counts as flagged.                          |
+| `raw_response`              | `jsonb`                       | no       |                                                  |          |           |           | Full native structured-decision answer for audit and diagnostics.                                  |
+| `scope_category`            | `classifier_scope_categories` | no       | `'community_ai'::classifier_scope_categories`    |          |           |           | Always community_ai, copied from the owning batch.                                                 |
+| `scope_community_id`        | `uuid`                        | no       |                                                  |          |           |           | Community provenance copied from the owning batch; deleting the community cascades to its results. |
+| `created_at`                | `timestamp with time zone`    | yes      | `uuid_extract_timestamp(id)`                     |          | virtual   |           |                                                                                                    |
+| `updated_at`                | `timestamp with time zone`    | no       | `CURRENT_TIMESTAMP`                              |          |           |           |                                                                                                    |
 
 **Primary key:** `PRIMARY KEY (batch_id, id)`
 
@@ -32,9 +32,9 @@ _none_
 **Check constraints:**
 
 - `chk_community_prompt_classifier_results__effective_thresholds`: `CHECK (((effective_lower_threshold >= (0)::numeric) AND (effective_upper_threshold <= (1)::numeric) AND (effective_lower_threshold < effective_upper_threshold)))`
-- `community_prompt_classifier_results_candidate_kind_check`: `CHECK ((candidate_kind = 'community_prompt'::classifier_candidate_kind))`
+- `community_prompt_classifier_results_candidate_kind_check`: `CHECK ((candidate_kind = 'community_prompt'::classifier_candidate_kinds))`
 - `community_prompt_classifier_results_probability_check`: `CHECK (((probability >= (0)::numeric) AND (probability <= (1)::numeric)))`
-- `community_prompt_classifier_results_scope_category_check`: `CHECK ((scope_category = 'community_ai'::text))`
+- `community_prompt_classifier_results_scope_category_check`: `CHECK ((scope_category = 'community_ai'::classifier_scope_categories))`
 
 **Foreign keys:**
 

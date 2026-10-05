@@ -12,6 +12,7 @@ import {
   materializeTopicRecommendationInput,
   replaceTopicRecommendationHostnames,
 } from './materialize-topic-recommendation.mts'
+import { replaceTopicRecommendationLandingPageUrls } from './replace-landing-page-urls.mts'
 import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
 
 export async function updateTopicRecommendation(
@@ -40,8 +41,11 @@ export async function updateTopicRecommendation(
           , hostname_id
           , primary_hostname.hostname AS topic_hostname
           , topic_type
-          , example_referral_link
-          , landing_page_urls
+          , (SELECT url FROM urls WHERE id = post_topic_recommendations.example_referral_url_id) AS example_referral_link,
+          COALESCE((SELECT ARRAY_AGG(urls.url ORDER BY submitted.sort_order)
+            FROM post_topic_recommendation_landing_page_urls submitted
+            JOIN urls ON urls.id = submitted.url_id
+            WHERE submitted.post_id = post_topic_recommendations.post_id), '{}'::TEXT[]) AS landing_page_urls
           , COALESCE((
               SELECT ARRAY_AGG(vuh.hostname ORDER BY vuh.hostname)
               FROM post_topic_recommendations_hostnames ptrh
@@ -120,8 +124,7 @@ export async function updateTopicRecommendation(
             aliases = ${materialized.topic_aliases},
             hostname_id = ${materialized.hostname_id},
             topic_type = ${materialized.topic_type ?? 'topic'},
-            example_referral_link = ${materialized.example_referral_link ?? null},
-            landing_page_urls = ${materialized.landing_page_urls ?? []},
+            example_referral_url_id = ${materialized.example_referral_url_id},
             approval_error_message = NULL
           WHERE post_id = ${recommendation.id}
             AND reviewed_at IS NULL
@@ -131,6 +134,11 @@ export async function updateTopicRecommendation(
     assert(extensionResult.rowCount === 1, 422, 'Recommendation is no longer editable')
 
     // ast-grep-ignore: no-three-sequential-awaits -- hostname replacement, publication capture, and the transaction-consistent reload are ordered
+    await replaceTopicRecommendationLandingPageUrls(
+      recommendation.id,
+      materialized.landing_page_url_ids,
+      options,
+    )
     await replaceTopicRecommendationHostnames(recommendation.id, materialized.hostname_ids, options)
     await recordPostPublicationChange(query, {
       scope: { type: 'post', postId: recommendation.id },

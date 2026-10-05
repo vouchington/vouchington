@@ -1,9 +1,10 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_admission_quota_consumptions (
   reservation_id UUID PRIMARY KEY REFERENCES post_admission_reservations (id) ON DELETE CASCADE,
   actor_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  source TEXT NOT NULL,
+  source contribution_policy_sources NOT NULL,
   committed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  consumption_mode TEXT NOT NULL DEFAULT 'all_windows'
+  consumption_mode post_admission_quota_consumption_modes NOT NULL DEFAULT 'all_windows'
     CHECK (consumption_mode IN ('all_windows', 'daily_only'))
 );
 

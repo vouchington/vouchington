@@ -14,7 +14,7 @@ async function seedPlaywrightCrawlersAndCrawls(
   // unblockHostname() can lift it.  WHERE NOT EXISTS makes this idempotent across re-seeds.
   await query(
     `INSERT INTO url_hostname_blocks (url_hostname_id, blocked_source)
-     SELECT '019c64e6-1000-7000-b000-000000000003', 'seed'
+     SELECT '019c64e6-1000-7000-b000-000000000003', 'admin'
      WHERE NOT EXISTS (
        SELECT 1 FROM url_hostname_blocks
        WHERE url_hostname_id = '019c64e6-1000-7000-b000-000000000003'

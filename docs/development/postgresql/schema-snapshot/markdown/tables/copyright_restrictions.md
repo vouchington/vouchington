@@ -6,21 +6,21 @@ Independent, reversible legal restrictions; lifting one restriction never lifts 
 
 Not partitioned — growth: unbounded.
 
-| Column                       | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                     |
-| ---------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------- |
-| `copyright_notice_id`        | `uuid`                     | no       |                              |          |           |           | Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion. |
-| `id`                         | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                             |
-| `authorizing_assessment_id`  | `uuid`                     | no       |                              |          |           |           | Immutable exact compliant assessment that authorized this restriction.                                      |
-| `copyright_notice_target_id` | `uuid`                     | no       |                              |          |           |           | Exact allegation target governed by this independent restriction.                                           |
-| `imposed_at`                 | `timestamp with time zone` | no       |                              |          |           |           | When the independent restriction became active.                                                             |
-| `lifted_at`                  | `timestamp with time zone` | yes      |                              |          |           |           | One-way timestamp recording when this restriction was lifted.                                               |
-| `imposed_by_id`              | `uuid`                     | yes      |                              |          |           |           | Staff actor that imposed the restriction, or NULL for an authorized automatic provisional action.           |
-| `lifted_by_id`               | `uuid`                     | yes      |                              |          |           |           | Staff actor that lifted the restriction; NULL denotes an authorized system restoration.                     |
-| `human_reviewed_at`          | `timestamp with time zone` | yes      |                              |          |           |           | When staff completed the mandatory review of this exact provisional restriction.                            |
-| `human_review_action`        | `text`                     | yes      |                              |          |           |           | Human outcome for this target restriction: confirm or reverse.                                              |
-| `human_reviewed_by_id`       | `uuid`                     | yes      |                              |          |           |           | Staff reviewer; may become NULL only when the reviewer account is erased.                                   |
-| `created_at`                 | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                             |
-| `updated_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                             |
+| Column                       | Type                                         | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                     |
+| ---------------------------- | -------------------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------- |
+| `copyright_notice_id`        | `uuid`                                       | no       |                              |          |           |           | Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion. |
+| `id`                         | `uuid`                                       | no       | `uuidv7()`                   |          |           |           |                                                                                                             |
+| `authorizing_assessment_id`  | `uuid`                                       | no       |                              |          |           |           | Immutable exact compliant assessment that authorized this restriction.                                      |
+| `copyright_notice_target_id` | `uuid`                                       | no       |                              |          |           |           | Exact allegation target governed by this independent restriction.                                           |
+| `imposed_at`                 | `timestamp with time zone`                   | no       |                              |          |           |           | When the independent restriction became active.                                                             |
+| `lifted_at`                  | `timestamp with time zone`                   | yes      |                              |          |           |           | One-way timestamp recording when this restriction was lifted.                                               |
+| `imposed_by_id`              | `uuid`                                       | yes      |                              |          |           |           | Staff actor that imposed the restriction, or NULL for an authorized automatic provisional action.           |
+| `lifted_by_id`               | `uuid`                                       | yes      |                              |          |           |           | Staff actor that lifted the restriction; NULL denotes an authorized system restoration.                     |
+| `human_reviewed_at`          | `timestamp with time zone`                   | yes      |                              |          |           |           | When staff completed the mandatory review of this exact provisional restriction.                            |
+| `human_review_action`        | `copyright_restriction_human_review_actions` | yes      |                              |          |           |           | Human outcome for this target restriction: confirm or reverse.                                              |
+| `human_reviewed_by_id`       | `uuid`                                       | yes      |                              |          |           |           | Staff reviewer; may become NULL only when the reviewer account is erased.                                   |
+| `created_at`                 | `timestamp with time zone`                   | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                             |
+| `updated_at`                 | `timestamp with time zone`                   | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                             |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -33,7 +33,7 @@ Not partitioned — growth: unbounded.
 - `copyright_restrictions_check`: `CHECK (((lifted_at IS NULL) OR (lifted_at >= imposed_at)))`
 - `copyright_restrictions_check1`: `CHECK (((human_reviewed_at IS NULL) OR (human_reviewed_at >= imposed_at)))`
 - `copyright_restrictions_check2`: `CHECK ((((human_reviewed_at IS NULL) AND (human_review_action IS NULL) AND (human_reviewed_by_id IS NULL)) OR ((human_reviewed_at IS NOT NULL) AND (human_review_action IS NOT NULL))))`
-- `copyright_restrictions_human_review_action_check`: `CHECK ((human_review_action = ANY (ARRAY['confirm'::text, 'reverse'::text])))`
+- `copyright_restrictions_human_review_action_check`: `CHECK ((human_review_action = ANY (ARRAY['confirm'::copyright_restriction_human_review_actions, 'reverse'::copyright_restriction_human_review_actions])))`
 
 **Foreign keys:**
 

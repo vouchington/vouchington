@@ -27,7 +27,7 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE TYPE user_display_name_source AS ENUM (
+  CREATE TYPE user_display_name_sources AS ENUM (
   'username',
   'facebook',
   'x',
@@ -97,17 +97,6 @@ END $$;
 COMMENT ON TYPE public_verified_name_displays IS 'How much of a verified user''s legal name to display publicly.';
 
 DO $$ BEGIN
-  CREATE TYPE verified_identity_statuses AS ENUM (
-    'active',
-    'revoked',
-    'transferred'
-  );
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
-
-COMMENT ON TYPE verified_identity_statuses IS 'Status of a verified_identities record.';
-
-DO $$ BEGIN
   CREATE TYPE engagement_email_types AS ENUM (
     'follow_topics',
     'post_referral_link',
@@ -127,11 +116,12 @@ END $$;
 -- users
 -- ============================================================================
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT uuidv7() REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
 
   -- public
-  use_display_name_from user_display_name_source DEFAULT 'username',
+  use_display_name_from user_display_name_sources DEFAULT 'username',
   username TEXT DEFAULT NULL,
   CHECK (username IS NULL OR char_length(username) <= 255),
   CHECK (username IS NULL OR username = TRIM(username)),
@@ -147,12 +137,12 @@ CREATE TABLE IF NOT EXISTS users (
   -- NULL = not set
   third_party_marketing BOOLEAN DEFAULT NULL,
   engagement_emails_enabled BOOLEAN NOT NULL DEFAULT TRUE,
-  news_digest_frequency TEXT NOT NULL DEFAULT 'weekly' CHECK (news_digest_frequency IN ('none', 'daily', 'weekly')),
+  news_digest_frequency digest_frequencies NOT NULL DEFAULT 'weekly' CHECK (news_digest_frequency IN ('none', 'daily', 'weekly')),
   moderation_emails_enabled BOOLEAN NOT NULL DEFAULT TRUE,
   -- Per-user opt-in to ActivityPub federation (Phase C). Default FALSE: federation exposes a
   -- public AP actor (/ap/users/:id) and accepts inbound follows, so it must never be silently on.
   fediverse_federation_enabled BOOLEAN NOT NULL DEFAULT FALSE,
-  community_digest_frequency TEXT NOT NULL DEFAULT 'weekly' CHECK (community_digest_frequency IN ('none', 'daily', 'weekly')),
+  community_digest_frequency digest_frequencies NOT NULL DEFAULT 'weekly' CHECK (community_digest_frequency IN ('none', 'daily', 'weekly')),
   moderation_email_cadence moderation_email_cadences NOT NULL DEFAULT 'daily',
   moderation_email_days_of_week SMALLINT[] NOT NULL DEFAULT ARRAY[1, 2, 3, 4, 5]::SMALLINT[] CHECK (
     cardinality(moderation_email_days_of_week) > 0
@@ -1045,16 +1035,17 @@ CREATE TABLE IF NOT EXISTS user_aside_preferences (
   CONSTRAINT uc_user_aside_preferences__user_aside UNIQUE (user_id, aside_key)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS curated_aside_items (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   topic_id UUID,
   rss_feed_id UUID,
   community_id UUID,
-  aside_type TEXT GENERATED ALWAYS AS (
+  aside_type curated_aside_item_types GENERATED ALWAYS AS (
     CASE
-      WHEN topic_id IS NOT NULL THEN 'topic'
-      WHEN rss_feed_id IS NOT NULL THEN 'source'
-      WHEN community_id IS NOT NULL THEN 'community'
+      WHEN topic_id IS NOT NULL THEN 'topic'::curated_aside_item_types
+      WHEN rss_feed_id IS NOT NULL THEN 'source'::curated_aside_item_types
+      WHEN community_id IS NOT NULL THEN 'community'::curated_aside_item_types
     END
   ) STORED,
   entity_id UUID GENERATED ALWAYS AS (COALESCE(topic_id, rss_feed_id, community_id)) STORED,

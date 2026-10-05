@@ -4,7 +4,7 @@
 -- Merged from: 0400-00-02-post-dispute-annotations.sql
 DO $$
 BEGIN
-  CREATE TYPE review_dispute_reason AS ENUM (
+  CREATE TYPE review_dispute_reasons AS ENUM (
     'factually_inaccurate',
     'defamatory',
     'impersonation',
@@ -18,7 +18,7 @@ $$;
 
 DO $$
 BEGIN
-  CREATE TYPE review_dispute_action AS ENUM ('no_action', 'remove', 'annotate', 'dismiss');
+  CREATE TYPE review_dispute_actions AS ENUM ('no_action', 'remove', 'annotate', 'dismiss');
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END
@@ -47,11 +47,11 @@ CREATE TABLE IF NOT EXISTS review_disputes (
   topic_id uuid NOT NULL REFERENCES topics (id) ON DELETE CASCADE,
   disputed_rating smallint NOT NULL CHECK (disputed_rating BETWEEN 1 AND 5),
   disputant_user_id uuid NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-  reason review_dispute_reason NOT NULL,
+  reason review_dispute_reasons NOT NULL,
   claim_text text NOT NULL CHECK (char_length(claim_text) <= 4000),
 
   -- AI draft columns (nullable until agent runs)
-  recommended_action review_dispute_action,
+  recommended_action review_dispute_actions,
   ai_public_response text,
   ai_internal_response text,
   model text,
@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS review_disputes (
   resolved_at timestamptz,
   -- guardrails-disable-next-line uuid-must-be-key
   resolved_by_id uuid REFERENCES users (id) ON DELETE SET NULL,
-  resolution_action review_dispute_action,
+  resolution_action review_dispute_actions,
 
   -- guardrails-disable-next-line uuid-must-be-key
   latest_lifecycle_change_id uuid,

@@ -45,7 +45,7 @@ export async function fetchBanEvasionReports(
       r.reviewed_at,
       r.reporter_user_id,
       NULL::text AS reporter_username,
-      'user'::moderation_report_entity_type AS entity_type,
+      'user'::moderation_report_entity_types AS entity_type,
       r.reported_user_id AS entity_id,
       COALESCE('@' || tu.username, 'User ' || r.reported_user_id::text) AS target_label,
       NULL::jsonb AS target_content,

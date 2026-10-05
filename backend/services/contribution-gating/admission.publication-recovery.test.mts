@@ -90,7 +90,7 @@ describe('contribution admission response publication', () => {
     await setContributionAdmissionReplayMetadataForTest({
       actorId: user.id,
       idempotencyKey,
-      replayMetadata: { route: 'test', scope: 'test' },
+      replayMetadata: { route: 'posts.create', scope: 'global' },
     })
     await expireContributionAdmissionClaimForTest({ actorId: user.id, idempotencyKey })
 

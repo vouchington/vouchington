@@ -187,6 +187,10 @@ consumer. Native clients that still offer an administrator API-key audience must
 `native.credentials.adminAudience` and `native.credentials.audience` claims stay in the manifest
 until the linked native change lands.
 
+The API-key storage column is `scopes` and uses the same generated enum as OAuth grants. API v1
+continues accepting and returning `permissions` as catalogue scope strings; client DTOs and pickers
+retain that wire field. The SQL read projection resolves the public field explicitly.
+
 ### Client ID Metadata Document boundary
 
 Native OAuth coordinators open the hosted browser flow rather than render consent copy. Client ID

@@ -160,12 +160,13 @@ COMMENT ON COLUMN posts.creation_source_url_id IS 'Immutable raw URL submitted w
 
 -- Exact hashtag occurrences are independent from the election-backed category
 -- relation so display casing is preserved without duplicating category votes.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_topic_alias_sources (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   post_id UUID NOT NULL REFERENCES posts ON DELETE CASCADE,
   topic_alias_id UUID NOT NULL REFERENCES topic_aliases ON DELETE RESTRICT,
   contributor_id UUID NOT NULL REFERENCES users ON DELETE RESTRICT,
-  source TEXT NOT NULL CHECK (source IN ('title', 'markdown', 'explicit')),
+  source post_topic_alias_source_types NOT NULL CHECK (source IN ('title', 'markdown', 'explicit')),
   authored_token TEXT NOT NULL,
   CHECK (char_length(authored_token) <= 255),
   CHECK (authored_token = TRIM(authored_token)),
@@ -677,6 +678,7 @@ COMMENT ON COLUMN agents__moderators.is_baseline IS 'When true, this moderator r
 
 -- Agent moderation results using the generic agents system
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS agent_moderations (
   post_id UUID NOT NULL REFERENCES posts ON DELETE CASCADE,
   prompt_id UUID NOT NULL REFERENCES agent_prompts ON DELETE CASCADE,
@@ -710,7 +712,7 @@ CREATE TABLE IF NOT EXISTS agent_moderations (
 
   -- Aggregate-only transparency projection. These source-row-local stamps
   -- make delete and FK-cascade maintenance independent of parent visibility.
-  moderation_transparency_category TEXT,
+  moderation_transparency_category moderation_transparency_categories,
   moderation_transparency_community_id UUID,
   CONSTRAINT chk_agent_moderations__transparency_projection CHECK (
     (moderation_transparency_category IS NULL AND moderation_transparency_community_id IS NULL)

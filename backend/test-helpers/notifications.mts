@@ -158,7 +158,7 @@ export async function setTestNotificationPushIntentTerminalState(input: {
 }): Promise<void> {
   await write(sql`/* setTestNotificationPushIntentTerminalState */
     UPDATE notification_push_intents
-    SET status = ${input.status}::notification_push_intent_status,
+    SET status = ${input.status}::notification_push_intent_statuses,
         delivered_at = CASE WHEN ${input.status} = 'delivered' THEN ${input.terminalAt}::timestamptz ELSE NULL END,
         suppressed_at = CASE WHEN ${input.status} = 'suppressed' THEN ${input.terminalAt}::timestamptz ELSE NULL END
     WHERE user_id = ${input.userId}::uuid AND notification_id = ${input.notificationId}::uuid

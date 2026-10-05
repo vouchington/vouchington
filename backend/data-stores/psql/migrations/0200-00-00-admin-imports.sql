@@ -8,7 +8,7 @@
 -- ============================================================================
 
 DO $$ BEGIN
-  CREATE TYPE admin_import_types AS ENUM ('topic', 'rss_feed');
+  CREATE TYPE import_entity_types AS ENUM ('topic', 'rss_feed');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS admin_import_batches (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  import_type admin_import_types NOT NULL,
+  import_type import_entity_types NOT NULL,
   created_by_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   total_rows INT NOT NULL CHECK (total_rows > 0 AND total_rows <= 50000),
   completed_rows INT NOT NULL DEFAULT 0 CHECK (completed_rows >= 0),
@@ -94,7 +94,7 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 DECLARE
-  batch_import_type admin_import_types;
+  batch_import_type import_entity_types;
 BEGIN
   SELECT import_type
   INTO STRICT batch_import_type

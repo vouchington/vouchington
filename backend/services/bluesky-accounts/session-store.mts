@@ -1,3 +1,4 @@
+import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 import { read, beginTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
@@ -92,8 +93,8 @@ async function persistAuthorizedSession(
     throw createBlueskySessionLifecycleConflict(did)
   }
   const { rows: authorizationRows } = await query<{
-    status: string
-    callback_mode: string
+    status: FiniteValue<'bluesky_link_authorization_statuses'>
+    callback_mode: FiniteValue<'oauth_callback_modes'>
     claimed_did: string | null
     active_user: boolean
     unexpired: boolean

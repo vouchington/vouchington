@@ -6,18 +6,18 @@ One classified post or RSS item decision, including scope provenance and prompt 
 
 Not partitioned — growth: unbounded.
 
-| Column               | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                              |
-| -------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------- |
-| `id`                 | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                      |
-| `classifier_id`      | `uuid`                     | no       |                              |          |           |           | Classifier used for this logical decision.                                                                           |
-| `prompt_version_id`  | `uuid`                     | no       |                              |          |           |           | Exact prompt revision used for this logical decision.                                                                |
-| `post_id`            | `uuid`                     | yes      |                              |          |           |           | Classified post subject; mutually exclusive with rss_feed_item_id.                                                   |
-| `rss_feed_item_id`   | `uuid`                     | yes      |                              |          |           |           | Classified RSS item subject; mutually exclusive with post_id.                                                        |
-| `scope_category`     | `text`                     | no       |                              |          |           |           | Decision scope: global or community_ai.                                                                              |
-| `scope_community_id` | `uuid`                     | yes      |                              |          |           |           | Immutable community for community_ai scope; deleting the community cascades to its scoped batches and their results. |
-| `completed_at`       | `timestamp with time zone` | yes      |                              |          |           |           | Completion marker set only after every call and result for this batch is durable.                                    |
-| `created_at`         | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                      |
-| `updated_at`         | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                      |
+| Column               | Type                          | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                              |
+| -------------------- | ----------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------- |
+| `id`                 | `uuid`                        | no       | `uuidv7()`                   |          |           |           |                                                                                                                      |
+| `classifier_id`      | `uuid`                        | no       |                              |          |           |           | Classifier used for this logical decision.                                                                           |
+| `prompt_version_id`  | `uuid`                        | no       |                              |          |           |           | Exact prompt revision used for this logical decision.                                                                |
+| `post_id`            | `uuid`                        | yes      |                              |          |           |           | Classified post subject; mutually exclusive with rss_feed_item_id.                                                   |
+| `rss_feed_item_id`   | `uuid`                        | yes      |                              |          |           |           | Classified RSS item subject; mutually exclusive with post_id.                                                        |
+| `scope_category`     | `classifier_scope_categories` | no       |                              |          |           |           | Decision scope: global or community_ai.                                                                              |
+| `scope_community_id` | `uuid`                        | yes      |                              |          |           |           | Immutable community for community_ai scope; deleting the community cascades to its scoped batches and their results. |
+| `completed_at`       | `timestamp with time zone`    | yes      |                              |          |           |           | Completion marker set only after every call and result for this batch is durable.                                    |
+| `created_at`         | `timestamp with time zone`    | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                      |
+| `updated_at`         | `timestamp with time zone`    | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                      |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -32,7 +32,7 @@ Not partitioned — growth: unbounded.
 **Check constraints:**
 
 - `chk_classifier_decision_batches__one_subject`: `CHECK ((num_nonnulls(post_id, rss_feed_item_id) = 1))`
-- `chk_classifier_decision_batches__scope`: `CHECK ((((scope_category = 'global'::text) AND (scope_community_id IS NULL)) OR ((scope_category = 'community_ai'::text) AND (scope_community_id IS NOT NULL))))`
+- `chk_classifier_decision_batches__scope`: `CHECK ((((scope_category = 'global'::classifier_scope_categories) AND (scope_community_id IS NULL)) OR ((scope_category = 'community_ai'::classifier_scope_categories) AND (scope_community_id IS NOT NULL))))`
 
 **Foreign keys:**
 

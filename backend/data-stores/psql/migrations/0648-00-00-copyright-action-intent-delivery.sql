@@ -48,12 +48,13 @@ COMMENT ON COLUMN copyright_notice_action_intents.next_attempt_at IS 'Earliest d
 -- request, while this table supplies exactly-once desired-state convergence across PostgreSQL and
 -- AWS.  A tuple contains the placement revision and asset binding so an allowed placement can
 -- never authorize another asset or a stale revision.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE media_delivery_registry_records (
   delivery_key text PRIMARY KEY CHECK (char_length(delivery_key) BETWEEN 1 AND 512),
   placement_id uuid NOT NULL REFERENCES media_placements(id) ON DELETE RESTRICT,
   placement_revision integer NOT NULL CHECK (placement_revision >= 0),
   image_id uuid NOT NULL REFERENCES images(id) ON DELETE RESTRICT,
-  desired_state text NOT NULL CHECK (desired_state IN ('allow', 'withheld')),
+  desired_state media_delivery_desired_states NOT NULL CHECK (desired_state IN ('allow', 'withheld')),
   generation bigint NOT NULL DEFAULT 0 CHECK (generation >= 0),
   created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -62,12 +63,13 @@ CREATE TABLE media_delivery_registry_records (
 );
 
 CREATE TYPE media_delivery_registry_change_types AS ENUM ('pending', 'claimed', 'completed', 'failed');
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE media_delivery_registry_changes (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   delivery_key text NOT NULL REFERENCES media_delivery_registry_records(delivery_key) ON DELETE RESTRICT,
   generation bigint NOT NULL CHECK (generation >= 0),
   change_type media_delivery_registry_change_types NOT NULL,
-  desired_state text NOT NULL CHECK (desired_state IN ('allow', 'withheld')),
+  desired_state media_delivery_desired_states NOT NULL CHECK (desired_state IN ('allow', 'withheld')),
   changed_by_id uuid REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
   delivery_attempt_count integer NOT NULL DEFAULT 0 CHECK (delivery_attempt_count BETWEEN 0 AND 5),
   claimed_at timestamptz,
@@ -87,8 +89,9 @@ CREATE TRIGGER trigger_media_delivery_registry_changes_immutable BEFORE UPDATE O
 FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 CREATE TRIGGER trigger_media_delivery_registry_changes_actor BEFORE INSERT ON media_delivery_registry_changes
 FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id');
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_update_media_delivery_change_authority() RETURNS trigger LANGUAGE plpgsql AS $$
-DECLARE current_generation bigint; current_desired_state text;
+DECLARE current_generation bigint; current_desired_state media_delivery_desired_states;
 BEGIN
   SELECT generation, desired_state INTO current_generation, current_desired_state FROM media_delivery_registry_records
     WHERE delivery_key = NEW.delivery_key FOR NO KEY UPDATE;

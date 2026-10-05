@@ -1,4 +1,5 @@
 /* v8 ignore start -- declarative schema-test allowlists have no executable branches */
+import { FINITE_LOOKUP_MISSING_UPDATED_AT } from '../../../finite-lookup-timestamp-exceptions.mts'
 import * as postPublication from './post-publication-allowlists.mts'
 import * as postModeration from './moderation-ledger-allowlists.mts'
 import {
@@ -24,14 +25,8 @@ export const ALLOWED_MISSING_CREATED_AT = new Map<string, string>([
     'rss_feed_item_ids',
     'Permanent identity lookup; creation time remains derivable from its UUIDv7 id and is never queried from the lookup.',
   ],
-  [
-    'rss_feed_item_read_states',
-    'Composite-PK read-state table; read_at serves as the single lifecycle timestamp.',
-  ],
-  [
-    'post_read_states',
-    'Composite-PK read-state table; read_at serves as the single lifecycle timestamp.',
-  ],
+  ['rss_feed_item_read_states', 'Composite PK; read_at is the sole lifecycle timestamp.'],
+  ['post_read_states', 'Composite PK; read_at is the sole lifecycle timestamp.'],
   ...postModeration.POST_MODERATION_TABLES_WITHOUT_CREATED_AT,
   ...CLASSIFIER_RUN_TABLES_WITHOUT_CREATED_AT,
   ['boilerplate_removal_urls', 'Pure join table keyed by boilerplate removal and URL.'],
@@ -75,6 +70,7 @@ export const ALLOWED_MISSING_CREATED_AT = new Map<string, string>([
 ])
 
 export const ALLOWED_MISSING_UPDATED_AT = new Map<string, string>([
+  ...FINITE_LOOKUP_MISSING_UPDATED_AT,
   ['image_surface_placement_activations', 'Immutable provenance; bound_at records activation.'],
   ...postModeration.HISTORY_WORKFLOW_TABLES_WITHOUT_UPDATED_AT,
   [

@@ -17,7 +17,7 @@ Not partitioned — growth: unbounded.
 | `referral_link_id` | `uuid`                         | yes      |                              |          |           |           | Reference to user_referral_program_links; set when item_type is referral_link. |
 | `topic_id`         | `uuid`                         | yes      |                              |          |           |           | Reference to a topic for grouping; set when item_type is topic_group.          |
 | `link_label`       | `text`                         | yes      |                              |          |           |           | Display label for a free-form link; set when item_type is link.                |
-| `link_url`         | `text`                         | yes      |                              |          |           |           | Destination URL for a free-form link; set when item_type is link.              |
+| `url_id`           | `uuid`                         | yes      |                              |          |           |           | Normalized URL relation for a free-form link; set when item_type is link.      |
 | `created_at`       | `timestamp with time zone`     | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                |
 | `updated_at`       | `timestamp with time zone`     | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                |
 
@@ -28,11 +28,9 @@ _none_
 
 **Check constraints:**
 
-- `user_landing_page_items_check`: `CHECK ((((item_type = 'profile_link'::user_landing_page_item_types) AND (profile_link_id IS NOT NULL) AND (review_id IS NULL) AND (referral_link_id IS NULL) AND (topic_id IS NULL) AND (link_label IS NULL) AND (link_url IS NULL)) OR ((item_type = 'review'::user_landing_page_item_types) AND (profile_link_id IS NULL) AND (review_id IS NOT NULL) AND (referral_link_id IS NULL) AND (topic_id IS NULL) AND (link_label IS NULL) AND (link_url IS NULL)) OR ((item_type = 'referral_link'::user_landing_page_item_types) AND (profile_link_id IS NULL) AND (review_id IS NULL) AND (referral_link_id IS NOT NULL) AND (topic_id IS NULL) AND (link_label IS NULL) AND (link_url IS NULL)) OR ((item_type = 'topic_group'::user_landing_page_item_types) AND (profile_link_id IS NULL) AND (review_id IS NULL) AND (referral_link_id IS NULL) AND (topic_id IS NOT NULL) AND (link_label IS NULL) AND (link_url IS NULL)) OR ((item_type = 'link'::user_landing_page_item_types) AND (profile_link_id IS NULL) AND (review_id IS NULL) AND (referral_link_id IS NULL) AND (topic_id IS NULL) AND (link_label IS NOT NULL) AND (char_length(link_label) >= 1) AND (link_url IS NOT NULL) AND (char_length(link_url) >= 1))))`
+- `user_landing_page_items_check`: `CHECK ((((item_type = 'profile_link'::user_landing_page_item_types) AND (profile_link_id IS NOT NULL) AND (review_id IS NULL) AND (referral_link_id IS NULL) AND (topic_id IS NULL) AND (link_label IS NULL) AND (url_id IS NULL)) OR ((item_type = 'review'::user_landing_page_item_types) AND (profile_link_id IS NULL) AND (review_id IS NOT NULL) AND (referral_link_id IS NULL) AND (topic_id IS NULL) AND (link_label IS NULL) AND (url_id IS NULL)) OR ((item_type = 'referral_link'::user_landing_page_item_types) AND (profile_link_id IS NULL) AND (review_id IS NULL) AND (referral_link_id IS NOT NULL) AND (topic_id IS NULL) AND (link_label IS NULL) AND (url_id IS NULL)) OR ((item_type = 'topic_group'::user_landing_page_item_types) AND (profile_link_id IS NULL) AND (review_id IS NULL) AND (referral_link_id IS NULL) AND (topic_id IS NOT NULL) AND (link_label IS NULL) AND (url_id IS NULL)) OR ((item_type = 'link'::user_landing_page_item_types) AND (profile_link_id IS NULL) AND (review_id IS NULL) AND (referral_link_id IS NULL) AND (topic_id IS NULL) AND (link_label IS NOT NULL) AND (char_length(link_label) >= 1) AND (url_id IS NOT NULL))))`
 - `user_landing_page_items_link_label_check`: `CHECK (((link_label IS NULL) OR (char_length(link_label) <= 100)))`
 - `user_landing_page_items_link_label_check1`: `CHECK (((link_label IS NULL) OR (link_label = TRIM(BOTH FROM link_label))))`
-- `user_landing_page_items_link_url_check`: `CHECK (((link_url IS NULL) OR (char_length(link_url) <= 2048)))`
-- `user_landing_page_items_link_url_check1`: `CHECK (((link_url IS NULL) OR (link_url = TRIM(BOTH FROM link_url))))`
 
 **Foreign keys:**
 
@@ -41,6 +39,7 @@ _none_
 - `user_landing_page_items_referral_link_id_fkey`: `FOREIGN KEY (referral_link_id) REFERENCES user_referral_program_links(id) ON DELETE CASCADE`
 - `user_landing_page_items_review_id_fkey`: `FOREIGN KEY (review_id) REFERENCES posts(id) ON DELETE CASCADE`
 - `user_landing_page_items_topic_id_fkey`: `FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE CASCADE`
+- `user_landing_page_items_url_id_fkey`: `FOREIGN KEY (url_id) REFERENCES urls(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
@@ -49,6 +48,7 @@ _none_
 - `idx_user_landing_page_items__referral_link_id`: `CREATE INDEX idx_user_landing_page_items__referral_link_id ON public.user_landing_page_items USING btree (referral_link_id) WHERE (referral_link_id IS NOT NULL)`
 - `idx_user_landing_page_items__review_id`: `CREATE INDEX idx_user_landing_page_items__review_id ON public.user_landing_page_items USING btree (review_id) WHERE (review_id IS NOT NULL)`
 - `idx_user_landing_page_items__topic_id`: `CREATE INDEX idx_user_landing_page_items__topic_id ON public.user_landing_page_items USING btree (topic_id) WHERE (topic_id IS NOT NULL)`
+- `idx_user_landing_page_items__url_id`: `CREATE INDEX idx_user_landing_page_items__url_id ON public.user_landing_page_items USING btree (url_id)`
 - `user_landing_page_items_pkey`: `CREATE UNIQUE INDEX user_landing_page_items_pkey ON public.user_landing_page_items USING btree (id)`
 
 **Triggers:**

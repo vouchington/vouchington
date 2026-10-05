@@ -18,10 +18,10 @@ export async function queryContributionAdmissionCapacityStatus(
       SELECT clock_timestamp() AS value
     ), windows (reason, scoped_source, consumption_mode, capacity_limit, window_seconds) AS (
       VALUES
-        ('global_limit'::text, NULL::text, 'all_windows'::text, ${policy.global.short.limit}::integer, ${policy.global.short.windowSeconds}::integer),
-        ('global_limit'::text, NULL::text, NULL::text, ${policy.global.daily.limit}::integer, ${policy.global.daily.windowSeconds}::integer),
-        ('type_limit'::text, ${source}::text, 'all_windows'::text, ${policy.type.short.limit}::integer, ${policy.type.short.windowSeconds}::integer),
-        ('type_limit'::text, ${source}::text, NULL::text, ${policy.type.daily.limit}::integer, ${policy.type.daily.windowSeconds}::integer)
+        ('global_limit'::text, NULL::contribution_policy_sources, 'all_windows'::post_admission_quota_consumption_modes, ${policy.global.short.limit}::integer, ${policy.global.short.windowSeconds}::integer),
+        ('global_limit'::text, NULL::contribution_policy_sources, NULL::post_admission_quota_consumption_modes, ${policy.global.daily.limit}::integer, ${policy.global.daily.windowSeconds}::integer),
+        ('type_limit'::text, ${source}::contribution_policy_sources, 'all_windows'::post_admission_quota_consumption_modes, ${policy.type.short.limit}::integer, ${policy.type.short.windowSeconds}::integer),
+        ('type_limit'::text, ${source}::contribution_policy_sources, NULL::post_admission_quota_consumption_modes, ${policy.type.daily.limit}::integer, ${policy.type.daily.windowSeconds}::integer)
     ), actor_consumptions AS MATERIALIZED (
       SELECT committed_at, reservation_id, source, consumption_mode
       FROM post_admission_quota_consumptions

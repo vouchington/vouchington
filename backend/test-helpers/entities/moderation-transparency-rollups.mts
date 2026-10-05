@@ -1,3 +1,4 @@
+import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -5,7 +6,7 @@ import sql from 'sql-template-strings'
 export async function getTestModerationTransparencyRollupFunctionDefinition(): Promise<string> {
   const { rows } = await read<{ definition: string }>(sql`
     SELECT pg_get_functiondef(
-      'fn_apply_moderation_transparency_daily_rollup(timestamp with time zone,uuid,text,text,integer)'::regprocedure
+      'fn_apply_moderation_transparency_daily_rollup(timestamp with time zone,uuid,moderation_transparency_metrics,moderation_transparency_categories,integer)'::regprocedure
     ) AS definition
   `)
   return rows[0]!.definition
@@ -43,8 +44,8 @@ export async function getTestModerationTransparencyDeleteRollupFunctionDefinitio
 export async function getTestModerationTransparencyRollupCount(options: {
   occurredAt: Date
   communityId?: string
-  metric: string
-  category: string
+  metric: FiniteValue<'moderation_transparency_metrics'>
+  category: FiniteValue<'moderation_transparency_categories'>
 }): Promise<number | undefined> {
   const day = options.occurredAt.toISOString().slice(0, 10)
   const { rows } = await read<{ count: number }>(sql`/* getTestModerationTransparencyRollupCount */
@@ -61,8 +62,8 @@ export async function getTestModerationTransparencyRollupCount(options: {
 export async function insertTestModerationTransparencyRollupRow(options: {
   occurredAt: Date
   communityId?: string
-  metric: string
-  category: string
+  metric: FiniteValue<'moderation_transparency_metrics'>
+  category: FiniteValue<'moderation_transparency_categories'>
   count: number
 }): Promise<void> {
   const day = options.occurredAt.toISOString().slice(0, 10)
@@ -78,8 +79,8 @@ export async function insertTestModerationTransparencyRollupRow(options: {
 
 export async function insertTestReleasedModerationTransparencyRollupRow(options: {
   occurredAt: Date
-  metric: string
-  category: string
+  metric: FiniteValue<'moderation_transparency_metrics'>
+  category: FiniteValue<'moderation_transparency_categories'>
   count: number
 }): Promise<void> {
   const day = options.occurredAt.toISOString().slice(0, 10)
@@ -92,8 +93,8 @@ export async function insertTestReleasedModerationTransparencyRollupRow(options:
 
 export async function getTestReleasedModerationTransparencyRollupCount(options: {
   occurredAt: Date
-  metric: string
-  category: string
+  metric: FiniteValue<'moderation_transparency_metrics'>
+  category: FiniteValue<'moderation_transparency_categories'>
 }): Promise<number | undefined> {
   const day = options.occurredAt.toISOString().slice(0, 10)
   const { rows } = await read<{ count: number }>(sql`
@@ -117,16 +118,19 @@ export async function getTestReleasedModerationTransparencyRollupCount(options: 
  */
 export async function getTestCommunityModerationTransparencyRollupCounts(options: {
   communityId: string
-  metric: string
+  metric: FiniteValue<'moderation_transparency_metrics'>
   categories: readonly string[]
 }): Promise<Record<string, number>> {
-  const { rows } = await read<{ category: string; count: number }>(sql`
+  const { rows } = await read<{
+    category: FiniteValue<'moderation_transparency_categories'>
+    count: number
+  }>(sql`
     /* getTestCommunityModerationTransparencyRollupCounts */
     SELECT category, sum(count)::int AS count
     FROM moderation_transparency_daily_rollups
     WHERE community_id = ${options.communityId}::uuid
       AND metric = ${options.metric}
-      AND category = ANY(${options.categories}::text[])
+      AND category = ANY(${options.categories}::moderation_transparency_categories[])
     GROUP BY category
   `)
   return Object.fromEntries(rows.map(row => [row.category, row.count]))
@@ -147,8 +151,8 @@ export async function getTestCommunityModerationTransparencyRollupVersion(
 
 export async function updateTestReleasedModerationTransparencyRollup(options: {
   occurredAt: Date
-  metric: string
-  category: string
+  metric: FiniteValue<'moderation_transparency_metrics'>
+  category: FiniteValue<'moderation_transparency_categories'>
 }): Promise<void> {
   const day = options.occurredAt.toISOString().slice(0, 10)
   await write(sql`/* updateTestReleasedModerationTransparencyRollup */
@@ -161,8 +165,8 @@ export async function updateTestReleasedModerationTransparencyRollup(options: {
 
 export async function deleteTestReleasedModerationTransparencyRollup(options: {
   occurredAt: Date
-  metric: string
-  category: string
+  metric: FiniteValue<'moderation_transparency_metrics'>
+  category: FiniteValue<'moderation_transparency_categories'>
 }): Promise<void> {
   const day = options.occurredAt.toISOString().slice(0, 10)
   await write(sql`/* deleteTestReleasedModerationTransparencyRollup */

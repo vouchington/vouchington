@@ -66,7 +66,7 @@ export async function insertTestUrlDirect(
   if (options.content_type) {
     const mimeType = options.content_type.toLowerCase()
     const contentTypeResult = await write(sql`/* insertTestUrlDirect */
-      INSERT INTO url_content_types (mime_type)
+      INSERT INTO media_types (mime_type)
       VALUES (${mimeType})
       ON CONFLICT (mime_type) DO UPDATE SET mime_type = EXCLUDED.mime_type
       RETURNING id
@@ -81,7 +81,7 @@ export async function insertTestUrlDirect(
   })
 
   const urlResult = await write(sql`/* insertTestUrlDirect */
-    INSERT INTO urls (url, hostname_id, pathname, search_params, created_by_id, url_content_type_id)
+    INSERT INTO urls (url, hostname_id, pathname, search_params, created_by_id, media_type_id)
     VALUES (
       ${normalizedUrl.toString()}, ${hostnameId}, ${pathname},
       ${JSON.stringify(searchParams)}::jsonb, ${userId}, ${urlContentTypeId}
@@ -124,7 +124,7 @@ export async function insertTestUrl(options: {
     values = values.append(sql`, ${canonicalUrlId}`)
   }
   if (urlContentTypeId !== undefined) {
-    query = query.append(sql`, url_content_type_id`)
+    query = query.append(sql`, media_type_id`)
     values = values.append(sql`, ${urlContentTypeId}`)
   }
 

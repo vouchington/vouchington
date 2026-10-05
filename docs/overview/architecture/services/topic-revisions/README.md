@@ -8,15 +8,14 @@ Append-only revision log for topics. Tracks per-field before/after diffs when to
 
 ### `topic_revisions`
 
-| Column           | Type                  | Description                                                   |
-| ---------------- | --------------------- | ------------------------------------------------------------- |
-| id               | UUID (PK)             | UUIDv7, provides temporal ordering                            |
-| topic_id         | UUID (FK)             | References `topics(id)` with CASCADE delete                   |
-| revision_type    | revision_types (ENUM) | `create`, `update`, or legacy `delete`                        |
-| revised_by_id    | UUID (FK)             | User who made the change; nullable                            |
-| revised_by_roles | TEXT[]                | Snapshot of the reviser's roles when the revision was written |
-| changes          | JSONB                 | `{ "field": { "before": <old>, "after": <new> } }`            |
-| created_at       | TIMESTAMPTZ           | Virtual, derived from UUIDv7 id                               |
+| Column            | Type                  | Description                                                                                  |
+| ----------------- | --------------------- | -------------------------------------------------------------------------------------------- |
+| id                | UUID (PK)             | UUIDv7, provides temporal ordering                                                           |
+| topic_id          | UUID (FK)             | References `topics(id)` with CASCADE delete                                                  |
+| revision_type     | revision_types (ENUM) | `create`, `update`, or `delete`                                                              |
+| revised_by_id     | UUID (FK)             | User who made the change; nullable                                                           |
+| revision_document | JSONB                 | `{ "changes": { "field": { "before": <old>, "after": <new> } }, "revised_by_roles": [...] }` |
+| created_at        | TIMESTAMPTZ           | Virtual, derived from UUIDv7 id                                                              |
 
 Not partitioned (small table).
 
@@ -30,11 +29,11 @@ Revisions are written **synchronously** inside the same transaction as the topic
 
 - **Create**: `createTopic()` inserts a `create` revision
 - **Update**: `updateTopic()` inserts an `update` revision with only the changed fields
-- **Delete**: topic deletion is intentionally unsupported; the enum value is retained only for historical rows.
+- **Delete**: topic deletion is intentionally unsupported; the service does not create delete revisions.
 
-Topic detail pages use the latest admin-authored `create` or `update` revision whose `changes`
+Topic detail pages use the latest admin-authored `create` or `update` revision whose `revision_document.changes`
 include `name` or `markdown` as the public topic content update attribution. The admin decision uses
-the `revised_by_roles` snapshot so later role changes do not rewrite historical attribution.
+the `revision_document.revised_by_roles` snapshot so later role changes do not rewrite historical attribution.
 Non-content changes such as images, homepage URLs, source metadata, relationships, and user-generated
 posts do not update that label. A partial index on admin content revisions supports the topic detail
 lookup.

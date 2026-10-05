@@ -1,3 +1,9 @@
+import { STATIC_IDENTITY_EXCEPTIONS } from './schema-growth-static-identities.mts'
+export { STATIC_IDENTITY_EXCEPTIONS } from './schema-growth-static-identities.mts'
+import {
+  PROVIDER_LOOKUP_BOUNDS,
+  PROVIDER_LOOKUP_ID_POLICIES,
+} from './schema-growth-provider-lookups.mts'
 import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations-metadata'
 import { EXTRA_BOUNDED_TABLES } from './schema-growth-bounded-extra.mts'
 import { EXTRA_UNBOUNDED_TABLES } from './schema-growth-unbounded-extra.mts'
@@ -6,15 +12,8 @@ import {
   RETAINED_RELATION_GROWTH_POLICIES,
   sharedParentUuidv7,
 } from './schema-growth-retained-identities.mts'
-export const STATIC_IDENTITY_EXCEPTIONS = new Map<string, string>([
-  ['countries', 'Small ISO country lookup populated from a fixed reference set.'],
-  ['currencies', 'Small ISO currency lookup populated from a fixed reference set.'],
-  ['domain_blacklist_sources', 'Small administrator-managed source lookup.'],
-  ['url_content_types', 'Small MIME-type lookup shared by URL rows.'],
-  ['user_permission_types', 'Small static RBAC permission lookup.'],
-  ['user_roles_types', 'Small static RBAC role lookup.'],
-])
 export const EXPLICIT_BOUNDED_TABLES = new Map<string, string>([
+  ...PROVIDER_LOOKUP_BOUNDS,
   ...STATIC_IDENTITY_EXCEPTIONS,
   ...EXTRA_BOUNDED_TABLES,
   [
@@ -47,6 +46,7 @@ const naturalOrProviderId = (rationale: string): NonDefaultIdException => ({
   rationale,
 })
 export const NON_DEFAULT_ID_EXCEPTIONS = new Map<string, NonDefaultIdException>([
+  ...PROVIDER_LOOKUP_ID_POLICIES,
   ...SHARED_PARENT_ID_POLICIES,
   ['post_publication_post_identities', sharedParentUuidv7('posts')],
   ['post_publication_community_identities', sharedParentUuidv7('communities')],

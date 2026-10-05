@@ -2,20 +2,6 @@ import { write } from '@data-stores/psql'
 import type { ImportRssFeedStatus } from './import-rss-feeds.mts'
 import sql from 'sql-template-strings'
 
-export async function recordRssFeedImportCanonicalUrl(
-  rowId: string,
-  canonicalUrl: string,
-): Promise<void> {
-  await write(
-    sql`/* recordRssFeedImportCanonicalUrl */
-      UPDATE user_rss_feed_import_rows
-      SET canonical_url = ${canonicalUrl}
-      WHERE id = ${rowId}
-        AND canonical_url IS NULL
-    `,
-  )
-}
-
 export async function updateRssFeedImportRowCompleted(
   rowId: string,
   outcome: Exclude<ImportRssFeedStatus, 'error'>,

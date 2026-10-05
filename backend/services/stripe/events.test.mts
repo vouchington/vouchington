@@ -138,7 +138,7 @@ describe('events', () => {
     })
 
     it('deduplicates concurrent inserts of the same stripe_event_id', async () => {
-      const event = createStripeEvent('invoice.paid', {
+      const event = createStripeEvent(`future.Event-${Math.random().toString(36).slice(2)}`, {
         id: 'in_test_concurrent',
         object: 'invoice',
         customer: 'cus_test_concurrent',
@@ -150,6 +150,7 @@ describe('events', () => {
         insertStripeEvent(event),
       ])
 
+      expect(first.event_type).toBe(event.type)
       expect(first.id).toBe(second.id)
       expect([first.is_new, second.is_new].toSorted()).toEqual([false, true])
     })

@@ -65,7 +65,10 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<Reco
   const cachedInputTokens = normalizeCachedInputTokens(usage)
   if (responseId !== undefined) {
     const { rows } = await run<RecordedRow>(sql`/* recordAiUsage */
-      WITH claimed_response AS (
+      WITH registered_tier AS (
+        INSERT INTO openai_service_tiers (id) VALUES (${serviceTier})
+        ON CONFLICT (id) DO NOTHING
+      ), claimed_response AS (
         INSERT INTO ai_usage_provider_response_keys (response_id, ai_usage_record_id)
         VALUES (
           ${responseId},
@@ -117,6 +120,10 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<Reco
   }
 
   await run(sql`/* recordAiUsage */
+    WITH registered_tier AS (
+      INSERT INTO openai_service_tiers (id) VALUES (${serviceTier})
+      ON CONFLICT (id) DO NOTHING
+    )
     INSERT INTO ai_usage_records (
       id,
       community_id,

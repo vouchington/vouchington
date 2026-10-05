@@ -96,7 +96,8 @@
             "type": "string"
           },
           "client_type": {
-            "$ref": "#/components/schemas/OAuthClientType"
+            "enum": ["confidential", "public"],
+            "type": "string"
           },
           "created_at": {
             "type": "string"
@@ -3731,6 +3732,12 @@
                           ]
                         },
                         "result": {
+                          "enum": [
+                            "decided_for_platform",
+                            "decided_for_recipient",
+                            "no_decision",
+                            "withdrawn"
+                          ],
                           "type": "string"
                         }
                       },
@@ -3922,10 +3929,6 @@
       },
       "CopyrightGuidanceStatus": {
         "enum": ["missing", "present", "unclear"],
-        "type": "string"
-      },
-      "CopyrightHoldResolutionKind": {
-        "enum": ["dismissed", "proceeding_ended", "superseded"],
         "type": "string"
       },
       "CopyrightJurisdictionPolicyApproval": {
@@ -4209,7 +4212,8 @@
             "type": "string"
           },
           "resolution_kind": {
-            "$ref": "#/components/schemas/CopyrightHoldResolutionKind"
+            "enum": ["dismissed", "proceeding_ended", "superseded"],
+            "type": "string"
           },
           "resolved_at": {
             "type": "string"
@@ -4653,6 +4657,9 @@
                 "const": "confirm"
               },
               {
+                "const": "modify"
+              },
+              {
                 "const": "reverse"
               },
               {
@@ -5087,6 +5094,12 @@
                           ]
                         },
                         "result": {
+                          "enum": [
+                            "decided_for_platform",
+                            "decided_for_recipient",
+                            "no_decision",
+                            "withdrawn"
+                          ],
                           "type": "string"
                         }
                       },
@@ -8411,6 +8424,12 @@
                     ]
                   },
                   "result": {
+                    "enum": [
+                      "decided_for_platform",
+                      "decided_for_recipient",
+                      "no_decision",
+                      "withdrawn"
+                    ],
                     "type": "string"
                   }
                 },
@@ -12617,19 +12636,6 @@
         "required": ["community_agent_moderations", "platform_moderation"],
         "type": "object"
       },
-      "ModerationTrainingEventType": {
-        "enum": [
-          "agent_accuracy_voted",
-          "appeal_resolved",
-          "automod_reviewed",
-          "dispute_resolved",
-          "draft_edited",
-          "manual_action_inferred",
-          "prompt_test_labelled",
-          "report_resolved"
-        ],
-        "type": "string"
-      },
       "ModerationTrainingFeedback": {
         "additionalProperties": false,
         "properties": {
@@ -12667,9 +12673,43 @@
             "type": "string"
           },
           "event_type": {
-            "$ref": "#/components/schemas/ModerationTrainingEventType"
+            "enum": [
+              "agent_accuracy_voted",
+              "appeal_resolved",
+              "automod_reviewed",
+              "dispute_resolved",
+              "draft_edited",
+              "manual_action_inferred",
+              "prompt_test_labelled",
+              "report_resolved"
+            ],
+            "type": "string"
           },
           "human_action": {
+            "enum": [
+              "accuracy_downvote",
+              "accuracy_unvote",
+              "accuracy_upvote",
+              "approve_publication",
+              "clearance_approved",
+              "clearance_in_review",
+              "clearance_pending",
+              "clearance_rejected",
+              "dismiss",
+              "keep_removed",
+              "label_only",
+              "reinstate",
+              "reject_publication",
+              "report_actioned",
+              "report_dismissed",
+              "report_reviewed",
+              "resolve_accept",
+              "resolve_annotate",
+              "resolve_reduce",
+              "resolve_remove",
+              "save_prompt_test_run",
+              "unpublish_post"
+            ],
             "type": "string"
           },
           "id": {
@@ -12699,7 +12739,17 @@
             ]
           },
           "label": {
-            "$ref": "#/components/schemas/ModerationTrainingLabel"
+            "enum": [
+              "accepted",
+              "edited",
+              "false_negative_candidate",
+              "false_positive",
+              "not_applicable",
+              "rejected",
+              "true_negative",
+              "true_positive"
+            ],
+            "type": "string"
           },
           "label_confidence": {
             "type": "number"
@@ -12778,7 +12828,19 @@
             ]
           },
           "source_type": {
-            "$ref": "#/components/schemas/ModerationTrainingSourceType"
+            "enum": [
+              "agent_moderation_vote",
+              "agent_moderation",
+              "community_prompt",
+              "community_review",
+              "moderation_appeal",
+              "moderation_report",
+              "openai_omni",
+              "prompt_test_run",
+              "review_dispute",
+              "spam_detection"
+            ],
+            "type": "string"
           },
           "updated_at": {
             "type": "string"
@@ -12807,34 +12869,6 @@
           "updated_at"
         ],
         "type": "object"
-      },
-      "ModerationTrainingLabel": {
-        "enum": [
-          "accepted",
-          "edited",
-          "false_negative_candidate",
-          "false_positive",
-          "not_applicable",
-          "rejected",
-          "true_negative",
-          "true_positive"
-        ],
-        "type": "string"
-      },
-      "ModerationTrainingSourceType": {
-        "enum": [
-          "agent_moderation_vote",
-          "agent_moderation",
-          "community_prompt",
-          "community_review",
-          "moderation_appeal",
-          "moderation_report",
-          "openai_omni",
-          "prompt_test_run",
-          "review_dispute",
-          "spam_detection"
-        ],
-        "type": "string"
       },
       "ModerationTransparency": {
         "additionalProperties": false,
@@ -12868,15 +12902,12 @@
             "type": "string"
           },
           "metric": {
-            "$ref": "#/components/schemas/ModerationTransparencyMetric"
+            "enum": ["appeals", "automated_moderation", "moderation_actions", "reports"],
+            "type": "string"
           }
         },
         "required": ["category", "count", "date", "metric"],
         "type": "object"
-      },
-      "ModerationTransparencyMetric": {
-        "enum": ["appeals", "automated_moderation", "moderation_actions", "reports"],
-        "type": "string"
       },
       "ModeratorActionCounts": {
         "additionalProperties": false,
@@ -13449,7 +13480,8 @@
             "type": "string"
           },
           "client_type": {
-            "$ref": "#/components/schemas/OAuthClientType"
+            "enum": ["confidential", "public"],
+            "type": "string"
           },
           "created_at": {
             "type": "string"
@@ -13470,7 +13502,8 @@
             "type": "array"
           },
           "token_endpoint_auth_method": {
-            "$ref": "#/components/schemas/OAuthClientAuthMethod"
+            "enum": ["client_secret_basic", "none"],
+            "type": "string"
           },
           "updated_at": {
             "type": "string"
@@ -13499,14 +13532,6 @@
           "verified_at"
         ],
         "type": "object"
-      },
-      "OAuthClientAuthMethod": {
-        "enum": ["client_secret_basic", "none"],
-        "type": "string"
-      },
-      "OAuthClientType": {
-        "enum": ["confidential", "public"],
-        "type": "string"
       },
       "OAuthGrantClientView": {
         "additionalProperties": false,
@@ -27566,7 +27591,8 @@
                             "type": "string"
                           },
                           "client_type": {
-                            "$ref": "#/components/schemas/OAuthClientType"
+                            "enum": ["confidential", "public"],
+                            "type": "string"
                           },
                           "created_at": {
                             "type": "string"
@@ -39448,9 +39474,43 @@
                           "type": "string"
                         },
                         "event_type": {
-                          "$ref": "#/components/schemas/ModerationTrainingEventType"
+                          "enum": [
+                            "agent_accuracy_voted",
+                            "appeal_resolved",
+                            "automod_reviewed",
+                            "dispute_resolved",
+                            "draft_edited",
+                            "manual_action_inferred",
+                            "prompt_test_labelled",
+                            "report_resolved"
+                          ],
+                          "type": "string"
                         },
                         "human_action": {
+                          "enum": [
+                            "accuracy_downvote",
+                            "accuracy_unvote",
+                            "accuracy_upvote",
+                            "approve_publication",
+                            "clearance_approved",
+                            "clearance_in_review",
+                            "clearance_pending",
+                            "clearance_rejected",
+                            "dismiss",
+                            "keep_removed",
+                            "label_only",
+                            "reinstate",
+                            "reject_publication",
+                            "report_actioned",
+                            "report_dismissed",
+                            "report_reviewed",
+                            "resolve_accept",
+                            "resolve_annotate",
+                            "resolve_reduce",
+                            "resolve_remove",
+                            "save_prompt_test_run",
+                            "unpublish_post"
+                          ],
                           "type": "string"
                         },
                         "id": {
@@ -39480,7 +39540,17 @@
                           ]
                         },
                         "label": {
-                          "$ref": "#/components/schemas/ModerationTrainingLabel"
+                          "enum": [
+                            "accepted",
+                            "edited",
+                            "false_negative_candidate",
+                            "false_positive",
+                            "not_applicable",
+                            "rejected",
+                            "true_negative",
+                            "true_positive"
+                          ],
+                          "type": "string"
                         },
                         "label_confidence": {
                           "type": "number"
@@ -39559,7 +39629,19 @@
                           ]
                         },
                         "source_type": {
-                          "$ref": "#/components/schemas/ModerationTrainingSourceType"
+                          "enum": [
+                            "agent_moderation_vote",
+                            "agent_moderation",
+                            "community_prompt",
+                            "community_review",
+                            "moderation_appeal",
+                            "moderation_report",
+                            "openai_omni",
+                            "prompt_test_run",
+                            "review_dispute",
+                            "spam_detection"
+                          ],
+                          "type": "string"
                         },
                         "updated_at": {
                           "type": "string"
@@ -47260,6 +47342,7 @@
                                           "type": "string"
                                         },
                                         "recommendation": {
+                                          "enum": ["confirm", "modify", "reverse", "uncertain"],
                                           "type": "string"
                                         }
                                       },
@@ -47374,6 +47457,21 @@
                                   "type": "number"
                                 },
                                 "delivery_kind": {
+                                  "enum": [
+                                    "claimant_decision_notice",
+                                    "claimant_receipt",
+                                    "counter_notice_forwarding",
+                                    "email_intake_needs_information",
+                                    "email_intake_received",
+                                    "email_intake_rejected",
+                                    "owner_information_notice",
+                                    "poster_restoration_notice",
+                                    "poster_restriction_notice",
+                                    "poster_review_notice",
+                                    "redress_decision_notice",
+                                    "staff_information_request",
+                                    "status_update"
+                                  ],
                                   "type": "string"
                                 },
                                 "id": {
@@ -47530,10 +47628,13 @@
                                           "recommendation": {
                                             "anyOf": [
                                               {
-                                                "type": "null"
+                                                "const": "invalid_or_spam"
                                               },
                                               {
-                                                "type": "string"
+                                                "const": "not_obviously_invalid"
+                                              },
+                                              {
+                                                "type": "null"
                                               }
                                             ]
                                           },
@@ -47556,6 +47657,7 @@
                                     ]
                                   },
                                   "source_kind": {
+                                    "enum": ["email", "guest_form", "signed_in_form", "staff"],
                                     "type": "string"
                                   }
                                 },
@@ -48502,6 +48604,12 @@
                                     ]
                                   },
                                   "result": {
+                                    "enum": [
+                                      "decided_for_platform",
+                                      "decided_for_recipient",
+                                      "no_decision",
+                                      "withdrawn"
+                                    ],
                                     "type": "string"
                                   }
                                 },
@@ -49010,12 +49118,22 @@
                                 "type": "string"
                               },
                               "kind": {
+                                "enum": [
+                                  "appeal",
+                                  "complaint",
+                                  "counter_notice",
+                                  "court_or_ccb_hold",
+                                  "notice",
+                                  "supplement",
+                                  "withdrawal"
+                                ],
                                 "type": "string"
                               },
                               "received_at": {
                                 "type": "string"
                               },
                               "source_kind": {
+                                "enum": ["email", "guest_form", "signed_in_form", "staff"],
                                 "type": "string"
                               }
                             },

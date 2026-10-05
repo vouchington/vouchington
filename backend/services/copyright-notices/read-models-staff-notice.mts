@@ -1,3 +1,4 @@
+import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 import { beginTransaction } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
@@ -13,7 +14,7 @@ export async function selectStaffTargets(
     sql`/* getPendingCopyrightStaffCase:targets */
       SELECT target.id, concat('image-placement:', target.placement_id) AS placement_key,
         target.placement_revision, image.image_id, target.hosted_use_url,
-        COALESCE(surface.surface_kind, 'post-image') AS surface,
+        COALESCE(surface.surface_kind::text, 'post-image') AS surface,
         CASE WHEN activation.placement_id IS NULL THEN NULL ELSE jsonb_build_object(
           'set_by_id', activation.bound_by_user_id,
           'set_by_administrator', activation.bound_by_administrator,
@@ -45,7 +46,7 @@ export async function selectStaffEvidence(
     byte_size: number
     sha256: Buffer
   }>(sql`/* getPendingCopyrightStaffCase:evidence */
-    SELECT artifact.id, artifact.copyright_notice_submission_id AS submission_id, artifact.mime_type, artifact.byte_size, artifact.sha256
+    SELECT artifact.id, artifact.copyright_notice_submission_id AS submission_id, (SELECT mime_type FROM media_types WHERE id = artifact.media_type_id) AS mime_type, artifact.byte_size, artifact.sha256
     FROM copyright_notice_evidence_artifacts artifact JOIN copyright_notice_submissions submission ON submission.id = artifact.copyright_notice_submission_id
     WHERE submission.copyright_notice_id = ${noticeId} ORDER BY artifact.id
   `)
@@ -63,9 +64,9 @@ export async function selectStaffFormReview(
 ): Promise<CopyrightStaffCase['form_review']> {
   const { rows } = await query<{
     intake_id: string
-    source_kind: string
+    source_kind: FiniteValue<'copyright_notice_submission_source_kinds'>
     state: 'pending' | 'failed' | 'completed' | null
-    recommendation: string | null
+    recommendation: FiniteValue<'copyright_notice_form_screening_recommendations'> | null
     rationale_ciphertext: string | null
     guidance_ciphertext: string | null
     review_accepted: boolean | null

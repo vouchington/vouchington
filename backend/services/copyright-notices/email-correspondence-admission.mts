@@ -79,7 +79,8 @@ export async function admitCopyrightEmailCorrespondence(input: {
   const { rows } =
     await transaction<PendingCorrespondence>(sql`/* admitCopyrightEmailCorrespondence:lock */
     SELECT intake.id, intake.ses_message_id, intake.received_at, intake.raw_storage_key,
-      intake.raw_sha256, intake.raw_mime_type, intake.raw_byte_size,
+      intake.raw_sha256, intake.raw_media_type_id,
+        (SELECT mime_type FROM media_types WHERE id = intake.raw_media_type_id) AS raw_mime_type, intake.raw_byte_size,
       link.copyright_notice_id AS notice_id, parse.body_ciphertext
     FROM copyright_notice_email_intakes intake
     JOIN copyright_notice_email_intake_notice_links link
@@ -130,7 +131,7 @@ export async function admitCopyrightEmailCorrespondence(input: {
     INSERT INTO copyright_notice_submissions (
       id, copyright_notice_id, submitted_by_user_id, kind, received_at, source_kind, body_ciphertext
     ) VALUES (
-      ${submissionId}, ${pending.notice_id}, NULL, ${input.kind}::text, ${pending.received_at}, 'email',
+      ${submissionId}, ${pending.notice_id}, NULL, ${input.kind}::copyright_notice_submission_kinds, ${pending.received_at}, 'email',
       ${encryptSecret(JSON.stringify(input.structuredSubmission), copyrightSubmissionPurpose(submissionId))}
     ) RETURNING id
   `)
@@ -166,8 +167,8 @@ export async function admitCopyrightEmailCorrespondence(input: {
   }
   await transaction(sql`/* admitCopyrightEmailCorrespondence:evidence */
     INSERT INTO copyright_notice_evidence_artifacts (
-      copyright_notice_submission_id, storage_key, sha256, mime_type, byte_size
-    ) VALUES (${submission.id}, ${pending.raw_storage_key}, ${pending.raw_sha256}, ${pending.raw_mime_type}, ${pending.raw_byte_size})
+      copyright_notice_submission_id, storage_key, sha256, media_type_id, byte_size
+    ) VALUES (${submission.id}, ${pending.raw_storage_key}, ${pending.raw_sha256}, ${pending.raw_media_type_id}, ${pending.raw_byte_size})
   `)
   const { rows: correspondenceRows } = await transaction<{
     id: string
@@ -187,7 +188,7 @@ export async function admitCopyrightEmailCorrespondence(input: {
       copyright_notice_submission_id, copyright_notice_correspondence_id,
       reviewed_at, reviewed_by_id, rationale_ciphertext, manual_fallback_reason_ciphertext
     ) VALUES (
-      ${input.intakeId}, ${pending.notice_id}, 'admitted', ${input.kind}::text, ${input.recommendationId}, ${submission.id},
+      ${input.intakeId}, ${pending.notice_id}, 'admitted', ${input.kind}::copyright_notice_email_correspondence_review_kinds, ${input.recommendationId}, ${submission.id},
       ${correspondence.id}, CURRENT_TIMESTAMP, ${input.currentUser.id},
       ${encryptSecret(input.rationale, copyrightEmailIntakePurpose(pending.ses_message_id))},
       ${input.manualFallbackReason ? encryptSecret(input.manualFallbackReason, copyrightEmailIntakePurpose(pending.ses_message_id)) : null}
@@ -269,7 +270,7 @@ export async function rejectCopyrightEmailCorrespondence(input: {
       copyright_notice_email_intake_id, copyright_notice_id, action, kind,
       copyright_notice_email_intake_recommendation_id, reviewed_at, reviewed_by_id,
       rationale_ciphertext, manual_fallback_reason_ciphertext
-    ) VALUES (${input.intakeId}, ${pending.notice_id}, 'rejected', ${input.kind}::text,
+    ) VALUES (${input.intakeId}, ${pending.notice_id}, 'rejected', ${input.kind}::copyright_notice_email_correspondence_review_kinds,
       ${input.recommendationId}, CURRENT_TIMESTAMP, ${input.currentUser.id},
       ${encryptSecret(input.rationale, copyrightEmailIntakePurpose(pending.ses_message_id))},
       ${input.manualFallbackReason ? encryptSecret(input.manualFallbackReason, copyrightEmailIntakePurpose(pending.ses_message_id)) : null})
@@ -330,6 +331,7 @@ type PendingCorrespondence = {
   received_at: Date
   raw_storage_key: string
   raw_sha256: Buffer
+  raw_media_type_id: string
   raw_mime_type: string
   raw_byte_size: number
   notice_id: string

@@ -54,7 +54,7 @@ export async function replacePostHashtagSources(
     `/* syncPostHashtagCategoriesInTransaction.insertSources */
       INSERT INTO post_topic_alias_sources (post_id, topic_alias_id, contributor_id, source, authored_token)
       SELECT $1, topic_alias_id, contributor_id, source, authored_token
-      FROM unnest($2::uuid[], $3::uuid[], $4::text[], $5::text[]) AS input(
+      FROM unnest($2::uuid[], $3::uuid[], $4::post_topic_alias_source_types[], $5::text[]) AS input(
         topic_alias_id,
         contributor_id,
         source,

@@ -3,12 +3,13 @@
 
 -- This table was not deployed by an earlier migration. A branch-local database that ran the
 -- pre-launch 0582 draft must be rebuilt rather than silently retaining that superseded schema.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE oauth_authorizations (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
-  provider TEXT NOT NULL CHECK (provider IN ('facebook', 'x', 'github')),
-  purpose TEXT NOT NULL CHECK (purpose IN ('authenticate', 'connect')),
-  callback_mode TEXT NOT NULL CHECK (callback_mode IN ('web', 'native')),
-  status TEXT NOT NULL DEFAULT 'pending' CHECK (
+  provider oauth_authorization_providers NOT NULL CHECK (provider IN ('facebook', 'x', 'github')),
+  purpose oauth_authorization_purposes NOT NULL CHECK (purpose IN ('authenticate', 'connect')),
+  callback_mode oauth_callback_modes NOT NULL CHECK (callback_mode IN ('web', 'native')),
+  status oauth_authorization_statuses NOT NULL DEFAULT 'pending' CHECK (
     status IN (
       'pending',
       'callback_received',
@@ -33,7 +34,7 @@ CREATE TABLE oauth_authorizations (
   facebook_user_id TEXT REFERENCES facebook_accounts(facebook_user_id) ON DELETE CASCADE,
   x_user_id TEXT REFERENCES x_accounts(x_user_id) ON DELETE CASCADE,
   github_user_id TEXT REFERENCES github_accounts(github_user_id) ON DELETE CASCADE,
-  result_kind TEXT CHECK (result_kind IS NULL OR result_kind IN ('authenticated', 'mfa_required', 'connected')),
+  result_kind oauth_authorization_result_kinds CHECK (result_kind IS NULL OR result_kind IN ('authenticated', 'mfa_required', 'connected')),
   result_user_id UUID REFERENCES users ON DELETE CASCADE,
   result_device_id UUID,
   result_session_id UUID,

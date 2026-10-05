@@ -70,7 +70,7 @@ export function moderationReportsWithEntitySql(): SQLStatement {
         WHEN mr.reported_user_id IS NOT NULL THEN 'user'
         WHEN mr.hostname_id IS NOT NULL THEN 'url_hostname'
         WHEN mr.rss_feed_item_id IS NOT NULL THEN 'rss_feed_item'
-      END::moderation_report_entity_type AS entity_type
+      END::moderation_report_entity_types AS entity_type
     FROM moderation_reports mr
     LEFT JOIN posts mrp ON mr.post_id IS NOT NULL AND mrp.id = mr.post_id
   )`)

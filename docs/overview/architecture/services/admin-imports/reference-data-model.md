@@ -7,7 +7,7 @@
 | Column           | Type                  | Description                          |
 | ---------------- | --------------------- | ------------------------------------ |
 | `id`             | UUID (UUIDv7)         | Primary key                          |
-| `import_type`    | `admin_import_types`  | `topic`, `rss_feed`                  |
+| `import_type`    | `import_entity_types` | `topic`, `rss_feed`                  |
 | `created_by_id`  | UUID → `users`        | Admin who initiated the import       |
 | `total_rows`     | INT                   | Number of rows in the batch (1–1000) |
 | `completed_rows` | INT                   | Rows successfully processed          |

@@ -1,6 +1,8 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE SEQUENCE IF NOT EXISTS oauth_client_metadata_refresh_generation_seq AS BIGINT;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS oauth_clients (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   metadata_url TEXT,
@@ -21,17 +23,16 @@ CREATE TABLE IF NOT EXISTS oauth_clients (
   client_id TEXT NOT NULL UNIQUE,
   owner_user_id UUID REFERENCES users ON DELETE SET NULL,
   client_name TEXT NOT NULL CHECK (char_length(client_name) BETWEEN 1 AND 120),
-  client_type TEXT NOT NULL CHECK (client_type IN ('public', 'confidential')),
-  token_endpoint_auth_method TEXT NOT NULL CHECK (
+  client_type oauth_client_types NOT NULL CHECK (client_type IN ('public', 'confidential')),
+  token_endpoint_auth_method oauth_client_token_endpoint_auth_methods NOT NULL CHECK (
     token_endpoint_auth_method IN ('none', 'client_secret_basic')
   ),
   redirect_uris TEXT[] NOT NULL CHECK (cardinality(redirect_uris) BETWEEN 1 AND 10),
-  grant_types TEXT[] NOT NULL CHECK (
-    grant_types <@ ARRAY['authorization_code', 'refresh_token']::TEXT[]
-    AND grant_types @> ARRAY['authorization_code', 'refresh_token']::TEXT[]
+  grant_types oauth_grant_types[] NOT NULL CHECK (
+    grant_types @> ARRAY['authorization_code', 'refresh_token']::oauth_grant_types[]
   ),
-  response_types TEXT[] NOT NULL CHECK (response_types = ARRAY['code']::TEXT[]),
-  scopes TEXT[] NOT NULL CHECK (cardinality(scopes) > 0),
+  response_types oauth_response_types[] NOT NULL CHECK (cardinality(response_types) = 1),
+  scopes api_scopes[] NOT NULL CHECK (cardinality(scopes) > 0),
   client_secret_hash TEXT CHECK (client_secret_hash IS NULL OR char_length(client_secret_hash) = 64),
   revoked_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -81,6 +82,7 @@ CREATE INDEX IF NOT EXISTS idx_oauth_clients__verified_active_id
 ON oauth_clients (id DESC)
 WHERE metadata_url IS NULL AND revoked_at IS NULL AND verified_at IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS oauth_authorization_requests (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   client_id UUID NOT NULL REFERENCES oauth_clients ON DELETE CASCADE,
@@ -89,7 +91,7 @@ CREATE TABLE IF NOT EXISTS oauth_authorization_requests (
   redirect_uri TEXT NOT NULL CHECK (char_length(redirect_uri) BETWEEN 1 AND 2048),
   state TEXT NOT NULL CHECK (char_length(state) BETWEEN 1 AND 1024),
   resource TEXT NOT NULL CHECK (char_length(resource) BETWEEN 1 AND 2048),
-  scopes TEXT[] NOT NULL CHECK (cardinality(scopes) > 0),
+  scopes api_scopes[] NOT NULL CHECK (cardinality(scopes) > 0),
   code_challenge TEXT NOT NULL CHECK (code_challenge ~ '^[A-Za-z0-9_-]{43}$'),
   expires_at TIMESTAMPTZ NOT NULL,
   approved_at TIMESTAMPTZ,
@@ -117,12 +119,13 @@ WHERE approved_at IS NULL AND denied_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_oauth_authorization_requests__expiry
 ON oauth_authorization_requests (expires_at, id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS oauth_grants (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
   client_id UUID NOT NULL REFERENCES oauth_clients ON DELETE CASCADE,
   resource TEXT NOT NULL CHECK (char_length(resource) BETWEEN 1 AND 2048),
-  scopes TEXT[] NOT NULL CHECK (cardinality(scopes) > 0),
+  scopes api_scopes[] NOT NULL CHECK (cardinality(scopes) > 0),
   consented_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   last_used_at TIMESTAMPTZ,
   revoked_at TIMESTAMPTZ,
@@ -145,9 +148,11 @@ ON oauth_grants (client_id, id);
 CREATE INDEX IF NOT EXISTS idx_oauth_grants__user
 ON oauth_grants (user_id, id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS oauth_authorization_server_events (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
-  event_type TEXT NOT NULL CHECK (event_type IN (
+  event_type oauth_authorization_server_event_types NOT NULL CHECK (event_type IN (
     'consent_approved',
     'consent_denied',
     'access_token_revoked',
@@ -161,7 +166,7 @@ CREATE TABLE IF NOT EXISTS oauth_authorization_server_events (
   client_id UUID NOT NULL,
   grant_id UUID,
   resource TEXT NOT NULL CHECK (char_length(resource) BETWEEN 1 AND 2048),
-  scopes TEXT[] NOT NULL CHECK (cardinality(scopes) > 0),
+  scopes api_scopes[] NOT NULL CHECK (cardinality(scopes) > 0),
   occurred_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CHECK (num_nonnulls(authorization_request_id, access_token_id, refresh_token_family_id) = 1),
   CHECK (
@@ -200,13 +205,14 @@ CREATE OR REPLACE TRIGGER trigger_oauth_authorization_server_events_append_only
 BEFORE UPDATE OR DELETE ON oauth_authorization_server_events
 FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS oauth_authorization_codes (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   code_hash TEXT NOT NULL UNIQUE CHECK (char_length(code_hash) = 64),
   grant_id UUID NOT NULL REFERENCES oauth_grants ON DELETE CASCADE,
   redirect_uri TEXT NOT NULL CHECK (char_length(redirect_uri) BETWEEN 1 AND 2048),
   resource TEXT NOT NULL CHECK (char_length(resource) BETWEEN 1 AND 2048),
-  scopes TEXT[] NOT NULL CHECK (cardinality(scopes) > 0),
+  scopes api_scopes[] NOT NULL CHECK (cardinality(scopes) > 0),
   code_challenge TEXT NOT NULL CHECK (code_challenge ~ '^[A-Za-z0-9_-]{43}$'),
   expires_at TIMESTAMPTZ NOT NULL,
   consumed_at TIMESTAMPTZ,
@@ -225,11 +231,12 @@ ON oauth_authorization_codes (grant_id, id);
 CREATE INDEX IF NOT EXISTS idx_oauth_authorization_codes__expiry
 ON oauth_authorization_codes (expires_at, id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS oauth_refresh_token_families (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   grant_id UUID NOT NULL REFERENCES oauth_grants ON DELETE CASCADE,
   resource TEXT NOT NULL CHECK (char_length(resource) BETWEEN 1 AND 2048),
-  scopes TEXT[] NOT NULL CHECK (cardinality(scopes) > 0),
+  scopes api_scopes[] NOT NULL CHECK (cardinality(scopes) > 0),
   expires_at TIMESTAMPTZ NOT NULL,
   revoked_at TIMESTAMPTZ,
   reuse_detected_at TIMESTAMPTZ,
@@ -250,11 +257,12 @@ ON oauth_refresh_token_families (grant_id, id);
 CREATE INDEX IF NOT EXISTS idx_oauth_refresh_token_families__expiry
 ON oauth_refresh_token_families (expires_at, id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS oauth_refresh_tokens (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   family_id UUID NOT NULL REFERENCES oauth_refresh_token_families ON DELETE CASCADE,
   token_hash TEXT NOT NULL UNIQUE CHECK (char_length(token_hash) = 64),
-  scopes TEXT[] NOT NULL CHECK (cardinality(scopes) > 0),
+  scopes api_scopes[] NOT NULL CHECK (cardinality(scopes) > 0),
   generation INTEGER NOT NULL CHECK (generation >= 0),
   expires_at TIMESTAMPTZ NOT NULL,
   consumed_at TIMESTAMPTZ,
@@ -282,13 +290,14 @@ CREATE INDEX IF NOT EXISTS idx_oauth_refresh_tokens__expiry
 ON oauth_refresh_tokens (expires_at, id)
 WHERE consumed_at IS NULL AND revoked_at IS NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS oauth_access_tokens (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   grant_id UUID NOT NULL REFERENCES oauth_grants ON DELETE CASCADE,
   refresh_family_id UUID NOT NULL,
   token_hash TEXT NOT NULL UNIQUE CHECK (char_length(token_hash) = 64),
   resource TEXT NOT NULL CHECK (char_length(resource) BETWEEN 1 AND 2048),
-  scopes TEXT[] NOT NULL CHECK (cardinality(scopes) > 0),
+  scopes api_scopes[] NOT NULL CHECK (cardinality(scopes) > 0),
   expires_at TIMESTAMPTZ NOT NULL,
   revoked_at TIMESTAMPTZ,
   last_used_at TIMESTAMPTZ,

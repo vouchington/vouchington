@@ -33783,6 +33783,7 @@
                                       "type": "string"
                                     },
                                     "recommendation": {
+                                      "enum": ["confirm", "modify", "reverse", "uncertain"],
                                       "type": "string"
                                     }
                                   },
@@ -34001,6 +34002,21 @@
                               "type": "number"
                             },
                             "delivery_kind": {
+                              "enum": [
+                                "claimant_decision_notice",
+                                "claimant_receipt",
+                                "counter_notice_forwarding",
+                                "email_intake_needs_information",
+                                "email_intake_received",
+                                "email_intake_rejected",
+                                "owner_information_notice",
+                                "poster_restoration_notice",
+                                "poster_restriction_notice",
+                                "poster_review_notice",
+                                "redress_decision_notice",
+                                "staff_information_request",
+                                "status_update"
+                              ],
                               "type": "string"
                             },
                             "id": {
@@ -34222,10 +34238,13 @@
                                       "recommendation": {
                                         "anyOf": [
                                           {
-                                            "type": "null"
+                                            "const": "invalid_or_spam"
                                           },
                                           {
-                                            "type": "string"
+                                            "const": "not_obviously_invalid"
+                                          },
+                                          {
+                                            "type": "null"
                                           }
                                         ]
                                       },
@@ -34248,6 +34267,7 @@
                                 ]
                               },
                               "source_kind": {
+                                "enum": ["email", "guest_form", "signed_in_form", "staff"],
                                 "type": "string"
                               }
                             },
@@ -34911,6 +34931,12 @@
                                           ]
                                         },
                                         "result": {
+                                          "enum": [
+                                            "decided_for_platform",
+                                            "decided_for_recipient",
+                                            "no_decision",
+                                            "withdrawn"
+                                          ],
                                           "type": "string"
                                         }
                                       },

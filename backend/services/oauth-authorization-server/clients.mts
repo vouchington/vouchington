@@ -1,3 +1,4 @@
+import { OAUTH_CLIENT_COLUMNS } from './client-columns.mts'
 import { randomBytes, timingSafeEqual } from 'node:crypto'
 import { write, type QueryExecutor, type TransactionQuery } from '@data-stores/psql'
 import { hasEveryScope } from '@modules/scopes'
@@ -73,8 +74,8 @@ export async function insertOAuthClient(
        response_types,
        scopes,
        client_secret_hash
-     ) VALUES ($1, $2, $3, $4, $5, $6::text[], $7::text[], $8::text[], $9::text[], $10)
-     RETURNING *`,
+     ) VALUES ($1, $2, $3, $4, $5, $6::text[], $7::oauth_grant_types[], $8::oauth_response_types[], $9::api_scopes[], $10)
+     RETURNING ${OAUTH_CLIENT_COLUMNS}`,
     [
       clientId,
       ownerUserId,
@@ -98,7 +99,7 @@ export async function getOAuthClient(
   query: QueryExecutor = write,
 ): Promise<OAuthClient | null> {
   const result = await query<OAuthClient>(
-    `/* getOAuthClient */ SELECT *
+    `/* getOAuthClient */ SELECT ${OAUTH_CLIENT_COLUMNS}
      FROM oauth_clients
      WHERE client_id = $1
        AND revoked_at IS NULL
@@ -140,7 +141,7 @@ export async function authenticateLockedOAuthClient(
   activeParticipantIds: ReadonlySet<string>,
 ): Promise<OAuthClient> {
   const result = await query<OAuthClient>(
-    `/* authenticateLockedOAuthClient */ SELECT *
+    `/* authenticateLockedOAuthClient */ SELECT ${OAUTH_CLIENT_COLUMNS}
      FROM oauth_clients
      WHERE client_id = $1
        AND revoked_at IS NULL

@@ -98,7 +98,7 @@
     },
     "GET:/api/v1/admin/oauth-clients": {
       "fixtureIds": ["web.admin.oauth-clients.list"],
-      "hash": "0d1e1a4f590f9149c07afea1b38e61f1a79b718f5500d7410722655d11d1fb82"
+      "hash": "1a2acf4cb51c2697a3f4b702a82522d4b44bbb3f141023cdf8fa7000c63c1504"
     },
     "GET:/api/v1/admin/users/:userId/landing-pages": {
       "fixtureIds": ["native.admin-user-landing-pages.default"],
@@ -256,7 +256,7 @@
     },
     "GET:/api/v1/communities/:idOrSlug/moderation-transparency": {
       "fixtureIds": ["native.community.moderation-transparency.default"],
-      "hash": "8888e2d3e3c82038d9b1845d906a9fc924d555058e57fe870eb3b612c09ad598"
+      "hash": "c67cab443e32aa31109f09b8d7fae46349bdf96cd22811e3f98d9c5605461536"
     },
     "GET:/api/v1/communities/:idOrSlug/reports/pending": {
       "fixtureIds": ["native.community.pending-reports.paginated"],
@@ -295,11 +295,11 @@
     },
     "GET:/api/v1/copyright-notices/:id/eu-dispute-settlements": {
       "fixtureIds": ["web.copyright.eu.dispute-settlements.participant"],
-      "hash": "c2ac090988053c5a8b7b8b6e1a99ffe1427bb1e5caf9d854cf8f1eddc223687a"
+      "hash": "5c7e8ff40e229ad90a4f47ffaa0db6559c18e62bbe661e0d2f24dc13f43014b4"
     },
     "GET:/api/v1/copyright-notices/:id/eu-dispute-settlements/staff": {
       "fixtureIds": ["web.copyright.eu.dispute-settlements.staff"],
-      "hash": "d19cb3686c47524cf4b0b24e93287d15e522f068e465f2bb2d5c59e02fdf0e12"
+      "hash": "0702a464280fc5ad2a2843e905e076d3126ef93eb8cd76db192e027923ddabde"
     },
     "GET:/api/v1/copyright-notices/:id/guest-capabilities": {
       "fixtureIds": ["web.copyright.guest-capabilities.listed"],
@@ -311,7 +311,7 @@
         "web.copyright.notice.participant.null-claimant",
         "web.copyright.notice.participant.populated"
       ],
-      "hash": "c83cec42a6c90e55f69895315ce0896e459bbbd8d0ed8eacd0bf68a19ab69cf0"
+      "hash": "d4f384126d38b42bb29d7bd8e76e44f972d4ff3b58ab6cd8a6f01bd17c362cad"
     },
     "GET:/api/v1/copyright-notices/:id/targets/:targetId/image-similarity-candidates": {
       "fixtureIds": ["native.moderation.copyright.image-similarity-candidates.default"],
@@ -323,7 +323,7 @@
     },
     "GET:/api/v1/copyright-notices/review-queue": {
       "fixtureIds": ["web.copyright.staff-queue.default", "web.copyright.staff-queue.territorial"],
-      "hash": "5da2f53411f901ca961ba94bcd9b32e1edeaaa1373a2f498b4dfc130d7e764df"
+      "hash": "da70afd291c5e0f0c3bca38904b69c21ac179de00b35bc67fa91916adeb170b7"
     },
     "GET:/api/v1/copyright-trusted-flaggers": {
       "fixtureIds": ["copyright.trusted-flaggers.list"],
@@ -473,7 +473,7 @@
     },
     "GET:/api/v1/moderation-transparency": {
       "fixtureIds": ["native.moderation.transparency.default"],
-      "hash": "8888e2d3e3c82038d9b1845d906a9fc924d555058e57fe870eb3b612c09ad598"
+      "hash": "c67cab443e32aa31109f09b8d7fae46349bdf96cd22811e3f98d9c5605461536"
     },
     "GET:/api/v1/moderation/exposure": {
       "fixtureIds": ["native.moderation.exposure.default"],
@@ -595,7 +595,7 @@
     },
     "GET:/api/v1/my/oauth-apps": {
       "fixtureIds": ["web.my.oauth-apps.paginated"],
-      "hash": "a82697d0c3e3f47822fc8d9c601e29bfee0ed1e0ce9563cfd50908948f5fe2ca"
+      "hash": "0bd5f053218db3e9bcab43a005a4df38fbbe75c4983aac16ad330f337193ebc6"
     },
     "GET:/api/v1/my/oauth-grants": {
       "fixtureIds": ["native.my.oauth-grants.paginated"],
@@ -967,7 +967,7 @@
     },
     "PATCH:/api/v1/my/oauth-apps/:id": {
       "fixtureIds": ["web.my.oauth-apps.update"],
-      "hash": "50e0253c2d7257db75f95da8c4a8dfe1203eddba85e7c706401beba8319d4c8b"
+      "hash": "3c84d6380f93c4558c3e39163979ed9bd0a7330b97973fc5e46d7559f23eef1d"
     },
     "PATCH:/api/v1/my/rewards-program-point-valuations/:id": {
       "fixtureIds": [
@@ -1073,7 +1073,7 @@
     },
     "POST:/api/v1/communities/:communitySlug/automod/recent-actions/:sourceKey/feedback": {
       "fixtureIds": ["web.communities.automod-feedback.create.default"],
-      "hash": "83814d6370be07703b22ed3ad8138cce0fb53e3a05bd5488b81e6c7ca890d31b"
+      "hash": "303d9e3e68e6df4535536400c0c114a2946e80380e57b1b89aacc715a67be306"
     },
     "POST:/api/v1/communities/:communitySlug/automod/simulate": {
       "fixtureIds": ["web.communities.automod-simulate.default"],
@@ -1270,11 +1270,11 @@
     },
     "POST:/api/v1/my/oauth-apps": {
       "fixtureIds": ["web.my.oauth-apps.create"],
-      "hash": "7e93cf62abb2dc89fed276c98d4366a2d29865062e18ee74326733695e78fd27"
+      "hash": "9b01e48d3feaa35ae0c912b5a7a8547d6bf6a5033ace6b43e06782386eb02231"
     },
     "POST:/api/v1/my/oauth-apps/:id/client-secrets": {
       "fixtureIds": ["web.my.oauth-apps.rotate-secret"],
-      "hash": "7e93cf62abb2dc89fed276c98d4366a2d29865062e18ee74326733695e78fd27"
+      "hash": "9b01e48d3feaa35ae0c912b5a7a8547d6bf6a5033ace6b43e06782386eb02231"
     },
     "POST:/api/v1/my/rewards-program-point-valuations": {
       "fixtureIds": ["native.point-valuations.create.default"],
@@ -1358,7 +1358,7 @@
     },
     "PUT:/api/v1/admin/oauth-clients/:id/verification": {
       "fixtureIds": ["web.admin.oauth-clients.verify"],
-      "hash": "4b65e296e5e87306946d95d22be5a3863f64b9d6dcda79676bd0a3aaff744b50"
+      "hash": "32c1489270bb528f61f4bdb436d30b05e4bd1be44c0802252a4c774af527e6dd"
     },
     "PUT:/api/v1/communities/:communitySlug/ai-agents/:agentSlug": {
       "fixtureIds": ["web.communities.ai-agent.default"],

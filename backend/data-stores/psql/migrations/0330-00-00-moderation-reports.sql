@@ -1,16 +1,17 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- edited-in-place: pre-launch, never deployed to production
 DO $$ BEGIN
-  CREATE TYPE moderation_report_entity_type AS ENUM ('rss_feed_item', 'post', 'comment', 'user', 'url_hostname');
+  CREATE TYPE moderation_report_entity_types AS ENUM ('rss_feed_item', 'post', 'comment', 'user', 'url_hostname');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE TYPE moderation_report_reason AS ENUM ('spam', 'harassment', 'misinformation', 'illegal_content', 'other', 'vote_manipulation');
+  CREATE TYPE moderation_report_reasons AS ENUM ('spam', 'harassment', 'misinformation', 'illegal_content', 'other', 'vote_manipulation');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE TYPE moderation_report_resolution_action AS ENUM ('reviewed', 'actioned', 'dismissed');
+  CREATE TYPE moderation_report_resolution_actions AS ENUM ('reviewed', 'actioned', 'dismissed');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
@@ -30,11 +31,11 @@ CREATE TABLE IF NOT EXISTS moderation_reports (
   rss_feed_item_id uuid REFERENCES rss_feed_items(id) ON DELETE CASCADE,
   -- guardrails-disable-next-line uuid-must-be-key
   case_id          uuid NOT NULL REFERENCES moderation_cases (id) ON DELETE CASCADE,
-  reason           moderation_report_reason NOT NULL,
-  original_reason  moderation_report_reason NOT NULL,
+  reason           moderation_report_reasons NOT NULL,
+  original_reason  moderation_report_reasons NOT NULL,
   moderation_transparency_community_id uuid,
   note             text CHECK (note IS NULL OR char_length(note) <= 1000),
-  resolution_action moderation_report_resolution_action,
+  resolution_action moderation_report_resolution_actions,
   resolved_by_id   uuid REFERENCES users(id) ON DELETE SET NULL,
   -- Escalation: a moderator can escalate a pending report for senior-mod review.
   escalated_at     timestamptz,

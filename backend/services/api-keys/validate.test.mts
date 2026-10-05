@@ -78,8 +78,16 @@ describe('validate', () => {
       expect(result.valid).toBe(false)
     })
 
+    it('rejects an unknown scope at the database boundary', async () => {
+      const user = await createTestUser()
+      const { apiKey } = await createApiKey(user.id, 'rss', 'Unknown stored scope', ['rss:read'])
+      await expect(setTestApiKeyPermissions(apiKey.id, ['unknown:read'])).rejects.toMatchObject({
+        code: '22P02',
+      })
+    })
+
     it.each([
-      ['unknown', ['rss:read', 'unknown:read']],
+      ['wrong surface', ['rss:read', 'mcp.admin:read']],
       ['duplicate', ['rss:read', 'rss:read']],
     ])('fails closed on a %s persisted scope set', async (_name, permissions) => {
       const user = await createTestUser()

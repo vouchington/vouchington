@@ -47,7 +47,7 @@ export async function validateOAuthAccessToken(
        )
        AND access.resource = $2
      RETURNING client.id AS oauth_client_id, client.client_id, client.owner_user_id,
-       oauth_grant.id AS grant_id, oauth_grant.user_id, access.resource, access.scopes, access.expires_at`,
+       oauth_grant.id AS grant_id, oauth_grant.user_id, access.resource, access.scopes::text[] AS scopes, access.expires_at`,
     [tokenHash, getOAuthResourceUrl(audience)],
   )
   const principal = result.rows[0]

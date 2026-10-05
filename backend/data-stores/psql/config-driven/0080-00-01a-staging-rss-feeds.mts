@@ -121,10 +121,10 @@ SELECT ${lit(ids.hostname)}, ${lit(feed.hostname)}, TRUE
 WHERE NOT EXISTS (SELECT 1 FROM url_hostnames WHERE hostname = ${lit(feed.hostname)})
 ON CONFLICT DO NOTHING;`,
     `
-INSERT INTO urls (id, url, hostname_id, pathname, search_params, url_content_type_id)
+INSERT INTO urls (id, url, hostname_id, pathname, search_params, media_type_id)
 SELECT ${lit(ids.url)}, ${lit(feed.url)}, h.id, ${lit(feed.pathname)}, '{}'::jsonb, ct.id
 FROM url_hostnames h
-JOIN url_content_types ct ON ct.mime_type = ${lit(RSS_MIME_TYPE)}
+JOIN media_types ct ON ct.mime_type = ${lit(RSS_MIME_TYPE)}
 WHERE h.hostname = ${lit(feed.hostname)}
   AND NOT EXISTS (SELECT 1 FROM urls WHERE url = ${lit(feed.url)})
 ON CONFLICT DO NOTHING;`,
@@ -180,9 +180,9 @@ export default function generateStagingRssFeedsSQL(
   return [
     '-- Staging only: seed a few RSS feeds the way createRssFeedSource writes them',
     `
-INSERT INTO url_content_types (mime_type)
+INSERT INTO media_types (mime_type)
 SELECT ${lit(RSS_MIME_TYPE)}
-WHERE NOT EXISTS (SELECT 1 FROM url_content_types WHERE mime_type = ${lit(RSS_MIME_TYPE)})
+WHERE NOT EXISTS (SELECT 1 FROM media_types WHERE mime_type = ${lit(RSS_MIME_TYPE)})
 ON CONFLICT DO NOTHING;`,
     ...STAGING_RSS_FEEDS.flatMap(feedStatements),
   ].join('\n')

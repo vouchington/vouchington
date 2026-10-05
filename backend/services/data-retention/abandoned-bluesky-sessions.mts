@@ -115,7 +115,7 @@ async function findExpiredAuthorizations(
   const statement = sql`/* findExpiredBlueskyAuthorizations */
     SELECT id, user_id, claimed_did
     FROM bluesky_link_authorizations link_auth
-    WHERE link_auth.status = ANY(${statuses}::text[])
+    WHERE link_auth.status = ANY(${statuses}::bluesky_link_authorization_statuses[])
       AND (`
   statement.append(
     buildBlueskyAuthorizationExpiryPredicate('link_auth', cutoffDate, lowerBoundDate),
@@ -166,7 +166,7 @@ async function expireExactAuthorizations(
     UPDATE bluesky_link_authorizations
     SET status = 'expired', handle = NULL
     WHERE id = ANY(${authorizationIds}::uuid[])
-      AND status = ANY(${statuses}::text[])
+      AND status = ANY(${statuses}::bluesky_link_authorization_statuses[])
       AND (`
   updateStatement.append(
     buildBlueskyAuthorizationExpiryPredicate(

@@ -9,7 +9,6 @@ import {
 } from './import-rss-feeds.mts'
 import { createRssFeedImport, getRssFeedImportRowWithBatch } from './rss-feed-import-records.mts'
 import {
-  recordRssFeedImportCanonicalUrl,
   updateRssFeedImportRowCompleted,
   updateRssFeedImportRowFailed,
 } from './rss-feed-import-row-updates.mts'
@@ -73,8 +72,6 @@ export async function processRssFeedImportRow(
     await updateRssFeedImportRowFailed(row.id, validation.error, { isFinalAttempt: true })
     return
   }
-
-  await recordRssFeedImportCanonicalUrl(row.id, validation.canonicalUrl)
 
   try {
     // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects

@@ -70,7 +70,7 @@ export async function resolveModerationReport(
               WHEN u.reported_user_id IS NOT NULL THEN 'user'
               WHEN u.hostname_id IS NOT NULL THEN 'url_hostname'
               WHEN u.rss_feed_item_id IS NOT NULL THEN 'rss_feed_item'
-            END::moderation_report_entity_type AS entity_type,
+            END::moderation_report_entity_types AS entity_type,
             COALESCE(u.post_id, u.reported_user_id, u.hostname_id, u.rss_feed_item_id) AS entity_id
           FROM updated u
           LEFT JOIN posts p ON u.post_id IS NOT NULL AND p.id = u.post_id

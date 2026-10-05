@@ -171,7 +171,7 @@ describe('classifier run schema', () => {
 
     await expect(
       fixture.update({ terminal_failure_kind: 'unknown', terminal_failed_at: new Date() }),
-    ).rejects.toMatchObject({ code: '23514' })
+    ).rejects.toMatchObject({ code: '22P02' })
     await expect(fixture.update({ terminal_failure_kind: 'provider-error' })).rejects.toMatchObject(
       { code: '23514' },
     )

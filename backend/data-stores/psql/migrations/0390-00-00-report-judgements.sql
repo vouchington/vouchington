@@ -1,7 +1,8 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- edited-in-place: pre-launch, never deployed to production
 DO $$
 BEGIN
-  CREATE TYPE moderation_judgement_action AS ENUM ('no_action', 'warn', 'remove', 'escalate');
+  CREATE TYPE moderation_judgement_actions AS ENUM ('no_action', 'warn', 'remove', 'escalate');
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END
@@ -21,7 +22,7 @@ CREATE TABLE IF NOT EXISTS moderation_report_judgements (
   triggering_report_id uuid REFERENCES moderation_reports (id) ON DELETE SET NULL,
   -- guardrails-disable-next-line uuid-must-be-key
   rerun_by_id uuid REFERENCES users (id) ON DELETE SET NULL,
-  recommended_action moderation_judgement_action NOT NULL,
+  recommended_action moderation_judgement_actions NOT NULL,
   public_response text NOT NULL,
   internal_response text NOT NULL,
   model text NOT NULL,

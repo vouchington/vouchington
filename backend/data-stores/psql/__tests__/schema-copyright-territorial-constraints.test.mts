@@ -77,9 +77,14 @@ describe('copyright territorial table constraints', () => {
     },
   )
 
+  it('rejects an invalid outcome through the enum domain', async () => {
+    await expect(probeTerritorialDecisionAssessment('invalid_outcome')).rejects.toMatchObject({
+      code: '22P02',
+    })
+  })
+
   it.each([
     ['no_action_with_assessment', 'chk_copyright_territorial_decisions__assessment'],
-    ['invalid_outcome', 'chk_copyright_territorial_decisions__outcome'],
     ['empty_explanation', 'chk_copyright_territorial_decisions__public_explanation'],
     ['oversized_explanation', 'chk_copyright_territorial_decisions__public_explanation'],
   ] as const)('rejects %s at the decision table', async (scenario, constraint) => {

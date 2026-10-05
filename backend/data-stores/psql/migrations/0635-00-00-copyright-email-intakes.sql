@@ -3,19 +3,20 @@
 -- intentionally separate from a legal case because email cannot safely identify a target until a
 -- moderator verifies the agent's extraction.
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_email_intakes (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   ses_message_id text NOT NULL UNIQUE CHECK (char_length(ses_message_id) BETWEEN 1 AND 512),
   received_at timestamptz NOT NULL,
   raw_storage_key text NOT NULL CHECK (char_length(raw_storage_key) BETWEEN 1 AND 1024),
   raw_sha256 bytea NOT NULL CHECK (octet_length(raw_sha256) = 32),
-  raw_mime_type text NOT NULL CHECK (char_length(raw_mime_type) BETWEEN 1 AND 255),
+  raw_media_type_id bigint NOT NULL REFERENCES media_types(id) ON DELETE RESTRICT,
   raw_byte_size integer NOT NULL CHECK (raw_byte_size >= 0),
-  spf_verdict text NOT NULL CHECK (spf_verdict IN ('pass', 'fail', 'gray', 'processing_failed', 'unknown')),
-  dkim_verdict text NOT NULL CHECK (dkim_verdict IN ('pass', 'fail', 'gray', 'processing_failed', 'unknown')),
-  dmarc_verdict text NOT NULL CHECK (dmarc_verdict IN ('pass', 'fail', 'gray', 'processing_failed', 'unknown')),
-  spam_verdict text NOT NULL CHECK (spam_verdict IN ('pass', 'fail', 'gray', 'processing_failed', 'unknown')),
-  virus_verdict text NOT NULL CHECK (virus_verdict IN ('pass', 'fail', 'gray', 'processing_failed', 'unknown')),
+  spf_verdict email_security_verdicts NOT NULL CHECK (spf_verdict IN ('pass', 'fail', 'gray', 'processing_failed', 'unknown')),
+  dkim_verdict email_security_verdicts NOT NULL CHECK (dkim_verdict IN ('pass', 'fail', 'gray', 'processing_failed', 'unknown')),
+  dmarc_verdict email_security_verdicts NOT NULL CHECK (dmarc_verdict IN ('pass', 'fail', 'gray', 'processing_failed', 'unknown')),
+  spam_verdict email_security_verdicts NOT NULL CHECK (spam_verdict IN ('pass', 'fail', 'gray', 'processing_failed', 'unknown')),
+  virus_verdict email_security_verdicts NOT NULL CHECK (virus_verdict IN ('pass', 'fail', 'gray', 'processing_failed', 'unknown')),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -27,10 +28,11 @@ ALTER TABLE copyright_notice_lifecycle_changes
 ALTER TABLE copyright_notice_lifecycle_changes
   VALIDATE CONSTRAINT copyright_lifecycle_event_email_intake_fk;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_email_intake_parses (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_email_intake_id uuid NOT NULL UNIQUE REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT,
-  status text NOT NULL CHECK (status IN ('succeeded', 'failed')),
+  status copyright_notice_email_intake_parse_statuses NOT NULL CHECK (status IN ('succeeded', 'failed')),
   sender_email_ciphertext text CHECK (char_length(sender_email_ciphertext) BETWEEN 1 AND 1048576),
   sender_name_ciphertext text,
   subject_ciphertext text CHECK (char_length(subject_ciphertext) BETWEEN 1 AND 4194304),
@@ -47,13 +49,14 @@ CREATE TABLE copyright_notice_email_intake_parses (
   )
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_email_intake_attachments (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_email_intake_id uuid NOT NULL REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT,
   ordinal integer NOT NULL CHECK (ordinal >= 0),
   filename_ciphertext text CHECK (char_length(filename_ciphertext) BETWEEN 1 AND 16384),
   content_id_ciphertext text CHECK (char_length(content_id_ciphertext) BETWEEN 1 AND 16384),
-  mime_type text NOT NULL CHECK (char_length(mime_type) BETWEEN 1 AND 255),
+  media_type_id bigint NOT NULL REFERENCES media_types(id) ON DELETE RESTRICT,
   byte_size integer NOT NULL CHECK (byte_size >= 0),
   sha256 bytea NOT NULL CHECK (octet_length(sha256) = 32),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -74,13 +77,14 @@ CREATE TABLE copyright_notice_email_intake_recommendations (
   UNIQUE (copyright_notice_email_intake_id, id)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_email_intake_reviews (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_email_intake_id uuid NOT NULL REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT,
   copyright_notice_email_intake_recommendation_id uuid,
   reviewed_at timestamptz NOT NULL,
   reviewed_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
-  decision text NOT NULL CHECK (decision IN ('approved', 'rejected', 'legal_process')),
+  decision copyright_notice_email_intake_review_decisions NOT NULL CHECK (decision IN ('approved', 'rejected', 'legal_process')),
   rationale_ciphertext text NOT NULL CHECK (char_length(rationale_ciphertext) BETWEEN 1 AND 1048576),
   promoted_copyright_notice_id uuid UNIQUE REFERENCES copyright_notices(id) ON DELETE RESTRICT,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -113,7 +117,7 @@ COMMENT ON TABLE copyright_notice_email_intake_reviews IS 'Append-only staff dec
 COMMENT ON COLUMN copyright_notice_email_intakes.ses_message_id IS 'Stable SES delivery identifier used for replay-safe admission.';
 COMMENT ON COLUMN copyright_notice_email_intakes.received_at IS 'Timestamp assigned by the inbound email delivery.';
 COMMENT ON COLUMN copyright_notice_email_intakes.raw_sha256 IS 'SHA-256 digest of the preserved original RFC 5322 message.';
-COMMENT ON COLUMN copyright_notice_email_intakes.raw_mime_type IS 'Media type of the preserved original message.';
+COMMENT ON COLUMN copyright_notice_email_intakes.raw_media_type_id IS 'Media type of the preserved original message.';
 COMMENT ON COLUMN copyright_notice_email_intakes.raw_byte_size IS 'Byte size of the preserved original message.';
 COMMENT ON COLUMN copyright_notice_email_intakes.spf_verdict IS 'SES SPF verdict from the amazonses.com Authentication-Results header SES added at receipt; unknown when SES reported none. Advisory risk signal only.';
 COMMENT ON COLUMN copyright_notice_email_intakes.dkim_verdict IS 'SES DKIM verdict from the amazonses.com Authentication-Results header; pass means a DKIM signature validated, not that the signing domain aligns with the From domain. unknown when SES reported none. Advisory risk signal only.';
@@ -134,7 +138,7 @@ COMMENT ON COLUMN copyright_notice_email_intake_attachments.copyright_notice_ema
 COMMENT ON COLUMN copyright_notice_email_intake_attachments.ordinal IS 'Zero-based MIME attachment order; duplicate attachment bytes remain distinct evidence.';
 COMMENT ON COLUMN copyright_notice_email_intake_attachments.filename_ciphertext IS 'Encrypted attachment filename metadata.';
 COMMENT ON COLUMN copyright_notice_email_intake_attachments.content_id_ciphertext IS 'Encrypted MIME content identifier metadata.';
-COMMENT ON COLUMN copyright_notice_email_intake_attachments.mime_type IS 'Declared attachment media type.';
+COMMENT ON COLUMN copyright_notice_email_intake_attachments.media_type_id IS 'Declared attachment media type.';
 COMMENT ON COLUMN copyright_notice_email_intake_attachments.byte_size IS 'Decoded attachment byte size.';
 COMMENT ON COLUMN copyright_notice_email_intake_attachments.sha256 IS 'SHA-256 digest computed while streaming the attachment.';
 COMMENT ON COLUMN copyright_notice_email_intake_recommendations.copyright_notice_email_intake_id IS 'Email intake evaluated by this advisory recommendation.';
@@ -153,3 +157,7 @@ COMMENT ON COLUMN copyright_notice_email_intake_reviews.promoted_copyright_notic
 -- Current indexes for fresh schema bootstrap.
 CREATE INDEX IF NOT EXISTS idx_copyright_notice_email_intakes__received_id
   ON copyright_notice_email_intakes (received_at, id);
+
+CREATE INDEX idx_copyright_notice_email_intakes__raw_media_type_id ON copyright_notice_email_intakes (raw_media_type_id);
+
+CREATE INDEX idx_copyright_notice_email_intake_attachments__media_type_id ON copyright_notice_email_intake_attachments (media_type_id);

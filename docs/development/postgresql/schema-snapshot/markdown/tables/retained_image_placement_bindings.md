@@ -6,11 +6,11 @@ Immutable image, placement and post/surface family identity retained with live o
 
 RANGE partitioned on `placement_id` (children: default, no retention owner, access class: target-scoped, growth: unbounded).
 
-| Column           | Type   | Nullable | Default | Identity | Generated | Collation | Comment                                                            |
-| ---------------- | ------ | -------- | ------- | -------- | --------- | --------- | ------------------------------------------------------------------ |
-| `placement_id`   | `uuid` | no       |         |          |           |           | UUIDv7 placement identity created with its live owner transaction. |
-| `image_id`       | `uuid` | no       |         |          |           |           | Exact immutable image identity for this placement.                 |
-| `binding_family` | `text` | no       |         |          |           |           | Post or surface live-child family fixed at first insertion.        |
+| Column           | Type                     | Nullable | Default | Identity | Generated | Collation | Comment                                                            |
+| ---------------- | ------------------------ | -------- | ------- | -------- | --------- | --------- | ------------------------------------------------------------------ |
+| `placement_id`   | `uuid`                   | no       |         |          |           |           | UUIDv7 placement identity created with its live owner transaction. |
+| `image_id`       | `uuid`                   | no       |         |          |           |           | Exact immutable image identity for this placement.                 |
+| `binding_family` | `image_binding_families` | no       |         |          |           |           | Post or surface live-child family fixed at first insertion.        |
 
 **Primary key:** `PRIMARY KEY (placement_id)`
 
@@ -21,7 +21,7 @@ RANGE partitioned on `placement_id` (children: default, no retention owner, acce
 
 **Check constraints:**
 
-- `retained_image_placement_bindings_binding_family_check`: `CHECK ((binding_family = ANY (ARRAY['post'::text, 'surface'::text])))`
+- `retained_image_placement_bindings_binding_family_check`: `CHECK ((binding_family = ANY (ARRAY['post'::image_binding_families, 'surface'::image_binding_families])))`
 
 **Foreign keys:**
 

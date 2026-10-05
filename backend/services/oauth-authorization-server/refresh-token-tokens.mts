@@ -81,7 +81,7 @@ async function lockRefreshToken(
        family.grant_id,
        oauth_grant.client_id AS client_internal_id,
        family.resource,
-       refresh.scopes,
+       refresh.scopes::text[] AS scopes,
        refresh.generation,
        refresh.expires_at AS token_expires_at,
        family.expires_at AS family_expires_at,

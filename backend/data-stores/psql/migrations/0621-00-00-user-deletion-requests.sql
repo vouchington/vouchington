@@ -18,6 +18,7 @@ $$;
 COMMENT ON FUNCTION fn_lock_active_user_for_mutation(UUID) IS
   'Serializes user-owned writes with account deletion and rejects writes after the privacy fence.';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_deletion_requests (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID NOT NULL REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
@@ -28,7 +29,7 @@ CREATE TABLE IF NOT EXISTS user_deletion_requests (
   dispatched_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   processing_started_at TIMESTAMPTZ,
   processing_attempts INT NOT NULL DEFAULT 0 CHECK (processing_attempts >= 0),
-  current_phase TEXT NOT NULL DEFAULT 'posts',
+  current_phase user_deletion_request_current_phases NOT NULL DEFAULT 'posts',
   completed_at TIMESTAMPTZ,
   last_error_message TEXT,
   CHECK (current_phase IN (
@@ -67,10 +68,11 @@ CREATE INDEX IF NOT EXISTS idx_user_deletion_requests__recover_started
 ON user_deletion_requests (processing_started_at, id)
 WHERE completed_at IS NULL AND processing_started_at IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_deletion_external_works (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   request_id UUID NOT NULL REFERENCES user_deletion_requests ON DELETE CASCADE,
-  work_kind TEXT NOT NULL,
+  work_kind user_deletion_external_work_kinds NOT NULL,
   work_key TEXT,
   relation_impact_id UUID,
   requested_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,

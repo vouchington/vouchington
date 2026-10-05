@@ -13,7 +13,7 @@ Not partitioned — growth: bounded.
 | `grant_id`       | `uuid`                     | no       |                              |          |           |           | Delegated grant represented by the code.               |
 | `redirect_uri`   | `text`                     | no       |                              |          |           |           | Callback URI bound to the code exchange.               |
 | `resource`       | `text`                     | no       |                              |          |           |           | Protected resource audience bound to the code.         |
-| `scopes`         | `text[]`                   | no       |                              |          |           |           | Canonical scope set bound to the code.                 |
+| `scopes`         | `api_scopes[]`             | no       |                              |          |           |           | Canonical scope set bound to the code.                 |
 | `code_challenge` | `text`                     | no       |                              |          |           |           | Base64url SHA-256 PKCE challenge bound to the code.    |
 | `expires_at`     | `timestamp with time zone` | no       |                              |          |           |           | Time after which the code cannot be exchanged.         |
 | `consumed_at`    | `timestamp with time zone` | yes      |                              |          |           |           | Time at which the code was exchanged successfully.     |

@@ -12,13 +12,16 @@ export function nativeSourceRange(
   columns: readonly string[],
   cursor: readonly string[] | null,
   textColumn = -1,
+  initialTextValue = '',
 ): SQLStatement {
   const statement = sql``.append(
     `${scopeColumn} = native_bounds.publication_scope_id AND (${scopeColumn}, ${columns.join(', ')}) `,
   )
   statement.append(cursor === null ? '>=' : '>').append(' (native_bounds.publication_scope_id')
   for (const [index] of columns.entries()) {
-    statement.append(sql`, ${cursor?.[index] ?? (index === textColumn ? '' : NIL_UUID)}`)
+    statement.append(
+      sql`, ${cursor?.[index] ?? (index === textColumn ? initialTextValue : NIL_UUID)}`,
+    )
     if (index !== textColumn) statement.append('::uuid')
   }
   return statement.append(')')

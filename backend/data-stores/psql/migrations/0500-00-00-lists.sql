@@ -1,9 +1,10 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Lists: user-curated collections of RSS feed items and posts.
 -- edited-in-place: pre-launch, never deployed to production
 
 DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'list_visibility') THEN
-    CREATE TYPE list_visibility AS ENUM ('private', 'unlisted', 'public');
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'list_visibilities') THEN
+    CREATE TYPE list_visibilities AS ENUM ('private', 'unlisted', 'public');
   END IF;
 END $$;
 
@@ -21,7 +22,7 @@ CREATE TABLE IF NOT EXISTS lists (
   owner_user_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
   name TEXT NOT NULL CHECK (char_length(name) BETWEEN 1 AND 255),
   description TEXT,
-  visibility list_visibility NOT NULL DEFAULT 'private',
+  visibility list_visibilities NOT NULL DEFAULT 'private',
   created_at TIMESTAMPTZ NOT NULL GENERATED ALWAYS AS (uuid_extract_timestamp(id)) STORED,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   removed_at TIMESTAMPTZ

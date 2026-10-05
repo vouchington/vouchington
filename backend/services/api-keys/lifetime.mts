@@ -40,7 +40,7 @@ export function apiKeyIsValidSql() {
       WHERE user_roles.user_id = api_keys.user_id
         AND user_roles_types.slug = 'administrator'
         AND (api_keys.expires_at IS NULL
-          OR api_keys.expires_at > api_keys.created_at + INTERVAL '90 days')
+          OR api_keys.expires_at > api_keys.created_at + INTERVAL '2160 hours')
     )
   `
 }

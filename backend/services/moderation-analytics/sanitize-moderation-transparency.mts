@@ -1,12 +1,10 @@
+import type { FiniteValue } from '@data-stores/psql/finite-values/index'
+
 export const MODERATION_TRANSPARENCY_DELAY_MS = 48 * 60 * 60 * 1000
 export const MODERATION_TRANSPARENCY_MINIMUM_COHORT_SIZE = 20
 export const MODERATION_TRANSPARENCY_ROUNDING_INCREMENT = 5
 
-export type ModerationTransparencyMetric =
-  | 'appeals'
-  | 'automated_moderation'
-  | 'moderation_actions'
-  | 'reports'
+export type ModerationTransparencyMetric = FiniteValue<'moderation_transparency_metrics'>
 
 export type ModerationTransparencyRawBucket = {
   date: string

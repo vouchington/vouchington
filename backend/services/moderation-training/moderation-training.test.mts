@@ -164,7 +164,7 @@ describe('moderation-training feedback', () => {
       sourceType: 'agent_moderation_vote',
       eventType: 'agent_accuracy_voted',
       label: 'true_positive',
-      humanAction: 'vote_up',
+      humanAction: 'accuracy_upvote',
       actorUserId: owner.id,
       communityId: community.id,
       postId,

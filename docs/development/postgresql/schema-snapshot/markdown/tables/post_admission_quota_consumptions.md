@@ -6,13 +6,13 @@ Immutable committed-admission ledger used to enforce contribution quotas.
 
 Not partitioned — growth: bounded.
 
-| Column             | Type                       | Nullable | Default               | Identity | Generated | Collation | Comment                                                                                                                                                                 |
-| ------------------ | -------------------------- | -------- | --------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `reservation_id`   | `uuid`                     | no       |                       |          |           |           | Admission reservation that committed and consumed quota exactly once. The consumption is deleted with its reservation, which outlives every contribution-policy window. |
-| `actor_id`         | `uuid`                     | no       |                       |          |           |           | Actor whose contribution quota was consumed.                                                                                                                            |
-| `source`           | `text`                     | no       |                       |          |           |           | Contribution-policy source whose quota was consumed.                                                                                                                    |
-| `committed_at`     | `timestamp with time zone` | no       | `now()`               |          |           |           | Clock timestamp at which the quota-consuming admission committed.                                                                                                       |
-| `consumption_mode` | `text`                     | no       | `'all_windows'::text` |          |           |           | Whether this consumption participates in all policy windows or daily windows only; the default preserves old writers as all-window consumption.                         |
+| Column             | Type                                     | Nullable | Default                                                 | Identity | Generated | Collation | Comment                                                                                                                                                                 |
+| ------------------ | ---------------------------------------- | -------- | ------------------------------------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `reservation_id`   | `uuid`                                   | no       |                                                         |          |           |           | Admission reservation that committed and consumed quota exactly once. The consumption is deleted with its reservation, which outlives every contribution-policy window. |
+| `actor_id`         | `uuid`                                   | no       |                                                         |          |           |           | Actor whose contribution quota was consumed.                                                                                                                            |
+| `source`           | `contribution_policy_sources`            | no       |                                                         |          |           |           | Contribution-policy source whose quota was consumed.                                                                                                                    |
+| `committed_at`     | `timestamp with time zone`               | no       | `now()`                                                 |          |           |           | Clock timestamp at which the quota-consuming admission committed.                                                                                                       |
+| `consumption_mode` | `post_admission_quota_consumption_modes` | no       | `'all_windows'::post_admission_quota_consumption_modes` |          |           |           | Whether this consumption participates in all policy windows or daily windows only; the default preserves old writers as all-window consumption.                         |
 
 **Primary key:** `PRIMARY KEY (reservation_id)`
 
@@ -21,7 +21,7 @@ _none_
 
 **Check constraints:**
 
-- `post_admission_quota_consumptions_consumption_mode_check`: `CHECK ((consumption_mode = ANY (ARRAY['all_windows'::text, 'daily_only'::text])))`
+- `post_admission_quota_consumptions_consumption_mode_check`: `CHECK ((consumption_mode = ANY (ARRAY['all_windows'::post_admission_quota_consumption_modes, 'daily_only'::post_admission_quota_consumption_modes])))`
 
 **Foreign keys:**
 

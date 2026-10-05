@@ -16,7 +16,7 @@ Migration: `backend/data-stores/psql/migrations/0500-00-00-lists.sql`
 Migration: `backend/data-stores/psql/migrations/0510-00-00-read-states.sql`
 View: `backend/data-stores/psql/views/2026-06-28-list-items.sql`
 
-### `list_visibility` enum
+### `list_visibilities` enum
 
 `'private' | 'unlisted' | 'public'`
 
@@ -32,7 +32,7 @@ View: `backend/data-stores/psql/views/2026-06-28-list-items.sql`
 | `owner_user_id` | `UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE`    | List owner; cascades on user deletion           |
 | `name`          | `TEXT NOT NULL`                                           | CHECK length 1–255                              |
 | `description`   | `TEXT`                                                    | Optional                                        |
-| `visibility`    | `list_visibility NOT NULL DEFAULT 'private'`              | Enum; flipped to public/unlisted in P3          |
+| `visibility`    | `list_visibilities NOT NULL DEFAULT 'private'`            | Enum; flipped to public/unlisted in P3          |
 | `created_at`    | `TIMESTAMPTZ` GENERATED from `uuid_extract_timestamp(id)` | Derived from UUIDv7 id                          |
 | `updated_at`    | `TIMESTAMPTZ NOT NULL DEFAULT now()`                      | Trigger-maintained via `fn_update_updated_at()` |
 | `removed_at`    | `TIMESTAMPTZ`                                             | Soft-delete; non-null = deleted                 |

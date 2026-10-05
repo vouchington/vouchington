@@ -11,7 +11,7 @@ Not partitioned — growth: bounded.
 | `id`             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                          |
 | `family_id`      | `uuid`                     | no       |                              |          |           |           | Rotating refresh-token family containing this member.    |
 | `token_hash`     | `text`                     | no       |                              |          |           |           | Purpose-bound hash of the opaque refresh token.          |
-| `scopes`         | `text[]`                   | no       |                              |          |           |           | Canonical scope set carried by this family member.       |
+| `scopes`         | `api_scopes[]`             | no       |                              |          |           |           | Canonical scope set carried by this family member.       |
 | `generation`     | `integer`                  | no       |                              |          |           |           | Monotonic position of this member within its family.     |
 | `expires_at`     | `timestamp with time zone` | no       |                              |          |           |           | Time after which this refresh token cannot be exchanged. |
 | `consumed_at`    | `timestamp with time zone` | yes      |                              |          |           |           | Time at which this refresh token was rotated.            |

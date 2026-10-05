@@ -517,12 +517,22 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS ses_bounce_subtypes (
+  id TEXT PRIMARY KEY,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+COMMENT ON TABLE ses_bounce_subtypes IS 'SES bounce subtype names registered on first sight; the provider owns this open set and exact spelling.';
+COMMENT ON COLUMN ses_bounce_subtypes.id IS 'Exact provider value used as the natural lookup key; never normalized.';
+COMMENT ON COLUMN ses_bounce_subtypes.created_at IS 'When this provider value was first observed.';
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS ses_bounce_events (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   notification_type ses_notification_types NOT NULL,
   bounce_type ses_bounce_types,
-  bounce_sub_type TEXT,
+  bounce_sub_type TEXT REFERENCES ses_bounce_subtypes(id) ON DELETE RESTRICT,
   CHECK (bounce_sub_type IS NULL OR (char_length(bounce_sub_type) <= 255 AND TRIM(bounce_sub_type) = bounce_sub_type)),
   recipients JSONB NOT NULL DEFAULT '[]'::jsonb,
   ses_message_id TEXT,
@@ -643,3 +653,7 @@ CREATE INDEX IF NOT EXISTS idx_spending_entries__individual_id_id
 CREATE INDEX IF NOT EXISTS idx_spending_entries__household_id_id
   ON spending_entries (household_id, id)
   WHERE household_id IS NOT NULL;
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_ses_bounce_events__bounce_sub_type
+  ON ses_bounce_events (bounce_sub_type);

@@ -27,7 +27,7 @@ CREATE TABLE notification_push_intent_subscription_receipts (
   CONSTRAINT notification_push_receipts_subscription_fkey FOREIGN KEY (user_id, subscription_id)
     REFERENCES web_push_subscriptions (user_id, id) ON UPDATE CASCADE ON DELETE CASCADE,
   endpoint TEXT NOT NULL,
-  status notification_push_endpoint_status NOT NULL DEFAULT 'pending',
+  status notification_push_endpoint_statuses NOT NULL DEFAULT 'pending',
   delivered_at TIMESTAMPTZ,
   permanently_failed_at TIMESTAMPTZ,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,

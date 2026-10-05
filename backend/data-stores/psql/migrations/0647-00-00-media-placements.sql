@@ -4,7 +4,7 @@ CREATE TABLE media_placements (
   revision integer NOT NULL DEFAULT 0 CHECK (revision >= 0),
   activation_revision integer NOT NULL DEFAULT 0 CHECK (activation_revision >= 0 AND activation_revision <= revision),
   retired_at timestamptz,
-  retirement_reason text CHECK (retirement_reason IN ('asset_deleted', 'owner_removed')),
+  retirement_reason media_placement_retirement_reasons CHECK (retirement_reason IN ('asset_deleted', 'owner_removed')),
   copyright_withheld_at timestamptz,
   CHECK (
     (retired_at IS NULL AND retirement_reason IS NULL)
@@ -20,11 +20,12 @@ FOREIGN KEY (id) REFERENCES retained_image_placement_bindings (placement_id)
 ON DELETE RESTRICT NOT VALID;
 ALTER TABLE media_placements VALIDATE CONSTRAINT fk_media_placements__retained_image_binding;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE image_placements (
   placement_id uuid PRIMARY KEY REFERENCES media_placements(id) ON DELETE RESTRICT,
   post_id uuid NOT NULL REFERENCES posts(id) ON DELETE RESTRICT,
   image_id uuid NOT NULL REFERENCES images(id) ON DELETE RESTRICT,
-  binding_family text NOT NULL DEFAULT 'post' CHECK (binding_family = 'post'),
+  binding_family image_binding_families NOT NULL DEFAULT 'post' CHECK (binding_family = 'post'),
   UNIQUE (post_id, image_id)
 );
 

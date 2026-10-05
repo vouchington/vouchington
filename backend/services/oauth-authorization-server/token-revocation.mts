@@ -65,7 +65,7 @@ export async function revokeOAuthToken(input: {
     await query(
       `/* revokeOAuthToken access event */ INSERT INTO oauth_authorization_server_events (
          event_type, access_token_id, user_id, client_id, grant_id, resource, scopes
-       ) VALUES ('access_token_revoked', $1, $2, $3, $4, $5, $6::text[])
+       ) VALUES ('access_token_revoked', $1, $2, $3, $4, $5, $6::api_scopes[])
        ON CONFLICT (access_token_id) WHERE access_token_id IS NOT NULL DO NOTHING`,
       [
         revokedAccess.id,

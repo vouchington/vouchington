@@ -45,6 +45,7 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 -- api_keys
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS api_keys (
   id UUID DEFAULT uuidv7() PRIMARY KEY REFERENCES retained_api_key_identities (id) ON DELETE RESTRICT,
   user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
@@ -52,7 +53,7 @@ CREATE TABLE IF NOT EXISTS api_keys (
   key_hash BYTEA NOT NULL,
   type api_key_types NOT NULL DEFAULT 'rss',
   label TEXT NOT NULL DEFAULT '',
-  permissions TEXT[] NOT NULL DEFAULT '{}',
+  scopes api_scopes[] NOT NULL DEFAULT '{}',
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   last_used_at TIMESTAMPTZ,
   revoked_at TIMESTAMPTZ,
@@ -84,7 +85,7 @@ COMMENT ON COLUMN api_keys.prefix IS 'Visible prefix of the API key for identifi
 COMMENT ON COLUMN api_keys.key_hash IS 'SHA-256 hash of the full API key (32 bytes).';
 COMMENT ON COLUMN api_keys.type IS 'Key type scope (rss or mcp). Determines which API features the key can access.';
 COMMENT ON COLUMN api_keys.label IS 'User-provided label to identify the key''s purpose.';
-COMMENT ON COLUMN api_keys.permissions IS 'Canonical scope set granted to this key; validated against the application scope catalogue.';
+COMMENT ON COLUMN api_keys.scopes IS 'Canonical scope set granted to this key; validated against the application scope catalogue.';
 COMMENT ON COLUMN api_keys.last_used_at IS 'When this API key was last used for authentication.';
 COMMENT ON COLUMN api_keys.revoked_at IS 'When this API key was revoked; revoked keys cannot authenticate.';
 COMMENT ON COLUMN api_keys.expires_at IS 'Authentication deadline; NULL means no expiry for non-administrator owners.';

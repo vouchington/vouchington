@@ -24,7 +24,7 @@ export async function listUserOAuthGrants(
        ) AS client,
        client.metadata_url AS client_metadata_url,
        oauth_grant.resource,
-       oauth_grant.scopes,
+       oauth_grant.scopes::text[] AS scopes,
        oauth_grant.consented_at,
        CASE
          WHEN oauth_grant.last_used_at IS NULL THEN token_use.last_used_at

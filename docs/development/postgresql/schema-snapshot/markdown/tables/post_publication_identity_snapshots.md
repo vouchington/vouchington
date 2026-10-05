@@ -6,24 +6,24 @@ Immutable-at-acceptance bounded identity materialization attempts; intentionally
 
 Not partitioned — growth: unbounded.
 
-| Column                    | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                            |
-| ------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------- |
-| `id`                      | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                    |
-| `dirty_work_id`           | `uuid`                     | yes      |                              |          |           |           | Live owning work FK; acknowledgement clears it without deleting accepted storage.  |
-| `generation`              | `bigint`                   | no       |                              |          |           |           | Captured work generation fencing this attempt.                                     |
-| `post_identity_id`        | `uuid`                     | no       |                              |          |           |           | Concrete durable post identity FK; live post access follows the bridge post_id FK. |
-| `eligibility_fingerprint` | `text`                     | no       |                              |          |           |           | Scalar candidate and root eligibility version.                                     |
-| `is_public`               | `boolean`                  | no       |                              |          |           |           | Eligibility captured for this attempt.                                             |
-| `source_cursor_kind`      | `text`                     | yes      |                              |          |           |           | Native source branch advanced by the last atomically staged physical row page.     |
-| `source_cursor_value`     | `text`                     | yes      |                              |          |           |           | Last native branch row key, independent from emitted or deduplicated identities.   |
-| `completed_at`            | `timestamp with time zone` | yes      |                              |          |           |           | Exact source comparison and scalar validation completion time.                     |
-| `abandoned_at`            | `timestamp with time zone` | yes      |                              |          |           |           | Source drift or supersession invalidated this attempt.                             |
-| `created_at`              | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                    |
-| `receipt_cursor_kind`     | `text`                     | yes      |                              |          |           |           | Snapshot-key source branch for prior receipt retention.                            |
-| `receipt_cursor_value`    | `text`                     | yes      |                              |          |           |           | Last snapshot key ID retained atomically.                                          |
-| `receipt_retained_at`     | `timestamp with time zone` | yes      |                              |          |           |           | EOF of prior receipt retention before current source staging.                      |
-| `receipt_source_version`  | `text`                     | yes      |                              |          |           |           | Accepted prior receipt version checked on every stage.                             |
-| `updated_at`              | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                    |
+| Column                    | Type                                    | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                            |
+| ------------------------- | --------------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------- |
+| `id`                      | `uuid`                                  | no       | `uuidv7()`                   |          |           |           |                                                                                    |
+| `dirty_work_id`           | `uuid`                                  | yes      |                              |          |           |           | Live owning work FK; acknowledgement clears it without deleting accepted storage.  |
+| `generation`              | `bigint`                                | no       |                              |          |           |           | Captured work generation fencing this attempt.                                     |
+| `post_identity_id`        | `uuid`                                  | no       |                              |          |           |           | Concrete durable post identity FK; live post access follows the bridge post_id FK. |
+| `eligibility_fingerprint` | `text`                                  | no       |                              |          |           |           | Scalar candidate and root eligibility version.                                     |
+| `is_public`               | `boolean`                               | no       |                              |          |           |           | Eligibility captured for this attempt.                                             |
+| `source_cursor_kind`      | `post_publication_source_cursor_kinds`  | yes      |                              |          |           |           | Native source branch advanced by the last atomically staged physical row page.     |
+| `source_cursor_value`     | `text`                                  | yes      |                              |          |           |           | Last native branch row key, independent from emitted or deduplicated identities.   |
+| `completed_at`            | `timestamp with time zone`              | yes      |                              |          |           |           | Exact source comparison and scalar validation completion time.                     |
+| `abandoned_at`            | `timestamp with time zone`              | yes      |                              |          |           |           | Source drift or supersession invalidated this attempt.                             |
+| `created_at`              | `timestamp with time zone`              | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                    |
+| `receipt_cursor_kind`     | `post_publication_receipt_cursor_kinds` | yes      |                              |          |           |           | Snapshot-key source branch for prior receipt retention.                            |
+| `receipt_cursor_value`    | `text`                                  | yes      |                              |          |           |           | Last snapshot key ID retained atomically.                                          |
+| `receipt_retained_at`     | `timestamp with time zone`              | yes      |                              |          |           |           | EOF of prior receipt retention before current source staging.                      |
+| `receipt_source_version`  | `text`                                  | yes      |                              |          |           |           | Accepted prior receipt version checked on every stage.                             |
+| `updated_at`              | `timestamp with time zone`              | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                    |
 
 **Primary key:** `PRIMARY KEY (id)`
 

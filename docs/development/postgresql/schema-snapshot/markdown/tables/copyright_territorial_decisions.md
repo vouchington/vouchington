@@ -6,21 +6,21 @@ Human decision on an EU or UK notice. A revoked no_action can be superseded once
 
 Not partitioned — growth: unbounded.
 
-| Column                                      | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                       |
-| ------------------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------- |
-| `id`                                        | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                               |
-| `copyright_notice_id`                       | `uuid`                     | no       |                              |          |           |           | Notice this decision explains. At most one original and one permitted successor per notice.                   |
-| `jurisdiction`                              | `text`                     | no       |                              |          |           |           | Jurisdiction of the notice: eu_dsa or uk. Must equal the notice jurisdiction.                                 |
-| `decided_at`                                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | When staff recorded the decision (the statement of reasons for eu_dsa).                                       |
-| `decided_by_id`                             | `uuid`                     | yes      |                              |          |           |           | Staff user who recorded the decision. Null after that account is deleted.                                     |
-| `outcome`                                   | `text`                     | no       |                              |          |           |           | Human decision: restrict the named targets or take no action.                                                 |
-| `copyright_notice_submission_assessment_id` | `uuid`                     | yes      |                              |          |           |           | Required compliant human assessment for a restrict decision; absent for no_action.                            |
-| `supersedes_decision_id`                    | `uuid`                     | yes      |                              |          |           |           | Prior no_action decision reopened by a complaint revoke on the same notice.                                   |
-| `automation_disclosure`                     | `text`                     | no       |                              |          |           |           | How the decision was produced. Constrained to human.                                                          |
-| `rationale_ciphertext`                      | `text`                     | no       |                              |          |           |           | Encrypted staff-only rationale; never included in participant notices.                                        |
-| `public_explanation_ciphertext`             | `text`                     | no       |                              |          |           |           | Encrypted staff-written public explanation for poster and notifier statements; must contain no personal data. |
-| `created_at`                                | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                               |
-| `updated_at`                                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                               |
+| Column                                      | Type                                                    | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                       |
+| ------------------------------------------- | ------------------------------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------- |
+| `id`                                        | `uuid`                                                  | no       | `uuidv7()`                   |          |           |           |                                                                                                               |
+| `copyright_notice_id`                       | `uuid`                                                  | no       |                              |          |           |           | Notice this decision explains. At most one original and one permitted successor per notice.                   |
+| `jurisdiction`                              | `copyright_jurisdictions`                               | no       |                              |          |           |           | Jurisdiction of the notice: eu_dsa or uk. Must equal the notice jurisdiction.                                 |
+| `decided_at`                                | `timestamp with time zone`                              | no       | `CURRENT_TIMESTAMP`          |          |           |           | When staff recorded the decision (the statement of reasons for eu_dsa).                                       |
+| `decided_by_id`                             | `uuid`                                                  | yes      |                              |          |           |           | Staff user who recorded the decision. Null after that account is deleted.                                     |
+| `outcome`                                   | `copyright_territorial_decision_outcomes`               | no       |                              |          |           |           | Human decision: restrict the named targets or take no action.                                                 |
+| `copyright_notice_submission_assessment_id` | `uuid`                                                  | yes      |                              |          |           |           | Required compliant human assessment for a restrict decision; absent for no_action.                            |
+| `supersedes_decision_id`                    | `uuid`                                                  | yes      |                              |          |           |           | Prior no_action decision reopened by a complaint revoke on the same notice.                                   |
+| `automation_disclosure`                     | `copyright_territorial_decision_automation_disclosures` | no       |                              |          |           |           | How the decision was produced. Constrained to human.                                                          |
+| `rationale_ciphertext`                      | `text`                                                  | no       |                              |          |           |           | Encrypted staff-only rationale; never included in participant notices.                                        |
+| `public_explanation_ciphertext`             | `text`                                                  | no       |                              |          |           |           | Encrypted staff-written public explanation for poster and notifier statements; must contain no personal data. |
+| `created_at`                                | `timestamp with time zone`                              | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                               |
+| `updated_at`                                | `timestamp with time zone`                              | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                               |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -31,13 +31,13 @@ Not partitioned — growth: unbounded.
 
 **Check constraints:**
 
-- `chk_copyright_territorial_decisions__assessment`: `CHECK (((outcome = 'restrict'::text) = (copyright_notice_submission_assessment_id IS NOT NULL)))`
-- `chk_copyright_territorial_decisions__human`: `CHECK ((automation_disclosure = 'human'::text))`
-- `chk_copyright_territorial_decisions__jurisdiction`: `CHECK ((jurisdiction = ANY (ARRAY['eu_dsa'::text, 'uk'::text])))`
-- `chk_copyright_territorial_decisions__outcome`: `CHECK ((outcome = ANY (ARRAY['restrict'::text, 'no_action'::text])))`
+- `chk_copyright_territorial_decisions__assessment`: `CHECK (((outcome = 'restrict'::copyright_territorial_decision_outcomes) = (copyright_notice_submission_assessment_id IS NOT NULL)))`
+- `chk_copyright_territorial_decisions__human`: `CHECK ((automation_disclosure = 'human'::copyright_territorial_decision_automation_disclosures))`
+- `chk_copyright_territorial_decisions__jurisdiction`: `CHECK ((jurisdiction = ANY (ARRAY['eu_dsa'::copyright_jurisdictions, 'uk'::copyright_jurisdictions])))`
+- `chk_copyright_territorial_decisions__outcome`: `CHECK ((outcome = ANY (ARRAY['restrict'::copyright_territorial_decision_outcomes, 'no_action'::copyright_territorial_decision_outcomes])))`
 - `chk_copyright_territorial_decisions__public_explanation`: `CHECK (((char_length(public_explanation_ciphertext) >= 1) AND (char_length(public_explanation_ciphertext) <= 1048576)))`
 - `chk_copyright_territorial_decisions__rationale`: `CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 1048576)))`
-- `chk_copyright_territorial_decisions__successor`: `CHECK (((supersedes_decision_id IS NULL) OR (outcome = 'restrict'::text)))`
+- `chk_copyright_territorial_decisions__successor`: `CHECK (((supersedes_decision_id IS NULL) OR (outcome = 'restrict'::copyright_territorial_decision_outcomes)))`
 
 **Foreign keys:**
 

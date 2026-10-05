@@ -113,6 +113,6 @@ describe('staff email intake SES verdicts', () => {
         rawByteSize: 5,
         sesVerdicts: { ...PASSING_COPYRIGHT_EMAIL_SES_VERDICTS, virus: 'clean' as never },
       }),
-    ).rejects.toThrow(/check constraint/)
+    ).rejects.toMatchObject({ code: '22P02' })
   })
 })

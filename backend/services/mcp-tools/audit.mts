@@ -82,7 +82,7 @@ export async function recordMcpCallAudit(
       UNION ALL
       SELECT NULL::uuid, $6::uuid WHERE $6::uuid IS NOT NULL
     ) AS subject
-    CROSS JOIN unnest($7::text[], $8::text[], $9::text[])
+    CROSS JOIN unnest($7::text[], $8::text[], $9::mcp_call_audit_event_outcomes[])
       WITH ORDINALITY AS event(jsonrpc_method, tool_name, outcome, ordinal)
     ORDER BY event.ordinal`,
     [

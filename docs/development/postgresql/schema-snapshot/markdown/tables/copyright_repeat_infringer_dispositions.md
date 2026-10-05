@@ -6,16 +6,16 @@ Staff decision that a confirmed incident no longer counts: withdrawn, duplicate,
 
 Not partitioned — growth: unbounded.
 
-| Column                                   | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                    |
-| ---------------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------- |
-| `id`                                     | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                            |
-| `copyright_repeat_infringer_incident_id` | `uuid`                     | no       |                              |          |           |           | Incident this disposition removes from the operative count.                |
-| `disposition`                            | `text`                     | no       |                              |          |           |           | Why the incident stopped counting. Restoration is not a disposition.       |
-| `rationale_ciphertext`                   | `text`                     | no       |                              |          |           |           | Encrypted staff rationale for removing the incident.                       |
-| `recorded_at`                            | `timestamp with time zone` | no       |                              |          |           |           | Time the moderator recorded the disposition.                               |
-| `recorded_by_id`                         | `uuid`                     | yes      |                              |          |           |           | Moderator who recorded the disposition. Null after that account is erased. |
-| `created_at`                             | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                            |
-| `updated_at`                             | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                            |
+| Column                                   | Type                                           | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                    |
+| ---------------------------------------- | ---------------------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------- |
+| `id`                                     | `uuid`                                         | no       | `uuidv7()`                   |          |           |           |                                                                            |
+| `copyright_repeat_infringer_incident_id` | `uuid`                                         | no       |                              |          |           |           | Incident this disposition removes from the operative count.                |
+| `disposition`                            | `copyright_repeat_infringer_disposition_kinds` | no       |                              |          |           |           | Why the incident stopped counting. Restoration is not a disposition.       |
+| `rationale_ciphertext`                   | `text`                                         | no       |                              |          |           |           | Encrypted staff rationale for removing the incident.                       |
+| `recorded_at`                            | `timestamp with time zone`                     | no       |                              |          |           |           | Time the moderator recorded the disposition.                               |
+| `recorded_by_id`                         | `uuid`                                         | yes      |                              |          |           |           | Moderator who recorded the disposition. Null after that account is erased. |
+| `created_at`                             | `timestamp with time zone`                     | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                            |
+| `updated_at`                             | `timestamp with time zone`                     | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                            |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -26,7 +26,7 @@ Not partitioned — growth: unbounded.
 **Check constraints:**
 
 - `copyright_repeat_infringer_dispositi_rationale_ciphertext_check`: `CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 65536)))`
-- `copyright_repeat_infringer_dispositions_disposition_check`: `CHECK ((disposition = ANY (ARRAY['withdrawn'::text, 'duplicate'::text, 'abusive'::text])))`
+- `copyright_repeat_infringer_dispositions_disposition_check`: `CHECK ((disposition = ANY (ARRAY['withdrawn'::copyright_repeat_infringer_disposition_kinds, 'duplicate'::copyright_repeat_infringer_disposition_kinds, 'abusive'::copyright_repeat_infringer_disposition_kinds])))`
 
 **Foreign keys:**
 

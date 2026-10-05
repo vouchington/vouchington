@@ -16,7 +16,7 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
 import { createTopicRevision, computeTopicChanges } from '@services/topic-revisions'
-import { claimTopicAlias, linkTopicAlias, updateTopicAliasesField } from './aliases.mts'
+import { claimTopicAlias, linkTopicAlias } from './aliases.mts'
 import { invalidatePostsForTopicAliases } from './invalidate-posts-for-topic-aliases.mts'
 
 export function finalizeCreatedTopic(topic: Topic, updates: CreateTopicUpdates): void {
@@ -143,7 +143,6 @@ async function createTopicInDatabase(
     })
   }
   await claimTopicAlias(topicId, updates.slug, options)
-  await updateTopicAliasesField(topicId, { ...options, skipSideEffects: true })
   if (updates.hostname !== undefined) {
     const hostnameId = await resolveHostname(creator.id, updates.hostname, options)
     await setTopicHostnameLink(topicId, hostnameId, options)

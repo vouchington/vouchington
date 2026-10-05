@@ -2,6 +2,7 @@
 -- Copyright communications are legal records. Delivery is a separate, retryable concern so a
 -- transport outage cannot erase the obligation to notify either party.
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_delivery_intents (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid REFERENCES copyright_notices(id) ON DELETE RESTRICT,
@@ -10,11 +11,11 @@ CREATE TABLE copyright_notice_delivery_intents (
   copyright_notice_correspondence_message_id uuid,
   recipient_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
   recipient_user_erased_at timestamptz,
-  recipient_role text NOT NULL CHECK (recipient_role IN ('claimant', 'poster', 'informed_owner', 'correspondent')),
-  delivery_kind text NOT NULL CHECK (delivery_kind IN ('claimant_receipt', 'status_update', 'poster_restriction_notice', 'poster_review_notice', 'poster_restoration_notice', 'owner_information_notice', 'claimant_decision_notice', 'redress_decision_notice', 'counter_notice_forwarding', 'staff_information_request', 'email_intake_rejected', 'email_intake_needs_information', 'email_intake_received')),
+  recipient_role copyright_notice_delivery_intent_recipient_roles NOT NULL CHECK (recipient_role IN ('claimant', 'poster', 'informed_owner', 'correspondent')),
+  delivery_kind copyright_notice_delivery_kinds NOT NULL CHECK (delivery_kind IN ('claimant_receipt', 'status_update', 'poster_restriction_notice', 'poster_review_notice', 'poster_restoration_notice', 'owner_information_notice', 'claimant_decision_notice', 'redress_decision_notice', 'counter_notice_forwarding', 'staff_information_request', 'email_intake_rejected', 'email_intake_needs_information', 'email_intake_received')),
   target_path text CHECK (target_path IS NULL OR (char_length(target_path) BETWEEN 1 AND 1024 AND target_path LIKE '/communities/%')),
-  channel text NOT NULL CHECK (channel IN ('in_app', 'email')),
-  state text NOT NULL DEFAULT 'pending' CHECK (state IN ('pending', 'claimed', 'sent', 'failed', 'bounced')),
+  channel copyright_notice_delivery_intent_channels NOT NULL CHECK (channel IN ('in_app', 'email')),
+  state copyright_notice_delivery_intent_states NOT NULL DEFAULT 'pending' CHECK (state IN ('pending', 'claimed', 'sent', 'failed', 'bounced')),
   delivery_attempt_count integer NOT NULL DEFAULT 0 CHECK (delivery_attempt_count BETWEEN 0 AND 5),
   idempotency_key text NOT NULL CHECK (char_length(idempotency_key) BETWEEN 1 AND 512),
   lease_token uuid,

@@ -6,17 +6,17 @@ Required staff review opened when an account reaches two operative incidents. Op
 
 Not partitioned — growth: unbounded.
 
-| Column                 | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                           |
-| ---------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------- |
-| `id`                   | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                   |
-| `account_user_id`      | `uuid`                     | no       |                              |          |           |           | Account whose second operative incident opened this review.                                                       |
-| `opened_at`            | `timestamp with time zone` | no       |                              |          |           |           | Time the second operative incident opened the review.                                                             |
-| `outcome`              | `text`                     | yes      |                              |          |           |           | Staff outcome. Null while the review is open. Restrict and terminate are applied by a later administrator action. |
-| `outcome_at`           | `timestamp with time zone` | yes      |                              |          |           |           | Time the moderator recorded the outcome. Null while the review is open.                                           |
-| `outcome_by_id`        | `uuid`                     | yes      |                              |          |           |           | Moderator who recorded the outcome. Null while the review is open, or after that account is erased.               |
-| `rationale_ciphertext` | `text`                     | yes      |                              |          |           |           | Encrypted staff rationale recorded with the outcome.                                                              |
-| `created_at`           | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                   |
-| `updated_at`           | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                   |
+| Column                 | Type                                         | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                           |
+| ---------------------- | -------------------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------- |
+| `id`                   | `uuid`                                       | no       | `uuidv7()`                   |          |           |           |                                                                                                                   |
+| `account_user_id`      | `uuid`                                       | no       |                              |          |           |           | Account whose second operative incident opened this review.                                                       |
+| `opened_at`            | `timestamp with time zone`                   | no       |                              |          |           |           | Time the second operative incident opened the review.                                                             |
+| `outcome`              | `copyright_repeat_infringer_review_outcomes` | yes      |                              |          |           |           | Staff outcome. Null while the review is open. Restrict and terminate are applied by a later administrator action. |
+| `outcome_at`           | `timestamp with time zone`                   | yes      |                              |          |           |           | Time the moderator recorded the outcome. Null while the review is open.                                           |
+| `outcome_by_id`        | `uuid`                                       | yes      |                              |          |           |           | Moderator who recorded the outcome. Null while the review is open, or after that account is erased.               |
+| `rationale_ciphertext` | `text`                                       | yes      |                              |          |           |           | Encrypted staff rationale recorded with the outcome.                                                              |
+| `created_at`           | `timestamp with time zone`                   | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                   |
+| `updated_at`           | `timestamp with time zone`                   | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                   |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -27,7 +27,7 @@ _none_
 
 - `copyright_repeat_infringer_reviews_check`: `CHECK (((outcome IS NULL) = (outcome_at IS NULL)))`
 - `copyright_repeat_infringer_reviews_check1`: `CHECK (((outcome IS NULL) = (rationale_ciphertext IS NULL)))`
-- `copyright_repeat_infringer_reviews_outcome_check`: `CHECK ((outcome = ANY (ARRAY['warning'::text, 'no_action'::text, 'restrict'::text, 'terminate'::text, 'reinstatement'::text])))`
+- `copyright_repeat_infringer_reviews_outcome_check`: `CHECK ((outcome = ANY (ARRAY['warning'::copyright_repeat_infringer_review_outcomes, 'no_action'::copyright_repeat_infringer_review_outcomes, 'restrict'::copyright_repeat_infringer_review_outcomes, 'terminate'::copyright_repeat_infringer_review_outcomes, 'reinstatement'::copyright_repeat_infringer_review_outcomes])))`
 - `copyright_repeat_infringer_reviews_rationale_ciphertext_check`: `CHECK (((rationale_ciphertext IS NULL) OR ((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 65536))))`
 
 **Foreign keys:**

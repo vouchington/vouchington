@@ -1,8 +1,9 @@
 import { afterAll, describe, expect, it } from 'vitest'
+import { CONVERTED_FINITE_COLUMNS } from '../../../test-helpers/data-stores/psql/schema-finite-columns.mts'
 import { MODERATOR_ACTION_TYPES } from '@ts-shared/utils/moderation-catalogs'
 import { onGracefulShutdown, read } from '../index.mts'
 
-const finiteEnumColumns = [
+const existingFiniteEnumColumns = [
   {
     table: 'api_keys',
     column: 'type',
@@ -102,6 +103,18 @@ const finiteEnumColumns = [
   },
 ] as const
 
+const finiteEnumColumns = [
+  ...new Map(
+    [
+      ...existingFiniteEnumColumns.map(definition => ({ ...definition, isArray: false })),
+      ...CONVERTED_FINITE_COLUMNS,
+    ].map(definition => [`${definition.table}.${definition.column}`, definition]),
+  ).values(),
+]
+const finiteEnumTypes = [
+  ...new Map(finiteEnumColumns.map(definition => [definition.type, definition])).values(),
+]
+
 describe('PostgreSQL finite enums', () => {
   afterAll(async () => {
     await onGracefulShutdown()
@@ -120,11 +133,11 @@ describe('PostgreSQL finite enums', () => {
       [finiteEnumColumns.map(definition => `${definition.table}.${definition.column}`)],
     )
 
-    expect(rows).toEqual(
+    expect(rows.toSorted((left, right) => left.column_key.localeCompare(right.column_key))).toEqual(
       finiteEnumColumns
         .map(definition => ({
           column_key: `${definition.table}.${definition.column}`,
-          type_name: definition.type,
+          type_name: definition.isArray ? `_${definition.type}` : definition.type,
         }))
         .toSorted((left, right) => left.column_key.localeCompare(right.column_key)),
     )
@@ -145,11 +158,11 @@ describe('PostgreSQL finite enums', () => {
           AND type_definition.typname = ANY($1)
         GROUP BY type_definition.typname
         ORDER BY type_definition.typname`,
-      [finiteEnumColumns.map(definition => definition.type)],
+      [finiteEnumTypes.map(definition => definition.type)],
     )
 
     expect(rows).toEqual(
-      finiteEnumColumns
+      finiteEnumTypes
         .map(definition => ({ type_name: definition.type, labels: [...definition.labels] }))
         .toSorted((left, right) => left.type_name.localeCompare(right.type_name)),
     )

@@ -1406,6 +1406,9 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
+      '@modules/scopes':
+        specifier: workspace:^
+        version: link:../../modules/scopes
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
@@ -4765,6 +4768,9 @@ importers:
       '@services/posts':
         specifier: workspace:^
         version: link:../posts
+      '@services/urls':
+        specifier: workspace:^
+        version: link:../urls
       '@services/user-rate-limits':
         specifier: workspace:^
         version: link:../user-rate-limits
@@ -13175,6 +13181,9 @@ importers:
       '@queues/topic-aliases':
         specifier: workspace:^
         version: link:../../queues/topic-aliases
+      '@services/entity-cache':
+        specifier: workspace:^
+        version: link:../../services/entity-cache
       '@services/rss-feed-items':
         specifier: workspace:^
         version: link:../../services/rss-feed-items

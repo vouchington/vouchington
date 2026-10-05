@@ -114,11 +114,7 @@ app.route('/api/v1/posts').post(async (ctx: Context) => {
     422,
     'Use the community posts endpoint to create community posts',
   )
-  const admissionPostType = isSupportedPostType(body.post_type)
-    ? body.post_type
-    : body.post_type === undefined
-      ? 'discussion'
-      : 'invalid'
+  const admissionPostType = isSupportedPostType(body.post_type) ? body.post_type : 'discussion'
   let isBareOneClickLink = false
   const admission = await admitRouteContribution({
     currentUser,

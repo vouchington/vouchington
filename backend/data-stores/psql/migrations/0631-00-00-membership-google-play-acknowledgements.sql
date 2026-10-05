@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_google_play_acknowledgements (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   membership_provider_evidence_id UUID NOT NULL UNIQUE,
@@ -5,7 +6,7 @@ CREATE TABLE IF NOT EXISTS membership_google_play_acknowledgements (
   provider membership_provider_kinds NOT NULL DEFAULT 'google_play' CHECK (provider = 'google_play'),
   environment membership_provider_environments NOT NULL, application_id TEXT NOT NULL,
   subscription_id TEXT NOT NULL CHECK (char_length(subscription_id) BETWEEN 1 AND 255 AND subscription_id = TRIM(subscription_id)),
-  purchase_token_lookup_sha256 TEXT NOT NULL CHECK (purchase_token_lookup_sha256 ~ '^[a-f0-9]{64}$'), encrypted_purchase_token BYTEA NOT NULL CHECK (octet_length(encrypted_purchase_token) BETWEEN 1 AND 65536), acknowledged_at TIMESTAMPTZ, skipped_at TIMESTAMPTZ, skip_reason TEXT, attempt_claim_token UUID,
+  purchase_token_lookup_sha256 TEXT NOT NULL CHECK (purchase_token_lookup_sha256 ~ '^[a-f0-9]{64}$'), encrypted_purchase_token BYTEA NOT NULL CHECK (octet_length(encrypted_purchase_token) BETWEEN 1 AND 65536), acknowledged_at TIMESTAMPTZ, skipped_at TIMESTAMPTZ, skip_reason membership_google_play_acknowledgement_skip_reasons, attempt_claim_token UUID,
   attempt_claimed_at TIMESTAMPTZ, next_attempt_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   attempt_count INTEGER NOT NULL DEFAULT 0, last_error TEXT,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,

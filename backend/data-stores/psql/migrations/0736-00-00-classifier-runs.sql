@@ -6,6 +6,7 @@
 -- The table is unpartitioned: a unique index on a partitioned table must include the partition key,
 -- and the identity index below is per subject kind.
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS classifier_runs (
   id UUID NOT NULL DEFAULT uuidv7(),
   classifier_id UUID NOT NULL REFERENCES classifiers (id) ON DELETE RESTRICT,
@@ -22,7 +23,7 @@ CREATE TABLE IF NOT EXISTS classifier_runs (
   decision_batch_id UUID,
   provider_attempts_started INTEGER NOT NULL DEFAULT 0 CHECK (provider_attempts_started >= 0),
   sweep_enqueue_count INTEGER NOT NULL DEFAULT 0 CHECK (sweep_enqueue_count >= 0),
-  terminal_failure_kind TEXT CHECK (
+  terminal_failure_kind classifier_run_terminal_failure_kinds CHECK (
     terminal_failure_kind IN (
       'provider-error', 'invalid-result', 'context-rejected', 'attempts-exhausted',
       'client-unavailable', 'sweep-bound-exceeded'
@@ -201,6 +202,7 @@ CREATE INDEX IF NOT EXISTS idx_classifier_run_candidates__rss_feed_item
   ON classifier_run_candidates (rss_feed_item_id, run_id) WHERE rss_feed_item_id IS NOT NULL;
 
 -- C5's local detector outcome, retained once per run so every terminal kind can keep it.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_classifier_local_outcomes (
   run_id UUID NOT NULL REFERENCES classifier_runs (id) ON DELETE CASCADE,
   local_topic_id UUID NOT NULL REFERENCES topics (id) ON DELETE CASCADE,
@@ -208,7 +210,7 @@ CREATE TABLE IF NOT EXISTS post_classifier_local_outcomes (
   reason TEXT NOT NULL CHECK (btrim(reason) <> ''),
   confidence_score DOUBLE PRECISION NOT NULL CHECK (confidence_score BETWEEN 0 AND 1),
   confidence_threshold DOUBLE PRECISION NOT NULL CHECK (confidence_threshold BETWEEN 0 AND 1),
-  classification TEXT NOT NULL CHECK (classification IN ('ai', 'human')),
+  classification post_classifier_local_outcome_classifications NOT NULL CHECK (classification IN ('ai', 'human')),
   detector TEXT NOT NULL CHECK (btrim(detector) <> ''),
   detector_model_version TEXT NOT NULL CHECK (btrim(detector_model_version) <> ''),
   CONSTRAINT pk_post_classifier_local_outcomes PRIMARY KEY (run_id)

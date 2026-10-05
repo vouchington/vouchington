@@ -62,9 +62,9 @@ export async function insertActiveFeedUnderOtherTopic(
   const topicName = `Seed fixture ${label}`
   const topicSlug = `seed-fixture-${label}`
   await tx(sql`
-    INSERT INTO url_content_types (mime_type)
+    INSERT INTO media_types (mime_type)
     SELECT 'application/rss+xml'
-    WHERE NOT EXISTS (SELECT 1 FROM url_content_types WHERE mime_type = 'application/rss+xml')
+    WHERE NOT EXISTS (SELECT 1 FROM media_types WHERE mime_type = 'application/rss+xml')
     ON CONFLICT DO NOTHING`)
   await tx(sql`
     INSERT INTO url_hostnames (hostname, crawlable)
@@ -72,9 +72,9 @@ export async function insertActiveFeedUnderOtherTopic(
     WHERE NOT EXISTS (SELECT 1 FROM url_hostnames WHERE hostname = ${feed.hostname})
     ON CONFLICT DO NOTHING`)
   await tx(sql`
-    INSERT INTO urls (url, hostname_id, pathname, search_params, url_content_type_id)
+    INSERT INTO urls (url, hostname_id, pathname, search_params, media_type_id)
     SELECT ${feed.url}, h.id, ${feed.pathname}, '{}'::jsonb, ct.id
-    FROM url_hostnames h JOIN url_content_types ct ON ct.mime_type = 'application/rss+xml'
+    FROM url_hostnames h JOIN media_types ct ON ct.mime_type = 'application/rss+xml'
     WHERE h.hostname = ${feed.hostname} AND NOT EXISTS (SELECT 1 FROM urls WHERE url = ${feed.url})
     ON CONFLICT DO NOTHING`)
   await tx(sql`
@@ -122,7 +122,7 @@ export async function readSeededFeeds(
     FROM rss_feeds f
     JOIN urls u ON u.id = f.rss_feed_url_id
     JOIN url_hostnames h ON h.id = u.hostname_id
-    JOIN url_content_types ct ON ct.id = u.url_content_type_id
+    JOIN media_types ct ON ct.id = u.media_type_id
     JOIN topics t ON t.id = f.topic_id
     LEFT JOIN url_hostnames th ON th.id = t.hostname_id
     WHERE u.url = ANY(${urls})

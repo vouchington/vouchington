@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE VIEW view_rss_feed_items AS
   SELECT
     'rss_feed_item' AS __entity_type,
@@ -7,7 +8,7 @@ CREATE OR REPLACE VIEW view_rss_feed_items AS
     rss_feed_items.published_at,
     rss_feed_items.media_type,
     rss_feed_items.enclosure_url,
-    rss_feed_items.enclosure_type,
+    enclosure_media_type.mime_type AS enclosure_type,
     rss_feed_items.enclosure_length,
     rss_feed_items.duration_seconds,
     rss_feed_items.thumbnail_url,
@@ -102,6 +103,7 @@ CREATE OR REPLACE VIEW view_rss_feed_items AS
     ), '[]'::json) AS categories,
     rss_feed_items.lingua_rs_detected_language
   FROM rss_feed_items
+  LEFT JOIN media_types enclosure_media_type ON enclosure_media_type.id = rss_feed_items.enclosure_media_type_id
   JOIN rss_feed_item_ids
     ON rss_feed_item_ids.id = rss_feed_items.id
   LEFT JOIN view_urls

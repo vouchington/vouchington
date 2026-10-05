@@ -53,3 +53,5 @@ ignore responses for another batch and responses whose progress counters regress
 - Topics service: [../topics/README.md](../topics/README.md)
 - User-facing import/export contract: [../../../docs/requirements/content/SOURCES-DOMAINS.md#importexport](../../../../requirements/content/SOURCES-DOMAINS.md#importexport)
 - HTTP endpoints: [../../api/v1/my/reference-post-api-v1-my-import-rss-feeds.md](../../../../requirements/api/v1/my/reference-post-api-v1-my-import-rss-feeds.md)
+
+RSS import rows retain the submitted `input_url` and resolved `rss_feed_id`; they do not store a second write-only canonical URL. Validation still normalizes the URL for feed lookup and creation.

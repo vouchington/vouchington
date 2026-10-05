@@ -6,12 +6,12 @@ Immutable image binding for a media placement. A post/image pair retains one sta
 
 Not partitioned — growth: unbounded.
 
-| Column           | Type   | Nullable | Default        | Identity | Generated | Collation | Comment                                                                                                                |
-| ---------------- | ------ | -------- | -------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `placement_id`   | `uuid` | no       |                |          |           |           | Stable media placement identifier used by trusted delivery routes.                                                     |
-| `post_id`        | `uuid` | no       |                |          |           |           | Hosting post for this immutable image use; retained with the placement so delivery authorization is scoped to the use. |
-| `image_id`       | `uuid` | no       |                |          |           |           | Immutable byte asset bound to this post placement; an asset can have multiple separately authorized placements.        |
-| `binding_family` | `text` | no       | `'post'::text` |          |           |           | Literal post family checked by the retained image placement triple foreign key.                                        |
+| Column           | Type                     | Nullable | Default                          | Identity | Generated | Collation | Comment                                                                                                                |
+| ---------------- | ------------------------ | -------- | -------------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `placement_id`   | `uuid`                   | no       |                                  |          |           |           | Stable media placement identifier used by trusted delivery routes.                                                     |
+| `post_id`        | `uuid`                   | no       |                                  |          |           |           | Hosting post for this immutable image use; retained with the placement so delivery authorization is scoped to the use. |
+| `image_id`       | `uuid`                   | no       |                                  |          |           |           | Immutable byte asset bound to this post placement; an asset can have multiple separately authorized placements.        |
+| `binding_family` | `image_binding_families` | no       | `'post'::image_binding_families` |          |           |           | Literal post family checked by the retained image placement triple foreign key.                                        |
 
 **Primary key:** `PRIMARY KEY (placement_id)`
 
@@ -21,7 +21,7 @@ Not partitioned — growth: unbounded.
 
 **Check constraints:**
 
-- `image_placements_binding_family_check`: `CHECK ((binding_family = 'post'::text))`
+- `image_placements_binding_family_check`: `CHECK ((binding_family = 'post'::image_binding_families))`
 
 **Foreign keys:**
 

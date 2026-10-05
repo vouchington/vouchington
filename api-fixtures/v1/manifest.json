@@ -3141,7 +3141,7 @@
     },
     "GET:/api/v1/admin/oauth-clients": {
       "bodyKind": "content",
-      "hash": "0d1e1a4f590f9149c07afea1b38e61f1a79b718f5500d7410722655d11d1fb82",
+      "hash": "1a2acf4cb51c2697a3f4b702a82522d4b44bbb3f141023cdf8fa7000c63c1504",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -3191,19 +3191,6 @@
               }
             },
             "type": "object"
-          },
-          "OAuthClientType": {
-            "type": "union",
-            "variants": [
-              {
-                "type": "literal",
-                "value": "confidential"
-              },
-              {
-                "type": "literal",
-                "value": "public"
-              }
-            ]
           },
           "Omit<BasicUser,individual_id>": {
             "additionalProperties": false,
@@ -3500,8 +3487,17 @@
                     "client_type": {
                       "required": true,
                       "schema": {
-                        "name": "OAuthClientType",
-                        "type": "ref"
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "literal",
+                            "value": "confidential"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "public"
+                          }
+                        ]
                       }
                     },
                     "created_at": {
@@ -11561,7 +11557,7 @@
     },
     "GET:/api/v1/communities/:idOrSlug/moderation-transparency": {
       "bodyKind": "content",
-      "hash": "8888e2d3e3c82038d9b1845d906a9fc924d555058e57fe870eb3b612c09ad598",
+      "hash": "c67cab443e32aa31109f09b8d7fae46349bdf96cd22811e3f98d9c5605461536",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -11646,33 +11642,29 @@
               "metric": {
                 "required": true,
                 "schema": {
-                  "name": "ModerationTransparencyMetric",
-                  "type": "ref"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "appeals"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "automated_moderation"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "moderation_actions"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "reports"
+                    }
+                  ]
                 }
               }
             },
             "type": "object"
-          },
-          "ModerationTransparencyMetric": {
-            "type": "union",
-            "variants": [
-              {
-                "type": "literal",
-                "value": "appeals"
-              },
-              {
-                "type": "literal",
-                "value": "automated_moderation"
-              },
-              {
-                "type": "literal",
-                "value": "moderation_actions"
-              },
-              {
-                "type": "literal",
-                "value": "reports"
-              }
-            ]
           }
         },
         "root": {
@@ -13639,7 +13631,7 @@
     },
     "GET:/api/v1/copyright-notices/:id/eu-dispute-settlements": {
       "bodyKind": "content",
-      "hash": "c2ac090988053c5a8b7b8b6e1a99ffe1427bb1e5caf9d854cf8f1eddc223687a",
+      "hash": "5c7e8ff40e229ad90a4f47ffaa0db6559c18e62bbe661e0d2f24dc13f43014b4",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -13692,7 +13684,25 @@
                         "result": {
                           "required": true,
                           "schema": {
-                            "type": "string"
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "literal",
+                                "value": "decided_for_platform"
+                              },
+                              {
+                                "type": "literal",
+                                "value": "decided_for_recipient"
+                              },
+                              {
+                                "type": "literal",
+                                "value": "no_decision"
+                              },
+                              {
+                                "type": "literal",
+                                "value": "withdrawn"
+                              }
+                            ]
                           }
                         }
                       },
@@ -13783,7 +13793,7 @@
     },
     "GET:/api/v1/copyright-notices/:id/eu-dispute-settlements/staff": {
       "bodyKind": "content",
-      "hash": "d19cb3686c47524cf4b0b24e93287d15e522f068e465f2bb2d5c59e02fdf0e12",
+      "hash": "0702a464280fc5ad2a2843e905e076d3126ef93eb8cd76db192e027923ddabde",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -13836,7 +13846,25 @@
                         "result": {
                           "required": true,
                           "schema": {
-                            "type": "string"
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "literal",
+                                "value": "decided_for_platform"
+                              },
+                              {
+                                "type": "literal",
+                                "value": "decided_for_recipient"
+                              },
+                              {
+                                "type": "literal",
+                                "value": "no_decision"
+                              },
+                              {
+                                "type": "literal",
+                                "value": "withdrawn"
+                              }
+                            ]
                           }
                         }
                       },
@@ -14107,7 +14135,7 @@
     },
     "GET:/api/v1/copyright-notices/:id/participant": {
       "bodyKind": "content",
-      "hash": "c83cec42a6c90e55f69895315ce0896e459bbbd8d0ed8eacd0bf68a19ab69cf0",
+      "hash": "d4f384126d38b42bb29d7bd8e76e44f972d4ff3b58ab6cd8a6f01bd17c362cad",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -14309,7 +14337,25 @@
                                 "result": {
                                   "required": true,
                                   "schema": {
-                                    "type": "string"
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "literal",
+                                        "value": "decided_for_platform"
+                                      },
+                                      {
+                                        "type": "literal",
+                                        "value": "decided_for_recipient"
+                                      },
+                                      {
+                                        "type": "literal",
+                                        "value": "no_decision"
+                                      },
+                                      {
+                                        "type": "literal",
+                                        "value": "withdrawn"
+                                      }
+                                    ]
                                   }
                                 }
                               },
@@ -14768,7 +14814,37 @@
                               "kind": {
                                 "required": true,
                                 "schema": {
-                                  "type": "string"
+                                  "type": "union",
+                                  "variants": [
+                                    {
+                                      "type": "literal",
+                                      "value": "appeal"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "complaint"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "counter_notice"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "court_or_ccb_hold"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "notice"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "supplement"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "withdrawal"
+                                    }
+                                  ]
                                 }
                               },
                               "received_at": {
@@ -14780,7 +14856,25 @@
                               "source_kind": {
                                 "required": true,
                                 "schema": {
-                                  "type": "string"
+                                  "type": "union",
+                                  "variants": [
+                                    {
+                                      "type": "literal",
+                                      "value": "email"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "guest_form"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "signed_in_form"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "staff"
+                                    }
+                                  ]
                                 }
                               }
                             },
@@ -15119,7 +15213,7 @@
     },
     "GET:/api/v1/copyright-notices/review-queue": {
       "bodyKind": "content",
-      "hash": "5da2f53411f901ca961ba94bcd9b32e1edeaaa1373a2f498b4dfc130d7e764df",
+      "hash": "da70afd291c5e0f0c3bca38904b69c21ac179de00b35bc67fa91916adeb170b7",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -15809,7 +15903,25 @@
                                 "result": {
                                   "required": true,
                                   "schema": {
-                                    "type": "string"
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "literal",
+                                        "value": "decided_for_platform"
+                                      },
+                                      {
+                                        "type": "literal",
+                                        "value": "decided_for_recipient"
+                                      },
+                                      {
+                                        "type": "literal",
+                                        "value": "no_decision"
+                                      },
+                                      {
+                                        "type": "literal",
+                                        "value": "withdrawn"
+                                      }
+                                    ]
                                   }
                                 }
                               },
@@ -16336,7 +16448,25 @@
                                       "recommendation": {
                                         "required": true,
                                         "schema": {
-                                          "type": "string"
+                                          "type": "union",
+                                          "variants": [
+                                            {
+                                              "type": "literal",
+                                              "value": "confirm"
+                                            },
+                                            {
+                                              "type": "literal",
+                                              "value": "modify"
+                                            },
+                                            {
+                                              "type": "literal",
+                                              "value": "reverse"
+                                            },
+                                            {
+                                              "type": "literal",
+                                              "value": "uncertain"
+                                            }
+                                          ]
                                         }
                                       }
                                     },
@@ -16499,7 +16629,61 @@
                             "delivery_kind": {
                               "required": true,
                               "schema": {
-                                "type": "string"
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "type": "literal",
+                                    "value": "claimant_decision_notice"
+                                  },
+                                  {
+                                    "type": "literal",
+                                    "value": "claimant_receipt"
+                                  },
+                                  {
+                                    "type": "literal",
+                                    "value": "counter_notice_forwarding"
+                                  },
+                                  {
+                                    "type": "literal",
+                                    "value": "email_intake_needs_information"
+                                  },
+                                  {
+                                    "type": "literal",
+                                    "value": "email_intake_received"
+                                  },
+                                  {
+                                    "type": "literal",
+                                    "value": "email_intake_rejected"
+                                  },
+                                  {
+                                    "type": "literal",
+                                    "value": "owner_information_notice"
+                                  },
+                                  {
+                                    "type": "literal",
+                                    "value": "poster_restoration_notice"
+                                  },
+                                  {
+                                    "type": "literal",
+                                    "value": "poster_restriction_notice"
+                                  },
+                                  {
+                                    "type": "literal",
+                                    "value": "poster_review_notice"
+                                  },
+                                  {
+                                    "type": "literal",
+                                    "value": "redress_decision_notice"
+                                  },
+                                  {
+                                    "type": "literal",
+                                    "value": "staff_information_request"
+                                  },
+                                  {
+                                    "type": "literal",
+                                    "value": "status_update"
+                                  }
+                                ]
                               }
                             },
                             "id": {
@@ -16764,10 +16948,15 @@
                                             "type": "union",
                                             "variants": [
                                               {
-                                                "type": "null"
+                                                "type": "literal",
+                                                "value": "invalid_or_spam"
                                               },
                                               {
-                                                "type": "string"
+                                                "type": "literal",
+                                                "value": "not_obviously_invalid"
+                                              },
+                                              {
+                                                "type": "null"
                                               }
                                             ]
                                           }
@@ -16804,7 +16993,25 @@
                               "source_kind": {
                                 "required": true,
                                 "schema": {
-                                  "type": "string"
+                                  "type": "union",
+                                  "variants": [
+                                    {
+                                      "type": "literal",
+                                      "value": "email"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "guest_form"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "signed_in_form"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "staff"
+                                    }
+                                  ]
                                 }
                               }
                             },
@@ -27874,7 +28081,7 @@
     },
     "GET:/api/v1/moderation-transparency": {
       "bodyKind": "content",
-      "hash": "8888e2d3e3c82038d9b1845d906a9fc924d555058e57fe870eb3b612c09ad598",
+      "hash": "c67cab443e32aa31109f09b8d7fae46349bdf96cd22811e3f98d9c5605461536",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -27959,33 +28166,29 @@
               "metric": {
                 "required": true,
                 "schema": {
-                  "name": "ModerationTransparencyMetric",
-                  "type": "ref"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "appeals"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "automated_moderation"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "moderation_actions"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "reports"
+                    }
+                  ]
                 }
               }
             },
             "type": "object"
-          },
-          "ModerationTransparencyMetric": {
-            "type": "union",
-            "variants": [
-              {
-                "type": "literal",
-                "value": "appeals"
-              },
-              {
-                "type": "literal",
-                "value": "automated_moderation"
-              },
-              {
-                "type": "literal",
-                "value": "moderation_actions"
-              },
-              {
-                "type": "literal",
-                "value": "reports"
-              }
-            ]
           }
         },
         "root": {
@@ -33879,7 +34082,7 @@
     },
     "GET:/api/v1/my/oauth-apps": {
       "bodyKind": "content",
-      "hash": "a82697d0c3e3f47822fc8d9c601e29bfee0ed1e0ce9563cfd50908948f5fe2ca",
+      "hash": "0bd5f053218db3e9bcab43a005a4df38fbbe75c4983aac16ad330f337193ebc6",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -33904,8 +34107,17 @@
               "client_type": {
                 "required": true,
                 "schema": {
-                  "name": "OAuthClientType",
-                  "type": "ref"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "confidential"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "public"
+                    }
+                  ]
                 }
               },
               "created_at": {
@@ -33941,8 +34153,17 @@
               "token_endpoint_auth_method": {
                 "required": true,
                 "schema": {
-                  "name": "OAuthClientAuthMethod",
-                  "type": "ref"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "client_secret_basic"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "none"
+                    }
+                  ]
                 }
               },
               "updated_at": {
@@ -33967,32 +34188,6 @@
               }
             },
             "type": "object"
-          },
-          "OAuthClientAuthMethod": {
-            "type": "union",
-            "variants": [
-              {
-                "type": "literal",
-                "value": "client_secret_basic"
-              },
-              {
-                "type": "literal",
-                "value": "none"
-              }
-            ]
-          },
-          "OAuthClientType": {
-            "type": "union",
-            "variants": [
-              {
-                "type": "literal",
-                "value": "confidential"
-              },
-              {
-                "type": "literal",
-                "value": "public"
-              }
-            ]
           },
           "PageInfo": {
             "additionalProperties": false,
@@ -68791,7 +68986,7 @@
     },
     "PATCH:/api/v1/my/oauth-apps/:id": {
       "bodyKind": "content",
-      "hash": "50e0253c2d7257db75f95da8c4a8dfe1203eddba85e7c706401beba8319d4c8b",
+      "hash": "3c84d6380f93c4558c3e39163979ed9bd0a7330b97973fc5e46d7559f23eef1d",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "PATCH",
@@ -68816,8 +69011,17 @@
               "client_type": {
                 "required": true,
                 "schema": {
-                  "name": "OAuthClientType",
-                  "type": "ref"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "confidential"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "public"
+                    }
+                  ]
                 }
               },
               "created_at": {
@@ -68853,8 +69057,17 @@
               "token_endpoint_auth_method": {
                 "required": true,
                 "schema": {
-                  "name": "OAuthClientAuthMethod",
-                  "type": "ref"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "client_secret_basic"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "none"
+                    }
+                  ]
                 }
               },
               "updated_at": {
@@ -68879,32 +69092,6 @@
               }
             },
             "type": "object"
-          },
-          "OAuthClientAuthMethod": {
-            "type": "union",
-            "variants": [
-              {
-                "type": "literal",
-                "value": "client_secret_basic"
-              },
-              {
-                "type": "literal",
-                "value": "none"
-              }
-            ]
-          },
-          "OAuthClientType": {
-            "type": "union",
-            "variants": [
-              {
-                "type": "literal",
-                "value": "confidential"
-              },
-              {
-                "type": "literal",
-                "value": "public"
-              }
-            ]
           }
         },
         "root": {
@@ -73300,50 +73487,13 @@
     },
     "POST:/api/v1/communities/:communitySlug/automod/recent-actions/:sourceKey/feedback": {
       "bodyKind": "content",
-      "hash": "83814d6370be07703b22ed3ad8138cce0fb53e3a05bd5488b81e6c7ca890d31b",
+      "hash": "303d9e3e68e6df4535536400c0c114a2946e80380e57b1b89aacc715a67be306",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
       "routeTemplate": "/api/v1/communities/:idOrSlug/automod/recent-actions/:sourceKey/feedback",
       "schema": {
         "definitions": {
-          "ModerationTrainingEventType": {
-            "type": "union",
-            "variants": [
-              {
-                "type": "literal",
-                "value": "agent_accuracy_voted"
-              },
-              {
-                "type": "literal",
-                "value": "appeal_resolved"
-              },
-              {
-                "type": "literal",
-                "value": "automod_reviewed"
-              },
-              {
-                "type": "literal",
-                "value": "dispute_resolved"
-              },
-              {
-                "type": "literal",
-                "value": "draft_edited"
-              },
-              {
-                "type": "literal",
-                "value": "manual_action_inferred"
-              },
-              {
-                "type": "literal",
-                "value": "prompt_test_labelled"
-              },
-              {
-                "type": "literal",
-                "value": "report_resolved"
-              }
-            ]
-          },
           "ModerationTrainingFeedback": {
             "additionalProperties": false,
             "properties": {
@@ -73398,14 +73548,137 @@
               "event_type": {
                 "required": true,
                 "schema": {
-                  "name": "ModerationTrainingEventType",
-                  "type": "ref"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "agent_accuracy_voted"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "appeal_resolved"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "automod_reviewed"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "dispute_resolved"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "draft_edited"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "manual_action_inferred"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "prompt_test_labelled"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "report_resolved"
+                    }
+                  ]
                 }
               },
               "human_action": {
                 "required": true,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "accuracy_downvote"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "accuracy_unvote"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "accuracy_upvote"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "approve_publication"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "clearance_approved"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "clearance_in_review"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "clearance_pending"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "clearance_rejected"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "dismiss"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "keep_removed"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "label_only"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "reinstate"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "reject_publication"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "report_actioned"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "report_dismissed"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "report_reviewed"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "resolve_accept"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "resolve_annotate"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "resolve_reduce"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "resolve_remove"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "save_prompt_test_run"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "unpublish_post"
+                    }
+                  ]
                 }
               },
               "id": {
@@ -73450,8 +73723,41 @@
               "label": {
                 "required": true,
                 "schema": {
-                  "name": "ModerationTrainingLabel",
-                  "type": "ref"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "accepted"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "edited"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "false_negative_candidate"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "false_positive"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "not_applicable"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "rejected"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "true_negative"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "true_positive"
+                    }
+                  ]
                 }
               },
               "label_confidence": {
@@ -73568,8 +73874,49 @@
               "source_type": {
                 "required": true,
                 "schema": {
-                  "name": "ModerationTrainingSourceType",
-                  "type": "ref"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "agent_moderation_vote"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "agent_moderation"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "community_prompt"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "community_review"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "moderation_appeal"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "moderation_report"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "openai_omni"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "prompt_test_run"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "review_dispute"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "spam_detection"
+                    }
+                  ]
                 }
               },
               "updated_at": {
@@ -73580,88 +73927,6 @@
               }
             },
             "type": "object"
-          },
-          "ModerationTrainingLabel": {
-            "type": "union",
-            "variants": [
-              {
-                "type": "literal",
-                "value": "accepted"
-              },
-              {
-                "type": "literal",
-                "value": "edited"
-              },
-              {
-                "type": "literal",
-                "value": "false_negative_candidate"
-              },
-              {
-                "type": "literal",
-                "value": "false_positive"
-              },
-              {
-                "type": "literal",
-                "value": "not_applicable"
-              },
-              {
-                "type": "literal",
-                "value": "rejected"
-              },
-              {
-                "type": "literal",
-                "value": "true_negative"
-              },
-              {
-                "type": "literal",
-                "value": "true_positive"
-              }
-            ]
-          },
-          "ModerationTrainingSourceType": {
-            "type": "union",
-            "variants": [
-              {
-                "type": "literal",
-                "value": "agent_moderation_vote"
-              },
-              {
-                "type": "literal",
-                "value": "agent_moderation"
-              },
-              {
-                "type": "literal",
-                "value": "community_prompt"
-              },
-              {
-                "type": "literal",
-                "value": "community_review"
-              },
-              {
-                "type": "literal",
-                "value": "moderation_appeal"
-              },
-              {
-                "type": "literal",
-                "value": "moderation_report"
-              },
-              {
-                "type": "literal",
-                "value": "openai_omni"
-              },
-              {
-                "type": "literal",
-                "value": "prompt_test_run"
-              },
-              {
-                "type": "literal",
-                "value": "review_dispute"
-              },
-              {
-                "type": "literal",
-                "value": "spam_detection"
-              }
-            ]
           },
           "Record<string,unknown>": {
             "additionalProperties": {
@@ -79376,7 +79641,7 @@
     },
     "POST:/api/v1/my/oauth-apps": {
       "bodyKind": "content",
-      "hash": "7e93cf62abb2dc89fed276c98d4366a2d29865062e18ee74326733695e78fd27",
+      "hash": "9b01e48d3feaa35ae0c912b5a7a8547d6bf6a5033ace6b43e06782386eb02231",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
@@ -79428,8 +79693,17 @@
               "client_type": {
                 "required": true,
                 "schema": {
-                  "name": "OAuthClientType",
-                  "type": "ref"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "confidential"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "public"
+                    }
+                  ]
                 }
               },
               "created_at": {
@@ -79465,8 +79739,17 @@
               "token_endpoint_auth_method": {
                 "required": true,
                 "schema": {
-                  "name": "OAuthClientAuthMethod",
-                  "type": "ref"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "client_secret_basic"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "none"
+                    }
+                  ]
                 }
               },
               "updated_at": {
@@ -79491,32 +79774,6 @@
               }
             },
             "type": "object"
-          },
-          "OAuthClientAuthMethod": {
-            "type": "union",
-            "variants": [
-              {
-                "type": "literal",
-                "value": "client_secret_basic"
-              },
-              {
-                "type": "literal",
-                "value": "none"
-              }
-            ]
-          },
-          "OAuthClientType": {
-            "type": "union",
-            "variants": [
-              {
-                "type": "literal",
-                "value": "confidential"
-              },
-              {
-                "type": "literal",
-                "value": "public"
-              }
-            ]
           }
         },
         "root": {
@@ -79530,7 +79787,7 @@
     },
     "POST:/api/v1/my/oauth-apps/:id/client-secrets": {
       "bodyKind": "content",
-      "hash": "7e93cf62abb2dc89fed276c98d4366a2d29865062e18ee74326733695e78fd27",
+      "hash": "9b01e48d3feaa35ae0c912b5a7a8547d6bf6a5033ace6b43e06782386eb02231",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
@@ -79582,8 +79839,17 @@
               "client_type": {
                 "required": true,
                 "schema": {
-                  "name": "OAuthClientType",
-                  "type": "ref"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "confidential"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "public"
+                    }
+                  ]
                 }
               },
               "created_at": {
@@ -79619,8 +79885,17 @@
               "token_endpoint_auth_method": {
                 "required": true,
                 "schema": {
-                  "name": "OAuthClientAuthMethod",
-                  "type": "ref"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "client_secret_basic"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "none"
+                    }
+                  ]
                 }
               },
               "updated_at": {
@@ -79645,32 +79920,6 @@
               }
             },
             "type": "object"
-          },
-          "OAuthClientAuthMethod": {
-            "type": "union",
-            "variants": [
-              {
-                "type": "literal",
-                "value": "client_secret_basic"
-              },
-              {
-                "type": "literal",
-                "value": "none"
-              }
-            ]
-          },
-          "OAuthClientType": {
-            "type": "union",
-            "variants": [
-              {
-                "type": "literal",
-                "value": "confidential"
-              },
-              {
-                "type": "literal",
-                "value": "public"
-              }
-            ]
           }
         },
         "root": {
@@ -81918,7 +82167,7 @@
     },
     "PUT:/api/v1/admin/oauth-clients/:id/verification": {
       "bodyKind": "content",
-      "hash": "4b65e296e5e87306946d95d22be5a3863f64b9d6dcda79676bd0a3aaff744b50",
+      "hash": "32c1489270bb528f61f4bdb436d30b05e4bd1be44c0802252a4c774af527e6dd",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "PUT",
@@ -81943,8 +82192,17 @@
               "client_type": {
                 "required": true,
                 "schema": {
-                  "name": "OAuthClientType",
-                  "type": "ref"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "confidential"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "public"
+                    }
+                  ]
                 }
               },
               "created_at": {
@@ -82021,19 +82279,6 @@
               }
             },
             "type": "object"
-          },
-          "OAuthClientType": {
-            "type": "union",
-            "variants": [
-              {
-                "type": "literal",
-                "value": "confidential"
-              },
-              {
-                "type": "literal",
-                "value": "public"
-              }
-            ]
           }
         },
         "root": {

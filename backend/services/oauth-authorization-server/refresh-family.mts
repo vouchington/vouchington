@@ -28,7 +28,7 @@ export async function revokeOAuthRefreshFamily(
        oauth_grant.client_id,
        oauth_grant.id AS grant_id,
        oauth_refresh_token_families.resource,
-       oauth_refresh_token_families.scopes,
+       oauth_refresh_token_families.scopes::text[] AS scopes,
        oauth_grant.user_id`,
     [familyId, reuseDetected],
   )
@@ -77,7 +77,7 @@ async function insertOAuthRefreshFamilyRevocationEvent(
        grant_id,
        resource,
        scopes
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7::text[])
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7::api_scopes[])
      ON CONFLICT (refresh_token_family_id, event_type)
        WHERE refresh_token_family_id IS NOT NULL
      DO NOTHING`,

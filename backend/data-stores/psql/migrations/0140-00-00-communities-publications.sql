@@ -11,13 +11,6 @@
 -- 0200-00-00-communities.sql
 -- ============================================================================
 
--- Community visibility types
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'community_visibility_types') THEN
-    CREATE TYPE community_visibility_types AS ENUM ('public', 'private');
-  END IF;
-END $$;
-
 -- Community member roles
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'community_member_roles') THEN
@@ -40,7 +33,7 @@ END $$;
 -- What a community does when its moderation classifier flags a post. The community setting
 -- uses all three values; a post's recorded automod flag uses review_queue or unpublish.
 DO $$ BEGIN
-  CREATE TYPE community_automod_action AS ENUM ('record_only', 'review_queue', 'unpublish');
+  CREATE TYPE community_automod_actions AS ENUM ('record_only', 'review_queue', 'unpublish');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
@@ -64,13 +57,13 @@ CREATE TABLE IF NOT EXISTS communities (
   name TEXT NOT NULL,
   slug TEXT NOT NULL,
   markdown TEXT,
-  visibility community_visibility_types NOT NULL DEFAULT 'public',
+  visibility privacy_types NOT NULL DEFAULT 'public',
   member_roster_visibility community_member_roster_visibility_types NOT NULL DEFAULT 'public',
   member_invites_allowed_at TIMESTAMPTZ,
   post_approval_required_at TIMESTAMPTZ,
   allow_review_posts BOOLEAN NOT NULL DEFAULT false,
   allow_data_point_posts BOOLEAN NOT NULL DEFAULT false,
-  automod_action community_automod_action NOT NULL DEFAULT 'record_only',
+  automod_action community_automod_actions NOT NULL DEFAULT 'record_only',
   trusted_at TIMESTAMPTZ,
   profile_image_id UUID REFERENCES images ON DELETE SET NULL,
   banner_image_id UUID REFERENCES images ON DELETE SET NULL,
@@ -366,6 +359,7 @@ COMMENT ON COLUMN community_invites.revoked_at IS 'When the invite was revoked b
 -- community_post_reviews
 -- This app has not launched, so the community publications baseline is
 -- intentionally replaced in place instead of carrying an upgrade migration.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS community_post_reviews (
   community_id UUID NOT NULL REFERENCES communities ON DELETE CASCADE,
   post_id UUID NOT NULL REFERENCES posts ON DELETE CASCADE,
@@ -380,7 +374,7 @@ CREATE TABLE IF NOT EXISTS community_post_reviews (
   unpublished_by_id UUID REFERENCES users ON DELETE SET NULL,
   platform_override_at TIMESTAMPTZ,
   platform_override_by_id UUID REFERENCES users ON DELETE SET NULL,
-  platform_override_action TEXT CHECK (
+  platform_override_action community_post_review_platform_override_actions CHECK (
     platform_override_action IN ('approve', 'reject', 'unpublish', 'restore')
   ),
   platform_override_reason_code TEXT CHECK (
@@ -396,7 +390,7 @@ CREATE TABLE IF NOT EXISTS community_post_reviews (
   escalated_by_id UUID REFERENCES users ON DELETE SET NULL,
   -- Automod flag: the community moderation classifier's latest flag on this post, written with
   -- the same row-level shape as escalated_* (the flag is superseded by content, not lifted).
-  automod_action community_automod_action,
+  automod_action community_automod_actions,
   automod_flagged_at TIMESTAMPTZ,
   automod_flagged_content_sha256 BYTEA,
   automod_dismissed_at TIMESTAMPTZ,

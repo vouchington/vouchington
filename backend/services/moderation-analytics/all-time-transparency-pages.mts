@@ -1,3 +1,4 @@
+import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 import { write } from '@data-stores/psql'
 import { decodeScopedTimestampUuidCursor, encodeCursor } from '@modules/pagination'
 import { getMinUUIDv7ForDate } from '@modules/utils/ids'
@@ -169,7 +170,7 @@ function hasReleasedDailyCohort(rows: unknown[], cutoff: Date): boolean {
       date: string
       occurred_at: Date
       metric: ModerationTransparencyMetric
-      category: string
+      category: FiniteValue<'moderation_transparency_categories'>
       count: number
     }
     return bucket

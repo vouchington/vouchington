@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS post_clearance_changes (
   platform_override BOOLEAN NOT NULL DEFAULT FALSE,
   metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
   is_creation_moderation_bypass BOOLEAN NOT NULL DEFAULT FALSE,
-  moderation_transparency_categories TEXT[] NOT NULL DEFAULT '{}',
+  moderation_transparency_categories moderation_transparency_categories[] NOT NULL DEFAULT '{}',
   moderation_transparency_community_id UUID,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CHECK (jsonb_typeof(metadata) = 'object'),

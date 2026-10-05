@@ -120,9 +120,11 @@ describe('createSesBounceEvent', () => {
 
   it('redelivering the same message is a no-op, not a duplicate row', async () => {
     const email = `tests+redelivered-${Math.random().toString(36).slice(2)}@voucha.ai`
+    const subtype = `FutureSubtype-${Math.random().toString(36).slice(2)}`
     const input = {
       notification_type: 'bounce' as const,
       bounce_type: 'permanent' as const,
+      bounce_sub_type: subtype,
       recipients: [email],
       ses_message_id: `msg-${Math.random().toString(36).slice(2)}`,
       ses_timestamp: new Date('2024-01-01T00:00:00.000Z'),
@@ -133,6 +135,7 @@ describe('createSesBounceEvent', () => {
     const redelivered = await createSesBounceEvent(input)
 
     expect(first?.id).toBeDefined()
+    expect(first?.bounce_sub_type).toBe(subtype)
     expect(redelivered).toBeNull()
   })
 

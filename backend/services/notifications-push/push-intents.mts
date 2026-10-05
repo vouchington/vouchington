@@ -52,7 +52,7 @@ export async function claimNotificationPushIntent(
           WHEN EXISTS (SELECT 1 FROM claimed_notification) THEN 'pending'
           WHEN notification_state.deleted_at IS NOT NULL THEN 'suppressed'
           ELSE 'delivered'
-        END)::notification_push_intent_status,
+        END)::notification_push_intent_statuses,
         lease_token = CASE
           WHEN EXISTS (SELECT 1 FROM claimed_notification) THEN uuidv7()
         END,

@@ -2,11 +2,6 @@
 
 [Schema index](README.md).
 
-## `admin_import_types`
-
-- `topic`
-- `rss_feed`
-
 ## `agent_model_providers`
 
 - `openai`
@@ -34,10 +29,79 @@
 - `storyteller`
 - `classifier`
 
+## `ai_usage_record_pricing_statuses`
+
+- `priced`
+- `unpriced`
+
 ## `api_key_types`
 
 - `rss`
 - `mcp`
+
+## `api_scopes`
+
+- `account-enforcement:penalize`
+- `account-enforcement:read`
+- `account-enforcement:suspend`
+- `account-enforcement:vote-weight`
+- `account-enforcement:write`
+- `analytics:read`
+- `bookmarks:read`
+- `bookmarks:write`
+- `cards:read`
+- `cards:write`
+- `communities:read`
+- `copyright-notices:read`
+- `data-points:read`
+- `domain-ratings:read`
+- `editorial:read`
+- `editorial:write`
+- `entity-relations:read`
+- `entity-relations:write`
+- `financial-profile:read`
+- `financial-profile:write`
+- `hostnames:read`
+- `lists:read`
+- `lists:write`
+- `mcp.admin:read`
+- `mcp.admin:write`
+- `mcp.user:read`
+- `mcp.user:write`
+- `moderation:agent-votes`
+- `moderation:ai-rerun`
+- `moderation:approve`
+- `moderation:read`
+- `moderation:write`
+- `notifications:read`
+- `notifications:write`
+- `point-valuations:read`
+- `point-valuations:write`
+- `post-relations.owned-private:write`
+- `posts:read`
+- `posts:write`
+- `preferences:read`
+- `preferences:write`
+- `profile:read`
+- `profile:write`
+- `recommendations:read`
+- `reference-data:read`
+- `referral-links:read`
+- `referral-links:write`
+- `rewards-statuses:read`
+- `rewards-statuses:write`
+- `rss:read`
+- `site-operations:config`
+- `site-operations:jobs`
+- `site-operations:queues`
+- `site-operations:read`
+- `spending:read`
+- `spending:write`
+- `topic-recommendations:read`
+- `topic-recommendations:write`
+- `topics:read`
+- `users:read`
+- `web-search:read`
 
 ## `app_attestation_environments`
 
@@ -52,6 +116,16 @@
 - `crawl_chunks`
 - `images`
 
+## `bluesky_link_authorization_statuses`
+
+- `pending`
+- `callback_claimed`
+- `handoff_ready`
+- `attached`
+- `revoked`
+- `expired`
+- `rejected`
+
 ## `broadcast_types`
 
 - `everyone`
@@ -59,22 +133,36 @@
 - `followers`
 - `mutual_followers`
 
-## `classifier_candidate_kind`
+## `classifier_candidate_kinds`
 
 - `topic`
 - `story`
 - `community_prompt`
 
-## `classifier_model_provider`
+## `classifier_model_providers`
 
 - `typesafe`
 - `openrouter`
 
-## `classifier_primitive`
+## `classifier_primitives`
 
 - `noul`
 - `choice`
 - `score`
+
+## `classifier_run_terminal_failure_kinds`
+
+- `provider-error`
+- `invalid-result`
+- `context-rejected`
+- `attempts-exhausted`
+- `client-unavailable`
+- `sweep-bound-exceeded`
+
+## `classifier_scope_categories`
+
+- `global`
+- `community_ai`
 
 ## `community_agent_prompt_revision_types`
 
@@ -93,7 +181,7 @@
 - `multi_select`
 - `checkbox`
 
-## `community_automod_action`
+## `community_automod_actions`
 
 - `record_only`
 - `review_queue`
@@ -132,17 +220,19 @@
 - `unpublish`
 - `restore`
 
+## `community_post_review_platform_override_actions`
+
+- `approve`
+- `reject`
+- `unpublish`
+- `restore`
+
 ## `community_restriction_types`
 
 - `require_post_approval`
 - `no_new_member_posts`
 - `no_links`
 - `approved_members_only`
-
-## `community_visibility_types`
-
-- `public`
-- `private`
 
 ## `consent_types`
 
@@ -158,6 +248,19 @@
 - `api`
 - `mcp`
 - `system`
+
+## `contribution_policy_sources`
+
+- `discussion`
+- `review`
+- `comment`
+- `data_point`
+- `link`
+- `story`
+- `rss_item_discussion`
+- `topic_recommendation`
+- `article`
+- `blog_post`
 
 ## `conversation_channel_types`
 
@@ -189,11 +292,195 @@
 - `admin`
 - `member`
 
+## `copyright_automatic_withholding_refusal_reasons`
+
+- `thresholds_unset`
+- `switch_on_unrecorded`
+- `received_before_switch_on`
+- `claimant_unavailable`
+- `claimant_suspended`
+- `trust_below_minimum`
+- `account_too_new`
+- `claimant_daily_cap`
+- `poster_daily_cap`
+- `non_post_target`
+
+## `copyright_claimant_misuse_event_outcomes`
+
+- `notice_withdrawn`
+- `notice_rejected`
+- `restriction_reversed_by_counter_notice`
+- `restriction_reversed_by_appeal`
+
+## `copyright_eu_dispute_settlement_results`
+
+- `decided_for_recipient`
+- `decided_for_platform`
+- `withdrawn`
+- `no_decision`
+
+## `copyright_jurisdictions`
+
+- `us_dmca`
+- `eu_dsa`
+- `uk`
+- `other`
+
+## `copyright_notice_action_intent_actions`
+
+- `withhold`
+- `restore`
+
+## `copyright_notice_action_intent_states`
+
+- `pending`
+- `claimed`
+- `completed`
+- `stale`
+- `blocked`
+- `failed`
+
+## `copyright_notice_appeal_recommendation_outcomes`
+
+- `confirm`
+- `modify`
+- `reverse`
+- `uncertain`
+
+## `copyright_notice_correspondence_kinds`
+
+- `receipt`
+- `request_information`
+- `restriction_notice`
+- `decision_notice`
+- `counter_notice_forwarding`
+- `restoration_notice`
+- `status_update`
+- `inbound_message`
+
+## `copyright_notice_correspondence_message_composition_kinds`
+
+- `inbound`
+- `deterministic_template`
+- `staff`
+- `agent`
+
+## `copyright_notice_correspondence_message_directions`
+
+- `inbound`
+- `outbound`
+
+## `copyright_notice_delivery_intent_channels`
+
+- `in_app`
+- `email`
+
+## `copyright_notice_delivery_intent_recipient_roles`
+
+- `claimant`
+- `poster`
+- `informed_owner`
+- `correspondent`
+
+## `copyright_notice_delivery_intent_states`
+
+- `pending`
+- `claimed`
+- `sent`
+- `failed`
+- `bounced`
+
+## `copyright_notice_delivery_kinds`
+
+- `owner_information_notice`
+- `redress_decision_notice`
+- `claimant_receipt`
+- `status_update`
+- `poster_restriction_notice`
+- `poster_review_notice`
+- `poster_restoration_notice`
+- `claimant_decision_notice`
+- `counter_notice_forwarding`
+- `staff_information_request`
+- `email_intake_rejected`
+- `email_intake_needs_information`
+- `email_intake_received`
+
+## `copyright_notice_email_correspondence_review_actions`
+
+- `pending`
+- `admitted`
+- `rejected`
+
+## `copyright_notice_email_correspondence_review_kinds`
+
+- `complaint`
+- `supplement`
+- `appeal`
+- `counter_notice`
+- `withdrawal`
+- `court_or_ccb_hold`
+
+## `copyright_notice_email_intake_link_kinds`
+
+- `initial`
+- `thread`
+
+## `copyright_notice_email_intake_parse_statuses`
+
+- `succeeded`
+- `failed`
+
+## `copyright_notice_email_intake_review_decisions`
+
+- `approved`
+- `rejected`
+- `legal_process`
+
+## `copyright_notice_email_thread_reference_kinds`
+
+- `message_id`
+- `reply_reference`
+
 ## `copyright_notice_form_screening_attempt_states`
 
 - `pending`
 - `failed`
 - `completed`
+
+## `copyright_notice_form_screening_recommendations`
+
+- `not_obviously_invalid`
+- `invalid_or_spam`
+
+## `copyright_notice_legal_bases`
+
+- `copyright`
+
+## `copyright_notice_legal_hold_assessment_ccb_claim_kinds`
+
+- `claim`
+- `counterclaim`
+
+## `copyright_notice_legal_hold_assessment_proceeding_kinds`
+
+- `federal_court`
+- `ccb`
+
+## `copyright_notice_legal_hold_resolution_kinds`
+
+- `dismissed`
+- `proceeding_ended`
+- `superseded`
+
+## `copyright_notice_lifecycle_change_recovery_sources`
+
+- `durable_review`
+- `durable_decision`
+
+## `copyright_notice_lifecycle_change_replay_reasons`
+
+- `operator_replay`
 
 ## `copyright_notice_lifecycle_change_types`
 
@@ -231,11 +518,87 @@
 - `guest_capability_revoked`
 - `guest_capability_revoked_by_withdrawal`
 
+## `copyright_notice_submission_kinds`
+
+- `complaint`
+- `notice`
+- `supplement`
+- `appeal`
+- `counter_notice`
+- `withdrawal`
+- `court_or_ccb_hold`
+
+## `copyright_notice_submission_source_kinds`
+
+- `signed_in_form`
+- `guest_form`
+- `email`
+- `staff`
+
+## `copyright_repeat_infringer_disposition_kinds`
+
+- `withdrawn`
+- `duplicate`
+- `abusive`
+
+## `copyright_repeat_infringer_review_outcomes`
+
+- `warning`
+- `no_action`
+- `restrict`
+- `terminate`
+- `reinstatement`
+
+## `copyright_restriction_human_review_actions`
+
+- `confirm`
+- `modify`
+- `reverse`
+
+## `copyright_review_actions`
+
+- `confirm`
+- `reverse`
+
+## `copyright_staydown_match_kinds`
+
+- `exact`
+- `perceptual`
+
+## `copyright_territorial_decision_automation_disclosures`
+
+- `human`
+
+## `copyright_territorial_decision_outcomes`
+
+- `restrict`
+- `no_action`
+
+## `copyright_territorial_notice_routing_destinations`
+
+- `staff_queue`
+
+## `copyright_territorial_party_roles`
+
+- `notifier`
+- `poster`
+- `reviewer`
+
+## `copyright_territorial_redress_decision_staff_dispositions`
+
+- `maintain`
+- `revoke`
+
 ## `copyright_trusted_flagger_change_types`
 
 - `suspended`
 - `reinstated`
 - `revoked`
+
+## `copyright_trusted_flagger_expertise_areas`
+
+- `intellectual_property`
+- `other`
 
 ## `crawl_network_errors`
 
@@ -247,6 +610,18 @@
 
 - `fetch`
 - `automation`
+
+## `curated_aside_item_types`
+
+- `topic`
+- `source`
+- `community`
+
+## `digest_frequencies`
+
+- `none`
+- `daily`
+- `weekly`
 
 ## `domain_blacklist_types`
 
@@ -273,6 +648,14 @@
 - `relation__rss_feed_item__category__topic`
 - `relation__rss_feed_item__category__topic_alias`
 
+## `email_security_verdicts`
+
+- `pass`
+- `fail`
+- `gray`
+- `processing_failed`
+- `unknown`
+
 ## `engagement_email_types`
 
 - `follow_topics`
@@ -297,6 +680,18 @@
 - `all_followers`
 - `selected_followers`
 
+## `http_request_methods`
+
+- `GET`
+- `HEAD`
+- `POST`
+- `PUT`
+- `DELETE`
+- `CONNECT`
+- `OPTIONS`
+- `TRACE`
+- `PATCH`
+
 ## `identity_verification_attempt_sources`
 
 - `self_paid`
@@ -316,16 +711,58 @@
 - `failed`
 - `duplicate_id`
 
+## `image_binding_families`
+
+- `post`
+- `surface`
+
+## `image_surface_placement_surface_kinds`
+
+- `user-profile-image`
+- `topic-logo-image`
+- `topic-hero-image`
+- `community-profile-image`
+- `community-banner-image`
+- `user-profile-link-image`
+
+## `import_entity_types`
+
+- `topic`
+- `rss_feed`
+
 ## `list_item_types`
 
 - `rss_feed_item`
 - `post`
 
-## `list_visibility`
+## `list_visibilities`
 
 - `private`
 - `unlisted`
 - `public`
+
+## `mcp_call_audit_event_outcomes`
+
+- `accepted`
+- `tool_error`
+- `invalid_request`
+- `invalid_arguments`
+- `not_found`
+- `role_denied`
+- `plan_denied`
+- `scopes_undeclared`
+- `insufficient_scope`
+- `rate_limited`
+
+## `mcp_call_audit_event_surfaces`
+
+- `mcp`
+- `admin_mcp`
+
+## `media_delivery_desired_states`
+
+- `allow`
+- `withheld`
 
 ## `media_delivery_registry_change_types`
 
@@ -333,6 +770,11 @@
 - `claimed`
 - `completed`
 - `failed`
+
+## `media_placement_retirement_reasons`
+
+- `asset_deleted`
+- `owner_removed`
 
 ## `membership_billing_intervals`
 
@@ -353,6 +795,20 @@
 - `admin_grant`
 - `admin_revoke`
 - `refund`
+
+## `membership_google_play_acknowledgement_skip_reasons`
+
+- `no_longer_eligible`
+
+## `membership_google_play_recovery_families`
+
+- `notifications`
+- `active_sources`
+- `acknowledgements`
+
+## `membership_microsoft_store_recovery_families`
+
+- `active_sources`
 
 ## `membership_operation_kinds`
 
@@ -413,7 +869,7 @@
 - `missing_account_token`
 - `stale_evidence`
 
-## `moderation_appeal_action`
+## `moderation_appeal_actions`
 
 - `accept`
 - `deny`
@@ -442,7 +898,7 @@
 - `selected_days`
 - `weekly`
 
-## `moderation_judgement_action`
+## `moderation_judgement_actions`
 
 - `no_action`
 - `warn`
@@ -456,7 +912,7 @@
 - `reports`
 - `post_page`
 
-## `moderation_report_entity_type`
+## `moderation_report_entity_types`
 
 - `rss_feed_item`
 - `post`
@@ -464,7 +920,7 @@
 - `user`
 - `url_hostname`
 
-## `moderation_report_reason`
+## `moderation_report_reasons`
 
 - `spam`
 - `harassment`
@@ -473,13 +929,13 @@
 - `other`
 - `vote_manipulation`
 
-## `moderation_report_resolution_action`
+## `moderation_report_resolution_actions`
 
 - `reviewed`
 - `actioned`
 - `dismissed`
 
-## `moderation_training_event_type`
+## `moderation_training_event_types`
 
 - `automod_reviewed`
 - `manual_action_inferred`
@@ -490,7 +946,32 @@
 - `agent_accuracy_voted`
 - `prompt_test_labelled`
 
-## `moderation_training_label`
+## `moderation_training_human_actions`
+
+- `reinstate`
+- `keep_removed`
+- `label_only`
+- `dismiss`
+- `resolve_accept`
+- `resolve_reduce`
+- `resolve_remove`
+- `resolve_annotate`
+- `report_reviewed`
+- `report_dismissed`
+- `report_actioned`
+- `clearance_approved`
+- `clearance_rejected`
+- `clearance_pending`
+- `clearance_in_review`
+- `approve_publication`
+- `reject_publication`
+- `unpublish_post`
+- `accuracy_upvote`
+- `accuracy_downvote`
+- `accuracy_unvote`
+- `save_prompt_test_run`
+
+## `moderation_training_labels`
 
 - `true_positive`
 - `false_positive`
@@ -501,7 +982,7 @@
 - `rejected`
 - `not_applicable`
 
-## `moderation_training_source_type`
+## `moderation_training_source_types`
 
 - `agent_moderation`
 - `openai_omni`
@@ -513,6 +994,93 @@
 - `review_dispute`
 - `agent_moderation_vote`
 - `prompt_test_run`
+
+## `moderation_transparency_categories`
+
+- `accept`
+- `activate_restriction`
+- `agent_moderation`
+- `agent_moderation_vote_delete`
+- `agent_moderation_vote_set`
+- `appeal_resolution_draft_rerun`
+- `approve`
+- `article_sync_run`
+- `backfill_run`
+- `ban`
+- `change_role`
+- `community_ai`
+- `crawler_create`
+- `crawler_delete`
+- `crawler_update`
+- `deny`
+- `dismiss_appeal`
+- `dismiss_report`
+- `dispute_resolution_draft_rerun`
+- `harassment`
+- `illegal_content`
+- `import_batch_create`
+- `lift_ban`
+- `lift_restriction`
+- `lock`
+- `misinformation`
+- `mod_note_delete`
+- `oauth_client_unverify`
+- `oauth_client_verify`
+- `openai_omni`
+- `other`
+- `pin`
+- `post_clearance_reject`
+- `preservation_hold_place`
+- `preservation_hold_release`
+- `queue_pause`
+- `queue_resume`
+- `queue_retry_failed`
+- `reduce`
+- `reject`
+- `remove`
+- `remove_member`
+- `report_claim`
+- `report_deescalate`
+- `report_escalate`
+- `report_integrity_flag_review`
+- `report_integrity_penalty_apply`
+- `report_integrity_penalty_revoke`
+- `report_judgement_rerun`
+- `report_unclaim`
+- `resolve_appeal`
+- `resolve_report`
+- `rss_category_assign`
+- `rss_category_reject`
+- `rss_category_unreject`
+- `scheduled_job_run`
+- `spam`
+- `spam_detection`
+- `story_item_add`
+- `story_item_remove`
+- `story_official_item_set`
+- `story_rename`
+- `suspend`
+- `tag`
+- `topic_claim_reject`
+- `topic_claim_revoke`
+- `topic_claim_verify`
+- `unlock`
+- `unpin`
+- `unsuspend`
+- `vote_integrity_flag_review`
+- `vote_integrity_penalty_apply`
+- `vote_integrity_penalty_revoke`
+- `vote_manipulation`
+- `vote_weight_reset`
+- `vote_weight_set`
+- `warn`
+
+## `moderation_transparency_metrics`
+
+- `reports`
+- `moderation_actions`
+- `automated_moderation`
+- `appeals`
 
 ## `moderator_action_types`
 
@@ -611,17 +1179,80 @@
 - `community_activity_digest`
 - `copyright_notice`
 
-## `notification_push_endpoint_status`
+## `notification_push_endpoint_statuses`
 
 - `pending`
 - `delivered`
 - `permanently_failed`
 
-## `notification_push_intent_status`
+## `notification_push_intent_statuses`
 
 - `pending`
 - `delivered`
 - `suppressed`
+
+## `notification_target_intents`
+
+- `notifications_inbox`
+
+## `oauth_authorization_providers`
+
+- `facebook`
+- `x`
+- `github`
+
+## `oauth_authorization_purposes`
+
+- `authenticate`
+- `connect`
+
+## `oauth_authorization_result_kinds`
+
+- `authenticated`
+- `mfa_required`
+- `connected`
+
+## `oauth_authorization_server_event_types`
+
+- `consent_approved`
+- `consent_denied`
+- `access_token_revoked`
+- `refresh_family_revoked`
+- `refresh_reuse_detected`
+
+## `oauth_authorization_statuses`
+
+- `pending`
+- `callback_received`
+- `exchanging`
+- `completion_ready`
+- `completed`
+- `rejected`
+- `expired`
+
+## `oauth_callback_modes`
+
+- `web`
+- `native`
+
+## `oauth_client_token_endpoint_auth_methods`
+
+- `none`
+- `client_secret_basic`
+
+## `oauth_client_types`
+
+- `public`
+- `confidential`
+
+## `oauth_grant_types`
+
+- `authorization_code`
+- `refresh_token`
+
+## `oauth_response_types`
+
+- `code`
 
 ## `passkey_device_types`
 
@@ -637,6 +1268,48 @@
 
 - `episodic`
 - `serial`
+
+## `post_admission_committed_statuses`
+
+- `created`
+
+## `post_admission_quota_consumption_modes`
+
+- `all_windows`
+- `daily_only`
+
+## `post_admission_reservation_states`
+
+- `in_progress`
+- `committed`
+- `retryable_failed`
+- `expired`
+
+## `post_admission_routes`
+
+- `internal`
+- `authored.create`
+- `posts.create`
+- `communities.posts.create`
+- `rss-feed-items.discussions.create`
+- `stories.discussions.create`
+- `topic-recommendations.create`
+- `my.import.topics.recommendation`
+
+## `post_admission_scope_categories`
+
+- `internal`
+- `global`
+- `community`
+- `rss_item`
+- `story`
+- `topic_recommendation`
+- `my.import.topics`
+
+## `post_classifier_local_outcome_classifications`
+
+- `ai`
+- `human`
 
 ## `post_clearance_change_types`
 
@@ -657,6 +1330,59 @@
 - `openai_omni`
 - `spam_detection`
 - `staff`
+
+## `post_publication_identity_bridge_cleanup_families`
+
+- `post`
+- `community`
+- `rss_feed_item`
+- `author`
+- `rss_feed`
+- `topic_alias`
+- `story`
+
+## `post_publication_reasons`
+
+- `post_created`
+- `post_updated`
+- `post_content_reset`
+- `post_audience_changed`
+- `post_archived`
+- `post_deleted`
+- `post_topics_changed`
+- `post_related_urls_changed`
+- `post_ratings_changed`
+- `post_clearance_changed`
+- `post_moderation_flag_changed`
+- `community_publication_changed`
+- `moderation_appeal_resolved`
+- `author_suspension_changed`
+- `author_deleted`
+- `community_visibility_changed`
+- `rss_feed_discoverability_changed`
+- `rss_feed_enablement_changed`
+- `rss_feed_source_changed`
+
+## `post_publication_receipt_cursor_kinds`
+
+- `typed`
+
+## `post_publication_source_cursor_kinds`
+
+- `review`
+- `data`
+- `relation`
+- `alias_source`
+- `alias_relation`
+- `static`
+- `slug`
+- `feed`
+
+## `post_topic_alias_source_types`
+
+- `title`
+- `markdown`
+- `explicit`
 
 ## `post_topic_recommendation_topic_types`
 
@@ -697,6 +1423,16 @@
 - `dismissed`
 - `penalized`
 
+## `retained_identity_cleanup_families`
+
+- `user`
+- `api_key`
+- `topic`
+- `post`
+- `rss_feed_item`
+- `image`
+- `image_placement_binding`
+
 ## `retained_identity_families`
 
 - `user`
@@ -706,7 +1442,7 @@
 - `rss_feed_item`
 - `image`
 
-## `review_dispute_action`
+## `review_dispute_actions`
 
 - `no_action`
 - `remove`
@@ -724,7 +1460,7 @@
 - `resolve_annotate`
 - `dismiss`
 
-## `review_dispute_reason`
+## `review_dispute_reasons`
 
 - `factually_inaccurate`
 - `defamatory`
@@ -790,7 +1526,31 @@
 - `rss_feed`
 - `fediverse_instance`
 
-## `user_display_name_source`
+## `url_hostname_block_sources`
+
+- `admin`
+- `google_web_risk`
+- `parent_hostname`
+
+## `user_deletion_external_work_kinds`
+
+- `cloudflare-cache-tag`
+- `entity-relation-effects`
+- `s3-export`
+- `stripe-customer`
+
+## `user_deletion_request_current_phases`
+
+- `posts`
+- `votes`
+- `user-relations`
+- `credentials`
+- `account-data`
+- `relation-impacts`
+- `external-work`
+- `finalize`
+
+## `user_display_name_sources`
 
 - `username`
 - `facebook`
@@ -800,11 +1560,6 @@
 - `linkedin`
 - `microsoft`
 - `github`
-
-## `user_import_request_entity_types`
-
-- `topic`
-- `rss_feed`
 
 ## `user_landing_page_group_member_types`
 
@@ -845,12 +1600,6 @@
 - `source_created`
 - `already_following`
 - `error`
-
-## `verified_identity_statuses`
-
-- `active`
-- `revoked`
-- `transferred`
 
 ## `vote_integrity_flag_types`
 

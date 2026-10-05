@@ -3,13 +3,14 @@
 -- Persist only aggregate daily moderation-transparency cohorts.  This is the
 -- privacy boundary for paid transparency: no user, post, prompt, or action id
 -- is retained here.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE moderation_transparency_daily_rollups (
   day date NOT NULL,
   -- No FK: a community hard-delete must not erase an eligible-but-unread
   -- aggregate before it can be promoted into the immutable release projection.
   community_id uuid,
-  metric text NOT NULL CHECK (metric IN ('reports', 'moderation_actions', 'automated_moderation', 'appeals')),
-  category text NOT NULL,
+  metric moderation_transparency_metrics NOT NULL CHECK (metric IN ('reports', 'moderation_actions', 'automated_moderation', 'appeals')),
+  category moderation_transparency_categories NOT NULL,
   count integer NOT NULL CHECK (count > 0),
   -- The maximum source timestamp is deliberately retained after decrements.
   -- A stale value can only delay a release; it can never release too early.
@@ -39,11 +40,12 @@ COMMENT ON COLUMN moderation_transparency_daily_rollups.latest_occurred_at IS 'L
 -- Once a qualifying daily cohort is released, retain only this aggregate snapshot.
 -- It deliberately has no foreign keys: source, community, and actor deletion cannot
 -- rewrite a published disclosure.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE moderation_transparency_released_daily_rollups (
   day date NOT NULL,
   community_id uuid,
-  metric text NOT NULL CHECK (metric IN ('reports', 'moderation_actions', 'automated_moderation', 'appeals')),
-  category text NOT NULL,
+  metric moderation_transparency_metrics NOT NULL CHECK (metric IN ('reports', 'moderation_actions', 'automated_moderation', 'appeals')),
+  category moderation_transparency_categories NOT NULL,
   count integer NOT NULL CHECK (count >= 20),
   latest_occurred_at timestamptz NOT NULL,
   released_at timestamptz NOT NULL DEFAULT transaction_timestamp(),
@@ -83,8 +85,9 @@ BEGIN
   END IF;
 END $$;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_apply_moderation_transparency_daily_rollup(
-  p_occurred_at timestamptz, p_community_id uuid, p_metric text, p_category text, p_delta integer
+  p_occurred_at timestamptz, p_community_id uuid, p_metric moderation_transparency_metrics, p_category moderation_transparency_categories, p_delta integer
 ) RETURNS void LANGUAGE plpgsql AS $$
 DECLARE p_day date := (p_occurred_at AT TIME ZONE 'UTC')::date;
 BEGIN
@@ -130,8 +133,9 @@ BEGIN
   END IF;
 END $$;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_release_moderation_transparency_daily_rollup(
-  p_day date, p_community_id uuid, p_metric text, p_category text, p_cutoff timestamptz
+  p_day date, p_community_id uuid, p_metric moderation_transparency_metrics, p_category moderation_transparency_categories, p_cutoff timestamptz
 ) RETURNS void LANGUAGE plpgsql AS $$
 BEGIN
   -- Share the same per-cohort lock as source-triggered increments and decrements.
@@ -205,7 +209,7 @@ DECLARE
 BEGIN
   FOR cohort IN EXECUTE format(
     'SELECT (uuid_extract_timestamp(id) AT TIME ZONE ''UTC'')::date AS day,
-      NULL::uuid AS community_id, $1::text AS metric, %I::text AS category,
+      NULL::uuid AS community_id, $1::moderation_transparency_metrics AS metric, %I::text::moderation_transparency_categories AS category,
       count(*)::integer AS count FROM %I
       WHERE moderation_transparency_community_id IS NULL
       GROUP BY 1, 2, 3, 4 ORDER BY 1, 2 NULLS FIRST, 3, 4', TG_ARGV[1], TG_ARGV[0])
@@ -213,7 +217,7 @@ BEGIN
   LOOP
     PERFORM fn_apply_moderation_transparency_daily_rollup(
       cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,
-      cohort.metric, cohort.category, delta_sign * cohort.count);
+      cohort.metric::moderation_transparency_metrics, cohort.category::text::moderation_transparency_categories, delta_sign * cohort.count);
   END LOOP;
   RETURN NULL;
 END $$;
@@ -422,7 +426,7 @@ BEGIN
   LOOP
     PERFORM fn_apply_moderation_transparency_daily_rollup(
       cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,
-      cohort.metric, cohort.category, cohort.delta
+      cohort.metric::moderation_transparency_metrics, cohort.category::text::moderation_transparency_categories, cohort.delta
     );
   END LOOP;
   RETURN NULL;
@@ -451,7 +455,7 @@ BEGIN
   LOOP
     PERFORM fn_apply_moderation_transparency_daily_rollup(
       cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,
-      cohort.metric, cohort.category, cohort.delta
+      cohort.metric::moderation_transparency_metrics, cohort.category::text::moderation_transparency_categories, cohort.delta
     );
   END LOOP;
   RETURN NULL;
@@ -471,7 +475,7 @@ BEGIN
   LOOP
     PERFORM fn_apply_moderation_transparency_daily_rollup(
       cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,
-      cohort.metric, cohort.category, -cohort.count
+      cohort.metric::moderation_transparency_metrics, cohort.category::text::moderation_transparency_categories, -cohort.count
     );
   END LOOP;
   RETURN NULL;
@@ -526,7 +530,7 @@ BEGIN
   LOOP
     PERFORM fn_apply_moderation_transparency_daily_rollup(
       cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,
-      cohort.metric, cohort.category, cohort.delta
+      cohort.metric::moderation_transparency_metrics, cohort.category::text::moderation_transparency_categories, cohort.delta
     );
   END LOOP;
   RETURN NULL;
@@ -556,7 +560,7 @@ BEGIN
   LOOP
     PERFORM fn_apply_moderation_transparency_daily_rollup(
       cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,
-      cohort.metric, cohort.category, cohort.delta
+      cohort.metric::moderation_transparency_metrics, cohort.category::text::moderation_transparency_categories, cohort.delta
     );
   END LOOP;
   RETURN NULL;
@@ -576,7 +580,7 @@ BEGIN
   LOOP
     PERFORM fn_apply_moderation_transparency_daily_rollup(
       cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,
-      cohort.metric, cohort.category, -cohort.count
+      cohort.metric::moderation_transparency_metrics, cohort.category::text::moderation_transparency_categories, -cohort.count
     );
   END LOOP;
   RETURN NULL;
@@ -632,7 +636,7 @@ BEGIN
   LOOP
     PERFORM fn_apply_moderation_transparency_daily_rollup(
       cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,
-      cohort.metric, cohort.category, cohort.delta
+      cohort.metric::moderation_transparency_metrics, cohort.category::text::moderation_transparency_categories, cohort.delta
     );
   END LOOP;
   RETURN NULL;
@@ -653,7 +657,7 @@ BEGIN
   LOOP
     PERFORM fn_apply_moderation_transparency_daily_rollup(
       cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,
-      cohort.metric, cohort.category, -cohort.count
+      cohort.metric::moderation_transparency_metrics, cohort.category::text::moderation_transparency_categories, -cohort.count
     );
   END LOOP;
   RETURN NULL;

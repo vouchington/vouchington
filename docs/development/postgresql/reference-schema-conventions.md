@@ -28,3 +28,10 @@ Relation votes use metadata-generated standalone RANGE parents with table-level 
 keys. The shared index-name builder retains owner words while fitting 63 bytes; cross-family reads
 use the enum-tagged generated union view. See the
 [R3 contract](../postgres-schema-rules.md#r3--normalize-ids-are-fk-columns-json-is-for-schemaless-data).
+
+Closed scalar domains and finite arrays use plural enums. The API scope enum is generated from the
+scope catalogue; raw enum-array result projections cast to `text[]` so the PostgreSQL driver
+decodes JavaScript arrays, while SQL storage and intermediate writes retain enum types. Vendor
+vocabularies use first-sight lookup rows. MIME references share `media_types`.
+See [constraints and validation](reference-constraints-and-validation.md) and the
+[finite enum ripple checklist](../finite-enum-ripple-checklist.md).

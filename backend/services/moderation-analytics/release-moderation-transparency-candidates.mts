@@ -1,3 +1,4 @@
+import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 import { write } from '@data-stores/psql'
 import pMap from 'p-map'
 import sql from 'sql-template-strings'
@@ -5,8 +6,8 @@ import sql from 'sql-template-strings'
 export type ModerationTransparencyReleaseCandidate = {
   day: string
   community_id: string | null
-  metric: string
-  category: string
+  metric: FiniteValue<'moderation_transparency_metrics'>
+  category: FiniteValue<'moderation_transparency_categories'>
 }
 
 /** Releases one candidate per transaction, preventing cross-cohort lock accumulation. */

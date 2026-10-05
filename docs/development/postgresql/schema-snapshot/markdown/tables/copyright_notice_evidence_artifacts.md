@@ -13,7 +13,7 @@ Not partitioned — growth: unbounded.
 | `copyright_notice_submission_id` | `uuid`                     | no       |                              |          |           |           | Submission whose preserved source or attachment this artifact represents.                                   |
 | `storage_key`                    | `text`                     | no       |                              |          |           |           | Private object-storage key; never included in member projections.                                           |
 | `sha256`                         | `bytea`                    | no       |                              |          |           |           | SHA-256 digest used to verify immutable evidence bytes.                                                     |
-| `mime_type`                      | `text`                     | no       |                              |          |           |           | Untrusted declared or detected media type used only for quarantined processing.                             |
+| `media_type_id`                  | `bigint`                   | no       |                              |          |           |           | Untrusted declared or detected media type used only for quarantined processing.                             |
 | `byte_size`                      | `integer`                  | no       |                              |          |           |           | Preserved artifact byte length for bounds and integrity checks.                                             |
 | `created_at`                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                             |
 | `updated_at`                     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                             |
@@ -32,6 +32,7 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
+- `copyright_notice_evidence_artifacts_media_type_id_fkey`: `FOREIGN KEY (media_type_id) REFERENCES media_types(id) ON DELETE RESTRICT`
 - `fk_copyright_artifacts__parent_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_submission_id) REFERENCES copyright_notice_submissions(copyright_notice_id, id) ON DELETE CASCADE`
 
 **Indexes:**
@@ -39,6 +40,7 @@ Not partitioned — growth: unbounded.
 - `copyright_notice_evidence_art_copyright_notice_submission_i_key`: `CREATE UNIQUE INDEX copyright_notice_evidence_art_copyright_notice_submission_i_key ON public.copyright_notice_evidence_artifacts USING btree (copyright_notice_submission_id, storage_key)`
 - `copyright_notice_evidence_artifacts_copyright_notice_id_id_key`: `CREATE UNIQUE INDEX copyright_notice_evidence_artifacts_copyright_notice_id_id_key ON public.copyright_notice_evidence_artifacts USING btree (copyright_notice_id, id)`
 - `copyright_notice_evidence_artifacts_pkey`: `CREATE UNIQUE INDEX copyright_notice_evidence_artifacts_pkey ON public.copyright_notice_evidence_artifacts USING btree (id)`
+- `idx_copyright_notice_evidence_artifacts__media_type_id`: `CREATE INDEX idx_copyright_notice_evidence_artifacts__media_type_id ON public.copyright_notice_evidence_artifacts USING btree (media_type_id)`
 
 **Triggers:**
 

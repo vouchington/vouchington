@@ -1,3 +1,4 @@
+import { upsertMediaTypes } from '../../../services/urls/media-types.mts'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -13,8 +14,9 @@ export async function rejectCrossNoticeSubmissionTarget(): Promise<void> {
 }
 
 export async function rejectCopyrightEvidenceMissingParent(): Promise<void> {
+  const mediaTypeId = await upsertMediaTypes('application/pdf')
   await write(sql`/* rejectCopyrightEvidenceMissingParent */
     INSERT INTO copyright_notice_evidence_artifacts (
-      copyright_notice_submission_id, storage_key, sha256, mime_type, byte_size
-    ) VALUES (uuidv7(), ${`missing-parent-${randomUUID()}`}, ${randomBytes(32)}, 'application/pdf', 1)`)
+      copyright_notice_submission_id, storage_key, sha256, media_type_id, byte_size
+    ) VALUES (uuidv7(), ${`missing-parent-${randomUUID()}`}, ${randomBytes(32)}, ${mediaTypeId}, 1)`)
 }

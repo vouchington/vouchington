@@ -12,7 +12,7 @@ Not partitioned — growth: unbounded.
 | `user_id`      | `uuid`                     | no       |                              |          |           |           | User who consented to the delegated grant.                         |
 | `client_id`    | `uuid`                     | no       |                              |          |           |           | Client receiving the delegated grant.                              |
 | `resource`     | `text`                     | no       |                              |          |           |           | Protected resource audience covered by the grant.                  |
-| `scopes`       | `text[]`                   | no       |                              |          |           |           | Latest canonical scope set consented for this client and resource. |
+| `scopes`       | `api_scopes[]`             | no       |                              |          |           |           | Latest canonical scope set consented for this client and resource. |
 | `consented_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | Time of the latest affirmative consent decision.                   |
 | `last_used_at` | `timestamp with time zone` | yes      |                              |          |           |           | Time at which the grant most recently issued or refreshed tokens.  |
 | `revoked_at`   | `timestamp with time zone` | yes      |                              |          |           |           | Time at which the complete grant was revoked.                      |

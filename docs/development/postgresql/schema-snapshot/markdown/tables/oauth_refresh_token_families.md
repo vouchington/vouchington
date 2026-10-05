@@ -11,7 +11,7 @@ Not partitioned — growth: bounded.
 | `id`                | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                |
 | `grant_id`          | `uuid`                     | no       |                              |          |           |           | Delegated grant represented by the rotating family.            |
 | `resource`          | `text`                     | no       |                              |          |           |           | Protected resource audience bound to the family.               |
-| `scopes`            | `text[]`                   | no       |                              |          |           |           | Maximum canonical scope set available to family members.       |
+| `scopes`            | `api_scopes[]`             | no       |                              |          |           |           | Maximum canonical scope set available to family members.       |
 | `expires_at`        | `timestamp with time zone` | no       |                              |          |           |           | Absolute expiry shared by every family member.                 |
 | `revoked_at`        | `timestamp with time zone` | yes      |                              |          |           |           | Time at which the complete token family was revoked.           |
 | `reuse_detected_at` | `timestamp with time zone` | yes      |                              |          |           |           | Time at which replay of a consumed family member was detected. |

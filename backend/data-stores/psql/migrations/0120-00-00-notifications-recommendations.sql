@@ -31,6 +31,7 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS notifications (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   id UUID NOT NULL DEFAULT uuidv7(),
@@ -208,7 +209,7 @@ CREATE TABLE IF NOT EXISTS notifications (
   body TEXT NOT NULL DEFAULT '' CHECK (length(body) <= 1000),
   actor_label TEXT CHECK (actor_label IS NULL OR length(actor_label) <= 100),
   target_path TEXT CHECK (target_path IS NULL OR length(target_path) > 0),
-  target_intent TEXT,
+  target_intent notification_target_intents,
   CONSTRAINT chk_notifications__target
     CHECK (
       (
@@ -494,6 +495,7 @@ COMMENT ON COLUMN web_push_subscriptions.user_agent IS 'Browser user-agent strin
 COMMENT ON COLUMN web_push_subscriptions.last_success_at IS 'When a push was last successfully delivered to this subscription.';
 COMMENT ON COLUMN web_push_subscriptions.last_failure_at IS 'When a push last failed to deliver to this subscription.';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_topic_recommendations (
   post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
   topic_title TEXT NOT NULL,
@@ -502,8 +504,7 @@ CREATE TABLE IF NOT EXISTS post_topic_recommendations (
   aliases TEXT[] NOT NULL DEFAULT '{}',
   hostname_id UUID REFERENCES url_hostnames(id) ON DELETE SET NULL,
   topic_type post_topic_recommendation_topic_types NOT NULL DEFAULT 'topic',
-  example_referral_link TEXT,
-  landing_page_urls TEXT[] NOT NULL DEFAULT '{}',
+  example_referral_url_id UUID REFERENCES urls(id) ON DELETE RESTRICT,
   approval_error_message TEXT,
   reviewed_at TIMESTAMPTZ,
   reviewed_by_id UUID REFERENCES users(id) ON DELETE SET NULL,
@@ -518,7 +519,6 @@ CREATE TABLE IF NOT EXISTS post_topic_recommendations (
   CHECK (char_length(TRIM(topic_title)) > 0),
   CHECK (char_length(topic_slug) > 0),
   CHECK (topic_markdown IS NULL OR topic_markdown = TRIM(topic_markdown)),
-  CHECK (example_referral_link IS NULL OR example_referral_link = TRIM(example_referral_link)),
   CHECK (
     approval_error_message IS NULL
     OR approval_error_message = TRIM(approval_error_message)
@@ -592,8 +592,26 @@ COMMENT ON COLUMN post_topic_recommendations.reviewed_by_id IS 'The admin who re
 COMMENT ON COLUMN post_topic_recommendations.rejection_reason IS 'Reason provided when rejecting the recommendation.';
 COMMENT ON COLUMN post_topic_recommendations.created_topic_id IS 'The topic created from this recommendation upon approval.';
 COMMENT ON COLUMN post_topic_recommendations.topic_type IS 'The proposed topic type: topic (generic), referral_program, or card.';
-COMMENT ON COLUMN post_topic_recommendations.example_referral_link IS 'For referral_program recommendations: an example referral URL submitted by the user.';
-COMMENT ON COLUMN post_topic_recommendations.landing_page_urls IS 'For card recommendations: one or more landing-page URLs submitted by the user.';
+COMMENT ON COLUMN post_topic_recommendations.example_referral_url_id IS 'Normalized example referral URL; registered without crawl events.';
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_post_topic_recommendations__example_referral_url_id
+ON post_topic_recommendations (example_referral_url_id);
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS post_topic_recommendation_landing_page_urls (
+  post_id UUID NOT NULL REFERENCES post_topic_recommendations(post_id) ON DELETE CASCADE,
+  url_id UUID NOT NULL REFERENCES urls(id) ON DELETE RESTRICT,
+  sort_order INT NOT NULL CHECK (sort_order >= 0),
+  PRIMARY KEY (post_id, url_id),
+  UNIQUE (post_id, sort_order)
+);
+CREATE INDEX IF NOT EXISTS idx_post_topic_recommendation_landing_page_urls__url_id
+ON post_topic_recommendation_landing_page_urls (url_id);
+COMMENT ON TABLE post_topic_recommendation_landing_page_urls IS 'Ordered normalized landing-page URL relations submitted for card recommendations.';
+COMMENT ON COLUMN post_topic_recommendation_landing_page_urls.post_id IS 'The owning topic recommendation.';
+COMMENT ON COLUMN post_topic_recommendation_landing_page_urls.url_id IS 'The normalized and safety-checked destination.';
+COMMENT ON COLUMN post_topic_recommendation_landing_page_urls.sort_order IS 'Zero-based submitted order.';
 
 CREATE INDEX IF NOT EXISTS idx_post_topic_recommendations_hostnames__hostname_id
 ON post_topic_recommendations_hostnames (hostname_id, post_id DESC);

@@ -29,7 +29,7 @@ export async function readDsaCopyrightComplaintFigures(
 ): Promise<DsaCopyrightComplaintFigures> {
   const query = sql`/* readDsaCopyrightComplaintFigures */
     WITH received AS (
-      SELECT request.filed_by, complained.outcome,
+      SELECT request.filed_by, complained.outcome::text AS outcome,
         `
     .append(inAreaTrustedFlaggerMatchSql(sql``.append('request.copyright_notice_id')))
     .append(sql` AS trusted
@@ -40,7 +40,7 @@ export async function readDsaCopyrightComplaintFigures(
         AND request.received_at >= ${periodStartedAt}
         AND request.received_at < ${periodEndedAt}
     ), decided AS (
-      SELECT complained.outcome, decision.staff_disposition,
+      SELECT complained.outcome::text AS outcome, decision.staff_disposition,
         EXTRACT(EPOCH FROM (decision.decided_at - request.received_at)) / 3600.0 AS hours,
         `)
     .append(inAreaTrustedFlaggerMatchSql(sql``.append('request.copyright_notice_id')))

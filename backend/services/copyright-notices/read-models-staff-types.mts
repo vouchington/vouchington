@@ -1,49 +1,16 @@
-import type { PageInfo } from '@voucha/types/pagination'
+import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 import type { ClaimantMisuseSummary } from './claimant-misuse-summary.mts'
 import type { CopyrightFormGuidance } from './form-screening-guidance.mts'
 import type {
   CopyrightCounterNoticeGuidance,
   CopyrightLegalHoldGuidance,
 } from '@ts-shared/utils/copyright-submission-guidance'
-import type { CopyrightTerritorialStaffRecipient } from './read-models-staff-territorial-recipients.mts'
-import type { CopyrightTerritorialStaffComplaint } from './read-models-staff-territorial-complaints.mts'
-export type CopyrightStaffTerritorialCase = {
-  hosted_use_url: string
-  grounds: string
-  notifier: { name: string | null; email: string | null }
-  recipients: CopyrightTerritorialStaffRecipient[]
-  complaints: CopyrightTerritorialStaffComplaint[]
-  complaints_page_info: PageInfo
-  dispute_settlements_page_info: PageInfo
-  dispute_settlements: Array<{
-    id: string
-    body_name: string
-    referred_at: Date
-    referred_by_party: 'poster' | 'notifier'
-    referred_by_user_id: string | null
-    outcome: { result: string; decided_at: Date; implemented_at: Date | null } | null
-  }>
-  acknowledgment: {
-    attempt_count: number
-    last_attempt_at: Date | null
-    acknowledged_at: Date | null
-    exhausted_at: Date | null
-    escalated: boolean
-  }
-  reopened_at: Date | null
-  decision: {
-    id: string
-    outcome: 'restrict' | 'no_action'
-    decided_at: Date
-    rationale: string
-    public_explanation: string
-  } | null
-}
+import type { CopyrightStaffTerritorialCase } from './read-models-staff-territorial-types.mts'
 
 export type CopyrightStaffCase = {
   id: string
   received_at: Date
-  jurisdiction: 'us_dmca' | 'eu_dsa' | 'uk'
+  jurisdiction: Exclude<FiniteValue<'copyright_jurisdictions'>, 'other'>
   territorial?: CopyrightStaffTerritorialCase
   claimant: {
     display_name: string | null
@@ -81,10 +48,10 @@ export type CopyrightStaffCase = {
   }>
   form_review: {
     intake_id: string
-    source_kind: string
+    source_kind: FiniteValue<'copyright_notice_submission_source_kinds'>
     screening: {
       state: 'pending' | 'failed' | 'completed'
-      recommendation: string | null
+      recommendation: FiniteValue<'copyright_notice_form_screening_recommendations'> | null
       rationale: string | null
       /** Advisory AI guidance for the moderator; never a decision. */
       guidance: CopyrightFormGuidance | null
@@ -107,7 +74,11 @@ export type CopyrightStaffCase = {
     submission_id: string
     reason: string
     target_ids: string[]
-    recommendation: { id: string; recommendation: string; rationale: string } | null
+    recommendation: {
+      id: string
+      recommendation: FiniteValue<'copyright_notice_appeal_recommendation_outcomes'>
+      rationale: string
+    } | null
   }>
   counter_notices: Array<{
     submission_id: string
@@ -124,8 +95,8 @@ export type CopyrightStaffCase = {
     assessment: {
       id: string
       from_original_claimant: boolean
-      proceeding_kind: 'federal_court' | 'ccb' | null
-      ccb_claim_kind: 'claim' | 'counterclaim' | null
+      proceeding_kind: FiniteValue<'copyright_notice_legal_hold_assessment_proceeding_kinds'> | null
+      ccb_claim_kind: FiniteValue<'copyright_notice_legal_hold_assessment_ccb_claim_kinds'> | null
       commenced_at: Date | null
       received_by_designated_agent_at: Date | null
       same_material: boolean
@@ -136,15 +107,15 @@ export type CopyrightStaffCase = {
   }>
   action_intents: Array<{
     id: string
-    action: 'withhold' | 'restore'
-    state: 'pending' | 'claimed' | 'completed' | 'stale' | 'blocked' | 'failed'
+    action: FiniteValue<'copyright_notice_action_intent_actions'>
+    state: FiniteValue<'copyright_notice_action_intent_states'>
     failure_message: string | null
   }>
   delivery_intents: Array<{
     id: string
-    delivery_kind: string
-    channel: 'in_app' | 'email'
-    state: 'pending' | 'claimed' | 'sent' | 'failed' | 'bounced'
+    delivery_kind: FiniteValue<'copyright_notice_delivery_kinds'>
+    channel: FiniteValue<'copyright_notice_delivery_intent_channels'>
+    state: FiniteValue<'copyright_notice_delivery_intent_states'>
     delivery_attempt_count: number
   }>
   /**
@@ -157,21 +128,15 @@ export type CopyrightStaffCase = {
     image_id: string
     registered_image_id: string
     uploaded_by_id: string
-    match_kind: 'exact' | 'perceptual'
+    match_kind: FiniteValue<'copyright_staydown_match_kinds'>
     /** Differing bits out of 64; 0 for an exact match. */
     hamming_distance: number
     matched_at: Date
   }>
   email_correspondence: Array<{
     submission_id: string | null
-    kind:
-      | 'supplement'
-      | 'appeal'
-      | 'counter_notice'
-      | 'withdrawal'
-      | 'court_or_ccb_hold'
-      | 'complaint'
-    action: 'admitted' | 'rejected'
+    kind: FiniteValue<'copyright_notice_email_correspondence_review_kinds'>
+    action: Exclude<FiniteValue<'copyright_notice_email_correspondence_review_actions'>, 'pending'>
     reviewed_at: Date
   }>
 }

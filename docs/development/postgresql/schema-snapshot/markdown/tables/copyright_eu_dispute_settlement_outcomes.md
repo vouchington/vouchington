@@ -6,16 +6,16 @@ One recorded outcome per EU dispute settlement referral. The body does not bind 
 
 Not partitioned — growth: unbounded.
 
-| Column                                        | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                             |
-| --------------------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------- |
-| `id`                                          | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                     |
-| `copyright_eu_dispute_settlement_referral_id` | `uuid`                     | no       |                              |          |           |           | Referral this outcome resolves; one outcome per referral.                           |
-| `decided_at`                                  | `timestamp with time zone` | no       |                              |          |           |           | When the body decided, no earlier than the referral.                                |
-| `result`                                      | `text`                     | no       |                              |          |           |           | Body outcome, which does not automatically change platform restrictions.            |
-| `implemented_at`                              | `timestamp with time zone` | yes      |                              |          |           |           | When staff implemented a decision for the recipient, after a separate staff action. |
-| `recorded_by_id`                              | `uuid`                     | yes      |                              |          |           |           | Staff account recording the outcome; null after account deletion.                   |
-| `created_at`                                  | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                     |
-| `updated_at`                                  | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                     |
+| Column                                        | Type                                      | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                             |
+| --------------------------------------------- | ----------------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------- |
+| `id`                                          | `uuid`                                    | no       | `uuidv7()`                   |          |           |           |                                                                                     |
+| `copyright_eu_dispute_settlement_referral_id` | `uuid`                                    | no       |                              |          |           |           | Referral this outcome resolves; one outcome per referral.                           |
+| `decided_at`                                  | `timestamp with time zone`                | no       |                              |          |           |           | When the body decided, no earlier than the referral.                                |
+| `result`                                      | `copyright_eu_dispute_settlement_results` | no       |                              |          |           |           | Body outcome, which does not automatically change platform restrictions.            |
+| `implemented_at`                              | `timestamp with time zone`                | yes      |                              |          |           |           | When staff implemented a decision for the recipient, after a separate staff action. |
+| `recorded_by_id`                              | `uuid`                                    | yes      |                              |          |           |           | Staff account recording the outcome; null after account deletion.                   |
+| `created_at`                                  | `timestamp with time zone`                | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                     |
+| `updated_at`                                  | `timestamp with time zone`                | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                     |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -25,8 +25,8 @@ Not partitioned — growth: unbounded.
 
 **Check constraints:**
 
-- `chk_copyright_eu_dispute_settlement_outcomes__implementation`: `CHECK (((implemented_at IS NULL) OR (result = 'decided_for_recipient'::text)))`
-- `chk_copyright_eu_dispute_settlement_outcomes__result`: `CHECK ((result = ANY (ARRAY['decided_for_recipient'::text, 'decided_for_platform'::text, 'withdrawn'::text, 'no_decision'::text])))`
+- `chk_copyright_eu_dispute_settlement_outcomes__implementation`: `CHECK (((implemented_at IS NULL) OR (result = 'decided_for_recipient'::copyright_eu_dispute_settlement_results)))`
+- `chk_copyright_eu_dispute_settlement_outcomes__result`: `CHECK ((result = ANY (ARRAY['decided_for_recipient'::copyright_eu_dispute_settlement_results, 'decided_for_platform'::copyright_eu_dispute_settlement_results, 'withdrawn'::copyright_eu_dispute_settlement_results, 'no_decision'::copyright_eu_dispute_settlement_results])))`
 
 **Foreign keys:**
 

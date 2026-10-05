@@ -38,11 +38,11 @@ export async function selectTerritorialStaffRecipients(
     FROM recipients recipient
     LEFT JOIN copyright_notice_delivery_intents intent
       ON intent.copyright_notice_id = ${noticeId}
-      AND intent.recipient_role = recipient.role
+      AND intent.recipient_role::text = recipient.role
       AND (recipient.role = 'claimant' OR intent.recipient_user_id = recipient.user_id)
-      AND intent.delivery_kind = CASE recipient.role
+      AND intent.delivery_kind = (CASE recipient.role
         WHEN 'claimant' THEN ${copyrightDecisionDeliveryKinds[1]}
-        ELSE ${copyrightDecisionDeliveryKinds[0]} END
+        ELSE ${copyrightDecisionDeliveryKinds[0]} END)::copyright_notice_delivery_kinds
       AND (intent.created_at >= ${decidedAt} OR intent.sent_at >= ${decidedAt})
     GROUP BY recipient.role, recipient.user_id
     ORDER BY recipient.role, recipient.user_id

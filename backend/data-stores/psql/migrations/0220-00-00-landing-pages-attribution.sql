@@ -81,6 +81,7 @@ COMMENT ON COLUMN user_landing_pages.is_default IS 'Whether this is the user''s 
 -- user_landing_page_items
 --------------------------------------------------------------------------------
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_landing_page_items (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   landing_page_id UUID NOT NULL REFERENCES user_landing_pages(id) ON DELETE CASCADE,
@@ -93,9 +94,7 @@ CREATE TABLE IF NOT EXISTS user_landing_page_items (
   link_label TEXT,
   CHECK (link_label IS NULL OR char_length(link_label) <= 100),
   CHECK (link_label IS NULL OR link_label = TRIM(link_label)),
-  link_url TEXT,
-  CHECK (link_url IS NULL OR char_length(link_url) <= 2048),
-  CHECK (link_url IS NULL OR link_url = TRIM(link_url)),
+  url_id UUID REFERENCES urls(id) ON DELETE RESTRICT,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CHECK (
@@ -106,7 +105,7 @@ CREATE TABLE IF NOT EXISTS user_landing_page_items (
       AND referral_link_id IS NULL
       AND topic_id IS NULL
       AND link_label IS NULL
-      AND link_url IS NULL
+      AND url_id IS NULL
     )
     OR (
       item_type = 'review'
@@ -115,7 +114,7 @@ CREATE TABLE IF NOT EXISTS user_landing_page_items (
       AND referral_link_id IS NULL
       AND topic_id IS NULL
       AND link_label IS NULL
-      AND link_url IS NULL
+      AND url_id IS NULL
     )
     OR (
       item_type = 'referral_link'
@@ -124,7 +123,7 @@ CREATE TABLE IF NOT EXISTS user_landing_page_items (
       AND referral_link_id IS NOT NULL
       AND topic_id IS NULL
       AND link_label IS NULL
-      AND link_url IS NULL
+      AND url_id IS NULL
     )
     OR (
       item_type = 'topic_group'
@@ -133,7 +132,7 @@ CREATE TABLE IF NOT EXISTS user_landing_page_items (
       AND referral_link_id IS NULL
       AND topic_id IS NOT NULL
       AND link_label IS NULL
-      AND link_url IS NULL
+      AND url_id IS NULL
     )
     OR (
       item_type = 'link'
@@ -143,11 +142,13 @@ CREATE TABLE IF NOT EXISTS user_landing_page_items (
       AND topic_id IS NULL
       AND link_label IS NOT NULL
       AND char_length(link_label) >= 1
-      AND link_url IS NOT NULL
-      AND char_length(link_url) >= 1
+      AND url_id IS NOT NULL
     )
   )
 );
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_user_landing_page_items__url_id ON user_landing_page_items (url_id);
 
 CREATE INDEX IF NOT EXISTS idx_user_landing_page_items__page_sort
 ON user_landing_page_items (landing_page_id, sort_order, id);
@@ -166,7 +167,7 @@ COMMENT ON COLUMN user_landing_page_items.review_id IS 'Reference to a review po
 COMMENT ON COLUMN user_landing_page_items.referral_link_id IS 'Reference to user_referral_program_links; set when item_type is referral_link.';
 COMMENT ON COLUMN user_landing_page_items.topic_id IS 'Reference to a topic for grouping; set when item_type is topic_group.';
 COMMENT ON COLUMN user_landing_page_items.link_label IS 'Display label for a free-form link; set when item_type is link.';
-COMMENT ON COLUMN user_landing_page_items.link_url IS 'Destination URL for a free-form link; set when item_type is link.';
+COMMENT ON COLUMN user_landing_page_items.url_id IS 'Normalized URL relation for a free-form link; set when item_type is link.';
 
 --------------------------------------------------------------------------------
 -- user_landing_page_group_members

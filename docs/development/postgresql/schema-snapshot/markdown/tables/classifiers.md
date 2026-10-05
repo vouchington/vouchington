@@ -6,20 +6,20 @@ Agent-independent classifier definitions with fixed primitive and candidate kind
 
 Not partitioned — growth: unbounded.
 
-| Column           | Type                        | Nullable | Default                      | Identity | Generated | Collation | Comment                                                             |
-| ---------------- | --------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------- |
-| `id`             | `uuid`                      | no       | `uuidv7()`                   |          |           |           |                                                                     |
-| `slug`           | `text`                      | no       |                              |          |           |           | Stable machine-readable classifier identifier.                      |
-| `primitive`      | `classifier_primitive`      | no       |                              |          |           |           | Structured-decision primitive used for every prompt version.        |
-| `candidate_kind` | `classifier_candidate_kind` | no       |                              |          |           |           | Concrete entity kind accepted as a candidate.                       |
-| `activated_at`   | `timestamp with time zone`  | yes      |                              |          |           |           | Time this classifier became active, or NULL when inactive.          |
-| `deactivated_at` | `timestamp with time zone`  | yes      |                              |          |           |           | Time this classifier became inactive, or NULL when not deactivated. |
-| `created_at`     | `timestamp with time zone`  | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                     |
-| `created_by_id`  | `uuid`                      | yes      |                              |          |           |           |                                                                     |
-| `updated_at`     | `timestamp with time zone`  | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                     |
-| `updated_by_id`  | `uuid`                      | yes      |                              |          |           |           |                                                                     |
-| `deleted_at`     | `timestamp with time zone`  | yes      |                              |          |           |           |                                                                     |
-| `deleted_by_id`  | `uuid`                      | yes      |                              |          |           |           |                                                                     |
+| Column           | Type                         | Nullable | Default                      | Identity | Generated | Collation | Comment                                                             |
+| ---------------- | ---------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------- |
+| `id`             | `uuid`                       | no       | `uuidv7()`                   |          |           |           |                                                                     |
+| `slug`           | `text`                       | no       |                              |          |           |           | Stable machine-readable classifier identifier.                      |
+| `primitive`      | `classifier_primitives`      | no       |                              |          |           |           | Structured-decision primitive used for every prompt version.        |
+| `candidate_kind` | `classifier_candidate_kinds` | no       |                              |          |           |           | Concrete entity kind accepted as a candidate.                       |
+| `activated_at`   | `timestamp with time zone`   | yes      |                              |          |           |           | Time this classifier became active, or NULL when inactive.          |
+| `deactivated_at` | `timestamp with time zone`   | yes      |                              |          |           |           | Time this classifier became inactive, or NULL when not deactivated. |
+| `created_at`     | `timestamp with time zone`   | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                     |
+| `created_by_id`  | `uuid`                       | yes      |                              |          |           |           |                                                                     |
+| `updated_at`     | `timestamp with time zone`   | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                     |
+| `updated_by_id`  | `uuid`                       | yes      |                              |          |           |           |                                                                     |
+| `deleted_at`     | `timestamp with time zone`   | yes      |                              |          |           |           |                                                                     |
+| `deleted_by_id`  | `uuid`                       | yes      |                              |          |           |           |                                                                     |
 
 **Primary key:** `PRIMARY KEY (id)`
 

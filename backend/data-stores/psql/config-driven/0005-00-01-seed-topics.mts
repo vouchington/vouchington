@@ -92,13 +92,6 @@ ON CONFLICT (alias) DO UPDATE
 SET topic_id = EXCLUDED.topic_id
 WHERE topic_aliases.topic_id IS NULL AND EXCLUDED.topic_id IS NOT NULL;`)
     }
-    parts.push(`
-UPDATE topics topic
-SET aliases = COALESCE(
-  (SELECT ARRAY_AGG(alias ORDER BY alias) FROM topic_aliases WHERE topic_id = topic.id),
-  '{}'::TEXT[]
-)
-WHERE topic.slug = '${safeSlug}';`)
   }
 
   return parts.join('\n')

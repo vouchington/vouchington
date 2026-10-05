@@ -3,6 +3,10 @@ import { beginTransaction } from '@data-stores/psql'
 import { createCodedError } from '@modules/on-error/create-coded-error'
 import { IDEMPOTENCY_KEY_REUSED } from '@modules/on-error/error-codes'
 import sql from 'sql-template-strings'
+import {
+  contributionAdmissionScopeCategory,
+  type ContributionAdmissionAudit,
+} from './admission-audit.mts'
 import { hashAdmissionIntent } from './admission-intent.mts'
 import {
   completeMarkerlessContributionAdmissionReplay,
@@ -16,14 +20,6 @@ export {
 } from './admission-reservation-maintenance.mts'
 
 type State = 'in_progress' | 'committed' | 'retryable_failed' | 'expired'
-
-export type ContributionAdmissionAudit = Readonly<{
-  route: string
-  scope: string
-  source: string
-  postType: string
-  policyRevision: string
-}>
 
 export async function claimContributionAdmission<T>(
   actorId: string,
@@ -40,7 +36,7 @@ export async function claimContributionAdmission<T>(
 
   await query(sql`/* claimContributionAdmission.insert */
       INSERT INTO post_admission_reservations (actor_id, idempotency_key, intent_sha256, route, scope, source, post_type, policy_revision)
-      VALUES (${actorId}, ${idempotencyKey}, ${intentSha256}, ${audit.route}, ${audit.scope}, ${audit.source}, ${audit.postType}, ${audit.policyRevision})
+      VALUES (${actorId}, ${idempotencyKey}, ${intentSha256}, ${audit.route}, ${contributionAdmissionScopeCategory(audit.scope)}, ${audit.source}, ${audit.postType}, ${audit.policyRevision})
       ON CONFLICT (actor_id, idempotency_key) DO NOTHING`)
   const reservation = await query<{
     id: string
@@ -69,7 +65,7 @@ export async function claimContributionAdmission<T>(
       id: string
     }>(sql`/* claimContributionAdmission.insertReplacement */
         INSERT INTO post_admission_reservations (actor_id, idempotency_key, intent_sha256, route, scope, source, post_type, policy_revision)
-        VALUES (${actorId}, ${idempotencyKey}, ${intentSha256}, ${audit.route}, ${audit.scope}, ${audit.source}, ${audit.postType}, ${audit.policyRevision})
+        VALUES (${actorId}, ${idempotencyKey}, ${intentSha256}, ${audit.route}, ${contributionAdmissionScopeCategory(audit.scope)}, ${audit.source}, ${audit.postType}, ${audit.policyRevision})
         RETURNING id`)
     reservationId = replacement.rows[0]?.id ?? ''
     if (!reservationId)
@@ -129,7 +125,7 @@ export async function claimContributionAdmission<T>(
   }
   await query(sql`/* claimContributionAdmission.mark */
       UPDATE post_admission_reservations
-      SET state = 'in_progress', route = ${audit.route}, scope = ${audit.scope}, source = ${audit.source},
+      SET state = 'in_progress', route = ${audit.route}, scope = ${contributionAdmissionScopeCategory(audit.scope)}, source = ${audit.source},
         post_type = ${audit.postType}, policy_revision = ${audit.policyRevision}, retryable_failure = NULL,
         updated_at = NOW(), retention_expires_at = NOW() + INTERVAL '48 hours'
       WHERE id = ${reservationId}`)

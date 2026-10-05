@@ -64,7 +64,7 @@ function buildCommunityPostQueueQuery(source: CommunityPostQueueSource, where: S
       NULL::timestamptz AS reviewed_at,
       NULL::uuid AS reporter_user_id,
       NULL::text AS reporter_username,
-      'post'::moderation_report_entity_type AS entity_type,
+      'post'::moderation_report_entity_types AS entity_type,
       cpr.post_id AS entity_id,
       COALESCE(NULLIF(BTRIM(rp.title), ''), 'Post ' || rp.id::text) AS target_label,
       CASE WHEN NULLIF(BTRIM(rp.title), '') IS NOT NULL THEN jsonb_build_object(
@@ -77,7 +77,7 @@ function buildCommunityPostQueueQuery(source: CommunityPostQueueSource, where: S
       ${postPath} AS admin_action_path,
       rp.created_by_id AS target_user_id,
       (rp.id IS NOT NULL AND rp.deleted_at IS NULL) AS target_available,
-      NULL::moderation_report_reason AS reason,
+      NULL::moderation_report_reasons AS reason,
       NULL::text AS note,
       'pending'::text AS status,
       NULL::uuid AS resolved_by_id,

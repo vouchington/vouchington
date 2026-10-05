@@ -14,7 +14,7 @@ Not partitioned — growth: unbounded.
 | `copyright_notice_appeal_recommendation_id` | `uuid`                     | yes      |                              |          |           |           | Advisory agent recommendation retained as provenance.             |
 | `reviewed_at`                               | `timestamp with time zone` | no       |                              |          |           |           | Time the moderator decided the appeal.                            |
 | `reviewed_by_id`                            | `uuid`                     | yes      |                              |          |           |           | Moderator who decided the appeal.                                 |
-| `action`                                    | `text`                     | no       |                              |          |           |           | Confirm, modify, or reverse decision for the restriction.         |
+| `action`                                    | `copyright_review_actions` | no       |                              |          |           |           | Confirm or reverse decision for the restriction.                  |
 | `rationale_ciphertext`                      | `text`                     | no       |                              |          |           |           | Encrypted moderator rationale.                                    |
 | `manual_fallback_reason_ciphertext`         | `text`                     | yes      |                              |          |           |           | Encrypted reason staff proceeded without an agent recommendation. |
 | `created_at`                                | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                   |
@@ -29,7 +29,7 @@ Not partitioned — growth: unbounded.
 **Check constraints:**
 
 - `copyright_notice_appeal_revi_manual_fallback_reason_ciphe_check`: `CHECK (((manual_fallback_reason_ciphertext IS NULL) OR ((char_length(manual_fallback_reason_ciphertext) >= 1) AND (char_length(manual_fallback_reason_ciphertext) <= 1048576))))`
-- `copyright_notice_appeal_reviews_action_check`: `CHECK ((action = ANY (ARRAY['confirm'::text, 'reverse'::text])))`
+- `copyright_notice_appeal_reviews_action_check`: `CHECK ((action = ANY (ARRAY['confirm'::copyright_review_actions, 'reverse'::copyright_review_actions])))`
 - `copyright_notice_appeal_reviews_check`: `CHECK (((copyright_notice_appeal_recommendation_id IS NULL) = (manual_fallback_reason_ciphertext IS NOT NULL)))`
 - `copyright_notice_appeal_reviews_rationale_ciphertext_check`: `CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 1048576)))`
 

@@ -30,8 +30,11 @@ export async function getLockedTopicRecommendationApproval(
       ptr.aliases,
       ptr.hostname_id,
       ptr.topic_type,
-      ptr.example_referral_link,
-      ptr.landing_page_urls,
+      (SELECT url FROM urls WHERE id = ptr.example_referral_url_id) AS example_referral_link,
+          COALESCE((SELECT ARRAY_AGG(urls.url ORDER BY submitted.sort_order)
+            FROM post_topic_recommendation_landing_page_urls submitted
+            JOIN urls ON urls.id = submitted.url_id
+            WHERE submitted.post_id = ptr.post_id), '{}'::TEXT[]) AS landing_page_urls,
       COALESCE((
         SELECT JSON_AGG(
           jsonb_build_object('id', vuh.id, 'hostname', vuh.hostname)

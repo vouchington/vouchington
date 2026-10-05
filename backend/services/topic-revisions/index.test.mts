@@ -40,8 +40,8 @@ describe('index', () => {
       expect(revision.topic_id).toBe(topicId)
       expect(revision.revision_type).toBe('create')
       expect(revision.revised_by_id).toBe(user.id)
-      expect(revision.revised_by_roles).toContain('administrator')
-      expect(revision.changes).toEqual(changes)
+      expect(revision.revision_document.revised_by_roles).toContain('administrator')
+      expect(revision.revision_document.changes).toEqual(changes)
       expect(revision.created_at).toBeInstanceOf(Date)
     })
 
@@ -63,7 +63,7 @@ describe('index', () => {
       const revision = await createTopicRevision(topicId, 'update', changes, user.id)
 
       expect(revision.revision_type).toBe('update')
-      expect(revision.changes).toEqual(changes)
+      expect(revision.revision_document.changes).toEqual(changes)
     })
 
     it('creates a delete revision', async () => {
@@ -78,7 +78,7 @@ describe('index', () => {
       const revision = await createTopicRevision(topicId, 'delete', changes, user.id)
 
       expect(revision.revision_type).toBe('delete')
-      expect(revision.changes).toEqual(changes)
+      expect(revision.revision_document.changes).toEqual(changes)
     })
 
     it('allows null revised_by_id', async () => {
@@ -96,7 +96,7 @@ describe('index', () => {
         null,
       )
       expect(revision.revised_by_id).toBeNull()
-      expect(revision.revised_by_roles).toEqual([])
+      expect(revision.revision_document.revised_by_roles).toEqual([])
     })
 
     it('returns an admin-authored create revision when there are no later content updates', async () => {
@@ -214,7 +214,7 @@ describe('index', () => {
       )
       await addUserRole(promotedUser.id, 'administrator')
 
-      expect(revision.revised_by_roles).not.toContain('administrator')
+      expect(revision.revision_document.revised_by_roles).not.toContain('administrator')
       await expect(getLatestTopicContentUpdate(topicId)).resolves.toBeNull()
     })
 

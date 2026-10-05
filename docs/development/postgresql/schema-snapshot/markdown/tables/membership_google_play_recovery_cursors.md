@@ -6,12 +6,12 @@ Bounded Google Play notification, acknowledgement, and active-source recovery sc
 
 Not partitioned — growth: bounded.
 
-| Column                 | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                         |
-| ---------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------- |
-| `id`                   | `text`                     | no       |                     |          |           |           |                                                                                                                 |
-| `last_evidence_id`     | `uuid`                     | yes      |                     |          |           |           | Durable UUIDv7 keyset position within the current bounded recovery sweep.                                       |
-| `sweep_upper_bound_id` | `uuid`                     | yes      |                     |          |           |           | Inclusive UUIDv7 high-water mark captured before a sweep so sustained inserts cannot starve older pending work. |
-| `updated_at`           | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                 |
+| Column                 | Type                                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                         |
+| ---------------------- | ------------------------------------------ | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------- |
+| `id`                   | `membership_google_play_recovery_families` | no       |                     |          |           |           |                                                                                                                 |
+| `last_evidence_id`     | `uuid`                                     | yes      |                     |          |           |           | Durable UUIDv7 keyset position within the current bounded recovery sweep.                                       |
+| `sweep_upper_bound_id` | `uuid`                                     | yes      |                     |          |           |           | Inclusive UUIDv7 high-water mark captured before a sweep so sustained inserts cannot starve older pending work. |
+| `updated_at`           | `timestamp with time zone`                 | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                 |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -20,7 +20,7 @@ _none_
 
 **Check constraints:**
 
-- `membership_google_play_recovery_cursors_id_check`: `CHECK ((id = ANY (ARRAY['notifications'::text, 'active_sources'::text, 'acknowledgements'::text])))`
+- `membership_google_play_recovery_cursors_id_check`: `CHECK ((id = ANY (ARRAY['notifications'::membership_google_play_recovery_families, 'active_sources'::membership_google_play_recovery_families, 'acknowledgements'::membership_google_play_recovery_families])))`
 
 **Foreign keys:**
 _none_

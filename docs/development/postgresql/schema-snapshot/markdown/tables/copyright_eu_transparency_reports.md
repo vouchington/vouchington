@@ -9,7 +9,7 @@ Not partitioned — growth: unbounded.
 | Column                       | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                       |
 | ---------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------- |
 | `id`                         | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                               |
-| `jurisdiction`               | `text`                     | no       |                              |          |           |           | Always eu_dsa.                                                                |
+| `jurisdiction`               | `copyright_jurisdictions`  | no       |                              |          |           |           | Always eu_dsa.                                                                |
 | `period_started_at`          | `timestamp with time zone` | no       |                              |          |           |           | Start of the caller-supplied reporting period. Not a statutory clock.         |
 | `period_ended_at`            | `timestamp with time zone` | no       |                              |          |           |           | End of the caller-supplied reporting period. Must be after period_started_at. |
 | `receipt_count`              | `integer`                  | no       |                              |          |           |           | Count of stored EU notice receipts in the period.                             |
@@ -31,7 +31,7 @@ _none_
 **Check constraints:**
 
 - `chk_copyright_eu_transparency_reports__counts`: `CHECK (((receipt_count >= 0) AND (statement_of_reasons_count >= 0) AND (redress_request_count >= 0) AND (redress_decision_count >= 0) AND (supervised_complaint_count >= 0) AND (escalation_count >= 0)))`
-- `chk_copyright_eu_transparency_reports__jurisdiction`: `CHECK ((jurisdiction = 'eu_dsa'::text))`
+- `chk_copyright_eu_transparency_reports__jurisdiction`: `CHECK ((jurisdiction = 'eu_dsa'::copyright_jurisdictions))`
 - `chk_copyright_eu_transparency_reports__period`: `CHECK ((period_started_at < period_ended_at))`
 
 **Foreign keys:**

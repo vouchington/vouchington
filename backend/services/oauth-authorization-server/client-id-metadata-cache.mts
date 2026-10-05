@@ -1,3 +1,4 @@
+import { OAUTH_CLIENT_COLUMNS } from './client-columns.mts'
 import type { QueryExecutor } from '@data-stores/psql'
 import { OAuthProtocolError } from './errors.mts'
 import type { OAuthClient } from './types.mts'
@@ -51,7 +52,7 @@ export async function getFreshClientIdMetadataClient(
   query: QueryExecutor,
 ): Promise<OAuthClient | null> {
   const result = await query<OAuthClient>(
-    `/* getFreshClientIdMetadataClient */ SELECT *
+    `/* getFreshClientIdMetadataClient */ SELECT ${OAUTH_CLIENT_COLUMNS}
      FROM oauth_clients
      WHERE client_id = $1
        AND metadata_url = $1
@@ -89,8 +90,8 @@ export async function upsertClientIdMetadataClient(
        metadata_expires_at, owner_user_id, client_name, client_type,
        token_endpoint_auth_method, redirect_uris, grant_types, response_types, scopes,
        client_secret_hash
-     ) VALUES ($1, $1, $2, $3, $4, NULL, $5, 'public', 'none', $6::text[], $7::text[],
-               $8::text[], $9::text[], NULL)
+     ) VALUES ($1, $1, $2, $3, $4, NULL, $5, 'public', 'none', $6::text[], $7::oauth_grant_types[],
+               $8::oauth_response_types[], $9::api_scopes[], NULL)
      ON CONFLICT (client_id) DO UPDATE SET
        metadata_refresh_generation = EXCLUDED.metadata_refresh_generation,
        metadata_refreshed_at = EXCLUDED.metadata_refreshed_at,
@@ -103,7 +104,7 @@ export async function upsertClientIdMetadataClient(
      WHERE oauth_clients.metadata_url = EXCLUDED.metadata_url
        AND oauth_clients.revoked_at IS NULL
        AND oauth_clients.metadata_refresh_generation < EXCLUDED.metadata_refresh_generation
-     RETURNING *`,
+     RETURNING ${OAUTH_CLIENT_COLUMNS}`,
     [
       metadataUrl,
       refresh.generation,

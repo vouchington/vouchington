@@ -6,18 +6,18 @@ Durable Bluesky OAuth link state machine. UUIDs identify generations but are nev
 
 Not partitioned — growth: unbounded.
 
-| Column                       | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                              |
-| ---------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                         | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                                      |
-| `user_id`                    | `uuid`                     | no       |                              |          |           |           | Voucha user who authenticated the begin request and exclusively owns this authorization lifecycle.                                                   |
-| `handle`                     | `text`                     | yes      |                              |          |           |           | Handle supplied when authorization began; display-only because Bluesky DIDs are authoritative, and scrubbed when the authorization becomes terminal. |
-| `callback_mode`              | `text`                     | no       |                              |          |           |           | web for cookie-bound browser attachment; native for proof-bound custom-scheme completion.                                                            |
-| `status`                     | `text`                     | no       | `'pending'::text`            |          |           |           | Explicit lifecycle: pending, callback_claimed, handoff_ready, attached, revoked, expired, or rejected.                                               |
-| `completion_proof_challenge` | `text`                     | yes      |                              |          |           |           | Native-only base64url SHA-256 challenge. The app retains the verifier; an intercepted custom-scheme bearer token is insufficient to attach.          |
-| `claimed_did`                | `text`                     | yes      |                              |          |           |           | DID exclusively claimed by the first successful provider callback for this authorization.                                                            |
-| `expires_at`                 | `timestamp with time zone` | no       |                              |          |           |           | Authorization deadline. Cleanup uses this timestamp and status, never UUID ordering.                                                                 |
-| `created_at`                 | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                      |
-| `updated_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                                      |
+| Column                       | Type                                  | Nullable | Default                                          | Identity | Generated | Collation | Comment                                                                                                                                              |
+| ---------------------------- | ------------------------------------- | -------- | ------------------------------------------------ | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                         | `uuid`                                | no       | `uuidv7()`                                       |          |           |           |                                                                                                                                                      |
+| `user_id`                    | `uuid`                                | no       |                                                  |          |           |           | Voucha user who authenticated the begin request and exclusively owns this authorization lifecycle.                                                   |
+| `handle`                     | `text`                                | yes      |                                                  |          |           |           | Handle supplied when authorization began; display-only because Bluesky DIDs are authoritative, and scrubbed when the authorization becomes terminal. |
+| `callback_mode`              | `oauth_callback_modes`                | no       |                                                  |          |           |           | web for cookie-bound browser attachment; native for proof-bound custom-scheme completion.                                                            |
+| `status`                     | `bluesky_link_authorization_statuses` | no       | `'pending'::bluesky_link_authorization_statuses` |          |           |           | Explicit lifecycle: pending, callback_claimed, handoff_ready, attached, revoked, expired, or rejected.                                               |
+| `completion_proof_challenge` | `text`                                | yes      |                                                  |          |           |           | Native-only base64url SHA-256 challenge. The app retains the verifier; an intercepted custom-scheme bearer token is insufficient to attach.          |
+| `claimed_did`                | `text`                                | yes      |                                                  |          |           |           | DID exclusively claimed by the first successful provider callback for this authorization.                                                            |
+| `expires_at`                 | `timestamp with time zone`            | no       |                                                  |          |           |           | Authorization deadline. Cleanup uses this timestamp and status, never UUID ordering.                                                                 |
+| `created_at`                 | `timestamp with time zone`            | yes      | `uuid_extract_timestamp(id)`                     |          | virtual   |           |                                                                                                                                                      |
+| `updated_at`                 | `timestamp with time zone`            | no       | `CURRENT_TIMESTAMP`                              |          |           |           |                                                                                                                                                      |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -26,14 +26,14 @@ _none_
 
 **Check constraints:**
 
-- `bluesky_link_authorizations_callback_mode_check`: `CHECK ((callback_mode = ANY (ARRAY['web'::text, 'native'::text])))`
-- `bluesky_link_authorizations_check`: `CHECK ((((callback_mode = 'native'::text) AND (completion_proof_challenge ~ '^[A-Za-z0-9_-]{43}$'::text)) OR ((callback_mode = 'web'::text) AND (completion_proof_challenge IS NULL))))`
-- `bluesky_link_authorizations_check1`: `CHECK (((status <> 'pending'::text) OR (claimed_did IS NULL)))`
-- `bluesky_link_authorizations_check2`: `CHECK ((((status = ANY (ARRAY['revoked'::text, 'expired'::text, 'rejected'::text])) AND (handle IS NULL)) OR ((status <> ALL (ARRAY['revoked'::text, 'expired'::text, 'rejected'::text])) AND (handle IS NOT NULL))))`
-- `bluesky_link_authorizations_check3`: `CHECK (((status <> ALL (ARRAY['callback_claimed'::text, 'handoff_ready'::text, 'attached'::text, 'revoked'::text])) OR (claimed_did IS NOT NULL)))`
+- `bluesky_link_authorizations_callback_mode_check`: `CHECK ((callback_mode = ANY (ARRAY['web'::oauth_callback_modes, 'native'::oauth_callback_modes])))`
+- `bluesky_link_authorizations_check`: `CHECK ((((callback_mode = 'native'::oauth_callback_modes) AND (completion_proof_challenge ~ '^[A-Za-z0-9_-]{43}$'::text)) OR ((callback_mode = 'web'::oauth_callback_modes) AND (completion_proof_challenge IS NULL))))`
+- `bluesky_link_authorizations_check1`: `CHECK (((status <> 'pending'::bluesky_link_authorization_statuses) OR (claimed_did IS NULL)))`
+- `bluesky_link_authorizations_check2`: `CHECK ((((status = ANY (ARRAY['revoked'::bluesky_link_authorization_statuses, 'expired'::bluesky_link_authorization_statuses, 'rejected'::bluesky_link_authorization_statuses])) AND (handle IS NULL)) OR ((status <> ALL (ARRAY['revoked'::bluesky_link_authorization_statuses, 'expired'::bluesky_link_authorization_statuses, 'rejected'::bluesky_link_authorization_statuses])) AND (handle IS NOT NULL))))`
+- `bluesky_link_authorizations_check3`: `CHECK (((status <> ALL (ARRAY['callback_claimed'::bluesky_link_authorization_statuses, 'handoff_ready'::bluesky_link_authorization_statuses, 'attached'::bluesky_link_authorization_statuses, 'revoked'::bluesky_link_authorization_statuses])) OR (claimed_did IS NOT NULL)))`
 - `bluesky_link_authorizations_claimed_did_check`: `CHECK (((claimed_did IS NULL) OR ((claimed_did ~~ 'did:%'::text) AND (char_length(claimed_did) <= 2048))))`
 - `bluesky_link_authorizations_handle_check`: `CHECK (((handle IS NULL) OR ((char_length(handle) > 0) AND (char_length(handle) <= 253))))`
-- `bluesky_link_authorizations_status_check`: `CHECK ((status = ANY (ARRAY['pending'::text, 'callback_claimed'::text, 'handoff_ready'::text, 'attached'::text, 'revoked'::text, 'expired'::text, 'rejected'::text])))`
+- `bluesky_link_authorizations_status_check`: `CHECK ((status = ANY (ARRAY['pending'::bluesky_link_authorization_statuses, 'callback_claimed'::bluesky_link_authorization_statuses, 'handoff_ready'::bluesky_link_authorization_statuses, 'attached'::bluesky_link_authorization_statuses, 'revoked'::bluesky_link_authorization_statuses, 'expired'::bluesky_link_authorization_statuses, 'rejected'::bluesky_link_authorization_statuses])))`
 
 **Foreign keys:**
 
@@ -43,7 +43,7 @@ _none_
 
 - `bluesky_link_authorizations_pkey`: `CREATE UNIQUE INDEX bluesky_link_authorizations_pkey ON public.bluesky_link_authorizations USING btree (id)`
 - `idx_bluesky_link_authorizations__claimed_did`: `CREATE INDEX idx_bluesky_link_authorizations__claimed_did ON public.bluesky_link_authorizations USING btree (claimed_did) WHERE (claimed_did IS NOT NULL)`
-- `idx_bluesky_link_authorizations__expiry`: `CREATE INDEX idx_bluesky_link_authorizations__expiry ON public.bluesky_link_authorizations USING btree (expires_at, id) WHERE (status = ANY (ARRAY['pending'::text, 'callback_claimed'::text, 'handoff_ready'::text]))`
+- `idx_bluesky_link_authorizations__expiry`: `CREATE INDEX idx_bluesky_link_authorizations__expiry ON public.bluesky_link_authorizations USING btree (expires_at, id) WHERE (status = ANY (ARRAY['pending'::bluesky_link_authorization_statuses, 'callback_claimed'::bluesky_link_authorization_statuses, 'handoff_ready'::bluesky_link_authorization_statuses]))`
 - `idx_bluesky_link_authorizations__user_id`: `CREATE INDEX idx_bluesky_link_authorizations__user_id ON public.bluesky_link_authorizations USING btree (user_id)`
 
 **Triggers:**

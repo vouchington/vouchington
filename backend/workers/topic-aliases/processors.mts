@@ -1,5 +1,5 @@
 import { getRssFeedsWorkLimit } from '@services/rss-feeds/work-limits'
-import { updateTopicAliasesField } from '@services/topics/aliases'
+import { invalidate } from '@services/entity-cache/invalidate'
 import { updateTopicEmbeddingContentHash } from '@services/topics/content'
 import { enqueueBackfillCategoriesForTopicAliases } from '@queues/rss-feed-item-categories/enqueues'
 import {
@@ -66,8 +66,8 @@ export const processTopicAliasesUpdate = async ({
     await clearCategoriesForUnlinkedTopicAlias(removedTopicAliasId, topicId)
   }
 
-  // Update the aliases field on the topic
-  await updateTopicAliasesField(topicId)
+  // The database projects the alias cache; refresh readers after the committed write.
+  await invalidate.topics(topicId)
 
   // Update the content hash to mark embeddings as stale
   // This lets the batch embedding process handle updates

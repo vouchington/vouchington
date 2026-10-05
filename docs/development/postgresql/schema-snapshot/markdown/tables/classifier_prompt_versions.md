@@ -6,23 +6,23 @@ Immutable classifier prompt/model revisions; activation lifecycle remains mutabl
 
 Not partitioned — growth: unbounded.
 
-| Column                    | Type                        | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                  |
-| ------------------------- | --------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------ |
-| `id`                      | `uuid`                      | no       | `uuidv7()`                   |          |           |           |                                                                          |
-| `classifier_id`           | `uuid`                      | no       |                              |          |           |           | Classifier whose immutable prompt revision this row records.             |
-| `prompt`                  | `text`                      | no       |                              |          |           |           | Exact instruction text sent for this revision.                           |
-| `model_name`              | `text`                      | no       |                              |          |           |           | Provider model identifier used by this revision.                         |
-| `model_provider`          | `classifier_model_provider` | no       |                              |          |           |           | Transport/provider identifier used by this revision.                     |
-| `default_lower_threshold` | `numeric(5,4)`              | no       |                              |          |           |           | Prompt-revision boundary below which a probability maps to downvote.     |
-| `default_upper_threshold` | `numeric(5,4)`              | no       |                              |          |           |           | Prompt-revision boundary above which a probability maps to upvote.       |
-| `activated_at`            | `timestamp with time zone`  | yes      |                              |          |           |           | Time this prompt revision became active, or NULL when inactive.          |
-| `deactivated_at`          | `timestamp with time zone`  | yes      |                              |          |           |           | Time this prompt revision became inactive, or NULL when not deactivated. |
-| `created_at`              | `timestamp with time zone`  | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                          |
-| `created_by_id`           | `uuid`                      | yes      |                              |          |           |           |                                                                          |
-| `updated_at`              | `timestamp with time zone`  | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                          |
-| `updated_by_id`           | `uuid`                      | yes      |                              |          |           |           |                                                                          |
-| `deleted_at`              | `timestamp with time zone`  | yes      |                              |          |           |           |                                                                          |
-| `deleted_by_id`           | `uuid`                      | yes      |                              |          |           |           |                                                                          |
+| Column                    | Type                         | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                  |
+| ------------------------- | ---------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------ |
+| `id`                      | `uuid`                       | no       | `uuidv7()`                   |          |           |           |                                                                          |
+| `classifier_id`           | `uuid`                       | no       |                              |          |           |           | Classifier whose immutable prompt revision this row records.             |
+| `prompt`                  | `text`                       | no       |                              |          |           |           | Exact instruction text sent for this revision.                           |
+| `model_name`              | `text`                       | no       |                              |          |           |           | Provider model identifier used by this revision.                         |
+| `model_provider`          | `classifier_model_providers` | no       |                              |          |           |           | Transport/provider identifier used by this revision.                     |
+| `default_lower_threshold` | `numeric(5,4)`               | no       |                              |          |           |           | Prompt-revision boundary below which a probability maps to downvote.     |
+| `default_upper_threshold` | `numeric(5,4)`               | no       |                              |          |           |           | Prompt-revision boundary above which a probability maps to upvote.       |
+| `activated_at`            | `timestamp with time zone`   | yes      |                              |          |           |           | Time this prompt revision became active, or NULL when inactive.          |
+| `deactivated_at`          | `timestamp with time zone`   | yes      |                              |          |           |           | Time this prompt revision became inactive, or NULL when not deactivated. |
+| `created_at`              | `timestamp with time zone`   | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                          |
+| `created_by_id`           | `uuid`                       | yes      |                              |          |           |           |                                                                          |
+| `updated_at`              | `timestamp with time zone`   | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                          |
+| `updated_by_id`           | `uuid`                       | yes      |                              |          |           |           |                                                                          |
+| `deleted_at`              | `timestamp with time zone`   | yes      |                              |          |           |           |                                                                          |
+| `deleted_by_id`           | `uuid`                       | yes      |                              |          |           |           |                                                                          |
 
 **Primary key:** `PRIMARY KEY (id)`
 

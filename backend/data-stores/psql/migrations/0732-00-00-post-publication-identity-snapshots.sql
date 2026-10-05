@@ -9,6 +9,7 @@ COMMENT ON COLUMN post_publication_identity_cleanup_progress.singleton IS 'Check
 COMMENT ON COLUMN post_publication_identity_cleanup_progress.cursor_snapshot_id IS 'Last examined header; no FK because reclaimed headers are deleted.';
 COMMENT ON COLUMN post_publication_identity_cleanup_progress.updated_at IS 'Last committed sweep progress.';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_publication_identity_snapshots (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   dirty_work_id UUID REFERENCES post_publication_dirty_work (id) ON DELETE SET NULL,
@@ -16,12 +17,12 @@ CREATE TABLE IF NOT EXISTS post_publication_identity_snapshots (
   post_identity_id UUID NOT NULL,
   eligibility_fingerprint TEXT NOT NULL,
   is_public BOOLEAN NOT NULL,
-  source_cursor_kind TEXT,
+  source_cursor_kind post_publication_source_cursor_kinds,
   source_cursor_value TEXT,
   completed_at TIMESTAMPTZ,
   abandoned_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  receipt_cursor_kind TEXT,
+  receipt_cursor_kind post_publication_receipt_cursor_kinds,
   receipt_cursor_value TEXT,
   receipt_retained_at TIMESTAMPTZ,
   receipt_source_version TEXT,

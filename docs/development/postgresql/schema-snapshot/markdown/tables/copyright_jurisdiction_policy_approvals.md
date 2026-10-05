@@ -9,7 +9,7 @@ Not partitioned — growth: unbounded.
 | Column           | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                        |
 | ---------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------ |
 | `id`             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                |
-| `jurisdiction`   | `text`                     | no       |                              |          |           |           | Contract family this approval activates: eu_dsa or uk.                         |
+| `jurisdiction`   | `copyright_jurisdictions`  | no       |                              |          |           |           | Contract family this approval activates: eu_dsa or uk.                         |
 | `policy_version` | `text`                     | no       |                              |          |           |           | Identifier of the approved contract text. Unique per jurisdiction.             |
 | `approved_at`    | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | When an operator approved this policy version.                                 |
 | `approved_by_id` | `uuid`                     | yes      |                              |          |           |           | Operator who approved this policy version. Null after that account is deleted. |
@@ -25,7 +25,7 @@ Not partitioned — growth: unbounded.
 
 **Check constraints:**
 
-- `chk_copyright_jurisdiction_policy_approvals__jurisdiction`: `CHECK ((jurisdiction = ANY (ARRAY['eu_dsa'::text, 'uk'::text])))`
+- `chk_copyright_jurisdiction_policy_approvals__jurisdiction`: `CHECK ((jurisdiction = ANY (ARRAY['eu_dsa'::copyright_jurisdictions, 'uk'::copyright_jurisdictions])))`
 - `chk_copyright_jurisdiction_policy_approvals__version`: `CHECK ((policy_version ~ '^[a-z0-9][a-z0-9._-]{0,63}$'::text))`
 
 **Foreign keys:**

@@ -309,13 +309,13 @@ UNION ALL
     ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object
            FROM (image_surface_placements surface
              JOIN media_placements placement ON ((placement.id = surface.placement_id)))
-          WHERE ((surface.surface_kind = 'topic-logo-image'::text) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))
+          WHERE ((surface.surface_kind = 'topic-logo-image'::image_surface_placement_surface_kinds) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))
           ORDER BY placement.id DESC
          LIMIT 1) AS logo_image_placement,
     ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object
            FROM (image_surface_placements surface
              JOIN media_placements placement ON ((placement.id = surface.placement_id)))
-          WHERE ((surface.surface_kind = 'topic-hero-image'::text) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))
+          WHERE ((surface.surface_kind = 'topic-hero-image'::image_surface_placement_surface_kinds) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))
           ORDER BY placement.id DESC
          LIMIT 1) AS hero_image_placement,
     rewards_program_id,
@@ -337,25 +337,25 @@ UNION ALL
     username,
     use_display_name_from,
         CASE
-            WHEN (use_display_name_from = 'facebook'::user_display_name_source) THEN ( SELECT jsonb_build_object('name', (fa.facebook_user_data ->> 'name'::text)) AS jsonb_build_object
+            WHEN (use_display_name_from = 'facebook'::user_display_name_sources) THEN ( SELECT jsonb_build_object('name', (fa.facebook_user_data ->> 'name'::text)) AS jsonb_build_object
                FROM facebook_accounts fa
               WHERE (fa.user_id = users.id))
-            WHEN (use_display_name_from = 'apple'::user_display_name_source) THEN ( SELECT jsonb_build_object('name', (aa.apple_user_data ->> 'name'::text)) AS jsonb_build_object
+            WHEN (use_display_name_from = 'apple'::user_display_name_sources) THEN ( SELECT jsonb_build_object('name', (aa.apple_user_data ->> 'name'::text)) AS jsonb_build_object
                FROM apple_accounts aa
               WHERE (aa.user_id = users.id))
-            WHEN (use_display_name_from = 'google'::user_display_name_source) THEN ( SELECT jsonb_build_object('name', (ga.google_user_data ->> 'name'::text)) AS jsonb_build_object
+            WHEN (use_display_name_from = 'google'::user_display_name_sources) THEN ( SELECT jsonb_build_object('name', (ga.google_user_data ->> 'name'::text)) AS jsonb_build_object
                FROM google_accounts ga
               WHERE (ga.user_id = users.id))
-            WHEN (use_display_name_from = 'x'::user_display_name_source) THEN ( SELECT jsonb_build_object('name', (xa.x_user_data ->> 'name'::text)) AS jsonb_build_object
+            WHEN (use_display_name_from = 'x'::user_display_name_sources) THEN ( SELECT jsonb_build_object('name', (xa.x_user_data ->> 'name'::text)) AS jsonb_build_object
                FROM x_accounts xa
               WHERE (xa.user_id = users.id))
-            WHEN (use_display_name_from = 'linkedin'::user_display_name_source) THEN ( SELECT jsonb_build_object('name', (la.linkedin_user_data ->> 'name'::text)) AS jsonb_build_object
+            WHEN (use_display_name_from = 'linkedin'::user_display_name_sources) THEN ( SELECT jsonb_build_object('name', (la.linkedin_user_data ->> 'name'::text)) AS jsonb_build_object
                FROM linkedin_accounts la
               WHERE (la.user_id = users.id))
-            WHEN (use_display_name_from = 'microsoft'::user_display_name_source) THEN ( SELECT jsonb_build_object('name', (ma.microsoft_user_data ->> 'name'::text)) AS jsonb_build_object
+            WHEN (use_display_name_from = 'microsoft'::user_display_name_sources) THEN ( SELECT jsonb_build_object('name', (ma.microsoft_user_data ->> 'name'::text)) AS jsonb_build_object
                FROM microsoft_accounts ma
               WHERE (ma.user_id = users.id))
-            WHEN (use_display_name_from = 'github'::user_display_name_source) THEN ( SELECT jsonb_build_object('name', (gha.github_user_data ->> 'name'::text)) AS jsonb_build_object
+            WHEN (use_display_name_from = 'github'::user_display_name_sources) THEN ( SELECT jsonb_build_object('name', (gha.github_user_data ->> 'name'::text)) AS jsonb_build_object
                FROM github_accounts gha
               WHERE (gha.user_id = users.id))
             ELSE NULL::jsonb
@@ -364,7 +364,7 @@ UNION ALL
     ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object
            FROM (image_surface_placements surface
              JOIN media_placements placement ON ((placement.id = surface.placement_id)))
-          WHERE ((surface.surface_kind = 'user-profile-image'::text) AND (surface.user_id = users.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))
+          WHERE ((surface.surface_kind = 'user-profile-image'::image_surface_placement_surface_kinds) AND (surface.user_id = users.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))
           ORDER BY placement.id DESC
          LIMIT 1) AS profile_image_placement,
     ARRAY[]::text[] AS roles,
@@ -809,8 +809,8 @@ UNION ALL
                   WHERE (post_topic_alias_sources.post_id = posts.id)
                   ORDER BY post_topic_alias_sources.topic_alias_id,
                         CASE post_topic_alias_sources.source
-                            WHEN 'title'::text THEN 0
-                            WHEN 'markdown'::text THEN 1
+                            WHEN 'title'::post_topic_alias_source_types THEN 0
+                            WHEN 'markdown'::post_topic_alias_source_types THEN 1
                             ELSE 2
                         END) source
              JOIN topic_aliases alias ON ((alias.id = source.topic_alias_id)))), '[]'::json) AS post_hashtags,
@@ -826,7 +826,7 @@ UNION ALL
                     'hashtag'::text AS category_type,
                     source.authored_token AS category_label
                    FROM post_topic_alias_sources source
-                  WHERE ((source.post_id = posts.id) AND (source.source = 'explicit'::text))) explicit_categories), '[]'::json) AS post_explicit_categories,
+                  WHERE ((source.post_id = posts.id) AND (source.source = 'explicit'::post_topic_alias_source_types))) explicit_categories), '[]'::json) AS post_explicit_categories,
     COALESCE(( SELECT json_agg(json_build_object('image_id', post_images.image_id, 'placement_id', placement.id, 'placement_revision', placement.revision, 'order_index', post_images.order_index, 'caption', post_images.caption) ORDER BY post_images.order_index) AS json_agg
            FROM ((post_images
              JOIN image_placements image_placement ON (((image_placement.post_id = post_images.post_id) AND (image_placement.image_id = post_images.image_id))))
@@ -852,7 +852,12 @@ UNION ALL
                      LIMIT 1), 'hostnames', COALESCE(( SELECT json_agg(to_jsonb(vuh.*) ORDER BY vuh.hostname) AS json_agg
                        FROM (post_topic_recommendations_hostnames ptrh
                          JOIN view_url_hostnames vuh ON ((vuh.id = ptrh.hostname_id)))
-                      WHERE (ptrh.post_id = ptr.post_id)), '[]'::json), 'topic_type', ptr.topic_type, 'example_referral_link', ptr.example_referral_link, 'landing_page_urls', ptr.landing_page_urls, 'approval_error_message', ptr.approval_error_message, 'status',
+                      WHERE (ptrh.post_id = ptr.post_id)), '[]'::json), 'topic_type', ptr.topic_type, 'example_referral_link', ( SELECT urls.url
+                       FROM urls
+                      WHERE (urls.id = ptr.example_referral_url_id)), 'landing_page_urls', COALESCE(( SELECT array_agg(urls.url ORDER BY submitted.sort_order) AS array_agg
+                       FROM (post_topic_recommendation_landing_page_urls submitted
+                         JOIN urls ON ((urls.id = submitted.url_id)))
+                      WHERE (submitted.post_id = ptr.post_id)), '{}'::text[]), 'approval_error_message', ptr.approval_error_message, 'status',
                     CASE
                         WHEN (ptr.reviewed_at IS NULL) THEN 'pending'::text
                         WHEN (ptr.created_topic_id IS NOT NULL) THEN 'approved'::text
@@ -910,7 +915,7 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
                  SELECT 1 AS "?column?"
                    FROM (communities publication_community
                      JOIN community_post_reviews publication_review ON (((publication_review.community_id = publication_community.id) AND (publication_review.post_id = root_post.id) AND (publication_review.approved_at IS NOT NULL) AND (publication_review.rejected_at IS NULL) AND (publication_review.unpublished_at IS NULL))))
-                  WHERE ((publication_community.id = root_post.community_id) AND (publication_community.deleted_at IS NULL) AND (publication_community.archived_at IS NULL) AND (publication_community.visibility = 'public'::community_visibility_types))
+                  WHERE ((publication_community.id = root_post.community_id) AND (publication_community.deleted_at IS NULL) AND (publication_community.archived_at IS NULL) AND (publication_community.visibility = 'public'::privacy_types))
                 )
          SELECT 1
            FROM publication))) AND ((root_post.post_type <> 'story'::post_types) OR (EXISTS ( WITH story_publication AS MATERIALIZED (
@@ -950,7 +955,7 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
     rss_feed_items.published_at,
     rss_feed_items.media_type,
     rss_feed_items.enclosure_url,
-    rss_feed_items.enclosure_type,
+    enclosure_media_type.mime_type AS enclosure_type,
     rss_feed_items.enclosure_length,
     rss_feed_items.duration_seconds,
     rss_feed_items.thumbnail_url,
@@ -996,7 +1001,8 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
                            FROM relation__rss_feed_item__category__topic topic_relation
                           WHERE ((topic_relation.subject_id = rfc.rss_feed_item_id) AND (topic_relation.object_id = rfc.topic_id) AND (topic_relation.deleted_at IS NULL) AND (topic_relation.votes_score_net > (0)::double precision)))))) AND ((rfc.topic_alias_id IS NULL) OR (relation.id IS NOT NULL)))) sub), '[]'::json) AS categories,
     rss_feed_items.lingua_rs_detected_language
-   FROM (((((rss_feed_items
+   FROM ((((((rss_feed_items
+     LEFT JOIN media_types enclosure_media_type ON ((enclosure_media_type.id = rss_feed_items.enclosure_media_type_id)))
      JOIN rss_feed_item_ids ON ((rss_feed_item_ids.id = rss_feed_items.id)))
      LEFT JOIN view_urls ON ((view_urls.id = rss_feed_items.url_id)))
      JOIN LATERAL ( SELECT rfis.rss_feed_id
@@ -1140,13 +1146,13 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
     ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object
            FROM (image_surface_placements surface
              JOIN media_placements placement ON ((placement.id = surface.placement_id)))
-          WHERE ((surface.surface_kind = 'topic-logo-image'::text) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))
+          WHERE ((surface.surface_kind = 'topic-logo-image'::image_surface_placement_surface_kinds) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))
           ORDER BY placement.id DESC
          LIMIT 1) AS logo_image_placement,
     ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object
            FROM (image_surface_placements surface
              JOIN media_placements placement ON ((placement.id = surface.placement_id)))
-          WHERE ((surface.surface_kind = 'topic-hero-image'::text) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))
+          WHERE ((surface.surface_kind = 'topic-hero-image'::image_surface_placement_surface_kinds) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))
           ORDER BY placement.id DESC
          LIMIT 1) AS hero_image_placement,
     topics.rewards_program_id,
@@ -1233,7 +1239,7 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
     ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object
            FROM (image_surface_placements surface
              JOIN media_placements placement ON ((placement.id = surface.placement_id)))
-          WHERE ((surface.surface_kind = 'user-profile-image'::text) AND (surface.user_id = users.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))
+          WHERE ((surface.surface_kind = 'user-profile-image'::image_surface_placement_surface_kinds) AND (surface.user_id = users.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))
           ORDER BY placement.id DESC
          LIMIT 1) AS profile_image_placement,
     users.markdown,

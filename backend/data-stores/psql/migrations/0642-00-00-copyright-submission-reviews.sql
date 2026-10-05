@@ -32,6 +32,7 @@ ALTER TABLE copyright_notice_appeal_recommendations
   ADD CONSTRAINT copyright_appeal_recommendations_id_submission_unique
   UNIQUE (id, copyright_notice_submission_id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_appeal_reviews (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_submission_id uuid NOT NULL REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
@@ -39,7 +40,7 @@ CREATE TABLE copyright_notice_appeal_reviews (
   copyright_notice_appeal_recommendation_id uuid,
   reviewed_at timestamptz NOT NULL,
   reviewed_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
-  action text NOT NULL CHECK (action IN ('confirm', 'modify', 'reverse')),
+  action copyright_review_actions NOT NULL CHECK (action IN ('confirm', 'reverse')),
   rationale_ciphertext text NOT NULL CHECK (char_length(rationale_ciphertext) BETWEEN 1 AND 1048576),
   manual_fallback_reason_ciphertext text CHECK (manual_fallback_reason_ciphertext IS NULL OR char_length(manual_fallback_reason_ciphertext) BETWEEN 1 AND 1048576),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -80,7 +81,7 @@ COMMENT ON COLUMN copyright_notice_appeal_reviews.copyright_restriction_id IS 'T
 COMMENT ON COLUMN copyright_notice_appeal_reviews.copyright_notice_appeal_recommendation_id IS 'Advisory agent recommendation retained as provenance.';
 COMMENT ON COLUMN copyright_notice_appeal_reviews.reviewed_at IS 'Time the moderator decided the appeal.';
 COMMENT ON COLUMN copyright_notice_appeal_reviews.reviewed_by_id IS 'Moderator who decided the appeal.';
-COMMENT ON COLUMN copyright_notice_appeal_reviews.action IS 'Confirm, modify, or reverse decision for the restriction.';
+COMMENT ON COLUMN copyright_notice_appeal_reviews.action IS 'Confirm or reverse decision for the restriction.';
 COMMENT ON COLUMN copyright_notice_appeal_reviews.rationale_ciphertext IS 'Encrypted moderator rationale.';
 COMMENT ON COLUMN copyright_notice_appeal_reviews.manual_fallback_reason_ciphertext IS 'Encrypted reason staff proceeded without an agent recommendation.';
 COMMENT ON TABLE copyright_notice_counter_notice_reviews IS 'Immutable moderator formal-compliance decisions for statutory US counter-notices.';

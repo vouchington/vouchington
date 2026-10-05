@@ -3,25 +3,25 @@
 -- configuration and result history independent of the agent tables retired by Epic A.
 
 DO $$ BEGIN
-CREATE TYPE classifier_primitive AS ENUM ('noul', 'choice', 'score');
+CREATE TYPE classifier_primitives AS ENUM ('noul', 'choice', 'score');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE TYPE classifier_candidate_kind AS ENUM ('topic', 'story', 'community_prompt');
+  CREATE TYPE classifier_candidate_kinds AS ENUM ('topic', 'story', 'community_prompt');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE TYPE classifier_model_provider AS ENUM ('typesafe', 'openrouter');
+  CREATE TYPE classifier_model_providers AS ENUM ('typesafe', 'openrouter');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 CREATE TABLE IF NOT EXISTS classifiers (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   slug TEXT NOT NULL UNIQUE,
-  primitive classifier_primitive NOT NULL,
-  candidate_kind classifier_candidate_kind NOT NULL,
+  primitive classifier_primitives NOT NULL,
+  candidate_kind classifier_candidate_kinds NOT NULL,
   activated_at TIMESTAMPTZ,
   deactivated_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS classifier_prompt_versions (
   classifier_id UUID NOT NULL REFERENCES classifiers ON DELETE RESTRICT,
   prompt TEXT NOT NULL,
   model_name TEXT NOT NULL,
-  model_provider classifier_model_provider NOT NULL,
+  model_provider classifier_model_providers NOT NULL,
   default_lower_threshold NUMERIC(5,4) NOT NULL,
   default_upper_threshold NUMERIC(5,4) NOT NULL,
   activated_at TIMESTAMPTZ,
@@ -137,7 +137,7 @@ CREATE OR REPLACE TRIGGER trigger_classifier_prompt_versions_updated_at
 CREATE TABLE IF NOT EXISTS classifier_candidates (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   classifier_id UUID NOT NULL,
-  candidate_kind classifier_candidate_kind NOT NULL,
+  candidate_kind classifier_candidate_kinds NOT NULL,
   topic_id UUID REFERENCES topics ON DELETE CASCADE,
   story_id UUID REFERENCES stories ON DELETE CASCADE,
   community_id UUID REFERENCES communities ON DELETE CASCADE,
@@ -390,13 +390,14 @@ CREATE OR REPLACE TRIGGER trigger_classifier_candidate_community_overrides_updat
   BEFORE UPDATE ON classifier_candidate_community_overrides
   FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS classifier_decision_batches (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   classifier_id UUID NOT NULL REFERENCES classifiers ON DELETE RESTRICT,
   prompt_version_id UUID NOT NULL,
   post_id UUID REFERENCES posts ON DELETE CASCADE,
   rss_feed_item_id UUID REFERENCES rss_feed_items ON DELETE CASCADE,
-  scope_category TEXT NOT NULL,
+  scope_category classifier_scope_categories NOT NULL,
   scope_community_id UUID REFERENCES communities ON DELETE CASCADE,
   completed_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -576,13 +577,14 @@ CREATE OR REPLACE TRIGGER trigger_classifier_decision_calls_append_only
   BEFORE UPDATE ON classifier_decision_calls
   FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS topic_classifier_results (
   topic_id UUID NOT NULL REFERENCES topics ON DELETE CASCADE,
   id UUID NOT NULL DEFAULT uuidv7(),
   batch_id UUID NOT NULL,
   decision_call_id UUID NOT NULL,
   classifier_id UUID NOT NULL,
-  candidate_kind classifier_candidate_kind NOT NULL DEFAULT 'topic'
+  candidate_kind classifier_candidate_kinds NOT NULL DEFAULT 'topic'
     CHECK (candidate_kind = 'topic'),
   candidate_id UUID,
   threshold_id UUID,
@@ -591,7 +593,7 @@ CREATE TABLE IF NOT EXISTS topic_classifier_results (
   effective_lower_threshold NUMERIC(5,4) NOT NULL,
   effective_upper_threshold NUMERIC(5,4) NOT NULL,
   raw_response JSONB NOT NULL,
-  scope_category TEXT NOT NULL,
+  scope_category classifier_scope_categories NOT NULL,
   scope_community_id UUID,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -694,6 +696,7 @@ CREATE OR REPLACE TRIGGER trigger_classifier_topic_vote_applications_updated_at
   BEFORE UPDATE ON classifier_topic_vote_applications
   FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS story_classifier_results (
   story_id UUID REFERENCES stories ON DELETE CASCADE,
   rss_feed_item_id UUID REFERENCES rss_feed_items ON DELETE CASCADE,
@@ -701,7 +704,7 @@ CREATE TABLE IF NOT EXISTS story_classifier_results (
   batch_id UUID NOT NULL,
   decision_call_id UUID NOT NULL,
   classifier_id UUID NOT NULL,
-  candidate_kind classifier_candidate_kind NOT NULL DEFAULT 'story'
+  candidate_kind classifier_candidate_kinds NOT NULL DEFAULT 'story'
     CHECK (candidate_kind = 'story'),
   candidate_id UUID,
   threshold_id UUID,
@@ -710,7 +713,7 @@ CREATE TABLE IF NOT EXISTS story_classifier_results (
   effective_lower_threshold NUMERIC(5,4) NOT NULL,
   effective_upper_threshold NUMERIC(5,4) NOT NULL,
   raw_response JSONB NOT NULL,
-  scope_category TEXT NOT NULL,
+  scope_category classifier_scope_categories NOT NULL,
   scope_community_id UUID,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -784,20 +787,21 @@ CREATE INDEX IF NOT EXISTS idx_story_classifier_results__threshold
 -- no stored candidate or threshold revision: the prompt version's defaults are the thresholds, and
 -- the community prompt row itself is the candidate identity. Partitioned by the UUIDv7 batch so a
 -- batch read prunes to one child.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS community_prompt_classifier_results (
   batch_id UUID NOT NULL,
   id UUID NOT NULL DEFAULT uuidv7(),
   community_prompt_id UUID NOT NULL,
   decision_call_id UUID NOT NULL,
   classifier_id UUID NOT NULL,
-  candidate_kind classifier_candidate_kind NOT NULL DEFAULT 'community_prompt'
+  candidate_kind classifier_candidate_kinds NOT NULL DEFAULT 'community_prompt'
     CHECK (candidate_kind = 'community_prompt'),
   prompt_version_id UUID NOT NULL,
   probability NUMERIC NOT NULL CHECK (probability >= 0 AND probability <= 1),
   effective_lower_threshold NUMERIC(5,4) NOT NULL,
   effective_upper_threshold NUMERIC(5,4) NOT NULL,
   raw_response JSONB NOT NULL,
-  scope_category TEXT NOT NULL DEFAULT 'community_ai'
+  scope_category classifier_scope_categories NOT NULL DEFAULT 'community_ai'
     CHECK (scope_category = 'community_ai'),
   scope_community_id UUID NOT NULL,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,

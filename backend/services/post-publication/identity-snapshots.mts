@@ -1,3 +1,4 @@
+import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 import { getPostPublicationWorkLimit } from './work-limits.mts'
 import { retainPublicationIdentityBridges } from './identity-bridges.mts'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
@@ -12,11 +13,11 @@ import { publicationEligibilityFingerprintSql } from './fingerprint.mts'
 type SnapshotPost = { id: string; eligibility_fingerprint: string; is_public: boolean }
 export type Snapshot = {
   id: string
-  cursor_kind: string | null
+  cursor_kind: FiniteValue<'post_publication_source_cursor_kinds'> | null
   cursor_value: string | null
   completed_at: Date | null
   eligibility_fingerprint: string
-  receipt_cursor_kind: string | null
+  receipt_cursor_kind: FiniteValue<'post_publication_receipt_cursor_kinds'> | null
   receipt_cursor_value: string | null
   receipt_retained_at: Date | null
   receipt_source_version: string | null

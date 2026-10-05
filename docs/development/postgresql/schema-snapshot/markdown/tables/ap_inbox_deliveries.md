@@ -9,7 +9,7 @@ Not partitioned — growth: unbounded.
 | Column                  | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                   |
 | ----------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`                    | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                           |
-| `request_method`        | `text`                     | no       |                              |          |           |           | Uppercase HTTP method from the exact inbound signed request; bounded to 16 characters.                                                    |
+| `request_method`        | `http_request_methods`     | no       |                              |          |           |           | Uppercase HTTP method from the exact inbound signed request; bounded to 16 characters.                                                    |
 | `request_target`        | `text`                     | no       |                              |          |           |           | Exact path and query string used to reconstruct the signed (request-target) value.                                                        |
 | `expected_host`         | `text`                     | no       |                              |          |           |           | Public Host value covered by the sender's HTTP Signature.                                                                                 |
 | `signature_header`      | `text`                     | no       |                              |          |           |           | Exact inbound Signature header retained until verification reaches a final outcome.                                                       |
@@ -50,8 +50,8 @@ _none_
 - `ap_inbox_deliveries__first_failed_requires_retention`: `CHECK (((first_failed_at IS NULL) OR (retention_expires_at IS NOT NULL)))`
 - `ap_inbox_deliveries__last_error_bounded`: `CHECK (((last_error IS NULL) OR (length(last_error) <= 1000)))`
 - `ap_inbox_deliveries__raw_body_bounded`: `CHECK ((octet_length(raw_body) <= 1048576))`
-- `ap_inbox_deliveries__request_method_length`: `CHECK (((length(request_method) >= 1) AND (length(request_method) <= 16)))`
-- `ap_inbox_deliveries__request_method_uppercase`: `CHECK ((request_method = upper(request_method)))`
+- `ap_inbox_deliveries__request_method_length`: `CHECK (((length((request_method)::text) >= 1) AND (length((request_method)::text) <= 16)))`
+- `ap_inbox_deliveries__request_method_uppercase`: `CHECK (((request_method)::text = upper((request_method)::text)))`
 - `ap_inbox_deliveries__sender_admission_requires_verification`: `CHECK (((sender_allowed_at IS NULL) OR ((verified_at IS NOT NULL) AND (remote_actor_id IS NOT NULL))))`
 - `ap_inbox_deliveries__sender_hostname_lowercase`: `CHECK ((sender_hostname = lower(sender_hostname)))`
 - `ap_inbox_deliveries__terminal_diagnostics_present`: `CHECK ((((deferred_until IS NULL) AND (failed_at IS NULL)) OR (last_error IS NOT NULL)))`

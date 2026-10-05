@@ -6,18 +6,18 @@ Tracks user import requests so imported or later-approved entities can be follow
 
 Not partitioned — growth: unbounded.
 
-| Column                         | Type                               | Nullable | Default                      | Identity | Generated | Collation | Comment                                                      |
-| ------------------------------ | ---------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------ |
-| `id`                           | `uuid`                             | no       | `uuidv7()`                   |          |           |           |                                                              |
-| `user_id`                      | `uuid`                             | no       |                              |          |           |           | The user who submitted the import request.                   |
-| `entity_type`                  | `user_import_request_entity_types` | no       |                              |          |           |           | The imported entity family.                                  |
-| `topic_id`                     | `uuid`                             | yes      |                              |          |           |           | Topic followed directly or after recommendation approval.    |
-| `rss_feed_id`                  | `uuid`                             | yes      |                              |          |           |           | RSS feed followed directly or after recommendation approval. |
-| `topic_recommendation_post_id` | `uuid`                             | yes      |                              |          |           |           | Pending topic recommendation created by the import request.  |
-| `input_value`                  | `text`                             | no       |                              |          |           |           | Trimmed user-provided import value.                          |
-| `followed_at`                  | `timestamp with time zone`         | yes      |                              |          |           |           | When the user was linked to the imported entity.             |
-| `created_at`                   | `timestamp with time zone`         | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                              |
-| `updated_at`                   | `timestamp with time zone`         | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                              |
+| Column                         | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                      |
+| ------------------------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------ |
+| `id`                           | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                              |
+| `user_id`                      | `uuid`                     | no       |                              |          |           |           | The user who submitted the import request.                   |
+| `entity_type`                  | `import_entity_types`      | no       |                              |          |           |           | The imported entity family.                                  |
+| `topic_id`                     | `uuid`                     | yes      |                              |          |           |           | Topic followed directly or after recommendation approval.    |
+| `rss_feed_id`                  | `uuid`                     | yes      |                              |          |           |           | RSS feed followed directly or after recommendation approval. |
+| `topic_recommendation_post_id` | `uuid`                     | yes      |                              |          |           |           | Pending topic recommendation created by the import request.  |
+| `input_value`                  | `text`                     | no       |                              |          |           |           | Trimmed user-provided import value.                          |
+| `followed_at`                  | `timestamp with time zone` | yes      |                              |          |           |           | When the user was linked to the imported entity.             |
+| `created_at`                   | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                              |
+| `updated_at`                   | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                              |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -26,7 +26,7 @@ _none_
 
 **Check constraints:**
 
-- `user_import_requests_check`: `CHECK ((((entity_type = 'topic'::user_import_request_entity_types) AND (rss_feed_id IS NULL) AND ((topic_id IS NOT NULL) OR (topic_recommendation_post_id IS NOT NULL))) OR ((entity_type = 'rss_feed'::user_import_request_entity_types) AND (topic_id IS NULL) AND (topic_recommendation_post_id IS NULL) AND (rss_feed_id IS NOT NULL))))`
+- `user_import_requests_check`: `CHECK ((((entity_type = 'topic'::import_entity_types) AND (rss_feed_id IS NULL) AND ((topic_id IS NOT NULL) OR (topic_recommendation_post_id IS NOT NULL))) OR ((entity_type = 'rss_feed'::import_entity_types) AND (topic_id IS NULL) AND (topic_recommendation_post_id IS NULL) AND (rss_feed_id IS NOT NULL))))`
 - `user_import_requests_check1`: `CHECK ((((followed_at IS NULL) AND (topic_id IS NULL) AND (rss_feed_id IS NULL)) OR ((followed_at IS NOT NULL) AND ((topic_id IS NOT NULL) OR (rss_feed_id IS NOT NULL)))))`
 - `user_import_requests_input_value_check`: `CHECK ((input_value = TRIM(BOTH FROM input_value)))`
 - `user_import_requests_input_value_check1`: `CHECK ((char_length(input_value) > 0))`

@@ -6,16 +6,16 @@ Durable image-use placements; exact binding and revision authority governs publi
 
 Not partitioned — growth: unbounded.
 
-| Column                  | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                               |
-| ----------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                    | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                                       |
-| `revision`              | `integer`                  | no       | `0`                          |          |           |           | Monotonic delivery revision; every availability change advances it exactly once.                                                                      |
-| `activation_revision`   | `integer`                  | no       | `0`                          |          |           |           | Most recent retirement-to-active generation revision, including trigger-only reactivation; copyright parties use an immutable snapshot of this value. |
-| `retired_at`            | `timestamp with time zone` | yes      |                              |          |           |           | Placement is no longer attached to its host surface; retained so stale routes fail closed.                                                            |
-| `retirement_reason`     | `text`                     | yes      |                              |          |           |           | Why the placement retired. Owner removal supersedes an asset retirement, fencing image-delete rollback from restoring a detached use.                 |
-| `copyright_withheld_at` | `timestamp with time zone` | yes      |                              |          |           |           | Placement-specific copyright withholding state; shared source assets remain recoverable.                                                              |
-| `created_at`            | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                       |
-| `updated_at`            | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                                       |
+| Column                  | Type                                 | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                               |
+| ----------------------- | ------------------------------------ | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                    | `uuid`                               | no       | `uuidv7()`                   |          |           |           |                                                                                                                                                       |
+| `revision`              | `integer`                            | no       | `0`                          |          |           |           | Monotonic delivery revision; every availability change advances it exactly once.                                                                      |
+| `activation_revision`   | `integer`                            | no       | `0`                          |          |           |           | Most recent retirement-to-active generation revision, including trigger-only reactivation; copyright parties use an immutable snapshot of this value. |
+| `retired_at`            | `timestamp with time zone`           | yes      |                              |          |           |           | Placement is no longer attached to its host surface; retained so stale routes fail closed.                                                            |
+| `retirement_reason`     | `media_placement_retirement_reasons` | yes      |                              |          |           |           | Why the placement retired. Owner removal supersedes an asset retirement, fencing image-delete rollback from restoring a detached use.                 |
+| `copyright_withheld_at` | `timestamp with time zone`           | yes      |                              |          |           |           | Placement-specific copyright withholding state; shared source assets remain recoverable.                                                              |
+| `created_at`            | `timestamp with time zone`           | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                       |
+| `updated_at`            | `timestamp with time zone`           | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                                       |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -26,7 +26,7 @@ _none_
 
 - `media_placements_check`: `CHECK (((activation_revision >= 0) AND (activation_revision <= revision)))`
 - `media_placements_check1`: `CHECK ((((retired_at IS NULL) AND (retirement_reason IS NULL)) OR ((retired_at IS NOT NULL) AND (retirement_reason IS NOT NULL))))`
-- `media_placements_retirement_reason_check`: `CHECK ((retirement_reason = ANY (ARRAY['asset_deleted'::text, 'owner_removed'::text])))`
+- `media_placements_retirement_reason_check`: `CHECK ((retirement_reason = ANY (ARRAY['asset_deleted'::media_placement_retirement_reasons, 'owner_removed'::media_placement_retirement_reasons])))`
 - `media_placements_revision_check`: `CHECK ((revision >= 0))`
 
 **Foreign keys:**

@@ -6,15 +6,15 @@ Immutable record of each application activation of an image surface placement.
 
 Not partitioned — growth: unbounded.
 
-| Column                   | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                       |
-| ------------------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------- |
-| `placement_id`           | `uuid`                     | no       |                     |          |           |           | Placement activated by the application.                                                       |
-| `surface_kind`           | `text`                     | no       |                     |          |           |           | Surface kind captured with the placement identity.                                            |
-| `placement_revision`     | `integer`                  | no       |                     |          |           |           | Placement revision at activation.                                                             |
-| `bound_by_user_id`       | `uuid`                     | no       |                     |          |           |           | Retained identity of the account that selected the image.                                     |
-| `uploaded_by_user_id`    | `uuid`                     | no       |                     |          |           |           | Retained identity of the original uploader.                                                   |
-| `bound_by_administrator` | `boolean`                  | yes      |                     |          |           |           | Whether a community image setter was an administrator at activation; null for other surfaces. |
-| `bound_at`               | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | Time the application activated the image placement.                                           |
+| Column                   | Type                                    | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                       |
+| ------------------------ | --------------------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------- |
+| `placement_id`           | `uuid`                                  | no       |                     |          |           |           | Placement activated by the application.                                                       |
+| `surface_kind`           | `image_surface_placement_surface_kinds` | no       |                     |          |           |           | Surface kind captured with the placement identity.                                            |
+| `placement_revision`     | `integer`                               | no       |                     |          |           |           | Placement revision at activation.                                                             |
+| `bound_by_user_id`       | `uuid`                                  | no       |                     |          |           |           | Retained identity of the account that selected the image.                                     |
+| `uploaded_by_user_id`    | `uuid`                                  | no       |                     |          |           |           | Retained identity of the original uploader.                                                   |
+| `bound_by_administrator` | `boolean`                               | yes      |                     |          |           |           | Whether a community image setter was an administrator at activation; null for other surfaces. |
+| `bound_at`               | `timestamp with time zone`              | no       | `CURRENT_TIMESTAMP` |          |           |           | Time the application activated the image placement.                                           |
 
 **Primary key:** `PRIMARY KEY (placement_id, placement_revision)`
 
@@ -23,9 +23,9 @@ _none_
 
 **Check constraints:**
 
-- `image_surface_placement_activations_check`: `CHECK (((surface_kind = ANY (ARRAY['community-profile-image'::text, 'community-banner-image'::text])) = (bound_by_administrator IS NOT NULL)))`
+- `image_surface_placement_activations_check`: `CHECK (((surface_kind = ANY (ARRAY['community-profile-image'::image_surface_placement_surface_kinds, 'community-banner-image'::image_surface_placement_surface_kinds])) = (bound_by_administrator IS NOT NULL)))`
 - `image_surface_placement_activations_placement_revision_check`: `CHECK ((placement_revision >= 0))`
-- `image_surface_placement_activations_surface_kind_check`: `CHECK ((surface_kind = ANY (ARRAY['user-profile-image'::text, 'topic-logo-image'::text, 'topic-hero-image'::text, 'community-profile-image'::text, 'community-banner-image'::text, 'user-profile-link-image'::text])))`
+- `image_surface_placement_activations_surface_kind_check`: `CHECK ((surface_kind = ANY (ARRAY['user-profile-image'::image_surface_placement_surface_kinds, 'topic-logo-image'::image_surface_placement_surface_kinds, 'topic-hero-image'::image_surface_placement_surface_kinds, 'community-profile-image'::image_surface_placement_surface_kinds, 'community-banner-image'::image_surface_placement_surface_kinds, 'user-profile-link-image'::image_surface_placement_surface_kinds])))`
 
 **Foreign keys:**
 

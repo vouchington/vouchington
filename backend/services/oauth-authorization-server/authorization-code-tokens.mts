@@ -103,7 +103,7 @@ async function lockAuthorizationCode(
        oauth_grant.client_id AS client_internal_id,
        code.redirect_uri,
        code.resource,
-       code.scopes,
+       code.scopes::text[] AS scopes,
        code.code_challenge,
        code.expires_at,
        code.consumed_at,
@@ -161,7 +161,7 @@ async function issueNewTokenFamily(
   await query(
     `/* issueNewTokenFamily */ INSERT INTO oauth_refresh_token_families (
        id, grant_id, resource, scopes, expires_at
-     ) VALUES ($1, $2, $3, $4::text[], $5)`,
+     ) VALUES ($1, $2, $3, $4::api_scopes[], $5)`,
     [familyId, code.grant_id, code.resource, code.scopes, familyExpiresAt],
   )
   return insertOAuthTokenPair(

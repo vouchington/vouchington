@@ -6,13 +6,13 @@ Single durable high-water mark for Microsoft Store active-source recovery.
 
 Not partitioned — growth: bounded.
 
-| Column                 | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                |
-| ---------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------- |
-| `id`                   | `text`                     | no       |                     |          |           |           |                                                                        |
-| `last_source_id`       | `uuid`                     | yes      |                     |          |           |           | Last source UUID scanned in the current keyset recovery pass.          |
-| `sweep_upper_bound_id` | `uuid`                     | yes      |                     |          |           |           | Frozen UUIDv7 upper bound for one finite active-source recovery sweep. |
-| `created_at`           | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                        |
-| `updated_at`           | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                        |
+| Column                 | Type                                           | Nullable | Default             | Identity | Generated | Collation | Comment                                                                |
+| ---------------------- | ---------------------------------------------- | -------- | ------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------- |
+| `id`                   | `membership_microsoft_store_recovery_families` | no       |                     |          |           |           |                                                                        |
+| `last_source_id`       | `uuid`                                         | yes      |                     |          |           |           | Last source UUID scanned in the current keyset recovery pass.          |
+| `sweep_upper_bound_id` | `uuid`                                         | yes      |                     |          |           |           | Frozen UUIDv7 upper bound for one finite active-source recovery sweep. |
+| `created_at`           | `timestamp with time zone`                     | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                        |
+| `updated_at`           | `timestamp with time zone`                     | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                        |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -21,7 +21,7 @@ _none_
 
 **Check constraints:**
 
-- `membership_microsoft_store_recovery_cursors_id_check`: `CHECK ((id = 'active_sources'::text))`
+- `membership_microsoft_store_recovery_cursors_id_check`: `CHECK ((id = 'active_sources'::membership_microsoft_store_recovery_families))`
 
 **Foreign keys:**
 _none_

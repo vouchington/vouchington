@@ -20,12 +20,13 @@ CREATE TRIGGER trigger_copyright_staydown_entries_updated_at
   BEFORE UPDATE ON copyright_staydown_entries
   FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_staydown_matches (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_staydown_entry_id uuid NOT NULL REFERENCES copyright_staydown_entries(id) ON DELETE CASCADE,
   image_id uuid NOT NULL REFERENCES images(id) ON DELETE CASCADE,
   uploaded_by_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  match_kind text NOT NULL CHECK (match_kind IN ('exact', 'perceptual')),
+  match_kind copyright_staydown_match_kinds NOT NULL CHECK (match_kind IN ('exact', 'perceptual')),
   hamming_distance smallint NOT NULL CHECK (hamming_distance BETWEEN 0 AND 64),
   reviewed_at timestamptz,
   reviewed_by_id uuid REFERENCES users(id) ON DELETE SET NULL,

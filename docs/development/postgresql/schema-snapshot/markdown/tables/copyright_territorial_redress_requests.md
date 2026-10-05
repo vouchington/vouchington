@@ -6,19 +6,19 @@ Participant redress against one live EU or UK decision. One request per submitte
 
 Not partitioned — growth: unbounded.
 
-| Column                              | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                             |
-| ----------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------- |
-| `id`                                | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                     |
-| `copyright_notice_id`               | `uuid`                     | no       |                              |          |           |           | Notice this redress request challenges. The composite foreign key requires the cited decision to be on this notice. |
-| `jurisdiction`                      | `text`                     | no       |                              |          |           |           | Jurisdiction of the notice: eu_dsa or uk. Must equal the notice jurisdiction.                                       |
-| `copyright_territorial_decision_id` | `uuid`                     | no       |                              |          |           |           | Decision this redress request cites, on the same notice.                                                            |
-| `submitted_by_user_id`              | `uuid`                     | yes      |                              |          |           |           | Retained identity of the submitting account; null only for a guest notifier. Never authorizes a deleted account.    |
-| `filed_by`                          | `text`                     | no       |                              |          |           |           | Role at filing: notifier, target poster, or reviewer. Guest filing can only be notifier.                            |
-| `idempotency_key`                   | `text`                     | no       |                              |          |           |           | Caller idempotency key, unique together with submitted_by_user_id and jurisdiction.                                 |
-| `explanation_ciphertext`            | `text`                     | no       |                              |          |           |           | Encrypted explanation supplied by the participant.                                                                  |
-| `received_at`                       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | When Voucha stored this redress request.                                                                            |
-| `created_at`                        | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                     |
-| `updated_at`                        | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                     |
+| Column                              | Type                                | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                             |
+| ----------------------------------- | ----------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------- |
+| `id`                                | `uuid`                              | no       | `uuidv7()`                   |          |           |           |                                                                                                                     |
+| `copyright_notice_id`               | `uuid`                              | no       |                              |          |           |           | Notice this redress request challenges. The composite foreign key requires the cited decision to be on this notice. |
+| `jurisdiction`                      | `copyright_jurisdictions`           | no       |                              |          |           |           | Jurisdiction of the notice: eu_dsa or uk. Must equal the notice jurisdiction.                                       |
+| `copyright_territorial_decision_id` | `uuid`                              | no       |                              |          |           |           | Decision this redress request cites, on the same notice.                                                            |
+| `submitted_by_user_id`              | `uuid`                              | yes      |                              |          |           |           | Retained identity of the submitting account; null only for a guest notifier. Never authorizes a deleted account.    |
+| `filed_by`                          | `copyright_territorial_party_roles` | no       |                              |          |           |           | Role at filing: notifier, target poster, or reviewer. Guest filing can only be notifier.                            |
+| `idempotency_key`                   | `text`                              | no       |                              |          |           |           | Caller idempotency key, unique together with submitted_by_user_id and jurisdiction.                                 |
+| `explanation_ciphertext`            | `text`                              | no       |                              |          |           |           | Encrypted explanation supplied by the participant.                                                                  |
+| `received_at`                       | `timestamp with time zone`          | no       | `CURRENT_TIMESTAMP`          |          |           |           | When Voucha stored this redress request.                                                                            |
+| `created_at`                        | `timestamp with time zone`          | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                     |
+| `updated_at`                        | `timestamp with time zone`          | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                     |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -30,9 +30,9 @@ Not partitioned — growth: unbounded.
 **Check constraints:**
 
 - `chk_copyright_territorial_redress_requests__explanation`: `CHECK (((char_length(explanation_ciphertext) >= 1) AND (char_length(explanation_ciphertext) <= 1048576)))`
-- `chk_copyright_territorial_redress_requests__filed_by`: `CHECK (((filed_by = ANY (ARRAY['notifier'::text, 'poster'::text, 'reviewer'::text])) AND ((submitted_by_user_id IS NOT NULL) OR (filed_by = 'notifier'::text))))`
+- `chk_copyright_territorial_redress_requests__filed_by`: `CHECK (((filed_by = ANY (ARRAY['notifier'::copyright_territorial_party_roles, 'poster'::copyright_territorial_party_roles, 'reviewer'::copyright_territorial_party_roles])) AND ((submitted_by_user_id IS NOT NULL) OR (filed_by = 'notifier'::copyright_territorial_party_roles))))`
 - `chk_copyright_territorial_redress_requests__idempotency`: `CHECK ((char_length(idempotency_key) = 36))`
-- `chk_copyright_territorial_redress_requests__jurisdiction`: `CHECK ((jurisdiction = ANY (ARRAY['eu_dsa'::text, 'uk'::text])))`
+- `chk_copyright_territorial_redress_requests__jurisdiction`: `CHECK ((jurisdiction = ANY (ARRAY['eu_dsa'::copyright_jurisdictions, 'uk'::copyright_jurisdictions])))`
 
 **Foreign keys:**
 

@@ -28,8 +28,9 @@ COMMENT ON COLUMN membership_google_play_purchase_tokens.linked_purchase_token_l
 -- fetch that completes first, even when the subscription expiry and state cycle back unchanged.
 CREATE SEQUENCE IF NOT EXISTS membership_google_play_observation_order_seq AS BIGINT;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_google_play_recovery_cursors (
-  id TEXT PRIMARY KEY CHECK (id IN ('notifications', 'active_sources', 'acknowledgements')),
+  id membership_google_play_recovery_families PRIMARY KEY CHECK (id IN ('notifications', 'active_sources', 'acknowledgements')),
   last_evidence_id UUID,
   sweep_upper_bound_id UUID,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP

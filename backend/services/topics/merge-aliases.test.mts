@@ -40,7 +40,7 @@ describe('mergeTopicAliases', () => {
     await mergeTopicAliases(admin, source, destination)
 
     const revision = (await getTopicRevisionsForTest(destination.id)).at(-1)
-    expect(revision?.changes).toEqual({
+    expect(revision?.revision_document.changes).toEqual({
       topic_aliases: {
         before: [destinationAlias],
         after: [destinationAlias, source.slug, sourceAlias].toSorted(),
