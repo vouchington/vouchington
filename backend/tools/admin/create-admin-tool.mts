@@ -13,6 +13,8 @@ import { findSchemaViolation } from '../schema-validator.mts'
 import { adminOutputSchema, wrapAdminOutput } from './untrusted-output.mts'
 
 type AdminToolConfig<TArgs> = {
+  switch?: 'copyright.mcpDecisionTools'
+  auditRationale?: true
   name: string
   description: string
   scope: ApiScope
@@ -43,6 +45,8 @@ export function createAdminTool<TArgs>(config: AdminToolConfig<TArgs>): Tool<TAr
       annotations: config.annotations,
       api: [config.api],
       outputSchema: adminOutputSchema(config.outputSchema) as ToolOutputSchema,
+      ...(config.switch ? { switch: config.switch } : {}),
+      ...(config.auditRationale ? { auditRationale: true } : {}),
     },
     function: currentUser => async args => {
       const user = await requirePrivateToolUser(currentUser)

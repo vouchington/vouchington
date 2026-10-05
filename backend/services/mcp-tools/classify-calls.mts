@@ -43,10 +43,13 @@ export function classifyMcpCalls(
   user: UserForClassification,
   grantedScopes: readonly ApiScope[],
   config: McpServerConfig,
+  copyrightDecisionToolsEnabled = false,
 ): McpCallAuditEvent[] {
   const messages: unknown[] = Array.isArray(parsedBody) ? parsedBody : [parsedBody]
   if (messages.length === 0) return [INVALID_REQUEST]
-  return messages.map(message => classifyMessage(message, user, grantedScopes, config))
+  return messages.map(message =>
+    classifyMessage(message, user, grantedScopes, config, copyrightDecisionToolsEnabled),
+  )
 }
 
 function classifyMessage(
@@ -54,6 +57,7 @@ function classifyMessage(
   user: UserForClassification,
   grantedScopes: readonly ApiScope[],
   config: McpServerConfig,
+  copyrightDecisionToolsEnabled: boolean,
 ): McpCallAuditEvent {
   const method = readAuditedMethod(message)
   if (!method) return INVALID_REQUEST
@@ -70,7 +74,13 @@ function classifyMessage(
   const request = CallToolRequestSchema.safeParse(message)
   if (!request.success) return { jsonrpcMethod: method, toolName: null, outcome: 'invalid_request' }
   const { name, arguments: args } = request.data.params
-  const resolution = resolveMcpToolCall(name, user, grantedScopes, config)
+  const resolution = resolveMcpToolCall(
+    name,
+    user,
+    grantedScopes,
+    config,
+    copyrightDecisionToolsEnabled,
+  )
   // An unregistered name is caller-supplied text, so it is never stored.
   if (resolution.status === 'not_found') {
     return { jsonrpcMethod: method, toolName: null, outcome: 'not_found' }
@@ -79,10 +89,18 @@ function classifyMessage(
     return { jsonrpcMethod: method, toolName: name, outcome: resolution.status }
   }
   const invalidArguments = validateToolArguments(resolution.tool.schema.parameters, args ?? {})
+  const copyrightRationale =
+    !invalidArguments &&
+    resolution.tool.meta?.switch === 'copyright.mcpDecisionTools' &&
+    resolution.tool.meta.auditRationale === true &&
+    typeof args?.rationale === 'string'
+      ? args.rationale
+      : undefined
   return {
     jsonrpcMethod: method,
     toolName: name,
     outcome: invalidArguments ? 'invalid_arguments' : 'accepted',
+    ...(copyrightRationale === undefined ? {} : { copyrightRationale }),
   }
 }
 

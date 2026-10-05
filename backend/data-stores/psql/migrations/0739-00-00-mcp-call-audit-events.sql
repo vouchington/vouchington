@@ -1,6 +1,7 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Durable per-call audit records for MCP surfaces. One row per JSON-RPC call (plus a follow-up row
--- when an admitted tool call fails). No arguments, results, tokens, or headers are stored.
+-- when an admitted tool call fails). Only the validated copyright decision rationale is retained,
+-- encrypted; arbitrary arguments, results, tokens, and headers are never stored.
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS mcp_call_audit_events (
@@ -25,8 +26,13 @@ CREATE TABLE IF NOT EXISTS mcp_call_audit_events (
     'insufficient_scope',
     'rate_limited'
   )),
+  copyright_rationale_ciphertext TEXT,
   occurred_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CHECK (tool_name IS NULL OR jsonrpc_method = 'tools/call'),
+  CHECK (copyright_rationale_ciphertext IS NULL OR (
+    surface = 'admin_mcp' AND jsonrpc_method = 'tools/call' AND outcome = 'accepted'
+    AND tool_name IS NOT NULL
+  )),
   CHECK (num_nonnulls(oauth_client_id, api_key_id) = 1)
   -- no updated_at or deleted_at: append-only
 ) PARTITION BY RANGE (id);
@@ -49,7 +55,7 @@ CREATE OR REPLACE TRIGGER trigger_mcp_call_audit_events_append_only
 BEFORE UPDATE OR DELETE ON mcp_call_audit_events
 FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 
-COMMENT ON TABLE mcp_call_audit_events IS 'Append-only durable audit of MCP calls made with a verified OAuth access token or user API key; one row per JSON-RPC message, plus a tool_error follow-up row for an admitted tool call that failed. Arguments, results, tokens, keys, and headers are never stored.';
+COMMENT ON TABLE mcp_call_audit_events IS 'Append-only durable audit of MCP calls made with a verified OAuth access token or user API key; one row per JSON-RPC message, plus a tool_error follow-up row for an admitted tool call that failed. Only validated copyright decision rationales are encrypted; arbitrary arguments, results, tokens, keys, and headers are never stored.';
 COMMENT ON COLUMN mcp_call_audit_events.surface IS 'MCP surface that received the call: mcp (user) or admin_mcp.';
 COMMENT ON COLUMN mcp_call_audit_events.correlation_id IS 'Server-minted id shared by every row written for one HTTP request; returned to the caller in the X-Correlation-Id response header.';
 COMMENT ON COLUMN mcp_call_audit_events.actor_user_id IS 'Owner of the verified access token or API key; references the retained user identity so hard deletion preserves the record.';
@@ -59,4 +65,5 @@ COMMENT ON COLUMN mcp_call_audit_events.resource IS 'Protected resource URL of t
 COMMENT ON COLUMN mcp_call_audit_events.jsonrpc_method IS 'JSON-RPC method from a fixed allowlist of MCP methods, or NULL when the request was rejected before its body was read or named no supported method.';
 COMMENT ON COLUMN mcp_call_audit_events.tool_name IS 'Name of a registered tool on the surface for a tools/call; NULL for other calls and for a requested name that is not a registered tool, so caller-supplied text is never stored.';
 COMMENT ON COLUMN mcp_call_audit_events.outcome IS 'Authorization and dispatch result of the call, or tool_error when an admitted tool call failed; never derived from result content.';
+COMMENT ON COLUMN mcp_call_audit_events.copyright_rationale_ciphertext IS 'Encrypted validated rationale for an admitted administrator copyright decision call, bound to this audit row id. No general argument or result text is stored.';
 COMMENT ON COLUMN mcp_call_audit_events.occurred_at IS 'Time the audit row was written, derived from the UUIDv7 id.';

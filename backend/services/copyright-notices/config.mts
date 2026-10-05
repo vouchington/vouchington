@@ -17,6 +17,7 @@ export const copyrightConfig = new DynamicConfig({
     dsaTransparencyReports: 'boolean',
     dsaSorDatabase: 'boolean',
     dsaSorDatabaseFrom: 'string',
+    mcpDecisionTools: 'boolean',
     automaticWithholdingMinTrustTier: 'number',
     automaticWithholdingMinAccountAgeDays: 'number',
     automaticWithholdingClaimantDailyCap: 'number',
@@ -35,6 +36,7 @@ export const copyrightConfig = new DynamicConfig({
     dsaTransparencyReports: false,
     dsaSorDatabase: false,
     dsaSorDatabaseFrom: '',
+    mcpDecisionTools: false,
     // -1 means unset: automatic withholding is refused until an operator approves every gate.
     automaticWithholdingMinTrustTier: -1,
     automaticWithholdingMinAccountAgeDays: -1,
@@ -138,4 +140,10 @@ export async function isCopyrightDsaSorDatabaseEnabled(): Promise<boolean> {
 export async function getCopyrightDsaSorDatabaseFrom(): Promise<Date | null> {
   await copyrightConfig.waitForInitialization()
   return parseCopyrightDsaSorDatabaseFrom(copyrightConfig.getFields().dsaSorDatabaseFrom)
+}
+
+/** Administrative MCP decision tools remain undiscoverable until explicitly enabled. */
+export async function isCopyrightMcpDecisionToolsEnabled(): Promise<boolean> {
+  await copyrightConfig.waitForInitialization()
+  return copyrightConfig.getFields().mcpDecisionTools === true
 }

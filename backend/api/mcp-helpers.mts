@@ -14,6 +14,7 @@ import {
 } from '@services/mcp-tools'
 import { checkRouteRateLimit } from '@services/route-rate-limits'
 import { isAdminUser } from '@services/users'
+import { isCopyrightMcpDecisionToolsEnabled } from '@services/copyright-notices/config'
 import { startMcpRequestAudit, unreadMcpCall } from './mcp-audit-helpers.mts'
 import { startMcpUsageMeter } from './mcp-usage-helpers.mts'
 
@@ -89,16 +90,26 @@ export async function dispatchMcpRequest(
 
       const parsedBody = await readBody(ctx, audit)
       const user = buildMcpContextUser(owner)
+      const copyrightDecisionToolsEnabled =
+        config.audience === 'admin' ? await isCopyrightMcpDecisionToolsEnabled() : false
       if (audit) {
         if (exceedsMcpAuditBatchLimit(parsedBody)) {
           await audit.record([unreadMcpCall('invalid_request')])
           ctx.throw(413, 'Too many JSON-RPC messages')
         }
-        await audit.record(classifyMcpCalls(parsedBody, user, scopes, config))
+        await audit.record(
+          classifyMcpCalls(parsedBody, user, scopes, config, copyrightDecisionToolsEnabled),
+        )
       }
       // Only OAuth clients can step up, so an API key keeps the in-band JSON-RPC scope error.
       if (authentication.credential === 'oauth') {
-        const stepUpScopes = findMcpStepUpScopes(parsedBody, user, scopes, config)
+        const stepUpScopes = findMcpStepUpScopes(
+          parsedBody,
+          user,
+          scopes,
+          config,
+          copyrightDecisionToolsEnabled,
+        )
         if (stepUpScopes) {
           ctx.set(
             'WWW-Authenticate',
@@ -121,6 +132,7 @@ export async function dispatchMcpRequest(
         }),
         parsedBody,
         config,
+        copyrightDecisionToolsEnabled,
         ...(audit ? { onToolError: audit.recordToolError } : {}),
       })
     },
