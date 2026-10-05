@@ -14,7 +14,7 @@ import {
 import { callCopyrightFormScreeningModel } from './model.mts'
 import { parseCopyrightFormScreeningOutput } from './output.mts'
 
-const PROMPT_VERSION = 'copyright-form-screening-v4'
+const PROMPT_VERSION = 'copyright-form-screening-v3'
 
 export async function runCopyrightFormScreeningAgent(
   submissionId: string,
