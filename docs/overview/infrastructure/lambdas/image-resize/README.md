@@ -2,7 +2,8 @@
 
 Source entrypoint: [lambdas/image-resize/README.md](../../../../../lambdas/image-resize/README.md)
 
-AWS Lambda behind API Gateway (HTTP API) and CloudFront that resizes and proxies images.
+AWS Lambda that resizes and proxies images. CloudFront calls it through a Lambda Function URL;
+there is no API Gateway.
 
 ```
 Client → CloudFront → Lambda Function URL → Lambda → (cache|origin) S3 → Lambda → CloudFront → Client
@@ -37,9 +38,9 @@ in `config.mts` must be bumped whenever resizing behavior changes.
 - `MAX_INPUT_IMAGE_BYTES` — 50 MB compressed cap for origin S3 objects and sideload fetches (HTTP 413 on `/images/*` and `/sideload/*`; `/og/*` degrades to the placeholder avatar)
 - `MAX_INPUT_PIXELS` — 24 MP decoded Sharp cap (HTTP 413 on the resize pipeline; `/og/*` degrades to the placeholder); sized for the 512 MB Lambda
 
-Source and rendered artifacts are streamed through private `os.tmpdir()` files. The current API
-Gateway `APIGatewayProxyResult` integration still requires one final bounded read and base64
-encoding at the response boundary; the raw-image cap accounts for base64 and proxy-envelope
+Source and rendered artifacts are streamed through private `os.tmpdir()` files. The handler returns
+a buffered `APIGatewayProxyResult`, the shape a Function URL accepts in buffered mode, so it still
+requires one final bounded read and base64 encoding at the response boundary; the raw-image cap accounts for base64 and proxy-envelope
 expansion so the serialized response stays within Lambda's 6 MiB synchronous limit. Removing that
 last copy requires the Function URL `RESPONSE_STREAM` deployment change in `vouchington-infra`.
 
@@ -108,7 +109,12 @@ Private IPv4 ranges, loopback, link-local (including AWS metadata at `169.254.16
 - Package: `@sentry/aws-serverless` (via `@lambdas/shared`)
 - DSN: set the public `SENTRY_DSN` environment value in deployed environments; missing or invalid
   configuration disables Sentry and emits a value-free warning
-- Auto-instrumentation: set `NODE_OPTIONS="--import @sentry/aws-serverless/awslambda-auto"`
+- Initialization: `index.mts` first imports `sentry-init.mts`, which calls `initSentry()` at module
+  load. There is no `awslambda-auto` preload and no `wrapHandler`. esbuild bundles
+  `@sentry/aws-serverless` into `index.mjs` and the zip installs only `sharp`, so a
+  `NODE_OPTIONS="--import @sentry/aws-serverless/awslambda-auto"` preload would not resolve.
+- Captured errors: only cache-write failures, through `captureException`. Other errors become HTTP
+  error responses and are not reported.
 - Release tracking: set `GIT_COMMIT` env var at deploy time
 - 4xx errors (`RequestParseError` 400, `S3OperationError` 404) are filtered via `beforeSend`
 

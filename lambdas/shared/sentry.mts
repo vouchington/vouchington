@@ -1,6 +1,8 @@
 // Shared Sentry initialization for all Lambda functions.
-// Uses @sentry/aws-serverless with NODE_OPTIONS="--import @sentry/aws-serverless/awslambda-auto"
-// for automatic handler wrapping. This module configures the DSN, environment, and filtering.
+// Each Lambda's entry point first imports a side-effect module that calls initSentry() at module
+// load (image-resize: sentry-init.mts). There is no awslambda-auto preload and no wrapHandler:
+// esbuild bundles @sentry/aws-serverless, so a NODE_OPTIONS --import of it would not resolve from
+// the zip. This module configures the DSN, environment, and filtering.
 //
 // Enabled only for ENVIRONMENT=staging|production.
 
