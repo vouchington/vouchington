@@ -75,7 +75,7 @@ const getPostFeedTool: Tool<PostArgs, FeedResult> = {
             id: row.id,
             entity_id: row.entity_id,
             delivery_type: row.delivery_type,
-            shared_by_user_id: row.shared_by_user_id ?? null,
+            shared_by_id: row.shared_by_id ?? null,
             shared_at: row.shared_at ? new Date(row.shared_at).toISOString() : null,
           })),
           page_info: result.page_info,

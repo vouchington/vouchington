@@ -38,7 +38,7 @@ export type FeedItem = {
   id: string
   entity_id: string
   delivery_type: 'direct' | 'share'
-  shared_by_user_id: string | null
+  shared_by_id: string | null
   shared_at: string | null
 }
 export type FeedResult =
@@ -78,7 +78,7 @@ export function feedItemSchema(component: 'Post' | 'ViewRssFeedItem') {
     id: pickProperties(component, ['id']).id!,
     entity_id: pickProperties(component, ['id']).id!,
     delivery_type: { type: 'string', enum: ['direct', 'share'] },
-    shared_by_user_id: { type: ['string', 'null'] },
+    shared_by_id: { type: ['string', 'null'] },
     shared_at: { type: ['string', 'null'], format: 'date-time' },
   })
 }

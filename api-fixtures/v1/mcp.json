@@ -7394,7 +7394,7 @@
                             "type": "string",
                             "enum": ["direct", "share"]
                           },
-                          "shared_by_user_id": {
+                          "shared_by_id": {
                             "type": ["string", "null"]
                           },
                           "shared_at": {
@@ -7406,7 +7406,7 @@
                           "id",
                           "entity_id",
                           "delivery_type",
-                          "shared_by_user_id",
+                          "shared_by_id",
                           "shared_at"
                         ],
                         "additionalProperties": false
@@ -7557,7 +7557,7 @@
                             "type": "string",
                             "enum": ["direct", "share"]
                           },
-                          "shared_by_user_id": {
+                          "shared_by_id": {
                             "type": ["string", "null"]
                           },
                           "shared_at": {
@@ -7569,7 +7569,7 @@
                           "id",
                           "entity_id",
                           "delivery_type",
-                          "shared_by_user_id",
+                          "shared_by_id",
                           "shared_at"
                         ],
                         "additionalProperties": false

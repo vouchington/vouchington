@@ -11,6 +11,10 @@ import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers
 import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
 import { insertRssFeedCrawl } from '@services/rss-feeds/crawls'
 import { updateRssFeedById } from '@services/rss-feeds'
+import {
+  sharePostWithFollowers,
+  processFollowerDistributionChunk,
+} from '@services/follower-distributions'
 import { upsertRssFeedItems } from '@services/rss-feed-items/upsert'
 import { getRssFeedItemKeyByGuid } from '@services/rss-feed-items/get'
 import type { PrivateUser } from '@services/users/types'
@@ -161,7 +165,7 @@ describe('MCP RSS and feed reads — real DB contracts', () => {
 
   it('keeps disabled, non-discoverable feed detail readable like REST', async () => {
     const hidden = await createTestRssFeed({ title: `${token} hidden` })
-    await updateRssFeedById(hidden.id, { enabled: false, discoverable: false })
+    await updateRssFeedById(hidden.id, { is_enabled: false, discoverable: false })
     const detail = await callStructuredMcpTool(free, 'get_rss_feed', { rss_feed_id: hidden.id }, [
       'rss-feeds:read',
     ])
@@ -232,7 +236,13 @@ describe('MCP RSS and feed reads — real DB contracts', () => {
     const follower = { ...(await createTestUser()), membership_plan: null }
     const author = await createTestUser()
     await followUser(follower, author)
-    const post = await createTestPost({ user: author, title: `${token} followed post` })
+    const post = await createTestPost({
+      user: await createTestUser(),
+      title: `${token} shared post`,
+    })
+    await processFollowerDistributionChunk(
+      (await sharePostWithFollowers(author, post.id)).distribution_id,
+    )
 
     const followerPage = await callStructuredMcpTool(
       follower,
@@ -240,9 +250,13 @@ describe('MCP RSS and feed reads — real DB contracts', () => {
       { feed_type: 'follow_users' },
       ['feeds:read'],
     )
-    expect(
-      (followerPage.results as Array<{ entity_id: string }>).map(row => row.entity_id),
-    ).toContain(post.id)
+    expect(followerPage.results).toContainEqual(
+      expect.objectContaining({
+        entity_id: post.id,
+        delivery_type: 'share',
+        shared_by_id: author.id,
+      }),
+    )
     const unrelatedPage = await callStructuredMcpTool(
       free,
       'get_post_feed',
