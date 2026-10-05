@@ -32,6 +32,7 @@ satisfies GDPR "Right to Data Portability" and CCPA "Right to Know" requirements
   - `referral-attributions.csv` – referral click attributions
   - `copyright-*.csv` – the account's copyright records, with a conservative redaction rule (see
     [Copyright records](#copyright-records))
+- The [Privacy Policy](../../../articles/privacy-policy.md) lists these files by category for users; update it whenever this list changes.
 - Boolean fields in export CSVs use `true`/`false`; unset values remain empty.
 - Download link expires after 7 days.
 - Users can request a new export at any time after the previous one has expired, failed, or is ready.
