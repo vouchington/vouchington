@@ -14,7 +14,7 @@ flowchart TD
   flagged -- No --> approved[Clearance approved]
   approved --> classifier[classifier-run-dispatcher]
   classifier --> labels[Label classifiers and local AI-generated detector]
-  labels --> effects[Topic votes and tags]
+  labels --> effects[Topic relations and relation votes]
   post --> request[classifier_run_requests row for community-moderation]
   request --> community[classifier-run-dispatcher]
   community --> run[One provider call over every active community prompt]

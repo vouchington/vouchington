@@ -70,9 +70,10 @@ that keeps pruning and foreign keys concrete without a polymorphic result owner.
 match the batch. C4 re-reads a committed topic-only decision with the caller's original expected
 bindings. It maps each persisted effective threshold snapshot, never current configuration: values
 strictly outside the pair are downvote or upvote, while the inclusive interval is durable semantic
-neutral `0`. A supplied shared system actor keeps automation distinct from human votes, and a
-transactional actor/topic/subject receipt makes exact retries no-ops while fencing an older UUIDv7
-batch behind a newer application. Story decisions have no vote domain at this boundary and reject.
+neutral `0`. A supplied shared system actor keeps automation distinct from human votes, and the
+score becomes that actor's vote on the subject's topic relation, never on a topic election. Exact
+retries are no-ops because an equal relation vote is a no-op, and the caller's run lifecycle fences
+a stale application. Story decisions have no vote domain at this boundary and reject.
 
 ## Multi-candidate call layer
 

@@ -20,13 +20,13 @@ neighbor considered for that subject; it never replaces the subject in receipt i
 content is sanitized and wrapped before entering a prompt. Candidate bindings are explicit, and
 every expected candidate must have exactly one valid answer.
 
-| Classifier              | Scope and subject               | Outcome owner                                                                                                                     |
-| ----------------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| C5 post classifier      | Global, approved post           | [Topic votes and detected labels](ai-agents/post-classifier/README.md); no clearance, review or publication changes               |
-| C6 autotagger           | Global, post or RSS feed item   | [Topic relations](ai-agents/autotagger/README.md), without publication changes                                                    |
-| C7 `autotagger-agent`   | Global, post or RSS feed item   | [Bounded, add-only reasoning pass](ai-agents/autotagger/README.md#c7-scoped-reasoning-autotagger) over topics paying users follow |
-| C8 community moderation | Per community publication, post | [Community rule flags](ai-agents/community-moderation/README.md) and the community's completion-time action                       |
-| C9 story clustering     | Global, RSS feed item           | [Story membership](ai-agents/story-clustering/README.md), separate from summary generation                                        |
+| Classifier              | Scope and subject               | Outcome owner                                                                                                                           |
+| ----------------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| C5 post classifier      | Global, approved post           | [Topic relations, relation votes and detected labels](ai-agents/post-classifier/README.md); no clearance, review or publication changes |
+| C6 autotagger           | Global, post or RSS feed item   | [Topic relations](ai-agents/autotagger/README.md), without publication changes                                                          |
+| C7 `autotagger-agent`   | Global, post or RSS feed item   | [Bounded, add-only reasoning pass](ai-agents/autotagger/README.md#c7-scoped-reasoning-autotagger) over topics paying users follow       |
+| C8 community moderation | Per community publication, post | [Community rule flags](ai-agents/community-moderation/README.md) and the community's completion-time action                             |
+| C9 story clustering     | Global, RSS feed item           | [Story membership](ai-agents/story-clustering/README.md), separate from summary generation                                              |
 
 C6's completion transaction writes C7's durable request. C7 runs on the same shared lifecycle,
 adds only topics C6 did not apply, and never overrides existing relations or changes publication.

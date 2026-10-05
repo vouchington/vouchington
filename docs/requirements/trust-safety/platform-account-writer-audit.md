@@ -11,7 +11,7 @@ Human and remote actors are out of scope. Paths are under `backend/`. This page 
 These write election-backed structural relations, matching the "Vote on entity relations" row, so the restriction does not apply. #1849 requires them to keep working.
 
 - `services/classifiers/topic-relation-actions.mts:96` and `topic-relation-votes.mts:25`: autotagger classifier writes a post or feed-item `category` topic relation and the actor vote. Covered by `topic-relation-actions.test.mts` (system and `ai_agent` actors).
-- `services/post-classifier/effects.mts:50`: post classifier (`ai_agent`) writes a post `category` topic relation and the actor vote. Covered by `services/post-classifier/run-effects.test.mts`.
+- `services/post-classifier/effects.mts:40,74`: post classifier (`ai_agent`) writes a post `category` topic relation and the actor vote, through `applyTopicClassifierDecisionRelations` for the remote decision and a direct relation write with a +1 vote for the local detector's positive outcome. It writes no global topic election vote. Covered by `services/post-classifier/run-effects.test.mts` and `run-effects.part-2.test.mts`.
 - `services/rss-feed-items/category-relations.mts:84,90,134`, `category-topic-votes.mts:94`, `reconcile-category-votes.mts:103`: rss-feed-categorizer writes feed-item category and hashtag relations and the actor votes. Covered by `categories.relations.test.mts` and `categories.clear-votes.test.mts`.
 - `services/rss-feeds/category-relations.mts:64`: rss-feed-categorizer writes a feed `category` topic relation. Covered by `services/rss-feeds/__tests__/category-relations.test.mts`.
 - `services/rss-feed-items/collaborative-topic-relations.mts:94`: collaborative categorizer writes feed-item topic relations with votes. Covered by `collaborative-topic-relations.test.mts`.
@@ -54,9 +54,9 @@ The user-tag exemption (`user-tag-authorization.mts:17`) and the administrator m
 
 ## Mismatches
 
-Recorded, not changed. Which of these stay allowed is a product decision.
+M1 is resolved. M2 to M4 are recorded, not changed; which of these stay allowed is a product decision.
 
-- **M1** `services/post-classifier/effects.mts:35` to `services/classifiers/topic-vote-actions.mts:68`: the post classifier (`ai_agent`) casts a global topic election vote. HTTP topic votes and the "Vote on posts / topics" row block this account type.
+- **M1** Resolved: classifier and AI accounts vote only on entity relations, never on topic or post elections ([decision, 2026-10-05](https://github.com/vouchington/vouchington/issues/1834#issuecomment-5999417459)). The post classifier now votes on the post's own `category` relation, and the global topic vote path was removed.
 - **M2** `POST /api/v1/rss-feeds` and the RSS import (`services/rss-feeds/create-source.mts:59,123,162,178`, `services/user-import-export/import-rss-feeds.mts:83`): an automatic +1 topic vote and follow is written for the caller with no platform-account check.
 - **M3** `POST /api/v1/fediverse/instances` (`services/fediverse-instances/create-instance.mts:46,65,73`): an automatic +1 topic vote is written for the caller with no platform-account check.
 - **M4** The "Moderator agent: tag post + move to review queue" row has no production caller. `services/moderators/tagging.mts` helpers are unused exports, and `agent-moderate.mts` writes no relation or vote.

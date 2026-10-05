@@ -22,10 +22,12 @@ export type PersistedTopicDecisionResult = Extract<
 /** Rejects malformed identifiers and duplicate or missing bindings before any decision is read. */
 export function assertApplicationInput(input: TopicClassifierApplicationInput): void {
   if (!isUUID(input.batchId) || !isUUID(input.sharedActorId)) {
-    throw new Error('Classifier topic vote application requires UUID batch and shared actor IDs')
+    throw new Error(
+      'Classifier topic relation application requires UUID batch and shared actor IDs',
+    )
   }
   if (input.expectedBindings.length === 0) {
-    throw new Error('Classifier topic vote application requires expected bindings')
+    throw new Error('Classifier topic relation application requires expected bindings')
   }
   const keys = new Set<string>()
   for (const binding of input.expectedBindings) {
@@ -33,11 +35,11 @@ export function assertApplicationInput(input: TopicClassifierApplicationInput): 
       !isUUID(binding.topicId) ||
       (binding.storedCandidateId && !isUUID(binding.storedCandidateId))
     ) {
-      throw new Error('Classifier topic vote application binding IDs must be UUIDs')
+      throw new Error('Classifier topic relation application binding IDs must be UUIDs')
     }
     const key = bindingKey(binding)
     if (keys.has(key))
-      throw new Error('Classifier topic vote application cannot duplicate bindings')
+      throw new Error('Classifier topic relation application cannot duplicate bindings')
     keys.add(key)
   }
 }
@@ -54,7 +56,7 @@ export function validateTopicDecision(
     results.length !== expected.size ||
     results.some(result => result.candidateKind !== 'topic')
   ) {
-    throw new Error('Classifier topic vote application requires a complete topic-only decision')
+    throw new Error('Classifier topic relation application requires a complete topic-only decision')
   }
   const topicResults = results as readonly PersistedTopicDecisionResult[]
   const seen = new Set<string>()
@@ -69,7 +71,7 @@ export function validateTopicDecision(
       seen.has(key)
     ) {
       throw new Error(
-        'Classifier topic vote application decision lineage is incomplete or inconsistent',
+        'Classifier topic relation application decision lineage is incomplete or inconsistent',
       )
     }
     seen.add(key)
@@ -82,16 +84,16 @@ export async function assertSharedSystemActor(
   query: OwnedTransaction,
   sharedActorId: string,
 ): Promise<void> {
-  await query(sql`/* lockClassifierTopicVoteActor */
+  await query(sql`/* lockClassifierTopicRelationActor */
     SELECT fn_lock_active_user_for_mutation(${sharedActorId}::uuid)
   `)
   const { rows } = await query<{
     platform_account_kind: 'official' | 'system' | null
-  }>(sql`/* readClassifierTopicVoteActor */
+  }>(sql`/* readClassifierTopicRelationActor */
     SELECT platform_account_kind FROM users WHERE id = ${sharedActorId}::uuid
   `)
   if (rows[0]?.platform_account_kind !== 'system') {
-    throw new Error('Classifier topic votes require a system actor')
+    throw new Error('Classifier topic relation votes require a system actor')
   }
 }
 

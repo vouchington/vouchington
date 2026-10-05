@@ -49,20 +49,3 @@ export async function getClassifierBorrowedDecisionFacts(
     storyResults: row.story_results,
   }
 }
-
-export async function getClassifierBorrowedVoteFacts(
-  batchId: string,
-  actorId: string,
-  topicId: string,
-  query: QueryExecutor = write,
-): Promise<{ receipts: number; votes: number }> {
-  const { rows } = await query<{ receipts: number; votes: number }>(sql`
-    /* getClassifierBorrowedVoteFacts */
-    SELECT
-      (SELECT COUNT(*)::int FROM classifier_topic_vote_applications
-        WHERE batch_id = ${batchId} AND shared_actor_user_id = ${actorId} AND topic_id = ${topicId}) AS receipts,
-      (SELECT COUNT(*)::int FROM topic_votes
-        WHERE user_id = ${actorId} AND topic_id = ${topicId}) AS votes
-  `)
-  return rows[0]!
-}

@@ -5,21 +5,27 @@ Source entrypoint: [backend/services/post-classifier/README.md](../../../../../b
 `@services/post-classifier` is the C5 adapter for the shared
 [classifier run lifecycle](../classifier-runs/README.md). It owns only what is specific to fixed
 post classification: fixed post-classifier configuration, the local detector outcome table, and the
-durable effects (topic votes and tags). Receipt, lease, reclaim, attempt reservation and cap,
-terminal failure, completion, supersession, dispatch and sweep live in `@services/classifier-runs`.
+durable effects (the post's topic relations and the classifier's votes on them). Receipt, lease,
+reclaim, attempt reservation and cap, terminal failure, completion, supersession, dispatch and sweep
+live in `@services/classifier-runs`.
 
 The adapter's `lockCurrent` admits only an approved, current content revision of a live post and
 locks it. Its `resolve` reads the post's community classifier configuration and fingerprints it. Its
-`applyEffects` completes any missing classifier votes and topic tags in one transaction. Classifier
-effects never write clearance or review state.
+`applyEffects` applies the remote decision through the shared relation boundary
+(`applyTopicClassifierDecisionRelations`) and then tags the post with the local detector's positive
+outcome, in one transaction. A positive remote result creates the post's `category` topic relation
+when it is absent and votes +1 on it; a neutral or negative result votes 0 or -1 only on an
+already live relation and never creates one, and a soft-deleted relation is never resurrected. The
+classifier is an `ai_agent` and votes only on entity relations, never on a topic election, so it
+writes no global topic election vote. Classifier effects never write clearance or review state.
 
 The service uses the existing moderation configuration only for the local AI-generated detector's
 threshold and result type. Existing moderator-agent histories and moderation behavior remain
 separate until their cutover work explicitly removes them.
 
 The local threshold is fingerprinted at the native detector's float32 precision so its returned
-threshold can be checked exactly against the run. Topic-tag application imports the election vote
-handler registration directly; it does not rely on worker bootstrap import order.
+threshold can be checked exactly against the run. Local topic-tag application imports the election
+vote handler registration directly; it does not rely on worker bootstrap import order.
 
 Configuration fingerprints hash PostgreSQL's canonical `jsonb::text` representation before
 reservation. The JSONB replay envelope retains question array order, and the database verifies the

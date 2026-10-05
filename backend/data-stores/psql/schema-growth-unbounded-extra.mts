@@ -35,7 +35,6 @@ export const EXTRA_UNBOUNDED_TABLES = [
   'classifier_run_requests',
   'classifier_runs',
   'classifier_prompt_versions',
-  'classifier_topic_vote_applications',
   'classifiers',
   'community_invites',
   'community_member_vacations',

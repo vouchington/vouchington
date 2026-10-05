@@ -30,10 +30,19 @@ export function localOutcomeFor(
   return local ? makePostClassifierLocalOutcome(is_flagged, local.confidenceThreshold) : undefined
 }
 
-/** A complete C3 decision for the run's reserved batch, all-positive or all-negative. */
+/** The probability that maps to +1 (`true`), -1 (`false`) or 0 (`'neutral'`) for these bounds. */
+function probabilityFor(result: boolean | 'neutral', lower: number, upper: number): number {
+  if (result === 'neutral') return (lower + upper) / 2
+  return result ? (upper + 1) / 2 : lower / 2
+}
+
+/**
+ * A complete C3 decision for the run's reserved batch where every question answers the same way:
+ * positive (`true`, +1), negative (`false`, -1) or neutral (`'neutral'`, 0).
+ */
 export function remoteDecisionFor(
   setup: PostClassifierExecutionFixture,
-  positive: boolean,
+  result: boolean | 'neutral',
 ): PersistClassifierDecisionInput | undefined {
   const remote = setup.lease.resolved.configuration.remote
   if (!remote || !setup.lease.decisionBatchId) return undefined
@@ -50,8 +59,8 @@ export function remoteDecisionFor(
           candidateKind: 'topic' as const,
           topicId: question.topicId,
           storedCandidateId: question.candidateId,
-          probability: positive ? (question.upper + 1) / 2 : question.lower / 2,
-          rawResponse: { type: 'noul', positive },
+          probability: probabilityFor(result, question.lower, question.upper),
+          rawResponse: { type: 'noul', result },
         })),
       },
     ],

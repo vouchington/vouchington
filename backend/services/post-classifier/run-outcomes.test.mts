@@ -1,8 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import {
-  getClassifierBorrowedDecisionFacts,
-  getClassifierBorrowedVoteFacts,
-} from '@voucha/test-helpers/data-stores/psql/classifier-borrowed-transactions'
+import { getClassifierBorrowedDecisionFacts } from '@voucha/test-helpers/data-stores/psql/classifier-borrowed-transactions'
+import { readSubjectTopicRelationFacts } from '@voucha/test-helpers/data-stores/psql/classifier-runs/subject-topic-relations'
 import { getClassifierRunFacts } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
 import {
   createPostClassifierExecutionFixture,
@@ -16,6 +14,7 @@ import {
 } from '@voucha/test-helpers/data-stores/psql/post-classifier/outcomes'
 import { POST_CLASSIFIER_SLUG } from '@voucha/types/entities/post-classifier'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { getTopicElectionVote } from '@services/elections-votes/topic'
 import {
   completeClassifierRun,
   persistClassifierRunOutcomes,
@@ -89,11 +88,11 @@ describe('post classifier outcomes on the shared lifecycle (real PG)', () => {
     })
     expect(await completeClassifierRun(setup.adapter, setup.lease)).toMatchObject({
       kind: 'completed',
-      effects: { appliedTopicIds: [question.topicId] },
+      effects: { addedTopicIds: [question.topicId] },
     })
   })
 
-  it('binds exact C3 lineage and the local outcome, then applies exactly one C4 vote', async () => {
+  it('binds exact C3 lineage and the local outcome, then casts exactly one relation vote', async () => {
     const setup = await createPostClassifierExecutionFixture(true, true)
     const question = setup.lease.resolved.configuration.remote!.questions[0]!
     await startClassifierProviderAttempt(setup.adapter, { lease: setup.lease, maxAttempts: 3 })
@@ -115,22 +114,19 @@ describe('post classifier outcomes on the shared lifecycle (real PG)', () => {
     expect(
       await startClassifierProviderAttempt(setup.adapter, { lease: setup.lease, maxAttempts: 3 }),
     ).toBe('replay')
-    const votesOf = () =>
-      getClassifierBorrowedVoteFacts(
-        setup.lease.decisionBatchId!,
-        setup.lease.resolved.actorId,
-        question.topicId,
-      )
-    // The classifier actor is shared by every post, so a vote row for its topic may already exist:
-    // this batch's receipt is what proves the vote was applied exactly once.
-    expect((await votesOf()).receipts).toBe(0)
+    const actorId = setup.lease.resolved.actorId
+    const subject = { postId: setup.post.id, rssFeedItemId: null } as const
+    const actorVotesOnRelation = async () =>
+      (await readSubjectTopicRelationFacts(subject))
+        .filter(relation => relation.topicId === question.topicId)
+        .flatMap(relation => relation.votes.filter(vote => vote.userId === actorId))
+    expect(await actorVotesOnRelation()).toEqual([])
 
     await completeClassifierRun(setup.adapter, setup.lease)
     expect(await completeClassifierRun(setup.adapter, setup.lease)).toEqual({ kind: 'replay' })
 
-    const after = await votesOf()
-    expect(after.receipts).toBe(1)
-    expect(after.votes).toBeGreaterThanOrEqual(1)
+    expect(await actorVotesOnRelation()).toEqual([{ userId: actorId, score: 1 }])
+    await expect(getTopicElectionVote(actorId, question.topicId)).resolves.toBeNull()
   })
 
   it('rejects poisoned remote candidate lineage without retaining a partial result', async () => {
