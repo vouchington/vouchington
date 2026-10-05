@@ -15,6 +15,7 @@ import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers
 import {
   countTestCommunitiesCreatedBy,
   listTestMcpCreateAttempts,
+  readTestCommunitySettings,
 } from '@voucha/test-helpers/mcp-write-tool-rows'
 import createTool from '../create-community.mts'
 
@@ -72,6 +73,33 @@ describe('create_community — real store', () => {
     })
     expect(await getTestCommunityMember(id, caller.id)).toMatchObject({ role: 'owner' })
     expect(await countTestCommunitiesCreatedBy(caller.id)).toBe(1)
+  })
+
+  it('stores every option the caller sets', async () => {
+    const caller = await createTestPlusMcpCaller()
+
+    const result = await callStructuredMcpTool(
+      caller,
+      TOOL,
+      args({
+        member_roster_visibility: 'members',
+        member_invites_allowed: true,
+        post_approval_required: true,
+        should_allow_review_posts: true,
+        should_allow_data_point_posts: true,
+        default_language: 'fr-FR',
+      }),
+      SCOPES,
+    )
+
+    expect(await readTestCommunitySettings((result.community as { id: string }).id)).toEqual({
+      member_roster_visibility: 'members',
+      member_invites_allowed: true,
+      post_approval_required: true,
+      should_allow_review_posts: true,
+      should_allow_data_point_posts: true,
+      default_language: 'fr',
+    })
   })
 
   it('defaults to a public community with a generated slug', async () => {

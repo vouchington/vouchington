@@ -5,7 +5,6 @@ import sql from 'sql-template-strings'
 
 /** How long an unfinished claim holds its key before a retry may take it over. */
 export const DELEGATED_CREATE_LEASE_SECONDS = 60
-const MAX_CLAIM_ATTEMPTS = 3
 
 export type DelegatedCreateClaim =
   | { kind: 'claimed'; id: string }
@@ -28,12 +27,11 @@ export async function claimDelegatedCreate(
   userId: string,
   idempotencyKey: string,
   intentSha256: string,
-  attemptsLeft = MAX_CLAIM_ATTEMPTS,
 ): Promise<DelegatedCreateClaim> {
+  // A retry means a concurrent release freed the key between the two statements, so the next
+  // insert claims it. Another round needs yet another release in that same window.
   const claim = await tryClaim(userId, idempotencyKey, intentSha256)
-  if (claim) return claim
-  if (attemptsLeft <= 1) throw new Error('Delegated create attempt could not be claimed')
-  return claimDelegatedCreate(userId, idempotencyKey, intentSha256, attemptsLeft - 1)
+  return claim ?? claimDelegatedCreate(userId, idempotencyKey, intentSha256)
 }
 
 /** One claim transaction. Null means the row was released between the insert and the read. */
