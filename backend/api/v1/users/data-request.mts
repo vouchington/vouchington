@@ -146,7 +146,10 @@ app.route('/api/v1/users/:idOrSlug/data-request/stream').get(async (ctx: Context
     /* v8 ignore next 2 -- socket abort timing is covered deterministically by watchForAbortBeforeSSE tests */
     if (abortBeforeSSE.wasAborted()) return
     abortBeforeSSE.stop()
-    const { stream, pipelinePromise, lifecycleSignal } = startSSE(ctx)
+    const sse = startSSE(ctx)
+    const stream = sse.stream
+    const pipelinePromise = sse.pipelinePromise
+    const lifecycleSignal = sse.lifecycleSignal
     try {
       await pipeChannelToSSE({
         emit: event =>

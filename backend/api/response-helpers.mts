@@ -1,4 +1,5 @@
 import type { Context } from '@jongleberry/api-server'
+import { isHttpError } from 'http-errors'
 import type { PrivateUser } from '@services/users/types'
 import type { PageInfo } from '@voucha/types/pagination'
 import { isUUID } from '@modules/utils'
@@ -99,6 +100,11 @@ export function validateUUIDParam(ctx: Context, name: string): string {
  * than short-circuiting for free. Unknown operations fail closed with a thrown `Error` (not a
  * 422) — see `RuntimeRequestValidatorRegistry.validateAuthenticated`.
  */
+/** Re-throws HTTP errors without leaving a declaration-only call in a route file. */
+export function rethrowHttpError(err: unknown): void {
+  if (isHttpError(err)) throw err
+}
+
 export function validateRequestContract(
   ctx: Context,
   operation: string,

@@ -13,7 +13,10 @@ import { QUEUE_NAMES } from './shared.mts'
 app.route('/api/v1/mq/stream').get(async (ctx: Context) => {
   await requireAuthAndRateLimit(ctx, currentUserCanAccessQueueStats, 'GET:/api/v1/mq/stream')
 
-  const { stream, pipelinePromise, lifecycleSignal } = startSSE(ctx)
+  const sse = startSSE(ctx)
+  const stream = sse.stream
+  const pipelinePromise = sse.pipelinePromise
+  const lifecycleSignal = sse.lifecycleSignal
   stream.on('error', onError)
 
   let inFlight = false

@@ -4,7 +4,7 @@ import { enqueueBulkUpdateTopicElectionVoteStats } from '@queues/elections/enque
 import { enqueueBulkUpdateTopicRatingStatsForTopicId } from '@queues/topic-ratings/enqueues'
 import { getTopicByAnyCached } from '@services/entity-fetch'
 import app from '../../../app.mts'
-import { createVoteClearHandler, createVoteHandler } from '../../../election-vote-handler.mts'
+import { handleElectionVote } from '../../../election-vote-handler.mts'
 import {
   apiNoRequestBody,
   apiOpenApiNoContent,
@@ -13,7 +13,7 @@ import {
 import type { ElectionVoteRequest } from '@voucha/types/entities/election'
 
 // PUT /api/v1/topics/:id/vote
-const topicVoteHandler = createVoteHandler({
+const topicVoteOptions = {
   rateLimitPrefix: 'topic-election-vote',
   routeKey: 'PUT:/api/v1/topics/:id/vote',
   requestContractOperation: 'PUT:/api/v1/topics/:id/vote',
@@ -27,9 +27,9 @@ const topicVoteHandler = createVoteHandler({
     enqueueBulkUpdateTopicElectionVoteStats,
     enqueueBulkUpdateTopicRatingStatsForTopicId,
   ),
-})
+}
 
-const clearTopicVoteHandler = createVoteClearHandler({
+const clearTopicVoteOptions = {
   rateLimitPrefix: 'topic-election-vote',
   routeKey: 'DELETE:/api/v1/topics/:id/vote',
   requestContractOperation: 'DELETE:/api/v1/topics/:id/vote',
@@ -43,18 +43,18 @@ const clearTopicVoteHandler = createVoteClearHandler({
     enqueueBulkUpdateTopicElectionVoteStats,
     enqueueBulkUpdateTopicRatingStatsForTopicId,
   ),
-})
+}
 
 app.route('/api/v1/topics/:id/vote').put(async ctx => {
   apiRequestContract<'PUT:/api/v1/topics/:id/vote', ElectionVoteRequest<'sentiment'>>(
     'PUT:/api/v1/topics/:id/vote',
   )
   apiOpenApiNoContent('PUT:/api/v1/topics/:id/vote', 204)
-  await topicVoteHandler(ctx)
+  await handleElectionVote(ctx, topicVoteOptions, false)
 })
 
 app.route('/api/v1/topics/:id/vote').delete(async ctx => {
   apiNoRequestBody('DELETE:/api/v1/topics/:id/vote')
   apiOpenApiNoContent('DELETE:/api/v1/topics/:id/vote', 204)
-  await clearTopicVoteHandler(ctx)
+  await handleElectionVote(ctx, clearTopicVoteOptions, true)
 })

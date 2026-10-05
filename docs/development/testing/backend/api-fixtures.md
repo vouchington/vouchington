@@ -64,7 +64,12 @@ and media type, and a failed secondary variant makes the whole operation unavail
 silently disappearing.
 
 The OpenAPI document catalogs every literal API-v1 route registration independently of fixture
-coverage. Every registered method and normalized path shape appears in `paths`. SSE frames are written through `apiSseFrame` at each concrete route's emission callback. Their
+coverage. Every registered method and normalized path shape appears in `paths`. SSE frames are
+written through `apiSseFrame` at each concrete route's emission callback. Bind `startSSE(ctx)` to a
+const and write that frame on the binding's `stream`. Destructuring the result, or writing the
+frame through a `let`, leaves the stream receiver unprovable, so discovery rejects the route as an
+unmarked frame. A catch binding passed to a declaration-only function in that same route file is an
+unmarked frame too; rethrow through a function that has a body. The
 `text/event-stream` content is a string; `x-sse-events` maps each literal event name to its
 compiler-derived `dataSchema`, including terminal events and every payload variant. Generic
 subscription helpers pass typed events to those callbacks. Keepalive comments carry no event
@@ -88,7 +93,9 @@ Use `apiNoContent('METHOD:/route/template')` only for fixture-backed bodyless re
 fixed-status bodyless response is emitted inside a helper the extractor cannot follow, use the
 OpenAPI-only `apiOpenApiNoContent('METHOD:/route/template', 302)` marker instead. It never changes
 runtime status or emits a response, does not create a fixture contract, and requires matching route
-and numeric status literals.
+and numeric status literals. Call that helper as a function declaration. Passing the route context
+to a factory return is an opaque response, so discovery marks the operation unavailable and the
+fixed-no-content marker conflicts.
 
 `api-fixtures/v1/manifest.json` version 2 publishes each fixture's
 `backendResponseContractKey` and the canonical backend schemas and hashes in

@@ -1,10 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import {
-  createVoteClearHandler,
-  createVoteHandler,
-  type CreateVoteHandlerOptions,
-} from '../../election-vote-handler.mts'
+import { handleElectionVote, type CreateVoteHandlerOptions } from '../../election-vote-handler.mts'
 import { getEntityRelationElectionByTargetCachedBatch } from '@services/entity-fetch/get'
 import {
   getEntityRelationElectionVotesByElectionId,
@@ -70,13 +66,11 @@ const entityRelationVoteOptions: CreateVoteHandlerOptions = {
   onNoop: (_currentUser, relationId) => refreshVoteStatsAfterNoop(relationId),
 }
 
-const entityRelationVoteHandler = createVoteHandler(entityRelationVoteOptions)
-
-const clearEntityRelationVoteHandler = createVoteClearHandler({
+const clearEntityRelationVoteOptions: CreateVoteHandlerOptions = {
   ...entityRelationVoteOptions,
   routeKey: 'DELETE:/api/v1/entity-relations/:id/vote',
   requestContractOperation: 'DELETE:/api/v1/entity-relations/:id/vote',
-})
+}
 
 app.route('/api/v1/entity-relations/:id/vote').put(async ctx => {
   apiRequestContract<'PUT:/api/v1/entity-relations/:id/vote', ElectionVoteRequest<'relation'>>(
@@ -84,13 +78,13 @@ app.route('/api/v1/entity-relations/:id/vote').put(async ctx => {
   )
   apiNoContent('PUT:/api/v1/entity-relations/:id/vote')
   apiOpenApiNoContent('PUT:/api/v1/entity-relations/:id/vote', 204)
-  await entityRelationVoteHandler(ctx)
+  await handleElectionVote(ctx, entityRelationVoteOptions, false)
 })
 
 app.route('/api/v1/entity-relations/:id/vote').delete(async ctx => {
   apiNoRequestBody('DELETE:/api/v1/entity-relations/:id/vote')
   apiOpenApiNoContent('DELETE:/api/v1/entity-relations/:id/vote', 204)
-  await clearEntityRelationVoteHandler(ctx)
+  await handleElectionVote(ctx, clearEntityRelationVoteOptions, true)
 })
 
 const entityRelationVotesParser = createPaginationParser({

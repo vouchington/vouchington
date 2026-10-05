@@ -14,11 +14,7 @@ import {
 } from '@services/users'
 import { getUserMetricsByAnyCached, getUserProfileMetricsByAny } from '@services/entity-fetch'
 import { listProfileLinks } from '@services/my/profile-links'
-import {
-  createVoteClearHandler,
-  createVoteHandler,
-  type CreateVoteHandlerOptions,
-} from '../../election-vote-handler.mts'
+import { handleElectionVote, type CreateVoteHandlerOptions } from '../../election-vote-handler.mts'
 import {
   getUserVouchElectionById,
   getUserVouchElectionVote,
@@ -147,30 +143,30 @@ const userVouchBaseOptions: Omit<CreateVoteHandlerOptions, 'routeKey'> = {
   enqueueIntegrityCheck: false,
 }
 
-const userVouchVoteHandler = createVoteHandler({
+const userVouchVoteOptions: CreateVoteHandlerOptions = {
   ...userVouchBaseOptions,
   routeKey: 'PUT:/api/v1/users/:id/vouch-vote',
   requestContractOperation: 'PUT:/api/v1/users/:id/vouch-vote',
-})
+}
 
-const clearUserVouchVoteHandler = createVoteClearHandler({
+const clearUserVouchVoteOptions: CreateVoteHandlerOptions = {
   ...userVouchBaseOptions,
   routeKey: 'DELETE:/api/v1/users/:id/vouch-vote',
   requestContractOperation: 'DELETE:/api/v1/users/:id/vouch-vote',
-})
+}
 
 app.route('/api/v1/users/:id/vouch-vote').put(async ctx => {
   apiRequestContract<'PUT:/api/v1/users/:id/vouch-vote', ElectionVoteRequest<'sentiment'>>(
     'PUT:/api/v1/users/:id/vouch-vote',
   )
   apiOpenApiNoContent('PUT:/api/v1/users/:id/vouch-vote', 204)
-  await userVouchVoteHandler(ctx)
+  await handleElectionVote(ctx, userVouchVoteOptions, false)
 })
 
 app.route('/api/v1/users/:id/vouch-vote').delete(async ctx => {
   apiNoRequestBody('DELETE:/api/v1/users/:id/vouch-vote')
   apiOpenApiNoContent('DELETE:/api/v1/users/:id/vouch-vote', 204)
-  await clearUserVouchVoteHandler(ctx)
+  await handleElectionVote(ctx, clearUserVouchVoteOptions, true)
 })
 
 app.route('/api/v1/users/:id/vouch-context').get(async (ctx: Context) => {

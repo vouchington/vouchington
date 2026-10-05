@@ -9,11 +9,7 @@ import {
 import { isUUID } from '@modules/utils'
 import { createPaginationParser } from '@modules/pagination'
 import { isAdminUser } from '@services/users'
-import {
-  createVoteClearHandler,
-  createVoteHandler,
-  type CreateVoteHandlerOptions,
-} from '../../election-vote-handler.mts'
+import { handleElectionVote, type CreateVoteHandlerOptions } from '../../election-vote-handler.mts'
 import {
   apiNoRequestBody,
   apiOpenApiNoContent,
@@ -37,7 +33,7 @@ const upsertAgentModerationVotesWithFeedback: CreateVoteHandlerOptions['upsertVo
 ) => upsertAgentModerationVotesWithTrainingEvidence(userId, votes, context, 'staff_or_user')
 
 // PUT /api/v1/agent-moderations/:id/vote (admin only)
-const agentModerationVoteHandler = createVoteHandler({
+const agentModerationVoteOptions: CreateVoteHandlerOptions = {
   rateLimitPrefix: 'agent-moderation-election-vote',
   routeKey: 'PUT:/api/v1/agent-moderations/:id/vote',
   requestContractOperation: 'PUT:/api/v1/agent-moderations/:id/vote',
@@ -52,9 +48,9 @@ const agentModerationVoteHandler = createVoteHandler({
   preAssertAccess: (ctx: Context, currentUser: PrivateUser) => {
     ctx.assert(isAdminUser(currentUser), 403, 'Admin access required')
   },
-})
+}
 
-const clearAgentModerationVoteHandler = createVoteClearHandler({
+const clearAgentModerationVoteOptions: CreateVoteHandlerOptions = {
   rateLimitPrefix: 'agent-moderation-election-vote',
   routeKey: 'DELETE:/api/v1/agent-moderations/:id/vote',
   requestContractOperation: 'DELETE:/api/v1/agent-moderations/:id/vote',
@@ -69,20 +65,20 @@ const clearAgentModerationVoteHandler = createVoteClearHandler({
   preAssertAccess: (ctx: Context, currentUser: PrivateUser) => {
     ctx.assert(isAdminUser(currentUser), 403, 'Admin access required')
   },
-})
+}
 
 app.route('/api/v1/agent-moderations/:id/vote').put(async ctx => {
   apiRequestContract<'PUT:/api/v1/agent-moderations/:id/vote', ElectionVoteRequest<'moderation'>>(
     'PUT:/api/v1/agent-moderations/:id/vote',
   )
   apiOpenApiNoContent('PUT:/api/v1/agent-moderations/:id/vote', 204)
-  await agentModerationVoteHandler(ctx)
+  await handleElectionVote(ctx, agentModerationVoteOptions, false)
 })
 
 app.route('/api/v1/agent-moderations/:id/vote').delete(async ctx => {
   apiNoRequestBody('DELETE:/api/v1/agent-moderations/:id/vote')
   apiOpenApiNoContent('DELETE:/api/v1/agent-moderations/:id/vote', 204)
-  await clearAgentModerationVoteHandler(ctx)
+  await handleElectionVote(ctx, clearAgentModerationVoteOptions, true)
 })
 
 const agentModerationVotesParser = createPaginationParser({

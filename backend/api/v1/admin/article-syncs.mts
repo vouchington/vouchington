@@ -4,9 +4,12 @@ import {
 } from '@services/admin-imports/article-sync-controls'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { isHttpError } from 'http-errors'
 import { isAdminUser } from '@services/users'
-import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
+import {
+  requireAuthAndRateLimit,
+  rethrowHttpError,
+  validateRequestContract,
+} from '../../response-helpers.mts'
 import { articleSync } from '@queues/article-sync/queues'
 import { articleSyncPubSub, type ArticleSyncStatus } from '@data-stores/valkey-pubsub'
 import { startSSE, pipeChannelToSSE, watchForAbortBeforeSSE } from '../../sse-helpers.mts'
@@ -71,7 +74,7 @@ app.route('/api/v1/admin/article-syncs/:jobId/stream').get(async (ctx: Context) 
     try {
       job = await articleSync.getJob(jobId)
     } catch (err) {
-      if (isHttpError(err)) throw err
+      rethrowHttpError(err)
       ctx.throw(503, 'Failed to load sync status')
     }
     if (!job) {
@@ -87,13 +90,15 @@ app.route('/api/v1/admin/article-syncs/:jobId/stream').get(async (ctx: Context) 
     if (abortBeforeSSE.wasAborted()) return
     /* v8 ignore next -- successful article streams require live queue timing; watcher stop is unit-tested */
     abortBeforeSSE.stop()
-    sse = startSSE(ctx)
+    const started = startSSE(ctx)
+    sse = started
+    const stream = started.stream
     await pipeChannelToSSE({
       emit: event =>
-        sse!.stream.write(apiSseFrame('GET:/api/v1/admin/article-syncs/:jobId/stream', event)),
+        stream.write(apiSseFrame('GET:/api/v1/admin/article-syncs/:jobId/stream', event)),
       subscription,
       eventName: 'status',
-      abortSignal: sse.lifecycleSignal,
+      abortSignal: started.lifecycleSignal,
       isTerminal: (s: ArticleSyncStatus) => s.status === 'completed' || s.status === 'failed',
       initialValue,
     })

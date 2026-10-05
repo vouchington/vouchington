@@ -38,7 +38,10 @@ app.route('/api/v1/imports/:batchId/stream').get(async (ctx: Context) => {
     'Import not found',
   )
 
-  const { stream, pipelinePromise, lifecycleSignal } = startSSE(ctx)
+  const sse = startSSE(ctx)
+  const stream = sse.stream
+  const pipelinePromise = sse.pipelinePromise
+  const lifecycleSignal = sse.lifecycleSignal
 
   let subscription: ImportProgressSubscription | undefined
   let closeSubscription: (() => Promise<void>) | undefined

@@ -20,7 +20,7 @@ import { getFollowedUsersByElectionVote } from '@services/users/follow-context'
 import { isUUID } from '@modules/utils'
 import { createPaginationParser } from '@modules/pagination'
 import { isAdminUser } from '@services/users'
-import { createVoteClearHandler, createVoteHandler } from '../../election-vote-handler.mts'
+import { handleElectionVote } from '../../election-vote-handler.mts'
 import { createVoteStatsNoopReconciler } from '@services/elections-votes/shared'
 import { enqueueBulkUpdateRssFeedItemElectionVoteStats } from '@queues/elections/enqueues'
 import {
@@ -96,7 +96,7 @@ app.route('/api/v1/rss-feed-items/:id/follow-context').get(async (ctx: Context) 
 })
 
 // PUT /api/v1/rss-feed-items/:id/vote
-const rssFeedItemVoteHandler = createVoteHandler({
+const rssFeedItemVoteOptions = {
   rateLimitPrefix: 'rss-feed-item-election-vote',
   routeKey: 'PUT:/api/v1/rss-feed-items/:id/vote',
   requestContractOperation: 'PUT:/api/v1/rss-feed-items/:id/vote',
@@ -107,9 +107,9 @@ const rssFeedItemVoteHandler = createVoteHandler({
   getCurrentVote: getRssFeedItemElectionVote,
   upsertVotes: upsertRssFeedItemElectionVotes,
   onNoop: createVoteStatsNoopReconciler(enqueueBulkUpdateRssFeedItemElectionVoteStats),
-})
+}
 
-const clearRssFeedItemVoteHandler = createVoteClearHandler({
+const clearRssFeedItemVoteOptions = {
   rateLimitPrefix: 'rss-feed-item-election-vote',
   routeKey: 'DELETE:/api/v1/rss-feed-items/:id/vote',
   requestContractOperation: 'DELETE:/api/v1/rss-feed-items/:id/vote',
@@ -120,20 +120,20 @@ const clearRssFeedItemVoteHandler = createVoteClearHandler({
   upsertVotes: upsertRssFeedItemElectionVotes,
   getCurrentVote: getRssFeedItemElectionVote,
   onNoop: createVoteStatsNoopReconciler(enqueueBulkUpdateRssFeedItemElectionVoteStats),
-})
+}
 
 app.route('/api/v1/rss-feed-items/:id/vote').put(async ctx => {
   apiRequestContract<'PUT:/api/v1/rss-feed-items/:id/vote', ElectionVoteRequest<'sentiment'>>(
     'PUT:/api/v1/rss-feed-items/:id/vote',
   )
   apiOpenApiNoContent('PUT:/api/v1/rss-feed-items/:id/vote', 204)
-  await rssFeedItemVoteHandler(ctx)
+  await handleElectionVote(ctx, rssFeedItemVoteOptions, false)
 })
 
 app.route('/api/v1/rss-feed-items/:id/vote').delete(async ctx => {
   apiNoRequestBody('DELETE:/api/v1/rss-feed-items/:id/vote')
   apiOpenApiNoContent('DELETE:/api/v1/rss-feed-items/:id/vote', 204)
-  await clearRssFeedItemVoteHandler(ctx)
+  await handleElectionVote(ctx, clearRssFeedItemVoteOptions, true)
 })
 
 const rssFeedItemVotesParser = createPaginationParser({

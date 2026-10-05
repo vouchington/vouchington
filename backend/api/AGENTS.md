@@ -9,6 +9,7 @@
 - Keep the source README `## Performance` pointer (enforced by no-mistakes). The owning docs page records round trips, cache hits, and cache headers.
 - APIs remain available regardless of frontend flags; never gate endpoints with `getFeatureFlagsFromCookie` 404s.
 - SSE uses `startSSE(ctx)`. Only `ECONNRESET` and `ERR_STREAM_PREMATURE_CLOSE` are benign pipeline disconnects; other errors reach `onError`. Close pub/sub subscriptions on disconnect/finally; recover reconnects from durable state.
+- Bind `startSSE(ctx)` to a const and write `apiSseFrame` on that binding's `stream`. Destructuring the result, or writing the frame through a `let`, leaves the receiver unprovable and fails contract discovery. See [API fixtures](../../docs/development/testing/backend/api-fixtures.md#backend-response-contracts).
 - SSE uses short `timeoutMs` and native `EventSource` reconnection. Do not make routine timeout cycles named-error terminal closes; follow [SSE bounds and exemptions](../../docs/development/runtime-timeouts.md#principle-sse--long-lived-connection-duration-under-fargate-spot).
 - Use resource-noun paths and sub-resource creation for actions. PATCH modifies only its URL resource, never `{ action: 'verb' }` RPC bodies.
 - Use [route helper contracts](../../docs/requirements/api/README.md#route-helpers), [route inventory](../../docs/requirements/api/catalog/README.md), and owning [services](../services/AGENTS.md); backend-wide rules are inherited.

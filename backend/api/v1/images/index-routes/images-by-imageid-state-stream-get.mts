@@ -38,12 +38,14 @@ app.route('/api/v1/images/:id/state/stream').get(async (ctx: Context) => {
     /* v8 ignore next 2 -- socket abort timing is covered deterministically by watchForAbortBeforeSSE tests */
     if (abortBeforeSSE.wasAborted()) return
     abortBeforeSSE.stop()
-    sse = startSSE(ctx)
+    const started = startSSE(ctx)
+    sse = started
+    const stream = started.stream
     await pipeChannelToSSE({
-      emit: event => sse!.stream.write(apiSseFrame('GET:/api/v1/images/:id/state/stream', event)),
+      emit: event => stream.write(apiSseFrame('GET:/api/v1/images/:id/state/stream', event)),
       subscription,
       eventName: 'state',
-      abortSignal: sse.lifecycleSignal,
+      abortSignal: started.lifecycleSignal,
       isTerminal: isTerminalImageState,
       initialValue: currentState,
     })

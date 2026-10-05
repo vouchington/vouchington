@@ -6,8 +6,7 @@ import { enqueueDistributeActivity } from '@queues/activitypub-delivery/enqueues
 import onError from '@modules/on-error'
 import app from '../../../app.mts'
 import {
-  createVoteClearHandler,
-  createVoteHandler,
+  handleElectionVote,
   type CreateVoteHandlerOptions,
 } from '../../../election-vote-handler.mts'
 import { createVoteStatsNoopReconciler } from '@services/elections-votes/shared'
@@ -125,13 +124,11 @@ const postVoteOptions: CreateVoteHandlerOptions = {
   },
 }
 
-const postVoteHandler = createVoteHandler(postVoteOptions)
-
-const clearPostVoteHandler = createVoteClearHandler({
+const clearPostVoteOptions: CreateVoteHandlerOptions = {
   ...postVoteOptions,
   routeKey: 'DELETE:/api/v1/posts/:id/vote',
   requestContractOperation: 'DELETE:/api/v1/posts/:id/vote',
-})
+}
 
 app.route('/api/v1/posts/:id/vote').put(async ctx => {
   apiRequestContract<
@@ -139,11 +136,11 @@ app.route('/api/v1/posts/:id/vote').put(async ctx => {
     ElectionVoteRequest<'sentiment' | 'recommendation'>
   >('PUT:/api/v1/posts/:id/vote')
   apiOpenApiNoContent('PUT:/api/v1/posts/:id/vote', 204)
-  await postVoteHandler(ctx)
+  await handleElectionVote(ctx, postVoteOptions, false)
 })
 
 app.route('/api/v1/posts/:id/vote').delete(async ctx => {
   apiNoRequestBody('DELETE:/api/v1/posts/:id/vote')
   apiOpenApiNoContent('DELETE:/api/v1/posts/:id/vote', 204)
-  await clearPostVoteHandler(ctx)
+  await handleElectionVote(ctx, clearPostVoteOptions, true)
 })
