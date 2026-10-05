@@ -105,6 +105,16 @@ async function releaseRefreshLock(holder: PoolClient): Promise<void> {
   )
 }
 
+function selectQueryResult(rows: pg.QueryResult['rows']): pg.QueryResult {
+  return {
+    command: 'SELECT',
+    rowCount: rows.length,
+    oid: 0,
+    fields: [],
+    rows,
+  }
+}
+
 function injectRefreshMaterializedViewContention(): {
   releasedWith(): Error | boolean | undefined
   restore(): void
@@ -118,7 +128,7 @@ function injectRefreshMaterializedViewContention(): {
     const release = client.release
     client.query = ((input: unknown, values?: unknown[]) => {
       if (String(input).includes('refreshMaterializedView.tryAdvisoryLock')) {
-        return Promise.resolve({ rows: [{ locked: false }] } as pg.QueryResult)
+        return Promise.resolve(selectQueryResult([{ locked: false }]))
       }
       return Reflect.apply(query, client, [input, values]) as Promise<pg.QueryResult>
     }) as PoolClient['query']
@@ -184,11 +194,11 @@ function wrapRefreshMaterializedViewFault(
     // Parallel files share `refresh-materialized-view`. These cases assert client destruction,
     // not the real lock or refresh, so a concurrent REFRESH must not surface as contention.
     if (sql.includes('refreshMaterializedView.tryAdvisoryLock')) {
-      return Promise.resolve({ rows: [{ locked: true }] } as pg.QueryResult)
+      return Promise.resolve(selectQueryResult([{ locked: true }]))
     }
     if (sql.includes('/* refreshMaterializedView */')) {
       if (fault.refreshError) return Promise.reject(fault.refreshError)
-      return Promise.resolve({ rows: [] } as pg.QueryResult)
+      return Promise.resolve(selectQueryResult([]))
     }
     if (sql.includes('refreshMaterializedView.unlock')) {
       return Promise.reject(fault.unlockError)
