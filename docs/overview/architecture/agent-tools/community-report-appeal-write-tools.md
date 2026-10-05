@@ -84,9 +84,10 @@ suspension on the web still works.
 
 ## Own-case reads
 
-REST lets any member list every dispute and appeal in a redacted view and fetch one by id. The MCP
-reads are narrower: `list_my_*` lists only the caller's own cases, newest first, and `get_my_*`
-refuses another user's case with `FORBIDDEN` (an unknown id is `NOT_FOUND`), staff included. Their
+REST lets any member list every dispute in a redacted view and fetch one by id, and lets staff read
+every appeal (a member reads only their own). The MCP reads are narrower: `list_my_*` lists only the
+caller's own cases, newest first, and `get_my_*` refuses another user's case with `FORBIDDEN` (an
+unknown id is `NOT_FOUND`), staff included. Their
 paging follows the shared MCP convention (`limit` 1 to 100, default 25, opaque `after` cursor,
 `status` of `pending`, `resolved` or `dismissed`), so unlike REST, which settles an unreadable limit
 or unknown status to a default, an out-of-range `limit` or an unknown `status` is an invalid argument.
