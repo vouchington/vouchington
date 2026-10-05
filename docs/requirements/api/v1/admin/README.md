@@ -90,11 +90,15 @@ without a scope step-up. The supported staff decisions are:
 - Six operations: repeat-infringer disposition, outcome and reinstatement; failed delivery and
   action replay; and guest-capability revocation.
 
-Each requires a nonempty `rationale` of at most 10,000 characters. Email approval and
-correspondence admission use the latest stored recommendation; callers supply neither contact
-fields nor reply text. Rejection sends the fixed reply to the parsed sender, or queues nothing
-when no sender is available. Missing statutory fields or a hosted URL identifying zero or multiple
-available images cause `422`; staff can resolve ambiguous selections in the web UI.
+Each requires a nonempty `rationale` of at most 10,000 characters. Email approval takes the same
+notice-form body as `POST /api/v1/copyright-email-intakes/:id/approvals` and calls the same decision
+function: the caller reads the raw email in the staff web interface (MCP reads return structured
+facts only) and supplies every claimant field, statutory declaration and hosted image, and
+`recommendation_id` or `manual_fallback_reason`. The recommendation is guidance only, so the
+caller's values win, as on REST. A missing declaration is rejected on both surfaces, and a
+declaration that is not `true` answers `422` on both. Correspondence admission uses the latest
+stored recommendation; callers supply neither contact fields nor reply text. Rejection sends the
+fixed reply to the parsed sender, or queues nothing when no sender is available.
 
 EU/UK redress, statement-of-reasons and territorial policy decisions, guest-capability issuance,
 staydown match review, information requests, media-delivery replay, and email legal-process

@@ -4775,9 +4775,6 @@ importers:
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../entity-cache
-      '@services/entity-fetch':
-        specifier: workspace:^
-        version: link:../entity-fetch
       '@services/images':
         specifier: workspace:^
         version: link:../images

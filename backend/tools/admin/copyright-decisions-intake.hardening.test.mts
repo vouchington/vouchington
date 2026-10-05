@@ -66,7 +66,25 @@ describe('copyright admin decision tool contracts', () => {
     const id = crypto.randomUUID()
     const inputs: Record<string, Record<string, unknown>> = {
       review_copyright_form_intake: { id, is_accepted: true },
-      approve_copyright_email_intake: { intake_id: id },
+      approve_copyright_email_intake: {
+        intake_id: id,
+        jurisdiction: 'us_dmca',
+        claimant_display_name: null,
+        claimant_contact: 'Synthetic claimant contact',
+        claimant_email: 'claimant@example.test',
+        work_description: 'An original photograph.',
+        has_good_faith_belief: true,
+        has_accuracy_authority_under_penalty_of_perjury: true,
+        electronic_signature: 'Synthetic claimant',
+        targets: [
+          {
+            surface: 'post-image',
+            post_id: id,
+            image_id: id,
+            target_url: 'https://voucha.ai/posts/synthetic',
+          },
+        ],
+      },
       reject_copyright_email_intake: { intake_id: id },
       admit_copyright_email_correspondence: { intake_id: id, kind: 'appeal' },
       reject_copyright_email_correspondence: { intake_id: id, kind: 'appeal' },
