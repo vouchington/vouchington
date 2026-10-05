@@ -137,6 +137,6 @@ it seeded because the shared test database is parallel. It proves that:
 
 - a published placement is covered and an unpublished one is returned as `pending`
 - a record that exhausted delivery comes back as `failed`
-- a current placement with no record comes back as `missing`
+- a post image placement with no record comes back as `missing`, then as `pending` once staged
 - a completed record that withholds counts as covered
 - a stale completed record for a replaced revision does not cover the current revision

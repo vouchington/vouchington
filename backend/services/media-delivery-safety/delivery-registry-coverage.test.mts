@@ -4,10 +4,12 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import {
   beginTransaction,
   createTestUserDirect,
-  getTestImageSurfacePlacements,
+  getTestMediaDeliveryRecord,
+  getTestPostImagePlacement,
   insertTestImage,
+  insertTestPost,
+  insertTestPostImage,
   markTestMediaDeliveryRecordFailed,
-  setTestUserProfileImage,
 } from '@voucha/test-helpers'
 import { advanceTestDeliveryPlacementRevision } from '@voucha/test-helpers/entities/media-delivery-repair'
 import { listTestMediaDeliveryCoverageGaps } from '@voucha/test-helpers/media-delivery-coverage'
@@ -107,27 +109,37 @@ describe('media delivery edge enforcement coverage query', () => {
     ])
   })
 
-  it('returns a current placement that has no registry record as missing', async () => {
+  it('returns a post image placement that has no registry record as missing', async () => {
     const user = await createTestUserDirect()
     const imageId = await insertTestImage(user.id)
-    await setTestUserProfileImage(user.id, imageId)
-    const [placement] = await getTestImageSurfacePlacements({ userId: user.id })
-    if (!placement) throw new Error('Missing test surface placement')
-    const deliveryKey = getImagePlacementDeliveryKey({
+    const postId = await insertTestPost({
+      title: 'Owned coverage fixture',
+      slug: crypto.randomUUID(),
+      createdById: user.id,
+      markdown: 'Coverage fixture image',
+    })
+    await insertTestPostImage({ postId, imageId })
+    const placement = await getTestPostImagePlacement(postId, imageId)
+    if (!placement) throw new Error('Missing test post image placement')
+    const tuple = {
       placementId: placement.placement_id,
       revision: placement.placement_revision,
       imageId,
-    })
+    }
+    const deliveryKey = getImagePlacementDeliveryKey(tuple)
 
-    expect(
-      await listTestMediaDeliveryCoverageGaps(coverageQuery, [placement.placement_id]),
-    ).toEqual([
+    expect(await listTestMediaDeliveryCoverageGaps(coverageQuery, [tuple.placementId])).toEqual([
       {
         delivery_key: deliveryKey,
-        placement_id: placement.placement_id,
+        placement_id: tuple.placementId,
         state: 'missing',
         failure_message: null,
       },
+    ])
+
+    await stageImagePlacementDeliveryRecord({ ...tuple, state: 'allow' })
+    expect(await listTestMediaDeliveryCoverageGaps(coverageQuery, [tuple.placementId])).toEqual([
+      expect.objectContaining({ delivery_key: deliveryKey, state: 'pending' }),
     ])
   })
 
@@ -137,6 +149,10 @@ describe('media delivery edge enforcement coverage query', () => {
     await stageImagePlacementDeliveryRecord({ ...fixture.tuple, state: 'withheld' })
     await publish(fixture)
 
+    expect(await getTestMediaDeliveryRecord(fixture.deliveryKey)).toMatchObject({
+      desired_state: 'withheld',
+      state: 'completed',
+    })
     expect(await gapsFor(fixture)).toEqual([])
   })
 
