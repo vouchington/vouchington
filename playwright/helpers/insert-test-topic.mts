@@ -56,7 +56,7 @@ export async function insertTestTopic(
       ])
     ).rows[0].id) as string
   if (flags.noindex !== undefined || flags.allowReviews !== undefined) {
-    await write(`UPDATE topics SET noindex = $2, allow_reviews = $3 WHERE id = $1`, [
+    await write(`UPDATE topics SET is_noindexed = $2, should_allow_reviews = $3 WHERE id = $1`, [
       id,
       flags.noindex ?? false,
       flags.allowReviews ?? true,

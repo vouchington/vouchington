@@ -196,7 +196,9 @@ describe('routes-extended', () => {
       // silent no-op path. Using a real user id and reading the row back is what actually
       // proves the attribution was persisted.
       const attributions = await getSessionReferralAttributionsWithUtm(sessionId)
-      expect(attributions).toContainEqual(expect.objectContaining({ referrer_id: referrerUserId }))
+      expect(attributions).toContainEqual(
+        expect.objectContaining({ referrer_user_id: referrerUserId }),
+      )
     })
 
     it('persists utm fields on the referral attribution', async () => {
@@ -224,7 +226,7 @@ describe('routes-extended', () => {
       const attributions = await getSessionReferralAttributionsWithUtm(sessionId)
       expect(attributions).toContainEqual(
         expect.objectContaining({
-          referrer_id: referrerUserSecondaryId,
+          referrer_user_id: referrerUserSecondaryId,
           utm_source: 'test',
           utm_medium: 'email',
           utm_campaign: 'welcome',

@@ -90654,7 +90654,7 @@
       "migratedFrom": ["predecessor-issue#7887"],
       "path": "/api/v1/my/import/rss-feeds",
       "requestBody": {
-        "follow": true,
+        "should_follow_imported_feeds": true,
         "urls": ["https://example.test/feed.xml", "https://invalid.example.test/feed.xml"]
       },
       "responseSchema": {

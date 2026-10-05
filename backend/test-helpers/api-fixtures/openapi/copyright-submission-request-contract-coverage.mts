@@ -8,11 +8,11 @@ export const COUNTER_NOTICES = 'POST:/api/v1/copyright-notices/:id/counter-notic
 /** Closed JSON bodies and the keys each one requires. */
 export const REQUIRED_KEYS: Record<string, string[]> = {
   [NOTICES]: [
-    'has_accuracy_authority_under_penalty_of_perjury',
     'claimant_contact',
     'claimant_display_name',
     'claimant_email',
     'electronic_signature',
+    'has_accuracy_authority_under_penalty_of_perjury',
     'has_good_faith_belief',
     'jurisdiction',
     'targets',

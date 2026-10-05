@@ -52,13 +52,13 @@ export const CONTENT_REFERRALS_DECLARATIONS = [
       context.client.my.replaceMyLandingPageItems('landing-page-1', {
         items: [
           { type: 'profile_link', profile_link_id: 'profile-link-1' },
-          { type: 'review', review_id: 'review-1' },
+          { type: 'review', review_post_id: 'review-1' },
           { type: 'referral_link', referral_link_id: 'referral-link-1' },
           {
             type: 'topic_group',
             topic_id: 'topic-1',
             entries: [
-              { type: 'review', review_id: 'review-2' },
+              { type: 'review', review_post_id: 'review-2' },
               { type: 'referral_link', referral_link_id: 'referral-link-2' },
             ],
           },

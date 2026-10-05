@@ -55,12 +55,12 @@ export async function insertTestRssFeed(topicId: string, suffix: string): Promis
   const id = feedResult.rows[0].id as string
 
   await write(
-    `INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, enabled, reason)
+    `INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason)
      VALUES ('enablement', $1, TRUE, $2)`,
     [id, 'playwright test fixture'],
   )
   await write(
-    `INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, enabled, reason)
+    `INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason)
      VALUES ('discoverability', $1, TRUE, $2)`,
     [id, 'playwright test fixture'],
   )

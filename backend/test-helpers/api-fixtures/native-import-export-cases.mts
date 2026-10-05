@@ -28,7 +28,7 @@ export const nativeImportExportApiFixtureCases: ApiFixtureCase[] = [
     route: { routeTemplate: '/api/v1/my/import/rss-feeds' },
     requestBody: {
       urls: ['https://example.test/feed.xml', 'https://invalid.example.test/feed.xml'],
-      follow: true,
+      should_follow_imported_feeds: true,
     },
     status: 201,
     body: {
