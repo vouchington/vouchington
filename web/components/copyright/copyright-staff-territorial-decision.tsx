@@ -125,11 +125,11 @@ export function CopyrightStaffTerritorialDecision({
       </div>
       <div className='space-y-1'>
         <Label htmlFor={`territorial-explanation-${item.id}`}>
-          Explanation for the poster and the notifier
+          Why we decided this (sent to the poster and the notifier)
         </Label>
         <p className='text-sm text-muted-foreground'>
-          This explanation is sent to both parties. Keep personal data out of it. Up to 2,000
-          characters.
+          Name the work, the right infringed, and why the image infringes it. Keep personal data
+          out. Up to 2,000 characters.
         </p>
         <Textarea
           id={`territorial-explanation-${item.id}`}

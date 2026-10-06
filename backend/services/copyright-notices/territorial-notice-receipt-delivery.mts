@@ -13,7 +13,7 @@ export async function createEuCopyrightReceiptDelivery(
       noticeId: input.noticeId,
       submissionId: null,
       correspondenceKind: 'receipt',
-      bodyText: copyrightEuReceiptText(input.noticeId),
+      bodyText: copyrightEuReceiptText(input.noticeId, input.requesterUserId !== null),
     },
     transaction,
   )

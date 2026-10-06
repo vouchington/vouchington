@@ -51,7 +51,7 @@ describe('poster statements on human imposition', () => {
       ),
     ).rejects.toThrow('Edge unavailable')
     const email = before.find(row => row.recipient_role === 'poster' && row.channel === 'email')!
-    expect(email.text).toContain('restriction is authorized')
+    expect(email.text).toContain('An image restriction was authorized')
     expect(email.text).not.toContain('The image is withheld')
     expect((await prepareCopyrightEmailDelivery(email.id))?.text).toBe(email.text)
     const inApp = before.find(row => row.recipient_role === 'poster' && row.channel === 'in_app')!
@@ -74,7 +74,7 @@ describe('poster statements on human imposition', () => {
     ).filter(row => row.recipient_role === 'poster')
     expect(intents).toHaveLength(2)
     expect(intents.every(row => row.recipient_user_id === poster.id)).toBe(true)
-    expect(intents.find(row => row.channel === 'email')?.text).toContain('globally')
+    expect(intents.find(row => row.channel === 'email')?.text).toContain('worldwide')
     expect(intents.find(row => row.channel === 'email')?.text).toContain(
       'A person made this decision',
     )

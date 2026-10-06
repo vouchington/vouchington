@@ -34,7 +34,7 @@ export type CopyrightStatementFields = {
     deleted: false
     scope: 'global'
   } | null
-  facts: { noticeId: string; receivedAt: string; targetUrls: string[]; basis: 'art_16_notice' }
+  facts: { noticeId: string; receivedAt: string; targetUrls: string[]; basis: 'notice' }
   automation: {
     detection: false
     decision: 'person' | 'automatic_pending_review' | 'automatic_deadline'

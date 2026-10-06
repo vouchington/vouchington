@@ -5472,6 +5472,16 @@
         "enum": ["active", "revoked", "suspended"],
         "type": "string"
       },
+      "CopyrightUkRedressRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "explanation": {
+            "type": "string"
+          }
+        },
+        "required": ["explanation"],
+        "type": "object"
+      },
       "Country": {
         "additionalProperties": false,
         "properties": {
@@ -50406,7 +50416,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CopyrightTerritorialRedressRequest"
+                "$ref": "#/components/schemas/CopyrightUkRedressRequest"
               }
             }
           }

@@ -56,14 +56,18 @@ export const webCopyrightEuApiFixtureCases: ApiFixtureCase[] = [
             state: 'sent',
             sent_at: '2026-07-01T12:11:00.000Z',
             text: [
-              `We decided not to restrict the material for copyright case ${noticeId}. You may seek judicial redress through a court.`,
-              `This decision concerns copyright case ${noticeId}, received 2026-07-01T12:00:00.000Z, and was taken in response to a notice.`,
+              `We decided not to restrict the material for copyright case ${noticeId}. You may submit an internal complaint, refer the decision to a certified out-of-court dispute settlement body, or seek judicial redress through a court.`,
+              `This decision concerns copyright case ${noticeId}, received 1 July 2026, and was taken in response to a notice.`,
               'A person made this decision.',
               'Automated detection was not used.',
               'Automated tools did not assist with processing this case.',
               'Legal ground considered: claimed copyright infringement under EU or Member State law, on a notice under Article 16 of the Digital Services Act.',
-              'Public explanation: The notice did not establish infringement for the identified hosted use.',
-              `You may submit an internal complaint within 6 months after you are informed of this decision. Internal complaint: /copyright/notices/${noticeId}/complaint. You may refer this decision to a certified out-of-court dispute settlement body under Article 21 of the Digital Services Act. You may seek judicial redress through a court.`,
+              'Why we decided this: The notice did not establish infringement for the identified hosted use.',
+              [
+                `You may submit an internal complaint within 6 months after you are informed of this decision. Internal complaint: https://voucha.ai/copyright/notices/${noticeId}/complaint.`,
+                "You may refer this decision to a certified out-of-court dispute settlement body under Article 21 of the Digital Services Act. You can find certified out-of-court dispute settlement bodies on the European Commission's list: https://digital-strategy.ec.europa.eu/en/policies/dsa-out-court-dispute-settlement.",
+                'You may seek judicial redress through a court.',
+              ].join('\n'),
             ].join('\n\n'),
           },
           {

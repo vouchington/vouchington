@@ -29,7 +29,7 @@ describe('copyright statements of reasons', () => {
         deleted: false,
         scope: 'global',
       })
-      expect(statement.fields.facts.basis).toBe('art_16_notice')
+      expect(statement.fields.facts.basis).toBe('notice')
       expect(statement.fields.legalGround).toMatchObject({
         jurisdiction: 'us_dmca',
         legalBasis: 'copyright',
@@ -94,8 +94,12 @@ describe('copyright statements of reasons', () => {
     })
   })
   it.each([
-    ['eu_dsa', 'EU or Member State law', 'DSA Article 16'],
-    ['uk', 'UK law', 'UK copyright law'],
+    ['eu_dsa', 'the copyright law of the Member State concerned', 'DSA Article 16'],
+    [
+      'uk',
+      'the Copyright, Designs and Patents Act 1988',
+      'Copyright, Designs and Patents Act 1988',
+    ],
   ] as const)(
     'uses %s copyright ground and jurisdiction redress',
     (jurisdiction, law, citation) => {

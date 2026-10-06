@@ -25,7 +25,6 @@ const routeClasses = {
     'POST:/api/v1/copyright-notices/:id/guest-filings',
     'POST:/api/v1/copyright-eu-notices/:id/redress-requests',
     'POST:/api/v1/copyright-eu-notices/:id/supervised-complaints',
-    'POST:/api/v1/copyright-uk-notices/:id/redress-requests',
   ],
   staff: [
     'POST:/api/v1/copyright-dsa-statement-submissions/:id/replays',
@@ -63,6 +62,7 @@ const routeClasses = {
     'POST:/api/v1/copyright-trusted-flaggers',
     'POST:/api/v1/copyright-trusted-flaggers/:id/status-changes',
     'POST:/api/v1/copyright-uk-notices/:id/acknowledgment-failures',
+    'POST:/api/v1/copyright-uk-notices/:id/redress-requests',
     'POST:/api/v1/copyright-uk-notices/:id/redress-requests/:redressId/decisions',
     'POST:/api/v1/copyright-uk-notices/:id/reviews',
   ],

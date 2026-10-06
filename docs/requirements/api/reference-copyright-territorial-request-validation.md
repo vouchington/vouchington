@@ -21,7 +21,8 @@ diagnostic. EU notice receipt permits guests and uses optional authentication. A
 | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `POST /copyright-eu-notices`                                                     | Closed `CopyrightEuNoticeRequest`, including name, email and literal-true good faith                 |
 | `POST /copyright-uk-notices`                                                     | Closed `CopyrightTerritorialNoticeRequest`; EU fields refused                                        |
-| `POST /copyright-{eu,uk}-notices/:id/redress-requests`                           | Closed `CopyrightTerritorialRedressRequest` and path                                                 |
+| `POST /copyright-eu-notices/:id/redress-requests`                                | Closed `CopyrightTerritorialRedressRequest` and path                                                 |
+| `POST /copyright-uk-notices/:id/redress-requests`                                | Closed `CopyrightUkRedressRequest` (`explanation` only; staff-only) and path                         |
 | `POST /copyright-eu-notices/:id/statements-of-reasons`                           | Closed decision request (`outcome`, `statement`, `public_explanation`, conditional targets) and path |
 | `POST /copyright-uk-notices/:id/reviews`                                         | Closed decision request (`outcome`, `rationale`, `public_explanation`, conditional targets) and path |
 | `POST /copyright-{eu,uk}-notices/:id/redress-requests/:redressId/decisions`      | Closed `CopyrightTerritorialRedressDecisionRequest` and path                                         |
@@ -56,8 +57,11 @@ Each handler keeps the order it had before the contract existed and adds the con
   `Idempotency-Key` (`400`), field parsers (`422`), closed contract (`422`), service.
 - UK notice receipt: intake kill switch (`503`), content type (`415`), authentication (`401`),
   suspension, body read, CAPTCHA, `Idempotency-Key`, field parsers, contract, service.
-- Redress request: content type, authentication, suspension, body read, CAPTCHA, path UUID,
+- EU redress request: content type, authentication, suspension, body read, CAPTCHA, path UUID,
   `Idempotency-Key`, field parsers, contract, service.
+- UK redress request: staff-only, so it follows the staff order below, then path UUID,
+  `Idempotency-Key`, field parsers, contract, service. It has no CAPTCHA: staff record a complaint
+  received by another channel, and a participant (notifier or poster) is turned away with `403`.
 - Supervised complaint (EU): authentication, suspension, content type, body read, path UUID, field
   parsers, contract, service. It has no CAPTCHA, kill switch, or idempotency key.
 - Staff routes (decisions, acknowledgment failures, Art. 21 records) and policy routes: authentication
@@ -103,7 +107,7 @@ look at.
 
 ### One acceptance change
 
-`cf_turnstile_response` is optional and string-only on the four notice and redress bodies. A
+`cf_turnstile_response` is optional and string-only on the three notice and EU redress bodies. A
 non-string or explicit-`null` value used to proceed when CAPTCHA verification did not read it (an
 attested caller, or Turnstile configured to always approve); it now answers `422`. A caller with
 neither of those already failed CAPTCHA for a missing token. No client in the repository sends a

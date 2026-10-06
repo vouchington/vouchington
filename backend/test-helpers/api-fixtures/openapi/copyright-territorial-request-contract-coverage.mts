@@ -35,7 +35,7 @@ export const REQUIRED_KEYS: Record<string, string[]> = {
 }
 
 /** Bodies that may carry an optional CAPTCHA token; the token is a string or absent, never null. */
-export const CAPTCHA_BODIES = [EU_NOTICE, UK_NOTICE, EU_REDRESS, UK_REDRESS]
+export const CAPTCHA_BODIES = [EU_NOTICE, UK_NOTICE, EU_REDRESS]
 
 /** Enumerated body fields and the values the route accepts. */
 export const ENUMS: Record<string, { field: string; values: string[] }> = {

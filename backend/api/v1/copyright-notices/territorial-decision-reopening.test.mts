@@ -132,7 +132,10 @@ describe.each(TERRITORIAL_SURFACES)('$label decision reopening', surface => {
       ),
     ).toBe(true)
 
-    const redressResponse = await actors.claimantRequest
+    // UK redress has no participant route: staff record a complaint received by another channel.
+    const redressRequest =
+      surface.jurisdiction === 'eu_dsa' ? actors.claimantRequest : actors.staffRequest
+    const redressResponse = await redressRequest
       .post(redressUrl)
       .set('Idempotency-Key', crypto.randomUUID())
       .send({ explanation: 'Please reconsider the no-action decision.' })

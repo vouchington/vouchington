@@ -1,8 +1,6 @@
-export const copyrightStatementNotificationCopy = {
-  claimant_decision_notice: {
-    title: 'Copyright notice decision',
-    body: 'Your copyright notice was decided. You may file a new notice at /copyright/notices/new, contact /copyright/designated-agent, or seek judicial redress through a court. Accepted cases show the reasons on the case page.',
-  },
+import { copyrightUsIntakeRoutesText } from './statement-of-reasons-redress-wording.mts'
+
+const copyrightStatementNotificationCopy = {
   poster_review_notice: {
     title: 'Copyright restriction reviewed',
     body: 'A person reviewed the restriction. See the case page for the decision and reasons.',
@@ -33,12 +31,10 @@ export function copyrightNotificationCopy(
     case 'claimant_receipt':
       return { title: 'Copyright notice received', body: 'Your copyright notice was received.' }
     case 'claimant_decision_notice':
-      return jurisdiction === 'us_dmca'
-        ? copyrightStatementNotificationCopy.claimant_decision_notice
-        : {
-            title: 'Copyright notice decision',
-            body: 'Your copyright notice was decided. The decision statement gives the reasons. You may seek judicial redress through a court.',
-          }
+      return {
+        title: 'Copyright notice decision',
+        body: claimantDecisionNoticeBody(jurisdiction),
+      }
     case 'redress_decision_notice':
       return {
         title: 'Copyright complaint decision',
@@ -56,4 +52,14 @@ export function copyrightNotificationCopy(
     case 'status_update':
       return { title: 'Copyright case update', body: 'There is an update to your copyright case.' }
   }
+}
+
+/** The fallback in-app body when the stored statement is unavailable, by the notice's jurisdiction. */
+function claimantDecisionNoticeBody(jurisdiction: string): string {
+  const decided = 'Your copyright notice was decided.'
+  if (jurisdiction === 'us_dmca')
+    return `${decided} ${copyrightUsIntakeRoutesText()} Accepted cases show the reasons on the case page.`
+  return jurisdiction === 'eu_dsa'
+    ? `${decided} The decision statement gives the reasons. You may submit an internal complaint, refer the decision to a certified out-of-court dispute settlement body, or seek judicial redress through a court.`
+    : `${decided} The decision statement gives the reasons. You may seek judicial redress through a court.`
 }

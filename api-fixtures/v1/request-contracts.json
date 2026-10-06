@@ -5455,6 +5455,16 @@
       "enum": ["active", "revoked", "suspended"],
       "type": "string"
     },
+    "CopyrightUkRedressRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "explanation": {
+          "type": "string"
+        }
+      },
+      "required": ["explanation"],
+      "type": "object"
+    },
     "Country": {
       "additionalProperties": false,
       "properties": {
@@ -34910,7 +34920,7 @@
     },
     "POST:/api/v1/copyright-uk-notices/:id/redress-requests": {
       "body": {
-        "$ref": "#/components/schemas/CopyrightTerritorialRedressRequest"
+        "$ref": "#/components/schemas/CopyrightUkRedressRequest"
       },
       "path": {
         "properties": {

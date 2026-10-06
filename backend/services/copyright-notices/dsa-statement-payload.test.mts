@@ -46,6 +46,8 @@ describe('DSA statement payload from actual restriction decisions', () => {
     })
     expect(payload.content_date).toBe(await readTestDsaImageUploadDate(image.imageId))
     expect(payload.territorial_scope).toEqual(DSA_EEA_TERRITORIAL_SCOPE)
+    // The statement basis is jurisdiction-neutral; a US notice still maps to the Article 16 source.
+    expect(payload.source_type).toBe('SOURCE_ARTICLE_16')
     expect(payload.automated_detection).toBe('No')
     expect(payload.automated_decision).toBe('AUTOMATED_DECISION_NOT_AUTOMATED')
     expect(payload.decision_visibility).toEqual(['DECISION_VISIBILITY_CONTENT_DISABLED'])
