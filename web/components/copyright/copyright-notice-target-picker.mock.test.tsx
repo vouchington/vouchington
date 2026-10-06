@@ -59,7 +59,7 @@ describe('CopyrightNoticeTargetPicker', () => {
     await waitFor(() => expect(onChange).toHaveBeenCalledWith([]))
   })
 
-  it('offers the designated-agent email path before and after a lookup', async () => {
+  it('points to the form, not to email, before and after a lookup', async () => {
     mockResolveTargets.mockRejectedValue(new Error('not found'))
     render(
       <CopyrightNoticeTargetPicker
@@ -67,9 +67,9 @@ describe('CopyrightNoticeTargetPicker', () => {
         onChange={vi.fn<(targets: CopyrightNoticeResolvedTarget[]) => void>()}
       />,
     )
-    expect(screen.getByTestId('copyright-designated-agent-hint')).toHaveTextContent(
-      /cannot open the image yourself/i,
-    )
+    const hint = screen.getByTestId('copyright-designated-agent-hint')
+    expect(hint).toHaveTextContent(/use this form to file your notice/i)
+    expect(hint).not.toHaveTextContent(/e-?mail/i)
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
 
     fireEvent.change(screen.getByLabelText('Hosted use URL'), {
@@ -78,7 +78,8 @@ describe('CopyrightNoticeTargetPicker', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Find hosted material' }))
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent(/could not find hosted material/i)
-    expect(screen.getByRole('link', { name: 'designated agent' })).toHaveAttribute(
+    expect(alert).not.toHaveTextContent(/e-?mail/i)
+    expect(within(alert).getByRole('link', { name: 'designated agent status' })).toHaveAttribute(
       'href',
       '/copyright/designated-agent',
     )

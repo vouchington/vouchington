@@ -15,7 +15,7 @@ Here's how the layers work.
 
 ## Automated Clearance
 
-Every post starts in a clearance pipeline before it can appear anywhere on the platform.
+Every new post, except posts that administrator accounts create, starts in a clearance pipeline before it can appear anywhere on the platform.
 
 Spam detection looks for excessive links, spam keywords, duplicate content, referral-link abuse, embedding similarity, and low-quality text. OpenAI moderation uses `omni-moderation-latest` to evaluate both the text and any attached images.
 
@@ -25,7 +25,7 @@ A post stays pending until both checks finish. If either flags the post, it's re
 
 After a post clears the initial pipeline, specialized agents review it for a second layer of issues: self-promotion, marketplace content, AI-generated writing, partisan political content, clickbait, vague posts, and low-effort posts.
 
-A subset of these agents are designated as global baseline moderators. They run on every post regardless of whether the post belongs to a community or whether any community has opted into AI moderation — because some violations are platform-wide, not community-specific.
+A subset of these agents are designated as global baseline moderators. They run on every post (except posts that administrator accounts create) regardless of whether the post belongs to a community or whether any community has opted into AI moderation — because some violations are platform-wide, not community-specific.
 
 Some agents move flagged posts into a review queue rather than removing them outright. Their results are deduplicated by content hash, so unchanged content doesn't repeatedly trigger the same model call.
 

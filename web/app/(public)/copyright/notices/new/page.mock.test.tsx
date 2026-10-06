@@ -86,7 +86,7 @@ describe('NewCopyrightNoticePage for a signed-out visitor', () => {
     ])
   })
 
-  it('shows the form with the CAPTCHA, the statutory warning and the email path', async () => {
+  it('shows the form with the CAPTCHA, the statutory warning and no email path', async () => {
     render(await NewCopyrightNoticePage())
 
     expect(mockRedirect).not.toHaveBeenCalled()
@@ -95,10 +95,11 @@ describe('NewCopyrightNoticePage for a signed-out visitor', () => {
     expect(screen.getByRole('note').textContent).toMatch(/512\(f\)/)
     expect(screen.getByText(/without signing in/i)).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'profile' })).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'designated agent' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'designated agent status' })).toHaveAttribute(
       'href',
       '/copyright/designated-agent',
     )
+    expect(screen.getByTestId('copyright-designated-agent-hint')).not.toHaveTextContent(/e-?mail/i)
   })
 
   it('files a notice and explains how the case is tracked without sending the guest to a signed-in page', async () => {

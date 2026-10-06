@@ -14,4 +14,10 @@ type Story = StoryObj<typeof meta>
 
 export const Hint: Story = {}
 
+export const AgentPublished: Story = { args: { agentPublished: true } }
+
 export const TargetNotFound: Story = { render: () => <CopyrightTargetNotFound /> }
+
+export const TargetNotFoundAgentPublished: Story = {
+  render: () => <CopyrightTargetNotFound agentPublished />,
+}

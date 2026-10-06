@@ -14,7 +14,7 @@ If your content is removed — or if you're wondering why you can't see somethin
 
 ## Automated Rejection
 
-Every new post goes through spam detection and OpenAI moderation before it's approved. If either system flags the post, it's rejected by the clearance pipeline. You won't see it in any feed. Automated decisions are audited under the `automod` system user.
+Every new post, except posts that administrator accounts create, goes through spam detection and OpenAI moderation before it's approved. If either system flags the post, it's rejected by the clearance pipeline. You won't see it in any feed. Automated decisions are audited under the `automod` system user.
 
 ## Community Removal
 

@@ -18,7 +18,7 @@ async function lookUpHostedUse(page: Page, path: string) {
 }
 
 test.describe('Signed-out copyright notice filing', () => {
-  test('a missing post gets the same not-found copy with the designated-agent email path', async ({
+  test('a missing post gets the same not-found copy and points to the form, not to email', async ({
     page,
   }) => {
     await resetAnonymousBrowserStateBeforeNavigation(page)
@@ -28,6 +28,7 @@ test.describe('Signed-out copyright notice filing', () => {
 
     const notFound = page.getByTestId('copyright-target-not-found')
     await expect(notFound).toBeVisible()
+    await expect(notFound).not.toContainText(/e-?mail/i)
     await expect(notFound.getByRole('link')).toHaveAttribute('href', '/copyright/designated-agent')
   })
 

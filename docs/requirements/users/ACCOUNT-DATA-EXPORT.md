@@ -26,12 +26,13 @@ satisfies GDPR "Right to Data Portability" and CCPA "Right to Know" requirements
   - `oauth-accounts.csv` – connected OAuth account metadata
   - `followed-rss-feeds.csv` – followed RSS feeds with source URLs and topic details
   - `followed-topics.csv` – followed topics with slugs and topic types
-  - `entity-relations.csv` – follows, mutes, blocks, and other relation predicates
-  - `bookmarks.csv` – saved/bookmarked data
+  - `entity-relations.csv` – the user's non-bookmark relations: topics they tagged themselves with and posts that mention them
+  - `bookmarks.csv` – the user's bookmark relations: saves, follows, hides, mutes, blocks, subscriptions, dismissed recommendations, and proxy follows and mutes
   - `consents.csv` – legal and cookie consent ledger records
   - `referral-attributions.csv` – referral click attributions
   - `copyright-*.csv` – the account's copyright records, with a conservative redaction rule (see
     [Copyright records](#copyright-records))
+- The [Privacy Policy](../../../articles/privacy-policy.md) lists these files by category for users; update it whenever this list changes.
 - Boolean fields in export CSVs use `true`/`false`; unset values remain empty.
 - Download link expires after 7 days.
 - Users can request a new export at any time after the previous one has expired, failed, or is ready.

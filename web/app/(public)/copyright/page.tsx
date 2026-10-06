@@ -28,9 +28,10 @@ export default async function CopyrightPage() {
         registration and contact details are published.
       </p>
       <p>
-        Signed-in members can see accepted case records and a claimant&apos;s current public
-        profile. They do not show legal names, contact details, raw email, evidence, or agent
-        analysis.
+        Signed-in members can see accepted case records and, when a signed-in member filed the
+        notice, that member&apos;s public profile name and a link to their profile. We never show
+        the legal name given in a notice. Case records do not show contact details, raw email,
+        evidence, or agent analysis.
       </p>
       <p>
         Read{' '}

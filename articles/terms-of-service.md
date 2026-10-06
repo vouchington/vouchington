@@ -65,6 +65,19 @@ Voucha reserves the right to remove any content that violates these policies and
 
 Verified representatives of topics on Voucha may dispute reviews that they believe are factually inaccurate, defamatory, or otherwise legally problematic. Disputes are reviewed by human moderators; Voucha does not guarantee any specific outcome. The dispute process does not affect Voucha's rights as a platform or any legal defenses available to Voucha under applicable law.
 
+### Content Moderation
+
+We use these measures together to enforce this Section 4:
+
+- **Automated screening.** Spam checks and OpenAI moderation screen every new post and its images before the post appears, except posts that administrator accounts create. If either check flags a post, the system rejects it, and it removes flagged images, without a person reviewing that decision first.
+- **AI-assisted review.** After a post clears screening, AI agents check it for further problems, such as self-promotion or low-effort posts. Depending on the agent, a flagged post is removed or sent to a review queue. When a report is filed, an AI agent can recommend an outcome, and a person makes the final call.
+- **Human moderators.** Voucha staff review reports, queued posts and appeals, and decide escalated cases.
+- **Community moderators.** Community owners and moderators review posts, issue warnings, and ban members within their own communities.
+
+Members can appeal eligible warnings, community bans, and post removals, and verified topic representatives can dispute reviews as described above. Staff review each appeal, and a human moderator approves any reply before we send it. [How Moderation Works](./how-moderation-works.md) and [What Happens When Content Is Removed](./what-happens-when-content-is-removed.md) explain where to file and track an appeal. Copyright notices have their own review, appeal, and counter-notice routes in Section 10, and a copyright moderator makes every copyright decision.
+
+Our [Community Guidelines](./community-guidelines.md) and [How Moderation Works](./how-moderation-works.md) are part of these Terms (see Section 17).
+
 ## 5. User-Generated Content
 
 ### Ownership
@@ -157,9 +170,10 @@ User-generated content belongs to respective users as described in Section 5.
 
 Voucha may restrict access to hosted material when it receives and validates a copyright notice.
 The copyright program is not active until Voucha registers a designated agent with the US Copyright
-Office and publishes a monitored contact channel. Until then, no address or form is represented as
-an active statutory DMCA intake channel. The rest of this section describes the process once the
-program is active. See [Copyright and the DMCA on Voucha](./copyright-and-dmca.md) and
+Office, publishes a monitored contact channel, and launches copyright intake. Until then, no address
+or form is represented as an active statutory DMCA intake channel. The rest of this section
+describes the process once the program is active. See
+[Copyright and the DMCA on Voucha](./copyright-and-dmca.md) and
 [How Copyright Complaints Work](./copyright-complaints.md) for more detail.
 
 ### Submitting a Notice
@@ -170,17 +184,25 @@ abuse. CAPTCHA does not decide whether a claim is valid.
 
 ### How Copyright Moderators Review Notices
 
-A copyright moderator reviews every notice and decides whether it is complete and whether to
-restrict material. An AI agent assists the moderator: it screens form notices for spam or obvious
-invalidity, structures emailed notices, gives the moderator a recommendation, and may draft a
-message that a moderator must approve before it is sent. The agent does not decide whether a notice
-is valid. It cannot restrict material, open a case, or send a message on its own.
+A copyright moderator makes every copyright decision, including whether a notice is complete and
+whether to restrict material. AI tools summarize notices for moderators; they do not decide. An AI
+agent screens form notices for spam or obvious invalidity, structures emailed notices, gives the
+moderator a recommendation, and may draft a message that a moderator must approve before it is
+sent. The agent cannot restrict material, open a case, or send a message on its own. If we ever let
+a system restrict material before a moderator reviews it, we will update these Terms first.
 
 A restriction withholds the identified image on the identified post. It does not delete the source
 image or affect another post that uses the same image independently. A copyright moderator records
 a decision to confirm or reverse each restriction. A restriction never becomes final only because
 no one appealed. We may preserve submissions, evidence, and case records, and notify affected
 participants.
+
+### False Notices and Counter-Notices
+
+Anyone who knowingly materially misrepresents that material is infringing, or that material was
+removed or disabled by mistake or misidentification, may be liable for damages, including costs and
+attorneys' fees, under 17 U.S.C. § 512(f). This applies to notices and counter-notices alike. See
+[Copyright and the DMCA on Voucha](./copyright-and-dmca.md) for more.
 
 ### Responding to a Notice
 
@@ -204,19 +226,21 @@ Board.
 
 Voucha may terminate, in appropriate circumstances, the account of a member who repeatedly
 infringes copyright. A copyright incident counts against an account when a copyright moderator
-confirms a restriction on that account's post, including on appeal. Confirmed restrictions from one
-notice count as one incident. An incident stops counting when a copyright moderator reverses every
-confirmed restriction behind it or records that the notice was withdrawn, a duplicate, or abusive.
-Restoring material after a counter-notice does not remove an incident. An account's second counting
-incident opens a staff review. Opening that review does not suspend the account. A copyright
-moderator may close the review with a warning or no action. Only an administrator may restrict or
-terminate the account, and only while it has at least two counting incidents. Restricting or
-terminating suspends the account. A terminated account stays suspended until an administrator
-records a reinstatement and lifts the suspension. An allegation or a count of notices alone never
-suspends or terminates an account.
+confirms a restriction on that account's post, including on appeal. Restrictions confirmed under EU
+or UK notices also count. Confirmed restrictions from one notice count as one incident. An incident
+stops counting when a copyright moderator reverses every confirmed restriction behind it or records
+that the notice was withdrawn, a duplicate, or abusive. If we restore material because the person
+who filed the notice did not file a court action after a valid counter-notice, that incident no
+longer counts. An account's second counting incident opens a staff review. Opening that review does
+not suspend the account. A copyright moderator may close the review with a warning or no action.
+Only an administrator may restrict or terminate the account, and only while it has at least two
+counting incidents. Restricting or terminating suspends the account. A terminated account stays
+suspended until an administrator records a reinstatement and lifts the suspension. An allegation or
+a count of notices alone never suspends or terminates an account.
 
-While your account has a counting incident, or a qualifying court or Copyright Claims Board hold on
-one of your posts is unresolved, you cannot delete your account.
+You cannot delete your account while it has a counting incident, while a qualifying court or
+Copyright Claims Board hold on one of your posts is unresolved, or while we must preserve records
+because of legal process.
 
 ### Case Records
 
@@ -224,9 +248,9 @@ Accepted case records are visible to signed-in members. A record shows the case 
 restriction status, and a timeline of event types and dates. It links to the affected post only
 when the viewer could otherwise see that post. When a signed-in member filed the notice and still
 has a public profile, the record shows that member's current public profile name and links to their
-profile. Records never show legal names, contact details, signatures, raw correspondence, evidence,
-moderator rationale, or agent analysis. A case records an allegation and its outcome. It does not
-call the claimant the owner of the work or the poster an infringer.
+profile. Records never show the legal name given in a notice, contact details, signatures, raw
+correspondence, evidence, moderator rationale, or agent analysis. A case records an allegation and
+its outcome. It does not call the claimant the owner of the work or the poster an infringer.
 
 ## 11. Disclaimer of Warranties
 
@@ -263,7 +287,7 @@ Voucha may suspend or terminate your account at any time, with or without notice
 - Your content may remain attributed to a [deleted] tombstone account
 - Outstanding billing obligations remain due
 
-You may delete your own account at any time from account settings, except while a copyright matter described in Section 10 blocks it. Account deletion is irreversible.
+You may delete your own account at any time from account settings, except while Section 10 blocks it or while we must preserve records because of legal process. Account deletion is irreversible.
 
 ## 15. Modifications to Terms
 
@@ -275,7 +299,7 @@ These Terms are governed by the laws of the State of Delaware, without regard to
 
 ## 17. Entire Agreement
 
-These Terms, together with our Privacy Policy, constitute the entire agreement between you and Voucha, Inc. regarding your use of the platform, and supersede any prior agreements.
+These Terms, together with our Privacy Policy, [Community Guidelines](./community-guidelines.md), and [How Moderation Works](./how-moderation-works.md), constitute the entire agreement between you and Voucha, Inc. regarding your use of the platform, and supersede any prior agreements.
 
 ## 18. Contact
 

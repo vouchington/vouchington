@@ -74,7 +74,11 @@ describe('web static SEO tests', () => {
       expect(document.body.textContent).toContain(
         'An allegation or a count of notices alone never suspends or terminates an account.',
       )
-      expect(document.querySelectorAll('main li')).toHaveLength(9)
+      expect(document.body.textContent).toContain(
+        'Restrictions confirmed under EU or UK notices also count.',
+      )
+      expect(document.body.textContent).toContain('that incident no longer counts.')
+      expect(document.querySelectorAll('main li')).toHaveLength(10)
     })
     it('robots.txt contains required directives', async () => {
       const response = await client.request('/robots.txt')
