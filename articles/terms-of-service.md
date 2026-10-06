@@ -69,7 +69,7 @@ Verified representatives of topics on Voucha may dispute reviews that they belie
 
 We use these measures together to enforce this Section 4:
 
-- **Automated screening.** Spam checks and OpenAI moderation screen every new post and its images before the post appears. If either check flags the post, the system rejects it, and it removes flagged images, without a person reviewing that decision first.
+- **Automated screening.** Spam checks and OpenAI moderation screen every new post and its images before the post appears, except posts that administrator accounts create. If either check flags a post, the system rejects it, and it removes flagged images, without a person reviewing that decision first.
 - **AI-assisted review.** After a post clears screening, AI agents check it for further problems, such as self-promotion or low-effort posts. Depending on the agent, a flagged post is removed or sent to a review queue. When a report is filed, an AI agent can recommend an outcome, and a person makes the final call.
 - **Human moderators.** Voucha staff review reports, queued posts and appeals, and decide escalated cases.
 - **Community moderators.** Community owners and moderators review posts, issue warnings, and ban members within their own communities.

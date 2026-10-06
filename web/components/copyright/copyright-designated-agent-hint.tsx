@@ -69,8 +69,8 @@ export function CopyrightTargetNotFound({
           </>
         ) : (
           <>
-            We could not find hosted material at that URL. Check the link and try again. Use this
-            form to file your notice; we have not published a designated agent yet. See the{' '}
+            We could not find hosted material at that URL. Check the link and try again. We have not
+            published a designated agent yet. See the{' '}
             <DesignatedAgentLink>designated agent status</DesignatedAgentLink> page for updates.
           </>
         )}

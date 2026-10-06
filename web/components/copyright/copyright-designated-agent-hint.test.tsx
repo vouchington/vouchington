@@ -39,7 +39,7 @@ describe('CopyrightTargetNotFound', () => {
 
     const alert = screen.getByTestId('copyright-target-not-found')
     expect(alert).toHaveTextContent(/could not find hosted material/i)
-    expect(alert).toHaveTextContent(/use this form to file your notice/i)
+    expect(alert).toHaveTextContent(/have not published a designated agent yet/i)
     expect(alert).not.toHaveTextContent(/e-?mail/i)
     expect(screen.getByRole('link', { name: 'designated agent status' })).toHaveAttribute(
       'href',
