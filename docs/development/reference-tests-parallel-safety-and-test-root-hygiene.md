@@ -320,6 +320,26 @@ regression — treat the named annotation as the lead for the next investigation
 `EXPLAIN` plan or a fixture bug would be. `backend/data-stores/psql/__tests__/statement-timeout.test.mts`
 guards the bound and its attribution wiring.
 
+### Database-backed projects never reach AWS
+
+`backend-data-stores`, `backend-platform-stats-cache`, `backend-activitypub-capacity` and the
+isolated-database child config load `backend/test-helpers/vitest.setup.s3-offline.mts`. It replaces
+`S3Client.prototype.send` with a rejection shaped like S3's answer to fake credentials
+(`InvalidAccessKeyId`, 403) before a socket is opened. These projects have fake static credentials
+and no endpoint override, so an unstubbed S3 call can only return 403 from the public AWS endpoint
+or hang: the AWS SDK's Node handler sets no connect or request timeout, and the 20s database
+`statement_timeout` above does not cover it. That is how `deleteImageById` (three `DeleteObject`
+requests inside the image storage lifecycle lock) held `dsa-statement-payload.test.mts` for the whole
+30s test timeout (#2127, merge-group run 37410378878).
+
+- A test that needs a different S3 answer spies on `S3Client.prototype.send`;
+  `useFakeCopyrightEvidenceBucket()` is the pattern. The spy wraps the offline default and
+  `vi.restoreAllMocks()` returns to it, never to real egress, which is why the setup assigns the
+  method instead of spying on it.
+- Real S3 coverage stays in the credentialed `backend-aws` project (`*.s3.test.mts`), which does not
+  load the setup, as do the `.mock.test.mts` projects.
+- Other AWS clients (SQS, SES, DynamoDB, CloudFront) are not covered by this default.
+
 ### Failure injection uses control rows, never shared-table DDL
 
 `CREATE TRIGGER` takes `SHARE ROW EXCLUSIVE` and `DROP TRIGGER` takes `ACCESS EXCLUSIVE` on the
