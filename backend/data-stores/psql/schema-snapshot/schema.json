@@ -121832,7 +121832,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         },
         "created_at": {
@@ -121878,6 +121878,17 @@
           "nullable": false,
           "ordinalPosition": 4,
           "type": "text"
+        },
+        "lease_token": {
+          "collation": null,
+          "comment": "Opaque fencing token rotated on each claim and takeover; completion and release compare it for equality, so a holder whose lease was taken over can neither finish nor free the newer holder's claim. It identifies no durable row.",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "uuid"
         },
         "response": {
           "collation": null,

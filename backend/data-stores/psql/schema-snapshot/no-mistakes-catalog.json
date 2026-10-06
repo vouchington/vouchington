@@ -127831,7 +127831,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 10
         },
         "created_at": {
           "comment": null,
@@ -127872,6 +127872,16 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 4
+        },
+        "lease_token": {
+          "comment": "Opaque fencing token rotated on each claim and takeover; completion and release compare it for equality, so a holder whose lease was taken over can neither finish nor free the newer holder's claim. It identifies no durable row.",
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9
         },
         "response": {
           "comment": "Exact structured result the completed create returned, replayed on every retry of the same key and request.",
