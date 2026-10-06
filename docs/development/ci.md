@@ -59,6 +59,14 @@ That contract is [pnpm/pnpm#16076](https://github.com/pnpm/pnpm/pull/16076), rel
 hide a failed script's output at this level. `pnpm-install-policy.test.mts` pins the flag on both
 installs. The direct installer in `postgresql-snapshot-update.yml` is separate and unchanged.
 
+`Main CI (storybook)` `publish-storybook` run `37500146641` wrote a 14,587-line, 1,401,606-byte
+job log. The `storybook build` region was 14,256 lines and 1,373,412 bytes and contained 824
+copies of the same Vite `MODULE_LEVEL_DIRECTIVE` warning: Next.js `"use client"` is not preserved
+by the Storybook bundle. The build still succeeds, and each copy repeats that fact for another
+module. Storybook's Vite `onLog` hook now prints the first module, omits the repeated boxes, and
+prints the omitted count when the build finishes. Other warning codes, error-level logs, the build
+result, and the protected Storybook artifact are unchanged.
+
 CI is expensive — this includes GitHub Actions artifact and cache storage. The repository artifact
 and log retention setting and every workflow artifact are **1 day**. `artifact-retention-policy.test.mts`
 rejects uploads that omit the literal `retention-days: 1` or substitute another value. Full-LCOV
