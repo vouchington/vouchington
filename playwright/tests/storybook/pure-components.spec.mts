@@ -29,7 +29,8 @@ test.describe('Storybook pure component stories', () => {
     await expect(page.getByTestId('rss-feed-link')).toHaveCount(2)
     await expect(page.getByTestId('rss-feed-link').first()).toBeVisible()
     await expect(page.getByTestId('separator')).toBeVisible()
-    await expect(page.getByTestId('search-input-shell')).toBeVisible()
+    await expect(page.getByTestId('search-input-shell')).toHaveCount(2)
+    await expect(page.getByTestId('search-input-shell').first()).toBeVisible()
     await expect(page.getByTestId('input').first()).toBeVisible()
   })
 
@@ -69,11 +70,17 @@ test.describe('Storybook pure component stories', () => {
     const compactVote = page.locator('[data-vote-root="storybook-semantic-compact"]')
     await expect(compactVote).toBeVisible()
     await compactVote.getByTestId('semantic-vote-trigger').click()
-    await expect(page.getByTestId('semantic-vote-choices')).toBeVisible()
-    await expect(page.getByTestId('semantic-vote-choice').first()).toBeVisible()
+    const compactChoices = page
+      .getByTestId('semantic-vote-choices')
+      .and(page.locator('[data-vote-root="storybook-semantic-compact"]'))
+    await expect(compactChoices).toBeVisible()
+    await expect(compactChoices.getByTestId('semantic-vote-choice').first()).toBeVisible()
     await expect(page.getByTestId('semantic-vote-binary-choice').first()).toBeVisible()
     await expect(
-      page.getByTestId('semantic-vote-choice').filter({ hasText: 'Neutral' }),
+      compactChoices
+        .locator('label')
+        .filter({ hasText: 'Neutral' })
+        .getByTestId('semantic-vote-choice'),
     ).toBeVisible()
     await expect(page.getByTestId('semantic-vote-clear')).toHaveCount(0)
   })
@@ -135,7 +142,11 @@ test.describe('Storybook pure component stories', () => {
     await expect(page.getByTestId('menubar-trigger').first()).toBeVisible()
 
     await openStory(page, 'design-system-components-checkbox--card')
-    await expect(page.getByTestId('checkbox-card').first()).toBeVisible()
+    // The card story sets a distinct data-pw on each card, so the component default is absent.
+    await expect(page.getByTestId('checkbox-card')).toHaveCount(0)
+    await expect(page.getByTestId('checkbox-card-notifications')).toBeVisible()
+    await expect(page.getByTestId('checkbox-card-marketing')).toBeVisible()
+    await expect(page.getByTestId('checkbox-card-disabled')).toBeVisible()
 
     await openStory(page, 'design-system-components-avatar--fallback')
     await expect(page.getByTestId('avatar').first()).toBeVisible()
