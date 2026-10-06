@@ -61,7 +61,7 @@ test.describe('Feed Routes', () => {
     const titleLinks = page.getByTestId('news-item-title-link')
     await expect(titleLinks.first()).toBeVisible()
     await expect(titleLinks.first()).toHaveAttribute('target', '_blank')
-    await expect.poll(() => titleLinks.count()).toBeGreaterThanOrEqual(2)
+    await expect(titleLinks.nth(1)).toBeVisible()
     await expect(titleLinks.nth(1)).toHaveAttribute('target', '_blank')
     await expect(page.getByTestId('news-item-actions-row').first()).toBeVisible()
   })

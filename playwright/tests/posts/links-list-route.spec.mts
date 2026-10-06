@@ -18,7 +18,7 @@ test('link collection searches a genuine link and opens its detail', async ({ pa
   const search = page.getByTestId('list-filters-search-input')
   await search.pressSequentially(title)
   await search.press('Enter')
-  await expect.poll(() => new URL(page.url()).searchParams.get('q')).toBe(title)
+  await expect(page).toHaveURL(url => url.searchParams.get('q') === title)
   const link = page.locator('main').getByRole('link', { name: title, exact: true })
   await expect(link).toBeVisible()
   await link.click()

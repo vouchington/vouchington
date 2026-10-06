@@ -121,7 +121,7 @@ test.describe('Tag Pages', () => {
     await expect(page).toHaveURL(`/article/${ARTICLE_SLUG}/tags/post`)
     await expect(page.getByTestId('manage-tags-active-heading')).toHaveText('Related Posts')
 
-    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(beforeTabChangeScrollY)
+    await page.waitForFunction(expected => window.scrollY === expected, beforeTabChangeScrollY)
   })
 
   test('displays existing tags with semantic vote controls', async ({ page }) => {

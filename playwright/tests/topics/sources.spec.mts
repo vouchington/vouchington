@@ -54,7 +54,7 @@ test.describe('Sources Page', () => {
     await searchInput.pressSequentially('fintech')
     await page.getByTestId('list-filters-search-submit').click()
 
-    await expect.poll(() => new URL(page.url()).searchParams.get('q')).toBe('fintech')
+    await expect(page).toHaveURL(url => url.searchParams.get('q') === 'fintech')
   })
 
   test('should filter sources by publisher type via the inline select', async ({ page }) => {
@@ -63,7 +63,7 @@ test.describe('Sources Page', () => {
     await page.getByTestId('sources-filter-publisher-type-trigger').click()
     await page.getByTestId('sources-filter-publisher-type-option-blog').click()
 
-    await expect.poll(() => new URL(page.url()).searchParams.get('publisher_type')).toBe('blog')
+    await expect(page).toHaveURL(url => url.searchParams.get('publisher_type') === 'blog')
   })
 
   test('should show feed-type suffix in source topic heading', async ({ page }) => {

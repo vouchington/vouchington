@@ -112,11 +112,7 @@ test.describe('News Page', () => {
     await expect(feedViewToggle).toBeEnabled()
 
     // In summary (card) mode seeded articles with excerpts should show excerpt text
-    await expect
-      .poll(() => page.getByTestId('news-item-excerpt').count(), {
-        message: 'seeded news articles with excerpts should show excerpt text in summary mode',
-      })
-      .toBeGreaterThan(0)
+    await expect(page.getByTestId('news-item-excerpt').first()).toBeVisible()
 
     // Switch to compact — excerpts should disappear
     await feedViewToggle.click()
@@ -126,7 +122,7 @@ test.describe('News Page', () => {
     // Switch back to card — excerpts should reappear (option value is 'summary')
     await feedViewToggle.click()
     await page.getByTestId('feed-view-toggle-summary').click()
-    await expect.poll(() => page.getByTestId('news-item-excerpt').count()).toBeGreaterThan(0)
+    await expect(page.getByTestId('news-item-excerpt').first()).toBeVisible()
   })
 
   test('/news shows "Show more" that opens modal', async ({ page }) => {
@@ -153,11 +149,7 @@ test.describe('News Page', () => {
     await page.evaluate(() => window.scrollTo(0, 200))
 
     const showMore = page.getByTestId('news-item-show-more-link')
-    await expect
-      .poll(() => showMore.count(), {
-        message: 'seeded news articles with excerpts should be visible',
-      })
-      .toBeGreaterThan(0)
+    await expect(showMore.first()).toBeVisible()
 
     const scrollBefore = await page.evaluate(() => window.scrollY)
     await waitForBelowFoldHydration(page)
@@ -177,9 +169,7 @@ test.describe('News Page', () => {
     await navigateTo(page, '/news?topics=doctor-of-credit-news')
 
     const relatedButton = page.getByTestId('news-item-cluster-related-toggle')
-    await expect
-      .poll(() => relatedButton.count(), { message: 'seeded related articles should be visible' })
-      .toBeGreaterThan(0)
+    await expect(relatedButton.first()).toBeVisible()
 
     const firstButton = relatedButton.first()
     await expect(firstButton).toHaveAttribute('aria-controls')
@@ -251,11 +241,7 @@ test.describe('News Page', () => {
     await navigateTo(page, '/news')
 
     const showMore = page.getByTestId('news-item-show-more-link')
-    await expect
-      .poll(() => showMore.count(), {
-        message: 'seeded news articles with excerpts should be visible',
-      })
-      .toBeGreaterThan(0)
+    await expect(showMore.first()).toBeVisible()
 
     await showMore.first().click()
     await page.waitForURL(/rss_item=/)
