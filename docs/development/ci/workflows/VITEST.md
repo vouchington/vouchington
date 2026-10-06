@@ -27,6 +27,14 @@ Reporter policy:
   `tests-backend-unit.yml` also sets `VITEST_FILE_PROGRESS=1`, which appends a reporter that
   prints each test file when a worker starts it and when it finishes. The `minimal` reporter
   prints nothing per file, so a shard that dies would otherwise leave no file in the log.
+- The same step streams three background samples to the shard log. `[backend-unit-resources]`
+  records memory, disk and the largest processes every 15 seconds. `[backend-unit-pg-waits]` runs
+  [`ci/backend-unit-pg-waits.sql`](../../../../ci/backend-unit-pg-waits.sql) every half second and
+  prints a row only for a blocked or blocking backend, or one statement that has run for 1.5 seconds
+  or longer, with its wait event, blockers and ungranted locks. `[backend-unit-pressure]` records
+  `vmstat` (user, system, idle, iowait and hypervisor steal) and the `/proc/pressure` averages every
+  2 seconds. A test-database statement that stalls until the 20 second `statement_timeout`
+  (`[pg-query-failed]`) is attributed from these lines, not from the final error.
 - The `github-actions` reporter must keep job summaries disabled and file links configured from GitHub environment variables.
 - `tests-backend-unit.yml` uploads each shard's JUnit report as the one-day `backend-junit-shard-N`
   artifact, so per-file durations can be aggregated across shards when auditing shard size. Vitest

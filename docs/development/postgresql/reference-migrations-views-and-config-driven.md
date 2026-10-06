@@ -96,6 +96,14 @@ anti-pattern above, not a one-off exception -- it is what `getTopicViewerCounts`
 onto `buildTopicPostCandidateSelect` (#11080); see that PR for the measured `EXPLAIN (ANALYZE)`
 before/after.
 
+An `EXISTS` over an eligibility view inside an `OR` is the same hazard in another shape: PostgreSQL
+may plan it as an uncorrelated hashed SubPlan that derives the view for every row of its tables,
+once per execution, and with no statistics it nested-loops that derivation. A scalar subquery with
+`LIMIT 1` (`(SELECT TRUE ... WHERE binding.placement_id = target.placement_id LIMIT 1) IS TRUE`)
+is never hashed, so the outer id always drives the lookup. `copyrightPlacementPublicVisibleSql` uses
+that shape, and the `copyright-statement-facts` [explain-analyze](explain-analyze/README.md) gate
+rejects a hashed SubPlan over `posts` or the placement tables (#2207).
+
 ### Staging Schema Drift (Pre-launch Only)
 
 Pre-launch staging data is disposable; canonical schema edits require an operator-controlled rebuild.

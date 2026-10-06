@@ -197,23 +197,43 @@ describe('backend uncredentialed Docker test workflow', () => {
       step => step.name === 'Run backend tests',
     )
     const script = runBackendTestsScript ?? ''
-    const sampleAt = script.indexOf('sample_runner_resources')
+    const sampleAt = script.indexOf('start_sampler sample_runner_resources 15')
     const vitestAt = script.indexOf('pnpm exec ./ci/with-node-test-options vitest run --bail=3')
 
     expect(runStep?.env?.VITEST_CI_REPORTERS).toBe('run')
     expect(runStep?.env?.VITEST_FILE_PROGRESS).toBe('1')
     expect(script).toContain("resource_prefix='[backend-unit-resources]'")
-    expect(script).toContain('printf \'%s %s\\n\' "$resource_prefix" "$line"')
+    expect(script).toContain('printf \'%s %s\\n\' "$1" "$line"')
+    expect(script).toContain('} 2>&1 | prefix_lines "$resource_prefix"')
     expect(script).toContain('free -m')
     expect(script).toContain('df -h "$GITHUB_WORKSPACE"')
     expect(script).toContain('df -h -t tmpfs')
     expect(script).toContain('ps -eo pid,rss,pmem,comm --sort=-rss')
-    expect(script).toContain('sleep 15')
     expect(script).toContain(') &')
-    expect(script).toContain('trap stop_resource_sampler EXIT')
+    expect(script).toContain('trap stop_samplers EXIT')
     expect(sampleAt).toBeGreaterThanOrEqual(0)
     expect(vitestAt).toBeGreaterThan(sampleAt)
     expect(script).not.toContain('--retry')
+  })
+
+  it('names blocked, blocking and slow database statements and host pressure while a shard runs', () => {
+    const script = runBackendTestsScript ?? ''
+    const sampleSql = readFileSync('ci/backend-unit-pg-waits.sql', 'utf8')
+    const vitestAt = script.indexOf('pnpm exec ./ci/with-node-test-options vitest run --bail=3')
+
+    expect(script).toContain("postgres_wait_prefix='[backend-unit-pg-waits]'")
+    expect(script).toContain("pressure_prefix='[backend-unit-pressure]'")
+    expect(script).toContain('psql "$DATABASE_URL" -X -At -F \'|\' -f ci/backend-unit-pg-waits.sql')
+    expect(script).toContain('PGAPPNAME=ci-pg-wait-sampler')
+    expect(script).toContain("PGOPTIONS='-c statement_timeout=3000'")
+    expect(script).toContain('vmstat 1 2')
+    expect(script).toContain('/proc/pressure/$resource')
+    expect(script.indexOf('start_sampler sample_postgres_waits 0.5')).toBeLessThan(vitestAt)
+    expect(script.indexOf('start_sampler sample_runner_pressure 2')).toBeLessThan(vitestAt)
+    expect(sampleSql).toContain('pg_blocking_pids(pid)')
+    expect(sampleSql).toContain('NOT lock.granted')
+    expect(sampleSql).toContain("application_name <> 'ci-pg-wait-sampler'")
+    expect(sampleSql).toContain("interval '1500 ms'")
   })
 
   it('runs the shard directly, with no self-hosted-era diagnostics or heavy-slot wrapper', () => {

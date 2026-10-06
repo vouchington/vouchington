@@ -15,6 +15,7 @@ import { runMembershipRefundScenarios } from './run-scenarios/memberships.mts'
 import { runRemoteFollowerScenarios } from './run-scenarios/remote-followers.mts'
 import { runReviewSuccessionScenarios } from './run-scenarios/review-successions.mts'
 import { runClassifierHumanVoteComparisonScenarios } from './run-scenarios/classifier-human-vote-comparison.mts'
+import { runCopyrightStatementFactsScenarios } from './run-scenarios/copyright-statement-facts.mts'
 import { runTopicImportAttemptScenarios } from './run-scenarios/topic-import-attempts.mts'
 import { runSearchAndFacetScenarios } from './run-scenarios/search-and-facets.mts'
 import { runOAuthClientVerificationScenarios } from './run-scenarios/oauth-client-verification.mts'
@@ -39,6 +40,7 @@ async function main() {
     await runRemoteFollowerScenarios()
     await runReviewSuccessionScenarios()
     await runClassifierHumanVoteComparisonScenarios()
+    await runCopyrightStatementFactsScenarios()
     await runEmbeddingReconciliationScenarios()
     assertScenarioManifest(getCompletedScenarioIds(), EXPLAIN_SCENARIO_MANIFEST)
   } finally {

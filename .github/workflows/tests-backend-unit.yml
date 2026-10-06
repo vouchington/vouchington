@@ -114,6 +114,13 @@ jobs:
           VITEST_JUNIT_OUTPUT_FILE: test-report.junit.xml
         run: |
           resource_prefix='[backend-unit-resources]'
+          postgres_wait_prefix='[backend-unit-pg-waits]'
+          pressure_prefix='[backend-unit-pressure]'
+          prefix_lines() {
+            while IFS= read -r line || [ -n "$line" ]; do
+              printf '%s %s\n' "$1" "$line"
+            done
+          }
           sample_runner_resources() {
             {
               date -u +%Y-%m-%dT%H:%M:%SZ
@@ -122,35 +129,58 @@ jobs:
               df -h -t tmpfs
               # head closes the pipe, so ps exits on SIGPIPE. That is not a sample failure.
               ps -eo pid,rss,pmem,comm --sort=-rss | head -n 15 || true
-            } 2>&1 | while IFS= read -r line || [ -n "$line" ]; do
-              printf '%s %s\n' "$resource_prefix" "$line"
-            done
+            } 2>&1 | prefix_lines "$resource_prefix"
           }
-          resource_sampler_pid=
-          stop_resource_sampler() {
-            if [ -z "${resource_sampler_pid}" ]; then
-              return 0
-            fi
-            # TERM hits the sampler shell, which stops its sleep child before exiting.
-            kill -TERM "${resource_sampler_pid}" 2>/dev/null || true
-            wait "${resource_sampler_pid}" 2>/dev/null || true
+          # Prints a row only for a blocked or blocking backend, or one statement running 1.5s or longer.
+          sample_postgres_waits() {
+            command -v psql >/dev/null 2>&1 || return 0
+            PGAPPNAME=ci-pg-wait-sampler PGCONNECT_TIMEOUT=3 PGOPTIONS='-c statement_timeout=3000' \
+              psql "$DATABASE_URL" -X -At -F '|' -f ci/backend-unit-pg-waits.sql 2>/dev/null |
+              prefix_lines "$postgres_wait_prefix"
+          }
+          # vmstat columns end in us sy id wa st (user, system, idle, iowait, hypervisor steal).
+          sample_runner_pressure() {
+            {
+              date -u +%H:%M:%S
+              vmstat 1 2 | tail -n 1
+              for resource in cpu io memory; do
+                if [ -r "/proc/pressure/$resource" ]; then
+                  printf '%s %s\n' "$resource" "$(head -n 1 "/proc/pressure/$resource")"
+                fi
+              done
+            } 2>&1 | tr '\n' ' ' | prefix_lines "$pressure_prefix"
+          }
+          sampler_pids=
+          start_sampler() {
+            (
+              set +e
+              set +o pipefail
+              sleep_pid=
+              trap 'if [ -n "${sleep_pid}" ]; then kill "${sleep_pid}" 2>/dev/null || true; fi; exit 0' TERM INT
+              while true; do
+                "$1"
+                sleep "$2" &
+                sleep_pid=$!
+                wait "${sleep_pid}"
+                sleep_pid=
+              done
+            ) &
+            sampler_pids="${sampler_pids} $!"
+          }
+          stop_samplers() {
+            # TERM hits each sampler shell, which stops its sleep child before exiting.
+            for sampler_pid in ${sampler_pids}; do
+              kill -TERM "${sampler_pid}" 2>/dev/null || true
+            done
+            for sampler_pid in ${sampler_pids}; do
+              wait "${sampler_pid}" 2>/dev/null || true
+            done
             return 0
           }
-          trap stop_resource_sampler EXIT
-          (
-            set +e
-            set +o pipefail
-            sleep_pid=
-            trap 'if [ -n "${sleep_pid}" ]; then kill "${sleep_pid}" 2>/dev/null || true; fi; exit 0' TERM INT
-            while true; do
-              sample_runner_resources
-              sleep 15 &
-              sleep_pid=$!
-              wait "${sleep_pid}"
-              sleep_pid=
-            done
-          ) &
-          resource_sampler_pid=$!
+          trap stop_samplers EXIT
+          start_sampler sample_runner_resources 15
+          start_sampler sample_postgres_waits 0.5
+          start_sampler sample_runner_pressure 2
           pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-platform-stats-cache --project backend-mocks --project backend-real-glide-mq --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}
         # Fewer, longer-running shards (see ci/vitest/project-ownership.mts) push real per-shard
         # test-execution time higher than the old <5m-per-shard target tolerated; this watchdog

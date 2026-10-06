@@ -11,6 +11,7 @@ import { assertTopicImportAttemptPlanShapeIfApplicable } from './plan-topic-impo
 import { assertRemoteFollowerPagePlanShapeIfApplicable } from './plan-remote-followers-gate.mts'
 import { assertReviewSuccessionCandidatePlanIfApplicable } from './plan-review-succession-gate.mts'
 import { assertClassifierHumanVoteComparisonPlanIfApplicable } from './plan-classifier-human-vote-comparison-gate.mts'
+import { assertCopyrightStatementFactsIsTargetBounded } from './plan-copyright-statement-facts-gate.mts'
 import { assertRssFeedCandidatesAreSetBased } from './plan-rss-feed-candidates-gate.mts'
 import { assertRssRecencyLateCursorPlan } from './plan-rss-recency-cursor-gate.mts'
 import { assertPostShareEligibilityIsTargetBounded } from './plan-post-share-targets-gate.mts'
@@ -63,6 +64,7 @@ export function assertRequiredPlanShape(result: ExplainResult): void {
   assertRemoteFollowerPagePlanShapeIfApplicable(result)
   assertReviewSuccessionCandidatePlanIfApplicable(result)
   assertClassifierHumanVoteComparisonPlanIfApplicable(result)
+  assertCopyrightStatementFactsIsTargetBounded(result)
   assertTopicImportAttemptPlanShapeIfApplicable(result)
   if (scenarioId === 'trending-communities') assertTrendingCommunitiesIsCandidateBounded(result)
   assertSearchCommunitiesEligibilityIsIndexed(result)
