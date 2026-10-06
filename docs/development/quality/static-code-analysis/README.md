@@ -270,8 +270,9 @@ is rejected through direct imports, local aliases, and re-export chains while pe
 entity-relations owners and unrelated same-named local functions remain valid. A context-free
 AST-grep call-spelling companion would add false positives without covering a distinct invariant.
 
-The Oxlint rate-limiter guard deliberately protects syntax rather than tracking `RateLimiter`
-provenance: a hazardous alias must first cross a statically named `.invalidate` member read or an
+The configured `vouchington/banned-member-read` rate-limiter guard deliberately protects syntax
+rather than tracking `RateLimiter` provenance: a hazardous alias must first cross a statically named
+`.invalidate` member read or an
 object-pattern extraction, so banning that boundary also covers imports, instances, factories,
 parameters, containers, `this`, aliases, optional access, and `bind`/`call`. Bare `invalidate`
 identifiers and domain-specific reset functions remain valid. Two entity test helpers retain

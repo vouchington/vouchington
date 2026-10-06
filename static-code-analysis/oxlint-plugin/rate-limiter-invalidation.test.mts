@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 type Fixture = {
@@ -11,7 +12,7 @@ type Fixture = {
 }
 
 const OXLINT_BIN = resolve('node_modules/.bin/oxlint')
-const PLUGIN = resolve('static-code-analysis/oxlint-plugin.cjs')
+const PLUGIN = fileURLToPath(import.meta.resolve('eslint-plugin-vouchington'))
 
 const invalid: Fixture[] = [
   {
@@ -195,7 +196,7 @@ delete cache.invalidate`,
   },
 ]
 
-describe('voucha/no-prefix-wide-rate-limiter-invalidate', () => {
+describe('vouchington/banned-member-read rate-limiter configuration', () => {
   let root: string
 
   beforeAll(() => {
@@ -209,9 +210,52 @@ describe('voucha/no-prefix-wide-rate-limiter-invalidate', () => {
       join(root, '.oxlintrc.json'),
       JSON.stringify({
         categories: { correctness: 'off', suspicious: 'off', perf: 'off' },
-        jsPlugins: [{ name: 'voucha', specifier: PLUGIN }],
+        jsPlugins: [{ name: 'vouchington', specifier: PLUGIN }],
         plugins: [],
-        rules: { 'voucha/no-prefix-wide-rate-limiter-invalidate': 'error' },
+        rules: {
+          'vouchington/banned-member-read': [
+            'error',
+            {
+              members: ['invalidate'],
+              include: [
+                'backend/**/*.test.mts',
+                'backend/**/*.spec.mts',
+                'backend/**/__tests__/**/*.mts',
+                'backend/**/test-helpers/**/*.mts',
+                'backend/**/test-support.mts',
+                'backend/**/test-support/**/*.mts',
+                'backend/**/*.test-helpers.mts',
+                'backend/**/*-test-support.mts',
+                'integration-tests/**/*.mts',
+                'playwright/**/*.mts',
+              ],
+              exclude: ['backend/services/valkey-admin/flush.mts', 'playwright/global-setup.mts'],
+              exceptions: [
+                {
+                  kind: 'constructor-constant',
+                  file: 'backend/test-helpers/entities/memberships.mts',
+                  member: 'invalidate',
+                  module: '@data-stores/valkey/cache',
+                  imported: 'ValkeyCache',
+                  local: 'ValkeyCache',
+                  constant: {
+                    name: 'ACTIVE_PLANS_CACHE_PREFIX',
+                    value: 'membership_products:provider-v1:active_plans',
+                  },
+                },
+                {
+                  kind: 'const-instance-prefix',
+                  file: 'backend/test-helpers/entities/email-addresses.mts',
+                  member: 'invalidate',
+                  module: '@data-stores/valkey/cache',
+                  imported: 'ValkeyCache',
+                  local: 'ValkeyCache',
+                  prefix: 'email-domain-validation',
+                },
+              ],
+            },
+          ],
+        },
       }),
     )
   })
