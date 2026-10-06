@@ -1,10 +1,9 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { createTestUser } from '@voucha/test-helpers'
+import { createTestUser, withFailingTransactionQueryOptionsForTest } from '@voucha/test-helpers'
 import {
   setTestApiKeyExpiry,
   getTestApiKeyLifecycle,
   countTestApiKeysForUser,
-  withTestApiKeyRotationWriteFailure,
 } from '@voucha/test-helpers/entities/api-keys'
 import { addUserRole } from '../users/roles-permissions.mts'
 import { deleteUser } from '../users/delete.mts'
@@ -128,11 +127,11 @@ describe('API key lifetime and rotation', () => {
     const user = await createTestUser()
     const old = await createApiKey(user.id, 'rss', 'Atomic failure', ['rss:read'])
     const original = await getTestApiKeyLifecycle(old.apiKey.id)
-    await withTestApiKeyRotationWriteFailure(user.id, async () => {
-      await expect(rotateApiKey(user.id, old.apiKey.id)).rejects.toThrow(
-        'violates check constraint',
-      )
-    })
+    await expect(
+      withFailingTransactionQueryOptionsForTest('linkRotatedApiKey', options =>
+        rotateApiKey(user.id, old.apiKey.id, options),
+      ),
+    ).rejects.toBeInstanceOf(Error)
     expect(await countTestApiKeysForUser(user.id)).toBe(1)
     expect(await getTestApiKeyLifecycle(old.apiKey.id)).toEqual(original)
     expect((await validateApiKey(old.rawKey, 'rss:read')).valid).toBe(true)

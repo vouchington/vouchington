@@ -31,21 +31,6 @@ export async function countTestApiKeysForUser(userId: string): Promise<number> {
   return rows[0]!.count as number
 }
 
-export async function withTestApiKeyRotationWriteFailure(userId: string, run: () => Promise<void>) {
-  if (!/^[a-f0-9-]{36}$/i.test(userId)) throw new Error('Expected synthetic user UUID')
-  const name = `test_api_key_rotation_${userId.replaceAll('-', '')}`
-  // Scoped to a randomized owner: other parallel tests' key writes remain valid.
-  await write(`/* withTestApiKeyRotationWriteFailure */ ALTER TABLE api_keys
-    ADD CONSTRAINT ${name} CHECK (user_id <> '${userId}'::uuid OR replaced_by_api_key_id IS NULL) NOT VALID`)
-  try {
-    await run()
-  } finally {
-    await write(
-      `/* withTestApiKeyRotationWriteFailure */ ALTER TABLE api_keys DROP CONSTRAINT ${name}`,
-    )
-  }
-}
-
 export async function insertTestApiKeysDueForReminder(
   userId: string,
   count: number,
