@@ -17,6 +17,20 @@ type Workflow = {
 }
 
 const ANCHOR_ENV = 'EXPLAIN_SEED_ANCHOR_DATE'
+const PROOF_INSTANTS = [
+  '2026-10-05T23:59:40Z',
+  '2026-10-06T00:01:13Z',
+  '2026-10-31T12:00:00Z',
+] as const
+
+function proofInstants(): readonly string[] {
+  const override = process.env.VOUCH_PROOF_NOW
+  if (override === undefined) return PROOF_INSTANTS
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(override)) {
+    throw new Error('VOUCH_PROOF_NOW must be a UTC instant')
+  }
+  return [override]
+}
 
 function explainAnalyzeJob() {
   const workflow = load(readFileSync('.github/workflows/explain-analyze.yml', 'utf8')) as Workflow
@@ -42,27 +56,42 @@ describe('explain-analyze seed anchor day', () => {
     expect(steps.filter(candidate => candidate.run?.includes(`${ANCHOR_ENV}=`))).toHaveLength(1)
   })
 
-  it('exports the current UTC day to every later step', () => {
+  it('exports the pinned UTC day, not the runner zone day', () => {
     const pinStep = explainAnalyzeJob().steps.find(candidate =>
       candidate.run?.includes(`${ANCHOR_ENV}=`),
     )
-    const directory = mkdtempSync(join(tmpdir(), 'explain-anchor-'))
-    const githubEnv = join(directory, 'github-env')
-    try {
-      const utcDayBefore = new Date().toISOString().slice(0, 10)
-      // A zone far ahead of UTC proves the step reads the UTC day, not the runner's local day.
-      const result = spawnSync('bash', ['-euo', 'pipefail', '-c', pinStep?.run ?? 'exit 1'], {
-        env: { ...process.env, GITHUB_ENV: githubEnv, TZ: 'Pacific/Kiritimati' },
-        encoding: 'utf8',
-      })
-      const utcDayAfter = new Date().toISOString().slice(0, 10)
-
-      expect({ status: result.status, stderr: result.stderr }).toEqual({ status: 0, stderr: '' })
-      const exported = readFileSync(githubEnv, 'utf8')
-      expect(exported).toMatch(new RegExp(`^${ANCHOR_ENV}=\\d{4}-\\d{2}-\\d{2}\\n$`))
-      expect([utcDayBefore, utcDayAfter]).toContain(exported.trim().slice(ANCHOR_ENV.length + 1))
-    } finally {
-      rmSync(directory, { recursive: true, force: true })
+    // date -u ignores TZ. A zone whose local day differs (UTC+14 at/after 10:00, else UTC-11)
+    // fails the step if it formats the local day. The instant is injected into `date -d`.
+    const script = `
+set -euo pipefail
+hour=$(command date -u -d "$VOUCH_INSTANT" +%H)
+if [ "$hour" -ge 10 ]; then
+  export TZ=Pacific/Kiritimati
+else
+  export TZ=Pacific/Pago_Pago
+fi
+date() { command date -d "$VOUCH_INSTANT" "$@"; }
+utc_day=$(date -u +%Y-%m-%d)
+local_day=$(date +%Y-%m-%d)
+${pinStep?.run ?? 'exit 1'}
+printf '%s\\n' "$utc_day" "$local_day"
+`
+    for (const instant of proofInstants()) {
+      const directory = mkdtempSync(join(tmpdir(), 'explain-anchor-'))
+      const githubEnv = join(directory, 'github-env')
+      try {
+        const result = spawnSync('bash', ['-euo', 'pipefail', '-c', script], {
+          env: { ...process.env, GITHUB_ENV: githubEnv, VOUCH_INSTANT: instant },
+          encoding: 'utf8',
+        })
+        expect({ status: result.status, stderr: result.stderr }).toEqual({ status: 0, stderr: '' })
+        const [utcDay, localDay] = result.stdout.trim().split('\n')
+        const exported = readFileSync(githubEnv, 'utf8')
+        expect(exported).toBe(`${ANCHOR_ENV}=${utcDay}\n`)
+        expect(localDay).not.toBe(utcDay)
+      } finally {
+        rmSync(directory, { recursive: true, force: true })
+      }
     }
   })
 

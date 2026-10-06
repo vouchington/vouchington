@@ -117,7 +117,8 @@ describe('analytics', () => {
     it('executes the landing page aggregate queries used by getLandingPageAnalytics', async () => {
       const pageId = crypto.randomUUID()
       const itemId = crypto.randomUUID()
-      const eventDate = new Date().toISOString().slice(0, 10)
+      const clock = new Date(process.env.VOUCH_PROOF_NOW ?? '2026-10-31T12:00:00.000Z')
+      const eventDate = clock.toISOString().slice(0, 10)
       const sessionId = crypto.randomUUID()
 
       const viewBase: Omit<WebPageViewRecord, 'event_id' | 'event_time' | 'session_id'> = {
@@ -131,20 +132,20 @@ describe('analytics', () => {
       writeRecord('web_page_view', {
         ...viewBase,
         event_id: crypto.randomUUID(),
-        event_time: new Date(),
+        event_time: clock,
         session_id: sessionId,
       })
       writeRecord('web_page_view', {
         ...viewBase,
         event_id: crypto.randomUUID(),
-        event_time: new Date(),
+        event_time: clock,
         session_id: sessionId,
       })
 
       const click: WebClickRecord = {
         event_id: crypto.randomUUID(),
         event_date: eventDate,
-        event_time: new Date(),
+        event_time: clock,
         env: 'test',
         page_kind: 'landing_page',
         page_id: pageId,
@@ -160,12 +161,12 @@ describe('analytics', () => {
           `
               SELECT
                 COUNT(*) AS total_visits,
-                COUNT(DISTINCT session_id) FILTER (WHERE event_date >= current_date - INTERVAL '30 days') AS unique_visitors
+                COUNT(DISTINCT session_id) FILTER (WHERE event_date >= CAST($2 AS DATE) - INTERVAL '30 days') AS unique_visitors
               FROM web_page_view
               WHERE page_kind = 'landing_page'
                 AND page_id = $1
             `,
-          [pageId],
+          [pageId, eventDate],
         ),
       ).resolves.toEqual([{ total_visits: 2, unique_visitors: 1 }])
 
@@ -210,7 +211,7 @@ describe('analytics', () => {
                 FROM web_page_view
                 WHERE page_kind = 'landing_page'
                   AND page_id = $1
-                  AND event_date >= current_date - INTERVAL '30 days'
+                  AND event_date >= CAST($2 AS DATE) - INTERVAL '30 days'
                 GROUP BY event_date
               ),
               daily_clicks AS (
@@ -218,7 +219,7 @@ describe('analytics', () => {
                 FROM web_click
                 WHERE page_kind = 'landing_page'
                   AND page_id = $1
-                  AND event_date >= current_date - INTERVAL '30 days'
+                  AND event_date >= CAST($2 AS DATE) - INTERVAL '30 days'
                 GROUP BY event_date
               )
               SELECT
@@ -230,7 +231,7 @@ describe('analytics', () => {
               FULL OUTER JOIN daily_clicks c ON v.date = c.date
               ORDER BY date ASC
             `,
-          [pageId],
+          [pageId, eventDate],
         ),
       ).resolves.toEqual([{ date: eventDate, visits: 2, clicks: 1, unique_visitors: 1 }])
 
@@ -243,12 +244,12 @@ describe('analytics', () => {
               FROM web_page_view
               WHERE page_kind = 'landing_page'
                 AND page_id = $1
-                AND event_date >= current_date - INTERVAL '30 days'
+                AND event_date >= CAST($2 AS DATE) - INTERVAL '30 days'
               GROUP BY 1
               ORDER BY 2 DESC
               LIMIT 20
             `,
-          [pageId],
+          [pageId, eventDate],
         ),
       ).resolves.toEqual([{ utm_source: 'newsletter', visits: 2 }])
 

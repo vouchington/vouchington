@@ -1,10 +1,8 @@
 import { emit, type RssFeedProcessingRecord } from '@data-stores/analytics'
 
-function makeBase(): Pick<
-  RssFeedProcessingRecord,
-  'event_id' | 'event_time' | 'event_date' | 'env'
-> {
-  const now = new Date()
+function makeBase(
+  now: Date,
+): Pick<RssFeedProcessingRecord, 'event_id' | 'event_time' | 'event_date' | 'env'> {
   return {
     event_id: crypto.randomUUID(),
     event_time: now,
@@ -23,6 +21,7 @@ export function trackRssFeedProcessingTruncated({
   categoryCap,
   categoryTruncatedItemCount,
   categoryTruncatedCount,
+  now = new Date(),
 }: {
   rssFeedId: string
   totalParsedItems: number
@@ -33,9 +32,10 @@ export function trackRssFeedProcessingTruncated({
   categoryCap: number
   categoryTruncatedItemCount: number
   categoryTruncatedCount: number
+  now?: Date
 }): void {
   emit('rss_feed_processing', {
-    ...makeBase(),
+    ...makeBase(now),
     event_type: 'truncated',
     rss_feed_id: rssFeedId,
     total_parsed_items: totalParsedItems,

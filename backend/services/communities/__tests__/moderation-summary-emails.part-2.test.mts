@@ -17,6 +17,10 @@ import {
   getCommunityModerationSummaryCommunities,
 } from '../moderation-summary-emails.mts'
 
+function pinnedNow(): Date {
+  return new Date(process.env.VOUCH_PROOF_NOW ?? '2026-10-31T12:00:00.000Z')
+}
+
 const ONE_DAY_MS = 24 * 60 * 60 * 1000
 const ONE_WEEK_MS = 7 * ONE_DAY_MS
 
@@ -159,7 +163,8 @@ describe('getCommunityModerationSummaryCommunities activity digest', () => {
   it('does not send when there is activity but no pending moderation work', async () => {
     const user = await createTestUser()
     const activityMember = await createTestUser()
-    const moderationEmailTime = new Date().toISOString().slice(11, 16)
+    const now = pinnedNow()
+    const moderationEmailTime = now.toISOString().slice(11, 16)
     await updateUserFields(user!.id, {
       is_moderation_emails_enabled: true,
       moderation_email_cadence: 'daily',
@@ -189,7 +194,7 @@ describe('getCommunityModerationSummaryCommunities activity digest', () => {
       approvedById: user!.id,
     })
 
-    await dispatchCommunityModerationSummaryEmails()
+    await dispatchCommunityModerationSummaryEmails(now)
 
     const jobs = await readAllQueueJobs(emails)
     expect(

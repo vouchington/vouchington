@@ -22,6 +22,10 @@ import {
   type ModerationRecipientRow,
 } from '../moderation-summary-emails.mts'
 
+function pinnedNow(): Date {
+  return new Date(process.env.VOUCH_PROOF_NOW ?? '2026-10-31T12:00:00.000Z')
+}
+
 describe('claimModerationEmailSend', () => {
   let userId: string
 
@@ -54,7 +58,8 @@ describe('claimModerationEmailSend', () => {
 
   it('dispatches a summary email for due community moderators', async () => {
     const user = await createTestUser()
-    const moderationEmailTime = new Date().toISOString().slice(11, 16)
+    const now = pinnedNow()
+    const moderationEmailTime = now.toISOString().slice(11, 16)
     await updateUserFields(user!.id, {
       is_moderation_emails_enabled: true,
       moderation_email_cadence: 'daily',
@@ -82,7 +87,7 @@ describe('claimModerationEmailSend', () => {
       submittedById: user!.id,
     })
 
-    await dispatchCommunityModerationSummaryEmails()
+    await dispatchCommunityModerationSummaryEmails(now)
 
     await expect(
       claimModerationEmailSend(
@@ -98,7 +103,7 @@ describe('claimModerationEmailSend', () => {
             moderation_email_time_of_day: moderationEmailTime,
             moderation_email_timezone: 'UTC',
           },
-          new Date(),
+          now,
         ),
       ),
     ).resolves.toBe(false)
@@ -106,8 +111,9 @@ describe('claimModerationEmailSend', () => {
 
   it('falls back to Los Angeles when moderation email timezone is unset', async () => {
     const user = await createTestUser()
+    const now = pinnedNow()
     await clearTestUserModerationEmailTimezone(user!.id)
-    const moderationEmailTime = formatLocalTime(new Date(), 'America/Los_Angeles')
+    const moderationEmailTime = formatLocalTime(now, 'America/Los_Angeles')
     await updateUserFields(user!.id, {
       is_moderation_emails_enabled: true,
       moderation_email_cadence: 'daily',
@@ -134,7 +140,7 @@ describe('claimModerationEmailSend', () => {
       submittedById: user!.id,
     })
 
-    await dispatchCommunityModerationSummaryEmails()
+    await dispatchCommunityModerationSummaryEmails(now)
 
     await expect(
       claimModerationEmailSend(
@@ -150,7 +156,7 @@ describe('claimModerationEmailSend', () => {
             moderation_email_time_of_day: moderationEmailTime,
             moderation_email_timezone: 'America/Los_Angeles',
           },
-          new Date(),
+          now,
         ),
       ),
     ).resolves.toBe(false)
@@ -158,7 +164,8 @@ describe('claimModerationEmailSend', () => {
 
   it('does not enqueue summaries for quiet communities', async () => {
     const user = await createTestUser()
-    const moderationEmailTime = new Date().toISOString().slice(11, 16)
+    const now = pinnedNow()
+    const moderationEmailTime = now.toISOString().slice(11, 16)
     await updateUserFields(user!.id, {
       is_moderation_emails_enabled: true,
       moderation_email_cadence: 'daily',
@@ -174,7 +181,7 @@ describe('claimModerationEmailSend', () => {
       approvedById: user!.id,
     })
 
-    await dispatchCommunityModerationSummaryEmails()
+    await dispatchCommunityModerationSummaryEmails(now)
 
     const jobs = await readAllQueueJobs(emails)
     expect(
