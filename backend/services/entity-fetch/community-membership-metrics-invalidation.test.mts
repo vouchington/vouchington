@@ -19,7 +19,8 @@ import {
   insertTestCommunityMember,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
+import { trackUserMetricsFills } from '../../test-helpers/user-metrics-cache-fills.mts'
 import { getUserMetricsByAnyCached } from './metrics.mts'
 
 describe('community membership user metrics invalidation', () => {
@@ -197,28 +198,6 @@ async function warmUserMetricsCache(user: PrivateUser, count: number): Promise<v
   } finally {
     stop()
   }
-}
-
-/** The read-through fill discards `setBySerializedKeyIfNotInvalidated`. Capture that promise. */
-function trackUserMetricsFills(pending: Promise<unknown>[]): () => void {
-  const cache = caches.user_metrics as unknown as UserMetricsFill
-  const fill = cache.setBySerializedKeyIfNotInvalidated
-  const spy = vi
-    .spyOn(cache, 'setBySerializedKeyIfNotInvalidated')
-    .mockImplementation((serializedKey, value, ttl) => {
-      const result = fill.call(cache, serializedKey, value, ttl)
-      pending.push(result)
-      return result
-    })
-  return () => spy.mockRestore()
-}
-
-type UserMetricsFill = {
-  setBySerializedKeyIfNotInvalidated(
-    serializedKey: string,
-    value: unknown,
-    ttl?: number,
-  ): Promise<void>
 }
 
 /**
