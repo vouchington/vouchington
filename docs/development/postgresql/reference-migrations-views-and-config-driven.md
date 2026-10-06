@@ -38,7 +38,11 @@ ledger and keeps the lock, ledger reads, and migration execution on one pinned w
 fixed migration is transactional by default: its SQL and ledger insert commit or roll back
 together. The runner applies `PG_MIGRATION_LOCK_TIMEOUT_MS` (default `5000`) and
 `PG_MIGRATION_STATEMENT_TIMEOUT_MS` (default `900000`) while it owns that client, then restores the
-client's original session settings before returning it to the pool.
+client's original session settings before returning it to the pool. Config-driven files on that
+same client run each statement group through `beginTransaction({ client })`, including
+`SET LOCAL lock_timeout`, and commit the group before the next one starts. `VALIDATE CONSTRAINT`
+stays in its own group. The runner does not send `BEGIN`, `COMMIT`, or `ROLLBACK` through the
+query executor.
 
 Indexes belong in their canonical table creators and execute inside the same transaction as the
 creator's ledger insert. Do not add online index-upgrade files, historical drops, or manual

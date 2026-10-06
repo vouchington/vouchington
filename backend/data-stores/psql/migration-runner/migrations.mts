@@ -1,5 +1,5 @@
 import path from 'node:path'
-import type { QueryExecutor } from '../types.mts'
+import type { PoolClient, QueryExecutor } from '../types.mts'
 import { runConfigDrivenStatementsInTransaction } from './config-driven-statements.mts'
 import { getFilesFromFolder, readMigrationFile } from './files.mts'
 import { silentMigrationLogger, type MigrationLogger } from './migration-logger.mts'
@@ -17,6 +17,7 @@ export interface RunConfigDrivenOptions {
   folder?: string
   logger?: MigrationLogger
   writer?: QueryExecutor
+  client?: PoolClient
   lockTimeoutMs?: number
 }
 
@@ -32,7 +33,7 @@ export async function runConfigDriven(rootDir: string, options: RunConfigDrivenO
 
     // ast-grep-ignore: no-three-sequential-awaits -- config-driven files must read and execute in sorted order
     const string = await readMigrationFile(configDrivenFolder, file)
-    await runConfigDrivenFile(file, string, logger, options.writer, lockTimeoutMs)
+    await runConfigDrivenFile(file, string, logger, options.writer, lockTimeoutMs, options.client)
 
     await runConfigDrivenAt(index + 1)
   }
@@ -46,12 +47,13 @@ async function runConfigDrivenFile(
   logger: MigrationLogger,
   writer: QueryExecutor | undefined,
   lockTimeoutMs: number,
+  client?: PoolClient,
   attempt = 1,
 ): Promise<void> {
   // Retries replay the whole config-driven file, which is safe only for the idempotent
   // seed/function SQL enforced by no-mistakes postgres-idempotent-insert.
   try {
-    await runConfigDrivenStatementsInTransaction(sql, writer, lockTimeoutMs)
+    await runConfigDrivenStatementsInTransaction(sql, writer, lockTimeoutMs, client)
     logger.log('Config-driven migration %s complete!', file)
   } catch (err) {
     if (isRetryableConfigDrivenPostgresError(err) && attempt < configDrivenMaxAttempts) {
@@ -63,7 +65,7 @@ async function runConfigDrivenFile(
         configDrivenMaxAttempts,
       )
       await waitForConfigDrivenRetry(attempt)
-      await runConfigDrivenFile(file, sql, logger, writer, lockTimeoutMs, attempt + 1)
+      await runConfigDrivenFile(file, sql, logger, writer, lockTimeoutMs, client, attempt + 1)
       return
     }
 

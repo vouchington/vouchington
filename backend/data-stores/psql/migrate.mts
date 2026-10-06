@@ -65,7 +65,7 @@ async function applyMigrationsInSession(
     if (path.resolve(rootDir) === path.resolve(__dirname)) {
       await dropRssFeedCrawlsDefaultPartition()
     }
-    await runConfigDrivenFromFolder(rootDir, { logger, writer })
+    await runConfigDrivenFromFolder(rootDir, { client, logger })
     await runViewsFromFolder(rootDir, { forced, logger, writer })
   })
 }

@@ -7,6 +7,8 @@ import type pg from 'pg'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import type { QueryExecutor, QueryInput } from '../types.mts'
+import { write, writePool } from '../index.mts'
+import { runConfigDrivenStatementsInTransaction } from './config-driven-statements.mts'
 import { runConfigDriven } from './migrations.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
@@ -117,7 +119,30 @@ SELECT id FROM config_driven_session_${suffix};
       ['SELECT broken;'],
       ['ERROR: running config-driven migration %s failed after SQL dump!', '0010-fail.sql'],
     ])
-    expect(writes.at(-1)).toBe('/* runConfigDrivenStatementsInTransaction */ ROLLBACK')
+    expect(writes.at(-1)).toBe('/* runConfigDrivenStatements */ SELECT broken')
+  })
+
+  it('rolls back a failed statement group on the borrowed migration client', async () => {
+    const table = `cfg_rollback_${randomUUID().replaceAll('-', '')}`
+    const client = await writePool.connect()
+    try {
+      await expect(
+        runConfigDrivenStatementsInTransaction(
+          `CREATE TABLE ${table} (id INTEGER); INSERT INTO ${table} (id) VALUES (1); SELECT broken;`,
+          undefined,
+          5_000,
+          client,
+        ),
+      ).rejects.toThrow('column "broken" does not exist')
+      const { rows } = await write<{ regclass: string | null }>(
+        '/* migrations.test */ SELECT to_regclass($1) AS regclass',
+        [table],
+      )
+      expect(rows[0]?.regclass).toBeNull()
+    } finally {
+      client.release()
+      await write(`DROP TABLE IF EXISTS ${table}`)
+    }
   })
 })
 
@@ -138,9 +163,7 @@ function makeWriter(writes: string[], onWrite: (sql: string) => void = () => {})
 
 function transactionWrites(...statements: string[]): string[] {
   return [
-    '/* runConfigDrivenStatementsInTransaction */ BEGIN',
     "/* runConfigDrivenStatementsInTransaction */ SET LOCAL lock_timeout = '5000ms'",
     ...statements.map(statement => `/* runConfigDrivenStatements */ ${statement}`),
-    '/* runConfigDrivenStatementsInTransaction */ COMMIT',
   ]
 }

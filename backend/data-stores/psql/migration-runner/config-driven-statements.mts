@@ -1,39 +1,44 @@
 import { beginTransaction, type OwnedTransaction } from '../setup.mts'
-import onError from '@modules/on-error'
-import type { QueryExecutor } from '../types.mts'
+import type { PoolClient, QueryExecutor } from '../types.mts'
 import { splitSqlStatements } from './sql-statements.mts'
 
 export async function runConfigDrivenStatementsInTransaction(
   sql: string,
   writer: QueryExecutor | undefined,
   lockTimeoutMs = 5_000,
+  client?: PoolClient,
 ): Promise<void> {
   const statements = splitSqlStatements(sql)
-
-  if (writer) {
-    await runConfigDrivenStatementGroups(statements, lockTimeoutMs, writer)
-    return
-  }
-
-  await runConfigDrivenStatementGroups(statements, lockTimeoutMs)
+  await runConfigDrivenStatementGroups(statements, lockTimeoutMs, writer, client)
 }
 
 async function runConfigDrivenStatementGroups(
   statements: readonly string[],
   lockTimeoutMs: number,
   writer?: QueryExecutor,
+  client?: PoolClient,
 ): Promise<void> {
   let group: string[] = []
+
+  async function runGroup(statementsToRun: readonly string[]): Promise<void> {
+    // A borrowed migration-session client must own the transaction. An injected writer has no
+    // client, so it only receives the statements and cannot open BEGIN/COMMIT/ROLLBACK itself.
+    if (client) {
+      await runConfigDrivenStatementsInNewTransaction(statementsToRun, lockTimeoutMs, client)
+      return
+    }
+    if (writer) {
+      await runConfigDrivenStatementsWithLocalLockTimeout(statementsToRun, writer, lockTimeoutMs)
+      return
+    }
+    await runConfigDrivenStatementsInNewTransaction(statementsToRun, lockTimeoutMs)
+  }
 
   async function flushGroup(): Promise<void> {
     if (group.length === 0) return
     const statementsToRun = group
     group = []
-    if (writer) {
-      await runConfigDrivenStatementsWithWriterTransaction(statementsToRun, writer, lockTimeoutMs)
-    } else {
-      await runConfigDrivenStatementsInNewTransaction(statementsToRun, lockTimeoutMs)
-    }
+    await runGroup(statementsToRun)
   }
 
   async function runStatementAt(index: number): Promise<void> {
@@ -45,11 +50,7 @@ async function runConfigDrivenStatementGroups(
 
     if (isConstraintValidationStatement(statement)) {
       await flushGroup()
-      if (writer) {
-        await runConfigDrivenStatementsWithWriterTransaction([statement], writer, lockTimeoutMs)
-      } else {
-        await runConfigDrivenStatementsInNewTransaction([statement], lockTimeoutMs)
-      }
+      await runGroup([statement])
       return runStatementAt(index + 1)
     }
 
@@ -60,26 +61,12 @@ async function runConfigDrivenStatementGroups(
   await runStatementAt(0)
 }
 
-async function runConfigDrivenStatementsWithWriterTransaction(
-  statements: readonly string[],
-  writer: QueryExecutor,
-  lockTimeoutMs: number,
-): Promise<void> {
-  await writer('/* runConfigDrivenStatementsInTransaction */ BEGIN')
-  try {
-    await runConfigDrivenStatementsWithLocalLockTimeout(statements, writer, lockTimeoutMs)
-    await writer('/* runConfigDrivenStatementsInTransaction */ COMMIT')
-  } catch (err) {
-    await writer('/* runConfigDrivenStatementsInTransaction */ ROLLBACK').catch(onError)
-    throw err
-  }
-}
-
 async function runConfigDrivenStatementsInNewTransaction(
   statements: readonly string[],
   lockTimeoutMs: number,
+  client?: PoolClient,
 ): Promise<void> {
-  await using transaction = await beginTransaction()
+  await using transaction = await beginTransaction(client ? { client } : {})
   await runAndCommitConfigDrivenStatements(statements, transaction, lockTimeoutMs)
 }
 

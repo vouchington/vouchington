@@ -25,7 +25,7 @@ describe('runConfigDriven lock contention handling', () => {
     return dir
   }
 
-  it('runs injected writer statements in a transaction with a local lock timeout', async () => {
+  it('sends a local lock timeout before injected writer statements', async () => {
     const folder = await makeConfigDrivenDir()
     await writeFile(join(folder, '0010-lock-timeout.sql'), 'SELECT 1;')
     const writes: string[] = []
@@ -37,10 +37,8 @@ describe('runConfigDriven lock contention handling', () => {
     })
 
     expect(writes).toEqual([
-      '/* runConfigDrivenStatementsInTransaction */ BEGIN',
       "/* runConfigDrivenStatementsInTransaction */ SET LOCAL lock_timeout = '1234ms'",
       '/* runConfigDrivenStatements */ SELECT 1',
-      '/* runConfigDrivenStatementsInTransaction */ COMMIT',
     ])
   })
 
@@ -167,53 +165,47 @@ describe('runConfigDriven lock contention handling', () => {
       '/* runConfigDrivenStatements */ ALTER TABLE active_table ADD COLUMN x INT',
     ])
   })
-  it('runs constraint validation statements in a separate transaction group', async () => {
+  it('commits constraint validation separately from the statements before it', async () => {
     // Short prefix keeps this within PostgreSQL's 63-byte identifier limit (a longer prefix
     // silently truncates on write, so the exact-match `conname = $1` lookup below finds nothing).
     const table = `cfg_validate_${randomUUID().replaceAll('-', '')}`
+    const log = `${table}_tx`
     const constraint = `${table}_id_check`
-    const writes: string[] = []
     const client = await writePool.connect()
 
     try {
-      // Pass a single real client through as the writer so the raw BEGIN/COMMIT statements
-      // this helper sends are genuine transaction boundaries on one session (proving real
-      // PostgreSQL enforcement), while also recording what was sent so we can assert on the
-      // boundary itself instead of only the resulting schema state.
-      const passthroughWriter: QueryExecutor = (input: QueryInput) => {
-        writes.push(stringFromUnknown(input))
-        return client.query(stringFromUnknown(input))
-      }
-
       await runConfigDrivenStatementsInTransaction(
         `
 CREATE TABLE ${table} (id INTEGER);
+CREATE TABLE ${log} (step INTEGER, txid TEXT);
+INSERT INTO ${log} (step, txid) VALUES (1, txid_current()::text);
 ALTER TABLE ${table} ADD CONSTRAINT ${constraint} CHECK (id >= 0) NOT VALID;
 ALTER TABLE ${table} VALIDATE CONSTRAINT ${constraint};
+INSERT INTO ${log} (step, txid) VALUES (2, txid_current()::text);
 `,
-        passthroughWriter,
+        undefined,
+        5_000,
+        client,
       )
 
-      // Collapsing this back into a single transaction would produce the same eventual schema
-      // state, so assert the actual boundary: VALIDATE CONSTRAINT must run in its own
-      // BEGIN/COMMIT group, separate from the CREATE TABLE/ADD CONSTRAINT group.
-      expect(writes.filter(sql => sql.includes('BEGIN'))).toHaveLength(2)
-      expect(writes.filter(sql => sql.includes('COMMIT'))).toHaveLength(2)
-
-      // If VALIDATE CONSTRAINT ran in the same transaction group as the earlier statements
-      // instead of its own, the constraint would still read back as unvalidated whenever that
-      // group rolled back for any reason. Confirm it actually committed as validated, and that
-      // it is genuinely enforced against new rows.
-      const { rows } = await write<{ convalidated: boolean }>(
+      // One transaction would give both inserts the same transaction id and would leave the
+      // constraint unvalidated if that transaction later rolled back.
+      const { rows } = await write<{ step: number; txid: string }>(
+        `/* config-driven-statements.test */ SELECT step, txid FROM ${log} ORDER BY step`,
+      )
+      expect(rows.map(row => row.step)).toEqual([1, 2])
+      expect(rows[0]?.txid).not.toBe(rows[1]?.txid)
+      const validated = await write<{ convalidated: boolean }>(
         '/* config-driven-statements.test */ SELECT convalidated FROM pg_constraint WHERE conname = $1',
         [constraint],
       )
-      expect(rows).toEqual([{ convalidated: true }])
+      expect(validated.rows).toEqual([{ convalidated: true }])
       await expect(write(`INSERT INTO ${table} (id) VALUES (-1)`)).rejects.toThrow(
         /violates check constraint/,
       )
     } finally {
       client.release()
+      await write(`DROP TABLE IF EXISTS ${log}`)
       await write(`DROP TABLE IF EXISTS ${table}`)
     }
   })
@@ -230,14 +222,10 @@ ALTER TABLE example VALIDATE CONSTRAINT example_check;
     )
 
     expect(writes).toEqual([
-      '/* runConfigDrivenStatementsInTransaction */ BEGIN',
       "/* runConfigDrivenStatementsInTransaction */ SET LOCAL lock_timeout = '5000ms'",
       '/* runConfigDrivenStatements */ ALTER TABLE example ADD CONSTRAINT example_check CHECK (id >= 0) NOT VALID',
-      '/* runConfigDrivenStatementsInTransaction */ COMMIT',
-      '/* runConfigDrivenStatementsInTransaction */ BEGIN',
       "/* runConfigDrivenStatementsInTransaction */ SET LOCAL lock_timeout = '5000ms'",
       '/* runConfigDrivenStatements */ ALTER TABLE example VALIDATE CONSTRAINT example_check',
-      '/* runConfigDrivenStatementsInTransaction */ COMMIT',
     ])
   })
 
