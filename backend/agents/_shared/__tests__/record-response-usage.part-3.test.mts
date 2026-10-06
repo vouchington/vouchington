@@ -60,11 +60,13 @@ describe('callRecordingAgentResponseUsage attempt hooks', () => {
   })
 
   it('rechecks the cap before a free retry continues into the provider', async () => {
+    const retryGuardEntered = Promise.withResolvers<void>()
     const retryGuardSettled = Promise.withResolvers<void>()
     const assertDailySpendCapNotBreached = vi
       .fn<(agentSlug: string) => Promise<null>>()
       .mockResolvedValueOnce(null)
       .mockImplementationOnce(async () => {
+        retryGuardEntered.resolve()
         await retryGuardSettled.promise
         return null
       })
@@ -82,7 +84,8 @@ describe('callRecordingAgentResponseUsage attempt hooks', () => {
       { assertDailySpendCapNotBreached, recordAgentResponseUsage: recorder },
     )
 
-    await vi.waitFor(() => expect(assertDailySpendCapNotBreached).toHaveBeenCalledTimes(2))
+    await retryGuardEntered.promise
+    expect(assertDailySpendCapNotBreached).toHaveBeenCalledTimes(2)
     expect(retryContinued).toBe(false)
     retryGuardSettled.resolve()
     await expect(call).resolves.toEqual(response())
@@ -90,10 +93,14 @@ describe('callRecordingAgentResponseUsage attempt hooks', () => {
   })
 
   it('awaits the unknown-billed latch and propagates a latch failure', async () => {
+    const latchCalled = Promise.withResolvers<void>()
     const latchSettled = Promise.withResolvers<void>()
     const latchAccountingUncertainty = vi
       .fn<typeof latchAccountingUncertaintyFn>()
-      .mockImplementation(async () => latchSettled.promise)
+      .mockImplementation(async () => {
+        latchCalled.resolve()
+        await latchSettled.promise
+      })
     const providerError = new Error('connection reset after provider accepted the request')
     const call = callRecordingAgentResponseUsage(
       async () => {
@@ -114,12 +121,11 @@ describe('callRecordingAgentResponseUsage attempt hooks', () => {
     )
     const callRejection = call.catch((err: unknown) => err)
 
-    await vi.waitFor(() =>
-      expect(latchAccountingUncertainty).toHaveBeenCalledExactlyOnceWith({
-        requestDay: '2026-08-16',
-        source: 'unknown_billed_attempt',
-      }),
-    )
+    await latchCalled.promise
+    expect(latchAccountingUncertainty).toHaveBeenCalledExactlyOnceWith({
+      requestDay: '2026-08-16',
+      source: 'unknown_billed_attempt',
+    })
     latchSettled.resolve()
     await expect(callRejection).resolves.toBe(providerError)
 

@@ -4,7 +4,6 @@ import {
   createTestUser,
   findAiUsageRecordForResponseId,
   insertTestCommunity,
-  pollUntilNotNull,
 } from '@voucha/test-helpers'
 import {
   answerCommunityQuestions,
@@ -122,9 +121,7 @@ describe('community prompt dry run', () => {
 
       await dryRun.classify(parts)
 
-      await expect(
-        pollUntilNotNull(() => findAiUsageRecordForResponseId(responseId)),
-      ).resolves.toMatchObject({
+      await expect(findAiUsageRecordForResponseId(responseId)).resolves.toMatchObject({
         agent_slug: 'community-moderation-dry-run',
         community_id: communityId,
         post_id: null,

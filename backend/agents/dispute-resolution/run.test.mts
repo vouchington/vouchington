@@ -7,7 +7,6 @@ import {
   insertTestPostReview,
   insertTestCommunity,
   findAiUsageRecordForPost,
-  pollUntilNotNull,
 } from '@voucha/test-helpers'
 import { createTopicClaim, adminVerifyTopicClaim } from '@services/topic-claims'
 import { parseCreateReviewDisputeInput } from '@services/review-disputes/parse'
@@ -248,9 +247,9 @@ describe('runDisputeResolutionAgent', () => {
 
     await runDisputeResolutionAgent({ disputeId: dispute.id }, callModel)
 
-    // recordAgentResponseUsage is fire-and-forget -- poll until the insert commits.
-    const row = await pollUntilNotNull(() => findAiUsageRecordForPost(postId, 'dispute-resolution'))
-    expect(row.community_id).toBe(community.id)
+    await expect(findAiUsageRecordForPost(postId, 'dispute-resolution')).resolves.toMatchObject({
+      community_id: community.id,
+    })
   })
 
   it('records a ledger row from an incomplete response before the error propagates', async () => {
@@ -282,11 +281,12 @@ describe('runDisputeResolutionAgent', () => {
       'OpenAI response incomplete: max_output_tokens',
     )
 
-    const row = await pollUntilNotNull(() => findAiUsageRecordForPost(postId, 'dispute-resolution'))
-    expect(row.model).toBe('gpt-5.4-nano-2026-03-17')
-    expect(row.service_tier).toBe('flex')
-    expect(row.input_tokens).toBe(150)
-    expect(row.output_tokens).toBe(25)
-    expect(row.pricing_status).toBe('priced')
+    await expect(findAiUsageRecordForPost(postId, 'dispute-resolution')).resolves.toMatchObject({
+      model: 'gpt-5.4-nano-2026-03-17',
+      service_tier: 'flex',
+      input_tokens: 150,
+      output_tokens: 25,
+      pricing_status: 'priced',
+    })
   })
 })

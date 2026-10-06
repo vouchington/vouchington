@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import {
   countAiUsageRecordsForAgent,
   findAiUsageRecordForAgent,
-  pollUntilNotNull,
   setBackgroundResponseLeaseExpiresAt,
 } from '@voucha/test-helpers'
 import {
@@ -69,9 +68,7 @@ describe('callRecordingAgentResponseUsage', () => {
       expect.anything(),
     )
     await expect(
-      pollUntilNotNull(() =>
-        findAiUsageRecordForAgent(agentSlug, { inputTokens: 100, outputTokens: 51 }),
-      ),
+      findAiUsageRecordForAgent(agentSlug, { inputTokens: 100, outputTokens: 51 }),
     ).resolves.not.toBeNull()
   })
 
@@ -91,11 +88,12 @@ describe('callRecordingAgentResponseUsage', () => {
     )
 
     expect(response.id).toBe(responseId)
-    const row = await pollUntilNotNull(() =>
+    await expect(
       findAiUsageRecordForAgent(agentSlug, { inputTokens: 101, outputTokens: 52 }),
-    )
-    expect(row.model).toBe('gpt-5.4-nano-2026-03-17')
-    expect(row.service_tier).toBe('flex')
+    ).resolves.toMatchObject({
+      model: 'gpt-5.4-nano-2026-03-17',
+      service_tier: 'flex',
+    })
 
     // The registration row must already be gone -- this path's own compare-and-set claimed it, so
     // a second delete attempt (what the sweeper would do) finds nothing left to claim.
@@ -118,25 +116,24 @@ describe('callRecordingAgentResponseUsage', () => {
     const agentSlug = `record-response-usage-idempotent-${randomSuffix()}`
     const responseId = `resp_${randomSuffix()}`
     const usage = { input_tokens: 102, output_tokens: 53 }
-    let lease: OwnedBackgroundResponseLease | undefined
-
-    let releaseFn: (() => void) | undefined
-    const fnGate = new Promise<void>(resolve => {
-      releaseFn = resolve
-    })
+    const leaseReady = Promise.withResolvers<OwnedBackgroundResponseLease>()
+    const releaseCompletion = Promise.withResolvers<void>()
 
     const completionPath = callRecordingAgentResponseUsage(
       async () => {
-        lease = await notifyResponseCreated(responseId)
+        leaseReady.resolve(await notifyResponseCreated(responseId))
         // Hold this path open until the sweeper-style claim (below) is armed and ready, so both
         // claims genuinely race on the same row instead of one trivially finishing first.
-        await fnGate
+        await releaseCompletion.promise
         return { id: responseId, model: 'gpt-5.4-nano-2026-03-17', service_tier: 'flex', usage }
       },
       { agentSlug },
     )
+    void completionPath.catch((err: unknown) => {
+      leaseReady.reject(err instanceof Error ? err : new Error('completion path failed'))
+    })
 
-    const acquiredLease = await pollUntilNotNull(async () => lease ?? null)
+    const acquiredLease = await leaseReady.promise
     const sweeperLease = await expireAndClaim(acquiredLease)
 
     // The sweeper-style claim: reconcile.mts's own claimAndRecordBackgroundResponseUsage call,
@@ -154,14 +151,10 @@ describe('callRecordingAgentResponseUsage', () => {
     // The creator token is already stale after expireAndClaim. Await the sweeper write first so
     // the completion path sees the response-id fence instead of latching the shared request day.
     await sweeperClaim
-    releaseFn?.()
+    releaseCompletion.resolve()
     await completionPath
 
     // Both contenders have settled before counting; response-id idempotency admits one row.
-    await pollUntilNotNull(() =>
-      findAiUsageRecordForAgent(agentSlug, { inputTokens: 102, outputTokens: 53 }),
-    )
-
     await expect(
       countAiUsageRecordsForAgent(agentSlug, { inputTokens: 102, outputTokens: 53 }),
     ).resolves.toBe(1)
@@ -190,10 +183,9 @@ describe('callRecordingAgentResponseUsage', () => {
     )
 
     expect(response.id).toBe(completedResponseId)
-    const row = await pollUntilNotNull(() =>
+    await expect(
       findAiUsageRecordForAgent(agentSlug, { inputTokens: 104, outputTokens: 55 }),
-    )
-    expect(row.model).toBe('gpt-5.4-nano-2026-03-17')
+    ).resolves.toMatchObject({ model: 'gpt-5.4-nano-2026-03-17' })
   })
 
   it('records from a thrown OpenAIResponseNotCompletedError and still claims the registration', async () => {
@@ -218,10 +210,9 @@ describe('callRecordingAgentResponseUsage', () => {
       ),
     ).rejects.toThrow('OpenAI response cancelled')
 
-    const row = await pollUntilNotNull(() =>
+    await expect(
       findAiUsageRecordForAgent(agentSlug, { inputTokens: 105, outputTokens: 56 }),
-    )
-    expect(row.model).toBe('gpt-5.4-nano-2026-03-17')
+    ).resolves.toMatchObject({ model: 'gpt-5.4-nano-2026-03-17' })
 
     // Claimed (deleted) by this path, same as the completed-response case above.
     const remaining = (await getExpiredBackgroundResponses({ batchSize: 100 })).find(

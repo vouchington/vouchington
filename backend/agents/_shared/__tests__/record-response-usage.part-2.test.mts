@@ -18,10 +18,14 @@ describe('recordAgentResponseUsage settlement barrier', () => {
   it('waits for the uncertainty latch after a ledger failure', async () => {
     const ledgerError = new Error('ledger unavailable')
     const latchSettled = Promise.withResolvers<void>()
+    const latchCalled = Promise.withResolvers<void>()
     const claimRegisteredResponseUsage = vi.fn<() => Promise<void>>().mockRejectedValue(ledgerError)
     const latchAccountingUncertainty = vi
       .fn<typeof latchAccountingUncertaintyFn>()
-      .mockImplementation(async () => latchSettled.promise)
+      .mockImplementation(async () => {
+        latchCalled.resolve()
+        await latchSettled.promise
+      })
     const recording = recordAgentResponseUsage(
       {
         response: responseWithUsage(),
@@ -35,12 +39,11 @@ describe('recordAgentResponseUsage settlement barrier', () => {
       settled = true
     })
 
-    await vi.waitFor(() =>
-      expect(latchAccountingUncertainty).toHaveBeenCalledExactlyOnceWith({
-        requestDay: '2026-08-16',
-        source: 'ledger_write_failed',
-      }),
-    )
+    await latchCalled.promise
+    expect(latchAccountingUncertainty).toHaveBeenCalledExactlyOnceWith({
+      requestDay: '2026-08-16',
+      source: 'ledger_write_failed',
+    })
     expect(settled).toBe(false)
     latchSettled.resolve()
     await expect(recording).resolves.toBeUndefined()
@@ -65,10 +68,12 @@ describe('recordAgentResponseUsage settlement barrier', () => {
   })
 
   it('does not resolve the direct OpenAI wrapper before recording settles', async () => {
+    const recorderStarted = Promise.withResolvers<void>()
     const recorderSettled = Promise.withResolvers<void>()
-    const recorder = vi
-      .fn<typeof recordAgentResponseUsage>()
-      .mockImplementation(async () => recorderSettled.promise)
+    const recorder = vi.fn<typeof recordAgentResponseUsage>().mockImplementation(async () => {
+      recorderStarted.resolve()
+      await recorderSettled.promise
+    })
     const response = responseWithUsage()
     const call = callRecordingAgentResponseUsage(
       async () => response,
@@ -83,7 +88,8 @@ describe('recordAgentResponseUsage settlement barrier', () => {
       resolved = true
     })
 
-    await vi.waitFor(() => expect(recorder).toHaveBeenCalledOnce())
+    await recorderStarted.promise
+    expect(recorder).toHaveBeenCalledOnce()
     expect(resolved).toBe(false)
     recorderSettled.resolve()
     await expect(call).resolves.toBe(response)
