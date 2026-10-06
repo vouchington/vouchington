@@ -1,5 +1,6 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import assert from 'http-assert'
+import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import { buildCopyrightStatementOfReasons } from './statement-of-reasons.mts'
 import { selectCopyrightStatementFacts } from './statement-of-reasons-facts.mts'
@@ -70,6 +71,13 @@ export async function buildCopyrightDsaStatementPayload(
     assessmentId: row.authorizing_assessment_id,
     targetId: row.copyright_notice_target_id,
   })
+  // A notice outside the supported grounds is a data problem the sweep records, not a plain Error.
+  assert(
+    facts.legalBasis === 'copyright' &&
+      Object.hasOwn(DSA_COPYRIGHT_LEGAL_GROUNDS, facts.jurisdiction),
+    422,
+    'Unsupported copyright statement legal ground',
+  )
   const { fields } = buildCopyrightStatementOfReasons({
     ...facts,
     audience: 'poster',
@@ -130,16 +138,19 @@ const payloadKeys = [
   'puid',
 ] as const
 
-/** Validate both newly materialized and persisted JSON against the public closed contract. */
+/**
+ * Validate both newly materialized and persisted JSON against the public closed contract. A failure
+ * is a data problem, never transient, so it is an HttpError 422 the sweep records and skips.
+ */
 export function assertDsaStatementPayload(value: unknown): asserts value is DsaStatementPayload {
   if (!value || typeof value !== 'object' || Array.isArray(value))
-    throw new Error('Invalid DSA payload')
+    throw createHttpError(422, 'Invalid DSA payload')
   const payload = value as Record<string, unknown>
   if (
     Object.keys(payload).length !== payloadKeys.length ||
     Object.keys(payload).some(key => !payloadKeys.includes(key as (typeof payloadKeys)[number]))
   )
-    throw new Error('Unexpected DSA payload key')
+    throw createHttpError(422, 'Unexpected DSA payload key')
   if (
     !sameSingle(payload.decision_visibility, 'DECISION_VISIBILITY_CONTENT_DISABLED') ||
     payload.decision_ground !== 'DECISION_GROUND_ILLEGAL_CONTENT' ||
@@ -167,7 +178,7 @@ export function assertDsaStatementPayload(value: unknown): asserts value is DsaS
     typeof payload.puid !== 'string' ||
     !/^[A-Za-z0-9_-]{1,500}$/.test(payload.puid)
   )
-    throw new Error('Invalid DSA statement payload')
+    throw createHttpError(422, 'Invalid DSA statement payload')
 }
 
 function sameSingle(value: unknown, expected: string): boolean {

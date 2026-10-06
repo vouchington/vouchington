@@ -12,6 +12,7 @@ import {
   readTestDsaSubmissionForRestriction,
   removeTestCopyrightTargetImageRow,
   restoreTestCopyrightTargetImageRow,
+  setTestImageUploadCompletedAt,
 } from '@voucha/test-helpers/dsa-statement-build-failure-fixtures'
 import {
   countTestDsaSubmissionsForRestriction,
@@ -105,6 +106,41 @@ describe('DSA statement payload build failures', () => {
     ).resolves.toBe(1)
   }, 100_000)
 
+  it('records a restriction whose built payload fails the closed contract as a 422 and keeps going', async () => {
+    const caseId = 'copyright-dsa-submission-build-failure-invalid-payload'
+    if (getIsolatedDatabaseCaseMode(caseId) === 'parent') {
+      await runIsolatedDatabaseCase(caseId)
+      return
+    }
+    const from = new Date('2026-07-01T00:00:00.000Z')
+    const invalidImage = await createTestCopyrightImageFixture('post-image')
+    const invalid = await createTestCopyrightRestrictionForImage(invalidImage)
+    const valid = await newRestriction()
+    // The builder's own validation throws a 422 HttpError, so it is a data problem the sweep records.
+    await setTestImageUploadCompletedAt(invalidImage.imageId, new Date('1999-12-31T00:00:00.000Z'))
+    const report = vi.fn<DsaStatementSweepDependencies['reportBuildFailure']>()
+
+    await expect(
+      materializeDsaStatementSubmissions(from, { reportBuildFailure: report }),
+    ).resolves.toBe(1)
+    expect(report).toHaveBeenCalledExactlyOnceWith({
+      restrictionId: invalid.restrictionId,
+      failureCode: 'http_422',
+    })
+    expect(await readTestDsaSubmissionForRestriction(invalid.restrictionId)).toMatchObject({
+      payload: null,
+      failure_code: 'http_422',
+    })
+    expect(await readTestDsaSubmissionForRestriction(valid.restrictionId)).toMatchObject({
+      payload: { puid: valid.restrictionId },
+      failed_at: null,
+    })
+    await expect(
+      materializeDsaStatementSubmissions(from, { reportBuildFailure: report }),
+    ).resolves.toBe(0)
+    expect(report).toHaveBeenCalledOnce()
+  }, 100_000)
+
   it('replays a failed restriction only after its data is fixed, then submits the rebuilt payload', async () => {
     const caseId = 'copyright-dsa-submission-build-failure-replay'
     if (getIsolatedDatabaseCaseMode(caseId) === 'parent') {
@@ -191,7 +227,7 @@ describe('payload build failure classification', () => {
 
     expect(getDsaStatementBuildFailureCode(databaseError)).toBeNull()
     expect(getDsaStatementBuildFailureCode(new TypeError('x is undefined'))).toBeNull()
-    expect(getDsaStatementBuildFailureCode(new Error('Invalid DSA statement payload'))).toBeNull()
+    expect(getDsaStatementBuildFailureCode(new Error('Unexpected builder failure'))).toBeNull()
     expect(getDsaStatementBuildFailureCode('http_404')).toBeNull()
     expect(getDsaStatementBuildFailureCode(undefined)).toBeNull()
   })

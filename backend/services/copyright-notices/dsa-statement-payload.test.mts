@@ -133,12 +133,29 @@ describe('DSA statement payload from actual restriction decisions', () => {
   )
 })
 
+function thrownBy(operation: () => void): unknown {
+  try {
+    operation()
+  } catch (err) {
+    return err
+  }
+  throw new Error('Expected the operation to throw')
+}
+
 describe('closed DSA payload validation', () => {
   it('rejects unknown fields and coercible non-string enums', () => {
     const valid = dsaTestPayload()
     expect(() => assertDsaStatementPayload(valid)).not.toThrow()
     for (const malformed of [null, [], 42])
       expect(() => assertDsaStatementPayload(malformed)).toThrow('Invalid DSA payload')
+    // A data problem is a 422 HttpError, so the DSA sweep records and skips it.
+    expect(thrownBy(() => assertDsaStatementPayload(null))).toMatchObject({ status: 422 })
+    expect(thrownBy(() => assertDsaStatementPayload({ ...valid, contact: 'x' }))).toMatchObject({
+      status: 422,
+    })
+    expect(
+      thrownBy(() => assertDsaStatementPayload({ ...valid, content_date: '1999-12-31' })),
+    ).toMatchObject({ status: 422, message: 'Invalid DSA statement payload' })
     for (const changed of [
       { ...valid, contact: 'private@example.test' },
       { ...valid, source_type: ['SOURCE_ARTICLE_16'] },

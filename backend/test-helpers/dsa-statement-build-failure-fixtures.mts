@@ -60,3 +60,18 @@ export async function readTestDsaSubmissionForRestriction(
   if (!rows[0]) throw new Error('Test DSA submission missing for restriction')
   return rows[0]
 }
+
+/**
+ * Backdates an image upload so the built payload's content date falls before the Commission's
+ * earliest accepted date, the validation failure case. Replica role bypasses the terminal
+ * lifecycle trigger for this one transaction only.
+ */
+export async function setTestImageUploadCompletedAt(imageId: string, at: Date): Promise<void> {
+  await using transaction = await beginTransaction()
+  await transaction(sql`SET LOCAL session_replication_role = replica`)
+  const { rows } = await transaction<{ id: string }>(sql`
+    UPDATE images SET upload_completed_at = ${at} WHERE id = ${imageId} RETURNING id
+  `)
+  if (!rows[0]) throw new Error('Test image missing')
+  await transaction.commit()
+}

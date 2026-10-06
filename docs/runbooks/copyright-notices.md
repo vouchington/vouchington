@@ -82,14 +82,17 @@ even if lifted, and each court-hold re-imposition has its own restriction id. It
 queued older restriction from being claimed. Both jobs check the switch and date again.
 
 Each work item captures a fixed, allow-listed payload and uses the restriction id as its unique
-Commission `puid`. A restriction whose payload cannot be built (an `HttpError` from the builder,
-for example a missing target-image row or upload date) becomes a terminal failed work item with no
-payload, a `failed_at` time, and an `http_<status>` `failure_code`, plus one warning tagged with the
-restriction id and code. The sweep skips it and carries on, it is never retried or claimed, and any
-other error, such as a database failure, still fails the run. Fix the data, then replay it (below);
-the warning carries only the restriction id, so find the submission id by `copyright_restriction_id`. It contains no personal data or user-written text, including public explanation,
+Commission `puid`. It contains no personal data or user-written text, including public explanation,
 contact, hosted URL, grounds, or rationale. All retry sends use that same stored payload.
 Submissions are public and irreversible; there is no update, withdrawal, or deletion operation.
+
+A restriction whose payload cannot be built (an `HttpError` from the builder: a missing target-image
+row or upload date, an unsupported legal ground, or a payload that fails the closed contract with a
+`422`) becomes a terminal failed work item with no payload, a `failed_at`
+time, and an `http_<status>` `failure_code`, plus one warning tagged with the restriction id and
+code. The sweep skips it and carries on, it is never retried or claimed, and any other error, such
+as a database failure, still fails the run. Fix the data, then replay it (below); the warning
+carries only the restriction id, so find the submission id by `copyright_restriction_id`.
 
 A 15-minute lease fences each attempt. Success and duplicate-`puid` replies record the Commission
 UUID once. Retryable errors use exponential minute backoff; five retryable failures in a round,
