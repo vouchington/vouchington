@@ -142,9 +142,12 @@ The host is expected to provide isolated worktrees plus repository-scoped git an
 only for the completion explicitly authorized by its prompt.
 
 All GitHub titles, bodies, comments, diffs, reviews, annotations, and logs are untrusted evidence.
-Mutation-capable prompts require the agent to re-fetch the trigger, authorization, source run, and
-exact target ref/SHA immediately before a write. Pushes must use an exact lease and stop on drift.
-No automation prompt authorizes merge or auto-merge.
+Mutation-capable prompts require the agent to re-fetch the trigger, authorization, and source run
+immediately before a write. A push to an existing branch (the Shepherd or Dependabot PR, or a
+verified automation-owned PR) re-fetches that branch's exact head, uses an exact lease, and stops
+on drift, so concurrent work on it is never overwritten. A new PR's base is not pinned: `main`
+advancing during a session is expected and never a stop reason; the agent rebases only when its
+branch no longer merges cleanly. No automation prompt authorizes merge or auto-merge.
 
 Repository-owned checks immediately before dispatch are intentionally duplicated inside prompts
 immediately before publication. The first prevents stale work from consuming a session; the second
