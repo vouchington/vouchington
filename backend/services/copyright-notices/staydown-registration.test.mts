@@ -9,6 +9,16 @@ import { isCopyrightStaydownMatchingEnabled } from './config.mts'
 import { completeCopyrightMandatoryHumanReview } from './index.mts'
 
 /**
+ * `imagesQueue` is `Queue<unknown>`. Read the image id only when the payload actually has one,
+ * so a staydown-hash job with another shape cannot satisfy the registration dedup id.
+ */
+function registrationImageId(data: unknown): string | undefined {
+  if (typeof data !== 'object' || data === null || !('id' in data)) return undefined
+  const { id } = data
+  return typeof id === 'string' ? id : undefined
+}
+
+/**
  * Registration enqueues with `void`, so the job can land after the service returns.
  * `searchJobs` is state-independent and scoped to this fixture's image id.
  */
@@ -21,9 +31,13 @@ async function registrationHashJobs(imageIds: readonly string[]) {
       }),
     ),
   )
-  return groups
-    .flat()
-    .filter(job => job.opts.deduplication?.id === `staydown-hash-registration-${job.data.id}`)
+  return groups.flat().filter((job): job is typeof job & { data: { id: string } } => {
+    const imageId = registrationImageId(job.data)
+    return (
+      imageId !== undefined &&
+      job.opts.deduplication?.id === `staydown-hash-registration-${imageId}`
+    )
+  })
 }
 
 async function expectNoRegistrationHashJobs(imageIds: readonly string[]): Promise<void> {
