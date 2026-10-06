@@ -123,7 +123,7 @@ describe('no-mistakes config', () => {
         specifier: './static-code-analysis/oxlint-plugin.cjs',
       }),
     )
-    expect(oxlint.rules['voucha/no-prefix-wide-rate-limiter-invalidate']).toBe('error')
+    expect(oxlint.rules['vouchington/banned-member-read']).toHaveProperty('0', 'error')
     expect(oxlint.rules['no-mistakes/playwright-literals']).toBe('error')
     expect(oxlint.rules).not.toHaveProperty('no-mistakes/playwright-no-set-timeout')
     expect(readRepoFile('playwright/.oxlintrc.json')).not.toContain(
