@@ -11,7 +11,9 @@ export type PostModerationReconciliation = {
 
 export async function reconcilePostModerationWork(
   limit = 100,
+  postIds?: readonly string[],
 ): Promise<PostModerationReconciliation> {
+  if (postIds?.length === 0) return { due: [], exhausted_post_ids: [] }
   const { rows } = await write<{
     row_kind: 'due' | 'exhausted'
     post_id: string
@@ -29,6 +31,7 @@ export async function reconcilePostModerationWork(
           AND post.id = version.post_id
           AND post.llm_moderation_content_sha256 = version.content_sha256
           AND version.policy_revision = $2
+          AND ($3::uuid[] IS NULL OR post.id = ANY($3::uuid[]))
           AND work.completed_at IS NULL
           AND version.deadline_at <= CURRENT_TIMESTAMP
         RETURNING work.version_id, work.source, version.post_id
@@ -54,6 +57,7 @@ export async function reconcilePostModerationWork(
           AND work.available_at <= CURRENT_TIMESTAMP
           AND version.deadline_at > CURRENT_TIMESTAMP
           AND (work.lease_expires_at IS NULL OR work.lease_expires_at <= CURRENT_TIMESTAMP)
+          AND ($3::uuid[] IS NULL OR post.id = ANY($3::uuid[]))
         ORDER BY work.available_at, version.id, work.source
         LIMIT $1
       )
@@ -62,7 +66,7 @@ export async function reconcilePostModerationWork(
       UNION ALL
       SELECT 'due'::text AS row_kind, due_work.post_id, due_work.source
       FROM due_work`,
-    [limit, POST_MODERATION_POLICY_REVISION],
+    [limit, POST_MODERATION_POLICY_REVISION, postIds ?? null],
   )
   const due: PostModerationReconciliation['due'] = []
   const exhaustedPostIds = new Set<string>()

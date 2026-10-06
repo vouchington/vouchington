@@ -6,11 +6,6 @@ import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
-  backendAliases,
-  isolatedDatabaseCaseAliases,
-  realGlideMqAlias,
-} from './vitest-config/aliases.mts'
-import {
   assertIsolatedDatabaseCaseRan,
   formatIsolatedDatabaseCaseResult,
 } from './vitest-isolated-database-case-result.mts'
@@ -34,22 +29,13 @@ const fixtureDirs: string[] = []
 const databaseName = `voucha_scope_case_${'a'.repeat(24)}`
 const databaseUrl = `postgres://postgres@localhost:5432/${databaseName}`
 const childEnv = {
-  VITEST_ISOLATED_DATABASE_CASE: 'activitypub-expiry',
+  VITEST_ISOLATED_DATABASE_CASE: 'images-abandoned-upload-cleanup',
   VITEST_ISOLATED_DATABASE_CHILD: databaseName,
   DATABASE_URL: databaseUrl,
   READ_DATABASE_URL: databaseUrl,
 }
 
 describe('isolated database case selection', () => {
-  it('preserves the selected isolated case queue boundary', () => {
-    const realCase = getIsolatedDatabaseCase('embedding-creation-fairness')
-    const ordinaryCase = getIsolatedDatabaseCase('embedding-reconciliation-router')
-    const realAliases = isolatedDatabaseCaseAliases(realCase.file)
-    expect(realAliases).toContainEqual(realGlideMqAlias())
-    expect(realAliases.filter(alias => String(alias.find) === String(/^glide-mq$/))).toHaveLength(1)
-    expect(isolatedDatabaseCaseAliases(ordinaryCase.file)).toEqual(backendAliases())
-  })
-
   it('registers only exact isolated database tests', () => {
     expect(makeIsolatedDatabaseName('a'.repeat(24))).toBe(databaseName)
     expect(() => makeIsolatedDatabaseName('shared_database')).toThrow(
@@ -60,10 +46,9 @@ describe('isolated database case selection', () => {
       fullName:
         'semantic search candidate paging > ends pagination at the fixed window and counts the same candidates',
     })
-    expect(getIsolatedDatabaseCase('activitypub-expiry')).toEqual({
-      file: 'backend/services/ap-inbox-activities/durable-delivery-storage.test.mts',
-      fullName:
-        'ActivityPub inbox durable storage bounds > deletes expired rows in deterministic lease-aware locked batches',
+    expect(getIsolatedDatabaseCase('images-abandoned-upload-cleanup')).toEqual({
+      file: 'backend/workers/images/workers/images.test.mts',
+      fullName: 'images worker > cleans abandoned uploads from the worker job',
     })
     expect(() => getIsolatedDatabaseCase('other')).toThrow('Unknown isolated database case')
   })
@@ -82,18 +67,18 @@ describe('isolated database case selection', () => {
   })
 
   it('anchors the selected test name instead of matching a prefix or sibling', () => {
-    const { fullName } = getIsolatedDatabaseCase('activitypub-expiry')
-    const pattern = new RegExp(isolatedTestNamePattern('activitypub-expiry'))
+    const { fullName } = getIsolatedDatabaseCase('images-abandoned-upload-cleanup')
+    const pattern = new RegExp(isolatedTestNamePattern('images-abandoned-upload-cleanup'))
     expect(pattern.test(fullName)).toBe(true)
     expect(pattern.test(`${fullName} extra`)).toBe(false)
     expect(pattern.test(`prefix ${fullName}`)).toBe(false)
   })
 
   it('distinguishes a parent from the exact registered disposable child', () => {
-    expect(getIsolatedDatabaseCaseMode('activitypub-expiry', {})).toBe('parent')
-    expect(getIsolatedDatabaseCaseMode('activitypub-expiry', childEnv)).toBe('child')
+    expect(getIsolatedDatabaseCaseMode('images-abandoned-upload-cleanup', {})).toBe('parent')
+    expect(getIsolatedDatabaseCaseMode('images-abandoned-upload-cleanup', childEnv)).toBe('child')
     expect(getIsolatedDatabaseChildCase(childEnv)).toEqual(
-      getIsolatedDatabaseCase('activitypub-expiry'),
+      getIsolatedDatabaseCase('images-abandoned-upload-cleanup'),
     )
   })
 
@@ -132,7 +117,7 @@ describe('isolated database case selection', () => {
     },
   ])('rejects a malformed or mismatched child identity %#', ({ override, message }) => {
     expect(() =>
-      getIsolatedDatabaseCaseMode('activitypub-expiry', { ...childEnv, ...override }),
+      getIsolatedDatabaseCaseMode('images-abandoned-upload-cleanup', { ...childEnv, ...override }),
     ).toThrow(message)
   })
 

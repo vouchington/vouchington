@@ -29,6 +29,7 @@ type OpenAIModerationJobData = { id?: string }
 export async function handleOpenAIModerationOmniSingleJob(
   job: Job<OpenAIModerationJobData>,
   worker: Worker,
+  scope?: { postIds?: readonly string[]; imageIds?: readonly string[] },
 ): Promise<unknown> {
   try {
     switch (job.name as OpenAIModerationOmniSingleJob) {
@@ -85,9 +86,9 @@ export async function handleOpenAIModerationOmniSingleJob(
         return { enqueued }
       }
       case 'reconcile_image_quarantines':
-        return await reconcilePendingImageQuarantines()
+        return await reconcilePendingImageQuarantines(scope?.imageIds)
       case 'reconcile_post_moderation': {
-        const reconciliation = await reconcilePostModerationWork()
+        const reconciliation = await reconcilePostModerationWork(100, scope?.postIds)
         await Promise.all(
           reconciliation.due.map(({ post_id: postId, source }) =>
             source === 'openai_omni'

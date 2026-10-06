@@ -1,20 +1,17 @@
 import { randomUUID } from 'node:crypto'
-import { getIsolatedDatabaseCaseMode } from '../../../../../test-helpers/vitest-isolated-database-cases.mts'
-import {
-  ISOLATED_DATABASE_PARENT_TIMEOUT_MS,
-  runIsolatedDatabaseCase,
-} from '../../../../../test-helpers/vitest-isolated-database-case.mts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Job, Worker } from 'glide-mq'
 import {
   createTestUser,
   expireTestPostModerationVersion,
+  getImageModerationState,
   getPostClearanceStatus,
   getPostModerationData,
   getTestPostModerationRetryDelayMinutes,
   insertPendingTestImage,
   insertTestImage,
   insertTestPost,
+  markImageQuarantinePending,
   readAllQueueJobs,
   setImageOpenAIModerationResults,
   setPostModerationContentSha256,
@@ -124,68 +121,75 @@ describe('openai moderation single worker', () => {
     ).toBe(true)
   })
 
-  it(
-    'requeues due source work and moves deadline-exhausted posts to review',
-    async () => {
-      if (getIsolatedDatabaseCaseMode('openai-moderation-reconciliation') === 'parent') {
-        await runIsolatedDatabaseCase('openai-moderation-reconciliation')
-        return
-      }
-      const creator = await createTestUser()
-      expect(creator).toBeTruthy()
-      const duePostId = await insertTestPost({
-        title: `OpenAI reconcile due ${randomUUID()}`,
-        slug: `openai-reconcile-due-${randomUUID()}`,
-        createdById: creator!.id,
-        markdown: 'Reconciliation due work.',
-        clearanceStatus: 'pending',
-      })
-      const expiredPostId = await insertTestPost({
-        title: `OpenAI reconcile expired ${randomUUID()}`,
-        slug: `openai-reconcile-expired-${randomUUID()}`,
-        createdById: creator!.id,
-        markdown: 'Reconciliation expired work.',
-        clearanceStatus: 'pending',
-      })
-      await ensureCurrentPostModerationVersion(duePostId)
-      const expiredVersion = await ensureCurrentPostModerationVersion(expiredPostId)
-      await expireTestPostModerationVersion(expiredVersion.id)
+  it('requeues due source work and moves deadline-exhausted posts to review', async () => {
+    const creator = await createTestUser()
+    expect(creator).toBeTruthy()
+    const duePostId = await insertTestPost({
+      title: `OpenAI reconcile due ${randomUUID()}`,
+      slug: `openai-reconcile-due-${randomUUID()}`,
+      createdById: creator!.id,
+      markdown: 'Reconciliation due work.',
+      clearanceStatus: 'pending',
+    })
+    const expiredPostId = await insertTestPost({
+      title: `OpenAI reconcile expired ${randomUUID()}`,
+      slug: `openai-reconcile-expired-${randomUUID()}`,
+      createdById: creator!.id,
+      markdown: 'Reconciliation expired work.',
+      clearanceStatus: 'pending',
+    })
+    const foreignPostId = await insertTestPost({
+      title: `OpenAI reconcile foreign ${randomUUID()}`,
+      slug: `openai-reconcile-foreign-${randomUUID()}`,
+      createdById: creator!.id,
+      markdown: 'Foreign reconciliation work stays pending.',
+      clearanceStatus: 'pending',
+    })
+    await ensureCurrentPostModerationVersion(duePostId)
+    const expiredVersion = await ensureCurrentPostModerationVersion(expiredPostId)
+    await expireTestPostModerationVersion(expiredVersion.id)
+    const foreignVersion = await ensureCurrentPostModerationVersion(foreignPostId)
+    await expireTestPostModerationVersion(foreignVersion.id)
 
-      const result = (await handleOpenAIModerationOmniSingleJob(
-        makeJob('reconcile_post_moderation', randomUUID()),
+    const result = (await handleOpenAIModerationOmniSingleJob(
+      makeJob('reconcile_post_moderation', randomUUID()),
+      {} as Worker,
+      { postIds: [duePostId, expiredPostId] },
+    )) as { enqueued: number; moved_to_review: number }
+
+    expect(result.enqueued).toBeGreaterThanOrEqual(1)
+    expect(result.moved_to_review).toBeGreaterThanOrEqual(1)
+    await expect(getPostClearanceStatus(expiredPostId)).resolves.toBe('in_review')
+    await expect(getPostClearanceStatus(foreignPostId)).resolves.toBe('pending')
+
+    const openaiJobs = await readAllQueueJobs(openai_moderation_omni_single)
+    expect(
+      openaiJobs.some(job => job.name === 'post' && (job.data as { id?: string }).id === duePostId),
+    ).toBe(true)
+    expect(
+      openaiJobs.some(
+        job => job.name === 'post' && (job.data as { id?: string }).id === foreignPostId,
+      ),
+    ).toBe(false)
+  })
+
+  it('runs image quarantine reconciliation jobs', async () => {
+    const creator = await createTestUser()
+    expect(creator).toBeTruthy()
+    const foreignImageId = await insertPendingTestImage(creator!.id)
+    await markImageQuarantinePending(foreignImageId)
+
+    await expect(
+      handleOpenAIModerationOmniSingleJob(
+        makeJob('reconcile_image_quarantines', randomUUID()),
         {} as Worker,
-      )) as { enqueued: number; moved_to_review: number }
-
-      expect(result.enqueued).toBeGreaterThanOrEqual(2)
-      expect(result.moved_to_review).toBeGreaterThanOrEqual(1)
-      await expect(getPostClearanceStatus(expiredPostId)).resolves.toBe('in_review')
-
-      const openaiJobs = await readAllQueueJobs(openai_moderation_omni_single)
-      expect(
-        openaiJobs.some(
-          job => job.name === 'post' && (job.data as { id?: string }).id === duePostId,
-        ),
-      ).toBe(true)
-    },
-    ISOLATED_DATABASE_PARENT_TIMEOUT_MS,
-  )
-
-  it(
-    'runs image quarantine reconciliation jobs',
-    async () => {
-      if (getIsolatedDatabaseCaseMode('openai-image-quarantine-reconciliation') === 'parent') {
-        await runIsolatedDatabaseCase('openai-image-quarantine-reconciliation')
-        return
-      }
-      await expect(
-        handleOpenAIModerationOmniSingleJob(
-          makeJob('reconcile_image_quarantines', randomUUID()),
-          {} as Worker,
-        ),
-      ).resolves.toEqual({ reconciled: 0 })
-    },
-    ISOLATED_DATABASE_PARENT_TIMEOUT_MS,
-  )
+        { imageIds: [randomUUID()] },
+      ),
+    ).resolves.toEqual({ reconciled: 0 })
+    await expect(getImageModerationState(foreignImageId)).resolves.toMatchObject({
+      deleted_at: null,
+    })
+  })
 
   it('records a retryable failed attempt when the provider is unavailable', async () => {
     const creator = await createTestUser()

@@ -15,6 +15,7 @@ export type ActivityPubInboxExpiryBatch = {
 export function buildExpireActivityPubInboxDeliveriesQuery(
   category: ActivityPubInboxExpiryCategory,
   limit: number = ACTIVITYPUB_INBOX_STORAGE_POLICY.cleanupBatchSize,
+  deliveryIds?: readonly string[],
 ): SQLStatement {
   if (
     !Number.isInteger(limit) ||
@@ -41,7 +42,11 @@ export function buildExpireActivityPubInboxDeliveriesQuery(
           delivery.failed_at IS NOT NULL
           OR delivery.leased_at IS NULL
           OR delivery.lease_expires_at <= clock_timestamp()
-        )
+        )`)
+  if (deliveryIds) {
+    query.append(sql` AND delivery.id = ANY(${deliveryIds}::uuid[])`)
+  }
+  query.append(sql`
       ORDER BY delivery.retention_expires_at, delivery.id
       LIMIT ${limit}
       FOR UPDATE SKIP LOCKED
@@ -60,11 +65,13 @@ export function buildExpireActivityPubInboxDeliveriesQuery(
 export async function expireActivityPubInboxDeliveries(
   category: ActivityPubInboxExpiryCategory,
   limit: number = ACTIVITYPUB_INBOX_STORAGE_POLICY.cleanupBatchSize,
+  deliveryIds?: readonly string[],
 ): Promise<ActivityPubInboxExpiryBatch> {
+  if (deliveryIds?.length === 0) return { deletedRows: 0, deletedRawBodyBytes: 0 }
   const { rows } = await write<{
     deleted_rows: number
     deleted_raw_body_bytes: string | number
-  }>(buildExpireActivityPubInboxDeliveriesQuery(category, limit))
+  }>(buildExpireActivityPubInboxDeliveriesQuery(category, limit, deliveryIds))
   const row = rows[0]
   return {
     deletedRows: row?.deleted_rows ?? 0,

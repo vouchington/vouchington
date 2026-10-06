@@ -112,10 +112,9 @@ async function getExistingManagedMonthlyPartitions(
   return rows
 }
 
-export async function createMonthlyPartitions(): Promise<void> {
-  await dropRssFeedCrawlsDefaultPartition()
-  const sql = generateMonthlyPartitions({ tables: ALL_MONTHLY_PARTITION_TABLES })
-  await write(sql)
+export async function createMonthlyPartitions(writer: QueryExecutor = write): Promise<void> {
+  await dropRssFeedCrawlsDefaultPartition(writer)
+  await writer(generateMonthlyPartitions({ tables: ALL_MONTHLY_PARTITION_TABLES }))
 }
 
 export async function cleanupPartitions(referenceDate: Date = new Date()): Promise<void> {

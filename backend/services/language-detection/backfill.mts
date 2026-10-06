@@ -113,19 +113,19 @@ export function streamCommunitiesNeedingLanguageDetection(): AsyncGenerator<
  * Streams user IDs eligible for language detection on their bio.
  * Only users with a non-empty bio are worth detecting.
  */
-export function streamUsersNeedingLanguageDetection(): AsyncGenerator<string[], void, unknown> {
+export function streamUsersNeedingLanguageDetection(
+  userIds?: readonly string[],
+): AsyncGenerator<string[], void, unknown> {
   const batchSize = getLanguageDetectionWorkLimit('backfill_batch_size')
-  return streamIdBatches(
-    createAsyncGeneratorFromCursor<{ id: string }>(
-      sql`/* streamUsersNeedingLanguageDetection */
+  const query = sql`/* streamUsersNeedingLanguageDetection */
         SELECT id FROM users
         WHERE markdown IS NOT NULL
           AND markdown != ''
-          AND deleted_at IS NULL
-        ORDER BY id
-      `,
-      { batchSize: batchSize },
-    ),
+          AND deleted_at IS NULL`
+  if (userIds) query.append(sql` AND id = ANY(${userIds}::uuid[])`)
+  query.append(sql` ORDER BY id`)
+  return streamIdBatches(
+    createAsyncGeneratorFromCursor<{ id: string }>(query, { batchSize: batchSize }),
     batchSize,
   )
 }

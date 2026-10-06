@@ -69,12 +69,15 @@ export async function markStoryPostRelatedUrlProjection(
 
 export async function claimStoryPostRelatedUrlProjectionWork(
   postId?: string,
+  postIds?: readonly string[],
 ): Promise<ProjectionWork | null> {
+  if (postIds?.length === 0) return null
   const { rows } = await write<ProjectionWork>(
     `/* claimStoryPostRelatedUrlProjection */
       WITH available AS (
         SELECT post_id FROM story_post_related_url_projection_jobs
         WHERE ($1::uuid IS NULL OR post_id = $1)
+          AND ($3::uuid[] IS NULL OR post_id = ANY($3::uuid[]))
           AND (lease_expires_at IS NULL OR lease_expires_at <= clock_timestamp())
         ORDER BY last_claimed_at NULLS FIRST, post_id LIMIT 1
       )
@@ -88,7 +91,7 @@ export async function claimStoryPostRelatedUrlProjectionWork(
       RETURNING work.post_id, work.story_id, work.generation, work.source_high_water_id,
         work.relation_high_water_id, work.relation_snapshot_at, work.source_cursor_id,
         work.source_completed_at, work.prune_cursor_id, work.lease_token`,
-    [postId ?? null, LEASE_SECONDS],
+    [postId ?? null, LEASE_SECONDS, postIds ?? null],
   )
   return rows[0] ?? null
 }

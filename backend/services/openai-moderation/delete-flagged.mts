@@ -69,7 +69,10 @@ export async function deleteFlaggedImage(imageId: string): Promise<boolean> {
   return true
 }
 
-export async function reconcilePendingImageQuarantines(): Promise<{ reconciled: number }> {
+export async function reconcilePendingImageQuarantines(
+  imageIds?: readonly string[],
+): Promise<{ reconciled: number }> {
+  if (imageIds?.length === 0) return { reconciled: 0 }
   const IMAGE_QUARANTINE_RECONCILIATION_BATCH_SIZE = getOpenaiModerationWorkLimit(
     'image_quarantine_batch_size',
   )
@@ -78,6 +81,7 @@ export async function reconcilePendingImageQuarantines(): Promise<{ reconciled: 
     FROM images
     WHERE quarantine_pending_at IS NOT NULL
       AND deleted_at IS NULL
+      AND (${imageIds ?? null}::uuid[] IS NULL OR id = ANY(${imageIds ?? null}::uuid[]))
     ORDER BY quarantine_pending_at, id
     LIMIT ${IMAGE_QUARANTINE_RECONCILIATION_BATCH_SIZE}
   `)

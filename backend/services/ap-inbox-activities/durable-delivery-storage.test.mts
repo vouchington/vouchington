@@ -17,9 +17,6 @@ import {
   type ActivityPubInboxEnvelope,
 } from './index.mts'
 import { createRemoteActorFixture } from '@voucha/test-helpers/ap-inbox-activity-fixtures'
-import { runIsolatedDatabaseCase } from '../../../test-helpers/vitest-isolated-database-case.mts'
-import { getIsolatedDatabaseCaseMode } from '../../../test-helpers/vitest-isolated-database-cases.mts'
-
 const ownedActivityIds = new Set<string>()
 
 describe('ActivityPub inbox durable storage bounds', () => {
@@ -145,30 +142,26 @@ describe('ActivityPub inbox durable storage bounds', () => {
   })
 
   it('deletes expired rows in deterministic lease-aware locked batches', async () => {
-    if (getIsolatedDatabaseCaseMode('activitypub-expiry') === 'parent') {
-      await runIsolatedDatabaseCase('activitypub-expiry')
-      return
-    }
     const active = await accept(makeEnvelope())
     const stale = await accept(makeEnvelope())
     const idle = await accept(makeEnvelope())
+    const foreign = await accept(makeEnvelope())
     await ageActivityPubInboxCleanupFixturesForTest(
       active.deliveryId,
       stale.deliveryId,
       idle.deliveryId,
     )
+    await expireActivityPubInboxDeliveryForTest(foreign.deliveryId)
+    await makeActivityPubInboxFailureExpiredForTest(foreign.deliveryId)
+    const ownedIds = [active.deliveryId, stale.deliveryId, idle.deliveryId]
 
-    expect(await expireActivityPubInboxDeliveries('unverified', 2)).toMatchObject({
+    expect(await expireActivityPubInboxDeliveries('unverified', 2, ownedIds)).toMatchObject({
       deletedRows: 2,
     })
     expect(
-      await getExistingActivityPubInboxDeliveryIdsForTest([
-        active.deliveryId,
-        stale.deliveryId,
-        idle.deliveryId,
-      ]),
-    ).toEqual([active.deliveryId])
-  }, 240_000)
+      await getExistingActivityPubInboxDeliveryIdsForTest([...ownedIds, foreign.deliveryId]),
+    ).toEqual([active.deliveryId, foreign.deliveryId].toSorted())
+  })
 
   it('rolls the storage counter back with the owned insert', async () => {
     const rawBody = Buffer.from('rollback')

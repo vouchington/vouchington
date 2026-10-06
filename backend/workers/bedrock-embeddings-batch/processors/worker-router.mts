@@ -21,6 +21,7 @@ type JobData = Record<string, unknown>
 export const processBedrockEmbeddingsBatchJob = async (
   job: Job<JobData>,
   worker: Worker,
+  scope?: { entityIds?: readonly string[] },
 ): Promise<unknown> => {
   try {
     const orderingKey = job.opts.ordering?.key
@@ -66,6 +67,7 @@ export const processBedrockEmbeddingsBatchJob = async (
             return await processExistingEmbeddingReconciliation(
               entityType as ReconciliationEntityType,
               data.after as string | undefined,
+              scope?.entityIds,
             )
           }
           case 'post_trigger_recovery': {

@@ -58,7 +58,13 @@ export function processLanguageDetection(
  */
 export async function processLanguageDetectionBackfill(
   jobName: LanguageDetectionBackfillJobName,
+  entityIds?: readonly string[],
 ): Promise<{ updated: number }> {
+  assertKnownLanguageDetectionBackfillJob(jobName)
+  if (entityIds?.length === 0) return { updated: 0 }
+  if (entityIds && jobName !== 'backfill_users') {
+    throw new Error(`Scoped language detection backfill is not implemented for ${jobName}`)
+  }
   let updated = 0
   switch (jobName) {
     case 'backfill_posts': {
@@ -90,7 +96,7 @@ export async function processLanguageDetectionBackfill(
       break
     }
     case 'backfill_users': {
-      for await (const ids of streamUsersNeedingLanguageDetection()) {
+      for await (const ids of streamUsersNeedingLanguageDetection(entityIds)) {
         const result = await detectUserLanguageBatch(ids)
         updated += result.updated
       }
@@ -109,4 +115,20 @@ export async function processLanguageDetectionBackfill(
     }
   }
   return { updated }
+}
+
+function assertKnownLanguageDetectionBackfillJob(jobName: LanguageDetectionBackfillJobName): void {
+  switch (jobName) {
+    case 'backfill_posts':
+    case 'backfill_rss_feed_items':
+    case 'backfill_crawls':
+    case 'backfill_communities':
+    case 'backfill_users':
+    case 'backfill_topics':
+      return
+    default: {
+      const _exhaustive: never = jobName
+      throw new Error(`Unknown backfill job: ${_exhaustive}`)
+    }
+  }
 }

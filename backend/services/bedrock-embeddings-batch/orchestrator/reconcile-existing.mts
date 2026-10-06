@@ -17,7 +17,11 @@ export type EmbeddingReconciliationPage = {
   nextCursor: string | null
 }
 
-export type EmbeddingReconciliationOptions = { after?: string; limit?: number }
+export type EmbeddingReconciliationOptions = {
+  after?: string
+  limit?: number
+  ids?: readonly string[]
+}
 
 export async function copyExistingEmbeddings(
   tableName: ReconciliationTable,
@@ -32,6 +36,7 @@ export async function copyExistingEmbeddings(
     throw new Error('Invalid embedding reconciliation page size')
   }
   const limit = Math.min(requestedLimit, configuredPageSize)
+  if (options.ids?.length === 0) return { updatedIds: [], scannedCount: 0, nextCursor: null }
   const scope = `embedding-reconciliation:${tableName}:id-asc`
   const afterId =
     options.after !== undefined
@@ -44,8 +49,10 @@ export async function copyExistingEmbeddings(
   const lockClause = copyExistingLockClause(tableName)
 
   await using query = await beginTransaction()
-  const cursorClause = afterId ? 'AND id > $1::uuid' : ''
-  const limitParameter = afterId ? '$2' : '$1'
+  const parameters: unknown[] = []
+  const cursorClause = afterId ? `AND id > $${parameters.push(afterId)}::uuid` : ''
+  const idClause = options.ids ? `AND id = ANY($${parameters.push(options.ids)}::uuid[])` : ''
+  const limitParameter = `$${parameters.push(limit)}`
 
   // The index-compatible candidate page is fixed before cache, deletion, batch-lock,
   // and row-lock checks. Every candidate advances the cursor, even if no copy occurs.
@@ -57,9 +64,10 @@ export async function copyExistingEmbeddings(
         OR ${EMBEDDING_COLUMNS.input_sha256} != ${EMBEDDING_COLUMNS.content_sha256}
       )
       ${cursorClause}
+      ${idClause}
       ORDER BY id
       LIMIT ${limitParameter}`,
-    afterId ? [afterId, limit] : [limit],
+    parameters,
   )
   const candidateIds = candidates.map(row => row.id)
   const scannedCount = candidateIds.length
