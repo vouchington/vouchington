@@ -102,10 +102,16 @@ describe('web push endpoint ownership', () => {
     const ownerLockReached = Promise.withResolvers<void>()
     const replacementRequest = upsertWebPushSubscription(input(user!.id, endpoint), {
       beforeOwnerRowLock: async () => {
-        await expect(testWebPushSubscriptionRowLockAvailable(current.id)).resolves.toBe(true)
-        ownerLockReached.resolve()
+        try {
+          await expect(testWebPushSubscriptionRowLockAvailable(current.id)).resolves.toBe(true)
+          ownerLockReached.resolve()
+        } catch (err) {
+          ownerLockReached.reject(err)
+          throw err
+        }
       },
     })
+    void replacementRequest.catch(() => undefined)
     await ownerLockReached.promise
 
     await owner.release()

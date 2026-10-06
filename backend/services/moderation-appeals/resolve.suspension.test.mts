@@ -80,7 +80,12 @@ describe('resolveModerationAppealAccept — suspension', () => {
     )
     const lift = liftUserSuspensionById(admin.id, suspensionId, {})
     try {
-      await authorLocked.promise
+      await Promise.race([
+        authorLocked.promise,
+        lift.then(() => {
+          throw new Error('suspension lift settled before the author lock')
+        }),
+      ])
       await expect(
         probeAuthorLifecycleLock(suspensionUser.id, lockAuthorPublicationLifecycle),
       ).rejects.toMatchObject({ code: '55P03' })
@@ -138,7 +143,14 @@ describe('resolveModerationAppealAccept — suspension', () => {
     const resolving = resolveModerationAppealAccept(admin.id, appeal.id, 'staff_or_user')
     const resolvingRejection = resolving.catch((err: unknown) => err)
     try {
-      await appealWaitingForAuthorLock.promise
+      await Promise.race([
+        appealWaitingForAuthorLock.promise,
+        resolvingRejection.then(result => {
+          throw result instanceof Error
+            ? result
+            : new Error('appeal settled before the author lock')
+        }),
+      ])
       await expect(
         probeAuthorLifecycleLock(suspensionUser.id, lockAuthorPublicationLifecycle),
       ).rejects.toMatchObject({ code: '55P03' })

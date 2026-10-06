@@ -98,6 +98,9 @@ describe('connectOAuthAccountToUser', () => {
       )
       await deletionUpdated.promise
 
+      const pendingConnection = connectOAuthAccountToUser('github', user.id, providerUserId).catch(
+        (err: unknown) => err,
+      )
       {
         await using contention = await beginTransaction()
         await contention(`SET LOCAL lock_timeout = '50ms'`)
@@ -108,9 +111,7 @@ describe('connectOAuthAccountToUser', () => {
       releaseDeletion.resolve()
 
       await expect(deleting).resolves.toBeUndefined()
-      await expect(
-        connectOAuthAccountToUser('github', user.id, providerUserId),
-      ).rejects.toMatchObject({ code: '23514' })
+      await expect(pendingConnection).resolves.toMatchObject({ code: '23514' })
       await expect(getTestOAuthAccountRaw('github', providerUserId)).resolves.toMatchObject({
         user_id: null,
       })

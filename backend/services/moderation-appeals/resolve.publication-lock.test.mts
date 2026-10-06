@@ -75,7 +75,12 @@ describe('resolveModerationAppealAccept publication lock', () => {
     })
     const resolving = resolveModerationAppealAccept(staff.id, appeal.id, 'staff_or_user')
     try {
-      await publicationLocked.promise
+      await Promise.race([
+        publicationLocked.promise,
+        resolving.then(() => {
+          throw new Error('appeal settled before the publication lock')
+        }),
+      ])
       await expect(probePublicationLock(postId, lockPostPublication)).rejects.toMatchObject({
         code: '55P03',
       })

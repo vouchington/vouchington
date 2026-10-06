@@ -292,7 +292,8 @@ function captureDeliveredPersist(subscriptionId: string) {
   const persist = (async (intent, outcome) => {
     const result = await persistClaimedNotificationPushOutcome(intent, outcome)
     if (outcome.kind === 'delivered' && outcome.subscription.id === subscriptionId)
-      delivered.resolve()
+      if (result === 'persisted') delivered.resolve()
+      else delivered.reject(new Error(`notification push persist returned ${result}`))
     return result
   }) as typeof persistClaimedNotificationPushOutcome
   return { delivered, persist }

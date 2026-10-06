@@ -58,7 +58,12 @@ describe('recordAutomodActionFeedback publication lock', () => {
       action: 'label_only',
     })
     try {
-      await publicationLocked.promise
+      await Promise.race([
+        publicationLocked.promise,
+        feedback.then(() => {
+          throw new Error('feedback settled before the publication lock')
+        }),
+      ])
       await expect(
         lockPublicationWithShortTimeout(postId, lockPostPublication),
       ).rejects.toMatchObject({ code: '55P03' })
