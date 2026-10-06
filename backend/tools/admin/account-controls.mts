@@ -13,7 +13,8 @@ const successSchema = {
 export const adminAccountControlTools = [
   createAdminTool<{ userId: string; reason?: string }>({
     name: 'suspend_user',
-    description: 'Suspend an account. Self, staff and official account targets are refused.',
+    description:
+      'Suspend an account. Self, staff (administrator or moderator) and platform account targets are refused; a platform account is any account whose account_type is not null (official, system or ai_agent).',
     scope: 'account-enforcement:suspend',
     api: { method: 'PUT', path: '/api/v1/users/:userId/suspension' },
     parameters: adminInput({ userId: UUID_INPUT, reason: TEXT_INPUT }, ['userId']),

@@ -14181,7 +14181,7 @@
           "tool": {
             "name": "get_user",
             "title": "Get User",
-            "description": "Get one user's public profile by UUID or username: username, bio, official-account flag and, only when the user shows their verified badge, the verified name. It is the signed-out profile for every caller, your own included: no email, phone, roles, linked accounts or private settings, ever. A deleted or unknown user returns { success: false, error: \"User not found\" }. An email address or phone number is not a valid identifier.",
+            "description": "Get one user's public profile by UUID or username: username, bio, `account_type` (`official`, `system` or `ai_agent` for a platform account, `null` for a member) and, only when the user shows their verified badge, the verified name. It is the signed-out profile for every caller, your own included: no email, phone, roles, linked accounts or private settings, ever. A deleted or unknown user returns { success: false, error: \"User not found\" }. An email address or phone number is not a valid identifier.",
             "inputSchema": {
               "type": "object",
               "properties": {
@@ -32021,7 +32021,7 @@
           "tool": {
             "name": "suspend_user",
             "title": "Suspend user",
-            "description": "Suspend an account. Self, staff and official account targets are refused.",
+            "description": "Suspend an account. Self, staff (administrator or moderator) and platform account targets are refused; a platform account is any account whose account_type is not null (official, system or ai_agent).",
             "inputSchema": {
               "type": "object",
               "properties": {

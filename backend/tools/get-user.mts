@@ -15,7 +15,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     name: 'get_user',
     type: 'function',
     description:
-      'Get one user\'s public profile by UUID or username: username, bio, official-account flag and, only when the user shows their verified badge, the verified name. It is the signed-out profile for every caller, your own included: no email, phone, roles, linked accounts or private settings, ever. A deleted or unknown user returns { success: false, error: "User not found" }. An email address or phone number is not a valid identifier.',
+      'Get one user\'s public profile by UUID or username: username, bio, `account_type` (`official`, `system` or `ai_agent` for a platform account, `null` for a member) and, only when the user shows their verified badge, the verified name. It is the signed-out profile for every caller, your own included: no email, phone, roles, linked accounts or private settings, ever. A deleted or unknown user returns { success: false, error: "User not found" }. An email address or phone number is not a valid identifier.',
     parameters: {
       type: 'object',
       properties: {
