@@ -1,4 +1,9 @@
-import { beginTransaction } from '@data-stores/psql'
+import {
+  beginTransaction,
+  withTransactionOptions,
+  type QueryOptions,
+  type TransactionQuery,
+} from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import createError from 'http-errors'
 import { generateApiKey } from './generate.mts'
@@ -6,11 +11,36 @@ import { addKeyHashToBloomFilter } from './bloom-filter.mts'
 import { lockApiKeyOwner } from './lifetime.mts'
 import type { ApiKey } from './types.mts'
 
+type RotatedApiKey = { apiKey: ApiKey; rawKey: string; keyHash: Buffer }
+
 export async function rotateApiKey(
   userId: string,
   id: string,
+  options: QueryOptions = {},
 ): Promise<{ apiKey: ApiKey; rawKey: string }> {
-  await using query = await beginTransaction()
+  const rotated = await rotateApiKeyRows(userId, id, options)
+  await addKeyHashToBloomFilter(rotated.keyHash)
+  return { apiKey: rotated.apiKey, rawKey: rotated.rawKey }
+}
+
+async function rotateApiKeyRows(
+  userId: string,
+  id: string,
+  options: QueryOptions,
+): Promise<RotatedApiKey> {
+  const run = (query: TransactionQuery) => rotateApiKeyInTransaction(query, userId, id)
+  if (options.query || options.client) return withTransactionOptions(options, run)
+  await using transaction = await beginTransaction()
+  const rotated = await run(transaction)
+  await transaction.commit()
+  return rotated
+}
+
+async function rotateApiKeyInTransaction(
+  query: TransactionQuery,
+  userId: string,
+  id: string,
+): Promise<RotatedApiKey> {
   const isAdministrator = await lockApiKeyOwner(query, userId)
   const { rows } = await query(sql`/* rotateApiKey */
     SELECT id, type, revoked_at, replaced_by_api_key_id, expires_at <= NOW() AS is_expired
@@ -39,12 +69,10 @@ export async function rotateApiKey(
       revoked_at, expires_at, replaced_by_api_key_id, expiry_reminder_sent_at, updated_at
   `)
   const apiKey = replacement.rows[0] as ApiKey
-  await query(sql`/* rotateApiKey */
+  await query(sql`/* linkRotatedApiKey */
     UPDATE api_keys SET replaced_by_api_key_id = ${apiKey.id}::uuid,
       expires_at = LEAST(expires_at, NOW() + INTERVAL '24 hours')
     WHERE id = ${id}::uuid
   `)
-  await query.commit()
-  await addKeyHashToBloomFilter(keyHash)
-  return { apiKey, rawKey }
+  return { apiKey, rawKey, keyHash }
 }
