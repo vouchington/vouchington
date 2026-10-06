@@ -1,7 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { isCurrencyCode } from '@ts-shared/money'
 import * as serverRoutes from '@/lib/api/server'
 import { installRoutesExtendedHarness } from '../../test-helpers/routes-extended-harness.mts'
+import { createWebApiTestCookieHeader } from '../routes.mts'
+
+const proofNow = new Date(process.env.VOUCH_PROOF_NOW ?? '2026-10-31T12:00:00.000Z')
 
 function unset(target: object, key: string) {
   delete (target as Record<string, unknown>)[key]
@@ -97,30 +100,28 @@ describe('routes-extended', () => {
     })
 
     it('getGrowthMetrics returns valid shape for today range', async () => {
-      // Bracket the request with the UTC midnight of "now" immediately before and after it
-      // fires: the midnight-alignment-only check below would accept every non-epoch midnight
-      // in history (an off-by-one-day, start-of-month, or stale-data regression included).
-      // Comparing against a single `new Date()` snapshot instead would be flaky, since the
-      // request can straddle the UTC-midnight boundary (or the 10s growth-metrics cache TTL)
-      // between computing the expectation and the response resolving — bracketing before and
-      // after preserves that tolerance while still proving the returned day is current.
-      const utcMidnightMs = (date: Date) =>
-        Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
-      const beforeMidnightMs = utcMidnightMs(new Date())
-      const metrics = await serverRoutes.getGrowthMetrics({
-        range: 'today',
-        headers: harness.adminCookieHeader,
-      })
-      const afterMidnightMs = utcMidnightMs(new Date())
-      expect(metrics.range).toBe('today')
-      const periodStartMs = new Date(metrics.period_start).getTime()
-      expect([beforeMidnightMs, afterMidnightMs]).toContain(periodStartMs)
-      expect(metrics.user_growth).toMatchObject({
-        total_users: expect.any(Number),
-        new_users: expect.any(Number),
-        dau: expect.any(Number),
-        mau: expect.any(Number),
-      })
+      // Mint the cookie on the same pinned clock the route reads, then expect that UTC midnight.
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(proofNow)
+      try {
+        const headers = await createWebApiTestCookieHeader(harness.admin.id)
+        const metrics = await serverRoutes.getGrowthMetrics({
+          range: 'today',
+          headers,
+        })
+        expect(metrics.range).toBe('today')
+        expect(new Date(metrics.period_start).getTime()).toBe(
+          Date.UTC(proofNow.getUTCFullYear(), proofNow.getUTCMonth(), proofNow.getUTCDate()),
+        )
+        expect(metrics.user_growth).toMatchObject({
+          total_users: expect.any(Number),
+          new_users: expect.any(Number),
+          dau: expect.any(Number),
+          mau: expect.any(Number),
+        })
+      } finally {
+        vi.useRealTimers()
+      }
     })
   })
 

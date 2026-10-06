@@ -4,6 +4,17 @@ import { buildTimeRangeFilter, getTimeRangeLowerBoundDate } from './time-range.m
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000
 const ONE_WEEK_MS = 7 * ONE_DAY_MS
+const PROOF_INSTANTS = [
+  '2026-10-05T23:59:40.000Z',
+  '2026-10-06T00:01:13.000Z',
+  '2026-10-31T12:00:00.000Z',
+] as const
+
+function proofInstants(): readonly Date[] {
+  const override = process.env.VOUCH_PROOF_NOW
+  const isos = override === undefined ? PROOF_INSTANTS : [override]
+  return isos.map(iso => new Date(iso))
+}
 
 describe('buildTimeRangeFilter', () => {
   it('throws for an invalid idColumn', () => {
@@ -37,46 +48,44 @@ describe('getTimeRangeLowerBoundDate', () => {
     expect(getTimeRangeLowerBoundDate('all')).toBeNull()
   })
 
-  it('returns a date exactly 1 day before now for "1d"', () => {
-    const before = Date.now()
-    const bound = getTimeRangeLowerBoundDate('1d')
-    const after = Date.now()
+  it('returns a date exactly 1 day before the pinned clock for "1d"', () => {
+    for (const now of proofInstants()) {
+      const bound = getTimeRangeLowerBoundDate('1d', now)
 
-    expect(bound).not.toBeNull()
-    expect(bound!.getTime()).toBeGreaterThanOrEqual(before - ONE_DAY_MS)
-    expect(bound!.getTime()).toBeLessThanOrEqual(after - ONE_DAY_MS)
+      expect(bound).not.toBeNull()
+      expect(bound!.getTime()).toBe(now.getTime() - ONE_DAY_MS)
+    }
   })
 
-  it('returns a date exactly 1 week before now for "1w"', () => {
-    const before = Date.now()
-    const bound = getTimeRangeLowerBoundDate('1w')
-    const after = Date.now()
+  it('returns a date exactly 1 week before the pinned clock for "1w"', () => {
+    for (const now of proofInstants()) {
+      const bound = getTimeRangeLowerBoundDate('1w', now)
 
-    expect(bound).not.toBeNull()
-    expect(bound!.getTime()).toBeGreaterThanOrEqual(before - ONE_WEEK_MS)
-    expect(bound!.getTime()).toBeLessThanOrEqual(after - ONE_WEEK_MS)
+      expect(bound).not.toBeNull()
+      expect(bound!.getTime()).toBe(now.getTime() - ONE_WEEK_MS)
+    }
   })
 
-  it('returns a date 1 UTC month before now for "1m"', () => {
-    const now = new Date()
-    const expected = new Date(now)
-    expected.setUTCMonth(expected.getUTCMonth() - 1)
+  it('returns a date 1 UTC month before the pinned clock for "1m"', () => {
+    for (const now of proofInstants()) {
+      const expected = new Date(now)
+      expected.setUTCMonth(expected.getUTCMonth() - 1)
+      const bound = getTimeRangeLowerBoundDate('1m', now)
 
-    const bound = getTimeRangeLowerBoundDate('1m')
-
-    expect(bound).not.toBeNull()
-    expect(Math.abs(bound!.getTime() - expected.getTime())).toBeLessThan(5000)
+      expect(bound).not.toBeNull()
+      expect(bound!.getTime()).toBe(expected.getTime())
+    }
   })
 
-  it('returns a date 1 UTC year before now for "1y"', () => {
-    const now = new Date()
-    const expected = new Date(now)
-    expected.setUTCFullYear(expected.getUTCFullYear() - 1)
+  it('returns a date 1 UTC year before the pinned clock for "1y"', () => {
+    for (const now of proofInstants()) {
+      const expected = new Date(now)
+      expected.setUTCFullYear(expected.getUTCFullYear() - 1)
+      const bound = getTimeRangeLowerBoundDate('1y', now)
 
-    const bound = getTimeRangeLowerBoundDate('1y')
-
-    expect(bound).not.toBeNull()
-    expect(Math.abs(bound!.getTime() - expected.getTime())).toBeLessThan(5000)
+      expect(bound).not.toBeNull()
+      expect(bound!.getTime()).toBe(expected.getTime())
+    }
   })
 
   it('throws for an unknown time range', () => {

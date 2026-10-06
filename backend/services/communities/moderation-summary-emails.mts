@@ -21,9 +21,8 @@ export type ModerationRecipientRow = {
   moderation_email_timezone: string
 }
 
-export async function dispatchCommunityModerationSummaryEmails(): Promise<void> {
-  const recipients = await getModerationSummaryRecipients()
-  const now = new Date()
+export async function dispatchCommunityModerationSummaryEmails(now = new Date()): Promise<void> {
+  const recipients = await getModerationSummaryRecipients(now)
   await pMap(recipients, recipient => dispatchModerationSummary(recipient, now), {
     concurrency: 1,
     stopOnError: false,
@@ -199,7 +198,7 @@ export async function hasModerationEmailSent(userId: string, sendKey: string): P
   return rows.length > 0
 }
 
-async function getModerationSummaryRecipients(): Promise<ModerationRecipientRow[]> {
+async function getModerationSummaryRecipients(now: Date): Promise<ModerationRecipientRow[]> {
   const WORK_PAGE_SIZE = getCommunitiesWorkLimit('summary_email_batch_size')
   const { rows } = await read(sql`/* getModerationSummaryRecipients */
     SELECT DISTINCT
@@ -223,8 +222,8 @@ async function getModerationSummaryRecipients(): Promise<ModerationRecipientRow[
         FROM community_member_vacations v
         WHERE v.community_id = cm.community_id
           AND v.user_id = cm.user_id
-          AND v.starts_at <= now()
-          AND (v.ends_at IS NULL OR v.ends_at > now())
+          AND v.starts_at <= ${now}::timestamptz
+          AND (v.ends_at IS NULL OR v.ends_at > ${now}::timestamptz)
         )
       )
     JOIN communities c
@@ -233,7 +232,7 @@ async function getModerationSummaryRecipients(): Promise<ModerationRecipientRow[
       AND c.archived_at IS NULL
     CROSS JOIN LATERAL (
       SELECT
-        CURRENT_TIMESTAMP AT TIME ZONE COALESCE(
+        ${now}::timestamptz AT TIME ZONE COALESCE(
           u.moderation_email_timezone,
           'America/Los_Angeles'
         ) AS local_now
@@ -489,8 +488,8 @@ export async function getCommunityModerationSummaryCommunities(
         FROM community_member_vacations v
         WHERE v.community_id = cm.community_id
           AND v.user_id = cm.user_id
-          AND v.starts_at <= now()
-          AND (v.ends_at IS NULL OR v.ends_at > now())
+          AND v.starts_at <= ${windowEnd}::timestamptz
+          AND (v.ends_at IS NULL OR v.ends_at > ${windowEnd}::timestamptz)
         )
       )
     ORDER BY c.name ASC, c.id ASC

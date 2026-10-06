@@ -27,13 +27,12 @@ export function buildTimeRangeFilter(timeRange: TimeRange, idColumn: string): SQ
     .append(sql` >= ${lowerBoundUuid}`)
 }
 
-export function getTimeRangeLowerBoundDate(timeRange: TimeRange): Date | null {
-  const lowerBoundTimestampMs = getTimeRangeLowerBoundTimestampMs(timeRange)
+export function getTimeRangeLowerBoundDate(timeRange: TimeRange, now = new Date()): Date | null {
+  const lowerBoundTimestampMs = getTimeRangeLowerBoundTimestampMs(timeRange, now)
   return lowerBoundTimestampMs === null ? null : new Date(lowerBoundTimestampMs)
 }
 
-function getTimeRangeLowerBoundTimestampMs(timeRange: TimeRange): number | null {
-  const now = new Date()
+function getTimeRangeLowerBoundTimestampMs(timeRange: TimeRange, now = new Date()): number | null {
   switch (timeRange) {
     case '1d':
       return now.getTime() - 24 * 60 * 60 * 1000

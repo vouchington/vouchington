@@ -17,10 +17,10 @@ import {
   type Ignore,
 } from './trivy-policy-helpers.mts'
 
+const clock = new Date(process.env.VOUCH_PROOF_NOW ?? '2026-10-31T12:00:00.000Z')
 function futureDate(days = 14): string {
-  const date = new Date()
-  date.setUTCDate(date.getUTCDate() + days)
-  return date.toISOString().slice(0, 10)
+  const date = new Date(clock)
+  return new Date(date.setUTCDate(date.getUTCDate() + days)).toISOString().slice(0, 10)
 }
 
 describe('Trivy policy', () => {
@@ -283,18 +283,18 @@ describe('Trivy policy', () => {
         'vulnerabilities[0].expired_at must be no more than 30 days away',
       ],
     ]
-    expect(() => validateIgnoreRegistry({ vulnerabilities: [valid] })).not.toThrow()
+    expect(() => validateIgnoreRegistry({ vulnerabilities: [valid] }, clock)).not.toThrow()
     expect(() =>
-      validateIgnoreRegistry({ vulnerabilities: [{ ...valid, purls: [plusName] }] }),
+      validateIgnoreRegistry({ vulnerabilities: [{ ...valid, purls: [plusName] }] }, clock),
     ).not.toThrow()
     expect(() =>
-      validateIgnoreRegistry({ vulnerabilities: [{ ...valid, purls: [encodedName] }] }),
+      validateIgnoreRegistry({ vulnerabilities: [{ ...valid, purls: [encodedName] }] }, clock),
     ).not.toThrow()
     const unquotedDateRegistry = parseIgnoreRegistry(
       `vulnerabilities:\n  - id: ${valid.id}\n    purls:\n      - ${valid.purls[0]}\n    statement: ${JSON.stringify(valid.statement)}\n    expired_at: ${valid.expired_at}\n`,
     )
-    expect(() => validateIgnoreRegistry(unquotedDateRegistry)).not.toThrow()
+    expect(() => validateIgnoreRegistry(unquotedDateRegistry, clock)).not.toThrow()
     for (const [ignore, message] of failures)
-      expect(() => validateIgnoreRegistry({ vulnerabilities: [ignore] })).toThrow(message)
+      expect(() => validateIgnoreRegistry({ vulnerabilities: [ignore] }, clock)).toThrow(message)
   })
 })

@@ -37,6 +37,7 @@ describe('rss-feed-processing analytics', () => {
 
   it('records RSS feed truncation counts', async () => {
     const rssFeedId = crypto.randomUUID()
+    const now = new Date(process.env.VOUCH_PROOF_NOW ?? '2026-10-31T12:00:00.000Z')
 
     trackRssFeedProcessingTruncated({
       rssFeedId,
@@ -48,10 +49,11 @@ describe('rss-feed-processing analytics', () => {
       categoryCap: 20,
       categoryTruncatedItemCount: 3,
       categoryTruncatedCount: 12,
+      now,
     })
     await flush()
 
-    const eventDate = new Date().toISOString().slice(0, 10)
+    const eventDate = now.toISOString().slice(0, 10)
     const rows = (
       await fs.promises.readFile(getPartitionPath('rss_feed_processing', eventDate), 'utf8')
     )
