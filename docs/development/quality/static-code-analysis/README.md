@@ -605,9 +605,10 @@ Tests for static-analysis tooling should be covered by semantic Vitest projects 
 The publication writer inventory uses `vouchington-tooling/post-publication-inventory` for source
 analysis. Product configuration supplies the approved capture modules and symbols, eligibility tables,
 and writer conventions; the local checker owns the tracked inventory and its diagnostics. The reader
-inventory also delegates static SQL template extraction and append-chain assembly to this package,
-with configured SQL tags and executor imports. Reader composition and public-boundary checks remain
-separate local guards.
+inventory delegates static SQL template extraction, append-chain assembly, reader composition,
+public-boundary filtering, and SQL eligibility-view analysis to this package. Product configuration
+supplies SQL tags, executor imports, canonical boundary symbols, relation names, and key columns;
+the local checker owns the tracked inventory and diagnostics.
 
 SQL text guards under `repo-file-policy/` share PostgreSQL comment, quote, literal, and
 statement handling through `sql-scanner.mts`, a re-export of `vouchington-tooling/sql-scanner`.
