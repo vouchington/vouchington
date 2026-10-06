@@ -18,7 +18,7 @@ import {
   removeEditorialStoryItem,
   setEditorialStoryOfficialItem,
 } from '@services/stories'
-import * as storyLifecycleLock from '@services/post-publication/story-lifecycle-lock'
+import * as storyLifecycleLock from '../post-publication/story-lifecycle-lock.mts'
 
 async function fixture() {
   const admin = await createTestUserDirect({ administrator: true })
@@ -44,9 +44,9 @@ describe('editorial official-item membership serialization', () => {
     let remove: ReturnType<typeof removeEditorialStoryItem>
     const itemLocked = Promise.withResolvers<void>()
     const lockStoryLifecycles = storyLifecycleLock.lockStoryLifecycles
-    vi.spyOn(storyLifecycleLock, 'lockStoryLifecycles').mockImplementation((...args) => {
+    vi.spyOn(storyLifecycleLock, 'lockStoryLifecycles').mockImplementation((query, storyIds) => {
       itemLocked.resolve()
-      return lockStoryLifecycles(...args)
+      return lockStoryLifecycles(query, storyIds)
     })
     try {
       await withTestStoryLifecycleLock(story.id, async () => {

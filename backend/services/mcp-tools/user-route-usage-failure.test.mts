@@ -14,13 +14,14 @@ import {
   issueTestUserMcpCredential,
   type UserMcpCredentialKind,
 } from '@voucha/test-helpers/mcp-user-credentials'
-import * as routeRateLimits from '@services/route-rate-limits'
+import type { UsageSettlement } from '../route-rate-limits/usage-types.mts'
+import * as routeRateLimits from '../route-rate-limits/index.mts'
 import * as audit from './audit.mts'
 
 function trackClosedUsageSettlement(): Promise<void>[] {
   const settled: Promise<unknown>[] = []
   const settleUsage = routeRateLimits.settleUsage
-  vi.spyOn(routeRateLimits, 'settleUsage').mockImplementation(settlement => {
+  vi.spyOn(routeRateLimits, 'settleUsage').mockImplementation((settlement: UsageSettlement) => {
     const result = settleUsage(settlement)
     settled.push(result)
     return result
@@ -29,7 +30,7 @@ function trackClosedUsageSettlement(): Promise<void>[] {
   const closed: Promise<void>[] = []
   vi.spyOn(ServerResponse.prototype, 'once').mockImplementation(function (
     this: ServerResponse,
-    event: string,
+    event: string | symbol,
     listener: (...args: unknown[]) => void,
   ) {
     if (event !== 'close') return once.call(this, event, listener)

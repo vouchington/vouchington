@@ -157,7 +157,7 @@ describe('asset admission root domain', () => {
         err => err as Error,
       )
       try {
-        await blocked.promise
+        await blocked
         await expectAdmissionLockHeld(imageId)
         expect(edge.put).not.toHaveBeenCalled()
       } finally {
@@ -235,7 +235,7 @@ describe('asset admission root domain', () => {
     })
     void reusing.catch(() => undefined)
     try {
-      await blocked.promise
+      await blocked
       await expectAdmissionLockHeld(imageId)
     } finally {
       await blocker.rollback()
