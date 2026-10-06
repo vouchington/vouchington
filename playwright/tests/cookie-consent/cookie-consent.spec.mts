@@ -1,9 +1,6 @@
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { test, expect } from '../../helpers/test.mts'
 
-// GTM only loads when NEXT_PUBLIC_GTM_ID is configured
-const hasGtmId = Boolean(process.env.NEXT_PUBLIC_GTM_ID)
-
 test.describe('Cookie Consent Banner', () => {
   test.beforeEach(async ({ page }) => {
     // Clear localStorage before each test so banner always shows on fresh visit
@@ -43,8 +40,6 @@ test.describe('Cookie Consent Banner', () => {
   })
 
   test('GTM script loads after accepting all cookies', async ({ page }) => {
-    test.skip(!hasGtmId, 'Requires NEXT_PUBLIC_GTM_ID to be configured')
-
     await navigateTo(page, '/')
 
     await page.getByTestId('cookie-consent-accept-all-button').click()

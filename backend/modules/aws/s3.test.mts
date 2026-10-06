@@ -4,12 +4,19 @@ import { describe, expect, it } from 'vitest'
 import { hasS3Credentials } from './credentials.mts'
 import { S3Buckets, S3ImageUploadsClient, S3ImagesClient } from './s3.mts'
 
-describe.skipIf(!hasS3Credentials())('S3ImagesClient', () => {
+function requireS3Credentials(): void {
+  if (!hasS3Credentials()) {
+    throw new Error('S3 credentials are required for this credentialed test.')
+  }
+}
+
+describe('S3ImagesClient', () => {
   it(
     'supports creating presigned upload URLs in test mode',
     { timeout: 30_000 },
     /* no-mistakes: integration=aws */
     async () => {
+      requireS3Credentials()
       const uploadUrl = await getSignedUrl(
         S3ImagesClient,
         new PutObjectCommand({
@@ -30,12 +37,13 @@ describe.skipIf(!hasS3Credentials())('S3ImagesClient', () => {
   )
 })
 
-describe.skipIf(!hasS3Credentials())('S3ImageUploadsClient', () => {
+describe('S3ImageUploadsClient', () => {
   it(
     'supports creating presigned upload URLs in test mode',
     { timeout: 30_000 },
     /* no-mistakes: integration=aws */
     async () => {
+      requireS3Credentials()
       const uploadUrl = await getSignedUrl(
         S3ImageUploadsClient,
         new PutObjectCommand({

@@ -152,6 +152,7 @@ export function createPlaywrightConfig({
           IMAGE_ORIGIN: process.env.IMAGE_ORIGIN ?? IMAGE_LAMBDA_URL,
           NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY:
             process.env.NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY ?? TEST_WEB_PUSH_PUBLIC_KEY,
+          GTM_ID: process.env.GTM_ID || process.env.NEXT_PUBLIC_GTM_ID || 'GTM-PLAYWRIGHT',
           NODE_OPTIONS: withOtelNodeOptions(nodeOptions, otelEnabled),
           ...(otelEnabled ? { OTEL_LOGS_EXPORTER: 'otlp', OTEL_SERVICE_NAME: 'voucha-web' } : {}),
         },

@@ -9,11 +9,11 @@ import { storybookBundleHasStory } from '../../helpers/storybook.mts'
 
 const currentBundleSentinelStory = 'design-system-shared-statuspage--not-found'
 
-async function skipIfStorybookBundleIsStale(page: Parameters<typeof navigateTo>[0]) {
-  test.skip(
-    !(await storybookBundleHasStory(page, currentBundleSentinelStory)),
-    'Full-stack Storybook bundle predates this story.',
-  )
+async function requireCurrentStorybookBundle(page: Parameters<typeof navigateTo>[0]) {
+  expect(
+    await storybookBundleHasStory(page, currentBundleSentinelStory),
+    `Storybook bundle is missing ${currentBundleSentinelStory}.`,
+  ).toBe(true)
 }
 
 async function openStory(page: Parameters<typeof navigateTo>[0], id: string) {
@@ -32,7 +32,7 @@ test.describe('status page and error page rendering', () => {
   })
 
   test('StatusPage storybook story renders rate-limited variant', async ({ page }) => {
-    await skipIfStorybookBundleIsStale(page)
+    await requireCurrentStorybookBundle(page)
     await openStory(page, 'design-system-shared-statuspage--rate-limited')
 
     await expect(page.getByTestId('status-page-title')).toContainText('Too many requests')
@@ -43,7 +43,7 @@ test.describe('status page and error page rendering', () => {
   })
 
   test('ErrorPage storybook story renders rate-limited variant', async ({ page }) => {
-    await skipIfStorybookBundleIsStale(page)
+    await requireCurrentStorybookBundle(page)
     await openStory(page, 'design-system-shared-errorpage--rate-limited')
 
     await expect(page.getByTestId('error-page')).toBeVisible()
@@ -56,7 +56,7 @@ test.describe('status page and error page rendering', () => {
   })
 
   test('ErrorPage storybook story renders generic error variant', async ({ page }) => {
-    await skipIfStorybookBundleIsStale(page)
+    await requireCurrentStorybookBundle(page)
     await openStory(page, 'design-system-shared-errorpage--generic-error')
 
     await expect(page.getByTestId('error-page-title')).toContainText('Something went wrong')
@@ -64,7 +64,7 @@ test.describe('status page and error page rendering', () => {
   })
 
   test('GlobalError storybook story renders rate-limited variant', async ({ page }) => {
-    await skipIfStorybookBundleIsStale(page)
+    await requireCurrentStorybookBundle(page)
     await openStory(page, 'design-system-shared-errorpage--global-error-rate-limited')
 
     await expect(page.getByTestId('global-error-page')).toBeVisible()
@@ -77,7 +77,7 @@ test.describe('status page and error page rendering', () => {
   })
 
   test('GlobalError storybook story renders generic error variant', async ({ page }) => {
-    await skipIfStorybookBundleIsStale(page)
+    await requireCurrentStorybookBundle(page)
     await openStory(page, 'design-system-shared-errorpage--global-error-generic')
 
     await expect(page.getByTestId('global-error-page-title')).toContainText('Something went wrong')

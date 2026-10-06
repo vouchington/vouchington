@@ -101,11 +101,7 @@ test.describe('My Notifications', () => {
   test('service worker registers and enable/disable push round-trip works', async ({
     page,
     context,
-    browserName,
   }) => {
-    // PushManager and service workers need Chromium; skip on other engines
-    test.skip(browserName !== 'chromium', 'Push API only tested on Chromium')
-
     // Grant the Permissions API permission for the browser-internal checks
     // performed by serviceWorker.register() and PushManager.subscribe().
     // The init script below additionally forces `Notification.permission` to

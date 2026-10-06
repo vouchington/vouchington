@@ -1,14 +1,8 @@
-import { it, expect, beforeAll, describe } from 'vitest'
+import { it, expect, describe } from 'vitest'
 import { upsertPostOpenAIModeration } from '../posts.mts'
 import { createPost } from '@services/posts'
-import {
-  createTestUser,
-  getPostModerationData,
-  liveOpenAITest,
-  WEB_PROVENANCE,
-} from '@voucha/test-helpers'
+import { createTestUser, getPostModerationData, WEB_PROVENANCE } from '@voucha/test-helpers'
 import type { Post } from '@services/posts/types'
-import type { PrivateUser } from '@services/users/types'
 
 describe('posts.openai', () => {
   /**
@@ -17,21 +11,18 @@ describe('posts.openai', () => {
    * Other tests are in posts.test.mts (no API) and posts.mock.test.mts (mocked API).
    */
 
-  const hasOpenAIKey = Boolean(process.env.OPENAI_API_KEY)
-  let user: PrivateUser
-
-  beforeAll(async () => {
-    user = await createTestUser()
-  })
-
   function randomSuffix(): string {
     return Math.random().toString(36).slice(2, 10)
   }
 
-  it.skipIf(!hasOpenAIKey)(
+  it(
     'upsertPostOpenAIModeration makes real API call and creates moderation',
     /* no-mistakes: integration=openai */
-    liveOpenAITest(async () => {
+    async () => {
+      if (!process.env.OPENAI_API_KEY?.trim()) {
+        throw new Error('OPENAI_API_KEY is required for this credentialed test.')
+      }
+      const user = await createTestUser()
       const random = randomSuffix()
       const post = await createPost(user, WEB_PROVENANCE, {
         title: `Test Post for OpenAI Moderation Integration ${random}`,
@@ -90,7 +81,7 @@ describe('posts.openai', () => {
       expect(result2).toBeDefined()
       expect(result2.results).toBeUndefined()
       expect(result2.content_sha256).toEqual(result.content_sha256)
-    }),
+    },
     30_000,
   )
 })

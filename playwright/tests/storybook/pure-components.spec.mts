@@ -4,11 +4,12 @@ import { storybookBundleHasStory } from '../../helpers/storybook.mts'
 
 const currentBundleSentinelStory = 'design-system-pure-components--shared-badges-and-links'
 
-async function skipIfStorybookBundleIsStale(page: Parameters<typeof navigateTo>[0]) {
-  test.skip(
-    !(await storybookBundleHasStory(page, currentBundleSentinelStory)),
-    'Full-stack Storybook bundle predates this pure component story sweep.',
-  )
+async function requireStory(page: Parameters<typeof navigateTo>[0], id: string) {
+  expect(await storybookBundleHasStory(page, id), `Storybook bundle is missing ${id}.`).toBe(true)
+}
+
+async function requireCurrentStorybookBundle(page: Parameters<typeof navigateTo>[0]) {
+  await requireStory(page, currentBundleSentinelStory)
 }
 
 async function openStory(page: Parameters<typeof navigateTo>[0], id: string) {
@@ -17,7 +18,7 @@ async function openStory(page: Parameters<typeof navigateTo>[0], id: string) {
 
 test.describe('Storybook pure component stories', () => {
   test('renders shared pure badges, links, search shell, and separator', async ({ page }) => {
-    await skipIfStorybookBundleIsStale(page)
+    await requireCurrentStorybookBundle(page)
     await openStory(page, 'design-system-pure-components--shared-badges-and-links')
 
     await expect(page.getByTestId('user-account-badge')).toHaveText([
@@ -32,7 +33,7 @@ test.describe('Storybook pure component stories', () => {
   })
 
   test('renders data point and review counter pure leaves', async ({ page }) => {
-    await skipIfStorybookBundleIsStale(page)
+    await requireCurrentStorybookBundle(page)
     await openStory(page, 'design-system-pure-components--data-point-details')
 
     await expect(page.getByTestId('data-point-row')).toHaveCount(2)
@@ -41,7 +42,7 @@ test.describe('Storybook pure component stories', () => {
   })
 
   test('renders plan feature label pure leaves', async ({ page }) => {
-    await skipIfStorybookBundleIsStale(page)
+    await requireCurrentStorybookBundle(page)
     await openStory(page, 'design-system-pure-components--plan-feature-labels')
 
     await expect(page.getByTestId('plan-feature-label')).toHaveCount(2)
@@ -51,7 +52,7 @@ test.describe('Storybook pure component stories', () => {
   })
 
   test('renders entity vouch/disavow wrappers', async ({ page }) => {
-    await skipIfStorybookBundleIsStale(page)
+    await requireCurrentStorybookBundle(page)
     await openStory(page, 'design-system-pure-components--entity-vouch-disavow-votes')
 
     await expect(page.getByTestId('topic-vouch-disavow-vote')).toBeVisible()
@@ -61,13 +62,7 @@ test.describe('Storybook pure component stories', () => {
   })
 
   test('renders semantic vote controls', async ({ page }) => {
-    test.skip(
-      !(await storybookBundleHasStory(
-        page,
-        'design-system-interactive-components--score-vote-variants',
-      )),
-      'Interactive components story bundle predates this sweep.',
-    )
+    await requireStory(page, 'design-system-interactive-components--score-vote-variants')
     await openStory(page, 'design-system-interactive-components--score-vote-variants')
 
     const compactVote = page.locator('[data-vote-root="storybook-semantic-compact"]')
@@ -83,13 +78,7 @@ test.describe('Storybook pure component stories', () => {
   })
 
   test('renders shared bookmark and upload buttons', async ({ page }) => {
-    test.skip(
-      !(await storybookBundleHasStory(
-        page,
-        'design-system-interactive-components--shared-buttons',
-      )),
-      'Interactive components story bundle predates this sweep.',
-    )
+    await requireStory(page, 'design-system-interactive-components--shared-buttons')
     await openStory(page, 'design-system-interactive-components--shared-buttons')
 
     await expect(page.getByTestId('entity-bookmark-button')).toBeVisible()
@@ -98,13 +87,7 @@ test.describe('Storybook pure component stories', () => {
   })
 
   test('renders user trust election cards', async ({ page }) => {
-    test.skip(
-      !(await storybookBundleHasStory(
-        page,
-        'design-system-interactive-components--user-election-cards',
-      )),
-      'Interactive components story bundle predates this sweep.',
-    )
+    await requireStory(page, 'design-system-interactive-components--user-election-cards')
     await openStory(page, 'design-system-interactive-components--user-election-cards')
 
     await expect(page.getByTestId('user-signal-election-card')).toBeVisible()
@@ -114,7 +97,7 @@ test.describe('Storybook pure component stories', () => {
   })
 
   test('renders the user-tags aside', async ({ page }) => {
-    await skipIfStorybookBundleIsStale(page)
+    await requireCurrentStorybookBundle(page)
     await openStory(page, 'entities-users--asides')
 
     const userTags = page.getByTestId('user-tags-aside')
@@ -124,20 +107,14 @@ test.describe('Storybook pure component stories', () => {
   })
 
   test('renders dismissible CTA aside', async ({ page }) => {
-    test.skip(
-      !(await storybookBundleHasStory(
-        page,
-        'design-system-interactive-components--dismissible-cta-aside-default',
-      )),
-      'Interactive components story bundle predates this sweep.',
-    )
+    await requireStory(page, 'design-system-interactive-components--dismissible-cta-aside-default')
     await openStory(page, 'design-system-interactive-components--dismissible-cta-aside-default')
 
     await expect(page.getByTestId('dismissible-cta-aside')).toBeVisible()
   })
 
   test('renders memoized primitive stories', async ({ page }) => {
-    await skipIfStorybookBundleIsStale(page)
+    await requireCurrentStorybookBundle(page)
 
     await openStory(page, 'design-system-components-textarea--with-label')
 
@@ -168,7 +145,7 @@ test.describe('Storybook pure component stories', () => {
   })
 
   test('renders memoized aside CTA content stories', async ({ page }) => {
-    await skipIfStorybookBundleIsStale(page)
+    await requireCurrentStorybookBundle(page)
 
     await openStory(page, 'entities-asides--all-asides')
     await expect(page.getByTestId('connect-social-aside-content')).toBeVisible()
@@ -178,7 +155,7 @@ test.describe('Storybook pure component stories', () => {
   })
 
   test('renders dispute annotation and topic-claim review actions', async ({ page }) => {
-    await skipIfStorybookBundleIsStale(page)
+    await requireCurrentStorybookBundle(page)
 
     await openStory(page, 'entities-admin-review-disputes--status-card')
     await expect(page.getByTestId('dispute-status-card')).toBeVisible()

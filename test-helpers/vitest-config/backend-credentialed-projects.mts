@@ -37,6 +37,7 @@ export const backendCredentialedTestProjects: TestProjectConfiguration[] = [
         'backend/**/*.s3.test.mts',
         'backend/modules/aws/s3.test.mts',
         'backend/modules/aws/ses.generated.test.mts',
+        'backend/api/v1/images/__tests__/index.real-presigner.s3.mock.test.mts',
       ],
       runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
       exclude: ['**/node_modules/**', '**/.git/**'],
