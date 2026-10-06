@@ -1055,9 +1055,16 @@
     "no-mistakes/vitest-mock-test-file-naming": "error",
     "no-mistakes/postgres-no-manual-transaction": "off",
     "no-mistakes/postgres-no-unbounded-query-fanout": "off",
-    "voucha/account-export-cursor-drains-serial": "error",
     "voucha/backend-contract-program-construction-location": "error",
     "voucha/no-prefix-wide-rate-limiter-invalidate": "error",
+    "vouchington/serial-cursor-drains": [
+      "error",
+      {
+        "include": [],
+        "includeFiles": ["backend/services/account-data-requests/export.mts"],
+        "functions": ["writeBookmarksCsv", "writeEntityRelationsCsv"]
+      }
+    ],
     "vouchington/banned-member-read": [
       "error",
       {

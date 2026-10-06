@@ -247,8 +247,8 @@ cursor executors exported by `@data-stores/psql` and `@data-stores/psql/cursors`
 must invoke the exact import or namespace member directly and expose SQL at that callsite, either
 inline or through one immutable local binding. The leading static text must contain a complete,
 non-empty `/* name */` annotation. Aliases, dependency containers, dynamic builders, reassignment,
-and helper-parameter flow are rejected at their boundary instead of being interpreted. The narrow
-`voucha/account-export-cursor-drains-serial` companion keeps the two account-data export cursor
+and helper-parameter flow are rejected at their boundary instead of being interpreted. The
+configured `vouchington/serial-cursor-drains` companion keeps the two account-data export cursor
 owners on serial drains so each PostgreSQL client is released before the next stream starts. Both
 rules are exercised through the real Oxlint JS-plugin runner.
 

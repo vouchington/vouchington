@@ -92,8 +92,8 @@ importers:
         specifier: ^1.0.2
         version: 1.0.2(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
       eslint-plugin-vouchington:
-        specifier: ^0.0.3
-        version: 0.0.3(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
+        specifier: ^0.1.0
+        version: 0.1.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
       gh-pr-attach-screenshots:
         specifier: ^0.2.0
         version: 0.2.0
@@ -20129,8 +20129,8 @@ packages:
     peerDependencies:
       eslint: '>=8.40.0'
 
-  eslint-plugin-vouchington@0.0.3:
-    resolution: {integrity: sha512-nRkd8wiX/YYsXAZmNh9gU+3wwRHgs5RtWgke7MEvkOMXd0VN6Wys9jFH1p1hKlmOqDo3PnjWwXUUtuy/a4KhsQ==}
+  eslint-plugin-vouchington@0.1.0:
+    resolution: {integrity: sha512-7ZUhmLL7jeDgNsIlxYp0h8sqSLLDk5Y482G6d4mSJU7j61LLzBxUvYoM6W4nv0Ncss5n9lryk3mE6wwW5BuHog==}
     engines: {node: '>=24.0.0'}
     peerDependencies:
       eslint: '>=9'
@@ -21797,10 +21797,6 @@ packages:
 
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
-
-  picomatch@4.0.5:
-    resolution: {integrity: sha512-RvwwcruNjI1ncT5xRakeyS9Lf8lcItv34KD+aif+VH9kduAyfYBipGh12274xtenIPZ119/R9BdTBa8gAwSh0A==}
-    engines: {node: '>=12'}
 
   picomatch@4.0.7:
     resolution: {integrity: sha512-qcJu88Q2IWqJsDD529JKMdwGm/dvInW4HvQnRwiH9JtihJvzGOscDtHE3x1pBKeUOTysQ8kVmLnJ2kJu7yhcGA==}
@@ -29087,10 +29083,10 @@ snapshots:
       eslint: 10.5.0(jiti@2.7.0)(supports-color@10.2.2)
       globals: 16.5.0
 
-  eslint-plugin-vouchington@0.0.3(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
+  eslint-plugin-vouchington@0.1.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
     dependencies:
       eslint: 10.5.0(jiti@2.7.0)(supports-color@10.2.2)
-      picomatch: 4.0.5
+      picomatch: 4.0.7
 
   eslint-scope@5.1.1:
     dependencies:
@@ -31024,8 +31020,6 @@ snapshots:
   phone@3.1.71: {}
 
   picocolors@1.1.1: {}
-
-  picomatch@4.0.5: {}
 
   picomatch@4.0.7: {}
 

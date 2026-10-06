@@ -9,7 +9,6 @@ const {
 const {
   createTypescriptProgramConstructionRule,
 } = require('./oxlint-plugin/typescript-program-construction.cjs')
-const { createPostgresRules } = require('./oxlint-plugin/postgres-rules.cjs')
 
 const VALKEY_CACHE_MODULE = '@data-stores/valkey/cache'
 const MESSAGE =
@@ -162,7 +161,6 @@ const typescriptProgramConstructionRule = createTypescriptProgramConstructionRul
   propertyName,
   unwrap,
 })
-const postgresRules = createPostgresRules({ findVariable, normalizeFilename, propertyName, unwrap })
 const noInvalidateMemberReadRule = {
   meta: {
     type: 'problem',
@@ -193,7 +191,6 @@ const noInvalidateMemberReadRule = {
 module.exports = {
   meta: { name: 'eslint-plugin-voucha', version: '1.0.0' },
   rules: {
-    ...postgresRules,
     'backend-contract-program-construction-location': typescriptProgramConstructionRule,
     'no-prefix-wide-rate-limiter-invalidate': noInvalidateMemberReadRule,
   },
