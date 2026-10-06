@@ -40394,13 +40394,268 @@
           "tool": {
             "name": "approve_copyright_email_intake",
             "title": "Approve copyright email intake",
-            "description": "Record the staff copyright decision approve copyright email intake.",
+            "description": "Approve a copyright email intake as a new notice, supplying the notice form yourself, exactly as the staff approval route takes it. First read the raw email on the staff email review page; get_copyright_email_intake returns structured facts only, without the raw email or contact details. The agent recommendation is guidance only, and no check compares your values with it: state each claimant field, each statutory declaration and every hosted image from the email itself. Every field except recommendation_id and manual_fallback_reason is required, and a missing or untrue has_good_faith_belief or has_accuracy_authority_under_penalty_of_perjury is rejected with 422, exactly as on the staff route. Send recommendation_id when you relied on the recommendation, or manual_fallback_reason when you did not.",
             "inputSchema": {
               "type": "object",
               "properties": {
                 "intake_id": {
                   "type": "string",
                   "format": "uuid"
+                },
+                "recommendation_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "manual_fallback_reason": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "pattern": "\\S",
+                      "maxLength": 10000
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "jurisdiction": {
+                  "type": "string",
+                  "enum": ["us_dmca"]
+                },
+                "claimant_display_name": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "pattern": "\\S",
+                      "maxLength": 200
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "claimant_contact": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S",
+                  "maxLength": 4096
+                },
+                "claimant_email": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S",
+                  "maxLength": 254
+                },
+                "work_description": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S",
+                  "maxLength": 50000
+                },
+                "has_good_faith_belief": {
+                  "type": "boolean"
+                },
+                "has_accuracy_authority_under_penalty_of_perjury": {
+                  "type": "boolean"
+                },
+                "electronic_signature": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S",
+                  "maxLength": 500
+                },
+                "targets": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 20,
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "surface": {
+                            "type": "string",
+                            "enum": ["post-image"]
+                          },
+                          "post_id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "image_id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "target_url": {
+                            "type": "string",
+                            "minLength": 1,
+                            "pattern": "\\S",
+                            "maxLength": 2048
+                          }
+                        },
+                        "required": ["surface", "post_id", "image_id", "target_url"],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "surface": {
+                            "type": "string",
+                            "enum": ["user-profile-image"]
+                          },
+                          "user_id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "image_id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "target_url": {
+                            "type": "string",
+                            "minLength": 1,
+                            "pattern": "\\S",
+                            "maxLength": 2048
+                          }
+                        },
+                        "required": ["surface", "user_id", "image_id", "target_url"],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "surface": {
+                            "type": "string",
+                            "enum": ["user-profile-link-image"]
+                          },
+                          "user_profile_link_id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "image_id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "target_url": {
+                            "type": "string",
+                            "minLength": 1,
+                            "pattern": "\\S",
+                            "maxLength": 2048
+                          }
+                        },
+                        "required": ["surface", "user_profile_link_id", "image_id", "target_url"],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "surface": {
+                            "type": "string",
+                            "enum": ["topic-logo-image"]
+                          },
+                          "topic_id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "image_id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "target_url": {
+                            "type": "string",
+                            "minLength": 1,
+                            "pattern": "\\S",
+                            "maxLength": 2048
+                          }
+                        },
+                        "required": ["surface", "topic_id", "image_id", "target_url"],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "surface": {
+                            "type": "string",
+                            "enum": ["topic-hero-image"]
+                          },
+                          "topic_id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "image_id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "target_url": {
+                            "type": "string",
+                            "minLength": 1,
+                            "pattern": "\\S",
+                            "maxLength": 2048
+                          }
+                        },
+                        "required": ["surface", "topic_id", "image_id", "target_url"],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "surface": {
+                            "type": "string",
+                            "enum": ["community-profile-image"]
+                          },
+                          "community_id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "image_id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "target_url": {
+                            "type": "string",
+                            "minLength": 1,
+                            "pattern": "\\S",
+                            "maxLength": 2048
+                          }
+                        },
+                        "required": ["surface", "community_id", "image_id", "target_url"],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "surface": {
+                            "type": "string",
+                            "enum": ["community-banner-image"]
+                          },
+                          "community_id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "image_id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "target_url": {
+                            "type": "string",
+                            "minLength": 1,
+                            "pattern": "\\S",
+                            "maxLength": 2048
+                          }
+                        },
+                        "required": ["surface", "community_id", "image_id", "target_url"],
+                        "additionalProperties": false
+                      }
+                    ]
+                  }
                 },
                 "rationale": {
                   "type": "string",

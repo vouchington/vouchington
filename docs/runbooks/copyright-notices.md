@@ -40,13 +40,16 @@ Authorize the administrator's OAuth client with exact `copyright-notices:write` 
 all 17 tools are hidden and calls return `Tool not found` without a scope step-up. Disabling the
 switch removes MCP decision access; it does not change the staff REST decision routes.
 
-Email approval and correspondence admission act on the latest stored recommendation and never
-accept caller contact details or reply text. Approval refuses incomplete statutory fields or URLs
-that identify zero or multiple available hosted images. Resolve ambiguous image selections in the
-staff web interface. Correspondence admission requires the requested kind to match the stored
-recommendation and the required fields for that kind. Email rejection uses fixed text and sends
-only to the parsed sender; with no parsed sender it queues no reply. Raw MIME, `.eml`, parsed
-messages, and parser errors remain unavailable through MCP reads.
+Email approval takes the same notice-form body as the staff approval route and calls the same
+decision function. Read the raw email in the staff web interface first, then supply every claimant
+field, each statutory declaration and each hosted image yourself, with the recommendation id or a
+manual-fallback reason. The recommendation is guidance only and is not compared with your values,
+exactly as on REST; the notice links the intake and its raw `.eml` evidence either way.
+Correspondence admission acts on the latest stored recommendation, requires the requested kind to
+match it and the required fields for that kind, and never accepts caller contact details or reply
+text. Email rejection uses fixed text and sends only to the parsed sender; with no parsed sender it
+queues no reply. Raw MIME, `.eml`, parsed messages, and parser errors remain unavailable through MCP
+reads.
 
 Every decision requires a rationale. Path-only replay and revocation operations retain it solely
 in the encrypted per-call MCP audit rather than a REST body. Existing append-only audit retention

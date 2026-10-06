@@ -89,3 +89,18 @@ export async function readCopyrightEmailIntakeResponses(intakeId: string): Promi
     WHERE copyright_notice_email_intake_id = ${intakeId}`)
   return rows
 }
+
+/** The cases an email intake is linked to; an approved initial intake links exactly one. */
+export async function readCopyrightEmailIntakeNoticeLinks(
+  intakeId: string,
+): Promise<{ copyright_notice_id: string; link_kind: string }[]> {
+  const { rows } = await read<{
+    copyright_notice_id: string
+    link_kind: string
+  }>(sql`/* readCopyrightEmailIntakeNoticeLinks */
+    SELECT copyright_notice_id, link_kind
+    FROM copyright_notice_email_intake_notice_links
+    WHERE copyright_notice_email_intake_id = ${intakeId}
+    ORDER BY copyright_notice_id`)
+  return rows
+}

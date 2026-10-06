@@ -3,12 +3,19 @@ import type { PrivateUser } from '@services/users/types'
 import { RuntimeRequestValidatorRegistry } from '@services/runtime-request-validation'
 import { reviewCopyrightFormIntake } from '@services/copyright-notices'
 import {
-  approveCopyrightEmailIntakeFromRecommendation,
   rejectCopyrightEmailIntakeFromRecommendation,
   admitCopyrightEmailCorrespondenceFromRecommendation,
   rejectCopyrightEmailCorrespondenceFromRecommendation,
   replayCopyrightEmailIntakeReplyAndEnqueue,
 } from '@services/copyright-notices/copyright-mcp-write-actions'
+import {
+  APPROVE_COPYRIGHT_EMAIL_INTAKE_DESCRIPTION,
+  APPROVE_COPYRIGHT_EMAIL_INTAKE_PATH,
+  APPROVE_COPYRIGHT_EMAIL_INTAKE_PROPERTIES,
+  APPROVE_COPYRIGHT_EMAIL_INTAKE_REQUIRED,
+  approveCopyrightEmailIntakeFromToolArgs,
+  type ApproveCopyrightEmailIntakeArgs,
+} from './copyright-decisions-approval.mts'
 import { adminInput, createAdminTool, UUID_INPUT } from './create-admin-tool.mts'
 import { adminRouteOutputSchema } from './output-schema.mts'
 export const RATIONALE_INPUT = {
@@ -22,6 +29,7 @@ type Kind = (typeof KINDS)[number]
 type DecisionArgs = { rationale: string }
 type DecisionConfig<T extends DecisionArgs> = {
   name: string
+  description?: string
   path: string
   properties: Record<string, unknown>
   required: string[]
@@ -34,7 +42,9 @@ export function copyrightDecisionTool<T extends DecisionArgs>(config: DecisionCo
   const api = { method: 'POST', path: config.path } as const
   return createAdminTool<T>({
     name: config.name,
-    description: `Record the staff copyright decision ${config.name.replaceAll('_', ' ')}.`,
+    description:
+      config.description ??
+      `Record the staff copyright decision ${config.name.replaceAll('_', ' ')}.`,
     scope: 'copyright-notices:write',
     switch: 'copyright.mcpDecisionTools',
     auditRationale: true,
@@ -67,7 +77,6 @@ export function validateCopyrightDecisionRequest(
 }
 
 const formReviewPath = '/api/v1/copyright-form-intakes/:id/reviews'
-const approvalPath = '/api/v1/copyright-email-intakes/:id/approvals'
 const rejectionPath = '/api/v1/copyright-email-intakes/:id/rejections'
 const admitPath = '/api/v1/copyright-email-intakes/:id/correspondence'
 const correspondenceRejectionPath = '/api/v1/copyright-email-intakes/:id/correspondence-rejections'
@@ -99,14 +108,14 @@ export const adminCopyrightDecisionIntakeTools = [
       }
     },
   }),
-  copyrightDecisionTool<{ intake_id: string; rationale: string }>({
+  copyrightDecisionTool<ApproveCopyrightEmailIntakeArgs>({
     name: 'approve_copyright_email_intake',
-    path: approvalPath,
-    properties: { intake_id: UUID_INPUT },
-    required: ['intake_id'],
+    description: APPROVE_COPYRIGHT_EMAIL_INTAKE_DESCRIPTION,
+    path: APPROVE_COPYRIGHT_EMAIL_INTAKE_PATH,
+    properties: APPROVE_COPYRIGHT_EMAIL_INTAKE_PROPERTIES,
+    required: APPROVE_COPYRIGHT_EMAIL_INTAKE_REQUIRED,
     idempotent: false,
-    run: (user, args) =>
-      approveCopyrightEmailIntakeFromRecommendation(user, args.intake_id, args.rationale),
+    run: approveCopyrightEmailIntakeFromToolArgs,
   }),
   copyrightDecisionTool<{ intake_id: string; rationale: string }>({
     name: 'reject_copyright_email_intake',
