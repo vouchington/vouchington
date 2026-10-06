@@ -79,6 +79,20 @@ reverse, or an in-flight `workflow_call` job could lose its credential mid-windo
 `HARNESS_API_KEY`, the `auto-harness` Environment copy has already been confirmed removed
 (verified 2026-08-26); the repository secret is the sole source of truth going forward.
 
+### Grok Commands run with `--sandbox off`
+
+The production `grok-print` and `grok-print-plan` Commands pass `--sandbox off`. Grok applies its OS
+sandbox process-wide at startup, with no per-command escalation, and every sandboxed profile
+(including the `workspace` profile that `vouchington-machines` sets in `~/.grok/config.toml`)
+denies the macOS keychain. Inside it, `gh` reports the token as invalid (401), reads fall back to
+anonymous, and a private `vouchington` org member's comment reads as `CONTRIBUTOR`, so `/shepherd`
+refuses the request. This only shows when Cursor is out of usage and sessions fall through to Grok.
+The fix is the Command flag, not `gh auth login`; the login itself is fine.
+
+With `--sandbox off`, `grok-print-plan`'s `--permission-mode plan` gates Grok's edit tools only.
+Bash commands are not inspected for writes, so treat plan mode as a behavioral guardrail rather
+than read-only enforcement, and do not grant Bash allow rules on plan Commands.
+
 ### Troubleshooting: missing `HARNESS_API_KEY`
 
 Before this repo-scoping change, a missing `HARNESS_API_KEY` surfaced as a script-level
