@@ -37,38 +37,75 @@ export type DsaCopyrightTransparencyFigures = EuCounts &
     generated_at: string
   }
 
-async function readExistingEuCounts(start: Date, end: Date): Promise<EuCounts> {
-  const { rows } = await read<EuCounts>(sql`/* readExistingEuCopyrightCounts */
+async function readExistingEuCounts(
+  start: Date,
+  end: Date,
+  noticeIds?: readonly string[],
+): Promise<EuCounts> {
+  if (noticeIds?.length === 0) return emptyEuCounts()
+  const query = sql`/* readExistingEuCopyrightCounts */
     SELECT
       (SELECT count(*)::integer FROM copyright_territorial_notice_receipts receipt
         WHERE receipt.jurisdiction = ${JURISDICTION}
-          AND receipt.received_at >= ${start} AND receipt.received_at < ${end}) AS receipt_count,
+          AND receipt.received_at >= ${start} AND receipt.received_at < ${end}`
+  appendEuNoticeIds(query, noticeIds, 'receipt.copyright_notice_id')
+  query.append(sql`) AS receipt_count,
       (SELECT count(*)::integer FROM copyright_territorial_decisions statement
         WHERE statement.jurisdiction = ${JURISDICTION}
-          AND statement.decided_at >= ${start} AND statement.decided_at < ${end})
+          AND statement.decided_at >= ${start} AND statement.decided_at < ${end}`)
+  appendEuNoticeIds(query, noticeIds, 'statement.copyright_notice_id')
+  query.append(sql`)
         AS statement_of_reasons_count,
       (SELECT count(*)::integer FROM copyright_territorial_redress_requests redress
         WHERE redress.jurisdiction = ${JURISDICTION}
-          AND redress.received_at >= ${start} AND redress.received_at < ${end})
+          AND redress.received_at >= ${start} AND redress.received_at < ${end}`)
+  appendEuNoticeIds(query, noticeIds, 'redress.copyright_notice_id')
+  query.append(sql`)
         AS redress_request_count,
       (SELECT count(*)::integer FROM copyright_territorial_redress_decisions decision
         JOIN copyright_territorial_redress_requests redress
           ON redress.id = decision.copyright_territorial_redress_request_id
         WHERE redress.jurisdiction = ${JURISDICTION}
-          AND decision.decided_at >= ${start} AND decision.decided_at < ${end})
+          AND decision.decided_at >= ${start} AND decision.decided_at < ${end}`)
+  appendEuNoticeIds(query, noticeIds, 'redress.copyright_notice_id')
+  query.append(sql`)
         AS redress_decision_count,
       (SELECT count(*)::integer FROM copyright_eu_supervised_complaints complaint
         WHERE complaint.jurisdiction = ${JURISDICTION}
-          AND complaint.received_at >= ${start} AND complaint.received_at < ${end})
+          AND complaint.received_at >= ${start} AND complaint.received_at < ${end}`)
+  appendEuNoticeIds(query, noticeIds, 'complaint.copyright_notice_id')
+  query.append(sql`)
         AS supervised_complaint_count,
       (SELECT count(*)::integer FROM copyright_territorial_escalations escalation
         WHERE escalation.jurisdiction = ${JURISDICTION}
-          AND escalation.escalated_at >= ${start} AND escalation.escalated_at < ${end})
+          AND escalation.escalated_at >= ${start} AND escalation.escalated_at < ${end}`)
+  appendEuNoticeIds(query, noticeIds, 'escalation.copyright_notice_id')
+  query.append(sql`)
         AS escalation_count
   `)
+  const { rows } = await read<EuCounts>(query)
   const counts = rows[0]
   assert(counts, 500, 'Failed to count EU copyright facts')
   return counts
+}
+
+function appendEuNoticeIds(
+  query: ReturnType<typeof sql>,
+  noticeIds: readonly string[] | undefined,
+  column: string,
+): void {
+  if (noticeIds) query.append(sql` AND `.append(column).append(sql` = ANY(${noticeIds}::uuid[])`))
+}
+
+function emptyEuCounts(): EuCounts {
+  return {
+    receipt_count: 0,
+    statement_of_reasons_count: 0,
+    redress_request_count: 0,
+    redress_decision_count: 0,
+    supervised_complaint_count: 0,
+    escalation_count: 0,
+  }
 }
 
 /** Read-only, aggregate-only export across all EU approval periods. */
@@ -76,14 +113,15 @@ export async function readEuCopyrightTransparencyFigures(
   actor: PrivateUser,
   periodStartedAt: Date,
   periodEndedAt: Date,
+  noticeIds?: readonly string[],
 ): Promise<DsaCopyrightTransparencyFigures> {
   assert(currentUserCanReviewCopyrightNotices(actor), 403, 'Forbidden')
   await assertCopyrightDsaTransparencyReportsEnabled()
   assertReportingPeriod(periodStartedAt, periodEndedAt)
   const [counts, noticeFigures, complaintFigures] = await Promise.all([
-    readExistingEuCounts(periodStartedAt, periodEndedAt),
-    readDsaCopyrightNoticeFigures(periodStartedAt, periodEndedAt),
-    readDsaCopyrightComplaintFigures(periodStartedAt, periodEndedAt),
+    readExistingEuCounts(periodStartedAt, periodEndedAt, noticeIds),
+    readDsaCopyrightNoticeFigures(periodStartedAt, periodEndedAt, noticeIds),
+    readDsaCopyrightComplaintFigures(periodStartedAt, periodEndedAt, noticeIds),
   ])
   return {
     period_start: periodStartedAt.toISOString(),
@@ -100,10 +138,16 @@ export async function compileEuCopyrightTransparencyReport(
   actor: PrivateUser,
   periodStartedAt: Date,
   periodEndedAt: Date,
+  noticeIds?: readonly string[],
 ): Promise<EuCopyrightTransparencyReport> {
   assert(currentUserCanReviewCopyrightNotices(actor), 403, 'Forbidden')
   await assertCopyrightDsaTransparencyReportsEnabled()
-  const figures = await readEuCopyrightTransparencyFigures(actor, periodStartedAt, periodEndedAt)
+  const figures = await readEuCopyrightTransparencyFigures(
+    actor,
+    periodStartedAt,
+    periodEndedAt,
+    noticeIds,
+  )
   await using transaction = await beginTransaction()
   const { rows } = await transaction<EuCopyrightTransparencyReport>(sql`
     /* compileEuCopyrightTransparencyReport */

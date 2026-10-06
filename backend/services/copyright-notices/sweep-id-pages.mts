@@ -5,6 +5,7 @@ import sql, { type SQLStatement } from 'sql-template-strings'
 import {
   observeSharedDbScope,
   sharedDbCursorScope,
+  sharedDbIdsScope,
   type SharedDbScopeOperation,
 } from '@data-stores/psql/shared-db-scope-observer'
 
@@ -14,7 +15,12 @@ export type CopyrightSweepIdPage = {
   page_info: PageInfo
 }
 
-export type CopyrightSweepPageOptions = { after?: string; limit?: number }
+export type CopyrightSweepPageOptions = {
+  after?: string
+  limit?: number
+  /** When set, the page is only these ids. Production sweeps omit it. */
+  ids?: readonly string[]
+}
 
 /** Validates a sweep page request. Callers fetch `limit + 1` rows after `afterId`. */
 export function parseCopyrightSweepPageOptions(
@@ -50,8 +56,15 @@ export async function queryCopyrightSweepIdPage(
   selectWhere: SQLStatement,
   query: SweepIdQuery,
 ): Promise<CopyrightSweepIdPage> {
+  if (options.ids?.length === 0) return toCopyrightSweepIdPage([], options.limit ?? 100)
   const parsed = parseCopyrightSweepPageOptions(options, cursorMessage)
-  observeSharedDbScope(operation, sharedDbCursorScope(parsed.afterId))
+  if (options.ids) {
+    if (column !== 'rowId') throw new Error('Copyright sweep id filters require the row id column')
+    observeSharedDbScope(operation, sharedDbIdsScope(options.ids))
+    selectWhere.append(sql` AND id = ANY(${options.ids}::uuid[])`)
+  } else {
+    observeSharedDbScope(operation, sharedDbCursorScope(parsed.afterId))
+  }
   appendCopyrightSweepKeyset(selectWhere, column, parsed.afterId, parsed.limit)
   const { rows } = await query(selectWhere)
   return toCopyrightSweepIdPage(rows, parsed.limit)

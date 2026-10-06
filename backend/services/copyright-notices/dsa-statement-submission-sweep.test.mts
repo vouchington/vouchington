@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createTestUser } from '@voucha/test-helpers'
 import {
   createTestCopyrightImageFixture,
   createTestCopyrightRestrictionForImage,
@@ -11,12 +10,6 @@ import {
   liftTestCopyrightRestriction,
 } from '@voucha/test-helpers/dsa-statement-submission-fixtures'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import { getIsolatedDatabaseCaseMode } from '../../../test-helpers/vitest-isolated-database-cases.mts'
-import { runIsolatedDatabaseCase } from '../../../test-helpers/vitest-isolated-database-case.mts'
-import {
-  findCurrentCopyrightJurisdictionPolicy,
-  withdrawCopyrightJurisdictionPolicyApproval,
-} from './jurisdiction-policy.mts'
 import {
   processCopyrightActionIntent,
   recordEuCopyrightStatementOfReasons,
@@ -60,11 +53,6 @@ describe('DSA statement submission materialization', () => {
   })
 
   it('records each eligible restriction once across cutoff, lift, and jurisdiction', async () => {
-    const caseId = 'copyright-dsa-submission-materialization'
-    if (getIsolatedDatabaseCaseMode(caseId) === 'parent') {
-      await runIsolatedDatabaseCase(caseId)
-      return
-    }
     const from = new Date('2026-07-01T00:00:00.000Z')
     const dayBefore = await createTestCopyrightRestrictionForImage(
       await createTestCopyrightImageFixture('post-image'),
@@ -93,11 +81,6 @@ describe('DSA statement submission materialization', () => {
       outcome: 'restrict',
       targets: uk.targets,
     })
-    const administrator = await createTestUser({ extraRoles: ['administrator'] })
-    const approval = await findCurrentCopyrightJurisdictionPolicy('eu_dsa')
-    if (!approval) throw new Error('EU policy approval missing')
-    await withdrawCopyrightJurisdictionPolicyApproval(administrator, approval.id)
-
     const dependencies = createTestCopyrightDeliveryDependencies(async () => undefined)
     const court = await openHeldCounterNoticeRestore(dependencies)
     await expect(
@@ -132,20 +115,8 @@ describe('DSA statement submission materialization', () => {
     )
     expect(await countTestDsaSubmissionsForRestriction(midnight.restrictionId)).toBe(0)
 
-    await materializeDsaStatementSubmissions(from)
-    const missingCredentials = vi.fn<DsaStatementSweepDependencies['recordConfigMissing']>()
-    expect(
-      await prepareDsaStatementSubmissionSweep({
-        isEnabled: async () => true,
-        getFrom: async () => from,
-        url: () => '',
-        token: () => '',
-        recordConfigMissing: missingCredentials,
-      }),
-    ).toBeNull()
-    expect(missingCredentials).toHaveBeenCalledExactlyOnceWith(
-      'processReconcileDsaStatementSubmissions',
-      'DSA_TRANSPARENCY_DATABASE_URL and DSA_TRANSPARENCY_DATABASE_TOKEN',
+    const foreign = await createTestCopyrightRestrictionForImage(
+      await createTestCopyrightImageFixture('post-image'),
     )
     const eligibleIds = [
       midnight.restrictionId,
@@ -155,10 +126,28 @@ describe('DSA statement submission materialization', () => {
       court.restriction.id,
       reimposed.id,
     ]
+    const scope = [...eligibleIds, dayBefore.restrictionId]
+    await materializeDsaStatementSubmissions(from, { restrictionIds: scope })
+    const missingCredentials = vi.fn<DsaStatementSweepDependencies['recordConfigMissing']>()
+    expect(
+      await prepareDsaStatementSubmissionSweep({
+        isEnabled: async () => true,
+        getFrom: async () => from,
+        url: () => '',
+        token: () => '',
+        recordConfigMissing: missingCredentials,
+        restrictionIds: scope,
+      }),
+    ).toBeNull()
+    expect(missingCredentials).toHaveBeenCalledExactlyOnceWith(
+      'processReconcileDsaStatementSubmissions',
+      'DSA_TRANSPARENCY_DATABASE_URL and DSA_TRANSPARENCY_DATABASE_TOKEN',
+    )
     for (const id of eligibleIds) {
       expect(await countTestDsaSubmissionsForRestriction(id)).toBe(1)
     }
     expect(await countTestDsaSubmissionsForRestriction(dayBefore.restrictionId)).toBe(0)
-    expect(await materializeDsaStatementSubmissions(from)).toBe(0)
-  }, 100_000)
+    expect(await countTestDsaSubmissionsForRestriction(foreign.restrictionId)).toBe(0)
+    expect(await materializeDsaStatementSubmissions(from, { restrictionIds: scope })).toBe(0)
+  })
 })

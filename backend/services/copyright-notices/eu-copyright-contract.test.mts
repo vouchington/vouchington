@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { useDsaTransparencyReports } from '@voucha/test-helpers/dsa-switches'
-import { getIsolatedDatabaseCaseMode } from '../../../test-helpers/vitest-isolated-database-cases.mts'
-import { runIsolatedDatabaseCase } from '../../../test-helpers/vitest-isolated-database-case.mts'
 import { createTestUser } from '@voucha/test-helpers'
 import {
   concealJurisdictionPolicyApprovals,
@@ -198,15 +196,14 @@ describe('EU copyright notice contracts', () => {
   })
 
   it('requires a staff statement before redress and reports only stored facts', async () => {
-    if (getIsolatedDatabaseCaseMode('copyright-eu-transparency-report') === 'parent') {
-      await runIsolatedDatabaseCase('copyright-eu-transparency-report')
-      return
-    }
-
     const { claimant, staff, stranger } = await euActors()
     const periodStart = new Date(Date.now() - 60_000)
     const periodEnd = new Date(Date.now() + 60_000)
-    const before = await readEuCopyrightTransparencyFigures(staff, periodStart, periodEnd)
+    const foreign = await receiveEuCopyrightNotice(
+      { user: claimant, identity: `user:${claimant.id}` },
+      crypto.randomUUID(),
+      noticeRequest(),
+    )
     const receipt = await receiveEuCopyrightNotice(
       { user: claimant, identity: `user:${claimant.id}` },
       crypto.randomUUID(),
@@ -251,14 +248,17 @@ describe('EU copyright notice contracts', () => {
       explanation: 'Complaint filed with the authority',
     })
     expect(complaint.escalation_id).toEqual(expect.any(String))
-    const report = await compileEuCopyrightTransparencyReport(staff, periodStart, periodEnd)
+    const report = await compileEuCopyrightTransparencyReport(staff, periodStart, periodEnd, [
+      receipt.notice_id,
+    ])
+    expect(foreign.notice_id).not.toBe(receipt.notice_id)
     expect(report).toMatchObject({
-      receipt_count: before.receipt_count + 1,
-      statement_of_reasons_count: before.statement_of_reasons_count + 1,
-      redress_request_count: before.redress_request_count + 1,
-      redress_decision_count: before.redress_decision_count + 1,
-      supervised_complaint_count: before.supervised_complaint_count + 1,
-      escalation_count: before.escalation_count + 1,
+      receipt_count: 1,
+      statement_of_reasons_count: 1,
+      redress_request_count: 1,
+      redress_decision_count: 1,
+      supervised_complaint_count: 1,
+      escalation_count: 1,
     })
     await expect(readCopyrightTerritorialContractShape(receipt.notice_id)).resolves.toMatchObject({
       deadline_count: 0,
@@ -267,7 +267,20 @@ describe('EU copyright notice contracts', () => {
       eu_statement_count: 1,
       provisional_withholding_at: null,
     })
-  }, 240_000)
+  })
+
+  it('returns zero transparency figures when the caller owns no notice ids', async () => {
+    const staff = await createTestUser({ extraRoles: ['moderator'] })
+    const figures = await readEuCopyrightTransparencyFigures(
+      staff,
+      new Date('2200-01-01T00:00:00.000Z'),
+      new Date('2200-01-02T00:00:00.000Z'),
+      [],
+    )
+    expect(figures.receipt_count).toBe(0)
+    expect(figures.notices_received_count).toBe(0)
+    expect(figures.complaints_by_submitter).toEqual({ notifier: 0, poster: 0, reviewer: 0 })
+  })
 
   it('rejects a second withdrawal of the same policy approval', async () => {
     const { administrator, approval } = await euActors()

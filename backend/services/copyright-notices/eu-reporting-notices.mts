@@ -24,7 +24,9 @@ type NoticeFigureRow = Omit<
 export async function readDsaCopyrightNoticeFigures(
   periodStartedAt: Date,
   periodEndedAt: Date,
+  noticeIds?: readonly string[],
 ): Promise<DsaCopyrightNoticeFigures> {
+  if (noticeIds?.length === 0) return emptyDsaCopyrightNoticeFigures()
   const population = [...DSA_COPYRIGHT_NOTICE_JURISDICTIONS]
   const noticeAlias = sql``.append('notice.id')
   const query = sql`/* readDsaCopyrightNoticeFigures */
@@ -45,13 +47,15 @@ export async function readDsaCopyrightNoticeFigures(
             ON assessment.copyright_notice_submission_id = submission.id
           WHERE submission.copyright_notice_id = notice.id AND submission.kind = 'notice'
             AND (`)
-    .append(automatedAssessmentSql('assessment'))
-    .append(sql`)
+    .append(automatedAssessmentSql('assessment')).append(sql`)
         )) AS automated
       FROM copyright_notices notice
       WHERE notice.jurisdiction = ANY(${population}::copyright_jurisdictions[])
         AND notice.received_at >= ${periodStartedAt}
-        AND notice.received_at < ${periodEndedAt}
+        AND notice.received_at < ${periodEndedAt}`)
+  appendOwnedNoticeIds(query, noticeIds)
+  query
+    .append(sql`
     ), imposed AS (
       SELECT restriction.id, notice.id AS notice_id, notice.received_at,
         `)
@@ -62,7 +66,9 @@ export async function readDsaCopyrightNoticeFigures(
       JOIN copyright_notices notice ON notice.id = restriction.copyright_notice_id
       WHERE restriction.imposed_at >= ${periodStartedAt}
         AND restriction.imposed_at < ${periodEndedAt}
-        AND notice.jurisdiction = ANY(${population}::copyright_jurisdictions[])
+        AND notice.jurisdiction = ANY(${population}::copyright_jurisdictions[])`)
+  appendOwnedNoticeIds(query, noticeIds)
+  query.append(sql`
     ), acted_notice AS (
       SELECT imposed.notice_id, bool_or(imposed.trusted) AS trusted,
         min(imposed.received_at) AS received_at
@@ -110,5 +116,27 @@ export async function readDsaCopyrightNoticeFigures(
     ...(median_hours_to_action_trusted_flagger === null
       ? {}
       : { median_hours_to_action_trusted_flagger }),
+  }
+}
+
+function appendOwnedNoticeIds(
+  query: ReturnType<typeof sql>,
+  noticeIds: readonly string[] | undefined,
+): void {
+  if (noticeIds) query.append(sql` AND notice.id = ANY(${noticeIds}::uuid[])`)
+}
+
+function emptyDsaCopyrightNoticeFigures(): DsaCopyrightNoticeFigures {
+  return {
+    notices_received_count: 0,
+    notices_received_trusted_flagger_count: 0,
+    notified_items_count: 0,
+    notified_items_trusted_flagger_count: 0,
+    actions_on_law_count: 0,
+    actions_on_law_trusted_flagger_count: 0,
+    actions_on_terms_count: 0,
+    actions_on_terms_trusted_flagger_count: 0,
+    notices_processed_by_automated_means_count: 0,
+    restrictions_imposed_by_automated_means_count: 0,
   }
 }

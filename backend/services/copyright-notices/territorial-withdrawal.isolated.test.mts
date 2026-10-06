@@ -1,7 +1,5 @@
-// This case changes the jurisdiction-wide approval gate and runs only in its own database.
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
-import { withdrawAllTestTerritorialApprovals } from '@voucha/test-helpers/copyright-territorial-withdrawal'
 import {
   assertTestEuWithdrawalContinuity,
   prepareTestEuWithdrawalGuestCase,
@@ -10,8 +8,6 @@ import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-deliver
 import { createHostedImagePost } from '@voucha/test-helpers/services/copyright-notices/hosted-post-audience'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyright-statement-notices'
-import { getIsolatedDatabaseCaseMode } from '../../../test-helpers/vitest-isolated-database-cases.mts'
-import { runIsolatedDatabaseCase } from '../../../test-helpers/vitest-isolated-database-case.mts'
 import {
   acknowledgeEuCopyrightNotice,
   acknowledgeUkCopyrightNotice,
@@ -24,11 +20,18 @@ import {
   recordEuCopyrightSupervisedComplaint,
   recordUkCopyrightRedressDecision,
   recordUkCopyrightReview,
+  getCopyrightJurisdictionAvailability,
   recordCopyrightJurisdictionPolicyApproval,
+  withdrawCopyrightJurisdictionPolicyApproval,
   submitEuCopyrightRedress,
   submitUkCopyrightRedress,
 } from './index.mts'
-import { readCopyrightTerritorialContractShape } from '@voucha/test-helpers/data-stores/psql/copyright-eu-uk-contracts'
+import { receiveTerritorialCopyrightNoticeInTransaction } from './territorial-notice-receipt.mts'
+import {
+  concealJurisdictionPolicyApprovals,
+  readCopyrightTerritorialContractShape,
+  withRolledBackTerritorialTransaction,
+} from '@voucha/test-helpers/data-stores/psql/copyright-eu-uk-contracts'
 
 function noticeRequest() {
   const suffix = crypto.randomUUID()
@@ -73,10 +76,6 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
   })
 
   it('gates new EU and UK intake while pending and decided notices continue', async () => {
-    if (getIsolatedDatabaseCaseMode('copyright-territorial-withdrawal') === 'parent') {
-      await runIsolatedDatabaseCase('copyright-territorial-withdrawal')
-      return
-    }
     installTestMediaDeliveryEdge()
     const [administrator, staff, claimant, euAImage, euCImage, euDImage, ukImage] =
       await Promise.all([
@@ -88,11 +87,11 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
         createHostedImagePost('public'),
         createHostedImagePost('public'),
       ])
-    await recordCopyrightJurisdictionPolicyApproval(administrator, {
+    const euApproval = await recordCopyrightJurisdictionPolicyApproval(administrator, {
       jurisdiction: 'eu_dsa',
       policyVersion: `eu-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
     })
-    await recordCopyrightJurisdictionPolicyApproval(administrator, {
+    const ukApproval = await recordCopyrightJurisdictionPolicyApproval(administrator, {
       jurisdiction: 'uk',
       policyVersion: `uk-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
     })
@@ -148,14 +147,20 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
       'Please reconsider the no-action decision.',
     )
     const euGuest = await prepareTestEuWithdrawalGuestCase()
-    expect(await withdrawAllTestTerritorialApprovals(administrator, 'eu_dsa')).toBeGreaterThan(0)
-    await expect(
-      receiveEuCopyrightNotice(
-        { user: claimant, identity: `user:${claimant.id}` },
-        crypto.randomUUID(),
-        euNoticeRequest(),
-      ),
-    ).rejects.toMatchObject({ status: 403, message: 'EU copyright notices are not available' })
+    await withRolledBackTerritorialTransaction(async transaction => {
+      await concealJurisdictionPolicyApprovals(transaction, 'eu_dsa', administrator.id)
+      expect((await getCopyrightJurisdictionAvailability(transaction)).eu_dsa).toBe(false)
+      await expect(
+        receiveTerritorialCopyrightNoticeInTransaction(
+          { user: claimant, identity: `user:${claimant.id}` },
+          'eu_dsa',
+          crypto.randomUUID(),
+          euNoticeRequest(),
+          transaction,
+        ),
+      ).rejects.toMatchObject({ status: 403, message: 'EU copyright notices are not available' })
+    })
+    await withdrawCopyrightJurisdictionPolicyApproval(administrator, euApproval.id)
     await assertTestEuWithdrawalContinuity({
       staff,
       notifier: claimant,
@@ -236,14 +241,20 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
     })
     expect((await getCopyrightNoticePrivateAggregate(euD.notice_id))?.restrictions).toHaveLength(1)
 
-    expect(await withdrawAllTestTerritorialApprovals(administrator, 'uk')).toBeGreaterThan(0)
-    await expect(
-      receiveUkCopyrightNotice(
-        { user: claimant, identity: `user:${claimant.id}` },
-        crypto.randomUUID(),
-        noticeRequest(),
-      ),
-    ).rejects.toMatchObject({ status: 403, message: 'UK copyright notices are not available' })
+    await withRolledBackTerritorialTransaction(async transaction => {
+      await concealJurisdictionPolicyApprovals(transaction, 'uk', administrator.id)
+      expect((await getCopyrightJurisdictionAvailability(transaction)).uk).toBe(false)
+      await expect(
+        receiveTerritorialCopyrightNoticeInTransaction(
+          { user: claimant, identity: `user:${claimant.id}` },
+          'uk',
+          crypto.randomUUID(),
+          noticeRequest(),
+          transaction,
+        ),
+      ).rejects.toMatchObject({ status: 403, message: 'UK copyright notices are not available' })
+    })
+    await withdrawCopyrightJurisdictionPolicyApproval(administrator, ukApproval.id)
     await recordUkCopyrightReview(staff, uk.notice_id, {
       text: 'The UK notice identifies an infringing image.',
       publicExplanation: 'This post image reproduces the protected work.',
@@ -270,5 +281,5 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
     expect(
       (await getCopyrightNoticePrivateAggregate(uk.notice_id))?.restrictions[0]?.lifted_at,
     ).toBeInstanceOf(Date)
-  }, 240_000)
+  })
 })
