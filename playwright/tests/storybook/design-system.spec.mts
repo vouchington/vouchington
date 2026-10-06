@@ -60,7 +60,11 @@ test.describe('Storybook design system component stories', () => {
     await openStory(page, 'design-system-components-skeleton--skeleton')
     await expect(page.getByTestId('skeleton').first()).toBeVisible()
 
-    await openStory(page, 'design-system-components-empty-state--default')
+    expect(
+      await storybookBundleHasStory(page, 'design-system-components-emptystate--default'),
+      'Storybook bundle is missing design-system-components-emptystate--default.',
+    ).toBe(true)
+    await openStory(page, 'design-system-components-emptystate--default')
     await expect(page.getByTestId('empty-state')).toBeVisible()
   })
 

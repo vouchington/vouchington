@@ -26,7 +26,8 @@ test.describe('Storybook pure component stories', () => {
       'System',
       'AI Agent',
     ])
-    await expect(page.getByTestId('rss-feed-link')).toBeVisible()
+    await expect(page.getByTestId('rss-feed-link')).toHaveCount(2)
+    await expect(page.getByTestId('rss-feed-link').first()).toBeVisible()
     await expect(page.getByTestId('separator')).toBeVisible()
     await expect(page.getByTestId('search-input-shell')).toBeVisible()
     await expect(page.getByTestId('input').first()).toBeVisible()
@@ -67,7 +68,7 @@ test.describe('Storybook pure component stories', () => {
 
     const compactVote = page.locator('[data-vote-root="storybook-semantic-compact"]')
     await expect(compactVote).toBeVisible()
-    await page.getByTestId('semantic-vote-trigger').click()
+    await compactVote.getByTestId('semantic-vote-trigger').click()
     await expect(page.getByTestId('semantic-vote-choices')).toBeVisible()
     await expect(page.getByTestId('semantic-vote-choice').first()).toBeVisible()
     await expect(page.getByTestId('semantic-vote-binary-choice').first()).toBeVisible()
