@@ -1,27 +1,28 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { getCopyrightStaffEmailIntake } from '@services/copyright-notices'
+import { createParsedCopyrightEmailIntake } from '@services/copyright-notices/email-intake-test-fixtures'
 import { searchCopyrightStaffEmailIntakes } from '@services/copyright-notices/read-models-staff-email-intakes'
 import { listCopyrightStaffQueue } from '@services/copyright-notices/read-models-staff'
-import { getIsolatedDatabaseCaseMode } from '../../../test-helpers/vitest-isolated-database-cases.mts'
-import { runIsolatedDatabaseCase } from '../../../test-helpers/vitest-isolated-database-case.mts'
 import { seedCopyright } from './copyright.mts'
 
 describe('seedCopyright', () => {
   it('fills both staff queues with every review state and adds nothing when run again', async () => {
-    if (getIsolatedDatabaseCaseMode('copyright-dev-seed') === 'parent') {
-      await runIsolatedDatabaseCase('copyright-dev-seed')
-      return
-    }
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    const foreign = await createParsedCopyrightEmailIntake(new Date())
     const first = await seedCopyright()
     const second = await seedCopyright()
     expect(second).toEqual(first)
 
     // The email queue is oldest first: new notice, its reply, a failed parse, no parse row, then
     // the message SES flagged for malware.
-    const { intakes } = await searchCopyrightStaffEmailIntakes(moderator, { limit: 10 })
+    const { intakes, hasNextPage: emailHasNextPage } = await searchCopyrightStaffEmailIntakes(
+      moderator,
+      { limit: first.emailIntakeIds.length, intakeIds: first.emailIntakeIds },
+    )
+    expect(emailHasNextPage).toBe(false)
     expect(intakes.map(intake => intake.id)).toEqual(first.emailIntakeIds)
+    expect(intakes.map(intake => intake.id)).not.toContain(foreign.id)
     expect(
       intakes.map(({ parse_status, review_path, recommendation_id, linked_notice_id }) => ({
         parse_status,
@@ -82,7 +83,11 @@ describe('seedCopyright', () => {
     ])
 
     // The overdue-deadline case outranks the case that has only waited on intake review.
-    const { cases, hasNextPage } = await listCopyrightStaffQueue(moderator, { limit: 10 })
+    const noticeIds = [first.deadlineCase.noticeId, first.intakeReviewCase.noticeId]
+    const { cases, hasNextPage } = await listCopyrightStaffQueue(moderator, {
+      limit: noticeIds.length,
+      noticeIds,
+    })
     expect(hasNextPage).toBe(false)
     expect(cases.map(queued => queued.id)).toEqual([
       first.deadlineCase.noticeId,
@@ -124,5 +129,5 @@ describe('seedCopyright', () => {
         },
       },
     })
-  }, 240_000)
+  })
 })

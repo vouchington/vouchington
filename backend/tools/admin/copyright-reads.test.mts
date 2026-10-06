@@ -2,17 +2,18 @@ import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { addTestUserRole, getTestPrivateUserById } from '@voucha/test-helpers/entities/users'
 import { createTestCopyrightMcpQueueCase } from '@voucha/test-helpers/copyright-mcp-read-fixtures'
-import { readCopyrightStaffQueueCursorBefore } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
+import { readCopyrightStaffQueueCursorRows } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
+import { encodeScopedTierPreciseUuidCursor } from '@modules/pagination'
 import { openTestGuestCopyrightNotice } from '@voucha/test-helpers/services/copyright-notices/guest-capability'
 import { createAcceptedCopyrightNotice } from '@voucha/test-helpers/services/copyright-notices/accepted-notice'
 import { createCopyrightFormFixture } from '@services/copyright-notices/route-test-fixtures'
+import { listCopyrightStaffEmailIntakePage } from '@services/copyright-notices/copyright-email-intake-page'
+import { copyrightStaffQueueCursorScope } from '@services/copyright-notices/read-models-staff'
 import { createParsedCopyrightEmailIntake } from '@services/copyright-notices/email-intake-test-fixtures'
 import { appendCopyrightEmailIntakeRecommendation } from '@services/copyright-notices/email-recommendations'
 import { reviewCopyrightFormIntake } from '@services/copyright-notices/form-reviews'
 import { findSchemaViolation } from '../schema-validator.mts'
 import { ALL_TOOLS } from '../registry/index.mts'
-import { getIsolatedDatabaseCaseMode } from '../../../test-helpers/vitest-isolated-database-cases.mts'
-import { runIsolatedDatabaseCase } from '../../../test-helpers/vitest-isolated-database-case.mts'
 import type { Tool } from '@services/openai-agents/tool-types'
 
 function readTool<TArgs>(name: string): Tool<TArgs> {
@@ -23,12 +24,9 @@ function readTool<TArgs>(name: string): Tool<TArgs> {
 
 describe('copyright admin MCP reads against live services', () => {
   it('omits raw email fields, lists bounded pages, and reads a staff case without guest tokens', async () => {
-    if (getIsolatedDatabaseCaseMode('copyright-mcp-read-tools') === 'parent') {
-      await runIsolatedDatabaseCase('copyright-mcp-read-tools')
-      return
-    }
     const administrator = await createTestUser({ extraRoles: ['administrator'] })
     const intake = await createParsedCopyrightEmailIntake()
+    const foreign = await createParsedCopyrightEmailIntake()
     const noticeId = await openTestGuestCopyrightNotice()
 
     const detail = (await readTool<{ id: string }>('get_copyright_email_intake').function(
@@ -41,11 +39,18 @@ describe('copyright admin MCP reads against live services', () => {
     expect(projected).not.toHaveProperty('parsed_email')
     expect(projected).not.toHaveProperty('parser_error')
 
-    const queue = (await readTool<{ limit?: number }>('list_copyright_email_intakes').function(
-      administrator,
-    )({ limit: 1 })) as { copyright_email_intakes: unknown[]; page_info: Record<string, unknown> }
-    expect(queue.copyright_email_intakes).toHaveLength(1)
-    expect(queue.page_info).toHaveProperty('has_next_page')
+    // The MCP list stays unscoped. Shared tests pass owned ids to the page the tool calls.
+    const queue = await listCopyrightStaffEmailIntakePage(administrator, {
+      limit: 1,
+      intakeIds: [intake.id],
+    })
+    expect(queue.copyright_email_intakes.map(item => item.id)).toEqual([intake.id])
+    expect(queue.copyright_email_intakes.map(item => item.id)).not.toContain(foreign.id)
+    expect(queue.page_info).toEqual({
+      has_next_page: false,
+      start_cursor: expect.any(String),
+      end_cursor: null,
+    })
 
     const capabilities = (await readTool<{ id: string; limit?: number }>(
       'list_copyright_guest_capabilities',
@@ -61,7 +66,7 @@ describe('copyright admin MCP reads against live services', () => {
     expect(staffCase.copyright_notice).toMatchObject({ id: acceptedNoticeId, viewer_role: 'staff' })
     expect(staffCase.copyright_notice).toHaveProperty('submissions')
     expect(staffCase.copyright_notice).toHaveProperty('timeline')
-  }, 240_000)
+  })
   it('redacts persisted recommendation contact before untrusted structured output is wrapped', async () => {
     const administrator = await createTestUser({ extraRoles: ['administrator'] })
     const intake = await createParsedCopyrightEmailIntake()
@@ -124,21 +129,22 @@ describe('copyright admin MCP reads against live services', () => {
     const administrator = await createTestUser({ extraRoles: ['administrator'] })
     const scene = await createTestCopyrightMcpQueueCase()
     const tool = readTool<{ after?: string; limit?: number }>('list_copyright_review_queue')
-    let after = await readCopyrightStaffQueueCursorBefore([scene.noticeId])
-    let found: Record<string, unknown> | undefined
-    for (let pageCount = 0; pageCount < 10 && !found; pageCount += 1) {
-      const result = (await tool.function(administrator)({ after, limit: 100 })) as {
-        copyright_notices: Array<Record<string, unknown>>
-        page_info: { has_next_page: boolean; end_cursor: string | null }
-      }
-      if (!tool.meta?.outputSchema) throw new Error('Queue tool output schema missing')
-      expect(findSchemaViolation(tool.meta.outputSchema, result)).toBeNull()
-      found = result.copyright_notices.find(item => item['id'] === scene.noticeId)
-      if (!result.page_info.has_next_page || !result.page_info.end_cursor) break
-      after = result.page_info.end_cursor
+    const [queueKey] = await readCopyrightStaffQueueCursorRows([scene.noticeId])
+    if (!queueKey) throw new Error('Copyright staff queue fixture has no queued notices')
+    const after = encodeScopedTierPreciseUuidCursor(
+      queueKey.waiting_since,
+      queueKey.tier,
+      previousUuid(queueKey.id),
+      copyrightStaffQueueCursorScope,
+    )
+    const result = (await tool.function(administrator)({ after, limit: 1 })) as {
+      copyright_notices: Array<Record<string, unknown>>
+      page_info: { has_next_page: boolean; end_cursor: string | null }
     }
-    expect(found).toBeDefined()
-    const item = found!
+    if (!tool.meta?.outputSchema) throw new Error('Queue tool output schema missing')
+    expect(findSchemaViolation(tool.meta.outputSchema, result)).toBeNull()
+    expect(result.copyright_notices.map(item => item['id'])).toEqual([scene.noticeId])
+    const item = result.copyright_notices[0]!
     const claimant = item['claimant'] as { display_name: string; contact: string }
     expect(claimant.display_name).toContain('Claimant Name')
     expect(claimant.contact).toContain('[redacted]')
@@ -187,5 +193,21 @@ describe('copyright admin MCP reads against live services', () => {
       if (!caseTool.meta?.outputSchema) throw new Error('Case tool output schema missing')
       expect(findSchemaViolation(caseTool.meta.outputSchema, detail)).toBeNull()
     }
-  }, 120_000)
+  })
 })
+
+/** Immediate UUID predecessor so a same-timestamp keyset starts on this notice. */
+function previousUuid(id: string): string {
+  const bytes = Buffer.from(id.replaceAll('-', ''), 'hex')
+  for (let index = bytes.length - 1; index >= 0; index -= 1) {
+    const value = bytes[index]!
+    if (value === 0) {
+      bytes[index] = 0xff
+      continue
+    }
+    bytes[index] = value - 1
+    break
+  }
+  const hex = bytes.toString('hex')
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+}

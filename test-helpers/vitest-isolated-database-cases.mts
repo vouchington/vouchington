@@ -43,27 +43,6 @@ const isolatedDatabaseCases = {
     fullName:
       'EU copyright notice contracts > requires a staff statement before redress and reports only stored facts',
   },
-  'copyright-staff-email-intakes': {
-    file: 'backend/services/copyright-notices/email-intakes-staff-queue.test.mts',
-    fullName:
-      'searchCopyrightStaffEmailIntakes > hides the queue from non-reviewers and lists unreviewed intakes, parsed or not, for staff',
-  },
-  'copyright-staff-email-intake-reply-failures': {
-    file: 'backend/services/copyright-notices/email-intakes-staff-queue-reply-failures.test.mts',
-    fullName:
-      'copyright email intake queue reply failures > lists a declined intake whose reply failed or bounced with its reason and wait, and hides the rest',
-  },
-  'copyright-email-legal-process-queue': {
-    file: 'backend/services/copyright-notices/email-legal-process-queue.test.mts',
-    fullName:
-      'copyright email legal process queue > removes a legal-process intake from the staff email queue and keeps the undecided ones',
-  },
-  'copyright-dev-seed': {
-    file: 'backend/scripts/seed/copyright.test.mts',
-    // Joined with ' > ' because that is what Vitest 5 matches.
-    fullName:
-      'seedCopyright > fills both staff queues with every review state and adds nothing when run again',
-  },
   'staging-rss-feed-publisher-type': {
     file: 'backend/data-stores/psql/config-driven/__tests__/0080-00-01a-staging-rss-feeds.bootstrap.test.mts',
     fullName:
