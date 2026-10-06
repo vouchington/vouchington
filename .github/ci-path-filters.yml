@@ -63,6 +63,7 @@ backend-credentialed:
   - 'backend/**/*.openai*.test.mts'
   - 'backend/**/*.openrouter.test.mts'
   - 'backend/**/*.s3.test.mts'
+  - 'backend/api/v1/images/__tests__/index.real-presigner.s3.mock.test.mts'
   - 'backend/**/*.stripe.test.mts'
   - 'backend/modules/aws/**'
   - 'backend/modules/stripe/**'
