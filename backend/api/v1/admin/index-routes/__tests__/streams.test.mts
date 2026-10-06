@@ -102,35 +102,21 @@ async function captureAdminStream(
 ): Promise<StreamCapture> {
   let contentType = ''
   const chunks: string[] = []
-  const originalSetInterval = globalThis.setInterval
-  const originalClearInterval = globalThis.clearInterval
-  let tickerHandle: ReturnType<typeof setInterval> | undefined
-  let tickerCallback: (() => void) | undefined
-  let tickerStopped: (() => void) | undefined
-  const tickerStoppedPromise = new Promise<void>(resolve => {
-    tickerStopped = resolve
-  })
-  const setIntervalSpy = options ? vi.spyOn(globalThis, 'setInterval') : undefined
-  const clearIntervalSpy = options ? vi.spyOn(globalThis, 'clearInterval') : undefined
+  const tickerStopped = Promise.withResolvers<void>()
+  let clearIntervalSpy: ReturnType<typeof vi.spyOn> | undefined
 
-  if (options && setIntervalSpy && clearIntervalSpy) {
-    setIntervalSpy.mockImplementation((...args) => {
-      const handle = originalSetInterval(...args)
-      if (args[1] === options.tickerIntervalMs) {
-        tickerHandle = handle
-        tickerCallback = () => args[0]()
-      }
-      return handle
-    })
-    clearIntervalSpy.mockImplementation(handle => {
-      originalClearInterval(handle)
-      if (handle === tickerHandle) tickerStopped?.()
+  if (options) {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+    const clearFakeInterval = globalThis.clearInterval
+    clearIntervalSpy = vi.spyOn(globalThis, 'clearInterval').mockImplementation(handle => {
+      clearFakeInterval(handle)
+      tickerStopped.resolve()
     })
   }
 
   try {
     await new Promise<void>((resolve, reject) => {
-      let tickerTriggered = false
+      let advanced = false
       const expectedSnapshotCount = options ? 2 : 1
       const req = request.get(path).set('Accept', 'text/event-stream').timeout(5000).buffer(false)
 
@@ -148,14 +134,11 @@ async function captureAdminStream(
             if (snapshotCount >= expectedSnapshotCount) {
               res.destroy()
               resolve()
-            } else if (options && snapshotCount === 1 && !tickerTriggered) {
-              if (!tickerCallback) {
-                reject(new Error('The admin snapshot ticker was not registered'))
-                res.destroy()
-                return
-              }
-              tickerTriggered = true
-              tickerCallback()
+              return
+            }
+            if (options && snapshotCount === 1 && !advanced) {
+              advanced = true
+              void vi.advanceTimersByTimeAsync(options.tickerIntervalMs).catch(reject)
             }
           })
           res.on('error', () => resolve())
@@ -171,14 +154,11 @@ async function captureAdminStream(
       })
     })
 
-    if (options) {
-      if (!tickerHandle) throw new Error('The admin snapshot ticker was not registered')
-      await tickerStoppedPromise
-    }
+    if (options) await tickerStopped.promise
 
     return { body: chunks.join(''), contentType }
   } finally {
-    setIntervalSpy?.mockRestore()
     clearIntervalSpy?.mockRestore()
+    if (options) vi.useRealTimers()
   }
 }

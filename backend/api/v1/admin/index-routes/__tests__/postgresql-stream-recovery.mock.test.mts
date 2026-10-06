@@ -36,27 +36,17 @@ describe('PostgreSQL SSE stream recovery', () => {
       }
       return originalReaddir(...args)
     })
-    const originalSetInterval = globalThis.setInterval
-    const originalClearInterval = globalThis.clearInterval
-    let tickerHandle: ReturnType<typeof setInterval> | undefined
-    let tickerCallback: (() => void) | undefined
-    let tickerStopped = false
-    const setIntervalSpy = vi.spyOn(globalThis, 'setInterval').mockImplementation((...args) => {
-      const handle = originalSetInterval(...args)
-      if (args[1] === TICKER_INTERVAL_MS) {
-        tickerHandle = handle
-        tickerCallback = () => args[0]()
-      }
-      return handle
-    })
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+    const tickerStopped = Promise.withResolvers<void>()
+    const clearFakeInterval = globalThis.clearInterval
     const clearIntervalSpy = vi.spyOn(globalThis, 'clearInterval').mockImplementation(handle => {
-      originalClearInterval(handle)
-      if (handle === tickerHandle) tickerStopped = true
+      clearFakeInterval(handle)
+      tickerStopped.resolve()
     })
     const chunks: string[] = []
     let contentType = ''
     let responseToDestroy: { destroy: () => void } | undefined
-    let tickerTriggered = false
+    let advanced = false
 
     try {
       await new Promise<void>((resolve, reject) => {
@@ -81,15 +71,12 @@ describe('PostgreSQL SSE stream recovery', () => {
               if (snapshotCount >= 2) {
                 res.destroy()
                 resolve()
-              } else if (snapshotCount === 1 && !tickerTriggered) {
-                if (!tickerCallback) {
-                  reject(new Error('The PostgreSQL snapshot ticker was not registered'))
-                  res.destroy()
-                  return
-                }
-                tickerTriggered = true
+                return
+              }
+              if (snapshotCount === 1 && !advanced) {
+                advanced = true
                 failNextMigrationRead = true
-                tickerCallback()
+                void vi.advanceTimersByTimeAsync(TICKER_INTERVAL_MS).catch(reject)
               }
             })
             res.on('error', () => resolve())
@@ -108,22 +95,14 @@ describe('PostgreSQL SSE stream recovery', () => {
       expect(contentType).toContain('text/event-stream')
       expect(chunks.join('').match(/event: snapshot\n/g)).toHaveLength(2)
       expect(chunks.join('')).toContain('Migration directory read failed')
-      if (!tickerHandle) throw new Error('The PostgreSQL snapshot ticker was not registered')
+      await tickerStopped.promise
     } finally {
       try {
         responseToDestroy?.destroy()
-        if (tickerHandle) {
-          await vi.waitFor(
-            () => {
-              if (!tickerStopped) throw new Error('The PostgreSQL snapshot ticker did not stop')
-            },
-            { timeout: 10_000 },
-          )
-        }
       } finally {
         readdirSpy.mockRestore()
-        setIntervalSpy.mockRestore()
         clearIntervalSpy.mockRestore()
+        vi.useRealTimers()
       }
     }
   })

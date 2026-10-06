@@ -1,13 +1,11 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestPost,
   createTestUserWithAge,
   CONTRIBUTING_USER_AGE_MS,
-  flushPendingTasks,
   insertTestPost,
   readAllQueueJobs,
-  waitForQueueJobs,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { activitypubDelivery } from '@queues/activitypub-delivery/queues'
@@ -25,17 +23,30 @@ describe('post.vote', () => {
       // (see backend/services/contribution-gating/quota.mts) and trip a 429 unrelated to what's
       // under test here.
       let voter: PrivateUser
+      let settleDelivery = () => Promise.resolve()
 
       beforeEach(async () => {
         await activitypubDelivery.obliterate({ force: true })
+        const pending: Promise<unknown>[] = []
+        const add = activitypubDelivery.add
+        vi.spyOn(activitypubDelivery, 'add').mockImplementation(
+          (...args: Parameters<typeof add>) => {
+            const job = add.call(activitypubDelivery, ...args)
+            pending.push(job)
+            return job
+          },
+        )
+        settleDelivery = () => Promise.all(pending).then(() => undefined)
         voter = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
       })
 
-      async function waitForDistributeActivityJobs(
-        predicate: (jobs: Awaited<ReturnType<typeof activitypubDelivery.getJobs>>) => boolean,
-        timeoutMs = 1000,
-      ): Promise<Awaited<ReturnType<typeof activitypubDelivery.getJobs>>> {
-        return waitForQueueJobs(activitypubDelivery, predicate, timeoutMs)
+      afterEach(() => {
+        vi.mocked(activitypubDelivery.add).mockRestore()
+      })
+
+      async function settledJobs() {
+        await settleDelivery()
+        return readAllQueueJobs(activitypubDelivery)
       }
 
       function hasDistributeJobFor(
@@ -80,8 +91,6 @@ describe('post.vote', () => {
           .find(data => data.activityType === activityType && data.targetPostId === targetPostId)
       }
 
-      // A wrongful fire-and-forget second enqueue may land after the PUT response.
-      // Give any in-flight enqueue a grace period before asserting absence.
       it('enqueues a Like distribution when voting score is 1', async () => {
         const post = await createTestPost({ user: voter })
 
@@ -90,9 +99,7 @@ describe('post.vote', () => {
 
         await request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'like' }).expect(204)
 
-        const jobs = await waitForDistributeActivityJobs(j =>
-          hasDistributeJobFor(j, post.id, 'Like'),
-        )
+        const jobs = await settledJobs()
         expect(hasDistributeJobFor(jobs, post.id, 'Like')).toBe(true)
         expect(getDistributeJobFor(jobs, post.id, 'Like')?.activityId).toBeTruthy()
       })
@@ -109,9 +116,7 @@ describe('post.vote', () => {
 
         await request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'dislike' }).expect(204)
         await request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'neutral' }).expect(204)
-        await flushPendingTasks()
-
-        const jobs = await readAllQueueJobs(activitypubDelivery)
+        const jobs = await settledJobs()
         expect(countDistributeJobsFor(jobs, post.id, 'Like')).toBe(0)
         expect(countDistributeJobsFor(jobs, post.id, 'UndoLike')).toBe(0)
       })
@@ -123,9 +128,7 @@ describe('post.vote', () => {
         await request.authenticateAs(voter)
 
         await request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'dislike' }).expect(204)
-        await flushPendingTasks()
-
-        const jobs = await readAllQueueJobs(activitypubDelivery)
+        const jobs = await settledJobs()
         expect(countDistributeJobsFor(jobs, post.id, 'Like')).toBe(0)
         expect(countDistributeJobsFor(jobs, post.id, 'UndoLike')).toBe(0)
       })
@@ -138,12 +141,8 @@ describe('post.vote', () => {
 
         await request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'dislike' }).expect(204)
         await request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'neutral' }).expect(204)
-        await flushPendingTasks()
-
         await request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'dislike' }).expect(204)
-        await flushPendingTasks()
-
-        const jobs = await readAllQueueJobs(activitypubDelivery)
+        const jobs = await settledJobs()
         expect(countDistributeJobsFor(jobs, post.id, 'Like')).toBe(0)
         expect(countDistributeJobsFor(jobs, post.id, 'UndoLike')).toBe(0)
       })
@@ -155,12 +154,8 @@ describe('post.vote', () => {
         await request.authenticateAs(voter)
 
         await request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'like' }).expect(204)
-        await waitForDistributeActivityJobs(j => hasDistributeJobFor(j, post.id, 'Like'))
-
         await request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'like' }).expect(204)
-        await flushPendingTasks()
-
-        const jobs = await readAllQueueJobs(activitypubDelivery)
+        const jobs = await settledJobs()
         expect(countDistributeJobsFor(jobs, post.id, 'Like')).toBe(1)
         const like = getDistributeJobFor(jobs, post.id, 'Like')
         expect(like?.activityId).toBeTruthy()
@@ -173,13 +168,8 @@ describe('post.vote', () => {
         await request.authenticateAs(voter)
 
         await request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'like' }).expect(204)
-        await waitForDistributeActivityJobs(j => hasDistributeJobFor(j, post.id, 'Like'))
-
         await request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'neutral' }).expect(204)
-
-        const jobs = await waitForDistributeActivityJobs(j =>
-          hasDistributeJobFor(j, post.id, 'UndoLike'),
-        )
+        const jobs = await settledJobs()
         expect(hasDistributeJobFor(jobs, post.id, 'UndoLike')).toBe(true)
         const like = getDistributeJobFor(jobs, post.id, 'Like')
         const undo = getDistributeJobFor(jobs, post.id, 'UndoLike')
@@ -195,13 +185,8 @@ describe('post.vote', () => {
         await request.authenticateAs(voter)
 
         await request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'like' }).expect(204)
-        await waitForDistributeActivityJobs(j => hasDistributeJobFor(j, post.id, 'Like'))
-
         await request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'dislike' }).expect(204)
-
-        const jobs = await waitForDistributeActivityJobs(j =>
-          hasDistributeJobFor(j, post.id, 'UndoLike'),
-        )
+        const jobs = await settledJobs()
         expect(hasDistributeJobFor(jobs, post.id, 'UndoLike')).toBe(true)
       })
 
@@ -215,9 +200,7 @@ describe('post.vote', () => {
         await request.authenticateAs(voter)
 
         await request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'like' }).expect(204)
-        await flushPendingTasks()
-
-        const jobs = await readAllQueueJobs(activitypubDelivery)
+        const jobs = await settledJobs()
         expect(countDistributeJobsFor(jobs, post.id, 'Like')).toBe(0)
       })
 
@@ -248,9 +231,7 @@ describe('post.vote', () => {
         await request.authenticateAs(voter)
 
         await request.put(`/api/v1/posts/${commentId}/vote`).send({ choice: 'like' }).expect(204)
-        await flushPendingTasks()
-
-        const jobs = await readAllQueueJobs(activitypubDelivery)
+        const jobs = await settledJobs()
         expect(countDistributeJobsFor(jobs, commentId, 'Like')).toBe(0)
       })
 
@@ -283,9 +264,7 @@ describe('post.vote', () => {
         await request.authenticateAs(voter)
 
         await request.put(`/api/v1/posts/${commentId}/vote`).send({ choice: 'like' }).expect(204)
-        await flushPendingTasks()
-
-        const jobs = await readAllQueueJobs(activitypubDelivery)
+        const jobs = await settledJobs()
         expect(countDistributeJobsFor(jobs, commentId, 'Like')).toBe(0)
       })
     })

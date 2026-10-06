@@ -7,7 +7,6 @@ import {
   CONTRIBUTING_USER_AGE_MS,
   beginTransaction,
   getTestPostPublicationDirtyWorkForScope,
-  isTestAuthorPublicationLifecycleLockWaiting,
   insertTestCommunity,
   insertTestPost,
   insertTestPostStory,
@@ -24,10 +23,10 @@ import {
 import { updateCommunity } from '@services/communities'
 import { createPost, deletePost, updatePost } from '@services/posts'
 import { hardDeleteRssFeedById, setRssFeedEnablementAsCurrentUser } from '@services/rss-feeds'
-import { suspendUser } from '@services/users'
+import { ensureUserSuspendedInTransaction } from '@services/users'
 import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 import { lockAuthorPublicationLifecycle } from '@services/post-publication'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   acquirePublicationLifecycleLockWithTimeout,
   holdAuthorPublicationLifecycleLock,
@@ -81,16 +80,18 @@ describe('post publication lifecycle capture integration', () => {
     })
     const holder = holdAuthorPublicationLifecycleLock(user.id, ready, held)
     await holderReady
-    const suspension = suspendUser(admin, user.id, 'allow')
     try {
-      await vi.waitFor(async () => {
-        expect(await isTestAuthorPublicationLifecycleLockWaiting(user.id)).toBe(true)
-      })
+      await using suspension = await beginTransaction()
+      await suspension(
+        `/* suspension shares author lifecycle lock */ SET LOCAL lock_timeout = '50ms'`,
+      )
+      await expect(
+        ensureUserSuspendedInTransaction(suspension, { actorId: admin.id, userId: user.id }),
+      ).rejects.toMatchObject({ code: '55P03' })
     } finally {
       release()
     }
     await holder
-    await expect(suspension).resolves.toMatchObject({ id: user.id })
   })
   it('captures RSS enablement and former story posts before feed deletion cascades', async () => {
     const administrator = await createTestUser({ administrator: true })

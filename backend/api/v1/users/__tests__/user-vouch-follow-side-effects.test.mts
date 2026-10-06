@@ -1,11 +1,10 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createTestUser,
   getEntityRelation,
   insertTestLegacyLocalFollow,
   insertTestLocalFollow,
   readAllQueueJobs,
-  waitForQueueJobs,
 } from '@voucha/test-helpers'
 import { upsertUserVouchElectionVotes } from '@services/elections-votes/user-vouch'
 import { activitypubDelivery } from '@queues/activitypub-delivery/queues'
@@ -14,9 +13,26 @@ import { blueskyFollowPropagation } from '@queues/bluesky-follow-propagation/que
 import type { ReconcileFollowData } from '@queues/bluesky-follow-propagation/enqueues'
 
 describe('user vouch follow side effects', () => {
+  let settleSideEffects = () => Promise.resolve()
+
   beforeEach(async () => {
     await activitypubDelivery.obliterate({ force: true })
     await blueskyFollowPropagation.obliterate({ force: true })
+    const pending: Promise<unknown>[] = []
+    for (const queue of [activitypubDelivery, blueskyFollowPropagation]) {
+      const addBulk = queue.addBulk
+      vi.spyOn(queue, 'addBulk').mockImplementation((...args: Parameters<typeof addBulk>) => {
+        const jobs = addBulk.call(queue, ...args)
+        pending.push(jobs)
+        return jobs
+      })
+    }
+    settleSideEffects = () => Promise.all(pending).then(() => undefined)
+  })
+
+  afterEach(() => {
+    vi.mocked(activitypubDelivery.addBulk).mockRestore()
+    vi.mocked(blueskyFollowPropagation.addBulk).mockRestore()
   })
 
   it('emits UndoFollow and Bluesky reconciliation for the follow deleted by a disavow', async () => {
@@ -32,17 +48,9 @@ describe('user vouch follow side effects', () => {
     expect(originalActivityId).toBeDefined()
 
     await upsertUserVouchElectionVotes(voter.id, [{ entityId: target.id, score: -2 }])
+    await settleSideEffects()
 
-    const activityJobs = await waitForQueueJobs(activitypubDelivery, jobs =>
-      jobs.some(job => {
-        const data = job.data as DistributeActivityData
-        return (
-          data.activityType === 'UndoFollow' &&
-          data.sourceUserId === voter.id &&
-          data.targetUserId === target.id
-        )
-      }),
-    )
+    const activityJobs = await readAllQueueJobs(activitypubDelivery)
     const undo = activityJobs
       .map(job => job.data as DistributeActivityData)
       .find(
@@ -55,12 +63,7 @@ describe('user vouch follow side effects', () => {
     expect(undo?.originalActivityId).toBe(originalActivityId)
     expect(undo?.activityId).not.toBe(undo?.originalActivityId)
 
-    const blueskyJobs = await waitForQueueJobs(blueskyFollowPropagation, jobs =>
-      jobs.some(job => {
-        const data = job.data as ReconcileFollowData
-        return data.followerUserId === voter.id && data.followeeUserId === target.id
-      }),
-    )
+    const blueskyJobs = await readAllQueueJobs(blueskyFollowPropagation)
     expect(
       blueskyJobs
         .map(job => job.data as ReconcileFollowData)
@@ -74,14 +77,9 @@ describe('user vouch follow side effects', () => {
     await insertTestLegacyLocalFollow(voter.id, target.id)
 
     await upsertUserVouchElectionVotes(voter.id, [{ entityId: target.id, score: -2 }])
-    await activitypubDelivery.getJobCounts()
+    await settleSideEffects()
 
-    const blueskyJobs = await waitForQueueJobs(blueskyFollowPropagation, jobs =>
-      jobs.some(job => {
-        const data = job.data as ReconcileFollowData
-        return data.followerUserId === voter.id && data.followeeUserId === target.id
-      }),
-    )
+    const blueskyJobs = await readAllQueueJobs(blueskyFollowPropagation)
     expect(
       blueskyJobs
         .map(job => job.data as ReconcileFollowData)

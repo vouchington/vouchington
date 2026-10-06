@@ -1,5 +1,7 @@
+import { ServerResponse } from 'node:http'
+
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { rateLimiterValkeyClient } from '@data-stores/valkey-rate-limiter'
+import { RateLimiter, rateLimiterValkeyClient } from '@data-stores/valkey-rate-limiter'
 import { listUserOAuthGrants } from '@services/oauth-authorization-server'
 import {
   routeRateLimitConfig,
@@ -31,16 +33,41 @@ function postMcp(token: string, body: string | object = LIST_BODY) {
     .send(body)
 }
 
-// The usage event is emitted when the response closes, so it lands just after the response does.
-function waitForUsageRows(userId: string, count: number) {
-  return vi.waitFor(
-    async () => {
-      const rows = await readApiUsageRows(userId)
-      expect(rows).toHaveLength(count)
-      return rows
-    },
-    { timeout: 15_000, interval: 100 },
-  )
+// settleUsage is discarded on response close. Charged responses await limiter.add before the
+// analytics write; refusals write synchronously inside that same close listener.
+async function settleMeteredResponses<T>(run: () => Promise<T>): Promise<T> {
+  const gates: Promise<void>[] = []
+  const add = vi.spyOn(RateLimiter.prototype, 'add')
+  const once = ServerResponse.prototype.once
+  const onceSpy = vi.spyOn(ServerResponse.prototype, 'once').mockImplementation(function (
+    this: ServerResponse,
+    event,
+    listener,
+  ) {
+    if (event !== 'close' || typeof listener !== 'function') {
+      return once.call(this, event, listener as () => void)
+    }
+    const gate = Promise.withResolvers<void>()
+    gates.push(gate.promise)
+    return once.call(this, 'close', (...args: unknown[]) => {
+      const started = add.mock.results.length
+      Reflect.apply(listener, this, args)
+      const settledAdds = add.mock.results
+        .slice(started)
+        .flatMap(result => (result.type === 'return' ? [result.value as Promise<unknown>] : []))
+      void Promise.allSettled(settledAdds).then(() => {
+        gate.resolve()
+      })
+    })
+  })
+  try {
+    const result = await run()
+    await Promise.all(gates)
+    return result
+  } finally {
+    onceSpy.mockRestore()
+    add.mockRestore()
+  }
 }
 
 async function usageQuotaKeys(): Promise<string[]> {
@@ -90,9 +117,9 @@ describe('POST /api/v1/mcp usage metering', () => {
   it('attributes an API key request to its key id and never stores the key', async () => {
     const { user, token, identity } = await issueTestUserMcpCredential('api_key', READ_SCOPE)
 
-    await postMcp(token).expect(200)
+    await settleMeteredResponses(() => postMcp(token).expect(200))
 
-    const [row, ...rest] = await waitForUsageRows(user.id, 1)
+    const [row, ...rest] = await readApiUsageRows(user.id)
     expect(rest).toEqual([])
     expect(row).toMatchObject({
       surface: 'mcp_user',
@@ -115,10 +142,10 @@ describe('POST /api/v1/mcp usage metering', () => {
   it('is not metered a second time by the REST usage meter', async () => {
     const { user, token } = await issueTestUserMcpCredential('api_key', READ_SCOPE)
 
-    await postMcp(token).expect(200)
+    await settleMeteredResponses(() => postMcp(token).expect(200))
 
     // The REST meter would settle first, as an anonymous row, because a bearer has no session.
-    const [row, ...rest] = await waitForUsageRows(user.id, 1)
+    const [row, ...rest] = await readApiUsageRows(user.id)
     expect(rest).toEqual([])
     expect(row).toMatchObject({ surface: 'mcp_user', credential: 'api_key' })
     expect(await readAnonymousApiUsageRows()).toEqual([])
@@ -129,9 +156,9 @@ describe('POST /api/v1/mcp usage metering', () => {
     const grants = await listUserOAuthGrants(user.id, { limit: 100 })
     const grant = grants.results.find(entry => entry.client.client_id === identity.oauth_client_id)
 
-    await postMcp(token).expect(200)
+    await settleMeteredResponses(() => postMcp(token).expect(200))
 
-    const [row] = await waitForUsageRows(user.id, 1)
+    const [row] = await readApiUsageRows(user.id)
     expect(row).toMatchObject({
       credential: 'oauth',
       user_id: user.id,
@@ -150,13 +177,15 @@ describe('POST /api/v1/mcp usage metering', () => {
     const member = await issueTestUserMcpCredential('api_key', READ_SCOPE)
     await createTestMembership({ user_id: member.user.id, plan: 'plus' })
 
-    await postMcp(reader.token).expect(200)
-    await postMcp(writer.token).expect(200)
-    await postMcp(member.token).expect(200)
+    await settleMeteredResponses(async () => {
+      await postMcp(reader.token).expect(200)
+      await postMcp(writer.token).expect(200)
+      await postMcp(member.token).expect(200)
+    })
 
-    const [readRow] = await waitForUsageRows(reader.user.id, 1)
-    const [writeRow] = await waitForUsageRows(writer.user.id, 1)
-    const [plusRow] = await waitForUsageRows(member.user.id, 1)
+    const [readRow] = await readApiUsageRows(reader.user.id)
+    const [writeRow] = await readApiUsageRows(writer.user.id)
+    const [plusRow] = await readApiUsageRows(member.user.id)
     const quota = (plan: 'free' | 'plus', scopeClass: 'read' | 'write') =>
       selectUsageQuota({ surface: 'mcp_user', plan, scopeClass }).limit
     expect(Number(readRow!.quota_limit)).toBe(quota('free', 'read'))
@@ -170,9 +199,9 @@ describe('POST /api/v1/mcp usage metering', () => {
   it('charges a served 4xx to the quota', async () => {
     const { user, token } = await issueTestUserMcpCredential('api_key', READ_SCOPE)
 
-    await postMcp(token, '{ not json').expect(400)
+    await settleMeteredResponses(() => postMcp(token, '{ not json').expect(400))
 
-    const [row] = await waitForUsageRows(user.id, 1)
+    const [row] = await readApiUsageRows(user.id)
     expect(row).toMatchObject({ status_code: 400 })
     expect(Number(row!.units)).toBe(1)
   })
@@ -202,12 +231,13 @@ describe('POST /api/v1/mcp usage metering', () => {
       )
     }
 
-    const limited = await postMcp(token).expect(429)
+    const limited = await settleMeteredResponses(() => postMcp(token).expect(429))
 
     expect(limited.headers['retry-after']).toBe(String(quota.windowSeconds))
     const audit = await readTestMcpCallAuditEvents(user.id)
     expect(audit.map(event => event.outcome)).toEqual(['rate_limited'])
-    const rows = await waitForUsageRows(user.id, quota.limit + 1)
+    const rows = await readApiUsageRows(user.id)
+    expect(rows).toHaveLength(quota.limit + 1)
     expect(rows.at(-1)).toMatchObject({ status_code: 429 })
     expect(rows.reduce((units, row) => units + Number(row.units), 0)).toBe(quota.limit)
     // A different user keeps a full allowance.

@@ -149,19 +149,23 @@ describe('flushQueues', () => {
 
   it('waits for sibling obliterations before closing handles', async () => {
     const sibling = Promise.withResolvers<void>()
+    const secondStarted = Promise.withResolvers<void>()
     const error = new Error('obliterate boom')
     let callIndex = 0
     obliterate.mockImplementation(() => {
       callIndex += 1
       if (callIndex === 1) return Promise.reject(error)
-      if (callIndex === 2) return sibling.promise
+      if (callIndex === 2) {
+        secondStarted.resolve()
+        return sibling.promise
+      }
       return Promise.resolve()
     })
     close.mockResolvedValue(undefined)
 
     const flush = flushQueues()
     const flushError = flush.catch(err => err)
-    await vi.waitFor(() => expect(obliterate.mock.calls.length).toBeGreaterThanOrEqual(2))
+    await secondStarted.promise
     expect(close).not.toHaveBeenCalled()
 
     sibling.resolve()
@@ -238,21 +242,23 @@ describe('flushQueues', () => {
     const reason = new Error('cancel queue obliteration')
     const obliterateError = new Error('obliterate boom')
     const aborter = Promise.withResolvers<void>()
+    const secondStarted = Promise.withResolvers<void>()
     let callIndex = 0
     obliterate.mockImplementation(async () => {
       callIndex += 1
+      if (callIndex === 2) secondStarted.resolve()
       if (callIndex === 1) {
         await aborter.promise
         controller.abort(reason)
-      } else if (callIndex === 2) {
-        throw obliterateError
+        return
       }
+      if (callIndex === 2) throw obliterateError
     })
     close.mockResolvedValue(undefined)
 
     const flush = flushQueues(controller.signal)
     const flushRejection = flush.catch((err: unknown) => err)
-    await vi.waitFor(() => expect(obliterate.mock.calls.length).toBeGreaterThanOrEqual(2))
+    await secondStarted.promise
     aborter.resolve()
 
     await expect(flushRejection).resolves.toMatchObject({

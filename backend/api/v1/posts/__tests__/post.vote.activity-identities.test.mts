@@ -1,13 +1,11 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   CONTRIBUTING_USER_AGE_MS,
   createTestPost,
   createTestUserWithAge,
-  flushPendingTasks,
   insertPostElectionVote,
   readAllQueueJobs,
-  waitForQueueJobs,
 } from '@voucha/test-helpers'
 import { activitypubDelivery } from '@queues/activitypub-delivery/queues'
 import type { DistributeActivityData } from '@queues/activitypub-delivery/enqueues'
@@ -16,10 +14,23 @@ import { upsertPostElectionVotes } from '@services/elections-votes/post'
 
 describe('post vote ActivityPub identities', () => {
   let voter: PrivateUser
+  let settleDelivery = () => Promise.resolve()
 
   beforeEach(async () => {
     await activitypubDelivery.obliterate({ force: true })
+    const pending: Promise<unknown>[] = []
+    const add = activitypubDelivery.add
+    vi.spyOn(activitypubDelivery, 'add').mockImplementation((...args: Parameters<typeof add>) => {
+      const job = add.call(activitypubDelivery, ...args)
+      pending.push(job)
+      return job
+    })
+    settleDelivery = () => Promise.all(pending).then(() => undefined)
     voter = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
+  })
+
+  afterEach(() => {
+    vi.mocked(activitypubDelivery.add).mockRestore()
   })
 
   it('rotates the Like identity when re-liking after an UndoLike', async () => {
@@ -28,13 +39,19 @@ describe('post vote ActivityPub identities', () => {
     await request.authenticateAs(voter)
 
     await request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'like' }).expect(204)
-    let jobs = await waitForLikeCount(post.id, 1)
+    let jobs = await settledDeliveryJobs(settleDelivery)
     const firstLikeId = getLikeIds(jobs, post.id)[0]
 
     await request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'neutral' }).expect(204)
-    await waitForUndoLike(post.id)
+    jobs = await settledDeliveryJobs(settleDelivery)
+    expect(
+      jobs.some(job => {
+        const data = job.data as DistributeActivityData
+        return data.activityType === 'UndoLike' && data.targetPostId === post.id
+      }),
+    ).toBe(true)
     await request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'like' }).expect(204)
-    jobs = await waitForLikeCount(post.id, 2)
+    jobs = await settledDeliveryJobs(settleDelivery)
 
     const likeIds = getLikeIds(jobs, post.id)
     expect(likeIds).toHaveLength(2)
@@ -54,9 +71,7 @@ describe('post vote ActivityPub identities', () => {
       request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'like' }).expect(204),
     ])
 
-    await waitForLikeCount(post.id, 1)
-    await flushPendingTasks()
-    const jobs = await readAllQueueJobs(activitypubDelivery)
+    const jobs = await settledDeliveryJobs(settleDelivery)
     expect(getLikeIds(jobs, post.id)).toHaveLength(1)
   })
 
@@ -73,11 +88,15 @@ describe('post vote ActivityPub identities', () => {
     const request = createRequest()
     await request.authenticateAs(voter)
     await request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'neutral' }).expect(204)
-    await flushPendingTasks()
 
-    expect(await readAllQueueJobs(activitypubDelivery)).toEqual([])
+    expect(await settledDeliveryJobs(settleDelivery)).toEqual([])
   })
 })
+
+async function settledDeliveryJobs(settle: () => Promise<void>) {
+  await settle()
+  return readAllQueueJobs(activitypubDelivery)
+}
 
 function getLikeIds(
   jobs: Awaited<ReturnType<typeof activitypubDelivery.getJobs>>,
@@ -90,23 +109,4 @@ function getLikeIds(
         data.activityType === 'Like' && data.targetPostId === postId,
     )
     .map(data => data.activityId)
-}
-
-async function waitForLikeCount(
-  postId: string,
-  expectedCount: number,
-): Promise<Awaited<ReturnType<typeof activitypubDelivery.getJobs>>> {
-  return waitForQueueJobs(
-    activitypubDelivery,
-    jobs => getLikeIds(jobs, postId).length === expectedCount,
-  )
-}
-
-async function waitForUndoLike(postId: string): Promise<void> {
-  await waitForQueueJobs(activitypubDelivery, jobs =>
-    jobs.some(job => {
-      const data = job.data as DistributeActivityData
-      return data.activityType === 'UndoLike' && data.targetPostId === postId
-    }),
-  )
 }

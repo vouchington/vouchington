@@ -1,4 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest'
+import { valkeyEvents } from 'valkyries'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
@@ -25,13 +26,16 @@ describe('GET /api/v1/trending-communities', () => {
 
   it('stores anonymous results in the search cache', async () => {
     await invalidateAnonymousSearchCaches()
+    const cached = watchCacheSet(TRENDING_COMMUNITIES_CACHE_PREFIX)
 
     try {
       const request = createRequest()
       await request.get('/api/v1/trending-communities?limit=19').expect(200)
+      await cached.done
 
-      await expect.poll(() => hasTrendingCommunitiesCacheKey()).toBe(true)
+      expect(await hasTrendingCommunitiesCacheKey()).toBe(true)
     } finally {
+      cached.stop()
       await invalidateAnonymousSearchCaches()
     }
   })
@@ -65,6 +69,22 @@ describe('GET /api/v1/trending-communities', () => {
     expect(response.body.communities.length).toBeLessThanOrEqual(1)
   })
 })
+
+function watchCacheSet(cacheName: string): { done: Promise<void>; stop: () => void } {
+  let stop = () => {}
+  const done = new Promise<void>(resolve => {
+    const onSet = (event: { cacheName: string; keys: string[] }) => {
+      if (event.cacheName !== cacheName) return
+      stop()
+      resolve()
+    }
+    stop = () => {
+      valkeyEvents.off('cache:set', onSet)
+    }
+    valkeyEvents.on('cache:set', onSet)
+  })
+  return { done, stop }
+}
 
 async function hasTrendingCommunitiesCacheKey(): Promise<boolean> {
   let cursor = '0'
