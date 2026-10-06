@@ -81,9 +81,9 @@ nightly runs that did not include the pull request.
 
 Group the occurrences that share a fingerprint; one entry's occurrences can land in different
 groups. An occurrence caused by its pull request's own change stays a group of one. Then choose
-exactly one outcome per group, and open at most one fix PR or issue per group. Finishing a group's
-outcome finishes only that group: continue with the next group, then report and sweep. End the
-session early only when you cannot continue at all, such as lost `gh` access.
+exactly one outcome per group, and open at most one issue and one fix PR per group. Finishing a
+group's outcome finishes only that group: continue with the next group, then report and sweep. End
+the session early only when you cannot continue at all, such as lost `gh` access.
 
 1. **The pull request is the root cause.** Its own change fails deterministically, or conflicts with
    an entry ahead of it or with `main`. Post the analysis comment below; this group is done. Do not
@@ -105,14 +105,30 @@ session early only when you cannot continue at all, such as lost `gh` access.
    `automation:auto-fix` labels, then re-fetch the PR and require both labels.
 3. **A CI or architecture defect.** Repository tooling, a ratchet, or shared infrastructure rejects
    work the group did not cause. Search for an existing issue; comment new evidence on it, or file
-   one issue with the failing runs, fingerprint, and a proposed fix. Do not open a PR for it.
+   one issue with the failing runs, fingerprint, and a proposed fix. When the defect is in this
+   repository, also fix it as a flaky test is fixed: one draft PR from `main` that closes the issue,
+   titled `Automation fix: <defect> (merge queue #N[, #M…])`. When it lives outside this
+   repository, such as in `no-mistakes`, `vouchington-tooling`, GitHub, or hosted infrastructure,
+   the issue is the whole outcome.
 4. **A transient failure.** The failure matches a catalogued transient or clear infrastructure
    noise. Say each pull request still out of the queue at its ejected head is safe to re-enqueue. If the fingerprint recurs across ejections,
    also find or file one issue.
 
-If the evidence does not support one outcome for a group, or materially different fixes remain,
-report `## Problem`, `## Options`, and `## Recommendation` in that group's comments instead of
-guessing.
+Every group ends in one of these outcomes, never in a list of options. When the evidence fits
+more than one outcome, or several fixes remain, reproduce locally when that is cheap, then choose
+the outcome and fix the evidence best supports and carry it out. A nondeterministic failure that
+no pull request in the group caused is a flaky test even when its cause is unproven, and a test
+failure that recurs across ejections is never a transient. In the fix PR's `## Root cause`,
+separate what the evidence proves from what it only suggests, and put the alternatives in
+`## Options considered`. When the logs cannot tell the candidate causes apart, for example a
+statement timeout with no wait event or plan, the fix PR also captures the evidence the next
+occurrence needs, but diagnostics alone are not a fix.
+
+A fix removes the cause. Never raise a test, statement, or job timeout, add a retry or rerun, skip
+or quarantine a test, weaken what a test proves, or break the
+[test suite rules](../../development/tests.md#test-suite-rules), such as moving a test back to its
+own database, to make a failure stop. When a timeout is only the symptom, fix what made the work
+slow or blocked it.
 
 ## Report
 
