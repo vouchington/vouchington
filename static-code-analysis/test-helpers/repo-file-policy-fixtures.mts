@@ -29,7 +29,6 @@ import { writeValidLocalLlmEndpointPolicyFixture } from '../repo-file-policy/loc
 export { mkdir, rm, writeFile } from 'node:fs/promises'
 export { join } from 'node:path'
 export { checkRepoFilePolicy } from '../repo-file-policy/index.mts'
-export { parseTopicTypeEntries } from '../repo-file-policy/finite-enum-ripple-parsers.mts'
 // Kept here (not just in repo-file-policy-test-sources.mts) so every existing consumer's
 // import path stays unchanged; the constant itself moved to stay under this file's line cap.
 export { SYNCED_MODERATION_POLICY_MATRIX_DOC } from '../repo-file-policy/repo-file-policy-test-sources.mts'

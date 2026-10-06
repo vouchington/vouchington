@@ -1,5 +1,3 @@
-export type ReadTrackedFile = (file: string) => string
-
 export interface RoutedPage {
   file: string
   isTopLevel: boolean
