@@ -24,7 +24,7 @@ type McpRequestContext = {
   onToolError?: (toolName: string) => Promise<void>
   // The retry delay of each `tools/call` whose REST route bucket was spent, by JSON-RPC request id.
   // Those calls are refused in-band without running, and are already audited as rate limited.
-  rateLimitedCalls?: ReadonlyMap<string | number, number>
+  rateLimitedCalls: ReadonlyMap<string | number, number>
 }
 
 export async function handleMcpHttpRequest(ctx: McpRequestContext): Promise<McpHttpResponse> {
@@ -47,7 +47,7 @@ export async function handleMcpHttpRequest(ctx: McpRequestContext): Promise<McpH
   })
 
   server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
-    const retryAfterSeconds = ctx.rateLimitedCalls?.get(extra.requestId)
+    const retryAfterSeconds = ctx.rateLimitedCalls.get(extra.requestId)
     if (retryAfterSeconds !== undefined) return buildRateLimitedToolResult(retryAfterSeconds)
     const result = await callMcpTool(
       request.params.name,

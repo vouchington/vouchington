@@ -30,6 +30,7 @@ describe('handleMcpHttpRequest', () => {
       }),
       parsedBody: body,
       config,
+      rateLimitedCalls: new Map(),
     })
 
   it.each([USER_MCP_SERVER_CONFIG, ADMIN_MCP_SERVER_CONFIG])(

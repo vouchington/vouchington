@@ -119,17 +119,18 @@ function classifyMessage(
   if (resolution.status !== 'allowed') {
     return uncharged({ jsonrpcMethod: method, toolName: name, outcome: resolution.status })
   }
-  const invalidArguments = validateToolArguments(resolution.tool.schema.parameters, args ?? {})
+  const callArguments = args ?? {}
+  const invalidArguments = validateToolArguments(resolution.tool.schema.parameters, callArguments)
   const copyrightRationale =
     !invalidArguments &&
     resolution.tool.meta?.switch === 'copyright.mcpDecisionTools' &&
     resolution.tool.meta.auditRationale === true &&
-    typeof args?.rationale === 'string'
-      ? args.rationale
+    typeof callArguments.rationale === 'string'
+      ? callArguments.rationale
       : undefined
   // Without an id the request is a notification, which the server never answers or runs.
   const requestId = invalidArguments ? null : readRequestId(message)
-  const routeKeys = requestId === null ? [] : toolRouteKeys(resolution.tool.meta, args ?? {})
+  const routeKeys = requestId === null ? [] : toolRouteKeys(resolution.tool.meta, callArguments)
   return {
     event: {
       jsonrpcMethod: method,
