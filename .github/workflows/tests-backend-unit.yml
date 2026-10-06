@@ -100,6 +100,8 @@ jobs:
       - working-directory: backend
         run: node data-stores/psql/migrate.mts
         timeout-minutes: 3
+      # File-progress lines and resource samples share this step's streamed log. A runner
+      # shutdown keeps that log; the JUnit artifact is still skipped when the run is killed.
       - name: Run backend tests
         env:
           GIT_COMMIT: ${{ github.sha }}
@@ -107,9 +109,49 @@ jobs:
           CI_SHARD: ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}
           CI_PROJECT: backend-unit
           VITEST_CI_REPORTERS: run
+          VITEST_FILE_PROGRESS: '1'
           VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}
           VITEST_JUNIT_OUTPUT_FILE: test-report.junit.xml
-        run: pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-platform-stats-cache --project backend-mocks --project backend-real-glide-mq --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}
+        run: |
+          resource_prefix='[backend-unit-resources]'
+          sample_runner_resources() {
+            {
+              date -u +%Y-%m-%dT%H:%M:%SZ
+              free -m
+              df -h "$GITHUB_WORKSPACE"
+              df -h -t tmpfs
+              # head closes the pipe, so ps exits on SIGPIPE. That is not a sample failure.
+              ps -eo pid,rss,pmem,comm --sort=-rss | head -n 15 || true
+            } 2>&1 | while IFS= read -r line || [ -n "$line" ]; do
+              printf '%s %s\n' "$resource_prefix" "$line"
+            done
+          }
+          resource_sampler_pid=
+          stop_resource_sampler() {
+            if [ -z "${resource_sampler_pid}" ]; then
+              return 0
+            fi
+            # TERM hits the sampler shell, which stops its sleep child before exiting.
+            kill -TERM "${resource_sampler_pid}" 2>/dev/null || true
+            wait "${resource_sampler_pid}" 2>/dev/null || true
+            return 0
+          }
+          trap stop_resource_sampler EXIT
+          (
+            set +e
+            set +o pipefail
+            sleep_pid=
+            trap 'if [ -n "${sleep_pid}" ]; then kill "${sleep_pid}" 2>/dev/null || true; fi; exit 0' TERM INT
+            while true; do
+              sample_runner_resources
+              sleep 15 &
+              sleep_pid=$!
+              wait "${sleep_pid}"
+              sleep_pid=
+            done
+          ) &
+          resource_sampler_pid=$!
+          pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-platform-stats-cache --project backend-mocks --project backend-real-glide-mq --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}
         # Fewer, longer-running shards (see ci/vitest/project-ownership.mts) push real per-shard
         # test-execution time higher than the old <5m-per-shard target tolerated; this watchdog
         # now matches the repo's 10-minute-hard-ceiling CI runtime target instead of the stale 5m.
