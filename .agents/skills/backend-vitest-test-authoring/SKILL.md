@@ -55,3 +55,4 @@ fixture, and dirty-database patterns.
    scenario suite for new plan-shape gates. See
    [tests.md § Query-plan (EXPLAIN) assertions](../../../docs/development/reference-tests-parallel-safety-and-test-root-hygiene.md#query-plan-explain-assertions).
 10. Apply the [Test Value and Safe Reduction](../../../docs/development/reference-tests-value-and-reduction.md) gate; do not duplicate an invariant already owned by a lower-cost realistic boundary.
+11. Follow the [suite rules](../../../docs/development/tests.md#test-suite-rules). Scope assertions to owned rows. Inject a write failure with a throwing `QueryExecutor`. Wait on the returned promise or queue event. Lower DynamicConfig limits instead of building a large fixture. Real network calls stay on the allowlisted hosts. Before asserting that nothing happened, complete the sibling event that would have caused it. Delete a redundant test only with the coverage comparison in R12.

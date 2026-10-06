@@ -1,0 +1,215 @@
+id: test-timeout-cap
+language: Tsx
+severity: error
+message: >-
+  A test timeout override is at most 30 seconds. Fix the slow test instead of
+  raising it. Interim ast-grep until no-mistakes vitest-timeout-cap ships
+  (jonathanong/no-mistakes#1566).
+files:
+  - '**/*.test.ts'
+  - '**/*.test.tsx'
+  - '**/*.test.mts'
+  - '**/*.spec.ts'
+  - '**/*.spec.tsx'
+  - '**/*.spec.mts'
+  - '**/test-helpers/**/*.ts'
+  - '**/test-helpers/**/*.mts'
+  - 'test-helpers/**/*.ts'
+  - 'test-helpers/**/*.mts'
+# Playwright keeps its own action and test budgets. This cap is the vitest rule.
+ignores:
+  - playwright/**
+  # Frozen vitest baseline. Cleanup PRs do not edit it. #2149 owns it. #2145 deletes it.
+  - '.github/workflows/image-lambda-smoke-retry.test.mts'
+  - 'backend/api/election-vote-callers.request-validation.test.mts'
+  - 'backend/api/election-vote-handler-retract.test.mts'
+  - 'backend/api/election-vote-handler.platform-accounts.test.mts'
+  - 'backend/api/election-vote-handler.test.mts'
+  - 'backend/api/v1/copyright-notices/copyright-cache.test.mts'
+  - 'backend/api/v1/copyright-notices/copyright-notices.replay.isolated.test.mts'
+  - 'backend/api/v1/copyright-notices/data-export-retention.test.mts'
+  - 'backend/api/v1/copyright-notices/data-export.test.mts'
+  - 'backend/api/v1/copyright-notices/email-intake-queue-pagination.test.mts'
+  - 'backend/api/v1/copyright-notices/eu-copyright-report-route.test.mts'
+  - 'backend/api/v1/copyright-notices/staff-form-review-guidance.test.mts'
+  - 'backend/api/v1/copyright-notices/staff-queue-urgency.test.mts'
+  - 'backend/api/v1/copyright-notices/trusted-flagger-staff-queue.test.mts'
+  - 'backend/api/v1/entity-relations/__tests__/entity-relations.official-vote.test.mts'
+  - 'backend/api/v1/entity-relations/__tests__/entity-relations.request-validation.test.mts'
+  - 'backend/api/v1/entity-relations/__tests__/user-tags-authorization.test.mts'
+  - 'backend/api/v1/feeds/__tests__/feeds.request-validation.test.mts'
+  - 'backend/api/v1/hostnames/__tests__/hostnames.request-validation.test.mts'
+  - 'backend/api/v1/hostnames/hostname.blocking.test.mts'
+  - 'backend/api/v1/households/households.request-validation.test.mts'
+  - 'backend/api/v1/lists/lists.request-validation.test.mts'
+  - 'backend/api/v1/mcp/mcp.route-rate-limit.test.mts'
+  - 'backend/api/v1/report-integrity/flags.test.mts'
+  - 'backend/api/v1/report-integrity/penalties.test.mts'
+  - 'backend/api/v1/report-integrity/penalty.test.mts'
+  - 'backend/api/v1/reports/__tests__/reports.clustered-pagination-matrix.test.mts'
+  - 'backend/api/v1/reports/__tests__/reports.flat-pagination-matrix.test.mts'
+  - 'backend/api/v1/reports/__tests__/reports.rate-limit.test.mts'
+  - 'backend/api/v1/rss-feeds/trending-rss-feeds.test.mts'
+  - 'backend/api/v1/trending-posts/trending-posts.test.mts'
+  - 'backend/api/v1/trending-topics/trending-topics.test.mts'
+  - 'backend/api/v1/urls/__tests__/urls.crawls.cursor.test.mts'
+  - 'backend/api/v1/urls/__tests__/urls.crawls.part-2.test.mts'
+  - 'backend/api/v1/urls/__tests__/urls.crawls.test.mts'
+  - 'backend/api/v1/urls/__tests__/urls.list-detail.test.mts'
+  - 'backend/api/v1/urls/__tests__/urls.request-validation.test.mts'
+  - 'backend/api/v1/users/__tests__/user.contexts.test.mts'
+  - 'backend/api/v1/users/__tests__/user.vouch-vote.test.mts'
+  - 'backend/api/v1/users/__tests__/users.request-validation.test.mts'
+  - 'backend/api/v1/users/vote-weight.test.mts'
+  - 'backend/api/v1/vote-integrity/flags.test.mts'
+  - 'backend/api/v1/vote-integrity/penalties.test.mts'
+  - 'backend/api/v1/web-search/__tests__/web-search.test.mts'
+  - 'backend/data-stores/psql/migration-runner/monthly-partitions.test.mts'
+  - 'backend/scripts/seed/copyright.test.mts'
+  - 'backend/services/ap-inbox-activities/durable-delivery-storage.test.mts'
+  - 'backend/services/bookmarks/upsert.follow-vouch.test.mts'
+  - 'backend/services/classifiers/human-vote-comparison-query-plan.test.mts'
+  - 'backend/services/communities/applications/index.test.mts'
+  - 'backend/services/communities/invites/index.test.mts'
+  - 'backend/services/copyright-notices/dsa-statement-submission-build-failure.test.mts'
+  - 'backend/services/copyright-notices/dsa-statement-submission-sweep.test.mts'
+  - 'backend/services/copyright-notices/email-intakes-staff-queue-reply-failures.test.mts'
+  - 'backend/services/copyright-notices/email-intakes-staff-queue.test.mts'
+  - 'backend/services/copyright-notices/email-legal-process-queue.test.mts'
+  - 'backend/services/copyright-notices/eu-copyright-contract.test.mts'
+  - 'backend/services/copyright-notices/eu-reporting-complaints.test.mts'
+  - 'backend/services/copyright-notices/eu-reporting-notices.test.mts'
+  - 'backend/services/copyright-notices/retention-erasure-spec.test.mts'
+  - 'backend/services/copyright-notices/territorial-withdrawal.isolated.test.mts'
+  - 'backend/services/crawls/__tests__/crawl-url.errors.part-2.test.mts'
+  - 'backend/services/crawls/__tests__/crawl-url.errors.part-3.test.mts'
+  - 'backend/services/crawls/__tests__/crawl-url.redirects.test.mts'
+  - 'backend/services/crawls/__tests__/crawl-url.ssrf.test.mts'
+  - 'backend/services/data-retention/__tests__/cleanup-membership-lineage.test.mts'
+  - 'backend/services/data-retention/__tests__/cleanup-retained-media-identities.test.mts'
+  - 'backend/services/data-retention/__tests__/cleanup-retained-preservation-holds.test.mts'
+  - 'backend/services/data-retention/__tests__/cleanup.batch-caps.test.mts'
+  - 'backend/services/data-retention/__tests__/cleanup.hashtag-sources.test.mts'
+  - 'backend/services/data-retention/__tests__/cleanup.identity-verification.test.mts'
+  - 'backend/services/data-retention/__tests__/cleanup.membership-retained-identities.test.mts'
+  - 'backend/services/data-retention/__tests__/cleanup.test.mts'
+  - 'backend/services/data-retention/__tests__/cleanup.transaction-boundary.test.mts'
+  - 'backend/services/data-retention/cleanup-analytics.test.mts'
+  - 'backend/services/data-retention/cleanup-windows.test.mts'
+  - 'backend/services/elections-votes/shared/vote-aggregation.test.mts'
+  - 'backend/services/elections-votes/shared/vote-drift.test.mts'
+  - 'backend/services/elections-votes/shared/vote-stats-snapshot-ordering.test.mts'
+  - 'backend/services/elections-votes/user-vouch/votes-upsert.test.mts'
+  - 'backend/services/engagement-emails/dispatch-engagement-emails.test.mts'
+  - 'backend/services/entity-fetch/metrics-batch.test.mts'
+  - 'backend/services/entity-listener-reconciliation/reconciliation.test.mts'
+  - 'backend/services/feeds/posts/__tests__/get-ids.hostname-filter.test.mts'
+  - 'backend/services/feeds/rss-feed-items/__tests__/get-ids.enabled-filter.test.mts'
+  - 'backend/services/feeds/rss-feed-items/__tests__/get-ids.filters.test.mts'
+  - 'backend/services/feeds/rss-feed-items/__tests__/get-ids.hostname-filter.test.mts'
+  - 'backend/services/hostname-blocking/block-hostname.test.mts'
+  - 'backend/services/hostname-blocking/penalize-blocked-hostname-attempt.test.mts'
+  - 'backend/services/images/retained-uploader-hard-purge.test.mts'
+  - 'backend/services/notifications/community-activity-digest-admission.real-glide.mock.test.mts'
+  - 'backend/services/notifications/community-activity-digest-dispatch.test.mts'
+  - 'backend/services/post-mentions/processors.test.mts'
+  - 'backend/services/post-publication/identity-snapshots.test.mts'
+  - 'backend/services/post-publication/shadow-audit-checkpoint.test.mts'
+  - 'backend/services/post-publication/shadow-audit.test.mts'
+  - 'backend/services/posts/__tests__/create-community-post-authorization.test.mts'
+  - 'backend/services/posts/__tests__/upsert.url-validation.generated.test.mts'
+  - 'backend/services/posts/search/__tests__/get-ids.pagination-and-following.generated.test.mts'
+  - 'backend/services/referral-program-link-validations/assert-urls-are-not-referral-links.test.mts'
+  - 'backend/services/report-integrity/apply-penalty.test.mts'
+  - 'backend/services/report-integrity/create-flag.test.mts'
+  - 'backend/services/report-integrity/detect.test.mts'
+  - 'backend/services/report-integrity/get-flags.test.mts'
+  - 'backend/services/report-integrity/get-penalties.test.mts'
+  - 'backend/services/report-integrity/resolve-flag.test.mts'
+  - 'backend/services/route-rate-limits/check.test.mts'
+  - 'backend/services/rss-feed-items/__tests__/categories.limits.test.mts'
+  - 'backend/services/rss-feed-items/search-semantic.test.mts'
+  - 'backend/services/rss-feed-items/tools/search.test.mts'
+  - 'backend/services/rss-feeds/__tests__/categories.test.mts'
+  - 'backend/services/rss-feeds/__tests__/category-relations.test.mts'
+  - 'backend/services/rss-feeds/__tests__/podcast-show.test.mts'
+  - 'backend/services/rss-feeds/__tests__/topic-alias-category-mapping-reconciliation.test.mts'
+  - 'backend/services/rss-feeds/delete.test.mts'
+  - 'backend/services/rss-xml/news-feed.test.mts'
+  - 'backend/services/stories/__tests__/story-post-related-url-projection-fairness.test.mts'
+  - 'backend/services/stories/__tests__/story-post-related-url-projection.test.mts'
+  - 'backend/services/trending-posts/get-trending-posts.test.mts'
+  - 'backend/services/trending-topics/get-trending-topics.test.mts'
+  - 'backend/services/urls/assert-hostname-not-blocked.test.mts'
+  - 'backend/services/users/authorization.test.mts'
+  - 'backend/services/users/enqueue-reconcile-post-topic-notifications.test.mts'
+  - 'backend/services/vote-integrity/apply-ring-penalty.test.mts'
+  - 'backend/services/vote-integrity/detect-ip-correlation.test.mts'
+  - 'backend/services/vote-integrity/detect-velocity-spike.test.mts'
+  - 'backend/services/vote-integrity/get-flags.test.mts'
+  - 'backend/services/vote-integrity/get-penalties.test.mts'
+  - 'backend/services/vote-integrity/resolve-flag.test.mts'
+  - 'backend/services/vote-weight/admin-set.test.mts'
+  - 'backend/services/vote-weight/enqueue-election-updates.test.mts'
+  - 'backend/services/vote-weight/find-users-needing-recalculation.test.mts'
+  - 'backend/services/vote-weight/gather-factors.test.mts'
+  - 'backend/services/vote-weight/update.test.mts'
+  - 'backend/test-helpers/api-fixtures/openapi/write-openapi.test.mts'
+  - 'backend/tools/__tests__/search-posts.generated.test.mts'
+  - 'backend/tools/admin/copyright-reads.test.mts'
+  - 'backend/workers/ai-agents/processors/process-reconcile-copyright-agent-dispatches.real-glide.mock.test.mts'
+  - 'backend/workers/bedrock-embeddings-batch/__tests__/worker-router.test.mts'
+  - 'backend/workers/images/workers/images.test.mts'
+  - 'backend/workers/report-integrity/processors.test.mts'
+  - 'ci/coverage-rules-scope.test.mts'
+  - 'static-code-analysis/i18n-extract/route-bounds.test.mts'
+  - 'static-code-analysis/i18n-extract/route-source-scan.test.mts'
+  - 'test-helpers/vitest-isolated-database-cases.test.mts'
+# Specific shapes come before it($A, $B, $N). An earlier structural match that
+# fails the number constraint does not fall through to the next branch.
+rule:
+  any:
+    - pattern: 'it($A, { timeout: $N }, $F)'
+    - pattern: 'test($A, { timeout: $N }, $F)'
+    - pattern: 'it($A, { timeout: $N, $$$ }, $F)'
+    - pattern: 'test($A, { timeout: $N, $$$ }, $F)'
+    - pattern: 'it.each($ARR)($A, $B, $N)'
+    - pattern: 'test.each($ARR)($A, $B, $N)'
+    - pattern: it.concurrent($A, $B, $N)
+    - pattern: test.concurrent($A, $B, $N)
+    - pattern: it($A, $B, $N)
+    - pattern: test($A, $B, $N)
+    - pattern: describe($A, $B, $N)
+    - pattern: beforeAll($F, $N)
+    - pattern: beforeEach($F, $N)
+    - pattern: afterAll($F, $N)
+    - pattern: afterEach($F, $N)
+constraints:
+  N:
+    kind: number
+    regex: '^(?:3000[1-9]|300[1-9][0-9]|30[1-9][0-9]{2}|3[1-9][0-9]{3}|[4-9][0-9]{4}|[1-9][0-9]{5,}|30_(?:[0-9][0-9][1-9]|[0-9][1-9][0-9]|[1-9][0-9][0-9])|3[1-9]_[0-9]{3}|[4-9][0-9]_[0-9]{3}|[1-9][0-9]{2,}_[0-9]{3}(?:_[0-9]{3})*)$'
+examples:
+  - code: |
+      it('slow', async () => {}, 60_000)
+    isValid: false
+    file: 'backend/services/example-suite-rules.test.mts'
+  - code: |
+      it('bounded', { timeout: 45_000 }, async () => {})
+    isValid: false
+    file: 'backend/services/example-suite-rules.test.mts'
+  - code: |
+      beforeAll(async () => {}, 60_000)
+    isValid: false
+    file: 'backend/services/example-suite-rules.test.mts'
+  - code: |
+      it('default', async () => {}, 5_000)
+    isValid: true
+    file: 'backend/services/example-suite-rules.test.mts'
+  - code: |
+      it('cap', async () => {}, 30_000)
+    isValid: true
+    file: 'backend/services/example-suite-rules.test.mts'
+  - code: |
+      expect(options).toMatchObject({ timeout: 60_000 })
+    isValid: true
+    file: 'backend/services/example-suite-rules.test.mts'

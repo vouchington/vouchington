@@ -348,6 +348,483 @@ rules:
             module: node:timers/promises
             export: setTimeout
 
+  - name: Vitest tests do not poll or wait on timers
+    rule: forbidden-calls
+    scope: repository
+    # Frozen baseline. Cleanup PRs do not edit it. #2136 owns it. #2145 deletes it.
+    exclude:
+      - '.github/workflows/image-lambda-smoke-retry.test.mts'
+      - 'backend/agents/_shared/__tests__/record-response-usage.part-2.test.mts'
+      - 'backend/agents/_shared/__tests__/record-response-usage.part-3.test.mts'
+      - 'backend/agents/_shared/__tests__/record-response-usage.spend-cap.test.mts'
+      - 'backend/agents/_shared/__tests__/record-response-usage.test.mts'
+      - 'backend/agents/appeal-resolution/run.part-2.test.mts'
+      - 'backend/agents/autotagger/classifier-run-client.test.mts'
+      - 'backend/agents/community-moderation/dry-run.test.mts'
+      - 'backend/agents/community-moderation/simulate.test.mts'
+      - 'backend/agents/conversation-title/generate-title.mock.test.mts'
+      - 'backend/agents/dispute-resolution/run.test.mts'
+      - 'backend/agents/post-classifier/classifier-billing.test.mts'
+      - 'backend/agents/report-judgement/run.part-2.test.mts'
+      - 'backend/agents/story-post/agent.test.mts'
+      - 'backend/api/__tests__/rest-usage-meter.routes.test.mts'
+      - 'backend/api/__tests__/sse-listener-budget.test.mts'
+      - 'backend/api/post-publication-lifecycle.test.mts'
+      - 'backend/api/v1/__tests__/trending-communities.test.mts'
+      - 'backend/api/v1/admin/article-syncs-stream.test.mts'
+      - 'backend/api/v1/admin/index-routes/__tests__/postgresql-stream-recovery.mock.test.mts'
+      - 'backend/api/v1/admin/index-routes/__tests__/streams.test.mts'
+      - 'backend/api/v1/communities/agent-prompts-routes/communities-by-idorslug-agent-prompts-by-promptid-test-runs-post.mock.test.mts'
+      - 'backend/api/v1/mcp/mcp.usage.test.mts'
+      - 'backend/api/v1/my/imports/stream-helpers.test.mts'
+      - 'backend/api/v1/posts/__tests__/post.vote.activity-identities.test.mts'
+      - 'backend/api/v1/posts/__tests__/post.vote.part-2.test.mts'
+      - 'backend/api/v1/report-integrity/penalties.test.mts'
+      - 'backend/api/v1/users/__tests__/index.data-request-routes.part-2.test.mts'
+      - 'backend/api/v1/users/__tests__/user-vouch-follow-side-effects.test.mts'
+      - 'backend/api/v1/valkey/queues-flush.test.mts'
+      - 'backend/data-stores/analytics/__tests__/backend-firehose.part-2.test.mts'
+      - 'backend/data-stores/analytics/__tests__/backend-firehose.test.mts'
+      - 'backend/data-stores/analytics/__tests__/backend-local-flush.test.mts'
+      - 'backend/data-stores/psql/__tests__/schema-classifiers.test.mts'
+      - 'backend/data-stores/psql/migrate.test.mts'
+      - 'backend/data-stores/psql/pool-stats-sampler.test.mts'
+      - 'backend/data-stores/psql/query-capture.test.mts'
+      - 'backend/data-stores/psql/query-telemetry.test.mts'
+      - 'backend/data-stores/valkey-core/app-integration.test.mts'
+      - 'backend/data-stores/valkey-pubsub/__tests__/channel-pubsub.test.mts'
+      - 'backend/data-stores/valkey-pubsub/__tests__/import-progress-pubsub.test.mts'
+      - 'backend/data-stores/valkey/inflight-saturation.no-data.mock.test.mts'
+      - 'backend/entrypoints/api/startup.test.mts'
+      - 'backend/entrypoints/api/valkey-admin-shutdown.test.mts'
+      - 'backend/entrypoints/worker-cpu/grafana-heartbeat.test.mts'
+      - 'backend/modules/openai-utils/create-response-background-lease.no-data.mock.test.mts'
+      - 'backend/modules/scheduled-job-manifest/runtime.test.mts'
+      - 'backend/modules/stripe/invoices.concurrency.test.mts'
+      - 'backend/queues/ai-agents/enqueues/spend-cap-recheck.real-glide.mock.test.mts'
+      - 'backend/queues/bedrock-embeddings-batch/enqueues.real-glide.mock.test.mts'
+      - 'backend/queues/entity-metrics-cache-refresh/enqueues.generated.test.mts'
+      - 'backend/queues/memberships/enqueues/refund-reconciliation.test.mts'
+      - 'backend/queues/oauth-authorization-exchange/enqueues.real-glide.mock.test.mts'
+      - 'backend/queues/ses-inbound/enqueues.real-glide.mock.test.mts'
+      - 'backend/queues/story-post-related-url-projections/enqueues.test.mts'
+      - 'backend/services/articles/sync.test.mts'
+      - 'backend/services/attribution/create.test.mts'
+      - 'backend/services/bedrock-embeddings/search/get-cached.test.mts'
+      - 'backend/services/bluesky-follows/disconnect-lock.test.mts'
+      - 'backend/services/communities/applications/review.test.mts'
+      - 'backend/services/communities/archive.test.mts'
+      - 'backend/services/communities/invites/index.test.mts'
+      - 'backend/services/communities/members/__tests__/index.part-2.test.mts'
+      - 'backend/services/communities/ownership-transfer.test.mts'
+      - 'backend/services/communities/publications/moderation-run.test.mts'
+      - 'backend/services/community-agent-prompts/deactivate-on-membership-change.test.mts'
+      - 'backend/services/copyright-notices/action-delivery-authority.test.mts'
+      - 'backend/services/copyright-notices/surface-target-lifecycle.test.mts'
+      - 'backend/services/crawls/__tests__/crawl-url.errors.part-2.test.mts'
+      - 'backend/services/crawls/__tests__/crawl-url.errors.test.mts'
+      - 'backend/services/crawls/__tests__/update.language-detection.test.mts'
+      - 'backend/services/crawls/domain-rate-limit.test.mts'
+      - 'backend/services/data-retention/__tests__/cleanup.transaction-boundary.test.mts'
+      - 'backend/services/elections-votes/entity-relation/publication-capture.test.mts'
+      - 'backend/services/elections-votes/entity-relation/vote-stats-batch-locks.test.mts'
+      - 'backend/services/elections-votes/entity-relation/vote-stats-publication-lock.test.mts'
+      - 'backend/services/elections-votes/shared/request-lock.test.mts'
+      - 'backend/services/elections-votes/shared/vote-drift.test.mts'
+      - 'backend/services/elections-votes/topic/vote-stats.test.mts'
+      - 'backend/services/entity-fetch/community-membership-metrics-invalidation.test.mts'
+      - 'backend/services/entity-fetch/metrics-refresh.test.mts'
+      - 'backend/services/entity-fetch/refresh.test.mts'
+      - 'backend/services/entity-fetch/rss-feed-follow-metrics-invalidation.test.mts'
+      - 'backend/services/entity-fetch/user-metrics-visibility-invalidation.test.mts'
+      - 'backend/services/entity-relations/delete-follow-retry.test.mts'
+      - 'backend/services/entity-relations/delete-for-subjects-follow.test.mts'
+      - 'backend/services/entity-relations/delete-origin-gating.test.mts'
+      - 'backend/services/entity-relations/enqueue-undo-follow-side-effects.test.mts'
+      - 'backend/services/entity-relations/publication-mutation-locks.test.mts'
+      - 'backend/services/entity-relations/referral-link-eligibility-lock.test.mts'
+      - 'backend/services/entity-relations/upsert-crawl.test.mts'
+      - 'backend/services/entity-relations/upsert-follow-retry.test.mts'
+      - 'backend/services/entity-relations/upsert-notification-transaction.test.mts'
+      - 'backend/services/entity-relations/upsert-origin-gating.test.mts'
+      - 'backend/services/fediverse-instances/create-instance.platform-accounts.test.mts'
+      - 'backend/services/fediverse-search/adapters/factory.test.mts'
+      - 'backend/services/images/__tests__/complete-upload.races.test.mts'
+      - 'backend/services/jwt-session/logout-cleanup-lease.test.mts'
+      - 'backend/services/mcp-tools/admin-story-concurrency.test.mts'
+      - 'backend/services/mcp-tools/user-route-usage-failure.test.mts'
+      - 'backend/services/media-delivery-safety/asset-admission.test.mts'
+      - 'backend/services/media-delivery-safety/delivery-authority.test.mts'
+      - 'backend/services/media-delivery-safety/surface-lock.test.mts'
+      - 'backend/services/memberships/create-lock-order.test.mts'
+      - 'backend/services/memberships/get-cache.test.mts'
+      - 'backend/services/memberships/grants/__tests__/delayed-terminal-family-retention.test.mts'
+      - 'backend/services/memberships/paid-tier-downgrade.test.mts'
+      - 'backend/services/memberships/reverse-ineligible-stripe-purchase-concurrency.test.mts'
+      - 'backend/services/memberships/update-lock-order.test.mts'
+      - 'backend/services/moderation-analytics/moderation-transparency-rollup-lifecycle.test.mts'
+      - 'backend/services/moderation-appeals/resolve.publication-lock.test.mts'
+      - 'backend/services/moderation-appeals/resolve.suspension.test.mts'
+      - 'backend/services/moderation-reports/__tests__/create-judgement-refresh.test.mts'
+      - 'backend/services/moderation-training/automod-feedback-publication-lock.test.mts'
+      - 'backend/services/my/landing-pages/create.invalidate.test.mts'
+      - 'backend/services/my/profile-image-owner-deletion.test.mts'
+      - 'backend/services/notifications-push/push-generation-fence.test.mts'
+      - 'backend/services/notifications-push/push-intent-incremental-receipts.mock.test.mts'
+      - 'backend/services/notifications/push-subscriptions.test.mts'
+      - 'backend/services/oauth-accounts/connect.test.mts'
+      - 'backend/services/oauth-github/__tests__/friends-batching.mock.test.mts'
+      - 'backend/services/oauth/__tests__/authorization-completion.test.mts'
+      - 'backend/services/openai-background-responses/reconcile.mock.test.mts'
+      - 'backend/services/openai-moderation/__tests__/images.test.mts'
+      - 'backend/services/post-classifier/run-effects.test.mts'
+      - 'backend/services/post-publication/capture-deletions.test.mts'
+      - 'backend/services/posts/__tests__/create.admin-bypass.test.mts'
+      - 'backend/services/posts/__tests__/create.generated.test.mts'
+      - 'backend/services/posts/__tests__/create.link-post-crawl.test.mts'
+      - 'backend/services/posts/__tests__/create.transaction-captured-categories.test.mts'
+      - 'backend/services/posts/delete.test.mts'
+      - 'backend/services/posts/images.test.mts'
+      - 'backend/services/recaptcha/rate-limit-lockout.test.mts'
+      - 'backend/services/report-integrity/apply-penalty.test.mts'
+      - 'backend/services/rss-feed-items/__tests__/capture-alias-lock-order.test.mts'
+      - 'backend/services/rss-feed-items/__tests__/categories.clear-votes.test.mts'
+      - 'backend/services/rss-feed-items/__tests__/categories.limits.test.mts'
+      - 'backend/services/rss-feed-items/__tests__/categories.relations.retries.test.mts'
+      - 'backend/services/rss-feed-items/__tests__/categories.relations.test.mts'
+      - 'backend/services/rss-feed-items/__tests__/categories.view-hashtags.test.mts'
+      - 'backend/services/rss-feed-items/__tests__/category-snapshot-reconciliations.test.mts'
+      - 'backend/services/rss-feed-items/categories.publication-lock.test.mts'
+      - 'backend/services/rss-feed-items/collaborative-topic-relations.test.mts'
+      - 'backend/services/rss-feed-items/upsert-enqueues.test.mts'
+      - 'backend/services/rss-feeds/__tests__/create-rss-feed-source.test.mts'
+      - 'backend/services/rss-feeds/__tests__/create-source.platform-accounts.test.mts'
+      - 'backend/services/rss-feeds/__tests__/create.generated.test.mts'
+      - 'backend/services/rss-feeds/__tests__/fetch-redirect.publication-lock.test.mts'
+      - 'backend/services/rss-feeds/__tests__/update.state.generated.test.mts'
+      - 'backend/services/rss-feeds/create-source.test.mts'
+      - 'backend/services/rss-feeds/delete.test.mts'
+      - 'backend/services/rss-feeds/discoverability.refresh.test.mts'
+      - 'backend/services/rss-feeds/reconcile-item-language.test.mts'
+      - 'backend/services/sitemaps/generation.test.mts'
+      - 'backend/services/stories/__tests__/refresh-story-post.test.mts'
+      - 'backend/services/stories/__tests__/rss-category-publication.test.mts'
+      - 'backend/services/stories/__tests__/story-post-related-url-projection-relations.test.mts'
+      - 'backend/services/stories/__tests__/story-posts.enqueues.test.mts'
+      - 'backend/services/stories/__tests__/story-posts.projection.test.mts'
+      - 'backend/services/stories/__tests__/story-posts.test.mts'
+      - 'backend/services/stories/assign.test.mts'
+      - 'backend/services/stripe/event-charge-refund-reconciliation.mock.test.mts'
+      - 'backend/services/topics/__tests__/aliases.create.test.mts'
+      - 'backend/services/topics/__tests__/aliases.post-cache-invalidation.test.mts'
+      - 'backend/services/topics/aliases.publication-lock.test.mts'
+      - 'backend/services/topics/create.hashtag.test.mts'
+      - 'backend/services/topics/enqueues.generated.test.mts'
+      - 'backend/services/topics/merge-aliases.test.mts'
+      - 'backend/services/topics/ratings.hardening.test.mts'
+      - 'backend/services/topics/topic-alias-publication-locks.test.mts'
+      - 'backend/services/topics/update.test.mts'
+      - 'backend/services/user-import-export/import-rss-feeds.platform-accounts.test.mts'
+      - 'backend/services/users/__tests__/create.test.mts'
+      - 'backend/services/users/__tests__/update.generated.test.mts'
+      - 'backend/services/users/delete-entity-relation-votes.test.mts'
+      - 'backend/services/users/enqueue-reconcile-post-topic-notifications.test.mts'
+      - 'backend/services/vote-weight/enqueue-election-updates.test.mts'
+      - 'backend/test-helpers/ap-inbox-activity-fixtures.mts'
+      - 'backend/test-helpers/election-vote-stats-jobs.mts'
+      - 'backend/test-helpers/election-vote-stats.test.mts'
+      - 'backend/test-helpers/entities/community-post-review-publication-lock.mts'
+      - 'backend/test-helpers/notification-push-fixtures.mts'
+      - 'backend/test-helpers/polling.mts'
+      - 'backend/test-helpers/polling.test.mts'
+      - 'backend/test-helpers/rest-usage-meter.mts'
+      - 'backend/test-helpers/services/oauth/friends-batch-sync.mts'
+      - 'backend/worker-runtime/sqs-consumer.no-data.mock.test.mts'
+      - 'backend/workers/activitypub-delivery/__tests__/e2e-round-trip.test.mts'
+      - 'backend/workers/ai-agents/processors/classifier-run-autotagger-agent.mock.test.mts'
+      - 'backend/workers/ai-agents/processors/process-classifier-run.real-glide.mock.test.mts'
+      - 'backend/workers/ai-agents/processors/process-copyright-form-screening.real-glide.mock.test.mts'
+      - 'backend/workers/ai-agents/workers/core.spend-cap.real-glide.mock.test.mts'
+      - 'backend/workers/article-sync/processors.test.mts'
+      - 'backend/workers/bedrock-embeddings-batch/processors/creation.real-glide.mock.test.mts'
+      - 'backend/workers/bloom-filters/__tests__/delete-user-bloom-filter.generated.test.mts'
+      - 'backend/workers/entity-listeners/processors/__tests__/posts.community-moderation.test.mts'
+      - 'backend/workers/heartbeat/workers.test.mts'
+      - 'backend/workers/memberships/processors/process-job.test.mts'
+      - 'backend/workers/post-publication/workers.test.mts'
+      - 'ci/__tests__/web-integration-processes.test.mts'
+      - 'ci/tooling-test-hang-watchdog.test.mts'
+      - 'ci/tooling-test-runner.test.mts'
+      - 'ci/transient-retry/run-context-logs.test.mts'
+      - 'cloudflare-worker/scripts/wrangler/start.mock.test.mts'
+      - 'dev/__tests__/cloc-child-process.test.mts'
+      - 'dev/__tests__/reset-worktree-concurrency.test.mts'
+      - 'dev/__tests__/stop-services.process.part-2.test.mts'
+      - 'dev/__tests__/stop-services.process.part-3.test.mts'
+      - 'dev/__tests__/stop-services.process.part-4.test.mts'
+      - 'dev/__tests__/stop-services.process.part-5.test.mts'
+      - 'dev/__tests__/stop-services.process.test.mts'
+      - 'playwright/tests/feed/feed.spec.mts'
+      - 'playwright/tests/layout/sidebar-slide.spec.mts'
+      - 'playwright/tests/news/news.spec.mts'
+      - 'playwright/tests/posts/links-list-route.spec.mts'
+      - 'playwright/tests/posts/post-archive.spec.mts'
+      - 'playwright/tests/posts/reviews.spec.mts'
+      - 'playwright/tests/posts/search-pagination.spec.mts'
+      - 'playwright/tests/tags/tag-pages.spec.mts'
+      - 'playwright/tests/topics/sources.spec.mts'
+      - 'test-helpers/glide-mq-vitest-flush-states.test.mts'
+      - 'test-helpers/vitest.setup.fork-leak-detection.mts'
+      - 'test-helpers/web-integration-asset-metadata-cache.test.mts'
+      - 'web/app/\(lists\)/list/\[id\]/list-page-actions.mock.test.tsx'
+      - 'web/app/admin/dynamic-config/__tests__/dynamic-config-state.mock.test.tsx'
+      - 'web/app/auth/callback/broker/page.mock.test.tsx'
+      - 'web/components/__tests__/service-worker-registrar-auth-boundary.mock.test.tsx'
+      - 'web/components/__tests__/service-worker-registrar.mock.test.tsx'
+      - 'web/components/admin/__tests__/report-cluster-detail-judgement.mock.test.tsx'
+      - 'web/components/admin/admin-report-row.mock.test.tsx'
+      - 'web/components/moderation/moderation-transparency-panel.mock.test.tsx'
+      - 'web/components/my/__tests__/preferences-form.mock.test.tsx'
+      - 'web/components/notifications/__tests__/use-notification-push-actions.part-2.mock.test.ts'
+      - 'web/components/notifications/push-registration.mock.test.ts'
+      - 'web/components/notifications/use-notification-push-actions.mock.test.ts'
+      - 'web/lib/api/client/__tests__/import-stream.test.ts'
+      - 'web/lib/api/client/admission-idempotency-owner-renewal.test.ts'
+      - 'web/lib/api/client/admission-idempotency-stale-settlement.test.ts'
+      - 'web/lib/api/client/admission-idempotency-storage.test.ts'
+      - 'web/lib/api/client/admission-idempotency.lifecycle.test.ts'
+      - 'web/lib/api/client/admission-idempotency.logout-retention.test.ts'
+      - 'web/lib/api/client/admission-idempotency.test.ts'
+      - 'web/lib/auth/logout.mock.test.ts'
+      - 'web/lib/auth/oauth-broker.mock.test.ts'
+      - 'web/lib/push-bootstrap.mock.test.ts'
+    options:
+      roots:
+        - vitest: true
+      traversal: file
+      unknownCalls: ignore
+      targets:
+        - global: setInterval
+        - global: setImmediate
+        - moduleExport:
+            module: node:timers
+            export: setInterval
+        - moduleExport:
+            module: node:timers
+            export: setImmediate
+        - moduleExport:
+            module: node:timers/promises
+            export: setInterval
+        - moduleExport:
+            module: node:timers/promises
+            export: setImmediate
+        - exact: vi.waitFor
+        - exact: vi.waitUntil
+        - exact: expect.poll
+        - function:
+            file: backend/test-helpers/polling.mts
+            symbol: waitForCondition
+        - function:
+            file: backend/test-helpers/polling.mts
+            symbol: waitForConditionThenObliterate
+        - function:
+            file: backend/test-helpers/polling.mts
+            symbol: pollUntilNotNull
+        - function:
+            file: backend/test-helpers/polling.mts
+            symbol: waitForQueueJobs
+
+  - name: Test helpers and vitest setup do not invoke real timers or polls
+    rule: forbidden-calls
+    scope: repository
+    # Frozen baseline. Cleanup PRs do not edit it. #2136 owns it. #2145 deletes it.
+    exclude:
+      - 'backend/test-helpers/ap-inbox-activity-fixtures.mts'
+      - 'backend/test-helpers/community-restriction-writer-race.mts'
+      - 'backend/test-helpers/copyright-repeat-infringer.mts'
+      - 'backend/test-helpers/election-vote-stats-jobs.mts'
+      - 'backend/test-helpers/election-vote-stats.mts'
+      - 'backend/test-helpers/election-vote-stats.test.mts'
+      - 'backend/test-helpers/entities/community-post-review-publication-lock.mts'
+      - 'backend/test-helpers/entities/memberships-lifecycle.mts'
+      - 'backend/test-helpers/entities/memberships/locks.mts'
+      - 'backend/test-helpers/entities/memberships/locks/action-while-user-locked.mts'
+      - 'backend/test-helpers/entities/memberships/locks/stripe-catalog-fk-hold.mts'
+      - 'backend/test-helpers/entities/oauth-authorization-recovery.mts'
+      - 'backend/test-helpers/entities/user-deletion-actor-locks.mts'
+      - 'backend/test-helpers/entrypoints/worker-serve-harness.mts'
+      - 'backend/test-helpers/feeds.mts'
+      - 'backend/test-helpers/notification-push-fixtures.mts'
+      - 'backend/test-helpers/polling.mts'
+      - 'backend/test-helpers/polling.test.mts'
+      - 'backend/test-helpers/post-delegated-fk-concurrency.mts'
+      - 'backend/test-helpers/postgres-lock-wait.mts'
+      - 'backend/test-helpers/refresh-materialized-view.mts'
+      - 'backend/test-helpers/rest-usage-meter.mts'
+      - 'backend/test-helpers/services/jwt-session/concurrent-user-agent.mts'
+      - 'backend/test-helpers/services/oauth/friends-batch-sync.mts'
+      - 'backend/test-helpers/services/posts/search/test-support.mts'
+      - 'backend/test-helpers/services/topic-recommendations/vote-stats.mts'
+      - 'backend/test-helpers/workers/entity-listeners/test-support.mts'
+      - 'dev/test-helpers/run-process.mts'
+      - 'dev/test-helpers/tmux-fake-bin.mts'
+      - 'test-helpers/glide-mq-vitest-flush-states.test.mts'
+      - 'test-helpers/glide-mq-vitest-flush-wait.mts'
+      - 'test-helpers/vitest.setup.fork-leak-detection.mts'
+      - 'test-helpers/web-integration-asset-metadata-cache.test.mts'
+      - 'web/test-helpers/vitest.setup.web.mts'
+    options:
+      roots:
+        - glob:
+            - 'test-helpers/**/*.mts'
+            - 'test-helpers/**/*.ts'
+            - '**/test-helpers/**/*.mts'
+            - '**/test-helpers/**/*.ts'
+            - '**/vitest.setup*.mts'
+            - '**/vitest.setup*.ts'
+      traversal: file
+      unknownCalls: ignore
+      targets:
+        - global: setTimeout
+        - global: setInterval
+        - global: setImmediate
+        - moduleExport:
+            module: node:timers
+            export: setTimeout
+        - moduleExport:
+            module: node:timers
+            export: setInterval
+        - moduleExport:
+            module: node:timers
+            export: setImmediate
+        - moduleExport:
+            module: node:timers/promises
+            export: setTimeout
+        - moduleExport:
+            module: node:timers/promises
+            export: setInterval
+        - moduleExport:
+            module: node:timers/promises
+            export: setImmediate
+        - exact: vi.waitFor
+        - exact: vi.waitUntil
+        - exact: expect.poll
+        - function:
+            file: backend/test-helpers/polling.mts
+            symbol: waitForCondition
+        - function:
+            file: backend/test-helpers/polling.mts
+            symbol: waitForConditionThenObliterate
+        - function:
+            file: backend/test-helpers/polling.mts
+            symbol: pollUntilNotNull
+        - function:
+            file: backend/test-helpers/polling.mts
+            symbol: waitForQueueJobs
+
+  - name: Playwright tests do not poll on timers
+    rule: forbidden-calls
+    scope: repository
+    options:
+      roots:
+        - playwright: true
+      traversal: file
+      unknownCalls: ignore
+      targets:
+        - global: setInterval
+        - global: setImmediate
+        - moduleExport:
+            module: node:timers
+            export: setInterval
+        - moduleExport:
+            module: node:timers
+            export: setImmediate
+        - moduleExport:
+            module: node:timers/promises
+            export: setInterval
+        - moduleExport:
+            module: node:timers/promises
+            export: setImmediate
+
+  - name: Tests do not create a database
+    rule: forbidden-calls
+    scope: repository
+    # Frozen baseline. Cleanup PRs do not edit it. #2135 and #2137 own it. #2145 deletes it.
+    exclude:
+      - 'backend/api/v1/copyright-notices/copyright-cache.test.mts'
+      - 'backend/api/v1/copyright-notices/copyright-notices.replay.isolated.test.mts'
+      - 'backend/api/v1/copyright-notices/email-intake-queue-pagination.test.mts'
+      - 'backend/api/v1/copyright-notices/eu-copyright-report-route.test.mts'
+      - 'backend/api/v1/copyright-notices/staff-queue-urgency.test.mts'
+      - 'backend/api/v1/copyright-notices/trusted-flagger-staff-queue.test.mts'
+      - 'backend/data-stores/psql/config-driven/__tests__/0080-00-01a-staging-rss-feeds.bootstrap.test.mts'
+      - 'backend/data-stores/psql/migration-runner/monthly-partitions.test.mts'
+      - 'backend/scripts/seed/copyright.test.mts'
+      - 'backend/services/ap-inbox-activities/durable-delivery-storage.test.mts'
+      - 'backend/services/classifiers/human-vote-comparison-query-plan.test.mts'
+      - 'backend/services/copyright-notices/dsa-statement-submission-build-failure.test.mts'
+      - 'backend/services/copyright-notices/dsa-statement-submission-sweep.test.mts'
+      - 'backend/services/copyright-notices/email-intakes-staff-queue-reply-failures.test.mts'
+      - 'backend/services/copyright-notices/email-intakes-staff-queue.test.mts'
+      - 'backend/services/copyright-notices/email-legal-process-queue.test.mts'
+      - 'backend/services/copyright-notices/eu-copyright-contract.test.mts'
+      - 'backend/services/copyright-notices/eu-reporting-complaints.test.mts'
+      - 'backend/services/copyright-notices/eu-reporting-notices.test.mts'
+      - 'backend/services/copyright-notices/territorial-withdrawal.isolated.test.mts'
+      - 'backend/services/data-retention/__tests__/cleanup-retained-media-identities.test.mts'
+      - 'backend/services/data-retention/__tests__/relation-cleanup-cursors.test.mts'
+      - 'backend/services/engagement-emails/dispatch-engagement-emails.test.mts'
+      - 'backend/services/entity-listener-reconciliation/reconciliation.test.mts'
+      - 'backend/services/notifications/community-activity-digest-admission.real-glide.mock.test.mts'
+      - 'backend/services/notifications/community-activity-digest-dispatch.test.mts'
+      - 'backend/services/post-publication/identity-snapshots.test.mts'
+      - 'backend/services/post-publication/shadow-audit-checkpoint.test.mts'
+      - 'backend/services/post-publication/shadow-audit.test.mts'
+      - 'backend/services/posts/search/__tests__/get-ids.semantic-window.test.mts'
+      - 'backend/services/rss-feeds/__tests__/topic-alias-category-mapping-reconciliation.test.mts'
+      - 'backend/services/stories/__tests__/story-post-related-url-projection-fairness.test.mts'
+      - 'backend/tools/admin/copyright-reads.test.mts'
+      - 'backend/workers/bedrock-embeddings-batch/__tests__/worker-router.test.mts'
+      - 'backend/workers/bedrock-embeddings-batch/processors/creation.real-glide.mock.test.mts'
+      - 'backend/workers/images/workers/images.test.mts'
+      - 'backend/workers/language-detection/processors.test.mts'
+      - 'backend/workers/openai-moderation/workers/__tests__/workers.test.mts'
+    options:
+      roots:
+        - vitest: true
+        - glob:
+            - 'test-helpers/**/*.mts'
+            - '**/test-helpers/**/*.mts'
+      traversal: file
+      unknownCalls: ignore
+      targets:
+        - function:
+            file: test-helpers/vitest-isolated-database-case.mts
+            symbol: runIsolatedDatabaseCase
+
+  - name: Vitest tests do not assert benchmarks
+    rule: forbidden-calls
+    scope: repository
+    # Frozen baseline. Cleanup PRs do not edit it. #2137 owns it. #2145 deletes it.
+    exclude:
+      - 'backend/api/v1/platform-stats/platform-stats.test.mts'
+      - 'backend/services/rss-feed-items/__tests__/categories.limits.test.mts'
+      - 'backend/test-helpers/api-fixtures/check.mts'
+      - 'backend/test-helpers/classifier-golden-set.mts'
+      - 'dev/test-helpers/run-process.mts'
+      - 'test-helpers/vitest.setup.data-stores.mts'
+      - 'ts-shared/utils/urls.test.mts'
+      - 'web/components/shared/__tests__/infinite-scroll.part-2.test.tsx'
+      - 'web/components/shared/__tests__/infinite-scroll.part-3.test.tsx'
+      - 'web/components/shared/__tests__/infinite-scroll.test.tsx'
+    options:
+      roots:
+        - vitest: true
+      traversal: file
+      unknownCalls: ignore
+      targets:
+        - exact: performance.now
+        - exact: process.memoryUsage
   - name: exported error classes are constructed in production
     rule: unconstructed-error-class
     scope: repository

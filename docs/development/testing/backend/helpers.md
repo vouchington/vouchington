@@ -5,6 +5,8 @@ Source entrypoint: [backend/test-helpers/README.md](../../../../backend/test-hel
 Testing utility library for the Voucha backend.
 [`readTestDatabaseTimestamp`](../../../../backend/test-helpers/database-clock.mts) returns PostgreSQL `clock_timestamp()` for sweep cutoffs that must include rows the test just inserted and exclude rows inserted afterward. See [AGENTS.md](../../../../backend/test-helpers/AGENTS.md) for agent conventions and rules.
 
+Tests share one dirty database ([suite rule R1](../../tests.md#test-suite-rules)). Assert owned ids, page with an owned-row cursor such as `encodeUuidCursorBefore(id)`, and take an advisory-lock reservation window such as `acquireTestAiUsageDateReservation` when the assertion is an exact global aggregate. Inject a write failure through a throwing `QueryExecutor` ([R2](../../tests.md#test-suite-rules)). Wait on the promise, queue event, or notification the code returns ([R3](../../tests.md#test-suite-rules)). Lower a DynamicConfig work limit with `overrideDynamicConfigFieldsForTest` instead of building a large fixture ([R4](../../tests.md#test-suite-rules)).
+
 SQL setup and assertions are grouped by concern in `sql-*.mts` (posts, RSS feeds, topics,
 moderation, feed shares, follower distribution, URLs, configuration, and agent prompts).
 Language detection separates fixture creation from state assertions, and `sql-query-inputs.mts`

@@ -46,7 +46,8 @@ policy; this skill is the checklist, not a restatement.
    [`docs/development/tests.md`](../../../docs/development/tests.md) for project selection and
    validation commands.
 7. Apply the [Test Value and Safe Reduction](../../../docs/development/reference-tests-value-and-reduction.md) value gate; keep one mutation-sensitive test at the lowest realistic boundary for each observable contract.
-8. Do not test the wording of prompts, skills, instructions, or reference docs. Test the behavior
+8. Follow the [suite rules](../../../docs/development/tests.md#test-suite-rules): shared dirty database, no schema changes, event waits, smallest fixtures, allowlisted hosts, no CI skips, a 30-second timeout cap, no repository-wide tooling, and an injected clock.
+9. Do not test the wording of prompts, skills, instructions, or reference docs. Test the behavior
    of their consumers. Preserve checks for machine-parsed markers, placeholders, paths, and actual
    rendered output when those contracts can fail meaningfully. When pruning a prose assertion,
    preserve unrelated behavioral assertions in the same test. Link labels and structural counts

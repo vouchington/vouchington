@@ -2,7 +2,7 @@
 
 Source entrypoint: [backend/scripts/explain-analyze/README.md](../../../../backend/scripts/explain-analyze/README.md)
 
-A development tool for profiling SQL query plans across key service queries.
+A development tool for profiling SQL query plans across key service queries. [Suite rule R4](../../tests.md#test-suite-rules) puts realistic data sizes, query plans, wall time, heap, and pool checks here. Unit tests cross the same boundary with the smallest fixture.
 
 ## Usage
 

@@ -93,4 +93,5 @@ complement the generic preflight in
 - Visible counts use shared locale-aware formatters from `@ts-shared/utils/format` and the resolved UI locale.
 - Storybook stories live in `web/storybook/` as `*.stories.@(ts|tsx)`. Document intentional story-local a11y exceptions next to the story.
 - Tests use typed `vi.mock(import('specifier'), ...)`. API response mocks use `@/test-helpers/api-responses` factories.
+- Web tests follow the [suite rules](tests.md#test-suite-rules). `findBy*` may wait on the rendered DOM. Do not use `vi.waitFor`, `vi.waitUntil`, or `expect.poll`. Do not skip a test in CI.
 - Components reading `document.cookie`, `localStorage`, or `sessionStorage` at render time must follow [Browser API Hydration Safety](../requirements/navigation/reference-components-patterns.md#browser-api-hydration-safety).

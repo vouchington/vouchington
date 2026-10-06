@@ -1,0 +1,88 @@
+id: test-no-skips
+language: Tsx
+severity: error
+message: >-
+  Tests do not skip, focus, or leave a todo. A missing credential fails the test.
+  Interim ast-grep until no-mistakes test-no-skips ships (jonathanong/no-mistakes#1565).
+files:
+  - '**/*.test.ts'
+  - '**/*.test.tsx'
+  - '**/*.test.mts'
+  - '**/*.spec.ts'
+  - '**/*.spec.tsx'
+  - '**/*.spec.mts'
+  - '**/test-helpers/**/*.ts'
+  - '**/test-helpers/**/*.mts'
+  - 'test-helpers/**/*.ts'
+  - 'test-helpers/**/*.mts'
+# Frozen baseline. Cleanup PRs do not edit it.
+# #2147 owns the urls-domains-robots, rss-feeds fetch, and dns-canary files.
+# #2148 owns the rest. #2145 deletes the list.
+ignores:
+  - 'backend/agents/_shared/__tests__/create-response.openai.test.mts'
+  - 'backend/agents/autotagger/autotagger.golden.openrouter.test.mts'
+  - 'backend/agents/post-classifier/post-classifier.golden.openrouter.test.mts'
+  - 'backend/api/mcp-origin.test.mts'
+  - 'backend/api/v1/images/__tests__/index.real-presigner.s3.mock.test.mts'
+  - 'backend/modules/aws/s3.test.mts'
+  - 'backend/modules/aws/ses.generated.test.mts'
+  - 'backend/modules/openrouter-utils/create-response.openrouter.test.mts'
+  - 'backend/modules/stripe/client.stripe.test.mts'
+  - 'backend/modules/structured-decisions/structured-decisions.openrouter.test.mts'
+  - 'backend/services/bedrock-embeddings/single/__tests__/index.bedrock.test.mts'
+  - 'backend/services/browser-crawl/crawl.integration.test.mts'
+  - 'backend/services/oauth-google/index.test.mts'
+  - 'backend/services/openai-moderation/__tests__/posts.openai.test.mts'
+  - 'backend/services/rss-feeds/__tests__/fetch.generated.test.mts'
+  - 'backend/services/urls-domains-robots/__tests__/index.generated.test.mts'
+  - 'backend/services/urls-hostnames/dns-canary.test.mts'
+  - 'backend/test-helpers/classifier-call-efficiency-tests.mts'
+  - 'backend/test-helpers/openai-live.mts'
+  - 'dev/plain-force-push.test.mts'
+  - 'playwright/credentialed/image-upload.spec.mts'
+  - 'playwright/tests/cookie-consent/cookie-consent.spec.mts'
+  - 'playwright/tests/my/notifications.spec.mts'
+  - 'playwright/tests/news/rss-modal-sideloaded-images.spec.mts'
+  - 'playwright/tests/rate-limiting/rate-limit-error-page.spec.mts'
+  - 'playwright/tests/storybook/design-system.spec.mts'
+  - 'playwright/tests/storybook/pure-components.spec.mts'
+rule:
+  any:
+    - pattern: it.skip($$$)
+    - pattern: it.skipIf($$$)
+    - pattern: it.runIf($$$)
+    - pattern: it.only($$$)
+    - pattern: it.todo($$$)
+    - pattern: it.fixme($$$)
+    - pattern: it.skip.each($$$)
+    - pattern: test.skip($$$)
+    - pattern: test.skipIf($$$)
+    - pattern: test.runIf($$$)
+    - pattern: test.only($$$)
+    - pattern: test.todo($$$)
+    - pattern: test.fixme($$$)
+    - pattern: test.skip.each($$$)
+    - pattern: describe.skip($$$)
+    - pattern: describe.skipIf($$$)
+    - pattern: describe.runIf($$$)
+    - pattern: describe.only($$$)
+    - pattern: describe.todo($$$)
+    - pattern: describe.fixme($$$)
+    - pattern: context.skip($$$)
+examples:
+  - code: |
+      it.skip('network', () => {})
+    isValid: false
+    file: 'backend/services/example-suite-rules.test.mts'
+  - code: |
+      describe.skipIf(!process.env.KEY)('credential', () => {})
+    isValid: false
+    file: 'backend/services/example-suite-rules.test.mts'
+  - code: |
+      it('runs', () => {})
+    isValid: true
+    file: 'backend/services/example-suite-rules.test.mts'
+  - code: |
+      const options = { skipIfDeleted: true }
+    isValid: true
+    file: 'backend/services/example-suite-rules.test.mts'

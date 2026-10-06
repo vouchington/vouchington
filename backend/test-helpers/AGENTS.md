@@ -6,3 +6,4 @@
 - Tests do not import raw PostgreSQL helpers or `sql-template-strings`; expose focused setup/assertions here without re-exporting SQL methods.
 - Keep helpers under this first-layer root without feature-local directories/forwarders. Entity helpers use `entities/*.mts`; generic helpers stay with narrow package owners.
 - Close resources and remove unexpected `console.*` output before handoff.
+- Follow the [test suite rules](../../docs/development/tests.md#test-suite-rules).
