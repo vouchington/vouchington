@@ -29,9 +29,9 @@ vi.mock<typeof import('node:fs')>(
       cpSync: vi.fn<typeof import('node:fs').cpSync>(),
       existsSync: vi.fn<typeof import('node:fs').existsSync>(() => true),
       mkdirSync: vi.fn<typeof import('node:fs').mkdirSync>(),
-      readFileSync: vi.fn<typeof import('node:fs').readFileSync>(
-        () => '<script>window.STORYBOOK_CSP_INLINE = true</script>',
-      ),
+      readFileSync: vi.fn<typeof import('node:fs').readFileSync>(() => {
+        return '<script>window.STORYBOOK_CSP_INLINE = true</script>' as never
+      }),
       renameSync: vi.fn<typeof import('node:fs').renameSync>(),
       rmSync: vi.fn<typeof import('node:fs').rmSync>(),
       writeFileSync: vi.fn<typeof import('node:fs').writeFileSync>(),
