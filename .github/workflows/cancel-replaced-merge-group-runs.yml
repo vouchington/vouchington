@@ -64,16 +64,25 @@ jobs:
           failed=0
           rows=
           # A run can change status between two lists, so the same id may appear twice.
+          # HTTP 502, 503, and 504 from the cancel API are retried up to three attempts,
+          # one second apart. A persistent gateway error still fails this run and the job.
           while IFS=$'\t' read -r id name branch; do
-            if error=$(gh api --method POST "repos/$GITHUB_REPOSITORY/actions/runs/$id/cancel" 2>&1 >/dev/null); then
-              result=cancelled
-            elif [[ "$error" == *"HTTP 409"* ]]; then
-              result='already completed'
-            else
-              result='failed'
-              failed=1
-              echo "::warning::Could not cancel run $id: $error"
-            fi
+            for attempt in 1 2 3; do
+              if error=$(gh api --method POST "repos/$GITHUB_REPOSITORY/actions/runs/$id/cancel" 2>&1 >/dev/null); then
+                result=cancelled
+                break
+              elif [[ "$error" == *"HTTP 409"* ]]; then
+                result='already completed'
+                break
+              elif [[ "$attempt" -lt 3 && ( "$error" == *"HTTP 502"* || "$error" == *"HTTP 503"* || "$error" == *"HTTP 504"* ) ]]; then
+                sleep 1
+              else
+                result='failed'
+                failed=1
+                echo "::warning::Could not cancel run $id: $error"
+                break
+              fi
+            done
             echo "$result: $name run $id on $branch"
             rows="$rows| $name | [$id]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$id) | \`$branch\` | $result |"$'\n'
           done < <(sort -t$'\t' -k1,1n -u "$candidates")

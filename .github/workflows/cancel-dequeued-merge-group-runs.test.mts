@@ -221,6 +221,30 @@ describe('cancel dequeued merge-group runs script', () => {
     expect(result.summary).toContain('Cancelled runs: none active.')
   })
 
+  it('retries a transient HTTP 502 and then cancels the run', () => {
+    const result = execute({
+      pages: { in_progress: [page(run(60, 'Web', branch(14, 'a')))] },
+      transient: [60],
+    })
+    expect(result.status).toBe(0)
+    expect(result.cancelled).toEqual([60])
+    expect(result.summary).toContain('| cancelled |')
+    expect(result.calls.filter(call => call.includes('--method POST'))).toHaveLength(2)
+  })
+
+  it('fails the job when a cancel HTTP 502 persists past three attempts', () => {
+    const result = execute({
+      pages: { in_progress: [page(run(61, 'Web', branch(14, 'a')))] },
+      transient: [61],
+      transientFailures: 3,
+    })
+    expect(result.status).toBe(1)
+    expect(result.cancelled).toEqual([])
+    expect(result.stdout).toContain('::warning::Could not cancel run 61')
+    expect(result.summary).toContain('| failed |')
+    expect(result.calls.filter(call => call.includes('--method POST'))).toHaveLength(3)
+  })
+
   it('treats a run that already completed as success', () => {
     const result = execute({
       pages: { in_progress: [page(run(40, 'Backend', branch(14, 'a')))] },
@@ -248,6 +272,7 @@ describe('cancel dequeued merge-group runs script', () => {
     expect(result.status).toBe(1)
     expect(result.cancelled).toEqual([51])
     expect(result.stdout).toContain('::warning::Could not cancel run 50')
+    expect(result.calls.filter(call => call.includes('/runs/50/cancel'))).toHaveLength(1)
     expect(result.stdout).toContain('::warning::Could not read the jobs of run 52')
   })
 

@@ -16,6 +16,8 @@ export type Scenario = {
   conflicts?: number[]
   errors?: number[]
   jobErrors?: number[]
+  transient?: number[]
+  transientFailures?: number
 }
 
 // Synthetic queue refs: real shas would trip the repository's no-test-git-sha rule.
@@ -43,6 +45,19 @@ case "$*" in
     id="\${id%/cancel}"
     case " $FAKE_CONFLICT_IDS " in *" $id "*) echo 'gh: Cannot cancel a workflow run that is completed. (HTTP 409)' >&2; exit 1 ;; esac
     case " $FAKE_ERROR_IDS " in *" $id "*) echo 'gh: Internal Server Error (HTTP 500)' >&2; exit 1 ;; esac
+    case " $FAKE_TRANSIENT_IDS " in
+      *" $id "*)
+        count_file="$FAKE_GH_DIR/transient-$id"
+        count=0
+        if [[ -f "$count_file" ]]; then count=$(cat "$count_file"); fi
+        count=$((count + 1))
+        printf '%s\\n' "$count" > "$count_file"
+        if [[ "$count" -le "\${FAKE_TRANSIENT_FAILURES:-1}" ]]; then
+          echo 'gh: Server Error (HTTP 502)' >&2
+          exit 1
+        fi
+        ;;
+    esac
     printf '%s\\n' "$id" >> "$FAKE_GH_DIR/cancelled"
     exit 0 ;;
   *"/jobs?"*)
@@ -100,6 +115,8 @@ export function createHarness(script: string) {
           FAKE_CONFLICT_IDS: (scenario.conflicts ?? []).join(' '),
           FAKE_ERROR_IDS: (scenario.errors ?? []).join(' '),
           FAKE_JOB_ERROR_IDS: (scenario.jobErrors ?? []).join(' '),
+          FAKE_TRANSIENT_IDS: (scenario.transient ?? []).join(' '),
+          FAKE_TRANSIENT_FAILURES: String(scenario.transientFailures ?? 1),
           FAKE_MERGED: String(scenario.merged ?? false),
           GH_TOKEN: 'token',
           PR_NUMBER: scenario.pr ?? '14',
