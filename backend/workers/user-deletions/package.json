@@ -19,6 +19,6 @@
     "@queues/user-deletions": "workspace:^",
     "@services/user-deletions": "workspace:^",
     "@services/users": "workspace:^",
-    "glide-mq": "^0.16.0"
+    "glide-mq": "^0.17.0"
   }
 }

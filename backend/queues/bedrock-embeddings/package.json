@@ -21,7 +21,7 @@
     "@modules/on-error": "workspace:^",
     "@services/analytics": "workspace:^",
     "@services/bedrock-embeddings": "workspace:^",
-    "glide-mq": "^0.16.0"
+    "glide-mq": "^0.17.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

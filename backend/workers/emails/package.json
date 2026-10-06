@@ -32,7 +32,7 @@
     "@services/email-classification": "workspace:^",
     "@services/engagement-emails": "workspace:^",
     "@services/users": "workspace:^",
-    "glide-mq": "^0.16.0"
+    "glide-mq": "^0.17.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

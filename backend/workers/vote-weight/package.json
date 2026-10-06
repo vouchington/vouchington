@@ -18,7 +18,7 @@
     "@modules/queue-config": "workspace:^",
     "@queues/vote-weight": "workspace:^",
     "@services/vote-weight": "workspace:^",
-    "glide-mq": "^0.16.0"
+    "glide-mq": "^0.17.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

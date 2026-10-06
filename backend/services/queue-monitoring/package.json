@@ -82,7 +82,7 @@
     "@services/users": "workspace:^",
     "@ts-shared/deploy-environment": "workspace:^",
     "@voucha/types": "workspace:^",
-    "glide-mq": "^0.16.0",
+    "glide-mq": "^0.17.0",
     "http-assert": "^1.5.0"
   }
 }

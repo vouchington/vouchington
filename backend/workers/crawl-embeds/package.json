@@ -21,6 +21,6 @@
     "@modules/queue-config": "workspace:^",
     "@queues/crawl-embeds": "workspace:^",
     "@services/crawl-embeds": "workspace:^",
-    "glide-mq": "^0.16.0"
+    "glide-mq": "^0.17.0"
   }
 }

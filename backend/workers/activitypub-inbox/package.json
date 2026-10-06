@@ -28,7 +28,7 @@
     "@modules/queue-errors": "workspace:^",
     "@queues/activitypub-inbox": "workspace:^",
     "@services/ap-inbox-activities": "workspace:^",
-    "glide-mq": "^0.16.0"
+    "glide-mq": "^0.17.0"
   },
   "devDependencies": {
     "@modules/http-signatures": "workspace:^",

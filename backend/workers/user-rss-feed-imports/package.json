@@ -21,6 +21,6 @@
     "@modules/queue-config": "workspace:^",
     "@queues/user-rss-feed-imports": "workspace:^",
     "@services/user-import-export": "workspace:^",
-    "glide-mq": "^0.16.0"
+    "glide-mq": "^0.17.0"
   }
 }

@@ -27,7 +27,7 @@
     "@modules/api-egress-proxy": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
-    "glide-mq": "^0.16.0",
+    "glide-mq": "^0.17.0",
     "openai": "^7.27.0"
   }
 }

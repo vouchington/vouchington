@@ -20,7 +20,7 @@
     "@queues/psql": "workspace:^",
     "@services/data-retention": "workspace:^",
     "@services/elections-votes": "workspace:^",
-    "glide-mq": "^0.16.0"
+    "glide-mq": "^0.17.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

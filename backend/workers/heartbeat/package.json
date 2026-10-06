@@ -21,6 +21,6 @@
     "@modules/queue-config": "workspace:^",
     "@queues/heartbeat": "workspace:^",
     "@services/queue-monitoring": "workspace:^",
-    "glide-mq": "^0.16.0"
+    "glide-mq": "^0.17.0"
   }
 }

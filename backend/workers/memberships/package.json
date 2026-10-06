@@ -30,7 +30,7 @@
     "@services/stripe": "workspace:^",
     "@services/stripe-event-processing": "workspace:^",
     "@services/users": "workspace:^",
-    "glide-mq": "^0.16.0"
+    "glide-mq": "^0.17.0"
   },
   "devDependencies": {
     "@apple/app-store-server-library": "^3.1.0",
