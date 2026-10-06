@@ -116,7 +116,7 @@ async function checkHostnameEmailability(domain: string): Promise<HostnameEmaila
   `)
 
   return {
-    emailable: result.rows[0].emailable,
+    emailable: result.rows[0].is_emailable,
     is_blacklisted: result.rows[0].is_blacklisted,
   }
 }
@@ -131,5 +131,5 @@ async function checkHostnameEmailabilityWithoutBlacklist(
     LIMIT 1
   `)
 
-  return { emailable: result.rows[0].emailable }
+  return { emailable: result.rows[0].is_emailable }
 }

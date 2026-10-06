@@ -210,7 +210,9 @@ function makeJob(
 }
 
 async function createCrawlerUrlFixture(label: string) {
-  const hostname = `crawler-${label}-${randomUUID()}.example.com`
+  // Rate-limit calculation fetches robots.txt. `*.localhost` is loopback, so that fetch
+  // stays inside the test network allowlist and does not leave the machine.
+  const hostname = `crawler-${label}-${randomUUID()}.localhost`
   const hostnameId = await insertTestUrlHostname({ hostname })
   const url = `https://${hostname}/path`
   const urlId = await insertTestUrl({ hostnameId, url })
