@@ -94,7 +94,6 @@ describe('callRecordingAgentResponseUsage', () => {
     const row = await pollUntilNotNull(() =>
       findAiUsageRecordForAgent(agentSlug, { inputTokens: 101, outputTokens: 52 }),
     )
-    if (!row) throw new Error('ai_usage_records row was not written')
     expect(row.model).toBe('gpt-5.4-nano-2026-03-17')
     expect(row.service_tier).toBe('flex')
 
@@ -138,7 +137,6 @@ describe('callRecordingAgentResponseUsage', () => {
     )
 
     const acquiredLease = await pollUntilNotNull(async () => lease ?? null)
-    if (!acquiredLease) throw new Error('background response lease was not acquired')
     const sweeperLease = await expireAndClaim(acquiredLease)
 
     // The sweeper-style claim: reconcile.mts's own claimAndRecordBackgroundResponseUsage call,
@@ -195,7 +193,6 @@ describe('callRecordingAgentResponseUsage', () => {
     const row = await pollUntilNotNull(() =>
       findAiUsageRecordForAgent(agentSlug, { inputTokens: 104, outputTokens: 55 }),
     )
-    if (!row) throw new Error('ai_usage_records row was not written despite the failed insert')
     expect(row.model).toBe('gpt-5.4-nano-2026-03-17')
   })
 
@@ -224,7 +221,6 @@ describe('callRecordingAgentResponseUsage', () => {
     const row = await pollUntilNotNull(() =>
       findAiUsageRecordForAgent(agentSlug, { inputTokens: 105, outputTokens: 56 }),
     )
-    if (!row) throw new Error('ai_usage_records row was not written for the thrown error')
     expect(row.model).toBe('gpt-5.4-nano-2026-03-17')
 
     // Claimed (deleted) by this path, same as the completed-response case above.

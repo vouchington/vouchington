@@ -55,7 +55,7 @@ export async function waitForTestPostgresLockWaiter(
   holderProcessId: number,
   queryMarker: string,
 ): Promise<void> {
-  const waiter = await pollUntilNotNull(
+  await pollUntilNotNull(
     async () => {
       const { rows } = await write<{ waiting: boolean }>(sql`
         /* waitForTestPostgresLockWaiter */
@@ -73,6 +73,7 @@ export async function waitForTestPostgresLockWaiter(
     },
     5_000,
     10,
-  )
-  if (!waiter) throw new Error(`Operation did not wait for the test lock: ${queryMarker}`)
+  ).catch(err => {
+    throw new Error(`Operation did not wait for the test lock: ${queryMarker}`, { cause: err })
+  })
 }

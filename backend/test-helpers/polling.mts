@@ -1,18 +1,31 @@
 import { readAllQueueJobs, type AllStateQueueJobReader } from './queue-jobs.mts'
 
-/** Polls `fn` until it returns a non-null value or `maxMs` elapses. */
+function pollTimeoutError(description: string, maxMs: number): Error {
+  return new Error(`Timed out waiting for ${description} (after ${maxMs}ms)`)
+}
+
+/**
+ * Polls `fn` until it returns a non-null value, then returns it. Throws once `maxMs` elapses, so a
+ * value that never appears fails the test at the wait instead of silently burning the whole
+ * timeout and letting a later assertion pass vacuously. `description` names what was awaited in
+ * the error. A test that must prove something stays absent asserts on a single read after the
+ * operation under test has settled; it does not poll.
+ */
 export async function pollUntilNotNull<T>(
   fn: () => Promise<T | null | undefined>,
   maxMs = 2000,
   intervalMs = 25,
-): Promise<T | null> {
+  description = 'a non-null value',
+): Promise<T> {
   const deadline = Date.now() + maxMs
   while (Date.now() < deadline) {
     const result = await fn()
     if (result != null) return result
     await new Promise(resolve => setTimeout(resolve, intervalMs))
   }
-  return null
+  const last = await fn()
+  if (last != null) return last
+  throw pollTimeoutError(description, maxMs)
 }
 
 /**
@@ -46,21 +59,24 @@ export async function flushPendingTasks(iterations = 20): Promise<void> {
 }
 
 /**
- * Polls `predicate` until it returns true or `timeoutMs` elapses. Unlike `pollUntilNotNull`, the
- * condition need not resolve a value — use this when what a test cares about is a side effect (a
- * row landing in the database, a specific job reaching a state) rather than a returned payload.
+ * Polls `predicate` until it returns true and throws once `timeoutMs` elapses. Unlike
+ * `pollUntilNotNull`, the condition need not resolve a value — use this when what a test cares
+ * about is a side effect (a row landing in the database, a specific job reaching a state) rather
+ * than a returned payload. `description` names what was awaited in the error.
  */
 export async function waitForCondition(
   predicate: () => Promise<boolean> | boolean,
   timeoutMs = 2000,
   intervalMs = 25,
-): Promise<boolean> {
+  description = 'condition',
+): Promise<void> {
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
-    if (await predicate()) return true
+    if (await predicate()) return
     await new Promise(resolve => setTimeout(resolve, intervalMs))
   }
-  return predicate()
+  if (await predicate()) return
+  throw pollTimeoutError(description, timeoutMs)
 }
 
 export type ObliterableQueue = { obliterate: (opts?: { force?: boolean }) => Promise<void> }
@@ -80,7 +96,11 @@ export async function waitForConditionThenObliterate(
   timeoutMs = 2000,
   intervalMs = 25,
 ): Promise<void> {
-  const met = await waitForCondition(predicate, timeoutMs, intervalMs)
-  if (!met) throw new Error('Timed out waiting for condition before obliterating the test queue')
+  await waitForCondition(
+    predicate,
+    timeoutMs,
+    intervalMs,
+    'condition before obliterating the test queue',
+  )
   await queue.obliterate({ force: true })
 }

@@ -64,7 +64,7 @@ describe('embedding reconciliation on real GlideMQ', () => {
         }
         if (job.name === 'other') otherLaneStarted.resolve()
       },
-      { ...connection, concurrency: 3, blockTimeout: 10_000 },
+      { ...connection, concurrency: 3, blockTimeout: 1000 },
     )
 
     try {

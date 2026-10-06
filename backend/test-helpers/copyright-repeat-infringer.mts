@@ -27,7 +27,7 @@ export async function confirmTestRepeatInfringerNoticesConcurrently(
     `)
     const pid = await getTestPostgresBackendProcessId(transaction)
     outcomes = Promise.allSettled(operations.map(operation => operation()))
-    const blocked = await pollUntilNotNull(
+    await pollUntilNotNull(
       async () => {
         const { rows } = await read<{ count: number }>(sql`
         SELECT count(*)::integer AS count FROM pg_stat_activity
@@ -38,8 +38,8 @@ export async function confirmTestRepeatInfringerNoticesConcurrently(
       },
       5_000,
       10,
+      'both confirmation transactions to reach the author lock',
     )
-    if (!blocked) throw new Error('Both confirmation transactions did not reach the author lock')
     await transaction.commit()
   }
   const results = await outcomes
@@ -81,7 +81,7 @@ export async function raceTestRepeatInfringerAuthorLock(input: {
     const started: Array<Promise<unknown>> = []
     for (const operation of input.operations) {
       started.push(operation())
-      const blocked = await pollUntilNotNull(
+      await pollUntilNotNull(
         async () => {
           const { rows } = await read<{ count: number }>(sql`
             /* raceTestRepeatInfringerAuthorLock:waiters */
@@ -93,8 +93,8 @@ export async function raceTestRepeatInfringerAuthorLock(input: {
         },
         5_000,
         10,
+        'the operations to reach the author lifecycle lock',
       )
-      if (!blocked) throw new Error('Operations did not reach the author lifecycle lock')
     }
     outcomes = Promise.allSettled(started)
     await transaction.commit()

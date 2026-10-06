@@ -11,6 +11,8 @@ describe('OAuth authorization exchange recovery through real GlideMQ', () => {
   it('reactivates matching completed and failed stable IDs without touching unrelated jobs', async () => {
     const queueName = `oauth_authorization_exchange_recovery_${randomUUID()}`
     const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
+    // A graceful close waits out the worker's in-flight blocking read, so keep that read short.
+    const workerOptions = { ...connection, blockTimeout: 1000 }
     const queue = new Queue<OAuthAuthorizationExchangeJobData>(queueName, connection)
     const completedAuthorizationId = randomUUID()
     const failedAuthorizationId = randomUUID()
@@ -26,7 +28,7 @@ describe('OAuth authorization exchange recovery through real GlideMQ', () => {
           throw new Error('expected terminal exchange failure')
         }
       },
-      connection,
+      workerOptions,
     )
     initialWorker.on('error', () => undefined)
     const options = (authorizationId: string) => ({
@@ -109,7 +111,7 @@ describe('OAuth authorization exchange recovery through real GlideMQ', () => {
           const authorizationId = job.data.authorizationId
           executionCounts.set(authorizationId, (executionCounts.get(authorizationId) ?? 0) + 1)
         },
-        connection,
+        workerOptions,
       )
       await vi.waitFor(
         () => {

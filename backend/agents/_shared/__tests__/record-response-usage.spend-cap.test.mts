@@ -35,10 +35,9 @@ describe('callRecordingAgentResponseUsage spend-cap recheck', () => {
 
     expect(checkSpendCap).toHaveBeenCalledExactlyOnceWith(agentSlug)
     expect(response.id).toBe(responseId)
-    const row = await pollUntilNotNull(() =>
+    await pollUntilNotNull(() =>
       findAiUsageRecordForAgent(agentSlug, { inputTokens: 106, outputTokens: 57 }),
     )
-    if (!row) throw new Error('ai_usage_records row was not written')
   })
 
   it('throws SpendCapBreachError without invoking fn when the recheck reports a breach', async () => {

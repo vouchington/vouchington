@@ -183,7 +183,7 @@ describe('daily AI spend-cap rollover with real GlideMQ', () => {
         markActiveJob?.()
         await activeJobReleased
       },
-      connection,
+      { ...connection, blockTimeout: 1000 },
     )
 
     try {

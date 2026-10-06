@@ -108,6 +108,23 @@ await Promise.all([
 - When testing sort-by-score/best pagination: vote scores change asynchronously via entity listeners, so wait before paginating to ensure stable scores.
 - After deletions/updates that trigger downstream cache invalidation.
 
+## `pollUntilNotNull` / `waitForCondition`
+
+`backend/test-helpers/polling.mts` waits for a value or side effect that must appear. Both helpers
+throw once their timeout elapses, naming what was awaited (the optional trailing `description`
+argument), so a condition that never lands fails at the wait. They never return `null` or `false`
+on timeout: a swallowed timeout silently burns the whole wait and lets a later assertion pass
+against state that was never set up. To prove something stays absent, assert one read after the
+operation under test has settled instead of polling.
+
+An invalidated entity cache key refuses `cacheGetByAny` refills until its invalidation marker
+expires (`valkyries`' `INVALIDATION_MARKER_TTL_SECONDS`). After an invalidation, do not poll for
+the same key to repopulate: read it (the read recomputes from the database) or seed it with
+`cache.set`, which ignores the marker. A read by id
+fills only the id key, so a test that asserts a username key was cleared must first read by username.
+These caches are filled by a fire-and-forget write, which is why the warm-up before the operation is
+the part worth polling.
+
 ## `onceElectionVoteStatsCompleted`
 
 Use `election-vote-stats.mts` after a vote when a test reads the asynchronously recomputed election

@@ -24,13 +24,16 @@ describe('deactivateCommunityPromptsForUser via membership changes', () => {
   let publicCommunity: Community
 
   async function waitForPromptDeactivated(promptId: string): Promise<void> {
-    const prompt = await pollUntilNotNull(async () => {
-      const p = await getCommunityAgentPrompt(promptId)
-      if (p === null) throw new Error(`Prompt ${promptId} not found — was it deleted?`)
-      return p.is_slot_allocated ? null : p
-    })
-    if (prompt === null)
-      throw new Error(`Timed out waiting for prompt ${promptId} to be deactivated`)
+    await pollUntilNotNull(
+      async () => {
+        const p = await getCommunityAgentPrompt(promptId)
+        if (p === null) throw new Error(`Prompt ${promptId} not found — was it deleted?`)
+        return p.is_slot_allocated ? null : p
+      },
+      2000,
+      25,
+      `prompt ${promptId} to be deactivated`,
+    )
   }
 
   beforeAll(async () => {

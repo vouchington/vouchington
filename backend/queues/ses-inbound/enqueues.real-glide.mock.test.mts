@@ -19,13 +19,15 @@ describe('SES inbound reconciliation through real GlideMQ', () => {
       connection: workerQueueConnection,
       prefix: workerQueuePrefix,
     }
+    // A graceful close waits out the worker's in-flight blocking read, so keep that read short.
+    const workerOptions = { ...ownedConnectionOptions, blockTimeout: 1000 }
     const queue = new Queue<SesInboundProcessJobData>(queueName, ownedConnectionOptions)
     const failedWorker = new Worker<SesInboundProcessJobData>(
       queueName,
       async () => {
         throw new Error('transient failure')
       },
-      ownedConnectionOptions,
+      workerOptions,
     )
     const data = {
       sesMessageId: 'ses-recovery-test',
@@ -57,7 +59,7 @@ describe('SES inbound reconciliation through real GlideMQ', () => {
       recoveryWorker = new Worker<SesInboundProcessJobData>(
         queueName,
         async () => undefined,
-        ownedConnectionOptions,
+        workerOptions,
       )
       await vi.waitFor(async () => expect(await job.getState()).toBe('completed'), {
         timeout: 10_000,

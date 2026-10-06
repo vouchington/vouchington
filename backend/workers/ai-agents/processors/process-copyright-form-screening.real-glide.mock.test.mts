@@ -30,7 +30,7 @@ describe('copyright screening worker with real GlideMQ and PostgreSQL', () => {
     const worker = new Worker<CopyrightFormScreeningJobData>(
       queueName,
       processCopyrightFormScreening,
-      connection,
+      { ...connection, blockTimeout: 1000 },
     )
     const errors: Error[] = []
     worker.on('error', error => errors.push(error))

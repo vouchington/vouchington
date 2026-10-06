@@ -58,6 +58,27 @@ async function warmOwnerCache(fixture: SurfaceFixture): Promise<void> {
   }
 }
 
+/**
+ * Writes the owner entity straight into its cache entry. An invalidation leaves a marker that makes
+ * `cacheGetByAny` skip its refill until the marker expires, so after the withhold a warm read never
+ * repopulates the entry; the restore's invalidation is only observable if the entry exists first.
+ */
+async function seedOwnerCache(fixture: SurfaceFixture): Promise<void> {
+  switch (fixture.ownerKind) {
+    case 'post':
+      await caches.posts.set(fixture.ownerId, await getPostByAny(fixture.ownerId))
+      break
+    case 'user':
+      await caches.users_public.set(fixture.ownerId, await getPublicUserByAny(fixture.ownerId))
+      break
+    case 'topic':
+      await caches.topics.set(fixture.ownerId, await getTopicByAny(fixture.ownerId))
+      break
+    case 'community':
+      break
+  }
+}
+
 async function publicImageIsProjected(fixture: SurfaceFixture): Promise<boolean> {
   switch (fixture.selector.surfaceKind) {
     case 'post-image':
@@ -128,7 +149,9 @@ describe('copyright surface target lifecycle', () => {
       const caseRecord = await createTestCopyrightRestrictionForImage(fixture)
       const cache = ownerCache(fixture)
       await warmOwnerCache(fixture)
-      if (cache) await pollUntilNotNull(() => cache.get(fixture.ownerId))
+      if (cache) {
+        await pollUntilNotNull(() => cache.get(fixture.ownerId), 2000, 25, 'the warmed owner entry')
+      }
       expect(await getImagePlacementCopyrightOwner(fixture.placementId)).toEqual({
         kind: fixture.ownerKind,
         id: fixture.ownerId,
@@ -138,12 +161,15 @@ describe('copyright surface target lifecycle', () => {
         'applied',
       )
       expect(cache ? (await cache.get(fixture.ownerId)) === null : true).toBe(true)
-      if (cache) await warmOwnerCache(fixture)
-      if (cache) await pollUntilNotNull(() => cache.get(fixture.ownerId))
+      if (cache) await seedOwnerCache(fixture)
+      expect(cache ? (await cache.get(fixture.ownerId)) !== null : true).toBe(true)
       const purgeQueued = cache
         ? true
-        : await pollUntilNotNull(async () =>
-            (await communityPurgeWasQueued(fixture.ownerId)) ? true : null,
+        : await pollUntilNotNull(
+            async () => ((await communityPurgeWasQueued(fixture.ownerId)) ? true : null),
+            2000,
+            25,
+            'the community cache purge to be queued',
           )
       expect(purgeQueued).toBe(true)
       expect(await publicImageIsProjected(fixture)).toBe(false)
