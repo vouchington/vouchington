@@ -4,6 +4,7 @@ import {
   executeTestAdmittedPost,
   expireContributionAdmissionClaimForTest,
 } from '@voucha/test-helpers'
+import { getContributionAdmissionAttemptsForTest } from '@voucha/test-helpers/contribution-admission-attempts'
 import { listTestDelegatedCreateReservations } from '@voucha/test-helpers/mcp-write-tool-rows'
 import { runContributionAdmission } from './admission.mts'
 import { admitDelegatedCreate } from './admit-delegated-create.mts'
@@ -116,7 +117,14 @@ describe('delegated create admission — real store', () => {
         },
       }),
     ).rejects.toThrow('store unavailable')
-    expect(await ledgerRows(args.currentUser.id)).toMatchObject([{ state: 'retryable_failed' }])
+    // A failure is an immutable attempt result; the key stays open for the retry.
+    expect(await ledgerRows(args.currentUser.id)).toMatchObject([{ state: 'in_progress' }])
+    expect(
+      await getContributionAdmissionAttemptsForTest({
+        actorId: args.currentUser.id,
+        idempotencyKey: args.idempotencyKey,
+      }),
+    ).toMatchObject([{ attempt_number: 1, failure: { message: 'store unavailable' } }])
 
     await expect(
       admitDelegatedCreate({ ...args, execute: async () => ({ ok: true }) }),

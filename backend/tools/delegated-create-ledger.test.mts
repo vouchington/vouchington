@@ -7,6 +7,7 @@ import {
   getContributionAdmissionReservationStateForTest,
   setContributionAdmissionReplayMetadataForTest,
 } from '@voucha/test-helpers'
+import { getContributionAdmissionAttemptsForTest } from '@voucha/test-helpers/contribution-admission-attempts'
 import { pollUntilNotNull } from '@voucha/test-helpers/polling'
 import { waitForTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-wait'
 import {
@@ -97,7 +98,15 @@ describe('delegated create ledger — real store', () => {
       'post_admission_reservations_metadata_bounds_check',
     )
     expect(await countTestCommunitiesCreatedBy(user.id)).toBe(0)
-    expect(await getContributionAdmissionReservationStateForTest(key)).toBe('retryable_failed')
+    expect(await getContributionAdmissionReservationStateForTest(key)).toBe('in_progress')
+    expect(await getContributionAdmissionAttemptsForTest(key)).toMatchObject([
+      {
+        attempt_number: 1,
+        failure: {
+          message: expect.stringContaining('post_admission_reservations_metadata_bounds'),
+        },
+      },
+    ])
 
     const created = await admitDelegatedCreate({ ...base, execute: createIn })
     expect(await admitDelegatedCreate({ ...base, execute: createIn })).toEqual(created)
