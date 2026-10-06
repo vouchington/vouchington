@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
+import { valkeyEvents } from 'valkyries'
 
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestPost,
   createTestUser,
   createUserProfileFixture,
-  pollUntilNotNull,
   safeUsername,
 } from '@voucha/test-helpers'
 
@@ -18,6 +18,22 @@ import {
   markDataRequestProcessing,
   markDataRequestReady,
 } from '@services/account-data-requests'
+
+function watchCacheSet(cacheName: string, key: string): { done: Promise<void>; stop: () => void } {
+  let stop = () => {}
+  const done = new Promise<void>(resolve => {
+    const onSet = (event: { cacheName: string; keys: string[] }) => {
+      if (event.cacheName !== cacheName || !event.keys.includes(key)) return
+      stop()
+      resolve()
+    }
+    stop = () => {
+      valkeyEvents.off('cache:set', onSet)
+    }
+    valkeyEvents.on('cache:set', onSet)
+  })
+  return { done, stop }
+}
 
 describe('Users API Routes', () => {
   describe('GET /api/v1/users/:idOrSlug', () => {
@@ -123,23 +139,26 @@ describe('Users API Routes', () => {
     it('should populate the public user metrics cache for anonymous requests', async () => {
       const user = await createTestUser({ username: safeUsername('users-cache') })
       const request = createRequest()
+      const cached = watchCacheSet('user_metrics', user!.id.toLowerCase())
 
-      const response = await request.get(`/api/v1/users/${user!.username!}`).expect(200)
+      try {
+        const response = await request.get(`/api/v1/users/${user!.username!}`).expect(200)
+        await cached.done
 
-      const byId = (await pollUntilNotNull(() => caches.user_metrics.get(user!.id))) as Record<
-        string,
-        unknown
-      >
+        const byId = (await caches.user_metrics.get(user!.id)) as Record<string, unknown>
 
-      expect(byId.id).toBe(user!.id)
-      expect(byId.viewer_count).toBeUndefined()
-      expect(byId.private_count).toBeUndefined()
-      expect(response.headers['cache-control']).toContain('public')
-      expect(response.headers['cache-control']).toContain(
-        `max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`,
-      )
-      expect(response.headers['vary']).toContain('Cookie')
-      expect(response.headers['vary']).toContain('Authorization')
+        expect(byId.id).toBe(user!.id)
+        expect(byId.viewer_count).toBeUndefined()
+        expect(byId.private_count).toBeUndefined()
+        expect(response.headers['cache-control']).toContain('public')
+        expect(response.headers['cache-control']).toContain(
+          `max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`,
+        )
+        expect(response.headers['vary']).toContain('Cookie')
+        expect(response.headers['vary']).toContain('Authorization')
+      } finally {
+        cached.stop()
+      }
     })
 
     it('should include profile_links array in the response', async () => {

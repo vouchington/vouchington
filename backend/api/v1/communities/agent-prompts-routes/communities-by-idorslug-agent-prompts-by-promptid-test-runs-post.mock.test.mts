@@ -8,7 +8,6 @@ import {
   insertTestCommunity,
   insertTestCommunityMember,
   insertTestCommunityAgentPrompt,
-  pollUntilNotNull,
 } from '@voucha/test-helpers'
 import { answerCommunityQuestions } from '@voucha/test-helpers/data-stores/psql/classifier-runs/community-moderation-provider'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
@@ -120,9 +119,7 @@ describe('POST /api/v1/communities/:idOrSlug/agent-prompts/:promptId/test-runs',
 
       await testRun({ text: 'Sample content to moderate' }).expect(200)
 
-      await expect(
-        pollUntilNotNull(() => findAiUsageRecordForResponseId(responseId)),
-      ).resolves.toMatchObject({
+      await expect(findAiUsageRecordForResponseId(responseId)).resolves.toMatchObject({
         agent_slug: 'community-moderation-dry-run',
         community_id: community.id,
         post_id: null,

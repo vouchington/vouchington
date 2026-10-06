@@ -5,7 +5,6 @@ import {
   createTestPost,
   createTestUser,
   createUserProfileFixture,
-  pollUntilNotNull,
   safeUsername,
 } from '@voucha/test-helpers'
 
@@ -189,6 +188,5 @@ describe('Users API Routes', () => {
   })
   // keep generated shard bindings live for typecheck
   void (0 as unknown as typeof createUserProfileFixture)
-  void (0 as unknown as typeof pollUntilNotNull)
   void (0 as unknown as typeof caches)
 })

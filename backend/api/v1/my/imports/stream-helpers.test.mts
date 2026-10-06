@@ -92,7 +92,7 @@ describe('pipeImportProgressToSSE', () => {
     expect(progressWrite).toContain(JSON.stringify(doneChunk))
   })
 
-  it('throttles progress writes via setInterval flush', async () => {
+  it('throttles progress writes on the flush interval', async () => {
     const { sub, trigger } = makeMockSubscription()
     const writes: string[] = []
 

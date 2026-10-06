@@ -9,6 +9,7 @@ describe('SSE response listener budget', () => {
   it('keeps composed close listeners within the dynamically reserved limit', async () => {
     const app = createVouchaApiApp()
     const listenerState = Promise.withResolvers<{ count: number; limit: number }>()
+    const pipelineSettled = Promise.withResolvers<void>()
     app.route('/events').get(async ctx => {
       const { stream, pipelinePromise } = startSSE(ctx)
       listenerState.resolve({
@@ -17,6 +18,7 @@ describe('SSE response listener budget', () => {
       })
       stream.end('event: done\ndata: {}\n\n')
       await pipelinePromise
+      pipelineSettled.resolve()
     })
 
     const callback = app.callback()
@@ -41,14 +43,11 @@ describe('SSE response listener budget', () => {
         req.end()
       })
 
-      await expect(listenerState.promise).resolves.toEqual({ count: 11, limit: 11 })
-      await vi.waitFor(() => {
-        expect(response?.getMaxListeners()).toBe(10)
-        expect(response?.listenerCount('close')).toBeLessThanOrEqual(
-          response?.getMaxListeners() ?? 0,
-        )
-        expect(closeObserver).toHaveBeenCalledTimes(3)
-      })
+      await Promise.all([listenerState.promise, pipelineSettled.promise])
+      expect(await listenerState.promise).toEqual({ count: 11, limit: 11 })
+      expect(response?.getMaxListeners()).toBe(10)
+      expect(response?.listenerCount('close')).toBeLessThanOrEqual(response?.getMaxListeners() ?? 0)
+      expect(closeObserver).toHaveBeenCalledTimes(3)
     } finally {
       await new Promise<void>((resolve, reject) => {
         server.close(error => {
