@@ -183,8 +183,8 @@ auto-fix PR #8260 identified a shared-worker import race around deployment-envir
 the change was superseded by merged PR #8277. Tests should pass env objects into the helper under
 test instead.
 
-The scope-aware Oxlint
-`voucha/backend-contract-program-construction-location` rule keeps backend API contract compiler
+The configured scope-aware Oxlint
+`vouchington/typescript-program-location` rule keeps backend API contract compiler
 construction in the memoized backend-program owner, including the
 public compiler-host and language-service construction families. It resolves TypeScript value imports, namespace aliases, extracted
 factory capabilities, exact proven Node `createRequire()` loads, assignments, optional calls, and
@@ -208,7 +208,7 @@ its bracket-index variant) that dependency-cruiser's module-graph resolution can
 arm matches the literal `createRequire` identifier without verifying it is bound to `node:module`'s
 export, so a same-named, same-shaped domain helper is a documented false positive; every
 multi-statement, destructured, aliased, shadowed-parameter, or reassignment variant of this loader
-shape stays covered only by the scope-aware `create-require-provenance.cjs` Oxlint rule, which
+shape stays covered only by the scope-aware `vouchington/typescript-program-location` Oxlint rule, which
 remains authoritative for that provenance. A
 third, coarser guard, the dependency-cruiser `no-api-fixtures-typescript-reachability` rule
 (`backend/dependency-cruiser-rules/api-fixtures-typescript-reachability.cjs`), adds a

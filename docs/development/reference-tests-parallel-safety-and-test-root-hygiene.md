@@ -552,9 +552,10 @@ independent module, and diagnostics are checked when that source is requested, s
 failure case does not poison its siblings.
 Runtime request-body assertions read the checked-in executable bundle. Exercise meaningful
 carrier behavior in route tests without adding full backend discovery to schema tests.
-The scope-aware Oxlint `voucha/backend-contract-program-construction-location` rule keeps TypeScript
-compiler-host, program, and language-service factories owned by only `backend-program.mts` and
-`virtual-program.mts`, including bracket and optional access, aliases, lexical shadows, and
+The configured scope-aware Oxlint `vouchington/typescript-program-location` rule keeps TypeScript
+compiler-host, program, and language-service factories owned by `backend-program.mts` and
+constrains virtual-matrix builds to their test lifecycle. It covers bracket and optional access,
+aliases, lexical shadows, and
 the public compiler-host family (`createCompilerHost`, `createIncrementalCompilerHost`,
 `createWatchCompilerHost`, `createSolutionBuilderHost`, and
 `createSolutionBuilderWithWatchHost`) plus the program, incremental, builder, watch,

@@ -1,14 +1,19 @@
-import { createRequire } from 'node:module'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
+import ts from 'typescript'
 import { describe, expect, it } from 'vitest'
 import { parse as yamlLoad } from 'yaml'
 
-const require = createRequire(import.meta.url)
-const { FACTORIES } = require('../oxlint-plugin/typescript-program-surface.cjs') as {
-  FACTORIES: Set<string>
-}
+const oxlint = ts.parseConfigFileTextToJson(
+  '.oxlintrc.json',
+  readFileSync(resolve('.oxlintrc.json'), 'utf8'),
+).config as { rules: Record<string, unknown> }
+const programRule = oxlint.rules['vouchington/typescript-program-location'] as [
+  string,
+  { factories: string[] },
+]
+const FACTORIES = new Set(programRule[1].factories)
 const rule = yamlLoad(
   readFileSync(
     resolve('ast-grep-rules/backend-contract-program-construction-location.yml'),

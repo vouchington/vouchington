@@ -1,7 +1,10 @@
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+import ts from 'typescript'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { additionalInvalid, additionalValid } from './typescript-program-additional-fixtures.mts'
 import { requireInvalid, requireValid } from './typescript-program-create-require-fixtures.mts'
@@ -14,7 +17,11 @@ interface Fixture {
 }
 
 const OXLINT = resolve('node_modules/.bin/oxlint')
-const PLUGIN = resolve('static-code-analysis/oxlint-plugin.cjs')
+const PLUGIN = fileURLToPath(import.meta.resolve('eslint-plugin-vouchington'))
+const rule = (
+  ts.parseConfigFileTextToJson('.oxlintrc.json', readFileSync(resolve('.oxlintrc.json'), 'utf8'))
+    .config as { rules: Record<string, unknown> }
+).rules['vouchington/typescript-program-location']
 const FILE = 'backend/test-helpers/api-fixtures/contract-schema.mts'
 
 const invalid: Fixture[] = [
@@ -199,7 +206,7 @@ ts.createProgram(files, options)`,
   ...additionalValid,
 ]
 
-describe('voucha/backend-contract-program-construction-location', () => {
+describe('configured vouchington/typescript-program-location', () => {
   let root: string
 
   beforeAll(() => {
@@ -213,10 +220,10 @@ describe('voucha/backend-contract-program-construction-location', () => {
       join(root, '.oxlintrc.json'),
       JSON.stringify({
         categories: { correctness: 'off', suspicious: 'off', perf: 'off' },
-        jsPlugins: [{ name: 'voucha', specifier: PLUGIN }],
+        jsPlugins: [{ name: 'vouchington', specifier: PLUGIN }],
         plugins: [],
         rules: {
-          'voucha/backend-contract-program-construction-location': 'error',
+          'vouchington/typescript-program-location': rule,
         },
       }),
     )

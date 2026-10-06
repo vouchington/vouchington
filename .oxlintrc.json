@@ -31,10 +31,6 @@
       "specifier": "eslint-plugin-no-mistakes"
     },
     {
-      "name": "voucha",
-      "specifier": "./static-code-analysis/oxlint-plugin.cjs"
-    },
-    {
       "name": "vouchington",
       "specifier": "eslint-plugin-vouchington"
     }
@@ -1055,7 +1051,41 @@
     "no-mistakes/vitest-mock-test-file-naming": "error",
     "no-mistakes/postgres-no-manual-transaction": "off",
     "no-mistakes/postgres-no-unbounded-query-fanout": "off",
-    "voucha/backend-contract-program-construction-location": "error",
+    "vouchington/typescript-program-location": [
+      "error",
+      {
+        "modules": ["typescript"],
+        "factories": [
+          "createCompilerHost",
+          "createIncrementalCompilerHost",
+          "createSolutionBuilderHost",
+          "createSolutionBuilderWithWatchHost",
+          "createWatchCompilerHost",
+          "createAbstractBuilder",
+          "createBuilderProgram",
+          "createBuilderProgramUsingIncrementalBuildInfo",
+          "createEmitAndSemanticDiagnosticsBuilderProgram",
+          "createIncrementalProgram",
+          "createLanguageService",
+          "createProgram",
+          "createRedirectedBuilderProgram",
+          "createSemanticDiagnosticsBuilderProgram",
+          "createSolutionBuilder",
+          "createSolutionBuilderWithWatch",
+          "createWatchProgram",
+          "readBuilderProgram"
+        ],
+        "owners": ["backend/test-helpers/api-fixtures/backend-program.mts"],
+        "include": ["backend/test-helpers/api-fixtures/**/*.mts"],
+        "virtualMatrix": {
+          "moduleBasename": "virtual-program",
+          "builder": "buildVirtualProgramMatrix",
+          "testModule": "vitest",
+          "testHook": "beforeAll",
+          "allowLifecycleFiles": ["backend/test-helpers/api-fixtures/virtual-program.test.mts"]
+        }
+      }
+    ],
     "vouchington/serial-cursor-drains": [
       "error",
       {

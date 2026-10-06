@@ -118,11 +118,9 @@ describe('no-mistakes config', () => {
       expect.objectContaining({ specifier: 'eslint-plugin-no-mistakes' }),
     )
     expect(oxlint.jsPlugins).toContainEqual(
-      expect.objectContaining({
-        name: 'voucha',
-        specifier: './static-code-analysis/oxlint-plugin.cjs',
-      }),
+      expect.objectContaining({ name: 'vouchington', specifier: 'eslint-plugin-vouchington' }),
     )
+    expect(oxlint.rules['vouchington/typescript-program-location']).toHaveProperty('0', 'error')
     expect(oxlint.rules['vouchington/banned-member-read']).toHaveProperty('0', 'error')
     expect(oxlint.rules['no-mistakes/playwright-literals']).toBe('error')
     expect(oxlint.rules).not.toHaveProperty('no-mistakes/playwright-no-set-timeout')
