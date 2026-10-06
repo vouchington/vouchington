@@ -1,4 +1,10 @@
-import { beginTransaction } from '@data-stores/psql'
+import {
+  beginTransaction,
+  registerPostCommitAction,
+  withTransactionOptions,
+  type QueryOptions,
+  type TransactionQuery,
+} from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import onError from '@modules/on-error'
@@ -9,11 +15,28 @@ import type { PrivateUser } from '@services/users/types'
 import { getReviewDisputeByIdFromPrimary } from './get.mts'
 import type { ReviewDisputeResponse } from './types.mts'
 
+/**
+ * Files a dispute. With `queryOptions.query` it joins the caller's transaction, which then owns
+ * the commit and the resolution enqueue after it; otherwise it runs and commits its own.
+ */
 export async function createReviewDispute(
   currentUser: PrivateUser,
   input: CreateReviewDisputeInput,
+  queryOptions?: QueryOptions,
 ): Promise<{ dispute: ReviewDisputeResponse; isDuplicate: boolean }> {
+  const run = (query: TransactionQuery) => insertReviewDispute(query, currentUser, input)
+  if (queryOptions?.query) return withTransactionOptions(queryOptions, run)
   await using query = await beginTransaction()
+  const result = await run(query)
+  await query.commit()
+  return result
+}
+
+async function insertReviewDispute(
+  query: TransactionQuery,
+  currentUser: PrivateUser,
+  input: CreateReviewDisputeInput,
+): Promise<{ dispute: ReviewDisputeResponse; isDuplicate: boolean }> {
   // The post and selected rating are resolved from the primary. A row lock on the rating then
   // keeps the captured value stable until the dispute insert commits.
   const getPostQuery = sql`/* createReviewDispute:getPost */
@@ -128,12 +151,11 @@ export async function createReviewDispute(
   const row = rows[0] as (ReviewDispute & { inserted: boolean }) | undefined
   assert(row, 500, 'Failed to create dispute')
   const result = { disputeId: row.id, isDuplicate: !row.inserted }
-  await query.commit()
 
   if (!result.isDuplicate) {
-    enqueueDisputeResolutionAsync(result.disputeId)
+    registerPostCommitAction(query, async () => enqueueDisputeResolutionAsync(result.disputeId))
   }
-  const dispute = await getReviewDisputeByIdFromPrimary(result.disputeId)
+  const dispute = await getReviewDisputeByIdFromPrimary(result.disputeId, { query })
   assert(dispute, 500, 'Dispute disappeared after creation')
   return { dispute, isDuplicate: result.isDuplicate }
 }

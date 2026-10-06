@@ -1,11 +1,15 @@
 import type { ContributionPolicySource } from './policy.mts'
 
+/**
+ * The ledger row's audit columns. A post admission names its policy source, post type and policy
+ * revision; a keyed create of any other entity has none of them, so all three are null together.
+ */
 export type ContributionAdmissionAudit = Readonly<{
   route: string
   scope: string
-  source: string
-  postType: string
-  policyRevision: string
+  source: string | null
+  postType: string | null
+  policyRevision: string | null
 }>
 
 export function normalizeContributionAdmissionAudit(input: {

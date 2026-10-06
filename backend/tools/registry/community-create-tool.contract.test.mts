@@ -14,7 +14,7 @@ import { contributionLimitConfig } from '@services/contribution-gating/limits-co
 import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import {
   countTestCommunitiesCreatedBy,
-  listTestMcpCreateAttempts,
+  listTestDelegatedCreateReservations,
   readTestCommunitySettings,
 } from '@voucha/test-helpers/mcp-write-tool-rows'
 import createTool from '../create-community.mts'
@@ -29,7 +29,7 @@ const args = (extra: Record<string, unknown> = {}) => ({
 })
 const expectNothingWritten = async (userId: string) => {
   expect(await countTestCommunitiesCreatedBy(userId)).toBe(0)
-  expect(await listTestMcpCreateAttempts(userId)).toEqual([])
+  expect(await listTestDelegatedCreateReservations(userId)).toEqual([])
 }
 const errorOf = async (caller: Parameters<typeof callRejectedMcpTool>[0], input: object) =>
   JSON.parse(await callRejectedMcpTool(caller, TOOL, input as never, SCOPES))
@@ -126,10 +126,10 @@ describe('create_community — real store', () => {
     } finally {
       restore()
     }
-    const attempts = await listTestMcpCreateAttempts(caller.id)
+    const attempts = await listTestDelegatedCreateReservations(caller.id)
 
     expect(second).toEqual(first)
-    expect(await listTestMcpCreateAttempts(caller.id)).toEqual(attempts)
+    expect(await listTestDelegatedCreateReservations(caller.id)).toEqual(attempts)
     expect(attempts).toHaveLength(1)
     expect(await countTestCommunitiesCreatedBy(caller.id)).toBe(1)
   })
@@ -138,7 +138,7 @@ describe('create_community — real store', () => {
     const caller = await createTestPlusMcpCaller()
     const input = args()
     await callStructuredMcpTool(caller, TOOL, input, SCOPES)
-    const attempts = await listTestMcpCreateAttempts(caller.id)
+    const attempts = await listTestDelegatedCreateReservations(caller.id)
 
     for (const changed of [
       { name: 'Another Quiet Birdwatchers Group' },
@@ -150,7 +150,7 @@ describe('create_community — real store', () => {
       })
     }
 
-    expect(await listTestMcpCreateAttempts(caller.id)).toEqual(attempts)
+    expect(await listTestDelegatedCreateReservations(caller.id)).toEqual(attempts)
     expect(await countTestCommunitiesCreatedBy(caller.id)).toBe(1)
   })
 
@@ -168,7 +168,7 @@ describe('create_community — real store', () => {
     }
 
     expect(await countTestCommunitiesCreatedBy(caller.id)).toBe(1)
-    expect(await listTestMcpCreateAttempts(caller.id)).toHaveLength(1)
+    expect(await listTestDelegatedCreateReservations(caller.id)).toHaveLength(1)
   })
 
   it('refuses a taken slug and writes nothing', async () => {

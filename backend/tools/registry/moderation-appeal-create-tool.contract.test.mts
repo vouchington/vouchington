@@ -13,7 +13,7 @@ import { createTestPlusMcpCaller } from '@voucha/test-helpers/mcp-plus-caller'
 import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import {
   countTestModerationAppealsByAppellant,
-  listTestMcpCreateAttempts,
+  listTestDelegatedCreateReservations,
 } from '@voucha/test-helpers/mcp-write-tool-rows'
 import createTool from '../create-moderation-appeal.mts'
 
@@ -51,7 +51,7 @@ const args = (targetId: string, extra: Record<string, unknown> = {}) => ({
 })
 const expectNothingWritten = async (userId: string) => {
   expect(await countTestModerationAppealsByAppellant(userId)).toBe(0)
-  expect(await listTestMcpCreateAttempts(userId)).toEqual([])
+  expect(await listTestDelegatedCreateReservations(userId)).toEqual([])
 }
 const errorOf = async (caller: Parameters<typeof callRejectedMcpTool>[0], input: object) =>
   JSON.parse(await callRejectedMcpTool(caller, TOOL, input as never, SCOPES))
@@ -139,12 +139,12 @@ describe('create_moderation_appeal — real store', () => {
     const caller = await createTestPlusMcpCaller()
     const input = args(await warningFor(caller.id))
     const first = await callStructuredMcpTool(caller, TOOL, input, SCOPES)
-    const attempts = await listTestMcpCreateAttempts(caller.id)
+    const attempts = await listTestDelegatedCreateReservations(caller.id)
 
     const second = await callStructuredMcpTool(caller, TOOL, input, SCOPES)
 
     expect(second).toEqual(first)
-    expect(await listTestMcpCreateAttempts(caller.id)).toEqual(attempts)
+    expect(await listTestDelegatedCreateReservations(caller.id)).toEqual(attempts)
     expect(attempts).toHaveLength(1)
     expect(await countTestModerationAppealsByAppellant(caller.id)).toBe(1)
   })
@@ -153,13 +153,13 @@ describe('create_moderation_appeal — real store', () => {
     const caller = await createTestPlusMcpCaller()
     const input = args(await warningFor(caller.id))
     await callStructuredMcpTool(caller, TOOL, input, SCOPES)
-    const attempts = await listTestMcpCreateAttempts(caller.id)
+    const attempts = await listTestDelegatedCreateReservations(caller.id)
 
     expect(await errorOf(caller, { ...input, appeal_reason: 'A different case.' })).toMatchObject({
       error: { status: 409, code: 'IDEMPOTENCY_KEY_REUSED', retryable: false },
     })
 
-    expect(await listTestMcpCreateAttempts(caller.id)).toEqual(attempts)
+    expect(await listTestDelegatedCreateReservations(caller.id)).toEqual(attempts)
     expect(await countTestModerationAppealsByAppellant(caller.id)).toBe(1)
   })
 

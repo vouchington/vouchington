@@ -1,4 +1,4 @@
-import { read, write } from '@data-stores/psql'
+import { read, write, type QueryOptions } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { DISPUTE_SLA_HOURS, type ReviewDisputeStatus } from './config.mts'
@@ -76,15 +76,18 @@ export async function getReviewDisputeById(id: string): Promise<ReviewDisputeRes
   return queryReviewDisputeById(id, read)
 }
 
+/** Reads from the primary, or through `options.query` to see the caller's own uncommitted rows. */
 export async function getReviewDisputeByIdFromPrimary(
   id: string,
+  options?: QueryOptions,
 ): Promise<ReviewDisputeResponse | null> {
-  return queryReviewDisputeById(id, write)
+  return queryReviewDisputeById(id, write, options)
 }
 
 async function queryReviewDisputeById(
   id: string,
   query: typeof read,
+  options?: QueryOptions,
 ): Promise<ReviewDisputeResponse | null> {
   const { rows } = await query<ReviewDisputeResponse>(
     sql`/* getReviewDisputeById */
@@ -97,6 +100,7 @@ async function queryReviewDisputeById(
     WHERE rd.id = ${id}
     LIMIT 1
   `),
+    options,
   )
   const row = rows[0]
   return row ? addIsOverdue(row) : null

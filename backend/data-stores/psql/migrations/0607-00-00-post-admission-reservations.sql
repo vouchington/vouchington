@@ -6,9 +6,9 @@ CREATE TABLE IF NOT EXISTS post_admission_reservations (
   intent_sha256 TEXT NOT NULL,
   route post_admission_routes NOT NULL,
   scope post_admission_scope_categories NOT NULL,
-  source contribution_policy_sources NOT NULL,
-  post_type post_types NOT NULL,
-  policy_revision TEXT NOT NULL,
+  source contribution_policy_sources,
+  post_type post_types,
+  policy_revision TEXT,
   state post_admission_reservation_states GENERATED ALWAYS AS (CASE WHEN committed_at IS NOT NULL THEN 'committed'::post_admission_reservation_states ELSE 'in_progress'::post_admission_reservation_states END) STORED NOT NULL,
   response JSONB,
   replay_metadata JSONB,
@@ -34,9 +34,12 @@ CREATE TABLE IF NOT EXISTS post_admission_reservations (
       jsonb_typeof(replay_metadata) = 'object' AND octet_length(replay_metadata::text) <= 8192
     ))
   ),
+  CONSTRAINT post_admission_reservations_policy_audit_check CHECK (
+    (source IS NULL) = (post_type IS NULL) AND (source IS NULL) = (policy_revision IS NULL)
+  ),
   CONSTRAINT post_admission_reservations_state_payload_check CHECK (
     (state = 'committed' AND response IS NOT NULL AND replay_metadata IS NOT NULL
-      AND committed_post_id IS NOT NULL AND committed_status IS NOT NULL
+      AND (committed_post_id IS NULL) = (post_type IS NULL) AND committed_status IS NOT NULL
       AND expires_at IS NOT NULL AND expires_at = retention_expires_at)
     OR (state = 'in_progress' AND response IS NULL AND replay_metadata IS NULL
       AND committed_post_id IS NULL AND committed_status IS NULL AND expires_at IS NULL)
@@ -51,19 +54,19 @@ FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 CREATE INDEX IF NOT EXISTS idx_post_admission_reservations__retention
 ON post_admission_reservations (retention_expires_at, id);
 
-COMMENT ON TABLE post_admission_reservations IS 'Durable actor-bound idempotency and admission records for authored posts; committed replays remain available for a rolling 48-hour client window plus bounded clock-skew safety.';
+COMMENT ON TABLE post_admission_reservations IS 'Durable actor-bound idempotency and admission ledger for every keyed create (authored posts and the delegated community, report, dispute, appeal and application creates); committed replays remain available for a rolling 48-hour client window plus bounded clock-skew safety. The actor and key space is shared by every route.';
 COMMENT ON COLUMN post_admission_reservations.actor_user_id IS 'Authenticated actor that owns the idempotency key and its replay record.';
 COMMENT ON COLUMN post_admission_reservations.idempotency_key IS 'Client-supplied UUID reused only to replay the same actor request.';
 COMMENT ON COLUMN post_admission_reservations.intent_sha256 IS 'SHA-256 of the canonical request intent. Different intent with the same actor and idempotency key is rejected.';
-COMMENT ON COLUMN post_admission_reservations.route IS 'Mutation route recorded for audit and replay metadata.';
+COMMENT ON COLUMN post_admission_reservations.route IS 'Mutation route recorded for audit and replay metadata; the route is part of the canonical intent, so a key reused on another route is rejected.';
 COMMENT ON COLUMN post_admission_reservations.scope IS 'Finite contribution scope category; the exact route-specific scope remains in replay_metadata.';
-COMMENT ON COLUMN post_admission_reservations.source IS 'Contribution-policy source charged when this request commits.';
-COMMENT ON COLUMN post_admission_reservations.post_type IS 'Authored post type recorded for contribution-policy audit.';
-COMMENT ON COLUMN post_admission_reservations.policy_revision IS 'Contribution-policy revision evaluated for this request.';
+COMMENT ON COLUMN post_admission_reservations.source IS 'Contribution-policy source charged when this request commits. Null for creates that are not charged against a contribution quota.';
+COMMENT ON COLUMN post_admission_reservations.post_type IS 'Authored post type recorded for contribution-policy audit. Null exactly when the admitted create makes no post.';
+COMMENT ON COLUMN post_admission_reservations.policy_revision IS 'Contribution-policy revision evaluated for this request. Null exactly when source is null.';
 COMMENT ON COLUMN post_admission_reservations.state IS 'Generated final lifecycle from committed_at; retry outcomes live in immutable attempt results.';
 COMMENT ON COLUMN post_admission_reservations.response IS 'Serialized successful response retained for exact idempotent replay.';
 COMMENT ON COLUMN post_admission_reservations.replay_metadata IS 'Bounded route and scope metadata paired with the replay response.';
-COMMENT ON COLUMN post_admission_reservations.committed_post_id IS 'Retained identity of the created post, kept in the replay record after the live post may be deleted. A retained identity never authorizes the deleted post.';
+COMMENT ON COLUMN post_admission_reservations.committed_post_id IS 'Retained identity of the created post, kept in the replay record after the live post may be deleted. A retained identity never authorizes the deleted post. Null exactly when the admitted create makes no post; the replay response carries any other created id.';
 COMMENT ON COLUMN post_admission_reservations.committed_status IS 'Successful response status retained with the exact replay payload.';
 COMMENT ON COLUMN post_admission_reservations.committed_at IS 'Clock timestamp at which the protected mutation committed.';
 COMMENT ON COLUMN post_admission_reservations.expires_at IS 'Replay expiration for committed admission records.';

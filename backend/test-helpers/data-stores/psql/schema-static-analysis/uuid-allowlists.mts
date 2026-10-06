@@ -115,10 +115,6 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'Opaque fencing token rotated for the current exclusive claimant; it intentionally identifies no durable relation.',
   ],
   [
-    'user_mcp_create_attempts.lease_token',
-    'Opaque fencing token rotated on each claim and takeover; it intentionally identifies no durable relation.',
-  ],
-  [
     'post_votes.outbound_activitypub_like_activity_id',
     'ActivityPub protocol identity for the current Like generation; it intentionally identifies no database row.',
   ],

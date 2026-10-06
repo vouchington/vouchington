@@ -22,7 +22,7 @@ import { contributionAdmissionConsumptionMode } from './policy.mts'
 import type { ContributionAdmissionInput, ContributionAdmissionResult } from './admission-types.mts'
 import { publishFinalizedContributionResponse } from './publish-finalized-response.mts'
 import {
-  committedContributionPostId,
+  committedContributionPostIdFor,
   getCommittedContributionAdmissionResponse,
   isContributionAdmissionCommitted,
 } from './admission-response.mts'
@@ -111,7 +111,7 @@ export async function runContributionAdmission<T>(
       )
       UPDATE post_admission_reservations r SET response = ${JSON.stringify(response)}::jsonb,
         replay_metadata = ${JSON.stringify({ route: audit.route, scope: audit.scope, finalization: 'pending' })}::jsonb,
-        committed_post_id = ${committedContributionPostId(response)}, committed_status = 'created',
+        committed_post_id = ${committedContributionPostIdFor(audit, response)}, committed_status = 'created',
         committed_at = terminal.committed_at,
         expires_at = terminal.committed_at + ${CONTRIBUTION_ADMISSION_REPLAY_RETENTION_MINUTES} * INTERVAL '1 minute',
         retention_expires_at = terminal.committed_at + ${CONTRIBUTION_ADMISSION_REPLAY_RETENTION_MINUTES} * INTERVAL '1 minute'

@@ -1,7 +1,12 @@
 import assert from 'http-assert'
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
-import { createApplication, getCommunityOrThrow } from '@services/communities'
-import { runDelegatedCreate } from '@services/contribution-gating/run-delegated-create'
+import { isUUID } from '@modules/utils'
+import {
+  createApplication,
+  getCommunityOrThrow,
+  validateCommunitySlug,
+} from '@services/communities'
+import { admitDelegatedCreate } from '@services/contribution-gating/admit-delegated-create'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { objectSchema, successSchema } from './output-schema-shapes.mts'
@@ -21,6 +26,13 @@ type Result = {
 
 /** The longest cover message POST /api/v1/communities/:idOrSlug/applications accepts. */
 const MAX_MESSAGE_LENGTH = 5000
+
+/** The community UUID or slug in its canonical lowercase form, so a retry cannot differ by case. */
+function parseCommunityRef(value: unknown): string {
+  const ref = typeof value === 'string' ? value.trim().toLowerCase() : ''
+  assert(ref !== '', 422, 'community_id must be a community UUID or slug')
+  return isUUID(ref) ? ref : validateCommunitySlug(ref)
+}
 
 const tool: Tool<Args, Result> = {
   schema: {
@@ -75,30 +87,34 @@ const tool: Tool<Args, Result> = {
   function: currentUser => async (args, invocationContext) => {
     const user = await requireActiveToolUser(currentUser)
     const authority = getDelegatedToolAuthority(user, invocationContext)
+    const communityRef = parseCommunityRef(args.community_id)
+    assert(
+      typeof args.answers === 'object' && args.answers !== null && !Array.isArray(args.answers),
+      422,
+      'answers must be an object keyed by application question id',
+    )
     const message = args.message?.trim() || undefined
     assert(
       message === undefined || message.length <= MAX_MESSAGE_LENGTH,
       422,
       'message must be 5000 characters or fewer',
     )
-    return runDelegatedCreate({
+    return admitDelegatedCreate({
       authority,
       currentUser: user,
       idempotencyKey: args.idempotency_key,
-      intent: {
-        tool: 'apply_to_community',
-        community_id: args.community_id,
-        answers: args.answers,
-        message: message ?? null,
-      },
-      execute: async () => {
-        const community = await getCommunityOrThrow(args.community_id)
+      route: 'communities.applications.create',
+      scope: `community:${communityRef}`,
+      intent: { community_id: communityRef, answers: args.answers, message: message ?? null },
+      execute: async query => {
+        const community = await getCommunityOrThrow(communityRef, { query })
         const application = await createApplication(
           user.id,
           getRequestContentProvenance(),
           community.id,
           args.answers,
           message,
+          { query },
         )
         return {
           success: true as const,

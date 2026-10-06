@@ -14,7 +14,7 @@ import { createTestPlusMcpCaller } from '@voucha/test-helpers/mcp-plus-caller'
 import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import {
   countTestCommunityApplicationsByUser,
-  listTestMcpCreateAttempts,
+  listTestDelegatedCreateReservations,
 } from '@voucha/test-helpers/mcp-write-tool-rows'
 import { setApplicationQuestions } from '@services/communities'
 import applyTool from '../apply-to-community.mts'
@@ -45,7 +45,7 @@ const args = (
 })
 const expectNothingWritten = async (userId: string) => {
   expect(await countTestCommunityApplicationsByUser(userId)).toBe(0)
-  expect(await listTestMcpCreateAttempts(userId)).toEqual([])
+  expect(await listTestDelegatedCreateReservations(userId)).toEqual([])
 }
 const errorOf = async (caller: Parameters<typeof callRejectedMcpTool>[0], input: object) =>
   JSON.parse(await callRejectedMcpTool(caller, TOOL, input as never, SCOPES))
@@ -90,12 +90,12 @@ describe('apply_to_community — real store', () => {
     const caller = await createTestPlusMcpCaller()
     const input = args(community.id, { [why]: 'Same' }, { message: 'Same request' })
     const first = await callStructuredMcpTool(caller, TOOL, input, SCOPES)
-    const attempts = await listTestMcpCreateAttempts(caller.id)
+    const attempts = await listTestDelegatedCreateReservations(caller.id)
 
     const second = await callStructuredMcpTool(caller, TOOL, input, SCOPES)
 
     expect(second).toEqual(first)
-    expect(await listTestMcpCreateAttempts(caller.id)).toEqual(attempts)
+    expect(await listTestDelegatedCreateReservations(caller.id)).toEqual(attempts)
     expect(attempts).toHaveLength(1)
     expect(await countTestCommunityApplicationsByUser(caller.id)).toBe(1)
   })
@@ -105,7 +105,7 @@ describe('apply_to_community — real store', () => {
     const caller = await createTestPlusMcpCaller()
     const input = args(community.id, { [why]: 'First' })
     await callStructuredMcpTool(caller, TOOL, input, SCOPES)
-    const attempts = await listTestMcpCreateAttempts(caller.id)
+    const attempts = await listTestDelegatedCreateReservations(caller.id)
 
     for (const changed of [{ answers: { [why]: 'Second' } }, { message: 'Added note' }]) {
       expect(await errorOf(caller, { ...input, ...changed })).toMatchObject({
@@ -113,7 +113,7 @@ describe('apply_to_community — real store', () => {
       })
     }
 
-    expect(await listTestMcpCreateAttempts(caller.id)).toEqual(attempts)
+    expect(await listTestDelegatedCreateReservations(caller.id)).toEqual(attempts)
     expect(await countTestCommunityApplicationsByUser(caller.id)).toBe(1)
   })
 
@@ -132,7 +132,7 @@ describe('apply_to_community — real store', () => {
     })
 
     expect(await countTestCommunityApplicationsByUser(applicant.id)).toBe(1)
-    expect(await listTestMcpCreateAttempts(applicant.id)).toHaveLength(1)
+    expect(await listTestDelegatedCreateReservations(applicant.id)).toHaveLength(1)
     await expectNothingWritten(member.id)
   })
 

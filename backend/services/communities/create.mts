@@ -1,151 +1,47 @@
-import { beginTransaction, write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
-import assert from 'http-assert'
+import { beginTransaction, withTransactionOptions, type QueryOptions } from '@data-stores/psql'
 import createHttpError from 'http-errors'
 import { v7 as uuidv7 } from 'uuid'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
-import { normalizeKey } from '@ts-shared/utils/strings'
 import { validateCommunitySlug, generateCommunitySlug } from './slugs.mts'
-import type { Community } from './types.mts'
-import { enqueueLanguageDetection } from '@queues/language-detection/enqueues'
-import onError from '@modules/on-error'
 import { normalizeContentLanguageTag } from '@ts-shared/languages/content-languages'
-import { getCommunity, type CommunityWithOwner } from './get.mts'
-import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
+import type { CommunityWithOwner } from './get.mts'
 import { validateCreateCommunityInput } from './create-validation.mts'
-import { invalidate } from '@services/entity-cache/invalidate'
-import { invalidateCommunityMemberUserMetrics } from './members/invalidate-user-metrics.mts'
-import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
-import {
-  lockImageAssetAdmission,
-  assertImagesReadyForSurface,
-  syncImageSurfacePlacement,
-} from '@services/media-delivery-safety'
+import { insertCommunity } from './create-insert.mts'
 import type { CreateCommunityInput } from './create-types.mts'
 export type { CreateCommunityInput } from './create-types.mts'
 
+/**
+ * Creates a community. With `queryOptions.query` it joins the caller's transaction, which then
+ * owns the commit and everything that follows it; otherwise it runs and commits its own.
+ */
 export async function createCommunity(
   currentUserId: string,
   provenance: ContentProvenance,
   input: CreateCommunityInput,
+  queryOptions?: QueryOptions,
 ): Promise<CommunityWithOwner> {
   validateCreateCommunityInput(input)
 
-  const name = input.name
   const id = uuidv7()
-  const slug = input.slug ? validateCommunitySlug(input.slug) : generateCommunitySlug(name, id)
+  const slug = input.slug
+    ? validateCommunitySlug(input.slug)
+    : generateCommunitySlug(input.name, id)
   const defaultLanguage = normalizeContentLanguageTag(input.default_language ?? null)
+  const insert = { id, slug, defaultLanguage, currentUserId, provenance, input }
 
-  let community: CommunityWithOwner | null
   try {
+    if (queryOptions?.query)
+      return await withTransactionOptions(queryOptions, query => insertCommunity(query, insert))
     await using query = await beginTransaction()
-    const imageIds = [input.profile_image_id, input.banner_image_id].flatMap(id => (id ? [id] : []))
-    await lockImageAssetAdmission(imageIds, query)
-    await assertImagesReadyForSurface(imageIds, query)
-    const options = { query }
-
-    const { rows } = await write(
-      sql`/* createCommunity */
-    INSERT INTO communities (
-      id,
-      name,
-      slug,
-      markdown,
-      visibility,
-      list_type,
-      member_roster_visibility,
-      member_invites_allowed_at,
-      post_approval_required_at,
-      should_allow_review_posts,
-      should_allow_data_point_posts,
-      profile_image_id,
-      banner_image_id,
-      created_by_id,
-      default_language,
-      created_via,
-      created_via_oauth_client_id
-    )
-    VALUES (
-      ${id},
-      ${name},
-      ${slug},
-      ${input.markdown ?? null},
-      ${input.visibility ?? 'public'},
-      ${input.list_type ?? null},
-      ${input.member_roster_visibility ?? 'public'},
-      ${input.member_invites_allowed_at ?? null},
-      ${input.post_approval_required_at ?? null},
-      ${input.should_allow_review_posts ?? false},
-      ${input.should_allow_data_point_posts ?? false},
-      NULL,
-      NULL,
-      ${currentUserId},
-      ${defaultLanguage},
-      ${provenance.createdVia},
-      ${provenance.oauthClientId}
-    )
-    RETURNING *
-    `,
-      options,
-    )
-
-    const newCommunity = rows[0] as Community
-
-    if (input.profile_image_id) {
-      await syncImageSurfacePlacement(
-        { surfaceKind: 'community-profile-image', communityId: newCommunity.id },
-        input.profile_image_id,
-        currentUserId,
-        query,
-      )
-    }
-    if (input.banner_image_id) {
-      await syncImageSurfacePlacement(
-        { surfaceKind: 'community-banner-image', communityId: newCommunity.id },
-        input.banner_image_id,
-        currentUserId,
-        query,
-      )
-    }
-    if (imageIds.length) {
-      await query(sql`/* createCommunity:setSurfaceImages */
-        UPDATE communities SET profile_image_id = ${input.profile_image_id ?? null},
-          banner_image_id = ${input.banner_image_id ?? null}
-        WHERE id = ${newCommunity.id}
-      `)
-    }
-
-    await write(
-      sql`/* createCommunity */
-    INSERT INTO community_members (community_id, user_id, role)
-    VALUES (${newCommunity.id}, ${currentUserId}, 'owner')
-    `,
-      options,
-    )
-
-    community = await getCommunity(newCommunity.id, options)
+    const community = await insertCommunity(query, insert)
     await query.commit()
-    void enqueueReconcileMediaDeliveryRegistry()
+    return community
   } catch (err) {
-    const pgError = err as { code?: string; constraint?: string }
-    if (pgError.code === '23505') {
+    if ((err as { code?: string }).code === '23505') {
       throw createHttpError(409, `Slug "${slug}" is already taken`)
     }
     throw err
   }
-
-  assert(community, 500, 'Failed to create community')
-  void entityCacheBloomFilters.communities.add([
-    normalizeKey(community.id),
-    normalizeKey(community.slug),
-  ])
-  await Promise.all([
-    invalidate.communities(community),
-    invalidateCommunityMemberUserMetrics(currentUserId),
-  ])
-  // Language detection is asynchronous enrichment; the committed community remains durable.
-  void enqueueLanguageDetection('community', community.id).catch(onError)
-  return community
 }
 
 export { validateCreateCommunityInput } from './create-validation.mts'

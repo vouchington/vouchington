@@ -12,7 +12,7 @@ import {
 } from '@voucha/test-helpers'
 import { createTestPlusMcpCaller } from '@voucha/test-helpers/mcp-plus-caller'
 import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
-import { listTestMcpCreateAttempts } from '@voucha/test-helpers/mcp-write-tool-rows'
+import { listTestDelegatedCreateReservations } from '@voucha/test-helpers/mcp-write-tool-rows'
 
 const SCOPES = ['communities:read', 'communities:write'] as const
 
@@ -93,7 +93,7 @@ describe('join_community — real store', () => {
     for (const community of [priv, archived, banned, limited]) {
       expect(await getTestCommunityMember(community.id, caller.id)).toBeNull()
     }
-    expect(await listTestMcpCreateAttempts(caller.id)).toEqual([])
+    expect(await listTestDelegatedCreateReservations(caller.id)).toEqual([])
   })
 
   it.each([
