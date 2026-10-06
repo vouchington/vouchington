@@ -194,7 +194,7 @@ describe('upsertEntityRelation follow-upsert retry idempotency', () => {
 })
 
 function trackBulkEnqueue(
-  queue: { addBulk: (jobs: ReadonlyArray<{ name: string; data: unknown }>) => Promise<unknown> },
+  queue: { addBulk: (jobs: { name: string; data: unknown }[]) => Promise<unknown> },
   pending: Promise<unknown>[],
 ): void {
   const addBulk = queue.addBulk
