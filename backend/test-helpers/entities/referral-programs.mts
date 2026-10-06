@@ -15,7 +15,8 @@ export async function createReferralProgramFixture(data: {
   hostname: string
 }> {
   const randomSuffix = data.randomSuffix || Math.random().toString(36).slice(2, 10)
-  const hostname = data.hostname || `referral-${randomSuffix}.example.com`
+  // Referral crawls fetch robots.txt. Loopback stays inside the test network allowlist.
+  const hostname = data.hostname || `referral-${randomSuffix}.localhost`
   const pathname = data.pathname || '/ref/%'
 
   const referralProgramId = await insertTestTopic({

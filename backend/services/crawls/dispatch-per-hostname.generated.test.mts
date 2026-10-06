@@ -26,7 +26,7 @@ describe('dispatch-per-hostname.generated', () => {
   })
   it('dispatchCrawlUrlsPerHostname returns 0 when hostname is blocked', async () => {
     const random = Math.random().toString(36).slice(2, 15)
-    const hostnameValue = `dispatch-blocked-${random}.example.com`
+    const hostnameValue = `dispatch-blocked-${random}.localhost`
     const url = await addUrl(user.id, `https://${hostnameValue}/test`)
     await updateUrlHostnameBlocked(url!.hostname.id, true)
 
@@ -37,7 +37,7 @@ describe('dispatch-per-hostname.generated', () => {
 
   it('dispatchCrawlUrlsPerHostname returns 0 when hostname is not crawlable', async () => {
     const random = Math.random().toString(36).slice(2, 15)
-    const hostnameValue = `dispatch-not-crawlable-${random}.example.com`
+    const hostnameValue = `dispatch-not-crawlable-${random}.localhost`
     const url = await addUrl(user.id, `https://${hostnameValue}/test`)
     await updateUrlHostname(url!.hostname.id, { is_crawlable: false })
 
@@ -56,7 +56,7 @@ describe('dispatch-per-hostname.generated', () => {
 
   it('uses custom attempt threshold hours when filtering recent crawl attempts', async () => {
     const random = Math.random().toString(36).slice(2, 15)
-    const hostnameValue = `dispatch-attempt-threshold-${random}.example.com`
+    const hostnameValue = `dispatch-attempt-threshold-${random}.localhost`
     const url = await addUrl(user.id, `https://${hostnameValue}/test`)
     await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
     await setUrlHostnameAttemptThresholdHoursForTest(url!.hostname.id, 2)
@@ -74,8 +74,8 @@ describe('dispatch-per-hostname.generated', () => {
   it('does not dispatch RSS feed URLs through the HTML crawler', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const feed = await insertTestRssFeedDirect({
-      rssFeedUrl: `https://dispatch-rss-feed-${random}.example.com/feed.xml`,
-      homePageUrl: `https://dispatch-rss-home-${random}.example.com/home`,
+      rssFeedUrl: `https://dispatch-rss-feed-${random}.localhost/feed.xml`,
+      homePageUrl: `https://dispatch-rss-home-${random}.localhost/home`,
     })
     const url = await getUrlById(feed.rss_feed_url_id)
     expect(url).toBeTruthy()
@@ -91,6 +91,8 @@ describe('dispatch-per-hostname.generated', () => {
     const fixture = await createReferralProgramFixture({
       createdById: user.id,
       randomSuffix: random,
+      // Dispatch fetches robots.txt before it enqueues. Loopback stays on the test network allowlist.
+      hostname: `referral-${random}.localhost`,
     })
     const url = await insertTestUrlDirect(user.id, `https://${fixture.hostname}/ref/${random}`)
     expect(url).toBeTruthy()
@@ -111,6 +113,7 @@ describe('dispatch-per-hostname.generated', () => {
     const fixture = await createReferralProgramFixture({
       createdById: user.id,
       randomSuffix: random,
+      hostname: `referral-inactive-${random}.localhost`,
     })
     const url = await insertTestUrlDirect(user.id, `https://${fixture.hostname}/inactive/${random}`)
     expect(url).toBeTruthy()
@@ -130,20 +133,20 @@ describe('dispatch-per-hostname.generated', () => {
   it('crawlable hostname filter excludes blocked and non-crawlable hostnames', async () => {
     // Create crawlable hostname
     const random1 = Math.random().toString(36).slice(2, 15)
-    const crawlableHostname = `dispatch-query-crawlable-${random1}.example.com`
+    const crawlableHostname = `dispatch-query-crawlable-${random1}.localhost`
     const url1 = await addUrl(user.id, `https://${crawlableHostname}/test`)
     await updateUrlHostname(url1!.hostname.id, { is_crawlable: true })
 
     // Create blocked hostname
     const random2 = Math.random().toString(36).slice(2, 15)
-    const blockedHostname = `dispatch-query-blocked-${random2}.example.com`
+    const blockedHostname = `dispatch-query-blocked-${random2}.localhost`
     const url2 = await addUrl(user.id, `https://${blockedHostname}/test`)
     await updateUrlHostname(url2!.hostname.id, { is_crawlable: true })
     await updateUrlHostnameBlocked(url2!.hostname.id, true)
 
     // Create non-crawlable hostname
     const random3 = Math.random().toString(36).slice(2, 15)
-    const nonCrawlableHostname = `dispatch-query-non-crawlable-${random3}.example.com`
+    const nonCrawlableHostname = `dispatch-query-non-crawlable-${random3}.localhost`
     const url3 = await addUrl(user.id, `https://${nonCrawlableHostname}/test`)
     await updateUrlHostname(url3!.hostname.id, { is_crawlable: false })
 
