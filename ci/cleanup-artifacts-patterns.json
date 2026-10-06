@@ -8,6 +8,7 @@
     "next-static-*",
     "postgresql-snapshot-*",
     "web-build-timings-*",
+    "backend-junit-shard-*",
     "playwright-junit-*",
     "playwright-credentialed-junit",
     "playwright-test-results-shard-*",

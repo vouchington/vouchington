@@ -57,7 +57,7 @@ describe('project-ownership-registry derivations', () => {
   it('owns intentional sharding policy in the registry', () => {
     expect(shardedJobPolicies()).toEqual({
       'test-backend-unit': {
-        filesPerShard: 350,
+        filesPerShard: 250,
         mode: 'file-count',
         reportPrefix: 'backend-shard',
       },
