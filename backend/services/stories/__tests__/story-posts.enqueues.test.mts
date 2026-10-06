@@ -33,7 +33,7 @@ function trackedStoryPostAgent() {
   const pending: Promise<unknown>[] = []
   const add = ai_agents.add
   const spy = vi.spyOn(ai_agents, 'add').mockImplementation((...args: Parameters<typeof add>) => {
-    const job: Promise<unknown> = Reflect.apply(add, ai_agents, args)
+    const job = Reflect.apply(add, ai_agents, args)
     pending.push(job)
     spy.mockRestore()
     return job
