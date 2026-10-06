@@ -1,11 +1,10 @@
-import { runIsolatedDatabaseCase } from '../../../test-helpers/vitest-isolated-database-case.mts'
-import { getIsolatedDatabaseCaseMode } from '../../../test-helpers/vitest-isolated-database-cases.mts'
 import { readFileSync } from 'node:fs'
 import {
   createTestUser,
   getTestPostPublicationShadowAuditCheckpoint,
   insertTestPost,
   setTestPostPublicationShadowAuditCheckpoint,
+  withTestPostPublicationShadowAuditLock,
 } from '@voucha/test-helpers'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
@@ -24,10 +23,6 @@ describe('post publication shadow audit checkpoints', () => {
   })
 
   it('resets the durable checkpoint after the final partial repair page', async () => {
-    if (getIsolatedDatabaseCaseMode('publication-audit-final-page') === 'parent') {
-      await runIsolatedDatabaseCase('publication-audit-final-page')
-      return
-    }
     const user = await createTestUser()
     if (!user) throw new Error('Expected final-page checkpoint user fixture')
     const suffix = randomUUID().replaceAll('-', '').slice(0, 11)
@@ -36,6 +31,12 @@ describe('post publication shadow audit checkpoints', () => {
     const firstPostId = `${idPrefix}1`
     const secondPostId = `${idPrefix}2`
 
+    await insertTestPost({
+      title: `Final partial audit foreign ${suffix}`,
+      slug: `final-partial-audit-${suffix}-foreign`,
+      markdown: 'Eligible post behind the terminal audit cursor.',
+      createdById: user.id,
+    })
     await insertTestPost({
       id: firstPostId,
       title: `Final partial audit page ${suffix} first`,
@@ -50,17 +51,12 @@ describe('post publication shadow audit checkpoints', () => {
       markdown: 'Second row on a terminal audit page.',
       createdById: user.id,
     })
-    await setTestPostPublicationShadowAuditCheckpoint(cursor)
-
-    const result = await runPostPublicationShadowAudit({
-      dryRun: false,
-      limit: 100,
+    await withTestPostPublicationShadowAuditLock(async () => {
+      await setTestPostPublicationShadowAuditCheckpoint(cursor)
+      const result = await runPostPublicationShadowAudit({ dryRun: false, limit: 100 })
+      expect(result).toMatchObject({ hasMore: false })
+      expect(result.scannedByScope.post).toBeGreaterThanOrEqual(2)
+      await expect(getTestPostPublicationShadowAuditCheckpoint()).resolves.toBeNull()
     })
-
-    expect(result).toMatchObject({
-      hasMore: false,
-    })
-    expect(result.scannedByScope.post).toBeGreaterThanOrEqual(2)
-    await expect(getTestPostPublicationShadowAuditCheckpoint()).resolves.toBeNull()
-  }, 240_000)
+  })
 })

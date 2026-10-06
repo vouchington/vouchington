@@ -18,6 +18,7 @@ export type RetainedRelationIdentityKey = { subjectId: string; relationId: strin
 export async function cleanupRetainedRelationIdentities(
   pageSize = 1_000,
   keysByTable?: Readonly<Record<string, readonly RetainedRelationIdentityKey[]>>,
+  options?: { ensureCursors?: boolean },
 ): Promise<RetainedRelationIdentityCleanupPage[]> {
   if (!Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > 1_000) {
     throw new RangeError('Retained relation cleanup page size must be between 1 and 1000')
@@ -33,8 +34,15 @@ export async function cleanupRetainedRelationIdentities(
       'cleanupRetainedRelationIdentities',
       sharedDbIdsScope(keys?.flatMap(key => [key.subjectId, key.relationId])),
     )
-    // oxlint-disable-next-line no-await-in-loop -- each concrete family owns an independent bounded transaction.
-    pages.push(await cleanupRelationFamily(metadata.table_name, pageSize, keys))
+    pages.push(
+      // oxlint-disable-next-line no-await-in-loop -- each concrete family owns an independent bounded transaction.
+      await cleanupRelationFamily(
+        metadata.table_name,
+        pageSize,
+        keys,
+        options?.ensureCursors === true,
+      ),
+    )
   }
   return pages
 }
@@ -43,12 +51,13 @@ async function cleanupRelationFamily(
   relationTable: string,
   pageSize: number,
   keys?: readonly RetainedRelationIdentityKey[],
+  ensureCursor = false,
 ): Promise<RetainedRelationIdentityCleanupPage> {
   const metadata = electedRelationMetadata.find(item => item.table_name === relationTable)!
   const owner = `retained_${metadata.table_name}`
   const targetColumn = getElectedRelationTargetColumn(relationTable)
   await using query = await beginTransaction()
-  if (!keys)
+  if (!keys || ensureCursor)
     await query(
       `/* ensureRetainedRelationCleanupProgress */
        INSERT INTO retained_relation_identity_cleanup_cursors (entity_relation)

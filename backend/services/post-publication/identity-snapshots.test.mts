@@ -1,5 +1,3 @@
-import { runIsolatedDatabaseCase } from '../../../test-helpers/vitest-isolated-database-case.mts'
-import { getIsolatedDatabaseCaseMode } from '../../../test-helpers/vitest-isolated-database-cases.mts'
 import { describe, expect, it } from 'vitest'
 import {
   beginTransaction,
@@ -9,6 +7,7 @@ import {
   expireTestPostPublicationDirtyWorkLease,
   hardDeleteTestPost,
   setTestPostPublicationShadowAuditCheckpoint,
+  withTestPostPublicationShadowAuditLock,
 } from '@voucha/test-helpers'
 import {
   insertTestPublicationTopicSlugFanout,
@@ -203,10 +202,6 @@ describe('bounded publication identity snapshots', () => {
     })
   })
   it('detects and repairs exact relational audit discrepancies', async () => {
-    if (getIsolatedDatabaseCaseMode('publication-audit-relational-identities') === 'parent') {
-      await runIsolatedDatabaseCase('publication-audit-relational-identities')
-      return
-    }
     const { work, candidate, user } = await createSnapshotWork()
     const snapshot = await materializePostPublicationIdentitySnapshot(work, candidate, 100)
     candidate.identity_snapshot_id = snapshot.snapshotId
@@ -229,15 +224,18 @@ describe('bounded publication identity snapshots', () => {
         .post,
     ).toBe(1)
 
-    await setTestPostPublicationShadowAuditCheckpoint(cursor)
-    expect(
-      (await runPostPublicationShadowAudit({ dryRun: false, limit: 1 })).discrepanciesByScope.post,
-    ).toBe(1)
+    await withTestPostPublicationShadowAuditLock(async () => {
+      await setTestPostPublicationShadowAuditCheckpoint(cursor)
+      expect(
+        (await runPostPublicationShadowAudit({ dryRun: false, limit: 1 })).discrepanciesByScope
+          .post,
+      ).toBe(1)
+    })
     expect(await readTestPublicationReceipt(candidate.id)).toEqual({
       snapshotId: snapshot.snapshotId,
       fingerprint: candidate.eligibility_fingerprint,
     })
-  }, 240_000)
+  })
 })
 
 async function createSnapshotWork() {

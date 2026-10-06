@@ -1,5 +1,9 @@
 import { read, write, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { acquireTestPostgresAdvisoryLock } from '../postgres-advisory-lock.mts'
+
+const SHADOW_AUDIT_LOCK_NAMESPACE = 2_135_041
+const SHADOW_AUDIT_LOCK_KEY = 1
 
 export async function getTestPostPublicationShadowAuditCheckpoint(): Promise<
   string | null | undefined
@@ -11,6 +15,25 @@ export async function getTestPostPublicationShadowAuditCheckpoint(): Promise<
     WHERE is_singleton
   `)
   return rows[0]?.cursor_post_id
+}
+
+/** Reserves the singleton audit cursor and restores it after the callback. */
+export async function withTestPostPublicationShadowAuditLock<T>(run: () => Promise<T>): Promise<T> {
+  const lock = await acquireTestPostgresAdvisoryLock({
+    namespace: SHADOW_AUDIT_LOCK_NAMESPACE,
+    key: SHADOW_AUDIT_LOCK_KEY,
+    timeout: '20s',
+  })
+  const previous = await getTestPostPublicationShadowAuditCheckpoint()
+  try {
+    return await run()
+  } finally {
+    try {
+      await setTestPostPublicationShadowAuditCheckpoint(previous ?? null)
+    } finally {
+      await lock.release()
+    }
+  }
 }
 
 export async function setTestPostPublicationShadowAuditCheckpoint(

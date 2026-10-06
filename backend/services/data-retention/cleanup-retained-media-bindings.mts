@@ -7,41 +7,59 @@ export type RetainedMediaBindingCleanupPage = {
   hasMore: boolean
 }
 
-/** A separate bounded transaction; marker acknowledgement never holds cleanup locks. */
+/** A separate bounded transaction; marker acknowledgement never holds cleanup locks.
+ * `cursorPlacementIds` pages the singleton cursor across those ids. Production omits it.
+ */
 export async function cleanupRetainedMediaBindings(
   pageSize = 1_000,
   placementIds?: readonly string[],
+  cursorPlacementIds?: readonly string[],
 ): Promise<RetainedMediaBindingCleanupPage> {
   if (!Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > 1_000) {
     throw new RangeError('Retained media binding cleanup page size must be between 1 and 1000')
   }
-  if (placementIds && placementIds.length > pageSize)
+  if (placementIds && cursorPlacementIds) {
+    throw new RangeError('Retained media cleanup accepts ids or a cursor page, not both')
+  }
+  const listedIds = cursorPlacementIds ?? placementIds
+  if (placementIds && placementIds.length > pageSize) {
     throw new RangeError('Scoped retained media cleanup must fit one page')
-  if (placementIds?.length === 0) return { scanned: 0, deleted: 0, hasMore: false }
-  observeSharedDbScope('cleanupRetainedMediaBindings', sharedDbIdsScope(placementIds))
+  }
+  if (listedIds?.length === 0) return { scanned: 0, deleted: 0, hasMore: false }
+  observeSharedDbScope('cleanupRetainedMediaBindings', sharedDbIdsScope(listedIds))
+  const trackCursor = placementIds === undefined
   await using query = await beginTransaction()
-  if (!placementIds)
+  if (trackCursor)
     await query(
       `/* ensureRetainedMediaBindingCleanupCursor */
         INSERT INTO retained_image_placement_binding_cleanup_cursors (is_singleton)
         VALUES (TRUE) ON CONFLICT DO NOTHING`,
     )
-  const progress = placementIds
-    ? null
-    : (
+  const progress = trackCursor
+    ? (
         await query<{ cursor_placement_id: string | null }>(
           `/* lockRetainedMediaBindingCleanupProgress */
            SELECT cursor_placement_id FROM retained_image_placement_binding_cleanup_cursors
            WHERE is_singleton FOR UPDATE`,
         )
       ).rows[0]
+    : null
   const { rows: candidates } = await query<{ placement_id: string; image_id: string }>(
     `/* listRetainedMediaBindingCleanupCandidates */
      SELECT placement_id, image_id FROM retained_image_placement_bindings
-     WHERE ($1::uuid[] IS NOT NULL AND placement_id = ANY($1::uuid[]))
-        OR ($1::uuid[] IS NULL AND ($2::uuid IS NULL OR placement_id > $2::uuid))
-     ORDER BY placement_id LIMIT $3`,
-    [placementIds ?? null, progress?.cursor_placement_id ?? null, pageSize + 1],
+     WHERE (
+       $1::uuid[] IS NOT NULL AND placement_id = ANY($1::uuid[])
+       AND ($3::boolean OR $2::uuid IS NULL OR placement_id > $2::uuid)
+     ) OR (
+       $1::uuid[] IS NULL AND ($2::uuid IS NULL OR placement_id > $2::uuid)
+     )
+     ORDER BY placement_id LIMIT $4`,
+    [
+      listedIds ?? null,
+      progress?.cursor_placement_id ?? null,
+      cursorPlacementIds === undefined,
+      pageSize + 1,
+    ],
   )
   const page = candidates.slice(0, pageSize)
   const pagePlacementIds = page.map(row => row.placement_id)
@@ -75,7 +93,7 @@ export async function cleanupRetainedMediaBindings(
     [locked.map(row => row.placement_id)],
   )
   const hasMore = candidates.length > pageSize
-  if (!placementIds)
+  if (trackCursor)
     await query(
       `/* checkpointRetainedMediaBindingCleanup */
        UPDATE retained_image_placement_binding_cleanup_cursors
