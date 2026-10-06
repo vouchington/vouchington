@@ -19,14 +19,12 @@ call answers a bounded `4xx`, and a valid call keeps its behavior. Most suites r
 through the shared `backend/test-helpers/staff-request-contract-matrix.mts` registrar, which asserts
 only the three statuses and the absence of a schema diagnostic for anonymous and non-staff callers.
 Validation runs before the first service or queue call by construction; the suites assert that
-nothing changed only for the routes named under [Side effects](#side-effects). Compiler-built carrier and schema
-assertions live in `staff-request-contract-coverage.mts` and
-`moderation-operations-request-contract-coverage.mts` next to the
-[API fixtures](../../../backend/test-helpers/api-fixtures/openapi/write-request-contracts.test.mts).
+nothing changed only for the routes named under [Side effects](#side-effects). Maintain checked-in carrier and schema data alongside handler types; the
+[fixture update flow](../../development/testing/backend/api-fixtures.md#update-flow) describes its ownership.
 
 ## Behavior changes
 
-Route-local shape checks that used to answer `400` are replaced by the generated contract, which
+Route-local shape checks that used to answer `400` are replaced by the declared contract, which
 answers `422`. Semantic checks (trim, length, range, cross-field, existence) keep their statuses.
 Typed request DTOs are closed, so a body with an unknown key or a value of the wrong type that a
 handler used to accept now answers `422` on every route below that reads a JSON body.
@@ -119,7 +117,7 @@ notes the anonymous cap.
 
 ## Query carriers
 
-Every query carrier on these routes goes through the generated contract, with `apiQuery` declared
+Every query carrier on these routes goes through the declared contract, with `apiQuery` declared
 inside the handler. Integer and paginated values are not coerced by the registry, so a route that
 owns a pagination parser follows this order:
 
@@ -143,9 +141,9 @@ The eleven routes previously skipped are validated: `GET /appeals`, `/disputes`,
 `/growth-metrics`, `/admin/moderation-analytics`, `/memberships/refundable-charges`, and
 `/admin/oauth-clients` (which had no remaining reason to skip once query preparation existed).
 
-## Carriers the generated schema does not check
+## Carriers the declared schema does not check
 
-- `POST /topic-recommendations`: the `Idempotency-Key` header is declared in the generated contract
+- `POST /topic-recommendations`: the `Idempotency-Key` header is declared in the declared contract
   but not passed to `validateRequestContract`. The contribution admission layer answers a malformed
   key with its own coded `400`, which is the documented status.
 - `GET /report-integrity/flags`, `/report-integrity/penalties`, `/vote-integrity/flags`, and

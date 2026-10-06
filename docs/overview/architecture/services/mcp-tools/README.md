@@ -27,7 +27,7 @@ value); the call path reports it through `onError` and returns the generic tool-
 never `structuredContent`. Tools without an output schema keep the text-only result, held to the same
 whole-response bound (step 4), so JSON escaping counts for them too.
 
-**One source of truth.** The generated `api-fixtures/v1/request-contracts.json` carries a
+**One source of truth.** The checked-in `api-fixtures/v1/request-contracts.json` carries a
 `responses` map with the response schema of every route whose 200 body is a named response type,
 keyed like `operations`, and a `components` map of every named type. `route-response-schema.mts` in
 `backend/tools` resolves an entry into a self-contained schema (recursive components stay a `$ref`
@@ -35,11 +35,20 @@ into a root `$defs`). `createGetMyEntityListTool` derives its `{ success, result
 single `meta.api` endpoint this way. A tool that reshapes the REST body, or has no REST twin, owns
 its schema, built from those components and the shapes in `output-schema-shapes.mts`, with a test
 that pins it to `request-contracts.json` where documented (`output-schema-pins.test.mts`).
-A route whose response schema is inline has no entry in `responses`; give it a named response type,
-run `pnpm run request-contracts:generate`, and then derive the tool's schema. The bundle's separate
+A route whose response schema is inline has no entry in `responses`; maintain its explicit schema
+and the corresponding tool declaration together. The bundle's separate
 `adminResponses` section preserves the 87 staff inline and non-200 fallback schemas previously
 consumed from OpenAPI. Staff tools read this section directly; `operations`, `responses`, and
 `components` keep their existing semantics, and runtime API behavior is unchanged.
+
+**Schema maintenance.** Tool execution and registration are handwritten. The checked-in request,
+response, and component schemas are explicit contract data; compiler discovery no longer maintains
+them. When a tool or its REST twin changes input/output shape, update the affected contract data,
+tool schemas, fixtures, and generated MCP catalog together. Keep positive and rejection coverage
+against actual handler results, including nullable fields, normal errors, and transformed outputs.
+Do not widen a schema or remove validation merely to make a mismatch pass. Runtime argument and
+structured-result validation remain enforced; broader automated drift detection awaits redesign.
+See the [fixture update flow](../../../../development/testing/backend/api-fixtures.md#update-flow).
 
 **Normal failure results.** A lookup tool that returns a miss (`{ success: false, error }` or
 `{ found: false, error }`) rather than throwing must admit that shape, or the miss fails
@@ -51,7 +60,7 @@ tool without an `outputSchema`, with no list of exceptions.
 
 **Paged results.** Paged tools reuse their REST twin's parsers (`@services/search-params`, and
 `parse-pagination.mts` in `@services/trending-posts` and `@services/trending-topics`), so cursors
-and limits match REST, and return `PageInfo` as `page_info`. The generated request bundle declares no
+and limits match REST, and return `PageInfo` as `page_info`. The checked-in request bundle declares no
 trending query parameters, so contract tests pin `after` and `limit`.
 
 ## Authorization

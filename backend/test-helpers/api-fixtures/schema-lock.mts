@@ -5,10 +5,8 @@ import {
 } from 'vouchington-tooling/api-fixtures'
 
 import { apiFixtureCases } from './cases.mts'
-import {
-  loadBackendResponseContracts,
-  type BackendResponseContract,
-} from './backend-contract-catalog.mts'
+import { backendResponseContracts } from './response-contracts.mts'
+import type { BackendResponseContract } from './response-contract-types.mts'
 
 export type ApiFixtureSchemaLock = FixtureSchemaLock
 
@@ -26,9 +24,7 @@ export function responseSchemaFor(id: string, key: string | undefined, body: unk
 }
 
 export function buildApiFixtureSchemaLock(
-  backendContracts: Record<string, BackendResponseContract> = loadBackendResponseContracts(
-    new Set(apiFixtureCases.map(fixtureCase => fixtureCase.backendResponseContractKey)),
-  ),
+  backendContracts: Record<string, BackendResponseContract> = backendResponseContracts,
 ): ApiFixtureSchemaLock {
   return buildFixtureSchemaLock({
     cases: apiFixtureCases.map(fixtureCase => ({

@@ -19,7 +19,7 @@ this shape and are described in
 ## Result shape
 
 Each tool owns a closed output schema (`backend/tools/mcp-post-output.mts`, `mcp-story-output.mts`)
-whose fields are picked from the generated REST `Post`, `Story`, `ViewRssFeedItem` and `PageInfo`
+whose fields are picked from the checked-in REST `Post`, `Story`, `ViewRssFeedItem` and `PageInfo`
 components, and `post-read-tools.output-schema.test.mts` pins every field to `request-contracts.json`. The
 result is `{ success: true, ... }` or `{ success: false, error }`, so expected bad input (a missing
 post, a malformed cursor) never surfaces as a tool failure. `after` is the opaque

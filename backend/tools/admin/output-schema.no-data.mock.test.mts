@@ -4,6 +4,20 @@ import { adminRouteOutputSchema } from './output-schema.mts'
 import { findSchemaViolation } from '../schema-validator.mts'
 
 describe('admin REST output schemas', () => {
+  it('retains inline staff schemas when no named response exists', () => {
+    const schema = adminRouteOutputSchema({
+      method: 'DELETE',
+      path: '/api/v1/users/:userId/suspension',
+    })
+    expect(schema).toMatchObject({ type: 'object', required: ['user'] })
+    expect(JSON.stringify(schema)).not.toContain('$ref')
+    expect(findSchemaViolation(schema, {})).not.toBeNull()
+  })
+  it('rejects staff tools without a checked-in response contract', () => {
+    expect(() =>
+      adminRouteOutputSchema({ method: 'GET', path: '/api/v1/missing-admin-contract' }),
+    ).toThrow('No checked-in admin response for GET:/api/v1/missing-admin-contract')
+  })
   it('keeps crawler response alternatives inside the required MCP object root', () => {
     const schema = adminRouteOutputSchema({ method: 'GET', path: '/api/v1/crawlers' })
     expect(schema).toMatchObject({ type: 'object' })

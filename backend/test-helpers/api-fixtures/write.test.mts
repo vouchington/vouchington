@@ -8,7 +8,10 @@ const manifest = JSON.parse(
   readFileSync(new URL('../../../api-fixtures/v1/manifest.json', import.meta.url), 'utf8'),
 ) as ApiFixtureManifest
 
-describe('fixture validation with a shared full response catalog', () => {
+describe('fixture validation with explicit response contracts', () => {
+  it('uses checked-in contracts without compiler discovery', () => {
+    expect(buildApiFixtureManifest()).toEqual(manifest)
+  })
   it('keeps fixture operations and explicit binary contracts in the canonical manifest', () => {
     const contracts = manifest.backendResponseContracts
     const extra = Object.values(contracts)[0]!
@@ -21,7 +24,7 @@ describe('fixture validation with a shared full response catalog', () => {
     expect(() => buildApiFixtureManifest(contracts)).toThrow(/Fixture contract validation failed/)
   })
 
-  it('retains fixture parameter spellings when full catalog routes use another spelling', () => {
+  it('retains fixture parameter spellings when explicit contract routes use another spelling', () => {
     const contracts = Object.fromEntries(
       Object.entries(manifest.backendResponseContracts).map(([key, contract]) => [
         key.replace(':communitySlug', ':communityIdOrSlug'),
@@ -39,7 +42,7 @@ describe('fixture validation with a shared full response catalog', () => {
     expect(() => buildApiFixtureManifest(contracts)).toThrow(/Fixture contract validation failed/)
   })
 
-  it('rejects ambiguous full catalog route spellings', () => {
+  it('rejects ambiguous explicit contract route spellings', () => {
     const key = 'GET:/api/v1/communities/:communitySlug'
     expect(() =>
       buildApiFixtureManifest({

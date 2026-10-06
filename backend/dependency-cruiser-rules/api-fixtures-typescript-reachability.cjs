@@ -33,8 +33,8 @@
 // 'backend-program.probes.test' and 'program-paths' are the only runtime `typescript` consumers
 // besides backend-program.mts. They use compiler-option enums, type flags, and diagnostic
 // formatting. They do not construct a program. Type-only imports are not runtime edges
-// (`dependencyTypesNot` below). The discovery engine that used to import `typescript` here now
-// lives in vouchington-tooling/api-contract-discovery.
+// (`dependencyTypesNot` below). API contract discovery is retired; PostgreSQL compiler checks
+// and independent schema utilities retain their existing upstream compiler boundaries.
 const LEGITIMATE_TYPE_GUARD_CONSUMERS = ['program-paths', 'backend-program.probes.test']
 
 // Entries above are interpolated into a RegExp string below; escape regex metacharacters so a

@@ -3,14 +3,13 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { stableStringify } from '@modules/utils/stable-stringify'
 import { writeGeneratedFiles } from 'vouchington-tooling/api-fixtures'
-import { routeShape } from 'vouchington-tooling/api-contract-discovery'
+import { routeShape, type BackendResponseContract } from './response-contract-types.mts'
 
 import { apiFixtureCases } from './cases.mts'
 import { validateFixtureContracts } from './fixture-contract-validation.mts'
-import { loadBackendResponseContracts } from './backend-contract-catalog.mts'
+import { backendResponseContracts as canonicalResponseContracts } from './response-contracts.mts'
 import { buildApiFixtureSchemaLock, responseSchemaFor } from './schema-lock.mts'
 import type { ApiFixtureManifest } from './types.mts'
-import type { BackendResponseContract } from './response-contract-types.mts'
 
 export { stableStringify } from '@modules/utils/stable-stringify'
 
@@ -32,7 +31,7 @@ export function buildApiFixtureManifest(
   )
   const backendResponseContracts = responseContracts
     ? selectFixtureContracts(responseContracts, requestedContractKeys)
-    : loadBackendResponseContracts(requestedContractKeys)
+    : selectFixtureContracts(canonicalResponseContracts, requestedContractKeys)
   validateFixtureContracts(apiFixtureCases, backendResponseContracts)
   return {
     version: 2,
@@ -65,7 +64,7 @@ function selectFixtureContracts(
     const contract = contracts[key] ?? byShape.get(contractKeyShape(key))
     if (contract) selected[key] = contract
   }
-  // Discovery retains explicit raw-body contracts even without a JSON fixture.
+  // Explicit raw-body contracts remain even without a JSON fixture.
   for (const [key, contract] of Object.entries(contracts)) {
     const root = contract.schema.root
     if (root.type === 'string' && root.format === 'binary') selected[key] = contract

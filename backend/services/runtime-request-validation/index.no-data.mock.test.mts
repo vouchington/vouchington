@@ -5,7 +5,7 @@ import { RuntimeRequestValidatorRegistry } from './index.mts'
 describe('RuntimeRequestValidatorRegistry', () => {
   const registry = new RuntimeRequestValidatorRegistry({
     version: 1,
-    source: 'compiler-extracted-request-contracts',
+    source: 'checked-in-request-contracts',
     components: {
       Name: { type: 'string', minLength: 1 },
     },
@@ -75,7 +75,7 @@ describe('RuntimeRequestValidatorRegistry', () => {
   it('rejects case-insensitive duplicate header names', () => {
     const headers = new RuntimeRequestValidatorRegistry({
       version: 1,
-      source: 'compiler-extracted-request-contracts',
+      source: 'checked-in-request-contracts',
       components: {},
       operations: {
         'POST:/api/v1/items': {
@@ -100,7 +100,7 @@ describe('RuntimeRequestValidatorRegistry', () => {
       () =>
         new RuntimeRequestValidatorRegistry({
           version: 1,
-          source: 'compiler-extracted-request-contracts',
+          source: 'checked-in-request-contracts',
           components: {},
           operations: { 'POST:/api/v1/items': { body: { $async: true, type: 'string' } } },
         }),

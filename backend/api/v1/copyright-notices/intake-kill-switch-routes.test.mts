@@ -1,4 +1,3 @@
-import { loadRegisteredRouteCatalog } from '@voucha/test-helpers/api-fixtures/backend-contract-catalog'
 import { describe, expect, it } from 'vitest'
 import { useDsaTransparencyReports } from '@voucha/test-helpers/dsa-switches'
 import { createTestUser } from '@voucha/test-helpers'
@@ -73,26 +72,6 @@ const routeClasses = {
 }
 const openRoutes = [...routeClasses.inCaseResponse, ...routeClasses.staff]
 
-const MUTATION_METHODS = new Set(['DELETE', 'PATCH', 'POST', 'PUT'])
-const registeredRoutes = loadRegisteredRouteCatalog()
-  .filter(
-    route =>
-      route.routeTemplate.startsWith('/api/v1/copyright-') && MUTATION_METHODS.has(route.method),
-  )
-  .map(route => `${route.method}:${route.routeTemplate}`)
-
-function classificationGaps(routes: string[]) {
-  const counts = new Map<string, number>()
-  for (const route of Object.values(routeClasses).flat()) {
-    counts.set(route, (counts.get(route) ?? 0) + 1)
-  }
-  return {
-    unclassified: routes.filter(route => !counts.has(route)),
-    duplicated: [...counts].filter(([, count]) => count > 1).map(([route]) => route),
-    stale: [...counts.keys()].filter(route => !routes.includes(route)),
-  }
-}
-
 function send(agent: ReturnType<typeof createRequest>, route: string) {
   const separator = route.indexOf(':')
   const method = route.slice(0, separator).toLowerCase() as 'delete' | 'patch' | 'post' | 'put'
@@ -107,19 +86,6 @@ async function memberRequest() {
   await agent.authenticateAs(await createTestUser())
   return agent
 }
-
-describe('copyright intake kill switch route classification', () => {
-  it('classifies every non-GET copyright route into exactly one class', () => {
-    expect(registeredRoutes.length).toBeGreaterThan(0)
-    expect(classificationGaps(registeredRoutes)).toEqual({
-      unclassified: [],
-      duplicated: [],
-      stale: [],
-    })
-    const added = 'POST:/api/v1/copyright-notices/:id/new-filings'
-    expect(classificationGaps([...registeredRoutes, added]).unclassified).toEqual([added])
-  })
-})
 
 describe('copyright routes with intake switched off', () => {
   useCopyrightIntakeEnvironment({ enabled: false })

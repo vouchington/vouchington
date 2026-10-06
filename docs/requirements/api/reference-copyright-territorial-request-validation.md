@@ -4,7 +4,7 @@
 
 The EU, UK, and jurisdiction policy routes under `backend/api/v1/copyright-notices/` validate their
 path and JSON body with `validateRequestContract` immediately before the first service call.
-[Request validation](reference-request-validation.md) owns the ordering and the generated contract
+[Request validation](reference-request-validation.md) owns the ordering and the declared contract
 mechanics; the [Copyright Notices API](v1/copyright-notices/README.md) owns the legal flow. This
 page records the covered operations, the order each handler keeps, and which status each malformed
 input keeps or changes. Other copyright route families (notice, appeal, and counter-notice
@@ -36,13 +36,11 @@ diagnostic. EU notice receipt permits guests and uses optional authentication. A
 | `POST /copyright-{eu,uk}-notices/:id/acknowledgment-failures`                    | `id` path only                                                                                       |
 | `POST /copyright-jurisdiction-policies/:id/withdrawals`                          | `id` path only                                                                                       |
 
-The request types live in `territorial-request-types.mts` beside the routes, and the compiler
-extracts the schema from them, so the request-contract bundle and the runtime
-check share one source. The EU handlers are split between `eu-copyright-routes.mts` (claimant) and
-`eu-copyright-staff-routes.mts` (staff and reporting) to stay inside the file-length limit.
-Compiler-built assertions in
-[`copyright-territorial-request-contract-coverage.test.mts`](../../../backend/test-helpers/api-fixtures/openapi/copyright-territorial-request-contract-coverage.test.mts)
-verify the emitted carriers, and
+The request types live in `territorial-request-types.mts` beside the routes. Maintain the checked-in request
+contract schemas alongside these types; compiler discovery is removed. See the
+[fixture update flow](../../development/testing/backend/api-fixtures.md#update-flow).
+The EU handlers remain split between `eu-copyright-routes.mts` and `eu-copyright-staff-routes.mts`.
+Runtime tests in
 [`territorial-claimant-request-contract.test.mts`](../../../backend/api/v1/copyright-notices/territorial-claimant-request-contract.test.mts)
 and
 [`territorial-staff-request-contract.test.mts`](../../../backend/api/v1/copyright-notices/territorial-staff-request-contract.test.mts)
@@ -95,7 +93,7 @@ look at.
   `parseTerritorialRedressDecision` with `422` and `rationale is required`, the message the service
   already gave a missing or blank one. The staff role `403` is on the route and runs first, so no
   status or message changes.
-- String lengths are not in the generated schema. Every length bound stays in the parsers and
+- String lengths are not in the declared schema. Every length bound stays in the parsers and
   services (for example `policy_version` at 64, `authority_reference` at 200, `contact` at 4096,
   `hosted_use_url` at 2048, free-text receipt fields at 50,000, and `public_explanation` at 2,000).
   The decision parser also requires `targets` for `restrict` and forbids them for `no_action`; each
@@ -134,7 +132,7 @@ before them, as a missing field already did:
   route tests pin the missing-notice `404` on the redress, supervised complaint, and statement or
   review routes, and the recorded-decision and recorded-policy `409`, each beside the `422`.
 
-## Carriers the generated schema does not check
+## Carriers the declared schema does not check
 
 Path ids are plain strings, so `validateUUIDParam` stays and answers a malformed id first. The three
 path-only operations (both acknowledgment-failure routes and the policy withdrawal) read no body,

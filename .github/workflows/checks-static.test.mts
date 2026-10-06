@@ -115,18 +115,24 @@ describe('checks-static workflow', () => {
     expect(job).not.toContain('Typecheck backend and email templates')
   })
 
-  it('compiles all API contracts once and rejects tracked or untracked canonical drift', () => {
+  it('checks PostgreSQL contracts and explicit fixtures and rejects canonical drift', () => {
     const job = jobSection('static-backend')
     const steps = parsed.jobs?.['static-backend']?.steps ?? []
-    const compilation = steps.find(step => step.name === 'Check compiled API contracts')
+    const compilation = steps.find(
+      step => step.name === 'Check PostgreSQL contracts and API fixtures',
+    )
     const apiFixtureSnapshots = steps.find(
       step => step.name === 'Check canonical API snapshot git state',
     )
-    expect(compilation).toMatchObject({ run: 'pnpm run api-contracts:check' })
-    expect(numberField(compilation?.['timeout-minutes'], 'API compilation')).toBeGreaterThan(
+    expect(compilation).toMatchObject({
+      run: 'pnpm run backend-row-contracts:check\npnpm run api-fixtures:check\n',
+    })
+    expect(numberField(compilation?.['timeout-minutes'], 'contract check')).toBeGreaterThan(
       numberField(apiFixtureSnapshots?.['timeout-minutes'], 'snapshot Git guard'),
     )
-    expect(steps.filter(step => step.run?.includes('pnpm run api-contracts:check'))).toHaveLength(1)
+    expect(
+      steps.filter(step => step.run?.includes('pnpm run backend-row-contracts:check')),
+    ).toHaveLength(1)
     expect(apiFixtureSnapshots).toMatchObject({
       run: `git diff --exit-code -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses api-fixtures/v1/request-contracts.json
 untracked_generated_files="$(git ls-files --others --exclude-standard -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses api-fixtures/v1/request-contracts.json)"
@@ -140,7 +146,7 @@ fi\n`,
     expect(apiFixtureSnapshots?.run).not.toContain('vitest')
     expect(apiFixtureSnapshots?.run).not.toContain('api-fixtures:generate')
     expect(apiFixtureSnapshots?.run).not.toContain('openapi:generate')
-    expect(job.indexOf('- name: Check compiled API contracts')).toBeGreaterThan(
+    expect(job.indexOf('- name: Check PostgreSQL contracts and API fixtures')).toBeGreaterThan(
       job.indexOf('- name: Check backend dependencies'),
     )
     expect(steps.indexOf(apiFixtureSnapshots!)).toBeGreaterThan(steps.indexOf(compilation!))

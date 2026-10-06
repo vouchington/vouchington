@@ -494,13 +494,12 @@ shape, so it is not AST-grep-matchable — the same reason the fake-timer runtim
 is a runtime guard rather than a static rule. The self-cleaning helper is the enforcement mechanism:
 using it makes cleanup the path of least resistance instead of an easily-forgotten manual step.
 
-### Compiler-backed contract tests
+### Compiler-backed row and schema tests
 
-`loadBackendProgram()` (`backend/test-helpers/api-fixtures/backend-program.mts`) memoizes one shared
-`ts.Program` while its compiler inputs and root set are unchanged — `ts.createProgram` is the
-expensive step, and every contract loader (`loadBackendResponseContracts`,
-`loadBackendRequestContracts`, `loadBackendQueryContracts`, the registered-route catalog) must
-reuse it rather than rebuilding. Warm freshness checks reparse the backend compiler configuration
+`loadBackendProgram()` (`backend/test-helpers/api-fixtures/backend-program.mts`) memoizes the
+program used by independent PostgreSQL row checks while its compiler inputs and root set are unchanged.
+API request/response discovery and the internal OpenAPI builder are removed. Warm freshness checks
+reparse the backend compiler configuration
 and replay the normalized, deduplicated filesystem decisions made by the exact CompilerHost that
 built the program: file reads and existence, directory existence and listings, and realpath results.
 That graph includes source inputs, package metadata and other module-resolution-affecting files,
@@ -512,13 +511,9 @@ text with a later disk snapshot. Added/deleted roots, deleted existing inputs, c
 dependencies, package.json changes, and newly satisfied failed lookups rebuild the program and
 advance an opaque generation.
 
-Every derived loader must call `loadBackendProgram()` before checking its own result cache and key
-that cache by the returned generation. One generation change therefore invalidates response,
-request, query, and registered-route results atomically rather than allowing an early derived-cache
-hit to hide stale compiler inputs. `getBackendProgramBuildCount()` exposes a module-level counter
-for this. The canonical static compilation job shares one settled backend program while verifying
-all current generated artifacts. The former full-backend multi-generation Vitest integrations are
-removed; tiny product catalog generation/signature composition coverage is a separate follow-up.
+`getBackendProgramBuildCount()` exposes the independent program-build counter. Keep compiler
+invalidation tests confined to that owner; fixture and runtime-schema checks read explicit contract
+records without discovering backend handlers.
 The bounded attempt loop
 calls `settleBuild` from `vouchington-tooling/compiler-build`. `backend-program-settlement.mts`
 keeps the three-attempt bound and the backend terminal error; its exhaustive retry, configuration
@@ -539,16 +534,14 @@ inputs as deterministic.
 String-source contract suites use `buildVirtualProgramMatrix()` from
 `backend/test-helpers/api-fixtures/virtual-program.mts`. Declare every named source for the file,
 build the matrix once in `beforeAll` as `buildVirtualProgramMatrix(import.meta, sources)`, and
-pass the shared program plus the requested source file to the lower-level discovery function. The
+pass the shared program plus the requested source file to the lower-level schema function. The
 module-execution identity is structural: the helper rejects a second successful build for that
 execution while allowing a watch rerun of the same file. The lifecycle rule requires the exact
 `import.meta` argument so a synthetic owner cannot bypass that cardinality check. Each virtual file is an
 independent module, and diagnostics are checked when that source is requested, so one expected
 failure case does not poison its siblings.
-The generic virtual discovery suites now live in `vouchington-tooling/api-contract-discovery`.
-Production Bluesky and Fediverse request-body spot checks belong to `openapi/write-request-contracts.test.mts`,
-which resolves them from the executable request bundle that file already builds and rejects missing or
-unavailable bodies; do not add a second full backend-program load to the request inference suite.
+Runtime request-body assertions read the checked-in executable bundle. Exercise meaningful
+carrier behavior in route tests without adding full backend discovery to schema tests.
 The scope-aware Oxlint `voucha/backend-contract-program-construction-location` rule keeps TypeScript
 compiler-host, program, and language-service factories owned by only `backend-program.mts` and
 `virtual-program.mts`, including bracket and optional access, aliases, lexical shadows, and
@@ -578,19 +571,7 @@ excluded. Keep the builder under its direct value import name: value-import alia
 and property/destructuring extraction are banned because AST-grep cannot trace an extracted
 function value to its eventual call site. Type-only aliases remain allowed.
 
-Cold-build time and warm-assertion time are different budgets — conflating them under one constant
-previously produced inconsistent per-file timeouts (15s vs 60s) that actually measured different
-builds. `backend/test-helpers/api-fixtures/cold-build-budget.mts` exports three intentionally distinct
-constants instead:
-
-- `COLD_BACKEND_PROGRAM_TIMEOUT_MS` — the full `backend/tsconfig.json` type-check via
-  `loadBackendProgram()`.
-- `COLD_VIRTUAL_PROGRAM_TIMEOUT_MS` — one `buildVirtualProgramMatrix()` string-source build for the
-  test file.
-- `COLD_OPENAPI_BUILD_TIMEOUT_MS` — the retained internal OpenAPI builder used by request-contract generation; public-spec generation and Redoc validation are retired.
-
-Use the constant that matches what the test actually builds. A test that intentionally forces
-multiple full backend program builds multiplies `COLD_BACKEND_PROGRAM_TIMEOUT_MS` by its exact
-expected build count. A bounded-retry test uses the production maximum attempt constant instead,
-preserving the per-build ceiling without applying a single-build budget to rebuild coverage. Do not
-reintroduce a local `coldTypeScriptProgramTimeoutMs`-style constant in a new contract test.
+`backend/test-helpers/api-fixtures/cold-build-budget.mts` retains
+`COLD_VIRTUAL_PROGRAM_TIMEOUT_MS` for one independent virtual schema-extraction program.
+The full API discovery and OpenAPI timeout tiers are removed with their producers. Do not
+reintroduce compiler discovery as a fixture or runtime-request acceptance gate.

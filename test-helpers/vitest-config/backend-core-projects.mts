@@ -49,9 +49,7 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
         'backend/test-helpers/services/users/test-support.test.mts',
         'backend/test-helpers/workers/entity-listeners/test-support.test.mts',
         'backend/test-helpers/entities/bluesky-link-authorizations.test.mts',
-        // Canonical contract assertions read artifacts verified by static-backend's compiler job.
-        'backend/test-helpers/api-fixtures/openapi/write-request-contracts.test.mts',
-        'backend/test-helpers/api-fixtures/backend-contract-catalog.hardening.test.mts',
+        // Canonical contract assertions read checked-in artifacts validated by static-backend.
         'backend/test-helpers/api-fixtures/native-moderation-optional-contracts.test.mts',
       ],
       testTimeout: 15_000,
@@ -62,14 +60,10 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
     extends: true,
     test: {
       pool: 'forks',
-      // These tests consume generated artifacts; full backend compilation belongs to static-backend.
+      // These tests consume checked-in contracts; PostgreSQL compilation belongs to static-backend.
       isolate: false,
       name: 'backend-contract-artifacts',
-      include: [
-        'backend/test-helpers/api-fixtures/openapi/write-request-contracts.test.mts',
-        'backend/test-helpers/api-fixtures/backend-contract-catalog.hardening.test.mts',
-        'backend/test-helpers/api-fixtures/native-moderation-optional-contracts.test.mts',
-      ],
+      include: ['backend/test-helpers/api-fixtures/native-moderation-optional-contracts.test.mts'],
       exclude: ['**/node_modules/**', '**/.git/**'],
       testTimeout: 60_000,
       hookTimeout: 60_000,

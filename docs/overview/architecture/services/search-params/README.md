@@ -40,5 +40,5 @@ references, rather than copied here.
 
 - Parent: [../AGENTS.md](../../../../../backend/services/AGENTS.md)
 - Pagination and query metadata: [../../modules/pagination/README.md](../../backend/modules/pagination/README.md)
-- API fixture and request-contract generation: [../../test-helpers/api-fixtures/README.md](../../../../development/testing/backend/api-fixtures.md)
+- API fixtures and explicit request contracts: [../../test-helpers/api-fixtures/README.md](../../../../development/testing/backend/api-fixtures.md)
 - Search utils module: [../../modules/search-utils/README.md](../../backend/modules/search-utils/README.md)

@@ -17,7 +17,7 @@ import { requireAuth, validateRequestContract } from '../../response-helpers.mts
 // `apiQuery(...)`/`ctx.json(...)` call (list), `apiRequestContract<Key, T>(key)` marker call
 // (rename/delete), and `ctx.setStatus(204)` call (rename/delete) directly in its own handler.
 // A `ctx.json(...)` or streamed JSON call inside a function invoked from more than one route is
-// rejected by `response-contract-ambiguous-attribution.mts` instead of being omitted from the
+// represented explicitly in the checked-in response contracts instead of omitted from the
 // generated contract. Request-body reads in a shared helper are still not attributed to one
 // route, so those markers stay at each caller too. Neither `renameMfaFactor` nor
 // `deleteMfaFactor` sets the response status itself; each caller does.

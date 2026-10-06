@@ -5,7 +5,7 @@
 The repeat-infringer routes and the staff review queue under `backend/api/v1/copyright-notices/`
 validate their path, query, and JSON body with `validateRequestContract` immediately before the first
 service call. [Request validation](reference-request-validation.md) owns the ordering and the
-generated contract mechanics; the [Copyright Notices API](v1/copyright-notices/README.md) owns the
+declared contract mechanics; the [Copyright Notices API](v1/copyright-notices/README.md) owns the
 legal flow. This page records the covered operations, the order each handler keeps, and which status
 each malformed input keeps or changes. Other copyright route families have their own pages, listed
 under [Route-family references](reference-request-validation.md#route-family-references); the form-intake,
@@ -25,11 +25,10 @@ diagnostic. A contract `422` names only the carrier (`Invalid request body` or `
 | `POST /copyright-repeat-infringer-accounts/:accountUserId/reinstatements` | Closed `CopyrightRepeatInfringerReinstatementRequest` and path |
 | `GET /copyright-notices/review-queue`                                     | `after` and `limit` (1 to 100, default 100) query              |
 
-The request types live in `repeat-infringer-request-types.mts` beside the routes, and the compiler
-extracts the schema from them, so the request-contract bundle and the runtime
-check share one source. Compiler-built assertions in
-[`copyright-staff-request-contract-coverage.test.mts`](../../../backend/test-helpers/api-fixtures/openapi/copyright-staff-request-contract-coverage.test.mts)
-verify the emitted carriers, and
+The request types live in `repeat-infringer-request-types.mts` beside the routes. Maintain the checked-in request
+contract schemas alongside these types; compiler discovery is removed. See the
+[fixture update flow](../../development/testing/backend/api-fixtures.md#update-flow).
+Runtime tests in
 [`repeat-infringer-request-validation.test.mts`](../../../backend/api/v1/copyright-notices/repeat-infringer-request-validation.test.mts)
 verifies order, status, and no-write behavior against the real database.
 
@@ -68,7 +67,7 @@ for a body key the parsers did not look at.
 - No status code changes for a valid request, and none for an invalid request that already answered
   with a `4xx`.
 
-## Carriers the generated schema does not check
+## Carriers the declared schema does not check
 
 `GET /copyright-notices/review-queue` declares its query with `apiQuery` and validates through
 `parseAndValidatePaginatedRequest`, but the shared pagination parser owns every query rejection
@@ -76,7 +75,7 @@ for a body key the parsers did not look at.
 a `limit` outside 1 to 100) and runs first. The carrier is therefore a drift guard: it cannot turn a
 request the parser accepted into a `422`.
 
-String lengths are not in the generated schema. Path ids are plain strings, so `validateUUIDParam`
+String lengths are not in the declared schema. Path ids are plain strings, so `validateUUIDParam`
 stays.
 
 ## Specialized ingress

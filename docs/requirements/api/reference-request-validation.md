@@ -3,7 +3,7 @@
 [Back to API Routes](README.md#route-helpers)
 
 Routes authenticate and complete admission, visibility, suspension, and non-mutating ownership
-preflights before detailed generated request validation. The generated path/body/query check then
+preflights before detailed declared request validation. The declared path/body/query check then
 runs before semantic resolution or writes; services retain authorization guards and transactional
 rechecks. A lag-sensitive mutation preflight reads from the primary when it must observe a
 preceding write.
@@ -12,30 +12,29 @@ preceding write.
 flowchart LR
   admission[auth and admission] --> preflight[visibility or ownership preflight]
   preflight --> prepare[pure query preparation]
-  prepare --> contract[generated path body query validation]
+  prepare --> contract[declared path body query validation]
   contract --> resolve[semantic resolution]
   resolve --> recheck[service authorization and transactional recheck]
   recheck --> write[service write]
 ```
 
 `validateRequestContract` is backed by `@services/runtime-request-validation`, which compiles the
-generated bundle with `@vouchington/request-contract-validation`. Routes use the adapter rather
+checked-in bundle with `@vouchington/request-contract-validation`. Routes use the adapter rather
 than its registry. A 422 names the carrier and does not include a JSON pointer. Signature-verified and raw-body routes keep their specialized
 parsers. Query routes prepare a normalized wire projection before asynchronous identifier
 resolution, preserving pagination clamping and malformed limit/cursor 400 behavior while malformed
 typed values remain visible for 422. There is no shared Ajv coercion, and UUID routes retain
-`validateUUIDParam` alongside generated path validation. A paginated list route runs its pagination
+`validateUUIDParam` alongside declared path validation. A paginated list route runs its pagination
 parser first, overwrites `limit` and `after` in the prepared query with the parsed values, and then
 validates, so clamping and the parser's `400` survive and only the filters are checked;
 [`validate-paginated-query.mts`](../../../backend/api/validate-paginated-query.mts) wraps those steps.
 A lenient filter (an unknown enum that falls back to its default, or an ignored key) is validated
 from its settled value so it cannot answer `422`.
 
-A typed raw-body declaration or explicit request-contract marker must emit a meaningful body
-schema: invoking the adapter against an empty object is not coverage. Compiler-built request-bundle
-assertions in [API fixtures](../../../backend/test-helpers/api-fixtures/openapi/write-request-contracts.test.mts) verify
-emitted carriers and schemas; route HTTP tests verify invocation order, status, and no-write
-behavior.
+An exposed request carrier must have a meaningful declared schema; invoking the adapter against
+an empty object is not coverage. Maintain the checked-in bundle alongside handler types through the
+[fixture update flow](../../development/testing/backend/api-fixtures.md#update-flow). Route HTTP tests
+verify carrier behavior, invocation order, status, and rejected execution without compiler discovery.
 
 ## Route-family references
 

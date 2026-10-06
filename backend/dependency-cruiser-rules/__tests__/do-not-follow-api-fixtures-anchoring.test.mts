@@ -37,8 +37,7 @@ describe('backend/.dependency-cruiser.cjs doNotFollow.path api-fixtures/ anchori
     {
       alternative: 'build',
       excludedOutsideApiFixtures: 'backend/services/foo/build/output.mts',
-      followedInsideApiFixtures:
-        'backend/test-helpers/api-fixtures/openapi/build-openapi-document.mts',
+      followedInsideApiFixtures: 'backend/test-helpers/api-fixtures/build/output.mts',
     },
     {
       alternative: 'fixtures',

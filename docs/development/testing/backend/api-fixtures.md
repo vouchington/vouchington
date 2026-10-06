@@ -8,90 +8,35 @@ This directory is the source for the generated shared API fixture corpus in
 Web consumers bind each generated response to its exact TypeScript response type and production
 wrapper invocation through the [web fixture declarations](../web/api-responses.md#shared-fixture-declarations).
 
-## Backend Compilation and Artifact Assertions
+## Contract Data and Artifact Assertions
 
-The real backend is compiled by `pnpm run api-contracts:check` in the static backend job. One
-settled program verifies fixture and executable request snapshots, exact query descriptors,
-registered-route completeness and PostgreSQL producer row types. Artifact assertions in Vitest read
-the committed outputs after that job passes. Tiny compiler-host and bounded-settlement tests retain
-filesystem invalidation and retry coverage; Vitest does not repeatedly compile the full backend.
-The checker shares one full response extraction with fixture validation and request-contract generation.
-Its grouped phase logs report build, catalog, fixture and snapshot durations in CI. Query and header validation reuse the full catalog when their known response set covers its operations.
-Fixture selection preserves requested parameter spellings, exact response variants and explicit
-binary contracts; missing fixture contracts still fail validation.
+The checked-in `backendResponseContracts` in `api-fixtures/v1/manifest.json` are the explicit
+response contract data. Fixture cases remain the source for generated example bodies and their
+metadata. `pnpm run api-fixtures:check` validates those cases against the declared contracts and
+checks the manifest, schema lock, and response snapshots without discovering backend routes.
+`pnpm run backend-row-contracts:check` independently verifies PostgreSQL producer row types.
+
+Compiler-based API contract discovery and OpenAPI publication are removed pending contract
+redesign. Current request, response, and MCP schema payloads are preserved. These checks do not
+prove that every backend handler still matches its declared schema; focused handler and tool
+integration tests must exercise that boundary when a contract changes.
 
 ## Backend Response Contracts
 
-Generic contract-schema extraction, the `app.route`/`ctx` discovery engine, fixture-contract
-validation, schema-lock hashing, virtual program matrices, and generated-file IO live in
-`vouchington-tooling` (`contract-schema`, `api-contract-discovery`, and `api-fixtures` subpaths).
-This directory injects Voucha knobs (`ApiUuidContract` / `ApiArrayContract`), keeps the shared
-compiler program and its result cache, and owns fixture cases plus the generate CLIs.
+Fixture-contract validation, schema-lock hashing, and generated-file IO remain upstream in
+`vouchington-tooling/api-fixtures`. This directory owns fixture cases, explicit response contract
+data, and the fixture generation CLI. It does not infer API contracts from TypeScript handlers.
 
-Backend TypeScript response expressions are authoritative. During generation,
-`vouchington-tooling/api-contract-discovery` resolves each fixture's method and route to the
-corresponding `ctx.json(...)`, streamed JSON object, 204 response, or explicit `apiResponse(...)`
-variant. `backend-contract-catalog.mts` supplies the shared program, route files, and Voucha schema
-aliases, then extracts a structural JSON schema from the inferred TypeScript type. Generation
-validates the fixture in both directions:
+Update an affected response contract together with its handler, fixture cases, and consumers.
+Fixture validation checks the keyed route and status, required fields, rejected extra fields,
+nullable values, and the recorded structural schema. Preserve exact variants and raw-body contracts.
+A fixture must use its declared `backendResponseContractKey`; route parameter spelling is normalized
+when matching route shapes.
 
-- the fixture method and normalized route shape must match the exact keyed backend emission;
-- the fixture status must be one of that exact emission's declared statuses, rather than any status
-  documented elsewhere on the same route;
-- every required backend field must be present in the fixture;
-- every fixture field must be declared by the backend response type;
-- optional backend fields are required only when the fixture scenario includes them;
-- nullable values, arrays, tuples, unions, intersections, dictionaries, recursive references,
-  promises, and `toJSON()` serialization are preserved;
-- `unknown` remains an intentionally open boundary, while `any` fails generation.
-
-A `ctx.json(...)` call is attributed to exactly one route by static resolution. When two or more
-routes share a helper function that would otherwise contain the discovery-relevant call, keep the
-`ctx.json(...)` call at each route's own call site instead, and have the shared helper return the
-response body for the route to emit. See `completeMfaVerification` in
-`backend/api/v1/sessions-authentication/auth-mfa-routes/complete-mfa-verification.mts` for the
-pattern (used because `auth-mfa-totp-verification-post.mts` and
-`auth-mfa-passkeys-authentication-verification-post.mts` share it). Generation rejects a `ctx.json(...)` or streamed JSON call whose enclosing function is
-registered on more than one distinct route, so that success body cannot disappear from the
-generated contract. The one-route-per-helper limit is unchanged. A hand-rolled 4xx branch, and a
-dynamic-status `ctx.json({ error })` payload, stay out of the success contract.
-
-Response metadata belongs to each concrete emission, not to the route as a whole. The extractor
-uses the nearest preceding `ctx.setStatus(...)` in the emission's active lexical branch; a dynamic
-nearest status makes that operation unavailable. JSON, XML, literal `text/csv` pipelines, and
-bodyless responses retain separate media/body contracts. Variants merge only within the same status
-and media type, and a failed secondary variant makes the whole operation unavailable rather than
-silently disappearing.
-
-The contract catalog includes literal API-v1 route registrations independently of fixture
-coverage. SSE frames use `apiSseFrame` at each concrete route's emission callback, with typed
-payloads supplied by subscription helpers. Keepalive comments carry no event payload, and routine
-lifecycle expiry reconnects without inventing an error event.
-
-Opaque SDK responses use `apiOpenApiHttpResponse` with the shared `ApiHttpResponse` carrier. The
-carrier describes reachable status, media and body variants without reading or replacing the
-response. Stateless MCP POST responses remain JSON (single replies or reply arrays), with bodyless
-202 notification acknowledgements and JSON-RPC errors at 200 or 400. The explicit 400 schema also
-includes framework admission errors. Unconditional 405 handlers retain only the shared error
-response. Unknown emissions and unsupported payload variants fail extraction; the generated
-response and request unavailable-route arrays must both remain empty.
-
-The default contract key is `METHOD:/route/template`. Use an explicit
-`backendResponseContractKey` only when a route has multiple response variants, and wrap that
-backend response with the matching `apiResponse('METHOD:/route/template#variant', body)` key.
-Route templates must match the actual backend route shape; parameter names may differ because the
-registry and fixture validator normalize parameter segments while resolving the binding.
-
-Use `apiNoContent('METHOD:/route/template')` only for fixture-backed bodyless responses. When a
-fixed-status bodyless response is emitted inside a helper the extractor cannot follow, use the
-contract-only `apiOpenApiNoContent('METHOD:/route/template', 302)` marker instead. It never changes
-runtime status or emits a response, does not create a fixture contract, and requires matching route
-and numeric status literals.
-
-`api-fixtures/v1/manifest.json` version 2 publishes each fixture's
-`backendResponseContractKey` and the canonical backend schemas and hashes in
-`backendResponseContracts`. `schema-lock.json` locks each contract hash together with the fixture
-IDs that exercise it. These are build-time checks only and do not alter API wire responses.
+`api-fixtures/v1/manifest.json` version 2 publishes those contracts and their fixture bindings.
+`schema-lock.json` locks each contract hash together with the fixture IDs that exercise it.
+These checks do not alter API wire responses. SSE and HTTP helpers retain their runtime behavior;
+there is no compiler-discovery acceptance gate.
 
 See the [Client Parity Matrix](../../../requirements/CLIENT-PARITY-MATRIX.md) for the client
 round-trip invariant enforced on top of this corpus.
@@ -169,73 +114,44 @@ applies this schema.
 
 ## Executable Request and Query Contracts
 
-`api-fixtures/v1/request-contracts.json` is the generated executable request bundle.
-TypeScript request contracts remain authoritative. The public OpenAPI JSON and Redoc reference
-are retired; the generator still uses the internal legacy OpenAPI builder to assemble this bundle.
-That implementation remains temporary upstream debt and retains its full compiler-build cost.
+`api-fixtures/v1/request-contracts.json` is the checked-in executable request and response bundle.
+Maintain it explicitly alongside exposed handler contracts. The compiler-discovery generator,
+its snapshot check, the internal OpenAPI builder, and public OpenAPI/Redoc publication are removed.
 
-The bundle also carries a top-level `responses` map, a sibling of `operations` so the request
-validator never mistakes it for request coverage. It holds the 200 response schema of each route
-whose JSON body is exactly one named component, keyed like `operations` (`GET:/api/v1/my/cards`),
-and reuses the shipped `components`. MCP tools derive their `outputSchema` from it through
+Only `operations` defines request coverage. The sibling `responses` map holds named 200 JSON
+response schemas and reuses `components`. MCP tools derive output schemas through
 `backend/tools/route-response-schema.mts`; see
 [Structured tool results](../../../overview/architecture/services/mcp-tools/README.md#structured-tool-results).
-A route with an inline or absent response schema has no entry in `responses`.
+The sibling `adminResponses` map preserves the 87 staff inline and non-200 fallback schemas
+previously consumed from OpenAPI. Runtime request validation and MCP output validation retain
+these same schema payloads and one reader.
 
-The sibling `adminResponses` section preserves the 87 staff inline and non-200 fallback schemas
-previously consumed from the published OpenAPI document. Staff tools now read those schemas from
-this runtime bundle. The existing `operations`, `responses`, and `components` retain their semantics;
-this changes the schema source without changing runtime API behavior or adding a second reader.
-
-The request bundle combines response contracts with query parameters from
-explicit `apiQuery('METHOD:/route', ...carriers)` markers in backend route handlers. The generator
-uses the TypeScript checker to inspect each carrier's typed `queryContract`; it never imports or
-executes backend route or parser modules.
-
-Generation fails closed when a marker has a widened or non-literal operation key, is outside its
-matching route handler, references a route without a response contract, has no carrier, exposes
-widened parameter names, uses an unknown descriptor, appears twice for one operation, or composes
-duplicate parameter names. Parsers with `queryContract` metadata are not published unless a route
-opts in with a marker.
-
-Schemas describe logical query values rather than every wire-compatible spelling:
-
-- UUID and URI strings keep their schema formats; UUID-or-URI parameters publish either form.
-- Integers publish their configured minimum, maximum, and default.
-- Booleans publish `true`/`false`; nullable boolean sentinels also publish the literal string `null`.
-- Plural aliases publish one comma-separated value with `style: form` and `explode: false`.
-  Singular aliases remain scalar. Runtime support for repeated keys and legacy boolean spellings is
-  intentionally not the canonical query-contract shape.
-
-Query parameters are optional by default. Required enum and string parameters use
-`requiredQueryEnum` and `requiredQueryString` in the route's typed carrier. Parameters are sorted
-by name after route-ordered path parameters. See
-[`@modules/pagination`](../../../overview/architecture/backend/modules/pagination/README.md) for the metadata builders and
-[`@services/search-params`](../../../overview/architecture/services/search-params/README.md) for parser ownership.
+Update request bodies, path/header/query carriers, response components, and affected MCP schemas
+together. Route parser metadata does not regenerate this bundle. Query schemas describe logical
+values: integer bounds/defaults, boolean and nullable sentinels, UUID/URI formats, and comma-separated
+plural aliases must still match the settled values passed to runtime validation. Keep focused route
+tests for normalization, admission order, invalid input, and rejected execution.
 
 ## Update Flow
 
-- Edit fixture source in this directory only (for static responses, update
-  `static-response-bodies.json`).
-- Run `pnpm run api-fixtures:generate`.
-- Run `pnpm run request-contracts:generate` when response or query contracts change.
-- Commit the source change, `api-fixtures/v1/manifest.json`, `api-fixtures/v1/schema-lock.json`,
-  any generated response JSON changes, and `api-fixtures/v1/request-contracts.json` when its contract changes.
-- `pnpm run api-contracts:check` verifies all canonical snapshots and compiler acceptance together.
-  `pnpm run api-fixtures:check` remains the narrower response-fixture convenience check.
-- CI checks these snapshots and rejects tracked or untracked drift in
-  `checks-static.yml`'s `static-backend` job.
-- Run `pnpm run request-contracts:check` before pushing.
+- Update the handler, affected explicit contract data, and fixture case source together.
+  For static example responses, update `static-response-bodies.json`.
+- Run `pnpm run api-fixtures:generate` and commit the manifest, schema lock, and response changes.
+- Update `api-fixtures/v1/request-contracts.json` directly when its contract changes; update
+  affected MCP tool schemas and regenerate their catalog through the existing catalog tooling.
+- Run `pnpm run api-fixtures:check` and the focused handler/tool schema tests before pushing.
+  CI checks fixture snapshots independently from `pnpm run backend-row-contracts:check`.
 - For client fixture coverage, run
   `swift-clients/tooling/with-build-lock.sh swift test --package-path swift-clients/core --filter ApiFixtureCoverageTests`
   and
   `dotnet-clients/tooling/with-build-lock.sh dotnet test dotnet-clients/Voucha.DotNet.sln --configuration Release --filter FullyQualifiedName~ApiFixtureCoverageTests`.
 
-Run those commands from a [vouchington/vouchington-clients](https://github.com/vouchington/vouchington-clients)
-checkout after its Vouchington contract preflight has completed.
+Run those native commands from a
+[vouchington/vouchington-clients](https://github.com/vouchington/vouchington-clients) checkout after
+its Vouchington contract preflight has completed.
 
-Do not edit `api-fixtures/v1/responses/*.json` directly. Those files are generated output. CI
-regenerates them and rejects snapshot drift.
+Response example files in `api-fixtures/v1/responses` remain generated output. Edit their case
+producers and regenerate them; CI rejects snapshot drift.
 
 ## Schema Lock
 

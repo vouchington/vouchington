@@ -34,11 +34,8 @@
     "test:ts-shared": "node ci/run-vitest-project-group.mts ts-shared",
     "test:tooling": "node ci/tooling-test-runner.mts",
     "test:web-api": "bash -c 'if [ -f .env ]; then source .env; fi; unset CF_WORKER_SECRET; node ci/run-vitest-project-group.mts web-api \"$@\"' --",
-    "api-contracts:check": "node backend/test-helpers/api-fixtures/check.mts",
     "api-fixtures:generate": "node backend/test-helpers/api-fixtures/generate.mts",
     "api-fixtures:check": "node backend/test-helpers/api-fixtures/generate.mts --check",
-    "request-contracts:generate": "node backend/test-helpers/api-fixtures/openapi/generate.mts",
-    "request-contracts:check": "node backend/test-helpers/api-fixtures/openapi/generate.mts --check",
     "mcp:catalog": "node backend/services/mcp-tools/catalog/generate.mts",
     "native-localization:check": "node dev/native-localization.mts --validate",
     "localization:catalog": "node dev/localization/catalog.mts",
@@ -114,7 +111,8 @@
     "login-as": "bash -c 'source .env && node backend/scripts/login-as/run.mts \"$@\"' --",
     "pr:attach-screenshots": "gh-pr-attach-screenshots",
     "seed-source": "bash -c 'source .env && node backend/scripts/seed-source/run.mts'",
-    "prepare": "node backend/scripts/prepare-husky.mts"
+    "prepare": "node backend/scripts/prepare-husky.mts",
+    "backend-row-contracts:check": "node backend/test-helpers/api-fixtures/check.mts"
   },
   "devDependencies": {
     "@ast-grep/cli": "^0.45.3",

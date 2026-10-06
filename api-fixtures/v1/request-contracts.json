@@ -48492,6 +48492,6 @@
       "$ref": "#/components/schemas/CommunityMemberVacationSettings"
     }
   },
-  "source": "compiler-extracted-request-contracts",
+  "source": "checked-in-request-contracts",
   "version": 1
 }
