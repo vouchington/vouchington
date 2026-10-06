@@ -13,8 +13,8 @@ rule:
   # The compiler-host, program, builder, watch, solution-builder, and language-service factory
   # list below is duplicated
   # verbatim across every regex arm below because YAML cannot import JS: it must stay in sync by
-  # hand with the canonical `FACTORIES` set in
-  # static-code-analysis/oxlint-plugin/typescript-program-surface.cjs, which is the single source
+  # hand with the canonical `factories` option of
+  # `vouchington/typescript-program-location` in .oxlintrc.json, which is the single source
   # of truth for which `ts.*` factory names count as program/language-service construction.
   any:
     # These two forms are context-free: the exact module is present in the matched syntax. Static
@@ -41,7 +41,7 @@ rule:
     # same-named/same-shaped domain helper -- a false positive ast-grep cannot avoid here. Every
     # multi-statement, destructured, aliased, shadowed-parameter, or reassignment ("kill-pattern")
     # variant of this loader shape is explicitly out of scope for this arm and stays covered only
-    # by the scope-aware AST-walking Oxlint rule (create-require-provenance.cjs), which is
+    # by the scope-aware `vouchington/typescript-program-location` Oxlint rule, which is
     # authoritative for createRequire()/require() provenance.
     - kind: call_expression
       regex: >-

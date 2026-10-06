@@ -92,8 +92,8 @@ importers:
         specifier: ^1.0.2
         version: 1.0.2(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
       eslint-plugin-vouchington:
-        specifier: ^0.1.0
-        version: 0.1.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
+        specifier: ^0.2.0
+        version: 0.2.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
       gh-pr-attach-screenshots:
         specifier: ^0.2.0
         version: 0.2.0
@@ -20125,8 +20125,8 @@ packages:
     peerDependencies:
       eslint: '>=8.40.0'
 
-  eslint-plugin-vouchington@0.1.0:
-    resolution: {integrity: sha512-7ZUhmLL7jeDgNsIlxYp0h8sqSLLDk5Y482G6d4mSJU7j61LLzBxUvYoM6W4nv0Ncss5n9lryk3mE6wwW5BuHog==}
+  eslint-plugin-vouchington@0.2.0:
+    resolution: {integrity: sha512-H1vp1u4xhbRhHplK2bPZs3KKuKsgQoed4a/xsvu6KQKkDtwvvLChXKt486PZLgFUhJMJqCE/4/+rhMESUXeJSA==}
     engines: {node: '>=24.0.0'}
     peerDependencies:
       eslint: '>=9'
@@ -29085,7 +29085,7 @@ snapshots:
       eslint: 10.5.0(jiti@2.7.0)(supports-color@10.2.2)
       globals: 16.5.0
 
-  eslint-plugin-vouchington@0.1.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
+  eslint-plugin-vouchington@0.2.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
     dependencies:
       eslint: 10.5.0(jiti@2.7.0)(supports-color@10.2.2)
       picomatch: 4.0.7

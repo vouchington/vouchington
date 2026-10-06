@@ -142,7 +142,7 @@
     "eslint-plugin-no-mistakes": "^0.76.0",
     "eslint-plugin-playwright": "^2.12.0",
     "eslint-plugin-react-you-might-not-need-an-effect": "^1.0.2",
-    "eslint-plugin-vouchington": "^0.1.0",
+    "eslint-plugin-vouchington": "^0.2.0",
     "gh-pr-attach-screenshots": "^0.2.0",
     "glide-mq": "^0.17.0",
     "husky": "^9.1.7",

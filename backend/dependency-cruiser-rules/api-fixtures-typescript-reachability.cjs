@@ -11,7 +11,8 @@
 //
 // dependency-cruiser's `to.path` can only express module-graph reachability -- it has no
 // way to see which named members of a module are used, so unlike
-// oxlint-plugin/typescript-program-construction.cjs it cannot distinguish "imports typescript
+// the `vouchington/typescript-program-location` Oxlint rule it cannot distinguish
+// "imports typescript
 // to construct a program" (banned) from "imports typescript as a runtime value for type
 // inspection, e.g. ts.isInterfaceDeclaration(...) / ts.SyntaxKind" (legitimate). Runtime
 // imports stay on the closed allowlist below. `import type` edges are excluded with
@@ -20,8 +21,9 @@
 // grandfather clause): do NOT add new entries here, except a pre-existing importer that only
 // became visible after a doNotFollow fix closed a blind spot in this rule itself -- see the
 // dated addition below for the one case where that has happened so far. The call-level
-// FACTORIES precision that actually enforces the "construction only in backend-program.mts" invariant continues to be
-// covered by oxlint-plugin/typescript-program-construction.cjs, which stays active in
+// configured factory precision that enforces the "construction only in backend-program.mts"
+// invariant continues to be
+// covered by `vouchington/typescript-program-location`, which stays active in
 // parallel -- this rule only adds a coarser reachability backstop against *new* files. This is
 // deliberately stricter than the oxlint invariant for genuinely new files: oxlint permits a new
 // type-guard-only consumer anywhere, while this rule hard-fails any new file that reaches
@@ -70,7 +72,7 @@ const noApiFixturesTypescriptReachability = {
     // flags any file that can reach `typescript` through any chain of imports, which is nearly
     // every file in this directory once test-helper fan-in is considered. Wrapper-indirection
     // (a helper module that itself imports typescript) stays covered only by
-    // oxlint-plugin/typescript-program-construction.cjs's FACTORIES call-level check on the
+    // `vouchington/typescript-program-location`'s configured factory call-level check on the
     // wrapper's own call site, not by this coarser dependency-graph backstop.
     //
     // 'typescript' resolves through an npm alias (package.json: "typescript":
