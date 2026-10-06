@@ -73,8 +73,8 @@ export async function assertPublisherTypeObjectsAreValidInTransaction(
     deleted_at: Date | null
     merged_into_topic_id: string | null
   }>(sql`/* assertPublisherTypeObjectsAreValidInTransaction:topics */
-    -- no-mistakes-disable-next-line postgres-required-predicates: transaction validation locks inactive rows so lifecycle changes are rejected
     SELECT id, topic_type, slug, deleted_at, merged_into_topic_id
+    -- no-mistakes-disable-next-line postgres-required-predicates: transaction validation locks inactive rows so lifecycle changes are rejected
     FROM topics
     WHERE id = ANY(${topicIds}::uuid[])
     ORDER BY id

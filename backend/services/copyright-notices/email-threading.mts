@@ -119,6 +119,7 @@ export async function linkPendingCopyrightEmailRepliesInTransaction(
     SELECT intake_id, ${input.noticeId}, 'thread'
     FROM thread_intakes
     WHERE intake_id <> ${input.initialIntakeId}
+    ORDER BY intake_id
     ON CONFLICT (copyright_notice_email_intake_id) DO NOTHING
   `)
   await transaction(sql`/* linkPendingCopyrightEmailRepliesInTransaction:reviews */
@@ -128,6 +129,7 @@ export async function linkPendingCopyrightEmailRepliesInTransaction(
     SELECT link.copyright_notice_email_intake_id, link.copyright_notice_id, 'pending'
     FROM copyright_notice_email_intake_notice_links link
     WHERE link.copyright_notice_id = ${input.noticeId} AND link.link_kind = 'thread'
+    ORDER BY link.copyright_notice_email_intake_id
     ON CONFLICT (copyright_notice_email_intake_id, action) DO NOTHING
   `)
 }

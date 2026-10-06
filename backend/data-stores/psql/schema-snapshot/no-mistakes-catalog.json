@@ -82326,7 +82326,7 @@
               "expression": "(structured_data ->> 'result'::text)",
               "nullsFirst": false,
               "opclass": "pg_catalog.text_ops",
-              "orderingSupported": false
+              "orderingSupported": true
             }
           ],
           "live": true,
@@ -82349,7 +82349,7 @@
               "expression": "(structured_data ->> 'topic_id'::text)",
               "nullsFirst": false,
               "opclass": "pg_catalog.text_ops",
-              "orderingSupported": false
+              "orderingSupported": true
             }
           ],
           "live": true,
@@ -111243,7 +111243,7 @@
               "expression": "lower(category_text)",
               "nullsFirst": false,
               "opclass": "pg_catalog.text_ops",
-              "orderingSupported": false
+              "orderingSupported": true
             }
           ],
           "live": true,
@@ -111275,7 +111275,7 @@
               "expression": "lower(category_text)",
               "nullsFirst": false,
               "opclass": "pg_catalog.text_ops",
-              "orderingSupported": false
+              "orderingSupported": true
             }
           ],
           "live": true,
@@ -111362,7 +111362,7 @@
               "expression": "lower(category_text)",
               "nullsFirst": false,
               "opclass": "pg_catalog.text_ops",
-              "orderingSupported": false
+              "orderingSupported": true
             }
           ],
           "live": true,
@@ -120688,7 +120688,7 @@
               "expression": "lower(name)",
               "nullsFirst": false,
               "opclass": "pg_catalog.text_ops",
-              "orderingSupported": false
+              "orderingSupported": true
             }
           ],
           "live": true,
@@ -133537,7 +133537,7 @@
               "expression": "lower(username)",
               "nullsFirst": false,
               "opclass": "pg_catalog.text_ops",
-              "orderingSupported": false
+              "orderingSupported": true
             }
           ],
           "live": true,

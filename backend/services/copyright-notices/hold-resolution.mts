@@ -88,6 +88,7 @@ export async function resolveCopyrightLegalHoldInTransaction(
     JOIN media_placements placement ON placement.id = target.placement_id
     WHERE source.copyright_notice_legal_hold_assessment_id = ${input.assessmentId}
       AND restriction.lifted_at IS NULL
+    ORDER BY restriction.id, placement.revision
     ON CONFLICT (copyright_restriction_id, expected_placement_revision, action) DO NOTHING
   `)
   // A fresh statement sees a competing insertion after the unique conflict has resolved.

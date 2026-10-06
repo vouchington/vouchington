@@ -566,18 +566,19 @@ Known gaps, tracked in [#2029](https://github.com/vouchington/vouchington/issues
   `FOR UPDATE OF a, b` list as unparseable, and most locking statements that handles bring into scope
   use that form. Enabling it waits for the upstream parser fix; the statements stay as written until
   then.
-- Factory and type imports are matched only against the exact `importSpecifier`. A parameter typed
-  with an executor type imported from `@data-stores/psql/types`, or from a relative path, is not
-  scanned by any rule until `no-mistakes` matches more than one module path.
+- Factory and type imports match `importSpecifier` and its subpaths, so a parameter typed with a
+  `TransactionQuery` imported from `@data-stores/psql/types` is scanned. An import through a
+  relative path is not matched and is not scanned by any rule.
 - A destructured factory result (`const { query } = await beginTransaction()`) and a name shadowed
   inside the scope are not tracked. The repository has no such site today.
 
 Shapes that satisfy `postgres-conflict-ordering` for handle and typed-executor SQL:
 
-- A constant leading arbiter column (a bound parameter) gets a select alias that heads the
-  `ORDER BY`: `SELECT $1::uuid AS url_hostname_id, ... ORDER BY url_hostname_id, ...`. Positional
-  `ORDER BY 1` and `ORDER BY $1::uuid` are not mapped.
-- A multi-row `DO NOTHING` names its conflict target.
+- A key that is a literal or a bound parameter (including a `${...}` interpolation in a `sql`
+  template) is the same in every row, so the `ORDER BY` may include it, omit it, or head with a
+  select alias for it, and a positional `ORDER BY 1, 2` maps to the select list.
+- A multi-row `DO NOTHING` names its conflict target. The target lists the arbiter columns the
+  `INSERT` leaves out; they take their defaults, so the `ORDER BY` need not mention them.
 - The rule resolves a partial-index target only when the predicate matches the catalog's
   parenthesized text. A statement that writes the predicate plainly carries a
   `no-mistakes-disable-next-line postgres-conflict-ordering` with the reason until upstream
@@ -585,7 +586,7 @@ Shapes that satisfy `postgres-conflict-ordering` for handle and typed-executor S
 - A statement that provably touches one row (no `FROM`, or one primary-key lookup) carries
   `/* deadlock-safe: <reason> */` inside the SQL. `postgres-conflict-ordering` reports the executor
   call line, so a `no-mistakes-disable-next-line` goes above the call;
-  `postgres-required-predicates` reports the SQL string line.
+  `postgres-required-predicates` reports the line of the relation it checks.
 
 PostgreSQL final-state inventories in `repo-file-policy` load the tracked, versioned
 [`schema.json`](../../../../backend/data-stores/psql/schema-snapshot/schema.json) once and fail closed when it
@@ -615,9 +616,10 @@ Tracked config-driven INSERT replay-safety, correlated `EXISTS` set-operation sh
 active-topic filter (`deleted_at IS NULL` and `merged_into_topic_id IS NULL`) live in
 [`.no-mistakes.yml`](../../../../.no-mistakes.yml) as `postgres-idempotent-insert`,
 `postgres-sql-shape-policy`, and `postgres-required-predicates`. Suppress with
-`no-mistakes-disable-next-line <rule>` on the line above the SQL text the rule reports (the line
-of the SQL string or `sql` template, not the executor call; inside a multi-line template, a SQL `--`
-comment above the reported line). TypeScript-generated config-driven SQL that those `.sql`
+`no-mistakes-disable-next-line <rule>` on the line above the SQL text the rule reports (for
+`postgres-required-predicates`, the line of the `FROM`, `JOIN` or `UPDATE` relation that lacks the
+predicate, not the executor call or the start of the statement; inside a multi-line template, a SQL
+`--` comment directly above that line). TypeScript-generated config-driven SQL that those `.sql`
 files never contain is still judged at test time by
 `backend/test-helpers/data-stores/psql/config-driven/generated-ddl-insert-invariants.mts`.
 

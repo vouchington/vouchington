@@ -11,10 +11,10 @@ export async function readAutotaggerCandidateTopics(
     topic_id: string
     name: string
   }>(
-    // no-mistakes-disable-next-line postgres-required-predicates: the run asks exactly the question set its receipt captured, and vote application binds to the same ids, so a retry or reclaim never asks a different set after a topic changes lifecycle state
     sql`/* readAutotaggerCandidateTopics */
     SELECT topic.id AS topic_id, topic.name
     FROM unnest(${[...topicIds]}::uuid[]) WITH ORDINALITY AS candidate (topic_id, ordinal)
+    -- no-mistakes-disable-next-line postgres-required-predicates: the run asks exactly the question set its receipt captured, and vote application binds to the same ids, so a retry or reclaim never asks a different set after a topic changes lifecycle state
     JOIN topics topic ON topic.id = candidate.topic_id
     ORDER BY candidate.ordinal
   `,

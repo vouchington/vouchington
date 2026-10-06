@@ -177,7 +177,11 @@ export async function retainCurrentRssFeedPublicationKeys(
     SELECT DISTINCT dirty_work_id, CASE WHEN kind = 'impact_topic' THEN uuid_value END AS topic_key,
       CASE WHEN kind = 'identity_rss_feed' THEN uuid_value END AS rss_feed_key FROM keys
     ORDER BY dirty_work_id, topic_key, rss_feed_key
-    ON CONFLICT DO NOTHING`,
+    ON CONFLICT (
+      dirty_work_id, impact_post_identity_id, impact_community_identity_id,
+      impact_rss_feed_item_identity_id, topic_key, author_key, community_key, rss_feed_key,
+      author_username, post_slug, community_slug, topic_alias, post_type, day
+    ) DO NOTHING`,
     [rows.map(row => row.dirtyWorkId), rows.map(row => row.rssFeedId)],
   )
 }

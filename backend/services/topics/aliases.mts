@@ -30,8 +30,8 @@ export async function linkTopicAlias(
     await lockTopicAliasPublicationScopes(query, [aliasId])
     const { rows: topicRows } = await query<{ id: string; merged_into_topic_id: string | null }>(
       `/* linkTopicAlias lockTopic */
-      -- no-mistakes-disable-next-line postgres-required-predicates: merged rows must be locked to preserve 409 conflict semantics
       SELECT id, merged_into_topic_id
+      -- no-mistakes-disable-next-line postgres-required-predicates: merged rows must be locked to preserve 409 conflict semantics
       FROM topics
       WHERE id = $1 AND deleted_at IS NULL
       FOR UPDATE`,
@@ -118,8 +118,8 @@ export async function createTopicAliases(
     const existingAliasIds = await lockExistingTopicAliasPublicationScopes(query, aliasArray)
     const { rows: topicRows } = await query<{ id: string; merged_into_topic_id: string | null }>(
       `/* createTopicAliases lockTopic */
-      -- no-mistakes-disable-next-line postgres-required-predicates: merged rows must be locked to preserve 409 conflict semantics
       SELECT id, merged_into_topic_id
+      -- no-mistakes-disable-next-line postgres-required-predicates: merged rows must be locked to preserve 409 conflict semantics
       FROM topics
       WHERE id = $1 AND deleted_at IS NULL
       FOR UPDATE`,
