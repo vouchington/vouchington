@@ -64,7 +64,6 @@ export const MODERATOR_ACTION_TYPES = [
   'unlock',
   'pin',
   'unpin',
-  'tag',
   'suspend',
   'unsuspend',
   'remove_member',

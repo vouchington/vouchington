@@ -64,7 +64,6 @@ describe('moderation catalogs', () => {
       'unlock',
       'pin',
       'unpin',
-      'tag',
       'suspend',
       'unsuspend',
       'remove_member',

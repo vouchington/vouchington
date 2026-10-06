@@ -12,7 +12,6 @@ export const MODERATION_ANALYTICS_ACTION_TYPES = [
   'unlock',
   'pin',
   'unpin',
-  'tag',
   'suspend',
   'unsuspend',
   'remove_member',

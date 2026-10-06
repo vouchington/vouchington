@@ -16,7 +16,6 @@ BEGIN
     'unlock',
     'pin',
     'unpin',
-    'tag',
     'suspend',
     'unsuspend',
     'remove_member',
