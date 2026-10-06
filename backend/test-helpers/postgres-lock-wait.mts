@@ -73,6 +73,7 @@ export async function waitForTestPostgresLockWaiter(
     },
     5_000,
     10,
-    `an operation to wait for the test lock: ${queryMarker}`,
-  )
+  ).catch(err => {
+    throw new Error(`Operation did not wait for the test lock: ${queryMarker}`, { cause: err })
+  })
 }
