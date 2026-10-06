@@ -24,6 +24,9 @@ Forced view rebuilding drops only the managed ordinary and materialized declarat
 default `RESTRICT` behavior. The runner retries dependency failures after another managed drop makes
 progress, then recreates the files in dependency-safe passes. Its teardown is one server-side command,
 so an unmanaged dependent blocks the rebuild without removing any managed object. It never uses `CASCADE`.
+PostgreSQL has no `CREATE OR REPLACE MATERIALIZED VIEW`. A materialized-view file that must replace
+its definition on every `runViews` drops that view first and marks the drop with
+`squawk-ignore ban-drop-view`. Ordinary view files stay `CREATE OR REPLACE VIEW`.
 
 Voucha has not launched. Add columns in the owning migration's original `CREATE TABLE`, then
 rebuild disposable databases, including staging through its operator runbook. Do not add a forward

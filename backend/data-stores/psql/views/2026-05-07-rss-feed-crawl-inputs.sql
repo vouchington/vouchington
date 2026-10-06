@@ -3,6 +3,7 @@
 -- always take effect, instead of being silently skipped when the MV already exists.
 -- CREATE MATERIALIZED VIEW ... AS SELECT repopulates the MV immediately during runViews, so
 -- deploys recompute tiers from the current data instead of waiting for the nightly refresh.
+-- squawk-ignore ban-drop-view -- PostgreSQL has no CREATE OR REPLACE for materialized views. Every runViews reapplies this definition by dropping the view first.
 DROP MATERIALIZED VIEW IF EXISTS mv_rss_feed_crawl_tiers;
 
 CREATE MATERIALIZED VIEW mv_rss_feed_crawl_tiers AS
