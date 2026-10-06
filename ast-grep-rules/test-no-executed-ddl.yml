@@ -37,6 +37,8 @@ ignores:
   - 'backend/services/elections-votes/shared/vote-aggregation.test.mts'
   - 'backend/services/posts/get-visible-collection-rows.test.mts'
   - 'backend/services/rss-feeds/discoverability-sql.test.mts'
+  # Reads pg_indexes.indexdef. The ILIKE pattern quotes CREATE UNIQUE INDEX and does not execute it.
+  - 'backend/test-helpers/entities/topics/core.mts'
   # Frozen baseline of executed SQL. Cleanup PRs do not edit it. #2145 deletes it.
   # #2116
   - 'backend/test-helpers/entities/api-keys.mts'
@@ -48,9 +50,11 @@ ignores:
   - 'backend/test-helpers/entities/notification-push-intents.mts'
   # #2143
   - 'backend/data-stores/psql/__tests__/schema-content-provenance.test.mts'
+  - 'backend/data-stores/psql/__tests__/schema-uuidv7-range-pruning.test.mts'
   - 'backend/data-stores/psql/explain-analyze.test.mts'
   - 'backend/data-stores/psql/migrate.test.mts'
   - 'backend/data-stores/psql/migration-runner/config-driven-statements.test.mts'
+  - 'backend/data-stores/psql/migration-runner/migrations.test.mts'
   - 'backend/data-stores/psql/migration-runner/monthly-partitions.test.mts'
   - 'backend/data-stores/psql/migration-runner/views.hardening.test.mts'
   - 'backend/test-helpers/data-stores/psql/forced-views.mts'
@@ -69,13 +73,41 @@ ignores:
 rule:
   any:
     - kind: string
-      regex: '(?:CREATE|ALTER|DROP)\s+(?:DATABASE|SCHEMA|TABLE|VIEW|TRIGGER|FUNCTION|PROCEDURE|INDEX|TYPE)|ALTER\s+SYSTEM|(?i:pg_sleep|session_replication_role|\bTRUNCATE\s+(?:TABLE|ONLY)\b)'
+      regex: '(?:CREATE(?:\s+(?:OR\s+REPLACE|TEMP|TEMPORARY|UNLOGGED|UNIQUE|MATERIALIZED))*|ALTER|DROP)\s+(?:DATABASE|SCHEMA|TABLE|VIEW|TRIGGER|FUNCTION|PROCEDURE|INDEX|TYPE)|ALTER\s+SYSTEM|(?i:pg_sleep|session_replication_role|\bTRUNCATE\s+(?:TABLE|ONLY)\b)'
     - kind: template_string
-      regex: '(?:CREATE|ALTER|DROP)\s+(?:DATABASE|SCHEMA|TABLE|VIEW|TRIGGER|FUNCTION|PROCEDURE|INDEX|TYPE)|ALTER\s+SYSTEM|(?i:pg_sleep|session_replication_role|\bTRUNCATE\s+(?:TABLE|ONLY)\b)'
+      regex: '(?:CREATE(?:\s+(?:OR\s+REPLACE|TEMP|TEMPORARY|UNLOGGED|UNIQUE|MATERIALIZED))*|ALTER|DROP)\s+(?:DATABASE|SCHEMA|TABLE|VIEW|TRIGGER|FUNCTION|PROCEDURE|INDEX|TYPE)|ALTER\s+SYSTEM|(?i:pg_sleep|session_replication_role|\bTRUNCATE\s+(?:TABLE|ONLY)\b)'
 examples:
   - code: |
       await write(`ALTER TABLE api_keys ADD CONSTRAINT c CHECK (false)`)
     isValid: false
+    file: 'backend/services/example-suite-rules.test.mts'
+  - code: |
+      await write(`CREATE TEMP TABLE config_driven_session (id int) ON COMMIT DROP`)
+    isValid: false
+    file: 'backend/data-stores/psql/migration-runner/example-suite-rules.test.mts'
+  - code: |
+      await query(`CREATE OR REPLACE FUNCTION reject_staff_action() RETURNS trigger AS $$ BEGIN RETURN NULL; END $$`)
+    isValid: false
+    file: 'backend/test-helpers/example-suite-rules.mts'
+  - code: |
+      await query(`CREATE TEMPORARY TABLE probe (id uuid) ON COMMIT DROP`)
+    isValid: false
+    file: 'backend/test-helpers/example-suite-rules.mts'
+  - code: |
+      await query(`CREATE UNLOGGED TABLE probe (id uuid)`)
+    isValid: false
+    file: 'backend/test-helpers/example-suite-rules.mts'
+  - code: |
+      await query(`CREATE UNIQUE INDEX topics_slug ON topics (slug)`)
+    isValid: false
+    file: 'backend/test-helpers/example-suite-rules.mts'
+  - code: |
+      await query(`CREATE MATERIALIZED VIEW unmanaged AS SELECT 1`)
+    isValid: false
+    file: 'backend/test-helpers/example-suite-rules.mts'
+  - code: |
+      const note = 'create temp table only in the fixture story'
+    isValid: true
     file: 'backend/services/example-suite-rules.test.mts'
   - code: |
       await query('SELECT pg_sleep(1)')
