@@ -58,6 +58,17 @@ export async function deleteTestRetainedRelationImpact(impactId: string): Promis
   )
 }
 
+export async function insertTestRetainedRelationIdentity(
+  relationTable: string,
+  subjectId: string,
+  relationId: string,
+): Promise<void> {
+  await write(
+    `/* insertTestRetainedRelationIdentity */ INSERT INTO ${retainedRelationTable(relationTable)} (subject_id, id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+    [subjectId, relationId],
+  )
+}
+
 export async function hasTestRetainedRelationIdentity(
   relationTable: string,
   subjectId: string,

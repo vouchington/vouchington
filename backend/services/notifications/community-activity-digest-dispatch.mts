@@ -5,7 +5,9 @@ import { COMMUNITY_ACTIVITY_DIGEST_INACTIVITY_TIMEOUT_MS } from '@voucha/types/c
 
 export async function prepareCommunityActivityDigestWorkItems(
   targetWindowStart: Date,
+  windowStarts?: readonly Date[],
 ): Promise<Array<{ windowStart: Date; windowEnd: Date }>> {
+  if (windowStarts?.length === 0) return []
   await write(sql`
     /* prepareCommunityActivityDigestWorkItems */
     WITH latest AS (
@@ -25,6 +27,7 @@ export async function prepareCommunityActivityDigestWorkItems(
     ON CONFLICT (window_starts_at) DO NOTHING
     RETURNING window_starts_at, window_ends_at
   `)
+  const ownedStarts = windowStarts?.map(start => start.toISOString()) ?? null
   const { rows: pending } = await write<{ window_starts_at: Date; window_ends_at: Date }>(sql`
     /* listPendingCommunityActivityDigestDispatchWindows */
     SELECT window_starts_at, window_ends_at
@@ -33,6 +36,10 @@ export async function prepareCommunityActivityDigestWorkItems(
       AND available_at <= clock_timestamp()
       AND (lease_token IS NULL OR lease_expires_at <= clock_timestamp())
       AND window_starts_at <= ${targetWindowStart}
+      AND (
+        ${ownedStarts}::timestamptz[] IS NULL
+        OR window_starts_at = ANY(${ownedStarts}::timestamptz[])
+      )
     ORDER BY window_starts_at
   `)
   return pending.map(row => ({ windowStart: row.window_starts_at, windowEnd: row.window_ends_at }))

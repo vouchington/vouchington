@@ -1,5 +1,3 @@
-import { runIsolatedDatabaseCase } from '../../../test-helpers/vitest-isolated-database-case.mts'
-import { getIsolatedDatabaseCaseMode } from '../../../test-helpers/vitest-isolated-database-cases.mts'
 import {
   beginTransaction,
   addTestPostDataPointTopic,
@@ -13,6 +11,7 @@ import {
   insertTestTopic,
   setTestPostPublicationShadowAuditCheckpoint,
   updateTestPostSlug,
+  withTestPostPublicationShadowAuditLock,
 } from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
 import { randomUUID } from 'node:crypto'
@@ -25,24 +24,47 @@ import {
   recordPostPublicationChange,
 } from './index.mts'
 import { runPostPublicationShadowAudit } from './shadow-audit.mts'
+
+function auditIds(suffix: string) {
+  const prefix = `${suffix.slice(0, 8)}-${suffix.slice(8, 11)}`
+  return {
+    cursor: `${prefix}1-7000-8000-000000000000`,
+    postId: `${prefix}1-7000-8000-000000000001`,
+    foreignPostId: `${prefix}0-7000-8000-000000000001`,
+  }
+}
+
+async function insertAuditPost(
+  userId: string,
+  id: string,
+  slug: string,
+  title: string,
+  markdown: string,
+) {
+  return insertTestPost({ id, title, slug, markdown, createdById: userId })
+}
+
 describe('post publication shadow audit', () => {
   it('repairs a receipt left behind by a hard-deleted post', async () => {
-    if (getIsolatedDatabaseCaseMode('publication-audit-orphan-repair') === 'parent') {
-      await runIsolatedDatabaseCase('publication-audit-orphan-repair')
-      return
-    }
     const user = await createTestUser()
     if (!user) throw new Error('Expected orphan-receipt author fixture')
     const suffix = randomUUID().replaceAll('-', '')
-    const prefix = `${suffix.slice(0, 8)}-${suffix.slice(8, 11)}`
+    const ids = auditIds(suffix)
     const oldSlug = `shadow-orphan-${suffix}`
-    const postId = await insertTestPost({
-      id: `${prefix}1-7000-8000-000000000001`,
-      title: `Shadow orphan ${suffix}`,
-      slug: oldSlug,
-      markdown: 'Receipt fixture for a missed hard deletion.',
-      createdById: user.id,
-    })
+    await insertAuditPost(
+      user.id,
+      ids.foreignPostId,
+      `shadow-orphan-foreign-${suffix}`,
+      `Shadow orphan foreign ${suffix}`,
+      'Eligible post behind the orphan audit cursor.',
+    )
+    const postId = await insertAuditPost(
+      user.id,
+      ids.postId,
+      oldSlug,
+      `Shadow orphan ${suffix}`,
+      'Receipt fixture for a missed hard deletion.',
+    )
     await using query = await beginTransaction()
     const work = await recordPostPublicationChange(query, {
       scope: { type: 'post', postId },
@@ -61,17 +83,18 @@ describe('post publication shadow audit', () => {
     await expect(hasTestPostPublicationProjectionReceipt(postId)).resolves.toBe(true)
     await hardDeleteTestPost(postId)
 
-    const cursor = `${prefix}1-7000-8000-000000000000`
     await expect(
-      runPostPublicationShadowAudit({ dryRun: true, limit: 1, cursor }),
+      runPostPublicationShadowAudit({ dryRun: true, limit: 1, cursor: ids.cursor }),
     ).resolves.toMatchObject({
       scannedByScope: { post: 1, author: 0, community: 0, rssFeed: 0 },
       discrepanciesByScope: { post: 1, author: 0, community: 0, rssFeed: 0 },
       checkpoint: postId,
     })
 
-    await setTestPostPublicationShadowAuditCheckpoint(cursor)
-    await runPostPublicationShadowAudit({ dryRun: false, limit: 1 })
+    await withTestPostPublicationShadowAuditLock(async () => {
+      await setTestPostPublicationShadowAuditCheckpoint(ids.cursor)
+      await runPostPublicationShadowAudit({ dryRun: false, limit: 1 })
+    })
     const repairWork = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: postId })
     if (!repairWork) throw new Error('Expected orphan-receipt repair work')
     const repairClaim = await claimPostPublicationDirtyWork(repairWork, 60)
@@ -94,80 +117,82 @@ describe('post publication shadow audit', () => {
       leaseToken: repairClaim.lease_token,
     })
     await expect(hasTestPostPublicationProjectionReceipt(postId)).resolves.toBe(false)
-  }, 240_000)
+  })
 
   it('compares missing receipts, keeps dry runs read-only, and records a repair with truthful counts', async () => {
-    if (getIsolatedDatabaseCaseMode('publication-audit-counts') === 'parent') {
-      await runIsolatedDatabaseCase('publication-audit-counts')
-      return
-    }
     const user = await createTestUser()
     if (!user) throw new Error('Expected shadow-audit user fixture')
     const suffix = randomUUID().replaceAll('-', '')
-    const prefix = `${suffix.slice(0, 8)}-${suffix.slice(8, 11)}`
-    const requestedPostId = `${prefix}1-7000-8000-000000000001`
-    const postId = await insertTestPost({
-      id: requestedPostId,
-      title: `Shadow audit ${suffix}`,
-      slug: `shadow-audit-${suffix}`,
-      markdown: 'Freshly captured primary-state candidate.',
-      createdById: user.id,
+    const ids = auditIds(suffix)
+    await insertAuditPost(
+      user.id,
+      ids.foreignPostId,
+      `shadow-audit-foreign-${suffix}`,
+      `Shadow audit foreign ${suffix}`,
+      'Eligible post behind the audit cursor.',
+    )
+    const postId = await insertAuditPost(
+      user.id,
+      ids.postId,
+      `shadow-audit-${suffix}`,
+      `Shadow audit ${suffix}`,
+      'Freshly captured primary-state candidate.',
+    )
+
+    await withTestPostPublicationShadowAuditLock(async () => {
+      await setTestPostPublicationShadowAuditCheckpoint(ids.cursor)
+      const dryRun = await runPostPublicationShadowAudit({
+        dryRun: true,
+        limit: 1,
+        cursor: ids.cursor,
+      })
+      expect(dryRun.dryRun).toBe(true)
+      expect(dryRun.discrepanciesByScope).toEqual({ post: 1, author: 1, community: 0, rssFeed: 0 })
+      await expect(
+        getTestPostPublicationDirtyWorkForScope({ type: 'post', id: postId }),
+      ).resolves.toBeUndefined()
+      await expect(getTestPostPublicationShadowAuditCheckpoint()).resolves.toBe(ids.cursor)
+
+      const repair = await runPostPublicationShadowAudit({ dryRun: false, limit: 1 })
+      expect(repair.dryRun).toBe(false)
+      expect(repair.discrepanciesByScope).toEqual({ post: 1, author: 1, community: 0, rssFeed: 0 })
+      expect(repair.checkpoint).toBe(postId)
+      await expect(getTestPostPublicationShadowAuditCheckpoint()).resolves.toBe(postId)
     })
-
-    const cursor = `${prefix}1-7000-8000-000000000000`
-    await setTestPostPublicationShadowAuditCheckpoint(cursor)
-
-    const dryRun = await runPostPublicationShadowAudit({ dryRun: true, limit: 1, cursor })
-
-    expect(dryRun.dryRun).toBe(true)
-    expect(dryRun.discrepanciesByScope).toEqual({ post: 1, author: 1, community: 0, rssFeed: 0 })
-    await expect(
-      getTestPostPublicationDirtyWorkForScope({ type: 'post', id: postId }),
-    ).resolves.toBeUndefined()
-    await expect(getTestPostPublicationShadowAuditCheckpoint()).resolves.toBe(cursor)
-
-    const repair = await runPostPublicationShadowAudit({ dryRun: false, limit: 1 })
-
-    expect(repair.dryRun).toBe(false)
-    expect(repair.discrepanciesByScope).toEqual({ post: 1, author: 1, community: 0, rssFeed: 0 })
-    expect(repair.checkpoint).toBe(postId)
     await expect(
       getTestPostPublicationDirtyWorkForScope({ type: 'post', id: postId }),
     ).resolves.toEqual(expect.objectContaining({ post_identity_id: postId }))
-    await expect(getTestPostPublicationShadowAuditCheckpoint()).resolves.toBe(postId)
-  }, 240_000)
+  })
 
   it('resets an EOF checkpoint so the next scheduled run can start over', async () => {
-    if (getIsolatedDatabaseCaseMode('publication-audit-eof') === 'parent') {
-      await runIsolatedDatabaseCase('publication-audit-eof')
-      return
-    }
-
-    await setTestPostPublicationShadowAuditCheckpoint('ffffffff-ffff-7fff-bfff-ffffffffffff')
-
-    const eof = await runPostPublicationShadowAudit({ dryRun: false, limit: 1 })
-
-    expect(eof).toMatchObject({ dryRun: false, checkpoint: null })
-    await expect(getTestPostPublicationShadowAuditCheckpoint()).resolves.toBeNull()
-  }, 240_000)
+    await withTestPostPublicationShadowAuditLock(async () => {
+      await setTestPostPublicationShadowAuditCheckpoint('ffffffff-ffff-7fff-bfff-ffffffffffff')
+      const eof = await runPostPublicationShadowAudit({ dryRun: false, limit: 1 })
+      expect(eof).toMatchObject({ dryRun: false, checkpoint: null })
+      await expect(getTestPostPublicationShadowAuditCheckpoint()).resolves.toBeNull()
+    })
+  })
 
   it('does not report a candidate whose current receipt matches primary state', async () => {
-    if (getIsolatedDatabaseCaseMode('publication-audit-exact-receipt') === 'parent') {
-      await runIsolatedDatabaseCase('publication-audit-exact-receipt')
-      return
-    }
     const user = await createTestUser()
     if (!user) throw new Error('Expected receipt-comparison user fixture')
     const suffix = randomUUID().replaceAll('-', '')
-    const prefix = `${suffix.slice(0, 8)}-${suffix.slice(8, 11)}`
+    const ids = auditIds(suffix)
     const oldSlug = `shadow-audit-receipt-${suffix}`
-    const postId = await insertTestPost({
-      id: `${prefix}1-7000-8000-000000000001`,
-      title: `Shadow audit receipt ${suffix}`,
-      slug: oldSlug,
-      markdown: 'Candidate with a matching durable projection receipt.',
-      createdById: user.id,
-    })
+    await insertAuditPost(
+      user.id,
+      ids.foreignPostId,
+      `shadow-audit-receipt-foreign-${suffix}`,
+      `Shadow audit receipt foreign ${suffix}`,
+      'Eligible post behind the receipt cursor.',
+    )
+    const postId = await insertAuditPost(
+      user.id,
+      ids.postId,
+      oldSlug,
+      `Shadow audit receipt ${suffix}`,
+      'Candidate with a matching durable projection receipt.',
+    )
     const oldTopicId = await insertTestTopic({
       name: `Shadow receipt ${suffix}`,
       slug: `shadow-receipt-${suffix}`,
@@ -194,15 +219,12 @@ describe('post publication shadow audit', () => {
       }),
     ).resolves.toBe(true)
 
-    await setTestPostPublicationShadowAuditCheckpoint(`${prefix}1-7000-8000-000000000000`)
-
-    const result = await runPostPublicationShadowAudit({
+    const matched = await runPostPublicationShadowAudit({
       dryRun: true,
       limit: 1,
-      cursor: `${prefix}1-7000-8000-000000000000`,
+      cursor: ids.cursor,
     })
-
-    expect(result).toMatchObject({
+    expect(matched).toMatchObject({
       dryRun: true,
       checkpoint: postId,
       discrepanciesByScope: { post: 0, author: 0, community: 0, rssFeed: 0 },
@@ -211,7 +233,10 @@ describe('post publication shadow audit', () => {
     const newSlug = `shadow-audit-current-${suffix}`
     await deleteTestPostDataPointTopics(postId)
     await updateTestPostSlug(postId, newSlug)
-    await runPostPublicationShadowAudit({ dryRun: false, limit: 1 })
+    await withTestPostPublicationShadowAuditLock(async () => {
+      await setTestPostPublicationShadowAuditCheckpoint(ids.cursor)
+      await runPostPublicationShadowAudit({ dryRun: false, limit: 1 })
+    })
     const repairWork = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: postId })
     if (!repairWork) throw new Error('Expected exact shadow repair work')
     const repairClaim = await claimPostPublicationDirtyWork(repairWork, 60)
@@ -232,11 +257,7 @@ describe('post publication shadow audit', () => {
       leaseToken: repairClaim.lease_token,
     })
     await expect(
-      runPostPublicationShadowAudit({
-        dryRun: true,
-        limit: 1,
-        cursor: `${prefix}1-7000-8000-000000000000`,
-      }),
+      runPostPublicationShadowAudit({ dryRun: true, limit: 1, cursor: ids.cursor }),
     ).resolves.toMatchObject({ discrepanciesByScope: { post: 0 } })
-  }, 240_000)
+  })
 })

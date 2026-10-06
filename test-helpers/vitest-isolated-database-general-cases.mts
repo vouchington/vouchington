@@ -16,11 +16,6 @@ export const generalIsolatedCases = {
       'semantic search candidate paging > fills a selective page and preserves distance ranking for semantic and hybrid queries',
   },
 
-  'retained-relation-cursors': {
-    file: 'backend/services/data-retention/__tests__/relation-cleanup-cursors.test.mts',
-    fullName:
-      'retained relation cleanup cursors > creates all missing cursors and reuses them on replay',
-  },
   'activitypub-expiry': {
     file: 'backend/services/ap-inbox-activities/durable-delivery-storage.test.mts',
     fullName:

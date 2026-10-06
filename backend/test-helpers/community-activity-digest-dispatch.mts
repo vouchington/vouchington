@@ -1,8 +1,42 @@
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { acquireTestPostgresAdvisoryLock } from './postgres-advisory-lock.mts'
 
-export async function clearTestCommunityActivityDigestWorkItems(): Promise<void> {
-  await write(sql`DELETE FROM community_activity_digest_work_items`)
+const DIGEST_LOCK_NAMESPACE = 2_135_042
+const DIGEST_LOCK_KEY = 1
+
+export async function withTestCommunityActivityDigestLock<T>(run: () => Promise<T>): Promise<T> {
+  const lock = await acquireTestPostgresAdvisoryLock({
+    namespace: DIGEST_LOCK_NAMESPACE,
+    key: DIGEST_LOCK_KEY,
+    timeout: '20s',
+  })
+  try {
+    return await run()
+  } finally {
+    await lock.release()
+  }
+}
+
+export async function readNextTestCommunityActivityDigestWindowStart(): Promise<Date> {
+  const { rows } = await write<{ window_starts_at: Date }>(sql`
+    /* readNextTestCommunityActivityDigestWindowStart */
+    SELECT COALESCE(
+      max(window_starts_at) + INTERVAL '7 days',
+      '2400-01-06T00:00:00.000Z'::timestamptz
+    ) AS window_starts_at
+    FROM community_activity_digest_work_items
+  `)
+  return rows[0]!.window_starts_at
+}
+
+export async function insertTestCommunityActivityDigestWorkItem(windowStart: Date): Promise<void> {
+  await write(sql`
+    /* insertTestCommunityActivityDigestWorkItem */
+    INSERT INTO community_activity_digest_work_items (window_starts_at, window_ends_at)
+    VALUES (${windowStart}, ${windowStart}::timestamptz + INTERVAL '7 days')
+    ON CONFLICT (window_starts_at) DO NOTHING
+  `)
 }
 
 export async function getTestCommunityActivityDigestWorkItems(): Promise<
