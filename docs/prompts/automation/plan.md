@@ -17,7 +17,9 @@ the trigger comment's live `author_association` to be exactly `OWNER`, `COLLABOR
 Do not edit files,
 create a branch, commit, push, or open a PR. Investigate only as much as needed to make the plan
 decision-complete. Immediately before posting, revalidate the issue, trigger, and authorization, then
-write exactly one issue comment containing the plan. Stop without mutation if anything changed.
+write exactly one issue comment containing the plan. Stop without mutation only if the issue
+closed, the trigger comment or its standalone `/plan` request is gone, or its association no longer
+qualifies; other issue edits and new comments are not a reason to stop.
 
 Keep the plan proportional to the issue. Explain the recommended behavior, supporting evidence,
 meaningful alternatives, affected files or subsystems, implementation steps, and validation. Include
