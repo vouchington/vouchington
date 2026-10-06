@@ -1,6 +1,6 @@
-import { randomBytes } from 'node:crypto'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { withInjectedFailure } from './injected-failures.mts'
 
 export async function readStaffActionHistory(actorId: string) {
   const { rows } = await write<{
@@ -24,35 +24,20 @@ export async function readStaffActionHistory(actorId: string) {
   return rows
 }
 
-/** A unique actor predicate keeps the failure injection isolated from concurrent tests. */
-export async function withRejectedStaffActionHistory<T>(
+/**
+ * A unique actor predicate keeps the failure injection isolated from concurrent tests. With
+ * `phase: 'finished'` only the operation's outcome row is rejected, not its requested row.
+ */
+export function withRejectedStaffActionHistory<T>(
   actorId: string,
   execute: () => Promise<T>,
   phase?: 'finished',
 ): Promise<T> {
-  const suffix = randomBytes(8).toString('hex')
-  const name = `test_staff_history_${suffix}`
-  await write(`/* withRejectedStaffActionHistory:createFunction */ CREATE FUNCTION ${name}() RETURNS trigger LANGUAGE plpgsql AS $body$
-    BEGIN
-      IF NEW.actor_user_id = '${actorId.replaceAll("'", "''")}'::uuid ${phase ? "AND NEW.metadata->>'phase' = 'finished'" : ''} THEN
-        RAISE EXCEPTION 'staff history rejected for test';
-      END IF;
-      RETURN NEW;
-    END
-    $body$`)
-  try {
-    await write(`/* withRejectedStaffActionHistory:createTrigger */ CREATE TRIGGER ${name} BEFORE INSERT ON moderator_actions
-      FOR EACH ROW EXECUTE FUNCTION ${name}()`)
-    try {
-      return await execute()
-    } finally {
-      await write(
-        `/* withRejectedStaffActionHistory:dropTrigger */ DROP TRIGGER ${name} ON moderator_actions`,
-      )
-    }
-  } finally {
-    await write(`/* withRejectedStaffActionHistory:dropFunction */ DROP FUNCTION ${name}()`)
-  }
+  return withInjectedFailure(
+    phase ? 'staff_action_history_finished' : 'staff_action_history',
+    actorId,
+    execute,
+  )
 }
 
 const HISTORY_TARGET_TABLES = {
