@@ -24,7 +24,7 @@
     "@services/boilerplate-removals": "workspace:^",
     "@services/crawlers": "workspace:^",
     "@services/crawls": "workspace:^",
-    "glide-mq": "^0.16.0"
+    "glide-mq": "^0.17.0"
   },
   "devDependencies": {
     "@modules/aws": "workspace:^",

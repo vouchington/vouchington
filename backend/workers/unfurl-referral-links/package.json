@@ -22,7 +22,7 @@
     "@queues/unfurl-referral-links": "workspace:^",
     "@services/referral-link-unfurl": "workspace:^",
     "@services/user-referral-program-links": "workspace:^",
-    "glide-mq": "^0.16.0"
+    "glide-mq": "^0.17.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

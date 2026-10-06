@@ -26,6 +26,6 @@
     "@modules/queue-config": "workspace:^",
     "@queues/bluesky-follow-propagation": "workspace:^",
     "@services/bluesky-follows": "workspace:^",
-    "glide-mq": "^0.16.0"
+    "glide-mq": "^0.17.0"
   }
 }

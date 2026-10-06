@@ -29,7 +29,7 @@
     "@data-stores/valkey-core": "workspace:^",
     "@glidemq/speedkey": "^0.4.2",
     "@modules/on-error": "workspace:^",
-    "glide-mq": "^0.16.0",
+    "glide-mq": "^0.17.0",
     "valkyries": "^0.8.1"
   }
 }

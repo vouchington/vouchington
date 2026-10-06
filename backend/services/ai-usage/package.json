@@ -37,6 +37,6 @@
   "devDependencies": {
     "@services/users": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
-    "glide-mq": "^0.16.0"
+    "glide-mq": "^0.17.0"
   }
 }

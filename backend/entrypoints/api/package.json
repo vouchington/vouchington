@@ -52,7 +52,7 @@
     "@voucha/rss": "workspace:^",
     "cookie": "^2.0.1",
     "express": "^5.2.1",
-    "glide-mq": "^0.16.0"
+    "glide-mq": "^0.17.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",

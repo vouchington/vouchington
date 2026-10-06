@@ -25,7 +25,7 @@
     "@queues/admin-imports": "workspace:^",
     "@services/admin-imports": "workspace:^",
     "@services/users": "workspace:^",
-    "glide-mq": "^0.16.0",
+    "glide-mq": "^0.17.0",
     "http-errors": "^2.0.1"
   },
   "devDependencies": {

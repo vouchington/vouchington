@@ -21,6 +21,6 @@
     "@modules/scheduled-job-manifest": "workspace:^",
     "@services/urls-domains-blacklist": "workspace:^",
     "@voucha/types": "workspace:^",
-    "glide-mq": "^0.16.0"
+    "glide-mq": "^0.17.0"
   }
 }
