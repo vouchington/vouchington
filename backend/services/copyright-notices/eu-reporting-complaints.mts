@@ -26,19 +26,23 @@ function reportBucket(bucket: StoredBucket): DsaCopyrightComplaintBucket {
 export async function readDsaCopyrightComplaintFigures(
   periodStartedAt: Date,
   periodEndedAt: Date,
+  noticeIds?: readonly string[],
 ): Promise<DsaCopyrightComplaintFigures> {
+  if (noticeIds?.length === 0) return emptyDsaCopyrightComplaintFigures()
   const query = sql`/* readDsaCopyrightComplaintFigures */
     WITH received AS (
       SELECT request.filed_by, complained.outcome::text AS outcome,
-        `
-    .append(inAreaTrustedFlaggerMatchSql(sql``.append('request.copyright_notice_id')))
+        `.append(inAreaTrustedFlaggerMatchSql(sql``.append('request.copyright_notice_id')))
     .append(sql` AS trusted
       FROM copyright_territorial_redress_requests request
       JOIN copyright_territorial_decisions complained
         ON complained.id = request.copyright_territorial_decision_id
       WHERE request.jurisdiction = 'eu_dsa'
         AND request.received_at >= ${periodStartedAt}
-        AND request.received_at < ${periodEndedAt}
+        AND request.received_at < ${periodEndedAt}`)
+  appendOwnedComplaintNoticeIds(query, noticeIds)
+  query
+    .append(sql`
     ), decided AS (
       SELECT complained.outcome::text AS outcome, decision.staff_disposition,
         EXTRACT(EPOCH FROM (decision.decided_at - request.received_at)) / 3600.0 AS hours,
@@ -52,7 +56,9 @@ export async function readDsaCopyrightComplaintFigures(
         ON complained.id = request.copyright_territorial_decision_id
       WHERE request.jurisdiction = 'eu_dsa'
         AND decision.decided_at >= ${periodStartedAt}
-        AND decision.decided_at < ${periodEndedAt}
+        AND decision.decided_at < ${periodEndedAt}`)
+  appendOwnedComplaintNoticeIds(query, noticeIds)
+  query.append(sql`
     ), buckets AS (
       SELECT bucket FROM (VALUES ('restrict'), ('no_action'), ('no_action_trusted_flagger'))
         AS definitions(bucket)
@@ -100,6 +106,25 @@ export async function readDsaCopyrightComplaintFigures(
       restrict: reportBucket(row.by_decision_type.restrict),
       no_action: reportBucket(row.by_decision_type.no_action),
       no_action_trusted_flagger: reportBucket(row.by_decision_type.no_action_trusted_flagger),
+    },
+  }
+}
+
+function appendOwnedComplaintNoticeIds(
+  query: ReturnType<typeof sql>,
+  noticeIds: readonly string[] | undefined,
+): void {
+  if (noticeIds) query.append(sql` AND request.copyright_notice_id = ANY(${noticeIds}::uuid[])`)
+}
+
+function emptyDsaCopyrightComplaintFigures(): DsaCopyrightComplaintFigures {
+  const bucket = () => ({ received: 0, upheld: 0, partially_reversed: 0, reversed: 0 })
+  return {
+    complaints_by_submitter: { notifier: 0, poster: 0, reviewer: 0 },
+    complaints_by_decision_type: {
+      restrict: bucket(),
+      no_action: bucket(),
+      no_action_trusted_flagger: bucket(),
     },
   }
 }

@@ -43,9 +43,10 @@ const defaultDependencies: DsaStatementSweepDependencies = {
 
 /** Checks both audited gates, materializes eligible decisions once, and never enqueues without credentials. */
 export async function prepareDsaStatementSubmissionSweep(
-  overrides: Partial<DsaStatementSweepDependencies> = {},
+  overrides: Partial<DsaStatementSweepDependencies> & { restrictionIds?: readonly string[] } = {},
 ): Promise<Date | null> {
-  const dependencies = { ...defaultDependencies, ...overrides }
+  const { restrictionIds, ...dependencyOverrides } = overrides
+  const dependencies = { ...defaultDependencies, ...dependencyOverrides }
   if (!(await dependencies.isEnabled())) return null
   const from = await dependencies.getFrom()
   if (!from) {
@@ -53,7 +54,11 @@ export async function prepareDsaStatementSubmissionSweep(
     return null
   }
 
-  await materializeDsaStatementSubmissions(from, dependencies)
+  await materializeDsaStatementSubmissions(from, {
+    buildPayload: dependencies.buildPayload,
+    reportBuildFailure: dependencies.reportBuildFailure,
+    restrictionIds,
+  })
   if (
     !dependencies.isConfigured({ url: dependencies.url() ?? '', token: dependencies.token() ?? '' })
   ) {
@@ -70,15 +75,16 @@ export async function prepareDsaStatementSubmissionSweep(
  */
 export async function materializeDsaStatementSubmissions(
   from: Date,
-  overrides: Partial<
-    Pick<DsaStatementSweepDependencies, 'buildPayload' | 'reportBuildFailure'>
-  > = {},
+  overrides: Partial<Pick<DsaStatementSweepDependencies, 'buildPayload' | 'reportBuildFailure'>> & {
+    restrictionIds?: readonly string[]
+  } = {},
 ): Promise<number> {
-  const dependencies = { ...defaultDependencies, ...overrides }
+  const { restrictionIds, ...dependencyOverrides } = overrides
+  const dependencies = { ...defaultDependencies, ...dependencyOverrides }
   // One bounded page per scheduled run. Inserted rows disappear from the next run's
   // NOT EXISTS work predicate, so the table itself is the durable resume marker.
   const page = await queryCopyrightSweepIdPage(
-    { limit: 100 },
+    { limit: 100, ids: restrictionIds },
     'Invalid DSA submission restriction cursor',
     'searchUnmaterializedDsaStatementRestrictionIds',
     'rowId',

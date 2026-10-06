@@ -11,7 +11,7 @@ export async function prepareTestEuWithdrawalGuestCase() {
   return { noticeId: scene.noticeId, notifierEmail: scene.email }
 }
 
-/** Reads and records existing-case duties after every EU approval was withdrawn. */
+/** Reads and records existing-case duties. Intake closure is proved on the caller's transaction. */
 export async function assertTestEuWithdrawalContinuity(input: {
   staff: PrivateUser
   notifier: PrivateUser
@@ -24,10 +24,6 @@ export async function assertTestEuWithdrawalContinuity(input: {
     staffRequest.authenticateAs(input.staff),
     notifierRequest.authenticateAs(input.notifier),
   ])
-  const availability = await createRequest()
-    .get('/api/v1/copyright-jurisdiction-availability')
-    .expect(200)
-  expect(availability.body.copyright_jurisdiction_availability.eu_dsa).toBe(false)
   const detail = await notifierRequest
     .get(`/api/v1/copyright-notices/${input.restrictedNoticeId}/participant`)
     .expect(200)
