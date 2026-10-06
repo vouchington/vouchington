@@ -32,6 +32,7 @@ export default defineConfig({
     setupFiles: [
       './backend/test-helpers/vitest.setup.sentry-mock.mts',
       './backend/test-helpers/vitest.setup.aws-mocks.mts',
+      './backend/test-helpers/vitest.setup.s3-offline.mts',
       './backend/test-helpers/vitest.setup.captcha-skip.mts',
       './backend/test-helpers/vitest.setup.server-error-responses.mts',
     ],
