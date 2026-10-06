@@ -81,6 +81,12 @@ jobs:
         run: |
           echo "DATABASE_URL=postgres://postgres@localhost:${{ job.services.postgres.ports['5432'] }}/postgres" >> "$GITHUB_ENV"
           echo "VALKEY_URL=redis://localhost:${{ job.services.valkey.ports['6379'] }}" >> "$GITHUB_ENV"
+      - name: Pin the EXPLAIN seed anchor day
+        # seed.mts and run.mts are separate node processes that must derive the same seeded ids.
+        # Choose the UTC day once for the whole job so a midnight or month boundary falling
+        # between the two steps cannot give them different ids (#2110).
+        timeout-minutes: 1
+        run: echo "EXPLAIN_SEED_ANCHOR_DATE=$(date -u +%Y-%m-%d)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-backend
         id: setup-backend

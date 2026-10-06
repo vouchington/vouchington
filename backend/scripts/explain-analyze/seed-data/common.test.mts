@@ -46,10 +46,12 @@ describe('seedUuid', () => {
     }
   })
 
-  it('derives the same post id whether the process starts early or late in the same UTC calendar day', async () => {
-    // seed.mts and run.mts are separate `node` process invocations in CI: this module's
-    // day-anchor is captured once at import time in each. vi.resetModules() + a dynamic import
-    // forces a genuinely fresh module evaluation, simulating that cross-process boundary.
+  it('derives the same post id whether an unpinned process starts early or late in the same UTC calendar day', async () => {
+    // With EXPLAIN_SEED_ANCHOR_DATE unset (a local run), this module's day-anchor falls back to
+    // the current UTC day, captured once at import time. vi.resetModules() + a dynamic import
+    // forces a genuinely fresh module evaluation, simulating the seed.mts/run.mts process
+    // boundary. The pinned-day variant lives in seed-anchor.test.mts.
+    vi.stubEnv('EXPLAIN_SEED_ANCHOR_DATE', undefined)
     vi.useFakeTimers()
     try {
       vi.setSystemTime(new Date('2026-03-05T00:05:00.000Z'))
@@ -74,6 +76,7 @@ describe('seedUuid', () => {
       expect(nextDay.seedUuid(3, '05')).not.toBe(early.seedUuid(3, '05'))
     } finally {
       vi.useRealTimers()
+      vi.unstubAllEnvs()
       vi.resetModules()
     }
   })
