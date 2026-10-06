@@ -57,9 +57,11 @@ credentials are absent.
 
 - `AWS_REGION` — defaults to `'us-west-2'`
 - `BEDROCK_AWS_REGION` — `'us-east-1'`
-- `MEDIA_DELIVERY_REGISTRY_REGION` — required only when media edge enforcement is enabled;
-  the DynamoDB registry region (`us-east-1` for the Lambda@Edge viewer authorization), independent
-  of the application `AWS_REGION`
+- `MEDIA_DELIVERY_REGISTRY_REGION` — required whenever media delivery registry publication is
+  enabled, and therefore for edge enforcement; the DynamoDB registry region (`us-east-1` for the
+  Lambda@Edge viewer authorization), independent of the application `AWS_REGION`. All five
+  `MEDIA_DELIVERY_*` variables are listed in the
+  [environment variable reference](../../../../infrastructure/reference-environment-variables-aws-s3-storage.md#media-delivery).
 
 ## Related
 

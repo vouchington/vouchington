@@ -52,6 +52,7 @@ section notes.
 - <a id="cloudflare-worker"></a>[Cloudflare Worker](reference-environment-variables-cloudflare-worker.md)
 - <a id="sideload-image-security"></a>[Sideload Image Security](reference-environment-variables-sideload-image-security.md)
 - <a id="aws-s3-storage"></a>[AWS S3 Storage](reference-environment-variables-aws-s3-storage.md)
+- <a id="media-delivery"></a>[Media Delivery](reference-environment-variables-aws-s3-storage.md#media-delivery)
 - <a id="browser-crawl-lightpanda"></a>[Browser Crawl (Lightpanda)](reference-environment-variables-browser-crawl-lightpanda.md)
 - <a id="server-configuration"></a>[Server Configuration](reference-environment-variables-server-configuration.md)
 - <a id="related"></a>[Related](reference-environment-variables-server-configuration.md)
