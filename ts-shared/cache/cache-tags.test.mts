@@ -73,6 +73,21 @@ describe('deriveEntityCacheTags', () => {
     expect(deriveEntityCacheTags('/topic/some-id')).toEqual(['topic:some-id'])
   })
 
+  it('tags a fediverse instance page with the topic tag a topic purge emits', () => {
+    expect(deriveEntityCacheTags('/instance/mastodon-example')).toEqual(['topic:mastodon-example'])
+    expect(deriveEntityCacheTags('/instance/mastodon-example/posts')).toEqual([
+      'topic:mastodon-example',
+    ])
+    expect(
+      deriveCacheTags('/instance/mastodon-example', {
+        isSitemap: false,
+        isRss: false,
+        isStatic: false,
+      }),
+    ).toEqual(['topic:mastodon-example'])
+    expect(deriveEntityCacheTags('/instances')).toEqual([])
+  })
+
   it('ignores extra path depth beyond the id-or-slug segment', () => {
     expect(deriveEntityCacheTags('/user/alice/reviews')).toEqual(['user:alice'])
     expect(deriveEntityCacheTags('/card/chase-sapphire/settings/about')).toEqual([

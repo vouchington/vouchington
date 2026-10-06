@@ -55,8 +55,7 @@ export const HTML_TAG = 'html'
 //   - posts: web/app/(posts)/*/[id]/page.tsx route dirs. `story` posts' canonical
 //     generated links collapse onto the `discussion` path (see web/lib/post-helpers.ts's
 //     POST_TYPE_PATHS), but `/story/:id` is a separate, independently reachable Next.js
-//     route (web/app/(posts)/story/[id]/page.tsx) that also renders story posts directly,
-//     so it needs its own slug here to stay purge-precise.
+//     route (web/app/(posts)/story/[id]/page.tsx) and needs its own slug to stay purge-precise.
 //   - topics: backend/types/entities/topic.mts's topicTypes[*].slug
 export const POST_TYPE_SLUGS: ReadonlySet<string> = new Set([
   'discussion',
@@ -77,6 +76,7 @@ export const TOPIC_TYPE_SLUGS: ReadonlySet<string> = new Set([
   'card',
   'bank-account',
   'source',
+  'instance',
 ])
 
 // Plural resource-collection family names shared by both `/api/v1/<family>/:idOrSlug`
