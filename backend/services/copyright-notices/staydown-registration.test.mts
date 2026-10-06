@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { PRIORITY_DEFAULT } from '@queues/images/config'
+import * as imageEnqueues from '@queues/images/enqueues'
 import { imagesQueue } from '@queues/images/queues'
 import { readCopyrightStaydownEntries } from '@voucha/test-helpers/data-stores/psql/copyright-staydown'
 import { createRestrictedStaydownCase } from '@voucha/test-helpers/services/copyright-notices/staydown-fixture'
@@ -19,9 +20,28 @@ function registrationImageId(data: unknown): string | undefined {
 }
 
 /**
- * Registration enqueues with `void`, so the job can land after the service returns.
- * `searchJobs` is state-independent and scoped to this fixture's image id.
+ * The registration enqueue is fire-and-forget. Await the promise `enqueueStaydownHash` already
+ * returns, then read the queue once. `searchJobs` is state-independent and scoped to this image.
  */
+async function settledRegistration<T>(run: () => Promise<T>): Promise<T> {
+  const pending: Promise<unknown>[] = []
+  const enqueue = imageEnqueues.enqueueStaydownHash
+  const spy = vi
+    .spyOn(imageEnqueues, 'enqueueStaydownHash')
+    .mockImplementation((imageId, source) => {
+      const job = enqueue(imageId, source)
+      pending.push(job)
+      return job
+    })
+  try {
+    const result = await run()
+    await Promise.all(pending)
+    return result
+  } finally {
+    spy.mockRestore()
+  }
+}
+
 async function registrationHashJobs(imageIds: readonly string[]) {
   const groups = await Promise.all(
     imageIds.map(imageId =>
@@ -45,11 +65,8 @@ async function expectNoRegistrationHashJobs(imageIds: readonly string[]): Promis
 }
 
 async function expectRegistrationHashJobs(imageIds: readonly string[]): Promise<void> {
-  let jobs: Awaited<ReturnType<typeof registrationHashJobs>> = []
-  await vi.waitFor(async () => {
-    jobs = await registrationHashJobs(imageIds)
-    expect(jobs).toHaveLength(imageIds.length)
-  })
+  const jobs = await registrationHashJobs(imageIds)
+  expect(jobs).toHaveLength(imageIds.length)
   expect(jobs.map(job => job.data.id).toSorted()).toEqual(imageIds.toSorted())
   for (const job of jobs) {
     expect(job.opts).toMatchObject({
@@ -79,7 +96,9 @@ describe('copyright staydown registration', () => {
     useStaydownMatching()
 
     it('registers the exact digest of each moderator-confirmed image and queues its perceptual hash', async () => {
-      const staydownCase = await createRestrictedStaydownCase({ targetCount: 2 })
+      const staydownCase = await settledRegistration(() =>
+        createRestrictedStaydownCase({ targetCount: 2 }),
+      )
 
       const entries = await readCopyrightStaydownEntries(staydownCase.noticeId)
       const images = await Promise.all(staydownCase.imageIds.map(id => getImageByIdFromPrimary(id)))
@@ -113,14 +132,16 @@ describe('copyright staydown registration', () => {
       async ({ action, registers }) => {
         const staydownCase = await createRestrictedStaydownCase({ imposedBy: 'automation' })
 
-        await completeCopyrightMandatoryHumanReview({
-          currentUser: staydownCase.moderator,
-          noticeId: staydownCase.noticeId,
-          restrictionId: staydownCase.restrictions[0]!.id,
-          action,
-          rationale: 'Reviewed the image against the claimed work.',
-          reviewedAt: new Date('2026-07-01T13:00:00.000Z'),
-        })
+        await settledRegistration(() =>
+          completeCopyrightMandatoryHumanReview({
+            currentUser: staydownCase.moderator,
+            noticeId: staydownCase.noticeId,
+            restrictionId: staydownCase.restrictions[0]!.id,
+            action,
+            rationale: 'Reviewed the image against the claimed work.',
+            reviewedAt: new Date('2026-07-01T13:00:00.000Z'),
+          }),
+        )
 
         const entries = await readCopyrightStaydownEntries(staydownCase.noticeId)
         expect(entries.map(entry => entry.image_id)).toEqual(registers ? staydownCase.imageIds : [])
