@@ -22,6 +22,7 @@ describe('SES inbound reconciliation through real GlideMQ', () => {
     // A graceful close waits out the worker's in-flight blocking read, so keep that read short.
     const workerOptions = { ...ownedConnectionOptions, blockTimeout: 1000 }
     const queue = new Queue<SesInboundProcessJobData>(queueName, ownedConnectionOptions)
+    const failedSettled = Promise.withResolvers<void>()
     const failedWorker = new Worker<SesInboundProcessJobData>(
       queueName,
       async () => {
@@ -29,17 +30,19 @@ describe('SES inbound reconciliation through real GlideMQ', () => {
       },
       workerOptions,
     )
+    failedWorker.once('failed', () => failedSettled.resolve())
     const data = {
       sesMessageId: 'ses-recovery-test',
       objectKey: 'copyright-incoming/ses-recovery-test',
     }
-    let recoveryWorker: { close(): Promise<void> } | undefined
+    let recoveryWorker: Worker<SesInboundProcessJobData> | undefined
 
     try {
       const options = { ...getSesInboundProcessJobOptions(data), attempts: 1 }
       const job = await queue.add(SES_INBOUND_PROCESS_JOB_NAME, data, options)
       if (!job) throw new Error('Expected the failed test job to be created')
-      await vi.waitFor(async () => expect(await job.getState()).toBe('failed'), { timeout: 10_000 })
+      await failedSettled.promise
+      expect(await job.getState()).toBe('failed')
       await failedWorker.close()
 
       await expect(
@@ -56,23 +59,22 @@ describe('SES inbound reconciliation through real GlideMQ', () => {
         }),
       ).resolves.toBe(1)
 
+      const recovered = Promise.withResolvers<void>()
       recoveryWorker = new Worker<SesInboundProcessJobData>(
         queueName,
         async () => undefined,
         workerOptions,
       )
-      await vi.waitFor(async () => expect(await job.getState()).toBe('completed'), {
-        timeout: 10_000,
-      })
+      recoveryWorker.once('completed', () => recovered.resolve())
+      await recovered.promise
+      expect(await job.getState()).toBe('completed')
     } finally {
       await Promise.allSettled([failedWorker.close(), recoveryWorker?.close()])
       await queue.obliterate({ force: true })
       await queue.close()
     }
 
-    await vi.waitFor(() => expect(countActivePipeWraps()).toBeLessThanOrEqual(pipeWrapsBefore), {
-      timeout: 2_000,
-    })
+    expect(countActivePipeWraps()).toBeLessThanOrEqual(pipeWrapsBefore)
   })
 })
 

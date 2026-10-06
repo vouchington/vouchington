@@ -6,7 +6,7 @@ import { CLASSIFIER_RUN_ATTEMPTS } from '@queues/ai-agents/config'
 import { ai_agents } from '@queues/ai-agents/queues'
 import { spendCapConfig } from '@services/ai-usage'
 import type { ClassifierRunSubject } from '@services/classifier-runs'
-import { findAiUsageRecordForPost, pollUntilNotNull } from '@voucha/test-helpers'
+import { findAiUsageRecordForPost } from '@voucha/test-helpers'
 import {
   classifierRunDispatcherJobFor,
   classifierRunDispatcherJobForFeedItem,
@@ -236,12 +236,10 @@ describe('C7 reasoning autotagger through the shared lifecycle (real PG, mocked 
     await (await dispatchAgentRun(fixture)).run()
 
     const { id } = fixture.post
-    await expect(
-      pollUntilNotNull(() => findAiUsageRecordForPost(id, AUTOTAGGER_AGENT_SLUG)),
-    ).resolves.toMatchObject({ input_tokens: 12 })
-    await expect(
-      pollUntilNotNull(() => findAiUsageRecordForPost(id, 'autotagger')),
-    ).resolves.toMatchObject({ input_tokens: 12 })
+    expect(await findAiUsageRecordForPost(id, AUTOTAGGER_AGENT_SLUG)).toMatchObject({
+      input_tokens: 12,
+    })
+    expect(await findAiUsageRecordForPost(id, 'autotagger')).toMatchObject({ input_tokens: 12 })
   })
 
   describe('recovery', () => {

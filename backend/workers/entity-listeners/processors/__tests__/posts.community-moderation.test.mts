@@ -56,7 +56,7 @@ describe('post entity listener community moderation request', () => {
     expect(
       await getClassifierRunRequestFacts(postId, COMMUNITY_MODERATION_CLASSIFIER_SLUG),
     ).toMatchObject([{ input_sha256: content_sha256, run_id: null, stale_at: null }])
-    await expect.poll(() => readCommunityModerationDispatchers(postId)).toHaveLength(1)
+    expect(await readCommunityModerationDispatchers(postId)).toHaveLength(1)
   })
 
   it('requests nothing for a post that is no longer published in its community', async () => {

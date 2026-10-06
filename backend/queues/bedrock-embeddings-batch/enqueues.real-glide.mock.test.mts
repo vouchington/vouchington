@@ -53,11 +53,13 @@ describe('embedding reconciliation on real GlideMQ', () => {
     const firstStarted = Promise.withResolvers<void>()
     const otherLaneStarted = Promise.withResolvers<void>()
     const releaseFirst = Promise.withResolvers<void>()
+    const secondProcessed = Promise.withResolvers<void>()
     const processed: string[] = []
     const worker = new Worker(
       queueName,
       async (job: Job) => {
         processed.push(job.name)
+        if (job.name === 'second') secondProcessed.resolve()
         if (job.name === 'first') {
           firstStarted.resolve()
           await releaseFirst.promise
@@ -95,7 +97,8 @@ describe('embedding reconciliation on real GlideMQ', () => {
       expect(await second.getState()).toBe('group-waiting')
       expect(processed).toEqual(['first', 'other'])
       releaseFirst.resolve()
-      await vi.waitFor(() => expect(processed).toContain('second'), { timeout: 3_000 })
+      await secondProcessed.promise
+      expect(processed).toContain('second')
     } finally {
       releaseFirst.resolve()
       await worker.close(true)

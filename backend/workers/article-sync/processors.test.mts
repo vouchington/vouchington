@@ -136,17 +136,13 @@ async function withPublishedStatus(
   run: () => Promise<void>,
 ): Promise<ArticleSyncStatus[]> {
   const subscription = await articleSyncPubSub.subscribe(jobId)
-  const received: ArticleSyncStatus[] = []
-  subscription.setHandler(value => received.push(value))
+  const published = Promise.withResolvers<ArticleSyncStatus>()
+  subscription.setHandler(value => published.resolve(value))
   try {
     await run()
-    await vi.waitFor(
-      () => {
-        expect(received).toEqual([expected])
-      },
-      { timeout: 10_000, interval: 50 },
-    )
-    return received
+    const status = await published.promise
+    expect(status).toEqual(expected)
+    return [status]
   } finally {
     await subscription.close()
   }

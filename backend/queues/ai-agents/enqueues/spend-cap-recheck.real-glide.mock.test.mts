@@ -22,6 +22,7 @@ describe('spend-cap recheck priority-zero scheduling with real GlideMQ', () => {
       { ...connection, blockTimeout: 10_000, promotionInterval: 25 },
     )
 
+    let onDelayedCompleted: ((completedJob: Job<SpendCapRecheckJobData>) => void) | undefined
     try {
       await worker.waitUntilReady()
       const drained = Promise.withResolvers<void>()
@@ -41,10 +42,18 @@ describe('spend-cap recheck priority-zero scheduling with real GlideMQ', () => {
         { delay: 500, jobId: randomUUID(), priority: 0 },
       )
       if (!job) throw new Error('Expected delayed spend-cap coordinator')
+      const delayedCompleted = Promise.withResolvers<void>()
+      onDelayedCompleted = completedJob => {
+        if (completedJob.id !== job.id) return
+        delayedCompleted.resolve()
+      }
+      worker.on('completed', onDelayedCompleted)
       await expect(job.getState()).resolves.toBe('delayed')
 
-      await vi.waitFor(() => expect(processedIds).toContain(job.id), { timeout: 3_000 })
+      await delayedCompleted.promise
+      expect(processedIds).toContain(job.id)
     } finally {
+      if (onDelayedCompleted) worker.off('completed', onDelayedCompleted)
       await worker.close(true)
       await queue.obliterate({ force: true })
       await queue.close()

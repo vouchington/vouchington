@@ -1,5 +1,5 @@
 import { it, expect, describe } from 'vitest'
-import { createTestUser, createTestPost, pollUntilNotNull } from '@voucha/test-helpers'
+import { createTestUser, createTestPost } from '@voucha/test-helpers'
 import { caches } from '@services/entity-cache/caches'
 import {
   enqueueBulkRefreshPostMetricsById,
@@ -20,9 +20,10 @@ describe('enqueues.generated', () => {
     const user = await createTestUser({ administrator: true })
     const post = await createTestPost({ user: user! })
 
+    // The test queue flushes the refresh job before enqueue resolves, so the cache write is done.
     await enqueueBulkRefreshPostMetricsById([post.id])
 
-    expect(await pollUntilNotNull(() => caches.post_metrics.get(post.id))).not.toBeNull()
+    expect(await caches.post_metrics.get(post.id)).not.toBeNull()
   })
 
   it('enqueueBulkRefreshUserMetricsById refreshes user metrics cache', async () => {
@@ -30,7 +31,7 @@ describe('enqueues.generated', () => {
 
     await enqueueBulkRefreshUserMetricsById([user!.id])
 
-    expect(await pollUntilNotNull(() => caches.user_metrics.get(user!.id))).not.toBeNull()
-    expect(await pollUntilNotNull(() => caches.user_metrics.get(user!.username!))).not.toBeNull()
+    expect(await caches.user_metrics.get(user!.id)).not.toBeNull()
+    expect(await caches.user_metrics.get(user!.username!)).not.toBeNull()
   })
 })
