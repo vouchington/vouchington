@@ -1,8 +1,6 @@
-import type { Job } from 'glide-mq'
 import { it, expect, describe } from 'vitest'
 import { createTestUser, createTestPost } from '@voucha/test-helpers'
 import { caches } from '@services/entity-cache/caches'
-import { entityMetricsCacheRefresh } from '@workers/entity-metrics-cache-refresh/workers'
 import {
   enqueueBulkRefreshPostMetricsById,
   enqueueBulkRefreshUserMetricsById,
@@ -22,7 +20,8 @@ describe('enqueues.generated', () => {
     const user = await createTestUser({ administrator: true })
     const post = await createTestPost({ user: user! })
 
-    await waitForMetricsRefresh(post.id, () => enqueueBulkRefreshPostMetricsById([post.id]))
+    // The test queue flushes the refresh job before enqueue resolves, so the cache write is done.
+    await enqueueBulkRefreshPostMetricsById([post.id])
 
     expect(await caches.post_metrics.get(post.id)).not.toBeNull()
   })
@@ -30,26 +29,9 @@ describe('enqueues.generated', () => {
   it('enqueueBulkRefreshUserMetricsById refreshes user metrics cache', async () => {
     const user = await createTestUser({ administrator: true })
 
-    await waitForMetricsRefresh(user!.id, () => enqueueBulkRefreshUserMetricsById([user!.id]))
+    await enqueueBulkRefreshUserMetricsById([user!.id])
 
     expect(await caches.user_metrics.get(user!.id)).not.toBeNull()
     expect(await caches.user_metrics.get(user!.username!)).not.toBeNull()
   })
 })
-
-async function waitForMetricsRefresh(id: string, enqueue: () => Promise<unknown>): Promise<void> {
-  let onCompleted: ((job: Job) => void) | undefined
-  const completed = new Promise<void>(resolve => {
-    onCompleted = (job: Job) => {
-      if ((job.data as { id?: string } | undefined)?.id !== id) return
-      resolve()
-    }
-    entityMetricsCacheRefresh.on('completed', onCompleted)
-  })
-  try {
-    await enqueue()
-    await completed
-  } finally {
-    if (onCompleted) entityMetricsCacheRefresh.off('completed', onCompleted)
-  }
-}

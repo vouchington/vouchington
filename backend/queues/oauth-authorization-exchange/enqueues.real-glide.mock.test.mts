@@ -33,7 +33,7 @@ describe('OAuth authorization exchange recovery through real GlideMQ', () => {
     initialWorker.on('error', () => undefined)
     const terminalStates = new Map<string, 'completed' | 'failed'>()
     const initialSettled = Promise.withResolvers<void>()
-    const trackedIds = new Set([
+    const trackedIds = new Set<string>([
       completedAuthorizationId,
       failedAuthorizationId,
       unrelatedAuthorizationId,
