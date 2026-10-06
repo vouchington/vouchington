@@ -7,10 +7,11 @@ import {
   type ClassifierGoldenCase,
 } from '@voucha/test-helpers/classifier-golden-set'
 
-const apiKey = process.env.OPENROUTER_API_KEY ?? ''
-
 describe('autotagger golden regression set', () => {
-  it.skipIf(!apiKey)('keeps synthetic tagging decisions in their configured bands', async () => {
+  it('keeps synthetic tagging decisions in their configured bands', async () => {
+    if (!process.env.OPENROUTER_API_KEY?.trim()) {
+      throw new Error('OPENROUTER_API_KEY is required for this credentialed test.')
+    }
     const [
       { buildPostClassifierState, buildRssFeedItemClassifierState },
       { getActiveClassifierConfigurationBySlugFromPrimary },

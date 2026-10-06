@@ -29,6 +29,9 @@ vi.mock<typeof import('node:fs')>(
       cpSync: vi.fn<typeof import('node:fs').cpSync>(),
       existsSync: vi.fn<typeof import('node:fs').existsSync>(() => true),
       mkdirSync: vi.fn<typeof import('node:fs').mkdirSync>(),
+      readFileSync: vi.fn<typeof import('node:fs').readFileSync>(() => {
+        return '<script>window.STORYBOOK_CSP_INLINE = true</script>' as never
+      }),
       renameSync: vi.fn<typeof import('node:fs').renameSync>(),
       rmSync: vi.fn<typeof import('node:fs').rmSync>(),
       writeFileSync: vi.fn<typeof import('node:fs').writeFileSync>(),
@@ -112,16 +115,37 @@ describe('setup-web-integration', () => {
     expect(webBuildEnv().NEXT_TEST_BUILD).toBe('1')
   })
 
-  it('builds the Cloudflare Worker before starting the Next build', async () => {
+  it('builds the Cloudflare Worker, then Storybook, before starting the Next build', async () => {
+    const fs = await import('node:fs')
+    const { resolve } = await import('node:path')
     const modulePath = './setup-web-integration.mts?sequential-builds'
     await import(modulePath)
 
     expect(buildEvents).toEqual([
       'start:--dir cloudflare-worker build',
       'exit:--dir cloudflare-worker build',
+      'start:--dir web exec storybook build --output-dir storybook-static',
+      'exit:--dir web exec storybook build --output-dir storybook-static',
       'start:--dir web build',
       'exit:--dir web build',
     ])
+    expect(spawnCalls.find(call => call.args.includes('storybook'))?.env.STORYBOOK_BASE_PATH).toBe(
+      '/storybook/',
+    )
+    const root = process.cwd()
+    expect(vi.mocked(fs.cpSync)).toHaveBeenCalledWith(
+      resolve(root, 'web/storybook-static'),
+      resolve(root, 'web/.next/standalone/web/public/storybook'),
+      { recursive: true },
+    )
+    expect(vi.mocked(fs.writeFileSync)).toHaveBeenCalledWith(
+      resolve(root, 'web/storybook-static/iframe.html'),
+      '<script src="./csp-inline-0.js"></script>',
+    )
+    expect(vi.mocked(fs.writeFileSync)).toHaveBeenCalledWith(
+      resolve(root, 'web/storybook-static/csp-inline-0.js'),
+      'window.STORYBOOK_CSP_INLINE = true',
+    )
   })
 
   it('allows callers to opt out of the test build flag', async () => {
@@ -185,9 +209,9 @@ describe('setup-web-integration', () => {
       .map(([, json]) => JSON.parse(stringFromUnknown(json)) as { timings: Record<string, number> })
 
     // One write before any step starts, plus one after each of cache-cleanup,
-    // cloudflare-worker-build, next-build, and standalone-asset-copy: a watchdog SIGKILL partway
-    // through the build still leaves whichever of these writes already landed on disk.
-    expect(calls.length).toBeGreaterThanOrEqual(5)
+    // cloudflare-worker-build, storybook-build, next-build, and standalone-asset-copy.
+    // A watchdog SIGKILL partway through the build still leaves whichever writes already landed.
+    expect(calls.length).toBeGreaterThanOrEqual(6)
     expect(calls[0]!.timings).toEqual({})
 
     const afterCloudflareBuildOnly = calls.find(
@@ -204,8 +228,10 @@ describe('setup-web-integration', () => {
   it('does not abort the build when the timing report write fails', async () => {
     const fs = await import('node:fs')
     process.env.VOUCHINGTON_SETUP_WEB_TIMINGS_JSON = '/tmp/setup-web-timings-write-failure.json'
-    vi.mocked(fs.writeFileSync).mockImplementation(() => {
-      throw new Error('EIO: simulated timing-report write failure')
+    vi.mocked(fs.writeFileSync).mockImplementation(path => {
+      if (path === '/tmp/setup-web-timings-write-failure.json') {
+        throw new Error('EIO: simulated timing-report write failure')
+      }
     })
 
     const modulePath = './setup-web-integration.mts?timing-report-write-failure'

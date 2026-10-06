@@ -38,10 +38,23 @@ const fixture = {
   },
 } as unknown as Tool
 
-const ROUTES = [
-  { path: '/api/v1/mcp', audience: 'user', scope: 'topics:read' },
-  { path: '/api/v1/admin/mcp', audience: 'admin', scope: 'mcp.admin:read' },
-] as const
+const USER_ROUTE = { path: '/api/v1/mcp', audience: 'user', scope: 'topics:read' } as const
+const ADMIN_ROUTE = {
+  path: '/api/v1/admin/mcp',
+  audience: 'admin',
+  scope: 'mcp.admin:read',
+} as const
+const ROUTES = [USER_ROUTE, ADMIN_ROUTE] as const
+
+function installOriginFixture(): void {
+  const mutableTools = ALL_TOOLS as Tool[]
+  beforeEach(() => {
+    mutableTools.push(fixture)
+  })
+  afterEach(() => {
+    mutableTools.splice(mutableTools.indexOf(fixture), 1)
+  })
+}
 
 async function callFixture(path: string, token: string) {
   const response = await createRequest()
@@ -61,19 +74,12 @@ async function callFixture(path: string, token: string) {
 
 describe.each(ROUTES)('POST $path request origin', ({ path, audience, scope }) => {
   let admin: PrivateUser
-  const mutableTools = ALL_TOOLS as Tool[]
 
   beforeAll(async () => {
     admin = await createTestUser({ administrator: true })
   })
 
-  beforeEach(() => {
-    mutableTools.push(fixture)
-  })
-
-  afterEach(() => {
-    mutableTools.splice(mutableTools.indexOf(fixture), 1)
-  })
+  installOriginFixture()
 
   it('records the OAuth client that the access token was issued to', async () => {
     const approved = await createTestApprovedOAuthAuthorization(admin, { audience, scope })
@@ -90,11 +96,21 @@ describe.each(ROUTES)('POST $path request origin', ({ path, audience, scope }) =
       provenance: { createdVia: 'mcp', oauthClientId: client!.id },
     })
   })
+})
 
-  it.skipIf(audience === 'admin')('records an MCP API key without an OAuth client', async () => {
-    const { rawKey } = await createApiKey(admin.id, 'mcp', 'Origin MCP Key', [scope])
+describe('POST /api/v1/mcp request origin', () => {
+  let admin: PrivateUser
 
-    await expect(callFixture(path, rawKey)).resolves.toEqual({
+  beforeAll(async () => {
+    admin = await createTestUser({ administrator: true })
+  })
+
+  installOriginFixture()
+
+  it('records an MCP API key without an OAuth client', async () => {
+    const { rawKey } = await createApiKey(admin.id, 'mcp', 'Origin MCP Key', [USER_ROUTE.scope])
+
+    await expect(callFixture(USER_ROUTE.path, rawKey)).resolves.toEqual({
       origin: { interface: 'mcp', credential: 'api_key', client: null, oauthClientId: null },
       provenance: { createdVia: 'mcp', oauthClientId: null },
     })

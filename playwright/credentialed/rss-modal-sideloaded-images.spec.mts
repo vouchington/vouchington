@@ -1,30 +1,20 @@
-// Real-network test: the sideload pipeline fetches picsum.photos/seed/voucha-pw/640/360 through
-// the image-resize Lambda. picsum.photos/seed/<fixed> is deterministic so bytes are stable across
-// runs. CI has S3 credentials; skip locally when neither S3_AWS_ACCESS_KEY_ID nor
-// AWS_ACCESS_KEY_ID is set (the Lambda needs S3 to cache the resized image before returning it).
-import { test, expect, type Request } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import {
-  installImageResponseGuard,
-  expectAllImagesLoaded,
-} from '../../helpers/expect-no-broken-images.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
-import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
-import { insertTestRssFeed } from '../../helpers/insert-test-rss-feed.mts'
-import { write } from '../../../backend/data-stores/psql/clients.mts'
-import { insertTestRssFeedItem } from '../../../backend/test-helpers/entities/rss-feed-items.mts'
+// Sideload pipeline test. The image lambda serves the reserved Playwright cover locally, so CI
+// does not fetch an external host. Runs only in the credentialed Playwright workflow, which
+// provides AWS credentials and the image buckets. A missing credential fails the test.
+import { PLAYWRIGHT_SIDELOAD_IMAGE_URL } from '../../lambdas/playwright-podcast-cover.mts'
+import { test, expect, type Request } from '../helpers/test.mts'
+import { navigateTo } from '../helpers/navigate-to.mts'
+import { installImageResponseGuard } from '../helpers/expect-no-broken-images.mts'
+import { randomSuffix } from '../helpers/random-id.mts'
+import { insertTestTopic } from '../helpers/insert-test-topic.mts'
+import { insertTestRssFeed } from '../helpers/insert-test-rss-feed.mts'
+import { write } from '../../backend/data-stores/psql/clients.mts'
+import { insertTestRssFeedItem } from '../../backend/test-helpers/entities/rss-feed-items.mts'
 import {
   parseSigningKeys,
   SIDELOAD_SIGNING_KEYS_ENV,
   signPath,
-} from '../../../ts-shared/url-signing/index.mts'
-
-// The image-resize Lambda needs S3 (to cache resized output) AND outbound HTTPS to
-// picsum.photos. Both are reliable in CI; locally either can be flaky depending on the
-// dev's AWS profile and network. Skip outside CI so local cheap checks stay offline
-// on environment-specific failures while still exercising the path on every CI run.
-const hasS3Credentials = Boolean(process.env.S3_AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID)
-const isCI = Boolean(process.env.CI)
+} from '../../ts-shared/url-signing/index.mts'
 
 test.describe('sideloaded images in RSS item modal', () => {
   let rssItemId: string
@@ -35,10 +25,9 @@ test.describe('sideloaded images in RSS item modal', () => {
   let topicId: string | undefined
 
   test.beforeEach(async () => {
-    // Skip before any DB writes — when running locally without S3/CI, this avoids
-    // churning topics/feeds/items just to discard them in afterEach.
-    test.skip(!isCI, 'Sideload + image-resize stack is only reliably available in CI')
-    test.skip(!hasS3Credentials, 'Requires S3 credentials for the image-resize Lambda cache')
+    if (!process.env.S3_AWS_ACCESS_KEY_ID && !process.env.AWS_ACCESS_KEY_ID) {
+      throw new Error('AWS credentials are required for this credentialed test.')
+    }
 
     const suffix = `sideload-${randomSuffix()}`
 
@@ -79,7 +68,7 @@ test.describe('sideloaded images in RSS item modal', () => {
         contentSnippet: 'Test article with a sideloaded image.',
         description:
           '<p>Test body.</p>' +
-          '<img src="https://picsum.photos/seed/voucha-pw/640/360" alt="test sideloaded image" />',
+          `<img src="${PLAYWRIGHT_SIDELOAD_IMAGE_URL}" alt="test sideloaded image" />`,
       },
       contentSha256: Buffer.from('01'.padStart(64, '0'), 'hex'),
     })
@@ -131,11 +120,18 @@ test.describe('sideloaded images in RSS item modal', () => {
     const dialog = page.getByRole('dialog')
     await expect(dialog).toBeVisible()
 
-    // DOM gate: every <img> under the dialog must resolve with non-zero naturalWidth.
-    await expectAllImagesLoaded(dialog)
-
-    const sideloadImage = dialog.locator('img[src*="/sideload/"]')
+    // The markdown enhancer hides the original lazy <img> and portals a visible one.
+    // Only the visible sideload image is required to decode.
+    const sideloadImage = dialog.locator('img[src*="/sideload/"]:visible')
     await expect(sideloadImage).toHaveCount(1)
+    await expect
+      .poll(() =>
+        sideloadImage.evaluate(element => {
+          const image = element as HTMLImageElement
+          return image.complete && image.naturalWidth > 0 && image.naturalHeight > 0
+        }),
+      )
+      .toBe(true)
     const sideloadSrcValue = await sideloadImage.getAttribute('src')
     expect(sideloadSrcValue).not.toBeNull()
     const sideloadSrc = new URL(sideloadSrcValue!)

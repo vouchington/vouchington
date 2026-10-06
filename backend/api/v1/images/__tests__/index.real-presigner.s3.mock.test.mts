@@ -1,23 +1,21 @@
-import { describe, it, expect, beforeAll, vi } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { hasS3Credentials } from '@modules/aws/credentials'
 
 vi.unmock('@aws-sdk/s3-request-presigner')
 
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
-import type { PrivateUser } from '@services/users/types'
 
-describe.skipIf(!hasS3Credentials())('POST /api/v1/images/upload-url', () => {
-  let user: PrivateUser
-
-  beforeAll(async () => {
-    user = await createTestUser()
-  })
+describe('POST /api/v1/images/upload-url', () => {
   it(
     'returns a real signed S3 upload URL in test mode',
     { timeout: 30_000 },
     /* no-mistakes: integration=aws */
     async () => {
+      if (!hasS3Credentials()) {
+        throw new Error('S3 credentials are required for this credentialed test.')
+      }
+      const user = await createTestUser()
       let reachedRealPresignerPath = false
 
       const request = createRequest()

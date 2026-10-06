@@ -1,20 +1,40 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRandomString } from '@voucha/test-helpers'
 import { createSign, generateKeyPairSync } from 'node:crypto'
-import { GOOGLE_CLIENT_ID } from '@voucha/config'
-import { getGoogleAccountByGoogleUserId, upsertGoogleAccount } from './index.mts'
+import type { fetch as undiciFetch } from 'undici'
+
+const googleClientId = 'google-oauth-test-client'
+const fetchSpy = vi.fn<typeof undiciFetch>()
+
+vi.resetModules()
+vi.doMock<typeof import('undici')>(import('undici'), async () => {
+  const actual = await vi.importActual<typeof import('undici')>('undici')
+  return { ...actual, fetch: fetchSpy }
+})
+
+const { getGoogleAccountByGoogleUserId, upsertGoogleAccount } = await import('./index.mts')
 
 const { privateKey: googlePrivateKey, publicKey: googlePublicKey } = generateKeyPairSync('rsa', {
   modulusLength: 2048,
 })
 const googleJwk = googlePublicKey.export({ format: 'jwk' }) as Record<string, string>
 
-describe.skipIf(!GOOGLE_CLIENT_ID)('google oauth', () => {
+describe('google oauth', () => {
   const googleUserId = `google-${createRandomString(10)}`
   const email = `tests+${createRandomString(8)}@voucha.ai`
 
+  beforeEach(() => {
+    vi.stubEnv('GOOGLE_CLIENT_ID', googleClientId)
+  })
+
   afterEach(() => {
+    fetchSpy.mockReset()
     vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
+  afterAll(() => {
+    vi.doUnmock('undici')
   })
 
   it('upserts a google account from a signed credential', async () => {
@@ -25,7 +45,7 @@ describe.skipIf(!GOOGLE_CLIENT_ID)('google oauth', () => {
       },
       {
         iss: 'https://accounts.google.com',
-        aud: GOOGLE_CLIENT_ID!,
+        aud: googleClientId,
         sub: googleUserId,
         email,
         email_verified: true,
@@ -34,13 +54,10 @@ describe.skipIf(!GOOGLE_CLIENT_ID)('google oauth', () => {
         exp: Math.floor(Date.now() / 1000) + 300,
       },
       jwks => {
-        vi.stubGlobal(
-          'fetch',
-          vi.fn<typeof fetch>().mockResolvedValue({
-            ok: true,
-            json: () => Promise.resolve({ keys: [jwks] }),
-          } as Response),
-        )
+        fetchSpy.mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve({ keys: [jwks] }),
+        } as Awaited<ReturnType<typeof undiciFetch>>)
       },
     )
 
@@ -58,7 +75,7 @@ describe.skipIf(!GOOGLE_CLIENT_ID)('google oauth', () => {
       { kid: 'google-kid', alg: 'HS256' },
       {
         iss: 'https://accounts.google.com',
-        aud: GOOGLE_CLIENT_ID!,
+        aud: googleClientId,
         sub: 'unsupported-alg',
         iat: Math.floor(Date.now() / 1000) - 60,
         exp: Math.floor(Date.now() / 1000) + 300,

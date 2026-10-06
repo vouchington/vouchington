@@ -7,13 +7,8 @@ import { storybookBundleHasStory } from '../../helpers/storybook.mts'
 // API failures, which cannot be injected via page.route() since server-to-backend requests
 // bypass the browser network stack. They are verified via Vitest unit tests and Storybook.
 
-const currentBundleSentinelStory = 'design-system-shared-statuspage--not-found'
-
-async function skipIfStorybookBundleIsStale(page: Parameters<typeof navigateTo>[0]) {
-  test.skip(
-    !(await storybookBundleHasStory(page, currentBundleSentinelStory)),
-    'Full-stack Storybook bundle predates this story.',
-  )
+async function requireStory(page: Parameters<typeof navigateTo>[0], id: string) {
+  expect(await storybookBundleHasStory(page, id), `Storybook bundle is missing ${id}.`).toBe(true)
 }
 
 async function openStory(page: Parameters<typeof navigateTo>[0], id: string) {
@@ -32,7 +27,7 @@ test.describe('status page and error page rendering', () => {
   })
 
   test('StatusPage storybook story renders rate-limited variant', async ({ page }) => {
-    await skipIfStorybookBundleIsStale(page)
+    await requireStory(page, 'design-system-shared-statuspage--rate-limited')
     await openStory(page, 'design-system-shared-statuspage--rate-limited')
 
     await expect(page.getByTestId('status-page-title')).toContainText('Too many requests')
@@ -43,7 +38,7 @@ test.describe('status page and error page rendering', () => {
   })
 
   test('ErrorPage storybook story renders rate-limited variant', async ({ page }) => {
-    await skipIfStorybookBundleIsStale(page)
+    await requireStory(page, 'design-system-shared-errorpage--rate-limited')
     await openStory(page, 'design-system-shared-errorpage--rate-limited')
 
     await expect(page.getByTestId('error-page')).toBeVisible()
@@ -56,7 +51,7 @@ test.describe('status page and error page rendering', () => {
   })
 
   test('ErrorPage storybook story renders generic error variant', async ({ page }) => {
-    await skipIfStorybookBundleIsStale(page)
+    await requireStory(page, 'design-system-shared-errorpage--generic-error')
     await openStory(page, 'design-system-shared-errorpage--generic-error')
 
     await expect(page.getByTestId('error-page-title')).toContainText('Something went wrong')
@@ -64,7 +59,7 @@ test.describe('status page and error page rendering', () => {
   })
 
   test('GlobalError storybook story renders rate-limited variant', async ({ page }) => {
-    await skipIfStorybookBundleIsStale(page)
+    await requireStory(page, 'design-system-shared-errorpage--global-error-rate-limited')
     await openStory(page, 'design-system-shared-errorpage--global-error-rate-limited')
 
     await expect(page.getByTestId('global-error-page')).toBeVisible()
@@ -77,7 +72,7 @@ test.describe('status page and error page rendering', () => {
   })
 
   test('GlobalError storybook story renders generic error variant', async ({ page }) => {
-    await skipIfStorybookBundleIsStale(page)
+    await requireStory(page, 'design-system-shared-errorpage--global-error-generic')
     await openStory(page, 'design-system-shared-errorpage--global-error-generic')
 
     await expect(page.getByTestId('global-error-page-title')).toContainText('Something went wrong')

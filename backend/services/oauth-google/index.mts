@@ -1,7 +1,7 @@
 import { createPublicKey, createVerify } from 'node:crypto'
 import assert from 'http-assert'
 import createHttpError from 'http-errors'
-import { GOOGLE_CLIENT_ID } from '@voucha/config'
+import { readGoogleClientId } from '@voucha/config'
 import {
   upsertOAuthAccount,
   getOAuthAccountByProviderUserId,
@@ -87,8 +87,9 @@ function verifyGoogleJwtWithKey(credential: string, key: GooglePublicKey): Googl
   if (payload.iss !== 'accounts.google.com' && payload.iss !== 'https://accounts.google.com') {
     throw createHttpError(401, 'Google credential issuer is invalid')
   }
-  if (!GOOGLE_CLIENT_ID) throw createHttpError(500, 'Google OAuth not configured')
-  if (payload.aud !== GOOGLE_CLIENT_ID) {
+  const googleClientId = readGoogleClientId()
+  if (!googleClientId) throw createHttpError(500, 'Google OAuth not configured')
+  if (payload.aud !== googleClientId) {
     throw createHttpError(401, 'Google credential audience is invalid')
   }
 

@@ -8,12 +8,13 @@ describe('stripe.client', () => {
    * Other Stripe tests are in *.mock.test.mts (mocked client).
    */
 
-  const hasStripeKey = Boolean(process.env.STRIPE_SECRET_KEY)
-
-  it.skipIf(!hasStripeKey)(
+  it(
     'connects to Stripe and retrieves balance',
     /* no-mistakes: integration=stripe */
     async () => {
+      if (!process.env.STRIPE_SECRET_KEY?.trim()) {
+        throw new Error('STRIPE_SECRET_KEY is required for this credentialed test.')
+      }
       const stripe = getStripeClient()
       const balance = await stripe.balance.retrieve()
       expect(balance.object).toBe('balance')

@@ -1,7 +1,6 @@
 // Real S3 presigned PUT test — exercises the CORS allow-list on the staging uploads bucket.
-// Requires AWS credentials (S3_AWS_ACCESS_KEY_ID or AWS_ACCESS_KEY_ID).
-// This test is skipped when credentials or the staging bucket are not available (dependabot /
-// untrusted PRs).
+// Runs only in the credentialed Playwright workflow, which provides AWS credentials and
+// S3_BUCKET_IMAGE_UPLOADS. A missing credential fails the test.
 
 import { test, expect } from '../../playwright/helpers/test.mts'
 import { navigateTo } from '../../playwright/helpers/navigate-to.mts'
@@ -21,21 +20,14 @@ function expectNoEmptyChecksumQueryParams(uploadUrl: URL): void {
   expect(emptyChecksumParams).toHaveLength(0)
 }
 
-// Skip the entire suite at the file level so beforeAll (DB write) never runs when
-// credentials are absent (dependabot PRs / local dev without AWS config).
-test.skip(
-  !hasAwsCredentials || !imageUploadsBucket,
-  'Requires AWS credentials and S3_BUCKET_IMAGE_UPLOADS',
-)
-
-let topic: { id: string; urlSlug: string }
-
-test.beforeAll(async () => {
-  const suffix = randomSuffix()
-  topic = await insertTestTopic(`image-upload-${suffix}`, `image-upload-${suffix}`, 'card')
-})
-
 test('uploads logo image to S3 without CORS error', async ({ page }) => {
+  expect(
+    hasAwsCredentials && Boolean(imageUploadsBucket),
+    'AWS credentials and S3_BUCKET_IMAGE_UPLOADS are required for this credentialed test.',
+  ).toBe(true)
+  const suffix = randomSuffix()
+  const topic = await insertTestTopic(`image-upload-${suffix}`, `image-upload-${suffix}`, 'card')
+
   await loginAsAdmin(page)
   await navigateTo(page, `/card/${topic.id}/settings/about`)
   await page.locator('[data-hydrated="true"]').waitFor()

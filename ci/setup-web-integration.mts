@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { cpSync, existsSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { runPnpm } from './run-pnpm-command.mts'
 import { clearStaleTestCaches, getWranglerRuntimeRoot } from './stale-test-cache-cleanup.mts'
@@ -8,6 +8,7 @@ import { clearStaleTestCaches, getWranglerRuntimeRoot } from './stale-test-cache
 const ROOT_DIR = process.cwd()
 const WEB_DIR = resolve(ROOT_DIR, 'web')
 const WORKER_DIR = resolve(ROOT_DIR, 'cloudflare-worker')
+const storybookStaticDir = resolve(WEB_DIR, 'storybook-static')
 
 const imageOrigin =
   process.env.IMAGE_ORIGIN ??
@@ -30,7 +31,7 @@ const nextBuildCache = !fsCache ? 'disabled' : existsSync(turbopackCachePath) ? 
 // watchdog SIGKILL mid-`next-build` still leaves partial data on disk for issue #10937.
 writeTimingReport()
 
-// ast-grep-ignore: no-three-sequential-awaits -- fixed pipeline, not independent work: cleanup must finish before either build touches the caches it clears, and the builds stay serialized so one runner never hosts two concurrent production builds
+// ast-grep-ignore: no-three-sequential-awaits -- fixed pipeline, not independent work: cleanup must finish before the builds touch the caches it clears, and the worker, Storybook, and Next builds stay serialized so one runner never hosts concurrent production builds
 await timeStep('cache-cleanup', async () => {
   clearStaleTestCaches({
     rootDir: ROOT_DIR,
@@ -50,6 +51,16 @@ await timeStep('cache-cleanup', async () => {
 await timeStep('cloudflare-worker-build', () =>
   runPnpm(ROOT_DIR, ['--dir', 'cloudflare-worker', 'build'], { NODE_ENV: 'production' }),
 )
+await timeStep('storybook-build', async () => {
+  await runPnpm(
+    ROOT_DIR,
+    ['--dir', 'web', 'exec', 'storybook', 'build', '--output-dir', 'storybook-static'],
+    { STORYBOOK_BASE_PATH: '/storybook/' },
+  )
+  // The worker CSP allows same-origin scripts and blocks inline scripts. Storybook's
+  // preview iframe keeps its runtime config in inline scripts, so move those into files.
+  externalizeStorybookInlineScripts(storybookStaticDir)
+})
 await timeStep('next-build', () =>
   runPnpm(ROOT_DIR, ['--dir', 'web', 'build'], {
     NODE_ENV: 'production',
@@ -87,7 +98,12 @@ await timeStep('standalone-asset-copy', async () => {
   try {
     rmSync(webStandalonePublicDir, { force: true, recursive: true })
     rmSync(webStandaloneStaticDir, { force: true, recursive: true })
+    const storybookIndex = resolve(storybookStaticDir, 'index.json')
+    if (!existsSync(storybookIndex)) {
+      throw new Error(`Missing Storybook index at ${storybookIndex}`)
+    }
     cpSync(webPublicDir, webStandalonePublicDir, { recursive: true })
+    cpSync(storybookStaticDir, resolve(webStandalonePublicDir, 'storybook'), { recursive: true })
     cpSync(webStaticDir, webStandaloneStaticDir, { recursive: true })
   } catch (err) {
     // Stable marker for hasWebStackBuildFailureSignal, in case a runner shutdown races the
@@ -120,6 +136,26 @@ function writeTimingReport(): void {
     // abort the build or replace the real build error from timeStep's finally block.
     process.stderr.write(`Failed to write timing report to ${timingReportPath}: ${String(err)}\n`)
   }
+}
+
+function externalizeStorybookInlineScripts(outputDir: string): void {
+  const iframePath = resolve(outputDir, 'iframe.html')
+  if (!existsSync(iframePath)) {
+    throw new Error(`Missing Storybook iframe at ${iframePath}`)
+  }
+
+  const html = readFileSync(iframePath, 'utf8')
+  let index = 0
+  const rewritten = html.replace(/<script>([\s\S]*?)<\/script>/g, (_match, source: string) => {
+    const fileName = `csp-inline-${index}.js`
+    index += 1
+    writeFileSync(resolve(outputDir, fileName), source)
+    return `<script src="./${fileName}"></script>`
+  })
+  if (/<script(?![^>]*\bsrc=)[^>]*>/.test(rewritten)) {
+    throw new Error(`Storybook iframe still has an inline script after externalizing ${iframePath}`)
+  }
+  if (rewritten !== html) writeFileSync(iframePath, rewritten)
 }
 
 async function timeStep(name: string, fn: () => Promise<void>): Promise<void> {

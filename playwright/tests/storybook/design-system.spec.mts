@@ -4,11 +4,11 @@ import { storybookBundleHasStory } from '../../helpers/storybook.mts'
 
 const currentBundleSentinelStory = 'design-system-layout--sidebar-menu-skeleton-default'
 
-async function skipIfStorybookBundleIsStale(page: Parameters<typeof navigateTo>[0]) {
-  test.skip(
-    !(await storybookBundleHasStory(page, currentBundleSentinelStory)),
-    'Full-stack Storybook bundle predates this design system story sweep.',
-  )
+async function requireCurrentStorybookBundle(page: Parameters<typeof navigateTo>[0]) {
+  expect(
+    await storybookBundleHasStory(page, currentBundleSentinelStory),
+    `Storybook bundle is missing ${currentBundleSentinelStory}.`,
+  ).toBe(true)
 }
 
 async function openStory(page: Parameters<typeof navigateTo>[0], id: string) {
@@ -17,7 +17,7 @@ async function openStory(page: Parameters<typeof navigateTo>[0], id: string) {
 
 test.describe('Storybook design system component stories', () => {
   test('renders alert components', async ({ page }) => {
-    await skipIfStorybookBundleIsStale(page)
+    await requireCurrentStorybookBundle(page)
     await openStory(page, 'design-system-components-alert--variants')
 
     await expect(page.getByTestId('alert').first()).toBeVisible()
@@ -26,10 +26,10 @@ test.describe('Storybook design system component stories', () => {
   })
 
   test('renders keyboard key primitives', async ({ page }) => {
-    test.skip(
-      !(await storybookBundleHasStory(page, 'design-system-components-kbd--shortcuts')),
-      'Full-stack Storybook bundle predates the keyboard key primitive story.',
-    )
+    expect(
+      await storybookBundleHasStory(page, 'design-system-components-kbd--shortcuts'),
+      'Storybook bundle is missing design-system-components-kbd--shortcuts.',
+    ).toBe(true)
     await openStory(page, 'design-system-components-kbd--shortcuts')
 
     await expect(page.getByTestId('kbd-group')).toBeVisible()
@@ -37,7 +37,7 @@ test.describe('Storybook design system component stories', () => {
   })
 
   test('renders badge, button, and card primitives', async ({ page }) => {
-    await skipIfStorybookBundleIsStale(page)
+    await requireCurrentStorybookBundle(page)
 
     await openStory(page, 'design-system-components-badge--variants')
     await expect(page.getByTestId('badge').first()).toBeVisible()
@@ -55,17 +55,21 @@ test.describe('Storybook design system component stories', () => {
   })
 
   test('renders skeleton and empty state', async ({ page }) => {
-    await skipIfStorybookBundleIsStale(page)
+    await requireCurrentStorybookBundle(page)
 
     await openStory(page, 'design-system-components-skeleton--skeleton')
     await expect(page.getByTestId('skeleton').first()).toBeVisible()
 
-    await openStory(page, 'design-system-components-empty-state--default')
+    expect(
+      await storybookBundleHasStory(page, 'design-system-components-emptystate--default'),
+      'Storybook bundle is missing design-system-components-emptystate--default.',
+    ).toBe(true)
+    await openStory(page, 'design-system-components-emptystate--default')
     await expect(page.getByTestId('empty-state')).toBeVisible()
   })
 
   test('renders feed components', async ({ page }) => {
-    await skipIfStorybookBundleIsStale(page)
+    await requireCurrentStorybookBundle(page)
 
     await openStory(page, 'design-system-feed--category-chips-default')
     await expect(page.getByTestId('category-chips')).toBeVisible()
@@ -96,7 +100,7 @@ test.describe('Storybook design system component stories', () => {
   })
 
   test('renders layout, media, brand, and SEO components', async ({ page }) => {
-    await skipIfStorybookBundleIsStale(page)
+    await requireCurrentStorybookBundle(page)
 
     await openStory(page, 'design-system-layout--hoverable-card-default')
     await expect(page.getByTestId('hoverable-card')).toBeVisible()
@@ -119,7 +123,7 @@ test.describe('Storybook design system component stories', () => {
   })
 
   test('renders entity list item components', async ({ page }) => {
-    await skipIfStorybookBundleIsStale(page)
+    await requireCurrentStorybookBundle(page)
 
     await openStory(page, 'entities-communities--list-item-card')
     await expect(page.getByTestId('community-list-item-card')).toBeVisible()
@@ -132,7 +136,7 @@ test.describe('Storybook design system component stories', () => {
   })
 
   test('renders user profile link components', async ({ page }) => {
-    await skipIfStorybookBundleIsStale(page)
+    await requireCurrentStorybookBundle(page)
 
     await openStory(page, 'entities-users--profile-links')
     await expect(page.getByTestId('profile-link-badge').first()).toBeVisible()

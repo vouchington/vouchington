@@ -10,6 +10,8 @@ const ORIGINAL_S3_BUCKET_RENDERS = process.env.S3_BUCKET_RENDERS
 const ORIGINAL_ALLOW_TURNSTILE_TEST_KEY = process.env.ALLOW_TURNSTILE_TEST_KEY
 const ORIGINAL_NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY = process.env.NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY
 const ORIGINAL_NEXT_PUBLIC_ASSET_PREFIX = process.env.NEXT_PUBLIC_ASSET_PREFIX
+const ORIGINAL_GTM_ID = process.env.GTM_ID
+const ORIGINAL_NEXT_PUBLIC_GTM_ID = process.env.NEXT_PUBLIC_GTM_ID
 
 function loadPlaywrightConfig() {
   vi.resetModules()
@@ -68,6 +70,16 @@ describe('Playwright shared config', () => {
     } else {
       process.env.NEXT_PUBLIC_ASSET_PREFIX = ORIGINAL_NEXT_PUBLIC_ASSET_PREFIX
     }
+    if (ORIGINAL_GTM_ID === undefined) {
+      delete process.env.GTM_ID
+    } else {
+      process.env.GTM_ID = ORIGINAL_GTM_ID
+    }
+    if (ORIGINAL_NEXT_PUBLIC_GTM_ID === undefined) {
+      delete process.env.NEXT_PUBLIC_GTM_ID
+    } else {
+      process.env.NEXT_PUBLIC_GTM_ID = ORIGINAL_NEXT_PUBLIC_GTM_ID
+    }
     vi.resetModules()
   })
 
@@ -110,6 +122,8 @@ describe('Playwright shared config', () => {
       delete process.env.IMAGE_LAMBDA_PORT
       delete process.env.S3_BUCKET_IMAGES
       delete process.env.S3_BUCKET_RENDERS
+      delete process.env.GTM_ID
+      delete process.env.NEXT_PUBLIC_GTM_ID
       Object.assign(process.env, envOverrides)
       const { CHROMIUM_USE, createPlaywrightConfig } = await loadPlaywrightConfig()
 
@@ -129,6 +143,7 @@ describe('Playwright shared config', () => {
       const workerServer = webServers.find(server => server.name === 'cloudflare-worker')
       expect(webServer?.env).toMatchObject({
         ALLOW_TURNSTILE_TEST_KEY: 'true',
+        GTM_ID: 'GTM-PLAYWRIGHT',
         NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY: expect.any(String),
         PORT: expected.WEB_PORT,
       })
@@ -158,6 +173,24 @@ describe('Playwright shared config', () => {
     const webServers = Array.isArray(config.webServer) ? config.webServer : []
     const webServer = webServers.find(server => server.name === 'web')
     expect(webServer?.env).toMatchObject({ ALLOW_TURNSTILE_TEST_KEY: 'false' })
+  })
+
+  it('preserves an explicit GTM id for the Playwright web server', async () => {
+    process.env.GTM_ID = 'GTM-EXPLICIT'
+    const { CHROMIUM_USE, createPlaywrightConfig } = await loadPlaywrightConfig()
+
+    const config = createPlaywrightConfig({
+      backendCommand: 'node backend/entrypoints/api/serve.mts',
+      junitOutputFile: 'test-report.junit.xml',
+      projects: [{ name: 'chromium', use: CHROMIUM_USE }],
+      reuseExistingServer: false,
+      testDir: './playwright/tests',
+      timeout: 60_000,
+    })
+
+    const webServers = Array.isArray(config.webServer) ? config.webServer : []
+    const webServer = webServers.find(server => server.name === 'web')
+    expect(webServer?.env).toMatchObject({ GTM_ID: 'GTM-EXPLICIT' })
   })
 
   it('preserves an explicit web push public key for the Playwright web server', async () => {
