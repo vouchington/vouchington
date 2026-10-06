@@ -2,7 +2,8 @@
 
 Source entrypoint: [backend/test-helpers/README.md](../../../../backend/test-helpers/README.md)
 
-Testing utility library for the Voucha backend. See [AGENTS.md](../../../../backend/test-helpers/AGENTS.md) for agent conventions and rules.
+Testing utility library for the Voucha backend.
+[`readTestDatabaseTimestamp`](../../../../backend/test-helpers/database-clock.mts) returns PostgreSQL `clock_timestamp()` for sweep cutoffs that must include rows the test just inserted and exclude rows inserted afterward. See [AGENTS.md](../../../../backend/test-helpers/AGENTS.md) for agent conventions and rules.
 
 SQL setup and assertions are grouped by concern in `sql-*.mts` (posts, RSS feeds, topics,
 moderation, feed shares, follower distribution, URLs, configuration, and agent prompts).

@@ -1,9 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import {
+  connectTestOAuthAccount,
   createTestUser,
   insertTestOAuthAccount,
-  connectTestOAuthAccount,
+  readTestDatabaseTimestamp,
   setTestOAuthAccountTokens,
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
@@ -38,8 +39,11 @@ describe('friend dispatcher continuations', () => {
         batch_size: 1,
         max_rows_per_provider_per_run: 1,
       })
+      // The sweep cutoff is `created_at <= sweepStartedAt`. The runner clock can lag PostgreSQL,
+      // so a timestamp taken here can fall before the last insert and drop that tail row.
+      const sweepStartedAt = await readTestDatabaseTimestamp()
       const data: FriendsDispatchData = {
-        sweepStartedAt: new Date().toISOString(),
+        sweepStartedAt,
         upperIds: { facebook: null, x: null, github: null, [provider]: ids[2]! },
         afterIds: { [provider]: `${prefix}-0` },
       }
