@@ -13,6 +13,10 @@ vi.mock(import('next/link'), () => createNextLinkMock())
 
 vi.mock(import('next/dynamic'), () => createNextDynamicMock())
 
+// The dynamic() loader imports FollowButton. Stub it so that import does not pull in
+// login-url.ts, which can still be loading when Vitest tears the environment down.
+vi.mock(import('@/components/shared/follow-button'), () => ({ FollowButton: () => null }))
+
 vi.mock(
   import('@/lib/auth/context'),
   () =>
