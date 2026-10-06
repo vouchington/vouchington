@@ -34,7 +34,6 @@
       "dev/localization/local-smoke.mts",
       "dev/native-addon-readiness.mts",
       "dev/otel-register.mts",
-      "static-code-analysis/oxlint-plugin.cjs",
       "static-code-analysis/repo-file-policy-worker.mts",
       "web/generate-membership-benefit-catalog.ts",
       "web/storybook/mocks/contribute-cta-aside.tsx",
