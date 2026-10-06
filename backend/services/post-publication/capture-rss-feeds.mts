@@ -177,6 +177,7 @@ export async function retainCurrentRssFeedPublicationKeys(
       ON category.rss_feed_item_id = source.rss_feed_item_id
     WHERE category.topic_id IS NOT NULL
     )
+    /* no-mistakes#1556: the NULL columns list every arbiter column the INSERT would leave out */
     SELECT DISTINCT dirty_work_id, NULL::uuid AS impact_post_identity_id,
       NULL::uuid AS impact_community_identity_id, NULL::uuid AS impact_rss_feed_item_identity_id,
       CASE WHEN kind = 'impact_topic' THEN uuid_value END AS topic_key,

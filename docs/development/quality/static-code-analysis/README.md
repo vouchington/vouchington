@@ -574,10 +574,12 @@ Known gaps, tracked in [#2029](https://github.com/vouchington/vouchington/issues
 
 Shapes that satisfy `postgres-conflict-ordering` for handle and typed-executor SQL:
 
-- A constant leading arbiter column (a bound parameter) gets a select alias that heads the
+- Workaround for no-mistakes#1557, remove once fixed: a bound constant arbiter key (a bound
+  parameter, leading or trailing) is read as a column, so it gets a select alias that heads the
   `ORDER BY`: `SELECT $1::uuid AS url_hostname_id, ... ORDER BY url_hostname_id, ...`. Positional
   `ORDER BY 1` and `ORDER BY $1::uuid` are not mapped.
-- A multi-row `DO NOTHING` names its conflict target. An arbiter column left out of the `INSERT`
+- A multi-row `DO NOTHING` names its conflict target.
+- Workaround for no-mistakes#1556, remove once fixed: an arbiter column left out of the `INSERT`
   column list cannot be mapped to the `ORDER BY`, so the statement lists every arbiter column and
   selects `NULL::type AS column` for the ones it does not set.
 - The rule resolves a partial-index target only when the predicate matches the catalog's
