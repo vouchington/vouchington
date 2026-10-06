@@ -1,5 +1,5 @@
 import { beginTransaction, read } from '@data-stores/psql'
-import type { TransactionQuery } from '@data-stores/psql/types'
+import type { QueryExecutor, TransactionQuery } from '@data-stores/psql/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type { PrivateUser } from '@services/users/types'
@@ -37,7 +37,7 @@ function currentCopyrightJurisdictionPolicySql(jurisdiction: TerritorialCopyrigh
 
 export async function findCurrentCopyrightJurisdictionPolicy(
   jurisdiction: TerritorialCopyrightJurisdiction,
-  query: TransactionQuery = read,
+  query: QueryExecutor = read,
 ): Promise<CopyrightJurisdictionPolicyApproval | null> {
   const { rows } = await query<CopyrightJurisdictionPolicyApproval>(
     currentCopyrightJurisdictionPolicySql(jurisdiction),
@@ -46,9 +46,7 @@ export async function findCurrentCopyrightJurisdictionPolicy(
 }
 
 /** `query` lets a test read availability inside a transaction that has concealed approvals. */
-export async function getCopyrightJurisdictionAvailability(
-  query: TransactionQuery = read,
-): Promise<{
+export async function getCopyrightJurisdictionAvailability(query: QueryExecutor = read): Promise<{
   eu_dsa: boolean
   uk: boolean
 }> {
