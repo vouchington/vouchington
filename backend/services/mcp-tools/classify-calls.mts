@@ -35,7 +35,7 @@ const INVALID_REQUEST: McpCallAuditEvent = {
 
 // A `tools/call` that will run and exercises REST routes. `eventIndex` is its row in the plan's
 // events, and `requestId` is the JSON-RPC id the server answers it under.
-export type McpToolCallCharge = {
+type McpToolCallCharge = {
   eventIndex: number
   requestId: string | number
   routeKeys: readonly string[]
