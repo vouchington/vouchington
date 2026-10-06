@@ -4,10 +4,7 @@
 import { PLAYWRIGHT_SIDELOAD_IMAGE_URL } from '../../lambdas/playwright-podcast-cover.mts'
 import { test, expect, type Request } from '../helpers/test.mts'
 import { navigateTo } from '../helpers/navigate-to.mts'
-import {
-  installImageResponseGuard,
-  expectAllImagesLoaded,
-} from '../helpers/expect-no-broken-images.mts'
+import { installImageResponseGuard } from '../helpers/expect-no-broken-images.mts'
 import { randomSuffix } from '../helpers/random-id.mts'
 import { insertTestTopic } from '../helpers/insert-test-topic.mts'
 import { insertTestRssFeed } from '../helpers/insert-test-rss-feed.mts'
@@ -123,11 +120,18 @@ test.describe('sideloaded images in RSS item modal', () => {
     const dialog = page.getByRole('dialog')
     await expect(dialog).toBeVisible()
 
-    // DOM gate: every <img> under the dialog must resolve with non-zero naturalWidth.
-    await expectAllImagesLoaded(dialog)
-
-    const sideloadImage = dialog.locator('img[src*="/sideload/"]')
+    // The markdown enhancer hides the original lazy <img> and portals a visible one.
+    // Only the visible sideload image is required to decode.
+    const sideloadImage = dialog.locator('img[src*="/sideload/"]:visible')
     await expect(sideloadImage).toHaveCount(1)
+    await expect
+      .poll(() =>
+        sideloadImage.evaluate(element => {
+          const image = element as HTMLImageElement
+          return image.complete && image.naturalWidth > 0 && image.naturalHeight > 0
+        }),
+      )
+      .toBe(true)
     const sideloadSrcValue = await sideloadImage.getAttribute('src')
     expect(sideloadSrcValue).not.toBeNull()
     const sideloadSrc = new URL(sideloadSrcValue!)
