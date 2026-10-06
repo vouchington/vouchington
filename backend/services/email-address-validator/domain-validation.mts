@@ -94,6 +94,11 @@ export async function validateEmailDomain(domain: string): Promise<void> {
   }
 }
 
+/**
+ * @public Retained provisionally under issue #1360; this synthetic Vitest DNS override is a test seam,
+ * and external production use is unconfirmed. It may be made private or removed after the test seam
+ * and intended-use review are complete.
+ */
 export function setResolveMxRecordsForDomainValidationTest(
   override: typeof resolveMxRecords,
 ): () => void {
