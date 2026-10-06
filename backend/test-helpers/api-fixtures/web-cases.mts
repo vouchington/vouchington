@@ -1,5 +1,6 @@
 import { pageInfo, topic } from './data.mts'
 import { electionVotes, topicElection } from './election-data.mts'
+import { entityProvenanceApiFixtureCases } from './entity-provenance-cases.mts'
 import { rssFeedItemsFeedBody } from './rss-feed-items-data.mts'
 import type { ApiFixtureCase } from './types.mts'
 import { webCommunityApiFixtureCases } from './web-community-cases.mts'
@@ -11,6 +12,7 @@ import { webRssFeedCategoryApiFixtureCases } from './web-rss-feed-category-cases
 export const webApiFixtureCases: ApiFixtureCase[] = [
   ...webMembershipRefundApiFixtureCases,
   ...webRssFeedCategoryApiFixtureCases,
+  ...entityProvenanceApiFixtureCases,
   {
     id: 'web.oauth.authorization.complete.acknowledged',
     method: 'POST',

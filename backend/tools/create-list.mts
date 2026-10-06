@@ -1,4 +1,5 @@
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
+import { attachWrittenListProvenance } from '@services/content-provenance'
 import { createOwnedList, type List } from '@services/lists'
 import type { BasicUser } from '@services/users/types'
 import {
@@ -36,10 +37,8 @@ const tool: Tool<CreateListArgs, { success: true; list: List }> = {
   },
   function: (currentUser: BasicUser) => async (args: CreateListArgs) => {
     const currentPrivateUser = await requireActiveToolUser(currentUser)
-    return {
-      success: true,
-      list: await createOwnedList(currentPrivateUser.id, getRequestContentProvenance(), args),
-    }
+    const list = await createOwnedList(currentPrivateUser.id, getRequestContentProvenance(), args)
+    return { success: true, list: await attachWrittenListProvenance(list, null) }
   },
 }
 

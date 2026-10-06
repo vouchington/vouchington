@@ -49,11 +49,13 @@ describe('list read tool output schemas', () => {
       'visibility',
       'created_at',
       'updated_at',
+      'provenance',
     ])
     for (const [field, schema] of Object.entries(list)) {
       expect(schema).toEqual(documented('List', field))
     }
     expect(Object.keys(list)).not.toContain('removed_at')
+    expect(Object.keys(list)).not.toContain('staff_provenance')
   })
 
   it('takes the item fields from the ListItem contract', () => {

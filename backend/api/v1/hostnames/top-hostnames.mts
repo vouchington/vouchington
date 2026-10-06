@@ -2,6 +2,7 @@ import { clampAnonLimit } from '@services/pagination'
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import { streamJsonObject } from '@jongleberry/api-server'
 import app from '../../app.mts'
+import { attachTopicProvenance } from '@services/content-provenance'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { searchTopHostnames } from '@services/urls-hostnames/search-top'
 import { searchTopHostnamesCached } from '@services/entity-fetch/search-caches'
@@ -99,7 +100,12 @@ app.route('/api/v1/hostnames/top').get(async ctx => {
     results: visibleHostnames.map(h => ({ __entity_type: 'hostname' as const, id: h.id })),
     page_info,
     hostnames: indexById(visibleHostnames),
-    topics: topicIds.length > 0 ? getTopicByAnyCachedBatch(topicIds).then(indexById) : {},
+    topics:
+      topicIds.length > 0
+        ? getTopicByAnyCachedBatch(topicIds)
+            .then(topics => attachTopicProvenance(topics, currentUser))
+            .then(indexById)
+        : {},
     hostname_elections: electionsPromise,
     top_urls_by_hostname_id: getTopUrlsByHostnameIds(hostnameIds),
   }

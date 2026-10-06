@@ -4,6 +4,7 @@ import {
   getTopicByAnyWithRedirect,
   mergeTopicAliases,
 } from '@services/topics'
+import { attachWrittenTopicProvenance } from '@services/content-provenance'
 import app from '../../app.mts'
 import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 
@@ -42,7 +43,7 @@ app.route('/api/v1/topics/:sourceIdOrSlug/merges').post(async (ctx: Context) => 
   const merge = await mergeTopicAliases(currentUser, source.topic, target.topic)
   ctx.setStatus(201)
   ctx.json({
-    topic: merge.destination_topic,
+    topic: await attachWrittenTopicProvenance(merge.destination_topic, currentUser),
     topic_merge: {
       source_topic_id: merge.source_topic_id,
       destination_topic_id: merge.destination_topic_id,

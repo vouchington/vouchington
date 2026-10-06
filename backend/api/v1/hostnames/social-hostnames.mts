@@ -1,5 +1,6 @@
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
+import { attachTopicProvenance } from '@services/content-provenance'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { getFriendTrustedHostnames } from '@services/urls-hostnames/social'
 import { toPublicViewHostname, getUrlHostnamesByAnyBatch } from '@services/urls-hostnames'
@@ -66,7 +67,11 @@ app.route('/api/v1/hostnames/social').get(async (ctx: Context) => {
     hostnames: hostnamesPromise,
     hostname_elections: getHostnameElectionByIdCachedBatch(hostnameIds).then(indexById),
     topics: topicIdsPromise.then(topicIds =>
-      topicIds.length > 0 ? getTopicByAnyCachedBatch(topicIds).then(indexById) : {},
+      topicIds.length > 0
+        ? getTopicByAnyCachedBatch(topicIds)
+            .then(topics => attachTopicProvenance(topics, currentUser))
+            .then(indexById)
+        : {},
     ),
     social_by_hostname_id: Object.fromEntries(
       results.map(r => [

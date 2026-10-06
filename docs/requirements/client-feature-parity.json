@@ -3055,13 +3055,13 @@
         "web": {
           "status": "full",
           "uiEvidence": [
-            "web/components/posts/post-provenance-badges.tsx",
+            "web/components/provenance/provenance-badges.tsx",
             "web/components/posts/post-card/post-card-badges.tsx",
             "web/components/posts/post-detail-badges.tsx",
-            "web/storybook/posts/post-provenance-badges.stories.tsx"
+            "web/storybook/provenance/provenance-badges.stories.tsx"
           ],
           "behaviorTests": [
-            "web/components/posts/__tests__/post-provenance-badges.test.tsx",
+            "web/components/provenance/__tests__/provenance-badges.test.tsx",
             "web/components/posts/__tests__/post-badges.provenance.test.tsx",
             "playwright/tests/posts/post-provenance.spec.mts"
           ]
@@ -3079,6 +3079,193 @@
       },
       "gap": {
         "summary": "Swift and .NET decode neither `provenance` nor `staff_provenance` and render no \"via API\", \"via MCP\" or \"via {app}\" label, channel or OAuth client on posts. The fields are staged in the API fixtures.",
+        "trackingIssue": "https://github.com/vouchington/vouchington-clients/issues/206"
+      }
+    },
+    {
+      "id": "community-provenance-label",
+      "title": "Community provenance label",
+      "domain": "Content",
+      "intents": [],
+      "requirements": [
+        "docs/requirements/content/content-provenance.md",
+        "docs/requirements/content/reference-content-provenance-exposure.md",
+        "docs/requirements/anatomy/community.md"
+      ],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "Community provenance label"
+        },
+        {
+          "table": "C",
+          "surface": "community-provenance-label"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/components/provenance/provenance-badges.tsx",
+            "web/components/communities/community-card.tsx",
+            "web/components/communities/community-header.tsx",
+            "web/storybook/provenance/provenance-badges.stories.tsx"
+          ],
+          "behaviorTests": ["web/components/provenance/__tests__/provenance-badges.test.tsx"]
+        },
+        "swift": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        },
+        "dotnet": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        }
+      },
+      "gap": {
+        "summary": "Swift and .NET decode neither `provenance` nor `staff_provenance` and render no \"via API\", \"via MCP\" or \"via {app}\" label, channel or OAuth client on communities.",
+        "trackingIssue": "https://github.com/vouchington/vouchington-clients/issues/206"
+      }
+    },
+    {
+      "id": "topic-provenance-label",
+      "title": "Topic provenance label",
+      "domain": "Content",
+      "intents": [],
+      "requirements": [
+        "docs/requirements/content/content-provenance.md",
+        "docs/requirements/content/reference-content-provenance-exposure.md",
+        "docs/requirements/anatomy/topic.md"
+      ],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "Topic provenance label"
+        },
+        {
+          "table": "C",
+          "surface": "topic-provenance-label"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/components/provenance/provenance-badges.tsx",
+            "web/components/topics/topic-card.tsx",
+            "web/components/topics/topic-detail-header.tsx",
+            "web/storybook/provenance/provenance-badges.stories.tsx"
+          ],
+          "behaviorTests": ["web/components/provenance/__tests__/provenance-badges.test.tsx"]
+        },
+        "swift": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        },
+        "dotnet": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        }
+      },
+      "gap": {
+        "summary": "Swift and .NET decode neither `provenance` nor `staff_provenance` and render no \"via API\", \"via MCP\" or \"via {app}\" label, channel or OAuth client on topics.",
+        "trackingIssue": "https://github.com/vouchington/vouchington-clients/issues/206"
+      }
+    },
+    {
+      "id": "list-provenance-label",
+      "title": "List provenance label",
+      "domain": "Content",
+      "intents": [],
+      "requirements": [
+        "docs/requirements/content/content-provenance.md",
+        "docs/requirements/content/reference-content-provenance-exposure.md",
+        "docs/requirements/anatomy/list.md"
+      ],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "List provenance label"
+        },
+        {
+          "table": "C",
+          "surface": "list-provenance-label"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/components/provenance/provenance-badges.tsx",
+            "web/app/(lists)/list/[id]/page.tsx",
+            "web/app/(my)/my/lists/page.tsx",
+            "web/storybook/provenance/provenance-badges.stories.tsx"
+          ],
+          "behaviorTests": ["web/components/provenance/__tests__/provenance-badges.test.tsx"]
+        },
+        "swift": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        },
+        "dotnet": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        }
+      },
+      "gap": {
+        "summary": "Swift and .NET decode neither `provenance` nor `staff_provenance` and render no \"via API\", \"via MCP\" or \"via {app}\" label, channel or OAuth client on lists.",
+        "trackingIssue": "https://github.com/vouchington/vouchington-clients/issues/206"
+      }
+    },
+    {
+      "id": "rss-feed-provenance-label",
+      "title": "RSS feed provenance label",
+      "domain": "Content",
+      "intents": [],
+      "requirements": [
+        "docs/requirements/content/content-provenance.md",
+        "docs/requirements/content/reference-content-provenance-exposure.md",
+        "docs/requirements/anatomy/source.md"
+      ],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "RSS feed provenance label"
+        },
+        {
+          "table": "C",
+          "surface": "rss-feed-provenance-label"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/components/provenance/provenance-badges.tsx",
+            "web/components/sources/source-list-item-meta.tsx",
+            "web/storybook/provenance/provenance-badges.stories.tsx"
+          ],
+          "behaviorTests": ["web/components/provenance/__tests__/provenance-badges.test.tsx"]
+        },
+        "swift": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        },
+        "dotnet": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        }
+      },
+      "gap": {
+        "summary": "Swift and .NET decode neither `provenance` nor `staff_provenance` and render no \"via API\", \"via MCP\" or \"via {app}\" label, channel or OAuth client on RSS feeds.",
         "trackingIssue": "https://github.com/vouchington/vouchington-clients/issues/206"
       }
     }

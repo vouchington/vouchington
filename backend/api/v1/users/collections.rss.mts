@@ -2,6 +2,7 @@ import app from '../../app.mts'
 import { apiQuery } from '../../response-contract.mts'
 import type { Context } from '@jongleberry/api-server'
 import { defineQueryContract, queryEnum } from '@modules/pagination'
+import { attachRssFeedProvenance } from '@services/content-provenance'
 import { getUserRssFeedsCollection, getUserRssFeedItemsCollection } from '@services/entity-fetch'
 import { buildRssFeedSidecars, proxyRssFeedCoverArt } from '@services/rss-feeds'
 import { getRssFeedItemEmbedsByItems, proxyThumbnailUrls } from '@services/rss-feed-items'
@@ -64,11 +65,16 @@ app.route('/api/v1/users/:idOrSlug/rss-feeds/:listType').get(async (ctx: Context
     limit,
     after,
     feedType,
-  })
-  const proxiedResults = collection.results.map(proxyRssFeedCoverArt)
-  const sidecars = await buildRssFeedSidecars(proxiedResults, resolved.currentUser)
+  }).then(async found => ({
+    ...found,
+    results: await attachRssFeedProvenance(
+      found.results.map(proxyRssFeedCoverArt),
+      resolved.currentUser,
+    ),
+  }))
+  const sidecars = await buildRssFeedSidecars(collection.results, resolved.currentUser)
   applyCacheHeaders(ctx, !isPrivate, resolved.currentUser)
-  ctx.json({ ...collection, results: proxiedResults, ...sidecars })
+  ctx.json({ ...collection, ...sidecars })
 })
 
 app.route('/api/v1/users/:idOrSlug/rss-feed-items/:listType').get(async (ctx: Context) => {

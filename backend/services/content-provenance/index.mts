@@ -1,3 +1,6 @@
+export * from './attach-entity-provenance.mts'
 export * from './attach-post-provenance.mts'
+export * from './entity-facts.mts'
 export * from './post-facts.mts'
+export * from './provenance-facts.mts'
 export * from './resolve-public-provenance-label.mts'

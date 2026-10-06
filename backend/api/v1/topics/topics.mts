@@ -6,6 +6,7 @@ import {
   requireAuth,
   validateRequestContract,
 } from '../../response-helpers.mts'
+import { attachTopicProvenance, attachWrittenTopicProvenance } from '@services/content-provenance'
 import { getTopicIds, createTopic, type CreateTopicUpdates } from '@services/topics'
 import { getTopicIdsCached } from '@services/entity-fetch/search-caches'
 import {
@@ -84,7 +85,9 @@ app
 
     // Use streaming pattern: pass promises directly to allow independent streaming
     const topicsPromise = getTopicByAnyCachedBatch(topicIds)
-    const topicsIndexedPromise = topicsPromise.then(indexById)
+    const topicsIndexedPromise = topicsPromise
+      .then(topics => attachTopicProvenance(topics, currentUser))
+      .then(indexById)
     const topicMetricsIndexedPromise = getTopicMetricsByAnyCachedBatch(topicIds).then(indexById)
     const visibleResultsPromise = Promise.all([
       topicsIndexedPromise,
@@ -160,5 +163,5 @@ app
     const topic = await createTopic(currentUser, provenance, body)
 
     ctx.setStatus(201)
-    ctx.json({ topic })
+    ctx.json({ topic: await attachWrittenTopicProvenance(topic, currentUser) })
   })

@@ -1,0 +1,130 @@
+{
+  "bookmarks": {},
+  "community_memberships": {},
+  "community_metrics": {},
+  "communitys": {
+    "community-1-api": {
+      "__entity_type": "community",
+      "archived_at": null,
+      "archived_by_id": null,
+      "automod_action": "record_only",
+      "banner_image_id": null,
+      "created_at": "2026-01-01T00:00:00Z",
+      "created_by_id": "user-1",
+      "default_language": null,
+      "deleted_at": null,
+      "deleted_by_id": null,
+      "id": "community-1-api",
+      "lingua_rs_detected_language": null,
+      "list_type": null,
+      "markdown": "",
+      "member_invites_allowed_at": null,
+      "member_roster_visibility": "public",
+      "name": "Test Community",
+      "post_approval_required_at": null,
+      "profile_image_id": null,
+      "provenance": {
+        "app": null,
+        "via": "api"
+      },
+      "rules_markdown": null,
+      "should_allow_data_point_posts": false,
+      "should_allow_review_posts": false,
+      "slug": "test-community",
+      "trusted_at": null,
+      "updated_at": "2026-01-01T00:00:00Z",
+      "visibility": "public"
+    },
+    "community-1-mcp": {
+      "__entity_type": "community",
+      "archived_at": null,
+      "archived_by_id": null,
+      "automod_action": "record_only",
+      "banner_image_id": null,
+      "created_at": "2026-01-01T00:00:00Z",
+      "created_by_id": "user-1",
+      "default_language": null,
+      "deleted_at": null,
+      "deleted_by_id": null,
+      "id": "community-1-mcp",
+      "lingua_rs_detected_language": null,
+      "list_type": null,
+      "markdown": "",
+      "member_invites_allowed_at": null,
+      "member_roster_visibility": "public",
+      "name": "Test Community",
+      "post_approval_required_at": null,
+      "profile_image_id": null,
+      "provenance": {
+        "app": {
+          "client_id": "voucha_fixture_agent",
+          "client_name": "Fixture Agent",
+          "kind": "verified"
+        },
+        "via": "mcp"
+      },
+      "rules_markdown": null,
+      "should_allow_data_point_posts": false,
+      "should_allow_review_posts": false,
+      "slug": "test-community",
+      "trusted_at": null,
+      "updated_at": "2026-01-01T00:00:00Z",
+      "visibility": "public"
+    },
+    "community-1-web": {
+      "__entity_type": "community",
+      "archived_at": null,
+      "archived_by_id": null,
+      "automod_action": "record_only",
+      "banner_image_id": null,
+      "created_at": "2026-01-01T00:00:00Z",
+      "created_by_id": "user-1",
+      "default_language": null,
+      "deleted_at": null,
+      "deleted_by_id": null,
+      "id": "community-1-web",
+      "lingua_rs_detected_language": null,
+      "list_type": null,
+      "markdown": "",
+      "member_invites_allowed_at": null,
+      "member_roster_visibility": "public",
+      "name": "Test Community",
+      "post_approval_required_at": null,
+      "profile_image_id": null,
+      "rules_markdown": null,
+      "should_allow_data_point_posts": false,
+      "should_allow_review_posts": false,
+      "slug": "test-community",
+      "trusted_at": null,
+      "updated_at": "2026-01-01T00:00:00Z",
+      "visibility": "public"
+    }
+  },
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  },
+  "pending_application_community_ids": [],
+  "results": [
+    {
+      "__entity_type": "community",
+      "id": "community-1-mcp"
+    },
+    {
+      "__entity_type": "community",
+      "id": "community-1-api"
+    },
+    {
+      "__entity_type": "community",
+      "id": "community-1-web"
+    }
+  ],
+  "users": {
+    "user-1": {
+      "account_type": null,
+      "id": "user-1",
+      "username": "testuser"
+    }
+  }
+}

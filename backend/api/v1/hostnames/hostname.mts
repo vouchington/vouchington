@@ -7,6 +7,7 @@ import {
   getHostnameElectionByIdCachedBatch,
 } from '@services/entity-fetch/get'
 import { getCrawlersForHostname } from '@services/crawlers'
+import { attachRssFeedProvenance, attachTopicProvenance } from '@services/content-provenance'
 import {
   currentUserCanFilterHostnameModeration,
   stripHostnameElectionFields,
@@ -81,16 +82,17 @@ app.route('/api/v1/hostnames/:id').get(async ctx => {
 
   setAnonymousPublicCacheHeaders(ctx, currentUser, HTTP_CACHE_LONG_MAX_AGE_SECONDS)
 
-  const topic = hostname.topic_id ? await getTopicByAnyCached(hostname.topic_id) : null
-  const [hostnameElection, electionVote, topUrls, rssFeeds] = await Promise.all([
+  const cachedTopic = hostname.topic_id ? await getTopicByAnyCached(hostname.topic_id) : null
+  const [[topic = null], hostnameElection, electionVote, topUrls, rssFeeds] = await Promise.all([
+    attachTopicProvenance([cachedTopic], currentUser),
     getHostnameElectionByIdCachedBatch([hostname.id]).then(elections => elections[0] ?? null),
     currentUser ? getHostnameElectionVote(currentUser.id, hostname.id) : Promise.resolve(null),
     searchUrls({ hostnameId: hostname.id, limit: 25, excludeBlockedHostnames: true }).then(
       result => result.results,
     ),
-    topic
-      ? searchRssFeeds({ topic_id: topic.id, is_enabled: null, limit: 25 }).then(feeds =>
-          feeds.map(proxyRssFeedCoverArt),
+    cachedTopic
+      ? searchRssFeeds({ topic_id: cachedTopic.id, is_enabled: null, limit: 25 }).then(feeds =>
+          attachRssFeedProvenance(feeds.map(proxyRssFeedCoverArt), currentUser),
         )
       : Promise.resolve([]),
   ])

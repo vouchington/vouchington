@@ -5,6 +5,7 @@ import {
   type CommunityMetrics,
   type CommunityWithOwner,
 } from '@services/communities'
+import { attachCommunityProvenance } from '@services/content-provenance'
 import createHttpError from 'http-errors'
 import { nullable } from './output-schema-shapes.mts'
 import { closedObject, pickProperties } from './read-tool-output-schema.mts'
@@ -27,6 +28,7 @@ const COMMUNITY_FIELDS = [
   'archived_at',
   'created_at',
   'updated_at',
+  'provenance',
 ] as const
 
 const METRIC_FIELDS = [
@@ -52,6 +54,8 @@ export type McpCommunity = {
   archived_at: string | null
   created_at: string
   updated_at: string
+  /** The public provenance facts of an API or MCP community; never the staff detail. */
+  provenance?: Community['provenance']
 }
 
 export type McpCommunityOwner = { id: string; username: string | null }
@@ -107,6 +111,7 @@ export async function toMcpCommunity(community: Community): Promise<McpCommunity
     archived_at: community.archived_at ? iso(community.archived_at) : null,
     created_at: iso(community.created_at),
     updated_at: iso(community.updated_at),
+    ...(community.provenance && { provenance: community.provenance }),
   }
 }
 
@@ -137,22 +142,34 @@ export function toMcpCommunityMetrics(
   }
 }
 
-export async function toMcpCommunityEntry(
-  community: Community,
-  owner: CommunityWithOwner['owner'],
-  metrics: CommunityMetrics | null | undefined,
-): Promise<McpCommunityEntry> {
-  return {
-    community: await toMcpCommunity(community),
-    owner: await toMcpCommunityOwner(owner),
-    metrics: toMcpCommunityMetrics(metrics),
-  }
+/**
+ * Maps communities with their owners and counts for MCP. The public provenance label a signed-out
+ * reader sees is attached to every community in one batch; `staff_provenance` never reaches MCP.
+ */
+export async function toMcpCommunityEntries(
+  entries: {
+    community: Community
+    owner: CommunityWithOwner['owner']
+    metrics: CommunityMetrics | null | undefined
+  }[],
+): Promise<McpCommunityEntry[]> {
+  const communities = await attachCommunityProvenance(
+    entries.map(entry => entry.community),
+    null,
+  )
+  return Promise.all(
+    entries.map(async (entry, index) => ({
+      community: await toMcpCommunity(communities[index]!),
+      owner: await toMcpCommunityOwner(entry.owner),
+      metrics: toMcpCommunityMetrics(entry.metrics),
+    })),
+  )
 }
 
 /** The properties of an `McpCommunityEntry`, from the generated `Community` contracts. */
 export function mcpCommunityEntryProperties() {
   return {
-    community: closedObject(pickProperties('Community', COMMUNITY_FIELDS)),
+    community: closedObject(pickProperties('Community', COMMUNITY_FIELDS), ['provenance']),
     owner: nullable(closedObject(pickProperties('CommunityOwner', ['id', 'username']))),
     metrics: nullable(closedObject(pickProperties('CommunityMetrics', METRIC_FIELDS))),
   }

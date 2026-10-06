@@ -5,6 +5,7 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import { getList, getListItems } from '@/lib/api/server/lists'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
+import { ProvenanceBadges } from '@/components/provenance/provenance-badges'
 import { ListPageActions } from './list-page-actions'
 import { ListItemsAccumulator } from './list-items-accumulator'
 import { getTranslations } from '@/lib/i18n/get-translations'
@@ -79,13 +80,21 @@ export default async function ListPage({
   return (
     <main className='space-y-4'>
       <div className='flex items-start justify-between gap-4'>
-        <div>
-          <h1
-            className='text-2xl font-bold'
-            data-pw='list-name'
-          >
-            {list.name}
-          </h1>
+        <div data-pw='list-header'>
+          <div className='flex flex-wrap items-center gap-2'>
+            <h1
+              className='text-2xl font-bold'
+              data-pw='list-name'
+            >
+              {list.name}
+            </h1>
+            <ProvenanceBadges
+              testIdPrefix='list'
+              provenance={list.provenance}
+              staffProvenance={list.staff_provenance}
+              showClient
+            />
+          </div>
           {list.description && <p className='mt-1 text-muted-foreground'>{list.description}</p>}
         </div>
         {isOwner && <ListPageActions listId={list.id} />}

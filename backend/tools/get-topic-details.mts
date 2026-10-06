@@ -1,9 +1,11 @@
 import type { BasicUser } from '@services/users/types'
 import type { Tool } from '@services/openai-agents/tool-types'
+import { attachTopicProvenance } from '@services/content-provenance'
 import { getTopicByAny } from '@services/topics/get'
 import { getCardAttributes } from '@services/topics/cards'
 import { getRewardsProgramAttributes } from '@services/topics/rewards-programs'
 import { getTopicsByAnyBatch } from '@services/topics/get-batch'
+import type { Topic } from '@services/topics/types'
 import type { Money } from '@ts-shared/money'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
 import { nullable, outcomeSchema } from './output-schema-shapes.mts'
@@ -29,13 +31,21 @@ const OUTPUT_SCHEMA = outcomeSchema(
     topic_type: componentPropertySchema('TopicBasic', 'topic_type'),
     markdown: { type: 'string' },
     aliases: componentPropertySchema('TopicBasic', 'aliases'),
+    provenance: componentPropertySchema('TopicBasic', 'provenance'),
     annual_fee: nullable(componentSchema('Money')),
     bank_name: nullableName,
     brand_name: nullableName,
     rewards_program_company: nullableName,
     ...HIERARCHY_OUTPUT_PROPERTIES,
   },
-  ['annual_fee', 'bank_name', 'brand_name', 'rewards_program_company', ...HIERARCHY_OUTPUT_FIELDS],
+  [
+    'provenance',
+    'annual_fee',
+    'bank_name',
+    'brand_name',
+    'rewards_program_company',
+    ...HIERARCHY_OUTPUT_FIELDS,
+  ],
 )
 
 type ToolArgs = TopicHierarchyArgs & {
@@ -51,6 +61,8 @@ type ToolResult =
       topic_type: string
       markdown: string
       aliases: string[]
+      /** The public provenance facts of an API or MCP topic; never the staff detail. */
+      provenance?: Topic['provenance']
       annual_fee?: Money | null
       bank_name?: string | null
       brand_name?: string | null
@@ -91,7 +103,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
   function:
     (_currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
-      const topic = await getTopicByAny(args.topic_id)
+      const [topic] = await attachTopicProvenance([await getTopicByAny(args.topic_id)], null)
 
       if (!topic) {
         return { success: false, error: 'Topic not found' }
@@ -108,6 +120,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
           contentType: 'topic',
         }),
         aliases: topic.aliases,
+        ...(topic.provenance && { provenance: topic.provenance }),
         ...(await getTopicHierarchyResult(topic.id, args)),
       }
 

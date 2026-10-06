@@ -1,3 +1,7 @@
+import type {
+  PublicContentProvenance,
+  StaffContentProvenance,
+} from '@voucha/types/entities/content-provenance'
 import type * as Api from './shared'
 
 type PageInfo = Api.PageInfo
@@ -12,6 +16,10 @@ export type List = {
   created_at: string
   updated_at: string
   removed_at: string | null
+  /** Set for API and MCP lists only. */
+  provenance?: PublicContentProvenance
+  /** Set for administrators and moderators only. */
+  staff_provenance?: StaffContentProvenance
 }
 
 export type ListItem = {

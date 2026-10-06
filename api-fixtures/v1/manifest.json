@@ -6053,7 +6053,7 @@
     },
     "GET:/api/v1/communities/:communitySlug": {
       "bodyKind": "content",
-      "hash": "4b9b08f8483458e698e890c697694a1af8989963cfb408c9cbc72cc5c6e38d62",
+      "hash": "289e9c5550337a5195b11768ef4b8785bbd83e58223b06fb3af01e2192f0a671",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -6351,6 +6351,193 @@
               }
             },
             "type": "object"
+          },
+          "OAuthContentCreationChannel": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "api"
+              },
+              {
+                "type": "literal",
+                "value": "mcp"
+              }
+            ]
+          },
+          "PublicContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "app": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "verified"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "hostname": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "hostname"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "key": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "known"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "via": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthContentCreationChannel",
+                  "type": "ref"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "StaffContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "created_via": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "api"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "dotnet"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "mcp"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "swift"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "system"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "web"
+                    }
+                  ]
+                }
+              },
+              "oauth_client": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "metadata_url": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "verified": {
+                          "required": true,
+                          "schema": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
           }
         },
         "root": {
@@ -6609,6 +6796,13 @@
                       ]
                     }
                   },
+                  "provenance": {
+                    "required": false,
+                    "schema": {
+                      "name": "PublicContentProvenance",
+                      "type": "ref"
+                    }
+                  },
                   "rules_markdown": {
                     "required": true,
                     "schema": {
@@ -6639,6 +6833,13 @@
                     "required": true,
                     "schema": {
                       "type": "string"
+                    }
+                  },
+                  "staff_provenance": {
+                    "required": false,
+                    "schema": {
+                      "name": "StaffContentProvenance",
+                      "type": "ref"
                     }
                   },
                   "trusted_at": {
@@ -20013,7 +20214,7 @@
     },
     "GET:/api/v1/fediverse/instances": {
       "bodyKind": "content",
-      "hash": "c965950d73b4f72221549ef9b09480029020e7e14999d5a0e38f39aadfe4d58c",
+      "hash": "ba99f8d1e5ca4ea637bb31b9e420910afcc879a51442a6b4946fa373ecf86ffb",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -20344,6 +20545,19 @@
             },
             "type": "object"
           },
+          "OAuthContentCreationChannel": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "api"
+              },
+              {
+                "type": "literal",
+                "value": "mcp"
+              }
+            ]
+          },
           "PageInfo": {
             "additionalProperties": false,
             "properties": {
@@ -20398,6 +20612,93 @@
                 "required": true,
                 "schema": {
                   "type": "string"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "PublicContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "app": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "verified"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "hostname": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "hostname"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "key": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "known"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "via": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthContentCreationChannel",
+                  "type": "ref"
                 }
               }
             },
@@ -20632,6 +20933,93 @@
             "properties": {},
             "type": "object"
           },
+          "StaffContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "created_via": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "api"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "dotnet"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "mcp"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "swift"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "system"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "web"
+                    }
+                  ]
+                }
+              },
+              "oauth_client": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "metadata_url": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "verified": {
+                          "required": true,
+                          "schema": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
           "TopicBasic": {
             "additionalProperties": false,
             "properties": {
@@ -20802,6 +21190,13 @@
                   "type": "string"
                 }
               },
+              "provenance": {
+                "required": false,
+                "schema": {
+                  "name": "PublicContentProvenance",
+                  "type": "ref"
+                }
+              },
               "referral_program_id": {
                 "required": true,
                 "schema": {
@@ -20854,6 +21249,13 @@
                 "required": true,
                 "schema": {
                   "type": "string"
+                }
+              },
+              "staff_provenance": {
+                "required": false,
+                "schema": {
+                  "name": "StaffContentProvenance",
+                  "type": "ref"
                 }
               },
               "topic_type": {
@@ -21272,7 +21674,7 @@
     },
     "GET:/api/v1/fediverse/instances/:id": {
       "bodyKind": "content",
-      "hash": "91f89ab945488d1b9018348f3a59fd052aafa5e8d555e09e8fd4eb95fdba9abe",
+      "hash": "1428d212e744afd1eaf15dd9664c7b975445cdc89ca186fe04a1bdaf492b0e0c",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -21540,6 +21942,106 @@
             },
             "type": "object"
           },
+          "OAuthContentCreationChannel": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "api"
+              },
+              {
+                "type": "literal",
+                "value": "mcp"
+              }
+            ]
+          },
+          "PublicContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "app": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "verified"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "hostname": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "hostname"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "key": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "known"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "via": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthContentCreationChannel",
+                  "type": "ref"
+                }
+              }
+            },
+            "type": "object"
+          },
           "PublicFediverseInstanceAttributes": {
             "additionalProperties": false,
             "properties": {
@@ -21667,6 +22169,93 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "StaffContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "created_via": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "api"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "dotnet"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "mcp"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "swift"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "system"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "web"
+                    }
+                  ]
+                }
+              },
+              "oauth_client": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "metadata_url": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "verified": {
+                          "required": true,
+                          "schema": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -21844,6 +22433,13 @@
                   "type": "string"
                 }
               },
+              "provenance": {
+                "required": false,
+                "schema": {
+                  "name": "PublicContentProvenance",
+                  "type": "ref"
+                }
+              },
               "referral_program_id": {
                 "required": true,
                 "schema": {
@@ -21896,6 +22492,13 @@
                 "required": true,
                 "schema": {
                   "type": "string"
+                }
+              },
+              "staff_provenance": {
+                "required": false,
+                "schema": {
+                  "name": "StaffContentProvenance",
+                  "type": "ref"
                 }
               },
               "topic_type": {
@@ -22912,7 +23515,7 @@
     },
     "GET:/api/v1/hostnames": {
       "bodyKind": "content",
-      "hash": "07df49bb717e7ca320d177c5c13f3e1f8603ace40fd7bd9831a8ba5ccce60ae5",
+      "hash": "f2a4f8752aed210fe7f8e146372a83647290f089a0883b60cd12c995c099d168",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -23243,6 +23846,19 @@
             },
             "type": "object"
           },
+          "OAuthContentCreationChannel": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "api"
+              },
+              {
+                "type": "literal",
+                "value": "mcp"
+              }
+            ]
+          },
           "PageInfo": {
             "additionalProperties": false,
             "properties": {
@@ -23278,6 +23894,93 @@
                       "type": "string"
                     }
                   ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "PublicContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "app": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "verified"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "hostname": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "hostname"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "key": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "known"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "via": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthContentCreationChannel",
+                  "type": "ref"
                 }
               }
             },
@@ -23416,6 +24119,93 @@
               "type": "ref"
             },
             "properties": {},
+            "type": "object"
+          },
+          "StaffContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "created_via": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "api"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "dotnet"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "mcp"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "swift"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "system"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "web"
+                    }
+                  ]
+                }
+              },
+              "oauth_client": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "metadata_url": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "verified": {
+                          "required": true,
+                          "schema": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            },
             "type": "object"
           },
           "TopicBasic": {
@@ -23588,6 +24378,13 @@
                   "type": "string"
                 }
               },
+              "provenance": {
+                "required": false,
+                "schema": {
+                  "name": "PublicContentProvenance",
+                  "type": "ref"
+                }
+              },
               "referral_program_id": {
                 "required": true,
                 "schema": {
@@ -23640,6 +24437,13 @@
                 "required": true,
                 "schema": {
                   "type": "string"
+                }
+              },
+              "staff_provenance": {
+                "required": false,
+                "schema": {
+                  "name": "StaffContentProvenance",
+                  "type": "ref"
                 }
               },
               "topic_type": {
@@ -23806,7 +24610,7 @@
     },
     "GET:/api/v1/hostnames/:id#public": {
       "bodyKind": "content",
-      "hash": "cad9941a421d1c70d6527baafd7c3c583780b1858ed3e4e33e66df8cd42f8f19",
+      "hash": "be4bb102e6a8af740f679eed70c68e78fad97e40e969065e48934da3cb51be7b",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -24137,6 +24941,19 @@
             },
             "type": "object"
           },
+          "OAuthContentCreationChannel": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "api"
+              },
+              {
+                "type": "literal",
+                "value": "mcp"
+              }
+            ]
+          },
           "PodcastShow": {
             "additionalProperties": false,
             "properties": {
@@ -24205,6 +25022,93 @@
                       "type": "null"
                     }
                   ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "PublicContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "app": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "verified"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "hostname": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "hostname"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "key": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "known"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "via": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthContentCreationChannel",
+                  "type": "ref"
                 }
               }
             },
@@ -24289,6 +25193,93 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "StaffContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "created_via": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "api"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "dotnet"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "mcp"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "swift"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "system"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "web"
+                    }
+                  ]
+                }
+              },
+              "oauth_client": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "metadata_url": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "verified": {
+                          "required": true,
+                          "schema": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -24466,6 +25457,13 @@
                   "type": "string"
                 }
               },
+              "provenance": {
+                "required": false,
+                "schema": {
+                  "name": "PublicContentProvenance",
+                  "type": "ref"
+                }
+              },
               "referral_program_id": {
                 "required": true,
                 "schema": {
@@ -24518,6 +25516,13 @@
                 "required": true,
                 "schema": {
                   "type": "string"
+                }
+              },
+              "staff_provenance": {
+                "required": false,
+                "schema": {
+                  "name": "StaffContentProvenance",
+                  "type": "ref"
                 }
               },
               "topic_type": {
@@ -24917,6 +25922,13 @@
                   ]
                 }
               },
+              "provenance": {
+                "required": false,
+                "schema": {
+                  "name": "PublicContentProvenance",
+                  "type": "ref"
+                }
+              },
               "publisher_type": {
                 "required": true,
                 "schema": {
@@ -24936,6 +25948,13 @@
                 "required": true,
                 "schema": {
                   "name": "ViewUrl",
+                  "type": "ref"
+                }
+              },
+              "staff_provenance": {
+                "required": false,
+                "schema": {
+                  "name": "StaffContentProvenance",
                   "type": "ref"
                 }
               },
@@ -25444,7 +26463,7 @@
     },
     "GET:/api/v1/lists": {
       "bodyKind": "content",
-      "hash": "fc9b30ac27b05cce8e9edaf97996f43f1d068fcd1f1ba47702d2c81eabd520fd",
+      "hash": "ae9a0ece2755ccf16c0c941e82f08dae0fcdf661abaa9c8e3a8513fc1d71af6c",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -25499,6 +26518,13 @@
                   "type": "string"
                 }
               },
+              "provenance": {
+                "required": false,
+                "schema": {
+                  "name": "PublicContentProvenance",
+                  "type": "ref"
+                }
+              },
               "removed_at": {
                 "required": true,
                 "schema": {
@@ -25511,6 +26537,13 @@
                       "type": "string"
                     }
                   ]
+                }
+              },
+              "staff_provenance": {
+                "required": false,
+                "schema": {
+                  "name": "StaffContentProvenance",
+                  "type": "ref"
                 }
               },
               "updated_at": {
@@ -25543,6 +26576,19 @@
               {
                 "type": "literal",
                 "value": "unlisted"
+              }
+            ]
+          },
+          "OAuthContentCreationChannel": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "api"
+              },
+              {
+                "type": "literal",
+                "value": "mcp"
               }
             ]
           },
@@ -25579,6 +26625,180 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "PublicContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "app": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "verified"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "hostname": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "hostname"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "key": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "known"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "via": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthContentCreationChannel",
+                  "type": "ref"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "StaffContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "created_via": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "api"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "dotnet"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "mcp"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "swift"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "system"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "web"
+                    }
+                  ]
+                }
+              },
+              "oauth_client": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "metadata_url": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "verified": {
+                          "required": true,
+                          "schema": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -42947,7 +44167,7 @@
     },
     "GET:/api/v1/rss-feeds": {
       "bodyKind": "content",
-      "hash": "b8438601bea0947dc1f156736a131acb462823ff7ee0b8e88ba1fc0a7fd7eb55",
+      "hash": "376227396c025f70121350a4162cb98526501d9ae50b166366b9a09538545d31",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -43302,6 +44522,19 @@
             },
             "type": "object"
           },
+          "OAuthContentCreationChannel": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "api"
+              },
+              {
+                "type": "literal",
+                "value": "mcp"
+              }
+            ]
+          },
           "PageInfo": {
             "additionalProperties": false,
             "properties": {
@@ -43410,6 +44643,93 @@
                       "type": "null"
                     }
                   ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "PublicContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "app": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "verified"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "hostname": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "hostname"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "key": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "known"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "via": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthContentCreationChannel",
+                  "type": "ref"
                 }
               }
             },
@@ -43533,6 +44853,93 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "StaffContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "created_via": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "api"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "dotnet"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "mcp"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "swift"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "system"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "web"
+                    }
+                  ]
+                }
+              },
+              "oauth_client": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "metadata_url": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "verified": {
+                          "required": true,
+                          "schema": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -43710,6 +45117,13 @@
                   "type": "string"
                 }
               },
+              "provenance": {
+                "required": false,
+                "schema": {
+                  "name": "PublicContentProvenance",
+                  "type": "ref"
+                }
+              },
               "referral_program_id": {
                 "required": true,
                 "schema": {
@@ -43762,6 +45176,13 @@
                 "required": true,
                 "schema": {
                   "type": "string"
+                }
+              },
+              "staff_provenance": {
+                "required": false,
+                "schema": {
+                  "name": "StaffContentProvenance",
+                  "type": "ref"
                 }
               },
               "topic_type": {
@@ -44161,6 +45582,13 @@
                   ]
                 }
               },
+              "provenance": {
+                "required": false,
+                "schema": {
+                  "name": "PublicContentProvenance",
+                  "type": "ref"
+                }
+              },
               "publisher_type": {
                 "required": true,
                 "schema": {
@@ -44180,6 +45608,13 @@
                 "required": true,
                 "schema": {
                   "name": "ViewUrl",
+                  "type": "ref"
+                }
+              },
+              "staff_provenance": {
+                "required": false,
+                "schema": {
+                  "name": "StaffContentProvenance",
                   "type": "ref"
                 }
               },
@@ -44490,7 +45925,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/rss-feeds/rss-feed.mts",
+      "source": "backend/api/v1/rss-feeds/rss-feed-crawls.mts",
       "statusKnowledge": "default"
     },
     "GET:/api/v1/rss-feeds/:id/crawls/:crawlId#paid": {
@@ -44541,7 +45976,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/rss-feeds/rss-feed.mts",
+      "source": "backend/api/v1/rss-feeds/rss-feed-crawls.mts",
       "statusKnowledge": "default"
     },
     "GET:/api/v1/rss-feeds/:id/crawls/:crawlId#privileged": {
@@ -44661,7 +46096,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/rss-feeds/rss-feed.mts",
+      "source": "backend/api/v1/rss-feeds/rss-feed-crawls.mts",
       "statusKnowledge": "default"
     },
     "GET:/api/v1/scopes": {
@@ -44830,7 +46265,7 @@
     },
     "GET:/api/v1/stories/:id": {
       "bodyKind": "content",
-      "hash": "0858113a6bdb9900e5b6f13cbbea775aa3efcf314c1bf40cdc49e59c6f6232c7",
+      "hash": "f0e5af549719b8a47632414ba4295b51e62a1ed5fdb5b8c382a2c9fde49ca4c8",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -47928,6 +49363,13 @@
                   "type": "string"
                 }
               },
+              "provenance": {
+                "required": false,
+                "schema": {
+                  "name": "PublicContentProvenance",
+                  "type": "ref"
+                }
+              },
               "referral_program_id": {
                 "required": true,
                 "schema": {
@@ -47980,6 +49422,13 @@
                 "required": true,
                 "schema": {
                   "type": "string"
+                }
+              },
+              "staff_provenance": {
+                "required": false,
+                "schema": {
+                  "name": "StaffContentProvenance",
+                  "type": "ref"
                 }
               },
               "topic_type": {
@@ -48692,6 +50141,13 @@
                   ]
                 }
               },
+              "provenance": {
+                "required": false,
+                "schema": {
+                  "name": "PublicContentProvenance",
+                  "type": "ref"
+                }
+              },
               "publisher_type": {
                 "required": true,
                 "schema": {
@@ -48711,6 +50167,13 @@
                 "required": true,
                 "schema": {
                   "name": "ViewUrl",
+                  "type": "ref"
+                }
+              },
+              "staff_provenance": {
+                "required": false,
+                "schema": {
+                  "name": "StaffContentProvenance",
                   "type": "ref"
                 }
               },
@@ -49136,7 +50599,7 @@
     },
     "GET:/api/v1/topic-recommendations/top-hashtags": {
       "bodyKind": "content",
-      "hash": "1faa7547638e3aa0a97087e44f3612b00ba465eb332868ba5b19972e47deb0ae",
+      "hash": "263611951610d7217e488757e488ecebdaa5e67f086f51a39056ea30a1d0e089",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -49404,6 +50867,106 @@
             },
             "type": "object"
           },
+          "OAuthContentCreationChannel": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "api"
+              },
+              {
+                "type": "literal",
+                "value": "mcp"
+              }
+            ]
+          },
+          "PublicContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "app": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "verified"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "hostname": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "hostname"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "key": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "known"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "via": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthContentCreationChannel",
+                  "type": "ref"
+                }
+              }
+            },
+            "type": "object"
+          },
           "PublicViewHostname": {
             "additionalProperties": false,
             "properties": {
@@ -49490,6 +51053,93 @@
               ]
             },
             "properties": {},
+            "type": "object"
+          },
+          "StaffContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "created_via": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "api"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "dotnet"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "mcp"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "swift"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "system"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "web"
+                    }
+                  ]
+                }
+              },
+              "oauth_client": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "metadata_url": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "verified": {
+                          "required": true,
+                          "schema": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            },
             "type": "object"
           },
           "TopHashtag": {
@@ -49712,6 +51362,13 @@
                   "type": "string"
                 }
               },
+              "provenance": {
+                "required": false,
+                "schema": {
+                  "name": "PublicContentProvenance",
+                  "type": "ref"
+                }
+              },
               "referral_program_id": {
                 "required": true,
                 "schema": {
@@ -49764,6 +51421,13 @@
                 "required": true,
                 "schema": {
                   "type": "string"
+                }
+              },
+              "staff_provenance": {
+                "required": false,
+                "schema": {
+                  "name": "StaffContentProvenance",
+                  "type": "ref"
                 }
               },
               "topic_type": {
@@ -57863,7 +59527,7 @@
     },
     "GET:/api/v1/users/:idOrSlug/communities/:listType": {
       "bodyKind": "content",
-      "hash": "a712f4f8b31cfd7681d5b29c701fcf0887a097acfa3b1a5e72256b429eb13c1c",
+      "hash": "89d00409813168e1bf76ffd1c116e85e0da2ec9e678ebf7834157f92d115e2fd",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -58141,6 +59805,13 @@
                   ]
                 }
               },
+              "provenance": {
+                "required": false,
+                "schema": {
+                  "name": "PublicContentProvenance",
+                  "type": "ref"
+                }
+              },
               "rules_markdown": {
                 "required": true,
                 "schema": {
@@ -58171,6 +59842,13 @@
                 "required": true,
                 "schema": {
                   "type": "string"
+                }
+              },
+              "staff_provenance": {
+                "required": false,
+                "schema": {
+                  "name": "StaffContentProvenance",
+                  "type": "ref"
                 }
               },
               "trusted_at": {
@@ -58311,6 +59989,19 @@
             },
             "type": "object"
           },
+          "OAuthContentCreationChannel": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "api"
+              },
+              {
+                "type": "literal",
+                "value": "mcp"
+              }
+            ]
+          },
           "PageInfo": {
             "additionalProperties": false,
             "properties": {
@@ -58344,6 +60035,180 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "PublicContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "app": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "verified"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "hostname": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "hostname"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "key": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "known"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "via": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthContentCreationChannel",
+                  "type": "ref"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "StaffContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "created_via": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "api"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "dotnet"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "mcp"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "swift"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "system"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "web"
+                    }
+                  ]
+                }
+              },
+              "oauth_client": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "metadata_url": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "verified": {
+                          "required": true,
+                          "schema": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -60340,7 +62205,7 @@
     },
     "GET:/api/v1/users/:idOrSlug/rss-feed-items/:listType": {
       "bodyKind": "content",
-      "hash": "c3acad0551204c8efae7d09e3941e2a2cd148c447d6bb41667075ba3c2af5286",
+      "hash": "034c4b0509428ea2f0a46ed83be301d4f78e1d98cb2a5dc421b5041cbc4ce11e",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -60829,6 +62694,19 @@
             },
             "type": "object"
           },
+          "OAuthContentCreationChannel": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "api"
+              },
+              {
+                "type": "literal",
+                "value": "mcp"
+              }
+            ]
+          },
           "PageInfo": {
             "additionalProperties": false,
             "properties": {
@@ -60937,6 +62815,93 @@
                       "type": "null"
                     }
                   ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "PublicContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "app": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "verified"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "hostname": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "hostname"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "key": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "known"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "via": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthContentCreationChannel",
+                  "type": "ref"
                 }
               }
             },
@@ -61375,6 +63340,93 @@
             },
             "type": "object"
           },
+          "StaffContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "created_via": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "api"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "dotnet"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "mcp"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "swift"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "system"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "web"
+                    }
+                  ]
+                }
+              },
+              "oauth_client": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "metadata_url": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "verified": {
+                          "required": true,
+                          "schema": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
           "TopicBasic": {
             "additionalProperties": false,
             "properties": {
@@ -61545,6 +63597,13 @@
                   "type": "string"
                 }
               },
+              "provenance": {
+                "required": false,
+                "schema": {
+                  "name": "PublicContentProvenance",
+                  "type": "ref"
+                }
+              },
               "referral_program_id": {
                 "required": true,
                 "schema": {
@@ -61597,6 +63656,13 @@
                 "required": true,
                 "schema": {
                   "type": "string"
+                }
+              },
+              "staff_provenance": {
+                "required": false,
+                "schema": {
+                  "name": "StaffContentProvenance",
+                  "type": "ref"
                 }
               },
               "topic_type": {
@@ -62309,6 +64375,13 @@
                   ]
                 }
               },
+              "provenance": {
+                "required": false,
+                "schema": {
+                  "name": "PublicContentProvenance",
+                  "type": "ref"
+                }
+              },
               "publisher_type": {
                 "required": true,
                 "schema": {
@@ -62328,6 +64401,13 @@
                 "required": true,
                 "schema": {
                   "name": "ViewUrl",
+                  "type": "ref"
+                }
+              },
+              "staff_provenance": {
+                "required": false,
+                "schema": {
+                  "name": "StaffContentProvenance",
                   "type": "ref"
                 }
               },
@@ -62724,7 +64804,7 @@
     },
     "GET:/api/v1/users/:idOrSlug/rss-feeds/:listType": {
       "bodyKind": "content",
-      "hash": "b8438601bea0947dc1f156736a131acb462823ff7ee0b8e88ba1fc0a7fd7eb55",
+      "hash": "376227396c025f70121350a4162cb98526501d9ae50b166366b9a09538545d31",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -63079,6 +65159,19 @@
             },
             "type": "object"
           },
+          "OAuthContentCreationChannel": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "api"
+              },
+              {
+                "type": "literal",
+                "value": "mcp"
+              }
+            ]
+          },
           "PageInfo": {
             "additionalProperties": false,
             "properties": {
@@ -63187,6 +65280,93 @@
                       "type": "null"
                     }
                   ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "PublicContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "app": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "verified"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "hostname": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "hostname"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "key": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "known"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "via": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthContentCreationChannel",
+                  "type": "ref"
                 }
               }
             },
@@ -63310,6 +65490,93 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "StaffContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "created_via": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "api"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "dotnet"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "mcp"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "swift"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "system"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "web"
+                    }
+                  ]
+                }
+              },
+              "oauth_client": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "metadata_url": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "verified": {
+                          "required": true,
+                          "schema": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -63487,6 +65754,13 @@
                   "type": "string"
                 }
               },
+              "provenance": {
+                "required": false,
+                "schema": {
+                  "name": "PublicContentProvenance",
+                  "type": "ref"
+                }
+              },
               "referral_program_id": {
                 "required": true,
                 "schema": {
@@ -63539,6 +65813,13 @@
                 "required": true,
                 "schema": {
                   "type": "string"
+                }
+              },
+              "staff_provenance": {
+                "required": false,
+                "schema": {
+                  "name": "StaffContentProvenance",
+                  "type": "ref"
                 }
               },
               "topic_type": {
@@ -63938,6 +66219,13 @@
                   ]
                 }
               },
+              "provenance": {
+                "required": false,
+                "schema": {
+                  "name": "PublicContentProvenance",
+                  "type": "ref"
+                }
+              },
               "publisher_type": {
                 "required": true,
                 "schema": {
@@ -63957,6 +66245,13 @@
                 "required": true,
                 "schema": {
                   "name": "ViewUrl",
+                  "type": "ref"
+                }
+              },
+              "staff_provenance": {
+                "required": false,
+                "schema": {
+                  "name": "StaffContentProvenance",
                   "type": "ref"
                 }
               },
@@ -64171,7 +66466,7 @@
     },
     "GET:/api/v1/users/:idOrSlug/topics/:listType": {
       "bodyKind": "content",
-      "hash": "9c619b8ad20afa8dd1edd513d97f440d4f9742a90d6798445dc6e0a94d81a0e8",
+      "hash": "4440faefabfedfd6407ae5e1034f7f4ee1f99c717dbd6845b925516dd976f6d6",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -64439,6 +66734,19 @@
             },
             "type": "object"
           },
+          "OAuthContentCreationChannel": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "api"
+              },
+              {
+                "type": "literal",
+                "value": "mcp"
+              }
+            ]
+          },
           "PageInfo": {
             "additionalProperties": false,
             "properties": {
@@ -64479,6 +66787,93 @@
             },
             "type": "object"
           },
+          "PublicContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "app": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "verified"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "hostname": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "hostname"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "key": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "known"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "via": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthContentCreationChannel",
+                  "type": "ref"
+                }
+              }
+            },
+            "type": "object"
+          },
           "PublicViewHostname": {
             "additionalProperties": false,
             "properties": {
@@ -64511,6 +66906,93 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "StaffContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "created_via": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "api"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "dotnet"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "mcp"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "swift"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "system"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "web"
+                    }
+                  ]
+                }
+              },
+              "oauth_client": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "metadata_url": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "verified": {
+                          "required": true,
+                          "schema": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -64688,6 +67170,13 @@
                   "type": "string"
                 }
               },
+              "provenance": {
+                "required": false,
+                "schema": {
+                  "name": "PublicContentProvenance",
+                  "type": "ref"
+                }
+              },
               "referral_program_id": {
                 "required": true,
                 "schema": {
@@ -64740,6 +67229,13 @@
                 "required": true,
                 "schema": {
                   "type": "string"
+                }
+              },
+              "staff_provenance": {
+                "required": false,
+                "schema": {
+                  "name": "StaffContentProvenance",
+                  "type": "ref"
                 }
               },
               "topic_type": {
@@ -67042,7 +69538,7 @@
     },
     "PATCH:/api/v1/communities/:communitySlug": {
       "bodyKind": "content",
-      "hash": "8cbb8f9997198630e8b9a7e0581860e4e491ad83352d2a984974f4278ce4221e",
+      "hash": "c060fcab5faf47261cb24b2261b59b3aeb02268c84e0065ebf1c470e4cb2a0e7",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "PATCH",
@@ -67123,6 +69619,193 @@
               }
             },
             "type": "object"
+          },
+          "OAuthContentCreationChannel": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "api"
+              },
+              {
+                "type": "literal",
+                "value": "mcp"
+              }
+            ]
+          },
+          "PublicContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "app": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "verified"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "hostname": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "hostname"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "key": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "known"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "via": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthContentCreationChannel",
+                  "type": "ref"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "StaffContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "created_via": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "api"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "dotnet"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "mcp"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "swift"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "system"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "web"
+                    }
+                  ]
+                }
+              },
+              "oauth_client": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "metadata_url": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "verified": {
+                          "required": true,
+                          "schema": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
           }
         },
         "root": {
@@ -67381,6 +70064,13 @@
                       ]
                     }
                   },
+                  "provenance": {
+                    "required": false,
+                    "schema": {
+                      "name": "PublicContentProvenance",
+                      "type": "ref"
+                    }
+                  },
                   "rules_markdown": {
                     "required": true,
                     "schema": {
@@ -67411,6 +70101,13 @@
                     "required": true,
                     "schema": {
                       "type": "string"
+                    }
+                  },
+                  "staff_provenance": {
+                    "required": false,
+                    "schema": {
+                      "name": "StaffContentProvenance",
+                      "type": "ref"
                     }
                   },
                   "trusted_at": {
@@ -67453,7 +70150,7 @@
     },
     "PATCH:/api/v1/communities/:communitySlug/automod-settings": {
       "bodyKind": "content",
-      "hash": "8cbb8f9997198630e8b9a7e0581860e4e491ad83352d2a984974f4278ce4221e",
+      "hash": "c060fcab5faf47261cb24b2261b59b3aeb02268c84e0065ebf1c470e4cb2a0e7",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "PATCH",
@@ -67534,413 +70231,189 @@
               }
             },
             "type": "object"
-          }
-        },
-        "root": {
-          "additionalProperties": false,
-          "properties": {
-            "community": {
-              "required": true,
-              "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "__entity_type": {
-                    "required": true,
-                    "schema": {
-                      "type": "literal",
-                      "value": "community"
-                    }
-                  },
-                  "archived_at": {
-                    "required": true,
-                    "schema": {
-                      "type": "union",
-                      "variants": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    }
-                  },
-                  "archived_by_id": {
-                    "required": true,
-                    "schema": {
-                      "type": "union",
-                      "variants": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    }
-                  },
-                  "automod_action": {
-                    "required": true,
-                    "schema": {
-                      "name": "CommunityAutomodAction",
-                      "type": "ref"
-                    }
-                  },
-                  "banner_image_id": {
-                    "required": true,
-                    "schema": {
-                      "type": "union",
-                      "variants": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    }
-                  },
-                  "banner_image_placement": {
-                    "required": false,
-                    "schema": {
-                      "type": "union",
-                      "variants": [
-                        {
-                          "name": "ImagePlacementTuple",
-                          "type": "ref"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    }
-                  },
-                  "created_at": {
-                    "required": true,
-                    "schema": {
-                      "type": "string"
-                    }
-                  },
-                  "created_by_id": {
-                    "required": true,
-                    "schema": {
-                      "type": "string"
-                    }
-                  },
-                  "default_language": {
-                    "required": false,
-                    "schema": {
-                      "type": "union",
-                      "variants": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    }
-                  },
-                  "deleted_at": {
-                    "required": true,
-                    "schema": {
-                      "type": "union",
-                      "variants": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    }
-                  },
-                  "deleted_by_id": {
-                    "required": true,
-                    "schema": {
-                      "type": "union",
-                      "variants": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    }
-                  },
-                  "id": {
-                    "required": true,
-                    "schema": {
-                      "type": "string"
-                    }
-                  },
-                  "lingua_rs_detected_language": {
-                    "required": false,
-                    "schema": {
-                      "type": "union",
-                      "variants": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    }
-                  },
-                  "list_type": {
-                    "required": true,
-                    "schema": {
-                      "type": "union",
-                      "variants": [
-                        {
-                          "type": "literal",
-                          "value": "follow"
-                        },
-                        {
-                          "type": "literal",
-                          "value": "mute"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    }
-                  },
-                  "markdown": {
-                    "required": true,
-                    "schema": {
-                      "type": "union",
-                      "variants": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    }
-                  },
-                  "member_invites_allowed_at": {
-                    "required": true,
-                    "schema": {
-                      "type": "union",
-                      "variants": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    }
-                  },
-                  "member_roster_visibility": {
-                    "required": true,
-                    "schema": {
-                      "name": "CommunityMemberRosterVisibility",
-                      "type": "ref"
-                    }
-                  },
-                  "name": {
-                    "required": true,
-                    "schema": {
-                      "type": "string"
-                    }
-                  },
-                  "post_approval_required_at": {
-                    "required": true,
-                    "schema": {
-                      "type": "union",
-                      "variants": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    }
-                  },
-                  "profile_image_id": {
-                    "required": true,
-                    "schema": {
-                      "type": "union",
-                      "variants": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    }
-                  },
-                  "profile_image_placement": {
-                    "required": false,
-                    "schema": {
-                      "type": "union",
-                      "variants": [
-                        {
-                          "name": "ImagePlacementTuple",
-                          "type": "ref"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    }
-                  },
-                  "rules_markdown": {
-                    "required": true,
-                    "schema": {
-                      "type": "union",
-                      "variants": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    }
-                  },
-                  "should_allow_data_point_posts": {
-                    "required": true,
-                    "schema": {
-                      "type": "boolean"
-                    }
-                  },
-                  "should_allow_review_posts": {
-                    "required": true,
-                    "schema": {
-                      "type": "boolean"
-                    }
-                  },
-                  "slug": {
-                    "required": true,
-                    "schema": {
-                      "type": "string"
-                    }
-                  },
-                  "trusted_at": {
-                    "required": true,
-                    "schema": {
-                      "type": "union",
-                      "variants": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    }
-                  },
-                  "updated_at": {
-                    "required": true,
-                    "schema": {
-                      "type": "string"
-                    }
-                  },
-                  "visibility": {
-                    "required": true,
-                    "schema": {
-                      "name": "CommunityVisibility",
-                      "type": "ref"
-                    }
-                  }
-                },
-                "type": "object"
-              }
-            }
           },
-          "type": "object"
-        }
-      },
-      "source": "backend/api/v1/communities/automod-settings.mts",
-      "statusKnowledge": "default"
-    },
-    "PATCH:/api/v1/communities/:communitySlug/post-type-settings": {
-      "bodyKind": "content",
-      "hash": "8cbb8f9997198630e8b9a7e0581860e4e491ad83352d2a984974f4278ce4221e",
-      "mediaType": "application/json",
-      "mediaTypeKnowledge": "known",
-      "method": "PATCH",
-      "routeTemplate": "/api/v1/communities/:idOrSlug/post-type-settings",
-      "schema": {
-        "definitions": {
-          "CommunityAutomodAction": {
+          "OAuthContentCreationChannel": {
             "type": "union",
             "variants": [
               {
                 "type": "literal",
-                "value": "record_only"
+                "value": "api"
               },
               {
                 "type": "literal",
-                "value": "review_queue"
-              },
-              {
-                "type": "literal",
-                "value": "unpublish"
+                "value": "mcp"
               }
             ]
           },
-          "CommunityMemberRosterVisibility": {
-            "type": "union",
-            "variants": [
-              {
-                "type": "literal",
-                "value": "members"
-              },
-              {
-                "type": "literal",
-                "value": "moderators"
-              },
-              {
-                "type": "literal",
-                "value": "public"
-              },
-              {
-                "type": "literal",
-                "value": "users"
-              }
-            ]
-          },
-          "CommunityVisibility": {
-            "type": "union",
-            "variants": [
-              {
-                "type": "literal",
-                "value": "private"
-              },
-              {
-                "type": "literal",
-                "value": "public"
-              }
-            ]
-          },
-          "ImagePlacementTuple": {
+          "PublicContentProvenance": {
             "additionalProperties": false,
             "properties": {
-              "image_id": {
+              "app": {
                 "required": true,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "verified"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "hostname": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "hostname"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "key": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "known"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 }
               },
-              "placement_id": {
+              "via": {
                 "required": true,
                 "schema": {
-                  "type": "string"
+                  "name": "OAuthContentCreationChannel",
+                  "type": "ref"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "StaffContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "created_via": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "api"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "dotnet"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "mcp"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "swift"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "system"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "web"
+                    }
+                  ]
                 }
               },
-              "placement_revision": {
-                "required": true,
+              "oauth_client": {
+                "required": false,
                 "schema": {
-                  "type": "number"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "metadata_url": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "verified": {
+                          "required": true,
+                          "schema": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 }
               }
             },
@@ -68203,6 +70676,13 @@
                       ]
                     }
                   },
+                  "provenance": {
+                    "required": false,
+                    "schema": {
+                      "name": "PublicContentProvenance",
+                      "type": "ref"
+                    }
+                  },
                   "rules_markdown": {
                     "required": true,
                     "schema": {
@@ -68233,6 +70713,625 @@
                     "required": true,
                     "schema": {
                       "type": "string"
+                    }
+                  },
+                  "staff_provenance": {
+                    "required": false,
+                    "schema": {
+                      "name": "StaffContentProvenance",
+                      "type": "ref"
+                    }
+                  },
+                  "trusted_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "updated_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "visibility": {
+                    "required": true,
+                    "schema": {
+                      "name": "CommunityVisibility",
+                      "type": "ref"
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/communities/automod-settings.mts",
+      "statusKnowledge": "default"
+    },
+    "PATCH:/api/v1/communities/:communitySlug/post-type-settings": {
+      "bodyKind": "content",
+      "hash": "c060fcab5faf47261cb24b2261b59b3aeb02268c84e0065ebf1c470e4cb2a0e7",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "PATCH",
+      "routeTemplate": "/api/v1/communities/:idOrSlug/post-type-settings",
+      "schema": {
+        "definitions": {
+          "CommunityAutomodAction": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "record_only"
+              },
+              {
+                "type": "literal",
+                "value": "review_queue"
+              },
+              {
+                "type": "literal",
+                "value": "unpublish"
+              }
+            ]
+          },
+          "CommunityMemberRosterVisibility": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "members"
+              },
+              {
+                "type": "literal",
+                "value": "moderators"
+              },
+              {
+                "type": "literal",
+                "value": "public"
+              },
+              {
+                "type": "literal",
+                "value": "users"
+              }
+            ]
+          },
+          "CommunityVisibility": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "private"
+              },
+              {
+                "type": "literal",
+                "value": "public"
+              }
+            ]
+          },
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "OAuthContentCreationChannel": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "api"
+              },
+              {
+                "type": "literal",
+                "value": "mcp"
+              }
+            ]
+          },
+          "PublicContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "app": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "verified"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "hostname": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "hostname"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "key": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "known"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "via": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthContentCreationChannel",
+                  "type": "ref"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "StaffContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "created_via": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "api"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "dotnet"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "mcp"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "swift"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "system"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "web"
+                    }
+                  ]
+                }
+              },
+              "oauth_client": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "metadata_url": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "verified": {
+                          "required": true,
+                          "schema": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "community": {
+              "required": true,
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "__entity_type": {
+                    "required": true,
+                    "schema": {
+                      "type": "literal",
+                      "value": "community"
+                    }
+                  },
+                  "archived_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "archived_by_id": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "automod_action": {
+                    "required": true,
+                    "schema": {
+                      "name": "CommunityAutomodAction",
+                      "type": "ref"
+                    }
+                  },
+                  "banner_image_id": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "banner_image_placement": {
+                    "required": false,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "name": "ImagePlacementTuple",
+                          "type": "ref"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "created_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "created_by_id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "default_language": {
+                    "required": false,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "deleted_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "deleted_by_id": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "lingua_rs_detected_language": {
+                    "required": false,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "list_type": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "literal",
+                          "value": "follow"
+                        },
+                        {
+                          "type": "literal",
+                          "value": "mute"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "markdown": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "member_invites_allowed_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "member_roster_visibility": {
+                    "required": true,
+                    "schema": {
+                      "name": "CommunityMemberRosterVisibility",
+                      "type": "ref"
+                    }
+                  },
+                  "name": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "post_approval_required_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "profile_image_id": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "profile_image_placement": {
+                    "required": false,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "name": "ImagePlacementTuple",
+                          "type": "ref"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "provenance": {
+                    "required": false,
+                    "schema": {
+                      "name": "PublicContentProvenance",
+                      "type": "ref"
+                    }
+                  },
+                  "rules_markdown": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "should_allow_data_point_posts": {
+                    "required": true,
+                    "schema": {
+                      "type": "boolean"
+                    }
+                  },
+                  "should_allow_review_posts": {
+                    "required": true,
+                    "schema": {
+                      "type": "boolean"
+                    }
+                  },
+                  "slug": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "staff_provenance": {
+                    "required": false,
+                    "schema": {
+                      "name": "StaffContentProvenance",
+                      "type": "ref"
                     }
                   },
                   "trusted_at": {
@@ -81464,7 +84563,7 @@
     },
     "POST:/api/v1/topics": {
       "bodyKind": "content",
-      "hash": "10e84e4bac500735140a994a2bffd2c6ff09068ef834f67688fa19ec9303ee66",
+      "hash": "66232707fa8a2afea29b949add49a67e9ef1de885b465eba0ddf8b6201d4ee03",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
@@ -81732,6 +84831,106 @@
             },
             "type": "object"
           },
+          "OAuthContentCreationChannel": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "api"
+              },
+              {
+                "type": "literal",
+                "value": "mcp"
+              }
+            ]
+          },
+          "PublicContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "app": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "verified"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "hostname": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "hostname"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "key": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "known"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "via": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthContentCreationChannel",
+                  "type": "ref"
+                }
+              }
+            },
+            "type": "object"
+          },
           "PublicViewHostname": {
             "additionalProperties": false,
             "properties": {
@@ -81764,6 +84963,93 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "StaffContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "created_via": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "api"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "dotnet"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "mcp"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "swift"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "system"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "web"
+                    }
+                  ]
+                }
+              },
+              "oauth_client": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "metadata_url": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "verified": {
+                          "required": true,
+                          "schema": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -81941,6 +85227,13 @@
                   "type": "string"
                 }
               },
+              "provenance": {
+                "required": false,
+                "schema": {
+                  "name": "PublicContentProvenance",
+                  "type": "ref"
+                }
+              },
               "referral_program_id": {
                 "required": true,
                 "schema": {
@@ -81993,6 +85286,13 @@
                 "required": true,
                 "schema": {
                   "type": "string"
+                }
+              },
+              "staff_provenance": {
+                "required": false,
+                "schema": {
+                  "name": "StaffContentProvenance",
+                  "type": "ref"
                 }
               },
               "topic_type": {
@@ -86920,6 +90220,198 @@
       },
       "route": {
         "routeTemplate": "/api/v1/rss-feed-categories"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/communities",
+      "bodyFile": "responses/entity-provenance.communities.json",
+      "consumers": [],
+      "id": "entity-provenance.communities",
+      "method": "GET",
+      "migratedFrom": [],
+      "path": "/api/v1/communities",
+      "query": {
+        "q": "test"
+      },
+      "responseSchema": {
+        "hash": "c5c045b61caa49ace85ef012d95f33ed2109f24f4af47f621e32ba6aae2e712b",
+        "key": "entity-provenance.communities"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/communities"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/topics",
+      "bodyFile": "responses/entity-provenance.topics.json",
+      "consumers": [],
+      "id": "entity-provenance.topics",
+      "method": "GET",
+      "migratedFrom": [],
+      "path": "/api/v1/topics",
+      "query": {
+        "q": "test"
+      },
+      "responseSchema": {
+        "hash": "7108c033fa4dd4afc4266fccf58e0ebd6b9469d58980f082bdb5f1369e186708",
+        "key": "entity-provenance.topics"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/topics"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/lists",
+      "bodyFile": "responses/entity-provenance.lists.json",
+      "consumers": [],
+      "id": "entity-provenance.lists",
+      "method": "GET",
+      "migratedFrom": [],
+      "path": "/api/v1/lists",
+      "query": {
+        "limit": "25"
+      },
+      "responseSchema": {
+        "hash": "12c967936b401a8bfeba3caa69169ce4eac8d866fbdd23e2a3a4b86878a329cc",
+        "key": "entity-provenance.lists"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/lists"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/rss-feeds",
+      "bodyFile": "responses/entity-provenance.rss-feeds.json",
+      "consumers": [],
+      "id": "entity-provenance.rss-feeds",
+      "method": "GET",
+      "migratedFrom": [],
+      "path": "/api/v1/rss-feeds",
+      "query": {
+        "limit": "25"
+      },
+      "responseSchema": {
+        "hash": "89b493cc1485e43e92f97068147f7fd2a1948911d5362b09a265fed82e9f2be1",
+        "key": "entity-provenance.rss-feeds"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/rss-feeds"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/communities",
+      "bodyFile": "responses/entity-provenance.communities.staff.json",
+      "consumers": [],
+      "id": "entity-provenance.communities.staff",
+      "method": "GET",
+      "migratedFrom": [],
+      "path": "/api/v1/communities",
+      "query": {
+        "q": "test"
+      },
+      "responseSchema": {
+        "hash": "c6ecdc7f50054e2015e170d8b458c1a668cbd506bd2fb68b3869b0e7c06d499a",
+        "key": "entity-provenance.communities.staff"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/communities"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/topics",
+      "bodyFile": "responses/entity-provenance.topics.staff.json",
+      "consumers": [],
+      "id": "entity-provenance.topics.staff",
+      "method": "GET",
+      "migratedFrom": [],
+      "path": "/api/v1/topics",
+      "query": {
+        "q": "test"
+      },
+      "responseSchema": {
+        "hash": "bd4f578fa088f4b23a528d6b08885a1eca26d6bf9f967745ecfd57d890b345e9",
+        "key": "entity-provenance.topics.staff"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/topics"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/lists",
+      "bodyFile": "responses/entity-provenance.lists.staff.json",
+      "consumers": [],
+      "id": "entity-provenance.lists.staff",
+      "method": "GET",
+      "migratedFrom": [],
+      "path": "/api/v1/lists",
+      "query": {
+        "limit": "25"
+      },
+      "responseSchema": {
+        "hash": "205b9549b0fa8cd1f6f80c5e5bbd3508f8f945fb10698cfb1f1a7055bd7840c4",
+        "key": "entity-provenance.lists.staff"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/lists"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/rss-feeds",
+      "bodyFile": "responses/entity-provenance.rss-feeds.staff.json",
+      "consumers": [],
+      "id": "entity-provenance.rss-feeds.staff",
+      "method": "GET",
+      "migratedFrom": [],
+      "path": "/api/v1/rss-feeds",
+      "query": {
+        "limit": "25"
+      },
+      "responseSchema": {
+        "hash": "c7503d3342e19ada0bdefe326eafc4fc4735c81b6cb837815117d58d7373c08c",
+        "key": "entity-provenance.rss-feeds.staff"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/rss-feeds"
       },
       "source": {
         "caseFile": "backend/test-helpers/api-fixtures/web-cases.mts"

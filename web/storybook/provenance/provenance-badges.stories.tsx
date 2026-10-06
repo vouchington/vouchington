@@ -1,12 +1,13 @@
 import type { ComponentProps } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { PostProvenanceBadges } from '@/components/posts/post-provenance-badges'
+import { ProvenanceBadges } from '@/components/provenance/provenance-badges'
 import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {
-  title: 'Posts/Post Provenance Badges',
-  component: PostProvenanceBadges,
-} satisfies Meta<typeof PostProvenanceBadges>
+  title: 'Provenance/Provenance Badges',
+  component: ProvenanceBadges,
+  args: { testIdPrefix: 'post' },
+} satisfies Meta<typeof ProvenanceBadges>
 
 export default meta
 type Story = StoryObj<typeof meta>
@@ -17,10 +18,14 @@ const verifiedApp = {
   client_name: 'Fixture Agent',
 } as const
 
-const strip = (props: ComponentProps<typeof PostProvenanceBadges>) => (
+/** The badges look the same on every entity; the prefix only sets their `data-pw` ids. */
+const strip = (props: Omit<ComponentProps<typeof ProvenanceBadges>, 'testIdPrefix'>) => (
   <StoryFrame width='max-w-xl'>
     <div className='flex flex-wrap items-center gap-1.5'>
-      <PostProvenanceBadges {...props} />
+      <ProvenanceBadges
+        testIdPrefix='post'
+        {...props}
+      />
     </div>
   </StoryFrame>
 )
@@ -80,7 +85,7 @@ export const StaffDetailClient: Story = {
     }),
 }
 
-export const StaffWebPost: Story = {
+export const StaffWebEntity: Story = {
   render: () =>
     strip({ staffProvenance: { created_via: 'web', oauth_client: null }, showClient: true }),
 }

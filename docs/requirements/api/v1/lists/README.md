@@ -38,17 +38,17 @@ holds `post-relations.owned-private:write`; every other denial is the same `List
 
 ## Performance
 
-| Endpoint                                     | Round trips                   | Cache | Cache-Control        |
-| -------------------------------------------- | ----------------------------- | ----- | -------------------- |
-| GET `/api/v1/lists`                          | 1 (searchUserLists)           | None  | None (authenticated) |
-| POST `/api/v1/lists`                         | 1 (createList)                | None  | None                 |
-| GET `/api/v1/lists/contains`                 | 1 (getListsContainingEntity)  | None  | None (authenticated) |
-| GET `/api/v1/lists/:id`                      | 1 (getList)                   | None  | None                 |
-| PATCH `/api/v1/lists/:id`                    | 2 (getList + updateList)      | None  | None                 |
-| DELETE `/api/v1/lists/:id`                   | 2 (getList + softDeleteList)  | None  | None                 |
-| GET `/api/v1/lists/:id/items`                | 2 (getList + searchListItems) | None  | None                 |
-| POST `/api/v1/lists/:id/items/*`             | 2 (getList + addListItem)     | None  | None                 |
-| DELETE `/api/v1/lists/:id/items/*/:entityId` | 2 (getList + removeListItem)  | None  | None                 |
+| Endpoint                                     | Round trips                                                  | Cache | Cache-Control        |
+| -------------------------------------------- | ------------------------------------------------------------ | ----- | -------------------- |
+| GET `/api/v1/lists`                          | 2 (searchUserLists + provenance facts, batched)              | None  | None (authenticated) |
+| POST `/api/v1/lists`                         | 2 (createList + provenance facts from the primary)           | None  | None                 |
+| GET `/api/v1/lists/contains`                 | 1 (getListsContainingEntity)                                 | None  | None (authenticated) |
+| GET `/api/v1/lists/:id`                      | 2 (getList + provenance facts, both from the primary)        | None  | None                 |
+| PATCH `/api/v1/lists/:id`                    | 3 (getList + updateList + provenance facts from the primary) | None  | None                 |
+| DELETE `/api/v1/lists/:id`                   | 2 (getList + softDeleteList)                                 | None  | None                 |
+| GET `/api/v1/lists/:id/items`                | 2 (getList + searchListItems)                                | None  | None                 |
+| POST `/api/v1/lists/:id/items/*`             | 2 (getList + addListItem)                                    | None  | None                 |
+| DELETE `/api/v1/lists/:id/items/*/:entityId` | 2 (getList + removeListItem)                                 | None  | None                 |
 
 ## Related
 

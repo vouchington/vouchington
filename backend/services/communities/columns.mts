@@ -2,11 +2,15 @@ import type { Community } from './types.mts'
 
 type CommunityColumn = Exclude<
   keyof Community,
-  '__entity_type' | 'profile_image_placement' | 'banner_image_placement'
+  | '__entity_type'
+  | 'profile_image_placement'
+  | 'banner_image_placement'
+  | 'provenance'
+  | 'staff_provenance'
 >
 
 // Every declared Community column and nothing else: search_vector and the lingua_rs_* detector
-// state never reach a response.
+// state never reach a response. The provenance fields are attached per request after the read.
 const communityColumnNames = Object.keys({
   id: true,
   name: true,

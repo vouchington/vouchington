@@ -1678,6 +1678,9 @@
               }
             ]
           },
+          "provenance": {
+            "$ref": "#/components/schemas/PublicContentProvenance"
+          },
           "rules_markdown": {
             "anyOf": [
               {
@@ -1696,6 +1699,9 @@
           },
           "slug": {
             "type": "string"
+          },
+          "staff_provenance": {
+            "$ref": "#/components/schemas/StaffContentProvenance"
           },
           "trusted_at": {
             "anyOf": [
@@ -10692,6 +10698,9 @@
           "owner_user_id": {
             "type": "string"
           },
+          "provenance": {
+            "$ref": "#/components/schemas/PublicContentProvenance"
+          },
           "removed_at": {
             "anyOf": [
               {
@@ -10701,6 +10710,9 @@
                 "type": "string"
               }
             ]
+          },
+          "staff_provenance": {
+            "$ref": "#/components/schemas/StaffContentProvenance"
           },
           "updated_at": {
             "type": "string"
@@ -18759,6 +18771,9 @@
             "name": {
               "type": "string"
             },
+            "provenance": {
+              "$ref": "#/components/schemas/PublicContentProvenance"
+            },
             "referral_program_id": {
               "anyOf": [
                 {
@@ -18794,6 +18809,9 @@
             },
             "slug": {
               "type": "string"
+            },
+            "staff_provenance": {
+              "$ref": "#/components/schemas/StaffContentProvenance"
             },
             "topic_type": {
               "enum": [
@@ -22106,6 +22124,9 @@
           "name": {
             "type": "string"
           },
+          "provenance": {
+            "$ref": "#/components/schemas/PublicContentProvenance"
+          },
           "referral_program_id": {
             "anyOf": [
               {
@@ -22141,6 +22162,9 @@
           },
           "slug": {
             "type": "string"
+          },
+          "staff_provenance": {
+            "$ref": "#/components/schemas/StaffContentProvenance"
           },
           "topic_type": {
             "enum": [
@@ -25570,6 +25594,9 @@
               }
             ]
           },
+          "provenance": {
+            "$ref": "#/components/schemas/PublicContentProvenance"
+          },
           "publisher_type": {
             "anyOf": [
               {
@@ -25582,6 +25609,9 @@
           },
           "rss_feed_url": {
             "$ref": "#/components/schemas/ViewUrl"
+          },
+          "staff_provenance": {
+            "$ref": "#/components/schemas/StaffContentProvenance"
           },
           "title": {
             "type": "string"
@@ -25706,6 +25736,9 @@
               "name": {
                 "type": "string"
               },
+              "provenance": {
+                "$ref": "#/components/schemas/PublicContentProvenance"
+              },
               "referral_program_id": {
                 "anyOf": [
                   {
@@ -25741,6 +25774,9 @@
               },
               "slug": {
                 "type": "string"
+              },
+              "staff_provenance": {
+                "$ref": "#/components/schemas/StaffContentProvenance"
               },
               "topic_type": {
                 "enum": [
@@ -25985,6 +26021,9 @@
                         "name": {
                           "type": "string"
                         },
+                        "provenance": {
+                          "$ref": "#/components/schemas/PublicContentProvenance"
+                        },
                         "referral_program_id": {
                           "anyOf": [
                             {
@@ -26020,6 +26059,9 @@
                         },
                         "slug": {
                           "type": "string"
+                        },
+                        "staff_provenance": {
+                          "$ref": "#/components/schemas/StaffContentProvenance"
                         },
                         "topic_type": {
                           "enum": [
@@ -37448,6 +37490,9 @@
                             }
                           ]
                         },
+                        "provenance": {
+                          "$ref": "#/components/schemas/PublicContentProvenance"
+                        },
                         "rules_markdown": {
                           "anyOf": [
                             {
@@ -37466,6 +37511,9 @@
                         },
                         "slug": {
                           "type": "string"
+                        },
+                        "staff_provenance": {
+                          "$ref": "#/components/schemas/StaffContentProvenance"
                         },
                         "trusted_at": {
                           "anyOf": [
@@ -37777,6 +37825,9 @@
                             }
                           ]
                         },
+                        "provenance": {
+                          "$ref": "#/components/schemas/PublicContentProvenance"
+                        },
                         "rules_markdown": {
                           "anyOf": [
                             {
@@ -37795,6 +37846,9 @@
                         },
                         "slug": {
                           "type": "string"
+                        },
+                        "staff_provenance": {
+                          "$ref": "#/components/schemas/StaffContentProvenance"
                         },
                         "trusted_at": {
                           "anyOf": [
@@ -38082,6 +38136,9 @@
                             }
                           ]
                         },
+                        "provenance": {
+                          "$ref": "#/components/schemas/PublicContentProvenance"
+                        },
                         "rules_markdown": {
                           "anyOf": [
                             {
@@ -38100,6 +38157,9 @@
                         },
                         "slug": {
                           "type": "string"
+                        },
+                        "staff_provenance": {
+                          "$ref": "#/components/schemas/StaffContentProvenance"
                         },
                         "trusted_at": {
                           "anyOf": [
@@ -39166,6 +39226,9 @@
                             }
                           ]
                         },
+                        "provenance": {
+                          "$ref": "#/components/schemas/PublicContentProvenance"
+                        },
                         "rules_markdown": {
                           "anyOf": [
                             {
@@ -39184,6 +39247,9 @@
                         },
                         "slug": {
                           "type": "string"
+                        },
+                        "staff_provenance": {
+                          "$ref": "#/components/schemas/StaffContentProvenance"
                         },
                         "trusted_at": {
                           "anyOf": [
@@ -43067,6 +43133,9 @@
                             }
                           ]
                         },
+                        "provenance": {
+                          "$ref": "#/components/schemas/PublicContentProvenance"
+                        },
                         "rules_markdown": {
                           "anyOf": [
                             {
@@ -43085,6 +43154,9 @@
                         },
                         "slug": {
                           "type": "string"
+                        },
+                        "staff_provenance": {
+                          "$ref": "#/components/schemas/StaffContentProvenance"
                         },
                         "trusted_at": {
                           "anyOf": [
@@ -55822,6 +55894,9 @@
                         "name": {
                           "type": "string"
                         },
+                        "provenance": {
+                          "$ref": "#/components/schemas/PublicContentProvenance"
+                        },
                         "referral_program_id": {
                           "anyOf": [
                             {
@@ -55857,6 +55932,9 @@
                         },
                         "slug": {
                           "type": "string"
+                        },
+                        "staff_provenance": {
+                          "$ref": "#/components/schemas/StaffContentProvenance"
                         },
                         "topic_type": {
                           "enum": [
@@ -57329,6 +57407,9 @@
                                 "name": {
                                   "type": "string"
                                 },
+                                "provenance": {
+                                  "$ref": "#/components/schemas/PublicContentProvenance"
+                                },
                                 "referral_program_id": {
                                   "anyOf": [
                                     {
@@ -57364,6 +57445,9 @@
                                 },
                                 "slug": {
                                   "type": "string"
+                                },
+                                "staff_provenance": {
+                                  "$ref": "#/components/schemas/StaffContentProvenance"
                                 },
                                 "topic_type": {
                                   "enum": [
@@ -57588,6 +57672,9 @@
                                 "name": {
                                   "type": "string"
                                 },
+                                "provenance": {
+                                  "$ref": "#/components/schemas/PublicContentProvenance"
+                                },
                                 "referral_program_id": {
                                   "anyOf": [
                                     {
@@ -57623,6 +57710,9 @@
                                 },
                                 "slug": {
                                   "type": "string"
+                                },
+                                "staff_provenance": {
+                                  "$ref": "#/components/schemas/StaffContentProvenance"
                                 },
                                 "topic_type": {
                                   "enum": [
@@ -77605,6 +77695,9 @@
                         "name": {
                           "type": "string"
                         },
+                        "provenance": {
+                          "$ref": "#/components/schemas/PublicContentProvenance"
+                        },
                         "referral_program_id": {
                           "anyOf": [
                             {
@@ -77640,6 +77733,9 @@
                         },
                         "slug": {
                           "type": "string"
+                        },
+                        "staff_provenance": {
+                          "$ref": "#/components/schemas/StaffContentProvenance"
                         },
                         "topic_type": {
                           "enum": [
@@ -78085,6 +78181,9 @@
                             "name": {
                               "type": "string"
                             },
+                            "provenance": {
+                              "$ref": "#/components/schemas/PublicContentProvenance"
+                            },
                             "referral_program_id": {
                               "anyOf": [
                                 {
@@ -78120,6 +78219,9 @@
                             },
                             "slug": {
                               "type": "string"
+                            },
+                            "staff_provenance": {
+                              "$ref": "#/components/schemas/StaffContentProvenance"
                             },
                             "topic_type": {
                               "enum": [
@@ -80359,6 +80461,9 @@
                         "name": {
                           "type": "string"
                         },
+                        "provenance": {
+                          "$ref": "#/components/schemas/PublicContentProvenance"
+                        },
                         "referral_program_id": {
                           "anyOf": [
                             {
@@ -80394,6 +80499,9 @@
                         },
                         "slug": {
                           "type": "string"
+                        },
+                        "staff_provenance": {
+                          "$ref": "#/components/schemas/StaffContentProvenance"
                         },
                         "topic_type": {
                           "enum": [
@@ -84934,6 +85042,9 @@
                               }
                             ]
                           },
+                          "provenance": {
+                            "$ref": "#/components/schemas/PublicContentProvenance"
+                          },
                           "rules_markdown": {
                             "anyOf": [
                               {
@@ -84952,6 +85063,9 @@
                           },
                           "slug": {
                             "type": "string"
+                          },
+                          "staff_provenance": {
+                            "$ref": "#/components/schemas/StaffContentProvenance"
                           },
                           "trusted_at": {
                             "anyOf": [
@@ -85658,6 +85772,9 @@
                           "name": {
                             "type": "string"
                           },
+                          "provenance": {
+                            "$ref": "#/components/schemas/PublicContentProvenance"
+                          },
                           "referral_program_id": {
                             "anyOf": [
                               {
@@ -85693,6 +85810,9 @@
                           },
                           "slug": {
                             "type": "string"
+                          },
+                          "staff_provenance": {
+                            "$ref": "#/components/schemas/StaffContentProvenance"
                           },
                           "topic_type": {
                             "enum": [

@@ -1,6 +1,7 @@
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { createRandomString } from '../data.mts'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import type {
   Community,
   CommunityInvite,
@@ -21,6 +22,7 @@ type InsertTestCommunityOptions = {
   member_invites_allowed_at?: Date | null
   trusted_at?: Date | null
   rules_markdown?: string | null
+  provenance?: ContentProvenance
 }
 export async function insertTestCommunity(options: InsertTestCommunityOptions): Promise<Community> {
   const random = createRandomString(8)
@@ -32,7 +34,7 @@ export async function insertTestCommunity(options: InsertTestCommunityOptions): 
       name, slug, visibility, member_roster_visibility, list_type,
       post_approval_required_at, should_allow_review_posts, should_allow_data_point_posts,
       member_invites_allowed_at, trusted_at, rules_markdown, created_by_id,
-      created_via
+      created_via, created_via_oauth_client_id
     )
     VALUES (
       ${name}, ${slug}, ${options.visibility ?? 'public'},
@@ -40,7 +42,7 @@ export async function insertTestCommunity(options: InsertTestCommunityOptions): 
       ${options.post_approval_required_at ?? null}, ${options.should_allow_review_posts ?? false},
       ${options.should_allow_data_point_posts ?? false}, ${options.member_invites_allowed_at ?? null},
       ${options.trusted_at ?? null}, ${options.rules_markdown ?? null}, ${options.createdById},
-      'system'
+      ${options.provenance?.createdVia ?? 'system'}, ${options.provenance?.oauthClientId ?? null}
     )
     RETURNING *
     `,

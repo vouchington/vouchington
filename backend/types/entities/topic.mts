@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import type { PublicContentProvenance, StaffContentProvenance } from './content-provenance.mts'
 import type { BasicUser, ImagePlacementTuple } from './user.mts'
 
 type TopicTypeConfig = {
@@ -108,6 +109,9 @@ type TopicBasic = {
   referral_program_id: string | null
   referral_program_slug?: string | null
   lingua_rs_detected_language?: string | null
+  // Attached per request after the cache read, never stored on the cached topic or in a view.
+  provenance?: PublicContentProvenance
+  staff_provenance?: StaffContentProvenance
 }
 
 export type Topic = TopicBasic & {

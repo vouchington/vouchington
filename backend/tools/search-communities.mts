@@ -6,7 +6,7 @@ import {
   communityPageInfoSchema,
   communityPageInputProperties,
   mcpCommunityEntryProperties,
-  toMcpCommunityEntry,
+  toMcpCommunityEntries,
   type McpCommunityEntry,
 } from './mcp-community-output.mts'
 import {
@@ -84,14 +84,12 @@ const tool: Tool<ToolArgs, ToolResult> = {
       if (!page) return INVALID_CURSOR_RESULT
       return {
         success: true,
-        results: await Promise.all(
-          page.results.map(community =>
-            toMcpCommunityEntry(
-              community,
-              page.users[community.created_by_id] ?? null,
-              page.community_metrics[community.id],
-            ),
-          ),
+        results: await toMcpCommunityEntries(
+          page.results.map(community => ({
+            community,
+            owner: page.users[community.created_by_id] ?? null,
+            metrics: page.community_metrics[community.id],
+          })),
         ),
         page_info: page.page_info,
       }

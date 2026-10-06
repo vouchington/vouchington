@@ -1,5 +1,6 @@
 import { clampAnonLimit, getPaginationLimits } from '@services/pagination'
 import app from '../../app.mts'
+import { attachTopicProvenance } from '@services/content-provenance'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import {
   getOptionalAuthAndRateLimit,
@@ -124,7 +125,8 @@ app
 
     setAnonymousPublicCacheHeaders(ctx, currentUser, HTTP_CACHE_SHORT_MAX_AGE_SECONDS)
     const topicsPromise = getTopicByAnyCachedBatch(topicIds)
-    const topicsIndexedPromise = topicsPromise.then(indexById)
+    const labeledTopics = topicsPromise.then(topics => attachTopicProvenance(topics, currentUser))
+    const topicsIndexedPromise = labeledTopics.then(indexById)
     const hostnameIdsPromise = topicsPromise.then(topics =>
       topics.flatMap(topic => (topic?.hostname?.id ? [topic.hostname.id] : [])),
     )

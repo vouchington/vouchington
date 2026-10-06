@@ -41,7 +41,9 @@ Response is streamed and includes: `results`, `page_info`, `posts`, `posts_metri
 
 Reads the refreshed `mv_top_hashtags` aggregate. `q` filters display/canonical hashtag text,
 `mapping` is `all`, `linked`, or `unlinked`, and `after` is a scoped opaque ranking cursor.
-The response includes typed hashtag results and a `topics` sidecar keyed by linked topic ID.
+The response includes typed hashtag results and a `topics` sidecar keyed by linked topic ID. Each
+sidecar topic carries the optional `provenance` and, for moderation staff, `staff_provenance`, as
+in [Content provenance exposure](../../../content/reference-content-provenance-exposure.md).
 
 ## GET /api/v1/topic-recommendations/:id
 

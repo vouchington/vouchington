@@ -1,6 +1,7 @@
 import { TopicDetailHeader } from './topic-detail-header'
 import { TopicDetailTabs } from './topic-detail-tabs'
 import type { ElectionVote } from '@/types/posts'
+import type { ViewRssFeed } from '@/types/rss-feeds'
 import type { Topic, TopicElection, TopicMetrics } from '@/types/topics'
 import type { FediverseInstanceAttributes } from '@/types/fediverse-instances'
 import type { HostnameElection } from '@/types/hostnames'
@@ -19,6 +20,7 @@ export interface TopicDetailLayoutProps {
   rssFeedId?: string
   isFollowingRssFeed?: boolean
   displayName?: string
+  sourceFeed?: Pick<ViewRssFeed, 'provenance' | 'staff_provenance'> | null
   fediverseInstance?: FediverseInstanceAttributes | null
   hostnameElection?: HostnameElection | null
   children: React.ReactNode
@@ -37,6 +39,7 @@ export function TopicDetailLayout({
   rssFeedId,
   isFollowingRssFeed,
   displayName,
+  sourceFeed,
   fediverseInstance,
   hostnameElection,
   children,
@@ -52,6 +55,7 @@ export function TopicDetailLayout({
         rssFeedId={rssFeedId}
         isFollowingRssFeed={isFollowingRssFeed}
         displayName={displayName}
+        sourceFeed={sourceFeed}
       />
       {topic.topic_type === 'fediverse_instance' && (
         <FediverseInstanceMetadata

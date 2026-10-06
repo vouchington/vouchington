@@ -9,7 +9,7 @@ export type KnownOAuthClients = Readonly<Record<string, KnownOAuthClient>>
 
 // Exact CIMD URLs are added only after the key, display name and document URL are reviewed
 // together. An entry also needs the key's display copy in the web localization catalog (see
-// `web/components/posts/known-app-name-keys.ts`) and, later, in the native catalogs.
+// `web/components/provenance/known-app-name-keys.ts`) and, later, in the native catalogs.
 export const KNOWN_OAUTH_CLIENTS = {} as const satisfies KnownOAuthClients
 
 export function getKnownOAuthClient(

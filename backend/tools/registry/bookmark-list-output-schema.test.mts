@@ -10,6 +10,13 @@ type JsonSchema = Record<string, unknown>
 const properties = (schema: unknown): Record<string, unknown> =>
   (schema as JsonSchema)['properties'] as Record<string, unknown>
 
+// MCP carries the public provenance label only, so the REST staff block is not part of the twin.
+const withoutStaffProvenance = (schema: unknown): unknown => {
+  const kept = { ...properties(schema) }
+  delete kept['staff_provenance']
+  return { ...(schema as JsonSchema), properties: kept }
+}
+
 const BOOKMARK_ROUTE = '/api/v1/bookmarks/{entityType}/{entityId}/{predicate}'
 
 // The bookmark and list routes document their bodies inline, so these tools own their output
@@ -25,7 +32,7 @@ describe('bookmark and list tool output schemas stay pinned to the documented RE
     'takes %# result entity from the documented REST body',
     (tool, method, path, status, key) => {
       expect(properties(tool.meta?.outputSchema)[key]).toEqual(
-        documentedResponseProperty(method, path, status, key),
+        withoutStaffProvenance(documentedResponseProperty(method, path, status, key)),
       )
     },
   )

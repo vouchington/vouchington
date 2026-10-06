@@ -3,6 +3,7 @@ import { streamJsonObject, type Context } from '@jongleberry/api-server'
 // receives logo_image_id/hero_image_id changes (topics cannot depend on images).
 import '@services/images/register-image-exists-guard'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
+import { attachTopicProvenance, attachWrittenTopicProvenance } from '@services/content-provenance'
 import { getTopicElectionVotesByUser } from '@services/elections-votes/topic'
 import {
   getTopicByAnyWithRedirectCached,
@@ -60,7 +61,7 @@ app
       return getTopicMetricsByAny(topic.id)
     })
     const output: Record<string, unknown> = {
-      topic,
+      topic: attachTopicProvenance([topic], currentUser).then(([labeled]) => labeled),
       topic_redirect,
       html,
       topic_election: getTopicElectionByIdCachedBatch([topic.id]).then(
@@ -116,7 +117,7 @@ app
     validateRequestContract(ctx, 'PATCH:/api/v1/topics/:idOrSlug', { body: changes })
     const updated = await updateTopic(currentUser, topic, changes)
 
-    ctx.json({ topic: updated })
+    ctx.json({ topic: await attachWrittenTopicProvenance(updated, currentUser) })
   })
   .delete((ctx: Context) => {
     ctx.set('Allow', 'GET, PATCH')

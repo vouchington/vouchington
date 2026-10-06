@@ -24,14 +24,16 @@ A source is a topic with `topic_type = 'rss_feed'` plus a 1:1 extension row in `
 
 **`rss_feeds` extension row:**
 
-| Field             | Notes                                                                          |
-| ----------------- | ------------------------------------------------------------------------------ |
-| `rss_feed_url_id` | FK to the `urls` row for the feed URL                                          |
-| `home_page_url`   | Source homepage URL (resolved at service layer, not a direct DB column)        |
-| `feed_type`       | `article` \| `podcast` \| `video` \| `mixed`                                   |
-| `is_enabled`      | Whether crawling is active                                                     |
-| `topic_id`        | FK back to `topics.id`                                                         |
-| `created_via`     | Required immutable channel; see [provenance](../content/content-provenance.md) |
+| Field              | Notes                                                                                                                         |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `rss_feed_url_id`  | FK to the `urls` row for the feed URL                                                                                         |
+| `home_page_url`    | Source homepage URL (resolved at service layer, not a direct DB column)                                                       |
+| `feed_type`        | `article` \| `podcast` \| `video` \| `mixed`                                                                                  |
+| `is_enabled`       | Whether crawling is active                                                                                                    |
+| `topic_id`         | FK back to `topics.id`                                                                                                        |
+| `created_via`      | Required immutable channel; see [provenance](../content/content-provenance.md)                                                |
+| `provenance`       | Public label, API and MCP sources only: `{ via, app }`; see [provenance](../content/reference-content-provenance-exposure.md) |
+| `staff_provenance` | Staff-only channel and raw OAuth client, computed per request; never cached or public                                         |
 
 **Display name** (never show raw `topics.name`):
 

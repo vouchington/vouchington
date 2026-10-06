@@ -1,4 +1,5 @@
 import app from '../../app.mts'
+import { attachTopicProvenance } from '@services/content-provenance'
 import type { Context } from '@jongleberry/api-server'
 import {
   getOptionalAuthAndRateLimit,
@@ -58,7 +59,8 @@ app.route('/api/v1/fediverse/instances/:id').get(async (ctx: Context) => {
 
   setAnonymousPublicCacheHeaders(ctx, currentUser, HTTP_CACHE_LONG_MAX_AGE_SECONDS)
 
-  const [fediverseInstance, topicElections, hostnameElections] = await Promise.all([
+  const [[labeledTopic], fediverseInstance, topicElections, hostnameElections] = await Promise.all([
+    attachTopicProvenance([topic], currentUser),
     getFediverseInstanceAttributes(topic.id),
     getTopicElectionByIdCachedBatch([topic.id]),
     topic.hostname?.id
@@ -67,7 +69,7 @@ app.route('/api/v1/fediverse/instances/:id').get(async (ctx: Context) => {
   ])
 
   ctx.json({
-    topic,
+    topic: labeledTopic,
     fediverse_instance: toPublicFediverseInstanceAttributes(fediverseInstance),
     topic_election: topicElections[0] ?? null,
     hostname_election: hostnameElections[0] ?? null,

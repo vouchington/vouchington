@@ -7,9 +7,8 @@ import { HoverableCard } from '@/components/shared/hoverable-card'
 import { TopicLogo } from '@/components/shared/topic-logo'
 import { TopicAboutCopy } from '@/components/topics/topic-about-copy'
 import { TopicCardFediverseRow } from '@/components/topics/topic-card-fediverse-row'
-import { Users, Star } from 'lucide-react'
-import { formatCompactNumber, calculateAverageRating } from '@ts-shared/utils/format'
-import { useUiLocale } from '@/lib/i18n/ui-locale-context'
+import { TopicCardMetrics } from '@/components/topics/topic-card-metrics'
+import { ProvenanceBadges } from '@/components/provenance/provenance-badges'
 import {
   getTopicTypeLabel,
   type Topic,
@@ -45,6 +44,8 @@ export interface TopicCardProps {
     | 'logo_image_placement'
     | 'should_allow_reviews'
     | 'hostname'
+    | 'provenance'
+    | 'staff_provenance'
   >
   metrics?: Pick<TopicMetrics, 'ratings' | 'bookmarks'>
   election?: Pick<TopicElection, 'id' | 'votes_count_up' | 'votes_count_down'>
@@ -70,13 +71,7 @@ export function TopicCard({
 }: TopicCardProps) {
   const t = useTranslations()
   const { currentUser } = useAuth()
-  const uiLocale = useUiLocale()
   const currentUserId = currentUser?.id
-  const averageRating = metrics?.ratings ? calculateAverageRating(metrics.ratings.count) : null
-  const followerCount = metrics?.bookmarks.follow || 0
-  const reviewCount = metrics?.ratings
-    ? Object.values(metrics.ratings.count).reduce((sum, count) => sum + count, 0)
-    : 0
 
   return (
     <HoverableCard
@@ -98,12 +93,19 @@ export function TopicCard({
             </h3>
 
             {/* Topic type badge — below title per UI rules */}
-            <Badge
-              variant='secondary'
-              className='mt-1 text-xs'
-            >
-              {t(getTopicTypeLabel(topic.topic_type))}
-            </Badge>
+            <div className='mt-1 flex flex-wrap items-center gap-1.5'>
+              <Badge
+                variant='secondary'
+                className='text-xs'
+              >
+                {t(getTopicTypeLabel(topic.topic_type))}
+              </Badge>
+              <ProvenanceBadges
+                testIdPrefix='topic'
+                provenance={topic.provenance}
+                staffProvenance={topic.staff_provenance}
+              />
+            </div>
 
             {/* Fediverse instance software + trust badge row */}
             {topic.topic_type === 'fediverse_instance' && (
@@ -121,29 +123,10 @@ export function TopicCard({
               className='mt-2 line-clamp-2 text-sm text-muted-foreground'
             />
 
-            {/* Metrics */}
-            <div className='mt-2 flex items-center gap-4 text-sm text-muted-foreground'>
-              {/* Average rating — hidden for topics that don't allow reviews */}
-              {topic.should_allow_reviews && averageRating !== null && (
-                <div className='flex items-center gap-1'>
-                  <Star className='h-4 w-4 fill-yellow-400 text-yellow-400' />
-                  <span>{averageRating.toFixed(1)}</span>
-                </div>
-              )}
-
-              {/* Review count — hidden for topics that don't allow reviews */}
-              {topic.should_allow_reviews && reviewCount > 0 && (
-                <span>{formatCompactNumber(reviewCount, uiLocale)} reviews</span>
-              )}
-
-              {/* Follower count */}
-              {followerCount > 0 && (
-                <div className='flex items-center gap-1'>
-                  <Users className='h-4 w-4' />
-                  <span>{formatCompactNumber(followerCount, uiLocale)} followers</span>
-                </div>
-              )}
-            </div>
+            <TopicCardMetrics
+              topic={topic}
+              metrics={metrics}
+            />
 
             {/* Action buttons — vote visible for all; follow/mute suppressed in passive mode */}
             {(!hideBookmarkActions || !!election) && (

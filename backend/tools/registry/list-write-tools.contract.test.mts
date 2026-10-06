@@ -77,7 +77,7 @@ describe('list write tools contract — real DB', () => {
     )
 
     expect(Object.keys(result.list as object).toSorted()).toEqual(
-      Object.keys(rest.body.list).toSorted(),
+      [...Object.keys(rest.body.list), 'provenance'].toSorted(),
     )
     expect(result.list).toMatchObject({ name, description: null, visibility: 'private' })
     expect(result.list).toMatchObject({ owner_user_id: caller.id, removed_at: null })

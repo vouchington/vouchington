@@ -5,7 +5,7 @@ import {
   COMMUNITY_NOT_FOUND,
   loadPublicCommunity,
   mcpCommunityEntryProperties,
-  toMcpCommunityEntry,
+  toMcpCommunityEntries,
   type McpCommunityEntry,
 } from './mcp-community-output.mts'
 import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
@@ -45,7 +45,8 @@ const tool: Tool<ToolArgs, ToolResult> = {
       const community = await loadPublicCommunity(args.community_id)
       if (!community) return COMMUNITY_NOT_FOUND
       const metrics = await getCommunityMetrics(community.id)
-      return { success: true, ...(await toMcpCommunityEntry(community, community.owner, metrics)) }
+      const [entry] = await toMcpCommunityEntries([{ community, owner: community.owner, metrics }])
+      return { success: true, ...entry! }
     },
 }
 

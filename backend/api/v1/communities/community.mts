@@ -20,6 +20,10 @@ import {
   type UpdateCommunityInput,
 } from '@services/communities'
 import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
+import {
+  attachCommunityProvenance,
+  attachWrittenCommunityProvenance,
+} from '@services/content-provenance'
 
 app
   .route('/api/v1/communities/:idOrSlug')
@@ -34,11 +38,12 @@ app
     setAnonymousPublicCacheHeaders(ctx, currentUser, HTTP_CACHE_LONG_MAX_AGE_SECONDS)
 
     const { owner, ...communityData } = community
+    const [labelledCommunity] = await attachCommunityProvenance([communityData], currentUser)
 
     ctx.setType('json')
     await ctx.pipeline(
       streamJsonObject({
-        community: communityData,
+        community: labelledCommunity,
         user: owner,
         membership,
         community_metrics: getCommunityMetrics(community.id),
@@ -165,7 +170,7 @@ app
     }
     const { owner: _owner, ...communityData } = updated
 
-    ctx.json({ community: communityData })
+    ctx.json({ community: await attachWrittenCommunityProvenance(communityData, currentUser) })
   })
   .delete(async (ctx: Context) => {
     const currentUser = await requireAuth(ctx, 'DELETE:/api/v1/communities/:idOrSlug')

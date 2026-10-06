@@ -1,5 +1,5 @@
 import type { MessageKey, Translator } from '@ts-shared/ui-messages'
-import type { Post } from '@/types/posts'
+import type { PublicContentProvenance } from '@voucha/types/entities/content-provenance'
 import { KNOWN_APP_NAME_KEYS } from './known-app-name-keys'
 
 /**
@@ -9,7 +9,7 @@ import { KNOWN_APP_NAME_KEYS } from './known-app-name-keys'
  */
 export function publicProvenanceLabel(
   t: Translator,
-  provenance: NonNullable<Post['provenance']>,
+  provenance: PublicContentProvenance,
   knownAppNameKeys: ReadonlyMap<string, MessageKey> = KNOWN_APP_NAME_KEYS,
 ): string {
   const channel =

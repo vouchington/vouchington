@@ -87,7 +87,8 @@ endpoints are always mounted; the `fediverse` feature flag gates frontend visibi
   HTTP cache can't replay a degraded response to later anonymous callers.
 - **`GET /instances`**: one topic-id search call (cached search wrapper for anonymous callers, live
   for authenticated callers), then batched topic, metric, instance, topic-election,
-  hostname-election, markdown, and optional personalization fetches — no per-row queries.
+  hostname-election, markdown, and optional personalization fetches — no per-row queries. The topic
+  provenance facts are one more batched read, chained after the topic batch.
   Anonymous responses set the standard
   short public cache header.
 - **`POST /instances`**: one hostname resolve, one dedup lookup, and — on the non-duplicate path —
@@ -95,8 +96,8 @@ endpoints are always mounted; the `fediverse` feature flag gates frontend visibi
   the insert. Classification runs in the API and uses the selected direct or proxy dispatcher.
   Proxy transport failure does not fall back to direct network I/O and leaves metadata
   unclassified. Not cached; this is a mutation.
-- **`GET /instances/:id`**: one cached topic lookup, then the single-id attribute getter and the
-  single-id election batch getter in parallel. Anonymous responses set the standard long public
+- **`GET /instances/:id`**: one cached topic lookup, then the single-id attribute getter, the
+  single-id election batch getter and the topic provenance read in parallel. Anonymous responses set the standard long public
   cache header (instance detail pages change less often than the search-driven list).
 - **`POST /instances/:id/integration-changes`**: one cached topic lookup, then one write through
   `setIntegrationStatusAsAdmin` (a single insert; the denormalized status column is trigger-

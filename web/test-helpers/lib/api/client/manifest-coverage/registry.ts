@@ -5,6 +5,7 @@ import { classifierThresholdEndpointRegistry } from './classifier-threshold-regi
 import { communityEndpointRegistry } from './community-registry'
 import { copyrightDsaEndpointRegistry } from './copyright-dsa-registry'
 import { engineeringEndpointRegistry } from './engineering-registry'
+import { entityProvenanceEndpointRegistry } from './entity-provenance-registry'
 import { nonWebClientEndpointRegistry } from './non-web-registry'
 import { moderationEndpointRegistry } from './moderation-registry'
 import { resourceEndpointRegistry } from './resource-registry'
@@ -20,6 +21,7 @@ export const nonWebEndpointRegistry = mergeEndpointRegistries(
   communityEndpointRegistry,
   copyrightDsaEndpointRegistry,
   engineeringEndpointRegistry,
+  entityProvenanceEndpointRegistry,
   moderationEndpointRegistry,
   resourceEndpointRegistry,
   nativeChatEndpointRegistry,

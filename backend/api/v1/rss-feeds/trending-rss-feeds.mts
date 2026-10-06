@@ -4,6 +4,7 @@ import app from '../../app.mts'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 import { getTrendingRssFeeds } from '@services/trending-rss-feeds/get-trending-rss-feeds'
 import { getTrendingRssFeedsCached } from '@services/entity-fetch/search-caches'
+import { attachRssFeedProvenance } from '@services/content-provenance'
 import { getRssFeedByIdCachedBatch } from '@services/entity-fetch'
 import { proxyRssFeedCoverArt } from '@services/rss-feeds/proxy-cover-art'
 import {
@@ -74,11 +75,14 @@ app.route('/api/v1/rss-feeds/trending').get(async ctx => {
   const output: Record<string, unknown> = {
     results: result.results,
     page_info: result.page_info,
-    rss_feeds: getRssFeedByIdCachedBatch(feedIds).then(feeds =>
-      indexById(
-        feeds.filter((f): f is NonNullable<typeof f> => f != null).map(proxyRssFeedCoverArt),
-      ),
-    ),
+    rss_feeds: getRssFeedByIdCachedBatch(feedIds)
+      .then(feeds =>
+        attachRssFeedProvenance(
+          feeds.filter((f): f is NonNullable<typeof f> => f != null).map(proxyRssFeedCoverArt),
+          currentUser,
+        ),
+      )
+      .then(indexById),
   }
 
   ctx.setType('json')
