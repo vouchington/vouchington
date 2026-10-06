@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import * as psql from '@data-stores/psql'
 import * as moderationEnqueues from '@queues/openai-moderation/enqueues'
 import * as spamEnqueues from '@queues/spam-detection/enqueues'
 import { entitiesListeners } from '@queues/entity-listeners/queues'
@@ -212,7 +211,7 @@ describe('setPostImages', () => {
     const releaseImage = Promise.withResolvers<void>()
     const holder = holdImageRowLock(imageId, imageLocked, releaseImage)
     await imageLocked.promise
-    const imageLockStarted = whenRollbackImageLockStarts()
+    const imageLockStarted = Promise.withResolvers<void>()
     const rollingBack = rollbackPostImages(
       postId,
       createPostImageRollbackFixture({
@@ -222,9 +221,10 @@ describe('setPostImages', () => {
         currentLlmModerationContentSha256: moderationSha,
         llmModerationContentSha256: moderationSha,
       }),
+      { onImageLockQuery: () => imageLockStarted.resolve() },
     )
     try {
-      await imageLockStarted
+      await imageLockStarted.promise
       await expect(acquirePostPublicationLockWithShortTimeout(postId)).resolves.toBeUndefined()
     } finally {
       releaseImage.resolve()
@@ -255,28 +255,6 @@ function watchContentChangedEnqueues(postId: string): {
     },
   )
   return { spam: spam.promise, moderation: moderation.promise }
-}
-
-function whenRollbackImageLockStarts(): Promise<void> {
-  const started = Promise.withResolvers<void>()
-  const begin = psql.beginTransaction
-  vi.spyOn(psql, 'beginTransaction').mockImplementation(async options => {
-    const query = await begin(options)
-    return new Proxy(query, {
-      apply(target, thisArg, args: unknown[]) {
-        const input = args[0]
-        const text =
-          typeof input === 'string'
-            ? input
-            : input && typeof input === 'object' && 'text' in input
-              ? String(input.text)
-              : ''
-        if (text.includes('rollbackPostImages:lockImages')) started.resolve()
-        return Reflect.apply(target, thisArg, args)
-      },
-    })
-  })
-  return started.promise
 }
 
 async function holdImageRowLock(

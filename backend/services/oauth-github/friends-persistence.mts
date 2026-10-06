@@ -21,11 +21,13 @@ export async function finalizeGithubFriendSync(
   githubUserId: string,
   userId: string,
   syncStartTime: string,
+  options?: { onStaleFriendPage?: (friendIds: string[]) => void },
 ): Promise<void> {
   const batchSize = getOauthGithubWorkLimit('friend_mutation_batch_size')
   while (true) {
     // oxlint-disable-next-line no-await-in-loop -- each bounded candidate page follows the previous commit.
     const staleFriendIds = await getStaleGithubFriendIds(githubUserId, syncStartTime, batchSize)
+    options?.onStaleFriendPage?.(staleFriendIds)
     if (staleFriendIds.length === 0) {
       // oxlint-disable-next-line no-await-in-loop -- completion follows the final bounded candidate read.
       await markGithubFriendSyncComplete(githubUserId, userId)
