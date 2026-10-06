@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS user_mcp_create_attempts (
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   claimed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  lease_token UUID NOT NULL DEFAULT uuidv7(),
   completed_at TIMESTAMPTZ,
   CONSTRAINT user_mcp_create_attempts_user_key_unique UNIQUE (user_id, idempotency_key),
   CONSTRAINT user_mcp_create_attempts_intent_sha256_check CHECK (
@@ -33,4 +34,5 @@ COMMENT ON COLUMN user_mcp_create_attempts.idempotency_key IS 'Caller-supplied U
 COMMENT ON COLUMN user_mcp_create_attempts.intent_sha256 IS 'SHA-256 of the canonical tool name and arguments; reusing the key with a different request is rejected.';
 COMMENT ON COLUMN user_mcp_create_attempts.response IS 'Exact structured result the completed create returned, replayed on every retry of the same key and request.';
 COMMENT ON COLUMN user_mcp_create_attempts.claimed_at IS 'When the in-flight create claimed the key; an unfinished claim older than the lease may be taken over by a retry.';
+COMMENT ON COLUMN user_mcp_create_attempts.lease_token IS 'Opaque fencing token rotated on each claim and takeover; completion and release compare it for equality, so a holder whose lease was taken over can neither finish nor free the newer holder''s claim. It identifies no durable row.';
 COMMENT ON COLUMN user_mcp_create_attempts.completed_at IS 'When the create finished and its response was stored; null while the create is still running.';

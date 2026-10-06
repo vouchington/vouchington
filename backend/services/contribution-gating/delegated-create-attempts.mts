@@ -6,8 +6,11 @@ import sql from 'sql-template-strings'
 /** How long an unfinished claim holds its key before a retry may take it over. */
 export const DELEGATED_CREATE_LEASE_SECONDS = 60
 
+/** A holder's claim on one key. The token is rotated on every takeover, so a stale one is inert. */
+export type DelegatedCreateLease = { id: string; leaseToken: string }
+
 export type DelegatedCreateClaim =
-  | { kind: 'claimed'; id: string }
+  | ({ kind: 'claimed' } & DelegatedCreateLease)
   | { kind: 'replay'; response: Record<string, unknown> }
   | { kind: 'in_progress'; retryAfterSeconds: number }
 
@@ -41,14 +44,17 @@ async function tryClaim(
   intentSha256: string,
 ): Promise<DelegatedCreateClaim | null> {
   await using transaction = await beginTransaction()
-  const inserted = await transaction<{ id: string }>(sql`/* claimDelegatedCreate.insert */
+  const inserted = await transaction<{
+    id: string
+    lease_token: string
+  }>(sql`/* claimDelegatedCreate.insert */
     INSERT INTO user_mcp_create_attempts (user_id, idempotency_key, intent_sha256)
     VALUES (${userId}, ${idempotencyKey}, ${intentSha256})
     ON CONFLICT (user_id, idempotency_key) DO NOTHING
-    RETURNING id`)
+    RETURNING id, lease_token`)
   if (inserted.rows[0]) {
     await transaction.commit()
-    return { kind: 'claimed', id: inserted.rows[0].id }
+    return { kind: 'claimed', id: inserted.rows[0].id, leaseToken: inserted.rows[0].lease_token }
   }
   const existing = await transaction<AttemptRow>(sql`/* claimDelegatedCreate.get */
     SELECT id, intent_sha256, response,
@@ -69,25 +75,37 @@ async function tryClaim(
   if (row.response) return { kind: 'replay', response: row.response }
   if (row.retry_after_seconds > 0)
     return { kind: 'in_progress', retryAfterSeconds: row.retry_after_seconds }
-  await transaction(sql`/* claimDelegatedCreate.takeOver */
-    UPDATE user_mcp_create_attempts SET claimed_at = clock_timestamp() WHERE id = ${row.id}`)
+  const takenOver = await transaction<{ lease_token: string }>(
+    sql`/* claimDelegatedCreate.takeOver */
+    UPDATE user_mcp_create_attempts
+    SET claimed_at = clock_timestamp(), lease_token = uuidv7()
+    WHERE id = ${row.id}
+    RETURNING lease_token`,
+  )
   await transaction.commit()
-  return { kind: 'claimed', id: row.id }
+  return { kind: 'claimed', id: row.id, leaseToken: takenOver.rows[0]!.lease_token }
 }
 
-/** Stores the exact response the create returned so every retry of the key replays it. */
+/**
+ * Stores the exact response the create returned so every retry of the key replays it. A holder
+ * whose lease was taken over matches no row, so it cannot overwrite the newer holder's result.
+ */
 export async function completeDelegatedCreate(
-  attemptId: string,
+  lease: DelegatedCreateLease,
   response: Record<string, unknown>,
 ): Promise<void> {
   await query(sql`/* completeDelegatedCreate */
     UPDATE user_mcp_create_attempts
     SET response = ${JSON.stringify(response)}::jsonb, completed_at = clock_timestamp()
-    WHERE id = ${attemptId} AND response IS NULL`)
+    WHERE id = ${lease.id} AND lease_token = ${lease.leaseToken} AND response IS NULL`)
 }
 
-/** Frees the key after a failed create so the caller may retry it. */
-export async function releaseDelegatedCreate(attemptId: string): Promise<void> {
+/**
+ * Frees the key after a failed create so the caller may retry it. A holder whose lease was taken
+ * over matches no row, so it cannot free the newer holder's claim.
+ */
+export async function releaseDelegatedCreate(lease: DelegatedCreateLease): Promise<void> {
   await query(sql`/* releaseDelegatedCreate */
-    DELETE FROM user_mcp_create_attempts WHERE id = ${attemptId} AND response IS NULL`)
+    DELETE FROM user_mcp_create_attempts
+    WHERE id = ${lease.id} AND lease_token = ${lease.leaseToken} AND response IS NULL`)
 }

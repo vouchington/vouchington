@@ -50,7 +50,10 @@ owner and key, with a SHA-256 of the tool name and arguments:
 
 - The same key and arguments replay the stored result without writing again or spending quota.
 - A changed request fails with `IDEMPOTENCY_KEY_REUSED`.
-- A live claim fails with `CONTRIBUTION_ADMISSION_IN_PROGRESS` and a retry delay.
+- A live claim fails with `CONTRIBUTION_ADMISSION_IN_PROGRESS` and a retry delay. An unfinished
+  claim older than 60 seconds is taken over and its `lease_token` rotated, so a holder that
+  outlived its lease can neither store its result nor release the newer holder's claim. Both
+  executions may still have run; only the newer holder's result is replayed.
 - Argument parsing and ownership checks run before the claim, so a refused request never claims a key.
   Domain guards and quotas run inside the claimed execution, and a failure releases the claim.
 - The ledger is retained so a late retry keeps returning the first result; it is classified as
@@ -73,6 +76,11 @@ restriction and relaxes none.
 - `apply_to_community`: Banned `FORBIDDEN`; archived or already pending or a member `CONFLICT`; public community or answers the questions reject `INVALID_INPUT`.
 - `create_review_dispute`: Unknown post `NOT_FOUND`; not a review, no rating for the topic, or over 4000 characters `INVALID_INPUT`; removed post `INVALID_INPUT`; no verified topic claim `FORBIDDEN`.
 - `create_moderation_appeal`: Missing or revoked warning or lifted ban `NOT_FOUND`; not the caller's `FORBIDDEN`; post not removed or reason over 4000 characters `INVALID_INPUT`.
+
+REST's per-route request limits are HTTP middleware that a tool call never passes through, for
+example the 10 submissions per hour on `POST /api/v1/reports`. Every MCP tool call shares the
+`POST /api/v1/mcp` route limit and the outcome-based usage quota instead, as for every other write
+tool. These tools do not add a report-specific limit.
 
 Over MCP, HTTP 422 and 410 report as `INVALID_INPUT`, and `IDENTITY_REQUIRED` and `COMMUNITY_BANNED`
 report as `FORBIDDEN`, because the MCP error mapping has no more specific code for them.

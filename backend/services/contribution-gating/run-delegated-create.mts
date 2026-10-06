@@ -46,10 +46,10 @@ export async function runDelegatedCreate<T extends Record<string, unknown>>(inpu
   }
   try {
     const response = await input.execute()
-    await completeDelegatedCreate(claim.id, response)
+    await completeDelegatedCreate(claim, response)
     return response
   } catch (err) {
-    await releaseDelegatedCreate(claim.id)
+    await releaseDelegatedCreate(claim)
     throw err
   }
 }
