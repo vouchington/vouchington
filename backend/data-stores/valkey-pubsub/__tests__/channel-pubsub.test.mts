@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { setImmediate } from 'node:timers/promises'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { createChannelPubSub } from '../channel-pubsub.mts'
 
 const channelPrefix = 'test:valkey:channel-pubsub'
@@ -31,14 +30,9 @@ describe('createChannelPubSub', () => {
 
     const key = randomUUID()
     const sub = trackClose(await pubSub.subscribe(key))
-    const received: Array<{ x: number }> = []
-    sub.setHandler(value => received.push(value))
-
+    const received = nextMessage<{ x: number }>(sub.setHandler)
     await pubSub.publish(key, { x: 42 })
-
-    await vi.waitFor(() => {
-      expect(received).toEqual([{ x: 42 }])
-    })
+    await expect(received).resolves.toEqual({ x: 42 })
   })
 
   it('replays buffered messages after a handler is installed', async () => {
@@ -47,24 +41,21 @@ describe('createChannelPubSub', () => {
 
     const key = randomUUID()
     const sub = trackClose(await pubSub.subscribe(key))
-    const readinessProbe: Array<{ x: string }> = []
-
-    sub.setHandler(value => readinessProbe.push(value))
+    const ready = nextMessage<{ x: string }>(sub.setHandler)
     await pubSub.publish(key, { x: 'ready' })
-    await vi.waitFor(() => {
-      expect(readinessProbe).toEqual([{ x: 'ready' }])
-    })
+    await expect(ready).resolves.toEqual({ x: 'ready' })
     sub.setHandler(null)
 
+    const probe = trackClose(await pubSub.subscribe(key))
+    const seen = nextMessage<{ x: string }>(probe.setHandler)
     await pubSub.publish(key, { x: 'buffered' })
-    await setImmediate()
+    await seen
 
     const received: Array<{ x: string }> = []
-    sub.setHandler(value => received.push(value))
-
-    await vi.waitFor(() => {
-      expect(received).toEqual([{ x: 'buffered' }])
+    sub.setHandler(value => {
+      received.push(value)
     })
+    expect(received).toEqual([{ x: 'buffered' }])
   })
 
   it('supports custom serializers and deserializers', async () => {
@@ -76,14 +67,9 @@ describe('createChannelPubSub', () => {
 
     const key = randomUUID()
     const sub = trackClose(await pubSub.subscribe(key))
-    const received: number[] = []
-    sub.setHandler(value => received.push(value))
-
+    const received = nextMessage<number>(sub.setHandler)
     await pubSub.publish(key, 99)
-
-    await vi.waitFor(() => {
-      expect(received).toEqual([99])
-    })
+    await expect(received).resolves.toEqual(99)
   })
 
   it('delivers a message to every active subscription for the same key', async () => {
@@ -93,18 +79,11 @@ describe('createChannelPubSub', () => {
     const key = randomUUID()
     const subA = trackClose(await pubSub.subscribe(key))
     const subB = trackClose(await pubSub.subscribe(key))
-    const receivedA: Array<{ done: boolean }> = []
-    const receivedB: Array<{ done: boolean }> = []
-
-    subA.setHandler(value => receivedA.push(value))
-    subB.setHandler(value => receivedB.push(value))
-
+    const receivedA = nextMessage<{ done: boolean }>(subA.setHandler)
+    const receivedB = nextMessage<{ done: boolean }>(subB.setHandler)
     await pubSub.publish(key, { done: true })
-
-    await vi.waitFor(() => {
-      expect(receivedA).toEqual([{ done: true }])
-      expect(receivedB).toEqual([{ done: true }])
-    })
+    expect(await receivedA).toEqual({ done: true })
+    expect(await receivedB).toEqual({ done: true })
   })
 
   it('contains decode failures and keeps the subscription usable', async () => {
@@ -115,15 +94,11 @@ describe('createChannelPubSub', () => {
 
     const key = randomUUID()
     const sub = trackClose(await pubSub.subscribe(key))
-    const received: Array<{ x: number }> = []
-    sub.setHandler(value => received.push(value))
+    const received = nextMessage<{ x: number }>(sub.setHandler)
 
     await pubSub.publish(key, { x: 0 })
     await pubSub.publish(key, { x: 1 })
-
-    await vi.waitFor(() => {
-      expect(received).toEqual([{ x: 1 }])
-    })
+    await expect(received).resolves.toEqual({ x: 1 })
   })
 
   it('rejects direct subscriber closure while subscriptions are active', async () => {
@@ -151,3 +126,11 @@ describe('createChannelPubSub', () => {
     await expect(pubSub.subscribe(key)).rejects.toThrow('Channel pub/sub is closed')
   })
 })
+
+function nextMessage<T>(setHandler: (handler: (value: T) => void) => void): Promise<T> {
+  return new Promise(resolve => {
+    setHandler(value => {
+      resolve(value)
+    })
+  })
+}

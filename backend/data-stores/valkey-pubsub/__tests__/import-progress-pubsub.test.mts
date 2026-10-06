@@ -1,7 +1,14 @@
 import { randomUUID } from 'node:crypto'
-import { setImmediate } from 'node:timers/promises'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { publishImportProgress, subscribeImportProgress } from '../import-progress-pubsub.mts'
+
+type ImportProgress = {
+  batchId: string
+  completed: number
+  failed: number
+  total: number
+  done: boolean
+}
 
 describe('import-progress-pubsub', () => {
   let cleanup: Array<() => void | Promise<void>> = []
@@ -20,185 +27,70 @@ describe('import-progress-pubsub', () => {
 
   it('publishes and receives progress updates', async () => {
     const batchId = `batch-${randomUUID()}`
+    const progress = { batchId, completed: 5, failed: 0, total: 10, done: false }
     const sub = trackClose(await subscribeImportProgress(batchId))
-    const received: Array<{
-      batchId: string
-      completed: number
-      failed: number
-      total: number
-      done: boolean
-    }> = []
-    sub.setHandler(chunk => received.push(chunk))
+    const received = nextMessage<ImportProgress>(sub.setHandler)
 
-    await publishImportProgress(batchId, {
-      batchId,
-      completed: 5,
-      failed: 0,
-      total: 10,
-      done: false,
-    })
-
-    await vi.waitFor(() => {
-      expect(received).toEqual([
-        {
-          batchId,
-          completed: 5,
-          failed: 0,
-          total: 10,
-          done: false,
-        },
-      ])
-    })
+    await publishImportProgress(batchId, progress)
+    await expect(received).resolves.toEqual(progress)
   })
 
   it('replays buffered progress updates after handler registration', async () => {
     const batchId = `batch-${randomUUID()}`
+    const ready = { batchId, completed: 0, failed: 0, total: 1, done: false }
+    const buffered = { batchId, completed: 1, failed: 0, total: 1, done: true }
     const sub = trackClose(await subscribeImportProgress(batchId))
-    const readinessProbe: Array<{
-      batchId: string
-      completed: number
-      failed: number
-      total: number
-      done: boolean
-    }> = []
-
-    sub.setHandler(chunk => readinessProbe.push(chunk))
-    await publishImportProgress(batchId, {
-      batchId,
-      completed: 0,
-      failed: 0,
-      total: 1,
-      done: false,
-    })
-    await vi.waitFor(() => {
-      expect(readinessProbe).toEqual([
-        {
-          batchId,
-          completed: 0,
-          failed: 0,
-          total: 1,
-          done: false,
-        },
-      ])
-    })
+    const readiness = nextMessage<ImportProgress>(sub.setHandler)
+    await publishImportProgress(batchId, ready)
+    await expect(readiness).resolves.toEqual(ready)
     sub.setHandler(null)
 
-    await publishImportProgress(batchId, {
-      batchId,
-      completed: 1,
-      failed: 0,
-      total: 1,
-      done: true,
-    })
-    await setImmediate()
+    const probe = trackClose(await subscribeImportProgress(batchId))
+    const seen = nextMessage<ImportProgress>(probe.setHandler)
+    await publishImportProgress(batchId, buffered)
+    await seen
 
-    const received: Array<{
-      batchId: string
-      completed: number
-      failed: number
-      total: number
-      done: boolean
-    }> = []
-    sub.setHandler(chunk => received.push(chunk))
-
-    await vi.waitFor(() => {
-      expect(received).toEqual([
-        {
-          batchId,
-          completed: 1,
-          failed: 0,
-          total: 1,
-          done: true,
-        },
-      ])
+    const received: ImportProgress[] = []
+    sub.setHandler(chunk => {
+      received.push(chunk)
     })
+    expect(received).toEqual([buffered])
   })
 
   it('delivers progress updates in order to multiple subscribers', async () => {
     const batchId = `batch-${randomUUID()}`
+    const progress = { batchId, completed: 2, failed: 0, total: 3, done: false }
     const subA = trackClose(await subscribeImportProgress(batchId))
     const subB = trackClose(await subscribeImportProgress(batchId))
-    const receivedA: Array<{
-      batchId: string
-      completed: number
-      failed: number
-      total: number
-      done: boolean
-    }> = []
-    const receivedB: Array<{
-      batchId: string
-      completed: number
-      failed: number
-      total: number
-      done: boolean
-    }> = []
+    const receivedA = nextMessage<ImportProgress>(subA.setHandler)
+    const receivedB = nextMessage<ImportProgress>(subB.setHandler)
 
-    subA.setHandler(chunk => receivedA.push(chunk))
-    subB.setHandler(chunk => receivedB.push(chunk))
-
-    await publishImportProgress(batchId, {
-      batchId,
-      completed: 2,
-      failed: 0,
-      total: 3,
-      done: false,
-    })
-
-    await vi.waitFor(() => {
-      expect(receivedA).toEqual([
-        {
-          batchId,
-          completed: 2,
-          failed: 0,
-          total: 3,
-          done: false,
-        },
-      ])
-      expect(receivedB).toEqual([
-        {
-          batchId,
-          completed: 2,
-          failed: 0,
-          total: 3,
-          done: false,
-        },
-      ])
-    })
+    await publishImportProgress(batchId, progress)
+    expect(await receivedA).toEqual(progress)
+    expect(await receivedB).toEqual(progress)
   })
 
   it('delivers updates only to the matching batch subscription', async () => {
     const batchA = `batch-${randomUUID()}`
     const batchB = `batch-${randomUUID()}`
+    const progressA = { batchId: batchA, completed: 1, failed: 0, total: 2, done: false }
+    const progressB = { batchId: batchB, completed: 2, failed: 0, total: 2, done: true }
     const subA = trackClose(await subscribeImportProgress(batchA))
     const subB = trackClose(await subscribeImportProgress(batchB))
-    const receivedA: Array<{ batchId: string; completed: number }> = []
-    const receivedB: Array<{ batchId: string; completed: number }> = []
+    const receivedA = nextMessage<ImportProgress>(subA.setHandler)
+    const receivedB = nextMessage<ImportProgress>(subB.setHandler)
 
-    subA.setHandler(chunk => receivedA.push(chunk))
-    subB.setHandler(chunk => receivedB.push(chunk))
-
-    await publishImportProgress(batchA, {
-      batchId: batchA,
-      completed: 1,
-      failed: 0,
-      total: 2,
-      done: false,
-    })
-    await publishImportProgress(batchB, {
-      batchId: batchB,
-      completed: 2,
-      failed: 0,
-      total: 2,
-      done: true,
-    })
-
-    await vi.waitFor(() => {
-      expect(receivedA).toEqual([
-        { batchId: batchA, completed: 1, failed: 0, total: 2, done: false },
-      ])
-      expect(receivedB).toEqual([
-        { batchId: batchB, completed: 2, failed: 0, total: 2, done: true },
-      ])
-    })
+    await publishImportProgress(batchA, progressA)
+    await publishImportProgress(batchB, progressB)
+    expect(await receivedA).toEqual(progressA)
+    expect(await receivedB).toEqual(progressB)
   })
 })
+
+function nextMessage<T>(setHandler: (handler: (value: T) => void) => void): Promise<T> {
+  return new Promise(resolve => {
+    setHandler(value => {
+      resolve(value)
+    })
+  })
+}
