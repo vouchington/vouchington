@@ -1,5 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest'
-import * as imageEnqueues from '@queues/images/enqueues'
+import { describe, expect, it, vi } from 'vitest'
+import { PRIORITY_DEFAULT } from '@queues/images/config'
+import { imagesQueue } from '@queues/images/queues'
 import { readCopyrightStaydownEntries } from '@voucha/test-helpers/data-stores/psql/copyright-staydown'
 import { createRestrictedStaydownCase } from '@voucha/test-helpers/services/copyright-notices/staydown-fixture'
 import { useStaydownMatching } from '@voucha/test-helpers/services/copyright-notices/staydown-matching'
@@ -7,19 +8,47 @@ import { getImageByIdFromPrimary } from '@services/images/get'
 import { isCopyrightStaydownMatchingEnabled } from './config.mts'
 import { completeCopyrightMandatoryHumanReview } from './index.mts'
 
-let enqueueHash: MockInstance<typeof imageEnqueues.enqueueStaydownHash>
+/**
+ * Registration enqueues with `void`, so the job can land after the service returns.
+ * `searchJobs` is state-independent and scoped to this fixture's image id.
+ */
+async function registrationHashJobs(imageIds: readonly string[]) {
+  const groups = await Promise.all(
+    imageIds.map(imageId =>
+      imagesQueue.searchJobs({
+        name: 'staydown-hash',
+        data: { id: imageId },
+      }),
+    ),
+  )
+  return groups
+    .flat()
+    .filter(job => job.opts.deduplication?.id === `staydown-hash-registration-${job.data.id}`)
+}
+
+async function expectNoRegistrationHashJobs(imageIds: readonly string[]): Promise<void> {
+  expect(await registrationHashJobs(imageIds)).toEqual([])
+}
+
+async function expectRegistrationHashJobs(imageIds: readonly string[]): Promise<void> {
+  let jobs: Awaited<ReturnType<typeof registrationHashJobs>> = []
+  await vi.waitFor(async () => {
+    jobs = await registrationHashJobs(imageIds)
+    expect(jobs).toHaveLength(imageIds.length)
+  })
+  expect(jobs.map(job => job.data.id).toSorted()).toEqual(imageIds.toSorted())
+  for (const job of jobs) {
+    expect(job.opts).toMatchObject({
+      priority: PRIORITY_DEFAULT,
+      deduplication: {
+        id: `staydown-hash-registration-${job.data.id}`,
+        mode: 'simple',
+      },
+    })
+  }
+}
 
 describe('copyright staydown registration', () => {
-  beforeEach(() => {
-    enqueueHash = vi
-      .spyOn(imageEnqueues, 'enqueueStaydownHash')
-      .mockResolvedValue(undefined as never)
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   describe('copyright staydown registration with the switch off', () => {
     it('hashes and registers nothing when a moderator confirms a restriction', async () => {
       expect(await isCopyrightStaydownMatchingEnabled()).toBe(false)
@@ -28,7 +57,7 @@ describe('copyright staydown registration', () => {
 
       expect(staydownCase.restrictions).toHaveLength(2)
       expect(await readCopyrightStaydownEntries(staydownCase.noticeId)).toEqual([])
-      expect(enqueueHash).not.toHaveBeenCalled()
+      await expectNoRegistrationHashJobs(staydownCase.imageIds)
     })
   })
 
@@ -51,10 +80,7 @@ describe('copyright staydown registration', () => {
           entry.copyright_restriction_id,
         )
       }
-      expect(enqueueHash.mock.calls.map(call => call[0]).toSorted()).toEqual(
-        staydownCase.imageIds.toSorted(),
-      )
-      expect(enqueueHash.mock.calls.every(call => call[1] === 'registration')).toBe(true)
+      await expectRegistrationHashJobs(staydownCase.imageIds)
     })
 
     it('does not register an automated restriction no moderator has reviewed', async () => {
@@ -62,7 +88,7 @@ describe('copyright staydown registration', () => {
 
       expect(staydownCase.restrictions[0]?.human_review_action).toBeNull()
       expect(await readCopyrightStaydownEntries(staydownCase.noticeId)).toEqual([])
-      expect(enqueueHash).not.toHaveBeenCalled()
+      await expectNoRegistrationHashJobs(staydownCase.imageIds)
     })
 
     it.each([
@@ -84,7 +110,8 @@ describe('copyright staydown registration', () => {
 
         const entries = await readCopyrightStaydownEntries(staydownCase.noticeId)
         expect(entries.map(entry => entry.image_id)).toEqual(registers ? staydownCase.imageIds : [])
-        expect(enqueueHash).toHaveBeenCalledTimes(registers ? 1 : 0)
+        if (registers) await expectRegistrationHashJobs(staydownCase.imageIds)
+        else await expectNoRegistrationHashJobs(staydownCase.imageIds)
       },
     )
   })
