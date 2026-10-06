@@ -3,9 +3,9 @@ import { ALL_TOOLS } from '@voucha/tools/registry/index'
 import type { Tool } from '@services/openai-agents/tool-types'
 import type { ApiScope } from '@modules/scopes'
 import {
-  classifyMcpCalls,
   exceedsMcpAuditBatchLimit,
   MAX_AUDITED_MCP_MESSAGES,
+  planMcpCalls,
 } from './classify-calls.mts'
 import { ADMIN_MCP_SERVER_CONFIG } from './config.mts'
 
@@ -52,9 +52,9 @@ const call = (name: unknown, args?: unknown) => ({
   params: { name, ...(args === undefined ? {} : { arguments: args }) },
 })
 const classify = (body: unknown, scopes: ApiScope[] = READ) =>
-  classifyMcpCalls(body, admin, scopes, ADMIN_MCP_SERVER_CONFIG)
+  planMcpCalls(body, admin, scopes, ADMIN_MCP_SERVER_CONFIG).events
 
-describe('classifyMcpCalls', () => {
+describe('planMcpCalls events', () => {
   beforeAll(() => {
     ;(ALL_TOOLS as Tool[]).push(...FIXTURES)
   })
@@ -103,7 +103,7 @@ describe('classifyMcpCalls', () => {
 
   it('omits the registered tool name and rationale while copyright decisions are off', () => {
     expect(
-      classifyMcpCalls(
+      planMcpCalls(
         call('review_copyright_form_intake', {
           id: '00000000-0000-7000-8000-000000000121',
           is_accepted: true,
@@ -113,7 +113,7 @@ describe('classifyMcpCalls', () => {
         ['copyright-notices:read', 'copyright-notices:write'],
         ADMIN_MCP_SERVER_CONFIG,
         false,
-      ),
+      ).events,
     ).toEqual([{ jsonrpcMethod: 'tools/call', toolName: null, outcome: 'not_found' }])
   })
 
@@ -124,7 +124,7 @@ describe('classifyMcpCalls', () => {
     {},
     { rationale: 'Sensitive staff rationale', unknown_argument: 'Sensitive caller input' },
   ])('retains no plaintext rationale when copyright arguments are invalid: %j', fields => {
-    const events = classifyMcpCalls(
+    const { events } = planMcpCalls(
       call('review_copyright_form_intake', {
         id: '00000000-0000-7000-8000-000000000121',
         is_accepted: true,

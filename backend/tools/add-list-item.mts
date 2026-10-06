@@ -8,7 +8,17 @@ import {
   LIST_ITEM_RESULT_SCHEMA,
   type ListItemToolArgs,
 } from './list-tool-support.mts'
-import type { Tool, ToolInvocationContext } from '@services/openai-agents/tool-types'
+import type {
+  Tool,
+  ToolApiEndpoint,
+  ToolInvocationContext,
+} from '@services/openai-agents/tool-types'
+import { selectApiByArgument } from './select-api-by-argument.mts'
+
+const ENDPOINTS: Record<string, ToolApiEndpoint> = {
+  post: { method: 'POST', path: '/api/v1/lists/:id/items/posts' },
+  rss_feed_item: { method: 'POST', path: '/api/v1/lists/:id/items/rss-feed-items' },
+}
 
 const tool: Tool<ListItemToolArgs, { success: true; list_item: ListItem }> = {
   schema: {
@@ -25,10 +35,8 @@ const tool: Tool<ListItemToolArgs, { success: true; list_item: ListItem }> = {
     plan: 'plus',
     requiredScopes: { mcp: ['lists:read', 'lists:write'] },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
-    api: [
-      { method: 'POST', path: '/api/v1/lists/:id/items/posts' },
-      { method: 'POST', path: '/api/v1/lists/:id/items/rss-feed-items' },
-    ],
+    api: Object.values(ENDPOINTS),
+    selectApi: selectApiByArgument('item_type', ENDPOINTS),
     outputSchema: LIST_ITEM_RESULT_SCHEMA,
   },
   function:

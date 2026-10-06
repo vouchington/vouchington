@@ -50,6 +50,7 @@ const NON_TOOL_FILES = new Set([
   'route-response-schema.mts',
   'search-system.mts',
   'schema-validator.mts',
+  'select-api-by-argument.mts',
   'topic-hierarchy-result.mts',
   'topic-output-schema-parts.mts',
   'topic-recommendation-post-text.mts',

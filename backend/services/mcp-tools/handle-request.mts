@@ -3,6 +3,7 @@ import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import { listMcpToolsForUser } from './list-tools.mts'
 import { callMcpTool } from './call-tool.mts'
+import { buildRateLimitedToolResult } from './rate-limited-result.mts'
 import { validateRegisteredMcpRequest } from './validate-registered-request.mts'
 import { MCP_SERVER_INSTRUCTIONS } from './instructions.mts'
 import type { BasicUser } from '@services/users/types'
@@ -21,6 +22,9 @@ type McpRequestContext = {
   config: McpServerConfig
   // Awaited after an admitted tool call returns an error result, so the caller can record it.
   onToolError?: (toolName: string) => Promise<void>
+  // The retry delay of each `tools/call` whose REST route bucket was spent, by JSON-RPC request id.
+  // Those calls are refused in-band without running, and are already audited as rate limited.
+  rateLimitedCalls?: ReadonlyMap<string | number, number>
 }
 
 export async function handleMcpHttpRequest(ctx: McpRequestContext): Promise<McpHttpResponse> {
@@ -42,7 +46,9 @@ export async function handleMcpHttpRequest(ctx: McpRequestContext): Promise<McpH
     return Promise.resolve({ tools })
   })
 
-  server.setRequestHandler(CallToolRequestSchema, async request => {
+  server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
+    const retryAfterSeconds = ctx.rateLimitedCalls?.get(extra.requestId)
+    if (retryAfterSeconds !== undefined) return buildRateLimitedToolResult(retryAfterSeconds)
     const result = await callMcpTool(
       request.params.name,
       request.params.arguments ?? {},

@@ -1,5 +1,5 @@
 import { searchCommunityListItems, type CommunityListItemType } from '@services/communities'
-import type { Tool } from '@services/openai-agents/tool-types'
+import type { Tool, ToolApiEndpoint } from '@services/openai-agents/tool-types'
 import type { BasicUser } from '@services/users/types'
 import {
   COMMUNITY_LIST_ITEM_TYPES,
@@ -16,6 +16,7 @@ import {
 import { pageProperties, type McpPage } from './mcp-read-output.mts'
 import { findPageOrNull, INVALID_CURSOR_RESULT, type InvalidCursorResult } from './paged-search.mts'
 import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
+import { selectApiByArgument } from './select-api-by-argument.mts'
 import { clampToolLimit } from './search-system.mts'
 
 type ToolArgs = {
@@ -28,7 +29,17 @@ type ToolArgs = {
 type ToolResult = McpPage<McpCommunityListItem> | typeof COMMUNITY_NOT_FOUND | InvalidCursorResult
 
 const { default: defaultLimit, max } = COMMUNITY_PAGE_LIMIT
-const ROUTES = ['topics', 'rss-feeds', 'posts', 'domains', 'urls']
+const listItemsEndpoint = (route: string): ToolApiEndpoint => ({
+  method: 'GET',
+  path: `/api/v1/communities/:idOrSlug/list-items/${route}`,
+})
+const ENDPOINTS: Record<CommunityListItemType, ToolApiEndpoint> = {
+  topic: listItemsEndpoint('topics'),
+  rss_feed: listItemsEndpoint('rss-feeds'),
+  post: listItemsEndpoint('posts'),
+  url_hostname: listItemsEndpoint('domains'),
+  url: listItemsEndpoint('urls'),
+}
 
 const tool: Tool<ToolArgs, ToolResult> = {
   schema: {
@@ -55,10 +66,8 @@ const tool: Tool<ToolArgs, ToolResult> = {
     title: 'Get Community List Items',
     requiredScopes: { mcp: ['communities:read'] },
     annotations: { readOnlyHint: true },
-    api: ROUTES.map(route => ({
-      method: 'GET' as const,
-      path: `/api/v1/communities/:idOrSlug/list-items/${route}`,
-    })),
+    api: Object.values(ENDPOINTS),
+    selectApi: selectApiByArgument('item_type', ENDPOINTS),
     outputSchema: foundOrNotFoundSchema(pageProperties(mcpCommunityListItemSchema())),
   },
   function:
