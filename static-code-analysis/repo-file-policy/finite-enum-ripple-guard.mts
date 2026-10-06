@@ -1,9 +1,10 @@
-import { checkTopicTypes, checkPostTypes } from './finite-enum-ripple-types.mts'
-import { existsSync, readFileSync } from 'node:fs'
+import { checkFiniteEnumRipple } from 'vouchington-tooling/finite-enum-ripple'
+import { finiteEnumConfiguration } from './finite-enum-ripple-config.mts'
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 
 import type { SharedContext } from 'vouchington-tooling/shared-context'
-import type { FiniteEnumFiles, ReadTrackedFile, RoutedPage } from './finite-enum-ripple-model.mts'
+import type { FiniteEnumFiles, RoutedPage } from './finite-enum-ripple-model.mts'
 
 const NON_TOPIC_ENTITY_ROUTE_SLUGS = new Set(['domain', 'url'])
 const NON_TOPIC_COLLECTION_ROUTE_SLUGS = new Set(['domains', 'urls', 'web-search'])
@@ -15,9 +16,7 @@ export function checkFiniteEnumRippleGuard(
   existingTrackedFiles = ctx.trackedFiles.filter(file => existsSync(join(ctx.repoRoot, file))),
 ): void {
   const files = collectFiniteEnumFiles(existingTrackedFiles)
-  const readTracked = createTrackedFileReader(ctx)
-  checkTopicTypes(errors, files, readTracked)
-  checkPostTypes(errors, files, readTracked)
+  errors.push(...checkFiniteEnumRipple(ctx, finiteEnumConfiguration(files)))
 }
 
 /** Classifies the already-existing tracked inventory once for every enum ripple check. */
@@ -64,17 +63,6 @@ export function collectFiniteEnumFiles(existingTrackedFiles: readonly string[]):
   return files
 }
 
-export function createTrackedFileReader(ctx: SharedContext): ReadTrackedFile {
-  const contents = new Map<string, string>()
-  return file => {
-    const cached = contents.get(file)
-    if (cached !== undefined) return cached
-    const content = ctx.readTrackedFile?.(file) ?? readFileSync(join(ctx.repoRoot, file), 'utf8')
-    contents.set(file, content)
-    return content
-  }
-}
-
 export function collectionSlug(
   file: string,
   group: 'posts' | 'topics',
@@ -86,5 +74,3 @@ export function collectionSlug(
   if (parts.length < 2 || parts[1] === '[id]') return undefined
   return { isTopLevel: parts.length === 2, slug: parts[0] }
 }
-
-export { checkTopicTypes, checkPostTypes }

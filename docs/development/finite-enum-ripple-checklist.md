@@ -56,5 +56,10 @@ locally and in CI:
 - explicit topic route directories
 - public post route directories and route config maps
 
+Enum source parsing and comparisons are owned by the released
+`vouchington-tooling/finite-enum-ripple` API. This repository supplies tracked route inventories,
+paths, diagnostic labels, and exclusions in
+[`finite-enum-ripple-config.mts`](../../static-code-analysis/repo-file-policy/finite-enum-ripple-config.mts).
+
 The static guard is intentionally narrow. The purge scan above is still required for behavior,
 fixtures, docs, and one-off helper literals outside the known surfaces.

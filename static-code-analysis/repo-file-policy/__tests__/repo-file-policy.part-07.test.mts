@@ -3,10 +3,7 @@ import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import {
-  parseTopicTypeEntries,
-  setupRepoFilePolicyTest,
-} from '../../test-helpers/repo-file-policy-fixtures.mts'
+import { setupRepoFilePolicyTest } from '../../test-helpers/repo-file-policy-fixtures.mts'
 
 describe('repo-file-policy', () => {
   const { makeRepo, run, track, trackTopicEnumSurfaces } = setupRepoFilePolicyTest()
@@ -46,10 +43,14 @@ describe('repo-file-policy', () => {
     })
   })
 
-  it('rejects unterminated topicTypes objects', () => {
-    expect(() =>
-      parseTopicTypeEntries('export const topicTypes = {\n  topic: {\n', 'web/types/topics.ts'),
-    ).toThrow('web/types/topics.ts: could not find end of topicTypes')
+  it('rejects unterminated topicTypes objects through the configured scanner', async () => {
+    const dir = await makeRepo()
+    await trackTopicEnumSurfaces(dir, { backend: { topic: 'topic' }, routes: ['topic'] })
+    await track(dir, 'web/types/topics.ts', 'export const topicTypes = {\n  topic: {\n')
+    await expect(run(dir)).rejects.toMatchObject({
+      code: 1,
+      stdout: expect.stringContaining('web/types/topics.ts: could not find end of topicTypes'),
+    })
   })
 
   it('rejects stale topic route directories after a topic type is removed', async () => {
