@@ -6,9 +6,9 @@ import {
   communityPageInfoSchema,
   communityPageInputProperties,
   mcpCommunityEntryProperties,
+  toMcpCommunityEntries,
   type McpCommunityEntry,
 } from './mcp-community-output.mts'
-import { toMcpCommunityEntries } from './mcp-community-entries.mts'
 import {
   findPageOrNull,
   INVALID_CURSOR_RESULT,

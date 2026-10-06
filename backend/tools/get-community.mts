@@ -5,9 +5,9 @@ import {
   COMMUNITY_NOT_FOUND,
   loadPublicCommunity,
   mcpCommunityEntryProperties,
+  toMcpCommunityEntries,
   type McpCommunityEntry,
 } from './mcp-community-output.mts'
-import { toMcpCommunityEntries } from './mcp-community-entries.mts'
 import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
 
 type ToolArgs = {

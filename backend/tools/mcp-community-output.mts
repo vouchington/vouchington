@@ -5,6 +5,7 @@ import {
   type CommunityMetrics,
   type CommunityWithOwner,
 } from '@services/communities'
+import { attachCommunityProvenance } from '@services/content-provenance'
 import createHttpError from 'http-errors'
 import { nullable } from './output-schema-shapes.mts'
 import { closedObject, pickProperties } from './read-tool-output-schema.mts'
@@ -139,6 +140,30 @@ export function toMcpCommunityMetrics(
     proxy_mute_count: metrics.proxy_mute_count,
     virtual_subscription_count: metrics.virtual_subscription_count,
   }
+}
+
+/**
+ * Maps communities with their owners and counts for MCP. The public provenance label a signed-out
+ * reader sees is attached to every community in one batch; `staff_provenance` never reaches MCP.
+ */
+export async function toMcpCommunityEntries(
+  entries: {
+    community: Community
+    owner: CommunityWithOwner['owner']
+    metrics: CommunityMetrics | null | undefined
+  }[],
+): Promise<McpCommunityEntry[]> {
+  const communities = await attachCommunityProvenance(
+    entries.map(entry => entry.community),
+    null,
+  )
+  return Promise.all(
+    entries.map(async (entry, index) => ({
+      community: await toMcpCommunity(communities[index]!),
+      owner: await toMcpCommunityOwner(entry.owner),
+      metrics: toMcpCommunityMetrics(entry.metrics),
+    })),
+  )
 }
 
 /** The properties of an `McpCommunityEntry`, from the generated `Community` contracts. */
