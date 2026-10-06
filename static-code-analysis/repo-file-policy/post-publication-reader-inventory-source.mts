@@ -1,14 +1,17 @@
 import type { SharedContext } from 'vouchington-tooling/shared-context'
-import { isNode, parseSource, propertyName, walk } from '../targeted-guardrails/ast-utils.mts'
 import {
-  appendReceiverName,
-  isAppendCall,
-  isTerminalSqlCall,
-  staticSqlTemplateText,
-  terminalSqlExecutorBindings,
-} from './post-publication-reader-inventory-source-helpers.mts'
+  extractStaticSqlTemplateQuasis as extractSqlTemplateQuasis,
+  type ReaderSqlTemplateOptions,
+} from 'vouchington-tooling/post-publication-inventory'
 
-type Node = import('../targeted-guardrails/ast-utils.mts').UnknownNode
+const SQL_TEMPLATE_OPTIONS: ReaderSqlTemplateOptions = {
+  templateTag: 'sql',
+  appendMethod: 'append',
+  placeholderPrefix: 'reader_inventory_placeholder_',
+  executorImports: new Map([
+    ['@data-stores/psql', new Set(['read', 'write', 'query', 'readStream', 'explainAnalyze'])],
+  ]),
+}
 
 const PUBLIC_READER_SCOPES = [
   'backend/api/',
@@ -65,65 +68,7 @@ export function discoverPublicPostReaders(ctx: SharedContext): string[] {
 
 /** Extracts static SQL template quasis and reassembles local SQLStatement append chains. */
 export function extractStaticSqlTemplateQuasis(content: string): string[] {
-  const ast = parseSource(content).ast
-  const terminalExecutors = terminalSqlExecutorBindings(ast)
-  const statements = new Map<string, { text: string; offset: number }>()
-  const consumedStatements = new Set<string>()
-  const directStatements: string[] = []
-  walk(ast, (node: Node) => {
-    if (node.type !== 'VariableDeclarator') return
-    const binding = propertyName(isNode(node.id) ? node.id : undefined)
-    const initializer = isNode(node.init) ? node.init : undefined
-    const statementText = staticSqlTemplateText(initializer)
-    if (binding && statementText)
-      statements.set(binding, { text: statementText, offset: node.range?.[0] ?? 0 })
-  })
-  walk(ast, (node: Node) => {
-    if (node.type === 'ExportNamedDeclaration' && isNode(node.declaration)) {
-      markExportedStatementBindings(node.declaration, consumedStatements)
-    }
-    if (node.type === 'ReturnStatement' && isNode(node.argument)) {
-      const binding = propertyName(node.argument)
-      if (binding) consumedStatements.add(binding)
-      const text = staticSqlTemplateText(node.argument)
-      if (text) directStatements.push(text)
-      return
-    }
-    if (node.type !== 'CallExpression' || !Array.isArray(node.arguments)) return
-    const terminal = isTerminalSqlCall(node, terminalExecutors)
-    for (const argument of node.arguments) {
-      if (!isNode(argument)) continue
-      const binding = propertyName(argument)
-      if (binding && terminal) consumedStatements.add(binding)
-      const text = staticSqlTemplateText(argument)
-      if (text && terminal) directStatements.push(text)
-    }
-  })
-  walk(ast, (node: Node) => {
-    if (!isAppendCall(node) || !Array.isArray(node.arguments)) return
-    const receiver = appendReceiverName(node)
-    const argument = node.arguments.find(isNode)
-    const appended = argument ? staticSqlTemplateText(argument) : null
-    const statement = receiver ? statements.get(receiver) : undefined
-    if (statement && appended && (node.range?.[0] ?? 0) > statement.offset) {
-      statement.text += appended
-    }
-  })
-  return [
-    ...directStatements,
-    ...[...statements.entries()].flatMap(([binding, statement]) =>
-      consumedStatements.has(binding) ? [statement.text] : [],
-    ),
-  ]
-}
-
-function markExportedStatementBindings(declaration: Node, consumed: Set<string>): void {
-  if (declaration.type !== 'VariableDeclaration' || !Array.isArray(declaration.declarations)) return
-  for (const declarator of declaration.declarations) {
-    if (!isNode(declarator) || !isNode(declarator.id)) continue
-    const binding = propertyName(declarator.id)
-    if (binding) consumed.add(binding)
-  }
+  return extractSqlTemplateQuasis(content, SQL_TEMPLATE_OPTIONS)
 }
 
 export {
