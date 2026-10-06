@@ -21,6 +21,9 @@ vi.mock<typeof import('node:fs')>(
       cpSync: vi.fn<typeof import('node:fs').cpSync>(),
       existsSync: vi.fn<typeof import('node:fs').existsSync>(() => true),
       mkdirSync: vi.fn<typeof import('node:fs').mkdirSync>(),
+      readFileSync: vi.fn<typeof import('node:fs').readFileSync>(
+        () => '<script>window.STORYBOOK_CSP_INLINE = true</script>',
+      ),
       renameSync: vi.fn<typeof import('node:fs').renameSync>(),
       rmSync: vi.fn<typeof import('node:fs').rmSync>(),
       writeFileSync: vi.fn<typeof import('node:fs').writeFileSync>(),
@@ -147,6 +150,7 @@ describe('setup-web-integration Turbopack build cache CI gate (#11431)', () => {
     }
     expect(report.nextBuildCache).toBe('hit')
     expect(report.timings['next-build']).toBeGreaterThanOrEqual(0)
+    expect(report.timings['storybook-build']).toBeGreaterThanOrEqual(0)
     expect(report.timings['cloudflare-worker-build']).toBeGreaterThanOrEqual(0)
     expect(report.timings['standalone-asset-copy']).toBeGreaterThanOrEqual(0)
     expect(report.timings.total).toBeGreaterThanOrEqual(0)
