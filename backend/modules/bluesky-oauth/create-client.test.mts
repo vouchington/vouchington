@@ -72,7 +72,7 @@ describe('createBlueskyOAuthClient', () => {
     expect(client.clientMetadata.client_id).toBe('https://example.voucha.ai/client-metadata.json')
   })
 
-  it('rejects a non-special provider hostname that DNS resolves to loopback', async () => {
+  it('rejects a provider hostname that DNS resolves to loopback', async () => {
     vi.stubEnv('SITE_ORIGIN', 'https://example.voucha.ai')
     const { createBlueskyOAuthClient } = await import('./create-client.mts')
 
@@ -90,18 +90,12 @@ describe('createBlueskyOAuthClient', () => {
     // dot-access member expression outright regardless of call vs. reference.
     expect(injectedFetch).not.toBe(globalThis['fetch'])
 
-    const error = await injectedFetch('http://pds.attacker.example.net/oauth').catch(
-      (err: unknown) => err,
-    )
+    const error = await injectedFetch('http://example.com/oauth').catch((err: unknown) => err)
 
     expect(error).toBeInstanceOf(TypeError)
     expect(error).toMatchObject({ message: 'fetch failed' })
     expect(errorCauseMessages(error)).toContain('Hostname resolved to non-unicast address')
-    expect(lookupMock).toHaveBeenCalledWith(
-      'pds.attacker.example.net',
-      expect.any(Object),
-      expect.any(Function),
-    )
+    expect(lookupMock).toHaveBeenCalledWith('example.com', expect.any(Object), expect.any(Function))
   })
 })
 

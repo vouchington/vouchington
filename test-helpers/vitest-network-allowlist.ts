@@ -1,10 +1,11 @@
 const STATE_KEY = Symbol.for('voucha.testNetworkAllowlist')
 
-// Tests may open real sockets and resolve DNS only for these hosts and for loopback.
-// Anything else fails the test, even when production code swallows the error.
-// undici, fetch, and node:http/node:https connect through net.Socket. DNS is patched
-// on both node:dns APIs and both Resolver prototypes. `.ts` so Storybook SWC can parse it.
+// Real sockets and DNS may reach only these hosts, loopback, and local binds (0.0.0.0, ::).
+// Any other host fails the test. Live-provider projects are exempt. `.ts` for Storybook SWC.
 const ALLOWED_HOSTS = new Set(['example.com', 'example.net', 'example.org'])
+const LIVE_PROVIDER_PROJECTS = new Set(
+  'backend-aws,backend-bedrock,backend-openai,backend-openrouter,backend-stripe'.split(','),
+)
 
 type AllowlistState = { installed: boolean; violations: string[]; allowedIps: Set<string> }
 type DnsFn = (this: unknown, ...args: unknown[]) => unknown
@@ -33,9 +34,18 @@ function normalizeHost(host: string): string {
   return value
 }
 
+function isLiveProviderProject(): boolean {
+  const worker = (globalThis as Record<string, { ctx?: { projectName?: string } } | undefined>)[
+    '__vitest_worker__'
+  ]
+  const projectName = worker?.ctx?.projectName
+  return projectName !== undefined && LIVE_PROVIDER_PROJECTS.has(projectName)
+}
+
 function isLoopbackHost(host: string): boolean {
   if (host === 'localhost' || host.endsWith('.localhost')) return true
-  if (host === '::1' || host === '0:0:0:0:0:0:0:1' || host === '0.0.0.0') return true
+  if (host === '::' || host === '::1' || host === '0:0:0:0:0:0:0:1' || host === '0.0.0.0')
+    return true
   if (host.startsWith('::ffff:')) return isLoopbackHost(host.slice('::ffff:'.length))
   const parts = host.split('.')
   if (parts.length !== 4 || parts.some(part => !/^\d{1,3}$/.test(part))) return false
@@ -44,6 +54,7 @@ function isLoopbackHost(host: string): boolean {
 }
 
 function isAllowedHost(host: string): boolean {
+  if (isLiveProviderProject()) return true
   const normalized = normalizeHost(host)
   return (
     ALLOWED_HOSTS.has(normalized) ||
