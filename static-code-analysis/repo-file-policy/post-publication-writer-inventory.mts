@@ -2,7 +2,26 @@ import type { SharedContext } from 'vouchington-tooling/shared-context'
 import {
   analyzePostPublicationWriterSource,
   type PostPublicationWriterSourceAnalysis,
-} from './post-publication-writer-inventory-analysis.mts'
+  type PostPublicationWriterSourceOptions,
+} from 'vouchington-tooling/post-publication-inventory'
+import {
+  CAPTURE_IMPORT_MODULE_SPECIFIERS,
+  CAPTURE_SYMBOLS,
+  ELIGIBILITY_TABLES,
+} from './post-publication-writer-inventory-constants.mts'
+
+const SOURCE_OPTIONS: PostPublicationWriterSourceOptions = {
+  captureModules: CAPTURE_IMPORT_MODULE_SPECIFIERS,
+  captureSymbols: CAPTURE_SYMBOLS,
+  eligibilityTables: ELIGIBILITY_TABLES,
+  captureOption: 'capturePublication',
+  insertBuilder: 'buildInsertQuery',
+  identifierAssertion: 'assertWhitelistedSqlIdentifier',
+  entityTable: { receiver: 'config', property: 'entityTable' },
+  relationTable: { receiver: 'relation', property: 'table_name' },
+  relationElectionAllowlist: 'entityRelationElectionTables',
+  appendMethod: 'append',
+}
 
 const INVENTORY_PATH = 'static-code-analysis/post-publication-writer-inventory.json'
 const CAPTURE_API = 'backend/services/post-publication/capture.mts'
@@ -52,7 +71,8 @@ export function checkPostPublicationWriterInventory(ctx: SharedContext, errors: 
   const getAnalysis = (path: string): PostPublicationWriterSourceAnalysis | null => {
     if (analyses.has(path)) return analyses.get(path) ?? null
     const source = ctx.readTrackedFile?.(path)
-    const analysis = source == null ? null : analyzePostPublicationWriterSource(source, path)
+    const analysis =
+      source == null ? null : analyzePostPublicationWriterSource(source, path, SOURCE_OPTIONS)
     analyses.set(path, analysis)
     return analysis
   }
