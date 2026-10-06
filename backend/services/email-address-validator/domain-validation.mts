@@ -7,7 +7,19 @@ import { bloomFilterConfig } from '@services/bloom-filter-config'
 import { resolveMxRecords, DnsTimeoutError } from './resolve-mx.mts'
 
 const CACHE_TTL_SECONDS = 3600 // 1 hour
-let resolveMxRecordsForValidation = resolveMxRecords
+
+// example.com, example.net, and example.org publish no MX records, so Vitest cannot prove
+// "this domain can receive mail" with a real lookup. `.invalid` and `.test` stay empty.
+// setResolveMxRecordsForDomainValidationTest replaces this for a single test.
+const SYNTHETIC_MX = [{ exchange: 'example.com', priority: 10 }]
+function syntheticResolveMxRecords(domain: string) {
+  const normalized = domain.toLowerCase().trim().replace(/\.$/, '')
+  if (normalized.endsWith('.invalid') || normalized.endsWith('.test')) return Promise.resolve([])
+  return Promise.resolve(SYNTHETIC_MX)
+}
+
+let resolveMxRecordsForValidation =
+  process.env.VITEST === 'true' ? syntheticResolveMxRecords : resolveMxRecords
 
 type DomainValidationResult = { success: true } | { success: false; reason: string }
 

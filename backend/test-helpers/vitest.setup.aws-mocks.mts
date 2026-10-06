@@ -1,13 +1,8 @@
 import { vi } from 'vitest'
-import { BedrockEmbeddingsClient } from '@modules/aws/bedrock-runtime'
 
 // The default AWS credential chain dials the EC2 metadata service at 169.254.169.254.
-// Unit tests have no instance role. Live Bedrock stays in the backend-bedrock project.
+// Unit tests have no instance role. Live provider projects pass explicit credentials.
 process.env.AWS_EC2_METADATA_DISABLED ??= 'true'
-Object.defineProperty(BedrockEmbeddingsClient, 'send', {
-  configurable: true,
-  value: () => Promise.reject(new Error('Bedrock is not called from unit tests')),
-})
 
 // Provide fallback fake credentials so getS3Credentials() never throws in test
 // environments. The vi.mock below normally intercepts getSignedUrl before real
