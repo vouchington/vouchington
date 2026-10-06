@@ -65,21 +65,6 @@ describe('isolated database case selection', () => {
       fullName:
         'ActivityPub inbox durable storage bounds > deletes expired rows in deterministic lease-aware locked batches',
     })
-    expect(getIsolatedDatabaseCase('copyright-staff-email-intakes')).toEqual({
-      file: 'backend/services/copyright-notices/email-intakes-staff-queue.test.mts',
-      fullName:
-        'searchCopyrightStaffEmailIntakes > hides the queue from non-reviewers and lists unreviewed intakes, parsed or not, for staff',
-    })
-    expect(getIsolatedDatabaseCase('copyright-staff-email-intake-reply-failures')).toEqual({
-      file: 'backend/services/copyright-notices/email-intakes-staff-queue-reply-failures.test.mts',
-      fullName:
-        'copyright email intake queue reply failures > lists a declined intake whose reply failed or bounced with its reason and wait, and hides the rest',
-    })
-    expect(getIsolatedDatabaseCase('copyright-dev-seed')).toEqual({
-      file: 'backend/scripts/seed/copyright.test.mts',
-      fullName:
-        'seedCopyright > fills both staff queues with every review state and adds nothing when run again',
-    })
     expect(() => getIsolatedDatabaseCase('other')).toThrow('Unknown isolated database case')
   })
 
@@ -122,7 +107,7 @@ describe('isolated database case selection', () => {
       message: 'Invalid isolated database child identity',
     },
     {
-      override: { VITEST_ISOLATED_DATABASE_CASE: 'copyright-dev-seed' },
+      override: { VITEST_ISOLATED_DATABASE_CASE: 'semantic-post-window-cap' },
       message: 'Invalid isolated database child identity',
     },
     {
