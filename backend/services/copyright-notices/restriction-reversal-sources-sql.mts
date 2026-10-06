@@ -46,7 +46,7 @@ export const territorialAssessmentRevokedSql = sql`EXISTS (
  * `state = 'completed'` matters: `stale`, `blocked` and `failed` intents also set `completed_at`.
  */
 export const statutoryRestorationSourceSql = sql`EXISTS (
-  SELECT 1 FROM copyright_notice_action_intents statutory_intent
+  SELECT 1 FROM copyright_notice_action_work_items statutory_intent
   WHERE statutory_intent.copyright_restriction_id = restriction.id
     AND statutory_intent.action = 'restore'
     AND statutory_intent.state = 'completed'
