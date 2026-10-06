@@ -494,7 +494,7 @@ shape, so it is not AST-grep-matchable — the same reason the fake-timer runtim
 is a runtime guard rather than a static rule. The self-cleaning helper is the enforcement mechanism:
 using it makes cleanup the path of least resistance instead of an easily-forgotten manual step.
 
-### Compiler-backed row and schema tests
+### Compiler-backed contract tests
 
 `loadBackendProgram()` (`backend/test-helpers/api-fixtures/backend-program.mts`) memoizes the
 program used by independent PostgreSQL row checks while its compiler inputs and root set are unchanged.
