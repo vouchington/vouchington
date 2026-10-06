@@ -41,6 +41,13 @@ describe('retained media identity cleanup', () => {
     vi.unstubAllEnvs()
   })
 
+  it('rejects a placement id list and a cursor page together', async () => {
+    const id = v7()
+    await expect(cleanupRetainedMediaBindings(1, [id], [id])).rejects.toThrow(
+      'Retained media cleanup accepts ids or a cursor page, not both',
+    )
+  })
+
   it('initializes its own cursor and resumes deleted placement positions without advancing scoped calls', async () => {
     const lock = await acquireTestPostgresAdvisoryLock({
       namespace: 2_135_044,
