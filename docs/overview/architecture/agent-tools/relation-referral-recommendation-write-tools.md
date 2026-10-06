@@ -61,8 +61,7 @@ shares for its ballot and stats refresh. Withdrawing is allowed for any account 
 suspended, as on the web, so an official account can clear a ballot it cast before it was official.
 It takes the same per-user advisory lock as a web vote, so a withdrawal and a concurrent vote
 serialize. The tool does not apply the vote route's per-minute limiter (keyed by user, IP and
-session); its calls are charged to the route's per-route bucket like any tool with a REST twin, and
-the MCP call path rate-limits each credential itself. Casting a vote has no tool: it adds contribution
+session); the MCP call path rate-limits each credential itself. Casting a vote has no tool: it adds contribution
 gating, a quota and the user-tag permission checks, and no policy says what replaces them for a
 delegated credential.
 

@@ -82,7 +82,7 @@ and one filed over REST spend one budget, such as the hourly submissions on `POS
 A call that finds that budget spent is refused before it runs, with the in-band rate-limit error
 and its `retryAfterSeconds`, and the audit row records `rate_limited`. The `POST /api/v1/mcp`
 route limit and the outcome-based usage quota still apply to the request. See
-[MCP tool calls and REST route limits](../reference-rate-limiting-layer-4-per-route-rate-limiting-backend.md#mcp-tool-calls-and-rest-route-limits).
+[MCP tool calls and REST route limits](../reference-rate-limiting-mcp-tool-calls-and-rest-route-limits.md).
 These tools add no limit of their own.
 
 Over MCP, HTTP 422 and 410 report as `INVALID_INPUT`, and `IDENTITY_REQUIRED` and `COMMUNITY_BANNED`

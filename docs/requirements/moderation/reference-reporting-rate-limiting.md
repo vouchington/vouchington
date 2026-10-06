@@ -23,7 +23,7 @@ either protocol. A refused MCP call is answered in-band with the rate-limit erro
 `retryAfterSeconds` of 3600 in place of the header, and its audit row records `rate_limited`. A
 JSON-RPC batch charges once per `create_content_report` call. An API key is charged to its own
 bucket rather than the user's. See
-[MCP tool calls and REST route limits](../../overview/architecture/reference-rate-limiting-layer-4-per-route-rate-limiting-backend.md#mcp-tool-calls-and-rest-route-limits).
+[MCP tool calls and REST route limits](../../overview/architecture/reference-rate-limiting-mcp-tool-calls-and-rest-route-limits.md).
 
 ---
 
