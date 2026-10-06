@@ -230,6 +230,11 @@ describe('backend uncredentialed Docker test workflow', () => {
     expect(script).toContain('/proc/pressure/$resource')
     expect(script.indexOf('start_sampler sample_postgres_waits 0.5')).toBeLessThan(vitestAt)
     expect(script.indexOf('start_sampler sample_runner_pressure 2')).toBeLessThan(vitestAt)
+    expect(script).toContain('-f ci/backend-unit-auto-explain.sql')
+    expect(script.indexOf('-f ci/backend-unit-auto-explain.sql')).toBeLessThan(vitestAt)
+    expect(readFileSync('ci/backend-unit-auto-explain.sql', 'utf8')).toContain(
+      "auto_explain.log_min_duration = %L', current_database(), '1s'",
+    )
     expect(sampleSql).toContain('pg_blocking_pids(pid)')
     expect(sampleSql).toContain('NOT lock.granted')
     expect(sampleSql).toContain("application_name <> 'ci-pg-wait-sampler'")

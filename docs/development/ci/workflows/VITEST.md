@@ -35,6 +35,9 @@ Reporter policy:
   `vmstat` (user, system, idle, iowait and hypervisor steal) and the `/proc/pressure` averages every
   2 seconds. A test-database statement that stalls until the 20 second `statement_timeout`
   (`[pg-query-failed]`) is attributed from these lines, not from the final error.
+  [`ci/backend-unit-auto-explain.sql`](../../../../ci/backend-unit-auto-explain.sql) also makes
+  `auto_explain` print the executed plan, with actual rows and JIT time, of every statement that runs
+  for one second or longer into the Postgres service log printed at the end of the job.
 - The `github-actions` reporter must keep job summaries disabled and file links configured from GitHub environment variables.
 - `tests-backend-unit.yml` uploads each shard's JUnit report as the one-day `backend-junit-shard-N`
   artifact, so per-file durations can be aggregated across shards when auditing shard size. Vitest

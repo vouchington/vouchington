@@ -178,6 +178,9 @@ jobs:
             return 0
           }
           trap stop_samplers EXIT
+          if command -v psql >/dev/null 2>&1; then
+            psql "$DATABASE_URL" -X -q -v ON_ERROR_STOP=1 -f ci/backend-unit-auto-explain.sql || true
+          fi
           start_sampler sample_runner_resources 15
           start_sampler sample_postgres_waits 0.5
           start_sampler sample_runner_pressure 2
