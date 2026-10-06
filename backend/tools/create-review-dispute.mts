@@ -1,4 +1,4 @@
-import { runDelegatedCreate } from '@services/contribution-gating/run-delegated-create'
+import { admitDelegatedCreate } from '@services/contribution-gating/admit-delegated-create'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { createReviewDispute, parseCreateReviewDisputeInput } from '@services/review-disputes'
 import { REVIEW_DISPUTE_REASONS } from '@ts-shared/utils/moderation-catalogs'
@@ -63,13 +63,15 @@ const tool: Tool<Args, Result> = {
       claim_text: args.claim_text,
       topic_id: args.topic_id,
     })
-    return runDelegatedCreate({
+    return admitDelegatedCreate({
       authority,
       currentUser: user,
       idempotencyKey: args.idempotency_key,
-      intent: { tool: 'create_review_dispute', input },
-      execute: async () => {
-        const { dispute, isDuplicate } = await createReviewDispute(user, input)
+      route: 'disputes.create',
+      scope: 'global',
+      intent: { input },
+      execute: async query => {
+        const { dispute, isDuplicate } = await createReviewDispute(user, input, { query })
         return {
           success: true as const,
           dispute: await toMcpDispute(dispute),

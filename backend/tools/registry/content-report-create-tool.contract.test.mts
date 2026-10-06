@@ -10,7 +10,7 @@ import { createTestPlusMcpCaller } from '@voucha/test-helpers/mcp-plus-caller'
 import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import {
   countTestModerationReportsByReporter,
-  listTestMcpCreateAttempts,
+  listTestDelegatedCreateReservations,
 } from '@voucha/test-helpers/mcp-write-tool-rows'
 import createTool from '../create-content-report.mts'
 
@@ -27,7 +27,7 @@ const args = (entityId: string, extra: Record<string, unknown> = {}) => ({
 })
 const expectNothingWritten = async (userId: string) => {
   expect(await countTestModerationReportsByReporter(userId)).toBe(0)
-  expect(await listTestMcpCreateAttempts(userId)).toEqual([])
+  expect(await listTestDelegatedCreateReservations(userId)).toEqual([])
 }
 const errorOf = async (caller: Parameters<typeof callRejectedMcpTool>[0], input: object) =>
   JSON.parse(await callRejectedMcpTool(caller, TOOL, input as never, SCOPES))
@@ -85,12 +85,12 @@ describe('create_content_report — real store', () => {
     const caller = await createTestPlusMcpCaller()
     const input = args(await reportablePostId(), { note: 'Same request' })
     const first = await callStructuredMcpTool(caller, TOOL, input, SCOPES)
-    const attempts = await listTestMcpCreateAttempts(caller.id)
+    const attempts = await listTestDelegatedCreateReservations(caller.id)
 
     const second = await callStructuredMcpTool(caller, TOOL, input, SCOPES)
 
     expect(second).toEqual(first)
-    expect(await listTestMcpCreateAttempts(caller.id)).toEqual(attempts)
+    expect(await listTestDelegatedCreateReservations(caller.id)).toEqual(attempts)
     expect(attempts).toHaveLength(1)
     expect(await countTestModerationReportsByReporter(caller.id)).toBe(1)
   })
@@ -99,7 +99,7 @@ describe('create_content_report — real store', () => {
     const caller = await createTestPlusMcpCaller()
     const input = args(await reportablePostId())
     await callStructuredMcpTool(caller, TOOL, input, SCOPES)
-    const attempts = await listTestMcpCreateAttempts(caller.id)
+    const attempts = await listTestDelegatedCreateReservations(caller.id)
 
     for (const changed of [{ reason: 'harassment' }, { note: 'Different' }]) {
       expect(await errorOf(caller, { ...input, ...changed })).toMatchObject({
@@ -107,7 +107,7 @@ describe('create_content_report — real store', () => {
       })
     }
 
-    expect(await listTestMcpCreateAttempts(caller.id)).toEqual(attempts)
+    expect(await listTestDelegatedCreateReservations(caller.id)).toEqual(attempts)
     expect(await countTestModerationReportsByReporter(caller.id)).toBe(1)
   })
 

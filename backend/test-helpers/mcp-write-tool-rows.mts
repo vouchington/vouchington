@@ -1,46 +1,47 @@
-import { beginTransaction, read, write } from '@data-stores/psql'
+import { beginTransaction, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getTestPostgresBackendProcessId } from './postgres-lock-wait.mts'
 
-export type TestMcpCreateAttempt = {
+export type TestDelegatedCreateReservation = {
   id: string
+  route: string
+  state: string
   response: Record<string, unknown> | null
-  completed_at: Date | null
+  finalization: string | null
+  committed_post_id: string | null
 }
 
-/** The delegated-create idempotency ledger rows the credential owner holds. */
-export async function listTestMcpCreateAttempts(userId: string): Promise<TestMcpCreateAttempt[]> {
-  const { rows } = await read<TestMcpCreateAttempt>(sql`/* listTestMcpCreateAttempts */
-    SELECT id, response, completed_at
-    FROM user_mcp_create_attempts
-    WHERE user_id = ${userId}
-    ORDER BY id`)
+/** The admission ledger rows of the creates that make no post, which the credential owner holds. */
+export async function listTestDelegatedCreateReservations(
+  userId: string,
+): Promise<TestDelegatedCreateReservation[]> {
+  const { rows } = await read<TestDelegatedCreateReservation>(
+    sql`/* listTestDelegatedCreateReservations */
+    SELECT id, route, state, response, replay_metadata->>'finalization' AS finalization, committed_post_id
+    FROM post_admission_reservations
+    WHERE actor_user_id = ${userId} AND post_type IS NULL
+    ORDER BY id`,
+  )
   return rows
 }
 
-/** Ages the owner's unfinished claims past the lease so a retry may take them over. */
-export async function expireTestMcpCreateAttemptLeases(userId: string): Promise<void> {
-  await write(sql`/* expireTestMcpCreateAttemptLeases */
-    UPDATE user_mcp_create_attempts
-    SET claimed_at = clock_timestamp() - INTERVAL '1 day'
-    WHERE user_id = ${userId} AND response IS NULL`)
-}
-
 /**
- * Row-locks the owner's unfinished claim. `deleteAndRelease` frees the key as a failed create does,
- * so a claim that already conflicted with the row finds it gone once it gets the lock.
+ * Row-locks an actor's admission reservation, so a claim for the same key waits on the lock.
+ * `deleteAndRelease` frees the key as a failed create does, so the waiting claim finds it gone.
  */
-export async function holdTestMcpCreateAttemptLock(userId: string) {
+export async function holdTestAdmissionReservationLock(actorId: string, idempotencyKey: string) {
   const query = await beginTransaction()
   try {
-    await query(sql`/* holdTestMcpCreateAttemptLock */
-      SELECT id FROM user_mcp_create_attempts WHERE user_id = ${userId} FOR UPDATE`)
+    await query(sql`/* holdTestAdmissionReservationLock */
+      SELECT id FROM post_admission_reservations
+      WHERE actor_user_id = ${actorId} AND idempotency_key = ${idempotencyKey} FOR UPDATE`)
     const processId = await getTestPostgresBackendProcessId(query)
     return {
       processId,
       async deleteAndRelease() {
-        await query(sql`/* holdTestMcpCreateAttemptLock.delete */
-          DELETE FROM user_mcp_create_attempts WHERE user_id = ${userId}`)
+        await query(sql`/* holdTestAdmissionReservationLock.delete */
+          DELETE FROM post_admission_reservations
+          WHERE actor_user_id = ${actorId} AND idempotency_key = ${idempotencyKey}`)
         await query.commit()
       },
       async [Symbol.asyncDispose]() {

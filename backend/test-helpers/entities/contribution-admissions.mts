@@ -70,16 +70,16 @@ export async function getContributionAdmissionAuditForTest(input: {
 }): Promise<{
   route: string
   scope: string
-  source: string
-  postType: string
-  policyRevision: string
+  source: string | null
+  postType: string | null
+  policyRevision: string | null
 } | null> {
   const result = await write<{
     route: string
     scope: string
-    source: string
-    post_type: string
-    policy_revision: string
+    source: string | null
+    post_type: string | null
+    policy_revision: string | null
   }>(sql`/* getContributionAdmissionAuditForTest */
     SELECT route, scope, source, post_type, policy_revision
     FROM post_admission_reservations

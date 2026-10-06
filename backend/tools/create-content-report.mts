@@ -1,5 +1,5 @@
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
-import { runDelegatedCreate } from '@services/contribution-gating/run-delegated-create'
+import { admitDelegatedCreate } from '@services/contribution-gating/admit-delegated-create'
 import {
   createModerationReport,
   MODERATION_REPORT_ENTITY_TYPES,
@@ -89,16 +89,19 @@ const tool: Tool<Args, Result> = {
       reason: args.reason,
       note: args.note,
     })
-    return runDelegatedCreate({
+    return admitDelegatedCreate({
       authority,
       currentUser: user,
       idempotencyKey: args.idempotency_key,
-      intent: { tool: 'create_content_report', input },
-      execute: async () => {
+      route: 'reports.create',
+      scope: 'global',
+      intent: { input },
+      execute: async query => {
         const { report, isDuplicate } = await createModerationReport(
           user.id,
           getRequestContentProvenance(),
           input,
+          { query },
         )
         return {
           success: true as const,

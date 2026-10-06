@@ -3,7 +3,7 @@ import {
   parseCreateModerationAppealInput,
 } from '@services/moderation-appeals'
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
-import { runDelegatedCreate } from '@services/contribution-gating/run-delegated-create'
+import { admitDelegatedCreate } from '@services/contribution-gating/admit-delegated-create'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { APPEAL_SCHEMA, toMcpAppeal, type McpAppeal } from './mcp-case-output.mts'
@@ -66,16 +66,19 @@ const tool: Tool<Args, Result> = {
       appeal_reason: args.appeal_reason,
       post_removal_kind: args.post_removal_kind,
     })
-    return runDelegatedCreate({
+    return admitDelegatedCreate({
       authority,
       currentUser: user,
       idempotencyKey: args.idempotency_key,
-      intent: { tool: 'create_moderation_appeal', input },
-      execute: async () => {
+      route: 'appeals.create',
+      scope: 'global',
+      intent: { input },
+      execute: async query => {
         const { appeal, isDuplicate } = await createModerationAppeal(
           user,
           getRequestContentProvenance(),
           input,
+          { query },
         )
         return {
           success: true as const,

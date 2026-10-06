@@ -11,6 +11,14 @@ export function committedContributionPostId(response: unknown): string {
   throw new Error('Contribution admission response must include a UUID post id')
 }
 
+/** Only a post admission binds its committed row to a post; any other keyed create has none. */
+export function committedContributionPostIdFor(
+  audit: { postType: string | null },
+  response: unknown,
+): string | null {
+  return audit.postType === null ? null : committedContributionPostId(response)
+}
+
 export async function isContributionAdmissionCommitted(reservationId: string): Promise<boolean> {
   const result = await write<{ committed: boolean }>(sql`/* isContributionAdmissionCommitted */
     SELECT state = 'committed' AS committed

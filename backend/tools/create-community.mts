@@ -6,7 +6,7 @@ import {
 } from '@services/communities'
 import { assertCanCreateCommunity } from '@services/communities/authorization'
 import { assertWithinContributionActionLimit } from '@services/contribution-gating/limits'
-import { runDelegatedCreate } from '@services/contribution-gating/run-delegated-create'
+import { admitDelegatedCreate } from '@services/contribution-gating/admit-delegated-create'
 import { getUserActivePlan } from '@services/memberships'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
@@ -102,23 +102,23 @@ const tool: Tool<Args, Result> = {
       post_approval_required_at: fields.post_approval_required ? new Date() : null,
     }
     validateCreateCommunityInput(input)
-    return runDelegatedCreate({
+    return admitDelegatedCreate({
       authority,
       currentUser: user,
       idempotencyKey,
+      route: 'communities.create',
+      scope: 'global',
       intent: {
-        tool: 'create_community',
         ...fields,
         member_invites_allowed: fields.member_invites_allowed === true,
         post_approval_required: fields.post_approval_required === true,
       },
-      execute: async () => {
-        await assertWithinContributionActionLimit(
-          user,
-          await getUserActivePlan(user.id),
-          'community',
-        )
-        const community = await createCommunity(user.id, getRequestContentProvenance(), input)
+      beforeCreate: async () =>
+        assertWithinContributionActionLimit(user, await getUserActivePlan(user.id), 'community'),
+      execute: async query => {
+        const community = await createCommunity(user.id, getRequestContentProvenance(), input, {
+          query,
+        })
         return {
           success: true as const,
           community: {

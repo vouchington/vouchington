@@ -44,23 +44,22 @@ on the web.
 [delegated contribution admission policy](../../../requirements/platform/agent-access.md#delegated-contribution-admission)
 replaces the captcha with the credential, and the same suspensions and quotas apply.
 
-These entities have no post to bind admission to, so `admitDelegatedContribution` does not fit.
-`runDelegatedCreate` instead records each attempt in `user_mcp_create_attempts`, unique per credential
-owner and key, with a SHA-256 of the tool name and arguments:
+These entities have no post to bind admission to, so `admitDelegatedCreate` runs each of them
+through the same admission ledger as `create_post` (`runContributionAdmission`), keyed by credential
+owner and key, with a SHA-256 of the route and arguments. The reservation carries no post audit
+fields and no `committed_post_id`:
 
 - The same key and arguments replay the stored result without writing again or spending quota.
-- A changed request fails with `IDEMPOTENCY_KEY_REUSED`.
-- A live claim fails with `CONTRIBUTION_ADMISSION_IN_PROGRESS` and a retry delay. An unfinished
-  claim older than 60 seconds is taken over and its `lease_token` rotated, so a holder that
-  outlived its lease can neither store its result nor release the newer holder's claim. Both
-  executions may still have run; only the newer holder's result is replayed.
-- Argument parsing and ownership checks run before the claim, so a refused request never claims a key.
-  Domain guards and quotas run inside the claimed execution, and a failure releases the claim.
-- The ledger is retained so a late retry keeps returning the first result; it is classified as
-  unbounded growth and the response is an allowed opaque JSON column.
-- If storing the response fails after the create succeeded, the claim is released and a retry
-  executes again. Reports, disputes and appeals are upserts that absorb this; a community creation
-  could duplicate.
+- A changed request, or the same key on another route or on a post, fails with
+  `IDEMPOTENCY_KEY_REUSED`.
+- A live claim fails with `CONTRIBUTION_ADMISSION_IN_PROGRESS` and a retry delay. The lease is
+  renewed while the create runs; a holder that lost it is fenced and its create rolls back.
+- The create and its stored response commit in one transaction, so a failure storing the response
+  rolls the create back and a retry creates once. Alerts and enqueues run after the commit.
+- Argument parsing and ownership checks run before the claim, so a refused request never claims a
+  key. The community quota and any terminal 4xx from the create free the key; any other failure
+  leaves it retryable.
+- Reservations are pruned with the post admission replay retention.
 
 Existing-open-case creation is an upsert, as in REST: reporting, disputing or appealing something
 with an open case from the same user updates it and returns `is_duplicate: true`, with a new key too.

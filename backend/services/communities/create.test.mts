@@ -39,6 +39,19 @@ describe('create', () => {
       )
     })
 
+    it.each([
+      ['profile_image_id', 'banner_image_id'],
+      ['banner_image_id', 'profile_image_id'],
+    ] as const)('sets only the %s and leaves %s empty', async (given, other) => {
+      const imageId = await insertTestImage(user.id)
+      const community = await createCommunity(user.id, WEB_PROVENANCE, {
+        name: `One Image Community ${crypto.randomUUID()}`,
+        [given]: imageId,
+      })
+      expect(community[given]).toBe(imageId)
+      expect(community[other]).toBeNull()
+    })
+
     it('creates a community and makes creator the owner', async () => {
       const community = await createCommunity(user.id, WEB_PROVENANCE, {
         name: 'Test Community Create',

@@ -1,4 +1,4 @@
-import { read, write } from '@data-stores/psql'
+import { read, registerPostCommitAction, write, type QueryOptions } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
@@ -32,13 +32,20 @@ export interface CreateModerationReportResult {
   isDuplicate: boolean
 }
 
+/**
+ * Files a report. With `queryOptions.query` the insert joins the caller's transaction, which then
+ * owns the commit and the alerts and checks that follow it; otherwise the insert commits alone.
+ */
 export async function createModerationReport(
   currentUserId: string,
   provenance: ContentProvenance,
   input: CreateModerationReportInput,
+  queryOptions?: QueryOptions,
 ): Promise<CreateModerationReportResult> {
   await assertReportableEntity(currentUserId, input)
 
+  // The case is a shared get-or-open row, so it opens on its own connection even when the report
+  // joins the caller's transaction; a rolled-back report leaves it for the next one to reuse.
   const caseId = await openOrGetOpenCase({ entityType: input.entityType, entityId: input.entityId })
   const fkColumn = reportEntityFkColumn(input.entityType)
   const query = sql`/* createModerationReport */ INSERT INTO moderation_reports (reporter_user_id, `
@@ -53,7 +60,7 @@ export async function createModerationReport(
     sql` IS NOT NULL DO UPDATE SET reason = EXCLUDED.reason, note = EXCLUDED.note RETURNING (xmax = 0) AS inserted, id, case_id, created_at, reviewed_at, reporter_user_id, reason, note, 'pending'::text AS status, resolved_by_id`,
   )
 
-  const { rows } = await write(query)
+  const { rows } = await write(query, queryOptions)
 
   const dbRow = rows[0] as
     | (Omit<ModerationReport, 'entity_type' | 'entity_id'> & { inserted: boolean })
@@ -66,17 +73,21 @@ export async function createModerationReport(
     entity_id: input.entityId,
   }
 
-  // N2: alert staff immediately for critical-severity reports (e.g. illegal_content)
-  if (getPolicySeverity(input.reason) === 'critical') {
-    void createCriticalModerationAlertNotification(report.id).catch(onError)
+  const notify = () => {
+    // N2: alert staff immediately for critical-severity reports (e.g. illegal_content)
+    if (getPolicySeverity(input.reason) === 'critical') {
+      void createCriticalModerationAlertNotification(report.id).catch(onError)
+    }
+
+    // Fire-and-forget: keep AI judgement guidance aligned with the current report set.
+    enqueueReportJudgementIfContextChanged(report.id, input.entityType, input.entityId)
+
+    // Fire-and-forget: enqueue a mass-report-abuse check for this entity.
+    // Debounce deduplication collapses rapid reports into a single check job.
+    enqueueReportIntegrityCheck(input.entityType, input.entityId)
   }
-
-  // Fire-and-forget: keep AI judgement guidance aligned with the current report set.
-  enqueueReportJudgementIfContextChanged(report.id, input.entityType, input.entityId)
-
-  // Fire-and-forget: enqueue a mass-report-abuse check for this entity.
-  // Debounce deduplication collapses rapid reports into a single check job.
-  enqueueReportIntegrityCheck(input.entityType, input.entityId)
+  if (queryOptions?.query) registerPostCommitAction(queryOptions.query, async () => notify())
+  else notify()
 
   return { report, isDuplicate: !inserted }
 }

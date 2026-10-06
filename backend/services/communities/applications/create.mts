@@ -1,4 +1,10 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import {
+  beginTransaction,
+  withTransactionOptions,
+  write,
+  type QueryOptions,
+  type TransactionQuery,
+} from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
@@ -12,20 +18,41 @@ import { getPendingApplicationForUser } from './pending.mts'
 import { getApplicationQuestions } from './questions.mts'
 import type { CommunityApplication } from '../types.mts'
 
+/**
+ * Files an application. With `queryOptions.query` it joins the caller's transaction, which then
+ * owns the commit; otherwise it runs and commits its own.
+ */
 export async function createApplication(
   currentUserId: string,
   provenance: ContentProvenance,
   communityId: string,
   answers: Record<string, unknown>,
   message?: string,
+  queryOptions?: QueryOptions,
 ): Promise<CommunityApplication> {
-  const community = await getCommunity(communityId)
+  const run = (query: TransactionQuery) =>
+    insertApplication(query, currentUserId, provenance, communityId, answers, message)
+  if (queryOptions?.query) return withTransactionOptions(queryOptions, run)
+  await using query = await beginTransaction()
+  const application = await run(query)
+  await query.commit()
+  return application
+}
+
+async function insertApplication(
+  query: TransactionQuery,
+  currentUserId: string,
+  provenance: ContentProvenance,
+  communityId: string,
+  answers: Record<string, unknown>,
+  message?: string,
+): Promise<CommunityApplication> {
+  const options = { query }
+  const community = await getCommunity(communityId, options)
   assert(community, 404, 'Community not found')
   assert(!community.archived_at, 409, 'Archived communities cannot be updated')
   assert(community.visibility === 'private', 422, 'Applications are only for private communities')
 
-  await using query = await beginTransaction()
-  const options = { query }
   const questions = await getApplicationQuestions(communityId, { ...options, lock: true })
   // Malformed answers stay 422 ahead of the ban, member, and pending gates.
   assertApplicationAnswers(questions, answers)
@@ -50,7 +77,5 @@ export async function createApplication(
   const applicationId = (rows[0] as { id: string }).id
   await insertApplicationAnswers(applicationId, communityId, answers, options)
   // Read back so the response carries the answers object rebuilt from the stored rows.
-  const application = (await getApplication(applicationId, options))!
-  await query.commit()
-  return application
+  return (await getApplication(applicationId, options))!
 }

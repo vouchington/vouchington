@@ -9,8 +9,8 @@ describe('moderation appeal primary-read routing', () => {
   it('keeps ordinary reads on replicas and mutation-critical reads on the primary', () => {
     const getSource = source('./get.mts')
     expect(getSource).toContain('return queryModerationAppealById(id, read)')
-    expect(getSource).toContain('return queryModerationAppealById(id, write)')
-    expect(getSource).toContain('await getModerationAppealByIdFromPrimary(id)')
+    expect(getSource).toContain('return queryModerationAppealById(id, write, options)')
+    expect(getSource).toContain('await getModerationAppealByIdFromPrimary(id, options)')
   })
 
   it('uses primary reads for immediate delivery and rerun guards', () => {

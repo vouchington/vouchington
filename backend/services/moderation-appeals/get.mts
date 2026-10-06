@@ -1,4 +1,4 @@
-import { read, write } from '@data-stores/psql'
+import { read, write, type QueryOptions } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { APPEAL_SLA_HOURS, type ModerationAppealStatus } from './config.mts'
@@ -18,15 +18,18 @@ export async function getModerationAppealById(
   return queryModerationAppealById(id, read)
 }
 
+/** Reads from the primary, or through `options.query` to see the caller's own uncommitted rows. */
 export async function getModerationAppealByIdFromPrimary(
   id: string,
+  options?: QueryOptions,
 ): Promise<ModerationAppealResponse | null> {
-  return queryModerationAppealById(id, write)
+  return queryModerationAppealById(id, write, options)
 }
 
 async function queryModerationAppealById(
   id: string,
   query: typeof read,
+  options?: QueryOptions,
 ): Promise<ModerationAppealResponse | null> {
   const { rows } = await query<ModerationAppealResponse>(
     sql`/* getModerationAppealById */
@@ -39,6 +42,7 @@ async function queryModerationAppealById(
     WHERE ma.id = ${id}
     LIMIT 1
   `),
+    options,
   )
   const row = rows[0]
   return row ? addIsOverdue(row) : null
@@ -46,8 +50,9 @@ async function queryModerationAppealById(
 
 export async function getModerationAppealAfterMutation(
   id: string,
+  options?: QueryOptions,
 ): Promise<ModerationAppealResponse> {
-  const appeal = await getModerationAppealByIdFromPrimary(id)
+  const appeal = await getModerationAppealByIdFromPrimary(id, options)
   assert(appeal, 500, 'Appeal disappeared after mutation')
   return appeal
 }
