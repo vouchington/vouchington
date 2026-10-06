@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import dnsPromises from 'node:dns/promises'
 import type { MxRecord } from 'node:dns'
 import { afterEach, beforeEach, expect, it, vi, describe, type MockInstance } from 'vitest'
+import { valkeyEvents } from 'valkyries'
 import {
   deleteTestEmailDomainValidationCache,
   readTestEmailDomainValidationCache,
@@ -37,11 +38,13 @@ describe('domain-validation', () => {
     const domain = ownDomain('timeout-test')
     const lookups: ReturnType<typeof Promise.withResolvers<MxRecord[]>>[] = []
     const validations: Promise<unknown>[] = []
+    let nextResolveStarted = Promise.withResolvers<void>()
     let disposed = false
     mockResolveMx.mockImplementation(requestedDomain => {
       if (requestedDomain !== domain) throw new Error('Unexpected DNS fixture domain')
       const lookup = Promise.withResolvers<MxRecord[]>()
       lookups.push(lookup)
+      nextResolveStarted.resolve()
       if (disposed) lookup.resolve([])
       return lookup.promise
     })
@@ -59,12 +62,10 @@ describe('domain-validation', () => {
     }
 
     async function validateWithTimeout(expectedCalls: number): Promise<void> {
+      nextResolveStarted = Promise.withResolvers<void>()
       const outcome = validateEmailDomain(domain).catch((err: unknown) => err)
       validations.push(outcome)
-      await vi.waitFor(() => expect(mockResolveMx).toHaveBeenCalledTimes(expectedCalls - 2), {
-        interval: 10,
-        timeout: 2_000,
-      })
+      await nextResolveStarted.promise
       await vi.advanceTimersByTimeAsync(15_000)
       await expect(outcome).resolves.toBeInstanceOf(EmailDomainInvalidError)
       await expect(outcome).resolves.toMatchObject({
@@ -88,19 +89,23 @@ describe('domain-validation', () => {
     const error = Object.assign(new Error('queryMx ENOTFOUND'), { code: 'ENOTFOUND' })
     mockResolveMx.mockRejectedValue(error)
 
-    await expect(validateEmailDomain(domain)).rejects.toThrow(EmailDomainInvalidError)
-    expect(mockResolveMx).toHaveBeenCalledExactlyOnceWith(domain)
-    // The actual cache owner writes asynchronously; observe persistence before asserting reuse.
-    await vi.waitFor(
-      async () => {
-        await expect(readTestEmailDomainValidationCache(domain)).resolves.toMatchObject({
-          success: false,
-          reason: 'DNS error: queryMx ENOTFOUND',
-        })
-      },
-      { timeout: 3_000 },
-    )
-    await expect(validateEmailDomain(domain)).rejects.toThrow(EmailDomainInvalidError)
-    expect(mockResolveMx).toHaveBeenCalledExactlyOnceWith(domain)
+    const cacheWrite = Promise.withResolvers<void>()
+    const onCacheWrite = ({ cacheName, keys }: { cacheName: string; keys: string[] }) => {
+      if (cacheName === 'email-domain-validation' && keys.includes(domain)) cacheWrite.resolve()
+    }
+    valkeyEvents.on('cache:set', onCacheWrite)
+    try {
+      await expect(validateEmailDomain(domain)).rejects.toThrow(EmailDomainInvalidError)
+      expect(mockResolveMx).toHaveBeenCalledExactlyOnceWith(domain)
+      await cacheWrite.promise
+      await expect(readTestEmailDomainValidationCache(domain)).resolves.toMatchObject({
+        success: false,
+        reason: 'DNS error: queryMx ENOTFOUND',
+      })
+      await expect(validateEmailDomain(domain)).rejects.toThrow(EmailDomainInvalidError)
+      expect(mockResolveMx).toHaveBeenCalledExactlyOnceWith(domain)
+    } finally {
+      valkeyEvents.off('cache:set', onCacheWrite)
+    }
   })
 })

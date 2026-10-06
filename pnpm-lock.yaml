@@ -5703,6 +5703,9 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+      valkyries:
+        specifier: ^0.8.1
+        version: 0.8.1
 
   backend/services/email-classification:
     dependencies:

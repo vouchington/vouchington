@@ -87,8 +87,12 @@ export function createOwnedWebRiskFixture(options: OwnedWebRiskOptions = {}) {
     return rateLimiterValkeyClient.pttl(key)
   }
 
-  async function expireCleanVerdict(url: URL): Promise<void> {
-    await rateLimiterValkeyClient.customCommand(['PEXPIRE', cleanKey(url), '1'])
+  async function invalidateCleanVerdict(url: URL): Promise<void> {
+    await rateLimiterValkeyClient.customCommand(['PEXPIRE', cleanKey(url), '0'])
+  }
+
+  async function invalidateProviderCooldown(): Promise<void> {
+    await rateLimiterValkeyClient.customCommand(['PEXPIRE', cooldownKey(), '0'])
   }
 
   async function corruptMinuteWindow(): Promise<void> {
@@ -113,7 +117,8 @@ export function createOwnedWebRiskFixture(options: OwnedWebRiskOptions = {}) {
     countWindow,
     keysExist,
     ttl,
-    expireCleanVerdict,
+    invalidateCleanVerdict,
+    invalidateProviderCooldown,
     corruptMinuteWindow,
     cleanup,
   }

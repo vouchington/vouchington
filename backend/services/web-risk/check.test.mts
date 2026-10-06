@@ -1,5 +1,5 @@
 import { Request as UndiciRequest, Response as UndiciResponse } from 'undici'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { upsertUrlHostnames } from '@services/urls-hostnames'
 import { updateUrlHostname } from '@services/urls-hostnames/update'
 import { getUrlHostnameByAny } from '@services/urls-hostnames/get'
@@ -210,22 +210,17 @@ describe('Google Web Risk checks', () => {
       expect(context.fetchSpy).toHaveBeenCalledTimes(1)
     }))
 
-  it('makes another paid lookup after the exact clean cache key expires', () =>
+  it('makes another paid lookup after invalidating the exact clean cache key', () =>
     withGoogleWebRiskTest(async context => {
       const url = new URL(`https://expired-${crypto.randomUUID()}.test/page`)
       context.fetchSpy.mockResolvedValueOnce(UndiciResponse.json({}))
       await context.fixture.check(url.toString())
       const key = context.fixture.cleanKey(url)
       expect(await context.fixture.ttl(key)).toBeGreaterThan(7 * 24 * 60 * 60 * 1000 - 5000)
-      await context.fixture.expireCleanVerdict(url)
-      await vi.waitFor(
-        async () => {
-          await expect(
-            context.fixture.own(context.fixture.state.hasCleanCachedVerdict(url)),
-          ).resolves.toBe(false)
-        },
-        { timeout: 2000, interval: 10 },
-      )
+      await context.fixture.invalidateCleanVerdict(url)
+      await expect(
+        context.fixture.own(context.fixture.state.hasCleanCachedVerdict(url)),
+      ).resolves.toBe(false)
       context.fetchSpy.mockResolvedValueOnce(UndiciResponse.json({}))
 
       await context.fixture.check(url.toString())

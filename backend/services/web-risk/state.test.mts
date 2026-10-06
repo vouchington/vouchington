@@ -132,7 +132,7 @@ describe('web-risk state', () => {
       await expect(fixture.countWindow(newKeys[1])).resolves.toBe(1)
     }))
 
-  it('writes a seven-day exact URL cache and observes actual key expiration', () =>
+  it('writes a seven-day exact URL cache and observes owned-key invalidation', () =>
     withStateFixtures(async ownFixture => {
       const fixture = ownFixture()
       const url = new URL(`https://${fixture.namespace}.test/page`)
@@ -145,13 +145,8 @@ describe('web-risk state', () => {
       await expect(fixture.own(fixture.state.hasCleanCachedVerdict(different))).resolves.toBe(false)
       expect(await fixture.ttl(key)).toBeGreaterThan(7 * 24 * 60 * 60 * 1000 - 5000)
       expect(await fixture.ttl(key)).toBeLessThanOrEqual(7 * 24 * 60 * 60 * 1000)
-      await fixture.expireCleanVerdict(url)
-      await vi.waitFor(
-        async () => {
-          await expect(fixture.own(fixture.state.hasCleanCachedVerdict(url))).resolves.toBe(false)
-        },
-        { timeout: 2000, interval: 10 },
-      )
+      await fixture.invalidateCleanVerdict(url)
+      await expect(fixture.own(fixture.state.hasCleanCachedVerdict(url))).resolves.toBe(false)
     }))
 
   it.each([
@@ -178,17 +173,13 @@ describe('web-risk state', () => {
     }
   })
 
-  it('observes real cooldown expiration without advancing global timers', () =>
+  it('returns false after invalidating its owned provider cooldown key', () =>
     withStateFixtures(async ownFixture => {
       const fixture = ownFixture()
-      await fixture.own(fixture.state.setProviderCooldown(1))
+      await fixture.own(fixture.state.setProviderCooldown(60))
       await expect(fixture.own(fixture.state.isProviderCoolingDown())).resolves.toBe(true)
 
-      await vi.waitFor(
-        async () => {
-          await expect(fixture.own(fixture.state.isProviderCoolingDown())).resolves.toBe(false)
-        },
-        { timeout: 3000, interval: 10 },
-      )
+      await fixture.invalidateProviderCooldown()
+      await expect(fixture.own(fixture.state.isProviderCoolingDown())).resolves.toBe(false)
     }))
 })

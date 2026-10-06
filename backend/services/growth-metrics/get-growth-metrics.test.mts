@@ -252,19 +252,20 @@ describe('getGrowthMetrics', () => {
     await expect(retry).rejects.toThrow(/.+/)
   })
 
-  it('coalesces cached loads and a fresh load after the real short cache expires', async () => {
-    const first = getGrowthMetrics('7d')
-    const second = getGrowthMetrics('7d')
-    const initial = await expectSharedLoad(first, second)
-    const [fresh, coalesced] = await vi.waitFor(
-      () => {
-        const refreshed = getGrowthMetrics('7d')
-        if (refreshed === first) throw new Error('Growth metrics cache has not expired')
-        return [refreshed, getGrowthMetrics('7d')] as const
-      },
-      { timeout: 15_000, interval: 100 },
-    )
-    expect(await expectSharedLoad(fresh, coalesced)).not.toBe(initial)
+  it('coalesces cached loads and reloads at the short-cache expiry boundary', async () => {
+    const start = Date.now() + 10_001
+    vi.useFakeTimers({ toFake: ['Date'] })
+    try {
+      vi.setSystemTime(start)
+      const first = getGrowthMetrics('7d')
+      const initial = await expectSharedLoad(first, getGrowthMetrics('7d'))
+      vi.setSystemTime(start + 10_000)
+      const fresh = getGrowthMetrics('7d')
+      expect(fresh).not.toBe(first)
+      expect(await expectSharedLoad(fresh, getGrowthMetrics('7d'))).not.toBe(initial)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('returns complete metrics with all 6 categories', async () => {
@@ -291,10 +292,7 @@ describe('getGrowthMetrics', () => {
 })
 
 async function expectSharedLoad(first: Promise<GrowthMetrics>, second: Promise<GrowthMetrics>) {
-  try {
-    expect(second).toBe(first)
-  } finally {
-    await Promise.allSettled([first, second])
-  }
+  if (second !== first) await Promise.allSettled([first, second])
+  expect(second).toBe(first)
   return first
 }
