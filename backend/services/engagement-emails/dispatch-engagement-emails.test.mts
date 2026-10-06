@@ -1,5 +1,3 @@
-import { runIsolatedDatabaseCase } from '../../../test-helpers/vitest-isolated-database-case.mts'
-import { getIsolatedDatabaseCaseMode } from '../../../test-helpers/vitest-isolated-database-cases.mts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createTestUser,
@@ -22,19 +20,23 @@ import {
   dispatchEngagementEmails,
 } from './dispatch-engagement-emails.mts'
 
+const scopedEngagementClaimResult = {
+  ownedSent: false,
+  ownedClaimAfterDispatch: false,
+  foreignClaimBeforeDispatch: true,
+  foreignClaimAfterDispatch: false,
+}
+
 describe('dispatchEngagementEmails', () => {
   afterEach(() => {
     vi.unstubAllEnvs()
   })
 
   it('dispatches follow-topic recommendations based on missing topic follows, not signup age', async () => {
-    if (getIsolatedDatabaseCaseMode('engagement-email-dispatch-1') === 'parent') {
-      await runIsolatedDatabaseCase('engagement-email-dispatch-1')
-      return
-    }
     const random = Math.random().toString(36).slice(2, 10)
     const admin = await createTestUser({ administrator: true })
     const user = await createTestUserWithAge(12 * 60 * 60 * 1000)
+    const foreign = await createTestUserWithAge(12 * 60 * 60 * 1000)
     const topicId = await insertTestTopic({
       name: `Email Young Topic ${random}`,
       slug: `email-young-topic-${random}`,
@@ -48,51 +50,51 @@ describe('dispatchEngagementEmails', () => {
     })
     await linkPostToTopic(postId, topicId, admin.id)
     await markPostsAsViewed(user.id, [postId])
+    await markPostsAsViewed(foreign.id, [postId])
 
-    await expect(dispatchEngagementEmails()).resolves.toBeUndefined()
-
-    await expect(claimEngagementEmailSend(user.id, 'follow_topics')).resolves.toBe(false)
-  }, 240_000)
+    await expect(ownedEngagementDispatch(user.id, foreign.id, 'follow_topics')).resolves.toEqual(
+      scopedEngagementClaimResult,
+    )
+  })
 
   it('dispatches follow-news-sources recommendations to eligible users', async () => {
-    if (getIsolatedDatabaseCaseMode('engagement-email-dispatch-2') === 'parent') {
-      await runIsolatedDatabaseCase('engagement-email-dispatch-2')
-      return
-    }
     const random = Math.random().toString(36).slice(2, 10)
     const admin = await createTestUser({ administrator: true })
     const user = await createTestUserWithAge(3.5 * 24 * 60 * 60 * 1000)
+    const foreign = await createTestUserWithAge(3.5 * 24 * 60 * 60 * 1000)
     const topicId = await insertTestTopic({
       name: `Email Source Topic ${random}`,
       slug: `email-source-topic-${random}`,
       createdById: admin.id,
     })
-    await insertEntityRelation('relation__user__follow__topic', user.id, topicId)
     await insertTestRssFeed({
       topicId,
       title: `Email Source Feed ${random}`,
     })
     const referralProgramId = await insertTestReferralProgram({ createdById: admin.id })
-    const url = await insertTestUrlDirect(user.id, `https://ref-${random}.example.com/offer`)
-    await insertTestUserReferralProgramLink({
-      userId: user.id,
-      referralProgramId,
-      urlId: url!.id,
-    })
+    for (const recipient of [user, foreign]) {
+      await insertEntityRelation('relation__user__follow__topic', recipient.id, topicId)
+      const url = await insertTestUrlDirect(
+        recipient.id,
+        `https://ref-${recipient.id}.example.com/offer`,
+      )
+      await insertTestUserReferralProgramLink({
+        userId: recipient.id,
+        referralProgramId,
+        urlId: url!.id,
+      })
+    }
 
-    await dispatchEngagementEmails()
-
-    await expect(claimEngagementEmailSend(user.id, 'follow_news_sources')).resolves.toBe(false)
-  }, 240_000)
+    await expect(
+      ownedEngagementDispatch(user.id, foreign.id, 'follow_news_sources'),
+    ).resolves.toEqual(scopedEngagementClaimResult)
+  })
 
   it('dispatches follow-topic recommendations to eligible users', async () => {
-    if (getIsolatedDatabaseCaseMode('engagement-email-dispatch-3') === 'parent') {
-      await runIsolatedDatabaseCase('engagement-email-dispatch-3')
-      return
-    }
     const random = Math.random().toString(36).slice(2, 10)
     const admin = await createTestUser({ administrator: true })
     const user = await createTestUserWithAge(1.5 * 24 * 60 * 60 * 1000)
+    const foreign = await createTestUserWithAge(1.5 * 24 * 60 * 60 * 1000)
     const topicId = await insertTestTopic({
       name: `Email Topic ${random}`,
       slug: `email-topic-${random}`,
@@ -106,20 +108,18 @@ describe('dispatchEngagementEmails', () => {
     })
     await linkPostToTopic(postId, topicId, admin.id)
     await markPostsAsViewed(user.id, [postId])
+    await markPostsAsViewed(foreign.id, [postId])
 
-    await dispatchEngagementEmails()
-
-    await expect(claimEngagementEmailSend(user.id, 'follow_topics')).resolves.toBe(false)
-  }, 240_000)
+    await expect(ownedEngagementDispatch(user.id, foreign.id, 'follow_topics')).resolves.toEqual(
+      scopedEngagementClaimResult,
+    )
+  })
 
   it('dispatches referral-link recommendations to eligible users', async () => {
-    if (getIsolatedDatabaseCaseMode('engagement-email-dispatch-4') === 'parent') {
-      await runIsolatedDatabaseCase('engagement-email-dispatch-4')
-      return
-    }
     const random = Math.random().toString(36).slice(2, 10)
     const admin = await createTestUser({ administrator: true })
     const user = await createTestUserWithAge(2.5 * 24 * 60 * 60 * 1000)
+    const foreign = await createTestUserWithAge(2.5 * 24 * 60 * 60 * 1000)
     const existingLinkUser = await createTestUser()
     const followedTopicId = await insertTestTopic({
       name: `Referral Existing Follow ${random}`,
@@ -127,6 +127,7 @@ describe('dispatchEngagementEmails', () => {
       createdById: admin.id,
     })
     await insertEntityRelation('relation__user__follow__topic', user.id, followedTopicId)
+    await insertEntityRelation('relation__user__follow__topic', foreign.id, followedTopicId)
     const referralProgramId = await insertTestReferralProgram({
       createdById: admin.id,
       name: `Email Referral Program ${random}`,
@@ -141,30 +142,23 @@ describe('dispatchEngagementEmails', () => {
       urlId: url!.id,
     })
 
-    await dispatchEngagementEmails()
-
-    await expect(claimEngagementEmailSend(user.id, 'post_referral_link')).resolves.toBe(false)
-  }, 240_000)
+    await expect(
+      ownedEngagementDispatch(user.id, foreign.id, 'post_referral_link'),
+    ).resolves.toEqual(scopedEngagementClaimResult)
+  })
 
   it('claims follow-topic recipients with no recommendations so later users can be considered', async () => {
-    if (getIsolatedDatabaseCaseMode('engagement-email-dispatch-5') === 'parent') {
-      await runIsolatedDatabaseCase('engagement-email-dispatch-5')
-      return
-    }
     const user = await createTestUserWithAge(1.5 * 24 * 60 * 60 * 1000)
+    const foreign = await createTestUserWithAge(1.5 * 24 * 60 * 60 * 1000)
 
-    await dispatchEngagementEmails()
-
-    await expect(hasEngagementEmailSent(user.id, 'follow_topics')).resolves.toBe(false)
-    await expect(claimEngagementEmailSend(user.id, 'follow_topics')).resolves.toBe(false)
-  }, 240_000)
+    await expect(ownedEngagementDispatch(user.id, foreign.id, 'follow_topics')).resolves.toEqual(
+      scopedEngagementClaimResult,
+    )
+  })
 
   it('claims follow-news-source recipients with no recommendations so later users can be considered', async () => {
-    if (getIsolatedDatabaseCaseMode('engagement-email-dispatch-6') === 'parent') {
-      await runIsolatedDatabaseCase('engagement-email-dispatch-6')
-      return
-    }
     const user = await createTestUserWithAge(3.5 * 24 * 60 * 60 * 1000)
+    const foreign = await createTestUserWithAge(3.5 * 24 * 60 * 60 * 1000)
     const admin = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 10)
     const topicId = await insertTestTopic({
@@ -172,20 +166,24 @@ describe('dispatchEngagementEmails', () => {
       slug: `no-source-existing-follow-${random}`,
       createdById: admin.id,
     })
-    await insertEntityRelation('relation__user__follow__topic', user.id, topicId)
     const referralProgramId = await insertTestReferralProgram({ createdById: admin.id })
-    const url = await insertTestUrlDirect(user.id, `https://existing-source-${random}.example.com`)
-    await insertTestUserReferralProgramLink({
-      userId: user.id,
-      referralProgramId,
-      urlId: url!.id,
-    })
+    for (const recipient of [user, foreign]) {
+      await insertEntityRelation('relation__user__follow__topic', recipient.id, topicId)
+      const url = await insertTestUrlDirect(
+        recipient.id,
+        `https://existing-source-${recipient.id}.example.com`,
+      )
+      await insertTestUserReferralProgramLink({
+        userId: recipient.id,
+        referralProgramId,
+        urlId: url!.id,
+      })
+    }
 
-    await dispatchEngagementEmails()
-
-    await expect(hasEngagementEmailSent(user.id, 'follow_news_sources')).resolves.toBe(false)
-    await expect(claimEngagementEmailSend(user.id, 'follow_news_sources')).resolves.toBe(false)
-  }, 240_000)
+    await expect(
+      ownedEngagementDispatch(user.id, foreign.id, 'follow_news_sources'),
+    ).resolves.toEqual(scopedEngagementClaimResult)
+  })
 
   it('builds follow-topic items from recommendation order', () => {
     vi.stubEnv('SITE_ORIGIN', 'https://app.example.test')
@@ -262,3 +260,21 @@ describe('dispatchEngagementEmails', () => {
     ])
   })
 })
+
+async function ownedEngagementDispatch(
+  userId: string,
+  foreignUserId: string,
+  emailType: 'follow_topics' | 'post_referral_link' | 'follow_news_sources',
+): Promise<typeof scopedEngagementClaimResult> {
+  await dispatchEngagementEmails([userId])
+  const ownedSent = await hasEngagementEmailSent(userId, emailType)
+  const ownedClaimAfterDispatch = await claimEngagementEmailSend(userId, emailType)
+  const foreignClaimBeforeDispatch = await claimEngagementEmailSend(foreignUserId, emailType)
+  await dispatchEngagementEmails([foreignUserId])
+  return {
+    ownedSent,
+    ownedClaimAfterDispatch,
+    foreignClaimBeforeDispatch,
+    foreignClaimAfterDispatch: await claimEngagementEmailSend(foreignUserId, emailType),
+  }
+}

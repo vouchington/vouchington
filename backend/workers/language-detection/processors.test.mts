@@ -19,11 +19,6 @@ import type {
   LanguageDetectionEntityType,
 } from '@queues/language-detection/types'
 import { processLanguageDetection, processLanguageDetectionBackfill } from './processors.mts'
-import {
-  ISOLATED_DATABASE_PARENT_TIMEOUT_MS,
-  runIsolatedDatabaseCase,
-} from '../../../test-helpers/vitest-isolated-database-case.mts'
-import { getIsolatedDatabaseCaseMode } from '../../../test-helpers/vitest-isolated-database-cases.mts'
 
 describe('language detection processors', () => {
   async function createRssFeedItemForLanguageDetection(): Promise<string> {
@@ -133,55 +128,45 @@ describe('language detection processors', () => {
     await expectEnglishDetection('topic', 'topics', topicId)
   })
 
-  it(
-    'accepts every known language detection backfill job name',
-    async () => {
-      if (getIsolatedDatabaseCaseMode('language-backfill-job-names') === 'parent') {
-        await runIsolatedDatabaseCase('language-backfill-job-names')
-        return
-      }
-      const jobs: LanguageDetectionBackfillJobName[] = [
-        'backfill_posts',
-        'backfill_rss_feed_items',
-        'backfill_crawls',
-        'backfill_communities',
-        'backfill_users',
-        'backfill_topics',
-      ]
+  it('accepts every known language detection backfill job name', async () => {
+    const jobs: LanguageDetectionBackfillJobName[] = [
+      'backfill_posts',
+      'backfill_rss_feed_items',
+      'backfill_crawls',
+      'backfill_communities',
+      'backfill_users',
+      'backfill_topics',
+    ]
 
-      for (const job of jobs) {
-        await expect(processLanguageDetectionBackfill(job)).resolves.toMatchObject({
-          updated: expect.any(Number),
-        })
-      }
-    },
-    ISOLATED_DATABASE_PARENT_TIMEOUT_MS,
-  )
+    for (const job of jobs) {
+      await expect(processLanguageDetectionBackfill(job, [])).resolves.toEqual({ updated: 0 })
+    }
+  })
 
-  it(
-    'backfills non-post entities through the batch processor path',
-    async () => {
-      if (getIsolatedDatabaseCaseMode('language-backfill-non-post') === 'parent') {
-        await runIsolatedDatabaseCase('language-backfill-non-post')
-        return
-      }
-      const random = createRandomString(10)
-      const userId = await insertLanguageDetectionUserForTest({
-        username: `language-backfill-user-${random}`,
-        markdown:
-          'This backfilled user profile is written in English with clear sentences, common vocabulary, and enough context for reliable language detection by the worker processor.',
-      })
+  it('backfills non-post entities through the batch processor path', async () => {
+    const random = createRandomString(10)
+    const userId = await insertLanguageDetectionUserForTest({
+      username: `language-backfill-user-${random}`,
+      markdown:
+        'This backfilled user profile is written in English with clear sentences, common vocabulary, and enough context for reliable language detection by the worker processor.',
+    })
+    const foreignUserId = await insertLanguageDetectionUserForTest({
+      username: `language-backfill-foreign-${random}`,
+      markdown:
+        'This foreign profile is also written in English and must stay undetected when the backfill lists only the owned user.',
+    })
 
-      const result = await processLanguageDetectionBackfill('backfill_users')
+    const result = await processLanguageDetectionBackfill('backfill_users', [userId])
 
-      expect(result.updated).toBeGreaterThan(0)
-      const state = await getLanguageDetectionStateForTest('users', userId)
-      expect(state.lingua_rs_detected_language).toBe('en')
-      expect(state.lingua_rs_input_sha256).toBeInstanceOf(Buffer)
-      expect(state.lingua_rs_detected_at).toBeInstanceOf(Date)
-    },
-    ISOLATED_DATABASE_PARENT_TIMEOUT_MS,
-  )
+    expect(result.updated).toBeGreaterThan(0)
+    const state = await getLanguageDetectionStateForTest('users', userId)
+    expect(state.lingua_rs_detected_language).toBe('en')
+    expect(state.lingua_rs_input_sha256).toBeInstanceOf(Buffer)
+    expect(state.lingua_rs_detected_at).toBeInstanceOf(Date)
+    await expect(getLanguageDetectionStateForTest('users', foreignUserId)).resolves.toMatchObject({
+      lingua_rs_detected_language: null,
+    })
+  })
 
   it('ignores missing post rows', async () => {
     await expect(processLanguageDetection('post', randomUUID())).resolves.toBeUndefined()

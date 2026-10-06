@@ -20,11 +20,13 @@ type CurrentTopicAlias = { topic_id: string | null }
  */
 export async function processReconcileTopicAliasCategoryMappings(
   limit = getRssFeedsWorkLimit('topic_alias_category_mapping_reconciliation_batch_size'),
+  topicAliasIds?: readonly string[],
 ): Promise<{
   reconciled: number
   updated: number
 }> {
-  const candidates = await getTopicAliasCategoryMappingDirtyRows(limit)
+  if (topicAliasIds?.length === 0) return { reconciled: 0, updated: 0 }
+  const candidates = await getTopicAliasCategoryMappingDirtyRows(limit, topicAliasIds)
   const { errors, ...result } = await reconcileTopicAliasCategoryMappingDirtyRows(
     candidates,
     0,
@@ -39,19 +41,29 @@ export async function processReconcileTopicAliasCategoryMappings(
 
 async function getTopicAliasCategoryMappingDirtyRows(
   limit: number,
+  topicAliasIds?: readonly string[],
 ): Promise<TopicAliasCategoryMappingDirtyRow[]> {
   const { rows } = await write<TopicAliasCategoryMappingDirtyRow>(
-    buildTopicAliasCategoryMappingDirtyRowsQuery(limit),
+    buildTopicAliasCategoryMappingDirtyRowsQuery(limit, topicAliasIds),
   )
   return rows
 }
 
 export function buildTopicAliasCategoryMappingDirtyRowsQuery(
   limit = getRssFeedsWorkLimit('topic_alias_category_mapping_reconciliation_batch_size'),
+  topicAliasIds?: readonly string[],
 ): SQLStatement {
+  if (!topicAliasIds) {
+    return sql`/* getTopicAliasCategoryMappingDirtyRows */
+    SELECT topic_alias_id, alias, generation
+    FROM topic_alias_category_mapping_reconciliations
+    ORDER BY updated_at, topic_alias_id
+    LIMIT ${limit}`
+  }
   return sql`/* getTopicAliasCategoryMappingDirtyRows */
     SELECT topic_alias_id, alias, generation
     FROM topic_alias_category_mapping_reconciliations
+    WHERE topic_alias_id = ANY(${topicAliasIds}::uuid[])
     ORDER BY updated_at, topic_alias_id
     LIMIT ${limit}`
 }

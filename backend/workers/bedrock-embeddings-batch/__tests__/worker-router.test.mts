@@ -21,9 +21,6 @@ import {
   cleanupTestEmbeddingsBatches,
   insertTestEmbeddingsBatch,
 } from '@voucha/test-helpers/entities/bedrock-embeddings-batches'
-import { getIsolatedDatabaseCaseMode } from '../../../../test-helpers/vitest-isolated-database-cases.mts'
-import { runIsolatedDatabaseCase } from '../../../../test-helpers/vitest-isolated-database-case.mts'
-
 const createdBatchIds: string[] = []
 
 describe('bedrock embeddings batch worker processor', () => {
@@ -51,10 +48,6 @@ describe('bedrock embeddings batch worker processor', () => {
   })
 
   it('reconciles a cached topic even when Bedrock creation is saturated', async () => {
-    if (getIsolatedDatabaseCaseMode('embedding-reconciliation-router') === 'parent') {
-      await runIsolatedDatabaseCase('embedding-reconciliation-router')
-      return
-    }
     await blockBatchCreation()
     const user = await createTestUserDirect()
     const suffix = randomUUID().slice(0, 8)
@@ -63,10 +56,21 @@ describe('bedrock embeddings batch worker processor', () => {
       slug: `reconciliation-router-${suffix}`,
       createdById: user.id,
     })
+    const foreignTopicId = await insertTestTopic({
+      name: `Reconciliation Router Foreign ${suffix}`,
+      slug: `reconciliation-router-foreign-${suffix}`,
+      createdById: user.id,
+    })
     const hash = randomBytes(32)
+    const foreignHash = randomBytes(32)
     const embedding = new Array<number>(1024).fill(0.25)
+    const foreignEmbedding = new Array<number>(1024).fill(0.5)
     await setTopicEmbeddingContentSha256(topicId, hash)
-    await insertTestEmbeddings([{ content_sha256: hash, embedding }])
+    await setTopicEmbeddingContentSha256(foreignTopicId, foreignHash)
+    await insertTestEmbeddings([
+      { content_sha256: hash, embedding },
+      { content_sha256: foreignHash, embedding: foreignEmbedding },
+    ])
     const before = decodeUuidCursor(
       encodeUuidCursorBefore(topicId),
       isSimpleCursor,
@@ -77,16 +81,19 @@ describe('bedrock embeddings batch worker processor', () => {
     const result = (await processBedrockEmbeddingsBatchJob(
       makeJob('reconcile_existing', { entityType: 'topics', after }, 'reconciliation'),
       {} as Worker,
+      { entityIds: [topicId] },
     )) as { updatedIds: string[]; scannedCount: number }
-    expect(result.updatedIds).toContain(topicId)
-    expect(result.scannedCount).toBeGreaterThanOrEqual(1)
-    expect(result.scannedCount).toBeLessThanOrEqual(100)
+    expect(result.updatedIds).toEqual([topicId])
+    expect(result.scannedCount).toBe(1)
     await expect(getTopicEmbeddingData(topicId)).resolves.toMatchObject({
       bedrock_nova_multimodal_v1_input_sha256: hash,
       bedrock_nova_multimodal_v1_embedding: embedding,
       bedrock_nova_multimodal_v1_embedding_created_at: expect.any(Date),
     })
-  }, 240_000)
+    await expect(getTopicEmbeddingData(foreignTopicId)).resolves.toMatchObject({
+      bedrock_nova_multimodal_v1_input_sha256: null,
+    })
+  })
 
   it('rejects malformed reconciliation payloads and scoped cursors unrecoverably', async () => {
     for (const data of [

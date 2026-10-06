@@ -23,6 +23,7 @@ export async function processReconciliationPage<TPage extends ReconciliationPage
 export function processExistingEmbeddingReconciliation(
   entityType: ReconciliationEntityType,
   after?: string,
+  ids?: readonly string[],
 ): Promise<ReconciliationPage> {
   const copy = {
     topics: copyExistingTopicEmbeddings,
@@ -33,7 +34,7 @@ export function processExistingEmbeddingReconciliation(
     enqueueReconcileExistingEmbeddings(entityType, cursor)
   return processReconciliationPage(
     after,
-    cursor => copy(cursor === undefined ? {} : { after: cursor }),
+    cursor => copy({ ...(cursor === undefined ? {} : { after: cursor }), ids }),
     enqueueContinuation,
   )
 }

@@ -5,8 +5,6 @@ import {
   insertTestStoryRssFeedItemsBatch,
   insertTestUrlDirect,
 } from '@voucha/test-helpers'
-import { runIsolatedDatabaseCase } from '../../../../test-helpers/vitest-isolated-database-case.mts'
-import { getIsolatedDatabaseCaseMode } from '../../../../test-helpers/vitest-isolated-database-cases.mts'
 import { createStoryPost } from '../story-posts.mts'
 import { reconcileStoryPostRelatedUrlProjection } from '../story-post-related-url-projection.mts'
 import { upsertSystemUser } from '@services/users/system-users'
@@ -17,20 +15,18 @@ import {
 
 describe('story post related URL projection fairness', () => {
   it('rotates dispatcher claims across pending posts', async () => {
-    if (getIsolatedDatabaseCaseMode('story-projection-dispatcher-fairness') === 'parent') {
-      await runIsolatedDatabaseCase('story-projection-dispatcher-fairness')
-      return
-    }
     await upsertSystemUser('story-teller')
-    const postIds = new Set([
+    const ownedPostIds = [
       await createPendingProjectionPost('first'),
       await createPendingProjectionPost('second'),
-    ])
+    ]
+    const foreignPostId = await createPendingProjectionPost('foreign')
     const claimedPostIds: string[] = []
-    for (let iteration = 0; claimedPostIds.length < 4 && iteration < 100; iteration += 1) {
-      const work = await claimStoryPostRelatedUrlProjectionWork()
+    for (let iteration = 0; claimedPostIds.length < 4 && iteration < 8; iteration += 1) {
+      const work = await claimStoryPostRelatedUrlProjectionWork(undefined, ownedPostIds)
       if (!work) throw new Error('Expected a pending projection claim')
-      if (postIds.has(work.post_id)) claimedPostIds.push(work.post_id)
+      expect(ownedPostIds).toContain(work.post_id)
+      claimedPostIds.push(work.post_id)
       await releaseStoryPostRelatedUrlProjectionWork(work)
     }
 
@@ -40,9 +36,12 @@ describe('story post related URL projection fairness', () => {
       claimedPostIds[0],
       claimedPostIds[1],
     ])
-    expect(new Set(claimedPostIds)).toEqual(postIds)
-    await Promise.all([...postIds].map(drainProjection))
-  }, 240_000)
+    expect(new Set(claimedPostIds)).toEqual(new Set(ownedPostIds))
+    const foreign = await claimStoryPostRelatedUrlProjectionWork(foreignPostId)
+    expect(foreign?.post_id).toBe(foreignPostId)
+    if (foreign) await releaseStoryPostRelatedUrlProjectionWork(foreign)
+    await Promise.all([...ownedPostIds, foreignPostId].map(drainProjection))
+  })
 })
 
 async function createPendingProjectionPost(label: string): Promise<string> {

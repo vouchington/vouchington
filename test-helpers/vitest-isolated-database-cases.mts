@@ -13,21 +13,6 @@ const isolatedDatabaseCases = {
   ...generalIsolatedCases,
   ...copyrightMcpIsolatedCases,
   ...cursorIsolatedCases,
-  'staging-rss-feed-publisher-type': {
-    file: 'backend/data-stores/psql/config-driven/__tests__/0080-00-01a-staging-rss-feeds.bootstrap.test.mts',
-    fullName:
-      'staging RSS feed seed on a fresh bootstrap > gives the Cloudflare topic its blog publisher type in one bootstrap pass',
-  },
-  'embedding-creation-fairness': {
-    file: 'backend/workers/bedrock-embeddings-batch/processors/creation.real-glide.mock.test.mts',
-    fullName:
-      'same-job embedding continuation > yields an image capacity delay to text work while preserving the global creation cap',
-  },
-  'embedding-reconciliation-router': {
-    file: 'backend/workers/bedrock-embeddings-batch/__tests__/worker-router.test.mts',
-    fullName:
-      'bedrock embeddings batch worker processor > reconciles a cached topic even when Bedrock creation is saturated',
-  },
 } as const satisfies Record<string, IsolatedDatabaseCaseDefinition>
 export type IsolatedDatabaseCaseId = keyof typeof isolatedDatabaseCases
 

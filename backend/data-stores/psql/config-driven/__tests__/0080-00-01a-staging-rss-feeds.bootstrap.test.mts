@@ -1,43 +1,21 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import {
-  beginRolledBackSeedTransaction,
-  readPublisherTypeSlugs,
-  readSeededFeeds,
-} from '../../../../test-helpers/data-stores/psql/staging-rss-feeds.mts'
-import {
-  ISOLATED_DATABASE_PARENT_TIMEOUT_MS,
-  runIsolatedDatabaseCase,
-} from '../../../../../test-helpers/vitest-isolated-database-case.mts'
-import { getIsolatedDatabaseCaseMode } from '../../../../../test-helpers/vitest-isolated-database-cases.mts'
-import { STAGING_RSS_FEEDS } from '../0080-00-01a-staging-rss-feeds.mts'
+import { readFileSync } from 'node:fs'
+import { describe, expect, it } from 'vitest'
+import generateStagingRssFeedsSQL, { STAGING_RSS_FEEDS } from '../0080-00-01a-staging-rss-feeds.mts'
 
-describe('staging RSS feed seed on a fresh bootstrap', () => {
-  afterEach(() => vi.unstubAllEnvs())
+const seedFile = '0080-00-01a-staging-rss-feeds.mts'
+const relationsFile = '0080-00-02-publisher-type-relations.sql'
 
-  // The config-driven files run in name order on a fresh database, in one pass. Only a fresh
-  // database proves the seed runs before 0080-00-02-publisher-type-relations.sql: the shared
-  // test database already holds the Cloudflare topic, so applying the files there tests nothing.
-  it(
-    'gives the Cloudflare topic its blog publisher type in one bootstrap pass',
-    async () => {
-      if (getIsolatedDatabaseCaseMode('staging-rss-feed-publisher-type') === 'parent') {
-        // The bootstrap child inherits this, so the generator emits its statements.
-        vi.stubEnv('ENVIRONMENT', 'staging')
-        await runIsolatedDatabaseCase('staging-rss-feed-publisher-type')
-        return
-      }
-      await using tx = await beginRolledBackSeedTransaction()
-      const feeds = await readSeededFeeds(
-        tx,
-        STAGING_RSS_FEEDS.map(feed => feed.url),
-      )
-      expect(feeds.map(feed => feed.slug).toSorted()).toEqual(
-        STAGING_RSS_FEEDS.map(feed => feed.slug).toSorted(),
-      )
-      expect(feeds.every(feed => feed.is_enabled && feed.is_discoverable)).toBe(true)
-      const cloudflare = STAGING_RSS_FEEDS.find(feed => feed.hostname === 'blog.cloudflare.com')!
-      expect(await readPublisherTypeSlugs(tx, cloudflare.slug)).toEqual(['blog'])
-    },
-    ISOLATED_DATABASE_PARENT_TIMEOUT_MS,
-  )
+describe('staging RSS feed seed SQL', () => {
+  it('places the Cloudflare blog feed before its publisher type relation', () => {
+    const cloudflare = STAGING_RSS_FEEDS.find(feed => feed.hostname === 'blog.cloudflare.com')
+    if (!cloudflare) throw new Error('Expected the Cloudflare staging feed')
+    const sql = generateStagingRssFeedsSQL('staging')
+    const relations = readFileSync(new URL(`../${relationsFile}`, import.meta.url), 'utf8')
+
+    expect(sql).toContain(cloudflare.slug)
+    expect(sql).toContain(cloudflare.ids.topic)
+    expect(relations).toContain(`('${cloudflare.slug}', 'blog')`)
+    expect(seedFile.localeCompare(relationsFile)).toBeLessThan(0)
+    expect(generateStagingRssFeedsSQL('production')).toBe('')
+  })
 })

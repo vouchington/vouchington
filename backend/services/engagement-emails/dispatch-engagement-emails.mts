@@ -60,19 +60,23 @@ type RssFeedInput = {
   }
 }
 
-export async function dispatchEngagementEmails(): Promise<void> {
+export async function dispatchEngagementEmails(userIds?: readonly string[]): Promise<void> {
+  if (userIds?.length === 0) return
   const dispatchStartedAt = new Date()
-  await dispatchFollowTopicsEmails()
-  await dispatchReferralAndNewsSourceEmails(dispatchStartedAt)
+  await dispatchFollowTopicsEmails(userIds)
+  await dispatchReferralAndNewsSourceEmails(dispatchStartedAt, userIds)
 }
 
-async function dispatchReferralAndNewsSourceEmails(dispatchStartedAt: Date): Promise<void> {
-  await dispatchPostReferralLinkEmails(dispatchStartedAt)
-  await dispatchFollowNewsSourcesEmails(dispatchStartedAt)
+async function dispatchReferralAndNewsSourceEmails(
+  dispatchStartedAt: Date,
+  userIds?: readonly string[],
+): Promise<void> {
+  await dispatchPostReferralLinkEmails(dispatchStartedAt, userIds)
+  await dispatchFollowNewsSourcesEmails(dispatchStartedAt, userIds)
 }
 
-async function dispatchFollowTopicsEmails(): Promise<void> {
-  const recipients = await getFollowTopicsRecipients()
+async function dispatchFollowTopicsEmails(userIds?: readonly string[]): Promise<void> {
+  const recipients = await getFollowTopicsRecipients(userIds)
   await pMap(recipients, dispatchFollowTopicsEmail, { concurrency: 1, stopOnError: false })
 }
 
@@ -113,8 +117,11 @@ async function dispatchFollowTopicsEmail(recipient: EngagementRecipientRow): Pro
   }
 }
 
-async function dispatchPostReferralLinkEmails(dispatchStartedAt: Date): Promise<void> {
-  const recipients = await getPostReferralLinkRecipients(dispatchStartedAt)
+async function dispatchPostReferralLinkEmails(
+  dispatchStartedAt: Date,
+  userIds?: readonly string[],
+): Promise<void> {
+  const recipients = await getPostReferralLinkRecipients(dispatchStartedAt, userIds)
   if (recipients.length === 0) return
 
   const programs = await getTrendingReferralPrograms({ limit: 5 })
@@ -162,8 +169,11 @@ async function dispatchPostReferralLinkEmail(
   }
 }
 
-async function dispatchFollowNewsSourcesEmails(dispatchStartedAt: Date): Promise<void> {
-  const recipients = await getFollowNewsSourcesRecipients(dispatchStartedAt)
+async function dispatchFollowNewsSourcesEmails(
+  dispatchStartedAt: Date,
+  userIds?: readonly string[],
+): Promise<void> {
+  const recipients = await getFollowNewsSourcesRecipients(dispatchStartedAt, userIds)
   await pMap(recipients, dispatchFollowNewsSourcesEmail, {
     concurrency: 1,
     stopOnError: false,
@@ -281,7 +291,9 @@ export function buildFollowNewsSourceItems(
     .filter((item): item is NonNullable<typeof item> => item != null)
 }
 
-async function getFollowTopicsRecipients(): Promise<EngagementRecipientRow[]> {
+async function getFollowTopicsRecipients(
+  userIds?: readonly string[],
+): Promise<EngagementRecipientRow[]> {
   const USERS_ENGAGEMENT_CLAIM_HOURS = getUsersWorkLimit('engagement_claim_hours')
   const WORK_PAGE_SIZE = getEngagementEmailsWorkLimit('dispatch_batch_size')
   const { rows } = await read(sql`/* getFollowTopicsRecipients */
@@ -313,6 +325,7 @@ async function getFollowTopicsRecipients(): Promise<EngagementRecipientRow[]> {
             OR s.claimed_at >= CURRENT_TIMESTAMP - ${USERS_ENGAGEMENT_CLAIM_HOURS}::integer * INTERVAL '1 hour'
           )
       )
+      AND (${userIds ?? null}::uuid[] IS NULL OR u.id = ANY(${userIds ?? null}::uuid[]))
     ORDER BY (
       SELECT s.claimed_at
       FROM user_engagement_email_sends s
@@ -325,6 +338,7 @@ async function getFollowTopicsRecipients(): Promise<EngagementRecipientRow[]> {
 
 async function getPostReferralLinkRecipients(
   dispatchStartedAt: Date,
+  userIds?: readonly string[],
 ): Promise<EngagementRecipientRow[]> {
   const USERS_ENGAGEMENT_CLAIM_HOURS = getUsersWorkLimit('engagement_claim_hours')
   const WORK_PAGE_SIZE = getEngagementEmailsWorkLimit('dispatch_batch_size')
@@ -365,6 +379,7 @@ async function getPostReferralLinkRecipients(
             OR s.claimed_at >= CURRENT_TIMESTAMP - ${USERS_ENGAGEMENT_CLAIM_HOURS}::integer * INTERVAL '1 hour'
           )
       )
+      AND (${userIds ?? null}::uuid[] IS NULL OR u.id = ANY(${userIds ?? null}::uuid[]))
     ORDER BY (
       SELECT s.claimed_at
       FROM user_engagement_email_sends s
@@ -377,6 +392,7 @@ async function getPostReferralLinkRecipients(
 
 async function getFollowNewsSourcesRecipients(
   dispatchStartedAt: Date,
+  userIds?: readonly string[],
 ): Promise<EngagementRecipientRow[]> {
   const USERS_ENGAGEMENT_CLAIM_HOURS = getUsersWorkLimit('engagement_claim_hours')
   const WORK_PAGE_SIZE = getEngagementEmailsWorkLimit('dispatch_batch_size')
@@ -416,6 +432,7 @@ async function getFollowNewsSourcesRecipients(
             OR s.claimed_at >= CURRENT_TIMESTAMP - ${USERS_ENGAGEMENT_CLAIM_HOURS}::integer * INTERVAL '1 hour'
           )
       )
+      AND (${userIds ?? null}::uuid[] IS NULL OR u.id = ANY(${userIds ?? null}::uuid[]))
     ORDER BY (
       SELECT s.claimed_at
       FROM user_engagement_email_sends s
