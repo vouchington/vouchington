@@ -24,6 +24,9 @@ Reporter policy:
 - `vitest.config.mts` owns the CI reporter list: `minimal`, configured `github-actions`, `junit`,
   `hanging-process`, and the CI-only teardown-overrun reporter, which prints process and
   active-resource context when Vitest's exit watchdog fires at `teardownTimeout`.
+  `tests-backend-unit.yml` also sets `VITEST_FILE_PROGRESS=1`, which appends a reporter that
+  prints each test file when a worker starts it and when it finishes. The `minimal` reporter
+  prints nothing per file, so a shard that dies would otherwise leave no file in the log.
 - The `github-actions` reporter must keep job summaries disabled and file links configured from GitHub environment variables.
 - `tests-backend-unit.yml` uploads each shard's JUnit report as the one-day `backend-junit-shard-N`
   artifact, so per-file durations can be aggregated across shards when auditing shard size. Vitest

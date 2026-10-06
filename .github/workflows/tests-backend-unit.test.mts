@@ -192,6 +192,30 @@ describe('backend uncredentialed Docker test workflow', () => {
     expect(jobSection('backend-tests')).toContain('IMAGE_ORIGIN: http://127.0.0.1:3100')
   })
 
+  it('streams each file start and a background memory and disk sample on the test step log', () => {
+    const runStep = stepsWorkflow.jobs?.['backend-tests']?.steps?.find(
+      step => step.name === 'Run backend tests',
+    )
+    const script = runBackendTestsScript ?? ''
+    const sampleAt = script.indexOf('sample_runner_resources')
+    const vitestAt = script.indexOf('pnpm exec ./ci/with-node-test-options vitest run --bail=3')
+
+    expect(runStep?.env?.VITEST_CI_REPORTERS).toBe('run')
+    expect(runStep?.env?.VITEST_FILE_PROGRESS).toBe('1')
+    expect(script).toContain("resource_prefix='[backend-unit-resources]'")
+    expect(script).toContain('printf \'%s %s\\n\' "$resource_prefix" "$line"')
+    expect(script).toContain('free -m')
+    expect(script).toContain('df -h "$GITHUB_WORKSPACE"')
+    expect(script).toContain('df -h -t tmpfs')
+    expect(script).toContain('ps -eo pid,rss,pmem,comm --sort=-rss')
+    expect(script).toContain('sleep 15')
+    expect(script).toContain(') &')
+    expect(script).toContain('trap stop_resource_sampler EXIT')
+    expect(sampleAt).toBeGreaterThanOrEqual(0)
+    expect(vitestAt).toBeGreaterThan(sampleAt)
+    expect(script).not.toContain('--retry')
+  })
+
   it('runs the shard directly, with no self-hosted-era diagnostics or heavy-slot wrapper', () => {
     const backendJob = jobSection('backend-tests')
     const steps = stepsWorkflow.jobs?.['backend-tests']?.steps ?? []

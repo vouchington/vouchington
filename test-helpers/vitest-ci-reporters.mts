@@ -1,5 +1,6 @@
 import path, { relative } from 'node:path'
 import type { InlineConfig } from 'vitest/node'
+import { createVitestFileProgressReporter } from './vitest-file-progress-reporter.mts'
 import { createVitestTeardownOverrunReporter } from './vitest-teardown-overrun-reporter.mts'
 import { createVitestStorybookProgressReporter } from './vitest-storybook-progress-reporter.mts'
 
@@ -57,6 +58,7 @@ export function ciReporters(): VitestReporters | undefined {
         'junit',
         'hanging-process',
         createVitestTeardownOverrunReporter(),
+        ...(process.env.VITEST_FILE_PROGRESS === '1' ? [createVitestFileProgressReporter()] : []),
       ]
     default:
       throw new Error(
