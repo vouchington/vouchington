@@ -96,7 +96,6 @@ async function insertDsaStatementSubmission(
   await using transaction = await beginTransaction()
   const payload = await buildPayload(restrictionId, transaction)
   const { rows } = await transaction<{ id: string }>(sql`/* insertDsaStatementSubmission */
-    /* deadlock-safe: the SELECT reads one restriction row by its primary key */
     INSERT INTO copyright_dsa_statement_submissions (copyright_restriction_id, payload, available_at)
     SELECT restriction.id, ${JSON.stringify(payload)}::jsonb, CURRENT_TIMESTAMP
     FROM copyright_restrictions restriction

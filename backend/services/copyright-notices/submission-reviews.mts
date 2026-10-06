@@ -117,6 +117,7 @@ export async function reviewCopyrightAppeal(input: {
     WHERE target.copyright_notice_id = ${appeal.copyright_notice_id}
       AND target.id = ANY(${appeal.target_ids})
       AND restriction.lifted_at IS NULL
+    ORDER BY restriction.id
     FOR UPDATE OF restriction
   `)
   assert(

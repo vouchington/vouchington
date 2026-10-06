@@ -82,13 +82,13 @@ export async function applyReportAbusePenalty(
     // Insert penalty records for the detection-time reporter set. A reporter hard-deleted
     // since detection has already left the set (CASCADE), so one deleted account does not
     // fail the whole batch; ON CONFLICT skips users already penalized from this flag.
-    // no-mistakes-disable-next-line postgres-conflict-ordering: the target matches the partial unique index on (user_id, source_flag_id), but the rule only resolves the catalog's parenthesized predicate text
     const { rows: insertedRows } = await query(sql`/* applyReportAbusePenalty_insertPenalties */
       INSERT INTO report_abuse_penalties (user_id, reason, source_flag_id, created_by_id)
-      SELECT reporter.user_id, 'mass_report_campaign', ${flagId}::uuid, ${currentUserId}::uuid
+      SELECT reporter.user_id, 'mass_report_campaign', ${flagId}::uuid AS source_flag_id,
+        ${currentUserId}::uuid
       FROM report_integrity_flag_reporters reporter
       WHERE reporter.flag_id = ${flagId}
-      ORDER BY reporter.user_id
+      ORDER BY reporter.user_id, source_flag_id
       ON CONFLICT (user_id, source_flag_id)
         WHERE source_flag_id IS NOT NULL AND revoked_at IS NULL
       DO NOTHING

@@ -550,27 +550,28 @@ to select no executor calls. Migration-only rules and `postgres-sql-statement-po
 option.
 
 Those entries and configs also set `executorFactoryNames: [beginTransaction,
-beginBoundedTransaction]` and `executorTypeNames: [TransactionQuery, QueryExecutor]`, except the two
-`postgres-lock-ordering` entries (see the gaps below). Without the options `no-mistakes` finds executor
-calls only by the imported names `query`, `read`, and `write`, so SQL run through a transaction handle
-or an injected executor is invisible. With them it also scans:
+beginBoundedTransaction]` and `executorTypeNames: [TransactionQuery, QueryExecutor]`. Without the
+options `no-mistakes` finds executor calls only by the imported names `query`, `read`, and `write`, so
+SQL run through a transaction handle or an injected executor is invisible. With them it also scans:
 
 - a local bound to a configured factory call, such as `await using query = await beginTransaction()`,
   within the declaring block; and
 - a parameter typed with a configured type, including a destructured parameter whose type literal
   names the executor, within the declaring function.
 
-Known gaps, tracked in [#2029](https://github.com/vouchington/vouchington/issues/2029):
+Known gaps:
 
-- `postgres-lock-ordering` does not set the options yet. It reports every comma-separated
-  `FOR UPDATE OF a, b` list as unparseable, and most locking statements that handles bring into scope
-  use that form. Enabling it waits for the upstream parser fix; the statements stay as written until
-  then.
 - Factory and type imports match `importSpecifier` and its subpaths, so a parameter typed with a
   `TransactionQuery` imported from `@data-stores/psql/types` is scanned. An import through a
   relative path is not matched and is not scanned by any rule.
 - A destructured factory result (`const { query } = await beginTransaction()`) and a name shadowed
   inside the scope are not tracked. The repository has no such site today.
+
+The two `postgres-lock-ordering` entries split the backend by catalog coverage. The catalog entry
+covers production code and also requires deterministic ordering. The entry without a catalog scans
+only the paths the catalog entry excludes (fixtures, scripts, seeds), because without a catalog every
+`IN`/`ANY` filter reads as multi-row and the entry would fail closed on locks the catalog proves
+single-row. `ci/postgres-ordering-config.test.mts` fails if the two scopes overlap.
 
 Shapes that satisfy `postgres-conflict-ordering` for handle and typed-executor SQL:
 
@@ -579,14 +580,12 @@ Shapes that satisfy `postgres-conflict-ordering` for handle and typed-executor S
   select alias for it, and a positional `ORDER BY 1, 2` maps to the select list.
 - A multi-row `DO NOTHING` names its conflict target. The target lists the arbiter columns the
   `INSERT` leaves out; they take their defaults, so the `ORDER BY` need not mention them.
-- The rule resolves a partial-index target only when the predicate matches the catalog's
-  parenthesized text. A statement that writes the predicate plainly carries a
-  `no-mistakes-disable-next-line postgres-conflict-ordering` with the reason until upstream
-  normalizes it.
-- A statement that provably touches one row (no `FROM`, or one primary-key lookup) carries
-  `/* deadlock-safe: <reason> */` inside the SQL. `postgres-conflict-ordering` reports the executor
-  call line, so a `no-mistakes-disable-next-line` goes above the call;
-  `postgres-required-predicates` reports the line of the relation it checks.
+- A partial-index target and an expression key such as `lower(category_text)` resolve against the
+  catalog as written; neither needs a directive.
+- A source that provably yields one row (no `FROM`, one catalog unique-key lookup pinned by literals
+  or bound parameters, or `LIMIT 1`) needs no `ORDER BY` and no directive.
+- `postgres-conflict-ordering` reports the executor call line, so a `no-mistakes-disable-next-line`
+  goes above the call; `postgres-required-predicates` reports the line of the relation it checks.
 
 PostgreSQL final-state inventories in `repo-file-policy` load the tracked, versioned
 [`schema.json`](../../../../backend/data-stores/psql/schema-snapshot/schema.json) once and fail closed when it

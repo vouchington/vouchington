@@ -65,7 +65,7 @@ describe('PostgreSQL ordering guard config', () => {
         name: 'production PostgreSQL locks use catalog key prefixes',
         rule: 'postgres-lock-ordering',
         scope: 'repository',
-        options: expectedOptions,
+        options: { ...expectedOptions, ...executorOptions },
       },
     ])
 
@@ -87,16 +87,13 @@ describe('PostgreSQL ordering guard config', () => {
     expect(directiveInventory).toEqual([
       'backend/data-stores/psql/config-driven/0503-00-00-youtube-rss-unreliable-status-codes.sql:1',
       'backend/services/bedrock-embeddings-batch/orchestrator/reconcile-existing.mts:1',
-      'backend/services/bluesky-accounts/native-callback-failure.mts:1',
+      'backend/services/bedrock-embeddings-batch/orchestrator/save.mts:1',
       'backend/services/bluesky-accounts/native-completion-persistence.mts:1',
       'backend/services/communities/list-items/add.mts:1',
-      'backend/services/copyright-notices/dsa-statement-submission-sweep.mts:1',
       'backend/services/crawl-chunks/create.mts:1',
       'backend/services/identity-verification/attempts.mts:1',
       'backend/services/individuals-households/households/spending-categories.mts:1',
       'backend/services/lists/items.mts:1',
-      'backend/services/memberships/ineligible-stripe-purchase-reversal-execution.mts:1',
-      'backend/services/memberships/refunds/refund-event-receipt.mts:1',
       'backend/services/notifications/create-critical-moderation-alert-notification.mts:1',
       'backend/services/notifications/create-moderation-report-reviewed-notification.mts:1',
       'backend/services/notifications/reconcile-post-writes.mts:1',
@@ -104,9 +101,36 @@ describe('PostgreSQL ordering guard config', () => {
       'backend/services/notifications/reconcile-rss-feed-item-writes.mts:1',
       'backend/services/notifications/reconcile-rss-feed-item.mts:1',
       'backend/services/post-publication/prepare-alias-identities.mts:1',
+      'backend/services/rss-feed-items/upsert-write-locks.mts:1',
       'backend/services/stripe/membership-provider-facts/context.mts:1',
       'backend/services/topic-recommendations/update-topic-recommendation.mts:1',
       'backend/services/vote-integrity/create-flag.mts:3',
     ])
+  })
+
+  it('keeps the no-catalog lock entry off the files the catalog entry scans', () => {
+    const config = parseYaml(readRepoFile('.no-mistakes.yml')) as {
+      rules: Array<{ name: string; options?: Record<string, unknown>; rule: string }>
+    }
+    const [plainLocks, catalogLocks] = ['multi-row FOR UPDATE locks', 'production PostgreSQL locks']
+      .map(prefix =>
+        config.rules.find(
+          rule => rule.rule === 'postgres-lock-ordering' && rule.name.startsWith(prefix),
+        ),
+      )
+      .map(rule => rule?.options as { include: string[]; exclude: string[] })
+    // Without a catalog every IN/ANY filter reads as multi-row, so the plain entry fails closed on
+    // locks the catalog entry proves single-row. It scans only what the catalog entry excludes.
+    const scoped = (options: { include: string[]; exclude: string[] }) =>
+      trackedFiles(repoRoot, ['backend']).filter(
+        path =>
+          options.include.some(pattern => matchesGlob(path, pattern)) &&
+          !options.exclude.some(pattern => matchesGlob(path, pattern)),
+      )
+    const plainPaths = scoped(plainLocks!)
+    const catalogPaths = new Set(scoped(catalogLocks!))
+
+    expect(plainPaths.length).toBeGreaterThan(0)
+    expect(plainPaths.filter(path => catalogPaths.has(path))).toEqual([])
   })
 })
