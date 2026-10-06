@@ -30,7 +30,7 @@ describe('private participant statement projection', () => {
       expect.objectContaining({
         delivery_kind: 'poster_restriction_notice',
         sent_at: null,
-        text: expect.stringContaining('globally'),
+        text: expect.stringContaining('worldwide'),
       }),
     ])
     expect((await getCopyrightParticipantNoticeDetail(caseId, claimant))?.statements).toEqual([
