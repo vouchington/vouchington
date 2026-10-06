@@ -1,5 +1,6 @@
 import app from '../../app.mts'
 import { apiQuery } from '../../response-contract.mts'
+import { buildCommunityListItemsOutput } from './list-items-output.mts'
 import { communityPageQuery, communityPageQueryInput } from './query-contracts-helpers.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import createHttpError from 'http-errors'
@@ -19,7 +20,6 @@ import {
 } from '@services/communities'
 import { attachTopicProvenance } from '@services/content-provenance'
 import { getTopicByAnyCachedBatch, getTopicMetricsByAnyCachedBatch } from '@services/entity-fetch'
-import { indexById } from '@modules/utils'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 
 app
@@ -44,34 +44,17 @@ app
     })
 
     const result = await searchCommunityListItems(community.id, 'topic', { limit, after })
-    const entityIds = result.results.map(item => item.entity_id)
 
     if (!currentUser) {
       ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
     }
 
-    const output: Record<string, unknown> = {
-      results: result.results.map(item => ({
-        __entity_type: 'community_list_item' as const,
-        id: item.id,
-      })),
-      page_info: result.page_info,
-      community_list_items: indexById(result.results),
-      topics: getTopicByAnyCachedBatch(entityIds)
-        .then(topics => attachTopicProvenance(topics, currentUser))
-        .then(topics =>
-          topics.reduce<Record<string, unknown>>((acc, topic) => {
-            if (topic) acc[topic.id] = topic
-            return acc
-          }, {}),
-        ),
-      topics_metrics: getTopicMetricsByAnyCachedBatch(entityIds).then(metrics =>
-        metrics.reduce<Record<string, unknown>>((acc, metric) => {
-          if (metric) acc[metric.id] = metric
-          return acc
-        }, {}),
-      ),
-    }
+    const output = buildCommunityListItemsOutput(result, {
+      name: 'topics',
+      getEntities: ids =>
+        getTopicByAnyCachedBatch(ids).then(topics => attachTopicProvenance(topics, currentUser)),
+      getMetrics: getTopicMetricsByAnyCachedBatch,
+    })
 
     ctx.setType('json')
     await ctx.pipeline(streamJsonObject(output))

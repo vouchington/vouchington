@@ -1,5 +1,6 @@
 import app from '../../app.mts'
 import { apiQuery } from '../../response-contract.mts'
+import { buildCommunityListItemsOutput } from './list-items-output.mts'
 import { communityPageQuery, communityPageQueryInput } from './query-contracts-helpers.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import {
@@ -18,7 +19,6 @@ import {
 } from '@services/communities'
 import { attachPostProvenance } from '@services/content-provenance'
 import { getPostByAnyCachedBatch, getPostMetricsByAnyCachedBatch } from '@services/entity-fetch'
-import { indexById } from '@modules/utils'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 
 app
@@ -47,34 +47,17 @@ app
       after,
       currentUser,
     })
-    const entityIds = result.results.map(item => item.entity_id)
 
     if (!currentUser) {
       ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
     }
 
-    const output: Record<string, unknown> = {
-      results: result.results.map(item => ({
-        __entity_type: 'community_list_item' as const,
-        id: item.id,
-      })),
-      page_info: result.page_info,
-      community_list_items: indexById(result.results),
-      posts: getPostByAnyCachedBatch(entityIds)
-        .then(posts => attachPostProvenance(posts, currentUser))
-        .then(posts =>
-          posts.reduce<Record<string, unknown>>((acc, post) => {
-            if (post) acc[post.id] = post
-            return acc
-          }, {}),
-        ),
-      posts_metrics: getPostMetricsByAnyCachedBatch(entityIds).then(metrics =>
-        metrics.reduce<Record<string, unknown>>((acc, metric) => {
-          if (metric) acc[metric.id] = metric
-          return acc
-        }, {}),
-      ),
-    }
+    const output = buildCommunityListItemsOutput(result, {
+      name: 'posts',
+      getEntities: ids =>
+        getPostByAnyCachedBatch(ids).then(posts => attachPostProvenance(posts, currentUser)),
+      getMetrics: getPostMetricsByAnyCachedBatch,
+    })
 
     ctx.setType('json')
     await ctx.pipeline(streamJsonObject(output))

@@ -30,7 +30,10 @@ export async function getCommunityProvenanceFacts(
   return mapProvenanceFacts(rows)
 }
 
-/** The creation channel and OAuth client of already-visible topics, in one query. */
+/**
+ * The creation channel and OAuth client of already-visible topics, in one query. The cached
+ * topic read only returns live canonical topics, so a deleted or merged row is never labeled.
+ */
 export async function getTopicProvenanceFacts(
   topicIds: string[],
   options: QueryOptions = {},
@@ -41,7 +44,9 @@ export async function getTopicProvenanceFacts(
     SELECT e.id, e.created_via, c.client_id, c.client_name, c.metadata_url, c.verified_at
     FROM topics e
     LEFT JOIN oauth_clients c ON c.id = e.created_via_oauth_client_id
-    WHERE e.id = ANY($1::uuid[])`,
+    WHERE e.id = ANY($1::uuid[])
+      AND e.deleted_at IS NULL
+      AND e.merged_into_topic_id IS NULL`,
     [topicIds],
     options,
   )
