@@ -15,6 +15,9 @@ const KEEP_NAMES = [
   // Same reasoning as web-build-timings-* above, for issue #51: a flaky test that fails then
   // passes on retry is exactly the case these diagnostics exist to capture.
   'playwright-test-results-shard-2',
+  // Per-shard backend JUnit reports are per-file duration evidence for shard-size audits; keep
+  // them for their one-day retention instead of sweeping them after a successful run.
+  'backend-junit-shard-2',
   'playwright-junit-shard-2',
   'playwright-credentialed-junit',
   'wrangler-logs-2',

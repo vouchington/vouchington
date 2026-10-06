@@ -5,7 +5,7 @@ import { parseFilesPerShardOverride, resolveShardTotalFromSuiteCount } from './s
 
 describe('resolveShardTotal', () => {
   it('derives a capped total from the live file-count suite', () => {
-    expect(resolveShardTotalFromSuiteCount('test-backend-unit', 351)).toBe(2)
+    expect(resolveShardTotalFromSuiteCount('test-backend-unit', 251)).toBe(2)
     expect(resolveShardTotalFromSuiteCount('test-web-api', 100_000)).toBe(GITHUB_MATRIX_MAX_JOBS)
   })
 

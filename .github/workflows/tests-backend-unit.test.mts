@@ -8,7 +8,14 @@ const stepsWorkflow = load(workflow) as {
   jobs?: Record<
     string,
     {
-      steps?: Array<{ env?: Record<string, string>; name?: string; run?: string }>
+      steps?: Array<{
+        env?: Record<string, string>
+        if?: string
+        name?: string
+        run?: string
+        uses?: string
+        with?: Record<string, string | number | boolean>
+      }>
     }
   >
 }
@@ -128,6 +135,24 @@ describe('backend uncredentialed Docker test workflow', () => {
     expect(backendJob).not.toContain(deletedTestsRoleVariable)
     expect(backendJob).not.toContain('Configure AWS credentials')
     expect(backendJob).not.toContain('OPENAI_API_KEY')
+  })
+
+  it('uploads each shard JUnit report for per-file timing even when the shard fails', () => {
+    const steps = stepsWorkflow.jobs?.['backend-tests']?.steps ?? []
+    const runIndex = steps.findIndex(step => step.name === 'Run backend tests')
+    const uploadIndex = steps.findIndex(step => step.name?.endsWith('JUnit report'))
+    const upload = steps[uploadIndex]
+
+    expect(runIndex).toBeGreaterThanOrEqual(0)
+    expect(steps[runIndex]?.env?.['VITEST_JUNIT_OUTPUT_FILE']).toBe('test-report.junit.xml')
+    expect(uploadIndex).toBe(runIndex + 1)
+    expect(upload?.if).toBe('${{ !cancelled() }}')
+    expect(upload?.uses).toMatch(/^actions\/upload-artifact@[0-9a-f]{40}$/u)
+    expect(upload?.with).toMatchObject({
+      name: 'backend-junit-shard-${{ matrix.shard }}',
+      path: 'test-report.junit.xml',
+      'if-no-files-found': 'ignore',
+    })
   })
 
   it('keeps consumed full LCOV upload attempts best-effort', () => {

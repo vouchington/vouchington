@@ -21,7 +21,7 @@ numeric fallback:
 
 | CI job                 | Sizing policy                       |
 | ---------------------- | ----------------------------------- |
-| `test-backend-unit`    | One shard per 350 checked-out files |
+| `test-backend-unit`    | One shard per 250 checked-out files |
 | `test-web`             | One shard per 500 checked-out files |
 | `test-web-api`         | One shard per 64 checked-out files  |
 | `test-web-integration` | Fixed at one                        |

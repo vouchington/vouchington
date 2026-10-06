@@ -25,6 +25,9 @@ Reporter policy:
   `hanging-process`, and the CI-only teardown-overrun reporter, which prints process and
   active-resource context when Vitest's exit watchdog fires at `teardownTimeout`.
 - The `github-actions` reporter must keep job summaries disabled and file links configured from GitHub environment variables.
+- `tests-backend-unit.yml` uploads each shard's JUnit report as the one-day `backend-junit-shard-N`
+  artifact, so per-file durations can be aggregated across shards when auditing shard size. Vitest
+  writes the report when the run finishes, so a shard killed by its step timeout uploads nothing.
 
 Backend tests that launch a registered isolated database case keep that database boundary when
 coverage is enabled. Each child writes LCOV to its own directory, and `tests-backend-unit.yml`
