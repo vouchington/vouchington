@@ -43,7 +43,6 @@ const MODERATION_TRANSPARENCY_CATEGORIES = {
     'unlock',
     'pin',
     'unpin',
-    'tag',
     'suspend',
     'unsuspend',
     'remove_member',

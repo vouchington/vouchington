@@ -58,7 +58,6 @@ export const DOMAIN_FINITE_VALUES = {
         'unlock',
         'pin',
         'unpin',
-        'tag',
         'suspend',
         'unsuspend',
         'remove_member',

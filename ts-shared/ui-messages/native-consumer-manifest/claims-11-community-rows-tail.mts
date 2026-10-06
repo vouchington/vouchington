@@ -104,7 +104,6 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_11_COMMUNITY_ROWS_TAIL = [
     key: 'native.swift.communityRows.transparencyCategories.suspend',
     consumers: ['dotnet', 'swift'],
   },
-  { key: 'native.swift.communityRows.transparencyCategories.tag', consumers: ['dotnet', 'swift'] },
   {
     key: 'native.swift.communityRows.transparencyCategories.unlock',
     consumers: ['dotnet', 'swift'],

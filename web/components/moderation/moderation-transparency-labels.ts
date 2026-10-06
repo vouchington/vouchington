@@ -90,7 +90,6 @@ const CATEGORY_LABEL_KEYS: Record<string, MessageKey> = {
   spam_detection:
     'extracted.moderationAnalytics.moderationTransparencyPanel.spamDetection_6f4b2e95',
   suspend: 'extracted.moderationAnalytics.moderationTransparencyPanel.suspend_8c1d3a96',
-  tag: 'extracted.moderationAnalytics.moderationTransparencyPanel.tag_9d2e4b17',
   unlock: 'extracted.moderationAnalytics.moderationTransparencyPanel.unlock_ae3f5c28',
   unpin: 'extracted.moderationAnalytics.moderationTransparencyPanel.unpin_bf4a6d39',
   unsuspend: 'extracted.moderationAnalytics.moderationTransparencyPanel.unsuspend_c0b5e7a40',

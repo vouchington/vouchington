@@ -24,7 +24,7 @@ Each row stores an actor, action type, optional community/post/user/report/dispu
 - User/community enforcement: `ban`, `lift_ban`, `warn`, `lock`, `unlock`, `remove_member`, `change_role`
 - Restrictions: `activate_restriction`, `lift_restriction`
 - Reports: `resolve_report`, `dismiss_report`
-- Platform enforcement: `suspend`, `unsuspend`, `tag`
+- Platform enforcement: `suspend`, `unsuspend`
 
 See also: [Moderation System Users](./MODERATION-SYSTEM-USERS.md).
 
