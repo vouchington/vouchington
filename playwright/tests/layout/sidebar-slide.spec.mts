@@ -4,10 +4,40 @@
  * collapse transition — the outer wrapper shrinks to 0 width under overflow-hidden,
  * clipping the content, producing a slide effect identical to AsideColumn.
  */
-import { expect, test } from '../../helpers/test.mts'
+import { expect, test, type Locator } from '../../helpers/test.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 
 const VIEWPORT = { width: 1440, height: 900 }
+
+function waitForOpaqueSidebarCollapse(sidebarPeer: Locator) {
+  return sidebarPeer.evaluate(peer => {
+    const inner = peer.querySelector('[data-sidebar="sidebar"]')
+    return new Promise<void>((resolve, reject) => {
+      const sample = () => {
+        const opacity = inner === null ? null : window.getComputedStyle(inner).opacity
+        const outerWidth = parseFloat(window.getComputedStyle(peer).width)
+        const reason =
+          inner === null
+            ? 'sidebar inner not found'
+            : opacity !== '1'
+              ? `opacity dropped to ${opacity}`
+              : Number.isNaN(outerWidth)
+                ? 'outer not found'
+                : null
+        if (reason !== null) {
+          reject(new Error(reason))
+          return
+        }
+        if (outerWidth < 1) {
+          resolve()
+          return
+        }
+        requestAnimationFrame(sample)
+      }
+      sample()
+    })
+  })
+}
 
 test.describe('Sidebar slide animation', () => {
   test('sidebar inner content stays opaque while collapsing', async ({ page }) => {
@@ -25,25 +55,10 @@ test.describe('Sidebar slide animation', () => {
     const opacityBefore = await sidebarInner.evaluate(el => window.getComputedStyle(el).opacity)
     expect(opacityBefore).toBe('1')
 
-    // Trigger collapse; immediately check opacity is still '1' (no fade)
+    // Collapse samples opacity on animation frames until the outer width clips to 0.
+    const collapsed = waitForOpaqueSidebarCollapse(sidebarPeer)
     await page.keyboard.press('ControlOrMeta+/')
-
-    // Poll: inner opacity stays '1' throughout the transition. Once outer is 0px wide, the
-    // clipped content is invisible — but opacity itself must never drop below 1.
-    await expect
-      .poll(
-        async () => {
-          const opacity = await sidebarInner.evaluate(el => window.getComputedStyle(el).opacity)
-          if (opacity !== '1') return `FAIL: opacity dropped to ${opacity}`
-          const outerWidth = await sidebarPeer.evaluate(el =>
-            parseFloat(window.getComputedStyle(el).width),
-          )
-          if (Number.isNaN(outerWidth)) return 'FAIL: outer not found'
-          return outerWidth < 1 ? 'done' : 'waiting'
-        },
-        { timeout: 5000, intervals: [50, 100, 200] },
-      )
-      .toBe('done')
+    await collapsed
   })
 
   test('sidebar slides back open without opacity flash', async ({ page }) => {
@@ -53,20 +68,9 @@ test.describe('Sidebar slide animation', () => {
     const sidebarPeer = page.getByTestId('sidebar-peer')
     await expect(sidebarPeer).toHaveAttribute('data-state', 'expanded')
 
-    // Collapse first — same expect.poll pattern as the collapse test above
+    const collapsed = waitForOpaqueSidebarCollapse(sidebarPeer)
     await page.keyboard.press('ControlOrMeta+/')
-    await expect
-      .poll(
-        async () => {
-          const outerWidth = await sidebarPeer.evaluate(el =>
-            parseFloat(window.getComputedStyle(el).width),
-          )
-          if (Number.isNaN(outerWidth)) return 'FAIL: outer not found'
-          return outerWidth < 1 ? 'done' : 'waiting'
-        },
-        { timeout: 5000, intervals: [50, 100, 200] },
-      )
-      .toBe('done')
+    await collapsed
 
     // Re-open
     await page.keyboard.press('ControlOrMeta+/')

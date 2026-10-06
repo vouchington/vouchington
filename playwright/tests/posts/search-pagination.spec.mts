@@ -76,7 +76,7 @@ test.describe('Post search and pagination', () => {
 
       await scrollToLoadMore(page)
       await nextPageResponse
-      await expect.poll(() => cards.count()).toBeGreaterThan(initialCards)
+      await expect(cards.nth(initialCards)).toBeVisible()
     })
   })
 

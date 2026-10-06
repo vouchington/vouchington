@@ -134,8 +134,8 @@ test.describe('Reviews Page', () => {
 
     // Posts that were visible before should still be visible (not replaced) — the
     // falsifiable form of the regression this guards: if page 2 replaced page 1
-    // instead of appending, the count would drop instead of grow.
-    await expect.poll(() => cards.count()).toBeGreaterThan(initialCards)
+    // instead of appending, the next card would never attach.
+    await expect(cards.nth(initialCards)).toBeVisible()
   })
 })
 
