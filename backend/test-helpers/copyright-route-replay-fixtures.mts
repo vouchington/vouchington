@@ -7,7 +7,7 @@ import {
   readTestCopyrightActionIntentState,
 } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { processCopyrightActionIntent } from '../services/copyright-notices/index.mts'
-import { replayFailedMediaDeliveryRegistryRecords } from '@services/media-delivery-safety'
+import { replayFailedMediaDeliveryRegistryRecords } from '../services/media-delivery-safety/index.mts'
 import {
   createCopyrightReplayFixture,
   createFailedMediaDeliveryReplayFixture,
