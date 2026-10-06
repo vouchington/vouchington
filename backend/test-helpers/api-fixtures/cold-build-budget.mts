@@ -29,7 +29,7 @@ export const COLD_VIRTUAL_PROGRAM_TIMEOUT_MS = 15_000
 /**
  * Full OpenAPI document generation: builds the full backend program (registered-route catalog,
  * response/request/query contract discovery) and then walks every route to assemble the document
- * — strictly more work than COLD_BACKEND_PROGRAM_TIMEOUT_MS alone, plus (for the spec-validation
- * case) shelling out to `redocly lint`. The most expensive tier.
+ * — strictly more work than COLD_BACKEND_PROGRAM_TIMEOUT_MS alone. Retained internal runtime-schema
+ * generation still uses this tier; published documentation and Redoc validation are retired.
  */
 export const COLD_OPENAPI_BUILD_TIMEOUT_MS = 180_000

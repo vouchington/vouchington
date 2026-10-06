@@ -1,6 +1,5 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import type { OpenApiDocument } from 'vouchington-tooling/openapi-document'
 
 import { newExpectedParameters } from './query-contract-expected-parameters.mts'
 
@@ -232,17 +231,28 @@ const expectedParameters = {
   ...newExpectedParameters,
 } as const
 
-const document = JSON.parse(
-  readFileSync(new URL('../../../api-fixtures/v1/openapi.json', import.meta.url), 'utf8'),
-) as OpenApiDocument
+const bundle = JSON.parse(
+  readFileSync(new URL('../../../api-fixtures/v1/request-contracts.json', import.meta.url), 'utf8'),
+) as {
+  operations: Record<
+    string,
+    { query?: { properties: Record<string, Record<string, unknown>>; required?: string[] } }
+  >
+}
 const queryParameters = Object.fromEntries(
-  Object.entries(document.paths).flatMap(([route, pathItem]) =>
-    Object.entries(pathItem).flatMap(([method, operation]) => {
-      const parameters = operation.parameters?.filter(parameter => parameter.in === 'query') ?? []
-      return parameters.length
-        ? [[`${method.toUpperCase()}:${route.replace(/\{([^}]+)\}/g, ':$1')}`, parameters]]
-        : []
-    }),
+  Object.entries(bundle.operations).flatMap(([route, operation]) =>
+    operation.query
+      ? [
+          [
+            route,
+            Object.entries(operation.query.properties).map(([name, schema]) => ({
+              name,
+              schema,
+              required: operation.query!.required?.includes(name) ?? false,
+            })),
+          ],
+        ]
+      : [],
   ),
 )
 
@@ -267,8 +277,6 @@ describe('generated backend API query contracts', () => {
     })
     expect(parameter('GET:/api/v1/topics/compare', 'slugs')).toMatchObject({
       schema: { type: 'array' },
-      style: 'form',
-      explode: false,
     })
     expect(parameter('GET:/api/v1/referral-links', 'limit').schema).toMatchObject({
       type: 'integer',

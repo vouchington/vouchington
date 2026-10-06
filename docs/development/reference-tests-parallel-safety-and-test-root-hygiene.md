@@ -546,8 +546,8 @@ execution while allowing a watch rerun of the same file. The lifecycle rule requ
 independent module, and diagnostics are checked when that source is requested, so one expected
 failure case does not poison its siblings.
 The generic virtual discovery suites now live in `vouchington-tooling/api-contract-discovery`.
-Production Bluesky and Fediverse request-body spot checks belong to `openapi/write-openapi.test.mts`,
-which resolves them from the real OpenAPI document that file already builds and rejects missing or
+Production Bluesky and Fediverse request-body spot checks belong to `openapi/write-request-contracts.test.mts`,
+which resolves them from the executable request bundle that file already builds and rejects missing or
 unavailable bodies; do not add a second full backend-program load to the request inference suite.
 The scope-aware Oxlint `voucha/backend-contract-program-construction-location` rule keeps TypeScript
 compiler-host, program, and language-service factories owned by only `backend-program.mts` and
@@ -587,7 +587,7 @@ constants instead:
   `loadBackendProgram()`.
 - `COLD_VIRTUAL_PROGRAM_TIMEOUT_MS` — one `buildVirtualProgramMatrix()` string-source build for the
   test file.
-- `COLD_OPENAPI_BUILD_TIMEOUT_MS` — full OpenAPI document generation plus `redocly lint`.
+- `COLD_OPENAPI_BUILD_TIMEOUT_MS` — the retained internal OpenAPI builder used by request-contract generation; public-spec generation and Redoc validation are retired.
 
 Use the constant that matches what the test actually builds. A test that intentionally forces
 multiple full backend program builds multiplies `COLD_BACKEND_PROGRAM_TIMEOUT_MS` by its exact

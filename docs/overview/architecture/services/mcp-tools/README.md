@@ -34,9 +34,12 @@ keyed like `operations`, and a `components` map of every named type. `route-resp
 into a root `$defs`). `createGetMyEntityListTool` derives its `{ success, result }` schema from its
 single `meta.api` endpoint this way. A tool that reshapes the REST body, or has no REST twin, owns
 its schema, built from those components and the shapes in `output-schema-shapes.mts`, with a test
-that pins it to `openapi.json` where documented (`output-schema-pins.test.mts`).
-A route that documents its response inline has no contract; give it a named response type, run
-`pnpm run openapi:generate`, and then derive the tool's schema.
+that pins it to `request-contracts.json` where documented (`output-schema-pins.test.mts`).
+A route whose response schema is inline has no entry in `responses`; give it a named response type,
+run `pnpm run request-contracts:generate`, and then derive the tool's schema. The bundle's separate
+`adminResponses` section preserves the 87 staff inline and non-200 fallback schemas previously
+consumed from OpenAPI. Staff tools read this section directly; `operations`, `responses`, and
+`components` keep their existing semantics, and runtime API behavior is unchanged.
 
 **Normal failure results.** A lookup tool that returns a miss (`{ success: false, error }` or
 `{ found: false, error }`) rather than throwing must admit that shape, or the miss fails
@@ -48,7 +51,7 @@ tool without an `outputSchema`, with no list of exceptions.
 
 **Paged results.** Paged tools reuse their REST twin's parsers (`@services/search-params`, and
 `parse-pagination.mts` in `@services/trending-posts` and `@services/trending-topics`), so cursors
-and limits match REST, and return `PageInfo` as `page_info`. OpenAPI documents no
+and limits match REST, and return `PageInfo` as `page_info`. The generated request bundle declares no
 trending query parameters, so contract tests pin `after` and `limit`.
 
 ## Authorization

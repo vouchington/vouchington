@@ -28,8 +28,7 @@ diagnostic. A contract `422` names only the carrier (`Invalid request body` or `
 
 The four request types live in `email-intake-request-types.mts` beside the routes. The decision
 handlers share one body reader, so each declares its type with `apiRequestContract`; the compiler
-cannot see through the shared helper. The compiler extracts the schema from the types, so the OpenAPI
-document, the request-contract bundle, and the runtime check share one source. Compiler-built
+cannot see through the shared helper. The compiler extracts the schema from the types, so the request-contract bundle and the runtime check share one source. Compiler-built
 assertions in
 [`copyright-email-intake-request-contract-coverage.test.mts`](../../../backend/test-helpers/api-fixtures/openapi/copyright-email-intake-request-contract-coverage.test.mts)
 verify the emitted carriers, and

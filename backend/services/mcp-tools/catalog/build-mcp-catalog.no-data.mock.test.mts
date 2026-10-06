@@ -1,7 +1,7 @@
 /* eslint-disable no-mistakes/vitest-mock-test-file-naming -- This pure catalog-builder test uses the DB/Valkey-free project selected by the .no-data.mock suffix. */
 import type { Tool, ToolMeta } from '@services/openai-agents/tool-types'
 import { describe, expect, it } from 'vitest'
-import { buildMcpCatalog, findMissingApiOperations } from './build-mcp-catalog.mts'
+import { buildMcpCatalog } from './build-mcp-catalog.mts'
 
 type ToolFixture = {
   name: string
@@ -140,27 +140,5 @@ describe('buildMcpCatalog', () => {
       ],
     })
     expect(catalog.servers[1]?.tools[0]).not.toHaveProperty('plan')
-  })
-})
-
-describe('findMissingApiOperations', () => {
-  it('reports REST equivalents whose OpenAPI path or method does not exist', () => {
-    const cards = fixtureTool({
-      name: 'cards',
-      meta: {
-        api: [
-          { method: 'POST', path: '/api/v1/cards' },
-          { method: 'DELETE', path: '/api/v1/cards/:cardId' },
-        ],
-      },
-    })
-    const openapi = { paths: { '/api/v1/topics/{id}': { get: {} }, '/api/v1/cards': { get: {} } } }
-
-    expect(
-      findMissingApiOperations([userRead, cards, fixtureTool({ name: 'bare' })], openapi),
-    ).toEqual([
-      { tool: 'cards', method: 'POST', path: '/api/v1/cards' },
-      { tool: 'cards', method: 'DELETE', path: '/api/v1/cards/:cardId' },
-    ])
   })
 })

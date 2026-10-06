@@ -26,7 +26,7 @@ diagnostic. A contract `422` names only the carrier (`Invalid request body` or `
 | `GET /copyright-notices/review-queue`                                     | `after` and `limit` (1 to 100, default 100) query              |
 
 The request types live in `repeat-infringer-request-types.mts` beside the routes, and the compiler
-extracts the schema from them, so the OpenAPI document, the request-contract bundle, and the runtime
+extracts the schema from them, so the request-contract bundle and the runtime
 check share one source. Compiler-built assertions in
 [`copyright-staff-request-contract-coverage.test.mts`](../../../backend/test-helpers/api-fixtures/openapi/copyright-staff-request-contract-coverage.test.mts)
 verify the emitted carriers, and

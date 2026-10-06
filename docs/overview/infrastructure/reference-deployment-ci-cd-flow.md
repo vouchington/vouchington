@@ -58,8 +58,7 @@ source-run artifact by immutable artifact ID and publishes the validated static 
 checking out or rebuilding product source. PR and dependency-bot Storybook runs stay test-only.
 
 For documentation, the successful trusted-main workflow uploads one protected
-`docs-<run-id>-<run-attempt>` artifact with one-day retention. It contains the generated OpenAPI
-HTML and source JSON plus the rendered PostgreSQL schema reference under its sole `docs/` root; the
+`docs-<run-id>-<run-attempt>` artifact with one-day retention. It contains the rendered MCP catalog and PostgreSQL schema references under its sole `docs/` root; the
 receiver selects that exact source-run artifact by immutable artifact ID. Vouchington does not create
 the documentation landing page or hold provider credentials.
 

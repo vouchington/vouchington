@@ -52,5 +52,4 @@ families should reuse that adapter rather than calling this registry directly.
 ## Related
 
 - [Backend services](../README.md)
-- [Generated OpenAPI document](../../../../../api-fixtures/v1/openapi.json)
 - [Generated request contracts](../../../../../api-fixtures/v1/request-contracts.json)

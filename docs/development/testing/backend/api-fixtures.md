@@ -11,11 +11,11 @@ wrapper invocation through the [web fixture declarations](../web/api-responses.m
 ## Backend Compilation and Artifact Assertions
 
 The real backend is compiled by `pnpm run api-contracts:check` in the static backend job. One
-settled program verifies fixture, OpenAPI and executable request snapshots, exact query descriptors,
+settled program verifies fixture and executable request snapshots, exact query descriptors,
 registered-route completeness and PostgreSQL producer row types. Artifact assertions in Vitest read
 the committed outputs after that job passes. Tiny compiler-host and bounded-settlement tests retain
 filesystem invalidation and retry coverage; Vitest does not repeatedly compile the full backend.
-The checker shares one full response extraction with fixture validation and OpenAPI generation.
+The checker shares one full response extraction with fixture validation and request-contract generation.
 Its grouped phase logs report build, catalog, fixture and snapshot durations in CI. Query and header validation reuse the full catalog when their known response set covers its operations.
 Fixture selection preserves requested parameter spellings, exact response variants and explicit
 binary contracts; missing fixture contracts still fail validation.
@@ -63,18 +63,16 @@ bodyless responses retain separate media/body contracts. Variants merge only wit
 and media type, and a failed secondary variant makes the whole operation unavailable rather than
 silently disappearing.
 
-The OpenAPI document catalogs every literal API-v1 route registration independently of fixture
-coverage. Every registered method and normalized path shape appears in `paths`. SSE frames are written through `apiSseFrame` at each concrete route's emission callback. Their
-`text/event-stream` content is a string; `x-sse-events` maps each literal event name to its
-compiler-derived `dataSchema`, including terminal events and every payload variant. Generic
-subscription helpers pass typed events to those callbacks. Keepalive comments carry no event
-payload, and routine lifecycle expiry reconnects without inventing an error event.
+The contract catalog includes literal API-v1 route registrations independently of fixture
+coverage. SSE frames use `apiSseFrame` at each concrete route's emission callback, with typed
+payloads supplied by subscription helpers. Keepalive comments carry no event payload, and routine
+lifecycle expiry reconnects without inventing an error event.
 
 Opaque SDK responses use `apiOpenApiHttpResponse` with the shared `ApiHttpResponse` carrier. The
 carrier describes reachable status, media and body variants without reading or replacing the
 response. Stateless MCP POST responses remain JSON (single replies or reply arrays), with bodyless
 202 notification acknowledgements and JSON-RPC errors at 200 or 400. The explicit 400 schema also
-includes framework admission errors. Unconditional 405 handlers publish only the shared error
+includes framework admission errors. Unconditional 405 handlers retain only the shared error
 response. Unknown emissions and unsupported payload variants fail extraction; the generated
 response and request unavailable-route arrays must both remain empty.
 
@@ -86,7 +84,7 @@ registry and fixture validator normalize parameter segments while resolving the 
 
 Use `apiNoContent('METHOD:/route/template')` only for fixture-backed bodyless responses. When a
 fixed-status bodyless response is emitted inside a helper the extractor cannot follow, use the
-OpenAPI-only `apiOpenApiNoContent('METHOD:/route/template', 302)` marker instead. It never changes
+contract-only `apiOpenApiNoContent('METHOD:/route/template', 302)` marker instead. It never changes
 runtime status or emits a response, does not create a fixture contract, and requires matching route
 and numeric status literals.
 
@@ -169,11 +167,12 @@ corpus; those belong on the CGNAT follow-up, not this contract.
 See the [static-analysis inventory](../../quality/static-code-analysis/README.md) for the guard that
 applies this schema.
 
-## OpenAPI Query Contracts
+## Executable Request and Query Contracts
 
-`api-fixtures/v1/request-contracts.json` is a generated executable sibling of `openapi.json`.
-Both are emitted in one compiler-backed generation and checked together. The TypeScript request
-contracts remain authoritative: consumers must not reconstruct runtime validation from OpenAPI.
+`api-fixtures/v1/request-contracts.json` is the generated executable request bundle.
+TypeScript request contracts remain authoritative. The public OpenAPI JSON and Redoc reference
+are retired; the generator still uses the internal legacy OpenAPI builder to assemble this bundle.
+That implementation remains temporary upstream debt and retains its full compiler-build cost.
 
 The bundle also carries a top-level `responses` map, a sibling of `operations` so the request
 validator never mistakes it for request coverage. It holds the 200 response schema of each route
@@ -181,9 +180,14 @@ whose JSON body is exactly one named component, keyed like `operations` (`GET:/a
 and reuses the shipped `components`. MCP tools derive their `outputSchema` from it through
 `backend/tools/route-response-schema.mts`; see
 [Structured tool results](../../../overview/architecture/services/mcp-tools/README.md#structured-tool-results).
-A route with an inline or absent response schema has no entry.
+A route with an inline or absent response schema has no entry in `responses`.
 
-The generated `api-fixtures/v1/openapi.json` combines response contracts with query parameters from
+The sibling `adminResponses` section preserves the 87 staff inline and non-200 fallback schemas
+previously consumed from the published OpenAPI document. Staff tools now read those schemas from
+this runtime bundle. The existing `operations`, `responses`, and `components` retain their semantics;
+this changes the schema source without changing runtime API behavior or adding a second reader.
+
+The request bundle combines response contracts with query parameters from
 explicit `apiQuery('METHOD:/route', ...carriers)` markers in backend route handlers. The generator
 uses the TypeScript checker to inspect each carrier's typed `queryContract`; it never imports or
 executes backend route or parser modules.
@@ -196,12 +200,12 @@ opts in with a marker.
 
 Schemas describe logical query values rather than every wire-compatible spelling:
 
-- UUID and URI strings keep their OpenAPI formats; UUID-or-URI parameters publish either form.
+- UUID and URI strings keep their schema formats; UUID-or-URI parameters publish either form.
 - Integers publish their configured minimum, maximum, and default.
 - Booleans publish `true`/`false`; nullable boolean sentinels also publish the literal string `null`.
 - Plural aliases publish one comma-separated value with `style: form` and `explode: false`.
   Singular aliases remain scalar. Runtime support for repeated keys and legacy boolean spellings is
-  intentionally not the canonical OpenAPI shape.
+  intentionally not the canonical query-contract shape.
 
 Query parameters are optional by default. Required enum and string parameters use
 `requiredQueryEnum` and `requiredQueryString` in the route's typed carrier. Parameters are sorted
@@ -214,14 +218,14 @@ by name after route-ordered path parameters. See
 - Edit fixture source in this directory only (for static responses, update
   `static-response-bodies.json`).
 - Run `pnpm run api-fixtures:generate`.
-- Run `pnpm run openapi:generate` when response or query contracts change.
+- Run `pnpm run request-contracts:generate` when response or query contracts change.
 - Commit the source change, `api-fixtures/v1/manifest.json`, `api-fixtures/v1/schema-lock.json`,
-  any generated response JSON changes, and `api-fixtures/v1/openapi.json` when its contract changes.
+  any generated response JSON changes, and `api-fixtures/v1/request-contracts.json` when its contract changes.
 - `pnpm run api-contracts:check` verifies all canonical snapshots and compiler acceptance together.
   `pnpm run api-fixtures:check` remains the narrower response-fixture convenience check.
 - CI checks these snapshots and rejects tracked or untracked drift in
   `checks-static.yml`'s `static-backend` job.
-- Run `pnpm run openapi:check` before pushing.
+- Run `pnpm run request-contracts:check` before pushing.
 - For client fixture coverage, run
   `swift-clients/tooling/with-build-lock.sh swift test --package-path swift-clients/core --filter ApiFixtureCoverageTests`
   and

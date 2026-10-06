@@ -1,4 +1,3 @@
-import { documentedResponseProperty } from '@voucha/test-helpers/openapi-documented-response'
 import { describe, expect, it } from 'vitest'
 import searchPostsTool from '../search-posts.mts'
 import searchTopicsTool from '../search-topics.mts'
@@ -14,21 +13,7 @@ const variants = (tool: { meta?: { outputSchema?: unknown } }): JsonSchema[] => 
   return schema.oneOf
 }
 
-// GET /api/v1/posts documents each field as a one-member anyOf; the tool states the member itself.
-const documentedPostsField = (field: string): JsonSchema =>
-  (documentedResponseProperty('get', '/api/v1/posts', '200', field) as { anyOf: JsonSchema[] })
-    .anyOf[0]!
-
-// Neither search tool returns its REST twin's body (post ids plus hydration maps, and an undocumented
-// topic body), so each owns its output schema. The fields the document does describe stay pinned.
-describe('search tool output schemas stay pinned to the documented REST twin', () => {
-  it.each([
-    ['search_posts', searchPostsTool],
-    ['search_topics', searchTopicsTool],
-  ])('%s takes page_info from the PageInfo component GET /api/v1/posts documents', (_, tool) => {
-    expect(properties(variants(tool)[0])['page_info']).toEqual(documentedPostsField('page_info'))
-  })
-
+describe('search tool output schemas', () => {
   it.each([
     ['search_posts', searchPostsTool],
     ['search_topics', searchTopicsTool],
@@ -41,19 +26,6 @@ describe('search tool output schemas stay pinned to the documented REST twin', (
       required: ['success', 'error'],
       additionalProperties: false,
     })
-  })
-
-  it('search_posts takes the post id and post_type from the documented result item', () => {
-    const documentedItem = properties(
-      (documentedPostsField('results') as { items: JsonSchema }).items,
-    )
-    const results = properties(variants(searchPostsTool)[0])['results'] as {
-      items: JsonSchema
-    }
-    const item = properties(results.items)
-
-    expect(item['id']).toEqual(documentedItem['id'])
-    expect(item['post_type']).toEqual(documentedItem['post_type'])
   })
 
   it('search_posts and search_topics share the REST limit and cursor argument names', () => {

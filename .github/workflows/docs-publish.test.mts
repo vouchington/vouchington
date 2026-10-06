@@ -60,10 +60,6 @@ describe('Docs Publish workflow', () => {
     })
 
     const build = publish?.steps?.find(step => step.name === 'Build and validate documentation')
-    expect(build?.run).toContain('pnpm exec redocly build-docs')
-    expect(build?.run).toContain('delivery/docs/openapi/index.html')
-    expect(build?.run).toContain('delivery/docs/openapi/openapi.json')
-    expect(build?.run).toContain('--disableGoogleFont')
     expect(build?.run).toContain('node ci/render-psql-docs.mts delivery/docs/psql')
     expect(build?.run).toContain('delivery/docs/psql/index.html')
     expect(build?.run).toContain('delivery/docs/psql/schema.md')

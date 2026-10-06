@@ -25,7 +25,7 @@ names only the carrier (`Invalid request body` or `Invalid request query`).
 | `GET /copyright-notices/:id` and `.../participant` | `id` path only; the plain-string path cannot reject more than `validateUUIDParam` does. |
 
 The request types live in `request-types.mts` beside the routes, and the compiler extracts the
-schema from them, so the OpenAPI document, the request-contract bundle, and the runtime check share
+schema from them, so the request-contract bundle and the runtime check share
 one source. Compiler-built assertions in
 [`copyright-submission-request-contract-coverage.test.mts`](../../../backend/test-helpers/api-fixtures/openapi/copyright-submission-request-contract-coverage.test.mts)
 verify the emitted carriers, and

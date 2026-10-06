@@ -30,10 +30,6 @@ export type McpCatalogServer = {
 
 export type McpCatalog = { servers: McpCatalogServer[] }
 
-export type OpenApiPaths = { paths: Partial<Record<string, Partial<Record<string, unknown>>>> }
-
-export type MissingApiOperation = ToolApiEndpoint & { tool: string }
-
 export function buildMcpCatalog(tools: readonly Tool[]): McpCatalog {
   return {
     servers: [USER_MCP_SERVER_CONFIG, ADMIN_MCP_SERVER_CONFIG].map(config => ({
@@ -47,20 +43,6 @@ export function buildMcpCatalog(tools: readonly Tool[]): McpCatalog {
       ),
     })),
   }
-}
-
-export function findMissingApiOperations(
-  tools: readonly Tool[],
-  openapi: OpenApiPaths,
-): MissingApiOperation[] {
-  return tools.flatMap(tool =>
-    (tool.meta?.api ?? [])
-      .filter(
-        ({ method, path }) =>
-          openapi.paths[toOpenApiPath(path)]?.[method.toLowerCase()] === undefined,
-      )
-      .map(endpoint => ({ tool: tool.schema.name, ...endpoint })),
-  )
 }
 
 function catalogTool(tool: Tool, surface: McpServerConfig['surface']): McpCatalogTool {
@@ -79,8 +61,4 @@ function grantedRoles(tool: Tool): string[] | null {
   return Object.keys(roles)
     .filter(role => roles[role] === true)
     .toSorted()
-}
-
-function toOpenApiPath(path: string): string {
-  return path.replaceAll(/:([A-Za-z_]\w*)/g, '{$1}')
 }

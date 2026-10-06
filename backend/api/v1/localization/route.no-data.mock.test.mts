@@ -48,18 +48,6 @@ describe('localization route handler', () => {
       required: ['consumer'],
       properties: { consumer: { type: 'string', enum: [...PUBLIC_LOCALIZATION_CONSUMERS] } },
     })
-
-    const openapi = JSON.parse(
-      readFileSync(new URL('../../../../api-fixtures/v1/openapi.json', import.meta.url), 'utf8'),
-    ) as { paths: Record<string, { get: { parameters: Array<Record<string, unknown>> } }> }
-    expect(openapi.paths['/api/v1/localization']?.get.parameters).toContainEqual(
-      expect.objectContaining({
-        in: 'query',
-        name: 'consumer',
-        required: true,
-        schema: { type: 'string', enum: [...PUBLIC_LOCALIZATION_CONSUMERS] },
-      }),
-    )
   })
 
   it('writes JSON, 304, and 400 responses', () => {

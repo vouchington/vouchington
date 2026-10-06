@@ -5,7 +5,6 @@ on:
     branches: [main]
     paths:
       - 'api-fixtures/v1/mcp.json'
-      - 'api-fixtures/v1/openapi.json'
       - 'backend/data-stores/psql/schema-snapshot/**'
       - 'docs/development/postgresql/schema-snapshot/**'
       - 'ci/render-docs-cli.mts'
@@ -43,16 +42,11 @@ jobs:
         timeout-minutes: 5
         run: |
           set -euo pipefail
-          mkdir -p delivery/docs/openapi
-          cp api-fixtures/v1/openapi.json delivery/docs/openapi/openapi.json
-          pnpm exec redocly build-docs api-fixtures/v1/openapi.json --output delivery/docs/openapi/index.html --disableGoogleFont
           node ci/render-psql-docs.mts delivery/docs/psql
           node ci/render-mcp-docs.mts delivery/docs/mcp
           for required_path in \
             delivery/docs/mcp/index.html \
             delivery/docs/mcp/mcp.json \
-            delivery/docs/openapi/index.html \
-            delivery/docs/openapi/openapi.json \
             delivery/docs/psql/index.html \
             delivery/docs/psql/schema.md \
             delivery/docs/psql/schema.json; do

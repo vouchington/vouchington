@@ -11,7 +11,7 @@ for the general ordering rule and
 A malformed body, an unrecognized top-level field, or a wrong-typed field returns `422` with a
 redacted diagnostic. The schema is generated from the DTO type each handler casts
 `ctx.request.json(...)` to, so the type and the runtime check cannot drift. After changing one, run
-`pnpm run openapi:generate` and `pnpm run api-fixtures:generate`.
+`pnpm run request-contracts:generate` and `pnpm run api-fixtures:generate`.
 
 API keys and the assistant chat routes are validated with their own slice and are not described
 here, except for their list reads: the paginated `GET /my/api-keys`, `/my/oauth-apps`, and

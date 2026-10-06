@@ -11,8 +11,11 @@ import {
   loadBackendQueryContracts,
 } from './backend-contract-catalog.mts'
 import { buildOpenApiDocument } from './openapi/build-openapi-document.mts'
-import { writeOpenApi } from './openapi/write-openapi.mts'
+import { writeRequestContracts } from './openapi/write-request-contracts.mts'
 import { writeApiFixtures } from './write.mts'
+import { assertContentRequestContractCoverage } from './openapi/content-request-contract-coverage.mts'
+import { assertStaffRequestContractCoverage } from './openapi/staff-request-contract-coverage.mts'
+import { assertModerationOperationsRequestContractCoverage } from './openapi/moderation-operations-request-contract-coverage.mts'
 
 const start = performance.now()
 async function phase<Value>(name: string, run: () => Value | Promise<Value>): Promise<Value> {
@@ -37,7 +40,7 @@ await phase('Verify response fixtures', () =>
   writeApiFixtures({ check: true, responseContracts: catalog.responses }),
 )
 const knownResponseRoutes = new Set(Object.keys(catalog.responses))
-const { document, queries, headers } = await phase('Build OpenAPI document', () => {
+const { document, queries, headers } = await phase('Build runtime request schemas', () => {
   const queries = loadBackendQueryContracts(knownResponseRoutes)
   const headers = loadBackendHeaderContracts(knownResponseRoutes)
   const document = buildOpenApiDocument(catalog.responses, catalog.requests, queries, {
@@ -48,6 +51,9 @@ const { document, queries, headers } = await phase('Build OpenAPI document', () 
 })
 assert.deepEqual(document['x-unavailable-routes'], [])
 assert.deepEqual(document['x-unavailable-request-routes'], [])
+assertContentRequestContractCoverage(document)
+assertStaffRequestContractCoverage(document)
+assertModerationOperationsRequestContractCoverage(document)
 
 const registered = catalog.routes.map(route => `${route.method}:${routeShape(route.routeTemplate)}`)
 const generated = Object.entries(document.paths).flatMap(([route, item]) =>
@@ -82,7 +88,9 @@ assert.throws(
   /apiQuery references unknown response route/,
 )
 
-await phase('Verify OpenAPI and request snapshots', () => writeOpenApi({ check: true, document }))
+await phase('Verify runtime request snapshot', () =>
+  writeRequestContracts({ check: true, document }),
+)
 assert.equal(
   getBackendProgramBuildCount(),
   builds,

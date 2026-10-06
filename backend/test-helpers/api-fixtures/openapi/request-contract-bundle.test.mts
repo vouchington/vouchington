@@ -27,6 +27,7 @@ describe('buildRequestContractsBundle', () => {
     } as never)
 
     expect(bundle).toEqual({
+      adminResponses: {},
       version: 1,
       source: 'compiler-extracted-request-contracts',
       components: { Item: { type: 'object' } },

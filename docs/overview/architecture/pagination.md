@@ -8,7 +8,7 @@ and unenforced top-N product expectations are not exemptions.
 ## Runtime Page Limits
 
 `pagination-config` owns runtime defaults and effective maxima. Pure parsers receive numeric
-bounds from the API, service or tool adapter; their request/OpenAPI contracts retain static
+bounds from the API, service or tool adapter; their request contracts retain static
 ceilings. A configured default above the effective maximum is clamped to that maximum.
 Invalid configuration falls back to a validated default within the static ceiling.
 

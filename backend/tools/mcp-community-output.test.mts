@@ -11,25 +11,25 @@ import searchCommunitiesTool from './search-communities.mts'
 import type { Tool } from '@services/openai-agents/tool-types'
 
 type JsonSchema = Record<string, unknown>
-type OpenApi = {
-  components: { schemas: Record<string, JsonSchema> }
+type RequestContracts = {
+  components: Record<string, JsonSchema>
   paths: Record<string, { get?: unknown }>
 }
 
-const openApi = JSON.parse(
-  readFileSync(new URL('../../api-fixtures/v1/openapi.json', import.meta.url), 'utf8'),
-) as OpenApi
+const contracts = JSON.parse(
+  readFileSync(new URL('../../api-fixtures/v1/request-contracts.json', import.meta.url), 'utf8'),
+) as RequestContracts
 
 // Each tool returns a leaner shape than its REST twin, so it owns its result schema. Every field
-// must stay exactly the schema the REST contract documents in the generated OpenAPI document.
+// must stay exactly the schema the REST contract documents in the generated runtime contract bundle.
 function documented(component: string, property: string): unknown {
-  const properties = openApi.components.schemas[component]?.['properties'] as
+  const properties = contracts.components[component]?.['properties'] as
     | Record<string, JsonSchema>
     | undefined
   const documentedProperty = properties?.[property]
   if (!documentedProperty)
-    throw new Error(`${component}.${property} is not in the OpenAPI document`)
-  return inlineSchemaReferences(documentedProperty, openApi.components.schemas)
+    throw new Error(`${component}.${property} is not in the runtime contract bundle`)
+  return inlineSchemaReferences(documentedProperty, contracts.components)
 }
 
 function propertiesOf(schema: JsonSchema): Record<string, JsonSchema> {
@@ -128,7 +128,6 @@ describe('community read tool output schemas', () => {
   it.each(TOOLS)('names the documented REST twin of %s', (_name, tool, path) => {
     const [endpoint] = tool.meta?.api ?? []
 
-    expect(openApi.paths[path]?.get).toBeDefined()
     expect(endpoint?.method).toBe('GET')
     expect(endpoint?.path.replace(/:(\w+)/g, '{$1}')).toBe(path)
   })

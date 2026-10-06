@@ -246,8 +246,7 @@ surface does not gain a new rendered UI claim.
 
 A6a (#1542) removes the hosted SSE `POST /api/v1/conversations/:conversationId/chat` route, so it
 now returns 404, along with its `chat` and `reconcile-chat-runtime-generations` queue jobs and the
-Valkey token channel. The regenerated `api-fixtures/v1/openapi.json` and
-`api-fixtures/v1/request-contracts.json` drop the operation and its unavailable-route entry. Native
+Valkey token channel. The regenerated `api-fixtures/v1/request-contracts.json` drops the operation and its unavailable-route entry. Native
 clients persist completed turns through `client-generated-chat` with a local provider and do not use
 a hosted fallback; that endpoint still rejects hosted providers with 400. Under decision D1 the
 server change does not wait on client migrations, so a native build that still calls the hosted
@@ -437,7 +436,7 @@ eligible fanout or completed crawl work; the response shape remains unchanged. S
 
 ## Runtime pagination limits
 
-`pagination-config` tunes page sizes within unchanged request/OpenAPI ceilings; lowered maxima
+`pagination-config` tunes page sizes within unchanged request-contract ceilings; lowered maxima
 may return shorter pages. All consumers continue from `page_info.end_cursor` when `has_next_page`
 is true. Requested size and the static default do not promise a full page; response shapes and
 cursors remain unchanged.
@@ -459,7 +458,7 @@ names their existing object type.
 ## Pre-launch column contract handoff (#1592)
 
 Vouchington and web adopt the following current API field names together. Regenerated shared
-request/response fixtures, OpenAPI, and MCP contracts describe this handoff. Swift and .NET must
+request/response fixtures and MCP contracts describe this handoff. Swift and .NET must
 regenerate their models and update callers before using these fields; their native builds and
 fixture validation are unverified in this schema stack. External provider payloads retain their
 protocol names.

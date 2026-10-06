@@ -128,8 +128,8 @@ describe('checks-static workflow', () => {
     )
     expect(steps.filter(step => step.run?.includes('pnpm run api-contracts:check'))).toHaveLength(1)
     expect(apiFixtureSnapshots).toMatchObject({
-      run: `git diff --exit-code -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses api-fixtures/v1/openapi.json api-fixtures/v1/request-contracts.json
-untracked_generated_files="$(git ls-files --others --exclude-standard -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses api-fixtures/v1/openapi.json api-fixtures/v1/request-contracts.json)"
+      run: `git diff --exit-code -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses api-fixtures/v1/request-contracts.json
+untracked_generated_files="$(git ls-files --others --exclude-standard -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses api-fixtures/v1/request-contracts.json)"
 if [ -n "$untracked_generated_files" ]; then
   echo "::error::Generated API fixture files are untracked:"
   printf '%s\\n' "$untracked_generated_files"

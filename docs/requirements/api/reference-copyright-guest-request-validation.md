@@ -26,7 +26,7 @@ diagnostic. A contract `422` names only the carrier (`Invalid request body` or `
 | `GET /copyright-notices/:id/guest-capabilities`                  | `after` and `limit` (1 to 100, default 25) query and `id` path   |
 
 The request types live in `guest-capability-request-types.mts` beside the routes, and the compiler
-extracts the schema from them, so the OpenAPI document, the request-contract bundle, and the runtime
+extracts the schema from them, so the request-contract bundle and the runtime
 check share one source. Compiler-built assertions in
 [`copyright-guest-request-contract-coverage.test.mts`](../../../backend/test-helpers/api-fixtures/openapi/copyright-guest-request-contract-coverage.test.mts)
 verify the emitted carriers, and

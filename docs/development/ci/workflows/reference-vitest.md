@@ -51,7 +51,7 @@ and fork-leak detection remain.
   path binding an un-closeable TCP listener on a fallback port. It is fixed by binding only when
   `NODE_PREWARM_PORT` is set. Check a new occurrence is not that before calling it this flake.
 
-The static backend job compiles current producers once to verify all API fixture, OpenAPI and
+The static backend job compiles current producers once to verify all API fixture and
 request-contract snapshots, exact query descriptors, registered routes and PostgreSQL row types.
 Vitest checks these verified canonical outputs without compiling the full backend. Small compiler-host
 and bounded-settlement tests still cover filesystem invalidation and build retry rules. Runtime

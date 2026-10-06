@@ -92,12 +92,10 @@ them:
 | [`backend/tools/manifest.json`](../../../../backend/tools/manifest.json) | `client`-surface tools for first-party native clients — see [iOS Client Implementation Notes](#ios-client-implementation-notes) |
 
 The same test asserts that each server's catalog equals what `tools/list` returns to a caller
-holding every role, the Pro plan, and every scope, that every `meta.api` route exists in
-`api-fixtures/v1/openapi.json`, that every listed tool has a title, and that hints agree with
+holding every role, the Pro plan, and every scope, that every listed tool has a title, and that hints agree with
 their REST equivalents (see [MCP Metadata](#mcp-metadata)). The `docs-publish` workflow renders
 `mcp.json` with [`ci/render-mcp-docs.mts`](../../../../ci/render-mcp-docs.mts) onto the credentialed
-[private docs site](../../../operations/private-docs-site.md) at `/mcp/`, next to the OpenAPI
-reference.
+[private docs site](../../../operations/private-docs-site.md) at `/mcp/`, alongside the PostgreSQL reference.
 
 ---
 
@@ -166,7 +164,7 @@ scopes; `parameters` is always `null`. The iOS Swift agent should:
    connection. Each entry in `api` is `{ method, path }` where `:param` segments
    are path parameters.
 2. Build its `@Generable` argument structs from those REST operations in
-   [`api-fixtures/v1/openapi.json`](../../../../api-fixtures/v1/openapi.json); the MCP
+   [`api-fixtures/v1/request-contracts.json`](../../../../api-fixtures/v1/request-contracts.json); the MCP
    `inputSchema` in `mcp.json` describes the server-side tool, not the REST request.
 3. Authenticate requests with the app's existing session, like any other API call; no
    separate MCP auth flow is needed for client-surface tools.

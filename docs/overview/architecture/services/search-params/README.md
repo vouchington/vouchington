@@ -17,7 +17,7 @@ Parses and validates search query parameters for multiple entity types, producin
 Each export is a callable parser with a typed `queryContract`. The contract is reusable metadata,
 not automatic publication: the route handler must explicitly pass the parser and any route-owned
 contract carriers to `apiQuery('METHOD:/route', ...)`. That opt-in keeps internal parsers and
-unrelated routes out of the public OpenAPI document.
+unrelated routes out of the generated request bundle.
 
 The four content owners (`posts`, `topics`, RSS feeds, and RSS feed items) use
 **prepare → validate → resolve**: preparation produces both service-ready pure inputs and a
@@ -40,5 +40,5 @@ references, rather than copied here.
 
 - Parent: [../AGENTS.md](../../../../../backend/services/AGENTS.md)
 - Pagination and query metadata: [../../modules/pagination/README.md](../../backend/modules/pagination/README.md)
-- API fixture and OpenAPI generation: [../../test-helpers/api-fixtures/README.md](../../../../development/testing/backend/api-fixtures.md)
+- API fixture and request-contract generation: [../../test-helpers/api-fixtures/README.md](../../../../development/testing/backend/api-fixtures.md)
 - Search utils module: [../../modules/search-utils/README.md](../../backend/modules/search-utils/README.md)

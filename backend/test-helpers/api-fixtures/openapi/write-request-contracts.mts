@@ -8,7 +8,6 @@ import { buildRequestContractsBundle } from './request-contract-bundle.mts'
 import type { OpenApiDocument } from 'vouchington-tooling/openapi-document'
 
 const repoRoot = fileURLToPath(new URL('../../../..', import.meta.url))
-const openApiPath = join(repoRoot, 'api-fixtures/v1/openapi.json')
 const requestContractsPath = join(repoRoot, 'api-fixtures/v1/request-contracts.json')
 
 async function formatWithOxfmt(path: string, rawJson: string): Promise<string> {
@@ -21,34 +20,29 @@ async function formatWithOxfmt(path: string, rawJson: string): Promise<string> {
   return result.code
 }
 
-export async function writeOpenApi({
+export async function writeRequestContracts({
   check = false,
-  path = openApiPath,
+  path = requestContractsPath,
   document = buildOpenApiDocument(),
 }: {
   check?: boolean
   path?: string
   document?: OpenApiDocument
 } = {}): Promise<void> {
-  const runtimePath =
-    path === openApiPath ? requestContractsPath : join(path, '..', 'request-contracts.json')
-  const files = new Map<string, string>()
-  files.set(path, await formatWithOxfmt(path, stableStringify(document)))
-  files.set(
-    runtimePath,
-    await formatWithOxfmt(runtimePath, stableStringify(buildRequestContractsBundle(document))),
-  )
+  const files = new Map<string, string>([
+    [path, await formatWithOxfmt(path, stableStringify(buildRequestContractsBundle(document)))],
+  ])
   await writeGeneratedFiles({
     files,
     check,
     staleError: stalePaths =>
       new Error(
         [
-          'OpenAPI runtime contracts are stale. Run `pnpm run openapi:generate` and commit both generated files.',
+          'Runtime request contracts are stale. Run `pnpm run request-contracts:generate` and commit the generated file.',
           ...stalePaths.map(stalePath => `- ${stalePath}`),
         ].join('\n'),
       ),
   })
 }
 
-export const openApiPaths = { openApiPath, requestContractsPath }
+export const requestContractPaths = { requestContractsPath }

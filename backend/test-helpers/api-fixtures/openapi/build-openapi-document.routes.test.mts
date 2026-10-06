@@ -1,17 +1,8 @@
-import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 import type { BackendResponseContract } from '../response-contract-types.mts'
 import { applyRequiredQueryParameterOverrides } from '../required-query-parameter-overrides.mts'
 import { buildOpenApiDocument } from './build-openapi-document.mts'
-import type { OpenApiDocument, OpenApiSchema } from 'vouchington-tooling/openapi-document'
-import { openApiPaths } from './write-openapi.mts'
-
-const passkeyOptionRoutes = [
-  '/api/v1/auth/mfa/passkeys/authentication/options',
-  '/api/v1/auth/passkeys/authentication/options',
-  '/api/v1/auth/passkeys/registration/options',
-] as const
 
 describe('OpenAPI catalog response helpers', () => {
   it('marks only the explicitly reviewed required query fields', () => {
@@ -197,34 +188,4 @@ describe('OpenAPI catalog response helpers', () => {
       'response contracts contain duplicate normalized route GET:/api/v1/stories/:: /api/v1/stories/:id and /api/v1/stories/:storyId',
     )
   })
-
-  it('keeps passkey option routes available without the non-JSON-safe prf extension', () => {
-    const doc = JSON.parse(readFileSync(openApiPaths.openApiPath, 'utf8')) as OpenApiDocument
-
-    for (const path of passkeyOptionRoutes) {
-      const operation = doc.paths[path]!.post!
-      expect(operation).not.toHaveProperty('x-schema-unavailable')
-
-      const response = operation.responses['200']!
-      if (!('content' in response)) throw new Error(`${path} has no OpenAPI response content`)
-      const schema = response.content!['application/json']!.schema as OpenApiSchema
-      const options = resolveSchema(doc.components.schemas, schema).properties!.options!
-      const extensions = resolveSchema(doc.components.schemas, options).properties!.extensions
-
-      expect(extensions).toBeDefined()
-      expect(resolveSchema(doc.components.schemas, extensions!)).not.toHaveProperty(
-        'properties.prf',
-      )
-    }
-  })
 })
-
-function resolveSchema(
-  schemas: Record<string, OpenApiSchema>,
-  schema: OpenApiSchema,
-): OpenApiSchema {
-  if (!schema.$ref) return schema
-  const name = schema.$ref.split('/').at(-1)
-  if (!name || !schemas[name]) throw new Error(`Missing OpenAPI component ${schema.$ref}`)
-  return schemas[name]
-}

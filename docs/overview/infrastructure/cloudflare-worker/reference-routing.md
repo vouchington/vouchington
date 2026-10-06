@@ -4,7 +4,7 @@
 
 ### Private docs environment
 
-The private-infrastructure-managed docs Worker serves the private docs landing page, OpenAPI reference,
+The private-infrastructure-managed docs Worker serves the private docs landing page,
 MCP server catalog, and PostgreSQL schema from the `DOCS_BUCKET` R2 binding. It does not serve
 Storybook. The private infrastructure source `deploy/docs/index.html`, in the private
 `vouchington-infra` repository, creates the root landing page; `vouchington/vouchington`'s

@@ -1,3 +1,3 @@
-import { writeOpenApi } from './write-openapi.mts'
+import { writeRequestContracts } from './write-request-contracts.mts'
 
-await writeOpenApi({ check: process.argv.includes('--check') })
+await writeRequestContracts({ check: process.argv.includes('--check') })

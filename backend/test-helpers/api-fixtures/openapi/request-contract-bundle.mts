@@ -1,3 +1,4 @@
+import { buildAdminResponseContracts } from './admin-response-contracts.mts'
 import type { OpenApiDocument } from 'vouchington-tooling/openapi-document'
 
 const OPERATION_METHODS = ['delete', 'get', 'patch', 'post', 'put']
@@ -36,6 +37,7 @@ export function buildRequestContractsBundle(document: OpenApiDocument) {
     components: document.components.schemas,
     operations,
     responses,
+    adminResponses: buildAdminResponseContracts(document),
   }
 }
 

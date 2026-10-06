@@ -33,7 +33,7 @@ from its settled value so it cannot answer `422`.
 
 A typed raw-body declaration or explicit request-contract marker must emit a meaningful body
 schema: invoking the adapter against an empty object is not coverage. Compiler-built request-bundle
-assertions in [API fixtures](../../../backend/test-helpers/api-fixtures/openapi/write-openapi.test.mts) verify
+assertions in [API fixtures](../../../backend/test-helpers/api-fixtures/openapi/write-request-contracts.test.mts) verify
 emitted carriers and schemas; route HTTP tests verify invocation order, status, and no-write
 behavior.
 

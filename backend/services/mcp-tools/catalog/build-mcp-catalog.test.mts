@@ -14,17 +14,12 @@ import {
   renderCatalogTable,
   spliceCatalogTable,
 } from './agent-tool-catalog.mts'
-import {
-  buildMcpCatalog,
-  findMissingApiOperations,
-  type OpenApiPaths,
-} from './build-mcp-catalog.mts'
+import { buildMcpCatalog } from './build-mcp-catalog.mts'
 import { findApiHintConflicts } from './find-api-hint-conflicts.mts'
 
 const repoPath = (path: string): string =>
   fileURLToPath(new URL(`../../../../${path}`, import.meta.url))
 const MCP_CATALOG_PATH = repoPath('api-fixtures/v1/mcp.json')
-const OPENAPI_PATH = repoPath('api-fixtures/v1/openapi.json')
 const CATALOG_MARKDOWN_PATH = repoPath('docs/overview/architecture/agent-tools/catalog.md')
 const CLIENT_MANIFEST_PATH = repoPath('backend/tools/manifest.json')
 
@@ -113,12 +108,6 @@ describe('generated MCP catalog artifacts', () => {
     expect(disabled.map(tool => tool.name)).toEqual(
       enabled.filter(tool => !decisions.includes(tool.name)).map(tool => tool.name),
     )
-  })
-
-  it('names only REST equivalents that exist in the OpenAPI document', async () => {
-    const openapi = JSON.parse(await readFile(OPENAPI_PATH, 'utf8')) as OpenApiPaths
-
-    expect(findMissingApiOperations(ALL_TOOLS, openapi)).toEqual([])
   })
 
   it('declares hints that agree with each tool REST equivalents', () => {

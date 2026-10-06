@@ -1,5 +1,4 @@
 import contracts from '@voucha/api-fixtures/v1/request-contracts.json' with { type: 'json' }
-import openapi from '@voucha/api-fixtures/v1/openapi.json' with { type: 'json' }
 import { inlineSchemaReferences } from '../route-response-schema.mts'
 import type { ToolApiEndpoint, ToolOutputSchema } from '@services/openai-agents/tool-types'
 
@@ -12,25 +11,10 @@ export function adminRouteOutputSchema(
   const components = contracts.components as Record<string, Record<string, unknown>>
   const named = (contracts.responses as Record<string, Record<string, unknown>>)[key]
   if (named) return objectRootSchema(inlineSchemaReferences(named, components), key)
-  const path = endpoint.path.replaceAll(/:([^/]+)/g, '{$1}')
-  const operation = (openapi.paths as Record<string, Record<string, unknown>>)[path]?.[
-    endpoint.method.toLowerCase()
-  ] as
-    | {
-        responses?: Record<
-          string,
-          { content?: Record<string, { schema?: Record<string, unknown> }> }
-        >
-      }
-    | undefined
-  const response =
-    operation?.responses?.['200'] ?? operation?.responses?.['201'] ?? operation?.responses?.['202']
-  const schema = response?.content?.['application/json']?.schema
-  if (!schema) throw new Error(`No documented admin response for ${key}`)
-  const inlined = inlineSchemaReferences(
-    schema,
-    openapi.components.schemas as Record<string, Record<string, unknown>>,
-  )
+  const responseKey = `${endpoint.method}:${endpoint.path.replaceAll(/\{([^}]+)\}/g, ':$1')}`
+  const schema = (contracts.adminResponses as Record<string, Record<string, unknown>>)[responseKey]
+  if (!schema) throw new Error(`No generated admin response for ${key}`)
+  const inlined = inlineSchemaReferences(schema, components)
   return objectRootSchema(inlined, key)
 }
 

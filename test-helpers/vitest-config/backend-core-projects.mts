@@ -50,7 +50,7 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
         'backend/test-helpers/workers/entity-listeners/test-support.test.mts',
         'backend/test-helpers/entities/bluesky-link-authorizations.test.mts',
         // Canonical contract assertions read artifacts verified by static-backend's compiler job.
-        'backend/test-helpers/api-fixtures/openapi/write-openapi.test.mts',
+        'backend/test-helpers/api-fixtures/openapi/write-request-contracts.test.mts',
         'backend/test-helpers/api-fixtures/backend-contract-catalog.hardening.test.mts',
         'backend/test-helpers/api-fixtures/native-moderation-optional-contracts.test.mts',
       ],
@@ -66,7 +66,7 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
       isolate: false,
       name: 'backend-contract-artifacts',
       include: [
-        'backend/test-helpers/api-fixtures/openapi/write-openapi.test.mts',
+        'backend/test-helpers/api-fixtures/openapi/write-request-contracts.test.mts',
         'backend/test-helpers/api-fixtures/backend-contract-catalog.hardening.test.mts',
         'backend/test-helpers/api-fixtures/native-moderation-optional-contracts.test.mts',
       ],

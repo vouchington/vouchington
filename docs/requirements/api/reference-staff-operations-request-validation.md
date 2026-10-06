@@ -22,7 +22,7 @@ Validation runs before the first service or queue call by construction; the suit
 nothing changed only for the routes named under [Side effects](#side-effects). Compiler-built carrier and schema
 assertions live in `staff-request-contract-coverage.mts` and
 `moderation-operations-request-contract-coverage.mts` next to the
-[API fixtures](../../../backend/test-helpers/api-fixtures/openapi/write-openapi.test.mts).
+[API fixtures](../../../backend/test-helpers/api-fixtures/openapi/write-request-contracts.test.mts).
 
 ## Behavior changes
 
@@ -52,7 +52,7 @@ handler used to accept now answers `422` on every route below that reads a JSON 
 - `PUT /stories/:storyId/official`: an invalid `rss_feed_item_id` is `422`; an item outside the
   story stays `400`.
 - `PATCH /stories/:id`: a non-string `title` is `422`; an empty or over-long title stays `400`.
-  The route parameter was renamed from `:storyId` because OpenAPI merges same-shape paths.
+  The route parameter was renamed from `:storyId` to keep same-shape route registrations consistent.
 - `GET /posts/:postId/disputes`: a non-staff caller now gets `403` before the UUID check.
 - Already `422` and now contract-backed: topic-claim rejection and revocation, RSS category
   assignments and rejections, appeal and dispute resolution, annotation removal, batch annotation

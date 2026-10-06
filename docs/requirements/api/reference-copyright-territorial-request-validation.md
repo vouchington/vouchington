@@ -37,7 +37,7 @@ diagnostic. EU notice receipt permits guests and uses optional authentication. A
 | `POST /copyright-jurisdiction-policies/:id/withdrawals`                          | `id` path only                                                                                       |
 
 The request types live in `territorial-request-types.mts` beside the routes, and the compiler
-extracts the schema from them, so the OpenAPI document, the request-contract bundle, and the runtime
+extracts the schema from them, so the request-contract bundle and the runtime
 check share one source. The EU handlers are split between `eu-copyright-routes.mts` (claimant) and
 `eu-copyright-staff-routes.mts` (staff and reporting) to stay inside the file-length limit.
 Compiler-built assertions in

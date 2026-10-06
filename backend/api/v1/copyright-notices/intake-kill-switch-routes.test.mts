@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { loadRegisteredRouteCatalog } from '@voucha/test-helpers/api-fixtures/backend-contract-catalog'
 import { describe, expect, it } from 'vitest'
 import { useDsaTransparencyReports } from '@voucha/test-helpers/dsa-switches'
 import { createTestUser } from '@voucha/test-helpers'
@@ -73,18 +73,13 @@ const routeClasses = {
 }
 const openRoutes = [...routeClasses.inCaseResponse, ...routeClasses.staff]
 
-const MUTATION_METHODS = new Set(['delete', 'patch', 'post', 'put'])
-// The committed document lists every registered route; write-openapi.test.mts keeps it current.
-const openApi = JSON.parse(
-  readFileSync(new URL('../../../../api-fixtures/v1/openapi.json', import.meta.url), 'utf8'),
-) as { paths: Record<string, Record<string, unknown>> }
-const registeredRoutes = Object.entries(openApi.paths)
-  .filter(([path]) => path.startsWith('/api/v1/copyright-'))
-  .flatMap(([path, operations]) =>
-    Object.keys(operations)
-      .filter(method => MUTATION_METHODS.has(method))
-      .map(method => `${method.toUpperCase()}:${path.replaceAll(/\{(\w+)\}/g, ':$1')}`),
+const MUTATION_METHODS = new Set(['DELETE', 'PATCH', 'POST', 'PUT'])
+const registeredRoutes = loadRegisteredRouteCatalog()
+  .filter(
+    route =>
+      route.routeTemplate.startsWith('/api/v1/copyright-') && MUTATION_METHODS.has(route.method),
   )
+  .map(route => `${route.method}:${route.routeTemplate}`)
 
 function classificationGaps(routes: string[]) {
   const counts = new Map<string, number>()
