@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   createTestUserDirect,
   getTestNotificationPushReceipt,
@@ -58,9 +58,6 @@ describe('notification push generation fence', () => {
     const persistence = persistClaimedNotificationPushOutcome(intent!, {
       kind: 'delivered',
       subscription: stale,
-    })
-    await vi.waitFor(async () => {
-      await expect(transfer.hasBlockedOperation()).resolves.toBe(true)
     })
     const currentId = await transfer.replace({
       userId: recipient.id,

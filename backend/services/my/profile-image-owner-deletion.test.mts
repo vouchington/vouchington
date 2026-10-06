@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import {
-  getTestDeliveryTransactionPid,
-  testDeliveryTransactionIsWaitingForLock,
-} from '@voucha/test-helpers/entities/media-delivery-repair'
-import {
   beginTransaction,
   createTestUserDirect,
   getTestImageSurfacePlacements,
@@ -89,7 +85,9 @@ describe('terminal image surface owner deletion', () => {
     await retireTestImageSurfaceOwner(clearing, placement.placement_id)
     await clearTestImageSurfaceOwnerInTransaction(clearing, placement.placement_id)
     await using reactivating = await beginTransaction()
-    const pid = await getTestDeliveryTransactionPid(reactivating)
+    await expect(probePlacementRow(placement.placement_id)).rejects.toMatchObject({
+      code: '55P03',
+    })
     const result = reactivateTestImageSurfaceInTransaction(
       reactivating,
       placement.placement_id,
@@ -97,7 +95,6 @@ describe('terminal image surface owner deletion', () => {
       () => null,
       (err: unknown) => err,
     )
-    await expect.poll(() => testDeliveryTransactionIsWaitingForLock(pid)).toBe(true)
     await clearing.commit()
     expect(await result).toMatchObject({
       message: 'ownerless image surface must remain retired for owner removal',
@@ -111,15 +108,23 @@ describe('terminal image surface owner deletion', () => {
     await using reactivating = await beginTransaction()
     await reactivateTestImageSurfaceInTransaction(reactivating, placement.placement_id)
     await using clearing = await beginTransaction()
-    const pid = await getTestDeliveryTransactionPid(clearing)
+    await expect(probePlacementRow(placement.placement_id)).rejects.toMatchObject({
+      code: '55P03',
+    })
     const result = clearTestImageSurfaceOwnerInTransaction(clearing, placement.placement_id).then(
       () => null,
       (err: unknown) => err,
     )
-    await expect.poll(() => testDeliveryTransactionIsWaitingForLock(pid)).toBe(true)
     await reactivating.commit()
     expect(await result).toMatchObject({
       message: 'image surface placement bindings are immutable',
     })
   })
 })
+
+async function probePlacementRow(placementId: string): Promise<void> {
+  await using probe = await beginTransaction()
+  await probe(`SET LOCAL lock_timeout = '50ms'`)
+  await probe(`SELECT id FROM media_placements WHERE id = $1::uuid FOR UPDATE`, [placementId])
+  await probe.commit()
+}

@@ -9,7 +9,7 @@ import { createImageUploadUrl } from '../create-upload-url.mts'
 import { completeImageUpload } from '../complete-upload.mts'
 import { getImageByHash, getImageById } from '../get.mts'
 import { deriveUploadStatus } from '../get-upload-state.mts'
-import { withImageStorageLifecycleLock } from '../storage-lifecycle-lock.mts'
+import * as storageLifecycleLock from '../storage-lifecycle-lock.mts'
 import { imagesQueue } from '@queues/images/queues'
 
 import * as s3Module from '../s3-upload-lifecycle.mts'
@@ -119,12 +119,23 @@ describe('completeImageUpload - duplicate recovery and races', () => {
     let lockAcquired!: () => void
     const lockReleased = new Promise<void>(resolve => (releaseLock = resolve))
     const acquired = new Promise<void>(resolve => (lockAcquired = resolve))
-    const lockHolder = withImageStorageLifecycleLock(failedImageId, async () => {
-      lockAcquired()
-      await lockReleased
-    })
+    const lockHolder = storageLifecycleLock.withImageStorageLifecycleLock(
+      failedImageId,
+      async () => {
+        lockAcquired()
+        await lockReleased
+      },
+    )
     await acquired
 
+    const replacementEnteredLock = Promise.withResolvers<void>()
+    const lock = storageLifecycleLock.withImageStorageLifecycleLock
+    vi.spyOn(storageLifecycleLock, 'withImageStorageLifecycleLock').mockImplementation(
+      (...args) => {
+        replacementEnteredLock.resolve()
+        return lock(...args)
+      },
+    )
     let hashLookupCompleted!: () => void
     const hashLookup = new Promise<void>(resolve => (hashLookupCompleted = resolve))
     const completion = completeImageUpload(user, retryImageId, {
@@ -136,7 +147,7 @@ describe('completeImageUpload - duplicate recovery and races', () => {
     })
     void completion.catch(() => {})
     await hashLookup
-    await new Promise<void>(resolve => setImmediate(resolve))
+    await replacementEnteredLock.promise
 
     expect(s3Module.deleteImageUploadSourceFromS3).not.toHaveBeenCalled()
 

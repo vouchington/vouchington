@@ -106,18 +106,17 @@ describe('reverseIneligibleStripePurchase', () => {
     const listRefundsForPaymentPage =
       vi.fn<IneligibleStripePurchaseOperations['listRefundsForPaymentPage']>()
     const releaseRefunds: (() => void)[] = []
-    let activeRefunds = 0
-    let maxActiveRefunds = 0
-    let signalFirstBatchStarted: (() => void) | undefined
-    const firstBatchStarted = new Promise<void>(resolve => {
-      signalFirstBatchStarted = resolve
-    })
+    let activeRefunds = 0,
+      maxActiveRefunds = 0
+    const firstBatchStarted = Promise.withResolvers<void>()
+    const fourthRefundEntered = Promise.withResolvers<void>()
     const createRefund = vi
       .fn<IneligibleStripePurchaseOperations['createRefund']>()
       .mockImplementation(async options => {
         activeRefunds += 1
         maxActiveRefunds = Math.max(maxActiveRefunds, activeRefunds)
-        if (activeRefunds === 3) signalFirstBatchStarted?.()
+        if (createRefund.mock.calls.length === 3) firstBatchStarted.resolve()
+        if (createRefund.mock.calls.length === 4) fourthRefundEntered.resolve()
         await new Promise<void>(resolve => {
           releaseRefunds.push(resolve)
         })
@@ -177,12 +176,12 @@ describe('reverseIneligibleStripePurchase', () => {
       userId: member.id,
     })
 
-    await firstBatchStarted
+    await firstBatchStarted.promise
     expect(createRefund).toHaveBeenCalledTimes(3)
     expect(maxActiveRefunds).toBe(3)
-
     for (const releaseRefund of releaseRefunds.splice(0)) releaseRefund()
-    await vi.waitFor(() => expect(createRefund).toHaveBeenCalledTimes(4))
+    await fourthRefundEntered.promise
+    expect(createRefund).toHaveBeenCalledTimes(4)
     expect(maxActiveRefunds).toBe(3)
 
     for (const releaseRefund of releaseRefunds.splice(0)) releaseRefund()

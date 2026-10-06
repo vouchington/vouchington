@@ -55,11 +55,15 @@ export async function listWebPushSubscriptionsPage(
 }
 
 /** Claims endpoint ownership and always creates a fresh browser activation generation. */
-export async function upsertWebPushSubscription(input: PushSubscriptionInput) {
+export async function upsertWebPushSubscription(
+  input: PushSubscriptionInput,
+  hooks?: { beforeOwnerRowLock?: () => Promise<void> },
+) {
   const endpointDigest = createHash('sha256').update(input.endpoint).digest('hex')
   await using transaction = await beginTransaction()
   await transaction(sql`/* lockWebPushEndpointOwner */
     SELECT pg_advisory_xact_lock(hashtextextended(${`web-push-endpoint:${endpointDigest}`}, 0))`)
+  await hooks?.beforeOwnerRowLock?.()
   const existing = await transaction<{ endpoint: string }>(sql`/* getWebPushEndpointOwner */
     SELECT endpoint
     FROM web_push_endpoint_owners

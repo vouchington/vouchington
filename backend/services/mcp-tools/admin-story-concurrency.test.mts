@@ -1,6 +1,7 @@
 import { randomUUID, createHash } from 'node:crypto'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
+  beginTransaction,
   createTestUserDirect,
   insertTestStory,
   insertTestRssFeedDirect,
@@ -8,7 +9,6 @@ import {
   createTestUrlWithHostname,
   setTestItemStoryId,
   withTestStoryLifecycleLock,
-  isTestStoryLifecycleLockWaiting,
 } from '@voucha/test-helpers'
 import { readStaffActionHistory } from '@voucha/test-helpers/staff-action-history'
 import { getStoryById } from '@services/feeds/rss-feed-items/get-story-by-id'
@@ -18,6 +18,7 @@ import {
   removeEditorialStoryItem,
   setEditorialStoryOfficialItem,
 } from '@services/stories'
+import * as storyLifecycleLock from '@services/post-publication/story-lifecycle-lock'
 
 async function fixture() {
   const admin = await createTestUserDirect({ administrator: true })
@@ -41,12 +42,22 @@ describe('editorial official-item membership serialization', () => {
     const { admin, story, itemId } = await fixture()
     let select: ReturnType<typeof setEditorialStoryOfficialItem>
     let remove: ReturnType<typeof removeEditorialStoryItem>
-    await withTestStoryLifecycleLock(story.id, async () => {
-      select = setEditorialStoryOfficialItem(admin, story.id, itemId)
-      // The setter has locked the item before waiting for this story lifecycle lock.
-      await expect.poll(() => isTestStoryLifecycleLockWaiting(story.id)).toBe(true)
-      remove = removeEditorialStoryItem(admin, story.id, itemId)
+    const itemLocked = Promise.withResolvers<void>()
+    const lockStoryLifecycles = storyLifecycleLock.lockStoryLifecycles
+    vi.spyOn(storyLifecycleLock, 'lockStoryLifecycles').mockImplementation((...args) => {
+      itemLocked.resolve()
+      return lockStoryLifecycles(...args)
     })
+    try {
+      await withTestStoryLifecycleLock(story.id, async () => {
+        select = setEditorialStoryOfficialItem(admin, story.id, itemId)
+        await itemLocked.promise
+        await expect(probeItemRow(itemId)).rejects.toMatchObject({ code: '55P03' })
+        remove = removeEditorialStoryItem(admin, story.id, itemId)
+      })
+    } finally {
+      vi.restoreAllMocks()
+    }
     await Promise.all([select!, remove!])
     const final = await getStoryById(story.id)
     expect(final?.official_rss_feed_item_id).toBeNull()
@@ -81,3 +92,13 @@ describe('editorial official-item membership serialization', () => {
     ])
   })
 })
+
+async function probeItemRow(itemId: string): Promise<void> {
+  await using query = await beginTransaction()
+  await query(`SET LOCAL lock_timeout = '50ms'`)
+  await query(
+    `SELECT id FROM rss_feed_items WHERE id = $1::uuid AND deleted_at IS NULL FOR UPDATE`,
+    [itemId],
+  )
+  await query.commit()
+}

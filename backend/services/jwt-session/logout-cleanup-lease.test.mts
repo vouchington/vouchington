@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
 import { isSessionRevoked } from './revocation.mts'
 import { logoutCleanupLease, runLogoutPushCleanupAndRevoke } from './logout-cleanup-lease.mts'
-import { getJwtLogoutCleanupAdmissionKey } from './constants.mts'
+import { admitLogoutCleanupScript, getJwtLogoutCleanupAdmissionKey } from './constants.mts'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import { v7 } from 'uuid'
 
@@ -72,6 +72,23 @@ describe('logout cleanup lease', () => {
       releaseBodylessCleanup = resolve
     })
 
+    const invokeScript = sessionValkeyClient.invokeScript
+    let admissions = 0
+    const thirdAdmission = Promise.withResolvers<void>()
+    vi.spyOn(sessionValkeyClient, 'invokeScript').mockImplementation((...args) => {
+      const result = invokeScript.call(sessionValkeyClient, ...args)
+      if (args[0] === admitLogoutCleanupScript) {
+        admissions += 1
+        if (admissions === 3) {
+          void Promise.resolve(result).then(
+            () => thirdAdmission.resolve(),
+            () => thirdAdmission.resolve(),
+          )
+        }
+      }
+      return result
+    })
+
     const bodyless = runLogoutPushCleanupAndRevoke(sid, revocationOptions, async () => {
       signalBodylessCleanupStarted()
       await bodylessCleanupReleased
@@ -97,10 +114,9 @@ describe('logout cleanup lease', () => {
         binding,
       ),
     ]
-    await vi.waitFor(async () => {
-      await expect(sessionValkeyClient.get(getJwtLogoutCleanupAdmissionKey(sid))).resolves.toBe('3')
-      await expect(isSessionRevoked(sid, revocationOptions)).resolves.toBe(false)
-    })
+    await thirdAdmission.promise
+    await expect(sessionValkeyClient.get(getJwtLogoutCleanupAdmissionKey(sid))).resolves.toBe('3')
+    await expect(isSessionRevoked(sid, revocationOptions)).resolves.toBe(false)
     releaseBodylessCleanup()
 
     await Promise.all([bodyless, ...exactReplays])

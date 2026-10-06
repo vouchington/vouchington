@@ -8,7 +8,7 @@ import {
   updateTestCommunityPostReviewState,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
-import { lockPostPublication } from '@services/post-publication'
+import * as postPublication from '@services/post-publication'
 import { createModerationAppeal } from './create.mts'
 import { parseCreateModerationAppealInput } from './parse.mts'
 import { resolveModerationAppealAccept } from './resolve.mts'
@@ -67,20 +67,31 @@ describe('resolveModerationAppealAccept publication lock', () => {
     const holder = holdReviewRow()
     await rowLocked.promise
 
+    const publicationLocked = Promise.withResolvers<void>()
+    const lockPostPublication = postPublication.lockPostPublication
+    vi.spyOn(postPublication, 'lockPostPublication').mockImplementation(async (...args) => {
+      await lockPostPublication(...args)
+      publicationLocked.resolve()
+    })
     const resolving = resolveModerationAppealAccept(staff.id, appeal.id, 'staff_or_user')
     try {
-      await vi.waitFor(async () => {
-        await expect(probePublicationLock(postId)).rejects.toMatchObject({ code: '55P03' })
+      await publicationLocked.promise
+      await expect(probePublicationLock(postId, lockPostPublication)).rejects.toMatchObject({
+        code: '55P03',
       })
     } finally {
       releaseRow.resolve()
+      vi.restoreAllMocks()
     }
     await holder
     await expect(resolving).resolves.toMatchObject({ status: 'resolved' })
   })
 })
 
-async function probePublicationLock(postId: string): Promise<void> {
+async function probePublicationLock(
+  postId: string,
+  lockPostPublication: typeof postPublication.lockPostPublication,
+): Promise<void> {
   await using query = await beginTransaction()
   await query(`/* resolve appeal publication lock timeout */ SET LOCAL lock_timeout = '50ms'`)
   await lockPostPublication(query, postId)

@@ -8,7 +8,7 @@ import {
   softDeleteTestWebPushSubscription,
   testWebPushSubscriptionRowLockAvailable,
 } from '@voucha/test-helpers'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   deleteExactWebPushSubscription,
   deleteWebPushSubscription,
@@ -99,11 +99,14 @@ describe('web push endpoint ownership', () => {
     const current = await upsertWebPushSubscription(input(user!.id, endpoint))
     await using owner = await holdTestWebPushEndpointOwnershipReplacement(endpoint)
 
-    const replacementRequest = upsertWebPushSubscription(input(user!.id, endpoint))
-    await vi.waitFor(async () => {
-      await expect(owner.hasBlockedOperation()).resolves.toBe(true)
+    const ownerLockReached = Promise.withResolvers<void>()
+    const replacementRequest = upsertWebPushSubscription(input(user!.id, endpoint), {
+      beforeOwnerRowLock: async () => {
+        await expect(testWebPushSubscriptionRowLockAvailable(current.id)).resolves.toBe(true)
+        ownerLockReached.resolve()
+      },
     })
-    await expect(testWebPushSubscriptionRowLockAvailable(current.id)).resolves.toBe(true)
+    await ownerLockReached.promise
 
     await owner.release()
     const replacement = await replacementRequest

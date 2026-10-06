@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { randomUUID } from 'node:crypto'
-import { waitForQueueJobs } from '@voucha/test-helpers'
+import { readAllQueueJobs } from '@voucha/test-helpers'
+import * as unfurlEnqueues from '@queues/unfurl-referral-links/enqueues'
 import { unfurlReferralLinksQueue } from '@queues/unfurl-referral-links/queues'
 import type { MembershipLifecycleFields, MembershipUpdateResult } from './update-result.mts'
 import { enqueueUnfurledChildRemovalOnDowngrade } from './paid-tier-downgrade.mts'
@@ -26,14 +27,22 @@ function jobUserId(job: { data: unknown }): string | undefined {
   return (job.data as { userId?: string } | null)?.userId
 }
 
-function findJobsForUser(
-  jobs: Awaited<ReturnType<typeof unfurlReferralLinksQueue.getJobs>>,
-  userId: string,
-) {
-  return jobs.filter(job => jobUserId(job) === userId)
+function captureChildRemovalJobs(): Promise<unknown>[] {
+  const pending: Promise<unknown>[] = []
+  const enqueue = unfurlEnqueues.enqueueRemoveUnfurledChildrenForUser
+  vi.spyOn(unfurlEnqueues, 'enqueueRemoveUnfurledChildrenForUser').mockImplementation(userId => {
+    const job = enqueue(userId)
+    pending.push(job)
+    return job
+  })
+  return pending
 }
 
 describe('enqueueUnfurledChildRemovalOnDowngrade', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it.each(['cancelled', 'expired', 'paused'] as const)(
     'enqueues removal for current.user_id when an active plus-tier membership becomes %s',
     async status => {
@@ -42,16 +51,13 @@ describe('enqueueUnfurledChildRemovalOnDowngrade', () => {
         previous: buildLifecycleFields({ user_id: userId, status: 'active' }),
         current: buildLifecycleFields({ user_id: userId, status }),
       }
+      const pending = captureChildRemovalJobs()
 
       enqueueUnfurledChildRemovalOnDowngrade(membership)
+      await Promise.all(pending)
 
-      const jobs = await waitForQueueJobs(
-        unfurlReferralLinksQueue,
-        jobs => findJobsForUser(jobs, userId).length > 0,
-      )
-      const matchingJobs = findJobsForUser(jobs, userId)
-
-      expect(matchingJobs).toHaveLength(1)
+      const jobs = await readAllQueueJobs(unfurlReferralLinksQueue)
+      expect(jobs.filter(job => jobUserId(job) === userId)).toHaveLength(1)
     },
   )
 
@@ -61,15 +67,11 @@ describe('enqueueUnfurledChildRemovalOnDowngrade', () => {
       previous: buildLifecycleFields({ user_id: userId, status: 'cancelled' }),
       current: buildLifecycleFields({ user_id: userId, status: 'active' }),
     }
+    const pending = captureChildRemovalJobs()
 
     enqueueUnfurledChildRemovalOnDowngrade(membership)
 
-    const jobs = await waitForQueueJobs(
-      unfurlReferralLinksQueue,
-      jobs => findJobsForUser(jobs, userId).length > 0,
-      200,
-    )
-    expect(findJobsForUser(jobs, userId)).toHaveLength(0)
+    expect(pending).toHaveLength(0)
   })
 
   it('does not enqueue when an active plus-tier membership has no tier change', async () => {
@@ -78,15 +80,11 @@ describe('enqueueUnfurledChildRemovalOnDowngrade', () => {
       previous: buildLifecycleFields({ user_id: userId, status: 'active' }),
       current: buildLifecycleFields({ user_id: userId, status: 'active' }),
     }
+    const pending = captureChildRemovalJobs()
 
     enqueueUnfurledChildRemovalOnDowngrade(membership)
 
-    const jobs = await waitForQueueJobs(
-      unfurlReferralLinksQueue,
-      jobs => findJobsForUser(jobs, userId).length > 0,
-      200,
-    )
-    expect(findJobsForUser(jobs, userId)).toHaveLength(0)
+    expect(pending).toHaveLength(0)
   })
 
   it('does not enqueue when a terminal projection yields an active paid grant', async () => {
@@ -95,14 +93,10 @@ describe('enqueueUnfurledChildRemovalOnDowngrade', () => {
       previous: buildLifecycleFields({ user_id: userId, status: 'active' }),
       current: buildLifecycleFields({ user_id: userId, status: 'cancelled' }),
     }
+    const pending = captureChildRemovalJobs()
 
     enqueueUnfurledChildRemovalOnDowngrade(membership, true)
 
-    const jobs = await waitForQueueJobs(
-      unfurlReferralLinksQueue,
-      jobs => findJobsForUser(jobs, userId).length > 0,
-      200,
-    )
-    expect(findJobsForUser(jobs, userId)).toHaveLength(0)
+    expect(pending).toHaveLength(0)
   })
 })
