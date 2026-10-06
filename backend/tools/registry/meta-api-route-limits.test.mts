@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import type { Tool, ToolApiEndpoint } from '@services/openai-agents/tool-types'
 import { ALL_TOOLS } from './index.mts'
@@ -86,6 +87,17 @@ describe('MCP tools and their REST routes', () => {
         }
       },
     )
+
+    it('charges create_post to the community route only when community_id is given', () => {
+      const { selectApi } = ALL_TOOLS.find(tool => tool.schema.name === 'create_post')!.meta!
+
+      expect(selectApi!({ community_id: randomUUID() })).toEqual([
+        { method: 'POST', path: '/api/v1/communities/:idOrSlug/posts' },
+      ])
+      expect(selectApi!({ post_type: 'discussion' })).toEqual([
+        { method: 'POST', path: '/api/v1/posts' },
+      ])
+    })
 
     it('reaches both routes of a tool that picks one by whether an optional argument is given', () => {
       const scoped: ToolApiEndpoint = { method: 'POST', path: '/api/v1/scopes/:id/items' }

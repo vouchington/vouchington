@@ -163,11 +163,12 @@ usage quota above are unchanged and still apply to the request.
   against the transport bucket. REST charges before it validates the body, so MCP is not stricter.
 - **Several routes**: a call is charged for the routes it exercises. A tool whose arguments pick
   among its `meta.api` routes declares `meta.selectApi` to name them: the `manage_my_*` tools by
-  `action`, `add_list_item`, `remove_list_item` and `get_community_list_items` by `item_type`, and
-  `add_entity_relation` by `action`. Where the call does not tell, each listed route is charged once:
-  `get_my_profile` calls all three of its routes, and `create_post` charges both its routes, which
-  is stricter than REST until it declares a selector. The admin `{id}` and user `:id` spellings of a
-  path parameter name one bucket, and a repeated route is charged once.
+  `action`, `add_list_item`, `remove_list_item` and `get_community_list_items` by `item_type`,
+  `add_entity_relation` by `action`, and `create_post` by whether `community_id` is present (the
+  community route when it is, `POST /api/v1/posts` when it is not). Where the call does not tell,
+  each listed route is charged once: `get_my_profile` calls all three of its routes. The admin
+  `{id}` and user `:id` spellings of a path parameter name one bucket, and a repeated route is
+  charged once.
 - **Refusal**: a call that finds a bucket spent does not run. It returns the tool-level rate-limit
   error in the JSON-RPC result, `isError: true` with `status` 429, `code` `RATE_LIMIT`,
   `retryable: true` and `retryAfterSeconds` set to the window `Retry-After` would carry on REST. It is

@@ -68,6 +68,13 @@ const tool: Tool<Args, { success: true; post: McpPost }> = {
       { method: 'POST', path: '/api/v1/posts' },
       { method: 'POST', path: '/api/v1/communities/:idOrSlug/posts' },
     ],
+    // `community_id` picks the community route, as in `function` below. Without it the call
+    // exercises only the global route.
+    selectApi: args => [
+      args.community_id
+        ? { method: 'POST', path: '/api/v1/communities/:idOrSlug/posts' }
+        : { method: 'POST', path: '/api/v1/posts' },
+    ],
     outputSchema: POST_WRITE_RESULT_SCHEMA,
   },
   function: currentUser => async (args, invocationContext) => {
