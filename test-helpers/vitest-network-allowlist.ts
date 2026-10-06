@@ -35,9 +35,9 @@ function normalizeHost(host: string): string {
 }
 
 function isLiveProviderProject(): boolean {
-  const worker = (globalThis as Record<string, { ctx?: { projectName?: string } } | undefined>)[
-    '__vitest_worker__'
-  ]
+  const worker = (
+    globalThis as unknown as Record<string, { ctx?: { projectName?: string } } | undefined>
+  )['__vitest_worker__']
   const projectName = worker?.ctx?.projectName
   return projectName !== undefined && LIVE_PROVIDER_PROJECTS.has(projectName)
 }
