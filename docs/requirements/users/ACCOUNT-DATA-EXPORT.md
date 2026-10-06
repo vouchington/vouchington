@@ -64,8 +64,9 @@ account holder, so it stays invisible to them.
 
 The export carries the user's own copyright records, because the right to know covers them. The rule
 is deliberately conservative: the export reveals nothing the user cannot already see in the app,
-except the user's own submissions. Counsel confirms it as part of the copyright launch readiness
-work in [#1230](https://github.com/vouchington/vouchington/issues/1230).
+except the user's own submissions. The owner approves it as part of the copyright launch readiness
+work in [#1230](https://github.com/vouchington/vouchington/issues/1230), after AI advisor review
+(not a legal determination).
 
 - **Own filings, decrypted in full.** `copyright-notices-filed.csv` holds each notice the user filed
   while signed in: claimant name, contact, work description, statements, signature, and target
@@ -84,7 +85,8 @@ work in [#1230](https://github.com/vouchington/vouchington/issues/1230).
   claimant identity. `copyright-repeat-infringer-reviews.csv` lists decided account reviews with
   their outcome and dates. Rationales and open reviews are withheld.
 - **Out of scope.** Claimants who only ever used email have no account, so those requests are
-  handled manually. EU and UK redress records, delivery and outbox rows (transport, not user records),
+  handled manually by the owner: see
+  [Data requests from email-only claimants](../../runbooks/copyright-notices.md#data-requests-from-email-only-claimants). EU and UK redress records, delivery and outbox rows (transport, not user records),
   and court or CCB filings are not exported; no signed-in court or CCB filing exists yet.
 - **Erased accounts** have no copyright records: their claimant and submitter links are cleared, and
   the other party's case view loses the attribution.

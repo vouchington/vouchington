@@ -4,7 +4,7 @@ Part of [`@services/copyright-notices`](README.md). The behaviour and its legal 
 [staydown matching](../../../../requirements/moderation/COPYRIGHT-NOTICES.md#staydown-matching);
 this page records where the code lives.
 
-While `copyright.staydownMatching` is on (off at launch, pending counsel's decision on DSM Article
+While `copyright.staydownMatching` is on (off at launch, pending the owner's decision on DSM Article
 17 staydown), a moderator-confirmed restriction registers its images in `copyright_staydown_entries`
 inside the confirming transaction. `applyCopyrightConfirmationConsequencesInTransaction` in
 `staydown-registration.mts` runs there beside the repeat-infringer sync, from acceptance,

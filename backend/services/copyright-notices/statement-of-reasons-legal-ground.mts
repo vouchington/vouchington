@@ -1,6 +1,6 @@
 import type { CopyrightStatementFields } from './statement-of-reasons-types.mts'
 
-/** Closed legal-ground wording; counsel reviews the EU/UK phrasing before approval. */
+/** Closed legal-ground wording; the owner approves the EU/UK phrasing after AI advisor review (#1230). */
 export function copyrightStatementLegalGround(jurisdiction: string): {
   fields: CopyrightStatementFields['legalGround']
   text: string

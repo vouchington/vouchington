@@ -1,4 +1,4 @@
-/** Draft public text for counsel review in #1230. Keep all public free text here. */
+/** Draft public text, reviewed by an AI advisor in #1230 (not a legal determination). Keep all public free text here. */
 export const DSA_COPYRIGHT_DECISION_FACTS =
   'After reviewing a copyright notice about an image hosted by the service, the platform disabled access to that image.'
 

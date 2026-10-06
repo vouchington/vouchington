@@ -21,9 +21,5 @@ export type CopyrightFormGuidance = {
     kind: 'possible_fair_use' | 'abuse_signal' | 'mismatched_claimant'
     note: string
   }>
-  suggested_action:
-    | 'approve_intake'
-    | 'request_information'
-    | 'reject_intake'
-    | 'escalate_to_counsel'
+  suggested_action: 'approve_intake' | 'request_information' | 'reject_intake' | 'escalate_to_owner'
 }

@@ -9,15 +9,16 @@ authority atomically with the intake review. Existing restrictions and their del
 continue while screening runs.
 
 This runbook covers recovery and escalation for the durable lifecycle in
-[Copyright Notice Lifecycle](../requirements/moderation/COPYRIGHT-NOTICES.md). It does not replace
-qualified legal review. Production contacts, credentials, response rosters, and infrastructure
-identifiers belong in the private operations repository.
+[Copyright Notice Lifecycle](../requirements/moderation/COPYRIGHT-NOTICES.md). It is not legal
+advice, and an AI advisor review (recorded on #1230) is not a legal determination. Production
+contacts, credentials, response rosters, and infrastructure identifiers belong in the private
+operations repository.
 
 ## Service targets
 
 - Triage every automatically restricted case within four elapsed hours.
 - Complete ordinary human review within 24 elapsed hours.
-- Apply an operator- and counsel-approved response target to guest, email, EU, and UK queues.
+- Apply an owner-approved response target to guest, email, EU, and UK queues.
 - Escalate an unresolved US restoration at the start of business day 14; treat the exclusive end of
   day 14 as an overdue incident.
 
@@ -64,7 +65,8 @@ Missing or withdrawn EU intake approval does not change this independent service
 Before activation, the operator completes [Commission onboarding](https://transparency.dsa.ec.europa.eu/page/onboarding-documentation)
 and sandbox validation, supplies
 worker-only `DSA_TRANSPARENCY_DATABASE_URL` and secret `DSA_TRANSPARENCY_DATABASE_TOKEN`, and obtains
-counsel's wording and automation confirmation in #1230. The code contains draft fixed templates.
+the owner's approval of the wording and automation, after AI advisor review (recorded on #1230;
+this is not a legal determination). The code contains draft fixed templates.
 The URL must use HTTPS on a Commission `europa.eu` host. Hand the two environment-variable names
 to the infrastructure owner through the [env contract](../overview/infrastructure/env-var-contract.md);
 this change does not configure infrastructure or credentials. Blank credentials leave work
@@ -256,7 +258,8 @@ environment:
 - reversible placement withholding and origin/CDN denial have passed end-to-end testing;
 - receipts, poster notices, approved correspondence, retry/bounce handling, appeal and counter-notice
   workflows are live; and
-- the repeat-infringer policy, retention schedule, templates, staffing, and legal review are approved.
+- the owner has approved the repeat-infringer policy, retention schedule, templates, and staffing,
+  after AI advisor review (recorded on #1230; this is not a legal determination).
 
 Never approve `eu_dsa` or `uk` before the staff territorial screen (#1906) has shipped. Approval is
 administrator-only: `POST /api/v1/copyright-jurisdiction-policies`. This prerequisite is separate
@@ -320,12 +323,12 @@ the staff case action first, then record implementation: the referral or outcome
 restore media. These records remain usable after withdrawal. UK has no EU filing/complaint UI or
 Art. 21 recording.
 
-Never approve `uk` without counsel's written sign-off. Keep both EU/UK approvals unapproved until
+Never approve `uk` without the owner's written sign-off. Keep both EU/UK approvals unapproved until
 the staff territorial screen ships. Approval and withdrawal are administrator-only:
 `POST /api/v1/copyright-jurisdiction-policies` and `.../:id/withdrawals`. Basis recorded by the owner
 on 2026-09-28: Online Safety Act 2023 s.59 excludes intellectual property, and e-Commerce Regulations
-2002 reg. 19 is met by the global pipeline. Counsel has not yet confirmed this basis; it is tracked
-in [#1230](https://github.com/vouchington/vouchington/issues/1230).
+2002 reg. 19 is met by the global pipeline. The basis was reviewed by an AI advisor on 2026-10-05
+([#1230](https://github.com/vouchington/vouchington/issues/1230)); it is not a legal determination.
 
 Designated-agent email is still ingested while the switch is off, so no inbound message waits
 unseen in `copyright-incoming/`. The SES worker and its reconcile sweep copy each message into the
@@ -402,12 +405,12 @@ carries a statutory filing for an existing case, handle it from the designated-a
 remains the source of truth for §512(g) clocks until the switch is on.
 
 The web footer must link to the Copyright policy, designated-agent status, repeat-infringer policy,
-Terms, Privacy, and Community Guidelines. Before launch, counsel must update the DB-backed Terms,
+Terms, Privacy, and Community Guidelines. Before launch, the owner must update the DB-backed Terms,
 Privacy, and Community Guidelines articles to describe the activated process, case-record privacy,
 evidence retention, and repeat-infringer enforcement. The placeholder-free public designated-agent
 page must state that the channel is inactive until a real registration and monitored contact exist.
 
-Do not advertise EU or UK statutory intake until counsel completes representative appointment and
+Do not advertise EU or UK statutory intake until the owner completes representative appointment and
 the applicability review. Those contracts stay unavailable until an unwithdrawn jurisdiction policy
 approval is recorded. The public form still accepts only `us_dmca`.
 
@@ -433,7 +436,8 @@ Before enabling it, confirm all of the following:
   `automaticWithholdingClaimantDailyCap` and `automaticWithholdingPosterDailyCap`. They launch
   unset (-1). While any is unset, nothing is withheld automatically and every notice waits for a
   moderator, so an incomplete setup fails closed. There are no defaults to inherit; choose each
-  value with legal and trust review. Zero is a real value (a cap of 0 refuses every notice); and
+  value as the owner, after AI advisor review (#1230) and trust review. Zero is a real value (a cap
+  of 0 refuses every notice); and
 - you flip the switch with the namespace PATCH, not by editing stored state, because the audited
   off-to-on change is what opens the automation window (below).
 
@@ -461,8 +465,9 @@ as usual.
 
 `staydownMatching` in the `copyright` dynamic-config namespace stays `false`. Only a developer or an
 administrator can change it, and the namespace history records each change. Staydown binds only an
-online content-sharing service provider under DSM Directive Article 17(4)(b)-(c). **Counsel must
-decide whether Voucha is one before anyone enables the switch.** See
+online content-sharing service provider under DSM Directive Article 17(4)(b)-(c). **The owner
+must decide whether Voucha is one, after AI advisor review (#1230), before anyone enables the
+switch.** See
 [Staydown matching](../requirements/moderation/COPYRIGHT-NOTICES.md#staydown-matching) for the
 contract.
 
@@ -676,10 +681,10 @@ repeat-infringer count needs. What it erases, and what stops it, is in
 [evidence retention](../requirements/moderation/COPYRIGHT-NOTICES.md#evidence-retention). It does
 nothing until you do all of the following, in order.
 
-1. **Get a counsel-approved period.** Counsel sets how many days a case is kept after its last
-   lifecycle event ([#1230](https://github.com/vouchington/vouchington/issues/1230)). Do not choose
-   one yourself. It must cover the three-year limitation period and any restoration and
-   repeat-infringer need counsel identifies.
+1. **Get an owner-approved period.** The owner sets how many days a case is kept after its last
+   lifecycle event, after AI advisor review ([#1230](https://github.com/vouchington/vouchington/issues/1230)).
+   Do not choose one yourself. It must cover the three-year limitation period and any restoration and
+   repeat-infringer need that review identifies.
 2. **Confirm the evidence-bucket permissions.** The worker role needs `s3:ListBucketVersions`,
    `s3:DeleteObjectVersion` and `s3:DeleteObject` on `S3_BUCKET_COPYRIGHT_EVIDENCE`
    ([#1229](https://github.com/vouchington/vouchington/issues/1229)). Without them every erasure
@@ -698,7 +703,7 @@ nothing until you do all of the following, in order.
    account keeps every case that account is party to out of the sweep, and the period restarts
    when the hold is released. The sweep cannot see legal process that no hold records: a request
    about an email-only claimant, who has no account, or a matter nobody placed a hold for. Place
-   the hold first, and keep the switch off while counsel has an open matter over copyright
+   the hold first, and keep the switch off while there is an open legal matter over copyright
    records that a hold cannot cover.
 5. **Set the period, then the switch.** In the admin dynamic-config page, open the `copyright`
    namespace (developer role). Set `evidenceRetentionDays` to the approved whole number of days,
@@ -726,7 +731,22 @@ unavailable. The repeat-infringer account view is unchanged, and its incident co
 capabilities, and email that was never promoted to a case
 ([#1660](https://github.com/vouchington/vouchington/issues/1660)). A case with an active restriction
 or an operative incident is never swept. If a claimant asks for erasure before the period ends,
-that is a data-subject request for counsel, not something this switch handles.
+that is a data-subject request for the owner to decide, not something this switch handles.
+
+## Data requests from email-only claimants
+
+A claimant who only emailed the designated-agent mailbox has no account, so no self-serve
+[account data export](../requirements/users/ACCOUNT-DATA-EXPORT.md#copyright-records) covers them.
+An AI advisor review ruled a manual process enough
+([#1230](https://github.com/vouchington/vouchington/issues/1230)); it is not a legal determination.
+The owner handles their GDPR Art. 15 request:
+
+1. Find their email intakes, and any cases opened from them, by the requester's address: the sender
+   on each intake in the email review queue, and the claimant contact on each case.
+2. Verify identity by replying to that same address. Release nothing to any other address.
+3. Send the records within one month of receiving the request (GDPR Art. 12(3)). Apply the
+   redaction rule in [copyright records](../requirements/users/ACCOUNT-DATA-EXPORT.md#copyright-records)
+   to anything about another party.
 
 ## Urgent review
 
@@ -758,9 +778,10 @@ action-intent record by hand.
 
 ## DMCA §512(h) subpoenas
 
-This procedure routes a subpoena to counsel. It is not legal advice. Counsel decides validity,
-scope, user notice, and what is produced. Keep the matter file, counsel contacts, and produced
-copies in the private operations repository.
+This procedure routes a subpoena to the owner, who engages a lawyer for the matter. It is not legal
+advice. The owner decides validity, scope, user notice, and what is produced, on that lawyer's
+advice. An AI advisor cannot answer compelled legal process. Keep the matter file, lawyer contacts,
+and produced copies in the private operations repository.
 
 Under [17 U.S.C. §512(h)](https://www.law.cornell.edu/uscode/text/17/512), a copyright owner can ask
 the clerk of any US district court to issue a subpoena. It orders Voucha to disclose information
@@ -768,7 +789,8 @@ sufficient to identify an alleged infringer, to the extent Voucha has it.
 
 1. **Intake.** Subpoenas are served on the designated agent, by post or process server at the
    registered address or through the designated inbox. Record when and how it was served, and
-   send it to counsel the same day. A subpoena emailed to the designated inbox becomes an email
+   send it to the owner the same day. Engage a lawyer for this matter the same day. A subpoena
+   emailed to the designated inbox becomes an email
    intake in the email review queue. Do not approve it, because approval admits it as a copyright
    notice. Do not reject it either, because rejection queues the standard notice-rejection reply
    to the parsed sender (or to an address staff type when none was parsed).
@@ -781,11 +803,12 @@ sufficient to identify an alleged infringer, to the extent Voucha has it.
      [review-target page](#review-target-page) stops counting it. The intake's review row records
      who decided and when.
    - **It is final.** A second decision on the intake, including a rejection or an approval, returns
-     `409`, and nothing undoes it. Record it once the subpoena is with counsel.
+     `409`, and nothing undoes it. Record it once the subpoena is with the owner.
    - **Initial intakes only.** The action is not offered on a reply that is linked to a case thread
-     or waiting for its root case. If a subpoena arrives that way, ask counsel before deciding
-     it: rejecting it as correspondence sends no email, but it does write a case event.
-2. **Validity checks.** Before anything is disclosed, record for counsel whether:
+     or waiting for its root case. If a subpoena arrives that way, ask the owner before deciding
+     it, on the lawyer's advice: rejecting it as correspondence sends no email, but it does write a
+     case event.
+2. **Validity checks.** Before anything is disclosed, record for the owner and the lawyer whether:
    - a clerk of a US district court issued and signed it;
    - it attaches or follows a notification that meets §512(c)(3)(A);
    - it attaches the requester's sworn declaration that the identity is sought only to protect
@@ -794,17 +817,18 @@ sufficient to identify an alleged infringer, to the extent Voucha has it.
      they match, if any; and
    - its return date and any required format.
 
-   A missing element is for counsel to weigh, not a reason to let the return date pass.
+   A missing element is for the owner to weigh, on the lawyer's advice, not a reason to let the
+   return date pass.
 
-3. **Counsel review.** Nothing is disclosed until counsel approves the scope in writing. Counsel
-   decides whether to comply, narrow the request, object, or move to quash. Section 512(h)(6)
-   applies the Federal Rules of Civil Procedure for subpoenas duces tecum. Staff do not tell the
-   requester whether an account exists.
-4. **User notice.** The product has no channel for notice of legal process. If counsel approves
-   notice and no court order or law forbids it, send it from the operator mailbox before any
-   production, so the user can respond. Record the date it was sent in the matter file.
-5. **Preservation.** If counsel directs that the account's records be preserved, an administrator
-   places a **preservation hold** on the account. The legal holds in
+3. **Owner decision.** Nothing is disclosed until the owner approves the scope in writing, on the
+   lawyer's advice. The owner decides whether to comply, narrow the request, object, or move to
+   quash, on that lawyer's advice. Section 512(h)(6) applies the Federal Rules of Civil Procedure for
+   subpoenas duces tecum. Staff do not tell the requester whether an account exists.
+4. **User notice.** The product has no channel for notice of legal process. If the owner approves
+   notice, on the lawyer's advice, and no court order or law forbids it, send it from the operator
+   mailbox before any production, so the user can respond. Record the date it was sent in the matter file.
+5. **Preservation.** If the owner directs, on the lawyer's advice, that the account's records be
+   preserved, an administrator places a **preservation hold** on the account. The legal holds in
    `copyright_notice_legal_hold_assessments` are a different record: they capture only §512(g)(2)(C)
    court and CCB filings and change restoration. Never record a subpoena as a court or CCB filing,
    or as a submission of kind `court_or_ccb_hold`.
@@ -813,8 +837,8 @@ sufficient to identify an alleged infringer, to the extent Voucha has it.
      Enter a short matter reference of up to 500 characters, such as a matter id. Do not put the
      requester's name, the subpoena text, or the account holder's data in it. It is stored
      encrypted, shown only to administrators, and never logged. The hold has no duration or scope:
-     counsel decides when it ends, and an administrator releases it from the same card. Only one
-     hold is open per account at a time.
+     the owner decides when it ends, on the lawyer's advice, and an administrator releases it from
+     the same card. Only one hold is open per account at a time.
    - **Effect.** While a hold is open, deletion of the account by the user or by an administrator
      returns the same `409` as for an operative incident or a court or CCB hold. The message does
      not say which, so it does not reveal that legal process exists. A hold does not copy or freeze
@@ -825,7 +849,7 @@ sufficient to identify an alleged infringer, to the extent Voucha has it.
      never deleted, so this history outlives the account and its eventual hard delete (see
      [account deletion](../requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md#deletion-refusals)).
    - **Already deleted.** A hold cannot be placed on an account that is already deleted. If the
-     subpoena arrives after deletion, tell counsel the same day: the account's personal data was
+     subpoena arrives after deletion, tell the owner the same day: the account's personal data was
      scrubbed at deletion, and the soft-deleted row is purged 90 days after it.
    - **Case evidence.** Copyright case records are append-only, and the only thing that destroys
      case evidence is the evidence retention sweep, which is off by default. A preservation hold
@@ -834,17 +858,17 @@ sufficient to identify an alleged infringer, to the extent Voucha has it.
      a repeat-infringer incident (see [Evidence retention deletion](#evidence-retention-deletion)).
      A hold on a different account, or none, does not.
 
-   If counsel also directs a copy of the data, an administrator requests an
-   [account data export](../requirements/users/ACCOUNT-DATA-EXPORT.md) for the account and saves
+   If the owner also directs, on the lawyer's advice, a copy of the data, an administrator requests
+   an [account data export](../requirements/users/ACCOUNT-DATA-EXPORT.md) for the account and saves
    the download to the matter file before its link expires. The export omits session IP
-   addresses, so capture any that counsel needs from `user_sessions`. The account holder cannot see
-   this export: it is recorded against the administrator who requested it, so their data page, its
+   addresses, so capture any that the owner or lawyer needs from `user_sessions`. The account holder cannot
+   see this export: it is recorded against the administrator who requested it, so their data page, its
    status stream and its download link do not return it, no ready email is sent, and it does not
    block their own export request. Only that administrator can read its status and download link,
-   through the data-request route on the account. Counsel still decides separately, in step 4,
+   through the data-request route on the account. The owner still decides separately, in step 4,
    whether to give the user notice of the legal process.
 
-6. **Records that may exist.** Produce only what counsel approves.
+6. **Records that may exist.** Produce only what the owner approves, on the lawyer's advice.
    - Account: the export categories (username, profile, creation date, email addresses, phone
      numbers, OAuth account and passkey metadata), plus `user_sessions` rows. Each row holds a
      device name, a user agent, a last-seen time, and the IP address captured at the latest
@@ -855,8 +879,8 @@ sufficient to identify an alleged infringer, to the extent Voucha has it.
      name, address, and telephone number, and the claimant has already received it with the
      forwarded counter-notice.
 7. **Close out.** In the matter file, record the requester, the service date, the validity
-   checks, counsel's decision, the notice sent, and what was produced and when. The case record
-   has no subpoena event or correspondence type, so don't add one to it.
+   checks, the owner's decision and the lawyer's advice, the notice sent, and what was produced and
+   when. The case record has no subpoena event or correspondence type, so don't add one to it.
 
 ## Statements of reasons and decision notices
 

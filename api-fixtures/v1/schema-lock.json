@@ -323,7 +323,7 @@
     },
     "GET:/api/v1/copyright-notices/review-queue": {
       "fixtureIds": ["web.copyright.staff-queue.default", "web.copyright.staff-queue.territorial"],
-      "hash": "23ccf82f418eaea948d38bb40316bae2572f3ffe81036c608308fb4808002a67"
+      "hash": "5455bcbaeed77daa8dd38c58bbaebe4cbbc66db4240ba7047e705a180f4e55ea"
     },
     "GET:/api/v1/copyright-trusted-flaggers": {
       "fixtureIds": ["copyright.trusted-flaggers.list"],

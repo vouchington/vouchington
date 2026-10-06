@@ -83,7 +83,7 @@ action. Counter-notice prompts use only statutory answers, field-presence boolea
 notice context, target URLs, and restricted-target count; names, addresses, telephone numbers,
 email, signature text, and claimant display name are excluded. For free-text filings, deterministic
 contact redaction replaces emails and phone numbers before sanitization and input hashing. Names and
-postal addresses typed into free text remain subject to counsel's #1230 decision. Erased bodies are
+postal addresses typed into free text remain subject to the owner's decision on #1230. Erased bodies are
 not sent. Guidance is encrypted, immutable, retention-erased with its submission, and advisory only.
 There is no guidance activation switch; `COPYRIGHT_INTAKE_ENABLED` does not gate guidance for an
 already-filed case. The panel uses the same "AI guidance — not a decision" label and no workflow
@@ -234,7 +234,7 @@ as a community owner acts as a user; only a site administrator's community setti
 content. Avatars and profile-link images remain the owner's own content regardless of staff role.
 Topic images and administrator-set community images are assessed and may be withheld, but have no
 subscriber counter-notice flow or incident. The claimant still receives the decision. These drafted
-subscriber and strike rules await counsel confirmation in #1230.
+subscriber and strike rules await the owner's approval after AI advisor review (#1230).
 
 Other community owners receive one informational in-app notice and email, linked to the community
 page. They gain no participant case access, appeal or counter-notice right. The notice says whether
@@ -324,7 +324,7 @@ case lifecycle, even when the recommendation is `potentially_valid`.
 On the staff email review page a moderator decides an initial intake with **Approve structured
 intake**, **Request information**, **Reject email intake**, or **Record as legal process**. A request for information carries a
 required message (not blank, at most 10,000 characters) that follows the fixed reply text, and like
-a rejection it closes the intake without opening a case. Reply wording is owned by counsel.
+a rejection it closes the intake without opening a case. The owner approves the reply wording.
 
 The page shows a parsed email's sender, subject, and body as labelled text, with the body
 preformatted so its newlines are real. A failed parse shows `Parse failed:` with the parser error,
@@ -493,7 +493,7 @@ supplements, counter-notice deadline starts, restoration and placement-retention
 submission and legal-hold assessments, human-review completion, evidence and correspondence
 handling, action, delivery, and registry replays, and every guest-capability event are staff-only.
 Whether a poster may see a received court or CCB hold, which explains why restoration did not
-happen, is an open owner and counsel decision. A new event type stays invisible to members and
+happen, is an open owner decision. A new event type stays invisible to members and
 participants until it is added to the allowlist.
 
 A guest who is not signed in acts only with a hashed, expiring, revocable capability for one case.
@@ -639,10 +639,10 @@ the thresholds before flipping the switch.
 ## Staydown matching
 
 DSM Directive Article 17(4)(b)-(c) obliges only an online content-sharing service provider (OCSSP)
-to keep confirmed-infringing works down. Whether Voucha is an OCSSP is a legal question for counsel,
+to keep confirmed-infringing works down. Whether Voucha is an OCSSP is a legal question the owner decides, after AI advisor review (#1230),
 so the capability ships switched off. `staydownMatching` in the audited `copyright` dynamic-config
 namespace defaults to `false`. Only a developer or an administrator can change it, and every change
-records the actor and the previous and next values. Counsel must decide the OCSSP question before
+records the actor and the previous and next values. The owner must decide the OCSSP question before
 anyone enables it.
 
 The feature never blocks, hides, or delays an upload. Article 17(7) and CJEU C-401/19 forbid
@@ -698,7 +698,7 @@ Do not claim that a designated agent is active before those facts are true.
 
 Before accepting EU notices, appoint any required DSA legal representative and contact points,
 implement Article 16 notice handling and Article 17 statements of reasons, assess Article 24(5)
-transparency reporting, and obtain counsel's Article 17 DSM analysis. Before accepting UK notices,
+transparency reporting, and obtain the owner's Article 17 DSM decision after AI advisor review (#1230). Before accepting UK notices,
 complete a UK copyright and Online Safety Act applicability assessment and publish the resulting
 process. Follow the [UK approval rule](../../runbooks/copyright-notices.md#intake-activation).
 These are activation requirements, not claims of current compliance.
@@ -782,9 +782,9 @@ other. Withdrawing approval stops new EU/UK
 notice intake only. A notice already received remains decidable, and its acknowledgment, decision,
 enforcement, statement delivery, complaint and complaint decision, restoration, and Article 21
 recording use the notice's receipt rather than current approval. These staff and in-case operations
-do not depend on `COPYRIGHT_INTAKE_ENABLED`. Representatives, counsel review, and the activation
+do not depend on `COPYRIGHT_INTAKE_ENABLED`. Representatives, owner approval after AI advisor review, and the activation
 checklist remain required before any live intake is advertised. Conflicting grounds go to qualified
-staff or counsel, and removing one ground cannot remove another.
+staff or the owner, and removing one ground cannot remove another.
 
 ## EU and UK contracts
 
@@ -921,8 +921,8 @@ no restoration behavior, and has no duration or scope. See
 ## Data export
 
 The account data export (GDPR Art. 15, CCPA right to know) includes the account's copyright records
-under a deliberately conservative redaction rule, so the export reveals nothing new. Counsel
-confirms the rule under [#1230](https://github.com/vouchington/vouchington/issues/1230).
+under a deliberately conservative redaction rule, so the export reveals nothing new. The owner
+approves the rule after AI advisor review ([#1230](https://github.com/vouchington/vouchington/issues/1230); not a legal determination).
 
 - The account's own signed-in submissions are exported decrypted in full: filed notices (claimant
   name, contact, work description, statements, signature, target references), counter-notices (name,
@@ -953,7 +953,7 @@ See [account data export](../users/ACCOUNT-DATA-EXPORT.md#copyright-records) for
 GDPR and UK GDPR need a retention period, real deletion or anonymisation when it ends, and
 disclosure of both. The US side must keep records for the repeat-infringer policy (17 USC 512(i)),
 restoration (512(g)), the three-year limitation period (17 USC 507(b)), and litigation holds. An
-hourly sweep reconciles the two. It is off by default and deletes nothing until counsel approves a
+hourly sweep reconciles the two. It is off by default and deletes nothing until the owner approves a
 period.
 
 - **Switch and period.** Both live in the audited `copyright` dynamic-config namespace, and only a
@@ -1023,8 +1023,8 @@ period.
   or an EU or UK record. Replaying an idempotent form request after its case was erased opens a new
   case, and a counter-notice that arrives after erasure cannot be forwarded to the claimant.
 
-[Enabling it](../../runbooks/copyright-notices.md#evidence-retention-deletion) needs a
-counsel-approved period
+[Enabling it](../../runbooks/copyright-notices.md#evidence-retention-deletion) needs an
+owner-approved period
 ([#1230](https://github.com/vouchington/vouchington/issues/1230)), the evidence-bucket delete
 permission ([#1229](https://github.com/vouchington/vouchington/issues/1229)), and a check that the
 account data export of an erased case completes ([#1754](https://github.com/vouchington/vouchington/issues/1754);
@@ -1066,8 +1066,8 @@ subject, or body fields. When every count is zero, nothing is sent. See the
 Before accepting live notices, the operator must register and publish the actual US designated
 agent, appoint any required EU/UK representatives, approve retention and repeat-infringer policies,
 staff the response targets, provision a versioned encrypted evidence bucket and least-privilege
-SES/worker IAM, and obtain US legal review. EU/UK intake additionally requires the representatives
-and legal review described above, including the
+SES/worker IAM, and obtain the owner's approval after AI advisor review (#1230; not a legal determination).
+EU/UK intake additionally requires the representatives and owner approval described above, including the
 [UK approval rule](../../runbooks/copyright-notices.md#intake-activation).
 Placeholder addresses, credentials, or registration claims are
 forbidden. See the [copyright operations runbook](../../runbooks/copyright-notices.md).

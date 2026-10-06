@@ -46,7 +46,7 @@ const OUTPUT_SCHEMA = {
         },
         suggested_action: {
           type: 'string',
-          enum: ['approve_intake', 'request_information', 'reject_intake', 'escalate_to_counsel'],
+          enum: ['approve_intake', 'request_information', 'reject_intake', 'escalate_to_owner'],
         },
       },
       required: ['summary', 'elements', 'risk_notes', 'suggested_action'],

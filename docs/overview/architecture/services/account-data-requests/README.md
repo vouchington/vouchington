@@ -53,8 +53,8 @@ Redaction rule: the export decrypts only what the account itself submitted as a 
 (notices, appeals, counter-notices). Every other party's data comes from the participant projection
 in `backend/services/copyright-notices/read-models.mts`, so it never holds another party's legal
 name, address, contact, signature, staff rationale or raw email, and it omits delivery and outbox rows.
-The rule is deliberately conservative and counsel confirms it under
-[#1230](https://github.com/vouchington/vouchington/issues/1230). See
+The rule is deliberately conservative and the owner approves it after AI advisor review
+([#1230](https://github.com/vouchington/vouchington/issues/1230); not a legal determination). See
 [account data export](../../../../requirements/users/ACCOUNT-DATA-EXPORT.md#copyright-records) for the exact files and
 [copyright notices](../../../../requirements/moderation/COPYRIGHT-NOTICES.md#data-export) for the
 owning rule.

@@ -22,7 +22,7 @@ describe('copyright form guidance parser', () => {
     const guidance = guidanceWith(value => {
       value.elements[1] = { element: 'work_identification', status: 'unclear', gap: 'No URL.' }
       value.risk_notes = riskNotes(6)
-      value.suggested_action = 'escalate_to_counsel'
+      value.suggested_action = 'escalate_to_owner'
     })
     expect(parseCopyrightFormGuidance(guidance)).toEqual(guidance)
   })

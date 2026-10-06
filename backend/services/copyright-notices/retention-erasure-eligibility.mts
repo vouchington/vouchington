@@ -20,7 +20,7 @@ import { COPYRIGHT_PRESERVATION_PARTIES_SQL } from './retention-erasure-preserva
  * latest of the case's last lifecycle event and the last change to a delivery, incident, guest
  * capability or preservation hold, none of which write a lifecycle event, so a blocker that has
  * just cleared never makes a case instantly erasable. Cases already erased are never offered again. Only `us_dmca`
- * cases are covered until counsel decides the EU and UK records.
+ * cases are covered until the owner decides the EU and UK records.
  */
 export function copyrightRetentionEligibleSql(now: Date, cutoff: Date): SQLStatement {
   return copyrightStaffQueueKeysSql()

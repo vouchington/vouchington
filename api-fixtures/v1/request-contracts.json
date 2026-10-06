@@ -3802,7 +3802,7 @@
           "type": "array"
         },
         "suggested_action": {
-          "enum": ["approve_intake", "escalate_to_counsel", "reject_intake", "request_information"],
+          "enum": ["approve_intake", "escalate_to_owner", "reject_intake", "request_information"],
           "type": "string"
         },
         "summary": {
