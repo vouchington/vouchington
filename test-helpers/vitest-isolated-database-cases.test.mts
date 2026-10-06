@@ -29,7 +29,7 @@ const fixtureDirs: string[] = []
 const databaseName = `voucha_scope_case_${'a'.repeat(24)}`
 const databaseUrl = `postgres://postgres@localhost:5432/${databaseName}`
 const childEnv = {
-  VITEST_ISOLATED_DATABASE_CASE: 'images-abandoned-upload-cleanup',
+  VITEST_ISOLATED_DATABASE_CASE: 'semantic-post-window-cap',
   VITEST_ISOLATED_DATABASE_CHILD: databaseName,
   DATABASE_URL: databaseUrl,
   READ_DATABASE_URL: databaseUrl,
@@ -46,10 +46,9 @@ describe('isolated database case selection', () => {
       fullName:
         'semantic search candidate paging > ends pagination at the fixed window and counts the same candidates',
     })
-    expect(getIsolatedDatabaseCase('images-abandoned-upload-cleanup')).toEqual({
-      file: 'backend/workers/images/workers/images.test.mts',
-      fullName: 'images worker > cleans abandoned uploads from the worker job',
-    })
+    expect(() => getIsolatedDatabaseCase('images-abandoned-upload-cleanup')).toThrow(
+      'Unknown isolated database case: images-abandoned-upload-cleanup',
+    )
     expect(() => getIsolatedDatabaseCase('other')).toThrow('Unknown isolated database case')
   })
 
@@ -67,18 +66,18 @@ describe('isolated database case selection', () => {
   })
 
   it('anchors the selected test name instead of matching a prefix or sibling', () => {
-    const { fullName } = getIsolatedDatabaseCase('images-abandoned-upload-cleanup')
-    const pattern = new RegExp(isolatedTestNamePattern('images-abandoned-upload-cleanup'))
+    const { fullName } = getIsolatedDatabaseCase('semantic-post-window-cap')
+    const pattern = new RegExp(isolatedTestNamePattern('semantic-post-window-cap'))
     expect(pattern.test(fullName)).toBe(true)
     expect(pattern.test(`${fullName} extra`)).toBe(false)
     expect(pattern.test(`prefix ${fullName}`)).toBe(false)
   })
 
   it('distinguishes a parent from the exact registered disposable child', () => {
-    expect(getIsolatedDatabaseCaseMode('images-abandoned-upload-cleanup', {})).toBe('parent')
-    expect(getIsolatedDatabaseCaseMode('images-abandoned-upload-cleanup', childEnv)).toBe('child')
+    expect(getIsolatedDatabaseCaseMode('semantic-post-window-cap', {})).toBe('parent')
+    expect(getIsolatedDatabaseCaseMode('semantic-post-window-cap', childEnv)).toBe('child')
     expect(getIsolatedDatabaseChildCase(childEnv)).toEqual(
-      getIsolatedDatabaseCase('images-abandoned-upload-cleanup'),
+      getIsolatedDatabaseCase('semantic-post-window-cap'),
     )
   })
 
@@ -92,7 +91,7 @@ describe('isolated database case selection', () => {
       message: 'Invalid isolated database child identity',
     },
     {
-      override: { VITEST_ISOLATED_DATABASE_CASE: 'semantic-post-window-cap' },
+      override: { VITEST_ISOLATED_DATABASE_CASE: 'semantic-post-window-selective' },
       message: 'Invalid isolated database child identity',
     },
     {
@@ -117,7 +116,7 @@ describe('isolated database case selection', () => {
     },
   ])('rejects a malformed or mismatched child identity %#', ({ override, message }) => {
     expect(() =>
-      getIsolatedDatabaseCaseMode('images-abandoned-upload-cleanup', { ...childEnv, ...override }),
+      getIsolatedDatabaseCaseMode('semantic-post-window-cap', { ...childEnv, ...override }),
     ).toThrow(message)
   })
 
