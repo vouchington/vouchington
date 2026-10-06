@@ -1,4 +1,4 @@
-import { it, expect, beforeAll, describe } from 'vitest'
+import { it, expect, beforeAll, describe, vi } from 'vitest'
 import '@services/referral-program-link-validations'
 import '../register-post-related-urls-guard.mts'
 import { createPost } from '../create.mts'
@@ -160,6 +160,7 @@ describe('create.generated', () => {
     const slug = `bloom-test-slug-${random}`
 
     entityCacheBloomFilters.posts = testPostsBloomFilter
+    const addToBloom = vi.spyOn(testPostsBloomFilter, 'add')
     try {
       await testPostsBloomFilter.delete()
       await testPostsBloomFilter.ensureExists()
@@ -168,9 +169,11 @@ describe('create.generated', () => {
         title: 'Bloom Filter Slug Test',
         slug,
       })
+      await Promise.all(addToBloom.mock.results.map(result => result.value))
 
-      await expect.poll(() => testPostsBloomFilter.exists(slug.toLowerCase())).toBe(true)
+      expect(await testPostsBloomFilter.exists(slug.toLowerCase())).toBe(true)
     } finally {
+      addToBloom.mockRestore()
       entityCacheBloomFilters.posts = originalPostsBloomFilter
       await testPostsBloomFilter.delete().catch(() => {})
     }
@@ -192,14 +195,17 @@ describe('create.generated', () => {
     const slug = `bloom-update-slug-${random}`
 
     entityCacheBloomFilters.posts = testPostsBloomFilter
+    const addToBloom = vi.spyOn(testPostsBloomFilter, 'add')
     try {
       await testPostsBloomFilter.delete()
       await testPostsBloomFilter.ensureExists()
 
       await updatePost(user, post, { slug })
+      await Promise.all(addToBloom.mock.results.map(result => result.value))
 
-      await expect.poll(() => testPostsBloomFilter.exists(slug.toLowerCase())).toBe(true)
+      expect(await testPostsBloomFilter.exists(slug.toLowerCase())).toBe(true)
     } finally {
+      addToBloom.mockRestore()
       entityCacheBloomFilters.posts = originalPostsBloomFilter
       await testPostsBloomFilter.delete().catch(() => {})
     }

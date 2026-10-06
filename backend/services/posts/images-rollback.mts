@@ -23,6 +23,7 @@ export type { PostImageRollback } from './images-rollback-types.mts'
 export async function rollbackPostImages(
   postId: string,
   rollback: PostImageRollback,
+  options?: { onImageLockQuery?: () => void },
 ): Promise<boolean> {
   const deliveryImageIds = [
     ...new Set([...rollback.currentImages, ...rollback.images].map(image => image.image_id)),
@@ -36,7 +37,7 @@ export async function rollbackPostImages(
     await lockImageDeliveryMutation(query, { postIds: [postId], imageIds })
     let rollbackImagesAvailable = true
     if (imageIds.length > 0) {
-      const { rows: availableImages } = await query<{
+      const imageLock = query<{
         id: string
       }>(sql`/* rollbackPostImages:lockImages */
         SELECT id
@@ -48,6 +49,8 @@ export async function rollbackPostImages(
         ORDER BY id
         FOR SHARE
       `)
+      options?.onImageLockQuery?.()
+      const { rows: availableImages } = await imageLock
       rollbackImagesAvailable = availableImages.length === imageIds.length
     }
     await lockPostPublication(query, postId)

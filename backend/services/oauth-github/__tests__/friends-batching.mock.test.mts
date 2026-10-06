@@ -13,6 +13,7 @@ import {
   softDeleteUser,
 } from '@voucha/test-helpers'
 import { syncGithubFriends } from '../friends.mts'
+import { finalizeGithubFriendSync } from '../friends-persistence.mts'
 
 const fetchSpy = vi.hoisted(() => vi.fn<VitestLooseMock>())
 vi.mock<typeof import('undici')>(import('undici'), async () => {
@@ -59,15 +60,27 @@ describe('syncGithubFriends batching', () => {
   })
 
   it('commits each bounded stale-row cleanup page separately', async () => {
-    const { providerUserId } = await createGithubSyncAccount()
+    const { providerUserId, userId } = await createGithubSyncAccount()
     const friendIds = makeFriendIds('github-stale')
     await insertTestFriends('github', providerUserId, friendIds)
     const rowLock = await acquireTestFriendRowLock('github', providerUserId, friendIds.at(-1)!)
-    fetchSpy.mockResolvedValueOnce(githubResponse([]))
-
-    const sync = syncGithubFriends(providerUserId)
+    const secondStalePage = Promise.withResolvers<void>()
+    let staleReads = 0
+    const sync = finalizeGithubFriendSync(
+      providerUserId,
+      userId,
+      new Date(Date.now() + 60_000).toISOString(),
+      {
+        onStaleFriendPage(page) {
+          if (page.length === 0) return
+          staleReads += 1
+          if (staleReads === 2) secondStalePage.resolve()
+        },
+      },
+    )
     try {
-      await expect.poll(() => countTestFriends('github', providerUserId)).toBe(1)
+      await secondStalePage.promise
+      await expect(countTestFriends('github', providerUserId)).resolves.toBe(1)
     } finally {
       await rowLock.release()
     }

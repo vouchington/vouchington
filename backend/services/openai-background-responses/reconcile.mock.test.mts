@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { APIError } from 'openai'
 import {
   findAiUsageRecordForAgent,
-  pollUntilNotNull,
   setBackgroundResponseLeaseExpiresAt,
 } from '@voucha/test-helpers'
 import type { Response } from 'openai/resources/responses/responses'
@@ -84,9 +83,10 @@ describe('reconcileExpiredBackgroundResponse', () => {
     expect(vi.mocked(retrieveOpenAIResponse)).toHaveBeenCalledExactlyOnceWith(row.responseId)
     expect(vi.mocked(cancelOpenAIResponse)).not.toHaveBeenCalled()
     await expect(getRegisteredRow(row.responseId)).resolves.toBeNull()
-    const record = await pollUntilNotNull(() =>
-      findAiUsageRecordForAgent(row.agentSlug, { inputTokens: 321, outputTokens: 654 }),
-    )
+    const record = await findAiUsageRecordForAgent(row.agentSlug, {
+      inputTokens: 321,
+      outputTokens: 654,
+    })
     expect(record).toMatchObject({
       model: 'gpt-5.4-nano-2026-03-17',
       service_tier: 'flex',

@@ -52,16 +52,6 @@ describe('background response lease controller', () => {
   })
 
   it('does not renew when a queued timer callback runs after stopAndSettle', async () => {
-    vi.useRealTimers()
-    let queuedCallback: (() => void) | undefined
-    const timer = { unref: vi.fn<() => void>() } as unknown as NodeJS.Timeout
-    vi.spyOn(globalThis, 'setTimeout').mockImplementation(((
-      callback: Parameters<typeof setTimeout>[0],
-    ) => {
-      queuedCallback = callback
-      return timer
-    }) as typeof setTimeout)
-    vi.spyOn(globalThis, 'clearTimeout').mockReturnValue(undefined)
     const renew = vi.fn<() => Promise<boolean>>(async () => true)
     const controller = createBackgroundResponseLeaseController(
       {
@@ -71,10 +61,11 @@ describe('background response lease controller', () => {
       },
       { renew, reportError: vi.fn<(error: Error) => void>() },
     )
+    const keepQueuedCallback = vi.spyOn(globalThis, 'clearTimeout').mockReturnValue(undefined)
 
     await controller.stopAndSettle()
-    queuedCallback?.()
-    await Promise.resolve()
+    keepQueuedCallback.mockRestore()
+    await vi.advanceTimersByTimeAsync(BACKGROUND_RESPONSE_HEARTBEAT_INTERVAL_MS)
 
     expect(renew).not.toHaveBeenCalled()
   })

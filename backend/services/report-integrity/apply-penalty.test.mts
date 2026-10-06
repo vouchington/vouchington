@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest'
+import * as jwtInvalidation from '@services/jwt-session/invalidation'
 import { randomBytes } from 'node:crypto'
 import {
   createTestUserDirect,
@@ -24,6 +25,14 @@ describe('applyReportAbusePenalty / revokeReportAbusePenalty', () => {
   beforeAll(async () => {
     adminUser = await createTestUserDirect({ username: randomUsername() })
   }, 60_000)
+
+  beforeEach(() => {
+    vi.spyOn(jwtInvalidation, 'markJwtStaleBatch')
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
 
   it('penalizes the persisted reporter set and sets bad_faith_reporter_at', async () => {
     const targetUser = await createTestUserDirect({ username: randomUsername() })
@@ -193,5 +202,8 @@ describe('applyReportAbusePenalty / revokeReportAbusePenalty', () => {
 })
 
 async function expectJwtStale(userId: string): Promise<void> {
-  await expect.poll(() => isJwtStale(userId)).toBe(true)
+  await Promise.all(
+    vi.mocked(jwtInvalidation.markJwtStaleBatch).mock.results.map(result => result.value),
+  )
+  expect(await isJwtStale(userId)).toBe(true)
 }

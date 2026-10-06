@@ -11,7 +11,7 @@ import {
   insertTestPost,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
-import { lockPostPublication } from '@services/post-publication'
+import * as postPublication from '@services/post-publication'
 
 describe('delete', () => {
   let user: PrivateUser
@@ -107,14 +107,25 @@ describe('delete', () => {
       const holder = holdPostRowLock({ postId, rowLocked, releaseRow })
       await rowLocked.promise
 
+      const publicationLocked = Promise.withResolvers<void>()
+      const lockPublication = postPublication.lockPostPublication
+      const spy = vi
+        .spyOn(postPublication, 'lockPostPublication')
+        .mockImplementation(async (query, lockedPostId) => {
+          try {
+            return await lockPublication(query, lockedPostId)
+          } finally {
+            if (lockedPostId === postId) publicationLocked.resolve()
+          }
+        })
       const deleting = deletePost(user, post)
       try {
-        await vi.waitFor(async () => {
-          await expect(acquirePostPublicationLockWithShortTimeout(postId)).rejects.toMatchObject({
-            code: '55P03',
-          })
+        await publicationLocked.promise
+        await expect(acquirePostPublicationLockWithShortTimeout(postId)).rejects.toMatchObject({
+          code: '55P03',
         })
       } finally {
+        spy.mockRestore()
         releaseRow.resolve()
       }
       await holder
@@ -145,6 +156,6 @@ async function holdPostRowLock({
 async function acquirePostPublicationLockWithShortTimeout(postId: string): Promise<void> {
   await using query = await beginTransaction()
   await query(`/* deletePost publication lock timeout */ SET LOCAL lock_timeout = '50ms'`)
-  await lockPostPublication(query, postId)
+  await postPublication.lockPostPublication(query, postId)
   await query.commit()
 }

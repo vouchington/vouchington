@@ -94,7 +94,10 @@ describe('images', () => {
       const result = await upsertImageOpenAIModeration(image.id, imageModerationDependencies)
 
       expect(result.flagged).toBe(false)
-      await vi.waitFor(() => expect(enqueueSpy).toHaveBeenCalledTimes(1))
+      await expect(enqueueSpy.mock.results[0]?.value).rejects.toThrow(
+        'test image embedding enqueue failure',
+      )
+      expect(enqueueSpy).toHaveBeenCalledTimes(1)
     } finally {
       enqueueSpy.mockRestore()
     }

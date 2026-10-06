@@ -2,7 +2,7 @@ import { notifications } from '@queues/notifications/queues'
 import { getEntityRelationElectionVote } from '@services/elections-votes/entity-relation/votes-get'
 import { upsertEntityRelation } from '@services/entity-relations'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
-import { createTestUser, waitForQueueJobs } from '@voucha/test-helpers'
+import { createTestUser, readAllQueueJobs } from '@voucha/test-helpers'
 import { getTestPrivateUserById } from '@voucha/test-helpers/entities/users'
 import { getClassifierRunFacts } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
 import {
@@ -120,16 +120,7 @@ describe('post classifier effects on the shared lifecycle (real PG)', () => {
 
     expect(await categoryRelationsForTest(setup.post.id)).toEqual([])
     expect(await facts(setup)).toMatchObject({ completed_at: null })
-    expect(
-      hasPostNotification(
-        await waitForQueueJobs(
-          notifications,
-          waiting => hasPostNotification(waiting, setup.post.id),
-          200,
-        ),
-        setup.post.id,
-      ),
-    ).toBe(false)
+    expect(hasPostNotification(await readAllQueueJobs(notifications), setup.post.id)).toBe(false)
     expect(await completeClassifierRun(setup.adapter, setup.lease)).toMatchObject({
       kind: 'completed',
     })
