@@ -18,7 +18,7 @@ import { verifyPhoneNumber } from '@modules/utils'
 
 import assert from 'node:assert'
 
-import { it, expect, beforeAll, describe } from 'vitest'
+import { it, expect, beforeAll, describe, vi } from 'vitest'
 
 import type { PrivateUser } from '@services/users/types'
 
@@ -195,11 +195,11 @@ describe('update.generated', () => {
       await testUsersBloomFilter.delete()
       await testUsersBloomFilter.ensureExists()
 
+      const bloomAdds = vi.spyOn(testUsersBloomFilter, 'add')
       await updateUserFields(user.id, { username })
-      // .add() is fire-and-forget in production; explicitly add and await for deterministic test
-      await testUsersBloomFilter.add([username.trim().toLowerCase()])
+      await Promise.all(bloomAdds.mock.results.map(result => result.value))
 
-      await expect.poll(() => testUsersBloomFilter.exists(username.toLowerCase())).toBe(true)
+      expect(await testUsersBloomFilter.exists(username.toLowerCase())).toBe(true)
     } finally {
       entityCacheBloomFilters.users = originalUsersBloomFilter
       await testUsersBloomFilter.delete().catch(() => {})

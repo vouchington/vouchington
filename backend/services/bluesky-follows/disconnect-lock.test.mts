@@ -1,28 +1,34 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import type { SessionAdvisoryLockDualFailure } from '@services/session-advisory-lock'
-import {
-  getTestPostgresAdvisoryLockHolderProcessId,
-  injectTestBlueskyDisconnectUnlockFault,
-  waitForTestPostgresLockWaiter,
-} from '@voucha/test-helpers'
+import { beginTransaction, injectTestBlueskyDisconnectUnlockFault } from '@voucha/test-helpers'
 import { BLUESKY_DISCONNECT_LOCK_NAMESPACE, withBlueskyDisconnectLock } from './disconnect-lock.mts'
+
+async function probeBlueskyDisconnectLock(userId: string): Promise<void> {
+  await using query = await beginTransaction()
+  await query(`/* bluesky disconnect lock timeout */ SET LOCAL lock_timeout = '50ms'`)
+  await query(
+    `/* bluesky disconnect lock probe */ SELECT pg_advisory_xact_lock($1, hashtext($2))`,
+    [BLUESKY_DISCONNECT_LOCK_NAMESPACE, userId],
+  )
+  await query.commit()
+}
 
 describe('Bluesky disconnect session-lock cleanup', () => {
   it('lets unrelated users hold disconnect locks concurrently', async () => {
     const firstEntered = Promise.withResolvers<void>()
     const releaseFirst = Promise.withResolvers<void>()
-    let secondEntered = false
+    const secondEntered = Promise.withResolvers<boolean>()
     const first = withBlueskyDisconnectLock(crypto.randomUUID(), async () => {
       firstEntered.resolve()
       await releaseFirst.promise
     })
     await firstEntered.promise
     const second = withBlueskyDisconnectLock(crypto.randomUUID(), async () => {
-      secondEntered = true
+      secondEntered.resolve(true)
     })
     try {
-      await vi.waitFor(() => expect(secondEntered).toBe(true))
+      await expect(secondEntered.promise).resolves.toBe(true)
     } finally {
       releaseFirst.resolve()
       await Promise.allSettled([first, second])
@@ -33,27 +39,22 @@ describe('Bluesky disconnect session-lock cleanup', () => {
     const userId = crypto.randomUUID()
     const firstEntered = Promise.withResolvers<void>()
     const releaseFirst = Promise.withResolvers<void>()
-    let secondEntered = false
+    const secondFinished = Promise.withResolvers<boolean>()
     const first = withBlueskyDisconnectLock(userId, async () => {
       firstEntered.resolve()
       await releaseFirst.promise
     })
     await firstEntered.promise
-    const firstHolderProcessId = await getTestPostgresAdvisoryLockHolderProcessId({
-      namespace: BLUESKY_DISCONNECT_LOCK_NAMESPACE,
-      key: userId,
-    })
     const second = withBlueskyDisconnectLock(userId, async () => {
-      secondEntered = true
+      secondFinished.resolve(true)
     })
     try {
-      await waitForTestPostgresLockWaiter(firstHolderProcessId, 'withBlueskyDisconnectLock:lock')
-      expect(secondEntered).toBe(false)
+      await expect(probeBlueskyDisconnectLock(userId)).rejects.toMatchObject({ code: '55P03' })
     } finally {
       releaseFirst.resolve()
       await Promise.allSettled([first, second])
     }
-    expect(secondEntered).toBe(true)
+    await expect(secondFinished.promise).resolves.toBe(true)
   })
 
   it('destroys the client and rejects with the unlock error after a successful operation', async () => {

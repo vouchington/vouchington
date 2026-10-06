@@ -5,8 +5,8 @@ import {
   createTestUser,
   insertTestCommunity,
   insertTestCommunityMember,
-  pollUntilNotNull,
 } from '@voucha/test-helpers'
+import * as cachePurgeEnqueues from '@queues/cache-purge/enqueues'
 import { cachePurge } from '@queues/cache-purge/queues'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { getCommunity } from './get.mts'
@@ -95,37 +95,48 @@ describe('updateCommunityAndSetArchiveState', () => {
     })
     const newSlug = `updated-${uuidv7()}`
     let observedCommittedState = false
+    const pendingPurges: Promise<unknown>[] = []
+    const enqueuePurge = cachePurgeEnqueues.enqueueBulkPurgeCacheTags
+    const purgeSpy = vi
+      .spyOn(cachePurgeEnqueues, 'enqueueBulkPurgeCacheTags')
+      .mockImplementation((tags, priority) => {
+        const job = enqueuePurge(tags, priority)
+        pendingPurges.push(job)
+        return job
+      })
 
-    const updated = await updateCommunityAndSetArchiveState(
-      owner,
-      community.id,
-      { slug: newSlug },
-      true,
-      membership,
-      {
-        invalidateCommunities: async (...keys) => {
-          const committed = await getCommunity(community.id)
-          expect(committed).toMatchObject({
-            slug: newSlug,
-            archived_by_id: owner.id,
-          })
-          expect(committed?.archived_at).not.toBeNull()
-          observedCommittedState = true
-          await invalidate.communities(...keys)
+    try {
+      const updated = await updateCommunityAndSetArchiveState(
+        owner,
+        community.id,
+        { slug: newSlug },
+        true,
+        membership,
+        {
+          invalidateCommunities: async (...keys) => {
+            const committed = await getCommunity(community.id)
+            expect(committed).toMatchObject({
+              slug: newSlug,
+              archived_by_id: owner.id,
+            })
+            expect(committed?.archived_at).not.toBeNull()
+            observedCommittedState = true
+            await invalidate.communities(...keys)
+          },
         },
-      },
-    )
+      )
+      await Promise.all(pendingPurges)
 
-    expect(observedCommittedState).toBe(true)
-    expect(updated).toMatchObject({ slug: newSlug, archived_by_id: owner.id })
-    expect(updated.archived_at).not.toBeNull()
+      expect(observedCommittedState).toBe(true)
+      expect(updated).toMatchObject({ slug: newSlug, archived_by_id: owner.id })
+      expect(updated.archived_at).not.toBeNull()
 
-    const communityKeys = [community.id, community.slug, newSlug]
-    const cachePurgeTags = await pollUntilNotNull(async () => {
-      const tags = await getCachePurgeTagsForCommunityKeys(communityKeys)
-      return communityKeys.every(key => tags.includes(`community:${key}`)) ? tags : null
-    })
-    expect(new Set(cachePurgeTags)).toEqual(new Set(communityKeys.map(key => `community:${key}`)))
+      const communityKeys = [community.id, community.slug, newSlug]
+      const cachePurgeTags = await getCachePurgeTagsForCommunityKeys(communityKeys)
+      expect(new Set(cachePurgeTags)).toEqual(new Set(communityKeys.map(key => `community:${key}`)))
+    } finally {
+      purgeSpy.mockRestore()
+    }
   })
 
   it('enqueues one refresh when its transaction changes visibility and archive state', async () => {

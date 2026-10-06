@@ -1,6 +1,5 @@
 import { createHash } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
-import { pollUntilNotNull } from '@voucha/test-helpers'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import { EMBEDDINGS_TABLE } from '../config.mts'
 import * as bedrockRequest from '../single/request.mts'
@@ -41,14 +40,29 @@ describe('getCachedSearchEmbedding', () => {
       .spyOn(bedrockRequest, 'createBedrockEmbedding')
       .mockResolvedValue({ embedding, tokens: 5 })
     const query = `cache-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    const cacheWrites = ValkeyCache.prototype as ValkeyCache & {
+      setBySerializedKeyIfNotInvalidated: (
+        serializedKey: string,
+        value: unknown,
+        ttl?: number,
+      ) => Promise<void>
+    }
+    const writeSpy = vi.spyOn(cacheWrites, 'setBySerializedKeyIfNotInvalidated')
 
-    await expect(getCachedSearchEmbedding(`  ${query.toUpperCase()}  `)).resolves.toEqual(embedding)
+    try {
+      await expect(getCachedSearchEmbedding(`  ${query.toUpperCase()}  `)).resolves.toEqual(
+        embedding,
+      )
+      await Promise.all(writeSpy.mock.results.map(result => result.value))
+    } finally {
+      writeSpy.mockRestore()
+    }
     expect(request).toHaveBeenCalledExactlyOnceWith(
       query,
       expect.objectContaining({ entityType: 'search' }),
     )
 
-    await expect(pollUntilNotNull(() => cacheProbe.get(query))).resolves.toEqual(embedding)
+    await expect(cacheProbe.get(query)).resolves.toEqual(embedding)
     await expect(getCachedSearchEmbedding(query)).resolves.toEqual(embedding)
     expect(request).toHaveBeenCalledOnce()
     request.mockRestore()

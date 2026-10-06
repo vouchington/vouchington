@@ -6,7 +6,7 @@ import {
   insertTestRssFeedDirect,
   readAllQueueJobs,
 } from '@voucha/test-helpers'
-import { lockPostPublicationRssFeedScopes } from '@services/post-publication'
+import * as postPublication from '@services/post-publication'
 import { rssFeedDiscoverability } from '@queues/rss-feed-discoverability/queues'
 import { updateTopicElectionVoteStats } from './vote-stats.mts'
 import { updateElectionStatsIfChanged } from '../shared/vote-stats-update.mts'
@@ -104,17 +104,26 @@ describe('topic vote stats side effects', () => {
       await query.commit()
     }
     await topicLocked.promise
+    const lockTopicFeeds = postPublication.lockTopicRssFeedPublicationScopes
+    const feedsLocked = Promise.withResolvers<void>()
+    const feedSpy = vi
+      .spyOn(postPublication, 'lockTopicRssFeedPublicationScopes')
+      .mockImplementation(async (query, topicIds) => {
+        const ids = await lockTopicFeeds(query, topicIds)
+        feedsLocked.resolve()
+        return ids
+      })
     const updating = updateElectionStatsIfChanged(
       TOPIC_ELECTION_CONFIG,
       topic.id,
       statsForNetScore(1),
     )
     try {
-      await vi.waitFor(async () => {
-        await expect(lockRssFeedPublicationScope()).rejects.toMatchObject({ code: '55P03' })
-      })
+      await feedsLocked.promise
+      await expect(lockRssFeedPublicationScope()).rejects.toMatchObject({ code: '55P03' })
     } finally {
       releaseTopic.resolve()
+      feedSpy.mockRestore()
     }
     await holder
     await expect(updating).resolves.toBeDefined()
@@ -122,7 +131,7 @@ describe('topic vote stats side effects', () => {
     async function lockRssFeedPublicationScope(): Promise<void> {
       await using query = await beginTransaction()
       await query(`/* topic vote stats feed scope timeout */ SET LOCAL lock_timeout = '50ms'`)
-      await lockPostPublicationRssFeedScopes(query, [rssFeed.id])
+      await postPublication.lockPostPublicationRssFeedScopes(query, [rssFeed.id])
       await query.commit()
     }
   })

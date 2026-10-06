@@ -1,11 +1,10 @@
 import { randomBytes } from 'node:crypto'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   createTestUserDirect,
   insertPostElectionVote,
   insertTestPost,
   insertUserVouchElectionVote,
-  readAllQueueJobs,
 } from '@voucha/test-helpers'
 import { enqueueBulkUpdatePostElectionVoteStats } from '@queues/elections/enqueues'
 import { elections } from '@queues/elections/queues'
@@ -67,14 +66,13 @@ describe('enqueueElectionUpdatesForUser', () => {
 
     const submittedJobIds = await enqueueElectionUpdatesForUser(user!.id)
 
-    let jobs: Awaited<ReturnType<typeof getElectionJobs>> = []
-    await vi.waitFor(async () => {
-      jobs = await getElectionJobs(postId)
-      expect(jobs).toHaveLength(1)
-    })
-    expect(submittedJobIds).toEqual([jobs[0].id])
-    expect(jobs[0].name).toBe('processUpdateElectionVoteStats')
-    expect(jobs[0].opts).toMatchObject({
+    expect(submittedJobIds).toHaveLength(1)
+    const submittedJobId = submittedJobIds[0]
+    if (submittedJobId === undefined) throw new Error('Expected one post election job id')
+    const job = await elections.getJob(submittedJobId)
+    expect(job?.id).toBe(submittedJobId)
+    expect(job?.name).toBe('processUpdateElectionVoteStats')
+    expect(job?.opts).toMatchObject({
       priority: 10,
       deduplication: {
         id: `processUpdateElectionVoteStats__post__${postId}`,
@@ -94,13 +92,12 @@ describe('enqueueElectionUpdatesForUser', () => {
 
     const submittedJobIds = await enqueueElectionUpdatesForUser(voter!.id)
 
-    let jobs: Awaited<ReturnType<typeof getElectionJobs>> = []
-    await vi.waitFor(async () => {
-      jobs = await getElectionJobs(target!.id)
-      expect(jobs).toHaveLength(1)
-    })
-    expect(submittedJobIds).toEqual([jobs[0].id])
-    expect(jobs[0].opts).toMatchObject({
+    expect(submittedJobIds).toHaveLength(1)
+    const submittedJobId = submittedJobIds[0]
+    if (submittedJobId === undefined) throw new Error('Expected one user vouch election job id')
+    const job = await elections.getJob(submittedJobId)
+    expect(job?.id).toBe(submittedJobId)
+    expect(job?.opts).toMatchObject({
       deduplication: {
         id: `processUpdateElectionVoteStats__user_vouch__${target!.id}`,
         mode: 'throttle',
@@ -134,8 +131,3 @@ describe('enqueueElectionUpdatesForUser', () => {
     expect(unrelatedJob?.data.electionId).toBe(unrelatedPostId)
   }, 60_000)
 })
-
-async function getElectionJobs(electionId: string) {
-  const jobs = await readAllQueueJobs(elections)
-  return jobs.filter(job => (job.data as { electionId?: string }).electionId === electionId)
-}

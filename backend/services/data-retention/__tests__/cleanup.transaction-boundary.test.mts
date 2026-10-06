@@ -11,6 +11,7 @@ import {
 } from '@voucha/test-helpers'
 import { v7 } from 'uuid'
 
+import * as cleanupUser from '../cleanup-soft-deleted-user.mts'
 import { cleanupSoftDeletedUsers } from '../cleanup.mts'
 
 describe('cleanupSoftDeletedUsers transaction boundaries', () => {
@@ -55,17 +56,26 @@ describe('cleanupSoftDeletedUsers transaction boundaries', () => {
     }
     await secondPostLocked.promise
 
+    const cleanupOne = cleanupUser.cleanupSoftDeletedUser
+    const firstCommitted = Promise.withResolvers<void>()
+    const cleanupSpy = vi
+      .spyOn(cleanupUser, 'cleanupSoftDeletedUser')
+      .mockImplementation(async (...args) => {
+        const result = await cleanupOne(...args)
+        if (args[0] === firstUser.id) firstCommitted.resolve()
+        return result
+      })
     const cleanup = cleanupSoftDeletedUsers({ ...window, batchSize: 4, maxBatches: 1 })
     try {
-      await vi.waitFor(async () => {
-        expect(await getTestUserRaw(firstUser.id)).toBeNull()
-        expect(
-          await getTestPostPublicationDirtyWorkForScope({ type: 'author', id: firstUser.id }),
-        ).toMatchObject({ reasons: expect.arrayContaining(['author_deleted']) })
-        expect(await getTestUserRaw(secondUser.id)).not.toBeNull()
-      })
+      await firstCommitted.promise
+      expect(await getTestUserRaw(firstUser.id)).toBeNull()
+      expect(
+        await getTestPostPublicationDirtyWorkForScope({ type: 'author', id: firstUser.id }),
+      ).toMatchObject({ reasons: expect.arrayContaining(['author_deleted']) })
+      expect(await getTestUserRaw(secondUser.id)).not.toBeNull()
     } finally {
       releaseSecondPost.resolve()
+      cleanupSpy.mockRestore()
     }
     await holder
     await expect(cleanup).resolves.toEqual({ deleted: 2, hasMore: false })

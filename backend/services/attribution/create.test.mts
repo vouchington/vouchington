@@ -1,17 +1,29 @@
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   acquireTestSessionReferralAttributionPairLock,
+  beginTransaction,
   createTestUserDirect,
-  flushPendingTasks,
   getSessionReferralAttributions,
   insertSessionReferralAttribution,
   softDeleteUser,
 } from '@voucha/test-helpers'
+import * as notificationEnqueues from '@queues/notifications/enqueues'
 import { notifications } from '@queues/notifications/queues'
 import { v7 as uuidv7 } from 'uuid'
 import { createSessionReferralAttribution } from './create.mts'
 import { updateAttributionSignup } from './update-signup.mts'
 import type { PrivateUser } from '@voucha/types/entities/user'
+
+async function probeAttributionPairLock(sessionId: string, referrerId: string): Promise<void> {
+  await using query = await beginTransaction()
+  await query(`/* attribution pair lock timeout */ SET LOCAL lock_timeout = '50ms'`)
+  await query(
+    `/* attribution pair lock probe */
+    SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`,
+    [`session-referral-attribution:${sessionId}:${referrerId}`],
+  )
+  await query.commit()
+}
 
 describe('createSessionReferralAttribution', () => {
   let referrer: PrivateUser
@@ -36,6 +48,24 @@ describe('createSessionReferralAttribution', () => {
   // enqueued by unrelated test files) — assert on the enqueued job itself instead of on
   // end-to-end notification delivery, matching
   // backend/services/rss-feed-items/upsert-enqueues.test.mts.
+  async function withReferralClickEnqueue<T>(run: () => Promise<T>): Promise<T> {
+    const enqueue = notificationEnqueues.enqueueReferralClickNotification
+    const pending: Promise<unknown>[] = []
+    const spy = vi
+      .spyOn(notificationEnqueues, 'enqueueReferralClickNotification')
+      .mockImplementation((referrerId, landingUrl) => {
+        const result = enqueue(referrerId, landingUrl)
+        pending.push(result)
+        return result
+      })
+    try {
+      return await run()
+    } finally {
+      await Promise.all(pending)
+      spy.mockRestore()
+    }
+  }
+
   async function referralClickJobWasEnqueued(landingUrl: string): Promise<boolean> {
     // `searchJobs` scans every state: a `priority > 0` notification is `prioritized`, which
     // `getJobs('waiting')` omits.
@@ -50,14 +80,15 @@ describe('createSessionReferralAttribution', () => {
     const sessionId = uuidv7()
     const landingUrl = `https://example.com/new-pair-${uuidv7()}`
 
-    await createSessionReferralAttribution({ sessionId, referrer: referrer.id, landingUrl })
+    await withReferralClickEnqueue(() =>
+      createSessionReferralAttribution({ sessionId, referrer: referrer.id, landingUrl }),
+    )
 
     const rows = await getSessionReferralAttributions(sessionId)
     expect(rows).toHaveLength(1)
     expect(rows[0]!.referrer_user_id).toBe(referrer.id)
     expect(rows[0]!.landing_url).toBe(landingUrl)
-
-    await expect.poll(() => referralClickJobWasEnqueued(landingUrl)).toBe(true)
+    expect(await referralClickJobWasEnqueued(landingUrl)).toBe(true)
   })
 
   it('a repeat click for the same pair replaces the row with a fresh, later id and does not duplicate the notification', async () => {
@@ -65,12 +96,14 @@ describe('createSessionReferralAttribution', () => {
     const firstUrl = `https://example.com/page1-${uuidv7()}`
     const secondUrl = `https://example.com/page2-${uuidv7()}`
 
-    await createSessionReferralAttribution({
-      sessionId,
-      referrer: referrer.id,
-      landingUrl: firstUrl,
-    })
-    await expect.poll(() => referralClickJobWasEnqueued(firstUrl)).toBe(true)
+    await withReferralClickEnqueue(() =>
+      createSessionReferralAttribution({
+        sessionId,
+        referrer: referrer.id,
+        landingUrl: firstUrl,
+      }),
+    )
+    expect(await referralClickJobWasEnqueued(firstUrl)).toBe(true)
     const [firstClick] = await getSessionReferralAttributions(sessionId)
 
     await createSessionReferralAttribution({
@@ -78,9 +111,6 @@ describe('createSessionReferralAttribution', () => {
       referrer: referrer.id,
       landingUrl: secondUrl,
     })
-    // Negative assertion: give the (should-never-happen) enqueue a real chance to land before
-    // asserting its absence, so a regression that does enqueue a second job is actually caught.
-    await flushPendingTasks()
 
     const rows = await getSessionReferralAttributions(sessionId)
     expect(rows).toHaveLength(1)
@@ -207,7 +237,9 @@ describe('createSessionReferralAttribution', () => {
     })
 
     try {
-      await expect.poll(() => pairLock.hasWaiter()).toBe(true)
+      await expect(probeAttributionPairLock(sessionId, referrer.id)).rejects.toMatchObject({
+        code: '55P03',
+      })
       expect(await getSessionReferralAttributions(sessionId)).toHaveLength(0)
     } finally {
       await pairLock.release()

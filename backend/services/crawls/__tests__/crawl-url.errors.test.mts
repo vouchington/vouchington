@@ -1,4 +1,3 @@
-import { setDomainRateLimitedBackground } from '@voucha/test-helpers/services/crawls/domain-rate-limit'
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest'
 
 import { crawlUrl } from '../crawl-url.mts'
@@ -10,8 +9,6 @@ import { createCrawler } from '@services/crawlers'
 import { updateUrlHostname } from '@services/urls-hostnames/update'
 
 import { createTestUser } from '@voucha/test-helpers'
-
-import { pollUntilNotNull } from '@voucha/test-helpers/polling'
 
 import { getTestHostnameDnsStats } from '@voucha/test-helpers/entities/url-hostnames'
 
@@ -39,6 +36,7 @@ function crawlUrlForTest(...args: Parameters<typeof crawlUrl>) {
 import {
   getDomainRateLimitRemainingMs,
   IMMEDIATE_RETRY_RATE_LIMIT_MS,
+  setDomainRateLimited,
 } from '../domain-rate-limit.mts'
 
 import {
@@ -80,10 +78,8 @@ describe('crawl-url.errors', () => {
       })
       await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
 
-      // Set a real rate limit in Valkey for this hostname
-      setDomainRateLimitedBackground(url!.hostname.id, 30_000)
-      // Poll until Valkey key is set before crawlUrl checks it
-      await pollUntilNotNull(() => getDomainRateLimitRemainingMs(url!.hostname.id))
+      await setDomainRateLimited(url!.hostname.id, 30_000)
+      expect(await getDomainRateLimitRemainingMs(url!.hostname.id)).toBeGreaterThan(0)
 
       let thrownError: any
       try {

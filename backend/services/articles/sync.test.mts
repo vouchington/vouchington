@@ -180,17 +180,22 @@ describe('syncArticles', () => {
 
   it('waits for each article before loading the next and preserves error result order', async () => {
     const firstLoad = Promise.withResolvers<string>()
+    const firstRequested = Promise.withResolvers<void>()
     listArticleMarkdownFiles.mockResolvedValue([
       { file: 'first.md', key: 'articles/first.md', cacheToken: 'first:v1' },
       { file: 'about.md', key: 'articles/about.md', cacheToken: 'about:v1' },
     ])
     getArticleMarkdown.mockImplementation(article => {
-      if (article.file === 'first.md') return firstLoad.promise
+      if (article.file === 'first.md') {
+        firstRequested.resolve()
+        return firstLoad.promise
+      }
       return Promise.resolve(articleFixtures.get(article.file)!)
     })
 
     const syncPromise = syncFixtureArticles()
-    await vi.waitFor(() => expect(getArticleMarkdown).toHaveBeenCalledOnce())
+    await firstRequested.promise
+    expect(getArticleMarkdown).toHaveBeenCalledOnce()
     expect(getArticleMarkdown).toHaveBeenLastCalledWith(
       expect.objectContaining({ file: 'first.md' }),
     )

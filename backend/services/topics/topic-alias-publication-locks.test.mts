@@ -1,7 +1,4 @@
-import {
-  lockTopicAliasPublicationScopes,
-  recordTopicMergePublicationChanges,
-} from '@services/post-publication'
+import * as postPublication from '@services/post-publication'
 import {
   beginTransaction,
   createTestTopic,
@@ -155,7 +152,11 @@ describe('topic alias publication locking', () => {
         SELECT pg_advisory_xact_lock(hashtextextended('topic-rss-feed-attachment:' || $1::text, 0))`,
         [source.id],
       )
-      await recordTopicMergePublicationChanges(query, source.id, scopes.lockedAliasIds)
+      await postPublication.recordTopicMergePublicationChanges(
+        query,
+        source.id,
+        scopes.lockedAliasIds,
+      )
       await query.commit()
     }
     const preparedMerge = prepareMerge()
@@ -184,14 +185,22 @@ async function expectAliasPublicationScopeBeforeRowLock(
   }
   const holder = holdRow()
   await rowLocked.promise
+  const lockAliases = postPublication.lockTopicAliasPublicationScopes
+  const aliasesLocked = Promise.withResolvers<void>()
+  const aliasSpy = vi
+    .spyOn(postPublication, 'lockTopicAliasPublicationScopes')
+    .mockImplementation(async (query, topicAliasIds) => {
+      await lockAliases(query, topicAliasIds)
+      aliasesLocked.resolve()
+    })
 
   const mutation = mutate()
   try {
-    await vi.waitFor(async () => {
-      await expect(contendForPublicationLock()).rejects.toMatchObject({ code: '55P03' })
-    })
+    await aliasesLocked.promise
+    await expect(contendForPublicationLock()).rejects.toMatchObject({ code: '55P03' })
   } finally {
     releaseRow.resolve()
+    aliasSpy.mockRestore()
   }
   await holder
   await expect(mutation).resolves.toBeDefined()
@@ -199,7 +208,7 @@ async function expectAliasPublicationScopeBeforeRowLock(
   async function contendForPublicationLock(): Promise<void> {
     await using query = await beginTransaction()
     await query(`/* topic alias publication lock timeout */ SET LOCAL lock_timeout = '50ms'`)
-    await lockTopicAliasPublicationScopes(query, [aliasId])
+    await lockAliases(query, [aliasId])
     await query.commit()
   }
 }
