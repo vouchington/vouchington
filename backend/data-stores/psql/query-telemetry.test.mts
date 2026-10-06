@@ -48,11 +48,11 @@ function timingRowCount(timing: object): number | undefined {
   return timing.row_count
 }
 
-async function readTimingRow(where: string): Promise<Record<string, unknown>> {
+async function readTimingRow(annotation: string): Promise<Record<string, unknown>> {
   await flush()
-  const rows = await query(`SELECT * FROM pg_query_timing WHERE ${where}`)
+  const rows = await query(`SELECT * FROM pg_query_timing WHERE annotation = '${annotation}'`)
   const row = rows[0]
-  if (row === undefined) throw new Error(`pg_query_timing did not record ${where}`)
+  if (row === undefined) throw new Error(`pg_query_timing did not record ${annotation}`)
   return row
 }
 
@@ -121,7 +121,7 @@ describe('recordQueryTiming', () => {
       cursorBatches: 3,
     })
     await emitted
-    const row = await readTimingRow(`annotation = '${annotation}'`)
+    const row = await readTimingRow(annotation)
     expect(row.annotation).toBe(annotation)
     expect(row.pool).toBe('write')
     expect(Number(row.duration_ms)).toBe(42)
@@ -137,7 +137,7 @@ describe('recordQueryTiming', () => {
     const emitted = whenQueryTimingEmitted(annotation)
     record(annotation, { pipelined: true, batchSize: 4 })
     await emitted
-    const row = await readTimingRow(`annotation = '${annotation}'`)
+    const row = await readTimingRow(annotation)
     expect(String(row.pipelined)).toBe('true')
     expect(Number(row.batch_size)).toBe(4)
     expect(row.cursor_batches == null).toBe(true)
@@ -147,9 +147,12 @@ describe('recordQueryTiming', () => {
     const emitted = whenQueryTimingEmitted('unannotated', 3)
     record(null, { pool: 'client', rowCount: 3, error: false, durationMs: 5 })
     await emitted
-    const row = await readTimingRow(
-      "annotation = 'unannotated' AND row_count = 3 AND pool = 'client'",
+    await flush()
+    const rows = await query(
+      `SELECT * FROM pg_query_timing WHERE annotation = 'unannotated' AND row_count = 3 AND pool = 'client'`,
     )
+    const row = rows[0]
+    if (row === undefined) throw new Error('pg_query_timing did not record unannotated')
     expect(row.annotation).toBe('unannotated')
   })
 
@@ -174,7 +177,7 @@ describe('recordQueryTiming', () => {
     const emitted = whenQueryTimingEmitted(annotation)
     record(annotation)
     await emitted
-    expect(await readTimingRow(`annotation = '${annotation}'`)).toBeDefined()
+    expect(await readTimingRow(annotation)).toBeDefined()
   })
 
   it('emits when the sample rate is not a finite number', async () => {
@@ -183,7 +186,7 @@ describe('recordQueryTiming', () => {
     const emitted = whenQueryTimingEmitted(annotation)
     record(annotation)
     await emitted
-    expect(await readTimingRow(`annotation = '${annotation}'`)).toBeDefined()
+    expect(await readTimingRow(annotation)).toBeDefined()
   })
 
   it('emits a fractional-rate query when Math.random falls below the rate', async () => {
@@ -193,7 +196,7 @@ describe('recordQueryTiming', () => {
     const emitted = whenQueryTimingEmitted(annotation)
     record(annotation)
     await emitted
-    expect(await readTimingRow(`annotation = '${annotation}'`)).toBeDefined()
+    expect(await readTimingRow(annotation)).toBeDefined()
   })
 
   it('drops a fractional-rate query when Math.random is at or above the rate', async () => {
@@ -221,7 +224,7 @@ describe('recordQueryTiming', () => {
       )
       // The new branch runs before the ANALYTICS_BACKEND early-out and must not swallow it.
       await emitted
-      const row = await readTimingRow(`annotation = '${annotation}'`)
+      const row = await readTimingRow(annotation)
       expect(String(row.error)).toBe('true')
     })
 
