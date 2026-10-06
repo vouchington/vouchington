@@ -121,4 +121,20 @@ describe('post-publication writer inventory regressions', () => {
       `${inventoryPath}: unclassified publication writer backend/agents/publication-bypass.mts`,
     ])
   })
+  it.each([
+    ['./capture.mts', true],
+    ['./unrelated.mts', false],
+  ] as const)('requires the configured capture module boundary %s', (module, approved) => {
+    const ctx = context(`import {recordPostPublicationChange as capture} from '${module}'
+      const query = \`UPDATE posts SET title = $1\`;capture(query, change)`)
+    const errors: string[] = []
+    checkPostPublicationWriterInventory(ctx, errors)
+    expect(errors).toEqual(
+      approved
+        ? []
+        : [
+            `${inventoryPath}: captured writer ${writerPath} must call an approved publication capture helper`,
+          ],
+    )
+  })
 })
