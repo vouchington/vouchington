@@ -1,6 +1,6 @@
 import type { BasicUser } from '@services/users/types'
 import { resolveHostname } from '@services/topics/hostname-link'
-import { upsertTopicElectionVotes } from '@services/elections-votes/topic/votes-upsert'
+import { upsertAutomaticTopicUpvote } from '@services/elections-votes/topic/automatic-upvote'
 import { normalizeHostname } from '@ts-shared/utils/urls'
 import assert from 'http-assert'
 import onError from '@modules/on-error'
@@ -43,7 +43,7 @@ export async function createInstanceFromHostname(
 
   const existing = await findExistingInstanceByHostnameId(hostnameId)
   if (existing) {
-    await upsertTopicElectionVotes(currentUser.id, [{ entityId: existing.topic_id, score: 1 }])
+    await upsertAutomaticTopicUpvote(currentUser, existing.topic_id)
     return { status: 'upvoted', topic_id: existing.topic_id, topic_slug: existing.topic_slug }
   }
 
@@ -62,7 +62,7 @@ export async function createInstanceFromHostname(
     // Race condition: another request created this instance concurrently — switch to upvote.
     const raceExisting = await findExistingInstanceByHostnameId(hostnameId)
     assert(raceExisting, 500, 'Concurrent instance creation race condition')
-    await upsertTopicElectionVotes(currentUser.id, [{ entityId: raceExisting.topic_id, score: 1 }])
+    await upsertAutomaticTopicUpvote(currentUser, raceExisting.topic_id)
     return {
       status: 'upvoted',
       topic_id: raceExisting.topic_id,
@@ -70,7 +70,7 @@ export async function createInstanceFromHostname(
     }
   }
 
-  upsertTopicElectionVotes(currentUser.id, [{ entityId: created.topicId, score: 1 }]).catch(onError)
+  upsertAutomaticTopicUpvote(currentUser, created.topicId).catch(onError)
 
   return { status: 'created', topic_id: created.topicId, topic_slug: created.slug }
 }

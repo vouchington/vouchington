@@ -8,6 +8,7 @@ import type {
   VoteEventContext,
 } from './types.mts'
 import { upsertUserAgentString } from '@data-stores/psql/upsert-user-agent-string'
+import { assertPlatformAccountVotesAllowed } from './platform-account-votes.mts'
 
 /** Append-only simple-entity vote events; current votes are latest per user and entity. */
 const NULL_VOTE_CONTEXT: VoteEventContext = {
@@ -57,6 +58,7 @@ export async function upsertElectionVotesShared(
     await query(sql`/* lockActiveUserForElectionVoteMutation */
       SELECT fn_lock_active_user_for_mutation(${userId}::uuid)
     `)
+    await assertPlatformAccountVotesAllowed(config, query, userId, values)
     // Keep every vote mutation query on this transaction's client. In particular, a user-agent
     // lookup cannot acquire a second write-pool client while an outer caller already holds one.
     const userAgentId = await upsertUserAgentString(context.userAgent?.trim() || null, { query })

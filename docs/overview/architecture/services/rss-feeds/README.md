@@ -6,7 +6,7 @@ RSS feeds are source entities owned by `topic_type='rss_feed'` topics. API behav
 
 Creation paths:
 
-- `createSourceFromUrl()` creates the source topic and `rss_feeds` row in one transaction, writes initial enablement and discoverability change rows, upvotes the source topic, optionally follows the feed, and enqueues an immediate crawl.
+- `createSourceFromUrl()` creates the source topic and `rss_feeds` row in one transaction, writes initial enablement and discoverability change rows, upvotes the source topic through `upsertAutomaticTopicUpvote` (which casts no vote for a platform account while the source is still created or found), optionally follows the feed, and enqueues an immediate crawl.
 - `createRssFeed()` is the low-level primitive for trusted internal callers and test helpers. It also seeds initial enablement and discoverability rows, then enqueues crawl and discoverability evaluation after commit.
 
 ## State

@@ -9,6 +9,7 @@ export const POST_ELECTION_CONFIG: EntityElectionConfig = {
   tracksOutboundActivityPubLike: true,
   tracksNeutralScore: true,
   tracksSemanticScore: true,
+  rejectsPlatformAccountVotes: true,
   legacySentimentEntityFilter: { field: 'post_type', excludedValues: ['topic_recommendation'] },
   votePolicy: 'sentiment',
   votePolicyByEntityField: {

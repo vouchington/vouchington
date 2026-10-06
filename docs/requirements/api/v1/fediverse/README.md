@@ -47,6 +47,10 @@ endpoints are always mounted; the `fediverse` feature flag gates frontend visibi
     already exists for the hostname (including a concurrent-creation race) — upvotes its topic
     election and returns `200` with `{ status: 'upvoted', topic_id, topic_slug }`. Any authenticated,
     non-suspended user may call this; subject to `fediverse_instance` contribution-gating limits.
+  - The upvote is the caller's automatic +1. An official, system or AI agent account (any non-null
+    `account_type`) gets the same responses and instance, but no vote is written on the new,
+    existing or race path, because these accounts cannot create community trust signals.
+    `status: 'upvoted'` means the instance already existed.
   - A body that is not exactly `{ hostname }` (a wrong-typed `hostname` or an unknown key) returns `422`
     before any write. See [Staff and operations validation](../../reference-staff-operations-request-validation.md).
   - Best-effort classifies the hostname through the same provider transport flag at creation time (see

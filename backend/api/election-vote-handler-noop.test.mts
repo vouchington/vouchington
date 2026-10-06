@@ -10,6 +10,7 @@ import {
 } from '@voucha/test-helpers'
 import { getTopicElectionById, upsertTopicElectionVotes } from '@services/elections-votes/topic'
 import { onceElectionVoteStatsCompleted } from '@voucha/test-helpers/election-vote-stats'
+import { setAccountTypeTestUserKind } from '@voucha/test-helpers/account-types'
 
 describe('election vote no-op reconciliation', () => {
   it('reconciles aggregate stats when a same-choice retry follows a missed enqueue', async () => {
@@ -28,10 +29,12 @@ describe('election vote no-op reconciliation', () => {
   }, 30_000)
 
   it('reconciles aggregate stats when an official Clear retry follows a missed enqueue', async () => {
-    const user = await createTestUser({ administrator: true })
+    // The writer rejects a platform account's vote, so the +1 predates the promotion.
+    const user = await createTestUser()
     const topicId = await createTopicForNoopRetry()
     await upsertTopicElectionVotes(user.id, [{ entityId: topicId, score: 1 }])
     await onceElectionVoteStatsCompleted({ electionId: topicId, orderingKey: 'topic' })
+    await setAccountTypeTestUserKind(user.id, 'official')
     await insertTopicElectionVote(user.id, topicId, null)
 
     const request = createRequest()

@@ -2,9 +2,31 @@
 
 [Back to Official Account Permissions](reference-trust-system-official-accounts-and-material-connections.md#official-account-permissions)
 
-The restriction is enforced only at HTTP and authorization guards (`isPlatformAccount(user)` is `account_type != null`). Service-level writers (`upsertEntityRelation`, `writeEntityRelations`, `handleElectionVotes`, `upsertEntityRelationElectionVotes`, `upsertTopicElectionVotes`) never check `account_type`, so a platform-account writer is blocked only where a guard sits in front of it. Classifier actors hardcode `account_type: 'ai_agent'` in the actor literal. An election-backed relation written through `upsertEntityRelation` or `writeEntityRelations` also casts the creator's +1 vote unless the caller passes `vote: false`.
+The restriction is enforced at HTTP and authorization guards (`isPlatformAccount(user)` is `account_type != null`) and, for topic and post elections, inside the writers themselves (see [Topic and post election writers](#topic-and-post-election-writers)). The other service-level writers (`upsertEntityRelation`, `writeEntityRelations`, `handleElectionVotes`, `upsertEntityRelationElectionVotes`) never check `account_type`, so a platform-account writer is blocked there only where a guard sits in front of it. Classifier actors hardcode `account_type: 'ai_agent'` in the actor literal. An election-backed relation written through `upsertEntityRelation` or `writeEntityRelations` also casts the creator's +1 vote unless the caller passes `vote: false`.
 
 Human and remote actors are out of scope. Paths are under `backend/`. This page classifies every non-test caller of those writers and of the `upsert*ElectionVotes` functions outside the election and relation service internals, and `backend/tools/` has no other vote writer. A writer is a mismatch when current behavior differs from the permissions table.
+
+## Topic and post election writers
+
+`upsertTopicElectionVotes` and `upsertPostElectionVotes` (`services/elections-votes/shared/vote-upsert.mts`, rule in `shared/platform-account-votes.mts`) reject a platform account's votes, so no caller can write one by accident. Only the topic and post election configs opt in (`rejectsPlatformAccountVotes`); relation, rss-feed-item, user-vouch, hostname and agent-moderation votes use their own configs and writers and are unchanged.
+
+- **Who:** the voter's `account_type` is non-null (`official`, `system` or `ai_agent`). It is read from `view_embedded_users`, the single derivation, inside the vote transaction after the per-user lock, so no second username, role or label list exists.
+- **Rejected:** any non-null score, `1`, `-1` or `0`. A stored neutral `0` is a trust signal (`score = 0`, `score_is_neutral = true`), so it is rejected too, and so is repeating the account's current score. The error is `403` with code `OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN`, the same error as the HTTP guard. The whole call is rejected and nothing is written, so a batch that mixes a clear with a vote writes neither.
+- **Allowed:** a clear, `score: null`. It appends a `NULL`-score row only when the account has a ballot to clear and is a no-op otherwise, so an account promoted after voting can still withdraw its old ballot. An empty batch is a no-op.
+- **Residual window:** the check and the insert share one transaction, but role grants are not serialized with it. A grant that commits after the check and before the vote commits lets that one vote land; every later write is rejected.
+- **Callers that skip the vote:** `services/rss-feeds/create-source.mts` and `services/fediverse-instances/create-instance.mts` cast the automatic +1 through `upsertAutomaticTopicUpvote`, which returns early for a platform account. The source is still created or found and the RSS follow is kept; a reply with `status: 'upvoted'` means the source already existed, not that a vote was written. The RSS import creates new feeds through `createSourceFromUrl`, and an import of an existing feed only follows it, so it casts no vote.
+
+Callers of the two writers:
+
+| Caller                                                                                                            | Classification                                                                                                                                                    |
+| ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `api/v1/topics/topic-routes/topic-vote-routes.mts` (PUT and DELETE) and `post-routes/comment-ancestors-route.mts` | `createVoteHandler` guards non-clears first and these routes do not opt out; the writer is the second line of defense. Clears pass.                               |
+| `workers/entity-listeners/processors/posts.mts:52`                                                                | Creator auto-vote, already skipped for platform creators. Covered by `posts.platform-creator-upvote.test.mts`.                                                    |
+| `services/rss-feeds/create-source.mts:59,123,162,178`                                                             | Automatic +1, skipped for platform accounts. Covered by `create-source.platform-accounts.test.mts`.                                                               |
+| `services/fediverse-instances/create-instance.mts:46,65,73`                                                       | Automatic +1, skipped for platform accounts. Covered by `create-instance.platform-accounts.test.mts`.                                                             |
+| `services/user-import-export/import-rss-feeds.mts:83`                                                             | Creates through `createSourceFromUrl`. Covered by `import-rss-feeds.platform-accounts.test.mts`.                                                                  |
+| `playwright/helpers/insert-personalized-fixtures.mts:36,37,86,87`                                                 | Votes as plain member fixtures, unchanged.                                                                                                                        |
+| Tests                                                                                                             | `election-vote-handler-retract.test.mts` and `election-vote-handler-noop.test.mts` voted as an official to test a clear; they now vote as a member, then promote. |
 
 ## Structural writers that keep working
 
@@ -44,7 +66,8 @@ No election-backed vote or relation is written.
 - `api/election-vote-handler-guards.mts:14`, called at `election-vote-handler.mts:77`: blocks sentiment votes on every `createVoteHandler` route unless the route opts out. Clears are always allowed. Covered by `election-vote-handler.test.mts` (administrator) and `election-vote-handler.platform-accounts.test.mts` (`official`, `system`, `ai_agent`).
 - `services/entity-relation-actions/user-tag-authorization.mts:17`: blocks user-tag relation add and vote, except for administrators. Covered by `user-tags-authorization.test.mts` (`system` and `ai_agent` rejected, administrator allowed).
 - `services/bookmarks/upsert.mts:123`: blocks a follow casting a vouch. Covered by `upsert.follow-vouch.test.mts`.
-- `workers/entity-listeners/processors/posts.mts:51`: suppresses the creator auto-positive vote on the creator's own post. No test for the platform-creator branch.
+- `services/elections-votes/shared/vote-upsert.mts`: the topic and post writers reject non-null votes from platform accounts and allow clears (see [Topic and post election writers](#topic-and-post-election-writers)). Covered by `shared/platform-account-votes.test.mts` (`official`, `system`, `ai_agent`, for both writers).
+- `workers/entity-listeners/processors/posts.mts:51`: suppresses the creator auto-positive vote on the creator's own post. Covered by `posts.platform-creator-upvote.test.mts`.
 - `services/posts/authorization.mts:62` and `services/posts/update/validation.mts:74`: block review and data-point create and edit. Covered by `create.review-content-validation.test.mts` and `update.review-content-validation.test.mts`.
 - `services/user-referral-program-links/authorization.mts:39,54`: blocks personal referral links. Covered by `api/v1/referral-links/links.test.mts`.
 
@@ -54,11 +77,11 @@ The user-tag exemption (`user-tag-authorization.mts:17`) and the administrator m
 
 ## Mismatches
 
-M1 is resolved. M2 to M4 are recorded, not changed; which of these stay allowed is a product decision.
+M1, M2 and M3 are resolved. M4 is recorded, not changed.
 
 - **M1** Resolved: classifier and AI accounts vote only on entity relations, never on topic or post elections ([decision, 2026-10-05](https://github.com/vouchington/vouchington/issues/1834#issuecomment-5999417459)). The post classifier now votes on the post's own `category` relation, and the global topic vote path was removed.
-- **M2** `POST /api/v1/rss-feeds` and the RSS import (`services/rss-feeds/create-source.mts:59,123,162,178`, `services/user-import-export/import-rss-feeds.mts:83`): an automatic +1 topic vote and follow is written for the caller with no platform-account check.
-- **M3** `POST /api/v1/fediverse/instances` (`services/fediverse-instances/create-instance.mts:46,65,73`): an automatic +1 topic vote is written for the caller with no platform-account check.
+- **M2** Resolved: `POST /api/v1/rss-feeds` and the RSS import (`services/rss-feeds/create-source.mts:59,123,162,178`, `services/user-import-export/import-rss-feeds.mts:83`) no longer cast the automatic +1 topic vote for a platform account, and the topic writer rejects it if a caller tries. The source is still created and the follow is kept.
+- **M3** Resolved: `POST /api/v1/fediverse/instances` (`services/fediverse-instances/create-instance.mts:46,65,73`) no longer casts the automatic +1 topic vote for a platform account, on the new, existing and race paths. The instance is still created.
 - **M4** The "Moderator agent: tag post + move to review queue" row has no production caller. `services/moderators/tagging.mts` helpers are unused exports, and `agent-moderate.mts` writes no relation or vote.
 
-#1849 requires structural relation votes and administrator user-tag authority to keep working, and the first section is covered by tests for that.
+#1849 requires structural relation votes and administrator user-tag authority to keep working, and the structural writers section is covered by tests for that.
