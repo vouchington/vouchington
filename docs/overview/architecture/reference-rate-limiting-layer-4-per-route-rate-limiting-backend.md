@@ -143,6 +143,13 @@ The Firehose stream and S3 Tables table for `api_usage` are provisioned in the i
 `firehose` backend reports a delivery error for each batch of `api_usage` rows; the `local`
 backend is unaffected.
 
+### MCP tool calls and REST route limits
+
+A `tools/call` is also charged to the per-route bucket of its REST twin, one charge per tool call,
+so a user has one budget per route across both protocols. The transport bucket and the usage quota
+above still apply. See
+[MCP tool calls and REST route limits](reference-rate-limiting-mcp-tool-calls-and-rest-route-limits.md).
+
 ### Exemptions
 
 `POST /api/v1/auth/logout` is exempt from backend per-route rate limiting. Logout must clear or

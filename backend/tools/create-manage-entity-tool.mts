@@ -1,6 +1,7 @@
 import type { BasicUser, PrivateUser } from '@services/users/types'
-import type { Tool, ToolMeta } from '@services/openai-agents/tool-types'
+import type { Tool, ToolApiEndpoint, ToolMeta } from '@services/openai-agents/tool-types'
 import { requirePrivateToolUser } from './private-user.mts'
+import { selectApiByArgument } from './select-api-by-argument.mts'
 import { objectSchema, successSchema } from './output-schema-shapes.mts'
 import { componentSchema } from './route-response-schema.mts'
 import createHttpError from 'http-errors'
@@ -73,6 +74,7 @@ export function createManageEntityTool<
       ? {
           meta: {
             ...config.meta,
+            selectApi: selectApiByArgument('action', actionEndpoints(config.meta.api ?? [])),
             outputSchema: deriveOutputSchema(config.toolName, config.entity),
           },
         }
@@ -103,6 +105,18 @@ export function createManageEntityTool<
         }
       },
   }
+}
+
+const ACTION_METHODS = { add: 'POST', update: 'PATCH', remove: 'DELETE' } as const
+
+// Each action calls the REST route of its method, so a call charges only that route's bucket.
+function actionEndpoints(api: readonly ToolApiEndpoint[]): Record<string, ToolApiEndpoint> {
+  return Object.fromEntries(
+    Object.entries(ACTION_METHODS).flatMap(([action, method]) => {
+      const endpoint = api.find(candidate => candidate.method === method)
+      return endpoint ? [[action, endpoint]] : []
+    }),
+  )
 }
 
 // The results above and their schema live side by side, so they change together. Add and update

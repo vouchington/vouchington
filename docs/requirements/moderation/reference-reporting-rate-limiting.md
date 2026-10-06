@@ -17,6 +17,14 @@
 
 A 429 response includes a `Retry-After` header. The UI surfaces a toast: "You are reporting too often. Please wait an hour."
 
+The MCP `create_content_report` tool is charged to this same bucket under the same identity, so a
+user has one reporting budget across REST and MCP: the next report in the window is refused on
+either protocol. A refused MCP call is answered in-band with the rate-limit error and a
+`retryAfterSeconds` of 3600 in place of the header, and its audit row records `rate_limited`. A
+JSON-RPC batch charges once per `create_content_report` call. An API key is charged to its own
+bucket rather than the user's. See
+[MCP tool calls and REST route limits](../../overview/architecture/reference-rate-limiting-mcp-tool-calls-and-rest-route-limits.md).
+
 ---
 
 ## Reporter privacy

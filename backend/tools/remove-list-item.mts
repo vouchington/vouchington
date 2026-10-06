@@ -6,7 +6,13 @@ import {
   SUCCESS_RESULT_SCHEMA,
   type ListItemToolArgs,
 } from './list-tool-support.mts'
-import type { Tool } from '@services/openai-agents/tool-types'
+import type { Tool, ToolApiEndpoint } from '@services/openai-agents/tool-types'
+import { selectApiByArgument } from './select-api-by-argument.mts'
+
+const ENDPOINTS: Record<string, ToolApiEndpoint> = {
+  post: { method: 'DELETE', path: '/api/v1/lists/:id/items/posts/:entityId' },
+  rss_feed_item: { method: 'DELETE', path: '/api/v1/lists/:id/items/rss-feed-items/:entityId' },
+}
 
 const tool: Tool<ListItemToolArgs, { success: true }> = {
   schema: {
@@ -23,10 +29,8 @@ const tool: Tool<ListItemToolArgs, { success: true }> = {
     plan: 'plus',
     requiredScopes: { mcp: ['lists:read', 'lists:write'] },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
-    api: [
-      { method: 'DELETE', path: '/api/v1/lists/:id/items/posts/:entityId' },
-      { method: 'DELETE', path: '/api/v1/lists/:id/items/rss-feed-items/:entityId' },
-    ],
+    api: Object.values(ENDPOINTS),
+    selectApi: selectApiByArgument('item_type', ENDPOINTS),
     outputSchema: SUCCESS_RESULT_SCHEMA,
   },
   function: (currentUser: BasicUser) => async (args: ListItemToolArgs) => {

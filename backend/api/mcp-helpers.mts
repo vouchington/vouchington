@@ -5,10 +5,10 @@ import {
   authenticateMcpBearer,
   buildMcpBearerChallenge,
   buildMcpContextUser,
-  classifyMcpCalls,
   exceedsMcpAuditBatchLimit,
   findMcpStepUpScopes,
   handleMcpHttpRequest,
+  planMcpCalls,
   type McpServerConfig,
   type McpHttpResponse,
 } from '@services/mcp-tools'
@@ -16,12 +16,17 @@ import { checkRouteRateLimit } from '@services/route-rate-limits'
 import { isAdminUser } from '@services/users'
 import { isCopyrightMcpDecisionToolsEnabled } from '@services/copyright-notices/config'
 import { startMcpRequestAudit, unreadMcpCall } from './mcp-audit-helpers.mts'
+import { chargeMcpToolCalls } from './mcp-route-rate-limit-helpers.mts'
 import { startMcpUsageMeter } from './mcp-usage-helpers.mts'
 
 // Stateless MCP Streamable HTTP for both MCP routes. The bearer credential (an OAuth access token,
 // or a user MCP API key on the user route only) is the identity, so session cookies are never read.
 // Each route emits the returned response itself: OpenAPI discovery only attributes an emission to a
 // route when it sits in that route's own handler, not in a helper both routes share.
+//
+// Each `tools/call` is also charged to the per-route rate-limit bucket of its REST twin, under the
+// identities the transport bucket uses, so a user has one budget per route across REST and MCP. A
+// call refused there is answered in-band and audited as rate limited; it never runs.
 //
 // Both routes audit every call of a verified credential (an OAuth access token or, on the user
 // route, an API key) before the call runs: each rejection below and each admitted message writes its
@@ -70,9 +75,10 @@ export async function dispatchMcpRequest(
         ctx.throw(403, 'Insufficient scope')
       }
 
+      const rateLimitIdentities = { ip: ctx.ip, ...authentication.rateLimitIdentity }
       const rateLimitResult = await checkRouteRateLimit(
         `POST:${config.routePath}`,
-        { ip: ctx.ip, ...authentication.rateLimitIdentity },
+        rateLimitIdentities,
         owner,
       )
       if (rateLimitResult.limited) {
@@ -92,31 +98,29 @@ export async function dispatchMcpRequest(
       const user = buildMcpContextUser(owner)
       const copyrightDecisionToolsEnabled =
         config.audience === 'admin' ? await isCopyrightMcpDecisionToolsEnabled() : false
-      if (audit) {
-        if (exceedsMcpAuditBatchLimit(parsedBody)) {
-          await audit.record([unreadMcpCall('invalid_request')])
-          ctx.throw(413, 'Too many JSON-RPC messages')
-        }
-        await audit.record(
-          classifyMcpCalls(parsedBody, user, scopes, config, copyrightDecisionToolsEnabled),
-        )
+      // Bounds the audit rows and the route charges one request can spend.
+      if (exceedsMcpAuditBatchLimit(parsedBody)) {
+        await audit?.record([unreadMcpCall('invalid_request')])
+        ctx.throw(413, 'Too many JSON-RPC messages')
       }
-      // Only OAuth clients can step up, so an API key keeps the in-band JSON-RPC scope error.
-      if (authentication.credential === 'oauth') {
-        const stepUpScopes = findMcpStepUpScopes(
-          parsedBody,
-          user,
-          scopes,
-          config,
-          copyrightDecisionToolsEnabled,
+      const plan = planMcpCalls(parsedBody, user, scopes, config, copyrightDecisionToolsEnabled)
+      // Only OAuth clients can step up, so an API key keeps the in-band JSON-RPC scope error. A
+      // request that must step up runs nothing, so it is audited but charges no route.
+      const stepUpScopes =
+        authentication.credential === 'oauth'
+          ? findMcpStepUpScopes(parsedBody, user, scopes, config, copyrightDecisionToolsEnabled)
+          : null
+      const { events, rateLimitedCalls } = await chargeMcpToolCalls(
+        stepUpScopes ? { ...plan, charges: [] } : plan,
+        { identities: rateLimitIdentities, owner },
+      )
+      await audit?.record(events)
+      if (stepUpScopes) {
+        ctx.set(
+          'WWW-Authenticate',
+          buildMcpBearerChallenge(config, { error: 'insufficient_scope', scopes: stepUpScopes }),
         )
-        if (stepUpScopes) {
-          ctx.set(
-            'WWW-Authenticate',
-            buildMcpBearerChallenge(config, { error: 'insufficient_scope', scopes: stepUpScopes }),
-          )
-          ctx.throw(403, 'Insufficient scope')
-        }
+        ctx.throw(403, 'Insufficient scope')
       }
 
       return handleMcpHttpRequest({
@@ -133,6 +137,7 @@ export async function dispatchMcpRequest(
         parsedBody,
         config,
         copyrightDecisionToolsEnabled,
+        rateLimitedCalls,
         ...(audit ? { onToolError: audit.recordToolError } : {}),
       })
     },

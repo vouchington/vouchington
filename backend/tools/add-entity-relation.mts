@@ -4,7 +4,12 @@ import { createEntityRelationAction } from '@services/entity-relation-actions'
 import { addPostHashtag } from '@services/posts'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { requirePrivateToolUser } from './private-user.mts'
-import type { Tool, ToolInvocationContext } from '@services/openai-agents/tool-types'
+import type {
+  Tool,
+  ToolApiEndpoint,
+  ToolInvocationContext,
+} from '@services/openai-agents/tool-types'
+import { selectApiByArgument } from './select-api-by-argument.mts'
 import { objectSchema, oneOfSchema } from './output-schema-shapes.mts'
 
 const text = { type: 'string' }
@@ -48,6 +53,14 @@ type AddEntityRelationResult =
     }
   | { post_id: string; tag: string; topic_alias_id: string }
 
+const ENDPOINTS: Record<AddEntityRelationArgs['action'], ToolApiEndpoint> = {
+  add_relation: {
+    method: 'POST',
+    path: '/api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType',
+  },
+  add_tag: { method: 'PATCH', path: '/api/v1/posts/:idOrSlug' },
+}
+
 const tool: Tool<AddEntityRelationArgs, AddEntityRelationResult> = {
   schema: {
     name: 'add_entity_relation',
@@ -89,13 +102,8 @@ const tool: Tool<AddEntityRelationArgs, AddEntityRelationResult> = {
     plan: 'plus',
     requiredScopes: { mcp: ['entity-relations:read', 'entity-relations:write'] },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
-    api: [
-      {
-        method: 'POST',
-        path: '/api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType',
-      },
-      { method: 'PATCH', path: '/api/v1/posts/:idOrSlug' },
-    ],
+    api: Object.values(ENDPOINTS),
+    selectApi: selectApiByArgument('action', ENDPOINTS),
     outputSchema: OUTPUT_SCHEMA,
   },
   function:

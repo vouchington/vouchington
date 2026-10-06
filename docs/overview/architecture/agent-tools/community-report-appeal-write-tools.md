@@ -77,10 +77,13 @@ restriction and relaxes none.
 - `create_review_dispute`: Unknown post `NOT_FOUND`; not a review, no rating for the topic, or over 4000 characters `INVALID_INPUT`; removed post `INVALID_INPUT`; no verified topic claim `FORBIDDEN`.
 - `create_moderation_appeal`: Missing or revoked warning or lifted ban `NOT_FOUND`; not the caller's `FORBIDDEN`; post not removed or reason over 4000 characters `INVALID_INPUT`.
 
-REST's per-route request limits are HTTP middleware that a tool call never passes through, for
-example the 10 submissions per hour on `POST /api/v1/reports`. Every MCP tool call shares the
-`POST /api/v1/mcp` route limit and the outcome-based usage quota instead, as for every other write
-tool. These tools do not add a report-specific limit.
+Each tool call is charged to the per-route rate limit of its REST twin, so a report filed over MCP
+and one filed over REST spend one budget, such as the hourly submissions on `POST /api/v1/reports`.
+A call that finds that budget spent is refused before it runs, with the in-band rate-limit error
+and its `retryAfterSeconds`, and the audit row records `rate_limited`. The `POST /api/v1/mcp`
+route limit and the outcome-based usage quota still apply to the request. See
+[MCP tool calls and REST route limits](../reference-rate-limiting-mcp-tool-calls-and-rest-route-limits.md).
+These tools add no limit of their own.
 
 Over MCP, HTTP 422 and 410 report as `INVALID_INPUT`, and `IDENTITY_REQUIRED` and `COMMUNITY_BANNED`
 report as `FORBIDDEN`, because the MCP error mapping has no more specific code for them.

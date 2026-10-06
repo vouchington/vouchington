@@ -77,6 +77,11 @@ export type ToolMeta = {
   requiredScopes?: Partial<Record<'mcp' | 'admin_mcp', readonly ApiScope[]>>
   // Equivalent existing REST endpoint(s), or null if none exist.
   api: readonly ToolApiEndpoint[] | null
+  // Narrows `api` to the endpoints a call with these validated arguments exercises, for a tool
+  // whose arguments pick among several REST routes. MCP charges only those routes' rate-limit
+  // buckets. Absent, every listed endpoint is exercised. It is never serialized, so the catalog and
+  // the MCP fixtures still list the whole `api`.
+  selectApi?: (args: Record<string, unknown>) => readonly ToolApiEndpoint[]
   // Declares the result shape. The MCP adapter publishes it as `outputSchema` and returns the
   // result as `structuredContent`, validated against it. A tool that returns its REST twin's
   // body unchanged derives it from the generated response contract

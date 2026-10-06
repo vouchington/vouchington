@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createManageEntityTool } from './create-manage-entity-tool.mts'
 import { createTestUser } from '@voucha/test-helpers'
 import type { BasicUser, PrivateUser } from '@services/users/types'
+import type { ToolApiEndpoint } from '@services/openai-agents/tool-types'
 import { randomUUID } from 'node:crypto'
 
 describe('createManageEntityTool', () => {
@@ -110,5 +111,52 @@ describe('createManageEntityTool', () => {
       status: 422,
     })
     expect(calls).toEqual([])
+  })
+
+  describe('route selection', () => {
+    const manageTool = (api: ToolApiEndpoint[] | null) =>
+      createManageEntityTool({
+        toolName: 'test_manage_entities',
+        description: 'Test manage entities',
+        addProperties: {},
+        updateProperties: {},
+        addFn: () => Promise.resolve(null),
+        updateFn: () => Promise.resolve(null),
+        removeFn: () => Promise.resolve(null),
+        entity: 'IndividualCard',
+        meta: {
+          surfaces: ['mcp'],
+          title: 'Test Manage Entities',
+          requiredScopes: { mcp: ['cards:read', 'cards:write'] },
+          annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
+          api,
+        },
+      })
+
+    it('names the route of the action the call performs', () => {
+      const prefix = `/api/v1/my/${randomUUID()}`
+      const tool = manageTool([
+        { method: 'POST', path: prefix },
+        { method: 'PATCH', path: `${prefix}/:id` },
+        { method: 'DELETE', path: `${prefix}/:id` },
+      ])
+
+      expect(tool.meta?.selectApi?.({ action: 'add' })).toEqual([{ method: 'POST', path: prefix }])
+      expect(tool.meta?.selectApi?.({ action: 'update' })).toEqual([
+        { method: 'PATCH', path: `${prefix}/:id` },
+      ])
+      expect(tool.meta?.selectApi?.({ action: 'remove' })).toEqual([
+        { method: 'DELETE', path: `${prefix}/:id` },
+      ])
+    })
+
+    it.each([
+      ['an action with no route listed', [{ method: 'POST', path: '/api/v1/my/things' }] as const],
+      ['no REST routes at all', null],
+    ])('names no route for %s', (_label, api) => {
+      const tool = manageTool(api && [...api])
+
+      expect(tool.meta?.selectApi?.({ action: 'remove' })).toEqual([])
+    })
   })
 })
