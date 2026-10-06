@@ -86,8 +86,8 @@ importers:
         specifier: ^18.5.0
         version: 18.5.0
       eslint-plugin-no-mistakes:
-        specifier: ^0.75.0
-        version: 0.75.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
+        specifier: ^0.76.0
+        version: 0.76.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
       eslint-plugin-playwright:
         specifier: ^2.12.0
         version: 2.12.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
@@ -119,8 +119,8 @@ importers:
         specifier: ^6
         version: 6.39.0
       no-mistakes:
-        specifier: ^0.75.0
-        version: 0.75.0
+        specifier: ^0.76.0
+        version: 0.76.0
       oxfmt:
         specifier: ^0.71.0
         version: 0.71.0
@@ -1432,8 +1432,8 @@ importers:
         version: 2.2.2
     devDependencies:
       no-mistakes:
-        specifier: ^0.75.0
-        version: 0.75.0
+        specifier: ^0.76.0
+        version: 0.76.0
       oxfmt:
         specifier: ^0.71.0
         version: 0.71.0
@@ -13418,8 +13418,8 @@ importers:
         specifier: ^3.3.1
         version: 3.3.1
       no-mistakes:
-        specifier: ^0.75.0
-        version: 0.75.0
+        specifier: ^0.76.0
+        version: 0.76.0
       picomatch:
         specifier: ^4.0.4
         version: 4.0.7
@@ -13675,8 +13675,8 @@ importers:
         specifier: ^8.20.0
         version: 8.20.0
       no-mistakes:
-        specifier: ^0.75.0
-        version: 0.75.0
+        specifier: ^0.76.0
+        version: 0.76.0
       oxfmt:
         specifier: ^0.71.0
         version: 0.71.0
@@ -20147,8 +20147,8 @@ packages:
     resolution: {integrity: sha512-/veY75JbMK4j1yjvuUxuVsiS/hr/4iHs9FTT6cgTexxdE0Ly/glccBAkloH/DofkjRbZU3bnoj38mOmhkZ0lHw==}
     engines: {node: '>=12'}
 
-  eslint-plugin-no-mistakes@0.75.0:
-    resolution: {integrity: sha512-VTL+9a8uIZ8P7LDv9kHg76QeuSfD5eqSzXXY/ZTgNDuV2Cy3hzU8mgseq0hSma4cxq87olqU01TZSxZHIsGYkw==}
+  eslint-plugin-no-mistakes@0.76.0:
+    resolution: {integrity: sha512-/M+w6F1JJcud3cZi4Z4yVA8aISvTajKxdIQaM9cTmKjQaF/3QSZtBG7drk/iRDxUaD3P7nrxoXUPpttkycVHHw==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
     peerDependencies:
       eslint: '>=9'
@@ -21492,30 +21492,30 @@ packages:
       sass:
         optional: true
 
-  no-mistakes-darwin-arm64@0.75.0:
-    resolution: {integrity: sha512-cux+JAJm+r5ACyykXyoJEDQrroZ+9ESOgLcZjLL9JSK1IhZSEifjzMvc3ehywaTV+UDIhkWFEhaGKnU3swfahQ==}
+  no-mistakes-darwin-arm64@0.76.0:
+    resolution: {integrity: sha512-90PddQRKT41bANYHqPEWjLx5uPd/QRHTBMnEe4cs/ExmcLh4UoRTzLXziZD788NvXqFYNbo74++xZtiOZnuAzQ==}
     cpu: [arm64]
     os: [darwin]
 
-  no-mistakes-linux-arm64-gnu@0.75.0:
-    resolution: {integrity: sha512-+xx01hJ4KEWe8cJsAOagH8umH73to9e4Yq+tWRTOlaie303zzoPRFBU2X1KDjO2IbhkcoUP7GAx32qSU2Q+jWQ==}
+  no-mistakes-linux-arm64-gnu@0.76.0:
+    resolution: {integrity: sha512-aEHjHON+vrx9o28sXpYWhbOrcK/MXTneuZo7Z+5mgxXougaf5c7U4SndHvVI7i+ZaR0C8MuTMNPyA5XWCGrQhw==}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  no-mistakes-linux-x64-gnu@0.75.0:
-    resolution: {integrity: sha512-j+cG6AKihDluD9tG+uXegdWI9k8XnPdpE96foZzh8/e0a8U5C+biLkB8FPhCIGvIZ8yEgCkfODj4govxBp3X2Q==}
+  no-mistakes-linux-x64-gnu@0.76.0:
+    resolution: {integrity: sha512-5/7J5YESNc3vlro/GfPfo9GA0JU6iW1CkYMw5hUD5IOoMuW302oJVmRz7wRJLoyhzdp3K0n8Grv+4s2yBd+l0A==}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  no-mistakes-win32-x64-msvc@0.75.0:
-    resolution: {integrity: sha512-6BHu6Hrq8CV93ordkX2UDlrFVYXXGC99VW8chiTXZPlJcO3M+uLad6mD3TGAEjqjda3KfxQmVG6FNA++Oxf23w==}
+  no-mistakes-win32-x64-msvc@0.76.0:
+    resolution: {integrity: sha512-AO4Rx/swKLbX7nkQRznWtM/m/NzWCsDDtzgeqF9T7xgYGALp47B9LgvSHqP0WEh0lBgPvaR3ZXsvY2/IIJoLGA==}
     cpu: [x64]
     os: [win32]
 
-  no-mistakes@0.75.0:
-    resolution: {integrity: sha512-CC74NG+UbZmHVXHNCO8yHwp8xVqIqitW5eb6YlPx9BWjUJFLYvkVOp8Uhefoyoj+SV7M1f7RmiQ9YzyeBXzOXQ==}
+  no-mistakes@0.76.0:
+    resolution: {integrity: sha512-CsJifs7j7vgsCjsMQXYILJtzXlImvVHAryjAsHVPVSdDdYYf2LXgJT03PH/7gc4wvEz34iFcUwkkSfplJ1sdjg==}
     hasBin: true
 
   node-app-attest@1.0.1:
@@ -29119,7 +29119,7 @@ snapshots:
 
   escape-string-regexp@5.0.0: {}
 
-  eslint-plugin-no-mistakes@0.75.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
+  eslint-plugin-no-mistakes@0.76.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
     dependencies:
       eslint: 10.5.0(jiti@2.7.0)(supports-color@10.2.2)
 
@@ -30624,24 +30624,24 @@ snapshots:
       - '@babel/core'
       - babel-plugin-macros
 
-  no-mistakes-darwin-arm64@0.75.0:
+  no-mistakes-darwin-arm64@0.76.0:
     optional: true
 
-  no-mistakes-linux-arm64-gnu@0.75.0:
+  no-mistakes-linux-arm64-gnu@0.76.0:
     optional: true
 
-  no-mistakes-linux-x64-gnu@0.75.0:
+  no-mistakes-linux-x64-gnu@0.76.0:
     optional: true
 
-  no-mistakes-win32-x64-msvc@0.75.0:
+  no-mistakes-win32-x64-msvc@0.76.0:
     optional: true
 
-  no-mistakes@0.75.0:
+  no-mistakes@0.76.0:
     optionalDependencies:
-      no-mistakes-darwin-arm64: 0.75.0
-      no-mistakes-linux-arm64-gnu: 0.75.0
-      no-mistakes-linux-x64-gnu: 0.75.0
-      no-mistakes-win32-x64-msvc: 0.75.0
+      no-mistakes-darwin-arm64: 0.76.0
+      no-mistakes-linux-arm64-gnu: 0.76.0
+      no-mistakes-linux-x64-gnu: 0.76.0
+      no-mistakes-win32-x64-msvc: 0.76.0
 
   node-app-attest@1.0.1:
     dependencies:
