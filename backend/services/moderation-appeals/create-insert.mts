@@ -154,7 +154,7 @@ async function findOpenAppeal(
       sql` AND post_id = ${postId}
             AND post_removal_kind IS NOT DISTINCT FROM ${postRemovalKind}`,
     )
-  } else if (userSuspensionId) {
+  } else {
     duplicateQuery.append(sql` AND user_suspension_id = ${userSuspensionId}`)
   }
   duplicateQuery.append(sql` LIMIT 1`)

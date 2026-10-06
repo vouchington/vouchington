@@ -4,7 +4,9 @@ import {
   createTestUser,
   insertTestCommunity,
   insertTestCommunityBan,
+  insertTestPost,
   insertTestUserWarning,
+  suspendTestUserGetId,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { countTestModerationAppealsByAppellant as countAppeals } from '@voucha/test-helpers/mcp-write-tool-rows'
@@ -55,6 +57,48 @@ describe('createModerationAppeal inside the caller transaction', () => {
     expect(second.isDuplicate).toBe(true)
     expect(second.appeal.id).toBe(first.appeal.id)
     expect(await countAppeals(appellant.id)).toBe(before + 1)
+  })
+
+  it('reads a repeat appeal of a removed post as the same appeal', async () => {
+    const postId = await insertTestPost({
+      title: `Joined Appeal Post ${crypto.randomUUID().slice(0, 8)}`,
+      slug: `joined-appeal-post-${crypto.randomUUID().slice(0, 8)}`,
+      createdById: appellant.id,
+      markdown: 'My post content',
+      clearanceStatus: 'rejected',
+    })
+    const input = parseCreateModerationAppealInput({
+      target_type: 'removal',
+      target_id: postId,
+      appeal_reason: 'My post was wrongly removed.',
+    })
+    await using query = await beginTransaction()
+
+    const first = await createModerationAppeal(appellant, WEB_PROVENANCE, input, { query })
+    const second = await createModerationAppeal(appellant, WEB_PROVENANCE, input, { query })
+    await query.commit()
+
+    expect(first.isDuplicate).toBe(false)
+    expect(second.isDuplicate).toBe(true)
+    expect(second.appeal.id).toBe(first.appeal.id)
+  })
+
+  it('reads a repeat appeal of a suspension as the same appeal', async () => {
+    const suspended = await createTestUser()
+    await suspendTestUserGetId(suspended.id, 'Joined appeal suspension')
+    const input = parseCreateModerationAppealInput({
+      target_type: 'suspension',
+      appeal_reason: 'I was suspended in error.',
+    })
+    await using query = await beginTransaction()
+
+    const first = await createModerationAppeal(suspended, WEB_PROVENANCE, input, { query })
+    const second = await createModerationAppeal(suspended, WEB_PROVENANCE, input, { query })
+    await query.commit()
+
+    expect(first.isDuplicate).toBe(false)
+    expect(second.isDuplicate).toBe(true)
+    expect(second.appeal.id).toBe(first.appeal.id)
   })
 
   it('refreshes the reason of an open warning appeal and reports a duplicate', async () => {

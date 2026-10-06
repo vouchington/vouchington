@@ -196,6 +196,24 @@ describe('apply_to_community — real store', () => {
   })
 
   it.each([
+    ['null answers', { answers: null }],
+    ['array answers', { answers: [] }],
+    ['text answers', { answers: 'text' }],
+    ['a numeric community_id', { community_id: 7 }],
+    ['a missing community_id', { community_id: undefined }],
+  ])('refuses %s even when schema validation is bypassed', async (_label, extra) => {
+    const { community } = await communityWithQuestions()
+    const caller = await createTestPlusMcpCaller()
+    await expect(
+      applyTool.function(caller)({ ...args(community.id, {}), ...extra } as never, {
+        credentialOwnerId: caller.id,
+        grantedScopes: SCOPES,
+      }),
+    ).rejects.toMatchObject({ status: 422 })
+    await expectNothingWritten(caller.id)
+  })
+
+  it.each([
     ['a missing answers object', { answers: undefined }],
     ['a numeric answer', { answers: { [crypto.randomUUID()]: 7 } }],
     ['a non-uuid idempotency key', { idempotency_key: 'not-a-uuid' }],
