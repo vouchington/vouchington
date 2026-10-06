@@ -34,14 +34,20 @@ describe('copyright screening worker with real GlideMQ and PostgreSQL', () => {
     )
     const errors: Error[] = []
     worker.on('error', error => errors.push(error))
+    const firstCompleted = Promise.withResolvers<void>()
+    worker.once('completed', () => firstCompleted.resolve())
     try {
       const data = { submission_id: notice.intake.copyright_notice_submission_id }
       const first = await queue.add('copyright-form-screening', data, { jobId: randomUUID() })
       if (!first) throw new Error('Expected first owned wakeup')
-      await vi.waitFor(async () => expect(await first.getState()).toBe('completed'))
+      await firstCompleted.promise
+      expect(await first.getState()).toBe('completed')
+      const duplicateCompleted = Promise.withResolvers<void>()
+      worker.once('completed', () => duplicateCompleted.resolve())
       const duplicate = await queue.add('copyright-form-screening', data, { jobId: randomUUID() })
       if (!duplicate) throw new Error('Expected duplicate owned wakeup')
-      await vi.waitFor(async () => expect(await duplicate.getState()).toBe('completed'))
+      await duplicateCompleted.promise
+      expect(await duplicate.getState()).toBe('completed')
       expect(openaiProvider.createOpenAIResponse).not.toHaveBeenCalled()
       expect(errors).toEqual([])
       await expect(

@@ -101,10 +101,13 @@ describe('daily AI spend-cap coordination with real GlideMQ', () => {
     const coordinatorQueue = new Queue(coordinatorQueueName, connection)
     const processedSpendIds: string[] = []
     const processedCoordinatorIds: string[] = []
+    const spendProcessed = Promise.withResolvers<void>()
+    const coordinatorProcessed = Promise.withResolvers<void>()
     const spendWorker = new Worker(
       spendQueueName,
       async (job: Job) => {
         processedSpendIds.push(job.id)
+        spendProcessed.resolve()
       },
       { ...connection, blockTimeout: 1000, limiter: { max: 1, duration: 60_000 } },
     )
@@ -112,6 +115,7 @@ describe('daily AI spend-cap coordination with real GlideMQ', () => {
       coordinatorQueueName,
       async (job: Job) => {
         processedCoordinatorIds.push(job.id)
+        coordinatorProcessed.resolve()
       },
       { ...connection, blockTimeout: 1000 },
     )
@@ -122,10 +126,10 @@ describe('daily AI spend-cap coordination with real GlideMQ', () => {
       const coordinator = await coordinatorQueue.add('recheck', {})
       if (!first || !coordinator) throw new Error('Expected limiter test jobs')
 
-      await vi.waitFor(() => expect(processedSpendIds).toContain(first.id), { timeout: 10_000 })
-      await vi.waitFor(() => expect(processedCoordinatorIds).toContain(coordinator.id), {
-        timeout: 10_000,
-      })
+      await spendProcessed.promise
+      await coordinatorProcessed.promise
+      expect(processedSpendIds).toContain(first.id)
+      expect(processedCoordinatorIds).toContain(coordinator.id)
       expect(processedSpendIds).toHaveLength(1)
     } finally {
       await Promise.all([spendWorker.close(true), coordinatorWorker.close(true)])

@@ -31,6 +31,23 @@ describe('OAuth authorization exchange recovery through real GlideMQ', () => {
       workerOptions,
     )
     initialWorker.on('error', () => undefined)
+    const terminalStates = new Map<string, 'completed' | 'failed'>()
+    const initialSettled = Promise.withResolvers<void>()
+    const trackedIds = new Set([
+      completedAuthorizationId,
+      failedAuthorizationId,
+      unrelatedAuthorizationId,
+    ])
+    const noteTerminal = (
+      settledJob: Job<OAuthAuthorizationExchangeJobData> | undefined,
+      state: 'completed' | 'failed',
+    ) => {
+      if (!settledJob || !trackedIds.has(settledJob.id)) return
+      terminalStates.set(settledJob.id, state)
+      if (terminalStates.size === trackedIds.size) initialSettled.resolve()
+    }
+    initialWorker.on('completed', settledJob => noteTerminal(settledJob, 'completed'))
+    initialWorker.on('failed', settledJob => noteTerminal(settledJob, 'failed'))
     const options = (authorizationId: string) => ({
       jobId: authorizationId,
       attempts: 1,
@@ -60,15 +77,10 @@ describe('OAuth authorization exchange recovery through real GlideMQ', () => {
       if (!completedJob || !failedJob || !unrelatedJob) {
         throw new Error('Expected terminal exchange test jobs to be created')
       }
-      await vi.waitFor(async () => expect(await completedJob.getState()).toBe('completed'), {
-        timeout: 10_000,
-      })
-      await vi.waitFor(async () => expect(await failedJob.getState()).toBe('failed'), {
-        timeout: 10_000,
-      })
-      await vi.waitFor(async () => expect(await unrelatedJob.getState()).toBe('completed'), {
-        timeout: 10_000,
-      })
+      await initialSettled.promise
+      await expect(completedJob.getState()).resolves.toBe('completed')
+      await expect(failedJob.getState()).resolves.toBe('failed')
+      await expect(unrelatedJob.getState()).resolves.toBe('completed')
       await initialWorker.close()
       failSelectedJob = false
 
@@ -105,6 +117,8 @@ describe('OAuth authorization exchange recovery through real GlideMQ', () => {
       expect(new Set(lookups)).toEqual(new Set(inputs.map(input => input.authorizationId)))
       expect(lookups).not.toContain(unrelatedAuthorizationId)
 
+      const recovered = Promise.withResolvers<void>()
+      const recoveredIds = new Set<string>()
       recoveryWorker = new Worker<OAuthAuthorizationExchangeJobData>(
         queueName,
         async (job: Job<OAuthAuthorizationExchangeJobData>) => {
@@ -113,13 +127,14 @@ describe('OAuth authorization exchange recovery through real GlideMQ', () => {
         },
         workerOptions,
       )
-      await vi.waitFor(
-        () => {
-          expect(executionCounts.get(completedAuthorizationId)).toBe(2)
-          expect(executionCounts.get(failedAuthorizationId)).toBe(2)
-        },
-        { timeout: 10_000 },
-      )
+      recoveryWorker.on('completed', job => {
+        if (job.id !== completedAuthorizationId && job.id !== failedAuthorizationId) return
+        recoveredIds.add(job.id)
+        if (recoveredIds.size === 2) recovered.resolve()
+      })
+      await recovered.promise
+      expect(executionCounts.get(completedAuthorizationId)).toBe(2)
+      expect(executionCounts.get(failedAuthorizationId)).toBe(2)
       await expect(unrelatedJob.getState()).resolves.toBe('completed')
       expect(executionCounts.get(unrelatedAuthorizationId)).toBe(1)
     } finally {

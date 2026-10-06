@@ -3,6 +3,7 @@ import detectorPackage from '@jongleberry/vurst-ai/package.json' with { type: 'j
 import { Response } from 'undici'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { closeAndUnregisterGlideMQInstance, createWorker } from '@data-stores/valkey-glide-mq'
+import type { Worker } from 'glide-mq'
 import { fetchStructuredDecisionProvider } from '@modules/structured-decisions/transport'
 import {
   AI_AGENTS_QUEUE_NAME,
@@ -176,31 +177,28 @@ describe('classifier run processor (real GlideMQ)', () => {
     )
     const jobId = classifierRunJobId(data.runId)
     const facts = async () => (await getClassifierRunFacts(setup.post.id, POST_CLASSIFIER_SLUG))[0]
+    const exhausted = waitForWorkerJob(worker, 'failed', jobId, CLASSIFIER_RUN_ATTEMPTS)
     try {
       await enqueueClassifierRun(data)
       await enqueueClassifierRun(data)
-      await expect.poll(() => attempts, { timeout: 15_000 }).toBe(CLASSIFIER_RUN_ATTEMPTS)
-      await expect.poll(() => ai_agents.getJob(jobId), { timeout: 5_000 }).toBeNull()
+      await exhausted
+      expect(attempts).toBe(CLASSIFIER_RUN_ATTEMPTS)
+      expect(await ai_agents.getJob(jobId)).toBeNull()
       expect(request).not.toHaveBeenCalled()
       unavailable = false
+      const recovered = waitForWorkerJob(worker, 'completed', jobId)
       await enqueueClassifierRun(data)
-      await expect
-        .poll(
-          async () => ({
-            completed: Boolean((await facts())?.completed_at),
-            errors: executionErrors,
-          }),
-          {
-            timeout: 15_000,
-          },
-        )
-        .toEqual({ completed: true, errors: [] })
-      await expect.poll(() => targetHandlerInvocations, { timeout: 5_000 }).toBe(attempts + 1)
+      await recovered
+      expect(executionErrors).toEqual([])
+      expect((await facts())?.completed_at).toEqual(expect.any(Date))
+      expect(targetHandlerInvocations).toBe(attempts + 1)
       expect(request).toHaveBeenCalledOnce()
-      await expect.poll(() => ai_agents.getJob(jobId), { timeout: 5_000 }).toBeNull()
+      expect(await ai_agents.getJob(jobId)).toBeNull()
+      const replayed = waitForWorkerJob(worker, 'completed', jobId)
       await enqueueClassifierRun(data)
-      await expect.poll(() => targetHandlerInvocations, { timeout: 15_000 }).toBe(attempts + 2)
-      await expect.poll(() => ai_agents.getJob(jobId), { timeout: 15_000 }).toBeNull()
+      await replayed
+      expect(targetHandlerInvocations).toBe(attempts + 2)
+      expect(await ai_agents.getJob(jobId)).toBeNull()
       expect(request).toHaveBeenCalledOnce()
       expect((await facts())?.provider_attempts_started).toBe(1)
     } finally {
@@ -227,3 +225,22 @@ describe('classifier run processor (real GlideMQ)', () => {
     }
   })
 })
+
+function waitForWorkerJob(
+  worker: Worker<ClassifierRunJobData>,
+  event: 'completed' | 'failed',
+  jobId: string,
+  times = 1,
+): Promise<void> {
+  let seen = 0
+  return new Promise(resolve => {
+    const onEvent = (job?: { id: string }) => {
+      if (job?.id !== jobId) return
+      seen += 1
+      if (seen < times) return
+      worker.off(event, onEvent)
+      resolve()
+    }
+    worker.on(event, onEvent)
+  })
+}

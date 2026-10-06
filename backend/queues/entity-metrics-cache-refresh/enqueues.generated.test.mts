@@ -1,6 +1,8 @@
+import type { Job } from 'glide-mq'
 import { it, expect, describe } from 'vitest'
-import { createTestUser, createTestPost, pollUntilNotNull } from '@voucha/test-helpers'
+import { createTestUser, createTestPost } from '@voucha/test-helpers'
 import { caches } from '@services/entity-cache/caches'
+import { entityMetricsCacheRefresh } from '@workers/entity-metrics-cache-refresh/workers'
 import {
   enqueueBulkRefreshPostMetricsById,
   enqueueBulkRefreshUserMetricsById,
@@ -20,17 +22,34 @@ describe('enqueues.generated', () => {
     const user = await createTestUser({ administrator: true })
     const post = await createTestPost({ user: user! })
 
-    await enqueueBulkRefreshPostMetricsById([post.id])
+    await waitForMetricsRefresh(post.id, () => enqueueBulkRefreshPostMetricsById([post.id]))
 
-    expect(await pollUntilNotNull(() => caches.post_metrics.get(post.id))).not.toBeNull()
+    expect(await caches.post_metrics.get(post.id)).not.toBeNull()
   })
 
   it('enqueueBulkRefreshUserMetricsById refreshes user metrics cache', async () => {
     const user = await createTestUser({ administrator: true })
 
-    await enqueueBulkRefreshUserMetricsById([user!.id])
+    await waitForMetricsRefresh(user!.id, () => enqueueBulkRefreshUserMetricsById([user!.id]))
 
-    expect(await pollUntilNotNull(() => caches.user_metrics.get(user!.id))).not.toBeNull()
-    expect(await pollUntilNotNull(() => caches.user_metrics.get(user!.username!))).not.toBeNull()
+    expect(await caches.user_metrics.get(user!.id)).not.toBeNull()
+    expect(await caches.user_metrics.get(user!.username!)).not.toBeNull()
   })
 })
+
+async function waitForMetricsRefresh(id: string, enqueue: () => Promise<unknown>): Promise<void> {
+  let onCompleted: ((job: Job) => void) | undefined
+  const completed = new Promise<void>(resolve => {
+    onCompleted = (job: Job) => {
+      if ((job.data as { id?: string } | undefined)?.id !== id) return
+      resolve()
+    }
+    entityMetricsCacheRefresh.on('completed', onCompleted)
+  })
+  try {
+    await enqueue()
+    await completed
+  } finally {
+    if (onCompleted) entityMetricsCacheRefresh.off('completed', onCompleted)
+  }
+}
