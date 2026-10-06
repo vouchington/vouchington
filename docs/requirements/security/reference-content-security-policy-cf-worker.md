@@ -17,16 +17,20 @@ to other backend routes.
 default-src 'self';
 script-src 'self' 'nonce-{per-request-nonce}' 'inline-speculation-rules' https://g.voucha.ai https://challenges.cloudflare.com https://connect.facebook.net https://accounts.google.com https://appleid.cdn-apple.com https://www.google.com https://www.gstatic.com {CSP_ASSET_ORIGIN};
 style-src 'self' 'unsafe-inline' {CSP_ASSET_ORIGIN};
-img-src 'self' data: https: https://images-staging.voucha.ai https://images.voucha.ai {CSP_ASSET_ORIGIN};
+img-src 'self' data: blob: https: https://images-staging.voucha.ai https://images.voucha.ai {CSP_ASSET_ORIGIN};
 font-src 'self' {CSP_ASSET_ORIGIN};
 frame-src 'self' https://g.voucha.ai https://challenges.cloudflare.com https://accounts.google.com https://www.google.com https://www.youtube-nocookie.com https://player.vimeo.com;
 media-src 'self' https: blob:;
-connect-src 'self' {CSP_SENTRY_ORIGIN} https://g.voucha.ai https://challenges.cloudflare.com https://connect.facebook.net https://accounts.google.com https://appleid.cdn-apple.com https://www.google.com https://graph.facebook.com https://www.facebook.com {CSP_BROWSER_UPLOAD_ORIGINS} {CSP_ASSET_ORIGIN};
+connect-src 'self' {CSP_SENTRY_ORIGIN} https://g.voucha.ai https://challenges.cloudflare.com https://connect.facebook.net https://accounts.google.com https://appleid.cdn-apple.com https://www.google.com https://graph.facebook.com https://www.facebook.com https://hn.algolia.com {CSP_BROWSER_UPLOAD_ORIGINS} {CSP_ASSET_ORIGIN};
 object-src 'none';
 base-uri 'self';
 form-action 'self';
 frame-ancestors 'self'
 ```
+
+The fence is the production `buildWebCsp()` policy. It always shows the asset, Sentry, and
+browser-upload slots, and it omits the non-production `'unsafe-eval'` and `http:` image allowances.
+The CSP doc-sync guard checks the fence against that rendering.
 
 `{CSP_ASSET_ORIGIN}` is the static asset origin (env var `CSP_ASSET_ORIGIN`). In local dev it is the Next.js server origin (for example, `http://localhost:3000`); in production set it to the CloudFront distribution URL. The CF Worker generates the script nonce per request, forwards it to the web origin in `x-nonce`, and applies the matching CSP after cache lookup. Shared cache entries strip CSP headers so nonce-bearing policies are never replayed from cache.
 
