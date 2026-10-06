@@ -58,7 +58,10 @@ describe('backend Vitest project config', () => {
     const owners = backendProjects().filter(project => projectOwnsPath(project, path))
 
     expect(owners.map(project => project.test?.name)).toEqual(['backend-data-stores'])
-    expect(owners[0]?.test?.globalSetup).toBe('./test-helpers/vitest.setup.data-stores.mts')
+    expect(owners[0]?.test?.globalSetup).toEqual([
+      './test-helpers/vitest.setup.data-stores.mts',
+      './test-helpers/vitest.setup.failure-injection.mts',
+    ])
     expect(owners[0]?.test?.setupFiles).toContain(
       './test-helpers/vitest.setup.glide-mq-workers.mts',
     )
@@ -123,7 +126,12 @@ describe('backend Vitest project config', () => {
                 './test-helpers/vitest.setup.data-stores.mts',
                 './test-helpers/vitest.global-setup.platform-stats-cache.mts',
               ]
-            : './test-helpers/vitest.setup.data-stores.mts',
+            : project.test?.name === 'backend-data-stores'
+              ? [
+                  './test-helpers/vitest.setup.data-stores.mts',
+                  './test-helpers/vitest.setup.failure-injection.mts',
+                ]
+              : './test-helpers/vitest.setup.data-stores.mts',
       })),
     )
   })

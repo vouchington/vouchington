@@ -33,6 +33,12 @@ export const backendDataProjects: TestProjectConfiguration[] = [
       ...backendDataStoreTestDefaults,
       name: 'backend-data-stores',
       runner: './test-helpers/vitest.runner.glide-mq-worker-attachment-guard.mts',
+      // Only this project installs the failure-injection triggers: backend-activitypub-capacity
+      // shares a database with the PostgreSQL schema snapshot check, which would see them.
+      globalSetup: [
+        './test-helpers/vitest.setup.data-stores.mts',
+        './test-helpers/vitest.setup.failure-injection.mts',
+      ],
       include: [
         'backend/{agents,api,data-stores,entrypoints,md,queues,rss,scripts,service-registrations,services,sitemaps,tools,worker-runtime,workers}/**/*.test.mts',
         'backend/test-helpers/election-vote-stats.test.mts',

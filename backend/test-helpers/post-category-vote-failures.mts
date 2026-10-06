@@ -1,15 +1,12 @@
-import { randomBytes } from 'node:crypto'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getEntityRelationMetadataOrThrow } from '../services/entity-relations/metadata.mts'
 import { getEntityRelationVoteTableName } from '@voucha/types/entities/entity-relations-metadata'
+import {
+  postCategoryTopicVoteTable as voteTable,
+  withInjectedFailure,
+} from './injected-failures.mts'
 
-const topicRelation = getEntityRelationMetadataOrThrow({
-  subjectType: 'post',
-  objectType: 'topic',
-  predicate: 'category',
-})
-const voteTable = getEntityRelationVoteTableName(topicRelation)
 const hashtagVoteTable = getEntityRelationVoteTableName(
   getEntityRelationMetadataOrThrow({
     subjectType: 'post',
@@ -19,34 +16,11 @@ const hashtagVoteTable = getEntityRelationVoteTableName(
 )
 
 /** Rejects only the fresh fixture actor's category votes, preserving parallel test isolation. */
-export async function withRejectedPostCategoryVotes<T>(
+export function withRejectedPostCategoryVotes<T>(
   actorId: string,
   execute: () => Promise<T>,
 ): Promise<T> {
-  const name = `test_category_vote_failure_${randomBytes(8).toString('hex')}`
-  const escapedActorId = actorId.replaceAll("'", "''")
-  await write(`/* withRejectedPostCategoryVotes:createFunction */
-    CREATE FUNCTION ${name}() RETURNS trigger LANGUAGE plpgsql AS $body$
-    BEGIN
-      IF NEW.user_id = '${escapedActorId}'::uuid THEN
-        RAISE EXCEPTION 'category vote rejected for test';
-      END IF;
-      RETURN NEW;
-    END
-    $body$`)
-  try {
-    await write(`/* withRejectedPostCategoryVotes:createTrigger */
-      CREATE TRIGGER ${name} BEFORE INSERT ON ${voteTable}
-      FOR EACH ROW EXECUTE FUNCTION ${name}()`)
-    try {
-      return await execute()
-    } finally {
-      await write(`/* withRejectedPostCategoryVotes:dropTrigger */
-        DROP TRIGGER ${name} ON ${voteTable}`)
-    }
-  } finally {
-    await write(`/* withRejectedPostCategoryVotes:dropFunction */ DROP FUNCTION ${name}()`)
-  }
+  return withInjectedFailure('post_category_topic_vote', actorId, execute)
 }
 
 /** Reads the fixture actor's committed rows from the primary after a failed admission. */
