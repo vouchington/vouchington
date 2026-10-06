@@ -118,9 +118,9 @@ Every group ends in one of these outcomes, never in a list of options. When the 
 more than one outcome, or several fixes remain, reproduce locally when that is cheap, then choose
 the outcome and fix the evidence best supports and carry it out. A nondeterministic failure that
 no pull request in the group caused is a flaky test even when its cause is unproven, and a test
-failure that recurs across ejections is never a transient. In the fix PR's `## Root cause`,
-separate what the evidence proves from what it only suggests, and put the alternatives in
-`## Options considered`. When the logs cannot tell the candidate causes apart, for example a
+failure that recurs across ejections is a transient only when it matches a catalogued transient in
+`ci/transient-retry/rules.mts`. In the fix PR's `## Root cause`, separate what the evidence proves
+from what it only suggests, and put the alternatives in `## Options considered`. When the logs cannot tell the candidate causes apart, for example a
 statement timeout with no wait event or plan, the fix PR also captures the evidence the next
 occurrence needs, but diagnostics alone are not a fix.
 
