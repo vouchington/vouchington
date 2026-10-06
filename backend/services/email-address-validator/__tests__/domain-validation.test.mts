@@ -7,16 +7,22 @@ import {
   deleteTestEmailDomainValidationCache,
   readTestEmailDomainValidationCache,
 } from '@voucha/test-helpers/email-domain-validation-cache'
-import { validateEmailDomain } from '../domain-validation.mts'
+import {
+  setResolveMxRecordsForDomainValidationTest,
+  validateEmailDomain,
+} from '../domain-validation.mts'
 import { EmailDomainInvalidError } from '../errors.mts'
+import { resolveMxRecords } from '../resolve-mx.mts'
 
 describe('domain-validation', () => {
   const ownedDomains: string[] = []
   let mockResolveMx: MockInstance<typeof dnsPromises.resolveMx>
+  let restoreMxRecordsForValidation: (() => void) | undefined
 
   beforeEach(() => {
     mockResolveMx = vi.spyOn(dnsPromises, 'resolveMx')
     mockResolveMx.mockRejectedValue(new Error('Unexpected DNS provider invocation'))
+    restoreMxRecordsForValidation = setResolveMxRecordsForDomainValidationTest(resolveMxRecords)
   })
 
   afterEach(async () => {
@@ -24,6 +30,8 @@ describe('domain-validation', () => {
       vi.useRealTimers()
       await deleteTestEmailDomainValidationCache(...ownedDomains.splice(0))
     } finally {
+      restoreMxRecordsForValidation?.()
+      restoreMxRecordsForValidation = undefined
       mockResolveMx.mockRestore()
     }
   })
