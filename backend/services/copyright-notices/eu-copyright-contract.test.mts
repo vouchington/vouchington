@@ -19,7 +19,10 @@ import {
 } from './eu-notice-receipt.mts'
 import { recordEuCopyrightStatementOfReasons } from './eu-reasons.mts'
 import { recordEuCopyrightRedressDecision, submitEuCopyrightRedress } from './eu-redress.mts'
-import { compileEuCopyrightTransparencyReport } from './eu-reporting.mts'
+import {
+  compileEuCopyrightTransparencyReport,
+  readEuCopyrightTransparencyFigures,
+} from './eu-reporting.mts'
 import { recordEuCopyrightSupervisedComplaint } from './eu-supervised-complaint.mts'
 import {
   recordCopyrightJurisdictionPolicyApproval,
@@ -264,6 +267,19 @@ describe('EU copyright notice contracts', () => {
       eu_statement_count: 1,
       provisional_withholding_at: null,
     })
+  })
+
+  it('returns zero transparency figures when the caller owns no notice ids', async () => {
+    const staff = await createTestUser({ extraRoles: ['moderator'] })
+    const figures = await readEuCopyrightTransparencyFigures(
+      staff,
+      new Date('2200-01-01T00:00:00.000Z'),
+      new Date('2200-01-02T00:00:00.000Z'),
+      [],
+    )
+    expect(figures.receipt_count).toBe(0)
+    expect(figures.notices_received_count).toBe(0)
+    expect(figures.complaints_by_submitter).toEqual({ notifier: 0, poster: 0, reviewer: 0 })
   })
 
   it('rejects a second withdrawal of the same policy approval', async () => {
