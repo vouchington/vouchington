@@ -10,7 +10,7 @@ const LIVE_PROVIDER_PROJECTS = new Set(
 type AllowlistState = { installed: boolean; violations: string[]; allowedIps: Set<string> }
 type DnsFn = (this: unknown, ...args: unknown[]) => unknown
 type DnsSurface = { promises?: DnsSurface; Resolver?: { prototype: DnsSurface } }
-type NetModule = { Socket: { prototype: { connect: DnsFn } } }
+type NetModule = { isIP: (host: string) => number; Socket: { prototype: { connect: DnsFn } } }
 type ConnectTarget = { host: string | null; options: Record<string, unknown> | null }
 
 function state(): AllowlistState {
@@ -162,8 +162,8 @@ function patchSocketConnect(net: NetModule): void {
     if (target.host === null || isAllowedHost(target.host))
       return Reflect.apply(original, this, args)
     const error = block('connection', target.host)
-    // Keep original connect so TLS still initializes. Returning early breaks the handshake.
-    if (!target.options) throw error
+    // IP literals skip lookup, so reject them here. Hostnames still call connect so TLS can start.
+    if (!target.options || net.isIP(normalizeHost(target.host)) !== 0) throw error
     target.options.lookup = (_hostname: unknown, second: unknown, third?: unknown) => {
       const callback = typeof third === 'function' ? third : second
       if (typeof callback === 'function') call(callback, error)
