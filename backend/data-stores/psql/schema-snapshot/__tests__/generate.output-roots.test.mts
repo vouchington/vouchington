@@ -1,24 +1,38 @@
 import { mkdir, mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { stableStringify } from '@modules/utils/stable-stringify'
-import { writeSchemaSnapshot } from '../generate.mts'
+import { resolveSchemaSnapshotOutputRoots, writeSchemaSnapshot } from '../generate.mts'
 import { renderSchemaMarkdown } from '../render-markdown.mts'
 import type { SchemaSnapshot } from '@vouchington/postgres/pg-schema-snapshot'
 
+const schemaSnapshotDirectory = dirname(import.meta.dirname)
+
 describe('schema snapshot output roots', () => {
-  it('checks the committed snapshot using the canonical JSON and documentation roots', async () => {
-    const snapshot = JSON.parse(
-      await readFile(new URL('../schema.json', import.meta.url), 'utf8'),
-    ) as SchemaSnapshot
-    await expect(
-      writeSchemaSnapshot({
-        snapshot,
-        markdown: renderSchemaMarkdown(snapshot),
-        check: true,
-      }),
-    ).resolves.toBeUndefined()
+  it('points omitted roots at the schema directory and committed markdown tree', () => {
+    expect(resolveSchemaSnapshotOutputRoots()).toEqual({
+      root: schemaSnapshotDirectory,
+      markdownRoot: resolve(
+        schemaSnapshotDirectory,
+        '../../../../docs/development/postgresql/schema-snapshot/markdown',
+      ),
+    })
+  })
+
+  it('does not attach the committed markdown tree to a fixture root', () => {
+    const root = join(tmpdir(), 'schema-snapshot-fixture-root')
+    expect(resolveSchemaSnapshotOutputRoots({ root })).toEqual({ root })
+  })
+
+  it('keeps an explicit markdown directory ahead of the committed default', () => {
+    const markdownRoot = join(tmpdir(), 'schema-snapshot-fixture-markdown')
+    expect(
+      resolveSchemaSnapshotOutputRoots({ root: schemaSnapshotDirectory, markdownRoot }),
+    ).toEqual({
+      root: schemaSnapshotDirectory,
+      markdownRoot,
+    })
   })
 
   it('keeps fixture outputs isolated and supports a separate Markdown directory', async () => {

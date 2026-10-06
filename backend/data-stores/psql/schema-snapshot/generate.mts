@@ -13,6 +13,25 @@ import { readNoMistakesCatalog, writeNoMistakesCatalog } from './no-mistakes-cat
 import { renderSchemaMarkdown } from './render-markdown.mts'
 
 const __dirname = import.meta.dirname
+const committedMarkdownRoot = resolve(
+  __dirname,
+  '../../../../docs/development/postgresql/schema-snapshot/markdown',
+)
+
+export function resolveSchemaSnapshotOutputRoots({
+  root = __dirname,
+  markdownRoot,
+}: {
+  root?: string
+  markdownRoot?: string
+} = {}): { root: string; markdownRoot?: string } {
+  const resolvedMarkdownRoot =
+    markdownRoot ?? (root === __dirname ? committedMarkdownRoot : undefined)
+  return {
+    root,
+    ...(resolvedMarkdownRoot === undefined ? {} : { markdownRoot: resolvedMarkdownRoot }),
+  }
+}
 
 async function formatWithOxfmt(path: string, raw: string): Promise<string> {
   const result = await format(path, raw)
@@ -47,10 +66,8 @@ export async function writeSchemaSnapshot({
   markdown,
   catalog,
   check = false,
-  root = __dirname,
-  markdownRoot = root === __dirname
-    ? resolve(__dirname, '../../../../docs/development/postgresql/schema-snapshot/markdown')
-    : undefined,
+  root,
+  markdownRoot,
 }: {
   snapshot: SchemaSnapshot
   markdown: Map<string, string>
@@ -59,20 +76,21 @@ export async function writeSchemaSnapshot({
   root?: string
   markdownRoot?: string
 }): Promise<void> {
+  const outputs = resolveSchemaSnapshotOutputRoots({ root, markdownRoot })
   // Both writers run so one stale file never hides the other in a single --check report.
   const outcomes = await Promise.allSettled([
     writeFromPostgres({
       snapshot,
       markdown,
       check,
-      root,
-      ...(markdownRoot === undefined ? {} : { markdownRoot }),
+      root: outputs.root,
+      ...(outputs.markdownRoot === undefined ? {} : { markdownRoot: outputs.markdownRoot }),
       format: formatWithOxfmt,
       stringify: stableStringify,
     }).catch(rewriteStaleError),
     catalog === undefined
       ? undefined
-      : writeNoMistakesCatalog({ catalog, root, format: formatWithOxfmt, check }),
+      : writeNoMistakesCatalog({ catalog, root: outputs.root, format: formatWithOxfmt, check }),
   ])
   const failures = outcomes.flatMap(outcome =>
     outcome.status === 'rejected' ? [outcome.reason as Error] : [],
