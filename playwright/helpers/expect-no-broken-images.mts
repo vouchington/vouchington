@@ -1,4 +1,4 @@
-import { expect, type Locator, type Page } from './test.mts'
+import type { Page } from './test.mts'
 
 interface ImageResponseGuard {
   assertNoImageFailures(): void
@@ -10,7 +10,7 @@ interface ImageResponseGuard {
  *
  * Call once at the top of a test, then call `assertNoImageFailures()` after the
  * interaction under test completes. This is the network-level gate — it catches
- * off-screen and lazy-loaded images that `expectAllImagesLoaded` cannot see.
+ * off-screen and lazy-loaded images that a visible-element poll cannot see.
  *
  * Intentionally broad: any image failure during the test will surface here.
  * If a specific known-flaky external host is expected to fail, add it to
@@ -43,35 +43,4 @@ export function installImageResponseGuard(page: Page): ImageResponseGuard {
       throw new Error(`${failures.length} image(s) failed to load:\n${details}`)
     },
   }
-}
-
-/**
- * Polls until every `<img>` element under `scope` has finished loading with
- * a non-zero naturalWidth and naturalHeight, indicating the image bytes were
- * successfully decoded by the browser.
- *
- * This is the DOM-level gate — it catches "src set but failed to decode" cases
- * even when the request returned 200 with an invalid body. Fails if `scope`
- * contains zero matching `<img>` elements so callers can't pass on an empty
- * tree (e.g. if a regression strips all images from the rendered modal).
- *
- * Skips images that have no `src` attribute (placeholder elements) and images
- * inside `[class*="line-clamp"]` containers that are hidden by CSS truncation.
- */
-export async function expectAllImagesLoaded(scope: Locator): Promise<void> {
-  await expect
-    .poll(
-      () =>
-        scope.evaluate(el => {
-          const imgs = [
-            ...(el as HTMLElement).querySelectorAll<HTMLImageElement>('img[src]'),
-          ].filter(img => !img.closest('[class*="line-clamp"]'))
-          if (imgs.length === 0) return false
-          return imgs.every(img => img.complete && img.naturalWidth > 0 && img.naturalHeight > 0)
-        }),
-      {
-        message: 'scope should contain at least one img that loads with non-zero dimensions',
-      },
-    )
-    .toBe(true)
 }
