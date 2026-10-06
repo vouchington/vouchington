@@ -1575,9 +1575,19 @@ rules:
     scope: repository
     options:
       importSpecifier: '@data-stores/psql'
+      executorFactoryNames: [beginTransaction, beginBoundedTransaction]
+      executorTypeNames: [TransactionQuery, QueryExecutor]
+      # Without a catalog every IN/ANY filter reads as multi-row, so this entry fails closed on locks
+      # the catalog entry below proves single-row. It scans only what that entry excludes; the
+      # catalog entry also requires deterministic ordering for everything else.
       include:
-        - backend/**/*.mts
-        - backend/**/*.ts
+        - backend/**/fixtures/**
+        - backend/**/*test-helper*.*
+        - backend/**/*test-support.*
+        - backend/**/*fixture*.*
+        - backend/**/scripts/**
+        - backend/data-stores/psql/config-driven/**/*seed*.mts
+        - backend/data-stores/psql/config-driven/0080-00-01-publisher-type-topics.mts
       exclude:
         - '**/*.test.*'
         - '**/test-helpers/**'
@@ -1619,6 +1629,8 @@ rules:
     scope: repository
     options:
       importSpecifier: '@data-stores/psql'
+      executorFactoryNames: [beginTransaction, beginBoundedTransaction]
+      executorTypeNames: [TransactionQuery, QueryExecutor]
       schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
       sqlInclude:
         - backend/data-stores/psql/config-driven/**/*.sql

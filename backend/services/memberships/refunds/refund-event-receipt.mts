@@ -23,7 +23,6 @@ export async function recordMembershipRefundEvent(options: {
   await using transaction = await beginTransaction()
   if (!canMatchReconciliationAttempt) {
     await transaction(sql`/* recordMembershipRefundEvent:unlinkedReceipt */
-      /* deadlock-safe: the SELECT reads one membership source by its primary key */
       INSERT INTO membership_refunds (
         membership_id, membership_source_id, user_id, stripe_refund_id, stripe_charge_id,
         stripe_payment_intent_id, amount_minor_units, currency_code, reason, has_revoked_access,

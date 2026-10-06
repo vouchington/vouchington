@@ -52,6 +52,7 @@ export async function applyBatchUpdates(
   // ast-grep-ignore: no-three-sequential-awaits
   await query(
     `/* applyBatchUpdates lockRows */
+      /* deadlock-safe: ORDER BY id is the primary key of every EMBEDDING_TABLES entry; the interpolated name hides that from the rule */
       SELECT id FROM ${tableName}
       WHERE id = ANY($1::uuid[])
       ORDER BY id
