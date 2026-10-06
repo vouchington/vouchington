@@ -1311,6 +1311,11 @@
 - `stories.discussions.create`
 - `topic-recommendations.create`
 - `my.import.topics.recommendation`
+- `communities.create`
+- `reports.create`
+- `disputes.create`
+- `appeals.create`
+- `communities.applications.create`
 
 ## `post_admission_scope_categories`
 
