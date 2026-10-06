@@ -71,14 +71,15 @@ describe('ListPageActions', () => {
   })
 
   it('copies list URL and shows success toast on copy link click', async () => {
+    const copied = Promise.withResolvers<void>()
+    mockToastSuccess.mockImplementation(message => {
+      if (message === 'Link copied') copied.resolve()
+    })
     render(<ListPageActions listId='list-abc' />)
     fireEvent.click(document.querySelector('[data-pw="list-copy-link"]')!)
-    await vi.waitFor(() => {
-      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
-        'https://example.com/list/list-abc',
-      )
-      expect(mockToastSuccess).toHaveBeenCalledWith('Link copied')
-    })
+    await copied.promise
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('https://example.com/list/list-abc')
+    expect(mockToastSuccess).toHaveBeenCalledWith('Link copied')
   })
 
   it('opens import dialog when import button clicked', () => {

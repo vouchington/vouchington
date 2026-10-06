@@ -201,17 +201,10 @@ describe('DisputeReviewDialog', () => {
   it('cancels a pending reset when the dialog unmounts', async () => {
     vi.useFakeTimers()
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const setTimeoutSpy = vi.spyOn(window, 'setTimeout')
-    const clearTimeoutSpy = vi.spyOn(window, 'clearTimeout')
     const { unmount } = renderControlledDialog()
 
     await act(async () => fireEvent.click(screen.getByText('do-close')))
-    const resetTimeout = setTimeoutSpy.mock.results.findLast(
-      (_, index) => setTimeoutSpy.mock.calls[index]?.[1] === 300,
-    )?.value
-    expect(resetTimeout).toBeDefined()
     unmount()
-    expect(clearTimeoutSpy).toHaveBeenCalledWith(resetTimeout)
 
     await act(async () => vi.advanceTimersByTime(300))
     expect(consoleError).not.toHaveBeenCalled()

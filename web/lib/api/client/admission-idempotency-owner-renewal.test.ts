@@ -33,6 +33,8 @@ describe('admission idempotency owner renewal', () => {
       const intent = { endpoint: '/api/v1/posts', body: { markdown: 'Hello' } }
       const winner = deferred<string>()
       const loser = deferred<string>()
+      const firstStarted = Promise.withResolvers<void>()
+      const secondStarted = Promise.withResolvers<void>()
       const first = new AdmissionIdempotency(() => key, {
         actorId: 'actor-a',
         lockManager,
@@ -43,10 +45,17 @@ describe('admission idempotency owner renewal', () => {
         lockManager,
         storage,
       })
-      const firstRequest = first.run(intent, () => winner.promise)
-      const secondRequest = second.run(intent, () => loser.promise)
+      const firstRequest = first.run(intent, () => {
+        firstStarted.resolve()
+        return winner.promise
+      })
+      const secondRequest = second.run(intent, () => {
+        secondStarted.resolve()
+        return loser.promise
+      })
       const secondRejection = secondRequest.catch((err: unknown) => err)
-      await vi.waitFor(() => expect(Object.keys(persistedOwnerLeases(storage))).toHaveLength(2))
+      await Promise.all([firstStarted.promise, secondStarted.promise])
+      expect(Object.keys(persistedOwnerLeases(storage))).toHaveLength(2)
 
       await vi.advanceTimersByTimeAsync(ADMISSION_OWNER_LEASE_MS + 1)
       const renewedLeases = Object.values(persistedOwnerLeases(storage))

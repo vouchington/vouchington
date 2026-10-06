@@ -74,14 +74,17 @@ describe('useNotificationPushActions', () => {
       endpoint: initialSubscriptions[0]!.endpoint,
       subscription_id: initialSubscriptions[0]!.id,
     }
-    vi.mocked(bootstrapPushBinding).mockResolvedValueOnce(binding)
+    const bootstrapped = Promise.withResolvers<typeof binding>()
+    vi.mocked(bootstrapPushBinding).mockReturnValueOnce(bootstrapped.promise)
     const { result, rerender } = renderHook(
       ({ subscriptions }) => useNotificationPushActions(subscriptions),
       { initialProps: { subscriptions: initialSubscriptions } },
     )
-    await vi.waitFor(() => expect(result.current.pushEnabled).toBe(true))
+    await act(async () => {
+      bootstrapped.resolve(binding)
+    })
+    expect(result.current.pushEnabled).toBe(true)
     vi.mocked(bootstrapPushBinding).mockRejectedValueOnce(new Error('offline'))
-
     rerender({
       subscriptions: [
         ...initialSubscriptions,
@@ -91,12 +94,10 @@ describe('useNotificationPushActions', () => {
         },
       ],
     })
-    await vi.waitFor(() => expect(bootstrapPushBinding).toHaveBeenCalledTimes(2))
-
+    expect(bootstrapPushBinding).toHaveBeenCalledTimes(2)
     expect(result.current.pushEnabled).toBe(true)
     expect(result.current.currentSubscriptionId).toBe(initialSubscriptions[0]!.id)
   })
-
   it('retries a transient bootstrap and publishes the recovered binding', async () => {
     vi.useFakeTimers()
     const binding = {
@@ -107,29 +108,28 @@ describe('useNotificationPushActions', () => {
       .mockRejectedValueOnce(new Error('offline'))
       .mockResolvedValueOnce(binding)
     const { result } = renderHook(() => useNotificationPushActions(initialSubscriptions))
-    await vi.waitFor(() => expect(bootstrapPushBinding).toHaveBeenCalledOnce())
-
-    await vi.advanceTimersByTimeAsync(5000)
-    await vi.waitFor(() =>
-      expect(result.current.currentSubscriptionId).toBe(binding.subscription_id),
-    )
-
+    await act(() => vi.advanceTimersByTimeAsync(0))
+    expect(bootstrapPushBinding).toHaveBeenCalledOnce()
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5000)
+      await vi.advanceTimersByTimeAsync(0)
+    })
+    expect(result.current.currentSubscriptionId).toBe(binding.subscription_id)
     expect(toastErrorMock).not.toHaveBeenCalled()
     expect(bootstrapPushBinding).toHaveBeenCalledTimes(2)
   })
-
   it('cancels a pending bootstrap retry on unmount', async () => {
     vi.useFakeTimers()
     vi.mocked(bootstrapPushBinding).mockRejectedValue(new Error('offline'))
     const { unmount } = renderHook(() => useNotificationPushActions(initialSubscriptions))
-    await vi.waitFor(() => expect(bootstrapPushBinding).toHaveBeenCalledOnce())
+    await act(() => vi.advanceTimersByTimeAsync(0))
+    expect(bootstrapPushBinding).toHaveBeenCalledOnce()
 
     unmount()
-    await vi.advanceTimersByTimeAsync(5000)
+    await act(() => vi.advanceTimersByTimeAsync(5000))
 
     expect(bootstrapPushBinding).toHaveBeenCalledOnce()
   })
-
   it('requires the runtime public web push key before enabling push', async () => {
     setRuntimePublicConfigForTest({})
 
@@ -139,7 +139,6 @@ describe('useNotificationPushActions', () => {
 
     expect(toastErrorMock).toHaveBeenCalledWith('Web push is not configured.')
   })
-
   it('uses the runtime public web push key before checking browser support', async () => {
     setRuntimePublicConfigForTest({ webPushPublicKey: 'runtime-push-key' })
 
@@ -149,7 +148,6 @@ describe('useNotificationPushActions', () => {
 
     expect(toastErrorMock).toHaveBeenCalledWith('This browser does not support push notifications.')
   })
-
   it('does not request permission when ownership locks are unavailable', async () => {
     setRuntimePublicConfigForTest({ webPushPublicKey: 'runtime-push-key' })
     const requestPermission = vi.fn<VitestLooseMock>().mockResolvedValue('granted')
@@ -176,7 +174,6 @@ describe('useNotificationPushActions', () => {
     expect(result.current.pushStatus).toBe('idle')
     expect(toastErrorMock).toHaveBeenCalledWith('This browser does not support push notifications.')
   })
-
   it('deletes the generation returned by the authoritative clear acknowledgement', async () => {
     const unsubscribe = vi.fn<VitestLooseMock>().mockResolvedValue(true)
     const registration = {
@@ -208,7 +205,6 @@ describe('useNotificationPushActions', () => {
     expect(waitForActiveServiceWorkerMock).toHaveBeenCalledWith(registration, { timeoutMs: 5000 })
     expect(unsubscribe).toHaveBeenCalledOnce()
   })
-
   it('commits disabled UI state when physical unsubscribe fails after deletion', async () => {
     const unsubscribe = vi.fn<VitestLooseMock>().mockRejectedValue(new Error('offline'))
     const registration = {
@@ -239,7 +235,6 @@ describe('useNotificationPushActions', () => {
     expect(toastErrorMock).not.toHaveBeenCalled()
     expect(result.current.pushEnabled).toBe(false)
   })
-
   it('keeps a concurrent ownership change behind deletion and physical unsubscribe', async () => {
     const events: string[] = []
     const unsubscribe = vi.fn<() => Promise<boolean>>(async () => {
@@ -265,9 +260,11 @@ describe('useNotificationPushActions', () => {
       },
     })
     let releaseDelete!: () => void
+    const deleteStarted = Promise.withResolvers<void>()
     deletePushMock.mockImplementationOnce(
       () =>
         new Promise<void>(resolve => {
+          deleteStarted.resolve()
           releaseDelete = () => {
             events.push('delete')
             resolve()
@@ -280,7 +277,8 @@ describe('useNotificationPushActions', () => {
     act(() => {
       disable = result.current.handleDisablePush()
     })
-    await vi.waitFor(() => expect(deletePushMock).toHaveBeenCalledOnce())
+    await deleteStarted.promise
+    expect(deletePushMock).toHaveBeenCalledOnce()
     const concurrent = withWebPushOwnershipLock(async () => {
       events.push('concurrent')
     })

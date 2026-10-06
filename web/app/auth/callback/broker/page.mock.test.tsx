@@ -45,21 +45,19 @@ describe('OAuth broker callback page', () => {
       .mockResolvedValueOnce({ user: { id: 'user-1' } })
 
     render(<OAuthBrokerCallbackPage />)
-    await vi.waitFor(() => expect(mockCompleteOAuthAuthorization).toHaveBeenCalledTimes(1))
-    await vi.advanceTimersByTimeAsync(1000)
+    await settleFakeTimers()
+    expect(mockCompleteOAuthAuthorization).toHaveBeenCalledTimes(1)
+    await settleFakeTimers(1000)
 
-    await vi.waitFor(() => {
-      expect(opener.postMessage).toHaveBeenCalledWith(
-        expect.objectContaining({ flowId: 'flow-1', status: 'authenticated' }),
-        window.location.origin,
-      )
-    })
+    expect(opener.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ flowId: 'flow-1', status: 'authenticated' }),
+      window.location.origin,
+    )
     confirmReceipt()
+    await settleFakeTimers()
 
-    await vi.waitFor(() => {
-      expect(mockCompleteOAuthAuthorization).toHaveBeenCalledTimes(2)
-      expect(mockAcknowledgeOAuthAuthorization).toHaveBeenCalledWith('flow-1')
-    })
+    expect(mockCompleteOAuthAuthorization).toHaveBeenCalledTimes(2)
+    expect(mockAcknowledgeOAuthAuthorization).toHaveBeenCalledWith('flow-1')
   })
 
   it('relays a terminal result when best-effort acknowledgement fails', async () => {
@@ -105,7 +103,7 @@ describe('OAuth broker callback page', () => {
     mockCompleteOAuthAuthorization.mockResolvedValue({ user: { id: 'user-1' } })
 
     render(<OAuthBrokerCallbackPage />)
-    // vi.waitFor() advances fake time before its callback, which can fire the receipt
+    // A fake-timer poll advances time before its callback, which can fire the receipt
     // timeout before this boundary and leave the React update unflushed.
     await act(async () => {
       await vi.advanceTimersByTimeAsync(0)
@@ -138,13 +136,12 @@ describe('OAuth broker callback page', () => {
     mockCompleteOAuthAuthorization.mockResolvedValue({ user: { id: 'user-1' } })
 
     render(<OAuthBrokerCallbackPage />)
-    await vi.waitFor(() => expect(closingOpener.postMessage).toHaveBeenCalled())
+    await settleFakeTimers()
+    expect(closingOpener.postMessage).toHaveBeenCalled()
     closingOpener.closed = true
-    await vi.advanceTimersByTimeAsync(250)
+    await settleFakeTimers(250)
 
-    await vi.waitFor(() => {
-      expect(screen.getByText('Unable to connect. Please try again.')).toBeVisible()
-    })
+    expect(screen.getByText('Unable to connect. Please try again.')).toBeVisible()
     expect(mockAcknowledgeOAuthAuthorization).not.toHaveBeenCalled()
     expect(window.close).not.toHaveBeenCalled()
   })
@@ -230,9 +227,8 @@ describe('OAuth broker callback page', () => {
     mockCompleteOAuthAuthorization.mockResolvedValue({ status: 'pending' })
 
     const { unmount } = render(<OAuthBrokerCallbackPage />)
-    await vi.waitFor(() => {
-      expect(mockCompleteOAuthAuthorization).toHaveBeenCalledTimes(1)
-    })
+    await settleFakeTimers()
+    expect(mockCompleteOAuthAuthorization).toHaveBeenCalledTimes(1)
 
     unmount()
     await vi.advanceTimersByTimeAsync(1000)
@@ -241,6 +237,13 @@ describe('OAuth broker callback page', () => {
     vi.useRealTimers()
   })
 })
+
+async function settleFakeTimers(ms = 0): Promise<void> {
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(ms)
+    if (ms > 0) await vi.advanceTimersByTimeAsync(0)
+  })
+}
 
 function confirmReceipt(flowId = 'flow-1'): void {
   window.dispatchEvent(

@@ -71,13 +71,16 @@ describe('streamImportProgress', () => {
     vi.stubGlobal('fetch', mockFetch)
 
     const received: ImportProgress[] = []
-    const promise = streamImportProgress('import-1', progress => received.push(progress))
-
-    await vi.waitFor(() => {
-      expect(received).toEqual([
-        { batchId: 'import-1', completed: 1, failed: 0, total: 2, done: false },
-      ])
+    const firstProgress = Promise.withResolvers<void>()
+    const promise = streamImportProgress('import-1', progress => {
+      received.push(progress)
+      firstProgress.resolve()
     })
+
+    await firstProgress.promise
+    expect(received).toEqual([
+      { batchId: 'import-1', completed: 1, failed: 0, total: 2, done: false },
+    ])
 
     await vi.advanceTimersByTimeAsync(2000)
     await promise
@@ -98,10 +101,18 @@ describe('streamImportProgress', () => {
         .mockResolvedValue(importResponse({ completed: 0, total: 1, done: false })),
     )
     const controller = new AbortController()
+    const polled = Promise.withResolvers<void>()
 
-    const promise = streamImportProgress('import-1', () => {}, controller.signal)
+    const promise = streamImportProgress(
+      'import-1',
+      () => {
+        polled.resolve()
+      },
+      controller.signal,
+    )
     const promiseRejection = promise.catch((err: unknown) => err)
-    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1))
+    await polled.promise
+    expect(fetch).toHaveBeenCalledTimes(1)
 
     controller.abort()
 
@@ -118,8 +129,12 @@ describe('streamImportProgress', () => {
       .mockResolvedValueOnce(importResponse({ completed: 1, total: 1, done: true }))
     vi.stubGlobal('fetch', mockFetch)
 
-    const promise = streamImportProgress('import-1', () => {})
-    await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1))
+    const polled = Promise.withResolvers<void>()
+    const promise = streamImportProgress('import-1', () => {
+      polled.resolve()
+    })
+    await polled.promise
+    expect(mockFetch).toHaveBeenCalledTimes(1)
     await vi.advanceTimersByTimeAsync(6000)
     await promise
 
@@ -136,12 +151,16 @@ describe('streamImportProgress', () => {
       .mockResolvedValueOnce(new Response('server error', { status: 503 }))
     vi.stubGlobal('fetch', mockFetch)
 
-    const promise = streamImportProgress('import-1', () => {})
+    const polled = Promise.withResolvers<void>()
+    const promise = streamImportProgress('import-1', () => {
+      polled.resolve()
+    })
     let caughtError: unknown
     const handledPromise = promise.catch((err: unknown) => {
       caughtError = err
     })
-    await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1))
+    await polled.promise
+    expect(mockFetch).toHaveBeenCalledTimes(1)
 
     await vi.advanceTimersByTimeAsync(6000)
     await handledPromise
@@ -161,9 +180,13 @@ describe('streamImportProgress', () => {
       .mockResolvedValueOnce(new Response('gone', { status: 404 }))
     vi.stubGlobal('fetch', mockFetch)
 
-    const promise = streamImportProgress('import-1', () => {})
+    const polled = Promise.withResolvers<void>()
+    const promise = streamImportProgress('import-1', () => {
+      polled.resolve()
+    })
     const handled = promise.catch((err: unknown) => err)
-    await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1))
+    await polled.promise
+    expect(mockFetch).toHaveBeenCalledTimes(1)
     await vi.advanceTimersByTimeAsync(2000)
 
     await expect(handled).resolves.toMatchObject({ status: 404 })

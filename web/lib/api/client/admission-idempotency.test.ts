@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { AdmissionIdempotency } from './admission-idempotency'
+import { fingerprintAdmissionIntent } from './admission-idempotency-intent'
 
 describe('AdmissionIdempotency basic behavior', () => {
   it('reuses a key for an unchanged intent until a request succeeds', async () => {
@@ -24,7 +25,16 @@ describe('AdmissionIdempotency basic behavior', () => {
 
   it('shares one execution between overlapping callers', async () => {
     let next = 0
-    const keys = new AdmissionIdempotency(() => `key-${++next}`)
+    let fingerprints = 0
+    const bothIdentified = Promise.withResolvers<void>()
+    const keys = new AdmissionIdempotency(() => `key-${++next}`, {
+      fingerprint: async value => {
+        const digest = await fingerprintAdmissionIntent(value)
+        fingerprints += 1
+        if (fingerprints === 2) bothIdentified.resolve()
+        return digest
+      },
+    })
     const intent = { route: 'posts.create', body: { markdown: 'Hello' } }
     let resolveRequest!: () => void
     const request = vi.fn<(key: string) => Promise<string>>(
@@ -34,7 +44,10 @@ describe('AdmissionIdempotency basic behavior', () => {
     const first = keys.run(intent, request)
     const second = keys.run(intent, request)
 
-    await vi.waitFor(() => expect(request).toHaveBeenCalledOnce())
+    await bothIdentified.promise
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(request).toHaveBeenCalledOnce()
     expect(request).toHaveBeenCalledWith('key-1')
     resolveRequest()
     await expect(first).resolves.toBe('key-1')

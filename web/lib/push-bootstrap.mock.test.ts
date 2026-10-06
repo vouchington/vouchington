@@ -202,9 +202,11 @@ describe('bootstrapAuthenticatedPushBinding', () => {
     vi.mocked(bindPushBinding).mockResolvedValue({ status: 'bound', binding, revision })
     mockPushManager.getSubscription.mockResolvedValue({ endpoint })
     let releasePage!: () => void
+    const pageRequested = Promise.withResolvers<void>()
     vi.mocked(getMyWebPushSubscriptionsClient).mockImplementationOnce(
       () =>
         new Promise(resolve => {
+          pageRequested.resolve()
           releasePage = () =>
             resolve({
               results: [makeSubscription('current-generation', endpoint)],
@@ -218,7 +220,8 @@ describe('bootstrapAuthenticatedPushBinding', () => {
     })
 
     const first = bootstrapAuthenticatedPushBinding(registration)
-    await vi.waitFor(() => expect(getMyWebPushSubscriptionsClient).toHaveBeenCalledOnce())
+    await pageRequested.promise
+    expect(getMyWebPushSubscriptionsClient).toHaveBeenCalledOnce()
     const second = bootstrapAuthenticatedPushBinding(registration)
     await Promise.resolve()
     expect(readOrInitializePushBinding).toHaveBeenCalledOnce()

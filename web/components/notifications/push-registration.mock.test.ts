@@ -122,12 +122,15 @@ describe('push registration ownership handoff', () => {
 
   it('waits for worker activation before explicit enable sends protocol messages', async () => {
     let releaseActivation!: (registration: ServiceWorkerRegistration) => void
-    vi.mocked(waitForActiveServiceWorker).mockImplementationOnce(
-      () => new Promise(resolve => (releaseActivation = resolve)),
-    )
+    const activationStarted = Promise.withResolvers<void>()
+    vi.mocked(waitForActiveServiceWorker).mockImplementationOnce(() => {
+      activationStarted.resolve()
+      return new Promise(resolve => (releaseActivation = resolve))
+    })
 
     const enabling = registerAndSavePush('unused-for-existing-subscription')
-    await vi.waitFor(() => expect(waitForActiveServiceWorker).toHaveBeenCalledOnce())
+    await activationStarted.promise
+    expect(waitForActiveServiceWorker).toHaveBeenCalledOnce()
     expect(clearPushBinding).not.toHaveBeenCalled()
 
     releaseActivation(registration as unknown as ServiceWorkerRegistration)
@@ -138,9 +141,11 @@ describe('push registration ownership handoff', () => {
 
   it('waits for worker activation before bootstrap sends protocol messages', async () => {
     let releaseActivation!: (registration: ServiceWorkerRegistration) => void
-    vi.mocked(waitForActiveServiceWorker).mockImplementationOnce(
-      () => new Promise(resolve => (releaseActivation = resolve)),
-    )
+    const activationStarted = Promise.withResolvers<void>()
+    vi.mocked(waitForActiveServiceWorker).mockImplementationOnce(() => {
+      activationStarted.resolve()
+      return new Promise(resolve => (releaseActivation = resolve))
+    })
     Object.defineProperty(navigator, 'serviceWorker', {
       configurable: true,
       value: {
@@ -148,7 +153,8 @@ describe('push registration ownership handoff', () => {
       },
     })
     const bootstrapping = bootstrapPushBinding()
-    await vi.waitFor(() => expect(waitForActiveServiceWorker).toHaveBeenCalledOnce())
+    await activationStarted.promise
+    expect(waitForActiveServiceWorker).toHaveBeenCalledOnce()
     expect(bootstrapBindingMock).not.toHaveBeenCalled()
 
     releaseActivation(registration as unknown as ServiceWorkerRegistration)
@@ -188,9 +194,11 @@ describe('push registration ownership handoff', () => {
 
   it('serializes generation creation across tabs until the winning worker bind completes', async () => {
     let releaseCreate!: () => void
+    const createStarted = Promise.withResolvers<void>()
     vi.mocked(createMyWebPushSubscription).mockImplementationOnce(
       () =>
         new Promise(resolve => {
+          createStarted.resolve()
           releaseCreate = () =>
             resolve({
               web_push_subscription: {
@@ -212,7 +220,8 @@ describe('push registration ownership handoff', () => {
     )
 
     const first = registerAndSavePush('key')
-    await vi.waitFor(() => expect(createMyWebPushSubscription).toHaveBeenCalledOnce())
+    await createStarted.promise
+    expect(createMyWebPushSubscription).toHaveBeenCalledOnce()
     const second = registerAndSavePush('key')
     await Promise.resolve()
     expect(clearPushBinding).toHaveBeenCalledOnce()

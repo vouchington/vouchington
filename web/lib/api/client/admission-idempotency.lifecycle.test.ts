@@ -4,16 +4,6 @@ import { getAdmissionLockManager } from './admission-idempotency-lock'
 import { ADMISSION_OWNER_LEASE_MS } from './admission-idempotency-owner-leases'
 import { MemoryLockManager, MemoryStorage } from './admission-idempotency-fixtures'
 
-function makeDeferred<T>() {
-  let resolve!: (value: T) => void
-  let reject!: (reason?: unknown) => void
-  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
-    resolve = resolvePromise
-    reject = rejectPromise
-  })
-  return { promise, reject, resolve }
-}
-
 function persistedOwnerCount(storage: MemoryStorage): number {
   const value = [...storage.values.values()][0]
   if (!value) return 0
@@ -88,12 +78,12 @@ describe('AdmissionIdempotency lifecycle', () => {
     })
     let firstObservedKey: string | undefined
     let secondObservedKey: string | undefined
-    let release!: () => void
+    const started = Promise.withResolvers<() => void>()
     const firstRequest = first.run(intent, key => {
       firstObservedKey = key
-      return new Promise<void>(resolve => (release = resolve)).then(() => key)
+      return new Promise<void>(resolve => started.resolve(() => resolve())).then(() => key)
     })
-    await vi.waitFor(() => expect(release).toBeTypeOf('function'))
+    const release = await started.promise
 
     const secondRequest = second.run(intent, async key => {
       secondObservedKey = key
@@ -117,8 +107,8 @@ describe('AdmissionIdempotency lifecycle', () => {
       const lockManager = new MemoryLockManager()
       const firstKey = crypto.randomUUID()
       const intent = { endpoint: '/api/v1/posts', body: { markdown: 'Hello' } }
-      const winner = makeDeferred<string>()
-      const loser = makeDeferred<string>()
+      const winner = Promise.withResolvers<string>()
+      const loser = Promise.withResolvers<string>()
       const first = new AdmissionIdempotency(() => firstKey, {
         actorId: 'actor-a',
         lockManager,
@@ -131,12 +121,15 @@ describe('AdmissionIdempotency lifecycle', () => {
       })
       let firstObservedKey: string | undefined
       let secondObservedKey: string | undefined
+      const started = [Promise.withResolvers<void>(), Promise.withResolvers<void>()]
       const firstRequest = first.run(intent, key => {
         firstObservedKey = key
+        started[0]!.resolve()
         return winner.promise
       })
       const secondRequest = second.run(intent, key => {
         secondObservedKey = key
+        started[1]!.resolve()
         return loser.promise
       })
       const secondOutcome = secondRequest.then(
@@ -144,7 +137,8 @@ describe('AdmissionIdempotency lifecycle', () => {
         err => ({ error: err }),
       )
 
-      await vi.waitFor(() => expect(persistedOwnerCount(storage)).toBe(2))
+      await Promise.all(started.map(gate => gate.promise))
+      expect(persistedOwnerCount(storage)).toBe(2)
       expect(firstObservedKey).toBe(secondObservedKey)
       const sharedKey = firstObservedKey!
       let firstResult: string | undefined
@@ -230,8 +224,10 @@ describe('AdmissionIdempotency lifecycle', () => {
       now: () => now,
       storage,
     })
-    void abandoned.run(intent, () => new Promise<never>(() => {}))
-    await vi.waitFor(() => expect(storage.length).toBe(1))
+    const claimed = Promise.withResolvers<void>()
+    void abandoned.run(intent, () => new Promise<never>(() => claimed.resolve()))
+    await claimed.promise
+    expect(storage.length).toBe(1)
     await expect(recovered.run(intent, async key => key)).resolves.toBe(firstKey)
 
     now += ADMISSION_OWNER_LEASE_MS + 1
@@ -247,12 +243,12 @@ describe('AdmissionIdempotency lifecycle', () => {
 
   it('pauses new submissions and drains an active request', async () => {
     const keys = new AdmissionIdempotency(() => crypto.randomUUID())
-    let release!: () => void
+    const started = Promise.withResolvers<() => void>()
     const active = keys.run(
       { route: 'posts.create', body: { markdown: 'Hello' } },
-      () => new Promise<void>(resolve => (release = resolve)),
+      () => new Promise<void>(resolve => started.resolve(() => resolve())),
     )
-    await vi.waitFor(() => expect(release).toBeTypeOf('function'))
+    const release = await started.promise
     keys.pause()
     await expect(
       keys.run({ route: 'posts.create', body: { markdown: 'Other' } }, async () => {}),
@@ -271,12 +267,12 @@ describe('AdmissionIdempotency lifecycle', () => {
 
   it('bounds draining a stalled request without clearing its retry entry', async () => {
     const keys = new AdmissionIdempotency(() => crypto.randomUUID())
-    let release!: () => void
+    const started = Promise.withResolvers<() => void>()
     const active = keys.run(
       { route: 'posts.create', body: { markdown: 'Hello' } },
-      () => new Promise<void>(resolve => (release = resolve)),
+      () => new Promise<void>(resolve => started.resolve(() => resolve())),
     )
-    await vi.waitFor(() => expect(release).toBeTypeOf('function'))
+    const release = await started.promise
 
     await expect(keys.drain(1)).resolves.toBe(false)
     release()

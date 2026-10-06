@@ -1,4 +1,4 @@
-import { render, waitFor } from '@testing-library/react'
+import { act, render, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@/lib/api/error'
 import { clearPushBinding } from '@/lib/push-service-worker'
@@ -112,11 +112,12 @@ describe('ServiceWorkerRegistrar', () => {
     vi.mocked(navigator.serviceWorker.register).mockResolvedValue(registration)
 
     render(<ServiceWorkerRegistrar />)
-    await vi.waitFor(() => expect(probeMock).toHaveBeenCalledOnce())
+    await settleFakeTimers()
+    expect(probeMock).toHaveBeenCalledOnce()
     expect(clearPushBinding).not.toHaveBeenCalled()
 
-    await vi.advanceTimersByTimeAsync(5000)
-    await vi.waitFor(() => expect(clearPushBinding).toHaveBeenCalledWith(registration))
+    await settleFakeTimers(5000)
+    expect(clearPushBinding).toHaveBeenCalledWith(registration)
     expect(probeMock).toHaveBeenCalledTimes(2)
   })
 
@@ -172,10 +173,11 @@ describe('ServiceWorkerRegistrar', () => {
       .mockResolvedValueOnce(null)
 
     render(<ServiceWorkerRegistrar currentUserId='user-1' />)
-    await vi.waitFor(() => expect(bootstrapAuthenticatedPushBinding).toHaveBeenCalledOnce())
+    await settleFakeTimers()
+    expect(bootstrapAuthenticatedPushBinding).toHaveBeenCalledOnce()
 
-    await vi.advanceTimersByTimeAsync(5000)
-    await vi.waitFor(() => expect(bootstrapAuthenticatedPushBinding).toHaveBeenCalledTimes(2))
+    await settleFakeTimers(5000)
+    expect(bootstrapAuthenticatedPushBinding).toHaveBeenCalledTimes(2)
   })
 
   it('does not clear after authentication changes during the anonymous probe', async () => {
@@ -200,11 +202,13 @@ describe('ServiceWorkerRegistrar', () => {
     vi.mocked(navigator.serviceWorker.register).mockResolvedValue(registration)
     const { rerender } = render(<ServiceWorkerRegistrar />)
 
-    await vi.waitFor(() => expect(probeMock).toHaveBeenCalledOnce())
+    await settleFakeTimers()
+    expect(probeMock).toHaveBeenCalledOnce()
     rerender(<ServiceWorkerRegistrar currentUserId='user-1' />)
-    await vi.waitFor(() => expect(bootstrapAuthenticatedPushBinding).toHaveBeenCalledOnce())
+    await settleFakeTimers()
+    expect(bootstrapAuthenticatedPushBinding).toHaveBeenCalledOnce()
     window.dispatchEvent(new Event('online'))
-    await vi.advanceTimersByTimeAsync(5000)
+    await settleFakeTimers(5000)
 
     expect(probeMock).toHaveBeenCalledOnce()
     expect(clearPushBinding).not.toHaveBeenCalled()
@@ -268,6 +272,13 @@ describe('ServiceWorkerRegistrar', () => {
     expect(bootstrapAuthenticatedPushBinding).toHaveBeenCalledOnce()
   })
 })
+
+async function settleFakeTimers(ms = 0): Promise<void> {
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(ms)
+    if (ms > 0) await vi.advanceTimersByTimeAsync(0)
+  })
+}
 
 function makeWorker(state: ServiceWorker['state'] = 'installing') {
   const worker = new EventTarget() as ServiceWorker

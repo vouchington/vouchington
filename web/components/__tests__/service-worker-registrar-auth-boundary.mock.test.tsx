@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react'
+import { act, render } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ServiceWorkerRegistrar } from '@/components/service-worker-registrar'
 import { ApiError } from '@/lib/api/error'
@@ -56,9 +56,10 @@ describe('ServiceWorkerRegistrar authenticated boundary', () => {
     )
 
     render(<ServiceWorkerRegistrar currentUserId='user-1' />)
-    await vi.waitFor(() => expect(clearPushBinding).toHaveBeenCalledWith(registration))
+    await settleFakeTimers()
+    expect(clearPushBinding).toHaveBeenCalledWith(registration)
 
-    await vi.advanceTimersByTimeAsync(5000)
+    await settleFakeTimers(5000)
     expect(bootstrapAuthenticatedPushBinding).toHaveBeenCalledOnce()
   })
 
@@ -71,14 +72,23 @@ describe('ServiceWorkerRegistrar authenticated boundary', () => {
       .mockReturnValueOnce(firstBootstrap.promise)
       .mockResolvedValue(null)
     const { rerender } = render(<ServiceWorkerRegistrar currentUserId='user-1' />)
-    await vi.waitFor(() => expect(bootstrapAuthenticatedPushBinding).toHaveBeenCalledOnce())
+    await settleFakeTimers()
+    expect(bootstrapAuthenticatedPushBinding).toHaveBeenCalledOnce()
 
     rerender(<ServiceWorkerRegistrar currentUserId='user-2' />)
-    await vi.waitFor(() => expect(bootstrapAuthenticatedPushBinding).toHaveBeenCalledTimes(2))
+    await settleFakeTimers()
+    expect(bootstrapAuthenticatedPushBinding).toHaveBeenCalledTimes(2)
     firstBootstrap.reject(new ApiError('Unauthorized', 401))
-    await vi.advanceTimersByTimeAsync(5000)
+    await settleFakeTimers(5000)
 
     expect(clearPushBinding).not.toHaveBeenCalled()
     expect(bootstrapAuthenticatedPushBinding).toHaveBeenCalledTimes(2)
   })
 })
+
+async function settleFakeTimers(ms = 0): Promise<void> {
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(ms)
+    if (ms > 0) await vi.advanceTimersByTimeAsync(0)
+  })
+}

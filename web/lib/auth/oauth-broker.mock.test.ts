@@ -21,6 +21,10 @@ describe('OAuth broker popup', () => {
 
   it('opens a blank popup before beginning and relays only an opaque result', async () => {
     const popup = makePopup()
+    const assigned = Promise.withResolvers<void>()
+    popup.location.assign.mockImplementation(() => {
+      assigned.resolve()
+    })
     const reloadPage = vi.fn<VitestLooseMock>()
     const lockManager = grantingLockManager()
     vi.spyOn(window, 'open').mockReturnValue(popup as unknown as Window)
@@ -50,11 +54,10 @@ describe('OAuth broker popup', () => {
       { mode: 'exclusive', ifAvailable: true },
       expect.any(Function),
     )
-    await vi.waitFor(() => {
-      expect(popup.location.assign).toHaveBeenCalledWith(
-        'https://github.com/login/oauth/authorize?opaque=1',
-      )
-    })
+    await assigned.promise
+    expect(popup.location.assign).toHaveBeenCalledWith(
+      'https://github.com/login/oauth/authorize?opaque=1',
+    )
 
     window.dispatchEvent(
       new MessageEvent('message', {
@@ -91,6 +94,10 @@ describe('OAuth broker popup', () => {
 
   it('confirms a valid terminal result to the callback popup before resolving', async () => {
     const popup = makePopup()
+    const assigned = Promise.withResolvers<void>()
+    popup.location.assign.mockImplementation(() => {
+      assigned.resolve()
+    })
     vi.spyOn(window, 'open').mockReturnValue(popup as unknown as Window)
     mockBeginOAuthAuthorization.mockResolvedValue({
       flow_id: '0198-flow-receipt',
@@ -106,7 +113,8 @@ describe('OAuth broker popup', () => {
       },
       { lockManager: grantingLockManager() },
     )
-    await vi.waitFor(() => expect(popup.location.assign).toHaveBeenCalled())
+    await assigned.promise
+    expect(popup.location.assign).toHaveBeenCalled()
 
     window.dispatchEvent(
       new MessageEvent('message', {

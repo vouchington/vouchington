@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { AdmissionIdempotency } from './admission-idempotency'
 import { ADMISSION_OWNER_LEASE_MS } from './admission-idempotency-owner-leases'
 import { MemoryLockManager, MemoryStorage } from './admission-idempotency-fixtures'
@@ -23,6 +23,7 @@ describe('AdmissionIdempotency stale settlement', () => {
       const intent = { endpoint: '/api/v1/posts' }
       const staleKey = crypto.randomUUID()
       const staleRequest = makeDeferred<string>()
+      const staleClaimed = Promise.withResolvers<void>()
       const stale = new AdmissionIdempotency(() => staleKey, {
         actorId: 'actor-a',
         lockManager,
@@ -30,12 +31,16 @@ describe('AdmissionIdempotency stale settlement', () => {
         storage,
       })
       const staleOutcome = stale
-        .run(intent, () => staleRequest.promise)
+        .run(intent, () => {
+          staleClaimed.resolve()
+          return staleRequest.promise
+        })
         .then(
           value => ({ value }),
           err => ({ error: err }),
         )
-      await vi.waitFor(() => expect(storage.length).toBe(1))
+      await staleClaimed.promise
+      expect(storage.length).toBe(1)
 
       now += ADMISSION_OWNER_LEASE_MS + 1
       const replay = new AdmissionIdempotency(() => crypto.randomUUID(), {
@@ -48,14 +53,19 @@ describe('AdmissionIdempotency stale settlement', () => {
 
       const freshKey = crypto.randomUUID()
       const freshRequest = makeDeferred<void>()
+      const freshClaimed = Promise.withResolvers<void>()
       const fresh = new AdmissionIdempotency(() => freshKey, {
         actorId: 'actor-a',
         lockManager,
         now: () => now,
         storage,
       })
-      const freshOutcome = fresh.run(intent, () => freshRequest.promise)
-      await vi.waitFor(() => expect([...storage.values.values()][0]).toContain(freshKey))
+      const freshOutcome = fresh.run(intent, () => {
+        freshClaimed.resolve()
+        return freshRequest.promise
+      })
+      await freshClaimed.promise
+      expect([...storage.values.values()][0]).toContain(freshKey)
       const persistedFreshEntry = [...storage.values.values()][0]
 
       if (outcome === 'successful') staleRequest.resolve(staleKey)

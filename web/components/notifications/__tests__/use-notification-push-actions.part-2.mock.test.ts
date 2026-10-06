@@ -1,4 +1,4 @@
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@/lib/api/error'
 import { MemoryLockManager } from '@/lib/api/client/admission-idempotency-fixtures'
@@ -62,9 +62,18 @@ describe('useNotificationPushActions bootstrap authentication boundary', () => {
     })
     bootstrapPushBindingMock.mockRejectedValueOnce(new ApiError('Unauthorized', 401))
 
+    const cleared = Promise.withResolvers<void>()
+    clearBindingMock.mockImplementation(async () => {
+      cleared.resolve()
+      return { status: 'disabled', revision: 'anonymous-revision' }
+    })
     const { result } = renderHook(() => useNotificationPushActions(initialSubscriptions))
 
-    await vi.waitFor(() => expect(clearPushBinding).toHaveBeenCalledWith(registration))
+    await act(async () => {
+      await cleared.promise
+      await Promise.resolve()
+    })
+    expect(clearPushBinding).toHaveBeenCalledWith(registration)
     expect(result.current.pushEnabled).toBe(false)
     expect(bootstrapPushBinding).toHaveBeenCalledOnce()
   })
@@ -77,17 +86,25 @@ describe('useNotificationPushActions bootstrap authentication boundary', () => {
     })
     bootstrapPushBindingMock.mockRejectedValueOnce(new ApiError('Unauthorized', 401))
     let releaseActivation!: (registration: ServiceWorkerRegistration) => void
-    waitForActiveServiceWorkerMock.mockReturnValueOnce(
-      new Promise(resolve => {
+    const activationStarted = Promise.withResolvers<void>()
+    waitForActiveServiceWorkerMock.mockImplementationOnce(() => {
+      activationStarted.resolve()
+      return new Promise(resolve => {
         releaseActivation = resolve
-      }),
-    )
+      })
+    })
     const { rerender } = renderHook(
       ({ subscriptions }) => useNotificationPushActions(subscriptions),
       { initialProps: { subscriptions: initialSubscriptions } },
     )
 
-    await vi.waitFor(() => expect(waitForActiveServiceWorker).toHaveBeenCalledOnce())
+    await activationStarted.promise
+    expect(waitForActiveServiceWorker).toHaveBeenCalledOnce()
+    const secondBootstrap = Promise.withResolvers<void>()
+    bootstrapPushBindingMock.mockImplementationOnce(async () => {
+      secondBootstrap.resolve()
+      return null
+    })
     rerender({
       subscriptions: [
         ...initialSubscriptions,
@@ -98,7 +115,16 @@ describe('useNotificationPushActions bootstrap authentication boundary', () => {
       ],
     })
     releaseActivation(registration as unknown as ServiceWorkerRegistration)
-    await vi.waitFor(() => expect(bootstrapPushBinding).toHaveBeenCalledTimes(2))
+    await act(async () => {
+      await secondBootstrap.promise
+      await Promise.resolve()
+      await Promise.resolve()
+      await Promise.resolve()
+      await Promise.resolve()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    expect(bootstrapPushBinding).toHaveBeenCalledTimes(2)
 
     expect(clearPushBinding).not.toHaveBeenCalled()
   })

@@ -154,9 +154,11 @@ describe('logout', () => {
       value: { getRegistration: vi.fn<VitestLooseMock>().mockResolvedValue(registration) },
     })
     let releaseLogout!: () => void
+    const logoutStarted = Promise.withResolvers<void>()
     mockPostLogout.mockImplementationOnce(
       () =>
         new Promise<void>(resolve => {
+          logoutStarted.resolve()
           releaseLogout = () => {
             events.push('logout')
             resolve()
@@ -165,7 +167,8 @@ describe('logout', () => {
     )
 
     const loggingOut = logout(vi.fn<VitestLooseMock>())
-    await vi.waitFor(() => expect(mockPostLogout).toHaveBeenCalledOnce())
+    await logoutStarted.promise
+    expect(mockPostLogout).toHaveBeenCalledOnce()
     const concurrent = withWebPushOwnershipLock(async () => {
       events.push('concurrent')
     })
@@ -188,13 +191,14 @@ describe('logout', () => {
       value: { getRegistration: vi.fn<VitestLooseMock>().mockResolvedValue(registration) },
     })
     let releaseActivation!: (registration: ServiceWorkerRegistration) => void
-    vi.mocked(waitForActiveServiceWorker).mockImplementationOnce(
-      () => new Promise(resolve => (releaseActivation = resolve)),
-    )
+    const activationStarted = Promise.withResolvers<void>()
+    vi.mocked(waitForActiveServiceWorker).mockImplementationOnce(() => {
+      activationStarted.resolve()
+      return new Promise(resolve => (releaseActivation = resolve))
+    })
     const loggingOut = logout(vi.fn<VitestLooseMock>())
-    await vi.waitFor(() =>
-      expect(waitForActiveServiceWorker).toHaveBeenCalledWith(registration, { timeoutMs: 5000 }),
-    )
+    await activationStarted.promise
+    expect(waitForActiveServiceWorker).toHaveBeenCalledWith(registration, { timeoutMs: 5000 })
     expect(mockClearPushBinding).not.toHaveBeenCalled()
 
     releaseActivation(registration as unknown as ServiceWorkerRegistration)
