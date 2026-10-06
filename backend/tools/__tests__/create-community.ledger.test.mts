@@ -8,6 +8,8 @@ import {
   setContributionAdmissionReplayMetadataForTest,
 } from '@voucha/test-helpers'
 import { getContributionAdmissionAttemptsForTest } from '@voucha/test-helpers/contribution-admission-attempts'
+import { createTestPlusMcpCaller } from '@voucha/test-helpers/mcp-plus-caller'
+import { callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { pollUntilNotNull } from '@voucha/test-helpers/polling'
 import { waitForTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-wait'
 import {
@@ -21,6 +23,21 @@ import { admitDelegatedCreate } from '@services/contribution-gating/admit-delega
 
 // The handle the ledger passes to a create; derived so this package takes no storage dependency.
 type TransactionQuery = Parameters<Parameters<typeof admitDelegatedCreate>[0]['execute']>[0]
+
+const SCOPES = ['communities:read', 'communities:write'] as const
+
+// The real tool call, so the replay and pruning are exercised through the path an agent takes.
+const callCreateCommunity = (
+  caller: Awaited<ReturnType<typeof createTestPlusMcpCaller>>,
+  idempotencyKey: string,
+  name = 'Quiet Birdwatchers Of Lakeside',
+) =>
+  callStructuredMcpTool(
+    caller,
+    'create_community',
+    { idempotency_key: idempotencyKey, name },
+    SCOPES,
+  )
 
 async function setup() {
   const user = await createTestUser()
@@ -161,22 +178,23 @@ describe('delegated create ledger — real store', () => {
   })
 
   it('replays a committed create whose finalization never completed, then prunes it', async () => {
-    const { user, base, key, createIn } = await setup()
-    const created = await admitDelegatedCreate({ ...base, execute: createIn })
+    const caller = await createTestPlusMcpCaller()
+    const key = { actorId: caller.id, idempotencyKey: crypto.randomUUID() }
+    const created = await callCreateCommunity(caller, key.idempotencyKey)
     // The state a crash between the commit and the finalizing step leaves: committed, no post.
     await setContributionAdmissionReplayMetadataForTest({
       ...key,
       replayMetadata: { route: 'communities.create', scope: 'global', finalization: 'pending' },
     })
-    expect(await listTestDelegatedCreateReservations(user.id)).toMatchObject([
+    expect(await listTestDelegatedCreateReservations(caller.id)).toMatchObject([
       { state: 'committed', finalization: 'pending', committed_post_id: null },
     ])
 
-    expect(await admitDelegatedCreate({ ...base, execute: createIn })).toEqual(created)
-    expect(await listTestDelegatedCreateReservations(user.id)).toMatchObject([
+    expect(await callCreateCommunity(caller, key.idempotencyKey)).toEqual(created)
+    expect(await listTestDelegatedCreateReservations(caller.id)).toMatchObject([
       { finalization: 'complete', committed_post_id: null },
     ])
-    expect(await countTestCommunitiesCreatedBy(user.id)).toBe(1)
+    expect(await countTestCommunitiesCreatedBy(caller.id)).toBe(1)
 
     await setContributionAdmissionReplayMetadataForTest({
       ...key,
@@ -188,16 +206,17 @@ describe('delegated create ledger — real store', () => {
   })
 
   it('prunes an expired replay and then accepts the key for a new request', async () => {
-    const { user, base, key, createIn } = await setup()
-    await admitDelegatedCreate({ ...base, execute: createIn })
+    const caller = await createTestPlusMcpCaller()
+    const key = { actorId: caller.id, idempotencyKey: crypto.randomUUID() }
+    await callCreateCommunity(caller, key.idempotencyKey)
     expect(await getContributionAdmissionReservationStateForTest(key)).toBe('committed')
 
     await expireContributionAdmissionForTest(key)
     await pruneExpiredContributionAdmissions()
 
     expect(await getContributionAdmissionReservationStateForTest(key)).toBeNull()
-    await admitDelegatedCreate({ ...base, intent: { name: 'Another request' }, execute: createIn })
+    await callCreateCommunity(caller, key.idempotencyKey, 'Another Request Entirely')
     expect(await getContributionAdmissionReservationStateForTest(key)).toBe('committed')
-    expect(await countTestCommunitiesCreatedBy(user.id)).toBe(2)
+    expect(await countTestCommunitiesCreatedBy(caller.id)).toBe(2)
   })
 })

@@ -1,23 +1,16 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import {
+  beginTransaction,
   createTestUser,
   insertTestCommunity,
   insertTestCommunityBan,
   insertTestUserWarning,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
+import { countTestModerationAppealsByAppellant as countAppeals } from '@voucha/test-helpers/mcp-write-tool-rows'
 import type { PrivateUser } from '@voucha/types/entities/user'
-import { beginTransaction, read } from '@data-stores/psql'
-import sql from 'sql-template-strings'
 import { createModerationAppeal } from './create.mts'
 import { parseCreateModerationAppealInput } from './parse.mts'
-
-const countAppeals = async (appellantId: string) => {
-  const { rows } = await read<{ count: number }>(
-    sql`SELECT count(*)::int AS count FROM moderation_appeals WHERE appellant_user_id = ${appellantId}`,
-  )
-  return rows[0]!.count
-}
 
 describe('createModerationAppeal inside the caller transaction', () => {
   let staff: PrivateUser
