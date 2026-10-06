@@ -101,7 +101,6 @@ describe('PostgreSQL ordering guard config', () => {
       'backend/services/notifications/reconcile-rss-feed-item-writes.mts:1',
       'backend/services/notifications/reconcile-rss-feed-item.mts:1',
       'backend/services/post-publication/prepare-alias-identities.mts:1',
-      'backend/services/rss-feed-items/upsert-write-locks.mts:1',
       'backend/services/stripe/membership-provider-facts/context.mts:1',
       'backend/services/topic-recommendations/update-topic-recommendation.mts:1',
       'backend/services/vote-integrity/create-flag.mts:3',

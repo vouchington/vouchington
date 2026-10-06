@@ -85,7 +85,6 @@ async function lockRssFeedItemIdentities(
     // oxlint-disable-next-line no-await-in-loop -- ascending GUID batches preserve global identity lock order.
     const result = await txQuery<{ id: string; guid: string }>(
       `/* upsertRssFeedItems:lockIdentities */
-        /* deadlock-safe: the WHERE equality pins url_hostname_id, so ORDER BY guid is the rest of the unique key; the rule misses the pin (no-mistakes#1552) */
         SELECT id, guid
         FROM rss_feed_item_guids
         WHERE url_hostname_id = $1
