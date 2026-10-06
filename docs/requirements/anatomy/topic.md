@@ -11,18 +11,20 @@
 
 ## Data Model
 
-| Field                  | Notes                                                                          |
-| ---------------------- | ------------------------------------------------------------------------------ |
-| `id`                   | UUID                                                                           |
-| `name`                 | Display name (raw stored value; surfaces use the display-name helper)          |
-| `slug`                 | URL-safe identifier; URL construction always uses the helper                   |
-| `topic_type`           | Enum; drives routing, extension table, and type-specific UI                    |
-| `markdown`             | Admin-authored description                                                     |
-| `noindex`              | When true, topic pages emit noindex robots metadata                            |
-| `should_allow_reviews` | When false, blocks review creation and hides review UI                         |
-| `deleted_at`           | Non-null when soft-deleted                                                     |
-| `merged_into_topic_id` | Non-null when merged into another topic                                        |
-| `created_via`          | Required immutable channel; see [provenance](../content/content-provenance.md) |
+| Field                  | Notes                                                                                                                        |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `id`                   | UUID                                                                                                                         |
+| `name`                 | Display name (raw stored value; surfaces use the display-name helper)                                                        |
+| `slug`                 | URL-safe identifier; URL construction always uses the helper                                                                 |
+| `topic_type`           | Enum; drives routing, extension table, and type-specific UI                                                                  |
+| `markdown`             | Admin-authored description                                                                                                   |
+| `noindex`              | When true, topic pages emit noindex robots metadata                                                                          |
+| `should_allow_reviews` | When false, blocks review creation and hides review UI                                                                       |
+| `deleted_at`           | Non-null when soft-deleted                                                                                                   |
+| `merged_into_topic_id` | Non-null when merged into another topic                                                                                      |
+| `created_via`          | Required immutable channel; see [provenance](../content/content-provenance.md)                                               |
+| `provenance`           | Public label, API and MCP topics only: `{ via, app }`; see [provenance](../content/reference-content-provenance-exposure.md) |
+| `staff_provenance`     | Staff-only channel and raw OAuth client, computed per request; never cached or public                                        |
 
 **Topic types** (8 total; each maps to a distinct URL slug):
 

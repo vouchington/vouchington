@@ -1,4 +1,5 @@
 import type { communityListItemTypeCatalog } from './community-list-item-type.mts'
+import type { PublicContentProvenance, StaffContentProvenance } from './content-provenance.mts'
 import type { ImagePlacementTuple } from './user.mts'
 
 export type CommunityListItemType = keyof typeof communityListItemTypeCatalog
@@ -44,6 +45,9 @@ export type Community = {
   default_language?: string | null
   lingua_rs_detected_language?: string | null
   rules_markdown: string | null
+  // Attached per request after the cache read, never stored on the cached community or in a view.
+  provenance?: PublicContentProvenance
+  staff_provenance?: StaffContentProvenance
 }
 
 export type CommunityMember = {
@@ -186,14 +190,4 @@ export type CommunityListItem = {
   order_index: number
   added_by_id: string | null
   created_at: Date
-}
-
-export type CommunityBanEvasionFlag = {
-  community_id: string
-  user_id: string
-  suspected_ban_evader_at: Date
-  suspected_ban_evader_source_user_id: string | null
-  suspected_ban_evader_score: number | null
-  suspected_ban_evader_dismissed_at: Date | null
-  suspected_ban_evader_dismissed_by_id: string | null
 }

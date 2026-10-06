@@ -8,6 +8,7 @@ import {
   queryString,
 } from '@modules/pagination'
 import { indexById, isUUID } from '@modules/utils'
+import { attachTopicProvenance } from '@services/content-provenance'
 import { getTopicByAnyCachedBatch } from '@services/entity-fetch'
 import {
   searchTopHashtags,
@@ -32,7 +33,7 @@ const filterQuery = defineQueryContract({
 
 app.route('/api/v1/topic-recommendations/top-hashtags').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/topic-recommendations/top-hashtags', parser, filterQuery)
-  await requireAuth(ctx, 'GET:/api/v1/topic-recommendations/top-hashtags')
+  const currentUser = await requireAuth(ctx, 'GET:/api/v1/topic-recommendations/top-hashtags')
   const pagination = parseAndValidatePaginatedRequest(
     ctx,
     'GET:/api/v1/topic-recommendations/top-hashtags',
@@ -54,7 +55,9 @@ app.route('/api/v1/topic-recommendations/top-hashtags').get(async (ctx: Context)
     limit: pagination.limit,
   })
   const topicIds = results.flatMap(result => (result.topic_id ? [result.topic_id] : []))
-  const topics = await getTopicByAnyCachedBatch(topicIds)
+  const topics = await getTopicByAnyCachedBatch(topicIds).then(found =>
+    attachTopicProvenance(found, currentUser),
+  )
   const publicResults: TopHashtag[] = results.map(
     ({ latest_content_at: _latestContentAt, ...result }) => result,
   )

@@ -1,0 +1,85 @@
+{
+  "lists": {
+    "list-1-api": {
+      "__entity_type": "list",
+      "created_at": "2026-06-28T10:00:00Z",
+      "description": "Articles to read later",
+      "id": "list-1-api",
+      "name": "Reading Queue",
+      "owner_user_id": "user-abc",
+      "provenance": {
+        "app": null,
+        "via": "api"
+      },
+      "removed_at": null,
+      "staff_provenance": {
+        "created_via": "api",
+        "oauth_client": null
+      },
+      "updated_at": "2026-06-28T10:00:00Z",
+      "visibility": "public"
+    },
+    "list-1-mcp": {
+      "__entity_type": "list",
+      "created_at": "2026-06-28T10:00:00Z",
+      "description": "Articles to read later",
+      "id": "list-1-mcp",
+      "name": "Reading Queue",
+      "owner_user_id": "user-abc",
+      "provenance": {
+        "app": {
+          "client_id": "voucha_fixture_agent",
+          "client_name": "Fixture Agent",
+          "kind": "verified"
+        },
+        "via": "mcp"
+      },
+      "removed_at": null,
+      "staff_provenance": {
+        "created_via": "mcp",
+        "oauth_client": {
+          "client_id": "voucha_fixture_agent",
+          "client_name": "Fixture Agent",
+          "metadata_url": null,
+          "verified": true
+        }
+      },
+      "updated_at": "2026-06-28T10:00:00Z",
+      "visibility": "public"
+    },
+    "list-1-web": {
+      "__entity_type": "list",
+      "created_at": "2026-06-28T10:00:00Z",
+      "description": "Articles to read later",
+      "id": "list-1-web",
+      "name": "Reading Queue",
+      "owner_user_id": "user-abc",
+      "removed_at": null,
+      "staff_provenance": {
+        "created_via": "web",
+        "oauth_client": null
+      },
+      "updated_at": "2026-06-28T10:00:00Z",
+      "visibility": "public"
+    }
+  },
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  },
+  "results": [
+    {
+      "__entity_type": "list",
+      "id": "list-1-mcp"
+    },
+    {
+      "__entity_type": "list",
+      "id": "list-1-api"
+    },
+    {
+      "__entity_type": "list",
+      "id": "list-1-web"
+    }
+  ]
+}

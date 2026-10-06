@@ -1,5 +1,6 @@
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
+import { attachTopicProvenance } from '@services/content-provenance'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery } from '../../response-contract.mts'
@@ -56,7 +57,9 @@ app.route('/api/v1/recommended-topics').get(async (ctx: Context) => {
   const output: Record<string, unknown> = {
     results: result.results,
     page_info: result.page_info,
-    topics: getTopicByAnyCachedBatch(topicIds).then(indexById),
+    topics: getTopicByAnyCachedBatch(topicIds)
+      .then(topics => attachTopicProvenance(topics, currentUser))
+      .then(indexById),
     topics_metrics: getTopicMetricsByAnyCachedBatch(topicIds).then(indexById),
   }
 

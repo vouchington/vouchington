@@ -27,9 +27,9 @@ Response is streamed and includes: `results`, `page_info`, `topics`, `topics_met
 
 ## Performance
 
-| Endpoint                       | Round Trips | Caching                | Notes                                                                |
-| ------------------------------ | ----------- | ---------------------- | -------------------------------------------------------------------- |
-| GET /api/v1/recommended-topics | 3           | Entities: Valkey batch | Auth, search, then parallel streaming (topics + metrics + bookmarks) |
+| Endpoint                       | Round Trips | Caching                | Notes                                                                                                                          |
+| ------------------------------ | ----------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| GET /api/v1/recommended-topics | 4           | Entities: Valkey batch | Auth, search, then parallel streaming (topics + metrics + bookmarks); provenance facts (batched) chained after the topic batch |
 
 ## Related
 

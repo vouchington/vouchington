@@ -1,7 +1,7 @@
 import type { Tool, ToolInvocationContext } from '@services/openai-agents/tool-types'
 import type { BasicUser } from '@services/users/types'
 import { loadReadableList } from './list-read-access.mts'
-import { LIST_NOT_FOUND, mcpListSchema, toMcpList, type McpList } from './mcp-list-output.mts'
+import { LIST_NOT_FOUND, mcpListSchema, toMcpLists, type McpList } from './mcp-list-output.mts'
 import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
 
 type ToolArgs = {
@@ -38,7 +38,9 @@ const tool: Tool<ToolArgs, ToolResult> = {
     async (args: ToolArgs, invocationContext?: ToolInvocationContext): Promise<ToolResult> => {
       const list = await loadReadableList(currentUser, args.list_id, invocationContext)
       if (!list) return LIST_NOT_FOUND
-      return { success: true, list: await toMcpList(list) }
+      // The list came from the primary, so its provenance does too.
+      const [mcpList] = await toMcpLists([list], { readOnly: false })
+      return { success: true, list: mcpList! }
     },
 }
 

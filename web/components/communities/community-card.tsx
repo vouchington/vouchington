@@ -9,6 +9,7 @@ import { getPlacementImageUrl } from '@/lib/utils/image-url'
 import { communityHref } from '@/lib/links/entity-href'
 import type { Community, CommunityMember, CommunityMetrics } from '@/types/api-responses'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { ProvenanceBadges } from '@/components/provenance/provenance-badges'
 import { CommunityAboutCopy } from './community-about-copy'
 import type JoinButtonComponent from './join-button'
 
@@ -25,6 +26,8 @@ interface CommunityCardProps {
     | 'lingua_rs_detected_language'
     | 'profile_image_id'
     | 'profile_image_placement'
+    | 'provenance'
+    | 'staff_provenance'
   >
   metrics?: Pick<CommunityMetrics, 'member_count' | 'post_count' | 'list_item_count'>
   membership?: CommunityMember | null
@@ -82,6 +85,11 @@ export function CommunityCard({
                 {t('extracted.communities.communityCard.joined_69318b0c')}
               </Badge>
             )}
+            <ProvenanceBadges
+              testIdPrefix='community'
+              provenance={community.provenance}
+              staffProvenance={community.staff_provenance}
+            />
           </div>
           <CommunityAboutCopy
             markdown={community.markdown}

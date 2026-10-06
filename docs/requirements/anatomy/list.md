@@ -13,16 +13,18 @@
 
 ### `user_lists`
 
-| Field           | Notes                                                                          |
-| --------------- | ------------------------------------------------------------------------------ |
-| `id`            | UUIDv7 PK; `created_at` derived from `uuid_extract_timestamp`                  |
-| `owner_user_id` | FK → `users.id`; cascades on delete                                            |
-| `name`          | Text, 1–255 chars                                                              |
-| `description`   | Optional text                                                                  |
-| `visibility`    | `'private' \| 'unlisted' \| 'public'`; default `'private'`                     |
-| `updated_at`    | Trigger-maintained                                                             |
-| `removed_at`    | Soft-delete; non-null = deleted                                                |
-| `created_via`   | Required immutable channel; see [provenance](../content/content-provenance.md) |
+| Field              | Notes                                                                                                                       |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `id`               | UUIDv7 PK; `created_at` derived from `uuid_extract_timestamp`                                                               |
+| `owner_user_id`    | FK → `users.id`; cascades on delete                                                                                         |
+| `name`             | Text, 1–255 chars                                                                                                           |
+| `description`      | Optional text                                                                                                               |
+| `visibility`       | `'private' \| 'unlisted' \| 'public'`; default `'private'`                                                                  |
+| `updated_at`       | Trigger-maintained                                                                                                          |
+| `removed_at`       | Soft-delete; non-null = deleted                                                                                             |
+| `created_via`      | Required immutable channel; see [provenance](../content/content-provenance.md)                                              |
+| `provenance`       | Public label, API and MCP lists only: `{ via, app }`; see [provenance](../content/reference-content-provenance-exposure.md) |
+| `staff_provenance` | Staff-only channel and raw OAuth client, computed per request; never cached or public                                       |
 
 ### `user_list_rss_feed_items` / `user_list_posts`
 

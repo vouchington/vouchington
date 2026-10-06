@@ -16,6 +16,7 @@ import {
   addCommunityListItem,
   removeCommunityListItem,
 } from '@services/communities'
+import { attachRssFeedProvenance } from '@services/content-provenance'
 import { getRssFeedByIdCachedBatch } from '@services/entity-fetch'
 import { proxyRssFeedCoverArt } from '@services/rss-feeds/proxy-cover-art'
 import { indexById } from '@modules/utils'
@@ -56,12 +57,14 @@ app
       })),
       page_info: result.page_info,
       community_list_items: indexById(result.results),
-      rss_feeds: getRssFeedByIdCachedBatch(entityIds).then(feeds =>
-        feeds.reduce<Record<string, unknown>>((acc, feed) => {
-          if (feed) acc[feed.id] = proxyRssFeedCoverArt(feed)
-          return acc
-        }, {}),
-      ),
+      rss_feeds: getRssFeedByIdCachedBatch(entityIds)
+        .then(feeds =>
+          attachRssFeedProvenance(
+            feeds.flatMap(feed => (feed ? [proxyRssFeedCoverArt(feed)] : [])),
+            currentUser,
+          ),
+        )
+        .then(indexById),
     }
 
     ctx.setType('json')

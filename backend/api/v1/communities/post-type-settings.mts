@@ -7,6 +7,7 @@ import {
   updateCommunityPostTypeSettings,
   type UpdateCommunityPostTypeSettingsInput,
 } from '@services/communities'
+import { attachWrittenCommunityProvenance } from '@services/content-provenance'
 
 app.route('/api/v1/communities/:idOrSlug/post-type-settings').patch(async (ctx: Context) => {
   const currentUser = await requireAuth(
@@ -24,5 +25,5 @@ app.route('/api/v1/communities/:idOrSlug/post-type-settings').patch(async (ctx: 
 
   const updated = await updateCommunityPostTypeSettings(currentUser, community.id, body, membership)
   const { owner: _owner, ...communityData } = updated
-  ctx.json({ community: communityData })
+  ctx.json({ community: await attachWrittenCommunityProvenance(communityData, currentUser) })
 })

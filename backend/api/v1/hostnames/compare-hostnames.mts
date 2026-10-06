@@ -1,4 +1,5 @@
 import app from '../../app.mts'
+import { attachTopicProvenance } from '@services/content-provenance'
 import type { Context } from '@jongleberry/api-server'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery } from '../../response-contract.mts'
@@ -54,7 +55,11 @@ app.route('/api/v1/hostnames/compare').get(async (ctx: Context) => {
 
   const [hostname_elections, topics] = await Promise.all([
     getHostnameElectionByIdCachedBatch(hostnameIds).then(indexById),
-    topicIds.length > 0 ? getTopicByAnyCachedBatch(topicIds).then(indexById) : Promise.resolve({}),
+    topicIds.length > 0
+      ? getTopicByAnyCachedBatch(topicIds)
+          .then(topics => attachTopicProvenance(topics, currentUser))
+          .then(indexById)
+      : Promise.resolve({}),
   ])
 
   ctx.json({

@@ -7742,6 +7742,66 @@
                           "is_discoverable": {
                             "type": "boolean"
                           },
+                          "provenance": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "app": {
+                                "anyOf": [
+                                  {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "client_id": {
+                                        "type": "string"
+                                      },
+                                      "client_name": {
+                                        "type": "string"
+                                      },
+                                      "kind": {
+                                        "const": "verified"
+                                      }
+                                    },
+                                    "required": ["client_id", "client_name", "kind"],
+                                    "type": "object"
+                                  },
+                                  {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "hostname": {
+                                        "type": "string"
+                                      },
+                                      "kind": {
+                                        "const": "hostname"
+                                      }
+                                    },
+                                    "required": ["hostname", "kind"],
+                                    "type": "object"
+                                  },
+                                  {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "key": {
+                                        "type": "string"
+                                      },
+                                      "kind": {
+                                        "const": "known"
+                                      }
+                                    },
+                                    "required": ["key", "kind"],
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "via": {
+                                "enum": ["api", "mcp"],
+                                "type": "string"
+                              }
+                            },
+                            "required": ["app", "via"],
+                            "type": "object"
+                          },
                           "rss_feed_url": {
                             "type": "string"
                           }
@@ -7865,6 +7925,66 @@
                         },
                         "is_discoverable": {
                           "type": "boolean"
+                        },
+                        "provenance": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "app": {
+                              "anyOf": [
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "client_id": {
+                                      "type": "string"
+                                    },
+                                    "client_name": {
+                                      "type": "string"
+                                    },
+                                    "kind": {
+                                      "const": "verified"
+                                    }
+                                  },
+                                  "required": ["client_id", "client_name", "kind"],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "hostname": {
+                                      "type": "string"
+                                    },
+                                    "kind": {
+                                      "const": "hostname"
+                                    }
+                                  },
+                                  "required": ["hostname", "kind"],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "key": {
+                                      "type": "string"
+                                    },
+                                    "kind": {
+                                      "const": "known"
+                                    }
+                                  },
+                                  "required": ["key", "kind"],
+                                  "type": "object"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "via": {
+                              "enum": ["api", "mcp"],
+                              "type": "string"
+                            }
+                          },
+                          "required": ["app", "via"],
+                          "type": "object"
                         },
                         "rss_feed_url": {
                           "type": "string"
@@ -10181,7 +10301,7 @@
                   "const": true
                 },
                 "list": {
-                  "additionalProperties": false,
+                  "type": "object",
                   "properties": {
                     "__entity_type": {
                       "const": "list"
@@ -10207,6 +10327,66 @@
                     },
                     "owner_user_id": {
                       "type": "string"
+                    },
+                    "provenance": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "app": {
+                          "anyOf": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "client_id": {
+                                  "type": "string"
+                                },
+                                "client_name": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "const": "verified"
+                                }
+                              },
+                              "required": ["client_id", "client_name", "kind"],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "hostname": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "const": "hostname"
+                                }
+                              },
+                              "required": ["hostname", "kind"],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "key": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "const": "known"
+                                }
+                              },
+                              "required": ["key", "kind"],
+                              "type": "object"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "via": {
+                          "enum": ["api", "mcp"],
+                          "type": "string"
+                        }
+                      },
+                      "required": ["app", "via"],
+                      "type": "object"
                     },
                     "removed_at": {
                       "anyOf": [
@@ -10237,7 +10417,7 @@
                     "updated_at",
                     "visibility"
                   ],
-                  "type": "object"
+                  "additionalProperties": false
                 }
               },
               "required": ["success", "list"],
@@ -11595,6 +11775,66 @@
                         },
                         "updated_at": {
                           "type": "string"
+                        },
+                        "provenance": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "app": {
+                              "anyOf": [
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "client_id": {
+                                      "type": "string"
+                                    },
+                                    "client_name": {
+                                      "type": "string"
+                                    },
+                                    "kind": {
+                                      "const": "verified"
+                                    }
+                                  },
+                                  "required": ["client_id", "client_name", "kind"],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "hostname": {
+                                      "type": "string"
+                                    },
+                                    "kind": {
+                                      "const": "hostname"
+                                    }
+                                  },
+                                  "required": ["hostname", "kind"],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "key": {
+                                      "type": "string"
+                                    },
+                                    "kind": {
+                                      "const": "known"
+                                    }
+                                  },
+                                  "required": ["key", "kind"],
+                                  "type": "object"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "via": {
+                              "enum": ["api", "mcp"],
+                              "type": "string"
+                            }
+                          },
+                          "required": ["app", "via"],
+                          "type": "object"
                         }
                       },
                       "required": [
@@ -12096,6 +12336,66 @@
                         },
                         "updated_at": {
                           "type": "string"
+                        },
+                        "provenance": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "app": {
+                              "anyOf": [
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "client_id": {
+                                      "type": "string"
+                                    },
+                                    "client_name": {
+                                      "type": "string"
+                                    },
+                                    "kind": {
+                                      "const": "verified"
+                                    }
+                                  },
+                                  "required": ["client_id", "client_name", "kind"],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "hostname": {
+                                      "type": "string"
+                                    },
+                                    "kind": {
+                                      "const": "hostname"
+                                    }
+                                  },
+                                  "required": ["hostname", "kind"],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "key": {
+                                      "type": "string"
+                                    },
+                                    "kind": {
+                                      "const": "known"
+                                    }
+                                  },
+                                  "required": ["key", "kind"],
+                                  "type": "object"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "via": {
+                              "enum": ["api", "mcp"],
+                              "type": "string"
+                            }
+                          },
+                          "required": ["app", "via"],
+                          "type": "object"
                         }
                       },
                       "required": [
@@ -13285,6 +13585,66 @@
                           },
                           "updated_at": {
                             "type": "string"
+                          },
+                          "provenance": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "app": {
+                                "anyOf": [
+                                  {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "client_id": {
+                                        "type": "string"
+                                      },
+                                      "client_name": {
+                                        "type": "string"
+                                      },
+                                      "kind": {
+                                        "const": "verified"
+                                      }
+                                    },
+                                    "required": ["client_id", "client_name", "kind"],
+                                    "type": "object"
+                                  },
+                                  {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "hostname": {
+                                        "type": "string"
+                                      },
+                                      "kind": {
+                                        "const": "hostname"
+                                      }
+                                    },
+                                    "required": ["hostname", "kind"],
+                                    "type": "object"
+                                  },
+                                  {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "key": {
+                                        "type": "string"
+                                      },
+                                      "kind": {
+                                        "const": "known"
+                                      }
+                                    },
+                                    "required": ["key", "kind"],
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "via": {
+                                "enum": ["api", "mcp"],
+                                "type": "string"
+                              }
+                            },
+                            "required": ["app", "via"],
+                            "type": "object"
                           }
                         },
                         "required": [
@@ -14951,6 +15311,66 @@
                         "type": "string"
                       },
                       "type": "array"
+                    },
+                    "provenance": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "app": {
+                          "anyOf": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "client_id": {
+                                  "type": "string"
+                                },
+                                "client_name": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "const": "verified"
+                                }
+                              },
+                              "required": ["client_id", "client_name", "kind"],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "hostname": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "const": "hostname"
+                                }
+                              },
+                              "required": ["hostname", "kind"],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "key": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "const": "known"
+                                }
+                              },
+                              "required": ["key", "kind"],
+                              "type": "object"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "via": {
+                          "enum": ["api", "mcp"],
+                          "type": "string"
+                        }
+                      },
+                      "required": ["app", "via"],
+                      "type": "object"
                     },
                     "annual_fee": {
                       "anyOf": [
@@ -17300,6 +17720,66 @@
                               },
                               "updated_at": {
                                 "type": "string"
+                              },
+                              "provenance": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "app": {
+                                    "anyOf": [
+                                      {
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "client_id": {
+                                            "type": "string"
+                                          },
+                                          "client_name": {
+                                            "type": "string"
+                                          },
+                                          "kind": {
+                                            "const": "verified"
+                                          }
+                                        },
+                                        "required": ["client_id", "client_name", "kind"],
+                                        "type": "object"
+                                      },
+                                      {
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "hostname": {
+                                            "type": "string"
+                                          },
+                                          "kind": {
+                                            "const": "hostname"
+                                          }
+                                        },
+                                        "required": ["hostname", "kind"],
+                                        "type": "object"
+                                      },
+                                      {
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "key": {
+                                            "type": "string"
+                                          },
+                                          "kind": {
+                                            "const": "known"
+                                          }
+                                        },
+                                        "required": ["key", "kind"],
+                                        "type": "object"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "via": {
+                                    "enum": ["api", "mcp"],
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["app", "via"],
+                                "type": "object"
                               }
                             },
                             "required": [
@@ -18376,7 +18856,7 @@
                   "const": true
                 },
                 "list": {
-                  "additionalProperties": false,
+                  "type": "object",
                   "properties": {
                     "__entity_type": {
                       "const": "list"
@@ -18402,6 +18882,66 @@
                     },
                     "owner_user_id": {
                       "type": "string"
+                    },
+                    "provenance": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "app": {
+                          "anyOf": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "client_id": {
+                                  "type": "string"
+                                },
+                                "client_name": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "const": "verified"
+                                }
+                              },
+                              "required": ["client_id", "client_name", "kind"],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "hostname": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "const": "hostname"
+                                }
+                              },
+                              "required": ["hostname", "kind"],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "key": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "const": "known"
+                                }
+                              },
+                              "required": ["key", "kind"],
+                              "type": "object"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "via": {
+                          "enum": ["api", "mcp"],
+                          "type": "string"
+                        }
+                      },
+                      "required": ["app", "via"],
+                      "type": "object"
                     },
                     "removed_at": {
                       "anyOf": [
@@ -18432,7 +18972,7 @@
                     "updated_at",
                     "visibility"
                   ],
-                  "type": "object"
+                  "additionalProperties": false
                 }
               },
               "required": ["success", "list"],

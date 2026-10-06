@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic'
 import { ProxiedImage as Image } from '@/components/shared/proxied-image'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
+import { ProvenanceBadges } from '@/components/provenance/provenance-badges'
 import { CommunityProxyBookmarkButton } from './community-proxy-bookmark-button'
 import { getPlacementImageUrl } from '@/lib/utils/image-url'
 import type { Community, CommunityMember, CommunityMetrics } from '@/types/api-responses'
@@ -35,7 +36,10 @@ export function CommunityHeader({
   const isMod = isMember && (membership.role === 'owner' || membership.role === 'moderator')
 
   return (
-    <div className='space-y-4'>
+    <div
+      className='space-y-4'
+      data-pw='community-header'
+    >
       {community.banner_image_placement && (
         <div className='relative h-40 w-full overflow-hidden rounded-xl bg-muted lg:h-56'>
           <Image
@@ -95,6 +99,12 @@ export function CommunityHeader({
                   {t('extracted.communities.communityHeader.private_c63eb672')}
                 </Badge>
               )}
+              <ProvenanceBadges
+                testIdPrefix='community'
+                provenance={community.provenance}
+                staffProvenance={community.staff_provenance}
+                showClient
+              />
             </div>
             {metrics && (
               <p

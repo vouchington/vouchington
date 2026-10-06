@@ -6,6 +6,7 @@ import {
   getUserCommunitiesCollection,
   getUserMemberCommunitiesCollection,
 } from '@services/entity-fetch'
+import { attachCommunityProvenance } from '@services/content-provenance'
 import { apiQuery } from '../../response-contract.mts'
 import { getOptionalAuthAndRateLimit } from '../../response-helpers.mts'
 import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
@@ -44,7 +45,7 @@ app.route('/api/v1/users/:idOrSlug/communities/:listType').get(async (ctx: Conte
     { path: true },
   )
   if (!resolved.currentUser) pagination.limit = clampAnonLimit(pagination.limit)
-  const communities =
+  const collection =
     serviceListType === 'member'
       ? await getUserMemberCommunitiesCollection(
           resolved.currentUser,
@@ -59,5 +60,8 @@ app.route('/api/v1/users/:idOrSlug/communities/:listType').get(async (ctx: Conte
         )
 
   applyCacheHeaders(ctx, !resolved.privateCollection, resolved.currentUser)
-  ctx.json(communities)
+  ctx.json({
+    ...collection,
+    results: await attachCommunityProvenance(collection.results, resolved.currentUser),
+  })
 })

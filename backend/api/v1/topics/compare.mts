@@ -6,6 +6,7 @@ import {
   getTopicMetricsByAnyCachedBatch,
   getTopicElectionByIdCachedBatch,
 } from '@services/entity-fetch'
+import { attachTopicProvenance } from '@services/content-provenance'
 import { getEntityRelations } from '@services/entity-relations/query'
 import { getTopicDataPointInsights } from '@services/data-points/insights'
 import { indexById } from '@modules/utils'
@@ -51,29 +52,37 @@ app.route('/api/v1/topics/compare').get(async (ctx: Context) => {
   const viewer = entityRelationViewerFor(currentUser)
   const topicIds = [topicA!.id, topicB!.id]
 
-  const [topic_metrics, topic_elections, insightsA, insightsB, relationsA, relationsB] =
-    await Promise.all([
-      getTopicMetricsByAnyCachedBatch(topicIds).then(indexById),
-      getTopicElectionByIdCachedBatch(topicIds).then(indexById),
-      getTopicDataPointInsights(topicA!.id),
-      getTopicDataPointInsights(topicB!.id),
-      getEntityRelations('topic', topicA!.id, 'category', 'topic', {
-        viewer,
-        positiveNetVoteScore: true,
-        limit: 20,
-      }),
-      getEntityRelations('topic', topicB!.id, 'category', 'topic', {
-        viewer,
-        positiveNetVoteScore: true,
-        limit: 20,
-      }),
-    ])
+  const [
+    labeledTopics,
+    topic_metrics,
+    topic_elections,
+    insightsA,
+    insightsB,
+    relationsA,
+    relationsB,
+  ] = await Promise.all([
+    attachTopicProvenance(topics, currentUser),
+    getTopicMetricsByAnyCachedBatch(topicIds).then(indexById),
+    getTopicElectionByIdCachedBatch(topicIds).then(indexById),
+    getTopicDataPointInsights(topicA!.id),
+    getTopicDataPointInsights(topicB!.id),
+    getEntityRelations('topic', topicA!.id, 'category', 'topic', {
+      viewer,
+      positiveNetVoteScore: true,
+      limit: 20,
+    }),
+    getEntityRelations('topic', topicB!.id, 'category', 'topic', {
+      viewer,
+      positiveNetVoteScore: true,
+      limit: 20,
+    }),
+  ])
 
   const categorySlugsA = extractCategorySlugs(relationsA)
   const categorySlugsB = extractCategorySlugs(relationsB)
 
   const output: Record<string, unknown> = {
-    topics: indexById(topics),
+    topics: indexById(labeledTopics),
     topic_metrics,
     topic_elections,
     topic_categories: { [topicA!.id]: categorySlugsA, [topicB!.id]: categorySlugsB },

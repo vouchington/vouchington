@@ -1,4 +1,5 @@
 import { read, write } from '@data-stores/psql'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import type { List, ListItem } from '@voucha/types/entities/list'
 
 type InsertTestListOptions = {
@@ -6,13 +7,14 @@ type InsertTestListOptions = {
   name: string
   description?: string | null
   visibility?: 'private' | 'unlisted' | 'public'
+  provenance?: ContentProvenance
 }
 
 export async function insertTestList(options: InsertTestListOptions): Promise<List> {
   const { rows } = await write(
     `/* insertTestList */
-    INSERT INTO user_lists (owner_user_id, name, description, visibility, created_via)
-    VALUES ($1, $2, $3, $4, 'system')
+    INSERT INTO user_lists (owner_user_id, name, description, visibility, created_via, created_via_oauth_client_id)
+    VALUES ($1, $2, $3, $4, $5, $6)
     RETURNING id, owner_user_id, name, description, visibility, created_at, updated_at, removed_at
     `,
     [
@@ -20,6 +22,8 @@ export async function insertTestList(options: InsertTestListOptions): Promise<Li
       options.name,
       options.description ?? null,
       options.visibility ?? 'private',
+      options.provenance?.createdVia ?? 'system',
+      options.provenance?.oauthClientId ?? null,
     ],
   )
   const row = rows[0]!

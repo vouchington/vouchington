@@ -285,11 +285,12 @@ automod flag list. Native delivery is tracked by
 [vouchington-clients#199](https://github.com/vouchington/vouchington-clients/issues/199); this
 repository does not edit `vouchington-clients`.
 
-## Post provenance label handoff
+## Provenance label handoff
 
-#706 exposes how a post was written. `Post` responses carry `provenance` (`{ "via": "api" | "mcp",
-"app": App | null }`) for posts created through the API or MCP, and nothing for web, Swift, .NET or
-system posts. `app` is facts, never wording: `{ "kind": "known", "key" }` for an allowlisted Client ID
+#706 and #2046 expose how a post, community, topic, list or RSS feed was written. `Post`,
+`Community`, `Topic`, `List` and `ViewRssFeed` responses carry `provenance` (`{ "via": "api" | "mcp",
+"app": App | null }`) for rows created through the API or MCP, and nothing for web, Swift, .NET or
+system rows. `app` is facts, never wording: `{ "kind": "known", "key" }` for an allowlisted Client ID
 Metadata Document client (a lowercase slug), `{ "kind": "hostname", "hostname" }` for any other such
 client, `{ "kind": "verified", "client_id", "client_name" }` for a staff-verified dynamically
 registered client, or `null` for everyone else. Clients compose the wording from their own copy:
@@ -306,13 +307,22 @@ public label, and so do the post in the `POST /api/v1/posts`,
 `POST /api/v1/communities/:idOrSlug/posts` and `PATCH /api/v1/posts/:idOrSlug` responses and in the
 MCP `create_post` and `update_post` results. MCP never carries `staff_provenance`.
 
-Swift and .NET must decode both optional fields and render the badge where they render the post type
-badge, composing the text from their own localized copy. The structured shape is staged in
-`api-fixtures/v1/` as `native.users.profile.posts.provenance` and
+Communities, topics, lists and RSS feeds carry the same two fields. Every full entity object a
+response serializes is labeled: the primary payloads and the `topics`, `rss_feeds`, `communities`
+and `lists` sidecar maps, on the list, detail, create and update routes, the trending and
+recommended routes, the hostname and fediverse routes and the user collections. Slim records, such
+as the community on a post, trending communities and global search results, and entities nested in
+another entity, such as the `topic` of a `ViewRssFeed`, carry neither field. Creating an RSS feed
+returns ids and a slug, so it carries neither. The MCP `get_community`, `search_communities`,
+`get_list`, `get_my_lists`, `create_list`, `update_list`, `get_topic_details`, `get_rss_feed` and
+`search_rss_feeds` tools carry the public label and never the staff block.
+
+Swift and .NET must decode both optional fields on all five entities and render the badge beside
+the post type badge on posts and on the cards and detail headers of communities, topics, lists and
+RSS feeds, composing the text from their own localized copy. The structured shape of posts is staged in `api-fixtures/v1/` as `native.users.profile.posts.provenance` and
 `native.users.profile.posts.staff-provenance`. Native delivery is tracked by
 [vouchington-clients#206](https://github.com/vouchington/vouchington-clients/issues/206); this
-repository does not edit `vouchington-clients`. Other entity types are follow-up
-[vouchington#2046](https://github.com/vouchington/vouchington/issues/2046).
+repository does not edit `vouchington-clients`, and native delivery never blocks the entity routes.
 
 ## Retired agent flag action handoff
 

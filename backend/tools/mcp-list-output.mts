@@ -1,3 +1,4 @@
+import { attachListProvenance } from '@services/content-provenance'
 import type { List, ListItem } from '@services/lists'
 import { externalText, iso, sanitizedTitle, type McpPageLimit } from './mcp-read-output.mts'
 import { closedObject, pickProperties } from './read-tool-output-schema.mts'
@@ -19,6 +20,7 @@ const LIST_FIELDS = [
   'visibility',
   'created_at',
   'updated_at',
+  'provenance',
 ] as const
 
 const LIST_ITEM_FIELDS = [
@@ -40,6 +42,8 @@ export type McpList = {
   visibility: List['visibility']
   created_at: string
   updated_at: string
+  /** The public provenance facts of an API or MCP list, on every tool; never the staff detail. */
+  provenance?: List['provenance']
 }
 
 /** One entry of a list: which kind of item it is and the id to read it with. */
@@ -53,8 +57,12 @@ export type McpListItem = {
   created_at: string
 }
 
-/** A list's name is sanitized like a title; its description is wrapped as external content. */
-export async function toMcpList(list: List): Promise<McpList> {
+/**
+ * A list's name is sanitized like a title; its description is wrapped as external content. The
+ * list carries the `provenance` it already has: read tools go through `toMcpLists`, which attaches
+ * the signed-out label, and `staff_provenance` never reaches MCP.
+ */
+async function toMcpList(list: List): Promise<McpList> {
   const [name, description] = await Promise.all([
     sanitizedTitle(list.name),
     externalText(list.description, 'list', 'list_description'),
@@ -67,7 +75,16 @@ export async function toMcpList(list: List): Promise<McpList> {
     visibility: list.visibility,
     created_at: iso(list.created_at),
     updated_at: iso(list.updated_at),
+    ...(list.provenance && { provenance: list.provenance }),
   }
+}
+
+/** Maps readable lists for MCP with their public provenance label, the signed-out one. */
+export async function toMcpLists(
+  lists: List[],
+  options: { readOnly?: boolean } = {},
+): Promise<McpList[]> {
+  return Promise.all((await attachListProvenance(lists, null, options)).map(toMcpList))
 }
 
 export function toMcpListItem(item: ListItem): McpListItem {
@@ -83,7 +100,7 @@ export function toMcpListItem(item: ListItem): McpListItem {
 }
 
 /** The schema of an `McpList`, from the generated `List` contract. */
-export const mcpListSchema = () => closedObject(pickProperties('List', LIST_FIELDS))
+export const mcpListSchema = () => closedObject(pickProperties('List', LIST_FIELDS), ['provenance'])
 
 /** The schema of an `McpListItem`, from the generated `ListItem` contract. */
 export const mcpListItemSchema = () => closedObject(pickProperties('ListItem', LIST_ITEM_FIELDS))

@@ -185,6 +185,56 @@ describe('ListPage', () => {
   })
 })
 
+describe('ListPage provenance', () => {
+  const staffClient = {
+    client_id: 'voucha_fixture_agent',
+    client_name: 'Fixture Agent',
+    metadata_url: null,
+    verified: true,
+  }
+  const renderList = async (overrides = {}) => {
+    mockGetList.mockResolvedValue({ list: makeList(overrides) })
+    mockGetListItems.mockResolvedValue(emptyItemsResponse)
+    render(await ListPage({ params: Promise.resolve({ id: 'list-1' }) }))
+    return document.querySelector('[data-pw="list-header"]')
+  }
+
+  beforeEach(() => {
+    mockGetList.mockReset()
+    mockGetListItems.mockReset()
+    mockGetCurrentUser.mockReset()
+    mockGetCurrentUser.mockResolvedValue(null)
+    mockHeaders.mockResolvedValue({ get: () => null })
+  })
+
+  it('shows the public label in the header', async () => {
+    const header = await renderList({ provenance: { via: 'api', app: null } })
+    expect(header?.querySelector('[data-pw="list-provenance-badge"]')?.textContent).toBe('via API')
+  })
+
+  it('shows staff the channel, the raw client and its verification', async () => {
+    const header = await renderList({
+      provenance: { via: 'mcp', app: null },
+      staff_provenance: { created_via: 'mcp', oauth_client: staffClient },
+    })
+    expect(header?.querySelector('[data-pw="list-provenance-channel"]')?.textContent).toBe(
+      'Channel: mcp',
+    )
+    expect(header?.querySelector('[data-pw="list-provenance-client"]')?.textContent).toContain(
+      'Fixture Agent',
+    )
+    expect(
+      header?.querySelector('[data-pw="list-provenance-client-verification"]')?.textContent,
+    ).toBe('Verified')
+  })
+
+  it('shows nothing for a list created on the web', async () => {
+    const header = await renderList()
+    expect(header?.querySelector('[data-pw="list-provenance-badge"]')).toBeNull()
+    expect(header?.querySelector('[data-pw="list-provenance-channel"]')).toBeNull()
+  })
+})
+
 describe('generateMetadata', () => {
   it('returns empty object when list not found', async () => {
     mockGetList.mockResolvedValue(null)

@@ -3,6 +3,7 @@ import type { Context } from '@jongleberry/api-server'
 
 import app from '../../app.mts'
 import { apiQuery } from '../../response-contract.mts'
+import { attachTopicProvenance } from '@services/content-provenance'
 import { getUserTopicsCollectionPage } from '@services/entity-fetch'
 import { getOptionalAuthAndRateLimit } from '../../response-helpers.mts'
 import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
@@ -37,5 +38,8 @@ app.route('/api/v1/users/:idOrSlug/topics/:listType').get(async (ctx: Context) =
   if (!resolved.currentUser) pagination.limit = clampAnonLimit(pagination.limit)
   const topics = await getUserTopicsCollectionPage(resolved.target.id, serviceListType, pagination)
   applyCacheHeaders(ctx, !resolved.privateCollection, resolved.currentUser)
-  ctx.json(topics)
+  ctx.json({
+    ...topics,
+    results: await attachTopicProvenance(topics.results, resolved.currentUser),
+  })
 })

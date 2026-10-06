@@ -27,9 +27,9 @@ Cached (short TTL) for unauthenticated users.
 
 ## Performance
 
-| Endpoint                    | Round Trips | Caching                                                       | Notes                                                    |
-| --------------------------- | ----------- | ------------------------------------------------------------- | -------------------------------------------------------- |
-| GET /api/v1/trending-topics | 2           | Search: anon Valkey; Entities: Valkey batch; HTTP: short anon | Search → parallel streaming (topics, metrics, bookmarks) |
+| Endpoint                    | Round Trips | Caching                                                       | Notes                                                                                                              |
+| --------------------------- | ----------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| GET /api/v1/trending-topics | 3           | Search: anon Valkey; Entities: Valkey batch; HTTP: short anon | Search → parallel streaming (topics, metrics, bookmarks); provenance facts (batched) chained after the topic batch |
 
 ## Related
 

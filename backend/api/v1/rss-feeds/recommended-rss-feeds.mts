@@ -4,6 +4,7 @@ import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { getRecommendedRssFeeds } from '@services/recommended-rss-feeds/get-recommendations'
 import type { RecommendationSource } from '@services/recommended-rss-feeds/types'
+import { attachRssFeedProvenance } from '@services/content-provenance'
 import { getRssFeedByIdCachedBatch } from '@services/entity-fetch'
 import { proxyRssFeedCoverArt } from '@services/rss-feeds/proxy-cover-art'
 import { createPaginationParser, defineQueryContract, queryString } from '@modules/pagination'
@@ -56,11 +57,14 @@ app.route('/api/v1/rss-feeds/recommended').get(async (ctx: Context) => {
   const output: Record<string, unknown> = {
     results: result.results,
     page_info: result.page_info,
-    rss_feeds: getRssFeedByIdCachedBatch(feedIds).then(feeds =>
-      indexById(
-        feeds.filter((f): f is NonNullable<typeof f> => f != null).map(proxyRssFeedCoverArt),
-      ),
-    ),
+    rss_feeds: getRssFeedByIdCachedBatch(feedIds)
+      .then(feeds =>
+        attachRssFeedProvenance(
+          feeds.filter((f): f is NonNullable<typeof f> => f != null).map(proxyRssFeedCoverArt),
+          currentUser,
+        ),
+      )
+      .then(indexById),
   }
 
   ctx.setType('json')

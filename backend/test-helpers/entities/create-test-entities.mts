@@ -19,6 +19,7 @@ export type CreateTestTopicOptions = {
   markdown?: string
   topic_type?: TopicTypes
   hostname?: string | null
+  provenance?: ContentProvenance
 }
 
 export type CreateTestPostOptions = {
@@ -69,7 +70,13 @@ export async function createTestTopic(options: CreateTestTopicOptions = {}) {
     createdById = admin.id
   }
 
-  const id = await insertTestTopic({ name, slug, createdById, topicType: options.topic_type })
+  const id = await insertTestTopic({
+    name,
+    slug,
+    createdById,
+    topicType: options.topic_type,
+    provenance: options.provenance,
+  })
   if (options.hostname !== undefined && options.hostname !== null) {
     const hostnameId = await insertTestUrlHostname({
       hostname: options.hostname,

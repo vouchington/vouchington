@@ -2,6 +2,7 @@ import { clampAnonLimit } from '@services/pagination'
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import { streamJsonObject } from '@jongleberry/api-server'
 import app from '../../app.mts'
+import { attachTopicProvenance } from '@services/content-provenance'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery } from '../../response-contract.mts'
 import { defineQueryContract, queryEnum, queryNumber } from '@modules/pagination'
@@ -74,7 +75,9 @@ app.route('/api/v1/trending-topics').get(async ctx => {
   const output: Record<string, unknown> = {
     results: result.results,
     page_info: result.page_info,
-    topics: getTopicByAnyCachedBatch(topicIds).then(indexById),
+    topics: getTopicByAnyCachedBatch(topicIds)
+      .then(topics => attachTopicProvenance(topics, currentUser))
+      .then(indexById),
     topics_metrics: getTopicMetricsByAnyCachedBatch(topicIds).then(indexById),
   }
 

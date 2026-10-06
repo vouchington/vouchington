@@ -3,6 +3,7 @@ import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { buildRssFeedSidecars, searchRssFeeds } from '@services/rss-feeds'
 import { createSourceFromUrl } from '@services/rss-feeds/create-source'
+import { attachRssFeedProvenance } from '@services/content-provenance'
 import { searchRssFeedsCached } from '@services/entity-fetch'
 import { assertNotSuspended } from '@services/users'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
@@ -111,7 +112,10 @@ app
 
     const allFeeds = rawFeeds as ViewRssFeed[]
     const hasNextPage = allFeeds.length > limit && !searchOptions.text_search_query
-    const pageFeeds = allFeeds.slice(0, limit).map(proxyRssFeedCoverArt)
+    const pageFeeds = await attachRssFeedProvenance(
+      allFeeds.slice(0, limit).map(proxyRssFeedCoverArt),
+      currentUser,
+    )
 
     setAnonymousPublicCacheHeaders(ctx, currentUser, HTTP_CACHE_SHORT_MAX_AGE_SECONDS)
 

@@ -12,15 +12,17 @@
 
 ## Data Model
 
-| Field                      | Notes                                                                          |
-| -------------------------- | ------------------------------------------------------------------------------ |
-| `id`                       | UUID                                                                           |
-| `slug`                     | URL-safe identifier; auto-generated when omitted                               |
-| `name`                     | Must have ≥3 words, trimmed, 1–100 characters                                  |
-| `description`              | Plain-text community description                                               |
-| `member_roster_visibility` | Who can see regular members: `public` \| `users` \| `members` \| `moderators`  |
-| `archived_at`              | Non-null when archived                                                         |
-| `created_via`              | Required immutable channel; see [provenance](../content/content-provenance.md) |
+| Field                      | Notes                                                                                                                             |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                       | UUID                                                                                                                              |
+| `slug`                     | URL-safe identifier; auto-generated when omitted                                                                                  |
+| `name`                     | Must have ≥3 words, trimmed, 1–100 characters                                                                                     |
+| `description`              | Plain-text community description                                                                                                  |
+| `member_roster_visibility` | Who can see regular members: `public` \| `users` \| `members` \| `moderators`                                                     |
+| `archived_at`              | Non-null when archived                                                                                                            |
+| `created_via`              | Required immutable channel; see [provenance](../content/content-provenance.md)                                                    |
+| `provenance`               | Public label, API and MCP communities only: `{ via, app }`; see [provenance](../content/reference-content-provenance-exposure.md) |
+| `staff_provenance`         | Staff-only channel and raw OAuth client, computed per request; never cached or public                                             |
 
 **Membership roles:** owner, moderator, member.
 

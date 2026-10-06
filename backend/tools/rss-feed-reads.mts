@@ -7,7 +7,7 @@ import { prepareRssFeedsSearchParams, resolveRssFeedsSearchParams } from '@servi
 import { buildPageInfo, decodeUuidCursor, isSimpleCursor } from '@modules/pagination'
 import { isUUID } from '@modules/utils'
 import { findPageOrNull, INVALID_CURSOR_RESULT, EMPTY_PAGE_INFO } from './paged-search.mts'
-import { mcpRssFeedSchema, toMcpRssFeed, type McpRssFeed } from './mcp-rss-output.mts'
+import { mcpRssFeedSchema, toMcpRssFeeds, type McpRssFeed } from './mcp-rss-output.mts'
 import { pageInfoSchema, type McpPage } from './mcp-read-output.mts'
 import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
 import { clampToolLimit } from './search-system.mts'
@@ -86,7 +86,7 @@ export const searchRssFeedsTool: Tool<ListArgs, ListResult> = {
         })
         const results = feeds.slice(0, limit)
         return {
-          results: await Promise.all(results.map(toMcpRssFeed)),
+          results: await toMcpRssFeeds(results),
           page_info: buildPageInfo(results, {
             hasNextPage: feeds.length > limit && !searchOptions.text_search_query,
             getCursor: feed => ({ id: feed.id }),
@@ -126,7 +126,8 @@ export const getRssFeedTool: Tool<DetailArgs, DetailResult> = {
       if (!isUUID(rss_feed_id)) return { success: false, error: 'RSS feed not found' }
       const feed = await getRssFeedByIdCached(rss_feed_id)
       if (!feed) return { success: false, error: 'RSS feed not found' }
-      return { success: true, rss_feed: await toMcpRssFeed(feed as ViewRssFeed) }
+      const [rssFeed] = await toMcpRssFeeds([feed as ViewRssFeed])
+      return { success: true, rss_feed: rssFeed! }
     },
 }
 

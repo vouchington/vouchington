@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { MessageKey } from '@ts-shared/ui-messages'
 import { defaultTranslator } from '@ts-shared/ui-messages/default-translator'
-import { publicProvenanceLabel } from '../post-provenance-label'
+import { publicProvenanceLabel } from '../provenance-label'
 
 type Provenance = Parameters<typeof publicProvenanceLabel>[1]
 

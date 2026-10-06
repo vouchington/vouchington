@@ -1,3 +1,5 @@
+import type { PublicContentProvenance, StaffContentProvenance } from './content-provenance.mts'
+
 export type ListVisibility = 'private' | 'unlisted' | 'public'
 
 export type ListItemType = 'rss_feed_item' | 'post'
@@ -12,6 +14,9 @@ export type List = {
   created_at: Date
   updated_at: Date
   removed_at: Date | null
+  // Attached per request after the cache read, never stored on the cached list or in a view.
+  provenance?: PublicContentProvenance
+  staff_provenance?: StaffContentProvenance
 }
 
 export type ListItem = {

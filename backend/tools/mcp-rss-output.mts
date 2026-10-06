@@ -3,6 +3,7 @@ import {
   sanitizeRssContent,
   wrapExternalContent,
 } from '@jongleberry/vurst-prompt'
+import { attachRssFeedProvenance } from '@services/content-provenance'
 import type { ViewRssFeed } from '@services/rss-feeds/types'
 import type { ViewRssFeedItem } from '@services/rss-feed-items/types'
 import { firstVisibleRssTextField } from '@modules/utils'
@@ -15,6 +16,8 @@ export type McpRssFeed = {
   is_enabled: boolean
   is_discoverable: boolean
   rss_feed_url: string
+  /** The public provenance facts of an API or MCP feed, on every tool; never the staff detail. */
+  provenance?: ViewRssFeed['provenance']
 }
 
 export type McpRssFeedItem = {
@@ -29,10 +32,20 @@ export type McpRssFeedItem = {
 }
 
 export function mcpRssFeedSchema() {
-  return closedObject({
-    ...pickProperties('ViewRssFeed', ['id', 'title', 'feed_type', 'is_enabled', 'is_discoverable']),
-    rss_feed_url: pickProperties('ViewUrl', ['url']).url!,
-  })
+  return closedObject(
+    {
+      ...pickProperties('ViewRssFeed', [
+        'id',
+        'title',
+        'feed_type',
+        'is_enabled',
+        'is_discoverable',
+        'provenance',
+      ]),
+      rss_feed_url: pickProperties('ViewUrl', ['url']).url!,
+    },
+    ['provenance'],
+  )
 }
 
 export function mcpRssFeedItemSchema() {
@@ -48,7 +61,12 @@ export function mcpRssFeedItemSchema() {
   })
 }
 
-export async function toMcpRssFeed(feed: ViewRssFeed): Promise<McpRssFeed> {
+/**
+ * A feed's title is sanitized as external content. The feed carries the `provenance` it already
+ * has: read tools go through `toMcpRssFeeds`, which attaches the signed-out label, and
+ * `staff_provenance` never reaches MCP.
+ */
+async function toMcpRssFeed(feed: ViewRssFeed): Promise<McpRssFeed> {
   return {
     id: feed.id,
     title: wrapExternalContent(await sanitizePromptInjection(feed.title, { isTitle: true }), {
@@ -59,7 +77,13 @@ export async function toMcpRssFeed(feed: ViewRssFeed): Promise<McpRssFeed> {
     is_enabled: feed.is_enabled,
     is_discoverable: feed.is_discoverable,
     rss_feed_url: feed.rss_feed_url.url,
+    ...(feed.provenance && { provenance: feed.provenance }),
   }
+}
+
+/** Maps readable feeds for MCP with their public provenance label, the signed-out one. */
+export async function toMcpRssFeeds(feeds: ViewRssFeed[]): Promise<McpRssFeed[]> {
+  return Promise.all((await attachRssFeedProvenance(feeds, null)).map(toMcpRssFeed))
 }
 
 export async function toMcpRssFeedItem(item: ViewRssFeedItem): Promise<McpRssFeedItem> {

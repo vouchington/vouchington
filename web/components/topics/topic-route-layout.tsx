@@ -148,6 +148,9 @@ export async function TopicRouteLayout({ id, topicType, children }: TopicRouteLa
         rssFeedId={firstRssFeed?.id}
         isFollowingRssFeed={isFollowingRssFeed}
         displayName={topicDisplayName}
+        sourceFeed={
+          topicType === 'rss_feed' && ownRssFeed?.topic?.id === topic.id ? ownRssFeed : null
+        }
         fediverseInstance={fediverseInstanceData?.fediverse_instance}
         hostnameElection={fediverseInstanceData?.hostname_election}
       >

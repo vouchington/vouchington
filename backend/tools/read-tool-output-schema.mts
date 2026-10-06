@@ -25,6 +25,18 @@ export function pickProperties(
 }
 
 /**
+ * Every property of a generated REST component except the `omitted` ones, inlined. Write tools
+ * return the REST entity as is, minus what only the REST twin may send (the staff detail).
+ */
+export function omitProperties(
+  component: string,
+  omitted: readonly string[],
+): Record<string, JsonSchema> {
+  const properties = componentSchema(component)['properties'] as Record<string, JsonSchema>
+  return Object.fromEntries(Object.entries(properties).filter(([key]) => !omitted.includes(key)))
+}
+
+/**
  * A closed object that requires every property it declares, except the `optionalKeys`, which may
  * be absent but are still checked against their schema when present.
  */

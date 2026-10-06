@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
-import { PostProvenanceBadges } from './post-provenance-badges'
+import { ProvenanceBadges } from '@/components/provenance/provenance-badges'
 import { TopicLabel } from '@/components/topics/topic-label'
 import { communityHref, topicTabForPostType } from '@/lib/links/entity-href'
 import { humanizePostType } from '@ts-shared/utils/format'
@@ -56,7 +56,8 @@ export function PostDetailBadges({
       >
         {humanizePostType(postType)}
       </Badge>
-      <PostProvenanceBadges
+      <ProvenanceBadges
+        testIdPrefix='post'
         provenance={provenance}
         staffProvenance={staffProvenance}
         showClient

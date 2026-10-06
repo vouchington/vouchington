@@ -7,6 +7,7 @@ import { requireCurrentUser } from '@/lib/auth/require-current-user'
 import { getMyLists } from '@/lib/api/server/lists'
 import { listHref } from '@/lib/links/entity-href'
 import { SettingsPageHeader } from '@/components/my/settings-page-header'
+import { ProvenanceBadges } from '@/components/provenance/provenance-badges'
 import { getTranslations } from '@/lib/i18n/get-translations'
 
 export const metadata: Metadata = createNoIndexMetadata('My Lists')
@@ -34,14 +35,24 @@ export default async function MyListsPage() {
       ) : (
         <ul className='space-y-2'>
           {lists.map(list => (
-            <li key={list.id}>
-              <Link
-                href={listHref(list)}
-                data-pw='my-list-item'
-                className='font-medium hover:underline'
-              >
-                {list.name}
-              </Link>
+            <li
+              key={list.id}
+              data-pw='my-list-row'
+            >
+              <div className='flex flex-wrap items-center gap-2'>
+                <Link
+                  href={listHref(list)}
+                  data-pw='my-list-item'
+                  className='font-medium hover:underline'
+                >
+                  {list.name}
+                </Link>
+                <ProvenanceBadges
+                  testIdPrefix='list'
+                  provenance={list.provenance}
+                  staffProvenance={list.staff_provenance}
+                />
+              </div>
               {list.description && (
                 <p className='text-sm text-muted-foreground'>{list.description}</p>
               )}

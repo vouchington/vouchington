@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { Link2, Lock, UserCheck, Users } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { PostProvenanceBadges } from '@/components/posts/post-provenance-badges'
+import { ProvenanceBadges } from '@/components/provenance/provenance-badges'
 import { TopicLabel } from '@/components/topics/topic-label'
 import { communityHref, reviewHref, topicTabForPostType } from '@/lib/links/entity-href'
 import { humanizePostType } from '@ts-shared/utils/format'
@@ -46,7 +46,8 @@ export function PostCardBadges({
       >
         {humanizePostType(post.post_type)}
       </Badge>
-      <PostProvenanceBadges
+      <ProvenanceBadges
+        testIdPrefix='post'
         provenance={post.provenance}
         staffProvenance={post.staff_provenance}
       />

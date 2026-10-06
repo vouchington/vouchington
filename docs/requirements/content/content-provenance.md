@@ -66,7 +66,8 @@ Invariants and what enforces each:
   [OAuth authorization server](../security/OAUTH-AUTHORIZATION-SERVER.md) clients are retired by
   setting `oauth_clients.revoked_at`, and no code path deletes them.
 - **Private by default:** neither column appears in an API response as a column. Only the derived
-  [exposure](#exposure) fields do, and only for posts. Tests enforce this rather than the schema:
+  [exposure](#exposure) fields do, and only for posts, communities, topics, lists and RSS feeds.
+  Tests enforce this rather than the schema:
   read paths select declared column lists whose tests assert the exact response keys (for example
   [`communities/get.test.mts`](../../../backend/services/communities/get.test.mts)), and the schema
   test below fails if a view references either column.
@@ -128,18 +129,20 @@ in observe mode. This prevents an unknown channel from being recorded.
 
 ## Exposure
 
-[#706](https://github.com/vouchington/vouchington/issues/706) shows `api` and `mcp` posts with a
-"via API", "via MCP" or "via {app}" label, and shows moderation staff every channel plus the raw
-OAuth client. The four label tiers, the anonymous-post rule, the per-request computation and the
-routes that carry it are in [Exposure](reference-content-provenance-exposure.md).
+Posts, communities, topics, lists and RSS feeds show `api` and `mcp` rows with a "via API",
+"via MCP" or "via {app}" label (`provenance`), and show moderation staff every channel plus the raw
+OAuth client (`staff_provenance`). The four label tiers, the anonymous-post rule, the per-request
+computation, the scope rule for which entity objects carry the fields, and the routes and MCP tools
+that carry them are in [Exposure](reference-content-provenance-exposure.md). The other tables above
+stay private: reports, appeals, community applications, referral links, import batches and
+conversation messages never expose their channel.
 
 ## Delivery scope
 
 [#611](https://github.com/vouchington/vouchington/issues/611) delivers writers, seeds and required
 schema together as one current contract. There is no historical untracked-row state or separate
-Contract stage. [#706](https://github.com/vouchington/vouchington/issues/706) shipped public "via API"
-and "via MCP" labels and staff visibility for posts (see [Exposure](#exposure)); the other content
-types follow in [#2046](https://github.com/vouchington/vouchington/issues/2046).
+Contract stage. Public "via API" and "via MCP" labels and staff visibility cover posts,
+communities, topics, lists and RSS feeds (see [Exposure](#exposure)).
 
 ## AI authorship disclosure
 

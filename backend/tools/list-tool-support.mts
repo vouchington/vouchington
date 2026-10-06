@@ -2,6 +2,7 @@ import { getManageableList, type ListItemType, type ListVisibility } from '@serv
 import type { BasicUser } from '@services/users/types'
 import { successSchema } from './output-schema-shapes.mts'
 import { requireActiveToolUser } from './private-user.mts'
+import { closedObject, omitProperties } from './read-tool-output-schema.mts'
 import { componentSchema } from './route-response-schema.mts'
 
 export type ListToolFields = {
@@ -62,7 +63,10 @@ export const LIST_ITEM_PARAMETERS = {
 }
 
 // The REST twins document each body inline, so the tools take the documented entities from the
-// generated components. A test pins them to those routes.
-export const LIST_RESULT_SCHEMA = successSchema({ list: componentSchema('List') })
+// generated components. A test pins them to those routes. The staff provenance is REST-only: MCP
+// carries the public `provenance` label, which is absent for a list not created via API or MCP.
+export const LIST_RESULT_SCHEMA = successSchema({
+  list: closedObject(omitProperties('List', ['staff_provenance']), ['provenance']),
+})
 export const LIST_ITEM_RESULT_SCHEMA = successSchema({ list_item: componentSchema('ListItem') })
 export const SUCCESS_RESULT_SCHEMA = successSchema({})

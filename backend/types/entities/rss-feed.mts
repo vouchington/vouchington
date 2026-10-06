@@ -1,3 +1,4 @@
+import type { PublicContentProvenance, StaffContentProvenance } from './content-provenance.mts'
 import type { Topic } from './topic.mts'
 
 // Local, non-exported duplicates of @services/urls/types#ViewUrl and
@@ -77,4 +78,7 @@ export type ViewRssFeed = {
   podcast_show?: PodcastShow | null
   /** Feed-level Apple itunes:category values, ordered alphabetically. */
   categories?: RssFeedCategory[]
+  // Attached per request after the cache read, never stored on the cached feed or in a view.
+  provenance?: PublicContentProvenance
+  staff_provenance?: StaffContentProvenance
 }

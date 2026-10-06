@@ -2,7 +2,7 @@ import { searchUserLists } from '@services/lists'
 import type { Tool, ToolInvocationContext } from '@services/openai-agents/tool-types'
 import type { BasicUser } from '@services/users/types'
 import { hasOwnedPrivateGrant } from './list-read-access.mts'
-import { LIST_PAGE_LIMIT, mcpListSchema, toMcpList, type McpList } from './mcp-list-output.mts'
+import { LIST_PAGE_LIMIT, mcpListSchema, toMcpLists, type McpList } from './mcp-list-output.mts'
 import { pageInputProperties, pageProperties, type McpPage } from './mcp-read-output.mts'
 import { findPageOrNull, INVALID_CURSOR_RESULT, type InvalidCursorResult } from './paged-search.mts'
 import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
@@ -50,7 +50,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
       if (!page) return INVALID_CURSOR_RESULT
       return {
         success: true,
-        results: await Promise.all(page.results.map(toMcpList)),
+        results: await toMcpLists(page.results),
         page_info: page.page_info,
       }
     },

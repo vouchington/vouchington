@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { DomainTrustBadge } from '@/components/domains/domain-trust-badge'
 import { TopicVouchDisavowVote } from '@/components/topics/topic-vouch-disavow-vote'
 import { TopicLabel } from '@/components/topics/topic-label'
+import { ProvenanceBadges } from '@/components/provenance/provenance-badges'
 import { topicHref } from '@/lib/links/entity-href'
 import { useAuth } from '@/lib/auth/context'
 import type { RssFeedTopicElection, ViewRssFeed } from '@/types/rss-feeds'
@@ -60,6 +61,11 @@ export function SourceListItemMeta({
           className='text-xs'
         />
       )}
+      <ProvenanceBadges
+        testIdPrefix='source'
+        provenance={feed.provenance}
+        staffProvenance={feed.staff_provenance}
+      />
       {topicElection && (
         <TopicVouchDisavowVote
           electionId={topicElection.id}

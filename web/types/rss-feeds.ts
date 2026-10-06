@@ -1,3 +1,8 @@
+import type {
+  PublicContentProvenance,
+  StaffContentProvenance,
+} from '@voucha/types/entities/content-provenance'
+
 interface RssFeedUrl {
   id: string
   url: string
@@ -68,6 +73,10 @@ export interface ViewRssFeed {
   podcast_show?: PodcastShow | null
   /** Feed-level Apple itunes:category values, ordered alphabetically. */
   categories?: RssFeedCategory[]
+  /** Set for API and MCP feeds only. */
+  provenance?: PublicContentProvenance
+  /** Set for administrators and moderators only. */
+  staff_provenance?: StaffContentProvenance
 }
 
 /** One crawl attempt in a feed's crawl history; matches OpenAPI `RssFeedCrawlSummary`. */

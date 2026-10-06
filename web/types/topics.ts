@@ -11,6 +11,10 @@ import type { AccountType } from '@ts-shared/utils/account-type'
 
 import type { Serialized } from '@voucha/types/serialized'
 import type {
+  PublicContentProvenance,
+  StaffContentProvenance,
+} from '@voucha/types/entities/content-provenance'
+import type {
   TopicTypes,
   TopicElection,
   TopicMetrics as BackendTopicMetrics,
@@ -166,6 +170,10 @@ interface TopicBasic {
   referral_program_id: string | null
   referral_program_slug?: string | null
   lingua_rs_detected_language?: string | null
+  /** Set for API and MCP topics only. */
+  provenance?: PublicContentProvenance
+  /** Set for administrators and moderators only. */
+  staff_provenance?: StaffContentProvenance
 }
 
 export type Topic = TopicBasic & {

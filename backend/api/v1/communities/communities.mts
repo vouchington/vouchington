@@ -19,6 +19,10 @@ import {
 import { assertCanCreateCommunity } from '@services/communities/authorization'
 import { verifyCaptchaOrAttestation } from '@services/captcha'
 import { assertNotSuspended } from '@services/users'
+import {
+  attachCommunityProvenance,
+  attachWrittenCommunityProvenance,
+} from '@services/content-provenance'
 import { assertWithinContributionActionLimit } from '@services/contribution-gating/limits'
 import { getUserActivePlan } from '@services/memberships'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
@@ -116,19 +120,23 @@ app
 
     const communityIds = communities.map(c => c.id)
 
-    const [communityMemberships, pendingApplicationCommunityIds] = currentUser
-      ? await Promise.all([
-          getCommunityMemberBatch(currentUser.id, communityIds),
-          getPendingApplicationCommunityIds(currentUser.id, communityIds),
-        ])
-      : [null, null]
+    const [labelledCommunities, [communityMemberships, pendingApplicationCommunityIds]] =
+      await Promise.all([
+        attachCommunityProvenance(communities, currentUser),
+        currentUser
+          ? Promise.all([
+              getCommunityMemberBatch(currentUser.id, communityIds),
+              getPendingApplicationCommunityIds(currentUser.id, communityIds),
+            ])
+          : [null, null],
+      ])
 
     const searchResults = communities.map(c => ({ __entity_type: 'community' as const, id: c.id }))
 
     const output: Record<string, unknown> = {
       results: searchResults,
       page_info: result.page_info,
-      communities: indexById(communities),
+      communities: indexById(labelledCommunities),
       users: result.users,
       community_metrics: result.community_metrics,
     }
@@ -177,5 +185,5 @@ app
     const { owner: _owner, ...communityData } = community
 
     ctx.setStatus(201)
-    ctx.json({ community: communityData })
+    ctx.json({ community: await attachWrittenCommunityProvenance(communityData, currentUser) })
   })

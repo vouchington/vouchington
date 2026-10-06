@@ -7,6 +7,7 @@ import { requireAuth, validateRequestContract } from '../../response-helpers.mts
 import { apiQuery } from '../../response-contract.mts'
 import { createOwnedList, searchUserLists, type ListVisibility } from '@services/lists'
 import { assertNotSuspended } from '@services/users'
+import { attachListProvenance, attachWrittenListProvenance } from '@services/content-provenance'
 
 type CreateListBody = {
   name: string
@@ -30,13 +31,14 @@ app
     const { limit, after } = query as { limit?: number; after?: string }
 
     const result = await searchUserLists(currentUser.id, { limit, after })
+    const lists = await attachListProvenance(result.results, currentUser)
 
     ctx.setType('json')
     await ctx.pipeline(
       streamJsonObject({
-        results: result.results.map(l => ({ __entity_type: 'list' as const, id: l.id })),
+        results: lists.map(l => ({ __entity_type: 'list' as const, id: l.id })),
         page_info: result.page_info,
-        lists: Object.fromEntries(result.results.map(l => [l.id, l])),
+        lists: Object.fromEntries(lists.map(l => [l.id, l])),
       }),
     )
   })
@@ -51,5 +53,5 @@ app
     const list = await createOwnedList(currentUser.id, provenance, body)
 
     ctx.setStatus(201)
-    ctx.json({ list })
+    ctx.json({ list: await attachWrittenListProvenance(list, currentUser) })
   })

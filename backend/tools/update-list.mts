@@ -1,3 +1,4 @@
+import { attachWrittenListProvenance } from '@services/content-provenance'
 import { updateOwnedList, type List } from '@services/lists'
 import type { BasicUser } from '@services/users/types'
 import {
@@ -37,7 +38,8 @@ const tool: Tool<UpdateListArgs, { success: true; list: List }> = {
   function: (currentUser: BasicUser) => async (args: UpdateListArgs) => {
     const { list_id, ...fields } = args
     const { user, list } = await getListWriteContext(currentUser, list_id)
-    return { success: true, list: await updateOwnedList(user.id, list, fields) }
+    const updated = await updateOwnedList(user.id, list, fields)
+    return { success: true, list: await attachWrittenListProvenance(updated, null) }
   },
 }
 

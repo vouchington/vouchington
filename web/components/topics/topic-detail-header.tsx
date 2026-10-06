@@ -7,8 +7,10 @@ import { Star } from 'lucide-react'
 import { calculateAverageRating } from '@ts-shared/utils/format'
 import { TopicLogo } from '@/components/shared/topic-logo'
 import { TopicVouchDisavowVote } from '@/components/topics/topic-vouch-disavow-vote'
+import { ProvenanceBadges } from '@/components/provenance/provenance-badges'
 import { useAuth } from '@/lib/auth/context'
 import type { ElectionVote } from '@/types/posts'
+import type { ViewRssFeed } from '@/types/rss-feeds'
 import {
   getTopicTypeLabel,
   type Topic,
@@ -26,8 +28,17 @@ const FollowButton = dynamic<Parameters<typeof FollowButtonComponent>[0]>(() =>
 interface TopicDetailHeaderProps {
   topic: Pick<
     Topic,
-    'id' | 'name' | 'slug' | 'topic_type' | 'logo_image_id' | 'logo_image_placement'
+    | 'id'
+    | 'name'
+    | 'slug'
+    | 'topic_type'
+    | 'logo_image_id'
+    | 'logo_image_placement'
+    | 'provenance'
+    | 'staff_provenance'
   >
+  /** The source's own feed. A source page shows the feed's provenance, never the topic's. */
+  sourceFeed?: Pick<ViewRssFeed, 'provenance' | 'staff_provenance'> | null
   metrics?: Pick<Partial<TopicMetrics>, 'ratings'>
   election?: Pick<TopicElection, 'id' | 'votes_count_up' | 'votes_count_down'> | null
   electionVote?: Pick<ElectionVote, 'choice'> | null
@@ -46,11 +57,14 @@ export function TopicDetailHeader({
   rssFeedId,
   isFollowingRssFeed,
   displayName,
+  sourceFeed,
 }: TopicDetailHeaderProps) {
   const t = useTranslations()
   const { currentUser } = useAuth()
   const currentUserId = currentUser?.id
   const averageRating = metrics?.ratings ? calculateAverageRating(metrics.ratings.count) : null
+  const isSource = topic.topic_type === 'rss_feed'
+  const provenanceOwner = isSource ? sourceFeed : topic
 
   return (
     <div
@@ -79,7 +93,15 @@ export function TopicDetailHeader({
         </div>
       </div>
 
-      <Badge variant='secondary'>{t(getTopicTypeLabel(topic.topic_type))}</Badge>
+      <div className='flex flex-wrap items-center gap-1.5'>
+        <Badge variant='secondary'>{t(getTopicTypeLabel(topic.topic_type))}</Badge>
+        <ProvenanceBadges
+          testIdPrefix={isSource ? 'source' : 'topic'}
+          provenance={provenanceOwner?.provenance}
+          staffProvenance={provenanceOwner?.staff_provenance}
+          showClient
+        />
+      </div>
 
       <div className='flex flex-wrap items-center gap-2 text-sm text-muted-foreground sm:gap-4'>
         {averageRating !== null && (
