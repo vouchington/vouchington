@@ -1,17 +1,15 @@
 import type { SharedContext } from 'vouchington-tooling/shared-context'
 import {
   extractStaticSqlTemplateQuasis as extractSqlTemplateQuasis,
-  type ReaderSqlTemplateOptions,
+  sourceImportsAndComposesAny as importsAndComposes,
+  sourceImportsAndUsesBoundaryAny as importsAndUsesBoundary,
+  sourceFiltersWithPublicBoundary as filtersWithPublicBoundary,
 } from 'vouchington-tooling/post-publication-inventory'
 
-const SQL_TEMPLATE_OPTIONS: ReaderSqlTemplateOptions = {
-  templateTag: 'sql',
-  appendMethod: 'append',
-  placeholderPrefix: 'reader_inventory_placeholder_',
-  executorImports: new Map([
-    ['@data-stores/psql', new Set(['read', 'write', 'query', 'readStream', 'explainAnalyze'])],
-  ]),
-}
+import {
+  SQL_TEMPLATE_OPTIONS,
+  readerSourceOptions,
+} from './post-publication-reader-inventory-config.mts'
 
 const PUBLIC_READER_SCOPES = [
   'backend/api/',
@@ -71,8 +69,14 @@ export function extractStaticSqlTemplateQuasis(content: string): string[] {
   return extractSqlTemplateQuasis(content, SQL_TEMPLATE_OPTIONS)
 }
 
-export {
-  sourceImportsAndComposesAny,
-  sourceImportsAndUsesBoundaryAny,
-} from './post-publication-reader-inventory-composition.mts'
-export { sourceFiltersWithPublicBoundary } from './post-publication-reader-inventory-public-boundary.mts'
+export function sourceImportsAndComposesAny(content: string, symbols: string[]): boolean {
+  return importsAndComposes(content, symbols, readerSourceOptions(symbols))
+}
+
+export function sourceImportsAndUsesBoundaryAny(content: string, symbols: string[]): boolean {
+  return importsAndUsesBoundary(content, symbols, readerSourceOptions(symbols))
+}
+
+export function sourceFiltersWithPublicBoundary(content: string, symbols: string[]): boolean {
+  return filtersWithPublicBoundary(content, symbols, readerSourceOptions(symbols))
+}
