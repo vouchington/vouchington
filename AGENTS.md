@@ -26,11 +26,9 @@
   changes. Follow [instruction placement](docs/AGENTS.md), and link rather than duplicate guidance.
 - Agent hooks and harness configuration follow [hook instructions](dev/codex-hooks/AGENTS.md).
   Keep shared `AGENTS.md`; do not introduce shadowing `CLAUDE.md` files.
-- No AST-parsing implementations in this repo. They belong upstream in `vouchington-tooling`
-  (Vouchington-specific) or `no-mistakes` (generalizable rules). Before building AST parsing,
-  escalate to a human for an architectural decision.
-  AST-based rules for third-party tools (ast-grep, Oxlint) are allowed;
-  repo-authored Oxlint plugins belong upstream in `vouchington-tooling`.
+- No repo-owned AST parsers. They belong in `vouchington-tooling` or `no-mistakes`.
+  ast-grep and Oxlint rules may live here; Oxlint plugins stay upstream.
+- Tests follow the [suite rules](docs/development/tests.md#test-suite-rules).
 - Tests use synthetic Git refs; keep production pins, checksums, and intentional historical refs exact.
   Test helpers belong only in `test-helpers/**` or immediately below
   a top-level workspace; never add nested helpers or `test-support` directories.

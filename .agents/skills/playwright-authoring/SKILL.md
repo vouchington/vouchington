@@ -59,8 +59,8 @@ page.goto(url)` when the response object is needed.
   needs with backend test helpers, then navigate directly to the rendered route. For sorted or
   paginated queue specs, explicitly set the sort/filter that guarantees the seeded row appears on
   the first page.
-- Feature-gated UI must use `helpers/feature-flags.mts`. Tests requiring external credentials (AWS,
-  OpenAI) must use `test.skip(!hasCredential, 'reason')`.
+- Feature-gated UI must use `helpers/feature-flags.mts`. A credentialed spec runs in the
+  credentialed workflow. A missing credential fails the test. Do not use `test.skip`.
 - Playwright global setup seeds DB fixtures under the `voucha:playwright-test-data` PostgreSQL
   advisory transaction lock. Do not remove or move that lock after fixture writes;
   `targeted-guardrails` enforces it.

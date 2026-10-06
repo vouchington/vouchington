@@ -1,0 +1,135 @@
+id: test-no-executed-ddl
+language: Tsx
+severity: error
+message: >-
+  Tests and helpers do not execute DDL, TRUNCATE, ALTER SYSTEM, pg_sleep, or
+  session_replication_role. Inject a write failure with a throwing QueryExecutor.
+  Interim ast-grep until no-mistakes statement policy ships
+  (jonathanong/no-mistakes#1562, #1563, #1564).
+files:
+  - '**/*.test.ts'
+  - '**/*.test.tsx'
+  - '**/*.test.mts'
+  - '**/*.spec.ts'
+  - '**/*.spec.tsx'
+  - '**/*.spec.mts'
+  - '**/test-helpers/**/*.ts'
+  - '**/test-helpers/**/*.mts'
+  - '**/vitest.setup*.ts'
+  - '**/vitest.setup*.mts'
+  - 'test-helpers/**/*.ts'
+  - 'test-helpers/**/*.mts'
+# Permanent: these files compare SQL text, reject SQL-looking data, or render
+# schema markdown. They do not execute DDL. #2145 does not delete this set.
+ignores:
+  - 'static-code-analysis/**'
+  - '**/*generated-ddl*'
+  - 'backend/modules/feed-query-builders/**'
+  - 'backend/data-stores/psql/config-driven/**'
+  - 'backend/data-stores/psql/schema-snapshot/**'
+  - 'backend/data-stores/psql/migration-runner/views.test.mts'
+  - 'backend/data-stores/psql/__tests__/schema-notification-push-intents-migration.test.mts'
+  - 'backend/data-stores/psql/__tests__/schema-post-admission-reservation-index.test.mts'
+  - 'backend/data-stores/psql/__tests__/schema-static-analysis.test.mts'
+  - 'backend/scripts/explain-analyze/pruning/database-lifecycle.test.mts'
+  - 'backend/services/bedrock-embeddings-batch/entities/shared.test.mts'
+  - 'backend/services/copyright-notices/review-target-automated-enforcement.test.mts'
+  - 'backend/services/elections-votes/shared/vote-aggregation.test.mts'
+  - 'backend/services/posts/get-visible-collection-rows.test.mts'
+  - 'backend/services/rss-feeds/discoverability-sql.test.mts'
+  # Reads pg_indexes.indexdef. The pattern quotes CREATE INDEX and does not execute it.
+  - 'backend/test-helpers/entities/membership-refund-reconciliation-schema.mts'
+  - 'backend/test-helpers/entities/topics/core.mts'
+  # Frozen baseline of executed SQL. Cleanup PRs do not edit it. #2145 deletes it.
+  # #2116
+  - 'backend/test-helpers/entities/api-keys.mts'
+  # #2135
+  - 'test-helpers/vitest-isolated-database-case.mts'
+  # #2136 pg_sleep
+  - 'backend/scripts/explain-analyze/seed-data/post-diagnostics.test.mts'
+  - 'backend/test-helpers/entities/contribution-admission-claims.mts'
+  - 'backend/test-helpers/entities/notification-push-intents.mts'
+  # #2143
+  - 'backend/data-stores/psql/__tests__/schema-content-provenance.test.mts'
+  - 'backend/data-stores/psql/__tests__/schema-uuidv7-range-pruning.test.mts'
+  - 'backend/data-stores/psql/explain-analyze.test.mts'
+  - 'backend/data-stores/psql/migrate.test.mts'
+  - 'backend/data-stores/psql/migration-runner/config-driven-statements.test.mts'
+  - 'backend/data-stores/psql/migration-runner/migrations.test.mts'
+  - 'backend/data-stores/psql/migration-runner/monthly-partitions.test.mts'
+  - 'backend/data-stores/psql/migration-runner/views.hardening.test.mts'
+  - 'backend/test-helpers/data-stores/psql/forced-views.mts'
+  - 'backend/test-helpers/data-stores/psql/shared-mutation-trigger.mts'
+  - 'backend/test-helpers/data-stores/psql/statement-timeout.mts'
+  - 'backend/test-helpers/dsa-statement-build-failure-fixtures.mts'
+  - 'backend/test-helpers/entities/moderation-transparency-date-reservation.mts'
+  - 'backend/test-helpers/injected-failures.mts'
+  - 'backend/test-helpers/monthly-partition-retirement-schema.mts'
+  - 'backend/test-helpers/monthly-partition-retirement.mts'
+  - 'backend/test-helpers/notification-push-pre-capture.mts'
+  - 'backend/test-helpers/notification-push-recovery.mts'
+  - 'backend/test-helpers/statement-timeout.mts'
+  - 'backend/test-helpers/vector-search-recall.mts'
+rule:
+  any:
+    - kind: string
+      regex: '(?:CREATE(?:\s+(?:OR\s+REPLACE|TEMP|TEMPORARY|UNLOGGED|UNIQUE|MATERIALIZED))*|ALTER|DROP)\s+(?:DATABASE|SCHEMA|TABLE|VIEW|TRIGGER|FUNCTION|PROCEDURE|INDEX|TYPE)|ALTER\s+SYSTEM|(?i:pg_sleep|session_replication_role|\bTRUNCATE\s+(?:TABLE|ONLY)\b)'
+    - kind: template_string
+      regex: '(?i:(?:CREATE(?:\s+(?:OR\s+REPLACE|TEMP|TEMPORARY|UNLOGGED|UNIQUE|MATERIALIZED))*|ALTER|DROP)\s+(?:DATABASE|SCHEMA|TABLE|VIEW|TRIGGER|FUNCTION|PROCEDURE|INDEX|TYPE)|ALTER\s+SYSTEM|pg_sleep|session_replication_role|\bTRUNCATE\s+(?:TABLE|ONLY)\b)'
+examples:
+  - code: |
+      await write(`ALTER TABLE api_keys ADD CONSTRAINT c CHECK (false)`)
+    isValid: false
+    file: 'backend/services/example-suite-rules.test.mts'
+  - code: |
+      await write(`alter table api_keys add constraint c check (false)`)
+    isValid: false
+    file: 'backend/services/example-suite-rules.test.mts'
+  - code: |
+      await write(`CREATE TEMP TABLE config_driven_session (id int) ON COMMIT DROP`)
+    isValid: false
+    file: 'backend/data-stores/psql/migration-runner/example-suite-rules.test.mts'
+  - code: |
+      await query(`CREATE OR REPLACE FUNCTION reject_staff_action() RETURNS trigger AS $$ BEGIN RETURN NULL; END $$`)
+    isValid: false
+    file: 'backend/test-helpers/example-suite-rules.mts'
+  - code: |
+      await query(`CREATE TEMPORARY TABLE probe (id uuid) ON COMMIT DROP`)
+    isValid: false
+    file: 'backend/test-helpers/example-suite-rules.mts'
+  - code: |
+      await query(`CREATE UNLOGGED TABLE probe (id uuid)`)
+    isValid: false
+    file: 'backend/test-helpers/example-suite-rules.mts'
+  - code: |
+      await query(`CREATE UNIQUE INDEX topics_slug ON topics (slug)`)
+    isValid: false
+    file: 'backend/test-helpers/example-suite-rules.mts'
+  - code: |
+      await query(`CREATE MATERIALIZED VIEW unmanaged AS SELECT 1`)
+    isValid: false
+    file: 'backend/test-helpers/example-suite-rules.mts'
+  - code: |
+      const note = 'create temp table only in the fixture story'
+    isValid: true
+    file: 'backend/services/example-suite-rules.test.mts'
+  - code: |
+      await query('SELECT pg_sleep(1)')
+    isValid: false
+    file: 'backend/test-helpers/example-suite-rules.mts'
+  - code: |
+      const text = 'SELECT id FROM api_keys WHERE id = $1'
+    isValid: true
+    file: 'backend/services/example-suite-rules.test.mts'
+  - code: |
+      it('should create database record with pending status', () => {})
+    isValid: true
+    file: 'backend/services/example-suite-rules.test.mts'
+  - code: |
+      it('does not truncate short content', () => {})
+    isValid: true
+    file: 'backend/services/example-suite-rules.test.mts'
+  - code: |
+      await write(`ALTER TABLE api_keys ADD CONSTRAINT c CHECK (false)`)
+    isValid: true
+    file: 'static-code-analysis/example-sql-text.test.mts'

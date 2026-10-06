@@ -1,0 +1,93 @@
+id: test-no-large-fixtures
+language: Tsx
+severity: error
+message: >-
+  Unit tests use the smallest fixture. A length or it.each size above 1,000
+  belongs in explain-analyze. Ordinary boundaries at 1,000 and below stay
+  allowed. 1,024 is the embedding width, not a row fixture.
+files:
+  - '**/*.test.ts'
+  - '**/*.test.tsx'
+  - '**/*.test.mts'
+  - '**/*.spec.ts'
+  - '**/*.spec.tsx'
+  - '**/*.spec.mts'
+  - '**/test-helpers/**/*.ts'
+  - '**/test-helpers/**/*.mts'
+  - 'test-helpers/**/*.ts'
+  - 'test-helpers/**/*.mts'
+# Frozen baseline. Cleanup PRs do not edit it. #2137 owns these files. #2145 deletes the list.
+ignores:
+  - 'backend/services/account-data-requests/s3.no-data.mock.test.mts'
+  - 'backend/services/admin-imports/create-batch.test.mts'
+  - 'backend/services/crawler-referral-links/__tests__/dispatch.plans.real-glide.mock.test.mts'
+  - 'backend/services/crawls/dispatch-plans.mock.test.mts'
+  - 'backend/services/entity-relations/build-insert-query.test.mts'
+  - 'backend/services/images/s3.quarantine.no-data.mock.test.mts'
+  - 'backend/services/moderator-actions/record.test.mts'
+  - 'backend/services/oauth-github/__tests__/friends-batching.mock.test.mts'
+  - 'backend/services/post-publication/capture-rss-feeds.test.mts'
+  - 'backend/services/post-publication/identity-keys.test.mts'
+  - 'backend/services/post-publication/public.test.mts'
+  - 'backend/services/post-publication/reconcile.hardening.test.mts'
+  - 'backend/services/post-publication/snapshot-retention.test.mts'
+  - 'backend/services/recently-viewed/store.test.mts'
+  - 'backend/services/referral-link-unfurl/dispatch-cap.real-glide.mock.test.mts'
+  - 'backend/services/rss-feeds/reconcile-item-language.test.mts'
+  - 'backend/services/stories/__tests__/story-post-related-url-projection.test.mts'
+  - 'backend/test-helpers/services/oauth/friends-batch-sync.mts'
+  - 'backend/workers/bloom-filters/__tests__/bloom-filter.multi-relation.generated.test.mts'
+rule:
+  any:
+    - pattern: 'Array.from({ length: $N })'
+    - pattern: 'Array.from({ length: $N }, $$$)'
+    - pattern: 'new Array($N)'
+    - pattern: it.each([$N])
+    - pattern: it.each([$N, $M])
+    - pattern: it.each([$N, $M, $P])
+    - pattern: test.each([$N])
+    - pattern: test.each([$N, $M])
+    - pattern: test.each([$N, $M, $P])
+constraints:
+  N:
+    kind: number
+    regex: '^(?:100[1-9]|101[0-9]|102[0-35-9]|10[3-9][0-9]|1[1-9][0-9]{2}|[2-9][0-9]{3}|[1-9][0-9]{4,}|1_00[1-9]|1_01[0-9]|1_02[0-35-9]|1_0[3-9][0-9]|1_[1-9][0-9]{2}|[2-9]_[0-9]{3}|[1-9][0-9]{1,}_[0-9]{3}(?:_[0-9]{3})*)$'
+  M:
+    kind: number
+    regex: '^(?:100[1-9]|101[0-9]|102[0-35-9]|10[3-9][0-9]|1[1-9][0-9]{2}|[2-9][0-9]{3}|[1-9][0-9]{4,}|1_00[1-9]|1_01[0-9]|1_02[0-35-9]|1_0[3-9][0-9]|1_[1-9][0-9]{2}|[2-9]_[0-9]{3}|[1-9][0-9]{1,}_[0-9]{3}(?:_[0-9]{3})*)$'
+  P:
+    kind: number
+    regex: '^(?:100[1-9]|101[0-9]|102[0-35-9]|10[3-9][0-9]|1[1-9][0-9]{2}|[2-9][0-9]{3}|[1-9][0-9]{4,}|1_00[1-9]|1_01[0-9]|1_02[0-35-9]|1_0[3-9][0-9]|1_[1-9][0-9]{2}|[2-9]_[0-9]{3}|[1-9][0-9]{1,}_[0-9]{3}(?:_[0-9]{3})*)$'
+examples:
+  - code: |
+      const ids = Array.from({ length: 1_001 }, () => crypto.randomUUID())
+    isValid: false
+    file: 'backend/services/example-suite-rules.test.mts'
+  - code: |
+      it.each([10_000, 100_000])('scale %i', () => {})
+    isValid: false
+    file: 'backend/services/example-suite-rules.test.mts'
+  - code: |
+      const ids = Array.from({ length: 3 }, () => crypto.randomUUID())
+    isValid: true
+    file: 'backend/services/example-suite-rules.test.mts'
+  - code: |
+      const boundary = Array.from({ length: 1_000 }, () => id)
+    isValid: true
+    file: 'backend/services/example-suite-rules.test.mts'
+  - code: |
+      const embedding = Array.from({ length: 1024 }, () => 0)
+    isValid: true
+    file: 'backend/services/example-suite-rules.test.mts'
+  - code: |
+      it.each([{ port: 5432 }])('keeps %j', () => {})
+    isValid: true
+    file: 'backend/services/example-suite-rules.test.mts'
+  - code: |
+      it.each([0, 1, 2000])('boundary %i', () => {})
+    isValid: true
+    file: 'backend/services/example-suite-rules.test.mts'
+  - code: |
+      it.each([600, 5000])('bytes %i', () => {})
+    isValid: true
+    file: 'backend/services/example-suite-rules.test.mts'

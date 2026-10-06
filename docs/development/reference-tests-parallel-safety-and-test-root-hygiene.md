@@ -2,7 +2,7 @@
 
 [Back to Tests and Checks](tests.md#parallel-safety-and-test-root-hygiene)
 
-Three session retrospectives (2026-06-13 → 2026-06-15) traced repeated "flaky" CI failures to shared test infrastructure that was not parallel-safe. The patterns below are required for all new test helpers.
+Three session retrospectives (2026-06-13 → 2026-06-15) traced repeated "flaky" CI failures to shared test infrastructure that was not parallel-safe. The patterns below are required for all new test helpers. [Suite rules R1 and R2](tests.md#test-suite-rules) forbid creating a database or changing the schema from a test.
 
 When an async-generator mock intentionally completes or fails without streaming values, use
 `yield* []` immediately before its terminal `return` or `throw`. Keep parameter capture and deferred
@@ -341,6 +341,8 @@ requests inside the image storage lifecycle lock) held `dsa-statement-payload.te
 - Other AWS clients (SQS, SES, DynamoDB, CloudFront) are not covered by this default.
 
 ### Failure injection uses control rows, never shared-table DDL
+
+New failure injection passes a `QueryExecutor` that throws on the targeted write. The real transaction still rolls back. Do not add DDL. The trigger installer below is existing debt; the schema-cleanup issue removes it.
 
 `CREATE TRIGGER` takes `SHARE ROW EXCLUSIVE` and `DROP TRIGGER` takes `ACCESS EXCLUSIVE` on the
 table. Backend tests share one parallel database, so per-test DDL on a shared table waits behind

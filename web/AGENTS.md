@@ -10,3 +10,4 @@
 - Browser config uses runtime public bootstrap (`IMAGE_ORIGIN` pattern), never new Docker build args; follow [public config](../docs/overview/infrastructure/reference-environment-variables-web-build-time-and-runtime-public-config.md).
 - Production test IDs use `data-pw`, never `data-testid`. React Compiler is enabled; avoid identity-only memoization under [pure component contracts](../docs/requirements/navigation/reference-components-patterns.md#pure-component-contracts).
 - Load [web Vitest authoring](../.agents/skills/web-vitest-test-authoring/SKILL.md) for tests/fixtures/mocks. API changes update fixtures and Swift/.NET tests under the root client-parity contract.
+- Web tests follow the [suite rules](../docs/development/tests.md#test-suite-rules).
