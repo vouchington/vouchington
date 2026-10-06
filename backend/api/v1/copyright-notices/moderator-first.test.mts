@@ -15,11 +15,11 @@ import { readTestAutomaticWithholdingOutcome } from '@voucha/test-helpers/servic
 import { createClearScreenedForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
 import {
-  appendCopyrightSubmissionAssessment,
   applyNonSpamSignedInCopyrightFormScreening,
   enforceCopyrightAssessment,
   searchPendingCopyrightEnforcementAssessmentIds,
 } from '@services/copyright-notices'
+import { appendCopyrightSubmissionAssessment } from '@services/copyright-notices/compliance'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 

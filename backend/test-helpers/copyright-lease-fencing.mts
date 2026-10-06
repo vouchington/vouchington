@@ -1,5 +1,5 @@
 import { createTestUser } from './index.mts'
-import { createParsedCopyrightEmailIntake } from '../services/copyright-notices/email-intake-test-fixtures.mts'
+import { createParsedCopyrightEmailIntake } from './copyright-email-intake-fixtures.mts'
 import { rejectCopyrightEmailIntake } from '../services/copyright-notices/email-rejection.mts'
 import { beginTransaction, read, write } from '@data-stores/psql'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'

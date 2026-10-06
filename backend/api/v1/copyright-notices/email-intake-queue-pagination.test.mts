@@ -5,7 +5,7 @@ import { encodeScopedPreciseTimestampCursor } from '@modules/pagination'
 import type { PrivateUser } from '@services/users/types'
 import { listCopyrightStaffEmailIntakePage } from '@services/copyright-notices/copyright-email-intake-page'
 import { copyrightStaffEmailIntakeQueueCursorScope } from '@services/copyright-notices/read-models-staff-email-intakes'
-import { createParsedCopyrightEmailIntake } from '@services/copyright-notices/email-intake-test-fixtures'
+import { createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
 
 const otherCursorScope = 'copyright-notices:staff-queue:received-at-asc-id-asc'
 const queuePath = '/api/v1/copyright-email-intakes/review-queue'

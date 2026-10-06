@@ -8,10 +8,10 @@ call with no tools, called synchronously by
 
 ## Files
 
-| File                 | Description                                                                   |
-| -------------------- | ----------------------------------------------------------------------------- |
-| `generate-title.mts` | Title input builder, model call and `generateChatTitle()` convenience wrapper |
-| `index.mts`          | Barrel exports                                                                |
+| File                 | Description                        |
+| -------------------- | ---------------------------------- |
+| `generate-title.mts` | Title input builder and model call |
+| `index.mts`          | Barrel exports                     |
 
 ## Exports
 
@@ -20,7 +20,6 @@ call with no tools, called synchronously by
   prompt text. It returns `null` when the conversation has no message content yet.
 - `generateChatTitleFromInput(input, userId)` — makes the model call and returns a trimmed title
   with surrounding quotes removed, falling back to `New Conversation` for empty output.
-- `generateChatTitle(conversationId, userId)` — the two steps together.
 
 ## Rules
 

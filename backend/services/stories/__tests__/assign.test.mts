@@ -9,7 +9,7 @@ import {
   createTestUserDirect,
   setTestItemStoryId,
 } from '@voucha/test-helpers'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { createStoryPost } from '../story-posts.mts'
 import { upsertSystemUser } from '@services/users/system-users'
 import type { PrivateUser } from '@services/users/types'

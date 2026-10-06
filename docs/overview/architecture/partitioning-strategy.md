@@ -1,9 +1,14 @@
 # PostgreSQL Partitioning Strategy
 
-This is the canonical inventory and decision record for PostgreSQL table growth. The typed source
-of truth is [`schema-growth-registry.mts`](../../../backend/data-stores/psql/schema-growth-registry.mts).
-Catalog-backed tests require it to materialize one entry for every logical table while excluding
-physical leaf partitions.
+This is the canonical inventory and decision record for PostgreSQL table growth. Runtime partition
+and unbounded-table policies live in
+[`schema-growth-registry.mts`](../../../backend/data-stores/psql/schema-growth-registry.mts).
+The full growth and identity projection lives in
+[`schema-growth-test-policies.mts`](../../../backend/test-helpers/schema-growth-test-policies.mts),
+using the canonical bounded and static identity policies in
+[`schema-growth-bounded-policies.mts`](../../../backend/test-helpers/schema-growth-bounded-policies.mts).
+Catalog-backed tests require the projection to materialize one entry for every logical table while
+excluding physical leaf partitions.
 
 ## Policy
 

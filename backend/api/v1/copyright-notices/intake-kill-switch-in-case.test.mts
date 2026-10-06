@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { receiveEuCopyrightNotice, receiveUkCopyrightNotice } from '@services/copyright-notices'
-import { createParsedCopyrightEmailIntake } from '@services/copyright-notices/email-intake-test-fixtures'
+import { createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
 import { linkCopyrightEmailIntakeToNotice } from '@services/copyright-notices/email-threading'
-import { counterNoticeBody } from '@services/copyright-notices/route-test-fixtures'
+import { counterNoticeBody } from '@voucha/test-helpers/copyright-route-fixtures'
 import {
   createTestUser,
   getTestPostImagePlacement,

@@ -64,7 +64,6 @@
     "p-map": "^7.0.8"
   },
   "devDependencies": {
-    "@services/rss-feeds": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
     "undici": "^8.11.2",
     "vitest": "^5.0.3"

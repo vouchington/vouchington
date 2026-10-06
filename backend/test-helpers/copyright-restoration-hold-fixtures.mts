@@ -5,16 +5,16 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
-import type { CopyrightActionDeliveryDependencies } from './action-delivery-dependencies.mts'
+import type { CopyrightActionDeliveryDependencies } from '../services/copyright-notices/action-delivery-dependencies.mts'
 import {
-  appendCopyrightSubmissionAssessment,
   createCopyrightCounterNotice,
-  createCopyrightDeliveryIntent,
-  createEligibleCopyrightRestoreIntent,
-  createOutboundCopyrightCorrespondence,
   processCopyrightActionIntent,
   reviewCopyrightCounterNotice,
-} from './index.mts'
+} from '../services/copyright-notices/index.mts'
+import { appendCopyrightSubmissionAssessment } from '../services/copyright-notices/compliance.mts'
+import { createCopyrightDeliveryIntent } from '../services/copyright-notices/delivery-intents.mts'
+import { createEligibleCopyrightRestoreIntent } from '../services/copyright-notices/restoration.mts'
+import { createOutboundCopyrightCorrespondence } from '../services/copyright-notices/correspondence.mts'
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 

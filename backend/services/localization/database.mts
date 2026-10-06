@@ -5,19 +5,26 @@ import {
 
 export const DEFAULT_LOCALIZATION_SQLITE_PATH = '/app/localization/catalog.sqlite'
 
-let cached: LocalizationDatabase | undefined
-
 export function localizationSqlitePath(): string {
   return process.env.LOCALIZATION_SQLITE_PATH ?? DEFAULT_LOCALIZATION_SQLITE_PATH
 }
 
-export function getLocalizationDatabase(): LocalizationDatabase {
-  if (cached) return cached
-  cached = openLocalizationDatabase(localizationSqlitePath())
-  return cached
+export function createLocalizationDatabaseOwner(path: () => string = localizationSqlitePath) {
+  let cached: LocalizationDatabase | undefined
+  function get(): LocalizationDatabase {
+    if (cached) return cached
+    cached = openLocalizationDatabase(path())
+    return cached
+  }
+  function close(): void {
+    cached?.close()
+    cached = undefined
+  }
+  return { get, close }
 }
 
-export function setLocalizationDatabaseForTests(database: LocalizationDatabase | undefined): void {
-  cached?.close()
-  cached = database
+const localizationDatabaseOwner = createLocalizationDatabaseOwner()
+
+export function getLocalizationDatabase(): LocalizationDatabase {
+  return localizationDatabaseOwner.get()
 }

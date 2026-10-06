@@ -242,6 +242,15 @@ GlideMQ's `upsertJobScheduler`, `getRepeatableJobs`, or `removeJobScheduler` dir
 manifest is reachable from both the API catalog and a worker runtime, and that every worker module
 is reachable from a runtime definition root.
 
+Four narrow `required-entrypoint-reachability` instances independently require Valkey pub/sub,
+rate-limiter, GlideMQ root, and direct GlideMQ factory consumers to load the actual
+`valkey-core/shutdown.mts` owner. The local `valkey-shutdown-owner-registration` AST-grep rule
+requires that owner to import the real registrar and call
+`registerGracefulShutdownValkey(onGracefulShutdown)` at module top level. Owned
+[data-store registry tests](../../../../backend/data-stores/graceful-shutdown/data-store-shutdown-registry.test.mts)
+exercise actual registration and connection-close behavior; the graph and syntax guards preserve
+entrypoint wiring without reloading shared runtime modules or shutting down shared clients.
+
 The scope-aware Oxlint `no-mistakes/postgres-cursor-call-contract` rule protects the two PostgreSQL
 cursor executors exported by `@data-stores/psql` and `@data-stores/psql/cursors`. Production callers
 must invoke the exact import or namespace member directly and expose SQL at that callsite, either

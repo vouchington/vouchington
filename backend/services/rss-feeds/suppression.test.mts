@@ -12,7 +12,7 @@ import {
   addRssFeedTopicPublisherTypeWithScore,
   createTestTopic,
 } from '@voucha/test-helpers'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { updateRssFeedById } from '@services/rss-feeds'
 import { updateRssFeedByIdAsCurrentUser } from '@services/rss-feeds/update-current-user'
 import { evaluateRssFeedDiscoverability } from '@services/rss-feeds/evaluate-discoverability'

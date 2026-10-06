@@ -13,7 +13,7 @@ import {
   createTestUser,
 } from '@voucha/test-helpers'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { processMembershipVerification } from './process-verification.mts'
+import { processAppleMembershipVerification } from './process-verification.mts'
 import type { AppleTransactionVerifier } from './types.mts'
 
 describe('Apple family verification with a direct lineage owner', () => {
@@ -49,7 +49,7 @@ describe('Apple family verification with a direct lineage owner', () => {
       evidence: { signed_transaction_info: `family-receipt-${randomUUID()}` },
     })
 
-    await processMembershipVerification(verification.id, {
+    await processAppleMembershipVerification(verification.id, {
       createVerifier: () =>
         makeFamilyVerifier({ applicationId, providerLineageId, providerProductId }),
     })

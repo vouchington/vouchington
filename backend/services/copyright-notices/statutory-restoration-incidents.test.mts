@@ -19,7 +19,7 @@ import { getCopyrightRepeatInfringerAccount } from './repeat-infringer-incidents
 import {
   openHeldCounterNoticeRestore,
   recordOrdinaryCopyrightHold,
-} from './restoration-hold-scene.mts'
+} from '@voucha/test-helpers/copyright-restoration-hold-scene'
 
 const publish: CopyrightTestDeliveryPublisher = async () => undefined
 const noReversalSource = {

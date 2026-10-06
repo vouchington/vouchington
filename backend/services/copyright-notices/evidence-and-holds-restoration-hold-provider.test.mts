@@ -7,8 +7,8 @@ import {
   appendCopyrightNoticeSubmission,
   processCopyrightActionIntent,
 } from './index.mts'
-import type { createCopyrightRestorationHoldFixture } from './evidence-and-holds-restoration-hold-fixtures.mts'
-import { openHeldCounterNoticeRestore } from './restoration-hold-scene.mts'
+import type { createCopyrightRestorationHoldFixture } from '@voucha/test-helpers/copyright-restoration-hold-fixtures'
+import { openHeldCounterNoticeRestore } from '@voucha/test-helpers/copyright-restoration-hold-scene'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('late legal-hold edge publication', () => {

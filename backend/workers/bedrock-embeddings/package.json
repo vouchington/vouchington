@@ -31,7 +31,6 @@
     "glide-mq": "^0.17.0"
   },
   "devDependencies": {
-    "@services/rss-feeds": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }
 }

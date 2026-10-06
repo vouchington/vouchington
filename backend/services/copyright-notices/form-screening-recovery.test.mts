@@ -12,13 +12,13 @@ import {
 import { readTestPendingCopyrightAgentDispatches } from '@voucha/test-helpers/services/copyright-notices/pending-agent-dispatches'
 import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
 import {
-  acceptCopyrightNoticeAndImposeRestriction,
-  appendCopyrightSubmissionAssessment,
   enforceCopyrightAssessment,
   recoverRejectedCopyrightFormReviewEffect,
   searchPendingCopyrightEnforcementAssessmentIds,
   searchRecoverableCopyrightFormReviewIntakeIds,
 } from './index.mts'
+import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
+import { appendCopyrightSubmissionAssessment } from './compliance.mts'
 import {
   appendCopyrightFormScreening,
   applyNonSpamSignedInCopyrightFormScreening,

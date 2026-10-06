@@ -1,0 +1,78 @@
+id: valkey-shutdown-owner-registration
+language: Tsx
+severity: error
+message: >-
+  The Valkey shutdown owner must import the actual graceful-shutdown registrar and register its
+  onGracefulShutdown callback unconditionally at module top level.
+files:
+  - 'backend/data-stores/valkey-core/shutdown.mts'
+rule:
+  kind: program
+  not:
+    all:
+      - has:
+          stopBy: neighbor
+          kind: import_statement
+          not:
+            regex: '^import\s+type\b|\btype\s+registerGracefulShutdownValkey\b'
+          pattern: "import { registerGracefulShutdownValkey } from '@data-stores/graceful-shutdown'"
+      - has:
+          stopBy: neighbor
+          kind: expression_statement
+          pattern:
+            context: registerGracefulShutdownValkey(onGracefulShutdown)
+            selector: expression_statement
+examples:
+  - code: |-
+      import { registerGracefulShutdownValkey } from '@data-stores/graceful-shutdown'
+      registerGracefulShutdownValkey(onGracefulShutdown)
+    isValid: true
+    file: 'backend/data-stores/valkey-core/shutdown.mts'
+  - code: |-
+      import { registerGracefulShutdownValkey } from '@data-stores/graceful-shutdown'
+      registerGracefulShutdownValkey(onGracefulShutdown);
+    isValid: true
+    file: 'backend/data-stores/valkey-core/shutdown.mts'
+  - code: |-
+      registerGracefulShutdownValkey(onGracefulShutdown)
+    isValid: false
+    file: 'backend/data-stores/valkey-core/shutdown.mts'
+  - code: |-
+      import { registerGracefulShutdownValkey } from '@unrelated/shutdown'
+      registerGracefulShutdownValkey(onGracefulShutdown)
+    isValid: false
+    file: 'backend/data-stores/valkey-core/shutdown.mts'
+  - code: |-
+      import type { registerGracefulShutdownValkey } from '@data-stores/graceful-shutdown'
+      registerGracefulShutdownValkey(onGracefulShutdown)
+    isValid: false
+    file: 'backend/data-stores/valkey-core/shutdown.mts'
+  - code: |-
+      import { registerGracefulShutdownValkey } from '@data-stores/graceful-shutdown'
+      export const onGracefulShutdown = createGracefulShutdown()
+    isValid: false
+    file: 'backend/data-stores/valkey-core/shutdown.mts'
+  - code: |-
+      import { registerGracefulShutdownValkey } from '@data-stores/graceful-shutdown'
+      function register() { registerGracefulShutdownValkey(onGracefulShutdown) }
+    isValid: false
+    file: 'backend/data-stores/valkey-core/shutdown.mts'
+  - code: |-
+      import { registerGracefulShutdownValkey } from '@data-stores/graceful-shutdown'
+      if (enabled) registerGracefulShutdownValkey(onGracefulShutdown)
+    isValid: false
+    file: 'backend/data-stores/valkey-core/shutdown.mts'
+  - code: |-
+      import { registerGracefulShutdownValkey } from '@data-stores/graceful-shutdown'
+      registerGracefulShutdownValkey(otherShutdown)
+    isValid: false
+    file: 'backend/data-stores/valkey-core/shutdown.mts'
+  - code: |-
+      registerGracefulShutdownValkey(otherShutdown)
+    isValid: true
+    file: 'backend/services/unrelated/index.mts'
+  - code: |-
+      import { type registerGracefulShutdownValkey } from '@data-stores/graceful-shutdown'
+      registerGracefulShutdownValkey(onGracefulShutdown)
+    isValid: false
+    file: 'backend/data-stores/valkey-core/shutdown.mts'

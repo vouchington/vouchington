@@ -1,8 +1,8 @@
+import { claimTestIneligiblePurchaseReversalOperations } from '@voucha/test-helpers/membership-reversal-case-fixtures'
 import { randomUUID } from 'node:crypto'
 import { vi } from 'vitest'
 import { createTestSku, createTestUser } from '@voucha/test-helpers'
 import { createMembership } from '../../../services/memberships/create.mts'
-import { claimIneligiblePurchaseReversals } from '../../../services/memberships/ineligible-stripe-purchase-reversal/claim-ledger.mts'
 import {
   completeIneligiblePurchaseReversal,
   markIneligiblePurchaseReversalCompleted,
@@ -36,7 +36,7 @@ export async function createWonDisputeRecoveryFixture(
   const paymentIntentIds = targetAmountsMinorUnits.map(
     (_, index) => `pi_won_dispute_${index}_${subscriptionId}`,
   )
-  const claim = (await claimIneligiblePurchaseReversals(
+  const claim = (await claimTestIneligiblePurchaseReversalOperations(
     {
       customerId: `cus_won_dispute_${randomUUID()}`,
       effectiveAt: undefined,

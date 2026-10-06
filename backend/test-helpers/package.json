@@ -34,8 +34,6 @@
     "@data-stores/graceful-shutdown": "workspace:^",
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
-    "@data-stores/valkey-glide-mq": "workspace:^",
-    "@data-stores/valkey-pubsub": "workspace:^",
     "@data-stores/valkey-rate-limiter": "workspace:^",
     "@jongleberry/vurst-markdown": "^0.4.3",
     "@libpg-query/parser": "^18.0.0",
@@ -76,6 +74,7 @@
     "@ts-shared/utils": "workspace:^",
     "@types/pg": "^8.23.1",
     "@types/supertest": "^7.2.1",
+    "stripe": "^23.0.0",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vitest": "^5.0.3"
   }

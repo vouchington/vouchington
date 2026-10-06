@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CloudFrontClient } from '@aws-sdk/client-cloudfront'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
-import { verifyCopyrightActionReplayRoute } from '@services/copyright-notices/route-replay-fixtures'
+import { verifyCopyrightActionReplayRoute } from '@voucha/test-helpers/copyright-route-replay-fixtures'
 
 describe('copyright notice replay routes', () => {
   beforeEach(() => {

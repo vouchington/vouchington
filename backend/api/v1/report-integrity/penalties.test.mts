@@ -1,3 +1,4 @@
+import { readTestJwtStaleMarker } from '@voucha/test-helpers/jwt-stale-markers'
 import { describe, it, expect, beforeAll } from 'vitest'
 import { randomBytes } from 'node:crypto'
 import { v7 as uuidv7 } from 'uuid'
@@ -12,7 +13,7 @@ import {
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { applyReportAbusePenalty } from '@services/report-integrity/apply-penalty'
-import { clearJwtStale, isJwtStale } from '@data-stores/valkey/jwt-stale'
+import { clearJwtStaleIfCurrent, isJwtStale } from '@data-stores/valkey/jwt-stale'
 
 describe('report-integrity penalties API', () => {
   const randomUsername = () => `test-ri-pen-${randomBytes(4).toString('hex')}`
@@ -261,7 +262,9 @@ describe('report-integrity penalties API', () => {
         applyReportAbusePenalty(admin.id, flag2),
       ])
       await expect.poll(() => isJwtStale(reporter!.id)).toBe(true)
-      await clearJwtStale(reporter!.id)
+      const marker = await readTestJwtStaleMarker(reporter!.id)
+      expect(marker).not.toBeNull()
+      await expect(clearJwtStaleIfCurrent(reporter!.id, marker!)).resolves.toBe(true)
 
       const [request1, request2] = [createRequest(), createRequest()]
       await Promise.all([request1.authenticateAs(admin), request2.authenticateAs(admin)])

@@ -2,11 +2,12 @@ import { randomUUID } from 'node:crypto'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { ai_agents } from '@queues/ai-agents/queues'
 import { bedrock_embeddings_nova_multimodal_v1_single } from '@queues/bedrock-embeddings/queues'
+import { EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME } from '@queues/bedrock-embeddings/config'
 import { language_detection } from '@queues/language-detection/queues'
 import { notifications } from '@queues/notifications/queues'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 import { enqueueRssFeedItemPostUpsertJobs } from './upsert-enqueues.mts'
-import { clearQueueStatsCacheForTesting } from '@data-stores/valkey-glide-mq/get-queue-stats-cached'
+import { getQueueBacklogDepthCached } from '@data-stores/valkey-glide-mq/get-queue-stats-cached'
 import {
   BEDROCK_BATCH_MAX_VALUES,
   bedrockEmbeddingsBatchConfig,
@@ -24,17 +25,17 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
     bedrockEmbeddingsBatchConfig.unsubscribe()
   })
 
-  beforeEach(() => {
-    clearQueueStatsCacheForTesting()
+  beforeEach(async () => {
+    await getQueueBacklogDepthCached(EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME, 0)
     restoreBacklogThreshold = overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
       backlog_threshold: BEDROCK_BATCH_MAX_VALUES.backlog_threshold,
     })
   })
 
-  afterEach(() => {
+  afterEach(async () => {
     restoreBacklogThreshold?.()
     restoreBacklogThreshold = undefined
-    clearQueueStatsCacheForTesting()
+    await getQueueBacklogDepthCached(EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME, 0)
   })
 
   afterAll(async () => {

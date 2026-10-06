@@ -52,10 +52,6 @@ async function loadGrowthMetrics(range: GrowthRange): Promise<GrowthMetrics> {
   }
 }
 
-export function clearGrowthMetricsCacheForTesting(): void {
-  growthMetricsCache.clear()
-}
-
 export function getRangeStart(range: GrowthRange, now: Date): Date {
   const d = new Date(now)
   switch (range) {

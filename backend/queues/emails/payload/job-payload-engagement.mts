@@ -3,52 +3,57 @@ import type {
   ProcessSendFollowTopicsEmailVariables,
   ProcessSendPostReferralLinkEmailVariables,
 } from '../types.mts'
+import {
+  communityItemVariableKeys,
+  moderationVariableKeys,
+  referralItemVariableKeys,
+  referralsVariableKeys,
+  sourceItemVariableKeys,
+  sourcesVariableKeys,
+  topicItemVariableKeys,
+  topicsVariableKeys,
+} from './job-payload-contract.mts'
 import { JobPayloadError } from './job-payload-error.mts'
 
-export const communityCountKeys = [
-  'pendingPostReviews',
-  'pendingApplications',
-  'pendingReports',
-  'escalatedItems',
-  'suspectedBanEvaders',
-  'netMemberChange',
-  'totalActiveMembers',
-  'newDiscussionPosts',
-  'newReviewPosts',
-  'newDataPointPosts',
-  'topDiscussionReplyCount',
-  'activeMemberCount',
-  'activeMemberRate',
-] as const
+const communityCountKeyList: string[] = []
+for (const [key, kind] of Object.entries(communityItemVariableKeys)) {
+  if (kind === 'number') communityCountKeyList.push(key)
+}
+export const communityCountKeys: readonly string[] = communityCountKeyList
 
 export const parseEngagementVariables = {
   processSendFollowTopicsEmail: (data: unknown) =>
-    listVariables<ProcessSendFollowTopicsEmailVariables>(data, 'topics', topicItem),
+    listVariables<ProcessSendFollowTopicsEmailVariables>(
+      data,
+      'topics',
+      topicsVariableKeys,
+      topicItem,
+    ),
   processSendPostReferralLinkEmail: (data: unknown) =>
     listVariables<ProcessSendPostReferralLinkEmailVariables>(
       data,
       'referralPrograms',
+      referralsVariableKeys,
       referralItem,
     ),
   processSendFollowNewsSourcesEmail: (data: unknown) =>
-    listVariables<ProcessSendFollowNewsSourcesEmailVariables>(data, 'sources', sourceItem),
+    listVariables<ProcessSendFollowNewsSourcesEmailVariables>(
+      data,
+      'sources',
+      sourcesVariableKeys,
+      sourceItem,
+    ),
   processSendCommunityModerationSummaryEmail: moderationVariables,
 }
 
 function listVariables<T>(
   data: unknown,
   listKey: keyof T & string,
+  allowed: Record<keyof T & string, unknown>,
   readItem: (item: unknown) => void,
 ): Record<string, unknown> {
   const record = asRecord(data)
-  assertExactKeys(record, [
-    listKey,
-    'userName',
-    'settingsUrl',
-    'unsubscribeUrl',
-    'physicalAddress',
-    'uiLocale',
-  ])
+  assertExactKeys(record, Object.keys(allowed))
   requiredString(record, 'settingsUrl')
   requiredString(record, 'unsubscribeUrl')
   optionalString(record, 'userName')
@@ -62,7 +67,7 @@ function listVariables<T>(
 
 function topicItem(item: unknown): void {
   const record = asRecord(item)
-  assertExactKeys(record, ['name', 'url', 'reason'])
+  assertExactKeys(record, Object.keys(topicItemVariableKeys))
   requiredString(record, 'name')
   requiredString(record, 'url')
   optionalString(record, 'reason')
@@ -70,7 +75,7 @@ function topicItem(item: unknown): void {
 
 function referralItem(item: unknown): void {
   const record = asRecord(item)
-  assertExactKeys(record, ['name', 'url', 'linkCount'])
+  assertExactKeys(record, Object.keys(referralItemVariableKeys))
   requiredString(record, 'name')
   requiredString(record, 'url')
   optionalNumber(record, 'linkCount')
@@ -78,7 +83,7 @@ function referralItem(item: unknown): void {
 
 function sourceItem(item: unknown): void {
   const record = asRecord(item)
-  assertExactKeys(record, ['name', 'url', 'description'])
+  assertExactKeys(record, Object.keys(sourceItemVariableKeys))
   requiredString(record, 'name')
   requiredString(record, 'url')
   optionalString(record, 'description')
@@ -86,15 +91,7 @@ function sourceItem(item: unknown): void {
 
 function moderationVariables(data: unknown): Record<string, unknown> {
   const record = asRecord(data)
-  assertExactKeys(record, [
-    'userName',
-    'generatedForDate',
-    'settingsUrl',
-    'unsubscribeUrl',
-    'physicalAddress',
-    'uiLocale',
-    'communities',
-  ])
+  assertExactKeys(record, Object.keys(moderationVariableKeys))
   requiredString(record, 'generatedForDate')
   requiredString(record, 'settingsUrl')
   optionalString(record, 'userName')
@@ -108,7 +105,7 @@ function moderationVariables(data: unknown): Record<string, unknown> {
 
 function communityItem(item: unknown): void {
   const record = asRecord(item)
-  assertExactKeys(record, ['name', 'url', 'topDiscussionTitle', ...communityCountKeys])
+  assertExactKeys(record, Object.keys(communityItemVariableKeys))
   requiredString(record, 'name')
   requiredString(record, 'url')
   const title = record.topDiscussionTitle

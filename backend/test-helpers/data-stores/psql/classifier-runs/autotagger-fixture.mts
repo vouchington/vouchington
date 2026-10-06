@@ -15,7 +15,7 @@ import {
 } from '../../../../services/classifier-runs/index.mts'
 import { createPostModerationContent } from '../../../../services/posts/content.mts'
 import { createRssFeedItemEmbeddingContent } from '../../../../services/rss-feed-items/content.mts'
-import { createTestRssFeed } from '../../../../services/rss-feeds/test-fixtures.mts'
+import { createTestRssFeed } from '../../../rss-feed-create.mts'
 import { addUrl } from '../../../../services/urls/upsert.mts'
 import {
   addDummyEmbeddingToPost,

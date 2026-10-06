@@ -17,13 +17,17 @@ different current version before dispatch, so persisted lineage cannot silently 
 revision other than the one the caller rendered.
 
 State and question text use the branded `ClassifierSafeText` contract. Callers sanitize and wrap
-every external post, RSS, topic, and community-authored fragment with
-`sanitizeClassifierExternalContent`, then interpolate only those safe fragments into the static
+every external post, RSS, topic, and community-authored fragment with the classifier content
+sanitizers, then interpolate only those safe fragments into the static
 `classifierPrompt` template tag. Choice criteria are bounded opaque keys, never external labels.
 For fixed operator-owned policy and questions, `renderFixedClassifierRequest` places the policy
 once outside the sanitized external state wrapper and retains each question independently. It
 accepts only trusted configuration instructions, not raw subject content; the post-classifier builder
 checks those instructions against its compiled catalog before rendering.
+
+`sanitizeClassifierExternalContent` is retained provisionally under issue #1360 as a documented
+sanitizer API. External production use is unconfirmed, and the export may be removed after
+intended-use review; the multi-part sanitizer remains the path used by current classifier builders.
 
 The caller pairs that policy with a C1 client fixed to the same transport/model route. This package
 never constructs, replaces, or falls back from that client.

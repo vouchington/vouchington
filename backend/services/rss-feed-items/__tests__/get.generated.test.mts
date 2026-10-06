@@ -1,5 +1,6 @@
 import { it, expect, describe } from 'vitest'
-import { getRssFeedItemById, getRssFeedItemKeyByGuid } from '../get.mts'
+import { getRssFeedItemById } from '../get.mts'
+import { getRssFeedItemKeyByGuid } from '@voucha/test-helpers/rss-feed-item-guid-lookup'
 import { upsertRssFeedItems } from '../upsert.mts'
 import { insertTestRssFeedDirect } from '@voucha/test-helpers'
 import { v7 } from 'uuid'

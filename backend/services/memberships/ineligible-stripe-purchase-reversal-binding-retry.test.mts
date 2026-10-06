@@ -1,3 +1,4 @@
+import { claimTestIneligiblePurchaseReversalOperations } from '@voucha/test-helpers/membership-reversal-case-fixtures'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
@@ -9,7 +10,6 @@ import {
 } from '@voucha/test-helpers'
 import { createMembership } from './create.mts'
 import { failIneligiblePurchaseReversal } from './ineligible-stripe-purchase-reversal-execution.mts'
-import { claimIneligiblePurchaseReversals } from './ineligible-stripe-purchase-reversal/claim-ledger.mts'
 
 describe('ineligible Stripe purchase reversal binding retry', () => {
   it('reuses the immutable case after its original binding is released and rebound', async () => {
@@ -46,7 +46,11 @@ describe('ineligible Stripe purchase reversal binding retry', () => {
       qualifyingAmountMinorUnits: 100,
     }
     const snapshot = { currency: 'usd', qualifyingAmountMinorUnits: 100 }
-    const initial = (await claimIneligiblePurchaseReversals(options, [target], snapshot))!
+    const initial = (await claimTestIneligiblePurchaseReversalOperations(
+      options,
+      [target],
+      snapshot,
+    ))!
     await Promise.all(
       [initial.cancellation!, initial.reversals[0]!].map(operation =>
         failIneligiblePurchaseReversal(operation, new Error('provider call interrupted')),
@@ -61,7 +65,7 @@ describe('ineligible Stripe purchase reversal binding retry', () => {
     await createMembershipBindingForRebindForTest(context.membership_source_id, user.id, new Date())
 
     await expect(
-      claimIneligiblePurchaseReversals(options, [target], snapshot),
+      claimTestIneligiblePurchaseReversalOperations(options, [target], snapshot),
     ).resolves.toMatchObject({
       cancellation: { id: initial.cancellation!.id },
       reversals: [{ id: initial.reversals[0]!.id }],

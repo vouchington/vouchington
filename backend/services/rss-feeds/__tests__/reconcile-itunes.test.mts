@@ -1,5 +1,5 @@
 import { it, expect, describe } from 'vitest'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { persistFeedMetadataAndReconcileLanguage } from '../reconcile-item-language.mts'
 import { getPodcastShow } from '../podcast-show.mts'
 import { getRssFeedCategories } from '../categories.mts'

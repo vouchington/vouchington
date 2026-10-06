@@ -7,7 +7,7 @@ import {
 import {
   createParsedCopyrightEmailIntake,
   createUnparsedCopyrightEmailIntake,
-} from './email-intake-test-fixtures.mts'
+} from '@voucha/test-helpers/copyright-email-intake-fixtures'
 import { prepareCopyrightEmailDelivery, recordCopyrightEmailParse } from './index.mts'
 import { rejectCopyrightEmailIntake } from './email-rejection.mts'
 

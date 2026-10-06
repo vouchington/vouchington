@@ -1,7 +1,7 @@
 import { reserveClassifierRun } from '@services/classifier-runs'
 import { updateRssFeedById } from '@services/rss-feeds'
 import { evaluateRssFeedDiscoverability } from '@services/rss-feeds/evaluate-discoverability'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { STORY_CLUSTER_CANDIDATE_LIMIT } from '@voucha/config'
 import {
   addRssFeedItemSource,

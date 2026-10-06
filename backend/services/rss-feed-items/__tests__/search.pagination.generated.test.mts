@@ -5,7 +5,7 @@ import { upsertRssFeedItems } from '../upsert.mts'
 import { insertTestStory, setTestItemStoryId, insertTestRssFeedDirect } from '@voucha/test-helpers'
 import { caches } from '@services/entity-cache/caches'
 import { getRssFeedItemsByIdBatch } from '../get-batch.mts'
-import { getRssFeedItemKeyByGuid } from '../get.mts'
+import { getRssFeedItemKeyByGuid } from '@voucha/test-helpers/rss-feed-item-guid-lookup'
 
 // Reconstructed locally rather than imported from @services/entity-fetch: entity-fetch already
 // depends on @services/rss-feed-items, so importing entity-fetch's cached getter back into

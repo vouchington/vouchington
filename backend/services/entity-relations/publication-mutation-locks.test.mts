@@ -24,7 +24,7 @@ import {
 } from '@services/post-publication'
 import { rssFeedDiscoverability } from '@queues/rss-feed-discoverability/queues'
 import { PUBLISHER_TYPE_SLUGS } from '@ts-shared/utils/publisher-types'
-import { createTestRssFeed } from '../rss-feeds/test-fixtures.mts'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { getPublisherTypeTopicId } from '../topics/publisher-type-topics.mts'
 import { getEntityRelationMetadataOrThrow } from './metadata.mts'
 import { upsertEntityRelation } from './upsert.mts'

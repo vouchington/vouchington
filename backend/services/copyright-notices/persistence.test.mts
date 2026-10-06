@@ -1,14 +1,14 @@
 import { createAssessedUsDmcaCopyrightNoticeFixture } from '@voucha/test-helpers/copyright-us-dmca-notice-fixture'
 import { describe, expect, it, vi } from 'vitest'
 import {
-  acceptCopyrightNoticeAndImposeRestriction,
-  appendCopyrightSubmissionAssessment,
   completeCopyrightMandatoryHumanReview,
   createCopyrightCounterNotice,
-  createEligibleCopyrightRestoreIntent,
   enforceCopyrightAssessment,
 } from './index.mts'
-import { acceptCounterNoticeForRestoration } from './evidence-and-holds-restoration-hold-fixtures.mts'
+import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
+import { appendCopyrightSubmissionAssessment } from './compliance.mts'
+import { createEligibleCopyrightRestoreIntent } from './restoration.mts'
+import { acceptCounterNoticeForRestoration } from '@voucha/test-helpers/copyright-restoration-hold-fixtures'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 async function createFixture() {

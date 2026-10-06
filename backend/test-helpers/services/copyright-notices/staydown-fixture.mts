@@ -1,5 +1,5 @@
-import { createCopyrightRestorationHoldFixture } from '../../../services/copyright-notices/evidence-and-holds-restoration-hold-fixtures.mts'
-import { acceptCopyrightNoticeAndImposeRestriction } from '../../../services/copyright-notices/index.mts'
+import { createCopyrightRestorationHoldFixture } from '../../copyright-restoration-hold-fixtures.mts'
+import { acceptCopyrightNoticeAndImposeRestriction } from '../../../services/copyright-notices/restrictions.mts'
 
 /**
  * A case whose targets are restricted the way a moderator does it, so staydown registers each

@@ -35,7 +35,6 @@
   },
   "devDependencies": {
     "@services/ai-usage": "workspace:^",
-    "@services/rss-feeds": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
     "undici": "^8.11.2"
   }

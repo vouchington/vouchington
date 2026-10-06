@@ -21,25 +21,6 @@ import { allocateReversalCaseTargets } from './case-allocation.mts'
 import { getCollisionPeriod, getFamilyCollisionRefundAmount } from './family-proration.mts'
 import { claimIneligiblePurchaseReversalTargets } from './target-ledger.mts'
 
-export async function claimIneligiblePurchaseReversals(
-  options: IneligibleStripePurchase,
-  reversalTargets: readonly ReversalTarget[],
-  caseSnapshot: IneligiblePurchaseReversalCaseSnapshot,
-): Promise<ClaimedIneligiblePurchaseReversals | null> {
-  const claimedCase = await claimIneligiblePurchaseReversalCaseForDiscovery(options, caseSnapshot)
-  if (claimedCase.disposition !== 'ineligible')
-    return claimedCase.disposition === 'none' ? null : { cancellation: null, reversals: [] }
-  return claimPersistedIneligiblePurchaseReversalCase(
-    {
-      originatingInvoiceId: claimedCase.reversalCase.originatingInvoiceId,
-      providerApplicationId: claimedCase.reversalCase.providerApplicationId,
-      providerEnvironment: claimedCase.reversalCase.providerEnvironment,
-      subscriptionId: claimedCase.reversalCase.subscriptionId,
-    },
-    reversalTargets,
-  )
-}
-
 export async function claimIneligiblePurchaseReversalCaseForDiscovery(
   options: IneligibleStripePurchase,
   caseSnapshot: IneligiblePurchaseReversalCaseSnapshot,

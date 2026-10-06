@@ -9,7 +9,7 @@ import {
 } from '@voucha/test-helpers/services/copyright-notices/declined-email-intake'
 import { markCopyrightDeliveryIntentSent, prepareCopyrightEmailDelivery } from './index.mts'
 import { searchCopyrightStaffEmailIntakes } from './read-models-staff-email-intakes.mts'
-import { createParsedCopyrightEmailIntake } from './email-intake-test-fixtures.mts'
+import { createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
 
 describe('copyright email intake queue reply failures', () => {
   useCopyrightIntakeEnvironment()

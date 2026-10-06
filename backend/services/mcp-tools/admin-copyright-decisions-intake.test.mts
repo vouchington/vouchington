@@ -12,7 +12,7 @@ import { readCopyrightEmailIntakeResponses } from '@voucha/test-helpers/data-sto
 import {
   createParsedCopyrightEmailIntake,
   createUnparsedCopyrightEmailIntake,
-} from '@services/copyright-notices/email-intake-test-fixtures'
+} from '@voucha/test-helpers/copyright-email-intake-fixtures'
 import { appendCopyrightEmailIntakeRecommendation } from '@services/copyright-notices/email-recommendations'
 import { prepareCopyrightEmailDelivery } from '@services/copyright-notices'
 import { copyrightIntakeRejectionText } from '@services/copyright-notices/statement-of-reasons-wording'

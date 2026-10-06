@@ -3,6 +3,11 @@ import sql from 'sql-template-strings'
 import { parseConversationMessageContent } from './chat-content.mts'
 import type { ConversationMessageContent } from './types.mts'
 
+/**
+ * @public Retained provisionally under issue #1360 and documented in
+ * `docs/overview/architecture/services/conversations-messages/README.md`; production use is
+ * unconfirmed and this export may be removed after intended-use review.
+ */
 export async function updateConversationMessageContent(
   conversationId: string,
   messageId: string,

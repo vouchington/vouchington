@@ -15,7 +15,7 @@ import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/service
 import { getPrivateUserByAny } from '@services/users/get'
 import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
 import { readClaimantMisuseSummary } from './claimant-misuse-summary.mts'
-import { openHeldCounterNoticeRestore } from './restoration-hold-scene.mts'
+import { openHeldCounterNoticeRestore } from '@voucha/test-helpers/copyright-restoration-hold-scene'
 import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
 import {
   appendCopyrightGuestFiling,

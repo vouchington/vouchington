@@ -1,12 +1,12 @@
 import { randomUUID } from 'node:crypto'
 import {
   appendCopyrightLegalHoldAssessment,
-  createCopyrightDeliveryIntent,
-  createOutboundCopyrightCorrespondence,
   issueCopyrightGuestCapability,
   resolveCopyrightLegalHold,
   revokeCopyrightGuestCapability,
 } from '../../../services/copyright-notices/index.mts'
+import { createCopyrightDeliveryIntent } from '../../../services/copyright-notices/delivery-intents.mts'
+import { createOutboundCopyrightCorrespondence } from '../../../services/copyright-notices/correspondence.mts'
 import { insertEncryptedCopyrightHoldSubmission } from '../../data-stores/psql/copyright-hold-submission.mts'
 import {
   cancelCopyrightDeadline,

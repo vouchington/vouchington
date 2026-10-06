@@ -3,7 +3,7 @@ import { recordCopyrightEmailParse } from '@services/copyright-notices'
 import {
   createParsedCopyrightEmailIntake,
   createUnparsedCopyrightEmailIntake,
-} from '@services/copyright-notices/email-intake-test-fixtures'
+} from '@voucha/test-helpers/copyright-email-intake-fixtures'
 import { createTestUser } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {

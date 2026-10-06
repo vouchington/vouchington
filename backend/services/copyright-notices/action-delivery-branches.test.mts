@@ -2,11 +2,9 @@ import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyrigh
 import { describe, expect, it } from 'vitest'
 import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import type { CopyrightImagePlacement } from '@services/images/placements'
-import {
-  acceptCopyrightNoticeAndImposeRestriction,
-  processCopyrightActionIntent,
-} from './index.mts'
-import { createCopyrightRestorationHoldFixture } from './evidence-and-holds-restoration-hold-fixtures.mts'
+import { processCopyrightActionIntent } from './index.mts'
+import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
+import { createCopyrightRestorationHoldFixture } from '@voucha/test-helpers/copyright-restoration-hold-fixtures'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('copyright action delivery branches', () => {
@@ -168,7 +166,7 @@ async function createRestoreIntent(input: {
   target: { id: string; placement_revision: number }
 }) {
   const { createCounterNoticeRestoreIntent } =
-    await import('./evidence-and-holds-restoration-hold-fixtures.mts')
+    await import('@voucha/test-helpers/copyright-restoration-hold-fixtures')
   const { now, restore } = await createCounterNoticeRestoreIntent({
     claimant: input.claimant as never,
     noticeId: input.noticeId,

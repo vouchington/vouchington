@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createStoryClusteringRunAdapter } from '@services/stories'
 import { completeClassifierRun } from '@services/classifier-runs'
 import { getRssFeedItemById } from '@services/rss-feed-items/get'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { insertTestStory, setTestItemStoryId } from '@voucha/test-helpers'
 import { createFakeChoiceClient } from '@voucha/test-helpers/agents/story-clustering/fake-choice-client'
 import {

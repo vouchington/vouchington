@@ -10,7 +10,7 @@ import {
   processCopyrightActionIntent,
   reviewCopyrightAppeal,
 } from './index.mts'
-import { openHeldCounterNoticeRestore } from './restoration-hold-scene.mts'
+import { openHeldCounterNoticeRestore } from '@voucha/test-helpers/copyright-restoration-hold-scene'
 
 describe('copyright staydown entries when a restriction is lifted', () => {
   useStaydownMatching()

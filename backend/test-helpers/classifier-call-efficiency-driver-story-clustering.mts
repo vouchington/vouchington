@@ -1,6 +1,6 @@
 import { STORY_CLUSTERING_CLASSIFIER_SLUG } from '@voucha/types/entities/story-clustering-classifier'
 import { CLASSIFIER_RUN_ATTEMPTS } from '../queues/ai-agents/config.mts'
-import { createTestRssFeed } from '../services/rss-feeds/test-fixtures.mts'
+import { createTestRssFeed } from './rss-feed-create.mts'
 import { createStoryClusteringRegistration } from '../workers/ai-agents/processors/classifier-run-story-clustering.mts'
 import { executeLeasedRun, type EfficiencyDriver } from './classifier-call-efficiency-run.mts'
 import {

@@ -163,9 +163,3 @@ export async function listModerationReports(options: ListModerationReportsOption
     hasPreviousPage: cursorDirection === 'before' ? hasNextPage : Boolean(beforeCursor),
   }
 }
-export function listPendingModerationReports(options: {
-  limit: number
-  beforeCursor?: { id: string } | null
-}): Promise<{ reports: PendingModerationReport[]; hasNextPage: boolean }> {
-  return listModerationReports({ ...options, sort: 'created_at_desc', status: 'pending' })
-}

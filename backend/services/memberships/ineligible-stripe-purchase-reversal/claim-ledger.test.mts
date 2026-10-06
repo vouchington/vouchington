@@ -1,3 +1,4 @@
+import { claimTestIneligiblePurchaseReversalOperations } from '@voucha/test-helpers/membership-reversal-case-fixtures'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
@@ -13,11 +14,11 @@ import {
   markIneligiblePurchaseReversalCompleted,
 } from '../ineligible-stripe-purchase-reversal-execution.mts'
 import {
-  claimIneligiblePurchaseReversals,
+  claimIneligiblePurchaseReversalCaseForDiscovery,
   claimPersistedIneligiblePurchaseReversalCase,
 } from './claim-ledger.mts'
 
-describe('claimIneligiblePurchaseReversals no-op cases', () => {
+describe('purchase reversal discovery no-op cases', () => {
   it('does not create operations when the immutable case does not exist', async () => {
     await expect(
       claimPersistedIneligiblePurchaseReversalCase(
@@ -35,25 +36,26 @@ describe('claimIneligiblePurchaseReversals no-op cases', () => {
     const user = await createTestUser()
     const sku = await createTestSku({ plan: 'pro' })
 
+    const options: Parameters<typeof claimIneligiblePurchaseReversalCaseForDiscovery>[0] = {
+      customerId: `cus_claim_none_${randomUUID()}`,
+      effectiveAt: undefined,
+      expiresAt: undefined,
+      incomingPlan: 'pro',
+      incomingStatus: 'active',
+      originatingInvoiceId: `in_claim_none_${randomUUID()}`,
+      providerEnvironment: 'production',
+      sku,
+      stripePriceId: sku.stripe_price_id,
+      subscriptionId: `sub_claim_none_${randomUUID()}`,
+      userId: user.id,
+    }
     await expect(
-      claimIneligiblePurchaseReversals(
-        {
-          customerId: `cus_claim_none_${randomUUID()}`,
-          effectiveAt: undefined,
-          expiresAt: undefined,
-          incomingPlan: 'pro',
-          incomingStatus: 'active',
-          originatingInvoiceId: `in_claim_none_${randomUUID()}`,
-          providerEnvironment: 'production',
-          sku,
-          stripePriceId: sku.stripe_price_id,
-          subscriptionId: `sub_claim_none_${randomUUID()}`,
-          userId: user.id,
-        },
-        [],
-        { currency: 'usd', qualifyingAmountMinorUnits: 0 },
-      ),
-    ).resolves.toBeNull()
+      claimIneligiblePurchaseReversalCaseForDiscovery(options, {
+        currency: 'usd',
+        qualifyingAmountMinorUnits: 0,
+      }),
+    ).resolves.toEqual({ disposition: 'none', reversalCase: null })
+    await expect(claimPersistedIneligiblePurchaseReversalCase(options, [])).resolves.toBeNull()
   })
 
   it('returns no operations when the direct purchase already converged', async () => {
@@ -68,25 +70,26 @@ describe('claimIneligiblePurchaseReversals no-op cases', () => {
       providerEnvironment: 'production',
     })
 
+    const options: Parameters<typeof claimIneligiblePurchaseReversalCaseForDiscovery>[0] = {
+      customerId: `cus_claim_converged_${randomUUID()}`,
+      effectiveAt: undefined,
+      expiresAt: undefined,
+      incomingPlan: 'pro',
+      incomingStatus: 'active',
+      originatingInvoiceId: `in_claim_converged_${randomUUID()}`,
+      providerEnvironment: 'production',
+      sku,
+      stripePriceId: sku.stripe_price_id,
+      subscriptionId,
+      userId: user.id,
+    }
     await expect(
-      claimIneligiblePurchaseReversals(
-        {
-          customerId: `cus_claim_converged_${randomUUID()}`,
-          effectiveAt: undefined,
-          expiresAt: undefined,
-          incomingPlan: 'pro',
-          incomingStatus: 'active',
-          originatingInvoiceId: `in_claim_converged_${randomUUID()}`,
-          providerEnvironment: 'production',
-          sku,
-          stripePriceId: sku.stripe_price_id,
-          subscriptionId,
-          userId: user.id,
-        },
-        [],
-        { currency: 'usd', qualifyingAmountMinorUnits: 0 },
-      ),
-    ).resolves.toEqual({ cancellation: null, reversals: [] })
+      claimIneligiblePurchaseReversalCaseForDiscovery(options, {
+        currency: 'usd',
+        qualifyingAmountMinorUnits: 0,
+      }),
+    ).resolves.toEqual({ disposition: 'converged', reversalCase: null })
+    await expect(claimPersistedIneligiblePurchaseReversalCase(options, [])).resolves.toBeNull()
   })
 })
 
@@ -133,15 +136,22 @@ describe('family collision reversal ledger', () => {
       qualifyingAmountMinorUnits: 1_000,
     }
     const snapshot = { currency: target.currency, qualifyingAmountMinorUnits: 1_000 }
-    const initial = (await claimIneligiblePurchaseReversals(options, [target], snapshot))!
+    const initial = (await claimTestIneligiblePurchaseReversalOperations(
+      options,
+      [target],
+      snapshot,
+    ))!
     await Promise.all(
       [initial.cancellation!, initial.reversals[0]!].map(operation =>
         failIneligiblePurchaseReversal(operation, new Error('retry after provider timeout')),
       ),
     )
 
-    const retried = (await claimIneligiblePurchaseReversals(options, [target], snapshot))!
-      .reversals[0]!
+    const retried = (await claimTestIneligiblePurchaseReversalOperations(
+      options,
+      [target],
+      snapshot,
+    ))!.reversals[0]!
 
     expect(retried.target.amountMinorUnits).toBe(500)
     await expect(
@@ -182,14 +192,20 @@ describe('family collision reversal ledger', () => {
       qualifyingAmountMinorUnits: 900,
     }
     const snapshot = { currency: target.currency, qualifyingAmountMinorUnits: 900 }
-    const initial = (await claimIneligiblePurchaseReversals(options, [target], snapshot))!
+    const initial = (await claimTestIneligiblePurchaseReversalOperations(
+      options,
+      [target],
+      snapshot,
+    ))!
     await markIneligiblePurchaseReversalCompleted(initial.cancellation!)
     await completeIneligiblePurchaseReversal(initial.reversals[0]!, {
       amountMinorUnits: 900,
       providerRefundId: `re_completed_${randomUUID()}`,
     })
 
-    await expect(claimIneligiblePurchaseReversals(options, [target], snapshot)).resolves.toEqual(
+    await expect(
+      claimTestIneligiblePurchaseReversalOperations(options, [target], snapshot),
+    ).resolves.toEqual(
       expect.objectContaining({
         reversals: [
           expect.objectContaining({

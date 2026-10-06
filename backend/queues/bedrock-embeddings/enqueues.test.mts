@@ -8,7 +8,7 @@ import {
 } from './enqueues.mts'
 import { bedrock_embeddings_nova_multimodal_v1_single } from './queues.mts'
 import { EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME } from './config.mts'
-import { clearQueueStatsCacheForTesting } from '@data-stores/valkey-glide-mq/get-queue-stats-cached'
+import { getQueueBacklogDepthCached } from '@data-stores/valkey-glide-mq/get-queue-stats-cached'
 import { bedrockEmbeddingsBatchConfig } from '@services/bedrock-embeddings/batch/config'
 import {
   overrideDynamicConfigFieldsForTest,
@@ -23,7 +23,7 @@ const enqueueBacklogItems = async (count: number, runId: string): Promise<void> 
   if (count === 0) return
   // Uses the public bulk enqueue function. Since the queue is obliterated in beforeEach
   // (depth=0), the skip guard never fires during seeding regardless of the threshold value.
-  // The caller must call clearQueueStatsCacheForTesting() after this helper so that the
+  // Await a fresh backlog fetch after seeding so that the
   // next enqueue call sees the real post-seed depth rather than the cached depth=0.
   const items = Array.from({ length: count }, (_, i) => ({
     rss_feed_item_id: `enqueue-skip-test-${runId}-${i}`,
@@ -44,8 +44,8 @@ describe('bedrock-embeddings enqueues', () => {
 
   describe('enqueueCreateTopicEmbedding — backlog skip guard', () => {
     beforeEach(async () => {
-      clearQueueStatsCacheForTesting()
       await bedrock_embeddings_nova_multimodal_v1_single.obliterate({ force: true })
+      await getQueueBacklogDepthCached(EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME, 0)
     })
 
     afterEach(async () => {
@@ -53,15 +53,15 @@ describe('bedrock-embeddings enqueues', () => {
     })
 
     afterAll(async () => {
-      clearQueueStatsCacheForTesting()
       await bedrock_embeddings_nova_multimodal_v1_single.obliterate({ force: true })
+      await getQueueBacklogDepthCached(EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME, 0)
     })
 
     it('enqueues normally when depth is below the threshold', async () => {
       overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, { backlog_threshold: 5 })
       const runId = `below-${randomUUID()}`
       await enqueueBacklogItems(4, runId)
-      clearQueueStatsCacheForTesting()
+      await getQueueBacklogDepthCached(EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME, 0)
 
       const topicId = `topic-${randomUUID()}`
       await enqueueCreateTopicEmbedding(topicId)
@@ -75,7 +75,7 @@ describe('bedrock-embeddings enqueues', () => {
       overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, { backlog_threshold: 5 })
       const runId = `at-${randomUUID()}`
       await enqueueBacklogItems(5, runId)
-      clearQueueStatsCacheForTesting()
+      await getQueueBacklogDepthCached(EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME, 0)
 
       const topicId = `topic-${randomUUID()}`
       await enqueueCreateTopicEmbedding(topicId)
@@ -89,7 +89,7 @@ describe('bedrock-embeddings enqueues', () => {
       overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, { backlog_threshold: 3 })
       const runId = `above-${randomUUID()}`
       await enqueueBacklogItems(7, runId)
-      clearQueueStatsCacheForTesting()
+      await getQueueBacklogDepthCached(EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME, 0)
 
       const topicId = `topic-${randomUUID()}`
       await enqueueCreateTopicEmbedding(topicId)
@@ -100,7 +100,7 @@ describe('bedrock-embeddings enqueues', () => {
     })
 
     it('uses the default threshold of 1000 when no override is set', async () => {
-      clearQueueStatsCacheForTesting()
+      await getQueueBacklogDepthCached(EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME, 0)
 
       // Empty queue → depth 0 → well below default 1000 → should enqueue
       const topicId = `topic-${randomUUID()}`
@@ -113,7 +113,7 @@ describe('bedrock-embeddings enqueues', () => {
 
     it('falls back to default 1000 when override is zero or negative', async () => {
       overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, { backlog_threshold: 0 })
-      clearQueueStatsCacheForTesting()
+      await getQueueBacklogDepthCached(EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME, 0)
 
       // depth=0 < default 1000 → still enqueues (fallback)
       const topicId = `topic-${randomUUID()}`
@@ -127,8 +127,8 @@ describe('bedrock-embeddings enqueues', () => {
 
   describe('enqueueCreatePostEmbedding — backlog skip guard', () => {
     beforeEach(async () => {
-      clearQueueStatsCacheForTesting()
       await bedrock_embeddings_nova_multimodal_v1_single.obliterate({ force: true })
+      await getQueueBacklogDepthCached(EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME, 0)
     })
 
     afterEach(async () => {
@@ -136,13 +136,13 @@ describe('bedrock-embeddings enqueues', () => {
     })
 
     afterAll(async () => {
-      clearQueueStatsCacheForTesting()
       await bedrock_embeddings_nova_multimodal_v1_single.obliterate({ force: true })
+      await getQueueBacklogDepthCached(EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME, 0)
     })
 
     it('enqueues normally when below threshold', async () => {
       overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, { backlog_threshold: 5 })
-      clearQueueStatsCacheForTesting()
+      await getQueueBacklogDepthCached(EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME, 0)
 
       const postId = `post-${randomUUID()}`
       await enqueueCreatePostEmbedding(postId)
@@ -156,7 +156,7 @@ describe('bedrock-embeddings enqueues', () => {
       overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, { backlog_threshold: 3 })
       const runId = `post-above-${randomUUID()}`
       await enqueueBacklogItems(3, runId)
-      clearQueueStatsCacheForTesting()
+      await getQueueBacklogDepthCached(EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME, 0)
 
       const postId = `post-${randomUUID()}`
       await enqueueCreatePostEmbedding(postId)
@@ -169,8 +169,8 @@ describe('bedrock-embeddings enqueues', () => {
 
   describe('enqueueBulkCreateRssFeedItemEmbeddings — backlog skip guard', () => {
     beforeEach(async () => {
-      clearQueueStatsCacheForTesting()
       await bedrock_embeddings_nova_multimodal_v1_single.obliterate({ force: true })
+      await getQueueBacklogDepthCached(EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME, 0)
     })
 
     afterEach(async () => {
@@ -178,13 +178,13 @@ describe('bedrock-embeddings enqueues', () => {
     })
 
     afterAll(async () => {
-      clearQueueStatsCacheForTesting()
       await bedrock_embeddings_nova_multimodal_v1_single.obliterate({ force: true })
+      await getQueueBacklogDepthCached(EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME, 0)
     })
 
     it('enqueues normally when below threshold', async () => {
       overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, { backlog_threshold: 5 })
-      clearQueueStatsCacheForTesting()
+      await getQueueBacklogDepthCached(EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME, 0)
 
       const itemId = `rss-${randomUUID()}`
       await enqueueBulkCreateRssFeedItemEmbeddings([{ rss_feed_item_id: itemId }])
@@ -200,7 +200,7 @@ describe('bedrock-embeddings enqueues', () => {
       overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, { backlog_threshold: 2 })
       const runId = `rss-above-${randomUUID()}`
       await enqueueBacklogItems(2, runId)
-      clearQueueStatsCacheForTesting()
+      await getQueueBacklogDepthCached(EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME, 0)
 
       const itemId = `rss-${randomUUID()}`
       await enqueueBulkCreateRssFeedItemEmbeddings([{ rss_feed_item_id: itemId }])
@@ -215,8 +215,8 @@ describe('bedrock-embeddings enqueues', () => {
 
   describe('queue stats cache TTL', () => {
     beforeEach(async () => {
-      clearQueueStatsCacheForTesting()
       await bedrock_embeddings_nova_multimodal_v1_single.obliterate({ force: true })
+      await getQueueBacklogDepthCached(EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME, 0)
       assert.equal(
         EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME,
         'bedrock_embeddings_nova_multimodal_v1_single',
@@ -224,7 +224,7 @@ describe('bedrock-embeddings enqueues', () => {
     })
 
     afterEach(async () => {
-      clearQueueStatsCacheForTesting()
+      await getQueueBacklogDepthCached(EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME, 0)
       overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, { backlog_threshold: 1000 })
     })
 
@@ -237,7 +237,7 @@ describe('bedrock-embeddings enqueues', () => {
 
       // Now flood the queue beyond threshold WITHOUT clearing cache
       await enqueueBacklogItems(10, runId)
-      // Do NOT call clearQueueStatsCacheForTesting() — cache still says depth=0
+      // Do not refresh the backlog cache here — it must still report depth=0
 
       // Second call: should use cached depth=0 → enqueues despite real depth=11
       const topicId2 = `topic-${randomUUID()}`

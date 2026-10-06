@@ -4,14 +4,13 @@ import onError from '@modules/on-error'
 
 const enqueueRebuildBloomFilterUnknown: (data: RebuildBloomFilterData) => unknown =
   enqueueRebuildBloomFilter
-const pendingBestEffortRebuildEnqueues = new Set<Promise<unknown>>()
 type EnqueueRebuildBloomFilter = (data: RebuildBloomFilterData) => unknown
 
 export function enqueueRebuildBloomFilterBestEffort(
   filter: RebuildBloomFilterData['filter'],
   onEnqueued?: () => Promise<unknown>,
-): void {
-  enqueueRebuildBloomFilterBestEffortWithEnqueue(
+): Promise<unknown> {
+  return enqueueRebuildBloomFilterBestEffortWithEnqueue(
     enqueueRebuildBloomFilterUnknown,
     filter,
     onEnqueued,
@@ -22,13 +21,13 @@ export function enqueueRebuildBloomFilterBestEffortWithEnqueue(
   enqueue: EnqueueRebuildBloomFilter,
   filter: RebuildBloomFilterData['filter'],
   onEnqueued?: () => Promise<unknown>,
-): void {
+): Promise<unknown> {
   let result: unknown
   try {
     result = enqueue({ filter })
   } catch (err) {
     onError(err instanceof Error ? err : new Error(String(err)))
-    return
+    return Promise.resolve()
   }
 
   if (!isPromiseLike(result)) {
@@ -37,24 +36,13 @@ export function enqueueRebuildBloomFilterBestEffortWithEnqueue(
       settled = onEnqueued ? Promise.resolve(onEnqueued()) : Promise.resolve()
     } catch (err) {
       onError(err instanceof Error ? err : new Error(String(err)))
-      return
+      return Promise.resolve()
     }
-    trackPendingRebuildEnqueue(settled)
-    return
+    return settled.catch(onError)
   }
-  trackPendingRebuildEnqueue(Promise.resolve(result).then(() => onEnqueued?.()))
-}
-
-export async function waitForBestEffortRebuildEnqueuesForTest(): Promise<void> {
-  await Promise.allSettled(pendingBestEffortRebuildEnqueues)
-}
-
-function trackPendingRebuildEnqueue(result: Promise<unknown>): void {
-  const pending = result.finally(() => {
-    pendingBestEffortRebuildEnqueues.delete(pending)
-  })
-  pendingBestEffortRebuildEnqueues.add(pending)
-  void pending.catch(onError)
+  return Promise.resolve(result)
+    .then(() => onEnqueued?.())
+    .catch(onError)
 }
 
 function isPromiseLike(value: unknown): value is PromiseLike<unknown> {

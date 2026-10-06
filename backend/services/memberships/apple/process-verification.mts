@@ -1,11 +1,8 @@
 import { deferClaimedMembershipVerification } from '../verification-work.mts'
-import { beginTransaction, read } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { DirectMembershipSourceRejectedError } from '../direct-source-authority.mts'
-import {
-  claimPendingMembershipVerification,
-  deferMembershipVerificationUntilAdapterAvailable,
-} from '../verification-recovery.mts'
+import { claimPendingMembershipVerification } from '../verification-recovery.mts'
 import { createConfiguredAppleTransactionVerifier } from './configured-verifier.mts'
 import {
   AppleVerificationConflictError,
@@ -52,17 +49,6 @@ export async function processAppleMembershipVerification(
     }
     await deferAppleVerification(claim.id, claim.leaseToken)
   }
-}
-
-export async function processMembershipVerification(
-  verificationId: string,
-  dependencies: AppleVerificationDependencies = {},
-): Promise<void> {
-  const { rows } = await read<{ provider: string }>(sql`/* processMembershipVerification.provider */
-    SELECT provider FROM membership_verifications WHERE id = ${verificationId} LIMIT 1`)
-  if (rows[0]?.provider === 'apple_app_store')
-    return processAppleMembershipVerification(verificationId, dependencies)
-  await deferMembershipVerificationUntilAdapterAvailable(verificationId)
 }
 
 async function processClaimedAppleVerification(

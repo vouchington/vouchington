@@ -1,14 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
-import {
-  acceptCopyrightNoticeAndImposeRestriction,
-  appendCopyrightLegalHoldAssessment,
-  appendCopyrightNoticeSubmission,
-} from './index.mts'
+import { appendCopyrightLegalHoldAssessment, appendCopyrightNoticeSubmission } from './index.mts'
+import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 import {
   createCompliantCounterNoticeDeadline,
   createCopyrightRestorationHoldFixture,
-} from './evidence-and-holds-restoration-hold-fixtures.mts'
+} from '@voucha/test-helpers/copyright-restoration-hold-fixtures'
 import {
   createDueStatutoryCopyrightRestoreIntentsForDeadline,
   searchDueStatutoryCopyrightRestorationDeadlineIds,

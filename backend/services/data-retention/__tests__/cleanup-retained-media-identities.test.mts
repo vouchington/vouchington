@@ -19,7 +19,7 @@ import {
   getTestDeliveryRepairMarker,
   reconcileTestDeliveryRepairMarker,
 } from '@voucha/test-helpers/entities/media-delivery-repair'
-import { getImagePlacementDeliveryKey } from '../../media-delivery-safety/index.mts'
+import { getImagePlacementDeliveryKey } from '../../media-delivery-safety/delivery-registry-types.mts'
 import { recordImageDeliveryRepairMarker } from '../../media-delivery-safety/delivery-repair-markers.mts'
 import { cleanupRetainedIdentityRoots } from '../cleanup-retained-identities.mts'
 import { cleanupRetainedMediaBindings } from '../cleanup-retained-media-bindings.mts'

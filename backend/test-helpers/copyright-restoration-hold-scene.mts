@@ -1,15 +1,15 @@
-import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
-import type { CopyrightActionDeliveryDependencies } from './action-delivery-dependencies.mts'
+import type { prepublishImagePlacementDenial } from '../services/media-delivery-safety/index.mts'
+import type { CopyrightActionDeliveryDependencies } from '../services/copyright-notices/action-delivery-dependencies.mts'
 import {
-  acceptCopyrightNoticeAndImposeRestriction,
   appendCopyrightLegalHoldAssessment,
   appendCopyrightNoticeSubmission,
-} from './index.mts'
+} from '../services/copyright-notices/index.mts'
+import { acceptCopyrightNoticeAndImposeRestriction } from '../services/copyright-notices/restrictions.mts'
 import {
   createCopyrightRestorationHoldFixture,
   createCounterNoticeRestoreIntent,
   deliverInitialCopyrightWithhold,
-} from './evidence-and-holds-restoration-hold-fixtures.mts'
+} from './copyright-restoration-hold-fixtures.mts'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 export async function openHeldCounterNoticeRestore(
@@ -32,7 +32,6 @@ export async function openHeldCounterNoticeRestore(
   if (!initialWithhold) throw new Error('initial withhold intent disappeared')
   await deliverInitialCopyrightWithhold(notice.id, dependencies)
   for (const other of aggregate.targets.slice(1)) {
-    // oxlint-disable-next-line no-await-in-loop -- each independently reviewed target gets its real restriction.
     await acceptCopyrightNoticeAndImposeRestriction({
       noticeId: notice.id,
       targetId: other.id,

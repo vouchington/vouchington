@@ -1,7 +1,7 @@
 import { createTestUser } from '../../index.mts'
 import { createCopyrightFormIntake } from '../../../services/copyright-notices/form-intakes.mts'
 import { reviewCopyrightFormIntake } from '../../../services/copyright-notices/form-reviews.mts'
-import type { createCopyrightFormFixture } from '../../../services/copyright-notices/route-test-fixtures.mts'
+import type { createCopyrightFormFixture } from '../../copyright-route-fixtures.mts'
 
 /**
  * Files the fixture's structured form as its claimant and has a moderator accept it. The notice

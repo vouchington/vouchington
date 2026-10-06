@@ -5,7 +5,7 @@ import { searchCopyrightStaffEmailIntakes } from './read-models-staff-email-inta
 import {
   createParsedCopyrightEmailIntake,
   createUnparsedCopyrightEmailIntake,
-} from './email-intake-test-fixtures.mts'
+} from '@voucha/test-helpers/copyright-email-intake-fixtures'
 
 describe('searchCopyrightStaffEmailIntakes', () => {
   it('hides the queue from non-reviewers and lists unreviewed intakes, parsed or not, for staff', async () => {

@@ -12,7 +12,7 @@ import {
   readTestCopyrightTrustedFlaggerMatch,
   readTestTrustedFlaggerNoticeEffects,
 } from '@voucha/test-helpers/copyright-trusted-flaggers'
-import { createCopyrightFormFixture } from '@services/copyright-notices/route-test-fixtures'
+import { createCopyrightFormFixture } from '@voucha/test-helpers/copyright-route-fixtures'
 import { createCopyrightFormIntake } from '@services/copyright-notices'
 import { copyrightConfig } from '@services/copyright-notices/config'
 import { withdrawCopyrightJurisdictionPolicyApproval } from '@services/copyright-notices/jurisdiction-policy'

@@ -44,7 +44,7 @@ async function enqueueRebuildAndInvalidateReadyMarker(
     if (readyValue === null) return
 
     if (!waitForEnqueue) {
-      enqueueRebuildBloomFilterBestEffort('email-blocklist', () =>
+      void enqueueRebuildBloomFilterBestEffort('email-blocklist', () =>
         unlinkReadyMarkerIfValue(BLOOM_READY_KEY, readyValue),
       )
       return

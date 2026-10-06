@@ -1,7 +1,5 @@
 import { createHash } from 'node:crypto'
 
-export const EMPTY_BODY_SHA256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
-
 export function sha256Hex(data: Buffer | string): string {
   return createHash('sha256').update(data).digest('hex')
 }
@@ -13,7 +11,7 @@ export function sha256Hex(data: Buffer | string): string {
  *   VOUCHA-REQSIG-v1
  *   {METHOD}           uppercase HTTP method
  *   {PATH}             pathname only, no query string
- *   {BODY_SHA256_HEX}  lowercase hex sha256 of raw body; empty body → EMPTY_BODY_SHA256
+ *   {BODY_SHA256_HEX}  lowercase hex sha256 of raw body; empty body → SHA-256 of empty bytes
  *   {TIMESTAMP}        client Unix epoch seconds, base-10 string
  *   {NONCE}            client-generated >=128-bit random, opaque
  *

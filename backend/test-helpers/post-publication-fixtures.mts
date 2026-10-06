@@ -1,13 +1,18 @@
 import { beginTransaction } from '@data-stores/psql'
-import { recordStoryTopicPublicationChanges } from './capture-story-topics.mts'
+import { recordStoryTopicPublicationChanges } from '../services/post-publication/capture-story-topics.mts'
 import { createTestPost, createTestUser } from '@voucha/test-helpers'
-import { recordPostPublicationChange } from './capture.mts'
-import { claimPostPublicationDirtyWork } from './dirty-work.mts'
-import { listPublicationCandidates } from './publication-candidates.mts'
-import { reconcilePostPublicationDirtyWork, type ReconciliationPost } from './reconcile.mts'
-import type { ClaimedPostPublicationDirtyWork } from './types.mts'
-import type { PublicationProjectionIdentity } from './projection-identity.mts'
-import { readTestPublicationSnapshot } from '@voucha/test-helpers/entities/post-publication-snapshots'
+import { recordPostPublicationChange } from '../services/post-publication/capture.mts'
+import { claimPostPublicationDirtyWork } from '../services/post-publication/dirty-work.mts'
+import { listPublicationCandidates } from '../services/post-publication/publication-candidates.mts'
+import {
+  reconcilePostPublicationDirtyWork,
+  type ReconciliationPost,
+} from '../services/post-publication/reconcile.mts'
+import type { ClaimedPostPublicationDirtyWork } from '../services/post-publication/types.mts'
+import {
+  readTestPublicationSnapshot,
+  type PublicationProjectionIdentity,
+} from './entities/post-publication-snapshots.mts'
 
 export async function reconcileTestPublicationUntilSnapshotsComplete(
   work: ClaimedPostPublicationDirtyWork,
@@ -15,7 +20,7 @@ export async function reconcileTestPublicationUntilSnapshotsComplete(
   selectedPostIds?: readonly string[],
 ) {
   for (let attempt = 0; attempt < 100; attempt += 1) {
-    // oxlint-disable-next-line no-await-in-loop -- retries consume durable sequential snapshot cursors.
+    // Retries consume durable sequential snapshot cursors.
     const result = await reconcilePostPublicationDirtyWork(work, limit, selectedPostIds)
     if (!result.hasIncompleteSnapshots) return result
   }

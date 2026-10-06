@@ -2,7 +2,6 @@ import '@data-stores/valkey-core/app-integration'
 
 import {
   cacheValkeyClient,
-  closeDynamicConfigValkeySubscriptionClient,
   dynamicConfigValkeyClient,
   rateLimiterValkeyClient,
   upsertValkeyClientByUrl,
@@ -11,7 +10,6 @@ import { config } from '@data-stores/valkey-core/config'
 
 export {
   cacheValkeyClient,
-  closeDynamicConfigValkeySubscriptionClient,
   dynamicConfigValkeyClient,
   rateLimiterValkeyClient,
   upsertValkeyClientByUrl,

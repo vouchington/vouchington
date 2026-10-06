@@ -18,7 +18,7 @@ import {
   setTestItemStoryId,
   archivePostForTopHashtagTest,
 } from '@voucha/test-helpers'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { createPostStory } from './update.mts'
 
 describe('get', () => {

@@ -11,9 +11,9 @@ import {
   getAccountingUncertaintySource,
   getDailyAiCostTotalMicrounits,
   getSpendCapFields,
+  refreshDailyAiCostTotalMicrounits,
   spendCapConfig,
 } from '@services/ai-usage'
-import { clearDailyAiCostTotalCacheForTesting } from '@services/ai-usage/daily-total'
 import { deleteBackgroundResponseRegistration } from '@services/openai-background-responses'
 import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.sentry-mock'
 import { getBackgroundResponseHooks } from '@modules/openai-utils/create-response'
@@ -43,12 +43,10 @@ async function withReservedDay(run: (day: string) => Promise<void>): Promise<voi
   const reservation = await acquireTestAiUsageDateReservation()
   vi.useFakeTimers({ toFake: ['Date'] })
   vi.setSystemTime(new Date(`${reservation.day}T12:00:00.000Z`))
-  clearDailyAiCostTotalCacheForTesting()
   try {
     await run(reservation.day)
   } finally {
     vi.useRealTimers()
-    clearDailyAiCostTotalCacheForTesting()
     try {
       await unlinkTestAiUsageUncertaintyKey(getAccountingUncertaintyKey(reservation.day))
     } finally {
@@ -233,8 +231,9 @@ describe('recordAgentResponseUsage response ID storage', () => {
 
       await expect(countAiUsageRecordsForAgent(slug, tokens)).resolves.toBe(1)
       await expect(getAccountingUncertaintySource(day)).resolves.toBeNull()
-      clearDailyAiCostTotalCacheForTesting()
-      const total = await getDailyAiCostTotalMicrounits(day)
+      const total = await refreshDailyAiCostTotalMicrounits()
+      expect(total.day).toBe(day)
+      await expect(getDailyAiCostTotalMicrounits(day)).resolves.toEqual(total)
       expect(total.totalMicrounits).toBeGreaterThan(0)
       expect(total.hasUnpricedRows).toBe(false)
       await spendCapConfig.waitForInitialization()

@@ -23,6 +23,11 @@ export function isClassifierChoiceKey(value: string): value is ClassifierChoiceK
   return CHOICE_KEY_PATTERN.test(value)
 }
 
+/**
+ * @public Retained provisionally under issue #1360 and described in
+ * `docs/overview/architecture/ai-agents/classifiers/README.md`; external production use is
+ * unconfirmed and this export may be removed after intended-use review.
+ */
 export async function sanitizeClassifierExternalContent(
   content: string,
   options: {

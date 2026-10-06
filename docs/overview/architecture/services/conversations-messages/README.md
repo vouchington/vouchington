@@ -21,11 +21,16 @@ and prevent gaps or duplicates.
 
 - `createConversation(createdById, title?)` — starts a new conversation
 - `createConversationMessage(conversationId, createdById, provenance, content)` — validates and stores the `{ role, content, error }` chat envelope as JSON in `conversation_messages.content`, with the writing request's [content provenance](../../../../requirements/content/content-provenance.md)
+- `updateConversationMessageContent(conversationId, messageId, content)` — updates one stored message envelope
 - `createClientGeneratedChatTurn(params)` — atomically stores a native user/assistant pair under a conversation row lock, both messages recording `params.provenance`; an identical retry replays the stored pair and its original provenance (provenance is not part of the turn identity), and changed text or model or reused partial identity throws `ClientGeneratedTurnIdentityConflictError`
 - `getConversationById(id)` / `getConversationByIdForMutation(id)` / `getConversationsByCreatedById(userId, options)` — conversation retrieval
 - `getConversationByCreatedByAndTitle(createdById, title)` — retrieval helper retained provisionally; it may be removed after intended-use review because production use is unconfirmed
 - `getConversationMessagesByConversationId(conversationId)` — message list
 - `currentUserCanViewConversation(currentUser, conversation)` / `currentUserCanUpdateConversation(...)` — authorization checks
+
+The `createConversationMessage` and `updateConversationMessageContent` write exports are retained
+provisionally under issue #1360. Production use is unconfirmed; either export may be removed after
+intended-use review.
 
 ## Related
 

@@ -8,7 +8,7 @@ import {
   unsuspendTestUser,
 } from '@voucha/test-helpers'
 import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { insertRssFeedCrawl } from '@services/rss-feeds/crawls'
 import { updateRssFeedById } from '@services/rss-feeds'
 import {
@@ -16,7 +16,7 @@ import {
   processFollowerDistributionChunk,
 } from '@services/follower-distributions'
 import { upsertRssFeedItems } from '@services/rss-feed-items/upsert'
-import { getRssFeedItemKeyByGuid } from '@services/rss-feed-items/get'
+import { getRssFeedItemKeyByGuid } from '@voucha/test-helpers/rss-feed-item-guid-lookup'
 import type { PrivateUser } from '@services/users/types'
 import { beforeAll, describe, expect, it } from 'vitest'
 

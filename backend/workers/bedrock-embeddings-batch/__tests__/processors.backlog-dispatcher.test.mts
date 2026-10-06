@@ -6,7 +6,7 @@ import { bedrock_embeddings_nova_multimodal_v1_single } from '@queues/bedrock-em
 import { enqueueBulkCreateRssFeedItemEmbeddings } from '@queues/bedrock-embeddings/enqueues'
 import { QUEUE_NAME } from '@queues/bedrock-embeddings-batch/config'
 import { EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME } from '@queues/bedrock-embeddings/config'
-import { clearQueueStatsCacheForTesting } from '@data-stores/valkey-glide-mq/get-queue-stats-cached'
+import { getQueueBacklogDepthCached } from '@data-stores/valkey-glide-mq/get-queue-stats-cached'
 import { bedrockEmbeddingsBatchConfig } from '@services/bedrock-embeddings/batch/config'
 import {
   overrideDynamicConfigFieldsForTest,
@@ -43,15 +43,15 @@ describe('processBacklogDispatcher', () => {
   })
 
   beforeEach(async () => {
-    // Clear the in-process queue-stats cache before obliterating so that the
+    // Refresh only this queue after obliterating so that the
     // next enqueueBulkCreateRssFeedItemEmbeddings call performs a fresh fetch
     // against the truly-empty queue. Without this, a stale cache entry from a
     // previous test file (backend-data-stores runs with isolate: false) can
     // make isSingleQueueBackedUp() return true, causing the enqueue to
     // short-circuit and leaving the queue at depth 0.
-    clearQueueStatsCacheForTesting()
     await bedrock_embeddings_nova_multimodal_v1_single.obliterate({ force: true })
     await bedrock_embeddings_batch.obliterate({ force: true })
+    await getQueueBacklogDepthCached(EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME, 0)
   })
 
   afterEach(async () => {
@@ -59,9 +59,9 @@ describe('processBacklogDispatcher', () => {
   })
 
   afterAll(async () => {
-    clearQueueStatsCacheForTesting()
     await bedrock_embeddings_nova_multimodal_v1_single.obliterate({ force: true })
     await bedrock_embeddings_batch.obliterate({ force: true })
+    await getQueueBacklogDepthCached(EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME, 0)
     await closeScopedDynamicConfigContext([bedrockEmbeddingsBatchConfig])
   })
 

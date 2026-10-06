@@ -1,6 +1,7 @@
+import { readTestStripeRefundHistory } from '@voucha/test-helpers/membership-reversal-case-fixtures'
+import { createRefundScanCase } from '@voucha/test-helpers/services/memberships/refund-scan-case'
 import { describe, expect, it } from 'vitest'
 import { getRefundableReversalTargets } from './ineligible-stripe-purchase-reversal-targets.mts'
-import { getObservedStripeRefunds } from './ineligible-stripe-purchase-reversal/refund-history.mts'
 
 describe('Stripe reversal dispute settlement', () => {
   it('counts a lost dispute toward the satisfied amount without counting a won dispute', async () => {
@@ -45,6 +46,7 @@ describe('Stripe reversal dispute settlement', () => {
   })
 
   it('caps combined refunds and lost disputes at the original payment capacity', async () => {
+    const { reversalCaseId } = await createRefundScanCase()
     await expect(
       getRefundableReversalTargets(
         [
@@ -61,9 +63,10 @@ describe('Stripe reversal dispute settlement', () => {
           },
         ],
         async target =>
-          getObservedStripeRefunds(
+          readTestStripeRefundHistory(
             [{ amount: 700, currency: 'usd', id: 're_existing', status: 'succeeded' }],
-            target.currency,
+            target,
+            reversalCaseId,
           ),
         async () => ({ lostDisputeAmountMinorUnits: 700, refundDeferred: false }),
       ),

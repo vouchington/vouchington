@@ -1,4 +1,4 @@
-import { resolveMx } from 'node:dns/promises'
+import dnsPromises from 'node:dns/promises'
 
 const DNS_TIMEOUT_MS = 5000 // 5 seconds
 const DNS_MAX_RETRIES = 2 // retry up to 2 times (3 attempts total)
@@ -13,7 +13,8 @@ export class DnsTimeoutError extends Error {
 function resolveMxWithTimeout(domain: string): Promise<{ exchange: string; priority: number }[]> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new DnsTimeoutError()), DNS_TIMEOUT_MS)
-    resolveMx(domain)
+    dnsPromises
+      .resolveMx(domain)
       .then(result => {
         clearTimeout(timer)
         resolve(result)

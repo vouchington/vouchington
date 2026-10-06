@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { getCopyrightStaffEmailIntake } from '@services/copyright-notices'
-import { createParsedCopyrightEmailIntake } from '@services/copyright-notices/email-intake-test-fixtures'
+import { createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
 import { searchCopyrightStaffEmailIntakes } from '@services/copyright-notices/read-models-staff-email-intakes'
 import { listCopyrightStaffQueue } from '@services/copyright-notices/read-models-staff'
 import { seedCopyright } from './copyright.mts'

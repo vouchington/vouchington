@@ -3,15 +3,17 @@ import {
   appendCopyrightLegalHoldAssessment,
   copyrightAppealRecommendations,
   createCopyrightCounterNotice,
-  createCopyrightDeliveryIntent,
-  createOutboundCopyrightCorrespondence,
   markCopyrightDeliveryIntentFailed,
   resolveCopyrightLegalHold,
   reviewCopyrightAppeal,
   reviewCopyrightCounterNotice,
 } from '../../../services/copyright-notices/index.mts'
 import { admitCopyrightEmailCorrespondence } from '../../../services/copyright-notices/email-correspondence-admission.mts'
-import { claimCopyrightDeliveryIntent } from '../../../services/copyright-notices/delivery-intents.mts'
+import { createOutboundCopyrightCorrespondence } from '../../../services/copyright-notices/correspondence.mts'
+import {
+  claimCopyrightDeliveryIntent,
+  createCopyrightDeliveryIntent,
+} from '../../../services/copyright-notices/delivery-intents.mts'
 import { linkCopyrightEmailIntakeToNotice } from '../../../services/copyright-notices/email-threading.mts'
 import { insertEncryptedCopyrightHoldSubmission } from '../../data-stores/psql/copyright-hold-submission.mts'
 import { insertCopyrightEvidenceArtifact } from '../../data-stores/psql/copyright-evidence-artifacts.mts'

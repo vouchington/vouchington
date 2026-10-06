@@ -110,9 +110,8 @@ describe('staging dual authorization', () => {
   it('never relays an ignored secondary header into the cache RPC', async () => {
     // CachedOrigin fetches the origin on a miss. Stub that call so the network
     // allowlist does not observe a socket to the backend origin.
-    globalThis.fetch = vi.fn<VitestLooseMock>(() =>
-      Promise.resolve(new Response('ok')),
-    ) as unknown as typeof fetch
+    const fetchSpy = vi.fn<VitestLooseMock>(() => Promise.resolve(new Response('ok')))
+    globalThis.fetch = fetchSpy as unknown as typeof fetch
     const env: Env = { BACKEND_ORIGIN: 'https://backend.example.com' }
     const context = createContext(env)
     const dispatchSpy = vi.spyOn(context.exports.CachedOrigin, 'fetch')
@@ -125,6 +124,10 @@ describe('staging dual authorization', () => {
     )
 
     const dispatchRequest = dispatchSpy.mock.calls[0]![0]
+    const originRequest = fetchSpy.mock.calls[0]![0] as Request
+    expect(dispatchSpy).toHaveBeenCalledOnce()
     expect(dispatchRequest.headers.get(STAGING_AUTHORIZATION_HEADER)).toBeNull()
+    expect(fetchSpy).toHaveBeenCalledOnce()
+    expect(originRequest.headers.get(STAGING_AUTHORIZATION_HEADER)).toBeNull()
   })
 })

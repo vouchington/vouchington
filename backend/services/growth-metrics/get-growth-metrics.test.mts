@@ -6,18 +6,14 @@ import {
   insertTestPost,
 } from '@voucha/test-helpers'
 import { getMaxUUIDv7ForDate, getMinUUIDv7ForDate } from '@modules/utils'
-import {
-  clearGrowthMetricsCacheForTesting,
-  getGrowthMetrics,
-  getRangeStart,
-} from './get-growth-metrics.mts'
+import { getGrowthMetrics, getRangeStart } from './get-growth-metrics.mts'
 import { getUserGrowth } from './get-user-growth.mts'
 import { getContentProduction } from './get-content-production.mts'
 import { getEngagement } from './get-engagement.mts'
 import { getNetworkEffects } from './get-network-effects.mts'
 import { getRevenue } from './get-revenue.mts'
 import { getInfrastructureMetrics } from './get-infrastructure-metrics.mts'
-import type { GrowthRange } from './types.mts'
+import type { GrowthMetrics, GrowthRange } from './types.mts'
 
 describe('getRangeStart', () => {
   it('returns start of today for "today"', () => {
@@ -246,8 +242,7 @@ describe('getInfrastructureMetrics', () => {
 
 describe('getGrowthMetrics', () => {
   it('evicts rejected loads so a later call can retry', async () => {
-    clearGrowthMetricsCacheForTesting()
-    const invalidRange = 'invalid' as GrowthRange
+    const invalidRange = `invalid-${crypto.randomUUID()}` as GrowthRange
     const first = getGrowthMetrics(invalidRange)
 
     await expect(first).rejects.toThrow(/.+/)
@@ -257,13 +252,20 @@ describe('getGrowthMetrics', () => {
     await expect(retry).rejects.toThrow(/.+/)
   })
 
-  it('coalesces repeated loads for the same range behind the short cache', async () => {
-    clearGrowthMetricsCacheForTesting()
-    const first = getGrowthMetrics('7d')
-    const second = getGrowthMetrics('7d')
-
-    expect(second).toBe(first)
-    await expect(first).resolves.toBe(await second)
+  it('coalesces cached loads and reloads at the short-cache expiry boundary', async () => {
+    const start = Date.now() + 10_001
+    vi.useFakeTimers({ toFake: ['Date'] })
+    try {
+      vi.setSystemTime(start)
+      const first = getGrowthMetrics('7d')
+      const initial = await expectSharedLoad(first, getGrowthMetrics('7d'))
+      vi.setSystemTime(start + 10_000)
+      const fresh = getGrowthMetrics('7d')
+      expect(fresh).not.toBe(first)
+      expect(await expectSharedLoad(fresh, getGrowthMetrics('7d'))).not.toBe(initial)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('returns complete metrics with all 6 categories', async () => {
@@ -288,3 +290,9 @@ describe('getGrowthMetrics', () => {
     }
   })
 })
+
+async function expectSharedLoad(first: Promise<GrowthMetrics>, second: Promise<GrowthMetrics>) {
+  if (second !== first) await Promise.allSettled([first, second])
+  expect(second).toBe(first)
+  return first
+}

@@ -1,10 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { afterAll, describe, expect, it, vi } from 'vitest'
 import type { Job } from 'glide-mq'
-import {
-  emailJobContractCoversCanonicalTypes,
-  JobPayloadError,
-} from '@queues/emails/payload/job-payload'
+import { JobPayloadError } from '@queues/emails/payload/job-payload'
 import { emails, isDispatcherJob, processEmailJob } from './workers.mts'
 
 describe('emails worker router', () => {
@@ -93,10 +90,6 @@ describe('emails worker router', () => {
         data: {},
       } as Job),
     ).rejects.toBeInstanceOf(JobPayloadError)
-  })
-
-  it('keeps the email payload contract aligned with the enqueue types', () => {
-    expect(emailJobContractCoversCanonicalTypes()).toBe(true)
   })
 
   it('routes a missing API key to the no-delivery result and rejects leaked secrets', async () => {

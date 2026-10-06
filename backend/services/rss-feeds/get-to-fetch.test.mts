@@ -6,7 +6,7 @@ import {
   updateUrlHostnameUnreliableStatusCodes,
   updateRssFeedTiming,
 } from '@voucha/test-helpers'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { getRssFeedById } from './get.mts'
 import { updateRssFeedById } from './update.mts'
 import { RSS_FEED_CRAWL_MAX_VALUES, rssFeedCrawlConfig } from './crawl-config.mts'

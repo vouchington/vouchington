@@ -7,7 +7,6 @@ import {
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
 import {
-  acceptCopyrightNoticeAndImposeRestriction,
   recordEuCopyrightRedressDecision,
   recordUkCopyrightRedressDecision,
   submitEuCopyrightRedress,
@@ -17,6 +16,7 @@ import {
   recordUkCopyrightReview,
   searchPendingCopyrightEnforcementAssessmentIds,
 } from './index.mts'
+import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 
 const determine = {
   eu_dsa: recordEuCopyrightStatementOfReasons,

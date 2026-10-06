@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, suspendTestUser, unsuspendTestUser } from '@voucha/test-helpers'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { createDeviceAndSessionTokens } from '@services/jwt-session'
 import { searchRecentlyViewed } from '@services/recently-viewed'
 import { ACCOUNT_SUSPENDED } from '@modules/on-error/error-codes'

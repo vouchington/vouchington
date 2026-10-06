@@ -18,7 +18,7 @@ import {
   getTestMembershipVerificationProcessingState,
 } from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
-import { processMembershipVerification } from './process-verification.mts'
+import { processAppleMembershipVerification } from './process-verification.mts'
 import {
   createTestAppleVerificationFixture as createAppleVerificationFixture,
   submitTestAppleVerification as submitAppleVerification,
@@ -33,7 +33,7 @@ describe('Apple membership verification processing', () => {
       fixture,
       `signed-direct-${randomUUID()}`,
     )
-    await processMembershipVerification(verification.id, {
+    await processAppleMembershipVerification(verification.id, {
       createVerifier: () => makeVerifier(fixture, { appAccountToken: fixture.purchaseIntentId }),
     })
     await expect(getMembershipVerification(user.id, verification.id)).resolves.toMatchObject({
@@ -47,11 +47,11 @@ describe('Apple membership verification processing', () => {
     const fixture = await createAppleVerificationFixture(user.id)
     const evidence = { signed_transaction_info: `signed-replay-${randomUUID()}` }
     const first = await submitAppleVerification(user.id, fixture, evidence.signed_transaction_info)
-    await processMembershipVerification(first.id, {
+    await processAppleMembershipVerification(first.id, {
       createVerifier: () => makeVerifier(fixture, { appAccountToken: fixture.purchaseIntentId }),
     })
     const replay = await submitAppleVerification(user.id, fixture, evidence.signed_transaction_info)
-    await processMembershipVerification(replay.id, {
+    await processAppleMembershipVerification(replay.id, {
       createVerifier: () => {
         throw new Error('finalized evidence must not be verified again')
       },
@@ -66,11 +66,11 @@ describe('Apple membership verification processing', () => {
     const fixture = await createAppleVerificationFixture(user.id)
     const evidence = { signed_transaction_info: `signed-rejected-replay-${randomUUID()}` }
     const first = await submitAppleVerification(user.id, fixture, evidence.signed_transaction_info)
-    await processMembershipVerification(first.id, {
+    await processAppleMembershipVerification(first.id, {
       createVerifier: () => makeVerifier(fixture, { bundleId: 'other.application' }),
     })
     const replay = await submitAppleVerification(user.id, fixture, evidence.signed_transaction_info)
-    await processMembershipVerification(replay.id, {
+    await processAppleMembershipVerification(replay.id, {
       createVerifier: () => {
         throw new Error('rejected evidence must not be verified again')
       },
@@ -95,7 +95,7 @@ describe('Apple membership verification processing', () => {
         `signed-rejected-${randomUUID()}`,
       )
 
-      await processMembershipVerification(verification.id, {
+      await processAppleMembershipVerification(verification.id, {
         createVerifier: () =>
           transaction
             ? makeVerifier(fixture, {
@@ -126,7 +126,7 @@ describe('Apple membership verification processing', () => {
       first,
       `signed-first-${randomUUID()}`,
     )
-    await processMembershipVerification(firstVerification.id, {
+    await processAppleMembershipVerification(firstVerification.id, {
       createVerifier: () =>
         makeVerifier(first, {
           appAccountToken: first.purchaseIntentId,
@@ -139,7 +139,7 @@ describe('Apple membership verification processing', () => {
       second,
       `signed-second-${randomUUID()}`,
     )
-    await processMembershipVerification(secondVerification.id, {
+    await processAppleMembershipVerification(secondVerification.id, {
       createVerifier: () =>
         makeVerifier(second, {
           appAccountToken: second.purchaseIntentId,
@@ -165,7 +165,7 @@ describe('Apple membership verification processing', () => {
       `signed-family-with-intent-${randomUUID()}`,
     )
 
-    await processMembershipVerification(verification.id, {
+    await processAppleMembershipVerification(verification.id, {
       createVerifier: () =>
         makeVerifier(fixture, { inAppOwnershipType: InAppOwnershipType.FAMILY_SHARED }),
     })
@@ -187,7 +187,7 @@ describe('Apple membership verification processing', () => {
       trustedProviderContext: { environment: 'test', applicationId: fixture.applicationId },
       evidence: { signed_transaction_info: `signed-${randomUUID()}` },
     })
-    await processMembershipVerification(verification.id, {
+    await processAppleMembershipVerification(verification.id, {
       createVerifier: () => makeVerifier(fixture, { appAccountToken: fixture.purchaseIntentId }),
     })
     await expect(getMembershipVerification(user.id, verification.id)).resolves.toMatchObject({
@@ -214,7 +214,7 @@ describe('Apple membership verification processing', () => {
       `signed-notification-first-${randomUUID()}`,
     )
 
-    await processMembershipVerification(verification.id, {
+    await processAppleMembershipVerification(verification.id, {
       createVerifier: () =>
         makeVerifier(fixture, {
           appAccountToken: fixture.purchaseIntentId,
@@ -242,10 +242,10 @@ describe('Apple membership verification processing', () => {
     const claimToken = randomUUID()
     await claimTestMembershipVerification(fenced.id, claimToken)
 
-    await processMembershipVerification(fenced.id, {
+    await processAppleMembershipVerification(fenced.id, {
       createVerifier: () => makeVerifier(fixture),
     })
-    await processMembershipVerification(retryable.id, {
+    await processAppleMembershipVerification(retryable.id, {
       createVerifier: () => {
         throw new Error('temporary verifier configuration failure')
       },

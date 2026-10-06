@@ -13,6 +13,11 @@ export type TransportRequest = {
   provider: string
   url: string
 }
+/**
+ * @public Retained provisionally under issue #1360 and described in
+ * `docs/overview/architecture/structured-decisions.md`; the internal client is a current owner,
+ * while external consumers are unconfirmed. This export may be removed after intended-use review.
+ */
 export function createTransportRequest(
   transport: StructuredDecisionTransport,
   apiKey: string,
@@ -59,7 +64,11 @@ function toProviderQuestion(question: StructuredDecisionQuestion): Record<string
   }
 }
 /* no-mistakes: integration=typesafe */
-/* no-mistakes: integration=openrouter */
+/* no-mistakes: integration=openrouter
+ @public Retained provisionally under issue #1360 and described in
+ `docs/overview/architecture/structured-decisions.md`; the internal client is a current owner,
+ while external consumers are unconfirmed. This export may be removed after intended-use review.
+*/
 export async function fetchStructuredDecisionProvider(
   url: string,
   init: Parameters<typeof undiciFetch>[1],

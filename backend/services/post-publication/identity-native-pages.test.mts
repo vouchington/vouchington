@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { beginTransaction } from '@voucha/test-helpers'
-import { createTestPublicationSnapshotWork } from './test-fixtures.mts'
+import { createTestPublicationSnapshotWork } from '@voucha/test-helpers/post-publication-fixtures'
 import { listPublicationIdentitySourcePage } from './identity-source-paging.mts'
 import { retainStoredPublicationIdentityPage } from './retain-stored-identities.mts'
 import { createTestTopicAliasForCategoryMapping } from '@voucha/test-helpers/entities/topic-alias-category-mappings'

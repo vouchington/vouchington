@@ -18,7 +18,7 @@ import {
 import {
   openHeldCounterNoticeRestore,
   recordOrdinaryCopyrightHold,
-} from './restoration-hold-scene.mts'
+} from '@voucha/test-helpers/copyright-restoration-hold-scene'
 import {
   materializeDsaStatementSubmissions,
   prepareDsaStatementSubmissionSweep,

@@ -5,7 +5,7 @@ import {
   createTestUser,
   setRssFeedOwningTopicVoteScore,
 } from '@voucha/test-helpers'
-import { createTestRssFeed } from './test-fixtures.mts'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import {
   setRssFeedDiscoverabilityAsCurrentUser,
   setRssFeedDiscoverabilityAsSystem,

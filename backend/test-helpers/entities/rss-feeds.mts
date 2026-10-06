@@ -36,14 +36,10 @@ export {
   setRssFeedOwningTopicVoteScore,
 }
 // Raw-primitive substitute for @services/rss-feeds' createRssFeed, for callers that only need an
-// rss_feeds row to exist (as incidental fixture setup for an unrelated entity/behavior under test)
-// and don't need createRssFeed's real validation or its enqueueBulkFetchRssFeeds /
-// enqueueEvaluateRssFeedDiscoverability side effects. Packages that @services/rss-feeds itself
-// depends on (directly or transitively — e.g. @services/rss-feed-items, @services/users,
-// @services/elections-votes, @services/entity-cache, @services/notifications,
-// @services/user-import-export, @services/moderation, @data-stores/psql) must use this instead of
-// @services/rss-feeds/test-fixtures's createTestRssFeed: importing that fixture would give those
-// packages a devDependency back on @services/rss-feeds, closing a workspace dependency cycle.
+// rss_feeds row to exist as incidental fixture setup and do not need production validation or
+// enqueue effects. Use @voucha/test-helpers/rss-feed-create's createTestRssFeed when those effects
+// are part of the behavior under test. That helper stays outside the main helper barrel so
+// incidental fixture users do not load the real service path.
 export async function insertTestRssFeedDirect(options: {
   topicId?: string
   topicHostname?: string

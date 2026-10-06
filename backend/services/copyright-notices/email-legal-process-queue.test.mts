@@ -3,7 +3,7 @@ import { createTestUser } from '@voucha/test-helpers'
 import {
   createParsedCopyrightEmailIntake,
   createUnparsedCopyrightEmailIntake,
-} from './email-intake-test-fixtures.mts'
+} from '@voucha/test-helpers/copyright-email-intake-fixtures'
 import { recordCopyrightEmailIntakeLegalProcess } from './index.mts'
 import { searchCopyrightStaffEmailIntakes } from './read-models-staff-email-intakes.mts'
 

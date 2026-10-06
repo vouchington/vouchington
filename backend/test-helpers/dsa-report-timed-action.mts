@@ -6,11 +6,9 @@ import { createHostedImagePost } from './services/copyright-notices/hosted-post-
 import { createCopyrightNoticeAggregate } from './services/copyright-notices/create-notice-aggregate.mts'
 import { getCopyrightNoticePrivateAggregate } from './services/copyright-notices/private-aggregate.mts'
 import { createTestCopyrightDeliveryDependencies } from './copyright-delivery-dependencies.mts'
-import {
-  acceptCopyrightNoticeAndImposeRestriction,
-  appendCopyrightSubmissionAssessment,
-  processCopyrightActionIntent,
-} from '../services/copyright-notices/index.mts'
+import { processCopyrightActionIntent } from '../services/copyright-notices/index.mts'
+import { acceptCopyrightNoticeAndImposeRestriction } from '../services/copyright-notices/restrictions.mts'
+import { appendCopyrightSubmissionAssessment } from '../services/copyright-notices/compliance.mts'
 
 /** Controlled clocks enter the real notice, assessment, restriction, and action service boundaries. */
 export async function createTestTimedDsaReportAction(input: {

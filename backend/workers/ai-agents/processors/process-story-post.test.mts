@@ -14,7 +14,7 @@ import {
   setTestItemStoryId,
   updatePostModerationData,
 } from '@voucha/test-helpers'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { upsertSystemUser } from '@services/users/system-users'
 import { createStoryPost } from '@services/stories/story-posts'
 import { getPostByAny } from '@services/posts/get'

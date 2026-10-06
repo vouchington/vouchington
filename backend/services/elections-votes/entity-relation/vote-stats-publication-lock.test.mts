@@ -12,7 +12,7 @@ import {
 } from '@voucha/test-helpers'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { describe, expect, it, vi } from 'vitest'
-import { createTestRssFeed } from '../../rss-feeds/test-fixtures.mts'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { createEntityRelationElectionTarget } from './target.mts'
 import { updateEntityRelationElectionVoteStatsFromPrimary } from './vote-stats.mts'
 import { upsertEntityRelationElectionVotes } from './votes-upsert.mts'

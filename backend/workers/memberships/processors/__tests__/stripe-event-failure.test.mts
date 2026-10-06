@@ -6,7 +6,7 @@ import {
   markStripeEventProcessing,
 } from '@services/stripe/events'
 import { handleStripeEvent } from '@services/stripe-event-processing'
-import { createStripeEvent } from '../stripe-event-test-fixtures.mts'
+import { createStripeEvent } from '@voucha/test-helpers/membership-stripe-fixtures'
 import { processStripeEvent } from '../stripe-event.mts'
 
 describe('stripe-event processing failures', () => {

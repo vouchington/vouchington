@@ -9,7 +9,7 @@ import {
   setTestItemStoryId,
 } from '@voucha/test-helpers'
 import type { DailyAiCostTotal } from '@services/ai-usage'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { upsertSystemUser } from '@services/users/system-users'
 import { createStoryPost } from '@services/stories/story-posts'
 import type { SpendCapBreachContext } from '@modules/on-error/spend-cap-breach'

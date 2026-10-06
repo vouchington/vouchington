@@ -25,7 +25,7 @@ import {
 } from './identity-bridges.mts'
 import { preparePostPublicationIdentityBridges } from './prepare-identity-bridges.mts'
 import type { PostPublicationChange } from './types.mts'
-import { createTestPublicationSnapshotWork } from './test-fixtures.mts'
+import { createTestPublicationSnapshotWork } from '@voucha/test-helpers/post-publication-fixtures'
 import { materializePostPublicationIdentitySnapshot } from './identity-snapshots.mts'
 import { acknowledgePostPublicationProjectionReceipts } from './receipts.mts'
 import { acknowledgePostPublicationDirtyWork } from './dirty-work.mts'

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { closeDynamicConfigValkeySubscriptionClient } from '@data-stores/valkey/clients'
+import { closeDynamicConfigValkeySubscriptionClient } from 'valkyries'
 import type { DynamicConfig } from '@data-stores/valkey/dynamic-config'
 import { dynamicConfigs } from 'valkyries/dynamic-config'
 

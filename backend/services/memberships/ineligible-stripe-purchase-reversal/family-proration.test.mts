@@ -1,9 +1,6 @@
+import { allocateReversalCaseTargets } from './case-allocation.mts'
 import { describe, expect, it } from 'vitest'
-import {
-  getCollisionPeriod,
-  getFamilyCollisionRefundAmount,
-  getFamilyCollisionReversalTargets,
-} from './family-proration.mts'
+import { getCollisionPeriod, getFamilyCollisionRefundAmount } from './family-proration.mts'
 
 describe('getFamilyCollisionRefundAmount', () => {
   it('rounds the unused service allocation up to a whole minor unit', () => {
@@ -58,7 +55,18 @@ describe('getFamilyCollisionRefundAmount', () => {
 
   it('preserves the unprorated provider observation for future reconciliation', () => {
     expect(
-      getFamilyCollisionReversalTargets(
+      allocateReversalCaseTargets(
+        {
+          currency: 'usd',
+          providerApplicationId: 'voucha-web',
+          providerEnvironment: 'test',
+          refundCapMinorUnits: getFamilyCollisionRefundAmount(1_000, {
+            collisionAt: new Date('2030-01-01T00:30:00.000Z'),
+            periodEndsAt: new Date('2030-01-01T01:00:00.000Z'),
+            periodStartedAt: new Date('2030-01-01T00:00:00.000Z'),
+          }),
+          subscriptionId: 'sub_family_allocation',
+        },
         [
           {
             amountMinorUnits: 1_000,
@@ -66,23 +74,56 @@ describe('getFamilyCollisionRefundAmount', () => {
             currency: 'usd',
             invoiceId: 'in_family_observed',
             paymentIntentId: null,
+            providerObservedAmountMinorUnits: 1_000,
             qualifyingAmountMinorUnits: 1_000,
           },
         ],
-        {
-          collisionAt: new Date('2030-01-01T00:30:00.000Z'),
-          periodEndsAt: new Date('2030-01-01T01:00:00.000Z'),
-          periodStartedAt: new Date('2030-01-01T00:00:00.000Z'),
-        },
+        new Map(),
       ),
     ).toEqual([
       expect.objectContaining({ amountMinorUnits: 500, providerObservedAmountMinorUnits: 1_000 }),
     ])
   })
 
+  it('does not invent a provider observation when discovery supplied none', () => {
+    const [target] = allocateReversalCaseTargets(
+      {
+        currency: 'usd',
+        providerApplicationId: 'voucha-web',
+        providerEnvironment: 'test',
+        refundCapMinorUnits: 500,
+        subscriptionId: 'sub_family_no_observation',
+      },
+      [
+        {
+          amountMinorUnits: 1_000,
+          chargeId: 'ch_no_observation',
+          currency: 'usd',
+          invoiceId: 'in_no_observation',
+          paymentIntentId: null,
+          qualifyingAmountMinorUnits: 1_000,
+        },
+      ],
+      new Map(),
+    )
+    expect(target).toMatchObject({ amountMinorUnits: 500, qualifyingAmountMinorUnits: 500 })
+    expect(target).not.toHaveProperty('providerObservedAmountMinorUnits')
+  })
+
   it('subtracts succeeded external refunds from the original prorated obligation', () => {
     expect(
-      getFamilyCollisionReversalTargets(
+      allocateReversalCaseTargets(
+        {
+          currency: 'usd',
+          providerApplicationId: 'voucha-web',
+          providerEnvironment: 'test',
+          refundCapMinorUnits: getFamilyCollisionRefundAmount(1_000, {
+            collisionAt: new Date('2030-01-01T00:30:00.000Z'),
+            periodEndsAt: new Date('2030-01-01T01:00:00.000Z'),
+            periodStartedAt: new Date('2030-01-01T00:00:00.000Z'),
+          }),
+          subscriptionId: 'sub_family_allocation',
+        },
         [
           {
             amountMinorUnits: 800,
@@ -95,11 +136,7 @@ describe('getFamilyCollisionRefundAmount', () => {
             qualifyingAmountMinorUnits: 1_000,
           },
         ],
-        {
-          collisionAt: new Date('2030-01-01T00:30:00.000Z'),
-          periodEndsAt: new Date('2030-01-01T01:00:00.000Z'),
-          periodStartedAt: new Date('2030-01-01T00:00:00.000Z'),
-        },
+        new Map(),
       ),
     ).toEqual([
       expect.objectContaining({
@@ -112,7 +149,18 @@ describe('getFamilyCollisionRefundAmount', () => {
   })
 
   it('rounds one split-payment invoice obligation once', () => {
-    const targets = getFamilyCollisionReversalTargets(
+    const targets = allocateReversalCaseTargets(
+      {
+        currency: 'usd',
+        providerApplicationId: 'voucha-web',
+        providerEnvironment: 'test',
+        refundCapMinorUnits: getFamilyCollisionRefundAmount(2, {
+          collisionAt: new Date('2030-01-01T00:30:00.000Z'),
+          periodEndsAt: new Date('2030-01-01T01:00:00.000Z'),
+          periodStartedAt: new Date('2030-01-01T00:00:00.000Z'),
+        }),
+        subscriptionId: 'sub_family_allocation',
+      },
       [
         {
           amountMinorUnits: 1,
@@ -131,20 +179,28 @@ describe('getFamilyCollisionRefundAmount', () => {
           qualifyingAmountMinorUnits: 1,
         },
       ],
-      {
-        collisionAt: new Date('2030-01-01T00:30:00.000Z'),
-        periodEndsAt: new Date('2030-01-01T01:00:00.000Z'),
-        periodStartedAt: new Date('2030-01-01T00:00:00.000Z'),
-      },
+      new Map(),
     )
 
-    expect(targets.map(target => target.amountMinorUnits)).toEqual([1, 0])
+    expect(targets.map(target => target.chargeId)).toEqual(['ch_family_first'])
+    expect(targets.map(target => target.amountMinorUnits)).toEqual([1])
     expect(targets.reduce((total, target) => total + target.amountMinorUnits, 0)).toBe(1)
   })
 
   it('keeps a later payment refund out of an earlier fixed prorated slice', () => {
     expect(
-      getFamilyCollisionReversalTargets(
+      allocateReversalCaseTargets(
+        {
+          currency: 'usd',
+          providerApplicationId: 'voucha-web',
+          providerEnvironment: 'test',
+          refundCapMinorUnits: getFamilyCollisionRefundAmount(2, {
+            collisionAt: new Date('2030-01-01T00:30:00.000Z'),
+            periodEndsAt: new Date('2030-01-01T01:00:00.000Z'),
+            periodStartedAt: new Date('2030-01-01T00:00:00.000Z'),
+          }),
+          subscriptionId: 'sub_family_allocation',
+        },
         [
           {
             amountMinorUnits: 1,
@@ -164,16 +220,9 @@ describe('getFamilyCollisionRefundAmount', () => {
             qualifyingAmountMinorUnits: 1,
           },
         ],
-        {
-          collisionAt: new Date('2030-01-01T00:30:00.000Z'),
-          periodEndsAt: new Date('2030-01-01T01:00:00.000Z'),
-          periodStartedAt: new Date('2030-01-01T00:00:00.000Z'),
-        },
+        new Map(),
       ),
-    ).toEqual([
-      expect.objectContaining({ amountMinorUnits: 1, qualifyingAmountMinorUnits: 1 }),
-      expect.objectContaining({ amountMinorUnits: 0, qualifyingAmountMinorUnits: 0 }),
-    ])
+    ).toEqual([expect.objectContaining({ amountMinorUnits: 1, qualifyingAmountMinorUnits: 1 })])
   })
 
   it('requires both service-period timestamps for a family collision', () => {

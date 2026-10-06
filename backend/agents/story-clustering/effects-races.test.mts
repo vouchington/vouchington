@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { completeClassifierRun } from '@services/classifier-runs'
 import { adminAssignItemToStory, createStoryClusteringRunAdapter } from '@services/stories'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import {
   createTestUserDirect,
   deleteTestStory,

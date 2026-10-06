@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { insertTestStory, setTestItemStoryId } from '@voucha/test-helpers'
 import { softDeleteRssFeedItemForTest } from '@voucha/test-helpers/data-stores/psql/classifier-runs/story-clustering-edits'
 import { createStoryClusteringItem } from '@voucha/test-helpers/data-stores/psql/classifier-runs/story-clustering-fixture'

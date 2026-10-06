@@ -15,7 +15,7 @@ import {
   setTestEntityRelationIdAndScore,
 } from '@voucha/test-helpers'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
-import { createTestRssFeed } from '../../rss-feeds/test-fixtures.mts'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { getPublisherTypeTopicId } from '../../topics/publisher-type-topics.mts'
 import { createEntityRelationElectionTarget } from './target.mts'
 import { updateEntityRelationElectionVoteStatsFromPrimaryBatch } from './vote-stats-batch.mts'

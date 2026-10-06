@@ -120,8 +120,3 @@ export function parseDailyTotalMicrounits(value: string): number {
     throw err as Error
   }
 }
-
-export function clearDailyAiCostTotalCacheForTesting(): void {
-  dailyAiCostTotalCache = null
-  dailyAiCostTotalRefresh = null
-}

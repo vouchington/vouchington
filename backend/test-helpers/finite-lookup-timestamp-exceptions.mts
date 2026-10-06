@@ -1,5 +1,5 @@
 /* v8 ignore start -- declarative timestamp exceptions have no executable branches */
-import { PROVIDER_LOOKUP_BOUNDS } from '../data-stores/psql/schema-growth-provider-lookups.mts'
+import { PROVIDER_LOOKUP_BOUNDS } from './schema-growth-bounded-policies.mts'
 
 export const FINITE_LOOKUP_MISSING_UPDATED_AT = new Map<string, string>([
   ...Array.from(

@@ -1,3 +1,4 @@
+import { claimTestIneligiblePurchaseReversalOperations } from '@voucha/test-helpers/membership-reversal-case-fixtures'
 import { randomUUID } from 'node:crypto'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
@@ -12,14 +13,13 @@ import {
 import { listAllStripeSubscriptionInvoices } from '@modules/stripe/invoices'
 import { createStripeRefund, listStripeRefundsForPaymentPage } from '@modules/stripe/refunds'
 import { createMembership } from '@services/memberships'
-import { claimIneligiblePurchaseReversals } from '@services/memberships/ineligible-stripe-purchase-reversal/claim-ledger'
 import {
   completeIneligiblePurchaseReversal,
   markIneligiblePurchaseReversalCompleted,
 } from '@services/memberships/ineligible-stripe-purchase-reversal-execution'
 import { getStripeEventByStripeEventId } from '@services/stripe/events'
 import { insertStripeEvent } from '@services/stripe/insert-event'
-import { createStripeEvent, toJobData } from '../stripe-event-test-fixtures.mts'
+import { createStripeEvent, toJobData } from '@voucha/test-helpers/membership-stripe-fixtures'
 import { processStripeEvent } from '../stripe-event.mts'
 
 const {
@@ -82,7 +82,7 @@ describe('processStripeEvent InvoicePayment reversal reconciliation', () => {
     const sku = await createTestSku({ plan: 'pro' })
     const subscriptionId = `sub_invoice_payment_${randomUUID()}`
     const invoiceId = `in_invoice_payment_${randomUUID()}`
-    const reversalCase = (await claimIneligiblePurchaseReversals(
+    const reversalCase = (await claimTestIneligiblePurchaseReversalOperations(
       {
         customerId: `cus_invoice_payment_${randomUUID()}`,
         effectiveAt: undefined,
@@ -181,7 +181,7 @@ describe('processStripeEvent InvoicePayment reversal reconciliation', () => {
     const subscriptionId = `sub_dispute_recovery_${randomUUID()}`
     const invoiceId = `in_dispute_recovery_${randomUUID()}`
     const chargeId = `ch_dispute_recovery_${randomUUID()}`
-    const claim = (await claimIneligiblePurchaseReversals(
+    const claim = (await claimTestIneligiblePurchaseReversalOperations(
       {
         customerId: `cus_dispute_recovery_${randomUUID()}`,
         effectiveAt: undefined,

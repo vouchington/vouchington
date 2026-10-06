@@ -1,12 +1,10 @@
+import { claimTestIneligiblePurchaseReversalOperations } from '@voucha/test-helpers/membership-reversal-case-fixtures'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import { createTestSku, createTestUser } from '@voucha/test-helpers'
 import { createMembership } from './create.mts'
 import { failIneligiblePurchaseReversal } from './ineligible-stripe-purchase-reversal-execution.mts'
-import {
-  claimIneligiblePurchaseReversals,
-  claimPersistedIneligiblePurchaseReversalCase,
-} from './ineligible-stripe-purchase-reversal/claim-ledger.mts'
+import { claimPersistedIneligiblePurchaseReversalCase } from './ineligible-stripe-purchase-reversal/claim-ledger.mts'
 import { reconcileRecordedIneligibleStripePurchaseReversal } from './reconcile-recorded-ineligible-stripe-purchase-reversal.mts'
 import type { IneligibleStripePurchaseOperations } from './reverse-ineligible-stripe-purchase-types.mts'
 
@@ -21,7 +19,7 @@ describe('ineligible Stripe purchase reversal case cap', () => {
       paymentIntentId: null,
       qualifyingAmountMinorUnits: 400,
     }
-    const initial = (await claimIneligiblePurchaseReversals(options, [firstTarget], {
+    const initial = (await claimTestIneligiblePurchaseReversalOperations(options, [firstTarget], {
       currency: 'usd',
       qualifyingAmountMinorUnits: 1_000,
     }))!
@@ -77,7 +75,7 @@ describe('ineligible Stripe purchase reversal case cap', () => {
       paymentIntentId: null,
       qualifyingAmountMinorUnits: 100,
     }
-    await claimIneligiblePurchaseReversals(options, [target], {
+    await claimTestIneligiblePurchaseReversalOperations(options, [target], {
       currency: target.currency,
       qualifyingAmountMinorUnits: target.qualifyingAmountMinorUnits,
     })

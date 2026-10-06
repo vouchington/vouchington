@@ -1,19 +1,11 @@
 import { afterAll, describe, expect, it } from 'vitest'
 import type { Job } from 'glide-mq'
-import {
-  entityJobContractCoversCanonicalTypes,
-  JobPayloadError,
-  parseEntityJob,
-} from '@queues/entity-listeners/payload/job-payload'
+import { JobPayloadError, parseEntityJob } from '@queues/entity-listeners/payload/job-payload'
 import { dispatchEntityListenerJob, entitiesListeners } from './workers.mts'
 
 describe('entity listener dispatch', () => {
   afterAll(async () => {
     await entitiesListeners.close()
-  })
-
-  it('covers the canonical enqueue payload types', () => {
-    expect(entityJobContractCoversCanonicalTypes()).toBe(true)
   })
 
   it('runs an empty image-updated job', async () => {

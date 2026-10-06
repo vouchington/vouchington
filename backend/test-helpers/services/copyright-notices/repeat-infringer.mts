@@ -5,11 +5,9 @@ import {
   insertTestPostImage,
 } from '../../entities/index.mts'
 import type { PrivateUser } from '../../../services/users/types.mts'
-import {
-  acceptCopyrightNoticeAndImposeRestriction,
-  appendCopyrightSubmissionAssessment,
-  completeCopyrightMandatoryHumanReview,
-} from '../../../services/copyright-notices/index.mts'
+import { completeCopyrightMandatoryHumanReview } from '../../../services/copyright-notices/index.mts'
+import { acceptCopyrightNoticeAndImposeRestriction } from '../../../services/copyright-notices/restrictions.mts'
+import { appendCopyrightSubmissionAssessment } from '../../../services/copyright-notices/compliance.mts'
 import { createCopyrightNoticeAggregate } from './create-notice-aggregate.mts'
 import { getCopyrightNoticePrivateAggregate } from './private-aggregate.mts'
 

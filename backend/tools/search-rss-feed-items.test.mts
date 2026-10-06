@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import searchRssFeedItemsTool from './search-rss-feed-items.mts'
 import { upsertRssFeedItems } from '@services/rss-feed-items/upsert'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 
 describe('search-rss-feed-items', () => {
   it('searchRssFeedItemsTool schema exposes hybrid and split search fields', () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { upsertRssFeedItems } from '@services/rss-feed-items'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { rssFeedNeedsChapterMetadataBackfill } from '../chapters-backfill.mts'
 
 describe('rssFeedNeedsChapterMetadataBackfill', () => {

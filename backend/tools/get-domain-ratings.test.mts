@@ -12,7 +12,7 @@ import {
   setUrlHostnameVotes,
 } from '@voucha/test-helpers'
 import { getRssFeedById } from '@services/rss-feeds/get'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import type { PrivateUser } from '@services/users/types'
 
 describe('get_domain_ratings tool — real DB', () => {

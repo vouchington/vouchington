@@ -7,14 +7,14 @@ import { getImagePlacementForCopyright } from '@services/images/placements'
 import {
   appendCopyrightLegalHoldAssessment,
   appendCopyrightNoticeSubmission,
-  appendCopyrightSubmissionAssessment,
   processCopyrightActionIntent,
   resolveCopyrightLegalHold,
 } from './index.mts'
+import { appendCopyrightSubmissionAssessment } from './compliance.mts'
 import {
   openHeldCounterNoticeRestore,
   recordOrdinaryCopyrightHold as recordHold,
-} from './restoration-hold-scene.mts'
+} from '@voucha/test-helpers/copyright-restoration-hold-scene'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('ordinary copyright hold restoration', () => {

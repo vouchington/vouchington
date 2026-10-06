@@ -2,13 +2,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import { readCopyrightNoticeTargetId } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
-import { createParsedCopyrightEmailIntake } from '@services/copyright-notices/email-intake-test-fixtures'
+import { createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
 import { linkCopyrightEmailIntakeToNotice } from '@services/copyright-notices/email-threading'
 import {
   counterNoticeBody,
   createCopyrightFormFixture,
   createNotice,
-} from '@services/copyright-notices/route-test-fixtures'
+} from '@voucha/test-helpers/copyright-route-fixtures'
 import { ai_agents } from '@queues/ai-agents/queues'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 

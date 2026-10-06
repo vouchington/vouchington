@@ -1,3 +1,4 @@
+import { claimTestIneligiblePurchaseReversalOperations } from '@voucha/test-helpers/membership-reversal-case-fixtures'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
@@ -8,7 +9,6 @@ import {
 } from '@voucha/test-helpers'
 import { createMembership } from './create.mts'
 import { markIneligiblePurchaseReversalCompleted } from './ineligible-stripe-purchase-reversal-execution.mts'
-import { claimIneligiblePurchaseReversals } from './ineligible-stripe-purchase-reversal/claim-ledger.mts'
 
 describe('ineligible Stripe purchase reversal receipt recovery', () => {
   it('finishes a receipt-recorded reversal without acquiring another execution lease', async () => {
@@ -45,7 +45,7 @@ describe('ineligible Stripe purchase reversal receipt recovery', () => {
       paymentIntentId: null,
       qualifyingAmountMinorUnits: 1_000,
     }
-    const initial = (await claimIneligiblePurchaseReversals(options, [target], {
+    const initial = (await claimTestIneligiblePurchaseReversalOperations(options, [target], {
       currency: target.currency,
       qualifyingAmountMinorUnits: target.qualifyingAmountMinorUnits,
     }))!
@@ -58,7 +58,7 @@ describe('ineligible Stripe purchase reversal receipt recovery', () => {
     )
 
     await expect(
-      claimIneligiblePurchaseReversals(options, [target], {
+      claimTestIneligiblePurchaseReversalOperations(options, [target], {
         currency: target.currency,
         qualifyingAmountMinorUnits: target.qualifyingAmountMinorUnits,
       }),

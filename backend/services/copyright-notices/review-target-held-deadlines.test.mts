@@ -8,7 +8,8 @@ import {
   insertOpenCopyrightDeadline,
   insertUnreviewedCopyrightSubmission,
 } from '@voucha/test-helpers/data-stores/psql/copyright-review-target'
-import { createCopyrightDeliveryIntent, readCopyrightReviewTargetBreaches } from './index.mts'
+import { readCopyrightReviewTargetBreaches } from './index.mts'
+import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
 import {
   failTestCopyrightActionIntent,
   failTestCopyrightDeliveryIntent,

@@ -6,10 +6,8 @@ import {
   createTestCopyrightRestrictionForImage,
 } from '@voucha/test-helpers/copyright-surface-target-fixtures'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import {
-  createOutboundCopyrightCorrespondence,
-  createCopyrightDeliveryIntent,
-} from '@services/copyright-notices'
+import { createOutboundCopyrightCorrespondence } from '@services/copyright-notices/correspondence'
+import { createCopyrightDeliveryIntent } from '@services/copyright-notices/delivery-intents'
 import { useCopyrightMcpDecisionTools } from '@voucha/test-helpers/copyright-mcp-write-fixtures'
 import {
   countTestCopyrightLifecycleEvents,
@@ -21,8 +19,8 @@ import {
   readTestCopyrightDeliveryIntentReplayEvents,
   readTestCopyrightDeliveryIntentReplayFacts,
 } from '@voucha/test-helpers/data-stores/psql/copyright-email-intake-reply-replays'
-import { createCopyrightReplayFixture } from '@services/copyright-notices/route-replay-fixture-setup'
-import { exhaustCopyrightActionIntent } from '@services/copyright-notices/route-replay-fixtures'
+import { createCopyrightReplayFixture } from '@voucha/test-helpers/copyright-route-replay-setup'
+import { exhaustCopyrightActionIntent } from '@voucha/test-helpers/copyright-route-replay-fixtures'
 
 import { callMcpTool } from './call-tool.mts'
 import { ADMIN_MCP_SERVER_CONFIG } from './config.mts'

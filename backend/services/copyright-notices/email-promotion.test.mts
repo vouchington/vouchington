@@ -21,7 +21,7 @@ import {
 } from './index.mts'
 import { promoteCopyrightEmailIntake } from './email-promotion.mts'
 import { rejectCopyrightEmailIntake } from './email-rejection.mts'
-import { createParsedCopyrightEmailIntake } from './email-intake-test-fixtures.mts'
+import { createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('copyright email promotion', () => {

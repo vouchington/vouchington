@@ -3,10 +3,8 @@ import { describe, expect, it } from 'vitest'
 import { stageCurrentImagePlacementDeliveryRecordsForImageIds } from '@services/media-delivery-safety/delivery-registry-reconciliation'
 import { createProfileLink, deleteProfileLink } from './profile-links.mts'
 import { updateProfileImageId } from './identity.mts'
-import {
-  getImagePlacementDeliveryKey,
-  stageImagePlacementDeliveryRecord,
-} from '@services/media-delivery-safety'
+import { stageImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
+import { getImagePlacementDeliveryKey } from '@services/media-delivery-safety/delivery-registry-types'
 import {
   createTestUserDirect,
   completeTestMediaDeliveryRecord,

@@ -6,7 +6,6 @@ import sql from 'sql-template-strings'
 import { connectBlueskyAccountToUser } from './connect.mts'
 import { lockBlueskyAuthorizationOwner } from './session-generation.mts'
 import {
-  createNativeCompletionToken,
   nativeCompletionProofMatches,
   nativeCompletionTokenMatches,
 } from './native-completion-token.mts'
@@ -14,7 +13,6 @@ import {
   assertActiveNativeLinkUserState,
   getActiveNativeLinkUserState,
 } from './native-user-state.mts'
-import { persistNativeBlueskyLinkCompletion } from './native-completion-persistence.mts'
 
 type CompletionRow = {
   authorization_id: string
@@ -23,17 +21,6 @@ type CompletionRow = {
   handle: string
   token_hash: string
   expires_at: Date
-}
-
-export async function createNativeBlueskyLinkCompletion(input: {
-  flowId: string
-  userId: string
-  did: string
-  handle: string
-}): Promise<string> {
-  const { token, tokenHash } = createNativeCompletionToken(input.flowId)
-  await persistNativeBlueskyLinkCompletion({ ...input, tokenHash })
-  return token
 }
 
 export async function finalizeNativeBlueskyAccountLink(

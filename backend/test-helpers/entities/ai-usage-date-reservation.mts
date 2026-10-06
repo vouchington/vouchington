@@ -1,13 +1,22 @@
+import { randomInt } from 'node:crypto'
 import { advisoryLockPool, type PoolClient } from '@data-stores/psql'
 import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 const TEST_AI_USAGE_WINDOW_START_MS = Date.parse('8000-01-01T00:00:00.000Z')
-// Keep more independently locked windows than the test runner can use concurrently so ordinary
-// exact-aggregate tests retain parallelism while a control slot remains available for regressions.
-const TEST_AI_USAGE_SLOT_COUNT = 16
-const TEST_AI_USAGE_CONTROL_SLOT = TEST_AI_USAGE_SLOT_COUNT
+const TEST_AI_USAGE_WINDOW_END_MS = Date.parse('9000-01-01T00:00:00.000Z')
+const TEST_AI_USAGE_MAX_LOCK_ATTEMPTS = 16
+const TEST_AI_USAGE_CONTROL_SLOT = 16
 const TEST_AI_USAGE_SLOT_DAYS = 3
+// Keep the existing recyclable control window separate from ordinary fresh-day reservations.
+const TEST_AI_USAGE_FIRST_ORDINARY_SLOT = TEST_AI_USAGE_CONTROL_SLOT + 1
+const TEST_AI_USAGE_ORDINARY_SLOT_COUNT =
+  Math.floor(
+    (TEST_AI_USAGE_WINDOW_END_MS - TEST_AI_USAGE_WINDOW_START_MS) /
+      (TEST_AI_USAGE_SLOT_DAYS * DAY_MS),
+  ) - TEST_AI_USAGE_FIRST_ORDINARY_SLOT
+const initialOrdinarySlotOffset = randomInt(TEST_AI_USAGE_ORDINARY_SLOT_COUNT)
+let ordinarySlotAttempts = 0
 
 export type TestAiUsageDateReservation = {
   day: string
@@ -16,19 +25,20 @@ export type TestAiUsageDateReservation = {
 
 /**
  * Reserves a clean, three-day UUIDv7 window for an exact global ai-usage aggregate assertion.
- * Slots are independently advisory-locked, allowing unrelated tests to run concurrently.
+ * Fresh ordinary windows are independently advisory-locked; no day is reused within this process.
  */
 export async function acquireTestAiUsageDateReservation(): Promise<TestAiUsageDateReservation> {
   const client = await advisoryLockPool.connect()
   try {
-    for (let slot = 0; slot < TEST_AI_USAGE_SLOT_COUNT; slot++) {
+    for (let attempt = 0; attempt < TEST_AI_USAGE_MAX_LOCK_ATTEMPTS; attempt++) {
+      const slot = nextOrdinarySlot()
       if (await tryAcquireSlot(client, slot)) {
         await clearSlot(client, slot)
         return createReservation(client, slot)
       }
     }
     throw new Error(
-      `No AI usage test date reservation slots are available (${TEST_AI_USAGE_SLOT_COUNT} are in use)`,
+      `No AI usage test date reservation was acquired after ${TEST_AI_USAGE_MAX_LOCK_ATTEMPTS} attempts`,
     )
   } catch (err) {
     client.release(toError(err))
@@ -49,6 +59,15 @@ export async function acquireTestAiUsageDateReservationControlSlot(): Promise<Te
     client.release(toError(err))
     throw err
   }
+}
+
+function nextOrdinarySlot(): number {
+  if (ordinarySlotAttempts >= TEST_AI_USAGE_ORDINARY_SLOT_COUNT) {
+    throw new Error('The finite AI usage test date reservation range is exhausted')
+  }
+  const offset =
+    (initialOrdinarySlotOffset + ordinarySlotAttempts++) % TEST_AI_USAGE_ORDINARY_SLOT_COUNT
+  return TEST_AI_USAGE_FIRST_ORDINARY_SLOT + offset
 }
 
 async function tryAcquireSlot(client: PoolClient, slot: number): Promise<boolean> {

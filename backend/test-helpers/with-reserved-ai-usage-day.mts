@@ -1,9 +1,5 @@
 import { onTestFinished, vi } from 'vitest'
-import {
-  clearDailyAiCostTotalCacheForTesting,
-  getAccountingUncertaintyKey,
-  spendCapConfig,
-} from '../services/ai-usage/index.mts'
+import { getAccountingUncertaintyKey, spendCapConfig } from '../services/ai-usage/index.mts'
 import { unlinkTestAiUsageUncertaintyKey } from './ai-usage-uncertainty-key.mts'
 import { overrideDynamicConfigFieldsForTest } from './dynamic-config.mts'
 import { acquireTestAiUsageDateReservation } from './entities/ai-usage-date-reservation.mts'
@@ -29,7 +25,6 @@ export async function withReservedAiUsageDay<T>(
   onTestFinished(release)
   vi.useFakeTimers({ toFake: ['Date'] })
   vi.setSystemTime(new Date(`${reservation.day}T12:00:00.000Z`))
-  clearDailyAiCostTotalCacheForTesting()
   const restore = overrideDynamicConfigFieldsForTest(spendCapConfig, {
     enabled: true,
     daily_cap_microunits: dailyCapMicrounits,
@@ -38,7 +33,6 @@ export async function withReservedAiUsageDay<T>(
     return await fn(reservation.day)
   } finally {
     restore()
-    clearDailyAiCostTotalCacheForTesting()
     vi.useRealTimers()
     await unlinkTestAiUsageUncertaintyKey(getAccountingUncertaintyKey(reservation.day))
     await release()

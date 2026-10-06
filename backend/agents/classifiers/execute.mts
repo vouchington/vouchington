@@ -17,6 +17,11 @@ import type {
   ExecuteClassifierDecisionInput,
 } from './types.mts'
 
+/**
+ * @public Retained provisionally under issue #1360 and documented in
+ * `docs/overview/architecture/structured-decisions.md`; external production use is unconfirmed
+ * and this export may be removed after intended-use review.
+ */
 export async function executeClassifierDecision(
   input: ExecuteClassifierDecisionInput,
   dependencies: ExecuteClassifierDecisionDependencies = {},

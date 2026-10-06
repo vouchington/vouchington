@@ -1,6 +1,6 @@
 import { it, expect, describe, beforeEach } from 'vitest'
 import { createTestTopic, createRandomString } from '@voucha/test-helpers'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { upsertRssFeedCategories } from '../categories.mts'
 import { createFeedCategoryRelations } from '../category-relations.mts'
 import { getEntityRelations } from '@services/entity-relations/query'

@@ -5,7 +5,7 @@ import {
   insertOpenCopyrightCounterNoticeDeadline,
   insertReviewedCopyrightFormIntake,
 } from '@voucha/test-helpers/data-stores/psql/copyright-staff-queue'
-import { createCopyrightFormFixture } from '@services/copyright-notices/route-test-fixtures'
+import { createCopyrightFormFixture } from '@voucha/test-helpers/copyright-route-fixtures'
 import {
   appendCopyrightGuestFiling,
   issueCopyrightGuestCapability,

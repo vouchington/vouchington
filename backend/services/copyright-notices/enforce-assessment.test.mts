@@ -2,13 +2,13 @@ import { describe, expect, it, vi } from 'vitest'
 import { countCopyrightActiveRestrictionsForNotice } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
 import {
-  acceptCopyrightNoticeAndImposeRestriction,
-  appendCopyrightSubmissionAssessment,
-  createCopyrightDeliveryIntent,
-  createOutboundCopyrightCorrespondence,
   enforceCopyrightAssessment,
   searchPendingCopyrightEnforcementAssessmentIds,
 } from './index.mts'
+import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
+import { appendCopyrightSubmissionAssessment } from './compliance.mts'
+import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
+import { createOutboundCopyrightCorrespondence } from './correspondence.mts'
 import {
   createTestUserDirect,
   getTestPostImagePlacement,

@@ -19,7 +19,7 @@ import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/met
 import { createEntityRelationElectionTarget } from './target.mts'
 import { updateEntityRelationElectionVoteStatsFromPrimary } from './vote-stats.mts'
 import { upsertEntityRelationElectionVotes } from './votes-upsert.mts'
-import { createTestRssFeed } from '../../rss-feeds/test-fixtures.mts'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 
 describe('post topic election publication capture', () => {
   it('takes the post publication lock before waiting on the relation row', async () => {

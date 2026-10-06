@@ -19,7 +19,7 @@ import {
 import {
   reconcileTestPublicationUntilSnapshotsComplete as reconcilePostPublicationDirtyWork,
   getTestPublicationProjectionIdentity,
-} from './test-fixtures.mts'
+} from '@voucha/test-helpers/post-publication-fixtures'
 import { recordPostPublicationChange } from './capture.mts'
 
 describe('topic alias publication reconciliation', () => {

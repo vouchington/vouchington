@@ -37,7 +37,7 @@ export async function repairBloomFilterUnavailableRead({
   try {
     const readyMarkerKeyType = await getValkeyKeyType(readyKey)
     if (isUnreadableReadyMarkerKeyType(readyMarkerKeyType)) {
-      enqueueRebuildBloomFilterBestEffort(filter)
+      void enqueueRebuildBloomFilterBestEffort(filter)
       await deleteReadyMarkerIfUnreadable(readyKey)
       return
     }

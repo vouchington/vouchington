@@ -16,7 +16,7 @@ import {
 } from '@voucha/test-helpers'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ingestAppleAppStoreNotification } from './notification-ingress.mts'
-import { processMembershipVerification } from './process-verification.mts'
+import { processAppleMembershipVerification } from './process-verification.mts'
 import { reconcileAppleNotification } from './reconcile-notification.mts'
 import type { AppleNotificationReconciliationVerifier } from './notification-verifier.mts'
 
@@ -294,7 +294,7 @@ async function proveFamilyReceipt(
     idempotencyKey: randomUUID(),
     evidence: { signed_transaction_info: receiptTransactionId },
   })
-  await processMembershipVerification(verification.id, {
+  await processAppleMembershipVerification(verification.id, {
     createVerifier: () => makeVerifier(fixture, receiptTransactionId, transaction),
   })
 }

@@ -1,10 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import {
-  getTurnstileConfig,
-  isTurnstileAlwaysApprove,
-  resetTurnstileAlwaysApproveSkipLogForTests,
-  turnstileConfig,
-} from './config.mts'
+import { getTurnstileConfig, isTurnstileAlwaysApprove, turnstileConfig } from './config.mts'
 import {
   deleteDynamicConfigFieldsForTest,
   overrideDynamicConfigFieldsForTest,
@@ -15,7 +10,6 @@ describe('turnstile-config', () => {
   afterEach(() => {
     vi.unstubAllEnvs()
     deleteDynamicConfigFieldsForTest(turnstileConfig, Object.keys(turnstileConfig.fieldTypes))
-    resetTurnstileAlwaysApproveSkipLogForTests()
   })
 
   it('defaults always_approve to false', () => {

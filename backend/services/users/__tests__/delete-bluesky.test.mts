@@ -17,10 +17,8 @@ import {
   testBlueskyLinkCompletionExists,
   setTestBlueskyLinkCompletionExpiresAt,
 } from '@voucha/test-helpers/entities/bluesky-linked-accounts'
-import {
-  createNativeBlueskyLinkCompletion,
-  finalizeNativeBlueskyAccountLink,
-} from '@services/bluesky-accounts'
+import { createNativeBlueskyLinkCompletion } from '@voucha/test-helpers/bluesky-native-completion-fixtures'
+import { finalizeNativeBlueskyAccountLink } from '@services/bluesky-accounts'
 import { v7 } from 'uuid'
 import { deleteUser } from '../delete.mts'
 import {

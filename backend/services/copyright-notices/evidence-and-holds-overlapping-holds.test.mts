@@ -9,7 +9,7 @@ import {
   processCopyrightActionIntent,
   resolveCopyrightLegalHold,
 } from './index.mts'
-import { openHeldCounterNoticeRestore } from './restoration-hold-scene.mts'
+import { openHeldCounterNoticeRestore } from '@voucha/test-helpers/copyright-restoration-hold-scene'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('copyright notice overlapping legal holds', () => {

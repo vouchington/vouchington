@@ -14,7 +14,7 @@ import {
   setTestItemStoryId,
   observeTestPostgresQueryPools,
 } from '@voucha/test-helpers'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import type { PrivateUser } from '@services/users/types'
 
 describe('authorization', () => {

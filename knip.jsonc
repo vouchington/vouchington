@@ -154,6 +154,18 @@
       "entry": ["**/*.mts"],
       "ignoreExportsUsedInFile": true,
     },
+    "backend/agents/copyright-appeal-recommendation": {
+      // Keep the package's manifest entry so production consumers reach its run module.
+      "ignoreExportsUsedInFile": true,
+    },
+    "backend/agents/copyright-email-intake": {
+      // Keep the package's manifest entry so production consumers reach its run module.
+      "ignoreExportsUsedInFile": true,
+    },
+    "backend/agents/copyright-form-screening": {
+      // Keep the package's manifest entry so production consumers reach its run module.
+      "ignoreExportsUsedInFile": true,
+    },
     "web": {
       "entry": [
         "lib/api/**/*.ts",

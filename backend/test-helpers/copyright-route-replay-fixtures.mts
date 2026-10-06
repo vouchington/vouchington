@@ -6,12 +6,12 @@ import {
   countTestCopyrightLifecycleEvents,
   readTestCopyrightActionIntentState,
 } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
-import { processCopyrightActionIntent } from '@services/copyright-notices'
-import { replayFailedMediaDeliveryRegistryRecords } from '@services/media-delivery-safety'
+import { processCopyrightActionIntent } from '../services/copyright-notices/index.mts'
+import { replayFailedMediaDeliveryRegistryRecords } from '../services/media-delivery-safety/index.mts'
 import {
   createCopyrightReplayFixture,
   createFailedMediaDeliveryReplayFixture,
-} from './route-replay-fixture-setup.mts'
+} from './copyright-route-replay-setup.mts'
 
 export async function verifyCopyrightActionReplayRoute(): Promise<true> {
   const fixture = await createCopyrightReplayFixture()

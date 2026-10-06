@@ -11,14 +11,14 @@ import {
 } from '@voucha/test-helpers/data-stores/psql/copyright-form-reviews'
 import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
 import {
-  acceptCopyrightNoticeAndImposeRestriction,
-  appendCopyrightSubmissionAssessment,
   createCopyrightFormIntake,
   enforceCopyrightAssessment,
   searchPendingCopyrightEnforcementAssessmentIds,
   recoverRejectedCopyrightFormReviewEffect,
   searchRecoverableCopyrightFormReviewIntakeIds,
 } from './index.mts'
+import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
+import { appendCopyrightSubmissionAssessment } from './compliance.mts'
 import { appendCopyrightFormScreening } from './form-screenings.mts'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'

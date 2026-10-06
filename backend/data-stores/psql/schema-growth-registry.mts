@@ -3,17 +3,8 @@ import {
   getEntityRelationVoteTableName,
 } from '@voucha/types/entities/entity-relations-metadata'
 import { VOTE_SCHEMA_CONFIGS } from './config-driven/utils/election-schema-config.mts'
-import {
-  buildUnboundedUnpartitionedTables,
-  EXPLICIT_BOUNDED_TABLES,
-  NON_DEFAULT_ID_EXCEPTIONS,
-  STATIC_IDENTITY_EXCEPTIONS,
-} from './schema-growth-classification.mts'
+import { buildUnboundedUnpartitionedTables } from './schema-growth-classification.mts'
 
-export { EXPLICIT_BOUNDED_TABLES, NON_DEFAULT_ID_EXCEPTIONS, STATIC_IDENTITY_EXCEPTIONS }
-
-export type SchemaGrowthClass = 'bounded' | 'unbounded'
-export type SchemaIdPolicy = 'uuidv7' | 'natural-or-provider' | 'static-identity' | 'no-id'
 export type PartitionAccessClass = 'target-scoped' | 'retention-window' | 'intentional-fanout'
 
 export type PartitionPolicy = {
@@ -22,16 +13,6 @@ export type PartitionPolicy = {
   children: 'default' | 'monthly'
   retentionOwner: 'cleanupPartitions' | null
   accessClass: PartitionAccessClass
-}
-
-export type SchemaGrowthRegistryEntry = {
-  table: string
-  growth: SchemaGrowthClass
-  idPolicy: SchemaIdPolicy
-  idPolicyRationale: string
-  partition: PartitionPolicy | null
-  noPartitionRationale?: string
-  reconsiderPartitioningWhen?: string
 }
 
 const defaultRange = (key: string): PartitionPolicy => ({
@@ -49,17 +30,6 @@ const monthlyRange = (key: string): PartitionPolicy => ({
   retentionOwner: 'cleanupPartitions',
   accessClass: 'retention-window',
 })
-
-const UNBOUNDED_RECONSIDERATION_EXCEPTIONS = new Map([
-  [
-    'ai_usage_provider_response_keys',
-    'Only if the replacement preserves global response-id uniqueness across every ledger partition.',
-  ],
-  [
-    'web_push_endpoint_owners',
-    'Only if the replacement preserves global endpoint uniqueness and claim serialization across every subscription partition.',
-  ],
-])
 
 const PARTITION_POLICY_ENTRIES: [string, PartitionPolicy][] = [
   ['retained_post_identities', defaultRange('id')],
@@ -116,35 +86,3 @@ export const PARTITION_POLICIES = new Map(PARTITION_POLICY_ENTRIES)
 export const UNBOUNDED_UNPARTITIONED_TABLES = buildUnboundedUnpartitionedTables(
   new Set(PARTITION_POLICIES.keys()),
 )
-
-export function buildSchemaGrowthRegistry(
-  tables: ReadonlyMap<string, { idPolicy: SchemaIdPolicy; idPolicyRationale: string }>,
-): SchemaGrowthRegistryEntry[] {
-  return [...tables]
-    .map(([table, id]) => {
-      const partition = PARTITION_POLICIES.get(table) ?? null
-      const unboundedRationale = UNBOUNDED_UNPARTITIONED_TABLES.get(table)
-      const boundedRationale = EXPLICIT_BOUNDED_TABLES.get(table)
-      if (!partition && !unboundedRationale && !boundedRationale) {
-        throw new Error(`Unclassified schema growth table: ${table}`)
-      }
-      const growth: SchemaGrowthClass = boundedRationale ? 'bounded' : 'unbounded'
-      const noPartitionRationale = partition ? undefined : (unboundedRationale ?? boundedRationale)
-      return {
-        table,
-        growth,
-        ...id,
-        partition,
-        ...(noPartitionRationale
-          ? {
-              noPartitionRationale,
-              reconsiderPartitioningWhen: unboundedRationale
-                ? (UNBOUNDED_RECONSIDERATION_EXCEPTIONS.get(table) ??
-                  'At approximately one million rows or measured planner/write pressure.')
-                : 'If the documented bounded-cardinality invariant changes.',
-            }
-          : {}),
-      }
-    })
-    .toSorted((left, right) => left.table.localeCompare(right.table))
-}

@@ -1,6 +1,8 @@
 import { createHash } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { EMPTY_BODY_SHA256, buildCanonicalRequestString, sha256Hex } from './request-canonical.mts'
+import { buildCanonicalRequestString, sha256Hex } from './request-canonical.mts'
+
+const EMPTY_BODY_SHA256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
 
 describe('sha256Hex', () => {
   it('returns lowercase hex sha256 of a Buffer', () => {
@@ -15,10 +17,10 @@ describe('sha256Hex', () => {
   })
 })
 
-describe('EMPTY_BODY_SHA256', () => {
+describe('empty-body SHA-256', () => {
   it('equals sha256 of an empty string', () => {
-    expect(EMPTY_BODY_SHA256).toBe(sha256Hex(''))
-    expect(EMPTY_BODY_SHA256).toBe(sha256Hex(Buffer.alloc(0)))
+    expect(sha256Hex('')).toBe(EMPTY_BODY_SHA256)
+    expect(sha256Hex(Buffer.alloc(0))).toBe(EMPTY_BODY_SHA256)
   })
 
   it('is lowercase hex', () => {

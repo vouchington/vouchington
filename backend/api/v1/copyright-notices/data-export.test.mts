@@ -10,7 +10,7 @@ import {
   reviewCopyrightFormIntake,
 } from '@services/copyright-notices'
 import { copyrightTimelineEventTypesFor } from '@services/copyright-notices/timeline-visibility'
-import { createCopyrightFormFixture } from '@services/copyright-notices/route-test-fixtures'
+import { createCopyrightFormFixture } from '@voucha/test-helpers/copyright-route-fixtures'
 import { createTestUser, hardDeleteTestUser } from '@voucha/test-helpers'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'

@@ -21,7 +21,10 @@ export const localizationQuery = defineQueryContract({
   selectors: queryCsvArray(queryString()),
 })
 
-export function localizationRoute(ctx: Context): void {
+export function localizationRoute(
+  ctx: Context,
+  getResult: typeof localizationGetResult = localizationGetResult,
+): void {
   try {
     const consumer = ctx.query.consumer
     if (typeof consumer !== 'string' || consumer.length === 0)
@@ -34,7 +37,7 @@ export function localizationRoute(ctx: Context): void {
         selectors: queryValues(ctx.query.selectors),
       },
     })
-    const result = localizationGetResult(
+    const result = getResult(
       ctx.query as Record<string, unknown>,
       headerValue(ctx.req.headers['if-none-match']),
     )
@@ -49,4 +52,8 @@ export function localizationRoute(ctx: Context): void {
     if (isLocalizationClientError(err)) ctx.throw(400, err.message)
     throw err
   }
+}
+
+export function createLocalizationRoute(getResult: typeof localizationGetResult) {
+  return (ctx: Context): void => localizationRoute(ctx, getResult)
 }

@@ -4,55 +4,76 @@ import { emitAnalytics } from './analytics-emit.mts'
 const DEFAULT_INTERVAL_MS = 60_000
 
 export interface SampledPools {
-  write: pg.Pool
-  read: pg.Pool
-  advisoryLock: pg.Pool
+  write: Pick<pg.Pool, 'totalCount' | 'idleCount' | 'waitingCount'>
+  read: Pick<pg.Pool, 'totalCount' | 'idleCount' | 'waitingCount'>
+  advisoryLock: Pick<pg.Pool, 'totalCount' | 'idleCount' | 'waitingCount'>
   readMax: number
   writeMax: number
   advisoryLockMax: number
 }
 
-let timer: NodeJS.Timeout | null = null
+type PoolStatsInterval = { unref(): void; dispose(): void }
+type PoolStatsScheduler = (callback: () => void, intervalMs: number) => PoolStatsInterval
 
-/**
- * Pool connection accounting is per-process, so it must be sampled inside each process that owns
- * a pool (api, workers) rather than from a queue job that would only see the worker's pool.
- * No-ops when analytics is disabled (the default in dev/test); the interval is `unref`'d so it
- * never keeps a process alive.
- */
-export function startConfiguredPoolStatsSampler(
-  pools: { writePool: pg.Pool; readPool: pg.Pool; advisoryLockPool: pg.Pool },
-  limits: { readMax: number; writeMax: number; advisoryLockMax: number },
-  nodePrewarm: boolean,
-): void {
-  if (nodePrewarm) return
-  startPoolStatsSampler({
-    write: pools.writePool,
-    read: pools.readPool,
-    advisoryLock: pools.advisoryLockPool,
-    readMax: limits.readMax,
-    writeMax: limits.writeMax,
-    advisoryLockMax: limits.advisoryLockMax,
-  })
+export function createPoolStatsSampler(schedule: PoolStatsScheduler = schedulePoolStatsInterval) {
+  let timer: PoolStatsInterval | null = null
+
+  /**
+   * Pool connection accounting is per-process, so it must be sampled inside each process that owns
+   * a pool (api, workers) rather than from a queue job that would only see the worker's pool.
+   * No-ops when analytics is disabled (the default in dev/test); the interval is `unref`'d so it
+   * never keeps a process alive.
+   */
+  function startConfiguredPoolStatsSampler(
+    pools: {
+      writePool: SampledPools['write']
+      readPool: SampledPools['read']
+      advisoryLockPool: SampledPools['advisoryLock']
+    },
+    limits: { readMax: number; writeMax: number; advisoryLockMax: number },
+    nodePrewarm: boolean,
+  ): void {
+    if (nodePrewarm) return
+    startPoolStatsSampler({
+      write: pools.writePool,
+      read: pools.readPool,
+      advisoryLock: pools.advisoryLockPool,
+      readMax: limits.readMax,
+      writeMax: limits.writeMax,
+      advisoryLockMax: limits.advisoryLockMax,
+    })
+  }
+
+  function startPoolStatsSampler(
+    pools: SampledPools,
+    intervalMs: number = poolStatsIntervalMs(),
+  ): void {
+    if (timer) return
+    const backend = process.env.ANALYTICS_BACKEND
+    if (!backend || backend === 'disabled') return
+
+    timer = schedule(() => emitPoolStats(pools), intervalMs)
+    timer.unref()
+  }
+
+  function clearSamplerInterval(): void {
+    if (!timer) return
+    timer.dispose()
+    timer = null
+  }
+
+  return {
+    startConfiguredPoolStatsSampler,
+    startPoolStatsSampler,
+    async [Symbol.asyncDispose]() {
+      clearSamplerInterval()
+    },
+  }
 }
 
-export function startPoolStatsSampler(
-  pools: SampledPools,
-  intervalMs: number = poolStatsIntervalMs(),
-): void {
-  if (timer) return
-  const backend = process.env.ANALYTICS_BACKEND
-  if (!backend || backend === 'disabled') return
+const poolStatsSampler = createPoolStatsSampler()
 
-  timer = setInterval(() => emitPoolStats(pools), intervalMs)
-  timer.unref()
-}
-
-export function stopPoolStatsSampler(): void {
-  if (!timer) return
-  clearInterval(timer)
-  timer = null
-}
+export const { startConfiguredPoolStatsSampler } = poolStatsSampler
 
 /** Emit one gauge record per pool. Exported for direct, deterministic testing. */
 export function emitPoolStats(pools: SampledPools): void {
@@ -71,7 +92,11 @@ export function emitPoolStats(pools: SampledPools): void {
   })
 }
 
-function poolGauge(label: 'advisory-lock' | 'read' | 'write', pool: pg.Pool, max: number) {
+function poolGauge(
+  label: 'advisory-lock' | 'read' | 'write',
+  pool: SampledPools['write'],
+  max: number,
+) {
   return {
     pool: label,
     total: pool.totalCount,
@@ -93,4 +118,16 @@ function baseRecord(now: Date) {
 function poolStatsIntervalMs(): number {
   const raw = Number(process.env.PG_POOL_STATS_INTERVAL_MS)
   return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_INTERVAL_MS
+}
+
+function schedulePoolStatsInterval(callback: () => void, intervalMs: number): PoolStatsInterval {
+  const timer = setInterval(callback, intervalMs)
+  return {
+    unref() {
+      timer.unref()
+    },
+    dispose() {
+      clearInterval(timer)
+    },
+  }
 }

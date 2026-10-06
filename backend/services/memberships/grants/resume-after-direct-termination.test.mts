@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  beginTransaction,
   createTestSku,
   createTestUser,
   getTestGrantQueue,
@@ -10,7 +11,7 @@ import {
 } from '@voucha/test-helpers'
 import { createMembership, grantMembership } from '../create.mts'
 import { getMembershipByUserId } from '../get.mts'
-import { resumeGrantAfterDirectTermination } from './resume-after-direct-termination.mts'
+import { resumeGrantAfterDirectAccessSuspensionInTransaction as resumeDirect } from './resume-after-direct-termination.mts'
 import { updateMembershipFromEvent } from '../update.mts'
 
 describe('direct terms', () => {
@@ -176,8 +177,12 @@ describe('direct terms', () => {
       terminalEffectiveAt: new Date('2026-09-04T12:00:00.000Z'),
     })
 
-    await expect(resumeGrantAfterDirectTermination(member.id, terminal.id)).resolves.toBe(true)
-    await expect(resumeGrantAfterDirectTermination(member.id, terminal.id)).resolves.toBe(false)
+    await expect(resumeDirectAccessSuspension(member.id, terminal.id)).resolves.toMatchObject({
+      changed: true,
+    })
+    await expect(resumeDirectAccessSuspension(member.id, terminal.id)).resolves.toMatchObject({
+      changed: false,
+    })
     await expect(getMembershipByUserId(member.id)).resolves.toMatchObject({ plan: 'plus' })
     await expect(getTestGrantQueue(member.id)).resolves.toMatchObject({
       active_grant_ids: [pausedGrantId],
@@ -214,7 +219,9 @@ describe('direct terms', () => {
       terminalEffectiveAt: new Date('2026-09-04T12:00:00.000Z'),
     })
 
-    await expect(resumeGrantAfterDirectTermination(member.id, terminal.id)).resolves.toBe(true)
+    await expect(resumeDirectAccessSuspension(member.id, terminal.id)).resolves.toMatchObject({
+      changed: true,
+    })
     await expect(getMembershipByUserId(member.id)).resolves.toMatchObject({ plan: 'plus' })
     await expect(getTestGrantQueue(member.id)).resolves.toMatchObject({
       active_grant_ids: [successorGrantId],
@@ -253,7 +260,9 @@ describe('direct terms', () => {
       terminalEffectiveAt: new Date('2026-09-04T12:00:00.000Z'),
     })
 
-    await expect(resumeGrantAfterDirectTermination(member.id, terminal.id)).resolves.toBe(true)
+    await expect(resumeDirectAccessSuspension(member.id, terminal.id)).resolves.toMatchObject({
+      changed: true,
+    })
     await expect(getTestGrantQueue(member.id)).resolves.toMatchObject({
       active_grant_ids: [],
       open_activation_count: 0,
@@ -280,3 +289,10 @@ describe('direct terms', () => {
     ).resolves.toMatchObject({ id: expect.any(String) })
   })
 })
+
+async function resumeDirectAccessSuspension(userId: string, membershipId: string) {
+  await using transaction = await beginTransaction()
+  const outcome = await resumeDirect(userId, membershipId, transaction)
+  await transaction.commit()
+  return outcome
+}

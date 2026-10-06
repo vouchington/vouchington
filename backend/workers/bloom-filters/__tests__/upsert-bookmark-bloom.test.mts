@@ -9,7 +9,7 @@ import {
 import { bloomFilterConfig } from '@services/bloom-filter-config'
 import { bloomFilters as bloomFiltersWorker } from '../workers.mts'
 import { overrideDynamicConfigFieldsForTest, createTestUser } from '@voucha/test-helpers'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { followRssFeedRelation } from '@services/rss-feeds/create-source-helpers'
 
 describe('upsert-bookmark-bloom', () => {

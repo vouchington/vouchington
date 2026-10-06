@@ -16,7 +16,7 @@ import {
   recordCopyrightEmailParse,
 } from '../services/copyright-notices/index.mts'
 import { linkCopyrightEmailIntakeToNotice } from '../services/copyright-notices/email-threading.mts'
-import { createParsedCopyrightEmailIntake } from '../services/copyright-notices/email-intake-test-fixtures.mts'
+import { createParsedCopyrightEmailIntake } from './copyright-email-intake-fixtures.mts'
 import { appendCopyrightEmailIntakeRecommendation } from '../services/copyright-notices/email-recommendations.mts'
 import { copyrightConfig } from '../services/copyright-notices/config.mts'
 import { overrideDynamicConfigFieldsForTest } from './dynamic-config.mts'

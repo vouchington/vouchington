@@ -2,17 +2,17 @@ import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/co
 import { describe, expect, it, vi } from 'vitest'
 import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
 import {
-  acceptCopyrightNoticeAndImposeRestriction,
   appendCopyrightLegalHoldAssessment,
   appendCopyrightNoticeSubmission,
   createCopyrightCounterNotice,
-  createEligibleCopyrightRestoreIntent,
   processCopyrightActionIntent,
 } from './index.mts'
+import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
+import { createEligibleCopyrightRestoreIntent } from './restoration.mts'
 import {
   acceptCounterNoticeForRestoration,
   createCopyrightRestorationHoldFixture,
-} from './evidence-and-holds-restoration-hold-fixtures.mts'
+} from '@voucha/test-helpers/copyright-restoration-hold-fixtures'
 import { readCopyrightStaffQueueCursorRows } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 

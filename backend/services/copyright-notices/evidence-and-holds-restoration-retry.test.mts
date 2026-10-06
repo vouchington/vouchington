@@ -4,14 +4,12 @@ import {
 } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { createAssessedUsDmcaCopyrightNoticeFixture } from '@voucha/test-helpers/copyright-us-dmca-notice-fixture'
 import { describe, expect, it } from 'vitest'
-import {
-  acceptCopyrightNoticeAndImposeRestriction,
-  processCopyrightActionIntent,
-} from './index.mts'
+import { processCopyrightActionIntent } from './index.mts'
+import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 import {
   createCounterNoticeRestoreIntent,
   deliverInitialCopyrightWithhold,
-} from './evidence-and-holds-restoration-hold-fixtures.mts'
+} from '@voucha/test-helpers/copyright-restoration-hold-fixtures'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 async function createFixture() {

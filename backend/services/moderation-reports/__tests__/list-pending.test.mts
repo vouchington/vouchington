@@ -13,9 +13,9 @@ import {
 import type { PrivateUser } from '@services/users/types'
 import { createModerationReport } from '../create.mts'
 import { parseCreateModerationReportInput } from '../parse.mts'
-import { listModerationReports, listPendingModerationReports } from '../get.mts'
+import { listModerationReports } from '../get.mts'
 
-describe('listPendingModerationReports', () => {
+describe('listModerationReports with pending status', () => {
   let releaseLock: () => Promise<void>
   beforeAll(async () => {
     const lock = await acquireReportPaginationTestLock()
@@ -62,7 +62,11 @@ describe('listPendingModerationReports', () => {
       createdAt,
     })
 
-    const { reports } = await listPendingModerationReports({ limit: 1000 })
+    const { reports } = await listModerationReports({
+      limit: 1000,
+      sort: 'created_at_desc',
+      status: 'pending',
+    })
     const ids = reports.map(r => r.id)
     expect(ids).toEqual(expect.arrayContaining([report1Id, report2Id]))
     // Results must contain both; verify descending order by checking adjacent timestamps
@@ -99,7 +103,11 @@ describe('listPendingModerationReports', () => {
       )
     }
 
-    const { reports: smallPage, hasNextPage } = await listPendingModerationReports({ limit: 1 })
+    const { reports: smallPage, hasNextPage } = await listModerationReports({
+      limit: 1,
+      sort: 'created_at_desc',
+      status: 'pending',
+    })
     expect(smallPage.length).toBe(1)
     expect(hasNextPage).toBe(true)
   })
@@ -125,8 +133,10 @@ describe('listPendingModerationReports', () => {
     )
 
     // Fetch with the exact report cursor — the cursor row should not appear again.
-    const { reports } = await listPendingModerationReports({
+    const { reports } = await listModerationReports({
       limit: 100,
+      sort: 'created_at_desc',
+      status: 'pending',
       beforeCursor: {
         id: report.id,
       },

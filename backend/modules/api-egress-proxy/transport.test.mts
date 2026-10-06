@@ -1,59 +1,102 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  closeApiEgressProxyTransport,
-  getApiEgressProxyUrl,
-  getProviderFetch,
-  getProviderRequestDispatcher,
-  installApiEgressProxyRoutingResolver,
-  resetApiEgressProxyTransportForTest,
-} from './transport.mts'
-import { getExternalRequestDispatcher } from '@modules/utils'
+import { createApiEgressProxyTransport, getApiEgressProxyUrl } from './transport.mts'
+import { createHttpDispatchers } from '@modules/utils'
 
 describe('API egress proxy transport', () => {
+  let direct: ReturnType<typeof createHttpDispatchers>
+  let transport: ReturnType<typeof createApiEgressProxyTransport>
+
+  beforeEach(() => {
+    direct = createHttpDispatchers()
+    transport = createApiEgressProxyTransport(direct)
+  })
+
   afterEach(async () => {
-    vi.unstubAllEnvs()
-    await resetApiEgressProxyTransportForTest()
+    try {
+      await transport[Symbol.asyncDispose]()
+    } finally {
+      await direct[Symbol.asyncDispose]()
+      vi.restoreAllMocks()
+      vi.unstubAllEnvs()
+    }
   })
 
   it('uses the guarded direct dispatcher while no API resolver is installed', () => {
-    expect(getProviderRequestDispatcher('stripe_enabled')).toBe(getExternalRequestDispatcher())
+    expect(transport.getProviderRequestDispatcher('stripe_enabled')).toBe(
+      direct.getExternalRequestDispatcher(),
+    )
   })
 
   it('reads an installed provider resolver at request time', async () => {
     vi.stubEnv('API_EGRESS_PROXY_URL', 'http://api-egress-proxy:3128')
     let enabled = false
-    installApiEgressProxyRoutingResolver(() => enabled)
-    const directDispatcher = getProviderRequestDispatcher('stripe_enabled')
-    expect(directDispatcher).toBe(getExternalRequestDispatcher())
+    transport.installApiEgressProxyRoutingResolver(() => enabled)
+    const directDispatcher = transport.getProviderRequestDispatcher('stripe_enabled')
+    expect(directDispatcher).toBe(direct.getExternalRequestDispatcher())
 
     enabled = true
-    const proxyDispatcher = getProviderRequestDispatcher('stripe_enabled')
+    const proxyDispatcher = transport.getProviderRequestDispatcher('stripe_enabled')
     expect(proxyDispatcher).not.toBe(directDispatcher)
 
     enabled = false
-    expect(getProviderRequestDispatcher('stripe_enabled')).toBe(directDispatcher)
+    expect(transport.getProviderRequestDispatcher('stripe_enabled')).toBe(directDispatcher)
+  })
+
+  it('keeps a held fetch lazy and re-evaluates routing on every call', async () => {
+    vi.stubEnv('API_EGRESS_PROXY_URL', '')
+    const providerFetch = transport.getProviderFetch('stripe_enabled')
+    expect(() => transport.getProviderRequestDispatcher('stripe_enabled')).not.toThrow()
+    transport.installApiEgressProxyRoutingResolver(() => true)
+    await expect(
+      providerFetch('https://example.com', { signal: AbortSignal.abort() }),
+    ).rejects.toThrow('API_EGRESS_PROXY_URL is required when API egress proxying is enabled')
+    transport.installApiEgressProxyRoutingResolver(() => false)
+    await expect(
+      providerFetch('https://example.com', { signal: AbortSignal.abort() }),
+    ).rejects.toMatchObject({
+      name: 'AbortError',
+    })
   })
 
   it('keeps routine and long-running proxy pools separate', () => {
     vi.stubEnv('API_EGRESS_PROXY_URL', 'http://api-egress-proxy:3128')
-    installApiEgressProxyRoutingResolver(() => true)
+    transport.installApiEgressProxyRoutingResolver(() => true)
 
-    const routine = getProviderRequestDispatcher('stripe_enabled')
-    const longRunning = getProviderRequestDispatcher('openai_moderation_enabled', 'long-running')
+    const routine = transport.getProviderRequestDispatcher('stripe_enabled')
+    const longRunning = transport.getProviderRequestDispatcher(
+      'openai_moderation_enabled',
+      'long-running',
+    )
 
     expect(longRunning).not.toBe(routine)
-    expect(getProviderRequestDispatcher('stripe_enabled')).toBe(routine)
-    expect(getProviderRequestDispatcher('openai_moderation_enabled', 'long-running')).toBe(
-      longRunning,
-    )
+    expect(transport.getProviderRequestDispatcher('stripe_enabled')).toBe(routine)
+    expect(
+      transport.getProviderRequestDispatcher('openai_moderation_enabled', 'long-running'),
+    ).toBe(longRunning)
+  })
+
+  it('disposes one proxy owner without closing another or clearing its resolver', async () => {
+    vi.stubEnv('API_EGRESS_PROXY_URL', 'http://api-egress-proxy:3128')
+    await using other = createApiEgressProxyTransport(direct)
+    other.installApiEgressProxyRoutingResolver(() => true)
+    const dispatcher = other.getProviderRequestDispatcher('stripe_enabled')
+    const close = vi.spyOn(dispatcher, 'close')
+    try {
+      await transport[Symbol.asyncDispose]()
+      expect(close).not.toHaveBeenCalled()
+      expect(other.getProviderRequestDispatcher('stripe_enabled')).toBe(dispatcher)
+      expect(other.isApiEgressProxyRouteEnabled('stripe_enabled')).toBe(true)
+    } finally {
+      close.mockRestore()
+    }
   })
 
   it('routes proxy-selected fetches through undici without a direct retry', async () => {
     vi.stubEnv('API_EGRESS_PROXY_URL', 'http://127.0.0.1:1')
-    installApiEgressProxyRoutingResolver(() => true)
+    transport.installApiEgressProxyRoutingResolver(() => true)
 
-    const fetchThroughProxy = getProviderFetch('github_oauth_enabled')
+    const fetchThroughProxy = transport.getProviderFetch('github_oauth_enabled')
     await expect(
       fetchThroughProxy('https://example.com', { signal: AbortSignal.abort() }),
     ).rejects.toMatchObject({ name: 'AbortError' })
@@ -61,8 +104,8 @@ describe('API egress proxy transport', () => {
 
   it('fails closed when a proxy-selected provider has no valid proxy URL', () => {
     vi.stubEnv('API_EGRESS_PROXY_URL', '')
-    installApiEgressProxyRoutingResolver(() => true)
-    expect(() => getProviderRequestDispatcher('stripe_enabled')).toThrow(
+    transport.installApiEgressProxyRoutingResolver(() => true)
+    expect(() => transport.getProviderRequestDispatcher('stripe_enabled')).toThrow(
       'API_EGRESS_PROXY_URL is required when API egress proxying is enabled',
     )
   })
@@ -89,9 +132,9 @@ describe('API egress proxy transport', () => {
 
   it('closes every proxy pool once and shares concurrent close work', async () => {
     vi.stubEnv('API_EGRESS_PROXY_URL', 'http://api-egress-proxy:3128')
-    installApiEgressProxyRoutingResolver(() => true)
-    const routineDispatcher = getProviderRequestDispatcher('stripe_enabled')
-    const longRunningDispatcher = getProviderRequestDispatcher(
+    transport.installApiEgressProxyRoutingResolver(() => true)
+    const routineDispatcher = transport.getProviderRequestDispatcher('stripe_enabled')
+    const longRunningDispatcher = transport.getProviderRequestDispatcher(
       'openai_moderation_enabled',
       'long-running',
     )
@@ -106,7 +149,10 @@ describe('API egress proxy transport', () => {
     // triggering their own Promise.all(...).close() over the pools.
     const outerCallCount = (spy: typeof routineClose) =>
       spy.mock.calls.filter(args => args.length === 0).length
-    await Promise.all([closeApiEgressProxyTransport(), closeApiEgressProxyTransport()])
+    await Promise.all([
+      transport.closeApiEgressProxyTransport(),
+      transport.closeApiEgressProxyTransport(),
+    ])
 
     expect(outerCallCount(routineClose)).toBe(1)
     expect(outerCallCount(longRunningClose)).toBe(1)

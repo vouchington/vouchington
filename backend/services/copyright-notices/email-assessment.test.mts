@@ -5,7 +5,7 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
-import { appendCopyrightSubmissionAssessment } from './index.mts'
+import { appendCopyrightSubmissionAssessment } from './compliance.mts'
 import { getOrCreateEmailAssessment } from './email-assessment.mts'
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'

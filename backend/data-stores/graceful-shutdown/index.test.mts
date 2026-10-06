@@ -32,17 +32,6 @@ describe('graceful shutdown', () => {
     expect(globalRef[SIGNAL_LISTENERS_REGISTERED]).toBeFalsy()
   })
 
-  it('tracks Valkey shutdown registration explicitly', async () => {
-    const { isGracefulShutdownValkeyRegistered, registerGracefulShutdownValkey } =
-      await loadSubject()
-
-    expect(isGracefulShutdownValkeyRegistered()).toBe(false)
-
-    registerGracefulShutdownValkey(async () => {})
-
-    expect(isGracefulShutdownValkeyRegistered()).toBe(true)
-  })
-
   it('addGracefulShutdownCallback registers and invokes callbacks on shutdown', async () => {
     const { addGracefulShutdownCallback, onGracefulShutdown } = await loadSubject()
 

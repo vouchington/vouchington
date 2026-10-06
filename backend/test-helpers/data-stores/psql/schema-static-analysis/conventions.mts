@@ -6,7 +6,7 @@ import {
   COMMENT_EXEMPT_COLUMN_NAMES,
   COMMENT_EXEMPT_COLUMN_PATTERNS,
 } from './uuid-allowlists.mts'
-import { NON_DEFAULT_ID_EXCEPTIONS } from '../../../../data-stores/psql/schema-growth-classification.mts'
+import { NON_DEFAULT_ID_EXCEPTIONS } from '../../../schema-growth-test-policies.mts'
 import {
   ALLOWED_MISSING_CREATED_AT,
   ALLOWED_NON_UUIDV7_CREATED_AT,

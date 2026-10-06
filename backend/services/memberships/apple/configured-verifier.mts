@@ -1,7 +1,6 @@
 import { getAppleAppStoreRootCertificates } from '@voucha/config/apple-app-store-root-certificates'
 import type { AppleMembershipProviderEnvironment } from './types.mts'
 import {
-  createAppleSignedTransactionEvidenceVerifier,
   createAppleTransactionVerifier,
   type AppleTransactionVerifier,
 } from './verify-transaction.mts'
@@ -12,19 +11,6 @@ export function createConfiguredAppleTransactionVerifier(options: {
   environment: AppleMembershipProviderEnvironment
 }): AppleTransactionVerifier {
   return createAppleTransactionVerifier({
-    appleRootCertificates: getAppleAppStoreRootCertificates(),
-    applicationId: options.applicationId,
-    appAppleId: options.appAppleId ?? getConfiguredAppleAppStoreId(options.environment),
-    environment: options.environment,
-  })
-}
-
-export function createConfiguredAppleSignedTransactionEvidenceVerifier(options: {
-  applicationId: string
-  appAppleId?: number
-  environment: AppleMembershipProviderEnvironment
-}): ReturnType<typeof createAppleSignedTransactionEvidenceVerifier> {
-  return createAppleSignedTransactionEvidenceVerifier({
     appleRootCertificates: getAppleAppStoreRootCertificates(),
     applicationId: options.applicationId,
     appAppleId: options.appAppleId ?? getConfiguredAppleAppStoreId(options.environment),

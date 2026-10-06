@@ -70,7 +70,3 @@ export type RejectedAppleSignedTransactionVerification = Extract<
   AppleSignedTransactionVerificationResult,
   { accepted: false }
 >
-
-export type AppleTransactionVerifierFactory = (
-  config: AppleSignedTransactionVerifierConfig,
-) => AppleTransactionVerifier

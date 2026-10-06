@@ -9,7 +9,8 @@ import {
 } from '@voucha/test-helpers/data-stores/psql/copyright-review-target'
 import { createCopyrightNoticeSchemaFixture } from '@voucha/test-helpers/data-stores/psql/copyright-notice-schema'
 import { automatedAssessmentSql } from './automated-assessment-sql.mts'
-import { appendCopyrightSubmissionAssessment, readCopyrightReviewTargetBreaches } from './index.mts'
+import { readCopyrightReviewTargetBreaches } from './index.mts'
+import { appendCopyrightSubmissionAssessment } from './compliance.mts'
 
 async function oldForm() {
   vi.useFakeTimers({ toFake: ['Date'] })

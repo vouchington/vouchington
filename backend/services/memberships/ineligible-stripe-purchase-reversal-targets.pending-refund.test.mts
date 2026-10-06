@@ -1,11 +1,13 @@
+import { readTestStripeRefundHistory } from '@voucha/test-helpers/membership-reversal-case-fixtures'
+import { createRefundScanCase } from '@voucha/test-helpers/services/memberships/refund-scan-case'
 import { describe, expect, it } from 'vitest'
 import { getRefundableReversalTargets } from './ineligible-stripe-purchase-reversal-targets.mts'
-import { getObservedStripeRefunds } from './ineligible-stripe-purchase-reversal/refund-history.mts'
 
 describe('getRefundableReversalTargets pending refunds', () => {
   it.each(['pending', null, 'future_status'] as const)(
     'defers while Stripe refund status is %s',
     async status => {
+      const { reversalCaseId } = await createRefundScanCase()
       await expect(
         getRefundableReversalTargets(
           [
@@ -25,9 +27,10 @@ describe('getRefundableReversalTargets pending refunds', () => {
             },
           ],
           async target =>
-            getObservedStripeRefunds(
+            readTestStripeRefundHistory(
               [{ amount: 1_000, currency: 'usd', id: 're_unsettled', status }],
-              target.currency,
+              target,
+              reversalCaseId,
             ),
           async () => ({ lostDisputeAmountMinorUnits: 0, refundDeferred: false }),
         ),
@@ -43,6 +46,7 @@ describe('getRefundableReversalTargets pending refunds', () => {
   )
 
   it('rejects a pending refund denominated in another currency before deferring', async () => {
+    const { reversalCaseId } = await createRefundScanCase()
     await expect(
       getRefundableReversalTargets(
         [
@@ -62,9 +66,10 @@ describe('getRefundableReversalTargets pending refunds', () => {
           },
         ],
         async target =>
-          getObservedStripeRefunds(
+          readTestStripeRefundHistory(
             [{ amount: 1_000, currency: 'eur', id: 're_pending_eur', status: 'pending' }],
-            target.currency,
+            target,
+            reversalCaseId,
           ),
         async () => ({ lostDisputeAmountMinorUnits: 0, refundDeferred: false }),
       ),

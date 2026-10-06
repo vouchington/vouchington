@@ -3,7 +3,6 @@ import type { EntityJobs } from '../types.mts'
 import {
   communityPromptPayload,
   conversationPayload,
-  entityJobContractCoversCanonicalTypes,
   followPayload,
   parseReconcileEntity,
   topicPayload,
@@ -18,7 +17,7 @@ import {
   requiredString,
 } from './job-payload-read.mts'
 
-export { entityJobContractCoversCanonicalTypes, JobPayloadError }
+export { JobPayloadError }
 
 const parsers = {
   enqueueReconcileEntities: emptyPayload,

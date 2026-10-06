@@ -2,21 +2,14 @@ import createHttpError from 'http-errors'
 import onError from '@modules/on-error'
 import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
 import { isPublicHostname } from '@modules/utils/urls'
-import { fetch } from 'undici'
+import undici from 'undici'
 import { getDomain } from 'tldts'
 import { isUrlBlocked } from '@services/urls-domains-blacklist'
 import { getHostnamePolicy } from '@services/urls-hostnames/policies'
 import { upsertUrlHostnames } from '@services/urls-hostnames/upsert'
 import { blockHostname } from '@services/hostname-blocking/block-hostname'
 import { getSystemUserByUsername, upsertSystemUser } from '@services/users/system-users'
-import {
-  cacheCleanVerdict,
-  hasCleanCachedVerdict,
-  isLocallyRateLimited,
-  isProviderCoolingDown,
-  setProviderCooldown,
-  setProviderCooldownFromResponse,
-} from './state.mts'
+import { createWebRiskState, type WebRiskState } from './state.mts'
 import { isWebRiskEnabled } from './config.mts'
 
 const WEB_RISK_LOOKUP_URL = 'https://webrisk.googleapis.com/v1/uris:search'
@@ -37,57 +30,66 @@ export class WebRiskRateLimitError extends Error {
   override name = 'WebRiskRateLimitError'
 }
 
-export async function assertUrlAllowedByWebRisk(url: string): Promise<void> {
-  let parsed: URL
-  try {
-    parsed = new URL(url)
-  } catch {
-    return
-  }
-  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return
-  if (!isPublicHostname(parsed.hostname)) return
+const productionState = createWebRiskState()
+export const assertUrlAllowedByWebRisk = createWebRiskChecker(productionState)
 
-  if (await isUrlBlocked(parsed.hostname)) {
-    throw createHttpError(400, `Domain is blocked: ${parsed.hostname}`)
-  }
-
-  if (!isWebRiskEnabled()) return
-  if (!hasWebRiskApiKey()) return
-
-  const policy = await getHostnamePolicy(parsed.hostname)
-  if (policy.should_skip_web_risk) return
-  if (await hasCleanCachedVerdict(parsed)) return
-  if (await isProviderCoolingDown()) return
-  if (await isLocallyRateLimited()) return
-
-  let threat: WebRiskThreat | null
-  try {
-    threat = await checkWebRiskUrl(parsed)
-  } catch (err) {
-    if (err instanceof WebRiskRateLimitError) {
-      onError(err)
+/** Binds the real preflight/provider pipeline to one persistent Web Risk state owner. */
+export function createWebRiskChecker(state: WebRiskState) {
+  return async function assertUrlAllowedByWebRisk(url: string): Promise<void> {
+    let parsed: URL
+    try {
+      parsed = new URL(url)
+    } catch {
       return
     }
-    await setProviderCooldown(SHORT_FAILURE_COOLDOWN_SECONDS)
-    onError(err instanceof Error ? err : new Error(String(err)))
-    return
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return
+    if (!isPublicHostname(parsed.hostname)) return
+
+    if (await isUrlBlocked(parsed.hostname)) {
+      throw createHttpError(400, `Domain is blocked: ${parsed.hostname}`)
+    }
+
+    if (!isWebRiskEnabled()) return
+    if (!hasWebRiskApiKey()) return
+
+    const policy = await getHostnamePolicy(parsed.hostname)
+    if (policy.should_skip_web_risk) return
+    if (await state.hasCleanCachedVerdict(parsed)) return
+    if (await state.isProviderCoolingDown()) return
+    if (await state.isLocallyRateLimited()) return
+
+    let threat: WebRiskThreat | null
+    try {
+      threat = await checkWebRiskUrl(parsed, state)
+    } catch (err) {
+      if (err instanceof WebRiskRateLimitError) {
+        onError(err)
+        return
+      }
+      await state.setProviderCooldown(SHORT_FAILURE_COOLDOWN_SECONDS)
+      onError(err instanceof Error ? err : new Error(String(err)))
+      return
+    }
+
+    if (!threat) {
+      await state.cacheCleanVerdict(parsed)
+      return
+    }
+
+    const blockedDomain = getRegistrableDomain(parsed.hostname)
+    const blockPolicy = await getHostnamePolicy(blockedDomain)
+    if (blockPolicy.should_skip_web_risk) return
+
+    await blockWebRiskDomain(blockedDomain, parsed.toString(), threat)
+    throw createHttpError(400, `Domain is blocked: ${blockedDomain}`)
   }
-
-  if (!threat) {
-    await cacheCleanVerdict(parsed)
-    return
-  }
-
-  const blockedDomain = getRegistrableDomain(parsed.hostname)
-  const blockPolicy = await getHostnamePolicy(blockedDomain)
-  if (blockPolicy.should_skip_web_risk) return
-
-  await blockWebRiskDomain(blockedDomain, parsed.toString(), threat)
-  throw createHttpError(400, `Domain is blocked: ${blockedDomain}`)
 }
 
 /* no-mistakes: integration=google-web-risk */
-export async function checkWebRiskUrl(url: URL): Promise<WebRiskThreat | null> {
+export async function checkWebRiskUrl(
+  url: URL,
+  state: WebRiskState = productionState,
+): Promise<WebRiskThreat | null> {
   const apiKey = getWebRiskApiKey()
   if (!apiKey) throw new Error('Google Web Risk API key is not configured')
 
@@ -98,12 +100,14 @@ export async function checkWebRiskUrl(url: URL): Promise<WebRiskThreat | null> {
     requestUrl.searchParams.append('threatTypes', threatType)
   }
 
-  const response = await fetch(requestUrl, {
-    dispatcher: getExternalRequestDispatcher(),
-    signal: AbortSignal.timeout(5000),
-  }).catch(err => {
-    throw new Error('Google Web Risk lookup request failed', { cause: err })
-  })
+  const response = await undici
+    .fetch(requestUrl, {
+      dispatcher: getExternalRequestDispatcher(),
+      signal: AbortSignal.timeout(5000),
+    })
+    .catch(err => {
+      throw new Error('Google Web Risk lookup request failed', { cause: err })
+    })
 
   if (response.status === 429 || response.status === 403) {
     // Ambient and package `Response` declarations have version-skewed types but describe the same
@@ -111,7 +115,7 @@ export async function checkWebRiskUrl(url: URL): Promise<WebRiskThreat | null> {
     // behavioral effect. Needed for programs that also load the "dom" lib (playwright,
     // integration-tests), where the ambient global `Response` resolves to lib.dom's incompatible
     // type instead of undici's — the two types don't overlap enough for a direct assertion.
-    await setProviderCooldownFromResponse(response as unknown as Response)
+    await state.setProviderCooldownFromResponse(response as unknown as Response)
     await response.body?.cancel()
     throw new WebRiskRateLimitError(`Google Web Risk lookup rate limited (HTTP ${response.status})`)
   }

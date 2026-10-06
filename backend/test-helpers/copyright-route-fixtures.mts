@@ -1,4 +1,4 @@
-// Route fixtures belong in the copyright service test support, outside route registration.
+// Test-only route fixtures exercise the real authenticated copyright routes.
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createHostedImagePost,

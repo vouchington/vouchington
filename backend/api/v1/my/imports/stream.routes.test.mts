@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
-import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { createImportBatch } from '@services/admin-imports/create-batch'
 import { updateRowCompleted } from '@services/admin-imports/update-row-status'
 import { publishImportProgress } from '@data-stores/valkey-pubsub'
