@@ -7,6 +7,7 @@ import {
   insertTestCommunityMember,
 } from '@voucha/test-helpers'
 import {
+  FENCE_HELD_EXPIRY_OFFSET_MS,
   withHeldDelegatedCommunityFenceForTest,
   withCommunityRestrictionApplicationClockForTest,
 } from '@voucha/test-helpers/community-restriction-writer-race'
@@ -80,7 +81,7 @@ describe('community restriction writers share delegated post fences', () => {
         community.id,
         delegateActorId,
         () => {
-          expiresAt = new Date(Date.now() + 10_000)
+          expiresAt = new Date(Date.now() + FENCE_HELD_EXPIRY_OFFSET_MS)
           return activateCommunityRestrictions(currentUser, community.id, {
             restrictionTypes: ['no_links'],
             expiresAt,
@@ -94,7 +95,7 @@ describe('community restriction writers share delegated post fences', () => {
   })
   it('does not manually lift a restriction that expires while waiting for the fence', async () => {
     const { currentUser, community, delegateActorId } = await fixture()
-    const expiresAt = new Date(Date.now() + 10_000)
+    const expiresAt = new Date(Date.now() + FENCE_HELD_EXPIRY_OFFSET_MS)
     const [restriction] = await activateCommunityRestrictions(currentUser, community.id, {
       restrictionTypes: ['no_links'],
       expiresAt,

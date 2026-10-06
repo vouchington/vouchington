@@ -53,7 +53,6 @@ describe('runAppealResolutionAgent', () => {
     )
 
     const row = await pollUntilNotNull(() => findAiUsageRecordForPost(postId, 'appeal-resolution'))
-    if (!row) throw new Error('ai_usage_records row was not written for the failed response')
     expect(row.model).toBe('gpt-5.4-nano-2026-03-17')
     expect(row.service_tier).toBe('flex')
     expect(row.input_tokens).toBe(180)

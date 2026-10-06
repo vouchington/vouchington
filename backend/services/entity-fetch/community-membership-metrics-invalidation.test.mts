@@ -12,7 +12,7 @@ import { removeMember } from '@services/communities/members/remove'
 import { updateMemberRole } from '@services/communities/members/update-role'
 import type { CommunityMember } from '@services/communities/types'
 import { updateCommunity } from '@services/communities/update'
-import type { PrivateUser, UserMetrics } from '@services/users/types'
+import type { PrivateUser } from '@services/users/types'
 import {
   createTestUser,
   insertTestCommunity,
@@ -26,7 +26,7 @@ import { getUserMetricsByAnyCached } from './metrics.mts'
 describe('community membership user metrics invalidation', () => {
   it('invalidates metrics when creating a community owner membership', async () => {
     const user = await createTestUser()
-    await expectCommunityCount(user, 0)
+    await warmUserMetricsCache(user, 0)
 
     await createCommunity(user.id, WEB_PROVENANCE, {
       name: `Metrics Community ${crypto.randomUUID()}`,
@@ -39,7 +39,7 @@ describe('community membership user metrics invalidation', () => {
   it('invalidates metrics when joining a public community', async () => {
     const { communityId, owner } = await createOwnedCommunity()
     const user = await createTestUser()
-    await expectCommunityCount(user, 0)
+    await warmUserMetricsCache(user, 0)
 
     await joinCommunity(user.id, communityId)
 
@@ -52,7 +52,7 @@ describe('community membership user metrics invalidation', () => {
     const { communityId, owner } = await createOwnedCommunity()
     const user = await createTestUser()
     const invite = await createInvite(owner.id, communityId, { username: user.username! })
-    await expectCommunityCount(user, 0)
+    await warmUserMetricsCache(user, 0)
 
     await redeemInviteCode(user.id, invite.code)
 
@@ -64,7 +64,7 @@ describe('community membership user metrics invalidation', () => {
     const { communityId, owner } = await createOwnedCommunity('private')
     const user = await createTestUser()
     const application = await createApplication(user.id, WEB_PROVENANCE, communityId, {})
-    await expectCommunityCount(user, 0)
+    await warmUserMetricsCache(user, 0)
 
     await approveApplication(owner, application.id)
 
@@ -76,7 +76,7 @@ describe('community membership user metrics invalidation', () => {
     const { communityId } = await createOwnedCommunity()
     const user = await createTestUser()
     await insertTestCommunityMember({ communityId, userId: user.id })
-    await expectCommunityCount(user, 1)
+    await warmUserMetricsCache(user, 1)
 
     await leaveCommunity(user.id, communityId)
 
@@ -88,7 +88,7 @@ describe('community membership user metrics invalidation', () => {
     const { communityId, owner } = await createOwnedCommunity()
     const user = await createTestUser()
     await insertTestCommunityMember({ communityId, userId: user.id })
-    await expectCommunityCount(user, 1)
+    await warmUserMetricsCache(user, 1)
 
     await removeMember(owner.id, communityId, user.id)
 
@@ -100,7 +100,7 @@ describe('community membership user metrics invalidation', () => {
     const { communityId, owner } = await createOwnedCommunity()
     const user = await createTestUser()
     await insertTestCommunityMember({ communityId, userId: user.id })
-    await expectCommunityCount(user, 1)
+    await warmUserMetricsCache(user, 1)
 
     await banUserFromCommunity(owner, communityId, user.id)
 
@@ -112,7 +112,7 @@ describe('community membership user metrics invalidation', () => {
     const { communityId, owner } = await createOwnedCommunity('public', 'users')
     const user = await createTestUser()
     await insertTestCommunityMember({ communityId, userId: user.id })
-    await expectCommunityCount(user, 0)
+    await warmUserMetricsCache(user, 0)
 
     await updateMemberRole(owner.id, communityId, user.id, 'moderator')
 
@@ -124,7 +124,7 @@ describe('community membership user metrics invalidation', () => {
     const { communityId, owner, ownerMembership } = await createOwnedCommunity()
     const user = await createTestUser()
     await insertTestCommunityMember({ communityId, userId: user.id })
-    await expectCommunityCount(user, 1)
+    await warmUserMetricsCache(user, 1)
 
     await updateCommunity(owner, communityId, { visibility: 'private' }, ownerMembership)
 
@@ -136,7 +136,7 @@ describe('community membership user metrics invalidation', () => {
     const { communityId, owner, ownerMembership } = await createOwnedCommunity()
     const user = await createTestUser()
     await insertTestCommunityMember({ communityId, userId: user.id })
-    await expectCommunityCount(user, 1)
+    await warmUserMetricsCache(user, 1)
 
     await updateCommunity(
       owner,
@@ -153,7 +153,7 @@ describe('community membership user metrics invalidation', () => {
     const { communityId, owner, ownerMembership } = await createOwnedCommunity()
     const user = await createTestUser()
     await insertTestCommunityMember({ communityId, userId: user.id })
-    await expectCommunityCount(user, 1)
+    await warmUserMetricsCache(user, 1)
 
     await deleteCommunity(owner, communityId, ownerMembership)
 
@@ -180,14 +180,36 @@ async function createOwnedCommunity(
   return { communityId: community.id, owner, ownerMembership }
 }
 
-async function expectCommunityCount(user: PrivateUser, count: number): Promise<UserMetrics> {
-  const metrics = await getUserMetricsByAnyCached(user.id)
-  expect(metrics?.count.communities_member).toBe(count)
-  await Promise.all([
-    pollUntilNotNull(() => caches.user_metrics.get(user.id)),
-    pollUntilNotNull(() => caches.user_metrics.get(user.username!)),
-  ])
-  return metrics!
+/**
+ * Fills both cache keys through the real cached reads and waits for the fire-and-forget writes.
+ * A read by id fills only the id key, so the username key needs its own by-username read; without
+ * it the later `expectMetricsInvalidated` username check would pass against a key never filled.
+ */
+async function warmUserMetricsCache(user: PrivateUser, count: number): Promise<void> {
+  await expectCommunityCount(user, count)
+  await Promise.all([waitForCachedMetrics(user.id), waitForCachedMetrics(user.username!)])
+}
+
+/** Waits for the fire-and-forget fill of one `user_metrics` key; throws if it never lands. */
+function waitForCachedMetrics(key: string): Promise<unknown> {
+  return pollUntilNotNull(
+    () => caches.user_metrics.get(key),
+    2000,
+    25,
+    `the user metrics entry for ${key}`,
+  )
+}
+
+/**
+ * Reads through the cache by id and by username and asserts the count. After an invalidation the
+ * cache refuses refills until its invalidation marker expires, so these reads recompute from the
+ * database and the entries are deliberately not polled for.
+ */
+async function expectCommunityCount(user: PrivateUser, count: number): Promise<void> {
+  for (const key of [user.id, user.username!]) {
+    const metrics = await getUserMetricsByAnyCached(key)
+    expect(metrics?.count.communities_member).toBe(count)
+  }
 }
 
 async function expectMetricsInvalidated(user: PrivateUser): Promise<void> {

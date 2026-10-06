@@ -7,6 +7,13 @@ import {
   waitForTestPostgresLockWaiter,
 } from './postgres-lock-wait.mts'
 
+/**
+ * How far ahead of "now" a restriction expiry sits when a case needs it to pass while the writer is
+ * held at the fence. `withHeldDelegatedCommunityFenceForTest` really sleeps until that instant, so
+ * keep it just long enough for the writer to reach the fence (a handful of queries).
+ */
+export const FENCE_HELD_EXPIRY_OFFSET_MS = 2_000
+
 /** Keep the delegated community fence until the real restriction writer is blocked on it. */
 export async function withHeldDelegatedCommunityFenceForTest<T>(
   communityId: string,
@@ -22,7 +29,13 @@ export async function withHeldDelegatedCommunityFenceForTest<T>(
   try {
     await waitForTestPostgresLockWaiter(processId, 'lockCommunityRestrictionWrites')
     if (releaseAfter) {
-      await setTimeout(Math.max(0, releaseAfter().getTime() - Date.now() + 1))
+      const releaseAt = releaseAfter().getTime()
+      // The writer must be blocked before the expiry; otherwise this case would pass without ever
+      // testing an expiry that lapses while the writer waits on the fence.
+      if (releaseAt <= Date.now()) {
+        throw new Error('The writer reached the fence only after the expiry had already passed')
+      }
+      await setTimeout(releaseAt - Date.now() + 1)
     }
     await query.commit()
   } catch (err) {

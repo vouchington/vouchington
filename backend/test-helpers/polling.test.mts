@@ -1,22 +1,50 @@
 import { describe, expect, it, vi } from 'vitest'
-import { waitForCondition, waitForConditionThenObliterate } from './polling.mts'
+import { pollUntilNotNull, waitForCondition, waitForConditionThenObliterate } from './polling.mts'
+
+describe('pollUntilNotNull', () => {
+  it('resolves the first non-null value', async () => {
+    let calls = 0
+    const fn = vi.fn<() => Promise<string | null>>(async () => {
+      calls += 1
+      return calls >= 3 ? 'ready' : null
+    })
+    await expect(pollUntilNotNull(fn, 2000, 5)).resolves.toBe('ready')
+    expect(calls).toBe(3)
+  })
+
+  it('treats falsy but non-null values as present', async () => {
+    await expect(pollUntilNotNull(async () => 0, 2000, 5)).resolves.toBe(0)
+  })
+
+  it('throws, naming what it waited for, once maxMs elapses without a value', async () => {
+    const fn = vi.fn<() => Promise<null>>(async () => null)
+    await expect(pollUntilNotNull(fn, 30, 5, 'the ledger row')).rejects.toThrow(
+      'Timed out waiting for the ledger row (after 30ms)',
+    )
+    expect(fn).toHaveBeenCalled()
+  })
+
+  it('still reads once when the deadline has already passed', async () => {
+    await expect(pollUntilNotNull(async () => 'present', 0)).resolves.toBe('present')
+  })
+})
 
 describe('waitForCondition', () => {
-  it('resolves true as soon as the predicate flips true', async () => {
+  it('resolves as soon as the predicate flips true', async () => {
     let calls = 0
     const predicate = vi.fn<() => boolean>(() => {
       calls += 1
       return calls >= 3
     })
-    const result = await waitForCondition(predicate, 2000, 5)
-    expect(result).toBe(true)
+    await expect(waitForCondition(predicate, 2000, 5)).resolves.toBeUndefined()
     expect(calls).toBe(3)
   })
 
-  it('resolves false once timeoutMs elapses without the predicate becoming true', async () => {
+  it('throws, naming the condition, once timeoutMs elapses without the predicate becoming true', async () => {
     const predicate = vi.fn<() => boolean>(() => false)
-    const result = await waitForCondition(predicate, 30, 5)
-    expect(result).toBe(false)
+    await expect(waitForCondition(predicate, 30, 5, 'the row to land')).rejects.toThrow(
+      'Timed out waiting for the row to land (after 30ms)',
+    )
     expect(predicate).toHaveBeenCalled()
   })
 })

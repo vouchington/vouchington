@@ -35,6 +35,7 @@ vi.hoisted(() => {
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
 const sweepStartedAt = '2026-07-17T00:00:00.000Z'
+const PROMOTION_INTERVAL_MS = 100
 const fixtures = [
   {
     label: 'tier1',
@@ -138,6 +139,9 @@ describe('periodic sweep coalescing', () => {
         prefix: workerQueuePrefix,
         concurrency: 5,
         blockTimeout: 1000,
+        // Repeat entries are evaluated on promotion ticks (5 s by default), so without a short tick
+        // each repeated root waits on a 5 s boundary however small `every` is.
+        promotionInterval: PROMOTION_INTERVAL_MS,
       },
     )
     worker.on('completed', job => {
@@ -211,6 +215,7 @@ describe('periodic sweep coalescing', () => {
         prefix: workerQueuePrefix,
         concurrency: 5,
         blockTimeout: 1000,
+        promotionInterval: PROMOTION_INTERVAL_MS,
       },
     )
     try {

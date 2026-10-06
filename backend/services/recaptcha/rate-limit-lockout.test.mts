@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { rateLimiterValkeyClient } from '@data-stores/valkey/clients'
-import { pollUntilNotNull } from '@voucha/test-helpers'
+import { waitForCondition } from '@voucha/test-helpers'
 import {
   isRecaptchaLockedOut,
   setRecaptchaLockedOut,
@@ -10,10 +10,8 @@ import {
 
 const LOCKOUT_KEY = 'recaptcha:assessment-lockout'
 
-async function waitForLockout(): Promise<boolean> {
-  return (
-    (await pollUntilNotNull(async () => ((await isRecaptchaLockedOut()) ? true : null))) ?? false
-  )
+async function waitForLockout(): Promise<void> {
+  await waitForCondition(isRecaptchaLockedOut, 2000, 25, 'the reCAPTCHA lockout to be set')
 }
 
 describe('secondsUntilEndOfUtcDay', () => {
@@ -50,6 +48,7 @@ describe('reCAPTCHA assessment lockout', () => {
 
   it('applies the lockout from the fire-and-forget wrapper', async () => {
     setRecaptchaLockedOutBackground()
-    expect(await waitForLockout()).toBe(true)
+    await waitForLockout()
+    expect(await isRecaptchaLockedOut()).toBe(true)
   })
 })

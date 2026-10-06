@@ -70,7 +70,7 @@ export async function waitForTestUserDeletionBackendsBlockedBehind(
   holderProcessId: number,
   expected: number,
 ): Promise<void> {
-  const blocked = await pollUntilNotNull(
+  await pollUntilNotNull(
     async () => {
       const { rows } = await write<{ count: number }>(sql`
         /* waitForTestUserDeletionBackendsBlockedBehind */
@@ -93,9 +93,8 @@ export async function waitForTestUserDeletionBackendsBlockedBehind(
     },
     10_000,
     10,
+    `${expected} account deletions blocked behind the test lock`,
   )
-  if (!blocked)
-    throw new Error(`Expected ${expected} account deletions blocked behind the test lock`)
 }
 
 export async function getTestUserDeletedById(userId: string): Promise<string | null> {

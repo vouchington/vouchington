@@ -5,6 +5,16 @@ import { createTestUser, pollUntilNotNull } from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
 import { getUserMetricsByAnyCached } from './metrics.mts'
 
+/** Waits for the fire-and-forget fill of one `user_metrics` key; throws if it never lands. */
+function waitForCachedMetrics(key: string): Promise<unknown> {
+  return pollUntilNotNull(
+    () => caches.user_metrics.get(key),
+    2000,
+    25,
+    `the user metrics entry for ${key}`,
+  )
+}
+
 describe('updateUserFields user metrics invalidation', () => {
   it('invalidates cached anonymous profile metrics for every count visibility field', async () => {
     const visibilityFields = [
@@ -20,11 +30,11 @@ describe('updateUserFields user metrics invalidation', () => {
       const user = users[index]!
       expect(user.username).not.toBeNull()
 
+      // A read by id fills only the id key; the by-username read fills the username key the
+      // invalidation must also clear.
       await getUserMetricsByAnyCached(user.id)
-      await Promise.all([
-        pollUntilNotNull(() => caches.user_metrics.get(user.id)),
-        pollUntilNotNull(() => caches.user_metrics.get(user.username!)),
-      ])
+      await getUserMetricsByAnyCached(user.username!)
+      await Promise.all([waitForCachedMetrics(user.id), waitForCachedMetrics(user.username!)])
 
       await updateUserFields(user.id, { [field]: 'nobody' })
 
@@ -44,7 +54,7 @@ describe('updateUserFields user metrics invalidation', () => {
     const user = await createTestUser()
 
     await getUserMetricsByAnyCached(user.id)
-    await pollUntilNotNull(() => caches.user_metrics.get(user.id))
+    await waitForCachedMetrics(user.id)
 
     for (const field of visibilityFields) {
       await updateUserFields(user.id, { [field]: 'nobody' })

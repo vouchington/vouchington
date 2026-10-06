@@ -250,7 +250,6 @@ describe('runDisputeResolutionAgent', () => {
 
     // recordAgentResponseUsage is fire-and-forget -- poll until the insert commits.
     const row = await pollUntilNotNull(() => findAiUsageRecordForPost(postId, 'dispute-resolution'))
-    if (!row) throw new Error('ai_usage_records row was not written')
     expect(row.community_id).toBe(community.id)
   })
 
@@ -284,7 +283,6 @@ describe('runDisputeResolutionAgent', () => {
     )
 
     const row = await pollUntilNotNull(() => findAiUsageRecordForPost(postId, 'dispute-resolution'))
-    if (!row) throw new Error('ai_usage_records row was not written for the failed response')
     expect(row.model).toBe('gpt-5.4-nano-2026-03-17')
     expect(row.service_tier).toBe('flex')
     expect(row.input_tokens).toBe(150)

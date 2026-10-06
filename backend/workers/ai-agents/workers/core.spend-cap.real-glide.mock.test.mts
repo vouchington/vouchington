@@ -106,14 +106,14 @@ describe('daily AI spend-cap coordination with real GlideMQ', () => {
       async (job: Job) => {
         processedSpendIds.push(job.id)
       },
-      { ...connection, limiter: { max: 1, duration: 60_000 } },
+      { ...connection, blockTimeout: 1000, limiter: { max: 1, duration: 60_000 } },
     )
     const coordinatorWorker = new Worker(
       coordinatorQueueName,
       async (job: Job) => {
         processedCoordinatorIds.push(job.id)
       },
-      connection,
+      { ...connection, blockTimeout: 1000 },
     )
 
     try {
@@ -157,7 +157,7 @@ describe('daily AI spend-cap coordination with real GlideMQ', () => {
           await priorCoordinatorReleased
         }
       },
-      connection,
+      { ...connection, blockTimeout: 1000 },
     )
 
     try {
