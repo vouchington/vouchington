@@ -55,7 +55,7 @@ describe('updateUserFields user metrics invalidation', () => {
 
 async function fillCachedMetrics(key: string): Promise<void> {
   const fills: Promise<unknown>[] = []
-  const stop = trackUserMetricsFills(fills)
+  const stop = trackUserMetricsFills(caches.user_metrics, fills)
   try {
     await getUserMetricsByAnyCached(key)
     if ((await caches.user_metrics.get(key)) == null) await Promise.all(fills)

@@ -187,7 +187,7 @@ async function createOwnedCommunity(
  */
 async function warmUserMetricsCache(user: PrivateUser, count: number): Promise<void> {
   const fills: Promise<unknown>[] = []
-  const stop = trackUserMetricsFills(fills)
+  const stop = trackUserMetricsFills(caches.user_metrics, fills)
   try {
     await expectCommunityCount(user, count)
     const [byId, byUsername] = await Promise.all([

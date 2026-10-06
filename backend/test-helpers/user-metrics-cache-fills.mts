@@ -1,4 +1,3 @@
-import { caches } from '@services/entity-cache/caches'
 import { vi } from 'vitest'
 
 type UserMetricsFill = {
@@ -10,13 +9,13 @@ type UserMetricsFill = {
 }
 
 /** The read-through fill discards `setBySerializedKeyIfNotInvalidated`. Capture that promise. */
-export function trackUserMetricsFills(pending: Promise<unknown>[]): () => void {
-  const cache = caches.user_metrics as unknown as UserMetricsFill
-  const fill = cache.setBySerializedKeyIfNotInvalidated
+export function trackUserMetricsFills(cache: object, pending: Promise<unknown>[]): () => void {
+  const target = cache as unknown as UserMetricsFill
+  const fill = target.setBySerializedKeyIfNotInvalidated
   const spy = vi
-    .spyOn(cache, 'setBySerializedKeyIfNotInvalidated')
+    .spyOn(target, 'setBySerializedKeyIfNotInvalidated')
     .mockImplementation((serializedKey, value, ttl) => {
-      const result = fill.call(cache, serializedKey, value, ttl)
+      const result = fill.call(target, serializedKey, value, ttl)
       pending.push(result)
       return result
     })
