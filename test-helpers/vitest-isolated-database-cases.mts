@@ -26,6 +26,21 @@ const isolatedDatabaseCases = {
     fullName:
       'DSA statement submission materialization > records each eligible restriction once across cutoff, lift, and jurisdiction',
   },
+  'copyright-dsa-submission-build-failure': {
+    file: 'backend/services/copyright-notices/dsa-statement-submission-build-failure.test.mts',
+    fullName:
+      'DSA statement payload build failures > records a restriction whose payload cannot be built and keeps materializing the rest',
+  },
+  'copyright-dsa-submission-build-failure-invalid-payload': {
+    file: 'backend/services/copyright-notices/dsa-statement-submission-build-failure.test.mts',
+    fullName:
+      'DSA statement payload build failures > records a restriction whose built payload fails the closed contract as a 422 and keeps going',
+  },
+  'copyright-dsa-submission-build-failure-replay': {
+    file: 'backend/services/copyright-notices/dsa-statement-submission-build-failure.test.mts',
+    fullName:
+      'DSA statement payload build failures > replays a failed restriction only after its data is fixed, then submits the rebuilt payload',
+  },
   'copyright-eu-transparency-report': {
     file: 'backend/services/copyright-notices/eu-copyright-contract.test.mts',
     fullName:

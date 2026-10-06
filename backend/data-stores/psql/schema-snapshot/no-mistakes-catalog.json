@@ -22459,8 +22459,24 @@
           "definition": "CHECK (((submitted_at IS NULL) = (transparency_database_uuid IS NULL)))",
           "validated": true
         },
+        "copyright_dsa_statement_submissions_check2": {
+          "definition": "CHECK (((payload IS NULL) = (failed_at IS NOT NULL)))",
+          "validated": true
+        },
+        "copyright_dsa_statement_submissions_check3": {
+          "definition": "CHECK (((failed_at IS NULL) = (failure_code IS NULL)))",
+          "validated": true
+        },
+        "copyright_dsa_statement_submissions_check4": {
+          "definition": "CHECK (((failed_at IS NULL) OR ((submitted_at IS NULL) AND (lease_token IS NULL))))",
+          "validated": true
+        },
+        "copyright_dsa_statement_submissions_failure_code_check": {
+          "definition": "CHECK (((failure_code IS NULL) OR ((char_length(failure_code) >= 1) AND (char_length(failure_code) <= 128))))",
+          "validated": true
+        },
         "copyright_dsa_statement_submissions_payload_check": {
-          "definition": "CHECK ((jsonb_typeof(payload) = 'object'::text))",
+          "definition": "CHECK (((payload IS NULL) OR (jsonb_typeof(payload) = 'object'::text)))",
           "validated": true
         }
       },
@@ -22473,7 +22489,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4
+          "ordinalPosition": 6
         },
         "copyright_restriction_id": {
           "comment": "The unique Art. 17(1) restriction decision represented by this public statement.",
@@ -22493,7 +22509,27 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10
+          "ordinalPosition": 12
+        },
+        "failed_at": {
+          "comment": "Time the payload build failed terminally; the item is never claimed until an administrator replay rebuilds the payload and clears it.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4
+        },
+        "failure_code": {
+          "comment": "Fixed http_<status> class of the payload build failure, never an error message or personal data.",
+          "dataType": "text",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5
         },
         "id": {
           "comment": "UUIDv7 durable work-item identifier.",
@@ -22513,7 +22549,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 9
         },
         "lease_token": {
           "comment": "Random claim token fencing every write after the HTTP request.",
@@ -22523,7 +22559,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5
+          "ordinalPosition": 7
         },
         "leased_at": {
           "comment": "Time the current worker lease was taken.",
@@ -22533,16 +22569,16 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 8
         },
         "payload": {
-          "comment": "Validated, personal-data-free API JSON, frozen across retries and replay.",
+          "comment": "Validated, personal-data-free API JSON, frozen across retries and replay once built; null only while failed_at records a payload build failure.",
           "dataType": "jsonb",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": false,
+          "nullable": true,
           "ordinalPosition": 3
         },
         "submitted_at": {
@@ -22553,7 +22589,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 10
         },
         "transparency_database_uuid": {
           "comment": "Commission statement UUID returned on success or existing-PUID confirmation.",
@@ -22563,7 +22599,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 11
         },
         "updated_at": {
           "comment": "Last durable claim or terminal-outcome update.",
@@ -22573,7 +22609,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11
+          "ordinalPosition": 13
         }
       },
       "comment": "One durable public DSA Transparency Database statement per copyright restriction decision; the payload is frozen before retry.",
@@ -22637,7 +22673,7 @@
         "idx_copyright_dsa_statement_submissions__available": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_dsa_statement_submissions__available ON public.copyright_dsa_statement_submissions USING btree (available_at, id) WHERE (submitted_at IS NULL)",
+          "definition": "CREATE INDEX idx_copyright_dsa_statement_submissions__available ON public.copyright_dsa_statement_submissions USING btree (available_at, id) WHERE ((submitted_at IS NULL) AND (failed_at IS NULL))",
           "immediate": true,
           "keys": [
             {
@@ -22660,7 +22696,7 @@
             }
           ],
           "live": true,
-          "predicate": "(submitted_at IS NULL)",
+          "predicate": "((submitted_at IS NULL) AND (failed_at IS NULL))",
           "primary": false,
           "ready": true,
           "unique": false,

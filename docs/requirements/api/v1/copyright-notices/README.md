@@ -405,8 +405,12 @@ callers receive `401`, and a moderator without the administrator role receives `
 A dead-lettered submission receives an immutable `replayed` attempt naming the retained actor
 and becomes due for a new round. Unknown, pending, recently replayed, or submitted items return
 `{ replayed: false }` and append nothing. The operation never resets the success outcome,
-rewrites earlier attempts, or replaces the captured payload. It enqueues only after commit;
+rewrites earlier attempts, or replaces a captured payload. It enqueues only after commit;
 submission jobs continue to require the independent switch and valid start date.
+
+A restriction whose payload could not be built is a payload-less failed submission that jobs never
+claim. Replaying it rebuilds and freezes the payload in the same transaction and then submits it as
+above. If the restriction still cannot be built, the response is `{ replayed: false }`.
 
 The Commission submission is worker-only, uses fixed allow-listed text with no personal data,
 and includes every eligible US, EU, or UK restriction, including court-hold re-impositions.

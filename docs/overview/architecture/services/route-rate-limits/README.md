@@ -158,7 +158,7 @@ is `backend/api/rest-usage-meter.mts`, and it shares the settle-on-response-clos
 
 ## Error Handling
 
-Fails open on Valkey errors: if `addAndCheck` throws, returns `{ limited: false }` so the request proceeds. Error is reported via `onError`. The usage quota check and charge fail open the same way. The one exception is a registry entry with `failClosed: true`, currently only `POST:/api/v1/copyright-notices` (claimant notice submission): when the limiter cannot be consulted that route returns `{ limited: true }` with `Retry-After` set to its window, so notice volume is never unbounded.
+Fails open on Valkey errors: if `addAndCheck` throws, returns `{ limited: false }` so the request proceeds. Error is reported via `onError`. The usage quota check and charge fail open the same way. The one exception is a registry entry with `failClosed: true`, currently only the two guest claimant intake routes, `POST:/api/v1/copyright-notices` (US) and `POST:/api/v1/copyright-eu-notices` (EU): when the limiter cannot be consulted those routes return `{ limited: true }` with `Retry-After` set to its window, so notice volume is never unbounded. The UK intake, staff, and redress entries stay fail-open.
 
 ## Files
 

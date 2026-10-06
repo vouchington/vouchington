@@ -9,7 +9,9 @@ CREATE TABLE copyright_dsa_statement_submissions (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_restriction_id uuid NOT NULL UNIQUE
     REFERENCES copyright_restrictions(id) ON DELETE RESTRICT,
-  payload jsonb NOT NULL CHECK (jsonb_typeof(payload) = 'object'),
+  payload jsonb CHECK (payload IS NULL OR jsonb_typeof(payload) = 'object'),
+  failed_at timestamptz,
+  failure_code text CHECK (failure_code IS NULL OR char_length(failure_code) BETWEEN 1 AND 128),
   available_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   lease_token uuid,
   leased_at timestamptz,
@@ -21,12 +23,15 @@ CREATE TABLE copyright_dsa_statement_submissions (
   CHECK ((lease_token IS NULL AND leased_at IS NULL AND lease_expires_at IS NULL)
     OR (lease_token IS NOT NULL AND leased_at IS NOT NULL AND lease_expires_at IS NOT NULL
       AND lease_expires_at > leased_at)),
-  CHECK ((submitted_at IS NULL) = (transparency_database_uuid IS NULL))
+  CHECK ((submitted_at IS NULL) = (transparency_database_uuid IS NULL)),
+  CHECK ((payload IS NULL) = (failed_at IS NOT NULL)),
+  CHECK ((failed_at IS NULL) = (failure_code IS NULL)),
+  CHECK (failed_at IS NULL OR (submitted_at IS NULL AND lease_token IS NULL))
 );
 
 CREATE INDEX idx_copyright_dsa_statement_submissions__available
   ON copyright_dsa_statement_submissions (available_at, id)
-  WHERE submitted_at IS NULL;
+  WHERE submitted_at IS NULL AND failed_at IS NULL;
 CREATE INDEX idx_copyright_dsa_statement_submissions__lease_expiry
   ON copyright_dsa_statement_submissions (lease_expires_at, id)
   WHERE lease_token IS NOT NULL;
@@ -62,7 +67,9 @@ CREATE TRIGGER trigger_copyright_dsa_statement_submission_attempts_immutable
 COMMENT ON TABLE copyright_dsa_statement_submissions IS 'One durable public DSA Transparency Database statement per copyright restriction decision; the payload is frozen before retry.';
 COMMENT ON COLUMN copyright_dsa_statement_submissions.id IS 'UUIDv7 durable work-item identifier.';
 COMMENT ON COLUMN copyright_dsa_statement_submissions.copyright_restriction_id IS 'The unique Art. 17(1) restriction decision represented by this public statement.';
-COMMENT ON COLUMN copyright_dsa_statement_submissions.payload IS 'Validated, personal-data-free API JSON, frozen across retries and replay.';
+COMMENT ON COLUMN copyright_dsa_statement_submissions.payload IS 'Validated, personal-data-free API JSON, frozen across retries and replay once built; null only while failed_at records a payload build failure.';
+COMMENT ON COLUMN copyright_dsa_statement_submissions.failed_at IS 'Time the payload build failed terminally; the item is never claimed until an administrator replay rebuilds the payload and clears it.';
+COMMENT ON COLUMN copyright_dsa_statement_submissions.failure_code IS 'Fixed http_<status> class of the payload build failure, never an error message or personal data.';
 COMMENT ON COLUMN copyright_dsa_statement_submissions.available_at IS 'Earliest time at which an unsubmitted, non-dead-lettered item may be claimed.';
 COMMENT ON COLUMN copyright_dsa_statement_submissions.lease_token IS 'Random claim token fencing every write after the HTTP request.';
 COMMENT ON COLUMN copyright_dsa_statement_submissions.leased_at IS 'Time the current worker lease was taken.';

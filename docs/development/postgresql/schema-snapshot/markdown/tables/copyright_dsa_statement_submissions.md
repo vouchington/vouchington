@@ -6,19 +6,21 @@ One durable public DSA Transparency Database statement per copyright restriction
 
 Not partitioned — growth: unbounded.
 
-| Column                       | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                          |
-| ---------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------- |
-| `id`                         | `uuid`                     | no       | `uuidv7()`                   |          |           |           | UUIDv7 durable work-item identifier.                                             |
-| `copyright_restriction_id`   | `uuid`                     | no       |                              |          |           |           | The unique Art. 17(1) restriction decision represented by this public statement. |
-| `payload`                    | `jsonb`                    | no       |                              |          |           |           | Validated, personal-data-free API JSON, frozen across retries and replay.        |
-| `available_at`               | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | Earliest time at which an unsubmitted, non-dead-lettered item may be claimed.    |
-| `lease_token`                | `uuid`                     | yes      |                              |          |           |           | Random claim token fencing every write after the HTTP request.                   |
-| `leased_at`                  | `timestamp with time zone` | yes      |                              |          |           |           | Time the current worker lease was taken.                                         |
-| `lease_expires_at`           | `timestamp with time zone` | yes      |                              |          |           |           | Deadline after which a stale lease becomes a retryable failure ledger entry.     |
-| `submitted_at`               | `timestamp with time zone` | yes      |                              |          |           |           | Time the Commission accepted this statement or confirmed its existing PUID.      |
-| `transparency_database_uuid` | `uuid`                     | yes      |                              |          |           |           | Commission statement UUID returned on success or existing-PUID confirmation.     |
-| `created_at`                 | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | Creation time derived from the UUIDv7 identifier.                                |
-| `updated_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | Last durable claim or terminal-outcome update.                                   |
+| Column                       | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                         |
+| ---------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                         | `uuid`                     | no       | `uuidv7()`                   |          |           |           | UUIDv7 durable work-item identifier.                                                                                                            |
+| `copyright_restriction_id`   | `uuid`                     | no       |                              |          |           |           | The unique Art. 17(1) restriction decision represented by this public statement.                                                                |
+| `payload`                    | `jsonb`                    | yes      |                              |          |           |           | Validated, personal-data-free API JSON, frozen across retries and replay once built; null only while failed_at records a payload build failure. |
+| `failed_at`                  | `timestamp with time zone` | yes      |                              |          |           |           | Time the payload build failed terminally; the item is never claimed until an administrator replay rebuilds the payload and clears it.           |
+| `failure_code`               | `text`                     | yes      |                              |          |           |           | Fixed http_<status> class of the payload build failure, never an error message or personal data.                                                |
+| `available_at`               | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | Earliest time at which an unsubmitted, non-dead-lettered item may be claimed.                                                                   |
+| `lease_token`                | `uuid`                     | yes      |                              |          |           |           | Random claim token fencing every write after the HTTP request.                                                                                  |
+| `leased_at`                  | `timestamp with time zone` | yes      |                              |          |           |           | Time the current worker lease was taken.                                                                                                        |
+| `lease_expires_at`           | `timestamp with time zone` | yes      |                              |          |           |           | Deadline after which a stale lease becomes a retryable failure ledger entry.                                                                    |
+| `submitted_at`               | `timestamp with time zone` | yes      |                              |          |           |           | Time the Commission accepted this statement or confirmed its existing PUID.                                                                     |
+| `transparency_database_uuid` | `uuid`                     | yes      |                              |          |           |           | Commission statement UUID returned on success or existing-PUID confirmation.                                                                    |
+| `created_at`                 | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | Creation time derived from the UUIDv7 identifier.                                                                                               |
+| `updated_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | Last durable claim or terminal-outcome update.                                                                                                  |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -30,7 +32,11 @@ Not partitioned — growth: unbounded.
 
 - `copyright_dsa_statement_submissions_check`: `CHECK ((((lease_token IS NULL) AND (leased_at IS NULL) AND (lease_expires_at IS NULL)) OR ((lease_token IS NOT NULL) AND (leased_at IS NOT NULL) AND (lease_expires_at IS NOT NULL) AND (lease_expires_at > leased_at))))`
 - `copyright_dsa_statement_submissions_check1`: `CHECK (((submitted_at IS NULL) = (transparency_database_uuid IS NULL)))`
-- `copyright_dsa_statement_submissions_payload_check`: `CHECK ((jsonb_typeof(payload) = 'object'::text))`
+- `copyright_dsa_statement_submissions_check2`: `CHECK (((payload IS NULL) = (failed_at IS NOT NULL)))`
+- `copyright_dsa_statement_submissions_check3`: `CHECK (((failed_at IS NULL) = (failure_code IS NULL)))`
+- `copyright_dsa_statement_submissions_check4`: `CHECK (((failed_at IS NULL) OR ((submitted_at IS NULL) AND (lease_token IS NULL))))`
+- `copyright_dsa_statement_submissions_failure_code_check`: `CHECK (((failure_code IS NULL) OR ((char_length(failure_code) >= 1) AND (char_length(failure_code) <= 128))))`
+- `copyright_dsa_statement_submissions_payload_check`: `CHECK (((payload IS NULL) OR (jsonb_typeof(payload) = 'object'::text)))`
 
 **Foreign keys:**
 
@@ -40,7 +46,7 @@ Not partitioned — growth: unbounded.
 
 - `copyright_dsa_statement_submission_copyright_restriction_id_key`: `CREATE UNIQUE INDEX copyright_dsa_statement_submission_copyright_restriction_id_key ON public.copyright_dsa_statement_submissions USING btree (copyright_restriction_id)`
 - `copyright_dsa_statement_submissions_pkey`: `CREATE UNIQUE INDEX copyright_dsa_statement_submissions_pkey ON public.copyright_dsa_statement_submissions USING btree (id)`
-- `idx_copyright_dsa_statement_submissions__available`: `CREATE INDEX idx_copyright_dsa_statement_submissions__available ON public.copyright_dsa_statement_submissions USING btree (available_at, id) WHERE (submitted_at IS NULL)`
+- `idx_copyright_dsa_statement_submissions__available`: `CREATE INDEX idx_copyright_dsa_statement_submissions__available ON public.copyright_dsa_statement_submissions USING btree (available_at, id) WHERE ((submitted_at IS NULL) AND (failed_at IS NULL))`
 - `idx_copyright_dsa_statement_submissions__lease_expiry`: `CREATE INDEX idx_copyright_dsa_statement_submissions__lease_expiry ON public.copyright_dsa_statement_submissions USING btree (lease_expires_at, id) WHERE (lease_token IS NOT NULL)`
 
 **Triggers:**

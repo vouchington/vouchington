@@ -83,6 +83,11 @@ work item for 15 minutes, rechecks the date against its restriction, and sends i
 to the Commission's single-statement endpoint. Both jobs return without enqueueing or HTTP while
 the switch is off or the date is unset. Blank credentials leave items pending and write no attempt.
 
+A restriction whose payload build throws an `HttpError` (the only error class the sweep absorbs) is
+recorded as a payload-less terminal work item (`failed_at`, `http_<status>` `failure_code`) with one
+warning and skipped, so it cannot stall the restrictions after it; the due scan and claim exclude
+it, and administrator replay rebuilds its payload. Any other error fails the run.
+
 The work item owns the exact lease and one success UUID. An append-only attempt ledger records
 each try and administrator replay. The current round follows the latest `replayed` row; one
 permanent failure or five retryable failures derives dead-letter state. An expired claim appends

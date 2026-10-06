@@ -86,6 +86,14 @@ Commission `puid`. It contains no personal data or user-written text, including 
 contact, hosted URL, grounds, or rationale. All retry sends use that same stored payload.
 Submissions are public and irreversible; there is no update, withdrawal, or deletion operation.
 
+A restriction whose payload cannot be built (an `HttpError` from the builder: a missing target-image
+row or upload date, an unsupported legal ground, or a payload that fails the closed contract with a
+`422`) becomes a terminal failed work item with no payload, a `failed_at`
+time, and an `http_<status>` `failure_code`, plus one warning tagged with the restriction id and
+code. The sweep skips it and carries on, it is never retried or claimed, and any other error, such
+as a database failure, still fails the run. Fix the data, then replay it (below); the warning
+carries only the restriction id, so find the submission id by `copyright_restriction_id`.
+
 A 15-minute lease fences each attempt. Success and duplicate-`puid` replies record the Commission
 UUID once. Retryable errors use exponential minute backoff; five retryable failures in a round,
 or one permanent validation failure, dead-letter the item and report ids and status only.
@@ -97,6 +105,9 @@ An administrator may call
 It appends a `replayed` ledger row naming the retained administrator, moves availability to now,
 and enqueues after commit. It preserves all earlier attempts and the captured payload. A new round
 may dead-letter again; submitted, pending, or unknown items return `{ replayed: false }`.
+Replaying a payload build failure first rebuilds the payload in the same transaction, freezes it,
+and clears the failure; while the data still cannot be built it returns `{ replayed: false }` and
+changes nothing.
 See the [API contract](../requirements/api/v1/copyright-notices/README.md#dsa-statement-replay)
 and [queue recovery matrix](../overview/architecture/queues/notifications/README.md#dsa-statement-database).
 
