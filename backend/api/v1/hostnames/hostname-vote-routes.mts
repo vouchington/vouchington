@@ -1,5 +1,9 @@
 import app from '../../app.mts'
-import { createVoteClearHandler, createVoteHandler } from '../../election-vote-handler.mts'
+import {
+  createVoteClearHandler,
+  createVoteHandler,
+  voteContext,
+} from '../../election-vote-handler.mts'
 import {
   apiNoRequestBody,
   apiOpenApiNoContent,
@@ -58,13 +62,13 @@ app.route('/api/v1/hostnames/:id/vote').put(async ctx => {
     'PUT:/api/v1/hostnames/:id/vote',
   )
   apiOpenApiNoContent('PUT:/api/v1/hostnames/:id/vote', 204)
-  await hostnameVoteHandler(ctx)
+  await hostnameVoteHandler(voteContext(ctx))
 })
 
 app.route('/api/v1/hostnames/:id/vote').delete(async ctx => {
   apiNoRequestBody('DELETE:/api/v1/hostnames/:id/vote')
   apiOpenApiNoContent('DELETE:/api/v1/hostnames/:id/vote', 204)
-  await clearHostnameVoteHandler(ctx)
+  await clearHostnameVoteHandler(voteContext(ctx))
 })
 
 function isBlockedHostname(hostname: unknown): hostname is { is_blocked: boolean } {

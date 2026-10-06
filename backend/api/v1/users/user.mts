@@ -17,6 +17,7 @@ import { listProfileLinks } from '@services/my/profile-links'
 import {
   createVoteClearHandler,
   createVoteHandler,
+  voteContext,
   type CreateVoteHandlerOptions,
 } from '../../election-vote-handler.mts'
 import {
@@ -141,9 +142,8 @@ const userVouchBaseOptions: Omit<CreateVoteHandlerOptions, 'routeKey'> = {
   upsertVotes: upsertUserVouchElectionVotes,
   getCurrentVote: getUserVouchElectionVote,
   onNoop: createVoteStatsNoopReconciler(enqueueBulkUpdateUserVouchElectionVoteStats),
-  assertAccess: (ctx: Context, currentUser, entity) => {
-    ctx.assert((entity as { id: string }).id !== currentUser.id, 403, 'Cannot vote on yourself')
-  },
+  assertAccess: (ctx, currentUser, entity) =>
+    ctx.assert((entity as { id: string }).id !== currentUser.id, 403, 'Cannot vote on yourself'),
   enqueueIntegrityCheck: false,
 }
 
@@ -164,13 +164,13 @@ app.route('/api/v1/users/:id/vouch-vote').put(async ctx => {
     'PUT:/api/v1/users/:id/vouch-vote',
   )
   apiOpenApiNoContent('PUT:/api/v1/users/:id/vouch-vote', 204)
-  await userVouchVoteHandler(ctx)
+  await userVouchVoteHandler(voteContext(ctx))
 })
 
 app.route('/api/v1/users/:id/vouch-vote').delete(async ctx => {
   apiNoRequestBody('DELETE:/api/v1/users/:id/vouch-vote')
   apiOpenApiNoContent('DELETE:/api/v1/users/:id/vouch-vote', 204)
-  await clearUserVouchVoteHandler(ctx)
+  await clearUserVouchVoteHandler(voteContext(ctx))
 })
 
 app.route('/api/v1/users/:id/vouch-context').get(async (ctx: Context) => {

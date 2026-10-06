@@ -12,7 +12,9 @@ import { isAdminUser } from '@services/users'
 import {
   createVoteClearHandler,
   createVoteHandler,
+  voteContext,
   type CreateVoteHandlerOptions,
+  type VoteRouteContext,
 } from '../../election-vote-handler.mts'
 import {
   apiNoRequestBody,
@@ -49,7 +51,7 @@ const agentModerationVoteHandler = createVoteHandler({
   getCurrentVote: getAgentModerationElectionVote,
   onNoop: createVoteStatsNoopReconciler(enqueueBulkUpdateAgentModerationElectionVoteStats),
   allowOfficialAccounts: true,
-  preAssertAccess: (ctx: Context, currentUser: PrivateUser) => {
+  preAssertAccess: (ctx: VoteRouteContext, currentUser: PrivateUser) => {
     ctx.assert(isAdminUser(currentUser), 403, 'Admin access required')
   },
 })
@@ -66,7 +68,7 @@ const clearAgentModerationVoteHandler = createVoteClearHandler({
   getCurrentVote: getAgentModerationElectionVote,
   onNoop: createVoteStatsNoopReconciler(enqueueBulkUpdateAgentModerationElectionVoteStats),
   allowOfficialAccounts: true,
-  preAssertAccess: (ctx: Context, currentUser: PrivateUser) => {
+  preAssertAccess: (ctx: VoteRouteContext, currentUser: PrivateUser) => {
     ctx.assert(isAdminUser(currentUser), 403, 'Admin access required')
   },
 })
@@ -76,13 +78,13 @@ app.route('/api/v1/agent-moderations/:id/vote').put(async ctx => {
     'PUT:/api/v1/agent-moderations/:id/vote',
   )
   apiOpenApiNoContent('PUT:/api/v1/agent-moderations/:id/vote', 204)
-  await agentModerationVoteHandler(ctx)
+  await agentModerationVoteHandler(voteContext(ctx))
 })
 
 app.route('/api/v1/agent-moderations/:id/vote').delete(async ctx => {
   apiNoRequestBody('DELETE:/api/v1/agent-moderations/:id/vote')
   apiOpenApiNoContent('DELETE:/api/v1/agent-moderations/:id/vote', 204)
-  await clearAgentModerationVoteHandler(ctx)
+  await clearAgentModerationVoteHandler(voteContext(ctx))
 })
 
 const agentModerationVotesParser = createPaginationParser({

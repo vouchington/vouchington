@@ -20,7 +20,11 @@ import { getFollowedUsersByElectionVote } from '@services/users/follow-context'
 import { isUUID } from '@modules/utils'
 import { createPaginationParser } from '@modules/pagination'
 import { isAdminUser } from '@services/users'
-import { createVoteClearHandler, createVoteHandler } from '../../election-vote-handler.mts'
+import {
+  createVoteClearHandler,
+  createVoteHandler,
+  voteContext,
+} from '../../election-vote-handler.mts'
 import { createVoteStatsNoopReconciler } from '@services/elections-votes/shared'
 import { enqueueBulkUpdateRssFeedItemElectionVoteStats } from '@queues/elections/enqueues'
 import {
@@ -127,13 +131,13 @@ app.route('/api/v1/rss-feed-items/:id/vote').put(async ctx => {
     'PUT:/api/v1/rss-feed-items/:id/vote',
   )
   apiOpenApiNoContent('PUT:/api/v1/rss-feed-items/:id/vote', 204)
-  await rssFeedItemVoteHandler(ctx)
+  await rssFeedItemVoteHandler(voteContext(ctx))
 })
 
 app.route('/api/v1/rss-feed-items/:id/vote').delete(async ctx => {
   apiNoRequestBody('DELETE:/api/v1/rss-feed-items/:id/vote')
   apiOpenApiNoContent('DELETE:/api/v1/rss-feed-items/:id/vote', 204)
-  await clearRssFeedItemVoteHandler(ctx)
+  await clearRssFeedItemVoteHandler(voteContext(ctx))
 })
 
 const rssFeedItemVotesParser = createPaginationParser({

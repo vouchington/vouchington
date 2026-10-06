@@ -14,7 +14,7 @@ import {
   EMAIL_VERIFICATION_REQUIRED,
   OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN,
 } from '@modules/on-error/error-codes'
-import { createVoteHandler } from './election-vote-handler.mts'
+import { createVoteHandler, voteContext } from './election-vote-handler.mts'
 import { getContributionQuota } from '@services/contribution-gating/quota'
 
 describe('election-vote-handler', () => {
@@ -106,7 +106,7 @@ describe('election-vote-handler', () => {
         },
       } as unknown as Context
 
-      await expect(handler(ctx)).rejects.toBe(parseError)
+      await expect(handler(voteContext(ctx))).rejects.toBe(parseError)
       expect(routeRateLimitCalls).toBe(1)
     })
 
@@ -136,7 +136,7 @@ describe('election-vote-handler', () => {
         },
       } as unknown as Context
 
-      await handler(ctx)
+      await handler(voteContext(ctx))
 
       expect(status).toBe(204)
     })

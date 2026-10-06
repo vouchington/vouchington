@@ -4,7 +4,11 @@ import { enqueueBulkUpdateTopicElectionVoteStats } from '@queues/elections/enque
 import { enqueueBulkUpdateTopicRatingStatsForTopicId } from '@queues/topic-ratings/enqueues'
 import { getTopicByAnyCached } from '@services/entity-fetch'
 import app from '../../../app.mts'
-import { createVoteClearHandler, createVoteHandler } from '../../../election-vote-handler.mts'
+import {
+  createVoteClearHandler,
+  createVoteHandler,
+  voteContext,
+} from '../../../election-vote-handler.mts'
 import {
   apiNoRequestBody,
   apiOpenApiNoContent,
@@ -50,11 +54,11 @@ app.route('/api/v1/topics/:id/vote').put(async ctx => {
     'PUT:/api/v1/topics/:id/vote',
   )
   apiOpenApiNoContent('PUT:/api/v1/topics/:id/vote', 204)
-  await topicVoteHandler(ctx)
+  await topicVoteHandler(voteContext(ctx))
 })
 
 app.route('/api/v1/topics/:id/vote').delete(async ctx => {
   apiNoRequestBody('DELETE:/api/v1/topics/:id/vote')
   apiOpenApiNoContent('DELETE:/api/v1/topics/:id/vote', 204)
-  await clearTopicVoteHandler(ctx)
+  await clearTopicVoteHandler(voteContext(ctx))
 })

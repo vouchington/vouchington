@@ -1,4 +1,3 @@
-import type { Context } from '@jongleberry/api-server'
 import { getPostElectionVote, upsertPostElectionVotes } from '@services/elections-votes/post'
 import { getPostByAnyCached } from '@services/entity-fetch'
 import { canViewPost, type Post } from '@services/posts'
@@ -8,7 +7,9 @@ import app from '../../../app.mts'
 import {
   createVoteClearHandler,
   createVoteHandler,
+  voteContext,
   type CreateVoteHandlerOptions,
+  type VoteRouteContext,
 } from '../../../election-vote-handler.mts'
 import { createVoteStatsNoopReconciler } from '@services/elections-votes/shared'
 import type { ElectionVoteRequest } from '@voucha/types/entities/election'
@@ -34,7 +35,7 @@ const postVoteOptions: CreateVoteHandlerOptions = {
   upsertVotes: upsertPostElectionVotes,
   getCurrentVote: getPostElectionVote,
   onNoop: createVoteStatsNoopReconciler(enqueueBulkUpdatePostElectionVoteStats),
-  assertAccess: async (ctx: Context, currentUser, entity) => {
+  assertAccess: async (ctx: VoteRouteContext, currentUser, entity) => {
     const targetPost = entity as Post
     // Topic recommendations are directly voteable despite being blocked from ordinary post-route
     // access. A comment beneath one inherits that root's access, while keeping its own policy.
@@ -139,11 +140,11 @@ app.route('/api/v1/posts/:id/vote').put(async ctx => {
     ElectionVoteRequest<'sentiment' | 'recommendation'>
   >('PUT:/api/v1/posts/:id/vote')
   apiOpenApiNoContent('PUT:/api/v1/posts/:id/vote', 204)
-  await postVoteHandler(ctx)
+  await postVoteHandler(voteContext(ctx))
 })
 
 app.route('/api/v1/posts/:id/vote').delete(async ctx => {
   apiNoRequestBody('DELETE:/api/v1/posts/:id/vote')
   apiOpenApiNoContent('DELETE:/api/v1/posts/:id/vote', 204)
-  await clearPostVoteHandler(ctx)
+  await clearPostVoteHandler(voteContext(ctx))
 })

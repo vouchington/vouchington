@@ -13,8 +13,8 @@ import { QUEUE_NAMES } from './shared.mts'
 app.route('/api/v1/mq/stream').get(async (ctx: Context) => {
   await requireAuthAndRateLimit(ctx, currentUserCanAccessQueueStats, 'GET:/api/v1/mq/stream')
 
-  const { stream, pipelinePromise, lifecycleSignal } = startSSE(ctx)
-  stream.on('error', onError)
+  const sse = startSSE(ctx)
+  sse.stream.on('error', onError)
 
   let inFlight = false
   const interval = setInterval(async () => {
@@ -23,8 +23,8 @@ app.route('/api/v1/mq/stream').get(async (ctx: Context) => {
     try {
       const queues = await getAllQueueStats(QUEUE_NAMES)
       const stats = aggregateQueueStats(queues)
-      if (!lifecycleSignal.aborted && !stream.destroyed) {
-        stream.write(
+      if (!sse.lifecycleSignal.aborted && !sse.stream.destroyed) {
+        sse.stream.write(
           apiSseFrame('GET:/api/v1/mq/stream', { event: 'stats', data: { stats, queues } }),
         )
       }
@@ -37,15 +37,15 @@ app.route('/api/v1/mq/stream').get(async (ctx: Context) => {
 
   const stopStream = () => {
     clearInterval(interval)
-    if (!stream.destroyed && !stream.writableEnded) stream.end()
+    if (!sse.stream.destroyed && !sse.stream.writableEnded) sse.stream.end()
   }
-  lifecycleSignal.addEventListener('abort', stopStream, { once: true })
+  sse.lifecycleSignal.addEventListener('abort', stopStream, { once: true })
 
   try {
-    await pipelinePromise
+    await sse.pipelinePromise
   } finally {
-    lifecycleSignal.removeEventListener('abort', stopStream)
+    sse.lifecycleSignal.removeEventListener('abort', stopStream)
     clearInterval(interval)
-    if (!stream.destroyed) stream.end()
+    if (!sse.stream.destroyed) sse.stream.end()
   }
 })

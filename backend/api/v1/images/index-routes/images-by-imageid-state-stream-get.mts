@@ -24,7 +24,6 @@ app.route('/api/v1/images/:id/state/stream').get(async (ctx: Context) => {
   const subscription = await imageStatePubSub.subscribe(imageId)
 
   let currentState: ImageUploadState
-  let sse: ReturnType<typeof startSSE> | undefined
   let subscriptionClosed = false
   let closeSubscriptionPromise: Promise<void> | undefined
   function closeSubscription() {
@@ -38,20 +37,26 @@ app.route('/api/v1/images/:id/state/stream').get(async (ctx: Context) => {
     /* v8 ignore next 2 -- socket abort timing is covered deterministically by watchForAbortBeforeSSE tests */
     if (abortBeforeSSE.wasAborted()) return
     abortBeforeSSE.stop()
-    sse = startSSE(ctx)
-    await pipeChannelToSSE({
-      emit: event => sse!.stream.write(apiSseFrame('GET:/api/v1/images/:id/state/stream', event)),
-      subscription,
-      eventName: 'state',
-      abortSignal: sse.lifecycleSignal,
-      isTerminal: isTerminalImageState,
-      initialValue: currentState,
-    })
+    const sse = startSSE(ctx)
+    try {
+      await pipeChannelToSSE({
+        emit: event => sse.stream.write(apiSseFrame('GET:/api/v1/images/:id/state/stream', event)),
+        subscription,
+        eventName: 'state',
+        abortSignal: sse.lifecycleSignal,
+        isTerminal: isTerminalImageState,
+        initialValue: currentState,
+      })
+    } finally {
+      abortBeforeSSE.stop()
+      closeSubscription()
+      sse.stream.end()
+      await closeSubscriptionPromise
+      await sse.pipelinePromise
+    }
   } finally {
     abortBeforeSSE.stop()
     closeSubscription()
-    sse?.stream.end()
     await closeSubscriptionPromise
-    await sse?.pipelinePromise
   }
 })

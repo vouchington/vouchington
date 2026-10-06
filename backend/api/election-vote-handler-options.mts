@@ -10,6 +10,20 @@ import type {
 } from '@services/elections-votes/shared'
 import type { PrivateUser } from '@services/users/types'
 
+/** Context operations the shared vote handler is allowed to use. */
+export type VoteRouteContext = {
+  getCurrentUser(): Promise<PrivateUser | null>
+  assert: Context['assert']
+  throw: Context['throw']
+  applyRouteRateLimit: Context['applyRouteRateLimit']
+  params: Context['params']
+  request: Pick<Context['request'], 'json'>
+  getSessionTokenData: Context['getSessionTokenData']
+  readonly ip: Context['ip']
+  req: Context['req']
+  setStatus(code: number): void
+}
+
 export type CreateVoteHandlerOptions<
   VoteResult extends ElectionVoteMutationResult = ElectionVoteMutationResult,
 > = {
@@ -30,12 +44,16 @@ export type CreateVoteHandlerOptions<
   /** Current ballot used to suppress same-choice and official Clear no-ops before quota. */
   getCurrentVote?: (userId: string, entityId: string) => Promise<ElectionVote | null>
   /** Runs before entity lookup, for checks that must not disclose entity existence. */
-  preAssertAccess?: (ctx: Context, currentUser: PrivateUser) => Promise<void> | void
+  preAssertAccess?: (ctx: VoteRouteContext, currentUser: PrivateUser) => Promise<void> | void
   /** Runs after entity lookup, when the access decision needs the entity. */
-  assertAccess?: (ctx: Context, currentUser: PrivateUser, entity: unknown) => Promise<void> | void
+  assertAccess?: (
+    ctx: VoteRouteContext,
+    currentUser: PrivateUser,
+    entity: unknown,
+  ) => Promise<void> | void
   /** Runs after entity lookup when clearing a prior ballot has narrower access requirements. */
   assertClearAccess?: (
-    ctx: Context,
+    ctx: VoteRouteContext,
     currentUser: PrivateUser,
     entity: unknown,
   ) => Promise<void> | void

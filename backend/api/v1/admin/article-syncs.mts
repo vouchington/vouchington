@@ -57,7 +57,6 @@ app.route('/api/v1/admin/article-syncs/:jobId/stream').get(async (ctx: Context) 
   const subscription = await articleSyncPubSub.subscribe(jobId)
 
   let initialValue: ArticleSyncStatus | undefined
-  let sse: ReturnType<typeof startSSE> | undefined
   let subscriptionClosed = false
   let closeSubscriptionPromise: Promise<void> | undefined
   function closeSubscription() {
@@ -71,7 +70,10 @@ app.route('/api/v1/admin/article-syncs/:jobId/stream').get(async (ctx: Context) 
     try {
       job = await articleSync.getJob(jobId)
     } catch (err) {
-      if (isHttpError(err)) throw err
+      // Catch bindings are not provable receivers. Copy Error instances into a const
+      // before the opaque isHttpError call so discovery does not treat it as an SSE write.
+      const caught = err instanceof Error ? err : undefined
+      if (caught !== undefined && isHttpError(caught)) throw err
       ctx.throw(503, 'Failed to load sync status')
     }
     if (!job) {
@@ -87,21 +89,27 @@ app.route('/api/v1/admin/article-syncs/:jobId/stream').get(async (ctx: Context) 
     if (abortBeforeSSE.wasAborted()) return
     /* v8 ignore next -- successful article streams require live queue timing; watcher stop is unit-tested */
     abortBeforeSSE.stop()
-    sse = startSSE(ctx)
-    await pipeChannelToSSE({
-      emit: event =>
-        sse!.stream.write(apiSseFrame('GET:/api/v1/admin/article-syncs/:jobId/stream', event)),
-      subscription,
-      eventName: 'status',
-      abortSignal: sse.lifecycleSignal,
-      isTerminal: (s: ArticleSyncStatus) => s.status === 'completed' || s.status === 'failed',
-      initialValue,
-    })
+    const sse = startSSE(ctx)
+    try {
+      await pipeChannelToSSE({
+        emit: event =>
+          sse.stream.write(apiSseFrame('GET:/api/v1/admin/article-syncs/:jobId/stream', event)),
+        subscription,
+        eventName: 'status',
+        abortSignal: sse.lifecycleSignal,
+        isTerminal: (s: ArticleSyncStatus) => s.status === 'completed' || s.status === 'failed',
+        initialValue,
+      })
+    } finally {
+      abortBeforeSSE.stop()
+      closeSubscription()
+      sse.stream.end()
+      await closeSubscriptionPromise
+      await sse.pipelinePromise
+    }
   } finally {
     abortBeforeSSE.stop()
     closeSubscription()
-    sse?.stream.end()
     await closeSubscriptionPromise
-    await sse?.pipelinePromise
   }
 })

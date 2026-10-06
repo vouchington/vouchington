@@ -100,7 +100,7 @@ export function validateUUIDParam(ctx: Context, name: string): string {
  * 422) — see `RuntimeRequestValidatorRegistry.validateAuthenticated`.
  */
 export function validateRequestContract(
-  ctx: Context,
+  ctx: { throw(status: number, message?: string, code?: string): never },
   operation: string,
   input: Parameters<RuntimeRequestValidatorRegistry['validateAuthenticated']>[1],
 ): void {

@@ -54,7 +54,7 @@ boilerplate. The handlers cover:
 - Append-only vote upsert, or a `NULL` Clear event, then a 204 response
 
 ```typescript
-import { createVoteHandler } from '../../election-vote-handler.mts'
+import { createVoteHandler, voteContext } from '../../election-vote-handler.mts'
 
 const handleTopicVote = createVoteHandler({
   rateLimitPrefix: 'topic-election-vote',
@@ -63,8 +63,18 @@ const handleTopicVote = createVoteHandler({
   entityNotFoundMessage: 'Topic not found',
 })
 
-app.route('/api/v1/topics/:id/vote').put(handleTopicVote).delete(handleTopicVoteClear)
+app.route('/api/v1/topics/:id/vote').put(async ctx => {
+  await handleTopicVote(voteContext(ctx))
+})
+
+app.route('/api/v1/topics/:id/vote').delete(async ctx => {
+  await handleTopicVoteClear(voteContext(ctx))
+})
 ```
+
+`voteContext(ctx)` forwards authentication, rate limiting, the request body, and `setStatus`
+without handing the route `ctx` value to the factory result. Contract discovery treats that direct
+argument as an opaque response and drops the route's declared 204.
 
 For routes with custom access checks (posts, admin moderation), use `assertAccess`:
 

@@ -48,7 +48,10 @@ validates the fixture in both directions:
 A `ctx.json(...)` call is attributed to exactly one route by static resolution. When two or more
 routes share a helper function that would otherwise contain the discovery-relevant call, keep the
 `ctx.json(...)` call at each route's own call site instead, and have the shared helper return the
-response body for the route to emit. See `completeMfaVerification` in
+response body for the route to emit. Passing the route `ctx` value into a helper whose body is not
+a resolvable function fail-closes that route as an unknown response. Forward only the operations
+the helper needs, as `voteContext(ctx)` does for the shared election vote handler, and keep
+`apiNoContent` or `apiOpenApiNoContent` on the route. See `completeMfaVerification` in
 `backend/api/v1/sessions-authentication/auth-mfa-routes/complete-mfa-verification.mts` for the
 pattern (used because `auth-mfa-totp-verification-post.mts` and
 `auth-mfa-passkeys-authentication-verification-post.mts` share it). Generation rejects a `ctx.json(...)` or streamed JSON call whose enclosing function is
@@ -64,8 +67,11 @@ and media type, and a failed secondary variant makes the whole operation unavail
 silently disappearing.
 
 The OpenAPI document catalogs every literal API-v1 route registration independently of fixture
-coverage. Every registered method and normalized path shape appears in `paths`. SSE frames are written through `apiSseFrame` at each concrete route's emission callback. Their
-`text/event-stream` content is a string; `x-sse-events` maps each literal event name to its
+coverage. Every registered method and normalized path shape appears in `paths`. SSE frames are written through `apiSseFrame` at each concrete route's emission callback. Bind that
+stream with `const sse = startSSE(ctx)` and write `sse.stream`. A destructured binding, `let`
+alias, or `catch` binding is not a provable receiver, so discovery fail-closes and reports an
+opaque call that receives one as an unmarked frame. Copy an `Error` into a `const` before passing
+it to an opaque helper such as `isHttpError`. The frames' `text/event-stream` content is a string; `x-sse-events` maps each literal event name to its
 compiler-derived `dataSchema`, including terminal events and every payload variant. Generic
 subscription helpers pass typed events to those callbacks. Keepalive comments carry no event
 payload, and routine lifecycle expiry reconnects without inventing an error event.

@@ -146,20 +146,20 @@ app.route('/api/v1/users/:idOrSlug/data-request/stream').get(async (ctx: Context
     /* v8 ignore next 2 -- socket abort timing is covered deterministically by watchForAbortBeforeSSE tests */
     if (abortBeforeSSE.wasAborted()) return
     abortBeforeSSE.stop()
-    const { stream, pipelinePromise, lifecycleSignal } = startSSE(ctx)
+    const sse = startSSE(ctx)
     try {
       await pipeChannelToSSE({
         emit: event =>
-          stream.write(apiSseFrame('GET:/api/v1/users/:idOrSlug/data-request/stream', event)),
+          sse.stream.write(apiSseFrame('GET:/api/v1/users/:idOrSlug/data-request/stream', event)),
         subscription,
         eventName: 'status',
-        abortSignal: lifecycleSignal,
+        abortSignal: sse.lifecycleSignal,
         isTerminal: (s: DataRequestStreamStatus) => isTerminalStatus(s.status),
         initialValue,
       })
     } finally {
-      stream.end()
-      await pipelinePromise
+      sse.stream.end()
+      await sse.pipelinePromise
     }
   } finally {
     abortBeforeSSE.stop()

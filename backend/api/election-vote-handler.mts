@@ -1,4 +1,3 @@
-import type { Context } from '@jongleberry/api-server'
 import { isAdminUser } from '@services/users'
 import { assertNotSuspended } from '@services/users/suspension-guard'
 import { RateLimiter } from '@data-stores/valkey-rate-limiter'
@@ -14,40 +13,43 @@ import {
 } from '@services/elections-votes/shared'
 import { enqueueVoteIntegrityCheck } from '@queues/vote-integrity/enqueues'
 import type { VoteEventContext } from '@voucha/types/entities/election'
-import { getUserActivePlan } from '@services/memberships'
-import { getContributionStatus } from '@services/contribution-gating/assert'
-import { assertWithinContributionQuota } from '@services/contribution-gating/quota'
-import { createCodedError } from '@modules/on-error/create-coded-error'
-import { EMAIL_VERIFICATION_REQUIRED } from '@modules/on-error/error-codes'
-import type { CreateVoteHandlerOptions } from './election-vote-handler-options.mts'
+import type {
+  CreateVoteHandlerOptions,
+  VoteRouteContext,
+} from './election-vote-handler-options.mts'
 import {
   assertNeutralRequiresExistingBallot,
   assertOfficialVoteMutationAccess,
+  assertVoteContributionAllowed,
 } from './election-vote-handler-guards.mts'
 
-export type { CreateVoteHandlerOptions } from './election-vote-handler-options.mts'
+export type {
+  CreateVoteHandlerOptions,
+  VoteRouteContext,
+} from './election-vote-handler-options.mts'
+export { voteContext } from './election-vote-context.mts'
 
 const VOTE_REQUESTS_PER_MINUTE = 30
 
 export function createVoteHandler<VoteResult extends ElectionVoteMutationResult>(
   options: CreateVoteHandlerOptions<VoteResult>,
-): (ctx: Context) => Promise<void> {
+): (route: VoteRouteContext) => Promise<void> {
   return createVoteMutationHandler(options, false)
 }
 
 export function createVoteClearHandler<VoteResult extends ElectionVoteMutationResult>(
   options: CreateVoteHandlerOptions<VoteResult>,
-): (ctx: Context) => Promise<void> {
+): (route: VoteRouteContext) => Promise<void> {
   return createVoteMutationHandler(options, true)
 }
 
 function createVoteMutationHandler<VoteResult extends ElectionVoteMutationResult>(
   options: CreateVoteHandlerOptions<VoteResult>,
   isClear: boolean,
-): (ctx: Context) => Promise<void> {
+): (route: VoteRouteContext) => Promise<void> {
   const rateLimiter = new RateLimiter({ prefix: options.rateLimitPrefix, ttlSeconds: 60 })
 
-  return async function handleVote(ctx: Context): Promise<void> {
+  return async function handleVote(ctx: VoteRouteContext): Promise<void> {
     const currentUser = await ctx.getCurrentUser()
     ctx.assert(currentUser, 401, 'Unauthorized')
 
@@ -141,21 +143,7 @@ function createVoteMutationHandler<VoteResult extends ElectionVoteMutationResult
         }
 
         if (!isClear) {
-          const membershipPlan = await getUserActivePlan(currentUser.id)
-          if (!bypassContributionGating) {
-            const contributionStatus = await getContributionStatus(currentUser, {
-              membershipPlan,
-              skipAccountAgeGate: true,
-            })
-            if (!contributionStatus.allowed) {
-              throw createCodedError(
-                403,
-                'A verified non-disposable email address is required to vote.',
-                EMAIL_VERIFICATION_REQUIRED,
-              )
-            }
-          }
-          await assertWithinContributionQuota(currentUser.id, isAdmin, membershipPlan)
+          await assertVoteContributionAllowed(currentUser, isAdmin, bypassContributionGating)
         }
 
         return options.upsertVotes(currentUser.id, [{ entityId, score }], context)
