@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { createRssFeedSource } from '../create-source-helpers.mts'
 import { createRssFeedUrlId } from '../rss-feed-url-id.mts'
 import { upsertUrlHostnames } from '@services/urls-hostnames/upsert'
@@ -123,6 +123,7 @@ describe('createRssFeedSource', () => {
     })
 
     entityCacheBloomFilters.topics = testBloomFilter
+    const bloomAdd = vi.spyOn(testBloomFilter, 'add')
     try {
       await testBloomFilter.delete()
       await testBloomFilter.ensureExists()
@@ -139,8 +140,13 @@ describe('createRssFeedSource', () => {
       })
 
       expect(result).not.toBeNull()
-      await expect.poll(() => testBloomFilter.exists(normalizeKey(slug))).toBe(true)
-      await expect.poll(() => testBloomFilter.exists(normalizeKey(result!.topicId))).toBe(true)
+      await Promise.all(
+        bloomAdd.mock.results.flatMap(entry =>
+          entry.type === 'return' ? [Promise.resolve(entry.value)] : [],
+        ),
+      )
+      expect(await testBloomFilter.exists(normalizeKey(slug))).toBe(true)
+      expect(await testBloomFilter.exists(normalizeKey(result!.topicId))).toBe(true)
     } finally {
       entityCacheBloomFilters.topics = originalBloomFilter
       await testBloomFilter.delete().catch(() => {})

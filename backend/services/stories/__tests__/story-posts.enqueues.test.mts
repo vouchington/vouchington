@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { it, expect, beforeAll, describe } from 'vitest'
+import { it, expect, beforeAll, describe, vi } from 'vitest'
 import {
   insertTestRssFeedItem,
   createTestUrlWithHostname,
@@ -21,19 +21,33 @@ import {
 } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
 import type { PrivateUser } from '@services/users/types'
+import { enqueueStoryPostAgent } from '@queues/ai-agents/enqueues/story-post'
 import { ai_agents } from '@queues/ai-agents/queues'
 import { upsertSystemUser } from '@services/users/system-users'
 import { createStoryPost } from '../story-posts.mts'
 import { reconcileStoryPostRelatedUrlProjection } from '../story-post-related-url-projection.mts'
-
 function sha256(data: unknown): Buffer {
   return createHash('sha256').update(JSON.stringify(data)).digest()
 }
-
+function trackedStoryPostAgent() {
+  const pending: Promise<unknown>[] = []
+  const add = ai_agents.add
+  const spy = vi.spyOn(ai_agents, 'add').mockImplementation((...args: Parameters<typeof add>) => {
+    const job = Reflect.apply(add, ai_agents, args)
+    pending.push(job)
+    spy.mockRestore()
+    return job
+  })
+  return {
+    pending,
+    enqueueStoryPostAgent(postId: string, opts?: { force?: boolean }) {
+      return Promise.all([enqueueStoryPostAgent(postId, opts)]).then(() => undefined)
+    },
+  }
+}
 let feedId: string
 let urlId: string
 let testUser: PrivateUser
-
 async function drainStoryPostRelatedUrlProjection(postId: string): Promise<void> {
   for (let page = 0; page < 10_000; page += 1) {
     const result = await reconcileStoryPostRelatedUrlProjection({ postId })
@@ -41,17 +55,14 @@ async function drainStoryPostRelatedUrlProjection(postId: string): Promise<void>
   }
   throw new Error('story post related URL projection did not drain')
 }
-
 describe('story-posts', () => {
   beforeAll(async () => {
     // Ensure @story-teller system user exists (same as seed script)
     await upsertSystemUser('story-teller')
-
     feedId = (await createTestRssFeed({})).id
     urlId = await createTestUrlWithHostname()
     testUser = await createTestUserDirect()
   })
-
   it('createStoryPost — creates a story post and links via story_posts', async () => {
     const story = await insertTestStory({ title: 'Test Story Title' })
     const random = Math.random().toString(36).slice(2, 10)
@@ -74,10 +85,10 @@ describe('story-posts', () => {
       contentSha256: sha256(itemData2),
     })
     await setTestItemStoryId(itemId2, story.id)
-
-    const result = await createStoryPost(story.id, testUser)
+    const agent = trackedStoryPostAgent()
+    const result = await createStoryPost(story.id, testUser, {}, agent)
+    await Promise.all(agent.pending)
     await drainStoryPostRelatedUrlProjection(result.post.id)
-
     expect(result.post).toBeDefined()
     expect(result.post.post_type).toBe('story')
     // Multi-item: title comes from story.title
@@ -88,9 +99,8 @@ describe('story-posts', () => {
     expect(result.postStory.post_id).toBe(result.post.id)
     expect(result.postStory.story_id).toBe(story.id)
     expect(result.postStory.initiated_by_id).toBe(testUser.id)
-    await expect.poll(() => hasStoryPostAgentJob(result.post.id)).toBe(true)
+    expect(await hasStoryPostAgentJob(result.post.id)).toBe(true)
   })
-
   it('createStoryPost — throws 409 if story already has a post', async () => {
     const story = await insertTestStory({ title: 'Already Has Discussion' })
     const random = Math.random().toString(36).slice(2, 10)
@@ -113,21 +123,16 @@ describe('story-posts', () => {
       contentSha256: sha256(itemData2),
     })
     await setTestItemStoryId(itemId2, story.id)
-
     // First call succeeds
     await createStoryPost(story.id, testUser)
-
     // Second call should throw 409
     await expect(createStoryPost(story.id, testUser)).rejects.toMatchObject({ status: 409 })
   })
-
   it('createStoryPost — throws 404 for unknown story', async () => {
     await expect(createStoryPost(randomUUID(), testUser)).rejects.toMatchObject({ status: 404 })
   })
-
   it('createStoryPost — creates post→related→url entity relations for all item URLs', async () => {
     const story = await insertTestStory({ title: 'URL Relations Test' })
-
     const random1 = Math.random().toString(36).slice(2, 10)
     const url1Id = await createTestUrlWithHostname()
     const item1Data = { title: `Item ${random1}`, link: `https://example.com/${random1}` }
@@ -138,7 +143,6 @@ describe('story-posts', () => {
       itemData: item1Data,
       contentSha256: sha256(item1Data),
     })
-
     const random2 = Math.random().toString(36).slice(2, 10)
     const url2Id = await createTestUrlWithHostname()
     const item2Data = { title: `Item ${random2}`, link: `https://example.com/${random2}` }
@@ -149,15 +153,11 @@ describe('story-posts', () => {
       itemData: item2Data,
       contentSha256: sha256(item2Data),
     })
-
     await setTestItemStoryId(item1Id, story.id)
     await setTestItemStoryId(item2Id, story.id)
-
     const result = await createStoryPost(story.id, testUser)
-
     // Multi-item: title falls back to story.title
     expect(result.post.title).toBe('URL Relations Test')
-
     await drainStoryPostRelatedUrlProjection(result.post.id)
     const linkedUrlIds = await getPostRelatedUrlIds(result.post.id)
     expect(linkedUrlIds).toContain(url1Id)
@@ -277,13 +277,18 @@ describe('story-posts', () => {
     })
     await setTestItemStoryId(itemId2, story.id)
 
-    const result = await createStoryPost(story.id, testUser, {
-      ai_summary_markdown: 'Overridden summary.',
-    })
+    const agent = trackedStoryPostAgent()
+    const result = await createStoryPost(
+      story.id,
+      testUser,
+      { ai_summary_markdown: 'Overridden summary.' },
+      agent,
+    )
+    await Promise.all(agent.pending)
 
     expect(result.post).toBeDefined()
     expect(result.post.ai_summary_markdown).toBe('Overridden summary.')
-    await expect.poll(() => hasStoryPostAgentJob(result.post.id)).toBe(true)
+    expect(await hasStoryPostAgentJob(result.post.id)).toBe(true)
   })
 })
 

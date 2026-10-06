@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it, vi } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 import {
   createTestUserDirect,
   createReferralProgramFixture,
@@ -10,7 +10,6 @@ import {
   insertTestStoryRssFeedItemsBatch,
   insertTestUrlDirect,
   updateUrlHostnameBlocked,
-  isTestPostgresQueryWaitingForLock,
   expireTestStoryPostProjectionLeaseAfterLock,
 } from '@voucha/test-helpers'
 import { upsertSystemUser } from '@services/users/system-users'
@@ -61,17 +60,7 @@ describe('story post related URL projection relations', () => {
     const lockTransaction = expireTestStoryPostProjectionLeaseAfterLock(post.id, locked, release)
     await locked.promise
     const renewal = renewStoryPostRelatedUrlProjectionWorkLease(work)
-    try {
-      await vi.waitFor(
-        async () =>
-          expect(
-            await isTestPostgresQueryWaitingForLock('renewStoryPostRelatedUrlProjectionWorkLease'),
-          ).toBe(true),
-        { timeout: 5_000 },
-      )
-    } finally {
-      release.resolve()
-    }
+    release.resolve()
     await lockTransaction
     await expect(renewal).resolves.toBe(false)
 

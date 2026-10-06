@@ -102,6 +102,14 @@ describe('persistFeedMetadataAndReconcileLanguage', () => {
       rows: Array.from({ length: 1001 }, (_, index) => ({ id: `item-${index}` })),
     })
 
+    const secondBatch = Promise.withResolvers<void>()
+    let enqueueCalls = 0
+    enqueueBulkLanguageDetectionImpl.mockImplementation(() => {
+      enqueueCalls += 1
+      if (enqueueCalls === 2) secondBatch.resolve()
+      return Promise.resolve(null)
+    })
+
     await persistFeedMetadataAndReconcileLanguage(
       'feed-1',
       { language: 'en' },
@@ -110,8 +118,9 @@ describe('persistFeedMetadataAndReconcileLanguage', () => {
       null,
       deps,
     )
+    await secondBatch.promise
 
-    await vi.waitFor(() => expect(enqueueBulkLanguageDetectionImpl).toHaveBeenCalledTimes(2))
+    expect(enqueueBulkLanguageDetectionImpl).toHaveBeenCalledTimes(2)
     expect(enqueueBulkLanguageDetectionImpl.mock.calls[0]![1]).toHaveLength(1000)
     expect(enqueueBulkLanguageDetectionImpl.mock.calls[1]![1]).toEqual(['item-1000'])
   })

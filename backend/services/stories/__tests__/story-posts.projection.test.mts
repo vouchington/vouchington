@@ -108,7 +108,7 @@ describe('story post projection', () => {
     )) as Array<{ votes_score_net: number }>
     expect(updatedRelation!.votes_score_net).toBeGreaterThan(0)
     await expect(getPostClearanceStatus(result.post.id)).resolves.toBe('approved')
-    await expect.poll(() => hasCrawlUrlJob(firstUrlId)).toBe(true)
+    expect(await hasCrawlUrlJob(firstUrlId)).toBe(true)
     await expect(hasPostNotificationJob(result.post.id)).resolves.toBe(true)
     await expect(hasEntityRelationVoteStatsJob(relation!.id)).resolves.toBe(false)
   })
