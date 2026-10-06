@@ -8,6 +8,7 @@ import {
   createPlatformAccountTestUser,
   type PlatformAccountTestKind,
 } from '@voucha/test-helpers/account-types'
+import * as automaticTopicUpvote from '@services/elections-votes/topic/automatic-upvote'
 import { createInstanceFromHostname } from './create-instance.mts'
 
 const KINDS: PlatformAccountTestKind[] = ['official', 'system', 'ai_agent']
@@ -70,12 +71,24 @@ describe('createInstanceFromHostname automatic vote for platform accounts', () =
     const joiner = await createTestUser()
     const hostname = hostnameFor('fedi-member-vote')
 
-    await createInstanceFromHostname(creator, WEB_PROVENANCE, hostname)
-    await createInstanceFromHostname(joiner, WEB_PROVENANCE, hostname)
+    const pendingVotes: Promise<unknown>[] = []
+    const castVote = automaticTopicUpvote.upsertAutomaticTopicUpvote
+    const spy = vi
+      .spyOn(automaticTopicUpvote, 'upsertAutomaticTopicUpvote')
+      .mockImplementation((user, topicId) => {
+        const vote = castVote(user, topicId)
+        pendingVotes.push(vote)
+        return vote
+      })
+    try {
+      await createInstanceFromHostname(creator, WEB_PROVENANCE, hostname)
+      await createInstanceFromHostname(joiner, WEB_PROVENANCE, hostname)
+      await Promise.all(pendingVotes)
+    } finally {
+      spy.mockRestore()
+    }
 
-    await vi.waitFor(async () => {
-      expect(await countTopicElectionVoteRowsForUser(creator.id)).toBe(1)
-      expect(await countTopicElectionVoteRowsForUser(joiner.id)).toBe(1)
-    })
+    expect(await countTopicElectionVoteRowsForUser(creator.id)).toBe(1)
+    expect(await countTopicElectionVoteRowsForUser(joiner.id)).toBe(1)
   })
 })

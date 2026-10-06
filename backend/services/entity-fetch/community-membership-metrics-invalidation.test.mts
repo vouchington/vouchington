@@ -17,10 +17,9 @@ import {
   createTestUser,
   insertTestCommunity,
   insertTestCommunityMember,
-  pollUntilNotNull,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { getUserMetricsByAnyCached } from './metrics.mts'
 
 describe('community membership user metrics invalidation', () => {
@@ -186,18 +185,40 @@ async function createOwnedCommunity(
  * it the later `expectMetricsInvalidated` username check would pass against a key never filled.
  */
 async function warmUserMetricsCache(user: PrivateUser, count: number): Promise<void> {
-  await expectCommunityCount(user, count)
-  await Promise.all([waitForCachedMetrics(user.id), waitForCachedMetrics(user.username!)])
+  const fills: Promise<unknown>[] = []
+  const stop = trackUserMetricsFills(fills)
+  try {
+    await expectCommunityCount(user, count)
+    const [byId, byUsername] = await Promise.all([
+      caches.user_metrics.get(user.id),
+      caches.user_metrics.get(user.username!),
+    ])
+    if (byId == null || byUsername == null) await Promise.all(fills)
+  } finally {
+    stop()
+  }
 }
 
-/** Waits for the fire-and-forget fill of one `user_metrics` key; throws if it never lands. */
-function waitForCachedMetrics(key: string): Promise<unknown> {
-  return pollUntilNotNull(
-    () => caches.user_metrics.get(key),
-    2000,
-    25,
-    `the user metrics entry for ${key}`,
-  )
+/** The read-through fill discards `setBySerializedKeyIfNotInvalidated`. Capture that promise. */
+function trackUserMetricsFills(pending: Promise<unknown>[]): () => void {
+  const cache = caches.user_metrics as unknown as UserMetricsFill
+  const fill = cache.setBySerializedKeyIfNotInvalidated
+  const spy = vi
+    .spyOn(cache, 'setBySerializedKeyIfNotInvalidated')
+    .mockImplementation((serializedKey, value, ttl) => {
+      const result = fill.call(cache, serializedKey, value, ttl)
+      pending.push(result)
+      return result
+    })
+  return () => spy.mockRestore()
+}
+
+type UserMetricsFill = {
+  setBySerializedKeyIfNotInvalidated(
+    serializedKey: string,
+    value: unknown,
+    ttl?: number,
+  ): Promise<void>
 }
 
 /**

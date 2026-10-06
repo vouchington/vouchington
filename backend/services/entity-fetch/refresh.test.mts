@@ -1,10 +1,5 @@
 import { it, expect, describe } from 'vitest'
-import {
-  createTestUser,
-  createTestPost,
-  pollUntilNotNull,
-  WEB_PROVENANCE,
-} from '@voucha/test-helpers'
+import { createTestUser, createTestPost, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createTopic } from '@services/topics/create'
 import { caches } from '@services/entity-cache/caches'
 import { refresh } from './refresh.mts'
@@ -21,14 +16,8 @@ describe('refresh', () => {
     })
     await refresh.topic_metrics(topic.id)
 
-    const byId = (await pollUntilNotNull(() => caches.topic_metrics.get(topic.id))) as Record<
-      string,
-      unknown
-    >
-    const bySlug = (await pollUntilNotNull(() => caches.topic_metrics.get(topic.slug))) as Record<
-      string,
-      unknown
-    >
+    const byId = (await caches.topic_metrics.get(topic.id)) as Record<string, unknown>
+    const bySlug = (await caches.topic_metrics.get(topic.slug)) as Record<string, unknown>
     expect(byId).not.toBeNull()
     expect(bySlug).not.toBeNull()
     expect(byId.id).toBe(topic.id)
@@ -40,10 +29,7 @@ describe('refresh', () => {
     const post = await createTestPost({ user: user! })
     await refresh.post_metrics(post.id)
 
-    const byId = (await pollUntilNotNull(() => caches.post_metrics.get(post.id))) as Record<
-      string,
-      unknown
-    >
+    const byId = (await caches.post_metrics.get(post.id)) as Record<string, unknown>
     expect(byId).not.toBeNull()
     expect(byId.id).toBe(post.id)
   })

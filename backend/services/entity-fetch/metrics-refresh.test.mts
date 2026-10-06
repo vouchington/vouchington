@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { caches } from '@services/entity-cache/caches'
-import { createTestUser, pollUntilNotNull } from '@voucha/test-helpers'
+import { createTestUser } from '@voucha/test-helpers'
 import { refreshUserMetricsCache } from './metrics.mts'
 
 describe('refreshUserMetricsCache', () => {
@@ -8,13 +8,11 @@ describe('refreshUserMetricsCache', () => {
     const testUser = await createTestUser({ administrator: true })
     await refreshUserMetricsCache(testUser!.id)
 
-    const byId = (await pollUntilNotNull(() => caches.user_metrics.get(testUser!.id))) as Record<
+    const byId = (await caches.user_metrics.get(testUser!.id)) as Record<string, unknown>
+    const byUsername = (await caches.user_metrics.get(testUser!.username!)) as Record<
       string,
       unknown
     >
-    const byUsername = (await pollUntilNotNull(() =>
-      caches.user_metrics.get(testUser!.username!),
-    )) as Record<string, unknown>
     expect(byId).not.toBeNull()
     expect(byUsername).not.toBeNull()
     expect(byId.id).toBe(testUser!.id)

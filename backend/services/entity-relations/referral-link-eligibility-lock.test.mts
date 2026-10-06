@@ -1,33 +1,29 @@
-import { describe, expect, it, vi } from 'vitest'
-import { beginTransaction, isTestPostgresQueryWaitingForLock } from '@voucha/test-helpers'
+import { describe, expect, it } from 'vitest'
+import { beginTransaction } from '@voucha/test-helpers'
 import { lockReferralLinkEligibility } from './referral-link-eligibility-lock.mts'
 
 describe('referral link eligibility lock', () => {
   it('serializes rule mutations after an in-flight eligibility decision', async () => {
     const sharedAcquired = Promise.withResolvers<void>()
     const releaseShared = Promise.withResolvers<void>()
-    const exclusiveAcquired = Promise.withResolvers<void>()
     const sharedTransaction = holdReferralEligibilityLock('shared', sharedAcquired, releaseShared)
     await sharedAcquired.promise
-    const exclusiveTransaction = holdReferralEligibilityLock(
-      'exclusive',
-      exclusiveAcquired,
-      undefined,
-    )
 
-    try {
-      await vi.waitFor(expectReferralEligibilityLockWait, { timeout: 5_000 })
-    } finally {
-      releaseShared.resolve()
-    }
+    await expect(lockReferralEligibilityWithTimeout('exclusive')).rejects.toMatchObject({
+      code: '55P03',
+    })
 
-    await Promise.all([sharedTransaction, exclusiveTransaction])
-    await expect(exclusiveAcquired.promise).resolves.toBeUndefined()
+    releaseShared.resolve()
+    await sharedTransaction
+    await lockReferralEligibilityWithTimeout('exclusive')
   })
 })
 
-async function expectReferralEligibilityLockWait(): Promise<void> {
-  expect(await isTestPostgresQueryWaitingForLock('lockReferralLinkEligibility')).toBe(true)
+async function lockReferralEligibilityWithTimeout(mode: 'shared' | 'exclusive'): Promise<void> {
+  await using query = await beginTransaction()
+  await query(`/* referral eligibility lock timeout */ SET LOCAL lock_timeout = '50ms'`)
+  await lockReferralLinkEligibility(query, mode)
+  await query.commit()
 }
 
 async function holdReferralEligibilityLock(

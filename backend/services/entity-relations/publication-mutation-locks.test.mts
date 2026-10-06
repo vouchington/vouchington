@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   beginTransaction,
   createTestUser,
@@ -13,15 +13,14 @@ import {
   insertTestUrlDirect,
   insertUnlinkedTopicAliasForTest,
   insertTestRssFeedDirect,
-  isTestPostgresQueryWaitingForLock,
   mergeTopicForTest,
   readAllQueueJobs,
   softDeleteTopic,
 } from '@voucha/test-helpers'
+import type { TransactionQuery } from '@data-stores/psql'
 import {
   lockPostPublicationRssFeedScopes,
   lockTopicAliasPublicationScopes,
-  lockTopicRssFeedPublicationScopes,
 } from '@services/post-publication'
 import { rssFeedDiscoverability } from '@queues/rss-feed-discoverability/queues'
 import { PUBLISHER_TYPE_SLUGS } from '@ts-shared/utils/publisher-types'
@@ -57,46 +56,20 @@ describe('entity relation publication mutation locks', () => {
       objectType: 'topic_alias',
       predicate: 'category',
     })
-    const itemLocked = Promise.withResolvers<void>()
-    const releaseItem = Promise.withResolvers<void>()
-    const holder = holdItemRowLock()
-
-    async function holdItemRowLock(): Promise<void> {
-      await using query = await beginTransaction()
-      await query(
-        `/* relation publication mutation lock test */ SELECT 1 FROM rss_feed_items WHERE id = $1 FOR UPDATE`,
-        [itemId],
-      )
-      itemLocked.resolve()
-      await releaseItem.promise
-
-      await query.commit()
-    }
-    await itemLocked.promise
-
-    const writing = upsertEntityRelation(user, relation, { id: itemId }, [{ id: aliasId }], {
-      vote: false,
+    await expectScopeHeldWhileRowLocked({
+      statement: `/* item row lock */ SELECT 1 FROM rss_feed_items WHERE id = $1 FOR UPDATE`,
+      values: [itemId],
+      marker: 'lockTopicAliasPublicationCaptures',
+      write: query =>
+        upsertEntityRelation(user, relation, { id: itemId }, [{ id: aliasId }], {
+          vote: false,
+          query,
+        }),
+      contend: () =>
+        expect(
+          lockScopeWithTimeout(query => lockTopicAliasPublicationScopes(query, [aliasId])),
+        ).rejects.toMatchObject({ code: '55P03' }),
     })
-    try {
-      await vi.waitFor(async () => {
-        await expect(lockTopicAliasPublicationScopeWithTimeout(aliasId)).rejects.toMatchObject({
-          code: '55P03',
-        })
-      })
-    } finally {
-      releaseItem.resolve()
-    }
-    await holder
-    await expect(writing).resolves.toHaveLength(1)
-
-    async function lockTopicAliasPublicationScopeWithTimeout(aliasId: string): Promise<void> {
-      await using query = await beginTransaction()
-      await query(
-        `/* relation publication mutation alias timeout */ SET LOCAL lock_timeout = '50ms'`,
-      )
-      await lockTopicAliasPublicationScopes(query, [aliasId])
-      await query.commit()
-    }
   })
 
   it('locks publisher-topic feed scopes before waiting on the subject topic row', async () => {
@@ -115,53 +88,20 @@ describe('entity relation publication mutation locks', () => {
       objectType: 'topic',
       predicate: 'publisher_type',
     })
-    const topicLocked = Promise.withResolvers<void>()
-    const releaseTopic = Promise.withResolvers<void>()
-    const holder = holdSubjectTopicRowLock()
-
-    async function holdSubjectTopicRowLock(): Promise<void> {
-      await using query = await beginTransaction()
-      await query(
-        `/* publisher relation publication mutation lock test */
-      SELECT 1 FROM topics WHERE id = $1::uuid FOR UPDATE`,
-        [subject.id],
-      )
-      topicLocked.resolve()
-      await releaseTopic.promise
-
-      await query.commit()
-    }
-    await topicLocked.promise
-
-    const writing = upsertEntityRelation(
-      user,
-      relation,
-      { id: subject.id },
-      [{ id: publisherTypeId }],
-      {
-        vote: false,
-      },
-    )
-    try {
-      await vi.waitFor(async () => {
-        await expect(lockRssFeedPublicationScopeWithTimeout()).rejects.toMatchObject({
-          code: '55P03',
-        })
-      })
-    } finally {
-      releaseTopic.resolve()
-    }
-    await holder
-    await expect(writing).resolves.toHaveLength(1)
-
-    async function lockRssFeedPublicationScopeWithTimeout(): Promise<void> {
-      await using query = await beginTransaction()
-      await query(
-        `/* publisher relation publication feed timeout */ SET LOCAL lock_timeout = '50ms'`,
-      )
-      await lockPostPublicationRssFeedScopes(query, [feed.id])
-      await query.commit()
-    }
+    await expectScopeHeldWhileRowLocked({
+      statement: `/* topic row lock */ SELECT 1 FROM topics WHERE id = $1::uuid FOR UPDATE`,
+      values: [subject.id],
+      marker: 'lockPostPublicationRssFeedScopes',
+      write: query =>
+        upsertEntityRelation(user, relation, { id: subject.id }, [{ id: publisherTypeId }], {
+          vote: false,
+          query,
+        }),
+      contend: () =>
+        expect(
+          lockScopeWithTimeout(query => lockPostPublicationRssFeedScopes(query, [feed.id])),
+        ).rejects.toMatchObject({ code: '55P03' }),
+    })
   })
 
   it('rejects a publisher type when its source merges after initial validation', async () => {
@@ -217,9 +157,8 @@ async function expectPublisherTypeRevalidationFailure({
   let publisherTypeTopicId: string | undefined
   let publisherTypeSlugAdded = false
   let publisherTypeSlugMissing = false
-  const publisherTypeLockAcquired = Promise.withResolvers<void>()
-  const releasePublisherTypeLock = Promise.withResolvers<void>()
-  let holder: Promise<void> | undefined
+  const reachedLock = Promise.withResolvers<void>()
+  const releaseLock = Promise.withResolvers<void>()
   let writing: Promise<unknown> | undefined
 
   try {
@@ -235,29 +174,25 @@ async function expectPublisherTypeRevalidationFailure({
       objectType: 'topic',
       predicate: 'publisher_type',
     })
-    holder = holdPublisherTypePublicationLock(
-      sourceTopicId,
-      publisherTypeLockAcquired,
-      releasePublisherTypeLock,
-    )
-    await publisherTypeLockAcquired.promise
-
+    await using transaction = await beginTransaction()
     writing = upsertEntityRelation(
       user,
       relation,
       { id: sourceTopicId },
       [{ id: publisherTypeTopicId }],
-      { vote: false },
+      {
+        vote: false,
+        query: gateSql(
+          transaction,
+          'lockTopicRssFeedAttachmentLifecycle',
+          reachedLock,
+          releaseLock,
+        ),
+      },
     ).catch(err => err)
-    await vi.waitFor(async () => {
-      expect(await isTestPostgresQueryWaitingForLock('lockTopicRssFeedAttachmentLifecycle')).toBe(
-        true,
-      )
-    })
-
+    await reachedLock.promise
     await mutate({ sourceTopicId, publisherTypeTopicId, userId: user.id })
-    releasePublisherTypeLock.resolve()
-    await holder
+    releaseLock.resolve()
 
     expect(await writing).toMatchObject({ status: 422, message: expectedMessage })
     await expect(
@@ -273,10 +208,8 @@ async function expectPublisherTypeRevalidationFailure({
     )
     expect(discoverabilityJobs).toEqual([])
   } finally {
-    releasePublisherTypeLock.resolve()
-    await Promise.allSettled(
-      [holder, writing].filter((promise): promise is Promise<unknown> => !!promise),
-    )
+    releaseLock.resolve()
+    await writing?.catch(() => undefined)
     if (publisherTypeSlugAdded) {
       const publisherTypeSlugIndex = PUBLISHER_TYPE_SLUGS.indexOf(publisherTypeSlug as never)
       if (publisherTypeSlugIndex < 0) publisherTypeSlugMissing = true
@@ -287,14 +220,77 @@ async function expectPublisherTypeRevalidationFailure({
   if (publisherTypeSlugMissing) throw new Error('Expected temporary publisher type slug')
 }
 
-async function holdPublisherTypePublicationLock(
-  sourceTopicId: string,
-  acquired: PromiseWithResolvers<void>,
+async function expectScopeHeldWhileRowLocked(options: {
+  statement: string
+  values: readonly unknown[]
+  marker: string
+  write: (query: TransactionQuery) => Promise<{ length: number }>
+  contend: () => Promise<unknown>
+}): Promise<void> {
+  const rowLocked = Promise.withResolvers<void>()
+  const releaseRow = Promise.withResolvers<void>()
+  const scopeLocked = Promise.withResolvers<void>()
+  const holder = holdRowLock(options.statement, options.values, rowLocked, releaseRow)
+  await rowLocked.promise
+  await using transaction = await beginTransaction()
+  const writing = options.write(gateSql(transaction, options.marker, scopeLocked))
+  try {
+    await scopeLocked.promise
+    await options.contend()
+  } finally {
+    releaseRow.resolve()
+    await holder
+  }
+  await expect(writing).resolves.toHaveLength(1)
+  await transaction.commit()
+}
+
+async function holdRowLock(
+  statement: string,
+  values: readonly unknown[],
+  locked: PromiseWithResolvers<void>,
   release: PromiseWithResolvers<void>,
 ): Promise<void> {
   await using query = await beginTransaction()
-  await lockTopicRssFeedPublicationScopes(query, [sourceTopicId])
-  acquired.resolve()
+  await query(statement, values)
+  locked.resolve()
   await release.promise
   await query.commit()
+}
+
+async function lockScopeWithTimeout(
+  lock: (query: TransactionQuery) => Promise<unknown>,
+): Promise<void> {
+  await using query = await beginTransaction()
+  await query(`SET LOCAL lock_timeout = '50ms'`)
+  await lock(query)
+  await query.commit()
+}
+
+function gateSql(
+  query: TransactionQuery,
+  marker: string,
+  seen: PromiseWithResolvers<void>,
+  release?: PromiseWithResolvers<void>,
+): TransactionQuery {
+  let paused = false
+  return Object.assign(
+    async (input: string, values?: unknown[]) => {
+      const textValue =
+        typeof input === 'object' && input !== null && 'text' in input
+          ? (input as { text?: unknown }).text
+          : undefined
+      const text =
+        typeof input === 'string' ? input : typeof textValue === 'string' ? textValue : ''
+      if (release && !paused && text.includes(marker)) {
+        paused = true
+        seen.resolve()
+        await release.promise
+      }
+      const result = await query(input, values)
+      if (!release && text.includes(marker)) seen.resolve()
+      return result
+    },
+    { client: query.client },
+  ) as TransactionQuery
 }

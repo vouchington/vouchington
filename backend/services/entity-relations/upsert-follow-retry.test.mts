@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
+import { afterEach, describe, it, expect, beforeAll, beforeEach, vi } from 'vitest'
 import { upsertEntityRelation } from './upsert.mts'
 import { softDeleteEntityRelation } from './delete.mts'
 import { entityRelationMetadatum, type EntityRelationMetadata } from './metadata.mts'
@@ -6,7 +6,7 @@ import {
   beginTransaction,
   createTestPost,
   createTestUser,
-  waitForQueueJobs,
+  readAllQueueJobs,
 } from '@voucha/test-helpers'
 import { activitypubDelivery } from '@queues/activitypub-delivery/queues'
 import type { DistributeActivityData } from '@queues/activitypub-delivery/enqueues'
@@ -27,8 +27,17 @@ describe('upsertEntityRelation follow-upsert retry idempotency', () => {
     )!
   })
 
+  const pendingEnqueues: Promise<unknown>[] = []
+
   beforeEach(async () => {
+    pendingEnqueues.length = 0
+    vi.restoreAllMocks()
+    trackBulkEnqueue(activitypubDelivery, pendingEnqueues)
     await activitypubDelivery.obliterate({ force: true })
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   function followDistributeJobsFor(
@@ -52,10 +61,8 @@ describe('upsertEntityRelation follow-upsert retry idempotency', () => {
     const followee = await createTestUser()
 
     await upsertEntityRelation(follower, userFollowUserMetadata, follower, [followee])
-    const firstJobs = await waitForQueueJobs(
-      activitypubDelivery,
-      j => followDistributeJobsFor(j, follower.id, followee.id).length > 0,
-    )
+    await settleEnqueues(pendingEnqueues)
+    const firstJobs = await readAllQueueJobs(activitypubDelivery)
     expect(followDistributeJobsFor(firstJobs, follower.id, followee.id)).toHaveLength(1)
     const firstActivityId = (
       followDistributeJobsFor(firstJobs, follower.id, followee.id)[0] as {
@@ -65,11 +72,8 @@ describe('upsertEntityRelation follow-upsert retry idempotency', () => {
 
     // Retry the identical upsert while the follow is still active.
     await upsertEntityRelation(follower, userFollowUserMetadata, follower, [followee])
-    const jobsAfterRetry = await waitForQueueJobs(
-      activitypubDelivery,
-      jobs => followDistributeJobsFor(jobs, follower.id, followee.id).length > 1,
-      200,
-    )
+    await settleEnqueues(pendingEnqueues)
+    const jobsAfterRetry = await readAllQueueJobs(activitypubDelivery)
     expect(followDistributeJobsFor(jobsAfterRetry, follower.id, followee.id)).toHaveLength(1)
     expect(
       (
@@ -85,24 +89,21 @@ describe('upsertEntityRelation follow-upsert retry idempotency', () => {
     const followee = await createTestUser()
 
     await upsertEntityRelation(follower, userFollowUserMetadata, follower, [followee])
-    const initialJobs = await waitForQueueJobs(
-      activitypubDelivery,
-      j => followDistributeJobsFor(j, follower.id, followee.id).length > 0,
-    )
+    await settleEnqueues(pendingEnqueues)
+    const initialJobs = await readAllQueueJobs(activitypubDelivery)
     const initialActivityId = (
       followDistributeJobsFor(initialJobs, follower.id, followee.id)[0] as {
         data: DistributeActivityData
       }
     ).data.activityId
     await softDeleteEntityRelation(follower, userFollowUserMetadata, follower, [followee])
+    await settleEnqueues(pendingEnqueues)
     await activitypubDelivery.obliterate({ force: true })
 
     await upsertEntityRelation(follower, userFollowUserMetadata, follower, [followee])
 
-    const jobs = await waitForQueueJobs(
-      activitypubDelivery,
-      j => followDistributeJobsFor(j, follower.id, followee.id).length > 0,
-    )
+    await settleEnqueues(pendingEnqueues)
+    const jobs = await readAllQueueJobs(activitypubDelivery)
     expect(followDistributeJobsFor(jobs, follower.id, followee.id)).toHaveLength(1)
     expect(
       (
@@ -191,3 +192,19 @@ describe('upsertEntityRelation follow-upsert retry idempotency', () => {
     ) as TransactionQuery
   }
 })
+
+function trackBulkEnqueue(
+  queue: { addBulk: (jobs: ReadonlyArray<{ name: string; data: unknown }>) => Promise<unknown> },
+  pending: Promise<unknown>[],
+): void {
+  const addBulk = queue.addBulk
+  vi.spyOn(queue, 'addBulk').mockImplementation(jobs => {
+    const enqueued = addBulk.call(queue, jobs)
+    pending.push(enqueued)
+    return enqueued
+  })
+}
+
+async function settleEnqueues(pending: Promise<unknown>[]): Promise<void> {
+  await Promise.all(pending)
+}

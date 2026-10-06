@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
+import { afterEach, describe, it, expect, beforeAll, beforeEach, vi } from 'vitest'
 import { upsertEntityRelationsForSubjects } from './upsert-for-subjects.mts'
 import { softDeleteEntityRelationsForSubjects } from './delete.mts'
 import { entityRelationMetadatum, type EntityRelationMetadata } from './metadata.mts'
-import { createTestUser, insertTestLegacyLocalFollow, waitForQueueJobs } from '@voucha/test-helpers'
+import { createTestUser, insertTestLegacyLocalFollow, readAllQueueJobs } from '@voucha/test-helpers'
 import { activitypubDelivery } from '@queues/activitypub-delivery/queues'
 import type { DistributeActivityData } from '@queues/activitypub-delivery/enqueues'
 import { blueskyFollowPropagation } from '@queues/bluesky-follow-propagation/queues'
@@ -23,9 +23,19 @@ describe('softDeleteEntityRelationsForSubjects follow federation + Bluesky propa
     )!
   })
 
+  const pendingEnqueues: Promise<unknown>[] = []
+
   beforeEach(async () => {
+    pendingEnqueues.length = 0
+    vi.restoreAllMocks()
+    trackBulkEnqueue(activitypubDelivery, pendingEnqueues)
+    trackBulkEnqueue(blueskyFollowPropagation, pendingEnqueues)
     await activitypubDelivery.obliterate({ force: true })
     await blueskyFollowPropagation.obliterate({ force: true })
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   function undoFollowPairs(jobs: { name: string; data: unknown }[]): Set<string> {
@@ -62,6 +72,7 @@ describe('softDeleteEntityRelationsForSubjects follow federation + Bluesky propa
       [followerA, followerB],
       followee,
     )
+    await settleEnqueues(pendingEnqueues)
     await activitypubDelivery.obliterate({ force: true })
     await blueskyFollowPropagation.obliterate({ force: true })
 
@@ -73,18 +84,13 @@ describe('softDeleteEntityRelationsForSubjects follow federation + Bluesky propa
       [followerA, followerB, neverFollowed],
       followee,
     )
-    const apJobs = await waitForQueueJobs(
-      activitypubDelivery,
-      jobs => undoFollowPairs(jobs).size >= 2,
-    )
+    await settleEnqueues(pendingEnqueues)
+    const apJobs = await readAllQueueJobs(activitypubDelivery)
     expect(undoFollowPairs(apJobs)).toEqual(
       new Set([`${followerA.id}__${followee.id}`, `${followerB.id}__${followee.id}`]),
     )
 
-    const blueskyJobs = await waitForQueueJobs(
-      blueskyFollowPropagation,
-      jobs => reconcilePairs(jobs).size >= 2,
-    )
+    const blueskyJobs = await readAllQueueJobs(blueskyFollowPropagation)
     expect(reconcilePairs(blueskyJobs)).toEqual(
       new Set([`${followerA.id}__${followee.id}`, `${followerB.id}__${followee.id}`]),
     )
@@ -101,6 +107,7 @@ describe('softDeleteEntityRelationsForSubjects follow federation + Bluesky propa
       [follower],
       followee,
     )
+    await settleEnqueues(pendingEnqueues)
     await activitypubDelivery.obliterate({ force: true })
     await blueskyFollowPropagation.obliterate({ force: true })
 
@@ -112,18 +119,11 @@ describe('softDeleteEntityRelationsForSubjects follow federation + Bluesky propa
       followee,
     )
 
-    const apJobs = await waitForQueueJobs(
-      activitypubDelivery,
-      jobs => undoFollowPairs(jobs).has(`${follower.id}__${followee.id}`),
-      200,
-    )
+    await settleEnqueues(pendingEnqueues)
+    const apJobs = await readAllQueueJobs(activitypubDelivery)
     expect(undoFollowPairs(apJobs).has(`${follower.id}__${followee.id}`)).toBe(false)
 
-    const blueskyJobs = await waitForQueueJobs(
-      blueskyFollowPropagation,
-      jobs => reconcilePairs(jobs).has(`${follower.id}__${followee.id}`),
-      200,
-    )
+    const blueskyJobs = await readAllQueueJobs(blueskyFollowPropagation)
     expect(reconcilePairs(blueskyJobs).has(`${follower.id}__${followee.id}`)).toBe(false)
   })
 
@@ -132,6 +132,7 @@ describe('softDeleteEntityRelationsForSubjects follow federation + Bluesky propa
     const follower: PrivateUser = await createTestUser()
 
     await upsertEntityRelationsForSubjects(followee, userFollowUserMetadata, [follower], followee)
+    await settleEnqueues(pendingEnqueues)
     await activitypubDelivery.obliterate({ force: true })
     await blueskyFollowPropagation.obliterate({ force: true })
 
@@ -145,18 +146,11 @@ describe('softDeleteEntityRelationsForSubjects follow federation + Bluesky propa
       },
     )
 
-    const apJobs = await waitForQueueJobs(
-      activitypubDelivery,
-      jobs => undoFollowPairs(jobs).has(`${follower.id}__${followee.id}`),
-      200,
-    )
+    await settleEnqueues(pendingEnqueues)
+    const apJobs = await readAllQueueJobs(activitypubDelivery)
     expect(undoFollowPairs(apJobs).has(`${follower.id}__${followee.id}`)).toBe(false)
 
-    const blueskyJobs = await waitForQueueJobs(
-      blueskyFollowPropagation,
-      jobs => reconcilePairs(jobs).has(`${follower.id}__${followee.id}`),
-      200,
-    )
+    const blueskyJobs = await readAllQueueJobs(blueskyFollowPropagation)
     expect(reconcilePairs(blueskyJobs).has(`${follower.id}__${followee.id}`)).toBe(false)
   })
 
@@ -171,6 +165,7 @@ describe('softDeleteEntityRelationsForSubjects follow federation + Bluesky propa
       [knownFollower],
       followee,
     )
+    await settleEnqueues(pendingEnqueues)
     await activitypubDelivery.obliterate({ force: true })
     await blueskyFollowPropagation.obliterate({ force: true })
 
@@ -181,17 +176,29 @@ describe('softDeleteEntityRelationsForSubjects follow federation + Bluesky propa
       followee,
     )
 
-    const apJobs = await waitForQueueJobs(activitypubDelivery, jobs =>
-      undoFollowPairs(jobs).has(`${knownFollower.id}__${followee.id}`),
-    )
+    await settleEnqueues(pendingEnqueues)
+    const apJobs = await readAllQueueJobs(activitypubDelivery)
     expect(undoFollowPairs(apJobs)).toEqual(new Set([`${knownFollower.id}__${followee.id}`]))
 
-    const blueskyJobs = await waitForQueueJobs(
-      blueskyFollowPropagation,
-      jobs => reconcilePairs(jobs).size === 2,
-    )
+    const blueskyJobs = await readAllQueueJobs(blueskyFollowPropagation)
     expect(reconcilePairs(blueskyJobs)).toEqual(
       new Set([`${legacyFollower.id}__${followee.id}`, `${knownFollower.id}__${followee.id}`]),
     )
   })
 })
+
+function trackBulkEnqueue(
+  queue: { addBulk: (jobs: ReadonlyArray<{ name: string; data: unknown }>) => Promise<unknown> },
+  pending: Promise<unknown>[],
+): void {
+  const addBulk = queue.addBulk
+  vi.spyOn(queue, 'addBulk').mockImplementation(jobs => {
+    const enqueued = addBulk.call(queue, jobs)
+    pending.push(enqueued)
+    return enqueued
+  })
+}
+
+async function settleEnqueues(pending: Promise<unknown>[]): Promise<void> {
+  await Promise.all(pending)
+}
