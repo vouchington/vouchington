@@ -1,6 +1,7 @@
-// Real-network test: the sideload pipeline fetches picsum.photos/seed/voucha-pw/640/360 through
-// the image-resize Lambda. Runs only in the credentialed Playwright workflow, which provides
-// AWS credentials and the image buckets. A missing credential fails the test.
+// Sideload pipeline test. The image lambda serves the reserved Playwright cover locally, so CI
+// does not fetch an external host. Runs only in the credentialed Playwright workflow, which
+// provides AWS credentials and the image buckets. A missing credential fails the test.
+import { PLAYWRIGHT_SIDELOAD_IMAGE_URL } from '../../lambdas/playwright-podcast-cover.mts'
 import { test, expect, type Request } from '../helpers/test.mts'
 import { navigateTo } from '../helpers/navigate-to.mts'
 import {
@@ -70,7 +71,7 @@ test.describe('sideloaded images in RSS item modal', () => {
         contentSnippet: 'Test article with a sideloaded image.',
         description:
           '<p>Test body.</p>' +
-          '<img src="https://picsum.photos/seed/voucha-pw/640/360" alt="test sideloaded image" />',
+          `<img src="${PLAYWRIGHT_SIDELOAD_IMAGE_URL}" alt="test sideloaded image" />`,
       },
       contentSha256: Buffer.from('01'.padStart(64, '0'), 'hex'),
     })
