@@ -1,4 +1,7 @@
-import { runWithCredentialRequestContext } from '../modules/request-client-info/index.mts'
+import {
+  runWithCredentialRequestContext,
+  type CredentialRequestOrigin,
+} from '../modules/request-client-info/index.mts'
 import { expect } from 'vitest'
 import type { ApiScope } from '../modules/scopes/index.mts'
 import { callMcpTool } from '../services/mcp-tools/call-tool.mts'
@@ -8,12 +11,12 @@ import { getRegisteredToolByName } from '../tools/registry/index.mts'
 
 export type McpContractCaller = BasicUser & { membership_plan: 'plus' | 'pro' | null }
 
-const MCP_API_KEY_ORIGIN = {
+const MCP_API_KEY_ORIGIN: CredentialRequestOrigin = {
   interface: 'mcp',
   credential: 'api_key',
   client: null,
   oauthClientId: null,
-} as const
+}
 
 /**
  * Expects the tool's own function to throw an error with these fields. The call path reduces a
@@ -59,15 +62,17 @@ export async function callRejectedMcpTool(
 /**
  * Calls a user-surface MCP tool through the real call path, which checks the result against the
  * tool's published output schema. A result the schema rejects becomes an error result, so this
- * fails the test instead of returning. It also pins the text block to the structured content.
+ * fails the test instead of returning. It also pins the text block to the structured content. The
+ * call is an MCP API key one unless `origin` names the credential, such as an OAuth client.
  */
 export async function callStructuredMcpTool(
   caller: McpContractCaller,
   name: string,
   args: Record<string, unknown>,
   scopes: readonly ApiScope[],
+  origin: CredentialRequestOrigin = MCP_API_KEY_ORIGIN,
 ): Promise<Record<string, unknown>> {
-  const result = await runWithCredentialRequestContext(MCP_API_KEY_ORIGIN, () =>
+  const result = await runWithCredentialRequestContext(origin, () =>
     callMcpTool(name, args, caller, scopes, USER_MCP_SERVER_CONFIG),
   )
   expect(result.isError).toBeUndefined()

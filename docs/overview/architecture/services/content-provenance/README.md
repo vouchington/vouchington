@@ -21,6 +21,8 @@ This page covers how to call the service.
 - `attachPostProvenance(posts, currentUser)` runs the read, applies the rules for that viewer and
   returns copies of the posts with `provenance` and, for administrators and moderators,
   `staff_provenance` set.
+- `attachWrittenPostProvenance(post, viewer)` labels the one post a write route or tool just wrote,
+  with the same rules as a read for `viewer`, reading the primary instead of a replica.
 - `labelAndMaskPosts(posts, currentUser)` attaches the label and then masks anonymous authors.
 
 ## Calling rules
@@ -32,7 +34,11 @@ This page covers how to call the service.
   out of `view_posts`, so a rename or an unverify shows on the next read.
 - MCP read tools call `toMcpPosts`, which attaches the signed-out label. Staff provenance is REST
   only.
-- Author mutation echoes, omnisearch and the lean MCP search summaries do not call it.
+- Write routes call `attachWrittenPostProvenance` on the response with the signed-in writer. The MCP
+  `create_post` and `update_post` tools call it through `toWrittenMcpPost` with no viewer. Never call
+  it on a post that is stored: an idempotent replay replays the stored post, and the replay's label
+  must still reflect the client's current name and verification.
+- Omnisearch and the lean MCP search summaries do not call it.
 
 ## Tests
 

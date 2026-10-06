@@ -26,7 +26,7 @@ import {
 import type { Tool } from '@services/openai-agents/tool-types'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { requireActiveToolUser } from './private-user.mts'
-import { toMcpPost, type McpPost } from './mcp-post-output.mts'
+import { toWrittenMcpPost, type McpPost } from './mcp-post-output.mts'
 import {
   loadWritablePost,
   postWriteParameters,
@@ -139,7 +139,7 @@ const tool: Tool<Args, { success: true; post: McpPost }> = {
         }),
     })
     const post = 'post' in admitted ? admitted.post : admitted
-    return { success: true, post: await toMcpPost(post) }
+    return { success: true, post: await toWrittenMcpPost(post) }
   },
 }
 

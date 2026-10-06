@@ -5,7 +5,7 @@ import { assertPostUpdatePreflight } from '@services/posts/update/validation'
 import { getUserActivePlan } from '@services/memberships'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { requireActiveToolUser } from './private-user.mts'
-import { toMcpPost, type McpPost } from './mcp-post-output.mts'
+import { toWrittenMcpPost, type McpPost } from './mcp-post-output.mts'
 import {
   loadWritablePost,
   postWriteParameters,
@@ -59,7 +59,9 @@ const tool: Tool<Args, { success: true; post: McpPost }> = {
         : null
     return {
       success: true,
-      post: await toMcpPost(await updatePost(user, post, changes, membershipPlan, undefined, true)),
+      post: await toWrittenMcpPost(
+        await updatePost(user, post, changes, membershipPlan, undefined, true),
+      ),
     }
   },
 }
