@@ -3,6 +3,7 @@ import sql from 'sql-template-strings'
 import {
   observeSharedDbScope,
   sharedDbCursorScope,
+  sharedDbIdsScope,
 } from '@data-stores/psql/shared-db-scope-observer'
 import type { PrivateUser } from '@services/users/types'
 import { assertNotSuspended } from '@services/users'
@@ -30,7 +31,7 @@ type QueuedCase = CopyrightStaffQueueCase & { cursor: CopyrightStaffQueueCursor 
  */
 export async function listCopyrightStaffQueue(
   currentUser: PrivateUser,
-  options: { limit: number; after?: CopyrightStaffQueueCursor },
+  options: { limit: number; after?: CopyrightStaffQueueCursor; noticeIds?: readonly string[] },
 ): Promise<{
   cases: QueuedCase[]
   endCursor: CopyrightStaffQueueCursor | null
@@ -40,10 +41,17 @@ export async function listCopyrightStaffQueue(
   if (!currentUserCanReviewCopyrightNotices(currentUser)) {
     return { cases: [], endCursor: null, hasNextPage: false }
   }
+  if (options.noticeIds?.length === 0) return { cases: [], endCursor: null, hasNextPage: false }
   const trustedFlaggerBoost =
     (await isCopyrightTrustedFlaggerPriorityEnabled()) &&
     (await findCurrentCopyrightJurisdictionPolicy('eu_dsa')) !== null
-  observeSharedDbScope('listCopyrightStaffQueue', sharedDbCursorScope(options.after?.id))
+  observeSharedDbScope(
+    'listCopyrightStaffQueue',
+    options.noticeIds
+      ? sharedDbIdsScope(options.noticeIds)
+      : sharedDbCursorScope(options.after?.id),
+  )
+  const noticeIds = options.noticeIds ? [...options.noticeIds] : null
   await using transaction = await beginTransaction()
   const query = sql`/* listPendingCopyrightStaffCases */`.append(
     copyrightStaffQueueKeysSql({ trustedFlaggerBoost }),
@@ -62,10 +70,14 @@ export async function listCopyrightStaffQueue(
       LIMIT 1
     ) next_deadline ON true
   `)
-  if (options.after) {
-    query.append(sql`
-    WHERE (queue_key.tier, queue_key.waiting_since, queue_key.id)
-      > (${options.after.tier}::int, ${options.after.timestamp}::timestamptz, ${options.after.id}::uuid)`)
+  if (options.after || noticeIds) {
+    query.append(sql` WHERE true`)
+    if (noticeIds) query.append(sql` AND queue_key.id = ANY(${noticeIds}::uuid[])`)
+    if (options.after) {
+      query.append(sql`
+        AND (queue_key.tier, queue_key.waiting_since, queue_key.id)
+          > (${options.after.tier}::int, ${options.after.timestamp}::timestamptz, ${options.after.id}::uuid)`)
+    }
   }
   query.append(sql`
     ORDER BY queue_key.tier, queue_key.waiting_since, queue_key.id

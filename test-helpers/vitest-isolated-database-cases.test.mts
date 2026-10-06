@@ -55,10 +55,10 @@ describe('isolated database case selection', () => {
     expect(() => makeIsolatedDatabaseName('shared_database')).toThrow(
       'Invalid isolated database suffix',
     )
-    expect(getIsolatedDatabaseCase('media-replay')).toEqual({
-      file: 'backend/api/v1/copyright-notices/copyright-notices.replay.isolated.test.mts',
+    expect(getIsolatedDatabaseCase('semantic-post-window-cap')).toEqual({
+      file: 'backend/services/posts/search/__tests__/get-ids.semantic-window.test.mts',
       fullName:
-        'isolated global media replay route > replays failed media registry records only for review staff and writes one audit event',
+        'semantic search candidate paging > ends pagination at the fixed window and counts the same candidates',
     })
     expect(getIsolatedDatabaseCase('activitypub-expiry')).toEqual({
       file: 'backend/services/ap-inbox-activities/durable-delivery-storage.test.mts',
@@ -75,32 +75,10 @@ describe('isolated database case selection', () => {
       fullName:
         'copyright email intake queue reply failures > lists a declined intake whose reply failed or bounced with its reason and wait, and hides the rest',
     })
-    for (const [caseId, title] of [
-      [
-        'copyright-email-queue-exact-limit',
-        'ends on an exact-limit final page with no next cursor',
-      ],
-      ['copyright-email-queue-partial', 'ends on a partial final page'],
-      ['copyright-email-queue-walk', 'walks every owned intake one page at a time without repeats'],
-      [
-        'copyright-email-queue-tie',
-        'uses the UUID tie-breaker when two intakes share a received timestamp',
-      ],
-    ] as const) {
-      expect(getIsolatedDatabaseCase(caseId)).toEqual({
-        file: 'backend/api/v1/copyright-notices/email-intake-queue-pagination.test.mts',
-        fullName: `copyright email intake queue pagination > ${title}`,
-      })
-    }
     expect(getIsolatedDatabaseCase('copyright-dev-seed')).toEqual({
       file: 'backend/scripts/seed/copyright.test.mts',
       fullName:
         'seedCopyright > fills both staff queues with every review state and adds nothing when run again',
-    })
-    expect(getIsolatedDatabaseCase('copyright-cache-policy')).toEqual({
-      file: 'backend/api/v1/copyright-notices/copyright-cache.test.mts',
-      fullName:
-        'copyright API cache policy > marks member, staff, and raw-email responses private and no-store',
     })
     expect(() => getIsolatedDatabaseCase('other')).toThrow('Unknown isolated database case')
   })
@@ -144,7 +122,7 @@ describe('isolated database case selection', () => {
       message: 'Invalid isolated database child identity',
     },
     {
-      override: { VITEST_ISOLATED_DATABASE_CASE: 'media-replay' },
+      override: { VITEST_ISOLATED_DATABASE_CASE: 'copyright-dev-seed' },
       message: 'Invalid isolated database child identity',
     },
     {
@@ -181,8 +159,8 @@ describe('isolated database case selection', () => {
   })
 })
 
-/** Runs a real Vitest over a file shaped like the registered copyright-cache-policy case. */
-async function runCopyrightCachePolicyFixture(testNamePattern: string): Promise<string> {
+/** Runs a real Vitest over a file shaped like the registered semantic-post-window-cap case. */
+async function runRegisteredCaseFixture(testNamePattern: string): Promise<string> {
   const dir = await mkdtemp(join(tmpdir(), 'voucha-isolated-case-'))
   fixtureDirs.push(dir)
   await writeFile(
@@ -194,8 +172,8 @@ export default { test: { reporters: [new IsolatedDatabaseCaseReporter()] } }
   await writeFile(
     join(dir, 'fixture.test.mts'),
     `import { describe, it } from 'vitest'
-describe('copyright API cache policy', () => {
-  it('marks member, staff, and raw-email responses private and no-store', () => {})
+describe('semantic search candidate paging', () => {
+  it('ends pagination at the fixed window and counts the same candidates', () => {})
   it('is a sibling the pattern leaves unselected', () => {})
 })
 `,
@@ -209,7 +187,7 @@ describe('copyright API cache policy', () => {
 }
 
 describe('isolated database case execution', () => {
-  const caseId = 'copyright-cache-policy'
+  const caseId = 'semantic-post-window-cap'
   const { fullName } = getIsolatedDatabaseCase(caseId)
 
   afterEach(async () => {
@@ -217,14 +195,14 @@ describe('isolated database case execution', () => {
   })
 
   it('selects the registered test by the full name Vitest reports', async () => {
-    const output = await runCopyrightCachePolicyFixture(isolatedTestNamePattern(caseId))
+    const output = await runRegisteredCaseFixture(isolatedTestNamePattern(caseId))
 
     expect(() => assertIsolatedDatabaseCaseRan(caseId, output)).not.toThrow()
   }, 90_000)
 
   it('fails a child whose pattern skipped the registered test', async () => {
     const spaceJoinedPattern = isolatedTestNamePattern(caseId).replace(' > ', ' ')
-    const output = await runCopyrightCachePolicyFixture(spaceJoinedPattern)
+    const output = await runRegisteredCaseFixture(spaceJoinedPattern)
 
     expect(() => assertIsolatedDatabaseCaseRan(caseId, output)).toThrow(
       `must pass exactly one test named "${fullName}" but 0 passed, 0 failed, 2 collected`,
@@ -239,7 +217,7 @@ describe('isolated database case execution', () => {
       'passed the registered test and failed a sibling',
       [
         { fullName, state: 'passed' },
-        { fullName: 'copyright API cache policy > sibling', state: 'failed' },
+        { fullName: 'semantic search candidate paging > sibling', state: 'failed' },
       ],
     ],
     [
@@ -265,7 +243,7 @@ describe('isolated database case execution', () => {
 
   it('accepts exactly one passing registered test beside skipped siblings', () => {
     const output = formatIsolatedDatabaseCaseResult([
-      { fullName: 'copyright API cache policy > sibling', state: 'skipped' },
+      { fullName: 'semantic search candidate paging > sibling', state: 'skipped' },
       { fullName, state: 'passed' },
     ])
 

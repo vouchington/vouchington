@@ -10,8 +10,6 @@ import {
   seedPendingTerritorialNotice,
 } from '@voucha/test-helpers/services/copyright-notices/territorial-routes'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
-import { getIsolatedDatabaseCaseMode } from '../../../../test-helpers/vitest-isolated-database-cases.mts'
-import { runIsolatedDatabaseCase } from '../../../../test-helpers/vitest-isolated-database-case.mts'
 
 const start = '2026-01-01T00:00:00.000Z'
 const end = '2026-02-01T00:00:00.000Z'
@@ -48,11 +46,6 @@ describe('DSA copyright transparency report GET', () => {
   })
 
   it('counts a receipt after withdrawing its approval and does not persist GET output', async () => {
-    const caseId = 'copyright-dsa-report-withdrawn-approval'
-    if (getIsolatedDatabaseCaseMode(caseId) === 'parent') {
-      await runIsolatedDatabaseCase(caseId)
-      return
-    }
     const { administrator, claimant, staff, staffRequest } = await createTerritorialActors()
     const periodStart = new Date(Date.now() - 60_000).toISOString()
     const periodEnd = new Date(Date.now() + 86_400_000).toISOString()
@@ -69,7 +62,7 @@ describe('DSA copyright transparency report GET', () => {
       before.body.copyright_eu_report.receipt_count + 1,
     )
     expect(await countEuTransparencyReportsBy(staff.id)).toBe(reportCount)
-  }, 240_000)
+  })
 
   it.each(['csv_notices', 'csv_complaints'] as const)(
     'serves %s as attachment with CRLF and no TOTAL row',

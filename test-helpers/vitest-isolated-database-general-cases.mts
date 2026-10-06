@@ -21,11 +21,6 @@ export const generalIsolatedCases = {
     fullName:
       'retained relation cleanup cursors > creates all missing cursors and reuses them on replay',
   },
-  'media-replay': {
-    file: 'backend/api/v1/copyright-notices/copyright-notices.replay.isolated.test.mts',
-    fullName:
-      'isolated global media replay route > replays failed media registry records only for review staff and writes one audit event',
-  },
   'activitypub-expiry': {
     file: 'backend/services/ap-inbox-activities/durable-delivery-storage.test.mts',
     fullName:

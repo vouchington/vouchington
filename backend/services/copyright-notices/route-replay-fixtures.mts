@@ -7,6 +7,7 @@ import {
   readTestCopyrightActionIntentState,
 } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { processCopyrightActionIntent } from '@services/copyright-notices'
+import { replayFailedMediaDeliveryRegistryRecords } from '@services/media-delivery-safety'
 import {
   createCopyrightReplayFixture,
   createFailedMediaDeliveryReplayFixture,
@@ -53,16 +54,28 @@ export async function verifyCopyrightActionReplayRoute(): Promise<true> {
 }
 
 export async function verifyMediaDeliveryReplayRoute(): Promise<true> {
-  const fixture = await createFailedMediaDeliveryReplayFixture()
+  const [fixture, foreign] = await Promise.all([
+    createFailedMediaDeliveryReplayFixture(),
+    createFailedMediaDeliveryReplayFixture(),
+  ])
   const nonModeratorRequest = createRequest()
   await nonModeratorRequest.authenticateAs(fixture.nonModerator)
   await nonModeratorRequest.post('/api/v1/copyright-media-delivery/replays').expect(403)
-  const moderatorRequest = createRequest()
-  await moderatorRequest.authenticateAs(fixture.moderator)
-  const replay = await moderatorRequest.post('/api/v1/copyright-media-delivery/replays').expect(200)
-  expect(replay.body.replayed).toBeGreaterThanOrEqual(1)
-  await replayMediaDeliveryAndAssertAudit(moderatorRequest, fixture)
-  await replayMediaDeliveryAndAssertAudit(moderatorRequest, fixture)
+  const replayOwned = (deliveryKeys: readonly string[]) =>
+    replayFailedMediaDeliveryRegistryRecords({
+      actorUserId: fixture.moderator.id,
+      deliveryKeys,
+    })
+  expect(await replayOwned([fixture.deliveryKey])).toBe(1)
+  expect(await replayOwned([fixture.deliveryKey])).toBe(0)
+  await expectOneReplayAudit(fixture, 'media_delivery_registry_replayed')
+  expect(
+    await countTestCopyrightLifecycleEvents({
+      noticeId: foreign.noticeId,
+      eventType: 'media_delivery_registry_replayed',
+      actorUserId: fixture.moderator.id,
+    }),
+  ).toBe(0)
   return true
 }
 
@@ -91,14 +104,6 @@ async function expectCopyrightActionDeliveryFailures(
     }),
   ).rejects.toThrow('provider outage')
   await expectCopyrightActionDeliveryFailures(intentId, startedAt, failedPublish, remainingOffsets)
-}
-
-async function replayMediaDeliveryAndAssertAudit(
-  moderatorRequest: ReturnType<typeof createRequest>,
-  fixture: Awaited<ReturnType<typeof createCopyrightReplayFixture>>,
-): Promise<void> {
-  await moderatorRequest.post('/api/v1/copyright-media-delivery/replays').expect(200)
-  await expectOneReplayAudit(fixture, 'media_delivery_registry_replayed')
 }
 
 async function expectOneReplayAudit(

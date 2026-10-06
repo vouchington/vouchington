@@ -1,9 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import {
-  observeSharedDbScope,
-  sharedDbCursorScope,
-} from '@data-stores/psql/shared-db-scope-observer'
+import { observeSharedDbScope, sharedDbIdsScope } from '@data-stores/psql/shared-db-scope-observer'
 import type { PrivateUser } from '@services/users/types'
 import { assertNotSuspended } from '@services/users'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
@@ -30,7 +27,11 @@ export const copyrightStaffEmailIntakeQueueCursorScope =
 
 export async function searchCopyrightStaffEmailIntakes(
   currentUser: PrivateUser,
-  options: { limit: number; after?: { timestamp: string; id: string } },
+  options: {
+    limit: number
+    after?: { timestamp: string; id: string }
+    intakeIds?: readonly string[]
+  },
 ): Promise<{
   intakes: Array<CopyrightStaffEmailIntakeQueueItem & { cursor_received_at: string }>
   hasNextPage: boolean
@@ -39,7 +40,9 @@ export async function searchCopyrightStaffEmailIntakes(
   if (!currentUserCanReviewCopyrightNotices(currentUser)) {
     return { intakes: [], hasNextPage: false }
   }
-  observeSharedDbScope('searchCopyrightStaffEmailIntakes', sharedDbCursorScope(options.after?.id))
+  if (options.intakeIds?.length === 0) return { intakes: [], hasNextPage: false }
+  observeSharedDbScope('searchCopyrightStaffEmailIntakes', sharedDbIdsScope(options.intakeIds))
+  const intakeIds = options.intakeIds ? [...options.intakeIds] : null
   await using transaction = await beginTransaction()
   const query = sql`/* searchCopyrightStaffEmailIntakes */
     SELECT intake.id, intake.received_at, COALESCE(parse.status::text, 'unparsed') AS parse_status,
@@ -65,6 +68,7 @@ export async function searchCopyrightStaffEmailIntakes(
       AND reply.delivery_kind IN ('email_intake_rejected', 'email_intake_needs_information') AND reply.state IN ('failed', 'bounced')
     WHERE (`.append(copyrightEmailIntakeAwaitingReviewSql())
   query.append(sql` OR reply.id IS NOT NULL)`)
+  if (intakeIds) query.append(sql` AND intake.id = ANY(${intakeIds}::uuid[])`)
   if (options.after) {
     query.append(sql`
       AND (intake.received_at, intake.id) > (${options.after.timestamp}::timestamptz, ${options.after.id})`)

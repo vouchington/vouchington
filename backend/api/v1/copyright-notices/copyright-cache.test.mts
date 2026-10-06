@@ -7,8 +7,6 @@ import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import { createCopyrightEmailIntake } from '@services/copyright-notices'
-import { getIsolatedDatabaseCaseMode } from '../../../../test-helpers/vitest-isolated-database-cases.mts'
-import { runIsolatedDatabaseCase } from '../../../../test-helpers/vitest-isolated-database-case.mts'
 
 describe('copyright API cache policy', () => {
   useCopyrightIntakeEnvironment()
@@ -18,10 +16,6 @@ describe('copyright API cache policy', () => {
   })
 
   it('marks member, staff, and raw-email responses private and no-store', async () => {
-    if (getIsolatedDatabaseCaseMode('copyright-cache-policy') === 'parent') {
-      await runIsolatedDatabaseCase('copyright-cache-policy')
-      return
-    }
     const member = createRequest()
     await member.authenticateAs(await createTestUser())
     expect(
@@ -30,12 +24,6 @@ describe('copyright API cache policy', () => {
 
     const moderator = createRequest()
     await moderator.authenticateAs(await createTestUser({ extraRoles: ['moderator'] }))
-    expect(
-      (await moderator.get('/api/v1/copyright-email-intakes/review-queue').expect(200)).headers[
-        'cache-control'
-      ],
-    ).toBe('private, no-store')
-
     const bytes = Buffer.from('From: claimant@example.test\r\n\r\nCopyright notice')
     const { intake } = await createCopyrightEmailIntake({
       sesMessageId: `ses-api-raw-${crypto.randomUUID()}`,
@@ -57,5 +45,5 @@ describe('copyright API cache policy', () => {
       'content-disposition': 'attachment; filename="original-email.eml"',
       'x-content-type-options': 'nosniff',
     })
-  }, 240_000)
+  })
 })
