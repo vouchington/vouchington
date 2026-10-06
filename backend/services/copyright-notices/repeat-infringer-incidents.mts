@@ -5,7 +5,10 @@ import { encryptSecret } from '@modules/token-secrets'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { lockCopyrightRepeatInfringerNoticeAccounts } from './repeat-infringer-locks.mts'
-import { anyReversalSourceSql } from './restriction-reversal-sources-sql.mts'
+import {
+  anyReversalSourceSql,
+  statutoryRestorationSourceSql,
+} from './restriction-reversal-sources-sql.mts'
 import { copyrightPlacementPartiesSql } from '@services/media-delivery-safety/copyright-placement-parties'
 
 export type CopyrightRepeatInfringerDisposition = 'withdrawn' | 'duplicate' | 'abusive'
@@ -40,7 +43,10 @@ export async function syncCopyrightRepeatInfringerIncidents(
           )
         )
         AND NOT `)
-      .append(anyReversalSourceSql).append(sql`
+      .append(anyReversalSourceSql)
+      .append(sql`
+        AND NOT `)
+      .append(statutoryRestorationSourceSql).append(sql`
     ), desired AS (
       SELECT owners.account_user_id,
         NOT EXISTS (

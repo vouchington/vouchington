@@ -13,6 +13,7 @@ import {
   lockCopyrightActionDelivery,
   lockCopyrightActionClaim,
 } from './action-delivery-state.mts'
+import { syncCopyrightIncidentsAfterStatutoryRestoreInTransaction } from './statutory-restoration-incidents.mts'
 
 export async function finalizeCopyrightActionAfterDelivery(
   intentId: string,
@@ -120,6 +121,7 @@ async function completeCopyrightActionAndInvalidate(input: {
         completedAt: input.now,
         query: input.transaction,
       }),
+    () => syncCopyrightIncidentsAfterStatutoryRestoreInTransaction(input.legal, input.transaction),
     () =>
       insertCopyrightActionLifecycleEvent(
         input.legal,

@@ -671,7 +671,8 @@ it is on:
 
 - **Registry.** It holds only images whose restriction a moderator confirmed: accepting a notice,
   completing mandatory human review with `confirm`, or confirming on appeal. An automated
-  provisional withholding and a reversed restriction are never registered. Each entry stores the
+  provisional withholding, a reversed restriction, and a restriction restored under a
+  counter-notice are never registered. Each entry stores the
   image's exact SHA-256 and a 64-bit perceptual difference hash (dHash) of its normalized pixels.
   The SHA-256 registers in the confirming transaction, and the `staydown-hash` job on the images
   queue fills the dHash. A flat image with too little detail to hash perceptually is matched only
@@ -904,8 +905,14 @@ owner. Topic images and administrator-set community images create none. Every au
 source, including an administrator lift, is terminal for that restriction and dominates confirmation. Appeal decisions synchronize incidents in the same
 transaction. Several targets on the same notice stay one incident per account; reversing one
 target preserves incidents supported by other confirmed targets. A guest placement with no author
-does not create one. Restoration does not remove the incident. A staff disposition of `withdrawn`,
-`duplicate`, or `abusive` makes its incident non-operative.
+does not create one. A restriction restored under the counter-notice process, because the notifier
+filed no court action, also ends its incident, in the same transaction that completes the
+restore. That restoration is a procedural outcome, not a finding that the restriction was wrong, so
+it is not a reversal source: the claimant-misuse ledger, restoration notices, and delivery facts
+read no differently. Only a restore the counter-notice deadline authorized, and only once it is
+completed, counts; a blocked, stale, or failed restore leaves the incident operative. A later
+court-ordered restriction is a new restriction that counts on its own terms. A staff disposition of
+`withdrawn`, `duplicate`, or `abusive` makes its incident non-operative.
 
 The second operative incident for an account opens a staff review. Opening that review does not
 suspend or delete the account. Incident synchronization locks all affected strike accounts and existing incident accounts through the
