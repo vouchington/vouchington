@@ -9,7 +9,7 @@ import {
   createPlatformAccountTestUser,
   type PlatformAccountTestKind,
 } from '@voucha/test-helpers/account-types'
-import * as automaticTopicUpvote from '@services/elections-votes/topic/automatic-upvote'
+import * as automaticTopicUpvote from '../elections-votes/topic/automatic-upvote.mts'
 import { createSourceFromUrl } from '@services/rss-feeds/create-source'
 import type { FeedClassification } from '@services/rss-feeds/validate'
 import { importSingleRssFeed } from './import-rss-feeds.mts'

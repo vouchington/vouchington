@@ -5,7 +5,7 @@ import {
   insertTestCommunityMember,
   insertTestCommunityAgentPrompt,
 } from '@voucha/test-helpers'
-import * as entityListenerEnqueues from '@queues/entity-listeners/enqueues'
+import * as entityListenerEnqueues from '../../queues/entity-listeners/enqueues.mts'
 import { updateMemberRole } from '@services/communities/members/update-role'
 import { removeMember } from '@services/communities/members/remove'
 import { getCommunityAgentPrompt } from './get.mts'
