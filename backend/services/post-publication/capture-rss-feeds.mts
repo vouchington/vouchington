@@ -151,11 +151,8 @@ export async function retainCurrentRssFeedPublicationKeys(
   if (rows.length === 0) return
   await query(
     `/* retainCurrentRssFeedPublicationKeys */
-    INSERT INTO post_publication_dirty_work_keys (
-      dirty_work_id, impact_post_identity_id, impact_community_identity_id,
-      impact_rss_feed_item_identity_id, topic_key, author_key, community_key, rss_feed_key,
-      author_username, post_slug, community_slug, topic_alias, post_type, day
-    )
+    INSERT INTO post_publication_dirty_work_keys
+      (dirty_work_id, topic_key, rss_feed_key)
     WITH input AS (
       SELECT *
       FROM UNNEST($1::uuid[], $2::uuid[]) AS row(dirty_work_id, rss_feed_id)
@@ -177,15 +174,8 @@ export async function retainCurrentRssFeedPublicationKeys(
       ON category.rss_feed_item_id = source.rss_feed_item_id
     WHERE category.topic_id IS NOT NULL
     )
-    /* no-mistakes#1556: the NULL columns list every arbiter column the INSERT would leave out */
-    SELECT DISTINCT dirty_work_id, NULL::uuid AS impact_post_identity_id,
-      NULL::uuid AS impact_community_identity_id, NULL::uuid AS impact_rss_feed_item_identity_id,
-      CASE WHEN kind = 'impact_topic' THEN uuid_value END AS topic_key,
-      NULL::uuid AS author_key, NULL::uuid AS community_key,
-      CASE WHEN kind = 'identity_rss_feed' THEN uuid_value END AS rss_feed_key,
-      NULL::text AS author_username, NULL::text AS post_slug, NULL::text AS community_slug,
-      NULL::text AS topic_alias, NULL::post_types AS post_type, NULL::date AS day
-    FROM keys
+    SELECT DISTINCT dirty_work_id, CASE WHEN kind = 'impact_topic' THEN uuid_value END AS topic_key,
+      CASE WHEN kind = 'identity_rss_feed' THEN uuid_value END AS rss_feed_key FROM keys
     ORDER BY dirty_work_id, topic_key, rss_feed_key
     ON CONFLICT (
       dirty_work_id, impact_post_identity_id, impact_community_identity_id,

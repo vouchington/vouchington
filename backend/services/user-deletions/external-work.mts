@@ -41,11 +41,10 @@ export async function addUserDeletionRelationEffects(
   if (impactIds.length === 0) return
   await query(sql`/* addUserDeletionRelationEffects */
     INSERT INTO user_deletion_external_works (request_id, work_kind, relation_impact_id)
-    /* no-mistakes#1557: the alias works around a bound constant arbiter key read as a column */
-    SELECT ${requestId}::uuid AS request_id, 'entity-relation-effects', impact.id
+    SELECT ${requestId}::uuid, 'entity-relation-effects', impact.id
     FROM user_deletion_relation_impacts impact
     WHERE impact.request_id = ${requestId} AND impact.id = ANY(${impactIds}::uuid[])
-    ORDER BY request_id, impact.id
+    ORDER BY impact.id
     ON CONFLICT (request_id, relation_impact_id) DO NOTHING
   `)
 }
