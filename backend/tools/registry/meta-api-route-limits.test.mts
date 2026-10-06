@@ -19,7 +19,7 @@ const sameEndpoint = (a: ToolApiEndpoint, b: ToolApiEndpoint) =>
   a.method === b.method && a.path === b.path
 
 // Every `enum` or `const` value a schema gives an argument, one argument at a time, through `oneOf`
-// branches too: the calls that can pick a route.
+// branches too.
 function discriminatorCalls(schema: unknown): Record<string, unknown>[] {
   if (Array.isArray(schema)) return schema.flatMap(discriminatorCalls)
   if (typeof schema !== 'object' || schema === null) return []
@@ -33,6 +33,19 @@ function discriminatorCalls(schema: unknown): Record<string, unknown>[] {
   )
   return [...own, ...discriminatorCalls(oneOf), ...discriminatorCalls(anyOf)]
 }
+
+// The calls that can pick a route: no arguments, every discriminator value, and each argument merely
+// present, since a route can also depend on whether an optional argument is given.
+function routePickingCalls(schema: unknown): Record<string, unknown>[] {
+  const { properties } = (schema ?? {}) as { properties?: Record<string, unknown> }
+  return [
+    {},
+    ...discriminatorCalls(schema),
+    ...Object.keys(properties ?? {}).map(name => ({ [name]: 'present' })),
+  ]
+}
+const selectedRoutes = (tool: Tool) =>
+  routePickingCalls(tool.schema.parameters).flatMap(args => tool.meta!.selectApi!(args))
 
 describe('MCP tools and their REST routes', () => {
   it('declares meta.api on every MCP tool that has a REST twin', () => {
@@ -62,9 +75,7 @@ describe('MCP tools and their REST routes', () => {
       '%s selects only routes that its meta.api lists, and each of them for some call',
       (_name, tool) => {
         const listed = tool.meta!.api!
-        const selected = discriminatorCalls(tool.schema.parameters).flatMap(args =>
-          tool.meta!.selectApi!(args),
-        )
+        const selected = selectedRoutes(tool)
 
         expect(selected.length).toBeGreaterThan(0)
         for (const endpoint of selected) {
@@ -75,5 +86,29 @@ describe('MCP tools and their REST routes', () => {
         }
       },
     )
+
+    it('reaches both routes of a tool that picks one by whether an optional argument is given', () => {
+      const scoped: ToolApiEndpoint = { method: 'POST', path: '/api/v1/scopes/:id/items' }
+      const global: ToolApiEndpoint = { method: 'POST', path: '/api/v1/items' }
+      const tool = {
+        schema: {
+          name: 'optional_argument_fixture',
+          type: 'function',
+          parameters: { type: 'object', properties: { scope_id: { type: 'string' } } },
+          strict: null,
+        },
+        function: () => () => Promise.resolve({}),
+        meta: {
+          surfaces: ['mcp'],
+          api: [global, scoped],
+          selectApi: (args: Record<string, unknown>) => [args['scope_id'] ? scoped : global],
+        },
+      } as unknown as Tool
+
+      const selected = selectedRoutes(tool)
+
+      expect(selected).toContainEqual(scoped)
+      expect(selected).toContainEqual(global)
+    })
   })
 })
