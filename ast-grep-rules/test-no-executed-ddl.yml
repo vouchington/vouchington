@@ -75,10 +75,14 @@ rule:
     - kind: string
       regex: '(?:CREATE(?:\s+(?:OR\s+REPLACE|TEMP|TEMPORARY|UNLOGGED|UNIQUE|MATERIALIZED))*|ALTER|DROP)\s+(?:DATABASE|SCHEMA|TABLE|VIEW|TRIGGER|FUNCTION|PROCEDURE|INDEX|TYPE)|ALTER\s+SYSTEM|(?i:pg_sleep|session_replication_role|\bTRUNCATE\s+(?:TABLE|ONLY)\b)'
     - kind: template_string
-      regex: '(?:CREATE(?:\s+(?:OR\s+REPLACE|TEMP|TEMPORARY|UNLOGGED|UNIQUE|MATERIALIZED))*|ALTER|DROP)\s+(?:DATABASE|SCHEMA|TABLE|VIEW|TRIGGER|FUNCTION|PROCEDURE|INDEX|TYPE)|ALTER\s+SYSTEM|(?i:pg_sleep|session_replication_role|\bTRUNCATE\s+(?:TABLE|ONLY)\b)'
+      regex: '(?i:(?:CREATE(?:\s+(?:OR\s+REPLACE|TEMP|TEMPORARY|UNLOGGED|UNIQUE|MATERIALIZED))*|ALTER|DROP)\s+(?:DATABASE|SCHEMA|TABLE|VIEW|TRIGGER|FUNCTION|PROCEDURE|INDEX|TYPE)|ALTER\s+SYSTEM|pg_sleep|session_replication_role|\bTRUNCATE\s+(?:TABLE|ONLY)\b)'
 examples:
   - code: |
       await write(`ALTER TABLE api_keys ADD CONSTRAINT c CHECK (false)`)
+    isValid: false
+    file: 'backend/services/example-suite-rules.test.mts'
+  - code: |
+      await write(`alter table api_keys add constraint c check (false)`)
     isValid: false
     file: 'backend/services/example-suite-rules.test.mts'
   - code: |

@@ -69,6 +69,7 @@ rule:
     - pattern: describe.todo($$$)
     - pattern: describe.fixme($$$)
     - pattern: context.skip($$$)
+    - pattern: $CTX.skip()
 examples:
   - code: |
       it.skip('network', () => {})
@@ -76,6 +77,12 @@ examples:
     file: 'backend/services/example-suite-rules.test.mts'
   - code: |
       describe.skipIf(!process.env.KEY)('credential', () => {})
+    isValid: false
+    file: 'backend/services/example-suite-rules.test.mts'
+  - code: |
+      test('missing', ctx => {
+        ctx.skip()
+      })
     isValid: false
     file: 'backend/services/example-suite-rules.test.mts'
   - code: |

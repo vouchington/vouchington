@@ -173,6 +173,12 @@ rule:
     - pattern: 'test($A, { timeout: $N }, $F)'
     - pattern: 'it($A, { timeout: $N, $$$ }, $F)'
     - pattern: 'test($A, { timeout: $N, $$$ }, $F)'
+    - pattern: 'it.each($ARR)($A, { timeout: $N }, $F)'
+    - pattern: 'test.each($ARR)($A, { timeout: $N }, $F)'
+    - pattern: 'it.each($ARR)($A, { timeout: $N, $$$ }, $F)'
+    - pattern: 'test.each($ARR)($A, { timeout: $N, $$$ }, $F)'
+    - pattern: 'describe($A, { timeout: $N }, $F)'
+    - pattern: 'describe($A, { timeout: $N, $$$ }, $F)'
     - pattern: 'it.each($ARR)($A, $B, $N)'
     - pattern: 'test.each($ARR)($A, $B, $N)'
     - pattern: it.concurrent($A, $B, $N)
@@ -196,6 +202,18 @@ examples:
   - code: |
       it('bounded', { timeout: 45_000 }, async () => {})
     isValid: false
+    file: 'backend/services/example-suite-rules.test.mts'
+  - code: |
+      describe('slow', { timeout: 45_000 }, () => {})
+    isValid: false
+    file: 'backend/services/example-suite-rules.test.mts'
+  - code: |
+      it.each([1])('slow %s', { timeout: 45_000 }, async () => {})
+    isValid: false
+    file: 'backend/services/example-suite-rules.test.mts'
+  - code: |
+      describe('cap', { timeout: 30_000 }, () => {})
+    isValid: true
     file: 'backend/services/example-suite-rules.test.mts'
   - code: |
       beforeAll(async () => {}, 60_000)
