@@ -20,6 +20,7 @@ const text = readFileSync(path, 'utf8')
 const workflow = parse(text) as Workflow
 const jobs = Object.entries(workflow.jobs)
 const prompt = readFileSync('docs/prompts/automation/merge-queue-ejection.md', 'utf8')
+const core = readFileSync('docs/prompts/automation/ci-failure-core.md', 'utf8')
 
 describe('merge-queue ejection workflow', () => {
   it('runs only when the merge queue dequeues a main pull request', () => {
@@ -101,8 +102,8 @@ describe('merge-queue ejection workflow', () => {
 
   it('passes the automation:auto-fix label the prompt tells the session to apply', () => {
     expect(workflow.jobs.dispatch?.with?.['pr-label']).toBe('automation:auto-fix')
-    expect(prompt).toContain('`automation`')
-    expect(prompt).toContain('`automation:auto-fix`')
+    expect(core).toContain('`automation`')
+    expect(core).toContain('`automation:auto-fix`')
   })
 
   it('comments on the pull request when triage cannot start', () => {
@@ -114,9 +115,9 @@ describe('merge-queue ejection workflow', () => {
   })
 
   it('renders exactly the placeholders the prompt uses', () => {
-    const rendered = workflow.jobs['render-prompt']?.steps?.at(-1)?.with?.['vars']
-    const vars = String(rendered)
-      .split('\n')
+    const render = workflow.jobs['render-prompt']?.steps?.at(-1)?.with
+    const vars = [render?.['vars'], render?.['var-files']]
+      .flatMap(value => (typeof value === 'string' ? value.split('\n') : []))
       .filter(Boolean)
       .map(line => line.split('=')[0]?.trim())
     const used = new Set([...prompt.matchAll(/\{\{(\w+)\}\}/gu)].map(match => match[1]))

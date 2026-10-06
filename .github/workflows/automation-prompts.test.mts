@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { parse } from 'yaml'
 
 function lines(path: string): string[] {
   return readFileSync(path, 'utf8').split(/\r?\n/u)
@@ -30,14 +31,23 @@ describe('Harness automation prompt contracts', () => {
     }
   })
 
-  it('gives the unclassified-transient interim classifier a publishable no-closing-ref body', () => {
-    const text = readFileSync('docs/prompts/automation/fix-main.md', 'utf8').replace(/\s+/gu, ' ')
-
-    expect(text).toContain(
-      'No closing reference; root-cause issue tracked via the Refs entry above.',
-    )
-    expect(text).toContain(
-      '<!-- related-issues-validation: no-closing-ref-fix-main-interim-classifier -->',
-    )
+  it('renders Fix Main and merge-queue ejection around one shared CI-failure core', () => {
+    const corePath = 'docs/prompts/automation/ci-failure-core.md'
+    expect(readFileSync(corePath, 'utf8')).not.toMatch(/\{\{\w+\}\}/u)
+    for (const name of ['fix-main', 'merge-queue-ejection']) {
+      const workflow = parse(readFileSync(`.github/workflows/${name}.yml`, 'utf8')) as {
+        jobs: Record<string, { steps?: { id?: string; with?: Record<string, string> }[] }>
+      }
+      const render = workflow.jobs['render-prompt']?.steps?.find(step => step.id === 'render')?.with
+      expect(render?.['var-files']?.trim()).toBe(`CI_FAILURE_CORE=${corePath}`)
+      const wrapper = readFileSync(`docs/prompts/automation/${name}.md`, 'utf8')
+      expect(wrapper.match(/\{\{CI_FAILURE_CORE\}\}/gu)).toHaveLength(1)
+      const supplied = [render?.['vars'], render?.['var-files']]
+        .flatMap(value => (value ?? '').split('\n'))
+        .filter(Boolean)
+        .map(line => line.split('=')[0]?.trim())
+      const used = new Set([...wrapper.matchAll(/\{\{(\w+)\}\}/gu)].map(match => match[1]))
+      expect([...used].toSorted()).toEqual(supplied.toSorted())
+    }
   })
 })

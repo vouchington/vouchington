@@ -71,64 +71,28 @@ blaming either side.
 
 ## Classify and group root causes
 
-Read `ci/transient-retry/rules.mts` for the catalogued transient fingerprints. Establish each
-occurrence's failure from logs, and reproduce it locally when that is cheap. Run pull-request code
-on this host only when the pull request is a same-repository branch, in a detached checkout of the
-occurrence's `head_sha` that you leave before any fix; for a fork, or an ejected head that a force
-push made unfetchable, classify from CI evidence alone. Fingerprint each failure by workflow, job,
-and stable error text, and check whether the same fingerprint appears in other recent merge-group or
-nightly runs that did not include the pull request.
+Classify each occurrence with the shared rules below. The change under test is the occurrence's
+ejected head. Run pull-request code on this host only when the pull request is a same-repository
+branch, in a detached checkout of the occurrence's `head_sha` that you leave before any fix; for a
+fork, or an ejected head that a force push made unfetchable, classify from CI evidence alone.
 
-Group the occurrences that share a fingerprint; one entry's occurrences can land in different
-groups. An occurrence caused by its pull request's own change stays a group of one. Then choose
-exactly one outcome per group, and open at most one issue and one fix PR per group. Finishing a
-group's outcome finishes only that group: continue with the next group, then report and sweep. End
-the session early only when you cannot continue at all, such as lost `gh` access.
+One entry's occurrences can land in different groups, and an occurrence caused by its pull
+request's own change stays a group of one. Finishing a group's outcome finishes only that group:
+continue with the next group, then report and sweep. End the session early only when you cannot
+continue at all, such as lost `gh` access.
 
-1. **The pull request is the root cause.** Its own change fails deterministically, or conflicts with
-   an entry ahead of it or with `main`. Post the analysis comment below; this group is done. Do not
-   fix it.
-2. **A flaky test.** The failure is nondeterministic and not caused by any pull request in the
-   group. Search open pull requests and issues for the same test first. If a focused fix already
-   exists, reference it in the comments; this group is done. Otherwise find or file one issue for
-   the flake, then create one draft fix PR from `main` that closes it. Create the fix branch from
-   `{{MAIN_SHA}}`, never from a fetched pull-request ref, and before creating the PR require
-   `git log {{MAIN_SHA}}..HEAD` to list only your own commits. When the fix adds or tightens an
-   assertion, first show that the assertion fails against the pre-fix source, per
-   [Implementation](../../../.agents/skills/agent-workflow/implementation.md)'s regression-test
-   rule. Create the PR with `node dev/pr-description.mts create --title <title> --body-file <path>`.
-   Title it `Automation fix: flaky <test> (merge queue #N[, #M…])`, listing every pull request in
-   the group. The body needs `## Root cause`, `## Implementation choice`, `## Options considered`
-   with pros and cons, implementation details, the failing runs, validation evidence,
-   `## Related issues` with the closing reference, and the line
-   `Workspace setup: Automation merge-queue-ejection run`. Apply both the `automation` and
-   `automation:auto-fix` labels, then re-fetch the PR and require both labels.
-3. **A CI or architecture defect.** Repository tooling, a ratchet, or shared infrastructure rejects
-   work the group did not cause. Search for an existing issue; comment new evidence on it, or file
-   one issue with the failing runs, fingerprint, and a proposed fix. When the defect is in this
-   repository, also fix it as a flaky test is fixed: one draft PR from `main` that closes the issue,
-   titled `Automation fix: <defect> (merge queue #N[, #M…])`. When it lives outside this
-   repository, such as in `no-mistakes`, `vouchington-tooling`, GitHub, or hosted infrastructure,
-   the issue is the whole outcome.
-4. **A transient failure.** The failure matches a catalogued transient or clear infrastructure
-   noise. Say each pull request still out of the queue at its ejected head is safe to re-enqueue. If the fingerprint recurs across ejections,
-   also find or file one issue.
+- **The ejected pull request is the root cause** when its own change fails deterministically, or
+  conflicts with an entry ahead of it or with `main`. Post the analysis comment below; this group is
+  done. Never fix it.
+- **A transient group:** say each pull request still out of the queue at its ejected head is safe
+  to re-enqueue.
+- **Fix base:** `{{MAIN_SHA}}`.
+- **Fix PR title:** `Automation fix: flaky <test> (merge queue #N[, #M…])` for a flaky test, or
+  `Automation fix: <defect> (merge queue #N[, #M…])` for a defect, listing every pull request in
+  the group.
+- **Workspace setup line:** `Workspace setup: Automation merge-queue-ejection run`.
 
-Every group ends in one of these outcomes, never in a list of options. When the evidence fits
-more than one outcome, or several fixes remain, reproduce locally when that is cheap, then choose
-the outcome and fix the evidence best supports and carry it out. A nondeterministic failure that
-no pull request in the group caused is a flaky test even when its cause is unproven, and a test
-failure that recurs across ejections is a transient only when it matches a catalogued transient in
-`ci/transient-retry/rules.mts`. In the fix PR's `## Root cause`, separate what the evidence proves
-from what it only suggests, and put the alternatives in `## Options considered`. When the logs cannot tell the candidate causes apart, for example a
-statement timeout with no wait event or plan, the fix PR also captures the evidence the next
-occurrence needs, but diagnostics alone are not a fix.
-
-A fix removes the cause. Never raise a test, statement, or job timeout, add a retry or rerun, skip
-or quarantine a test, weaken what a test proves, or break the
-[test suite rules](../../development/tests.md#test-suite-rules), such as moving a test back to its
-own database, to make a failure stop. When a timeout is only the symptom, fix what made the work
-slow or blocked it.
+{{CI_FAILURE_CORE}}
 
 ## Report
 
@@ -173,12 +137,3 @@ An ejection that joins this session after its last pass, or that the bound leave
 the session link from the workflow. An ejection whose dispatch GitHub cancelled while coalescing gets
 a notice without a triage marker instead. A session that another ejection starts within 24 hours
 covers both through its discovery window, which also retries ejections whose earlier session failed.
-
-For any PR body this workflow is authorized to create or update, follow the
-[PR-description standard](../../../.agents/skills/pr-description/SKILL.md): keep `## Summary`
-and `## Impact` visible, including the concrete outcome, affected audience, and material risks.
-Keep the required `## Root cause`, `## Implementation choice`, and `## Options considered`
-headings and long supporting evidence inside a collapsed `<details>` section. Use before/after
-tables and Mermaid when useful. After CI diagnosis, refresh conditional Harness gaps through the
-approved description helper and retain established gaps after green checks. Do not add routine
-successful local-check lists. This standard does not expand this workflow's mutation authority.

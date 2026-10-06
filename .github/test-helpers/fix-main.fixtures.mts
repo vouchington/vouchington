@@ -33,6 +33,10 @@ type Workflow = {
 
 export const fixMain = readFileSync('.github/workflows/fix-main.yml', 'utf8')
 export const harnessDispatch = readFileSync('.github/workflows/harness-dispatch.yml', 'utf8')
-export const fixMainPrompt = readFileSync('docs/prompts/automation/fix-main.md', 'utf8')
+/** fix-main.md as rendered, with the shared CI failure core its workflow passes as a var-file. */
+export const fixMainPrompt = readFileSync('docs/prompts/automation/fix-main.md', 'utf8').replace(
+  '{{CI_FAILURE_CORE}}',
+  readFileSync('docs/prompts/automation/ci-failure-core.md', 'utf8'),
+)
 export const parsedMain = load(fixMain) as Workflow
 export const parsedDispatch = load(harnessDispatch) as Workflow
