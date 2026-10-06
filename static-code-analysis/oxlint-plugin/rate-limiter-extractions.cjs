@@ -6,19 +6,6 @@ function propertyName(member) {
   return member.computed ? staticPropertyName(member.property) : null
 }
 
-function memberIsRead(node) {
-  const parent = node.parent
-  if (parent?.type === 'AssignmentExpression' && parent.left === node) {
-    return parent.operator !== '='
-  }
-  return !(parent?.type === 'UnaryExpression' && parent.operator === 'delete')
-}
-
-function patternPropertyName(property) {
-  if (!property.computed && property.key.type === 'Identifier') return property.key.name
-  return staticPropertyName(property.key)
-}
-
 function staticPropertyName(node) {
   let value = node
   while (
@@ -62,8 +49,6 @@ function receiverAtPath(receiver, path) {
 }
 
 module.exports = {
-  memberIsRead,
-  patternPropertyName,
   propertyName,
   receiverAtPath,
 }

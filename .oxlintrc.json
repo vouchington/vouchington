@@ -1056,7 +1056,6 @@
     "no-mistakes/postgres-no-manual-transaction": "off",
     "no-mistakes/postgres-no-unbounded-query-fanout": "off",
     "voucha/backend-contract-program-construction-location": "error",
-    "voucha/no-prefix-wide-rate-limiter-invalidate": "error",
     "vouchington/serial-cursor-drains": [
       "error",
       {
@@ -1081,11 +1080,29 @@
           "integration-tests/**/*.mts",
           "playwright/**/*.mts"
         ],
-        "exclude": [
-          "backend/services/valkey-admin/flush.mts",
-          "playwright/global-setup.mts",
-          "backend/test-helpers/entities/memberships.mts",
-          "backend/test-helpers/entities/email-addresses.mts"
+        "exclude": ["backend/services/valkey-admin/flush.mts", "playwright/global-setup.mts"],
+        "exceptions": [
+          {
+            "kind": "constructor-constant",
+            "file": "backend/test-helpers/entities/memberships.mts",
+            "member": "invalidate",
+            "module": "@data-stores/valkey/cache",
+            "imported": "ValkeyCache",
+            "local": "ValkeyCache",
+            "constant": {
+              "name": "ACTIVE_PLANS_CACHE_PREFIX",
+              "value": "membership_products:provider-v1:active_plans"
+            }
+          },
+          {
+            "kind": "const-instance-prefix",
+            "file": "backend/test-helpers/entities/email-addresses.mts",
+            "member": "invalidate",
+            "module": "@data-stores/valkey/cache",
+            "imported": "ValkeyCache",
+            "local": "ValkeyCache",
+            "prefix": "email-domain-validation"
+          }
         ]
       }
     ],
