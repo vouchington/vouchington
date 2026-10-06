@@ -47,25 +47,19 @@ replaces the captcha with the credential, and the same suspensions and quotas ap
 These entities have no post to bind admission to, so `admitDelegatedCreate` runs each of them
 through the same admission ledger as `create_post` (`runContributionAdmission`), keyed by credential
 owner and key, with a SHA-256 of the route and arguments. The reservation carries no post audit
-fields (`source`, `post_type` and `policy_revision` are null) and no `committed_post_id`:
+fields and no `committed_post_id`:
 
 - The same key and arguments replay the stored result without writing again or spending quota.
 - A changed request, or the same key on another route or on a post, fails with
   `IDEMPOTENCY_KEY_REUSED`.
 - A live claim fails with `CONTRIBUTION_ADMISSION_IN_PROGRESS` and a retry delay. The lease is
-  renewed while the create runs, so only a holder that stopped renewing is taken over. Taking over
-  fences the old holder: its create rolls back and it can neither store its result nor release the
-  newer holder's claim.
-- The create runs in the admission transaction and the response is stored in that same
-  transaction, so a failure while storing the response rolls the create back and a retry creates
-  once. Effects after the commit (alerts, enqueues) run only once it succeeds.
+  renewed while the create runs; a holder that lost it is fenced and its create rolls back.
+- The create and its stored response commit in one transaction, so a failure storing the response
+  rolls the create back and a retry creates once. Alerts and enqueues run after the commit.
 - Argument parsing and ownership checks run before the claim, so a refused request never claims a
-  key. A guard that refuses before the create (the community quota) or a terminal 4xx from the
-  create discards the reservation and frees the key. Any other failure leaves it retryable.
-- Reservations are pruned with the post admission replay retention, so the ledger is bounded.
-- If storing the response fails after the create succeeded, the claim is released and a retry
-  executes again. Reports, disputes and appeals are upserts that absorb this; a community creation
-  could duplicate.
+  key. The community quota and any terminal 4xx from the create free the key; any other failure
+  leaves it retryable.
+- Reservations are pruned with the post admission replay retention.
 
 Existing-open-case creation is an upsert, as in REST: reporting, disputing or appealing something
 with an open case from the same user updates it and returns `is_duplicate: true`, with a new key too.

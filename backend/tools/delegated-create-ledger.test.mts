@@ -5,12 +5,14 @@ import {
   expireContributionAdmissionForTest,
   getContributionAdmissionClaimExpiryForTest,
   getContributionAdmissionReservationStateForTest,
+  setContributionAdmissionReplayMetadataForTest,
 } from '@voucha/test-helpers'
 import { pollUntilNotNull } from '@voucha/test-helpers/polling'
 import { waitForTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-wait'
 import {
   countTestCommunitiesCreatedBy,
   holdTestAdmissionReservationLock,
+  listTestDelegatedCreateReservations,
 } from '@voucha/test-helpers/mcp-write-tool-rows'
 import { createCommunity } from '@services/communities'
 import { pruneExpiredContributionAdmissions } from '@services/contribution-gating/admission'
@@ -147,6 +149,33 @@ describe('delegated create ledger — real store', () => {
     expect(await countTestCommunitiesCreatedBy(user.id)).toBe(0)
     await admitDelegatedCreate({ ...base, execute: createIn })
     expect(await countTestCommunitiesCreatedBy(user.id)).toBe(1)
+  })
+
+  it('replays a committed create whose finalization never completed, then prunes it', async () => {
+    const { user, base, key, createIn } = await setup()
+    const created = await admitDelegatedCreate({ ...base, execute: createIn })
+    // The state a crash between the commit and the finalizing step leaves: committed, no post.
+    await setContributionAdmissionReplayMetadataForTest({
+      ...key,
+      replayMetadata: { route: 'communities.create', scope: 'global', finalization: 'pending' },
+    })
+    expect(await listTestDelegatedCreateReservations(user.id)).toMatchObject([
+      { state: 'committed', finalization: 'pending', committed_post_id: null },
+    ])
+
+    expect(await admitDelegatedCreate({ ...base, execute: createIn })).toEqual(created)
+    expect(await listTestDelegatedCreateReservations(user.id)).toMatchObject([
+      { finalization: 'complete', committed_post_id: null },
+    ])
+    expect(await countTestCommunitiesCreatedBy(user.id)).toBe(1)
+
+    await setContributionAdmissionReplayMetadataForTest({
+      ...key,
+      replayMetadata: { route: 'communities.create', scope: 'global', finalization: 'pending' },
+    })
+    await expireContributionAdmissionForTest(key)
+    await pruneExpiredContributionAdmissions()
+    expect(await getContributionAdmissionReservationStateForTest(key)).toBeNull()
   })
 
   it('prunes an expired replay and then accepts the key for a new request', async () => {

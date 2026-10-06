@@ -44,6 +44,8 @@ export async function createModerationReport(
 ): Promise<CreateModerationReportResult> {
   await assertReportableEntity(currentUserId, input)
 
+  // The case is a shared get-or-open row, so it opens on its own connection even when the report
+  // joins the caller's transaction; a rolled-back report leaves it for the next one to reuse.
   const caseId = await openOrGetOpenCase({ entityType: input.entityType, entityId: input.entityId })
   const fkColumn = reportEntityFkColumn(input.entityType)
   const query = sql`/* createModerationReport */ INSERT INTO moderation_reports (reporter_user_id, `

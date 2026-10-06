@@ -7,6 +7,7 @@ import type { ModerationAppeal } from './config.mts'
 import type { ModerationAppealResponse } from './types.mts'
 import { enqueueAppealResolutionAsync } from './enqueue-appeal-resolution.mts'
 import type { AppealTargetContext } from './create-target-types.mts'
+import { appealConflictClause } from './create-conflict.mts'
 import { getModerationAppealAfterMutation, getModerationAppealByIdFromPrimary } from './get.mts'
 
 /**
@@ -88,15 +89,7 @@ function insertStatement(
         ${provenance.oauthClientId}
       )
   `
-  // A warning refreshes the reason of the open appeal. Every other kind skips the insert, rather
-  // than raising a unique violation that would abort the caller's transaction.
-  statement.append(
-    userWarningId
-      ? sql`ON CONFLICT (appellant_user_id, user_warning_id)
-      WHERE resolved_at IS NULL AND user_warning_id IS NOT NULL
-      DO UPDATE SET appeal_reason = EXCLUDED.appeal_reason`
-      : sql`ON CONFLICT DO NOTHING`,
-  )
+  statement.append(appealConflictClause(target))
   statement.append(sql`
       RETURNING
         (xmax = 0) AS inserted,

@@ -7,6 +7,8 @@ export type TestDelegatedCreateReservation = {
   route: string
   state: string
   response: Record<string, unknown> | null
+  finalization: string | null
+  committed_post_id: string | null
 }
 
 /** The admission ledger rows of the creates that make no post, which the credential owner holds. */
@@ -15,7 +17,7 @@ export async function listTestDelegatedCreateReservations(
 ): Promise<TestDelegatedCreateReservation[]> {
   const { rows } = await read<TestDelegatedCreateReservation>(
     sql`/* listTestDelegatedCreateReservations */
-    SELECT id, route, state, response
+    SELECT id, route, state, response, replay_metadata->>'finalization' AS finalization, committed_post_id
     FROM post_admission_reservations
     WHERE actor_user_id = ${userId} AND post_type IS NULL
     ORDER BY id`,
