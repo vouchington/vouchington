@@ -46,8 +46,13 @@ describe('backend-unit file progress reporter', () => {
     vi.stubEnv('VITEST_FILE_PROGRESS', '1')
     const withProgress = ciReporters()
 
-    expect(baseline?.filter(isBackendUnitFileProgressReporter)).toHaveLength(0)
-    expect(withProgress?.filter(isBackendUnitFileProgressReporter)).toHaveLength(1)
-    expect(withProgress?.length).toBe((baseline?.length ?? 0) + 1)
+    expect(Array.isArray(baseline)).toBe(true)
+    expect(Array.isArray(withProgress)).toBe(true)
+    if (!Array.isArray(baseline) || !Array.isArray(withProgress)) {
+      return
+    }
+    expect(baseline.filter(isBackendUnitFileProgressReporter)).toHaveLength(0)
+    expect(withProgress.filter(isBackendUnitFileProgressReporter)).toHaveLength(1)
+    expect(withProgress.length).toBe(baseline.length + 1)
   })
 })
