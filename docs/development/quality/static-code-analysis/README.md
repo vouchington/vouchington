@@ -801,7 +801,9 @@ This section records the outcomes of the evaluation in #5044 so the tracking iss
 - **Markdown parsing for repository guards → `vouchington-tooling/markdown`**: the shared package
   owns GFM parsing, traversal, table extraction, and heading-bounded sections. The moderation
   policy doc-sync extractors compose those primitives by domain; do not add repo-local remark
-  processors or copied AST walkers.
+  processors or copied AST walkers. PR-description visibility and closing-reference checks use
+  the upstream Markdown facts; the staging Basic Auth source/runbook sync guard uses
+  `vouchington-tooling/basic-auth-doc-sync` with repository-owned configuration and diagnostics.
 - **Config-driven schema DDL bans → `no-mistakes` `postgres-sql-statement-policy`**: the parser-backed
   rule owns CREATE/ALTER/TRUNCATE/DROP statement policy, including executable `DO` bodies.
   Reproduce with `pnpm run no-mistakes`.

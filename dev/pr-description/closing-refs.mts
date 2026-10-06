@@ -1,4 +1,4 @@
-import { hasUncheckedGitHubTask } from './github-tasks-loader.mts'
+import { hasUncheckedMarkdownTask } from 'vouchington-tooling/markdown'
 
 export type ClosingIssueReference = {
   key: string
@@ -121,7 +121,7 @@ export function validateResolvedIssueReferences(
       } else if (state.toLowerCase() !== 'open' && !allowedClosedReferences.has(ref.key)) {
         pushUnlessEscaped(errors, body, ref, `${ref.key} is ${state.toUpperCase()}: ${title}.`)
       }
-      if (hasUncheckedGitHubTask(issueBody)) {
+      if (hasUncheckedMarkdownTask(issueBody ?? '')) {
         pushUnlessEscaped(
           errors,
           body,

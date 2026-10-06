@@ -1,7 +1,4 @@
-import { stripInlineCodeSpans } from './inline-code-spans.mts'
-import { stripType1RawHtmlBlocks } from './type1-html-blocks.mts'
-import { stripType6RawHtmlBlocks } from './type6-html-blocks.mts'
-import { stripType7RawHtmlBlocks } from './type7-html-blocks.mts'
+import { markdownHtmlBlocks, markdownLiteralSpans } from 'vouchington-tooling/markdown'
 
 // CommonMark measures fence indentation in columns, with a tab advancing to the next multiple of
 // four; from column 0 (every fence line starts a line) a single tab always lands on column 4 or
@@ -91,10 +88,8 @@ function stripHtmlComments(lines: string[]): string[] {
 // stripHtmlComments already accounts for above. Unlike a comment, none of these forms doubles as
 // this codebase's own marker mechanism, so there is no single-line exemption here: any occurrence,
 // same-line-closed or not, is content a human reviewer never sees and must not read as visible
-// prose. Handled elsewhere: `<script>`/`<style>`/`<pre>`/`<textarea>` blocks (stripType1RawHtmlBlocks,
-// dev/pr-description/type1-html-blocks.mts), the bare block-tag forms like `<div>`
-// (stripType6RawHtmlBlocks, dev/pr-description/type6-html-blocks.mts), and every other tag name alone
-// on its own line like `<span>` (stripType7RawHtmlBlocks, dev/pr-description/type7-html-blocks.mts) —
+// prose. Handled by upstream Markdown facts: `<script>`/`<style>`/`<pre>`/`<textarea>` blocks,
+// bare block-tag forms like `<div>`, and other tag names alone on their own line like `<span>` —
 // all three render their contents as ordinary *visible* HTML, but visible is not the criterion this
 // file blanks for (see sanitizedLines below), so all three still get blanked despite staying on the
 // rendered page.
@@ -156,20 +151,19 @@ function stripOtherRawHtmlBlocks(lines: string[]): string[] {
   return stripped
 }
 
-// All four remark-based passes below must parse the pristine, untouched `body` — never each
-// other's output — because blanking a line to '' changes what the next CommonMark parse would see
-// (a blank line is a block boundary), which could shift the very structure being detected. Their
-// results are merged by index instead of by re-parsing modified text.
-function stripRemarkDetectedBlocks(body: string): string[] {
-  const lines = stripType1RawHtmlBlocks(body)
-  for (const [index, line] of stripType6RawHtmlBlocks(body).entries()) {
-    if (line === '') lines[index] = ''
-  }
-  for (const [index, line] of stripType7RawHtmlBlocks(body).entries()) {
-    if (line === '') lines[index] = ''
-  }
-  for (const [index, line] of stripInlineCodeSpans(body).entries()) {
-    if (line === '') lines[index] = ''
+// Read all facts from the pristine body; blanking lines first would change Markdown boundaries.
+function stripMarkdownLiteralLines(body: string): string[] {
+  const lines = body.split(/\r?\n/)
+  const positions = [
+    ...markdownHtmlBlocks(body).map(fact => fact.position),
+    ...markdownLiteralSpans(body).flatMap(span =>
+      span.kind === 'inline-code' ? [span.position] : [],
+    ),
+  ]
+  for (const position of positions) {
+    for (let line = position.start.line; line <= position.end.line; line += 1) {
+      lines[line - 1] = ''
+    }
   }
   return lines
 }
@@ -187,6 +181,6 @@ function stripRemarkDetectedBlocks(body: string): string[] {
  */
 export function sanitizedLines(body: string): string[] {
   return stripOtherRawHtmlBlocks(
-    stripHtmlComments(unfencedLines(stripRemarkDetectedBlocks(body).join('\n'))),
+    stripHtmlComments(unfencedLines(stripMarkdownLiteralLines(body).join('\n'))),
   )
 }
