@@ -1,6 +1,6 @@
 import type { CopyrightStaffEmailIntake } from '@services/copyright-notices/read-models'
 import type { CopyrightStaffQueueCase } from '@services/copyright-notices/read-models-staff-types'
-import { stripContactDetails } from '@services/copyright-notices/contact-redaction'
+import { stripPersonalDetails } from '@services/copyright-notices/contact-redaction'
 
 const REDACTED = '[redacted]'
 const CONTACT_FIELDS = new Set([
@@ -49,7 +49,7 @@ function redactStatement(statement: Record<string, unknown>): Record<string, unk
         return [key, REDACTED]
       if (key === 'name' || key === 'electronic_signature' || key === 'signature')
         return [key, value]
-      return [key, typeof value === 'string' ? stripContactDetails(value) : value]
+      return [key, typeof value === 'string' ? stripPersonalDetails(value) : value]
     }),
   )
 }
@@ -60,7 +60,7 @@ export function redactCopyrightQueueCase(
   return {
     ...staffCase,
     claimant: { ...staffCase.claimant, contact: REDACTED },
-    work_description: stripContactDetails(staffCase.work_description),
+    work_description: stripPersonalDetails(staffCase.work_description),
     territorial: staffCase.territorial
       ? {
           ...staffCase.territorial,
@@ -72,7 +72,7 @@ export function redactCopyrightQueueCase(
       : undefined,
     appeals: staffCase.appeals.map(appeal => ({
       ...appeal,
-      reason: stripContactDetails(appeal.reason),
+      reason: stripPersonalDetails(appeal.reason),
     })),
     counter_notices: staffCase.counter_notices.map(counterNotice => ({
       ...counterNotice,
@@ -92,11 +92,11 @@ export function redactCopyrightEmailIntake(intake: CopyrightStaffEmailIntake) {
         Object.entries(output).map(([key, value]) => {
           if (CONTACT_FIELDS.has(key) && typeof value === 'string') return [key, REDACTED]
           if (INTAKE_TEXT_FIELDS.has(key) && typeof value === 'string')
-            return [key, stripContactDetails(value)]
+            return [key, stripPersonalDetails(value)]
           if (key === 'missing_information' && Array.isArray(value))
             return [
               key,
-              value.map(item => (typeof item === 'string' ? stripContactDetails(item) : item)),
+              value.map(item => (typeof item === 'string' ? stripPersonalDetails(item) : item)),
             ]
           if (key === 'source_evidence' && Array.isArray(value)) {
             return [
@@ -112,7 +112,7 @@ export function redactCopyrightEmailIntake(intake: CopyrightStaffEmailIntake) {
                     ...evidence,
                     excerpt:
                       typeof evidence['excerpt'] === 'string'
-                        ? stripContactDetails(evidence['excerpt'])
+                        ? stripPersonalDetails(evidence['excerpt'])
                         : evidence['excerpt'],
                   }
                 }),

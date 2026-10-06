@@ -154,7 +154,7 @@ describe('copyright submission guidance agent', () => {
       }),
     ])
     const statement = (email: string) =>
-      `Court case 1:26-cv-01234 filed 2026-07-02. Contact ${email} and +1 (555) 010-0100. 17 U.S.C. § 512(g).`
+      `Court case 1:26-cv-01234 filed 2026-07-02. Contact ${email} and +1 (555) 010-0100. Lives at 12 Elm Street, Springfield, IL 62701 (DOB 04/15/1980). 17 U.S.C. § 512(g).`
     const [first, second] = await Promise.all([
       appendCopyrightGuestFiling({
         noticeId,
@@ -187,6 +187,10 @@ describe('copyright submission guidance agent', () => {
       expect(input).not.toContain('@example.test')
       expect(input).not.toContain('+1 (555) 010-0100')
       expect(input).toContain('[phone removed]')
+      expect(input).not.toContain('Elm Street')
+      expect(input).not.toContain('04/15/1980')
+      expect(input).toContain('[address removed]')
+      expect(input).toContain('[date of birth removed]')
       expect(input).toContain('1:26-cv-01234')
       expect(input).toContain('2026-07-02')
     }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { stripContactDetails } from './contact-redaction.mts'
+import { stripPersonalDetails } from './contact-redaction.mts'
 
 describe('copyright filing contact redaction', () => {
   it.each([
@@ -15,7 +15,7 @@ describe('copyright filing contact redaction', () => {
     ['+15550100100', '[phone removed]'],
     ['+44 20 7946 0958', '[phone removed]'],
   ])('redacts %s', (input, expected) => {
-    expect(stripContactDetails(`Contact: ${input}.`)).toBe(`Contact: ${expected}.`)
+    expect(stripPersonalDetails(`Contact: ${input}.`)).toBe(`Contact: ${expected}.`)
   })
 
   it.each([
@@ -28,12 +28,12 @@ describe('copyright filing contact redaction', () => {
     'https://court.example.test/555-0100?email=jane@example.test',
     'www.court.example.test/555.010.0100',
   ])('preserves the legal reference or URL %s', input => {
-    expect(stripContactDetails(input)).toBe(input)
+    expect(stripPersonalDetails(input)).toBe(input)
   })
 
   it('redacts contacts around a preserved docket and URL', () => {
     expect(
-      stripContactDetails(
+      stripPersonalDetails(
         'Email jane@example.test or john@example.test; call +1 (555) 010-0100. Filed 2026-07-02 as 1:26-cv-01234. See https://example.test/555-0100.',
       ),
     ).toBe(
@@ -42,14 +42,14 @@ describe('copyright filing contact redaction', () => {
   })
 
   it('gives the same redacted model input for filings differing only in contacts', () => {
-    expect(stripContactDetails('Filed by jane@example.test; call 555-0100.')).toBe(
-      stripContactDetails('Filed by john@another.test; call 555-0199.'),
+    expect(stripPersonalDetails('Filed by jane@example.test; call 555-0100.')).toBe(
+      stripPersonalDetails('Filed by john@another.test; call 555-0199.'),
     )
   })
 
-  it('is idempotent and retains ordinary names and postal text', () => {
-    const redacted = stripContactDetails('Jane Doe, 123 Main Street; jane@example.test.')
-    expect(redacted).toBe('Jane Doe, 123 Main Street; [email removed].')
-    expect(stripContactDetails(redacted)).toBe(redacted)
+  it('is idempotent and retains ordinary names while removing the postal address', () => {
+    const redacted = stripPersonalDetails('Jane Doe, 123 Main Street; jane@example.test.')
+    expect(redacted).toBe('Jane Doe, [address removed]; [email removed].')
+    expect(stripPersonalDetails(redacted)).toBe(redacted)
   })
 })
