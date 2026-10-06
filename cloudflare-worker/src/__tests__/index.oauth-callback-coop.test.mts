@@ -1,11 +1,21 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import worker from '../index.mts'
-import { createContext } from '../../test-helpers/src/mock-env.mts'
+import { createContext, restoreGlobals } from '../../test-helpers/src/mock-env.mts'
 import type { Env } from '../types.mts'
 
 describe('OAuth callback COOP', () => {
+  afterEach(() => {
+    restoreGlobals()
+    vi.restoreAllMocks()
+  })
+
   it('uses unsafe-none only for callback documents', async () => {
+    // CachedOrigin fetches the web origin on a miss. Stub that call so the
+    // network allowlist does not observe a socket to the web origin.
+    globalThis.fetch = vi.fn<VitestLooseMock>(() =>
+      Promise.resolve(new Response('ok')),
+    ) as unknown as typeof fetch
     const env = { WEB_ORIGIN: 'https://web.example.com' } as Env
     const context = createContext(env)
 
