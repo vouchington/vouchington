@@ -12,6 +12,7 @@ import {
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { closeScopedDynamicConfigContext } from '@voucha/test-helpers/dynamic-config'
 import { readTestMcpCallAuditEvents } from '@voucha/test-helpers/entities/mcp-call-audit'
+import { insertTestTopic } from '@voucha/test-helpers/entities/topics'
 import { createTestPlusMcpCaller } from '@voucha/test-helpers/mcp-plus-caller'
 import { countTestModerationReportsByReporter } from '@voucha/test-helpers/mcp-write-tool-rows'
 import { issueTestOAuthTokens } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
@@ -199,9 +200,16 @@ describe('MCP tool calls and their REST route rate limit', () => {
   it('leaves a tool without a REST twin on the transport bucket alone', async () => {
     admitSensitiveCalls(0)
     const { user, token } = await callerWithToken()
+    // A topic made for this test keeps the read independent of rows other tests leave behind.
+    const suffix = createRandomString(8).toLowerCase()
+    const topicId = await insertTestTopic({
+      name: `Route limit topic ${suffix}`,
+      slug: `route-limit-topic-${suffix}`,
+      createdById: user.id,
+    })
 
     const response = await mcpPost(token, [
-      toolCall(1, 'search_data_points', { limit: 1 }),
+      toolCall(1, 'get_topic_metrics', { topic_id: topicId }),
       reportCall(2, await newPostId()),
     ]).expect(200)
 
