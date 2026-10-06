@@ -61,6 +61,7 @@ import {
 } from './seed-data/core.mts'
 import { checkpointSeed, printRowCounts, runAnalyze } from './seed-data/maintenance.mts'
 import { seedOAuthClientVerification } from './seed-data/oauth-client-verification.mts'
+import { seedClassifierHumanVoteComparison } from './seed-data/classifier-human-vote-comparison.mts'
 import { seedPostFeedShares } from './seed-data/post-feed-shares.mts'
 import { seedAdminEmails } from './seed-data/admin-emails.mts'
 import { seedSemanticPosts } from './seed-data/semantic-posts.mts'
@@ -138,6 +139,7 @@ async function main() {
   await seedFriendRecommendation()
   await checkpointSeed('final writes')
   await seedOAuthClientVerification()
+  await seedClassifierHumanVoteComparison()
   await runAnalyze()
   await printRowCounts()
   console.log('\nSeed complete.')

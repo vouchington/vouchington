@@ -1,4 +1,5 @@
-import { getStoriesWorkLimit } from '@services/stories/work-limits'
+import { getStoriesWorkLimit, storiesWorkConfig } from '@services/stories/work-limits'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { beforeAll, describe, expect, it } from 'vitest'
 import {
   createTestUserDirect,
@@ -26,9 +27,12 @@ describe('story post related URL projection', () => {
     testUser = await createTestUserDirect()
   })
 
-  it.each([10_000, 100_000])(
-    'processes a %i-item story through bounded pages and one terminal URL decision',
-    async itemCount => {
+  it('processes a story through bounded pages and one terminal URL decision', async () => {
+    const restorePageSize = overrideDynamicConfigFieldsForTest(storiesWorkConfig, {
+      post_related_url_projection_page_size: 2,
+    })
+    try {
+      const itemCount = getStoriesWorkLimit('post_related_url_projection_page_size') + 1
       const story = await insertTestStory({ title: `Projection scale ${crypto.randomUUID()}` })
       const url = await insertTestUrlDirect(
         null,
@@ -75,9 +79,10 @@ describe('story post related URL projection', () => {
       expect(observedReceiptCount).toBe(1)
       await expect(getPostRelatedUrlIds(post.id)).resolves.toEqual([url!.id])
       await expect(getTestStoryPostProjectionReceiptCount(post.id)).resolves.toBe(0)
-    },
-    180_000,
-  )
+    } finally {
+      restorePageSize()
+    }
+  })
 
   it('keeps a generation at its captured high-water until a later refresh', async () => {
     const story = await insertTestStory({ title: `Projection high-water ${crypto.randomUUID()}` })

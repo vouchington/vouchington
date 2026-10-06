@@ -1,3 +1,4 @@
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   beginTransaction,
   addCategoryToRssFeedItem,
@@ -17,6 +18,7 @@ import {
 } from './capture-rss-feeds.mts'
 import { recordPostPublicationChange } from './capture.mts'
 import { claimPostPublicationDirtyWork, reconcilePostPublicationDirtyWork } from './public.mts'
+import { postPublicationWorkConfig } from './work-limits.mts'
 
 describe('RSS-feed publication capture', () => {
   it('retains the feed owner and item-category topics for state reconciliation', async () => {
@@ -72,35 +74,45 @@ describe('RSS-feed publication capture', () => {
   })
 
   it('acquires scopes in bounded global UUID batches', async () => {
-    const ids = Array.from({ length: 1_001 }, () => crypto.randomUUID())
-    const expected = [...new Set(ids)].toSorted()
-    const batches: string[][] = []
-    const query = (async (_statement: string, values: unknown[]) => {
-      batches.push(values[0] as string[])
-      return { rows: [], rowCount: 0 }
-    }) as unknown as TransactionQuery
+    const restoreBatchSize = overrideDynamicConfigFieldsForTest(postPublicationWorkConfig, {
+      capture_batch_size: 2,
+    })
+    try {
+      const ids = Array.from({ length: 3 }, () => crypto.randomUUID())
+      const expected = [...new Set(ids)].toSorted()
+      const batches: string[][] = []
+      const query = (async (_statement: string, values: unknown[]) => {
+        batches.push(values[0] as string[])
+        return { rows: [], rowCount: 0 }
+      }) as unknown as TransactionQuery
 
-    await lockPostPublicationRssFeedScopes(query, ids)
+      await lockPostPublicationRssFeedScopes(query, ids)
 
-    expect(batches).toEqual([
-      expected.slice(0, 500),
-      expected.slice(500, 1_000),
-      expected.slice(1_000),
-    ])
+      expect(batches).toEqual([expected.slice(0, 2), expected.slice(2)])
+    } finally {
+      restoreBatchSize()
+    }
   })
 
-  it('captures large scope sets with one coalesced work row per feed', async () => {
-    const rssFeedIds = Array.from({ length: 1_001 }, () => crypto.randomUUID())
+  it('captures scope sets with one coalesced work row per feed', async () => {
+    const restoreBatchSize = overrideDynamicConfigFieldsForTest(postPublicationWorkConfig, {
+      capture_batch_size: 2,
+    })
+    try {
+      const rssFeedIds = Array.from({ length: 3 }, () => crypto.randomUUID())
 
-    await using query = await beginTransaction()
-    await recordRssFeedDiscoverabilityChanges(query, rssFeedIds)
-    await query.commit()
+      await using query = await beginTransaction()
+      await recordRssFeedDiscoverabilityChanges(query, rssFeedIds)
+      await query.commit()
 
-    await expect(countTestPostPublicationDirtyWorkForRssFeeds(rssFeedIds)).resolves.toBe(
-      rssFeedIds.length,
-    )
-    await expect(countTestPostPublicationIdentityKeysForRssFeeds(rssFeedIds)).resolves.toBe(
-      rssFeedIds.length,
-    )
+      await expect(countTestPostPublicationDirtyWorkForRssFeeds(rssFeedIds)).resolves.toBe(
+        rssFeedIds.length,
+      )
+      await expect(countTestPostPublicationIdentityKeysForRssFeeds(rssFeedIds)).resolves.toBe(
+        rssFeedIds.length,
+      )
+    } finally {
+      restoreBatchSize()
+    }
   })
 })

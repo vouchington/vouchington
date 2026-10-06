@@ -12,6 +12,7 @@ import {
   listTestPostPublicationImpactTopicIds,
   updateTestPostTitleInTransaction,
 } from '@voucha/test-helpers'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { describe, expect, it } from 'vitest'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { readFileSync } from 'node:fs'
@@ -27,6 +28,7 @@ import {
   updatePostPublicationDirtyWorkCursors,
   type PostPublicationChange,
 } from './public.mts'
+import { postPublicationWorkConfig } from './work-limits.mts'
 
 const captureMigrationSql = readFileSync(
   new URL(
@@ -163,22 +165,29 @@ describe('post publication capture', () => {
     )
   })
 
-  it('retains large tombstone-key sets in bounded batches for one repair generation', async () => {
-    const rssFeedId = crypto.randomUUID()
-    const impactedPostIds = Array.from({ length: 1_001 }, () => crypto.randomUUID())
-
-    const work = await record({
-      scope: { type: 'rss_feed', rssFeedId },
-      reason: 'rss_feed_discoverability_changed',
-      impactedPostIds,
+  it('retains tombstone-key sets in bounded batches for one repair generation', async () => {
+    const restoreBatchSize = overrideDynamicConfigFieldsForTest(postPublicationWorkConfig, {
+      dirty_work_key_batch_size: 2,
     })
+    try {
+      const rssFeedId = crypto.randomUUID()
+      const impactedPostIds = Array.from({ length: 3 }, () => crypto.randomUUID())
 
-    await expect(listTestPostPublicationImpactPostIds(work.id)).resolves.toEqual(
-      [...impactedPostIds].toSorted(),
-    )
-    await expect(getTestPostPublicationDirtyWork(work.id)).resolves.toMatchObject({
-      generation: '1',
-    })
+      const work = await record({
+        scope: { type: 'rss_feed', rssFeedId },
+        reason: 'rss_feed_discoverability_changed',
+        impactedPostIds,
+      })
+
+      await expect(listTestPostPublicationImpactPostIds(work.id)).resolves.toEqual(
+        [...impactedPostIds].toSorted(),
+      )
+      await expect(getTestPostPublicationDirtyWork(work.id)).resolves.toMatchObject({
+        generation: '1',
+      })
+    } finally {
+      restoreBatchSize()
+    }
   })
 
   it('claims only the exact available generation and fences stale cursors', async () => {
