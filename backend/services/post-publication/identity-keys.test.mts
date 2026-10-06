@@ -10,6 +10,7 @@ import {
   setTestPostPublicationDirtyWorkTopicCursor,
   updateTestPostSlugInTransaction,
 } from '@voucha/test-helpers'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { describe, expect, it } from 'vitest'
 import {
   processAuthorDeletionPublicationBatch,
@@ -25,6 +26,7 @@ import {
 } from './test-fixtures.mts'
 import { recordPostPublicationChange } from './capture.mts'
 import { retainPostPublicationKeys } from './retained-key-writes.mts'
+import { postPublicationWorkConfig } from './work-limits.mts'
 
 describe('post publication retained identity keys', () => {
   it('coalesces A to B to C and drains a NULL first cursor page once', async () => {
@@ -96,36 +98,59 @@ describe('post publication retained identity keys', () => {
     })
   })
 
-  it('retains and pages more than one thousand exact RSS-feed identities', async () => {
-    const post = await createTestPost()
-    await using workQuery = await beginTransaction()
-    const work = await recordPostPublicationChange(workQuery, {
-      scope: { type: 'post', postId: post.id },
-      reason: 'post_created',
+  it('pages RSS-feed identities beyond one retained-key batch', async () => {
+    const restoreBatchSize = overrideDynamicConfigFieldsForTest(postPublicationWorkConfig, {
+      dirty_work_key_batch_size: 2,
     })
-    await workQuery.commit()
-    const claimed = await claimPostPublicationDirtyWork(work, 60)
-    if (!claimed) throw new Error('Expected high-fanout identity work lease')
-    await using identityQuery = await beginTransaction()
-    await retainPostPublicationKeys(
-      identityQuery,
-      claimed.id,
-      Array.from({ length: 1_001 }, (_, index) => ({
-        kind: 'identity_rss_feed' as const,
-        uuidValue: `00000000-0000-7000-8000-${String(index).padStart(12, '0')}`,
-      })),
-    )
-    await identityQuery.commit()
+    try {
+      const post = await createTestPost()
+      await using workQuery = await beginTransaction()
+      const work = await recordPostPublicationChange(workQuery, {
+        scope: { type: 'post', postId: post.id },
+        reason: 'post_created',
+      })
+      await workQuery.commit()
+      const claimed = await claimPostPublicationDirtyWork(work, 60)
+      if (!claimed) throw new Error('Expected high-fanout identity work lease')
+      const rssFeedIds = Array.from(
+        { length: 3 },
+        (_, index) => `00000000-0000-7000-8000-${String(index).padStart(12, '0')}`,
+      )
+      await using identityQuery = await beginTransaction()
+      await retainPostPublicationKeys(
+        identityQuery,
+        claimed.id,
+        rssFeedIds.map(uuidValue => ({ kind: 'identity_rss_feed' as const, uuidValue })),
+      )
+      await identityQuery.commit()
 
-    const result = await reconcilePostPublicationDirtyWork(
-      { ...claimed, cursor_post_id: post.id },
-      100,
-    )
+      const seen: Array<{ kind: string; value: string }> = []
+      let cursorKeyId: string | null = null
+      let firstPage: Awaited<ReturnType<typeof reconcilePostPublicationDirtyWork>> | undefined
+      for (let pageNumber = 0; pageNumber < 8; pageNumber += 1) {
+        const page = await reconcilePostPublicationDirtyWork(
+          { ...claimed, cursor_post_id: post.id, cursor_key_id: cursorKeyId },
+          2,
+        )
+        firstPage ??= page
+        expect(page.identityKeys.length).toBeLessThanOrEqual(2)
+        seen.push(...page.identityKeys)
+        if (!page.hasMoreIdentityKeys || !page.cursorKeyId || page.cursorKeyId === cursorKeyId)
+          break
+        cursorKeyId = page.cursorKeyId
+      }
 
-    expect(result).toMatchObject({ hasMoreIdentityKeys: true })
-    expect(result.identityKeys.length).toBeGreaterThan(0)
-    expect(result.identityKeys.length).toBeLessThanOrEqual(100)
-    expect(result.identityKeys).toContainEqual(expect.objectContaining({ kind: 'rss_feed' }))
+      expect(firstPage).toMatchObject({ hasMoreIdentityKeys: true })
+      expect(firstPage!.identityKeys.length).toBeGreaterThan(0)
+      expect(firstPage!.identityKeys.length).toBeLessThanOrEqual(2)
+      expect(seen).toEqual(
+        expect.arrayContaining(
+          rssFeedIds.map(value => expect.objectContaining({ kind: 'rss_feed', value })),
+        ),
+      )
+    } finally {
+      restoreBatchSize()
+    }
   })
 
   it('moves canonical current identities into the retained-key page', async () => {

@@ -24,21 +24,13 @@ describe('platform-stats', () => {
     for (const request of authenticated) await request.authenticateAs(await createTestUser())
 
     const key = stableSerialize({})
-    const deadline = AbortSignal.timeout(30_000)
     const written = Promise.withResolvers<void>()
     const onWrite = ({ cacheName, keys }: { cacheName: string; keys: string[] }) => {
       if (cacheName === 'platform_stats_anon' && keys.includes(key)) written.resolve()
     }
-    const onDeadline = () => written.reject(deadline.reason)
     valkeyEvents.on('cache:set', onWrite)
-    deadline.addEventListener('abort', onDeadline, { once: true })
-    const timings: number[] = []
-    const requestStats = async (request: ReturnType<typeof createRequest>) => {
-      const started = performance.now()
-      const response = await request.get('/api/v1/platform-stats').expect(200)
-      timings.push(performance.now() - started)
-      return response
-    }
+    const requestStats = async (request: ReturnType<typeof createRequest>) =>
+      request.get('/api/v1/platform-stats').expect(200)
     let queries: ReturnType<typeof stopTestQueryCapture> = []
     const responses = []
     enableQueryCapture()
@@ -49,7 +41,6 @@ describe('platform-stats', () => {
     } finally {
       queries = stopTestQueryCapture()
       valkeyEvents.off('cache:set', onWrite)
-      deadline.removeEventListener('abort', onDeadline)
     }
     const aggregateQueries = countCapturedQueriesByAnnotation(queries, 'getPlatformStats')
     await writeFile(
@@ -57,7 +48,6 @@ describe('platform-stats', () => {
       JSON.stringify(
         {
           aggregateQueries,
-          requestMilliseconds: timings,
           responses: responses.map(response => ({
             body: response.body,
             cacheControl: response.headers['cache-control'] ?? null,

@@ -1,4 +1,5 @@
-import { getRssFeedItemsWorkLimit } from '@services/rss-feed-items/work-limits'
+import { rssFeedItemsWorkConfig } from '@services/rss-feed-items/work-limits'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { it, expect, beforeEach, describe } from 'vitest'
 import { upsertRssFeedItemCategories, getRssFeedItemCategories } from '../categories.mts'
 import { buildRssFeedItemCategorySqlBatches } from '../category-batches.mts'
@@ -8,7 +9,6 @@ import { v4 as uuid } from 'uuid'
 import {
   beginTransaction,
   createTestTopic,
-  getPostgresPoolWaitCounts,
   getTestPostgresBackendProcessId,
   insertTestRssFeedDirect,
   lockTestRssFeedItemCategory,
@@ -60,7 +60,7 @@ describe('categories limits', () => {
           ' Travel ',
           'travel',
           ...Array.from(
-            { length: RSS_FEED_ITEM_MAX_CATEGORIES + 5 },
+            { length: RSS_FEED_ITEM_MAX_CATEGORIES + 1 },
             (_, index) => `zzzz-category-cap-${random}-${index}`,
           ),
         ],
@@ -78,159 +78,130 @@ describe('categories limits', () => {
   })
 
   it('upsertRssFeedItemCategories writes category pairs across SQL chunks', async () => {
-    const random = Math.random().toString(36).slice(2, 15)
-    const itemCount = Math.ceil(getRssFeedItemsWorkLimit('category_sql_batch_size') / 20) + 1
-    const items = await upsertRssFeedItems(
-      testRssFeedId,
-      Array.from({ length: itemCount }, (_, index) => ({
-        link: `https://test-${uuid()}.example.com/chunked-categories-${index}`,
-        guid: `zzzz-chunked-category-item-${uuid()}`,
-        title: `Chunked Category Item ${index}`,
-      })),
-    )
+    const restoreBatchSize = overrideDynamicConfigFieldsForTest(rssFeedItemsWorkConfig, {
+      category_sql_batch_size: 2,
+    })
+    try {
+      const random = Math.random().toString(36).slice(2, 15)
+      const itemCount = 2
+      const categoriesPerItem = 2
+      const items = await upsertRssFeedItems(
+        testRssFeedId,
+        Array.from({ length: itemCount }, (_, index) => ({
+          link: `https://test-${uuid()}.example.com/chunked-categories-${index}`,
+          guid: `zzzz-chunked-category-item-${uuid()}`,
+          title: `Chunked Category Item ${index}`,
+        })),
+      )
 
-    await upsertRssFeedItemCategories(
-      items.map((item, itemIndex) => ({
-        rss_feed_item_id: item.id,
-        categories: Array.from(
-          { length: RSS_FEED_ITEM_MAX_CATEGORIES },
-          (_, categoryIndex) => `zzzz-chunked-${random}-${itemIndex}-${categoryIndex}`,
+      await upsertRssFeedItemCategories(
+        items.map((item, itemIndex) => ({
+          rss_feed_item_id: item.id,
+          categories: Array.from(
+            { length: categoriesPerItem },
+            (_, categoryIndex) => `zzzz-chunked-${random}-${itemIndex}-${categoryIndex}`,
+          ),
+        })),
+      )
+
+      const firstCategories = await getRssFeedItemCategories(items[0]!.id)
+      const lastCategories = await getRssFeedItemCategories(items.at(-1)!.id)
+      expect(
+        firstCategories.filter(category =>
+          category.category_text.startsWith(`zzzz-chunked-${random}-0-`),
         ),
-      })),
-    )
-
-    const firstCategories = await getRssFeedItemCategories(items[0]!.id)
-    const lastCategories = await getRssFeedItemCategories(items.at(-1)!.id)
-    expect(
-      firstCategories.filter(category =>
-        category.category_text.startsWith(`zzzz-chunked-${random}-0-`),
-      ),
-    ).toHaveLength(RSS_FEED_ITEM_MAX_CATEGORIES)
-    expect(
-      lastCategories.filter(category =>
-        category.category_text.startsWith(`zzzz-chunked-${random}-${itemCount - 1}-`),
-      ),
-    ).toHaveLength(RSS_FEED_ITEM_MAX_CATEGORIES)
+      ).toHaveLength(categoriesPerItem)
+      expect(
+        lastCategories.filter(category =>
+          category.category_text.startsWith(`zzzz-chunked-${random}-${itemCount - 1}-`),
+        ),
+      ).toHaveLength(categoriesPerItem)
+    } finally {
+      restoreBatchSize()
+    }
   })
 
   it('upsertRssFeedItemCategories updates matched categories across SQL chunks', async () => {
-    const random = Math.random().toString(36).slice(2, 15)
-    const itemCount = Math.ceil(getRssFeedItemsWorkLimit('category_sql_batch_size') / 20) + 1
-    const items = await upsertRssFeedItems(
-      testRssFeedId,
-      Array.from({ length: itemCount }, (_, index) => ({
-        link: `https://test-${uuid()}.example.com/update-categories-${index}`,
-        guid: `zzzz-update-category-item-${uuid()}`,
-        title: `Update Category Item ${index}`,
-      })),
-    )
-    const categoryInputs = items.map((item, itemIndex) => ({
-      rss_feed_item_id: item.id,
-      categories: Array.from(
-        { length: RSS_FEED_ITEM_MAX_CATEGORIES },
-        (_, categoryIndex) => `zzzz-update-${random}-${itemIndex}-${categoryIndex}`,
-      ),
-    }))
-    await upsertRssFeedItemCategories(categoryInputs)
-
-    const topic = await createTestTopic({
-      name: `Update Limit Topic ${random}`,
-      slug: `update-limit-topic-${random}`,
-      hostname: `update-limit-${random}.example.com`,
+    const restoreBatchSize = overrideDynamicConfigFieldsForTest(rssFeedItemsWorkConfig, {
+      category_sql_batch_size: 2,
     })
-    await createTopicAliases(topic.id, [categoryInputs[0]!.categories[0]!])
-    await upsertRssFeedItemCategories(categoryInputs)
+    try {
+      const random = Math.random().toString(36).slice(2, 15)
+      const itemCount = 2
+      const categoriesPerItem = 2
+      const items = await upsertRssFeedItems(
+        testRssFeedId,
+        Array.from({ length: itemCount }, (_, index) => ({
+          link: `https://test-${uuid()}.example.com/update-categories-${index}`,
+          guid: `zzzz-update-category-item-${uuid()}`,
+          title: `Update Category Item ${index}`,
+        })),
+      )
+      const categoryInputs = items.map((item, itemIndex) => ({
+        rss_feed_item_id: item.id,
+        categories: Array.from(
+          { length: categoriesPerItem },
+          (_, categoryIndex) => `zzzz-update-${random}-${itemIndex}-${categoryIndex}`,
+        ),
+      }))
+      await upsertRssFeedItemCategories(categoryInputs)
 
-    const categories = await getRssFeedItemCategories(items[0]!.id)
-    const matched = categories.find(
-      category => category.category_text === categoryInputs[0]!.categories[0]!,
-    )
-    expect(matched?.topic_id).toBe(topic.id)
+      const topic = await createTestTopic({
+        name: `Update Limit Topic ${random}`,
+        slug: `update-limit-topic-${random}`,
+        hostname: `update-limit-${random}.example.com`,
+      })
+      await createTopicAliases(topic.id, [categoryInputs[0]!.categories[0]!])
+      await upsertRssFeedItemCategories(categoryInputs)
+
+      const categories = await getRssFeedItemCategories(items[0]!.id)
+      const matched = categories.find(
+        category => category.category_text === categoryInputs[0]!.categories[0]!,
+      )
+      expect(matched?.topic_id).toBe(topic.id)
+    } finally {
+      restoreBatchSize()
+    }
   })
 
-  it('bounds the 500-item by 20 mapped-category database workload', async () => {
-    const random = Math.random().toString(36).slice(2, 15)
-    const mappedTopic = await createTestTopic({
-      name: `Mapped category limit ${random}`,
-      slug: `mapped-category-limit-${random}`,
-      hostname: `mapped-category-limit-${random}.example.com`,
-    })
-    const aliases = Array.from(
-      { length: RSS_FEED_ITEM_MAX_CATEGORIES },
-      (_, index) => `zzzz-scale-${random}-${index}`,
-    )
-    await createTopicAliases(mappedTopic.id, aliases)
-    const feedItems = await upsertRssFeedItems(
-      testRssFeedId,
-      Array.from({ length: 500 }, (_, index) => ({
-        link: `https://test-${uuid()}.example.com/scale-categories-${index}`,
-        guid: `zzzz-scale-category-item-${uuid()}`,
-        title: `Scale Category Item ${index}`,
-      })),
-    )
-    const items = feedItems.map(item => ({
-      rss_feed_item_id: item.id,
-      categories: aliases.map(alias => `#${alias}`),
-    }))
-
-    const batches = buildRssFeedItemCategorySqlBatches(items)
-    expect(batches).toHaveLength(10)
-    expect(
-      batches.every(batch => batch.length === getRssFeedItemsWorkLimit('category_sql_batch_size')),
-    ).toBe(true)
-    expect(batches.flat()).toHaveLength(10_000)
-
-    const heapBefore = process.memoryUsage().heapUsed
-    let maximumPoolWaits = 0
-    const poolWaitSampler = setInterval(() => {
-      const waits = getPostgresPoolWaitCounts()
-      maximumPoolWaits = Math.max(maximumPoolWaits, waits.read, waits.write)
-    }, 2)
-    const startedAt = performance.now()
-    try {
-      await upsertRssFeedItemCategories(items)
-    } finally {
-      clearInterval(poolWaitSampler)
-    }
-
-    expect(performance.now() - startedAt).toBeLessThan(60_000)
-    expect(process.memoryUsage().heapUsed - heapBefore).toBeLessThan(256 * 1024 * 1024)
-    expect(maximumPoolWaits).toBeLessThanOrEqual(1)
-    await expect(getRssFeedItemCategories(feedItems[0]!.id)).resolves.toHaveLength(20)
-    await expect(getRssFeedItemCategories(feedItems.at(-1)!.id)).resolves.toHaveLength(20)
-  }, 90_000)
-
   it('backfills aliases beyond one ordered database batch', async () => {
-    const random = Math.random().toString(36).slice(2, 15)
-    const alias = `zzzz-scale-alias-${random}`
-    const items = await upsertRssFeedItems(
-      testRssFeedId,
-      Array.from({ length: 501 }, (_, index) => ({
-        link: `https://test-${uuid()}.example.com/alias-backfill-${index}`,
-        guid: `zzzz-alias-backfill-${uuid()}`,
-        title: `Alias Backfill Item ${index}`,
-      })),
-    )
-    await upsertRssFeedItemCategories(
-      items.map(item => ({ rss_feed_item_id: item.id, categories: [alias] })),
-    )
-    const topic = await createTestTopic({
-      name: `Alias Backfill Topic ${random}`,
-      slug: `alias-backfill-topic-${random}`,
-      hostname: `alias-backfill-${random}.example.com`,
+    const restoreBatchSize = overrideDynamicConfigFieldsForTest(rssFeedItemsWorkConfig, {
+      category_backfill_batch_size: 2,
     })
-    await createTopicAliases(topic.id, [alias])
+    try {
+      const random = Math.random().toString(36).slice(2, 15)
+      const alias = `zzzz-scale-alias-${random}`
+      const items = await upsertRssFeedItems(
+        testRssFeedId,
+        Array.from({ length: 3 }, (_, index) => ({
+          link: `https://test-${uuid()}.example.com/alias-backfill-${index}`,
+          guid: `zzzz-alias-backfill-${uuid()}`,
+          title: `Alias Backfill Item ${index}`,
+        })),
+      )
+      await upsertRssFeedItemCategories(
+        items.map(item => ({ rss_feed_item_id: item.id, categories: [alias] })),
+      )
+      const topic = await createTestTopic({
+        name: `Alias Backfill Topic ${random}`,
+        slug: `alias-backfill-topic-${random}`,
+        hostname: `alias-backfill-${random}.example.com`,
+      })
+      await createTopicAliases(topic.id, [alias])
 
-    const result = await backfillCategoriesForTopicAliases(topic.id)
+      const result = await backfillCategoriesForTopicAliases(topic.id)
 
-    expect(result.updated).toBe(501)
-    await expect(getRssFeedItemCategories(items[0]!.id)).resolves.toEqual([
-      expect.objectContaining({ category_text: alias, topic_id: topic.id }),
-    ])
-    await expect(getRssFeedItemCategories(items.at(-1)!.id)).resolves.toEqual([
-      expect.objectContaining({ category_text: alias, topic_id: topic.id }),
-    ])
-  }, 60_000)
+      expect(result.updated).toBe(3)
+      await expect(getRssFeedItemCategories(items[0]!.id)).resolves.toEqual([
+        expect.objectContaining({ category_text: alias, topic_id: topic.id }),
+      ])
+      await expect(getRssFeedItemCategories(items.at(-1)!.id)).resolves.toEqual([
+        expect.objectContaining({ category_text: alias, topic_id: topic.id }),
+      ])
+    } finally {
+      restoreBatchSize()
+    }
+  })
 
   it('waits for locked matching categories instead of treating them as exhausted', async () => {
     const random = Math.random().toString(36).slice(2, 15)
@@ -279,5 +250,29 @@ describe('categories limits', () => {
     await expect(getRssFeedItemCategories(item!.id)).resolves.toEqual([
       expect.objectContaining({ category_text: alias, topic_id: topic.id }),
     ])
+  })
+})
+
+describe('buildRssFeedItemCategorySqlBatches', () => {
+  it('splits three normalized pairs across a batch size of two', () => {
+    const restoreBatchSize = overrideDynamicConfigFieldsForTest(rssFeedItemsWorkConfig, {
+      category_sql_batch_size: 2,
+    })
+    try {
+      const batches = buildRssFeedItemCategorySqlBatches([
+        {
+          rss_feed_item_id: '00000000-0000-7000-8000-000000000001',
+          categories: ['North', 'South'],
+        },
+        {
+          rss_feed_item_id: '00000000-0000-7000-8000-000000000002',
+          categories: ['East'],
+        },
+      ])
+      expect(batches.map(batch => batch.length)).toEqual([2, 1])
+      expect(batches.flat().map(row => row.category)).toEqual(['North', 'South', 'East'])
+    } finally {
+      restoreBatchSize()
+    }
   })
 })

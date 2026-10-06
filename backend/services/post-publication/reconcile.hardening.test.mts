@@ -1,3 +1,4 @@
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   beginTransaction,
   createTestOrphanPostPublicationProjectionReceipts,
@@ -16,6 +17,7 @@ import {
   retainPostPublicationKeys,
   type PostPublicationRetainedKey,
 } from './retained-key-writes.mts'
+import { postPublicationWorkConfig } from './work-limits.mts'
 
 import type { TransactionQuery } from '@data-stores/psql'
 
@@ -65,77 +67,96 @@ describe('post publication orphan-receipt reconciliation', () => {
   })
 
   it('retains canonical UUID, text, and sitemap key families across bounded batches', async () => {
-    const post = await createTestPost()
-    await using query = await beginTransaction()
-    const work = await recordPostPublicationChange(query, {
-      scope: { type: 'post', postId: post.id },
-      reason: 'post_updated',
+    const restoreBatchSize = overrideDynamicConfigFieldsForTest(postPublicationWorkConfig, {
+      dirty_work_key_batch_size: 2,
     })
-    const textKeys = Array.from({ length: 1_001 }, (_, index) => ({
-      kind: 'identity_topic_alias' as const,
-      textValue: `publication-key-${crypto.randomUUID()}-${index}`,
-    }))
-    const sitemapKeys = Array.from({ length: 1_001 }, (_, index) => ({
-      kind: 'sitemap_target' as const,
-      postType: 'discussion',
-      day: new Date(Date.UTC(2026, 0, index + 1)).toISOString().slice(0, 10),
-    }))
-    const keys: PostPublicationRetainedKey[] = [
-      ...Array.from({ length: 1_001 }, () => ({
-        kind: 'impact_post' as const,
-        uuidValue: crypto.randomUUID(),
-      })),
-      ...textKeys,
-      ...sitemapKeys,
-    ]
-    await retainPostPublicationKeys(query, work.id, keys)
-    await query.commit()
+    try {
+      const post = await createTestPost()
+      await using query = await beginTransaction()
+      const work = await recordPostPublicationChange(query, {
+        scope: { type: 'post', postId: post.id },
+        reason: 'post_updated',
+      })
+      const keyCount = 3
+      const textKeys = Array.from({ length: keyCount }, (_, index) => ({
+        kind: 'identity_topic_alias' as const,
+        textValue: `publication-key-${crypto.randomUUID()}-${index}`,
+      }))
+      const sitemapKeys = Array.from({ length: keyCount }, (_, index) => ({
+        kind: 'sitemap_target' as const,
+        postType: 'discussion',
+        day: new Date(Date.UTC(2026, 0, index + 1)).toISOString().slice(0, 10),
+      }))
+      const keys: PostPublicationRetainedKey[] = [
+        ...Array.from({ length: keyCount }, () => ({
+          kind: 'impact_post' as const,
+          uuidValue: crypto.randomUUID(),
+        })),
+        ...textKeys,
+        ...sitemapKeys,
+      ]
+      await retainPostPublicationKeys(query, work.id, keys)
+      await query.commit()
 
-    const claimed = await claimPostPublicationDirtyWork(work, 60)
-    if (!claimed) throw new Error('Expected retained-key publication work lease')
-    const page = await reconcilePostPublicationDirtyWork(claimed, 5_000)
+      const claimed = await claimPostPublicationDirtyWork(work, 60)
+      if (!claimed) throw new Error('Expected retained-key publication work lease')
+      const page = await reconcilePostPublicationDirtyWork(claimed)
 
-    expect(page.missingPostIds).toHaveLength(1_001)
-    expect(page.identityKeys).toContainEqual(
-      expect.objectContaining({ kind: 'topic_alias', value: textKeys[0]!.textValue }),
-    )
-    expect(page.identityKeys.filter(key => key.kind === 'topic_alias')).toHaveLength(1_001)
-    expect(page.sitemapTargets).toHaveLength(1_001)
+      expect(page.missingPostIds).toHaveLength(keyCount)
+      expect(page.identityKeys).toContainEqual(
+        expect.objectContaining({ kind: 'topic_alias', value: textKeys[0]!.textValue }),
+      )
+      expect(page.identityKeys.filter(key => key.kind === 'topic_alias')).toHaveLength(keyCount)
+      expect(page.sitemapTargets).toEqual(
+        expect.arrayContaining(sitemapKeys.map(key => ({ postType: key.postType, day: key.day }))),
+      )
+    } finally {
+      restoreBatchSize()
+    }
   })
 
   it('serializes reverse overlapping retained-key batches without losing either complete input', async () => {
-    const post = await createTestPost()
-    await using setup = await beginTransaction()
-    const work = await recordPostPublicationChange(setup, {
-      scope: { type: 'post', postId: post.id },
-      reason: 'post_updated',
+    const restoreBatchSize = overrideDynamicConfigFieldsForTest(postPublicationWorkConfig, {
+      dirty_work_key_batch_size: 2,
     })
-    await setup.commit()
-    const shared = Array.from({ length: 1_001 }, () => crypto.randomUUID())
-    const firstOnly = crypto.randomUUID()
-    const secondOnly = crypto.randomUUID()
-    const firstKeys: PostPublicationRetainedKey[] = [
-      ...shared.map(uuidValue => ({ kind: 'impact_post' as const, uuidValue })),
-      { kind: 'impact_post', uuidValue: firstOnly },
-    ]
-    const secondKeys: PostPublicationRetainedKey[] = [
-      { kind: 'impact_post', uuidValue: secondOnly },
-      ...shared.toReversed().map(uuidValue => ({ kind: 'impact_post' as const, uuidValue })),
-    ]
-    await using first = await beginTransaction()
-    await using second = await beginTransaction()
-    const firstDispatching = Promise.withResolvers<void>()
-    const secondDispatching = Promise.withResolvers<void>()
-    await Promise.all([
-      retainAndCommit(first, work.id, firstKeys, firstDispatching, secondDispatching),
-      retainAndCommit(second, work.id, secondKeys, secondDispatching, firstDispatching),
-    ])
+    try {
+      const post = await createTestPost()
+      await using setup = await beginTransaction()
+      const work = await recordPostPublicationChange(setup, {
+        scope: { type: 'post', postId: post.id },
+        reason: 'post_updated',
+      })
+      await setup.commit()
+      const shared = Array.from({ length: 3 }, () => crypto.randomUUID())
+      const firstOnly = crypto.randomUUID()
+      const secondOnly = crypto.randomUUID()
+      const firstKeys: PostPublicationRetainedKey[] = [
+        ...shared.map(uuidValue => ({ kind: 'impact_post' as const, uuidValue })),
+        { kind: 'impact_post', uuidValue: firstOnly },
+      ]
+      const secondKeys: PostPublicationRetainedKey[] = [
+        { kind: 'impact_post', uuidValue: secondOnly },
+        ...shared.toReversed().map(uuidValue => ({ kind: 'impact_post' as const, uuidValue })),
+      ]
+      await using first = await beginTransaction()
+      await using second = await beginTransaction()
+      const firstDispatching = Promise.withResolvers<void>()
+      const secondDispatching = Promise.withResolvers<void>()
+      await Promise.all([
+        retainAndCommit(first, work.id, firstKeys, firstDispatching, secondDispatching),
+        retainAndCommit(second, work.id, secondKeys, secondDispatching, firstDispatching),
+      ])
 
-    const claimed = await claimPostPublicationDirtyWork(work, 60)
-    if (!claimed) throw new Error('Expected reverse-overlap publication work lease')
-    const page = await reconcilePostPublicationDirtyWork(claimed, 2_000)
-    expect(page.missingPostIds).toHaveLength(1_003)
-    expect(page.missingPostIds).toEqual(expect.arrayContaining([firstOnly, secondOnly]))
+      const claimed = await claimPostPublicationDirtyWork(work, 60)
+      if (!claimed) throw new Error('Expected reverse-overlap publication work lease')
+      const page = await reconcilePostPublicationDirtyWork(claimed)
+      expect(page.missingPostIds).toHaveLength(shared.length + 2)
+      expect(page.missingPostIds).toEqual(
+        expect.arrayContaining([firstOnly, secondOnly, ...shared]),
+      )
+    } finally {
+      restoreBatchSize()
+    }
   })
 
   async function retainAndCommit(

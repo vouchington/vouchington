@@ -33,6 +33,7 @@
     "@services/articles": "workspace:^",
     "@services/bookmarks": "workspace:^",
     "@services/classifier-runs": "workspace:^",
+    "@services/classifiers": "workspace:^",
     "@services/comments": "workspace:^",
     "@services/communities": "workspace:^",
     "@services/conversations-messages": "workspace:^",
