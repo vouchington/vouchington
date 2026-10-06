@@ -16,8 +16,25 @@ const config: StorybookConfig = {
     const aliasArray = Array.isArray(existingAlias)
       ? existingAlias
       : Object.entries(existingAlias).map(([find, replacement]) => ({ find, replacement }))
+    const installedOnLog = viteConfig.build?.rolldownOptions?.onLog
     const directiveLogs = createStorybookUseDirectiveLogFilter({
-      previousOnLog: viteConfig.build?.rolldownOptions?.onLog,
+      // Rolldown's onLog level is info | debug | warn. An error is not part of
+      // that callback, so keep it on the default handler instead of forwarding
+      // a level the installed callback cannot accept.
+      previousOnLog: installedOnLog
+        ? (level, log, defaultHandler) => {
+            if (level === 'error') {
+              defaultHandler(level, log)
+              return
+            }
+            installedOnLog(level, log, (forwardedLevel, forwardedLog) => {
+              defaultHandler(
+                forwardedLevel,
+                typeof forwardedLog === 'string' ? { message: forwardedLog } : forwardedLog,
+              )
+            })
+          }
+        : undefined,
     })
 
     return {

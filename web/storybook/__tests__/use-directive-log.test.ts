@@ -1,4 +1,3 @@
-import type { Plugin } from 'vite'
 import { describe, expect, it } from 'vitest'
 import { createStorybookUseDirectiveLogFilter } from '../../.storybook/use-directive-log'
 
@@ -28,7 +27,9 @@ function runFilter(
     })
   }
   const closeBundle = plugin.closeBundle
-  if (typeof closeBundle === 'function') void closeBundle.call({} as Plugin)
+  if (typeof closeBundle === 'function') {
+    void closeBundle.call({} as ThisParameterType<typeof closeBundle>)
+  }
   return { written, forwarded }
 }
 
