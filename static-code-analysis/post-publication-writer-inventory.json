@@ -70,7 +70,7 @@
       "reason": "enforcement is a precursor signal; clearance owns publication state"
     },
     {
-      "path": "backend/services/communities/create.mts",
+      "path": "backend/services/communities/create-insert.mts",
       "reason": "new empty community has no published posts"
     },
     {
