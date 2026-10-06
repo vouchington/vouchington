@@ -86,7 +86,8 @@ Commission `puid`. A restriction whose payload cannot be built (an `HttpError` f
 for example a missing target-image row or upload date) becomes a terminal failed work item with no
 payload, a `failed_at` time, and an `http_<status>` `failure_code`, plus one warning tagged with the
 restriction id and code. The sweep skips it and carries on, it is never retried or claimed, and any
-other error, such as a database failure, still fails the run. Fix the data, then replay it (below). It contains no personal data or user-written text, including public explanation,
+other error, such as a database failure, still fails the run. Fix the data, then replay it (below);
+the warning carries only the restriction id, so find the submission id by `copyright_restriction_id`. It contains no personal data or user-written text, including public explanation,
 contact, hosted URL, grounds, or rationale. All retry sends use that same stored payload.
 Submissions are public and irreversible; there is no update, withdrawal, or deletion operation.
 
