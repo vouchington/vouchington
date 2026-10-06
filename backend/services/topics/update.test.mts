@@ -1,4 +1,4 @@
-import { it, expect, describe } from 'vitest'
+import { it, expect, describe, vi } from 'vitest'
 import { updateTopic } from './update.mts'
 import { getTopicByAny } from './get.mts'
 import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
@@ -75,13 +75,19 @@ describe('updateTopic', () => {
     const normalizedNewSlug = normalizeKey(newSlug)
 
     entityCacheBloomFilters.topics = testTopicsBloomFilter
+    const bloomAdd = vi.spyOn(testTopicsBloomFilter, 'add')
     try {
       await testTopicsBloomFilter.delete()
       await testTopicsBloomFilter.ensureExists()
 
       await updateTopic(user!, topic!, { slug: newSlug })
+      await Promise.all(
+        bloomAdd.mock.results.flatMap(result =>
+          result.type === 'return' ? [Promise.resolve(result.value)] : [],
+        ),
+      )
 
-      await expect.poll(() => testTopicsBloomFilter.exists(normalizedNewSlug)).toBe(true)
+      expect(await testTopicsBloomFilter.exists(normalizedNewSlug)).toBe(true)
     } finally {
       entityCacheBloomFilters.topics = originalTopicsBloomFilter
       await testTopicsBloomFilter.delete().catch(() => {})

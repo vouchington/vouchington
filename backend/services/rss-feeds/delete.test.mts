@@ -2,9 +2,9 @@ import { it, expect, beforeAll, describe, onTestFinished, vi } from 'vitest'
 import {
   claimPostPublicationDirtyWork,
   lockPostPublicationRssFeedScopes,
-  lockTopicAliasPublicationScopes,
   reconcilePostPublicationDirtyWork,
 } from '@services/post-publication'
+import * as topicAliasPublication from '@services/post-publication/capture-topic-alias'
 import {
   softDeleteRssFeedById,
   hardDeleteRssFeedById,
@@ -164,15 +164,23 @@ describe('delete', () => {
     }
     const holder = holdFeedPublicationScope()
     await feedLocked.promise
+    const lockAliases = topicAliasPublication.lockTopicAliasPublicationScopes
+    const aliasesLocked = Promise.withResolvers<void>()
+    const aliasSpy = vi
+      .spyOn(topicAliasPublication, 'lockTopicAliasPublicationScopes')
+      .mockImplementation(async (query, topicAliasIds) => {
+        await lockAliases(query, topicAliasIds)
+        aliasesLocked.resolve()
+      })
     const deletion = hardDeleteRssFeedById(feed.id)
     try {
-      await vi.waitFor(async () => {
-        await expect(contendForTopicAliasPublicationScope()).rejects.toMatchObject({
-          code: '55P03',
-        })
+      await aliasesLocked.promise
+      await expect(contendForTopicAliasPublicationScope()).rejects.toMatchObject({
+        code: '55P03',
       })
     } finally {
       releaseFeed.resolve()
+      aliasSpy.mockRestore()
     }
     await holder
     await expect(deletion).resolves.toBe(true)
@@ -180,7 +188,7 @@ describe('delete', () => {
     async function contendForTopicAliasPublicationScope(): Promise<void> {
       await using query = await beginTransaction()
       await query(`SET LOCAL lock_timeout = '50ms'`)
-      await lockTopicAliasPublicationScopes(query, [aliasId])
+      await lockAliases(query, [aliasId])
       await query.commit()
     }
   })

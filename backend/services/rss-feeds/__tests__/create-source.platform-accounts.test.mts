@@ -10,6 +10,7 @@ import {
   type PlatformAccountTestKind,
 } from '@voucha/test-helpers/account-types'
 import type { FeedClassification } from '../validate.mts'
+import * as automaticTopicUpvote from '@services/elections-votes/topic/automatic-upvote'
 import { createSourceFromUrl } from '../create-source.mts'
 
 const KINDS: PlatformAccountTestKind[] = ['official', 'system', 'ai_agent']
@@ -25,6 +26,25 @@ function feedFixture(label: string) {
     }),
   )
   return { httpsUrl: `https://${host}/feed.xml`, host, fetchAndClassifyFeedImpl }
+}
+
+async function withTrackedAutomaticUpvotes<T>(run: () => Promise<T>): Promise<T> {
+  const upvote = automaticTopicUpvote.upsertAutomaticTopicUpvote
+  const pending: Promise<unknown>[] = []
+  const spy = vi
+    .spyOn(automaticTopicUpvote, 'upsertAutomaticTopicUpvote')
+    .mockImplementation((user, topicId) => {
+      const result = upvote(user, topicId)
+      pending.push(result)
+      return result
+    })
+  try {
+    const result = await run()
+    await Promise.all(pending)
+    return result
+  } finally {
+    spy.mockRestore()
+  }
 }
 
 describe('create-source automatic vote for platform accounts', () => {
@@ -86,15 +106,17 @@ describe('create-source automatic vote for platform accounts', () => {
     const account = await createPlatformAccountTestUser('official')
     const { httpsUrl, fetchAndClassifyFeedImpl } = feedFixture('platform-race')
 
-    const [fromAccount, fromMember] = await Promise.all([
-      createSourceFromUrl(account, WEB_PROVENANCE, httpsUrl, { fetchAndClassifyFeedImpl }),
-      createSourceFromUrl(member, WEB_PROVENANCE, httpsUrl, { fetchAndClassifyFeedImpl }),
-    ])
+    const [fromAccount, fromMember] = await withTrackedAutomaticUpvotes(() =>
+      Promise.all([
+        createSourceFromUrl(account, WEB_PROVENANCE, httpsUrl, { fetchAndClassifyFeedImpl }),
+        createSourceFromUrl(member, WEB_PROVENANCE, httpsUrl, { fetchAndClassifyFeedImpl }),
+      ]),
+    )
 
     expect(fromAccount.rss_feed_id).toBe(fromMember.rss_feed_id)
     expect(await getRssFeedFollowExistsForTest(account.id, fromAccount.rss_feed_id)).toBe(true)
     expect(await countTopicElectionVoteRowsForUser(account.id)).toBe(0)
-    await vi.waitFor(async () => expect(await countTopicElectionVoteRowsForUser(member.id)).toBe(1))
+    expect(await countTopicElectionVoteRowsForUser(member.id)).toBe(1)
   })
 
   it('still casts the automatic +1 for a member on a new feed and on an existing one', async () => {
@@ -102,12 +124,12 @@ describe('create-source automatic vote for platform accounts', () => {
     const joiner = await createTestUser()
     const { httpsUrl, fetchAndClassifyFeedImpl } = feedFixture('member-vote')
 
-    await createSourceFromUrl(creator, WEB_PROVENANCE, httpsUrl, { fetchAndClassifyFeedImpl })
-    await createSourceFromUrl(joiner, WEB_PROVENANCE, httpsUrl, { fetchAndClassifyFeedImpl })
-
-    await vi.waitFor(async () => {
-      expect(await countTopicElectionVoteRowsForUser(creator.id)).toBe(1)
-      expect(await countTopicElectionVoteRowsForUser(joiner.id)).toBe(1)
+    await withTrackedAutomaticUpvotes(async () => {
+      await createSourceFromUrl(creator, WEB_PROVENANCE, httpsUrl, { fetchAndClassifyFeedImpl })
+      await createSourceFromUrl(joiner, WEB_PROVENANCE, httpsUrl, { fetchAndClassifyFeedImpl })
     })
+
+    expect(await countTopicElectionVoteRowsForUser(creator.id)).toBe(1)
+    expect(await countTopicElectionVoteRowsForUser(joiner.id)).toBe(1)
   })
 })

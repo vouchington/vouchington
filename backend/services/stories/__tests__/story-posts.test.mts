@@ -5,7 +5,7 @@ import {
   createSystemUser,
   restoreUser,
   softDeleteTestUserAndWaitBeforeCommit,
-  isTestAuthorPublicationLifecycleLockWaiting,
+  beginTransaction,
   insertTestRssFeedItem,
   createTestUrlWithHostname,
   insertTestStory,
@@ -17,6 +17,7 @@ import type { PrivateUser } from '@services/users/types'
 import { upsertSystemUser } from '@services/users/system-users'
 import { createStoryPost } from '../story-posts.mts'
 import { lockAuthorPublicationLifecycle } from '@services/post-publication'
+import * as publicationLock from '@services/post-publication/lock'
 import { canViewPost } from '@services/posts/check-privacy-access'
 import { getPostStoryByStoryId } from '../get-post-stories.mts'
 
@@ -144,6 +145,14 @@ describe('story posts', () => {
         },
       )
       await deletionHoldsAuthorLifecycle.promise
+      const lockAuthor = publicationLock.lockAuthorPublicationLifecycle
+      const entered = Promise.withResolvers<void>()
+      const authorSpy = vi
+        .spyOn(publicationLock, 'lockAuthorPublicationLifecycle')
+        .mockImplementation((query, authorUserId) => {
+          if (authorUserId === storyTeller.id) entered.resolve()
+          return lockAuthor(query, authorUserId)
+        })
 
       const creating = createStoryPost(
         story.id,
@@ -152,11 +161,14 @@ describe('story posts', () => {
         { getStoryTeller: async () => storyTeller },
       )
       creationOutcome = creating.catch((err: unknown) => err)
-      await vi.waitFor(async () => {
-        await expect(isTestAuthorPublicationLifecycleLockWaiting(storyTeller.id)).resolves.toBe(
-          true,
-        )
-      })
+      try {
+        await entered.promise
+        await using probe = await beginTransaction()
+        await probe(`SET LOCAL lock_timeout = '50ms'`)
+        await expect(lockAuthor(probe, storyTeller.id)).rejects.toMatchObject({ code: '55P03' })
+      } finally {
+        authorSpy.mockRestore()
+      }
       releaseDeletion.resolve()
 
       await expect(deleting).resolves.toBeUndefined()

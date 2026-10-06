@@ -23,10 +23,10 @@ import type { PrivateUser } from '@services/users/types'
 import { upsertSystemUser } from '@services/users/system-users'
 import { elections } from '../../../queues/elections/queues.mts'
 import { notifications } from '@queues/notifications/queues'
+import * as postPublicationPosts from '@services/post-publication/capture-posts'
 import { createStoryPost } from '../story-posts.mts'
 import { refreshStoryPostForStory } from '../refresh-story-post.mts'
 import { reconcileStoryPostRelatedUrlProjection } from '../story-post-related-url-projection.mts'
-import { lockPostPublicationPostScopes } from '@services/post-publication'
 
 function sha256(data: unknown): Buffer {
   return createHash('sha256').update(JSON.stringify(data)).digest()
@@ -239,14 +239,22 @@ describe('refreshStoryPostForStory', () => {
     }
     const holder = holdStoryTopicRelation()
     await relationLocked.promise
+    const lockPosts = postPublicationPosts.lockPostPublicationPostScopes
+    const postsLocked = Promise.withResolvers<void>()
+    const postSpy = vi
+      .spyOn(postPublicationPosts, 'lockPostPublicationPostScopes')
+      .mockImplementation(async (query, postIds) => {
+        await lockPosts(query, postIds)
+        postsLocked.resolve()
+      })
 
     const refreshing = refreshStoryPostForStory(story.id)
     try {
-      await vi.waitFor(async () => {
-        await expect(contendForStoryPublicationLock()).rejects.toMatchObject({ code: '55P03' })
-      })
+      await postsLocked.promise
+      await expect(contendForStoryPublicationLock()).rejects.toMatchObject({ code: '55P03' })
     } finally {
       releaseRelation.resolve()
+      postSpy.mockRestore()
     }
     await holder
     await refreshing
@@ -254,7 +262,7 @@ describe('refreshStoryPostForStory', () => {
     async function contendForStoryPublicationLock(): Promise<void> {
       await using query = await beginTransaction()
       await query(`/* refreshStoryPost publication lock timeout */ SET LOCAL lock_timeout = '50ms'`)
-      await lockPostPublicationPostScopes(query, [post.id])
+      await lockPosts(query, [post.id])
       await query.commit()
     }
   })

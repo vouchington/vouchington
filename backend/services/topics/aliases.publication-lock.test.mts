@@ -1,5 +1,5 @@
 import { beginTransaction, createTestTopic, createTestUser } from '@voucha/test-helpers'
-import { lockTopicAliasPublicationScopes } from '@services/post-publication'
+import * as postPublication from '@services/post-publication'
 import { describe, expect, it, vi } from 'vitest'
 import { createUnlinkedTopicAlias, linkTopicAlias } from './aliases.mts'
 
@@ -23,14 +23,22 @@ describe('linkTopicAlias publication locking', () => {
     }
     const holder = holdTopicRow()
     await rowLocked.promise
+    const lockAliases = postPublication.lockTopicAliasPublicationScopes
+    const aliasesLocked = Promise.withResolvers<void>()
+    const aliasSpy = vi
+      .spyOn(postPublication, 'lockTopicAliasPublicationScopes')
+      .mockImplementation(async (query, topicAliasIds) => {
+        await lockAliases(query, topicAliasIds)
+        aliasesLocked.resolve()
+      })
 
     const linking = linkTopicAlias(topic.id, alias.id)
     try {
-      await vi.waitFor(async () => {
-        await expect(contendForAliasPublicationLock()).rejects.toMatchObject({ code: '55P03' })
-      })
+      await aliasesLocked.promise
+      await expect(contendForAliasPublicationLock()).rejects.toMatchObject({ code: '55P03' })
     } finally {
       releaseRow.resolve()
+      aliasSpy.mockRestore()
     }
     await holder
     await expect(linking).resolves.toMatchObject({ id: alias.id, topic_id: topic.id })
@@ -38,7 +46,7 @@ describe('linkTopicAlias publication locking', () => {
     async function contendForAliasPublicationLock(): Promise<void> {
       await using query = await beginTransaction()
       await query(`/* linkTopicAlias publication lock timeout */ SET LOCAL lock_timeout = '50ms'`)
-      await lockTopicAliasPublicationScopes(query, [alias.id])
+      await lockAliases(query, [alias.id])
       await query.commit()
     }
   })

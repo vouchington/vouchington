@@ -1,4 +1,4 @@
-import { lockPostPublicationRssFeedScopes } from '@services/post-publication'
+import * as postPublication from '@services/post-publication'
 import { beginTransaction, insertTestRssFeedDirect } from '@voucha/test-helpers'
 import { describe, expect, it, vi } from 'vitest'
 import { disableAndHideSource } from '../fetch-redirect.mts'
@@ -21,14 +21,22 @@ describe('permanent RSS redirect publication locking', () => {
     }
     const holder = holdFeedRow()
     await rowLocked.promise
+    const lockFeeds = postPublication.lockPostPublicationRssFeedScopes
+    const feedsLocked = Promise.withResolvers<void>()
+    const feedSpy = vi
+      .spyOn(postPublication, 'lockPostPublicationRssFeedScopes')
+      .mockImplementation(async (query, rssFeedIds) => {
+        await lockFeeds(query, rssFeedIds)
+        feedsLocked.resolve()
+      })
 
     const disabling = disableAndHideSource(feed.id)
     try {
-      await vi.waitFor(async () => {
-        await expect(contendForFeedPublicationScope()).rejects.toMatchObject({ code: '55P03' })
-      })
+      await feedsLocked.promise
+      await expect(contendForFeedPublicationScope()).rejects.toMatchObject({ code: '55P03' })
     } finally {
       releaseRow.resolve()
+      feedSpy.mockRestore()
     }
     await holder
     await expect(disabling).resolves.toBeUndefined()
@@ -38,7 +46,7 @@ describe('permanent RSS redirect publication locking', () => {
       await query(
         `/* permanent RSS redirect publication lock timeout */ SET LOCAL lock_timeout = '50ms'`,
       )
-      await lockPostPublicationRssFeedScopes(query, [feed.id])
+      await lockFeeds(query, [feed.id])
       await query.commit()
     }
   })

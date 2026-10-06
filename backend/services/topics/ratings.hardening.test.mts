@@ -1,8 +1,8 @@
 import {
+  beginTransaction,
   createTestUser,
   holdTopicRatingRefreshLock,
   insertTestTopic,
-  isTopicRatingRefreshWaiting,
 } from '@voucha/test-helpers'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
@@ -33,7 +33,11 @@ describe('topic rating refresh concurrency', () => {
       refreshCompleted = true
     }
     try {
-      await expect.poll(isTopicRatingRefreshWaiting, { timeout: 1_000 }).toBe(true)
+      await using probe = await beginTransaction()
+      await probe(`SET LOCAL lock_timeout = '50ms'`)
+      await expect(
+        probe(`SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, [`topic-rating:${topicId}`]),
+      ).rejects.toMatchObject({ code: '55P03' })
       expect(refreshCompleted).toBe(false)
     } finally {
       releaseLock.resolve()

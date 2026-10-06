@@ -1,5 +1,5 @@
 import { it, expect, describe } from 'vitest'
-import { createTestUser, pollUntilNotNull, WEB_PROVENANCE } from '@voucha/test-helpers'
+import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createTopic } from './create.mts'
 import { caches } from '@services/entity-cache/caches'
 import { enqueueBulkRefreshTopicMetricsById } from '@queues/entity-metrics-cache-refresh/enqueues'
@@ -18,7 +18,7 @@ describe('enqueues.generated', () => {
 
     await enqueueBulkRefreshTopicMetricsById([topic.id])
 
-    expect(await pollUntilNotNull(() => caches.topic_metrics.get(topic.id))).not.toBeNull()
-    expect(await pollUntilNotNull(() => caches.topic_metrics.get(topic.slug))).not.toBeNull()
+    expect(await caches.topic_metrics.get(topic.id)).not.toBeNull()
+    expect(await caches.topic_metrics.get(topic.slug)).not.toBeNull()
   })
 })

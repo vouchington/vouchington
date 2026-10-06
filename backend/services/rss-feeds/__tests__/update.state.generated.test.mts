@@ -17,10 +17,7 @@ import {
 import type { PrivateUser } from '@services/users/types'
 import { createHash, randomUUID } from 'node:crypto'
 import { insertRssFeedCrawl } from '../crawls.mts'
-import {
-  lockPostPublicationScope,
-  lockTopicRssFeedAttachmentLifecycle,
-} from '@services/post-publication/lock'
+import * as publicationLock from '@services/post-publication/lock'
 describe('update.generated (state)', () => {
   let sharedUser: PrivateUser
   beforeAll(async () => {
@@ -43,14 +40,12 @@ describe('update.generated (state)', () => {
     const updated = await getRssFeedById(feed.id)
     expect(updated!.is_enabled).toBe(true)
   })
-
   it('updateRssFeedById records a caller-provided system state change reason', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const topic = await createTestTopic({
       user: sharedUser,
       hostname: `system-state-reason-${random}.example.com`,
     })
-
     const feed = await createRssFeed({
       provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
@@ -63,20 +58,17 @@ describe('update.generated (state)', () => {
       { is_enabled: false, discoverable: false },
       { stateChangeReason: 'test: focused state reason' },
     )
-
     const enablement = await getLatestEnablementChange(feed.id)
     const discoverability = await getLatestDiscoverabilityChange(feed.id)
     expect(enablement!.reason).toBe('test: focused state reason')
     expect(discoverability!.reason).toBe('test: focused state reason')
   })
-
   it('updateRssFeedById disables feed', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const topic = await createTestTopic({
       user: sharedUser,
       hostname: `disable-${random}.example.com`,
     })
-
     const feed = await createRssFeed({
       provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
@@ -86,18 +78,15 @@ describe('update.generated (state)', () => {
     })
     await updateRssFeedById(feed.id, { is_enabled: true })
     await updateRssFeedById(feed.id, { is_enabled: false })
-
     const updated = await getRssFeedById(feed.id)
     expect(updated!.is_enabled).toBe(false)
   })
-
   it('updateRssFeedByIdAsCurrentUser attributes state changes to current user', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const topic = await createTestTopic({
       user: sharedUser,
       hostname: `user-state-${random}.example.com`,
     })
-
     const feed = await createRssFeed({
       provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
@@ -109,20 +98,17 @@ describe('update.generated (state)', () => {
       is_enabled: false,
       discoverable: false,
     })
-
     const enablement = await getLatestEnablementChange(feed.id)
     const discoverability = await getLatestDiscoverabilityChange(feed.id)
     expect(enablement!.changed_by_id).toBe(sharedUser.id)
     expect(discoverability!.changed_by_id).toBe(sharedUser.id)
   })
-
   it('updateRssFeedByIdAsCurrentUser returns null for state-only changes on missing feed', async () => {
     const result = await updateRssFeedByIdAsCurrentUser(sharedUser, randomUUID(), {
       discoverable: false,
     })
     expect(result).toBeNull()
   })
-
   it('updateRssFeedWithStateAsCurrentUser ignores state-only changes on missing feed', async () => {
     await expect(
       updateRssFeedWithStateAsCurrentUser(sharedUser, randomUUID(), {}, { discoverable: false }),
@@ -225,13 +211,21 @@ describe('update.generated (state)', () => {
     }
     const holder = holdFeedRow()
     await rowLocked.promise
+    const lockScope = publicationLock.lockPostPublicationScope
+    const scopeHeld = Promise.withResolvers<void>()
+    const scopeSpy = vi
+      .spyOn(publicationLock, 'lockPostPublicationScope')
+      .mockImplementation(async (query, scope) => {
+        await lockScope(query, scope)
+        scopeHeld.resolve()
+      })
     const updating = updateRssFeedById(feed.id, { title: `Updated ${random}` })
     try {
-      await vi.waitFor(async () => {
-        await expect(contendForFeedPublicationScope()).rejects.toMatchObject({ code: '55P03' })
-      })
+      await scopeHeld.promise
+      await expect(contendForFeedPublicationScope()).rejects.toMatchObject({ code: '55P03' })
     } finally {
       releaseRow.resolve()
+      scopeSpy.mockRestore()
     }
     await holder
     await updating
@@ -239,7 +233,7 @@ describe('update.generated (state)', () => {
     async function contendForFeedPublicationScope(): Promise<void> {
       await using query = await beginTransaction()
       await query(`/* updateRssFeed publication lock timeout */ SET LOCAL lock_timeout = '50ms'`)
-      await lockPostPublicationScope(query, { type: 'rss_feed', rssFeedId: feed.id })
+      await lockScope(query, { type: 'rss_feed', rssFeedId: feed.id })
       await query.commit()
     }
   })
@@ -275,13 +269,21 @@ describe('update.generated (state)', () => {
     }
     const holder = holdAttachmentFeedRow()
     await rowLocked.promise
+    const lockAttachment = publicationLock.lockTopicRssFeedAttachmentLifecycle
+    const attachmentHeld = Promise.withResolvers<void>()
+    const attachmentSpy = vi
+      .spyOn(publicationLock, 'lockTopicRssFeedAttachmentLifecycle')
+      .mockImplementation(async (query, topicId) => {
+        await lockAttachment(query, topicId)
+        attachmentHeld.resolve()
+      })
     const updating = updateRssFeedById(feed.id, { topic_id: destination.id })
     try {
-      await vi.waitFor(async () => {
-        await expect(contendForAttachmentLifecycle()).rejects.toMatchObject({ code: '55P03' })
-      })
+      await attachmentHeld.promise
+      await expect(contendForAttachmentLifecycle()).rejects.toMatchObject({ code: '55P03' })
     } finally {
       releaseRow.resolve()
+      attachmentSpy.mockRestore()
     }
     await holder
     await updating
@@ -291,7 +293,7 @@ describe('update.generated (state)', () => {
       await query(
         `/* updateRssFeed attachment lifecycle timeout */ SET LOCAL lock_timeout = '50ms'`,
       )
-      await lockTopicRssFeedAttachmentLifecycle(query, destination.id)
+      await lockAttachment(query, destination.id)
       await query.commit()
     }
   })

@@ -15,11 +15,11 @@ import {
   insertTestStoryCategoryPublicationBatch,
   insertTestStory,
   insertTestTopicBatch,
-  isTestStoryLifecycleLockWaiting,
   listTestPostPublicationImpactPostIds,
   listTestPostPublicationImpactTopicIds,
   setTestItemStoryId,
   updateTestTopicAliasCategoryMappingOwner,
+  beginTransaction,
 } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
 import { upsertSystemUser } from '@services/users/system-users'
@@ -27,6 +27,7 @@ import type { PrivateUser } from '@services/users/types'
 import { upsertRssFeedItemCategories } from '@services/rss-feed-items/categories'
 import { backfillCategoriesForTopicAliases } from '@services/rss-feed-items/backfill-categories-for-topic-aliases'
 import { clearCategoriesForUnlinkedTopicAlias } from '@services/rss-feed-items/clear-topic-alias-categories'
+import * as storyLifecycleLock from '@services/post-publication/story-lifecycle-lock'
 import { createStoryPost } from '../story-posts.mts'
 import { recordTestStoryTopicPublicationChange } from '@services/post-publication/test-fixtures'
 
@@ -221,10 +222,23 @@ describe('RSS category story-post publication', () => {
     let capturing: Promise<void> | undefined
     try {
       await associationInserted.promise
+      const lockStories = storyLifecycleLock.lockStoryLifecycles
+      const entered = Promise.withResolvers<void>()
+      const lifecycleSpy = vi
+        .spyOn(storyLifecycleLock, 'lockStoryLifecycles')
+        .mockImplementation((query, storyIds) => {
+          if (storyIds.includes(story.id)) entered.resolve()
+          return lockStories(query, storyIds)
+        })
       capturing = upsertRssFeedItemCategories([{ rss_feed_item_id: itemId, categories: [alias] }])
-      await vi.waitFor(async () => {
-        await expect(isTestStoryLifecycleLockWaiting(story.id)).resolves.toBe(true)
-      })
+      try {
+        await entered.promise
+        await using probe = await beginTransaction()
+        await probe(`SET LOCAL lock_timeout = '50ms'`)
+        await expect(lockStories(probe, [story.id])).rejects.toMatchObject({ code: '55P03' })
+      } finally {
+        lifecycleSpy.mockRestore()
+      }
       releaseCreation.resolve()
       await Promise.all([creating, capturing])
       await expect(

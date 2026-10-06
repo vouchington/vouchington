@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   createTestUser,
   getTestTopicAliasRowVersion,
@@ -74,6 +74,7 @@ describe('createTopic hashtag alias source', () => {
       batchSize: originalConfig.batchSize,
     })
     entityCacheBloomFilters.topics = testBloomFilter
+    const bloomAdd = vi.spyOn(testBloomFilter, 'add')
     try {
       await testBloomFilter.delete()
       await testBloomFilter.ensureExists()
@@ -84,7 +85,12 @@ describe('createTopic hashtag alias source', () => {
       })
       const sourceAlias = `source-${suffix}`
       expect(topic.aliases).toContain(sourceAlias)
-      await expect.poll(() => testBloomFilter.exists(normalizeKey(sourceAlias))).toBe(true)
+      await Promise.all(
+        bloomAdd.mock.results.flatMap(result =>
+          result.type === 'return' ? [Promise.resolve(result.value)] : [],
+        ),
+      )
+      expect(await testBloomFilter.exists(normalizeKey(sourceAlias))).toBe(true)
       await expect(getTopicIdByAnyCached(sourceAlias)).resolves.toBe(topic.id)
     } finally {
       entityCacheBloomFilters.topics = originalBloomFilter

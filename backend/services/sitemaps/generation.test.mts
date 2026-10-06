@@ -33,21 +33,28 @@ describe('sitemap index generation entries', () => {
   it('bounds post-day manifest lookups for large tracked ranges', async () => {
     let activeLookups = 0
     let maxActiveLookups = 0
+    const capReached = Promise.withResolvers<void>()
+    const releaseLookups = Promise.withResolvers<void>()
     const getManifest = vi.fn<VitestLooseMock>().mockImplementation(async () => {
       activeLookups += 1
       maxActiveLookups = Math.max(maxActiveLookups, activeLookups)
-      await new Promise<void>(resolve => setImmediate(resolve))
+      if (activeLookups === 16) capReached.resolve()
+      await releaseLookups.promise
       activeLookups -= 1
       return null
     })
 
-    await buildPostTypeIndexEntries(
+    const building = buildPostTypeIndexEntries(
       'article',
       Array.from({ length: 40 }, (_, index) => `2026-06-${String(index + 1).padStart(2, '0')}`),
       getManifest,
     )
-
-    expect(maxActiveLookups).toBeLessThanOrEqual(16)
+    await capReached.promise
+    expect(activeLookups).toBe(16)
+    expect(maxActiveLookups).toBe(16)
+    releaseLookups.resolve()
+    await building
+    expect(maxActiveLookups).toBe(16)
   })
 
   it('only links family indexes that have a manifest', async () => {

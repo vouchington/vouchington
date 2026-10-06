@@ -6,6 +6,7 @@ import { withPostgresPoolQueryFailureForTest } from '@voucha/test-helpers/postgr
 import { getUrlByAny } from '@services/urls/get'
 import { getRssFeedByUrlId } from './get.mts'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
+import * as setCanonicalUrlModule from '@services/urls/set-canonical'
 import { createSourceFromUrl } from './create-source.mts'
 
 describe('source creation canonical mapping failure', () => {
@@ -48,22 +49,30 @@ describe('source creation canonical mapping failure', () => {
       }),
     )
     const firstCapture = sentryCaptureExceptionMock.mock.calls.length
+    const writeCanonicalUrl = setCanonicalUrlModule.setCanonicalUrl
+    const canonicalWrites: Promise<unknown>[] = []
+    const canonicalSpy = vi
+      .spyOn(setCanonicalUrlModule, 'setCanonicalUrl')
+      .mockImplementation((urlId, canonicalUrlId) => {
+        const pending = writeCanonicalUrl(urlId, canonicalUrlId)
+        canonicalWrites.push(pending)
+        return pending
+      })
     try {
       const { result, error } = await withMockAgentDefaultFetchForTest(agent, () =>
         withPostgresPoolQueryFailureForTest('/* setCanonicalUrl */', async () => {
           const created = await createSourceFromUrl(user, WEB_PROVENANCE, originalUrl, {
             follow: false,
           })
-          await vi.waitFor(() => {
-            expect(
-              sentryCaptureExceptionMock.mock.calls
-                .slice(firstCapture)
-                .some(
-                  ([captured]) =>
-                    captured instanceof Error && 'code' in captured && captured.code === '25P02',
-                ),
-            ).toBe(true)
-          })
+          await Promise.allSettled(canonicalWrites)
+          expect(
+            sentryCaptureExceptionMock.mock.calls
+              .slice(firstCapture)
+              .some(
+                ([captured]) =>
+                  captured instanceof Error && 'code' in captured && captured.code === '25P02',
+              ),
+          ).toBe(true)
           return created
         }),
       )
@@ -79,6 +88,7 @@ describe('source creation canonical mapping failure', () => {
       expect(await getRssFeedByUrlId(target.id)).toEqual({ id: result.rss_feed_id })
       agent.assertNoPendingInterceptors()
     } finally {
+      canonicalSpy.mockRestore()
       lookup.mockRestore()
       await agent.close()
     }

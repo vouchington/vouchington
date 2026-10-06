@@ -7,7 +7,7 @@ import {
   createTestUser,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
-import { lockTopicRssFeedAttachmentLifecycle } from '@services/post-publication/lock'
+import * as publicationLock from '@services/post-publication/lock'
 import { getTopicByAny } from '@services/topics/get'
 import { mergeTopicAliases } from '@services/topics/merge-aliases'
 
@@ -131,6 +131,14 @@ describe('create.generated', () => {
     }
     const holder = holdTopicRow()
     await topicRowLocked.promise
+    const lockAttachment = publicationLock.lockTopicRssFeedAttachmentLifecycle
+    const attachmentHeld = Promise.withResolvers<void>()
+    const attachmentSpy = vi
+      .spyOn(publicationLock, 'lockTopicRssFeedAttachmentLifecycle')
+      .mockImplementation(async (query, topicId) => {
+        await lockAttachment(query, topicId)
+        attachmentHeld.resolve()
+      })
 
     const creating = createRssFeed({
       provenance: WEB_PROVENANCE,
@@ -140,11 +148,11 @@ describe('create.generated', () => {
       title: `Attachment lifecycle ${random}`,
     })
     try {
-      await vi.waitFor(async () => {
-        await expect(contendForTopicAttachmentLifecycle()).rejects.toMatchObject({ code: '55P03' })
-      })
+      await attachmentHeld.promise
+      await expect(contendForTopicAttachmentLifecycle()).rejects.toMatchObject({ code: '55P03' })
     } finally {
       releaseTopicRow.resolve()
+      attachmentSpy.mockRestore()
     }
     await holder
     await creating
@@ -154,7 +162,7 @@ describe('create.generated', () => {
       await query(
         `/* createRssFeed attachment lifecycle timeout */ SET LOCAL lock_timeout = '50ms'`,
       )
-      await lockTopicRssFeedAttachmentLifecycle(query, topic.id)
+      await lockAttachment(query, topic.id)
       await query.commit()
     }
   })
@@ -189,11 +197,18 @@ describe('create.generated', () => {
     }
     const destinationHolder = holdDestinationTopicRow()
     await destinationRowLocked.promise
+    const lockAttachment = publicationLock.lockTopicRssFeedAttachmentLifecycle
+    const sourceLocked = Promise.withResolvers<void>()
+    const attachmentSpy = vi
+      .spyOn(publicationLock, 'lockTopicRssFeedAttachmentLifecycle')
+      .mockImplementation(async (query, topicId) => {
+        await lockAttachment(query, topicId)
+        if (topicId === source.id) sourceLocked.resolve()
+      })
 
     const merging = mergeTopicAliases(user, sourceTopic, destinationTopic)
-    await vi.waitFor(async () => {
-      await expect(contendForSourceAttachmentLifecycle()).rejects.toMatchObject({ code: '55P03' })
-    })
+    await sourceLocked.promise
+    await expect(contendForSourceAttachmentLifecycle()).rejects.toMatchObject({ code: '55P03' })
     const creating = createRssFeed({
       provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
@@ -214,6 +229,7 @@ describe('create.generated', () => {
       })
     } finally {
       releaseDestinationRow.resolve()
+      attachmentSpy.mockRestore()
       await destinationHolder
       await merging.catch(() => undefined)
       await creationOutcome
@@ -224,7 +240,7 @@ describe('create.generated', () => {
       await query(
         `/* createRssFeed merged attachment lifecycle timeout */ SET LOCAL lock_timeout = '50ms'`,
       )
-      await lockTopicRssFeedAttachmentLifecycle(query, source.id)
+      await lockAttachment(query, source.id)
       await query.commit()
     }
   })

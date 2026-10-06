@@ -14,8 +14,8 @@ import { getTopicByAny, getTopicByAnyWithRedirect, getTopicBySlug } from './get.
 import { mergeTopicAliases } from './merge-aliases.mts'
 import { getTopicIds } from './search/get-ids.mts'
 import type { Topic } from './types.mts'
-import { lockPostPublicationRssFeedScopes } from '@services/post-publication'
-import { lockTopicRssFeedAttachmentLifecycle } from '@services/post-publication/lock'
+import * as rssFeedPublication from '@services/post-publication/capture-rss-feeds'
+import * as publicationLock from '@services/post-publication/lock'
 
 async function createFullTestTopic(options: Parameters<typeof createTestTopic>[0]): Promise<Topic> {
   const topic = await createTestTopic(options)
@@ -172,15 +172,33 @@ describe('mergeTopicAliases', () => {
     }
     const holder = holdDestinationTopicRow()
     await topicRowLocked.promise
+    const lockAttachment = publicationLock.lockTopicRssFeedAttachmentLifecycle
+    const lockFeeds = rssFeedPublication.lockPostPublicationRssFeedScopes
+    const attachmentHeld = Promise.withResolvers<void>()
+    const feedsHeld = Promise.withResolvers<void>()
+    const attachmentSpy = vi
+      .spyOn(publicationLock, 'lockTopicRssFeedAttachmentLifecycle')
+      .mockImplementation(async (query, topicId) => {
+        await lockAttachment(query, topicId)
+        if (topicId === source.id) attachmentHeld.resolve()
+      })
+    const feedSpy = vi
+      .spyOn(rssFeedPublication, 'lockPostPublicationRssFeedScopes')
+      .mockImplementation(async (query, rssFeedIds) => {
+        await lockFeeds(query, rssFeedIds)
+        if (rssFeedIds.includes(feed.id)) feedsHeld.resolve()
+      })
 
     const merging = mergeTopicAliases(user, source, destination)
     try {
-      await vi.waitFor(async () => {
-        await expect(contendForAttachmentLifecycleLock()).rejects.toMatchObject({ code: '55P03' })
-        await expect(contendForFeedPublicationLock()).rejects.toMatchObject({ code: '55P03' })
-      })
+      await attachmentHeld.promise
+      await feedsHeld.promise
+      await expect(contendForAttachmentLifecycleLock()).rejects.toMatchObject({ code: '55P03' })
+      await expect(contendForFeedPublicationLock()).rejects.toMatchObject({ code: '55P03' })
     } finally {
       releaseTopicRow.resolve()
+      attachmentSpy.mockRestore()
+      feedSpy.mockRestore()
     }
     await holder
     await merging
@@ -190,14 +208,14 @@ describe('mergeTopicAliases', () => {
       await query(
         `/* mergeTopicAliases attachment lifecycle timeout */ SET LOCAL lock_timeout = '50ms'`,
       )
-      await lockTopicRssFeedAttachmentLifecycle(query, source.id)
+      await lockAttachment(query, source.id)
       await query.commit()
     }
 
     async function contendForFeedPublicationLock(): Promise<void> {
       await using query = await beginTransaction()
       await query(`/* mergeTopicAliases feed lock timeout */ SET LOCAL lock_timeout = '50ms'`)
-      await lockPostPublicationRssFeedScopes(query, [feed.id])
+      await lockFeeds(query, [feed.id])
       await query.commit()
     }
   })

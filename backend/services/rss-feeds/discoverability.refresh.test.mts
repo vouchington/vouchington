@@ -11,7 +11,7 @@ import {
   setRssFeedDiscoverabilityAsSystem,
 } from './discoverability.mts'
 import { evaluateRssFeedDiscoverability } from './evaluate-discoverability.mts'
-import { lockPostPublicationScope } from '@services/post-publication/lock'
+import * as publicationLock from '@services/post-publication/lock'
 
 describe('RSS feed discoverability top-hashtag refresh', () => {
   afterEach(() => {
@@ -111,14 +111,22 @@ describe('RSS feed discoverability top-hashtag refresh', () => {
     }
     const holder = holdDiscoverabilityChangeRow()
     await rowLocked.promise
+    const lockScope = publicationLock.lockPostPublicationScope
+    const scopeHeld = Promise.withResolvers<void>()
+    const scopeSpy = vi
+      .spyOn(publicationLock, 'lockPostPublicationScope')
+      .mockImplementation(async (query, scope) => {
+        await lockScope(query, scope)
+        scopeHeld.resolve()
+      })
 
     const settingState = setState(feed.id)
     try {
-      await vi.waitFor(async () => {
-        await expect(contendForRssFeedPublicationScope()).rejects.toMatchObject({ code: '55P03' })
-      })
+      await scopeHeld.promise
+      await expect(contendForRssFeedPublicationScope()).rejects.toMatchObject({ code: '55P03' })
     } finally {
       releaseRow.resolve()
+      scopeSpy.mockRestore()
     }
     await holder
     await settingState
@@ -126,7 +134,7 @@ describe('RSS feed discoverability top-hashtag refresh', () => {
     async function contendForRssFeedPublicationScope(): Promise<void> {
       await using query = await beginTransaction()
       await query(`/* rss feed state publication lock timeout */ SET LOCAL lock_timeout = '50ms'`)
-      await lockPostPublicationScope(query, { type: 'rss_feed', rssFeedId: feed.id })
+      await lockScope(query, { type: 'rss_feed', rssFeedId: feed.id })
       await query.commit()
     }
   }
