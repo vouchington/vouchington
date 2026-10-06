@@ -193,7 +193,6 @@ This catalog keeps package documentation directly discoverable from the owning `
 - [`../services/moderation-training/README.md`](../../services/moderation-training/README.md)
 - [`../services/moderation/README.md`](../../services/moderation/README.md)
 - [`../services/moderator-actions/README.md`](../../services/moderator-actions/README.md)
-- [`../services/moderators/README.md`](../../services/moderators/README.md)
 - [`../services/modmail/README.md`](../../services/modmail/README.md)
 - [`../services/my/README.md`](../../services/my/README.md)
 - [`../services/my/landing-pages/README.md`](../../services/my/landing-pages/README.md)

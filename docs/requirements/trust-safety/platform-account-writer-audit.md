@@ -54,7 +54,6 @@ No election-backed vote or relation is written.
 - `services/web-risk/check.mts:154` writes a hostname block, not a vote.
 - `services/vote-integrity/apply-referral-link-penalty.mts` applies a vote-weight penalty, not a vote.
 - `@automod`, `@ban-evasion` and the story-clustering classifier write no relation or vote.
-- `services/moderators/tagging.mts` has no production callers (see M4).
 - `services/admin-imports/process-topic-row-relations.mts:41`: an administrator writes `parent`, which is not election-backed.
 - `services/posts/create/transaction-side-effects.mts:132` writes a data-point `category` relation with `vote: false`. Platform data-point creation is blocked at `services/posts/authorization.mts:62`.
 - `services/ap-inbox-activities/dispatch-activity.mts:73,103`: a remote actor `follow`, not election-backed.
@@ -77,11 +76,11 @@ The user-tag exemption (`user-tag-authorization.mts:17`) and the administrator m
 
 ## Mismatches
 
-M1, M2 and M3 are resolved. M4 is recorded, not changed.
+M1 to M4 are resolved.
 
 - **M1** Resolved: classifier and AI accounts vote only on entity relations, never on topic or post elections ([decision, 2026-10-05](https://github.com/vouchington/vouchington/issues/1834#issuecomment-5999417459)). The post classifier now votes on the post's own `category` relation, and the global topic vote path was removed.
 - **M2** Resolved: `POST /api/v1/rss-feeds` and the RSS import (`services/rss-feeds/create-source.mts:59,123,162,178`, `services/user-import-export/import-rss-feeds.mts:83`) no longer cast the automatic +1 topic vote for a platform account, and the topic writer rejects it if a caller tries. The source is still created and the follow is kept.
 - **M3** Resolved: `POST /api/v1/fediverse/instances` (`services/fediverse-instances/create-instance.mts:46,65,73`) no longer casts the automatic +1 topic vote for a platform account, on the new, existing and race paths. The instance is still created.
-- **M4** The "Moderator agent: tag post + move to review queue" row has no production caller. `services/moderators/tagging.mts` helpers are unused exports, and `agent-moderate.mts` writes no relation or vote.
+- **M4** Resolved: the "Moderator agent: tag post + move to review queue" row described helpers (`services/moderators/tagging.mts`) that had no production caller, so the package and its docs page were deleted. The community moderation classifier sends a flagged post to the review queue or unpublishes it, per the community's `automod_action` (`record_only`, `review_queue` or `unpublish`; see `services/community-agent-prompts/moderation-run-effects.mts`), and writes no relation or vote. Tagging stays under the entity-relations row.
 
 #1849 requires structural relation votes and administrator user-tag authority to keep working, and the structural writers section is covered by tests for that.
