@@ -14,6 +14,7 @@ import { writeFileSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { assertRequiredPlanShape } from './plan-gates.mts'
 import { seedUuid } from './seed-data/common.mts'
+import { SEED_ANCHOR_DATE_ENV } from './seed-data/seed-anchor.mts'
 
 export const SEED_PREFIX = '019e0000'
 export const OUTPUT_DIR = join(import.meta.dirname, 'output')
@@ -88,9 +89,11 @@ export function getCompletedScenarioIds(): readonly string[] {
   return completedScenarioIds
 }
 
-// seed.mts and run.mts are separate `node` process invocations (see seed-data/common.mts's
-// getCurrentDayAnchorMs()); a UTC day rollover between them, or a seed step that silently didn't
-// run, makes every seedUuid(_, '05')-derived id here miss its row. A scenario that queries a
+// seed.mts and run.mts are separate `node` process invocations that must derive the same ids from
+// the one anchor day pinned by EXPLAIN_SEED_ANCHOR_DATE (see seed-data/seed-anchor.mts). CI sets
+// it once per job; with it unset, each process falls back to its own current UTC day, so a UTC
+// midnight between them (or a different value handed to each, or a seed step that silently didn't
+// run) makes every seedUuid(_, '05')-derived id here miss its row. A scenario that queries a
 // missing post by id still issues exactly one query matching zero rows, which
 // assertCapturedQueries can't distinguish from a real profiled query — so that failure mode is
 // otherwise silent. Check the anchor once, up front, instead of leaving it undetectable.
@@ -100,10 +103,14 @@ export async function assertSeedAnchorMatches(postId: string = seedPostId): Prom
     [postId],
   )
   if (rows.length === 0) {
+    const pinnedDay = process.env.EXPLAIN_SEED_ANCHOR_DATE
+    const anchorSource =
+      pinnedDay === undefined
+        ? `${SEED_ANCHOR_DATE_ENV} is unset, so a UTC midnight between the two process runs splits them`
+        : `${SEED_ANCHOR_DATE_ENV}=${pinnedDay} here; the seed step must have been given the same day`
     throw new Error(
       `Seed anchor post ${postId} not found. seed.mts and run.mts derived different day ` +
-        `anchors (likely a UTC day rollover between the two process runs), or the seed step did ` +
-        `not complete.`,
+        `anchors (${anchorSource}), or the seed step did not complete.`,
     )
   }
 }

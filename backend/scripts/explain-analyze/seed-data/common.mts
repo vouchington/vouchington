@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { resolveSeedAnchor } from './seed-anchor.mts'
 
 export const HOSTNAME_COUNT = 1000
 export const FEED_URL_COUNT = 2500
@@ -19,33 +20,23 @@ export const SEED_PREFIX = '019e0000'
 const POST_TABLE_TAG = '05'
 const POST_SEED_MINUTES_APART_MS = 60_000
 
-// Deterministic — a function of the calendar day, not Date.now() — and captured once at module
-// load, not read fresh per call. seed.mts and run.mts are two SEPARATE `node` processes in CI
-// (two separate workflow steps): seed.mts inserts a post's id via seedUuid(idx, '05'), and
-// run.mts's scenario/support code (run-support.mts, run-scenarios/*.mts) re-derives that same
-// post's id via the identical seedUuid(postIndex, '05') call to locate it, rather than
-// duplicating the address as a hardcoded literal. A per-process Date.now() would give the same
-// postIndex a different id in each process — network I/O and process startup separate the two
-// `node` invocations in real time — so the anchor is pinned to "today" instead of "the exact
-// instant this process started": any process importing this module on the same UTC day computes
-// the identical anchor without the value ever crossing the process boundary. Same precedent as
-// the month-anchor CRAWL_SEED_PREFIX below, at day granularity here so a post never lands more
-// than ~12h off "now" — safely inside the `time_range: '1w'` window the heavy feed scenarios
-// filter on.
-function getCurrentDayAnchorMs(): number {
-  const now = new Date()
-  return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 12)
-}
+// Deterministic — a function of the pinned anchor day (seed-anchor.mts), not Date.now() — and
+// captured once at module load, not read fresh per call. seed.mts and run.mts are two SEPARATE
+// `node` processes in CI (two separate workflow steps): seed.mts inserts a post's id via
+// seedUuid(idx, '05'), and run.mts's scenario/support code (run-support.mts,
+// run-scenarios/*.mts) re-derives that same post's id via the identical seedUuid(postIndex, '05')
+// call to locate it, rather than duplicating the address as a hardcoded literal. Both processes
+// therefore must agree on the anchor. explain-analyze.yml hands them one shared UTC day through
+// EXPLAIN_SEED_ANCHOR_DATE; with it unset (a local run) the anchor falls back to the current UTC
+// day, which two local invocations only share when no UTC midnight falls between them. The
+// month-granularity CRAWL_SEED_PREFIX below derives from the same day, so crawl ids agree too.
+// Day granularity keeps a post within ~12h of "now" — safely inside the `time_range: '1w'` window
+// the heavy feed scenarios filter on.
+const { dayAnchorMs: POST_SEED_ANCHOR_MS, monthUuidv7Prefix } = resolveSeedAnchor(
+  process.env.EXPLAIN_SEED_ANCHOR_DATE,
+)
 
-const POST_SEED_ANCHOR_MS = getCurrentDayAnchorMs()
-
-function getCurrentMonthUuidv7Prefix(): string {
-  const now = new Date()
-  const inMonthAnchorMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 15, 12)
-  return inMonthAnchorMs.toString(16).padStart(12, '0').slice(0, 8)
-}
-
-export const CRAWL_SEED_PREFIX = getCurrentMonthUuidv7Prefix()
+export const CRAWL_SEED_PREFIX = monthUuidv7Prefix
 
 export function seedUuid(index: number, tableTag = '00'): string {
   const indexHex = index.toString(16).padStart(12, '0')
