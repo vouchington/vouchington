@@ -6,6 +6,7 @@ import { enqueueSpendCapRecheck } from '@queues/ai-agents/enqueues/spend-cap-rec
 import { registerSpendCapDelayedJob } from '@services/ai-usage'
 import { getDayBounds } from '@ts-shared/utils/dates'
 import { processAIAgentWorkerJob } from './core.mts'
+import { delayForSpendCap } from '../processors/spend-cap-delay.mts'
 import { registerSpendCapRecheck as registerRecheck } from '../processors/spend-cap-recheck.mts'
 
 function delayedJob<T>(data: T): Job<T> {
@@ -70,13 +71,20 @@ describe('AI spend-cap registration timing', () => {
     const enqueue = vi.fn<typeof enqueueSpendCapRecheck>().mockResolvedValue(null)
 
     await expect(
-      registerRecheck(job, day, Date.now(), {
-        registerSpendCapDelayedJob: register,
-        enqueueSpendCapRecheck: enqueue,
-      }),
-    ).resolves.toBe(true)
+      delayForSpendCap(
+        job,
+        day,
+        (registeredJob, registeredDay) =>
+          registerRecheck(registeredJob, registeredDay, Date.now(), {
+            registerSpendCapDelayedJob: register,
+            enqueueSpendCapRecheck: enqueue,
+          }),
+        vi.fn(),
+      ),
+    ).rejects.toThrow('delayed')
 
     expect(register).toHaveBeenCalledExactlyOnceWith(job, day)
     expect(enqueue).toHaveBeenCalledExactlyOnceWith(day, 'generation-a', 0)
+    expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(getDayBounds(day).endMs)
   })
 })
