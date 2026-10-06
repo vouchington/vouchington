@@ -19,4 +19,6 @@ export type MembershipEventUpdateOptions = {
   transitionEffectiveAt?: Date | null
   cancelAtPeriodEnd?: boolean
   query?: QueryExecutor
+  /** Runs after the user row lock and before statements that wait on membership state. */
+  afterUserLock?: () => Promise<void>
 }

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import {
+  beginTransaction,
   createTestUser,
   getTestOAuthAccountRaw,
   lockTestUserMutation,
@@ -87,7 +88,6 @@ describe('connectOAuthAccountToUser', () => {
     const releaseDeletion = Promise.withResolvers<void>()
     const deletionUpdated = Promise.withResolvers<void>()
     let deleting: Promise<void> | undefined
-    let connecting: Promise<void> | undefined
 
     try {
       deleting = softDeleteTestUserAndWaitBeforeCommit(
@@ -98,19 +98,26 @@ describe('connectOAuthAccountToUser', () => {
       )
       await deletionUpdated.promise
 
-      connecting = connectOAuthAccountToUser('github', user.id, providerUserId)
-      await new Promise<void>(resolve => setImmediate(resolve))
+      const pendingConnection = connectOAuthAccountToUser('github', user.id, providerUserId).catch(
+        (err: unknown) => err,
+      )
+      {
+        await using contention = await beginTransaction()
+        await contention(`SET LOCAL lock_timeout = '50ms'`)
+        await expect(
+          connectOAuthAccountToUser('github', user.id, providerUserId, { query: contention }),
+        ).rejects.toMatchObject({ code: '55P03' })
+      }
       releaseDeletion.resolve()
 
       await expect(deleting).resolves.toBeUndefined()
-      await expect(connecting).rejects.toMatchObject({ code: '23514' })
+      await expect(pendingConnection).resolves.toMatchObject({ code: '23514' })
       await expect(getTestOAuthAccountRaw('github', providerUserId)).resolves.toMatchObject({
         user_id: null,
       })
     } finally {
       releaseDeletion.resolve()
       await deleting?.catch(() => undefined)
-      await connecting?.catch(() => undefined)
       await restoreUser(user.id)
     }
   })

@@ -108,6 +108,7 @@ export async function updateMembershipFromEvent(
       INNER JOIN users ON users.id = membership.user_id
       WHERE membership.id = ${options.membershipId} FOR UPDATE OF users
     `)
+    await options.afterUserLock?.()
     if (options.membershipSourceId !== undefined && options.status === 'cancelled') {
       await transaction(sql`/* updateMembershipFromEvent:detachedSourceState */
         UPDATE membership_source_states

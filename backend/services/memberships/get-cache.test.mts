@@ -135,7 +135,7 @@ describe('membership SKU cache schema', () => {
       // suite), so a concurrent fixture writer anywhere can delete this key between the write
       // above and the read here. Only the uniquely-addressed byStripePriceId key is safe to
       // assert on.
-      await expect.poll(() => cacheValkeyClient.get(keys.currentByStripePriceId)).not.toBeNull()
+      await expect(cacheValkeyClient.get(keys.currentByStripePriceId)).resolves.not.toBeNull()
       await expect(
         Promise.all([
           cacheValkeyClient.get(keys.legacyActivePlans),

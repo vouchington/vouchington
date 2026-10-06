@@ -6,14 +6,11 @@ import {
   insertTestTopic,
   setTestTopicSurfaceImages,
 } from '@voucha/test-helpers'
-import {
-  getTestDeliveryTransactionPid,
-  advanceTestDeliveryPlacementRevision,
-  testDeliveryTransactionIsWaitingForLock,
-} from '@voucha/test-helpers/entities/media-delivery-repair'
+import { advanceTestDeliveryPlacementRevision } from '@voucha/test-helpers/entities/media-delivery-repair'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { lockImageDeliveryMutation, prepublishImageSurfaceDenials } from './index.mts'
+import * as deliveryLock from './delivery-lock.mts'
 
 describe('multi-slot owner delivery fences', () => {
   afterEach(() => {
@@ -43,7 +40,16 @@ describe('multi-slot owner delivery fences', () => {
       placementIds: [firstPlacement!.placement_id],
       placementOnly: true,
     })
-    const ownerPid = await getTestDeliveryTransactionPid(owner)
+    const ownerEnteredLock = Promise.withResolvers<void>()
+    const lockDelivery = deliveryLock.lockImageDeliveryMutation
+    let ownerEntered = false
+    vi.spyOn(deliveryLock, 'lockImageDeliveryMutation').mockImplementation((query, input) => {
+      if (query !== owner || ownerEntered) return lockDelivery(query, input)
+      ownerEntered = true
+      const pending = lockDelivery(query, input)
+      ownerEnteredLock.resolve()
+      return pending
+    })
     const owning = (async () => {
       await prepublishImageSurfaceDenials(
         [
@@ -54,29 +60,18 @@ describe('multi-slot owner delivery fences', () => {
       )
       await owner.commit()
     })()
-    let result: PromiseSettledResult<void> | undefined
-    let locking: Promise<void> | undefined
     let laterCommitted = false
     let firstCommitted = false
     let advancedRevision = firstPlacement!.placement_revision
     try {
-      await vi.waitFor(async () =>
-        expect(await testDeliveryTransactionIsWaitingForLock(ownerPid)).toBe(true),
-      )
-      locking = lockImageDeliveryMutation(later, {
+      await ownerEnteredLock.promise
+      await expect(probePlacementAdvisoryLock(firstPlacement!.placement_id)).rejects.toMatchObject({
+        code: '55P03',
+      })
+      await lockImageDeliveryMutation(later, {
         placementIds: [secondPlacement!.placement_id],
         placementOnly: true,
-      }).then(
-        value => {
-          result = { status: 'fulfilled', value }
-          return value
-        },
-        err => {
-          result = { status: 'rejected', reason: err }
-        },
-      )
-      await vi.waitFor(() => expect(result).toBeDefined())
-      if (result?.status === 'rejected') throw result.reason
+      })
       expect(edge.put).not.toHaveBeenCalled()
       await later.commit()
       laterCommitted = true
@@ -88,7 +83,6 @@ describe('multi-slot owner delivery fences', () => {
       firstCommitted = true
     } finally {
       if (!firstCommitted) await first.rollback()
-      await locking
       if (!laterCommitted) await later.rollback()
       await Promise.allSettled([owning])
     }
@@ -104,3 +98,12 @@ describe('multi-slot owner delivery fences', () => {
     )
   })
 })
+
+async function probePlacementAdvisoryLock(placementId: string): Promise<void> {
+  await using probe = await beginTransaction()
+  await probe(`SET LOCAL lock_timeout = '50ms'`)
+  await probe(`/* surface lock probe */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, [
+    `image-placement:${placementId}`,
+  ])
+  await probe.commit()
+}

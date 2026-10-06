@@ -12,10 +12,7 @@ import {
   withTestDeliveryBorrowedClient,
   withTestDeliveryReusedClient,
   flagTestDeliveryImageInTransaction,
-  getTestDeliveryTransactionPid,
-  testDeliveryTransactionIsBlockingAdmission,
   setTestDeliveryUserImageInTransaction,
-  testDeliveryTransactionIsWaitingForLock,
 } from '@voucha/test-helpers/entities/media-delivery-repair'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import {
@@ -27,6 +24,7 @@ import {
   assertImagesReadyForSurface,
   lockUserProfileLinkImageOwners,
 } from './index.mts'
+import * as assetAdmissionLock from './asset-admission-lock.mts'
 import { syncImageSurfacePlacement } from './surface-placement-sync.mts'
 import { createCommunity } from '../communities/create.mts'
 import { lockActivePostAuthorImageAdmission } from '../posts/create/active-author.mts'
@@ -62,21 +60,14 @@ describe('asset admission root domain', () => {
     await using first = await beginTransaction()
     await using second = await beginTransaction()
     await lockUserProfileLinkImageOwners([ownerId], first)
-    const pid = await getTestDeliveryTransactionPid(second)
-    const locking = lockUserProfileLinkImageOwners(
-      [ownerId.replaceAll('-', '').toUpperCase()],
-      second,
-    )
-    void locking.catch(() => undefined)
-    try {
-      await vi.waitFor(async () =>
-        expect(await testDeliveryTransactionIsWaitingForLock(pid)).toBe(true),
-      )
-    } finally {
-      await first.rollback()
-      await Promise.allSettled([locking])
-    }
-    await expect(locking).resolves.toBeUndefined()
+    await second(`SET LOCAL lock_timeout = '50ms'`)
+    await expect(
+      lockUserProfileLinkImageOwners([ownerId.replaceAll('-', '').toUpperCase()], second),
+    ).rejects.toMatchObject({ code: '55P03' })
+    await second.rollback()
+    await first.rollback()
+    await using retry = await beginTransaction()
+    await lockUserProfileLinkImageOwners([ownerId.replaceAll('-', '').toUpperCase()], retry)
   })
 
   it('shares immutable roots across borrowed wrappers and rejects late expansion before publication', async () => {
@@ -148,7 +139,7 @@ describe('asset admission root domain', () => {
       await lockImageAssetAdmission([imageId], unsafe)
       await lockImageDeliveryMutation(unsafe, { imageIds: [imageId] })
       await flagTestDeliveryImageInTransaction(unsafe, imageId)
-      const pid = await getTestDeliveryTransactionPid(unsafe)
+      const blocked = watchAdmissionLock(ids => ids.includes(imageId))
       const admitting = (
         path === 'sync'
           ? syncImageSurfacePlacement(
@@ -166,9 +157,8 @@ describe('asset admission root domain', () => {
         err => err as Error,
       )
       try {
-        await vi.waitFor(async () =>
-          expect(await testDeliveryTransactionIsBlockingAdmission(pid)).toBe(true),
-        )
+        await blocked
+        await expectAdmissionLockHeld(imageId)
         expect(edge.put).not.toHaveBeenCalled()
       } finally {
         await unsafe.commit()
@@ -204,9 +194,11 @@ describe('asset admission root domain', () => {
       revision: tuple!.placement_revision,
       imageId,
     })
-    const pid = await getTestDeliveryTransactionPid(owner)
+    const admissionStarted = Promise.withResolvers<void>()
     const modifying = (async () => {
-      await lockImageAssetAdmission([imageId], unsafe)
+      const pending = lockImageAssetAdmission([imageId], unsafe)
+      admissionStarted.resolve()
+      await pending
       await lockImageDeliveryMutation(unsafe, { imageIds: [imageId] })
       await prepublishImageDeliveryDenials(imageId, { query: unsafe })
       await flagTestDeliveryImageInTransaction(unsafe, imageId)
@@ -214,9 +206,8 @@ describe('asset admission root domain', () => {
     })()
     void modifying.catch(() => undefined)
     try {
-      await vi.waitFor(async () =>
-        expect(await testDeliveryTransactionIsBlockingAdmission(pid)).toBe(true),
-      )
+      await admissionStarted.promise
+      await expectAdmissionLockHeld(imageId)
     } finally {
       await owner.commit()
       await Promise.allSettled([modifying])
@@ -231,7 +222,7 @@ describe('asset admission root domain', () => {
     const imageId = crypto.randomUUID()
     await using blocker = await beginTransaction()
     await lockImageAssetAdmission([imageId], blocker)
-    const pid = await getTestDeliveryTransactionPid(blocker)
+    const blocked = watchAdmissionLock(ids => ids.some(id => id === imageId.toUpperCase()))
     const reusing = withTestDeliveryReusedClient(async run => {
       await run(async query => {
         await lockImageAssetAdmission([crypto.randomUUID()], query)
@@ -244,9 +235,8 @@ describe('asset admission root domain', () => {
     })
     void reusing.catch(() => undefined)
     try {
-      await vi.waitFor(async () =>
-        expect(await testDeliveryTransactionIsBlockingAdmission(pid)).toBe(true),
-      )
+      await blocked
+      await expectAdmissionLockHeld(imageId)
     } finally {
       await blocker.rollback()
       await Promise.allSettled([reusing])
@@ -254,3 +244,27 @@ describe('asset admission root domain', () => {
     await expect(reusing).resolves.toBeUndefined()
   })
 })
+
+function watchAdmissionLock(matches: (imageIds: readonly string[]) => boolean): Promise<void> {
+  const blocked = Promise.withResolvers<void>()
+  const lockAdmission = assetAdmissionLock.lockImageAssetAdmission
+  let armed = false
+  vi.spyOn(assetAdmissionLock, 'lockImageAssetAdmission').mockImplementation((imageIds, query) => {
+    if (armed || !matches(imageIds)) return lockAdmission(imageIds, query)
+    armed = true
+    const pending = lockAdmission(imageIds, query)
+    blocked.resolve()
+    return pending
+  })
+  return blocked.promise
+}
+
+async function expectAdmissionLockHeld(imageId: string): Promise<void> {
+  await using probe = await beginTransaction()
+  await probe(`SET LOCAL lock_timeout = '50ms'`)
+  await expect(
+    probe(`/* admission lock probe */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, [
+      `image-asset-admission:${imageId}`,
+    ]),
+  ).rejects.toMatchObject({ code: '55P03' })
+}

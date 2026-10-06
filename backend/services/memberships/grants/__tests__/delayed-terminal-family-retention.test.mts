@@ -1,13 +1,14 @@
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   createTestFamilyMembership,
   createTestSku,
   createTestUser,
   getTestGrantQueue,
+  readAllQueueJobs,
   setTestMembershipGrantRemainingMilliseconds,
-  waitForQueueJobs,
 } from '@voucha/test-helpers'
+import * as unfurlEnqueues from '@queues/unfurl-referral-links/enqueues'
 import { unfurlReferralLinksQueue } from '@queues/unfurl-referral-links/queues'
 import { createMembership, grantMembership } from '../../create.mts'
 import { getMembershipByUserId } from '../../get.mts'
@@ -41,6 +42,13 @@ describe('delayed direct termination with an elapsed queued grant', () => {
     expect(queuedGrantId).toBeDefined()
     await setTestMembershipGrantRemainingMilliseconds(queuedGrantId!, 0.5)
     const terminalEffectiveAt = new Date()
+    const pendingChildRemoval: Promise<unknown>[] = []
+    const enqueueChildRemoval = unfurlEnqueues.enqueueRemoveUnfurledChildrenForUser
+    vi.spyOn(unfurlEnqueues, 'enqueueRemoveUnfurledChildrenForUser').mockImplementation(userId => {
+      const job = enqueueChildRemoval(userId)
+      pendingChildRemoval.push(job)
+      return job
+    })
 
     const terminal = await updateMembershipFromEvent(
       {
@@ -56,13 +64,10 @@ describe('delayed direct termination with an elapsed queued grant', () => {
       plan: 'plus',
       status: 'active',
     })
-    const queuedChildRemoval = (
-      await waitForQueueJobs(
-        unfurlReferralLinksQueue,
-        jobs => jobs.some(job => (job.data as { userId?: string } | null)?.userId === member.id),
-        200,
-      )
-    ).filter(job => (job.data as { userId?: string } | null)?.userId === member.id)
+    await Promise.all(pendingChildRemoval)
+    const queuedChildRemoval = (await readAllQueueJobs(unfurlReferralLinksQueue)).filter(
+      job => (job.data as { userId?: string } | null)?.userId === member.id,
+    )
     expect(queuedChildRemoval).toHaveLength(0)
   })
 })

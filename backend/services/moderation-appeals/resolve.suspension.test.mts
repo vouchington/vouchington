@@ -1,11 +1,10 @@
-import { describe, it, expect, beforeAll, vi } from 'vitest'
+import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest'
 import {
   beginTransaction,
   createTestUser,
   suspendTestUserGetId,
   getTestUserSuspension,
   hardDeleteTestUserAndWaitBeforeCommit,
-  isTestAuthorPublicationLifecycleLockWaiting,
   lockTestUserSuspension,
   getLatestTestAppealTrainingFeedback,
   WEB_PROVENANCE,
@@ -15,7 +14,7 @@ import { createModerationAppeal } from './create.mts'
 import { parseCreateModerationAppealInput } from './parse.mts'
 import { resolveModerationAppealAccept } from './resolve.mts'
 import { liftUserSuspensionById } from './lift-sanctions.mts'
-import { lockAuthorPublicationLifecycle } from '@services/post-publication'
+import * as postPublication from '@services/post-publication'
 import { deliverModerationAppealForTest } from '@voucha/test-helpers/services/moderation-appeals/resolution.fixtures'
 import * as psqlEnqueues from '@queues/psql/enqueues'
 
@@ -26,6 +25,10 @@ describe('resolveModerationAppealAccept — suspension', () => {
   beforeAll(async () => {
     admin = await createTestUser({ administrator: true })
     moderator = await createTestUser({ extraRoles: ['moderator'] })
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   it('lifts the platform suspension when an administrator accepts a suspension appeal', async () => {
@@ -67,13 +70,25 @@ describe('resolveModerationAppealAccept — suspension', () => {
     const holder = holdSuspensionRow()
     await suspensionRowLocked.promise
 
+    const authorLocked = Promise.withResolvers<void>()
+    const lockAuthorPublicationLifecycle = postPublication.lockAuthorPublicationLifecycle
+    vi.spyOn(postPublication, 'lockAuthorPublicationLifecycle').mockImplementation(
+      async (...args) => {
+        await lockAuthorPublicationLifecycle(...args)
+        authorLocked.resolve()
+      },
+    )
     const lift = liftUserSuspensionById(admin.id, suspensionId, {})
     try {
-      await vi.waitFor(async () => {
-        await expect(probeAuthorLifecycleLock(suspensionUser.id)).rejects.toMatchObject({
-          code: '55P03',
-        })
-      })
+      await Promise.race([
+        authorLocked.promise,
+        lift.then(() => {
+          throw new Error('suspension lift settled before the author lock')
+        }),
+      ])
+      await expect(
+        probeAuthorLifecycleLock(suspensionUser.id, lockAuthorPublicationLifecycle),
+      ).rejects.toMatchObject({ code: '55P03' })
     } finally {
       releaseSuspensionRow.resolve()
     }
@@ -98,12 +113,27 @@ describe('resolveModerationAppealAccept — suspension', () => {
 
     const deletionMayProceed = Promise.withResolvers<void>()
     const deletionHoldsAuthorLifecycle = Promise.withResolvers<void>()
+    const appealWaitingForAuthorLock = Promise.withResolvers<void>()
+    const lockAuthorPublicationLifecycle = postPublication.lockAuthorPublicationLifecycle
+    let deletionInstalled = false
+    vi.spyOn(postPublication, 'lockAuthorPublicationLifecycle').mockImplementation(
+      async (...args) => {
+        if (!deletionInstalled) {
+          deletionInstalled = true
+          await lockAuthorPublicationLifecycle(...args)
+          return
+        }
+        const pending = lockAuthorPublicationLifecycle(...args)
+        appealWaitingForAuthorLock.resolve()
+        await pending
+      },
+    )
     const deleting = hardDeleteTestUserAndWaitBeforeCommit(
       suspensionUser.id,
       Promise.resolve(),
       undefined,
       async query => {
-        await lockAuthorPublicationLifecycle(query, suspensionUser.id)
+        await postPublication.lockAuthorPublicationLifecycle(query, suspensionUser.id)
         deletionHoldsAuthorLifecycle.resolve()
         await deletionMayProceed.promise
       },
@@ -113,11 +143,17 @@ describe('resolveModerationAppealAccept — suspension', () => {
     const resolving = resolveModerationAppealAccept(admin.id, appeal.id, 'staff_or_user')
     const resolvingRejection = resolving.catch((err: unknown) => err)
     try {
-      await vi.waitFor(async () => {
-        await expect(isTestAuthorPublicationLifecycleLockWaiting(suspensionUser.id)).resolves.toBe(
-          true,
-        )
-      })
+      await Promise.race([
+        appealWaitingForAuthorLock.promise,
+        resolvingRejection.then(result => {
+          throw result instanceof Error
+            ? result
+            : new Error('appeal settled before the author lock')
+        }),
+      ])
+      await expect(
+        probeAuthorLifecycleLock(suspensionUser.id, lockAuthorPublicationLifecycle),
+      ).rejects.toMatchObject({ code: '55P03' })
     } finally {
       deletionMayProceed.resolve()
     }
@@ -144,7 +180,10 @@ describe('resolveModerationAppealAccept — suspension', () => {
   })
 })
 
-async function probeAuthorLifecycleLock(userId: string): Promise<void> {
+async function probeAuthorLifecycleLock(
+  userId: string,
+  lockAuthorPublicationLifecycle: typeof postPublication.lockAuthorPublicationLifecycle,
+): Promise<void> {
   await using query = await beginTransaction()
   await query(`/* author lifecycle lock timeout */ SET LOCAL lock_timeout = '50ms'`)
   await lockAuthorPublicationLifecycle(query, userId)

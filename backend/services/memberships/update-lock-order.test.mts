@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   createTestMembership,
   createTestUser,
@@ -21,11 +21,17 @@ describe('updateMembershipFromEvent lock order', () => {
     const holder = holdTestMembershipRowLock(membership.id, membershipLocked, releaseMembership)
     await membershipLocked.promise
 
-    const update = updateWithoutRecording({ membershipId: membership.id, status: 'past_due' })
+    const userLocked = Promise.withResolvers<void>()
+    const update = updateWithoutRecording({
+      membershipId: membership.id,
+      status: 'past_due',
+      afterUserLock: async () => {
+        userLocked.resolve()
+      },
+    })
     try {
-      await vi.waitFor(async () => {
-        await expect(probeTestUserLock(lockUser.id)).rejects.toMatchObject({ code: '55P03' })
-      })
+      await userLocked.promise
+      await expect(probeTestUserLock(lockUser.id)).rejects.toMatchObject({ code: '55P03' })
     } finally {
       releaseMembership.resolve()
     }
@@ -45,15 +51,18 @@ describe('updateMembershipFromEvent lock order', () => {
     )
     await sourceLocked.promise
 
+    const userLocked = Promise.withResolvers<void>()
     const update = updateWithoutRecording({
       membershipId: membership.id,
       membershipSourceId: membership.membership_source_id,
       status: 'cancelled',
+      afterUserLock: async () => {
+        userLocked.resolve()
+      },
     })
     try {
-      await vi.waitFor(async () => {
-        await expect(probeTestUserLock(lockUser.id)).rejects.toMatchObject({ code: '55P03' })
-      })
+      await userLocked.promise
+      await expect(probeTestUserLock(lockUser.id)).rejects.toMatchObject({ code: '55P03' })
     } finally {
       releaseSource.resolve()
     }

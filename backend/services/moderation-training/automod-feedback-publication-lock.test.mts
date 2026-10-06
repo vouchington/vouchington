@@ -8,7 +8,7 @@ import {
   setTestPostClearanceStatus,
   updatePostModerationData,
 } from '@voucha/test-helpers'
-import { lockPostPublication } from '@services/post-publication'
+import * as postPublication from '@services/post-publication'
 import { recordAutomodActionFeedback } from './automod-feedback.mts'
 
 describe('recordAutomodActionFeedback publication lock', () => {
@@ -44,6 +44,12 @@ describe('recordAutomodActionFeedback publication lock', () => {
     const holder = holdPostRow()
     await rowLocked.promise
 
+    const publicationLocked = Promise.withResolvers<void>()
+    const lockPostPublication = postPublication.lockPostPublication
+    vi.spyOn(postPublication, 'lockPostPublication').mockImplementation(async (...args) => {
+      await lockPostPublication(...args)
+      publicationLocked.resolve()
+    })
     const feedback = recordAutomodActionFeedback({
       communityId: community.id,
       sourceKey: `openai_omni:${postId}:${inputSha256.toString('hex')}`,
@@ -52,20 +58,28 @@ describe('recordAutomodActionFeedback publication lock', () => {
       action: 'label_only',
     })
     try {
-      await vi.waitFor(async () => {
-        await expect(lockPublicationWithShortTimeout(postId)).rejects.toMatchObject({
-          code: '55P03',
-        })
-      })
+      await Promise.race([
+        publicationLocked.promise,
+        feedback.then(() => {
+          throw new Error('feedback settled before the publication lock')
+        }),
+      ])
+      await expect(
+        lockPublicationWithShortTimeout(postId, lockPostPublication),
+      ).rejects.toMatchObject({ code: '55P03' })
     } finally {
       releaseRow.resolve()
+      vi.restoreAllMocks()
     }
     await holder
     await expect(feedback).resolves.toMatchObject({ applied_action: true })
   })
 })
 
-async function lockPublicationWithShortTimeout(postId: string): Promise<void> {
+async function lockPublicationWithShortTimeout(
+  postId: string,
+  lockPostPublication: typeof postPublication.lockPostPublication,
+): Promise<void> {
   await using query = await beginTransaction()
   await query(
     `/* recordAutomodActionFeedback publication lock timeout */ SET LOCAL lock_timeout = '50ms'`,

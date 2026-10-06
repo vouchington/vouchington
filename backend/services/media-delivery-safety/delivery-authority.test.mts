@@ -135,23 +135,13 @@ describe('delivery authority and durable denial repair', () => {
     await using first = await beginTransaction()
     await using second = await beginTransaction()
     await lockImageDeliveryMutation(first, { imageIds: [a.tuple.imageId] })
-    let result: PromiseSettledResult<void> | undefined
-    const locking = lockImageDeliveryMutation(second, { imageIds: [b.tuple.imageId] }).then(
-      value => {
-        result = { status: 'fulfilled', value }
-        return value
-      },
-      err => {
-        result = { status: 'rejected', reason: err }
-      },
-    )
     try {
-      await vi.waitFor(() => expect(result).toBeDefined())
-      if (result?.status === 'rejected') throw result.reason
+      await expect(
+        lockImageDeliveryMutation(second, { imageIds: [b.tuple.imageId] }),
+      ).resolves.toBeUndefined()
       await second.commit()
     } finally {
       await first.rollback()
-      await locking
     }
   })
 

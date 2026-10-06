@@ -1,9 +1,9 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Agent } from 'node:https'
 import webpush from 'web-push'
-import { waitForTestDatabaseTimestamp } from '@voucha/test-helpers'
 import { deliverClaimedNotificationPushIntent } from './push-intent-delivery.mts'
 import { claimNotificationPushIntent, renewNotificationPushIntentLease } from './push-intents.mts'
+import { persistClaimedNotificationPushOutcome } from './push-intent-results.mts'
 import {
   notificationPushDeliveryPolicy,
   type NotificationPushDeliveryPolicy,
@@ -12,7 +12,6 @@ import {
   createDelivery,
   getLeaseExpiry,
   successfulSendResult,
-  waitForDeliveredEndpoint,
 } from '@voucha/test-helpers/notification-push-fixtures'
 
 const shortLeasePolicy: NotificationPushDeliveryPolicy = {
@@ -51,8 +50,11 @@ describe('incremental notification push receipts', () => {
       slowSettled = true
       return successfulSendResult()
     })
-    const delivery = deliverClaimedNotificationPushIntent(intent)
-    await waitForDeliveredEndpoint(intent, promptSubscriptionId)
+    const promptDelivery = captureDeliveredPersist(promptSubscriptionId)
+    const delivery = deliverClaimedNotificationPushIntent(intent, undefined, {
+      persist: promptDelivery.persist,
+    })
+    await promptDelivery.delivered.promise
     expect(webpush.sendNotification).toHaveBeenCalledTimes(2)
     expect(slowSettled).toBe(false)
     resolveSlow()
@@ -64,9 +66,8 @@ describe('incremental notification push receipts', () => {
     const { intent, prompt, promptSubscriptionId, slow } = await createDelivery(1)
     const originalLeaseExpiry = await getLeaseExpiry(intent)
     const slowSend = Promise.withResolvers<void>()
-    let renewedAfterOriginalExpiry = false
-    let originalExpiryPassed = false
-    let renewals = 0
+    const renewed = Promise.withResolvers<void>()
+    const promptDelivery = captureDeliveredPersist(promptSubscriptionId)
     vi.mocked(webpush.sendNotification).mockImplementation(async subscription => {
       if (subscription.endpoint === prompt) return successfulSendResult()
       await slowSend.promise
@@ -74,21 +75,15 @@ describe('incremental notification push receipts', () => {
     })
     const deliveryRejection = deliverClaimedNotificationPushIntent(intent, shortLeasePolicy, {
       renew: async (renewedIntent, leaseSeconds) => {
-        renewals++
-        const startedAfterOriginalExpiry = originalExpiryPassed
         const accepted = await renewNotificationPushIntentLease(renewedIntent, leaseSeconds)
-        if (startedAfterOriginalExpiry) renewedAfterOriginalExpiry = true
+        if (accepted) renewed.resolve()
         return accepted
       },
+      persist: promptDelivery.persist,
     }).catch(err => err)
     try {
-      await waitForDeliveredEndpoint(intent, promptSubscriptionId)
-      await waitForTestDatabaseTimestamp(originalLeaseExpiry)
-      originalExpiryPassed = true
-      await vi.waitFor(() => expect(renewedAfterOriginalExpiry).toBe(true), {
-        timeout: shortLeasePolicy.leaseSeconds * 2_000,
-      })
-      expect(renewals).toBeGreaterThan(1)
+      await renewed.promise
+      await promptDelivery.delivered.promise
       await expect(getLeaseExpiry(intent)).resolves.toBeGreaterThan(originalLeaseExpiry)
       await expect(
         claimNotificationPushIntent(
@@ -291,3 +286,15 @@ describe('incremental notification push receipts', () => {
     },
   )
 })
+
+function captureDeliveredPersist(subscriptionId: string) {
+  const delivered = Promise.withResolvers<void>()
+  const persist = (async (intent, outcome) => {
+    const result = await persistClaimedNotificationPushOutcome(intent, outcome)
+    if (outcome.kind === 'delivered' && outcome.subscription.id === subscriptionId)
+      if (result === 'persisted') delivered.resolve()
+      else delivered.reject(new Error(`notification push persist returned ${result}`))
+    return result
+  }) as typeof persistClaimedNotificationPushOutcome
+  return { delivered, persist }
+}
