@@ -83,10 +83,12 @@ describe('CommentAncestorTrail', () => {
         limit: 5,
       }),
     )
-    expect(screen.getAllByRole('link').map(link => link.textContent)).toEqual([
-      'parent-1',
-      'parent-2',
-    ])
+    await waitFor(() =>
+      expect(screen.getAllByRole('link').map(link => link.textContent)).toEqual([
+        'parent-1',
+        'parent-2',
+      ]),
+    )
     expect(screen.queryByRole('button', { name: 'Show earlier replies' })).not.toBeInTheDocument()
   })
 
@@ -110,9 +112,11 @@ describe('CommentAncestorTrail', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
     await waitFor(() => expect(mockFetchPostAncestors).toHaveBeenCalledTimes(2))
-    expect(screen.getAllByRole('link').map(link => link.textContent)).toEqual([
-      'parent-1',
-      'parent-2',
-    ])
+    await waitFor(() =>
+      expect(screen.getAllByRole('link').map(link => link.textContent)).toEqual([
+        'parent-1',
+        'parent-2',
+      ]),
+    )
   })
 })
