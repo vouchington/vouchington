@@ -1084,7 +1084,6 @@
 - `story_official_item_set`
 - `story_rename`
 - `suspend`
-- `tag`
 - `topic_claim_reject`
 - `topic_claim_revoke`
 - `topic_claim_verify`
@@ -1120,7 +1119,6 @@
 - `unlock`
 - `pin`
 - `unpin`
-- `tag`
 - `suspend`
 - `unsuspend`
 - `remove_member`
