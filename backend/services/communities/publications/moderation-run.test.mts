@@ -119,7 +119,7 @@ describe('community moderation requests are written with the publication change'
       await approvePublication(owner, approvalCommunity.id, postId)
 
       expect(await requestsOf(postId)).toMatchObject([{ run_id: null, stale_at: null }])
-      await expect.poll(() => communityDispatchers(postId)).toHaveLength(1)
+      expect(await communityDispatchers(postId)).toHaveLength(1)
     })
   })
 
@@ -131,7 +131,7 @@ describe('community moderation requests are written with the publication change'
       await approvePublication(owner, approvalCommunity.id, postId)
 
       expect(await requestsOf(postId)).toHaveLength(1)
-      await expect.poll(() => communityDispatchers(postId)).toHaveLength(1)
+      expect(await communityDispatchers(postId)).toHaveLength(1)
     })
 
     it('requests the run once however often the approval is replayed', async () => {
@@ -151,7 +151,7 @@ describe('community moderation requests are written with the publication change'
       await approvePublication(siteModerator, approvalCommunity.id, postId)
 
       expect(await requestsOf(postId)).toHaveLength(1)
-      await expect.poll(() => communityDispatchers(postId)).toHaveLength(1)
+      expect(await communityDispatchers(postId)).toHaveLength(1)
     })
 
     it('requests nothing when the post is rejected', async () => {
@@ -190,7 +190,7 @@ describe('community moderation requests are written with the publication change'
       await createCommunityPostReview(member.id, postId, community.id)
 
       expect(await requestsOf(postId)).toHaveLength(1)
-      await expect.poll(() => communityDispatchers(postId)).toHaveLength(1)
+      expect(await communityDispatchers(postId)).toHaveLength(1)
     })
 
     it('requests nothing for a post that waits for moderator approval', async () => {
@@ -220,7 +220,7 @@ describe('community moderation requests are written with the publication change'
       await query.commit()
 
       expect(await requestsOf(postId)).toHaveLength(1)
-      await expect.poll(() => communityDispatchers(postId)).toHaveLength(1)
+      expect(await communityDispatchers(postId)).toHaveLength(1)
     })
   })
 })

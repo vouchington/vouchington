@@ -12,9 +12,8 @@ import { getUrlHostnameCrawlerDetailsById } from '@services/urls-hostnames'
 
 import { createTestUser } from '@voucha/test-helpers'
 
-import { pollUntilNotNull } from '@voucha/test-helpers/polling'
-
 import { getTestHostnameDnsStats } from '@voucha/test-helpers/entities/url-hostnames'
+import * as dnsFailures from '@services/urls-hostnames/dns-failures'
 
 import type { PrivateUser } from '@services/users/types'
 
@@ -62,6 +61,24 @@ import {
 import { createCrawl } from '../create.mts'
 import { updateCrawl } from '../update.mts'
 import { recordCrawlError } from '../crawl-url/errors.mts'
+
+async function withRecordedDnsFailure<T>(run: () => Promise<T>): Promise<T> {
+  const record = dnsFailures.recordHostnameDnsFailure
+  const pending: Promise<unknown>[] = []
+  const spy = vi
+    .spyOn(dnsFailures, 'recordHostnameDnsFailure')
+    .mockImplementation((hostnameId, resolveCanary) => {
+      const result = record(hostnameId, resolveCanary)
+      pending.push(result)
+      return result
+    })
+  try {
+    return await run()
+  } finally {
+    await Promise.all(pending)
+    spy.mockRestore()
+  }
+}
 
 let user: PrivateUser
 
@@ -127,16 +144,15 @@ describe('crawl-url.errors', () => {
         new CrawlerNetworkError(`https://${hostname}/page`, 0, nullRouteError),
       )
 
-      await expect(crawlUrlForTest(url!.id)).rejects.toThrow(CrawlerNetworkError)
+      await expect(withRecordedDnsFailure(() => crawlUrlForTest(url!.id))).rejects.toThrow(
+        CrawlerNetworkError,
+      )
 
       expect(fetchCrawlerHtml).not.toHaveBeenCalled()
       expect(await getLatestCrawlNetworkError(url!.id)).toBe('dns')
       expect(await getLatestCrawlStatusCode(url!.id)).toBe(502)
 
-      const dnsStats = await pollUntilNotNull(async () => {
-        const stats = await getTestHostnameDnsStats(url!.hostname.id)
-        return stats && stats.consecutive_dns_failures > 0 ? stats : null
-      })
+      const dnsStats = await getTestHostnameDnsStats(url!.hostname.id)
       expect(dnsStats).not.toBeNull()
       expect(dnsStats?.consecutive_dns_failures).toBe(1)
       expect(dnsStats?.last_dns_failure_at).toBeInstanceOf(Date)

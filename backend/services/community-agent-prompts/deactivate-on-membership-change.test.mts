@@ -1,11 +1,11 @@
-import { it, expect, beforeAll, describe } from 'vitest'
+import { it, expect, beforeAll, describe, vi } from 'vitest'
 import {
   createTestUser,
   insertTestCommunity,
   insertTestCommunityMember,
   insertTestCommunityAgentPrompt,
-  pollUntilNotNull,
 } from '@voucha/test-helpers'
+import * as entityListenerEnqueues from '@queues/entity-listeners/enqueues'
 import { updateMemberRole } from '@services/communities/members/update-role'
 import { removeMember } from '@services/communities/members/remove'
 import { getCommunityAgentPrompt } from './get.mts'
@@ -23,17 +23,22 @@ describe('deactivateCommunityPromptsForUser via membership changes', () => {
   let owner: PrivateUser
   let publicCommunity: Community
 
-  async function waitForPromptDeactivated(promptId: string): Promise<void> {
-    await pollUntilNotNull(
-      async () => {
-        const p = await getCommunityAgentPrompt(promptId)
-        if (p === null) throw new Error(`Prompt ${promptId} not found — was it deleted?`)
-        return p.is_slot_allocated ? null : p
-      },
-      2000,
-      25,
-      `prompt ${promptId} to be deactivated`,
-    )
+  async function withPromptDeactivation<T>(mutate: () => Promise<T>): Promise<T> {
+    const enqueue = entityListenerEnqueues.enqueueOnCommunityAgentPromptsDeactivated
+    const pending: Promise<unknown>[] = []
+    const spy = vi
+      .spyOn(entityListenerEnqueues, 'enqueueOnCommunityAgentPromptsDeactivated')
+      .mockImplementation((actorUserId, userId, communityId, priority) => {
+        const result = enqueue(actorUserId, userId, communityId, priority)
+        pending.push(result)
+        return result
+      })
+    try {
+      return await mutate()
+    } finally {
+      await Promise.all(pending)
+      spy.mockRestore()
+    }
   }
 
   beforeAll(async () => {
@@ -60,9 +65,10 @@ describe('deactivateCommunityPromptsForUser via membership changes', () => {
         slotAllocated: true,
       })
 
-      await updateMemberRole(owner.id, publicCommunity.id, mod.id, 'member')
+      await withPromptDeactivation(() =>
+        updateMemberRole(owner.id, publicCommunity.id, mod.id, 'member'),
+      )
 
-      await waitForPromptDeactivated(prompt.id)
       const p = await getCommunityAgentPrompt(prompt.id)
       expect(p!.is_slot_allocated).toBe(false)
       expect(p!.deactivated_at).not.toBeNull()
@@ -102,12 +108,12 @@ describe('deactivateCommunityPromptsForUser via membership changes', () => {
         }),
       ])
 
-      await updateMemberRole(owner.id, publicCommunity.id, mod.id, 'member')
+      await withPromptDeactivation(() =>
+        updateMemberRole(owner.id, publicCommunity.id, mod.id, 'member'),
+      )
 
-      // Wait for the community A prompt to be deactivated
-      await waitForPromptDeactivated(promptA.id)
-
-      // Community B prompt should be unaffected
+      const pA = await getCommunityAgentPrompt(promptA.id)
+      expect(pA!.is_slot_allocated).toBe(false)
       const pB = await getCommunityAgentPrompt(promptB.id)
       expect(pB!.is_slot_allocated).toBe(true)
     })
@@ -140,12 +146,12 @@ describe('deactivateCommunityPromptsForUser via membership changes', () => {
         }),
       ])
 
-      await updateMemberRole(owner.id, publicCommunity.id, mod1.id, 'member')
+      await withPromptDeactivation(() =>
+        updateMemberRole(owner.id, publicCommunity.id, mod1.id, 'member'),
+      )
 
-      // Wait for mod1's prompt to be deactivated
-      await waitForPromptDeactivated(prompt1.id)
-
-      // mod2's prompt should be unaffected
+      const deactivated = await getCommunityAgentPrompt(prompt1.id)
+      expect(deactivated!.is_slot_allocated).toBe(false)
       const p2 = await getCommunityAgentPrompt(prompt2.id)
       expect(p2!.is_slot_allocated).toBe(true)
     })
@@ -185,9 +191,8 @@ describe('deactivateCommunityPromptsForUser via membership changes', () => {
         slotAllocated: true,
       })
 
-      await removeMember(owner.id, publicCommunity.id, mod.id)
+      await withPromptDeactivation(() => removeMember(owner.id, publicCommunity.id, mod.id))
 
-      await waitForPromptDeactivated(prompt.id)
       const p = await getCommunityAgentPrompt(prompt.id)
       expect(p!.is_slot_allocated).toBe(false)
       expect(p!.deactivated_at).not.toBeNull()

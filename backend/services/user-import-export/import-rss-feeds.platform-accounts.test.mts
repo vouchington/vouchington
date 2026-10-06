@@ -9,6 +9,7 @@ import {
   createPlatformAccountTestUser,
   type PlatformAccountTestKind,
 } from '@voucha/test-helpers/account-types'
+import * as automaticTopicUpvote from '@services/elections-votes/topic/automatic-upvote'
 import { createSourceFromUrl } from '@services/rss-feeds/create-source'
 import type { FeedClassification } from '@services/rss-feeds/validate'
 import { importSingleRssFeed } from './import-rss-feeds.mts'
@@ -28,6 +29,24 @@ function feedFixture(label: string) {
   const createSourceFromUrlImpl: typeof createSourceFromUrl = (user, provenance, url, options) =>
     createSourceFromUrl(user, provenance, url, { ...options, fetchAndClassifyFeedImpl })
   return { feedUrl: `https://${label}-${random}.example.com/feed.xml`, createSourceFromUrlImpl }
+}
+
+async function withTrackedAutomaticUpvotes<T>(run: () => Promise<T>): Promise<T> {
+  const upvote = automaticTopicUpvote.upsertAutomaticTopicUpvote
+  const pending: Promise<unknown>[] = []
+  const spy = vi
+    .spyOn(automaticTopicUpvote, 'upsertAutomaticTopicUpvote')
+    .mockImplementation((user, topicId) => {
+      const result = upvote(user, topicId)
+      pending.push(result)
+      return result
+    })
+  try {
+    return await run()
+  } finally {
+    await Promise.all(pending)
+    spy.mockRestore()
+  }
 }
 
 describe('importSingleRssFeed automatic vote for platform accounts', () => {
@@ -65,8 +84,10 @@ describe('importSingleRssFeed automatic vote for platform accounts', () => {
     const member = await createTestUser()
     const { feedUrl, createSourceFromUrlImpl } = feedFixture('import-member-new')
 
-    await importSingleRssFeed(member, WEB_PROVENANCE, feedUrl, { createSourceFromUrlImpl })
+    await withTrackedAutomaticUpvotes(() =>
+      importSingleRssFeed(member, WEB_PROVENANCE, feedUrl, { createSourceFromUrlImpl }),
+    )
 
-    await vi.waitFor(async () => expect(await countTopicElectionVoteRowsForUser(member.id)).toBe(1))
+    expect(await countTopicElectionVoteRowsForUser(member.id)).toBe(1)
   })
 })

@@ -11,9 +11,8 @@ import { updateUrlHostname } from '@services/urls-hostnames/update'
 
 import { createTestUser, updateUrlHostnameBlocked } from '@voucha/test-helpers'
 
-import { flushPendingTasks, pollUntilNotNull } from '@voucha/test-helpers/polling'
-
 import { getTestHostnameDnsStats } from '@voucha/test-helpers/entities/url-hostnames'
+import * as dnsFailures from '@services/urls-hostnames/dns-failures'
 
 import type { PrivateUser } from '@services/users/types'
 
@@ -58,6 +57,24 @@ import {
   getLatestCrawlNetworkError,
   getLatestCrawlStatusCode,
 } from '@voucha/test-helpers/entities/crawl-state'
+
+async function withRecordedDnsFailure<T>(run: () => Promise<T>): Promise<T> {
+  const record = dnsFailures.recordHostnameDnsFailure
+  const pending: Promise<unknown>[] = []
+  const spy = vi
+    .spyOn(dnsFailures, 'recordHostnameDnsFailure')
+    .mockImplementation((hostnameId, resolveCanary) => {
+      const result = record(hostnameId, resolveCanary)
+      pending.push(result)
+      return result
+    })
+  try {
+    return await run()
+  } finally {
+    await Promise.all(pending)
+    spy.mockRestore()
+  }
+}
 
 let user: PrivateUser
 
@@ -119,13 +136,11 @@ describe('crawl-url.errors', () => {
         new CrawlerNetworkError(`https://${hostname}/page`, 1000, new Error('ENOTFOUND')),
       )
 
-      await expect(crawlUrlForTest(url!.id)).rejects.toThrow(CrawlerNetworkError)
+      await expect(withRecordedDnsFailure(() => crawlUrlForTest(url!.id))).rejects.toThrow(
+        CrawlerNetworkError,
+      )
 
-      // The canary is invoked synchronously inside the awaited `recordCrawlError`, so by the time
-      // the crawl rejects it has already been called; the failed branch then only logs and
-      // returns, with no database write left to race.
       expect(resolveDnsCanary).toHaveBeenCalledTimes(1)
-      await flushPendingTasks()
 
       const stats = await getTestHostnameDnsStats(url!.hostname.id)
       expect(stats!.consecutive_dns_failures).toBe(0)
@@ -133,7 +148,6 @@ describe('crawl-url.errors', () => {
     }, 60_000)
   })
   // keep generated shard bindings live for typecheck
-  void (0 as unknown as typeof pollUntilNotNull)
   void (0 as unknown as typeof countCrawlsForUrl)
   // keep generated shard import bindings live for typecheck
   void (0 as unknown as typeof getDomainRateLimitRemainingMs)

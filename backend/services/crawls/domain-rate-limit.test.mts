@@ -1,4 +1,3 @@
-import { setDomainRateLimitedBackground } from '@voucha/test-helpers/services/crawls/domain-rate-limit'
 import { describe, expect, it } from 'vitest'
 import {
   getDomainRateLimitRemainingMs,
@@ -7,7 +6,6 @@ import {
   normalizeDomainRateLimitScriptResult,
   setDomainRateLimited,
 } from './domain-rate-limit.mts'
-import { pollUntilNotNull } from '@voucha/test-helpers/polling'
 
 describe('domain-rate-limit', () => {
   it('normalizes retry-after values before writing Valkey locks', () => {
@@ -34,8 +32,8 @@ describe('domain-rate-limit', () => {
 
   it('returns positive remaining ms after setting rate limit', async () => {
     const hostnameId = `test-${crypto.randomUUID()}.example.com`
-    setDomainRateLimitedBackground(hostnameId, 10_000)
-    const result = await pollUntilNotNull(() => getDomainRateLimitRemainingMs(hostnameId))
+    await setDomainRateLimited(hostnameId, 10_000)
+    const result = await getDomainRateLimitRemainingMs(hostnameId)
     expect(result).toBeGreaterThan(0)
     expect(result).toBeLessThanOrEqual(10_000)
   })
@@ -51,8 +49,8 @@ describe('domain-rate-limit', () => {
 
   it('uses default 60s TTL when no retryAfterMs provided', async () => {
     const hostnameId = `test-${crypto.randomUUID()}.example.com`
-    setDomainRateLimitedBackground(hostnameId)
-    const result = await pollUntilNotNull(() => getDomainRateLimitRemainingMs(hostnameId))
+    await setDomainRateLimited(hostnameId)
+    const result = await getDomainRateLimitRemainingMs(hostnameId)
     expect(result).toBeGreaterThan(0)
     expect(result).toBeLessThanOrEqual(60_000)
   })

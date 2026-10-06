@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   createTestUser,
   insertTestPost,
@@ -6,7 +6,9 @@ import {
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { ai_agents } from '@queues/ai-agents/queues'
+import * as reportJudgementEnqueue from '@queues/ai-agents/enqueues/report-judgement'
 import { createModerationReport } from '../create.mts'
+import * as judgementRefresh from '../judgement-refresh.mts'
 import { parseCreateModerationReportInput } from '../parse.mts'
 import { insertReportJudgement } from '../judgements.mts'
 
@@ -15,128 +17,133 @@ describe('createModerationReport judgement refresh', () => {
     const { postId, authorId } = await createReportTarget('refresh-count')
     const firstReporter = await createTestUser()
     const secondReporter = await createTestUser()
-    const first = await createModerationReport(
-      firstReporter.id,
-      WEB_PROVENANCE,
-      parseCreateModerationReportInput({
-        entityType: 'post',
-        entityId: postId,
-        reason: 'spam',
-        note: 'first',
-      }),
+    const first = await awaitReportJudgementSideEffect(() =>
+      createModerationReport(
+        firstReporter.id,
+        WEB_PROVENANCE,
+        parseCreateModerationReportInput({
+          entityType: 'post',
+          entityId: postId,
+          reason: 'spam',
+          note: 'first',
+        }),
+      ),
     )
-    await waitForJudgementJobCount(postId, 1)
     await insertFreshJudgement(postId, first.report.id)
 
-    await createModerationReport(
-      secondReporter.id,
-      WEB_PROVENANCE,
-      parseCreateModerationReportInput({
-        entityType: 'post',
-        entityId: postId,
-        reason: 'spam',
-        note: `second from ${authorId}`,
-      }),
+    await awaitReportJudgementSideEffect(() =>
+      createModerationReport(
+        secondReporter.id,
+        WEB_PROVENANCE,
+        parseCreateModerationReportInput({
+          entityType: 'post',
+          entityId: postId,
+          reason: 'spam',
+          note: `second from ${authorId}`,
+        }),
+      ),
     )
 
-    // waitForJudgementJobCount's own expect.poll() carries the real assertion; wrap it here too
-    // so the check is visible directly in this test body, not just inside the helper.
-    await expect(waitForJudgementJobCount(postId, 2)).resolves.not.toThrow()
+    expect(await getJudgementJobsForEntity(postId)).toHaveLength(2)
   })
 
   it('enqueues a fresh judgement job when a duplicate report raises reason severity', async () => {
     const { postId } = await createReportTarget('refresh-rank')
     const reporter = await createTestUser()
-    const first = await createModerationReport(
-      reporter.id,
-      WEB_PROVENANCE,
-      parseCreateModerationReportInput({
-        entityType: 'post',
-        entityId: postId,
-        reason: 'spam',
-        note: 'same',
-      }),
+    const first = await awaitReportJudgementSideEffect(() =>
+      createModerationReport(
+        reporter.id,
+        WEB_PROVENANCE,
+        parseCreateModerationReportInput({
+          entityType: 'post',
+          entityId: postId,
+          reason: 'spam',
+          note: 'same',
+        }),
+      ),
     )
-    await waitForJudgementJobCount(postId, 1)
     await insertFreshJudgement(postId, first.report.id)
 
-    await createModerationReport(
-      reporter.id,
-      WEB_PROVENANCE,
-      parseCreateModerationReportInput({
-        entityType: 'post',
-        entityId: postId,
-        reason: 'illegal_content',
-        note: 'same',
-      }),
+    await awaitReportJudgementSideEffect(() =>
+      createModerationReport(
+        reporter.id,
+        WEB_PROVENANCE,
+        parseCreateModerationReportInput({
+          entityType: 'post',
+          entityId: postId,
+          reason: 'illegal_content',
+          note: 'same',
+        }),
+      ),
     )
 
-    // waitForJudgementJobCount's own expect.poll() carries the real assertion; wrap it here too
-    // so the check is visible directly in this test body, not just inside the helper.
-    await expect(waitForJudgementJobCount(postId, 2)).resolves.not.toThrow()
+    expect(await getJudgementJobsForEntity(postId)).toHaveLength(2)
   })
 
   it('enqueues a fresh judgement job when a duplicate report changes note', async () => {
     const { postId } = await createReportTarget('refresh-note')
     const reporter = await createTestUser()
-    const first = await createModerationReport(
-      reporter.id,
-      WEB_PROVENANCE,
-      parseCreateModerationReportInput({
-        entityType: 'post',
-        entityId: postId,
-        reason: 'spam',
-        note: 'first',
-      }),
+    const first = await awaitReportJudgementSideEffect(() =>
+      createModerationReport(
+        reporter.id,
+        WEB_PROVENANCE,
+        parseCreateModerationReportInput({
+          entityType: 'post',
+          entityId: postId,
+          reason: 'spam',
+          note: 'first',
+        }),
+      ),
     )
-    await waitForJudgementJobCount(postId, 1)
     await insertFreshJudgement(postId, first.report.id)
 
-    await createModerationReport(
-      reporter.id,
-      WEB_PROVENANCE,
-      parseCreateModerationReportInput({
-        entityType: 'post',
-        entityId: postId,
-        reason: 'spam',
-        note: 'updated',
-      }),
+    await awaitReportJudgementSideEffect(() =>
+      createModerationReport(
+        reporter.id,
+        WEB_PROVENANCE,
+        parseCreateModerationReportInput({
+          entityType: 'post',
+          entityId: postId,
+          reason: 'spam',
+          note: 'updated',
+        }),
+      ),
     )
 
-    // waitForJudgementJobCount's own expect.poll() carries the real assertion; wrap it here too
-    // so the check is visible directly in this test body, not just inside the helper.
-    await expect(waitForJudgementJobCount(postId, 2)).resolves.not.toThrow()
+    expect(await getJudgementJobsForEntity(postId)).toHaveLength(2)
   })
 
   it('does not enqueue a fresh judgement job when only duplicate reason severity decreases', async () => {
     const { postId } = await createReportTarget('skip-lower-rank')
     const reporter = await createTestUser()
-    const first = await createModerationReport(
-      reporter.id,
-      WEB_PROVENANCE,
-      parseCreateModerationReportInput({
-        entityType: 'post',
-        entityId: postId,
-        reason: 'illegal_content',
-        note: 'same',
-      }),
+    const first = await awaitReportJudgementSideEffect(() =>
+      createModerationReport(
+        reporter.id,
+        WEB_PROVENANCE,
+        parseCreateModerationReportInput({
+          entityType: 'post',
+          entityId: postId,
+          reason: 'illegal_content',
+          note: 'same',
+        }),
+      ),
     )
-    await waitForJudgementJobCount(postId, 1)
     await insertFreshJudgement(postId, first.report.id, 'escalate')
 
-    await createModerationReport(
-      reporter.id,
-      WEB_PROVENANCE,
-      parseCreateModerationReportInput({
-        entityType: 'post',
-        entityId: postId,
-        reason: 'spam',
-        note: 'same',
-      }),
+    await awaitReportJudgementSideEffect(() =>
+      createModerationReport(
+        reporter.id,
+        WEB_PROVENANCE,
+        parseCreateModerationReportInput({
+          entityType: 'post',
+          entityId: postId,
+          reason: 'spam',
+          note: 'same',
+        }),
+      ),
     )
-    await expectNoAdditionalJudgementJobs(postId, 1)
 
-    await expect(getJudgementJobsForEntity(postId)).resolves.toHaveLength(1)
+    expect(await getJudgementJobsForEntity(postId)).toHaveLength(1)
   })
 })
 
@@ -168,22 +175,36 @@ function insertFreshJudgement(
   })
 }
 
-async function waitForJudgementJobCount(entityId: string, count: number): Promise<void> {
-  await expect
-    .poll(() => getJudgementJobsForEntity(entityId).then(jobs => jobs.length), { timeout: 2000 })
-    .toBe(count)
-}
-
-async function expectNoAdditionalJudgementJobs(
-  entityId: string,
-  expectedCount: number,
-): Promise<void> {
-  await expect(getJudgementJobsForEntity(entityId)).resolves.toHaveLength(expectedCount)
-  const observation = AbortSignal.timeout(250)
-  await new Promise<void>(resolve => {
-    observation.addEventListener('abort', () => resolve(), { once: true })
-  })
-  await expect(getJudgementJobsForEntity(entityId)).resolves.toHaveLength(expectedCount)
+async function awaitReportJudgementSideEffect<T>(run: () => Promise<T>): Promise<T> {
+  const enqueue = reportJudgementEnqueue.enqueueReportJudgementAndWait
+  const pending: Promise<unknown>[] = []
+  const settled = Promise.withResolvers<void>()
+  const enqueueSpy = vi
+    .spyOn(reportJudgementEnqueue, 'enqueueReportJudgementAndWait')
+    .mockImplementation((...args) => {
+      const result = Promise.resolve(enqueue(...args)).finally(() => {
+        settled.resolve()
+      })
+      pending.push(result)
+      return result
+    })
+  const refresh = judgementRefresh.shouldRefreshReportJudgementForEntity
+  const refreshSpy = vi
+    .spyOn(judgementRefresh, 'shouldRefreshReportJudgementForEntity')
+    .mockImplementation(async (...args) => {
+      const decision = await refresh(...args)
+      if (!decision.refresh) settled.resolve()
+      return decision
+    })
+  try {
+    const result = await run()
+    await settled.promise
+    await Promise.all(pending)
+    return result
+  } finally {
+    enqueueSpy.mockRestore()
+    refreshSpy.mockRestore()
+  }
 }
 
 async function getJudgementJobsForEntity(entityId: string) {

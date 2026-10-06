@@ -1,4 +1,4 @@
-import { it, expect, describe } from 'vitest'
+import { it, expect, describe, vi } from 'vitest'
 import { createTopicAliases } from '../aliases.mts'
 import { getTopicAliasesForTest } from '@voucha/test-helpers/topic-aliases'
 import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
@@ -251,9 +251,11 @@ describe('bloom filter', () => {
       await testTopicsBloomFilter.delete()
       await testTopicsBloomFilter.ensureExists()
 
+      const bloomAdds = vi.spyOn(testTopicsBloomFilter, 'add')
       await createTopicAliases(topicId, alias)
+      await Promise.all(bloomAdds.mock.results.map(result => result.value))
 
-      await expect.poll(() => testTopicsBloomFilter.exists(normalizedAlias)).toBe(true)
+      expect(await testTopicsBloomFilter.exists(normalizedAlias)).toBe(true)
       expect(await testTopicsBloomFilter.exists(`definitely-not-${suffix}`)).toBe(false)
     } finally {
       entityCacheBloomFilters.topics = originalTopicsBloomFilter

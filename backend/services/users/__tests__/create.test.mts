@@ -7,7 +7,8 @@ import {
   getFollowExists,
   readAllQueueJobs,
 } from '@voucha/test-helpers'
-import { it, expect, describe } from 'vitest'
+import { it, expect, describe, vi } from 'vitest'
+import * as entityListenerEnqueues from '@queues/entity-listeners/enqueues'
 import { upsertUser } from '../create.mts'
 import { PRIVACY_POLICY_VERSION, TERMS_OF_SERVICE_VERSION } from '../create-helpers.mts'
 import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
@@ -18,6 +19,24 @@ import { getActiveConsents } from '@services/user-consents/get'
 import type { UserConsent } from '@services/user-consents'
 import { emails } from '@queues/emails/queues'
 import { v7 } from 'uuid'
+
+async function withAutoFollow<T>(run: () => Promise<T>): Promise<T> {
+  const enqueue = entityListenerEnqueues.enqueueAutoFollowReferrer
+  const pending: Promise<unknown>[] = []
+  const spy = vi
+    .spyOn(entityListenerEnqueues, 'enqueueAutoFollowReferrer')
+    .mockImplementation((newUserId, referrerId) => {
+      const result = enqueue(newUserId, referrerId)
+      pending.push(result)
+      return result
+    })
+  try {
+    return await run()
+  } finally {
+    await Promise.all(pending)
+    spy.mockRestore()
+  }
+}
 
 describe('create', () => {
   it('refuses to create a user without an authentication identity', async () => {
@@ -143,16 +162,10 @@ describe('create', () => {
     const sessionId = v7()
     await insertSessionReferralAttribution(sessionId, referrer.id)
 
-    const newUser = await upsertUser({
-      emailAddress: createRandomEmailAddress(),
-      sessionId,
-      deviceId: v7(),
-    })
-    // `processAutoFollowReferrer` (backend/workers/entity-listeners) is what creates this follow
-    // relation; poll the observable relation row instead of importing
-    // `@voucha/test-helpers/workers/entity-listeners/test-support` — this package must never depend on the worker
-    // package (workers/AGENTS.md: workers depend on services, never the reverse).
-    await expect.poll(() => getFollowExists(newUser.id, referrer.id)).toBe(true)
+    const newUser = await withAutoFollow(() =>
+      upsertUser({ emailAddress: createRandomEmailAddress(), sessionId, deviceId: v7() }),
+    )
+    expect(await getFollowExists(newUser.id, referrer.id)).toBe(true)
   })
 
   it('existing user logging in does not have referrer_user_id overwritten', async () => {
