@@ -184,6 +184,38 @@ describe('update.generated (state)', () => {
     expect(Buffer.isBuffer(crawl!.feed_data_sha256)).toBe(true)
     expect(crawl!.feed_data_sha256?.equals(feedDataSha256)).toBe(true)
   })
+  async function whileFeedRowHeld(
+    feedId: string,
+    entered: Promise<void>,
+    start: () => Promise<unknown>,
+    probe: () => Promise<void>,
+    restore: () => void,
+  ): Promise<unknown> {
+    const locked = Promise.withResolvers<void>()
+    const release = Promise.withResolvers<void>()
+    const holder = (async () => {
+      await using query = await beginTransaction()
+      await query(`SELECT 1 FROM rss_feeds WHERE id = $1::uuid FOR UPDATE`, [feedId])
+      locked.resolve()
+      await release.promise
+      await query.commit()
+    })()
+    await locked.promise
+    const pending = start()
+    let probeError: unknown
+    try {
+      await entered
+      await probe()
+    } catch (err) {
+      probeError = err
+    } finally {
+      release.resolve()
+      restore()
+    }
+    await holder
+    await pending
+    return probeError
+  }
   it('takes the publication lock before waiting on the feed row', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const topic = await createTestTopic({
@@ -197,20 +229,6 @@ describe('update.generated (state)', () => {
       topic_id: topic.id,
       title: `Publication lock ${random}`,
     })
-    const rowLocked = Promise.withResolvers<void>()
-    const releaseRow = Promise.withResolvers<void>()
-    async function holdFeedRow(): Promise<void> {
-      await using query = await beginTransaction()
-      await query(
-        `/* updateRssFeed publication lock test */ SELECT 1 FROM rss_feeds WHERE id = $1 FOR UPDATE`,
-        [feed.id],
-      )
-      rowLocked.resolve()
-      await releaseRow.promise
-      await query.commit()
-    }
-    const holder = holdFeedRow()
-    await rowLocked.promise
     const lockScope = publicationLock.lockPostPublicationScope
     const scopeHeld = Promise.withResolvers<void>()
     const scopeSpy = vi
@@ -219,23 +237,20 @@ describe('update.generated (state)', () => {
         await lockScope(query, scope)
         scopeHeld.resolve()
       })
-    const updating = updateRssFeedById(feed.id, { title: `Updated ${random}` })
-    try {
-      await scopeHeld.promise
-      await expect(contendForFeedPublicationScope()).rejects.toMatchObject({ code: '55P03' })
-    } finally {
-      releaseRow.resolve()
-      scopeSpy.mockRestore()
-    }
-    await holder
-    await updating
-
-    async function contendForFeedPublicationScope(): Promise<void> {
-      await using query = await beginTransaction()
-      await query(`/* updateRssFeed publication lock timeout */ SET LOCAL lock_timeout = '50ms'`)
-      await lockScope(query, { type: 'rss_feed', rssFeedId: feed.id })
-      await query.commit()
-    }
+    await expect(
+      whileFeedRowHeld(
+        feed.id,
+        scopeHeld.promise,
+        () => updateRssFeedById(feed.id, { title: `Updated ${random}` }),
+        async () => {
+          await using query = await beginTransaction()
+          await query(`SET LOCAL lock_timeout = '50ms'`)
+          await lockScope(query, { type: 'rss_feed', rssFeedId: feed.id })
+          await query.commit()
+        },
+        () => scopeSpy.mockRestore(),
+      ),
+    ).resolves.toMatchObject({ code: '55P03' })
   })
   it('takes the destination attachment lifecycle before waiting on the feed row', async () => {
     const random = Math.random().toString(36).slice(2, 15)
@@ -254,21 +269,6 @@ describe('update.generated (state)', () => {
       topic_id: source.id,
       title: `Attachment lifecycle ${random}`,
     })
-    const rowLocked = Promise.withResolvers<void>()
-    const releaseRow = Promise.withResolvers<void>()
-    async function holdAttachmentFeedRow(): Promise<void> {
-      await using query = await beginTransaction()
-      await query(
-        `/* updateRssFeed attachment lifecycle test */
-        SELECT 1 FROM rss_feeds WHERE id = $1::uuid FOR UPDATE`,
-        [feed.id],
-      )
-      rowLocked.resolve()
-      await releaseRow.promise
-      await query.commit()
-    }
-    const holder = holdAttachmentFeedRow()
-    await rowLocked.promise
     const lockAttachment = publicationLock.lockTopicRssFeedAttachmentLifecycle
     const attachmentHeld = Promise.withResolvers<void>()
     const attachmentSpy = vi
@@ -277,24 +277,19 @@ describe('update.generated (state)', () => {
         await lockAttachment(query, topicId)
         attachmentHeld.resolve()
       })
-    const updating = updateRssFeedById(feed.id, { topic_id: destination.id })
-    try {
-      await attachmentHeld.promise
-      await expect(contendForAttachmentLifecycle()).rejects.toMatchObject({ code: '55P03' })
-    } finally {
-      releaseRow.resolve()
-      attachmentSpy.mockRestore()
-    }
-    await holder
-    await updating
-
-    async function contendForAttachmentLifecycle(): Promise<void> {
-      await using query = await beginTransaction()
-      await query(
-        `/* updateRssFeed attachment lifecycle timeout */ SET LOCAL lock_timeout = '50ms'`,
-      )
-      await lockAttachment(query, destination.id)
-      await query.commit()
-    }
+    await expect(
+      whileFeedRowHeld(
+        feed.id,
+        attachmentHeld.promise,
+        () => updateRssFeedById(feed.id, { topic_id: destination.id }),
+        async () => {
+          await using query = await beginTransaction()
+          await query(`SET LOCAL lock_timeout = '50ms'`)
+          await lockAttachment(query, destination.id)
+          await query.commit()
+        },
+        () => attachmentSpy.mockRestore(),
+      ),
+    ).resolves.toMatchObject({ code: '55P03' })
   })
 })
