@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
+import { listCopyrightStaffQueuePage } from '@services/copyright-notices/staff-queue-page'
 import {
   insertOpenCopyrightCounterNoticeDeadline,
   insertReviewedCopyrightFormIntake,
@@ -12,21 +12,8 @@ import {
   createCopyrightFormIntake,
 } from '@services/copyright-notices'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
-import { getIsolatedDatabaseCaseMode } from '../../../../test-helpers/vitest-isolated-database-cases.mts'
-import { runIsolatedDatabaseCase } from '../../../../test-helpers/vitest-isolated-database-case.mts'
 
-const queuePath = '/api/v1/copyright-notices/review-queue'
 const day = 24 * 60 * 60 * 1000
-
-type QueuePage = {
-  copyright_notices: Array<{
-    id: string
-    reasons: string[]
-    waiting_since: string
-    next_deadline: { escalation_at: string; restoration_deadline_at: string } | null
-  }>
-  page_info: { has_next_page: boolean; end_cursor: string | null }
-}
 
 describe('copyright staff queue urgency', () => {
   useCopyrightIntakeEnvironment()
@@ -36,10 +23,6 @@ describe('copyright staff queue urgency', () => {
   })
 
   it('lists missed then due restoration deadlines ahead of older intake work across pages', async () => {
-    if (getIsolatedDatabaseCaseMode('copyright-staff-queue-urgency') === 'parent') {
-      await runIsolatedDatabaseCase('copyright-staff-queue-urgency')
-      return
-    }
     const fixture = await createCopyrightFormFixture()
     const target = fixture.form.targets[0]!
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
@@ -100,48 +83,41 @@ describe('copyright staff queue urgency', () => {
         state,
       })
     }
-    const request = createRequest()
-    await request.authenticateAs(moderator)
-
-    const page = (await request.get(queuePath).expect(200)).body as QueuePage
-    expect(page.copyright_notices.map(notice => notice.id)).toEqual([
-      missed,
-      due,
-      filingCase,
-      olderIntake,
-    ])
-    const [missedCase, dueCase, unassessedCase, intakeCase] = page.copyright_notices
+    const ownedIds = [missed, due, filingCase, olderIntake]
+    const owned = []
+    const endCursors: Array<string | null> = []
+    let after: string | undefined
+    let remaining = ownedIds.length
+    while (remaining > 0) {
+      remaining -= 1
+      const page = await listCopyrightStaffQueuePage(moderator, {
+        limit: 1,
+        after,
+        noticeIds: ownedIds,
+      })
+      owned.push(...page.copyright_notices)
+      endCursors.push(page.page_info.end_cursor)
+      if (!page.page_info.has_next_page) break
+      after = page.page_info.end_cursor ?? undefined
+    }
+    expect(owned.map(notice => notice.id)).toEqual(ownedIds)
+    expect(endCursors.at(-1)).toBeNull()
+    const [missedCase, dueCase, unassessedCase, intakeCase] = owned
     expect(missedCase).toMatchObject({
       reasons: ['deadline_missed'],
       next_deadline: {
-        escalation_at: expect.any(String),
-        restoration_deadline_at: expect.any(String),
+        escalation_at: expect.any(Date),
+        restoration_deadline_at: expect.any(Date),
       },
     })
-    expect(Date.parse(missedCase!.next_deadline!.restoration_deadline_at)).toBeLessThan(Date.now())
+    expect(missedCase!.next_deadline!.restoration_deadline_at.getTime()).toBeLessThan(Date.now())
     expect(dueCase).toMatchObject({ reasons: ['deadline_due'] })
-    expect(Date.parse(dueCase!.next_deadline!.escalation_at)).toBeLessThan(Date.now())
-    expect(Date.parse(dueCase!.next_deadline!.restoration_deadline_at)).toBeGreaterThan(Date.now())
-    expect(dueCase!.waiting_since).toBe(dueCase!.next_deadline!.escalation_at)
+    expect(dueCase!.next_deadline!.escalation_at.getTime()).toBeLessThan(Date.now())
+    expect(dueCase!.next_deadline!.restoration_deadline_at.getTime()).toBeGreaterThan(Date.now())
+    expect(dueCase!.waiting_since.getTime()).toBe(dueCase!.next_deadline!.escalation_at.getTime())
     expect(unassessedCase).toMatchObject({ id: filingCase, next_deadline: null })
     expect(unassessedCase!.reasons).toContain('legal_hold_review')
     expect(intakeCase).toMatchObject({ reasons: ['form_intake_review'], next_deadline: null })
-    expect(Date.parse(intakeCase!.waiting_since)).toBeLessThan(
-      Date.parse(missedCase!.waiting_since),
-    )
-
-    const walked: string[] = []
-    let after: string | null = null
-    for (let pageCount = 0; pageCount < 4; pageCount += 1) {
-      const path: string = after
-        ? `${queuePath}?limit=1&after=${encodeURIComponent(after)}`
-        : `${queuePath}?limit=1`
-      const onePage = (await request.get(path).expect(200)).body as QueuePage
-      walked.push(...onePage.copyright_notices.map(notice => notice.id))
-      after = onePage.page_info.end_cursor
-      if (!onePage.page_info.has_next_page) break
-    }
-    expect(walked).toEqual([missed, due, filingCase, olderIntake])
-    expect(after).toBeNull()
-  }, 240_000)
+    expect(intakeCase!.waiting_since.getTime()).toBeLessThan(missedCase!.waiting_since.getTime())
+  })
 })

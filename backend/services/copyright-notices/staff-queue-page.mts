@@ -17,7 +17,7 @@ export const copyrightStaffQueueParser = createPaginationParser({
 })
 export async function listCopyrightStaffQueuePage(
   currentUser: PrivateUser,
-  args: { after?: string; limit: number },
+  args: { after?: string; limit: number; noticeIds?: readonly string[] },
 ) {
   const message = 'Invalid copyright staff queue cursor'
   const after = args.after
@@ -27,6 +27,7 @@ export async function listCopyrightStaffQueuePage(
   const { cases, endCursor, hasNextPage } = await listCopyrightStaffQueue(currentUser, {
     limit: args.limit,
     after,
+    noticeIds: args.noticeIds,
   })
   const encode = (cursor: CopyrightStaffQueueCursor) =>
     encodeScopedTierPreciseUuidCursor(

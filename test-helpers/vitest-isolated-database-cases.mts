@@ -18,11 +18,6 @@ const isolatedDatabaseCases = {
     fullName:
       'territorial approval withdrawal keeps received-case duties > gates new EU and UK intake while pending and decided notices continue',
   },
-  'copyright-dsa-report-withdrawn-approval': {
-    file: 'backend/api/v1/copyright-notices/eu-copyright-report-route.test.mts',
-    fullName:
-      'DSA copyright transparency report GET > counts a receipt after withdrawing its approval and does not persist GET output',
-  },
   'copyright-dsa-submission-materialization': {
     file: 'backend/services/copyright-notices/dsa-statement-submission-sweep.test.mts',
     fullName:
@@ -63,45 +58,11 @@ const isolatedDatabaseCases = {
     fullName:
       'copyright email legal process queue > removes a legal-process intake from the staff email queue and keeps the undecided ones',
   },
-  'copyright-email-queue-exact-limit': {
-    file: 'backend/api/v1/copyright-notices/email-intake-queue-pagination.test.mts',
-    fullName:
-      'copyright email intake queue pagination > ends on an exact-limit final page with no next cursor',
-  },
-  'copyright-email-queue-partial': {
-    file: 'backend/api/v1/copyright-notices/email-intake-queue-pagination.test.mts',
-    fullName: 'copyright email intake queue pagination > ends on a partial final page',
-  },
-  'copyright-email-queue-walk': {
-    file: 'backend/api/v1/copyright-notices/email-intake-queue-pagination.test.mts',
-    fullName:
-      'copyright email intake queue pagination > walks every owned intake one page at a time without repeats',
-  },
-  'copyright-email-queue-tie': {
-    file: 'backend/api/v1/copyright-notices/email-intake-queue-pagination.test.mts',
-    fullName:
-      'copyright email intake queue pagination > uses the UUID tie-breaker when two intakes share a received timestamp',
-  },
-  'copyright-staff-queue-urgency': {
-    file: 'backend/api/v1/copyright-notices/staff-queue-urgency.test.mts',
-    fullName:
-      'copyright staff queue urgency > lists missed then due restoration deadlines ahead of older intake work across pages',
-  },
-  'copyright-trusted-flagger-priority': {
-    file: 'backend/api/v1/copyright-notices/trusted-flagger-staff-queue.test.mts',
-    fullName:
-      'trusted-flagger staff queue priority > boosts only in-area EU matches within urgency tiers and pages with the new cursor',
-  },
   'copyright-dev-seed': {
     file: 'backend/scripts/seed/copyright.test.mts',
     // Joined with ' > ' because that is what Vitest 5 matches.
     fullName:
       'seedCopyright > fills both staff queues with every review state and adds nothing when run again',
-  },
-  'copyright-cache-policy': {
-    file: 'backend/api/v1/copyright-notices/copyright-cache.test.mts',
-    fullName:
-      'copyright API cache policy > marks member, staff, and raw-email responses private and no-store',
   },
   'staging-rss-feed-publisher-type': {
     file: 'backend/data-stores/psql/config-driven/__tests__/0080-00-01a-staging-rss-feeds.bootstrap.test.mts',

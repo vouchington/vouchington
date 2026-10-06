@@ -17,21 +17,21 @@ import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/service
 
 export async function createFailedMediaDeliveryReplayFixture() {
   const fixture = await createCopyrightReplayFixture()
-  await failFixtureMediaDelivery(fixture)
-  return fixture
+  const deliveryKey = await failFixtureMediaDelivery(fixture)
+  return { ...fixture, deliveryKey }
 }
 
 async function failFixtureMediaDelivery(
   fixture: Awaited<ReturnType<typeof createCopyrightReplayFixture>>,
-): Promise<void> {
+): Promise<string> {
   const placement = await applyCopyrightActionAndLoadPlacement(fixture)
-  await markTestMediaDeliveryRecordFailed(
-    getImagePlacementDeliveryKey({
-      placementId: placement.placement_id,
-      revision: placement.placement_revision,
-      imageId: fixture.imageId,
-    }),
-  )
+  const deliveryKey = getImagePlacementDeliveryKey({
+    placementId: placement.placement_id,
+    revision: placement.placement_revision,
+    imageId: fixture.imageId,
+  })
+  await markTestMediaDeliveryRecordFailed(deliveryKey)
+  return deliveryKey
 }
 
 export async function createCopyrightReplayFixture() {

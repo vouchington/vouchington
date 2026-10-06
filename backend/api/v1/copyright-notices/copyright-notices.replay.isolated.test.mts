@@ -1,10 +1,7 @@
-// Private child-run case: the parent route test creates and disposes its own database.
 import { CloudFrontClient } from '@aws-sdk/client-cloudfront'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { verifyMediaDeliveryReplayRoute } from '@services/copyright-notices/route-replay-fixtures'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { runIsolatedDatabaseCase } from '../../../../test-helpers/vitest-isolated-database-case.mts'
-import { getIsolatedDatabaseCaseMode } from '../../../../test-helpers/vitest-isolated-database-cases.mts'
 
 describe('isolated global media replay route', () => {
   beforeEach(() => {
@@ -23,13 +20,6 @@ describe('isolated global media replay route', () => {
   })
 
   it('replays failed media registry records only for review staff and writes one audit event', async () => {
-    let replayed: boolean
-    if (getIsolatedDatabaseCaseMode('media-replay') === 'parent') {
-      await runIsolatedDatabaseCase('media-replay')
-      replayed = true
-    } else {
-      replayed = await verifyMediaDeliveryReplayRoute()
-    }
-    expect(replayed).toBe(true)
-  }, 240_000)
+    expect(await verifyMediaDeliveryReplayRoute()).toBe(true)
+  })
 })

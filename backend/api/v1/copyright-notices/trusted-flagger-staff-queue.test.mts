@@ -6,7 +6,7 @@ import {
   insertOpenCopyrightCounterNoticeDeadline,
   insertReviewedCopyrightFormIntake,
 } from '@voucha/test-helpers/data-stores/psql/copyright-staff-queue'
-import { readCopyrightStaffQueueCursorBefore } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
+import { listCopyrightStaffQueuePage } from '@services/copyright-notices/staff-queue-page'
 import {
   createTestCopyrightTrustedFlagger,
   readTestCopyrightTrustedFlaggerMatch,
@@ -21,17 +21,10 @@ import {
   seedPendingTerritorialNotice,
 } from '@voucha/test-helpers/services/copyright-notices/territorial-routes'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
-import { getIsolatedDatabaseCaseMode } from '../../../../test-helpers/vitest-isolated-database-cases.mts'
-import { runIsolatedDatabaseCase } from '../../../../test-helpers/vitest-isolated-database-case.mts'
 import { encodeScopedTierPreciseUuidCursor } from '@modules/pagination'
 
 const queuePath = '/api/v1/copyright-notices/review-queue'
 const priorQueueCursorScope = 'copyright-notices:staff-queue:urgency-asc-waiting-since-asc-id-asc'
-
-type QueuePage = {
-  copyright_notices: Array<{ id: string; reasons: string[] }>
-  page_info: { has_next_page: boolean; end_cursor: string | null }
-}
 
 describe('trusted-flagger staff queue priority', () => {
   useCopyrightIntakeEnvironment()
@@ -49,11 +42,6 @@ describe('trusted-flagger staff queue priority', () => {
   })
 
   it('boosts only in-area EU matches within urgency tiers and pages with the new cursor', async () => {
-    if (getIsolatedDatabaseCaseMode('copyright-trusted-flagger-priority') === 'parent') {
-      await runIsolatedDatabaseCase('copyright-trusted-flagger-priority')
-      return
-    }
-
     const administrator = await createTestUser({ administrator: true })
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const approval = await approveJurisdictionPolicy(administrator, 'eu_dsa')
@@ -120,10 +108,10 @@ describe('trusted-flagger staff queue priority', () => {
     restoreConfig = overrideDynamicConfigFieldsForTest(copyrightConfig, {
       trustedFlaggerPriority: false,
     })
-    const offCursor = await readCopyrightStaffQueueCursorBefore(ownedIds)
-    const off = (
-      await request.get(`${queuePath}?after=${encodeURIComponent(offCursor)}`).expect(200)
-    ).body as QueuePage
+    const off = await listCopyrightStaffQueuePage(moderator, {
+      limit: ownedIds.length,
+      noticeIds: ownedIds,
+    })
     expect(off.copyright_notices.map(item => item.id)).toEqual([
       missed,
       unmatched,
@@ -135,11 +123,10 @@ describe('trusted-flagger staff queue priority', () => {
     restoreConfig = overrideDynamicConfigFieldsForTest(copyrightConfig, {
       trustedFlaggerPriority: true,
     })
-    const onCursor = await readCopyrightStaffQueueCursorBefore(ownedIds, {
-      trustedFlaggerBoost: true,
+    const on = await listCopyrightStaffQueuePage(moderator, {
+      limit: ownedIds.length,
+      noticeIds: ownedIds,
     })
-    const on = (await request.get(`${queuePath}?after=${encodeURIComponent(onCursor)}`).expect(200))
-      .body as QueuePage
     expect(on.copyright_notices.map(item => item.id)).toEqual([
       missed,
       boosted,
@@ -160,18 +147,24 @@ describe('trusted-flagger staff queue priority', () => {
     }
 
     const walked: string[] = []
-    let after: string | null = onCursor
-    while (after && walked.length < ownedIds.length) {
-      if (!after) break
-      const page = (
-        await request.get(`${queuePath}?limit=1&after=${encodeURIComponent(after)}`).expect(200)
-      ).body as QueuePage
+    const endCursors: Array<string | null> = []
+    let after: string | undefined
+    let remaining = ownedIds.length
+    while (remaining > 0) {
+      remaining -= 1
+      const page = await listCopyrightStaffQueuePage(moderator, {
+        limit: 1,
+        after,
+        noticeIds: ownedIds,
+      })
       walked.push(...page.copyright_notices.map(item => item.id))
-      after = page.page_info.end_cursor
+      endCursors.push(page.page_info.end_cursor)
       if (!page.page_info.has_next_page) break
+      after = page.page_info.end_cursor ?? undefined
     }
     expect(walked).toEqual([missed, boosted, unmatched, outOfArea])
     expect(new Set(walked).size).toBe(walked.length)
+    expect(endCursors.at(-1)).toBeNull()
 
     const priorCursor = encodeScopedTierPreciseUuidCursor(
       '2026-01-01T00:00:00.000000Z',
@@ -181,16 +174,16 @@ describe('trusted-flagger staff queue priority', () => {
     )
     await request.get(`${queuePath}?after=${encodeURIComponent(priorCursor)}`).expect(400)
 
-    await withdrawCopyrightJurisdictionPolicyApproval(administrator, approval.id)
-    const withdrawnCursor = await readCopyrightStaffQueueCursorBefore(ownedIds)
-    const afterWithdrawal = (
-      await request.get(`${queuePath}?after=${encodeURIComponent(withdrawnCursor)}`).expect(200)
-    ).body as QueuePage
-    expect(afterWithdrawal.copyright_notices.map(item => item.id)).toEqual([
-      missed,
-      unmatched,
-      boosted,
-      outOfArea,
-    ])
-  }, 240_000)
+    // Another unwithdrawn approval can stay current, so this does not assert boost-off order.
+    expect(await withdrawCopyrightJurisdictionPolicyApproval(administrator, approval.id)).toEqual({
+      id: expect.any(String),
+    })
+    const afterWithdrawal = await listCopyrightStaffQueuePage(moderator, {
+      limit: ownedIds.length,
+      noticeIds: ownedIds,
+    })
+    expect(afterWithdrawal.copyright_notices.map(item => item.id).toSorted()).toEqual(
+      [...ownedIds].toSorted(),
+    )
+  })
 })

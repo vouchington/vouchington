@@ -16,7 +16,7 @@ export const copyrightEmailIntakeQueueParser = createPaginationParser({
 
 export async function listCopyrightStaffEmailIntakePage(
   currentUser: PrivateUser,
-  args: { after?: string; limit: number },
+  args: { after?: string; limit: number; intakeIds?: readonly string[] },
 ) {
   const after = args.after
     ? decodeScopedPreciseTimestampCursor(
@@ -28,6 +28,7 @@ export async function listCopyrightStaffEmailIntakePage(
   const { intakes, hasNextPage } = await searchCopyrightStaffEmailIntakes(currentUser, {
     limit: args.limit,
     after,
+    intakeIds: args.intakeIds,
   })
   const cursorFor = (intake: (typeof intakes)[number]) =>
     encodeScopedPreciseTimestampCursor(
