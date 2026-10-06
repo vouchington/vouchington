@@ -1,4 +1,4 @@
-import { lockTopicAliasPublicationScopes } from '@services/post-publication'
+import * as postPublication from '@services/post-publication'
 import { beginTransaction, createTestTopic, insertTestRssFeedDirect } from '@voucha/test-helpers'
 import { describe, expect, it, vi } from 'vitest'
 import { createUnlinkedTopicAlias, linkTopicAlias } from '@services/topics/aliases'
@@ -33,14 +33,15 @@ describe('RSS feed item category publication locking', () => {
     }
     const holder = holdCategoryItemRow()
     await rowLocked.promise
+    const aliasLock = observeAliasPublicationLock(alias.id)
     const upserting = upsertRssFeedItemCategories([
       { rss_feed_item_id: item!.id, categories: [`#${alias.alias}`] },
     ])
     try {
-      await vi.waitFor(async () => {
-        await expect(contendForCategoryAliasScope()).rejects.toMatchObject({ code: '55P03' })
-      })
+      await aliasLock.held
+      await expect(contendForCategoryAliasScope()).rejects.toMatchObject({ code: '55P03' })
     } finally {
+      aliasLock.restore()
       releaseRow.resolve()
     }
     await holder
@@ -49,7 +50,7 @@ describe('RSS feed item category publication locking', () => {
     async function contendForCategoryAliasScope(): Promise<void> {
       await using query = await beginTransaction()
       await query(`/* category publication lock timeout */ SET LOCAL lock_timeout = '50ms'`)
-      await lockTopicAliasPublicationScopes(query, [alias.id])
+      await postPublication.lockTopicAliasPublicationScopes(query, [alias.id])
       await query.commit()
     }
   })
@@ -87,14 +88,15 @@ describe('RSS feed item category publication locking', () => {
     }
     const holder = holdStaleCategoryItemRow()
     await rowLocked.promise
+    const aliasLock = observeAliasPublicationLock(alias.id)
     const reconciling = upsertRssFeedItemCategories([
       { rss_feed_item_id: item!.id, categories: [] },
     ])
     try {
-      await vi.waitFor(async () => {
-        await expect(contendForStaleCategoryAliasScope()).rejects.toMatchObject({ code: '55P03' })
-      })
+      await aliasLock.held
+      await expect(contendForStaleCategoryAliasScope()).rejects.toMatchObject({ code: '55P03' })
     } finally {
+      aliasLock.restore()
       releaseRow.resolve()
     }
     await holder
@@ -104,8 +106,26 @@ describe('RSS feed item category publication locking', () => {
     async function contendForStaleCategoryAliasScope(): Promise<void> {
       await using query = await beginTransaction()
       await query(`/* stale category publication lock timeout */ SET LOCAL lock_timeout = '50ms'`)
-      await lockTopicAliasPublicationScopes(query, [alias.id])
+      await postPublication.lockTopicAliasPublicationScopes(query, [alias.id])
       await query.commit()
     }
   })
 })
+
+function observeAliasPublicationLock(aliasId: string): {
+  held: Promise<void>
+  restore: () => void
+} {
+  const held = Promise.withResolvers<void>()
+  const lockScopes = postPublication.lockTopicAliasPublicationScopes
+  const spy = vi
+    .spyOn(postPublication, 'lockTopicAliasPublicationScopes')
+    .mockImplementation(async (query, topicAliasIds) => {
+      try {
+        return await lockScopes(query, topicAliasIds)
+      } finally {
+        if (topicAliasIds.includes(aliasId)) held.resolve()
+      }
+    })
+  return { held: held.promise, restore: () => spy.mockRestore() }
+}

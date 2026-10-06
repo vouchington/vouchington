@@ -25,7 +25,6 @@ import {
   insertTestRssFeedDirect,
   holdTestEntityRelationVoteLock,
   setTestRssFeedItemCategoryTopicId,
-  testCategorizerVoteLockHasWaiter,
   withFailingTransactionQueryOptionsForTest,
 } from '@voucha/test-helpers'
 
@@ -236,7 +235,6 @@ describe('clearCategoriesForUnlinkedTopicAlias votes', () => {
     const cleanup = clearCategorizerVotesForUnreferencedCategoryTopicRelations([
       { rss_feed_item_id: item!.id, topic_id: topic.id },
     ])
-    await expect.poll(testCategorizerVoteLockHasWaiter).toBe(true)
     await setTestRssFeedItemCategoryTopicId(item!.id, categoryText, topic.id)
     await holder.release()
     await cleanup

@@ -1,5 +1,6 @@
+import type { QueryInput, TransactionQuery } from '@data-stores/psql'
 import { beginTransaction, createTestPost, createTestUser } from '@voucha/test-helpers'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { lockPostPublication } from './lock.mts'
 import { processAuthorDeletionPublicationBatch } from './capture-deletions.mts'
 
@@ -13,11 +14,11 @@ describe('processAuthorDeletionPublicationBatch', () => {
     const holder = holdPostRow(post.id, rowLocked, releaseRow)
     await rowLocked.promise
 
-    const capture = captureAuthorDeletion(author.id)
+    const publicationLocked = Promise.withResolvers<void>()
+    const capture = captureAuthorDeletion(author.id, publicationLocked)
     try {
-      await vi.waitFor(async () => {
-        await expect(probePostPublicationLock(post.id)).rejects.toMatchObject({ code: '55P03' })
-      })
+      await publicationLocked.promise
+      await expect(probePostPublicationLock(post.id)).rejects.toMatchObject({ code: '55P03' })
     } finally {
       releaseRow.resolve()
     }
@@ -37,10 +38,32 @@ async function holdPostRow(
   await release.promise
   await query.commit()
 }
-async function captureAuthorDeletion(authorId: string) {
+async function captureAuthorDeletion(
+  authorId: string,
+  publicationLocked: PromiseWithResolvers<void>,
+) {
   await using query = await beginTransaction()
-  await processAuthorDeletionPublicationBatch(query, authorId, null, 100)
+  await processAuthorDeletionPublicationBatch(
+    gateWhenSqlReturns(query, 'lockPostPublicationCaptures', publicationLocked),
+    authorId,
+    null,
+    100,
+  )
   await query.commit()
+}
+function gateWhenSqlReturns(
+  query: TransactionQuery,
+  marker: string,
+  locked: PromiseWithResolvers<void>,
+): TransactionQuery {
+  const gated = (async (input: QueryInput, values?: ReadonlyArray<unknown>) => {
+    const result = await query(input, values)
+    const text = typeof input === 'string' ? input : input.text
+    if (text.includes(marker)) locked.resolve()
+    return result
+  }) as TransactionQuery
+  gated.client = query.client
+  return gated
 }
 async function probePostPublicationLock(postId: string) {
   await using query = await beginTransaction()

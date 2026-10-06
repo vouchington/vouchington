@@ -1,6 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { rateLimiterValkeyClient } from '@data-stores/valkey/clients'
-import { waitForCondition } from '@voucha/test-helpers'
 import {
   isRecaptchaLockedOut,
   setRecaptchaLockedOut,
@@ -9,10 +8,6 @@ import {
 } from './rate-limit-lockout.mts'
 
 const LOCKOUT_KEY = 'recaptcha:assessment-lockout'
-
-async function waitForLockout(): Promise<void> {
-  await waitForCondition(isRecaptchaLockedOut, 2000, 25, 'the reCAPTCHA lockout to be set')
-}
 
 describe('secondsUntilEndOfUtcDay', () => {
   it('returns a full day at the start of a UTC day', () => {
@@ -47,8 +42,13 @@ describe('reCAPTCHA assessment lockout', () => {
   })
 
   it('applies the lockout from the fire-and-forget wrapper', async () => {
-    setRecaptchaLockedOutBackground()
-    await waitForLockout()
-    expect(await isRecaptchaLockedOut()).toBe(true)
+    const writeLockout = vi.spyOn(rateLimiterValkeyClient, 'set')
+    try {
+      setRecaptchaLockedOutBackground()
+      await writeLockout.mock.results[0]?.value
+      expect(await isRecaptchaLockedOut()).toBe(true)
+    } finally {
+      writeLockout.mockRestore()
+    }
   })
 })

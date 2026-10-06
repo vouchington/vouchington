@@ -1,5 +1,5 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { completeOAuthAuthorization } from '../authorization-completion.mts'
 import { completeOAuthAuthorizationTransaction } from '../authorization-completion-transaction.mts'
 import { findYourFriendsQueue } from '@queues/find-your-friends/queues'
@@ -8,6 +8,7 @@ import {
   createTestUserDirect,
   getActiveTestUserSessions,
   getTestUserRaw,
+  readAllQueueJobs,
   setTestUserVoteWeightRecalculatedAt,
   suspendTestUser,
   unsuspendTestUser,
@@ -178,22 +179,12 @@ describe('OAuth authorization completion', () => {
       }),
     ).resolves.toMatchObject({ status: 'connected' })
 
-    await vi.waitFor(async () => {
-      const jobs = (
-        await Promise.all(
-          (['waiting', 'active', 'completed', 'failed', 'delayed'] as const).map(state =>
-            findYourFriendsQueue.getJobs(state),
-          ),
-        )
-      )
-        .flat()
-        .filter(
-          job =>
-            job.name === 'syncFacebookFriends' &&
-            (job.data as { facebookUserId?: string }).facebookUserId === account.provider_user_id,
-        )
-      expect(jobs).toHaveLength(1)
-    })
+    const jobs = (await readAllQueueJobs(findYourFriendsQueue)).filter(
+      job =>
+        job.name === 'syncFacebookFriends' &&
+        (job.data as { facebookUserId?: string }).facebookUserId === account.provider_user_id,
+    )
+    expect(jobs).toHaveLength(1)
 
     await suspendTestUser(userId)
     try {

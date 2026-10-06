@@ -5,9 +5,9 @@ import {
 } from '@services/post-publication'
 import { recordRssFeedHardDeletePublicationChange } from '@services/post-publication/capture-deletions'
 import { recordTopicMergePublicationChanges } from '@services/post-publication/capture-topic-merge'
-import type { TransactionQuery } from '@data-stores/psql'
+import type { QueryInput, TransactionQuery } from '@data-stores/psql'
 import { beginTransaction, createTestTopic, insertTestRssFeedDirect } from '@voucha/test-helpers'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { createUnlinkedTopicAlias, linkTopicAlias } from '@services/topics/aliases'
 import { upsertRssFeedItems } from '@services/rss-feed-items/upsert'
 import { upsertRssFeedItemCategories } from '@services/rss-feed-items/categories'
@@ -76,16 +76,16 @@ async function expectAliasBeforeBlockedCapture(
   }
   const holder = holdNextPublicationScope()
   await locked.promise
-  async function capturePublicationChanges(): Promise<void> {
+  async function capturePublicationChanges(locked: PromiseWithResolvers<void>): Promise<void> {
     await using query = await beginTransaction()
-    await capture(query)
+    await capture(gateWhenSqlReturns(query, 'lockTopicAliasPublicationCaptures', locked))
     await query.commit()
   }
-  const mutation = capturePublicationChanges()
+  const aliasLocked = Promise.withResolvers<void>()
+  const mutation = capturePublicationChanges(aliasLocked)
   try {
-    await vi.waitFor(async () => {
-      await expect(contendForAliasPublicationScope()).rejects.toMatchObject({ code: '55P03' })
-    })
+    await aliasLocked.promise
+    await expect(contendForAliasPublicationScope()).rejects.toMatchObject({ code: '55P03' })
   } finally {
     release.resolve()
   }
@@ -98,4 +98,19 @@ async function expectAliasBeforeBlockedCapture(
     await lockTopicAliasPublicationScopes(query, [aliasId])
     await query.commit()
   }
+}
+
+function gateWhenSqlReturns(
+  query: TransactionQuery,
+  marker: string,
+  locked: PromiseWithResolvers<void>,
+): TransactionQuery {
+  const gated = (async (input: QueryInput, values?: ReadonlyArray<unknown>) => {
+    const result = await query(input, values)
+    const text = typeof input === 'string' ? input : input.text
+    if (text.includes(marker)) locked.resolve()
+    return result
+  }) as TransactionQuery
+  gated.client = query.client
+  return gated
 }

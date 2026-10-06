@@ -3,8 +3,8 @@ import {
   beginTransaction,
   createTestUser,
   insertTestTopic,
+  readAllQueueJobs,
   updatePostTitleMarkdown,
-  waitForQueueJobs,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { notifications } from '@queues/notifications/queues'
@@ -47,13 +47,7 @@ describe('create transaction-captured categories', () => {
     const postId = prepared.response.post.id
     await query.commit()
 
-    const jobs = await waitForQueueJobs(notifications, currentJobs =>
-      currentJobs.some(
-        job =>
-          job.name === 'processReconcilePostNotifications' &&
-          (job.data as { postId: string }).postId === postId,
-      ),
-    )
+    const jobs = await readAllQueueJobs(notifications)
     expect(categoryNotificationCount(jobs, postId)).toBe(1)
 
     await updatePostTitleMarkdown(postId, `Later title ${suffix}`, `Later body ${suffix}`)

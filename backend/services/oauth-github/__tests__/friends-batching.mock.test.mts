@@ -12,6 +12,7 @@ import {
   setTestOAuthAccountAccessToken,
   softDeleteUser,
 } from '@voucha/test-helpers'
+import * as psql from '@data-stores/psql'
 import { syncGithubFriends } from '../friends.mts'
 
 const fetchSpy = vi.hoisted(() => vi.fn<VitestLooseMock>())
@@ -64,10 +65,25 @@ describe('syncGithubFriends batching', () => {
     await insertTestFriends('github', providerUserId, friendIds)
     const rowLock = await acquireTestFriendRowLock('github', providerUserId, friendIds.at(-1)!)
     fetchSpy.mockResolvedValueOnce(githubResponse([]))
+    const secondStalePage = Promise.withResolvers<void>()
+    let staleReads = 0
+    const writeFriends = psql.write
+    vi.spyOn(psql, 'write').mockImplementation((input, valuesOrOptions, options) => {
+      const pending = writeFriends(input, valuesOrOptions, options)
+      const sql = typeof input === 'string' ? input : input.text
+      if (sql.includes('getStaleGithubFriendIds')) {
+        void pending.then(() => {
+          staleReads += 1
+          if (staleReads === 2) secondStalePage.resolve()
+        })
+      }
+      return pending
+    })
 
     const sync = syncGithubFriends(providerUserId)
     try {
-      await expect.poll(() => countTestFriends('github', providerUserId)).toBe(1)
+      await secondStalePage.promise
+      await expect(countTestFriends('github', providerUserId)).resolves.toBe(1)
     } finally {
       await rowLock.release()
     }
