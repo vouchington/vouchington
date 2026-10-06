@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterEach, afterAll, vi } from 'vitest
 import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
+import * as analytics from '@data-stores/analytics'
 import { flush } from '@data-stores/analytics/backend-local'
 import { query } from '@data-stores/analytics/query'
 import { recordQueryTiming } from './query-telemetry.mts'
@@ -22,16 +23,37 @@ function record(
   })
 }
 
-async function waitForRow(annotation: string): Promise<Record<string, unknown>> {
-  return vi.waitFor(
-    async () => {
-      await flush()
-      const rows = await query(`SELECT * FROM pg_query_timing WHERE annotation = '${annotation}'`)
-      if (!rows.length) throw new Error('pending')
-      return rows[0]!
-    },
-    { timeout: 20_000, interval: 50 },
-  )
+function whenQueryTimingEmitted(annotation: string, rowCount?: number): Promise<void> {
+  const emitted = Promise.withResolvers<void>()
+  const originalEmit = analytics.emit
+  const spy = vi.spyOn(analytics, 'emit').mockImplementation((table, timing) => {
+    originalEmit(table, timing)
+    const matchesAnnotation = table === 'pg_query_timing' && timingAnnotation(timing) === annotation
+    const matchesRowCount = rowCount === undefined || timingRowCount(timing) === rowCount
+    if (matchesAnnotation && matchesRowCount) {
+      spy.mockRestore()
+      emitted.resolve()
+    }
+  })
+  return emitted.promise
+}
+
+function timingAnnotation(timing: object): string | undefined {
+  if (!('annotation' in timing) || typeof timing.annotation !== 'string') return undefined
+  return timing.annotation
+}
+
+function timingRowCount(timing: object): number | undefined {
+  if (!('row_count' in timing) || typeof timing.row_count !== 'number') return undefined
+  return timing.row_count
+}
+
+async function readTimingRow(annotation: string): Promise<Record<string, unknown>> {
+  await flush()
+  const rows = await query(`SELECT * FROM pg_query_timing WHERE annotation = '${annotation}'`)
+  const row = rows[0]
+  if (row === undefined) throw new Error(`pg_query_timing did not record ${annotation}`)
+  return row
 }
 
 async function countRows(annotation: string): Promise<number> {
@@ -49,10 +71,11 @@ async function assertNoEmit(annotation: string): Promise<void> {
   const sentinel = uid()
   const saved = process.env.PG_QUERY_TIMING_SAMPLE
   process.env.PG_QUERY_TIMING_SAMPLE = ''
+  const emitted = whenQueryTimingEmitted(sentinel)
   record(sentinel)
   if (saved === undefined) delete process.env.PG_QUERY_TIMING_SAMPLE
   else process.env.PG_QUERY_TIMING_SAMPLE = saved
-  await waitForRow(sentinel)
+  await emitted
   expect(await countRows(annotation)).toBe(0)
 }
 
@@ -89,6 +112,7 @@ describe('recordQueryTiming', () => {
 
   it('emits a pg_query_timing row with the timing fields', async () => {
     const annotation = uid()
+    const emitted = whenQueryTimingEmitted(annotation)
     record(annotation, {
       pool: 'write',
       durationMs: 42,
@@ -96,7 +120,8 @@ describe('recordQueryTiming', () => {
       error: true,
       cursorBatches: 3,
     })
-    const row = await waitForRow(annotation)
+    await emitted
+    const row = await readTimingRow(annotation)
     expect(row.annotation).toBe(annotation)
     expect(row.pool).toBe('write')
     expect(Number(row.duration_ms)).toBe(42)
@@ -109,29 +134,26 @@ describe('recordQueryTiming', () => {
 
   it('emits optional pipelined and batch_size when set', async () => {
     const annotation = uid()
+    const emitted = whenQueryTimingEmitted(annotation)
     record(annotation, { pipelined: true, batchSize: 4 })
-    const row = await waitForRow(annotation)
+    await emitted
+    const row = await readTimingRow(annotation)
     expect(String(row.pipelined)).toBe('true')
     expect(Number(row.batch_size)).toBe(4)
     expect(row.cursor_batches == null).toBe(true)
   })
 
   it('records a null annotation as "unannotated"', async () => {
-    const marker = uid()
+    const emitted = whenQueryTimingEmitted('unannotated', 3)
     record(null, { pool: 'client', rowCount: 3, error: false, durationMs: 5 })
-    const row = await vi.waitFor(
-      async () => {
-        await flush()
-        const rows = await query(
-          `SELECT * FROM pg_query_timing WHERE annotation = 'unannotated' AND row_count = 3 AND pool = 'client'`,
-        )
-        if (!rows.length) throw new Error('pending')
-        return rows[0]!
-      },
-      { timeout: 20_000, interval: 50 },
+    await emitted
+    await flush()
+    const rows = await query(
+      `SELECT * FROM pg_query_timing WHERE annotation = 'unannotated' AND row_count = 3 AND pool = 'client'`,
     )
+    const row = rows[0]
+    if (row === undefined) throw new Error('pg_query_timing did not record unannotated')
     expect(row.annotation).toBe('unannotated')
-    expect(marker).toBeDefined()
   })
 
   it('is a no-op when ANALYTICS_BACKEND is disabled', async () => {
@@ -152,23 +174,29 @@ describe('recordQueryTiming', () => {
   it('emits when the sample rate is >= 1', async () => {
     const annotation = uid()
     process.env.PG_QUERY_TIMING_SAMPLE = '1.5'
+    const emitted = whenQueryTimingEmitted(annotation)
     record(annotation)
-    expect(await waitForRow(annotation)).toBeDefined()
+    await emitted
+    expect(await readTimingRow(annotation)).toBeDefined()
   })
 
   it('emits when the sample rate is not a finite number', async () => {
     const annotation = uid()
     process.env.PG_QUERY_TIMING_SAMPLE = 'abc'
+    const emitted = whenQueryTimingEmitted(annotation)
     record(annotation)
-    expect(await waitForRow(annotation)).toBeDefined()
+    await emitted
+    expect(await readTimingRow(annotation)).toBeDefined()
   })
 
   it('emits a fractional-rate query when Math.random falls below the rate', async () => {
     const annotation = uid()
     process.env.PG_QUERY_TIMING_SAMPLE = '0.5'
     vi.spyOn(Math, 'random').mockReturnValue(0.1)
+    const emitted = whenQueryTimingEmitted(annotation)
     record(annotation)
-    expect(await waitForRow(annotation)).toBeDefined()
+    await emitted
+    expect(await readTimingRow(annotation)).toBeDefined()
   })
 
   it('drops a fractional-rate query when Math.random is at or above the rate', async () => {
@@ -189,12 +217,14 @@ describe('recordQueryTiming', () => {
     it('logs a [pg-query-failed] stderr line for a slow, errored query', async () => {
       const annotation = uid()
       const stderrSpy = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
+      const emitted = whenQueryTimingEmitted(annotation)
       record(annotation, { durationMs: 20_003, error: true })
       expect(stderrSpy).toHaveBeenCalledWith(
         `[pg-query-failed] annotation=${annotation} pool=read ms=20003\n`,
       )
       // The new branch runs before the ANALYTICS_BACKEND early-out and must not swallow it.
-      const row = await waitForRow(annotation)
+      await emitted
+      const row = await readTimingRow(annotation)
       expect(String(row.error)).toBe('true')
     })
 

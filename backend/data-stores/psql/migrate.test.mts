@@ -108,13 +108,19 @@ describe('applyAllMigrations', () => {
     const pid = rows[0]?.pid
     if (pid === undefined) throw new Error('Expected a PostgreSQL backend PID')
     const poolCountBeforeTermination = readPool.totalCount
+    const disconnected = new Promise<void>(resolve => {
+      client.once('error', () => {
+        resolve()
+      })
+    })
     const verifySchema = vi.fn<VerifySchemaAfterMigration>(async () => {
       const terminated = await write<{ terminated: boolean }>(
         '/* terminateIdleVerificationConnection */ SELECT pg_terminate_backend($1) AS terminated',
         [pid],
       )
       expect(terminated.rows[0]?.terminated).toBe(true)
-      await vi.waitFor(() => expect(readPool.totalCount).toBeLessThan(poolCountBeforeTermination))
+      await disconnected
+      expect(readPool.totalCount).toBeLessThan(poolCountBeforeTermination)
       const schemaRead = await read<{ migration_table: string | null }>(
         "/* verifyReadAfterIdleTermination */ SELECT to_regclass('migrations')::text AS migration_table",
       )

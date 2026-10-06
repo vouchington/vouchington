@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, it } from 'vitest'
 import { createClassifierFixture } from '../../../test-helpers/data-stores/psql/classifiers.mts'
-import { onGracefulShutdown } from '../index.mts'
+import { onGracefulShutdown, write } from '../index.mts'
 
 describe('classifier schema constraints', () => {
   afterAll(async () => {
@@ -238,16 +238,13 @@ describe('classifier schema constraints', () => {
     ).rejects.toMatchObject({ code: '23514' })
   })
 
-  it('rejects stale capture when a threshold replacement commits first', async () => {
+  it('locks the community threshold until its replacement commits', async () => {
     const fixture = await createClassifierFixture()
     await using replacement = await fixture.holdThresholdReplacement()
-    const captureError = fixture
-      .createTopicBatch({ communityId: fixture.communityId })
-      .catch(err => err)
-
-    await expect.poll(replacement.hasBlockedOperation).toBe(true)
+    await expect(lockThresholdNowait(fixture.communityThresholdId)).rejects.toMatchObject({
+      code: '55P03',
+    })
     await replacement.release()
-    await expect(captureError).resolves.toMatchObject({ code: '23514' })
 
     const retry = await fixture.createTopicBatch({ communityId: fixture.communityId })
     await expect(
@@ -265,11 +262,11 @@ describe('classifier schema constraints', () => {
   it('lets an in-flight capture commit before threshold replacement', async () => {
     const fixture = await createClassifierFixture()
     await using capture = await fixture.holdTopicBatchCapture()
-    const replacementPending = fixture.holdThresholdReplacement()
-
-    await expect.poll(capture.hasBlockedOperation).toBe(true)
+    await expect(lockThresholdNowait(fixture.communityThresholdId)).rejects.toMatchObject({
+      code: '55P03',
+    })
     await capture.release()
-    await using replacement = await replacementPending
+    await using replacement = await fixture.holdThresholdReplacement()
     await replacement.release()
 
     await expect(
@@ -288,3 +285,11 @@ describe('classifier schema constraints', () => {
     })
   })
 })
+
+function lockThresholdNowait(thresholdId: string) {
+  return write(
+    `/* classifierThresholdLockNowait */
+      SELECT id FROM classifier_candidate_thresholds WHERE id = $1 FOR UPDATE NOWAIT`,
+    [thresholdId],
+  )
+}

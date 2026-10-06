@@ -72,20 +72,17 @@ describe('ValkeyCache inflight-saturation handling', () => {
     })
     const getByAny = cache.cacheGetByAny((key: string) => Promise.resolve(`fresh-${key}`))
 
+    const reported = Promise.withResolvers<void>()
+    captureException.mockImplementationOnce(() => {
+      reported.resolve()
+    })
+
     // The caller gets the freshly computed value immediately — it never awaits the write.
     await expect(getByAny('key')).resolves.toBe('fresh-key')
-
-    // The write's saturation rejection is caught internally and reported, not left dangling:
-    // vitest fails the run on a genuine unhandled rejection, so resolving this assertion is
-    // direct proof the rejection was handled rather than merely absorbed by test-runner luck.
-    await vi.waitFor(
-      () => {
-        expect(captureException).toHaveBeenCalledWith(
-          expect.objectContaining({ message: 'Reached maximum inflight requests' }),
-          expect.anything(),
-        )
-      },
-      { timeout: 5000 },
+    await reported.promise
+    expect(captureException).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Reached maximum inflight requests' }),
+      expect.anything(),
     )
   })
 })
