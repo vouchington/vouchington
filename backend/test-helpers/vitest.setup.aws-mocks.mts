@@ -1,5 +1,9 @@
 import { vi } from 'vitest'
 
+// The default AWS credential chain dials the EC2 metadata service at 169.254.169.254.
+// Unit tests have no instance role. Live provider projects pass explicit credentials.
+process.env.AWS_EC2_METADATA_DISABLED ??= 'true'
+
 // Provide fallback fake credentials so getS3Credentials() never throws in test
 // environments. The vi.mock below normally intercepts getSignedUrl before real
 // credentials are ever read, but with pool:'forks' + isolate:false the mock

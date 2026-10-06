@@ -11,7 +11,7 @@ describe('retry-candidates', () => {
 
   it('getRetryCrawlUrlCandidates returns null when no other candidates exist', async () => {
     const random = Math.random().toString(36).slice(2, 15)
-    const url = await addUrl(null, `https://retry-solo-${random}.example.com/page`)
+    const url = await addUrl(null, `https://retry-solo-${random}.localhost/page`)
     await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
 
     // Only one URL on this hostname, excluding it leaves no candidates
@@ -21,7 +21,7 @@ describe('retry-candidates', () => {
 
   it('getRetryCrawlUrlCandidates returns candidates from the same hostname', async () => {
     const random = Math.random().toString(36).slice(2, 15)
-    const base = `https://retry-multi-${random}.example.com`
+    const base = `https://retry-multi-${random}.localhost`
     const [url1] = await Promise.all([
       addUrl(null, `${base}/page1`),
       addUrl(null, `${base}/page2`),

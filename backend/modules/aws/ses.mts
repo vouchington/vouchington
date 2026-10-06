@@ -46,6 +46,12 @@ export const SESClient = new Proxy({} as CreateSESClient, {
 export const sendEmail = (options: SendEmailOptions) => {
   assertValidSendEmailOptions(options)
 
+  // Unit tests have no SES account. Placeholder credentials would still dial the public endpoint.
+  // Credentialed backend-aws tests pass real SES keys and keep this call.
+  if (isVitestProcess(process.env) && !hasSESCredentials()) {
+    return Promise.resolve({ $metadata: {}, MessageId: 'vitest-placeholder' })
+  }
+
   /* c8 ignore start -- AWS transport wiring; raw MIME construction is covered separately. */
   if (options.headers) {
     const command = new SendRawEmailCommand({

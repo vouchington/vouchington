@@ -65,14 +65,18 @@ describe('database emailable flag', () => {
     const hostname = `test-not-emailable-${Date.now()}.com`
     await insertUrlHostname(hostname, { is_emailable: false })
 
-    await expect(validateEmailDomain(hostname)).rejects.toThrow(EmailDomainInvalidError)
+    const err = await validateEmailDomain(hostname).catch(err => err)
+    expect(err).toBeInstanceOf(EmailDomainInvalidError)
+    expect((err as EmailDomainInvalidError).reason).toBe(
+      'domain marked as not emailable in database',
+    )
   })
 
   it('still requires MX records even if marked emailable', async () => {
-    const hostname = `test-emailable-${Date.now()}.com`
+    const hostname = `test-emailable-${Date.now()}.test`
     await insertUrlHostname(hostname, { is_emailable: true })
 
-    // Will fail on DNS check since hostname has no MX records
+    // `.test` resolves to no MX records in the suite stub.
     await expect(validateEmailDomain(hostname)).rejects.toThrow(EmailDomainInvalidError)
   }, 15_000)
 })
@@ -221,13 +225,13 @@ describe('bloom filter integration', () => {
       url: 'https://example.com/email-blacklist.txt',
     })
 
-    const testDomain = `bloom-bypass-${Date.now()}.com`
+    const testDomain = `bloom-bypass-${Date.now()}.test`
     await insertTestDomainBlacklist(testDomain, 'test-email-blacklist')
     await invalidateEmailDomainCaches()
 
     // Bloom filter returns false → fast path skips the blacklist EXISTS subquery.
-    // The domain is in the DB blacklist but not the filter; it reaches DNS validation
-    // instead of being caught by the blacklist check.
+    // The domain is in the DB blacklist but not the filter; it reaches MX validation
+    // instead of being caught by the blacklist check. `.test` has no MX records.
     const error = await validateEmailDomain(testDomain).catch(err => err)
     expect(error).toBeInstanceOf(EmailDomainInvalidError)
     expect((error as EmailDomainInvalidError).message).not.toContain('email blacklist')

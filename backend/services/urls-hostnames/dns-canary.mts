@@ -11,13 +11,14 @@ let canaryIndex = 0
 
 /**
  * Resolves a canary hostname to check whether our server's DNS resolver is working.
- * Rotates through a list of well-known hostnames on each call.
+ * Rotates through a list of well-known hostnames on each call. A caller-supplied hostname
+ * is probed without advancing that rotation.
  *
  * Throws if the DNS lookup fails (resolver is down or unreachable).
  */
 /* no-mistakes: integration=http */
-export async function resolveDnsCanary(): Promise<void> {
-  const hostname = CANARY_HOSTNAMES[canaryIndex % CANARY_HOSTNAMES.length]!
-  canaryIndex++
-  await dns.lookup(hostname)
+export async function resolveDnsCanary(hostname?: string): Promise<void> {
+  const target = hostname ?? CANARY_HOSTNAMES[canaryIndex % CANARY_HOSTNAMES.length]!
+  if (hostname === undefined) canaryIndex++
+  await dns.lookup(target)
 }

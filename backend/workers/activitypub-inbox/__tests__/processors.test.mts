@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it, onTestFinished } from 'vitest'
+import dns from 'node:dns'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { generateRsaSha256KeyPair } from '@modules/http-signatures'
 import { UnrecoverableError } from '@modules/queue-errors'
 import { softDeleteRemoteActorForInboxTest } from '@voucha/test-helpers'
@@ -132,38 +133,63 @@ describe('ActivityPub inbox processor', () => {
 
   it('retains and re-arms a final retryable remote-actor availability failure', async () => {
     const hostname = `missing-${randomUUID()}.invalid`
-    await approveInstance(hostname)
-    const { privateKeyPem } = generateRsaSha256KeyPair()
-    const actorUri = `https://${hostname}/users/alice`
-    const delivery = await createSignedDelivery({
-      actorUri,
-      hostname,
-      keyId: `${actorUri}#main-key`,
-      privateKeyPem,
-    })
+    const lookup = stubUnresolvableHostname(hostname)
+    try {
+      await approveInstance(hostname)
+      const { privateKeyPem } = generateRsaSha256KeyPair()
+      const actorUri = `https://${hostname}/users/alice`
+      const delivery = await createSignedDelivery({
+        actorUri,
+        hostname,
+        keyId: `${actorUri}#main-key`,
+        privateKeyPem,
+      })
 
-    const failure = processDelivery(delivery, { isFinalAttempt: true })
-    await expect(failure).rejects.not.toBeInstanceOf(UnrecoverableError)
-    const rearmed = (await rearmFailedActivityPubInboxDeliveries([delivery.deliveryId])).find(
-      candidate => candidate.deliveryId === delivery.deliveryId,
-    )
-    expect(rearmed?.leaseToken).not.toBe(delivery.leaseToken)
+      const failure = processDelivery(delivery, { isFinalAttempt: true })
+      await expect(failure).rejects.not.toBeInstanceOf(UnrecoverableError)
+      const rearmed = (await rearmFailedActivityPubInboxDeliveries([delivery.deliveryId])).find(
+        candidate => candidate.deliveryId === delivery.deliveryId,
+      )
+      expect(rearmed?.leaseToken).not.toBe(delivery.leaseToken)
+    } finally {
+      lookup.mockRestore()
+    }
   })
 
   it('releases a non-final retryable remote-actor failure for another attempt', async () => {
     const actor = makeUnavailableActor()
-    await approveInstance(actor.hostname)
-    const delivery = await createSignedDelivery(actor)
-    onTestFinished(async () => {
-      await rejectTestDelivery(delivery.deliveryId, delivery.leaseToken)
-    })
+    const lookup = stubUnresolvableHostname(actor.hostname)
+    try {
+      await approveInstance(actor.hostname)
+      const delivery = await createSignedDelivery(actor)
+      onTestFinished(async () => {
+        await rejectTestDelivery(delivery.deliveryId, delivery.leaseToken)
+      })
 
-    await expect(processDelivery(delivery, { isFinalAttempt: false })).rejects.not.toBeInstanceOf(
-      UnrecoverableError,
-    )
-    expect(await claimTestDelivery(delivery.deliveryId, delivery.leaseToken)).not.toBeNull()
+      await expect(processDelivery(delivery, { isFinalAttempt: false })).rejects.not.toBeInstanceOf(
+        UnrecoverableError,
+      )
+      expect(await claimTestDelivery(delivery.deliveryId, delivery.leaseToken)).not.toBeNull()
+    } finally {
+      lookup.mockRestore()
+    }
   })
 })
+
+function stubUnresolvableHostname(hostname: string) {
+  const originalLookup = dns.promises.lookup
+  return vi.spyOn(dns.promises, 'lookup').mockImplementation(((
+    requested: string,
+    options?: unknown,
+  ) => {
+    if (requested === hostname) {
+      return Promise.reject(
+        Object.assign(new Error(`getaddrinfo ENOTFOUND ${hostname}`), { code: 'ENOTFOUND' }),
+      )
+    }
+    return Reflect.apply(originalLookup, dns.promises, [requested, options])
+  }) as typeof dns.promises.lookup)
+}
 
 async function markActivityPubInboxDeliveryVerified(
   deliveryId: string,

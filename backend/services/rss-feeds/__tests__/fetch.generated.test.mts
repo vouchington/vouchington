@@ -2,10 +2,9 @@ import { it, expect, describe } from 'vitest'
 import { fetchRssFeed } from '../fetch.mts'
 import { createRssFeed } from '../create.mts'
 import { updateRssFeedById } from '../update.mts'
-import { searchRssFeedItems } from '@services/rss-feed-items/search'
-import { getRssFeedItemById } from '@services/rss-feed-items/get'
 import {
   createTestTopic,
+  getRssFeedDeletedAt,
   updateRssFeedTiming,
   updateUrlHostnameBlocked,
   WEB_PROVENANCE,
@@ -15,58 +14,28 @@ import { getUrlHostnameByAny } from '@services/urls-hostnames/get'
 import { getRssFeedById } from '../get.mts'
 
 describe('fetch.generated', () => {
-  it.skipIf(process.env.CI === 'true')(
-    'fetchRssFeed fetches and upserts items from real RSS feed',
-    async () => {
-      try {
-        const random = Math.random().toString(36).slice(2, 15)
-        const topic = await createTestTopic({ hostname: `thepointsguy-${random}.example.com` })
+  it('fetchRssFeed soft-deletes the feed when example.com returns HTTP 404', async () => {
+    const random = Math.random().toString(36).slice(2, 15)
+    const topic = await createTestTopic({ hostname: `rss-404-${random}.example.com` })
+    const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
+      skipRemoteValidation: true,
+      rss_feed_url: `https://example.com/feed.xml?test=${random}`,
+      topic_id: topic.id,
+      title: `Test Feed ${random}`,
+    })
+    await updateRssFeedById(feed.id, { is_enabled: true })
 
-        const feed = await createRssFeed({
-          provenance: WEB_PROVENANCE,
-          skipRemoteValidation: true,
-          rss_feed_url: `https://thepointsguy.com/feed/?test=${random}`,
-          topic_id: topic.id,
-          title: `Test Feed ${random}`,
-        })
-        // Enable the feed
-        await updateRssFeedById(feed.id, { is_enabled: true })
-
-        // Fetch the feed
-        const items = await fetchRssFeed(feed.id, 0)
-
-        expect(Array.isArray(items)).toBe(true)
-        // Items might be empty if feed has no valid items (missing link/guid), which is valid
-        if (items.length === 0) {
-          return // Skip further checks if no items were returned
-        }
-
-        // Verify items were created
-        const searchResults = await searchRssFeedItems({ rss_feed_ids: [feed.id], limit: 10 })
-        expect(searchResults.results.length).toBeGreaterThan(0)
-
-        // Verify items have required fields
-        const firstItemId = searchResults.results[0].id
-        const firstItem = await getRssFeedItemById(firstItemId)
-        expect(firstItem).not.toBeNull()
-        expect(firstItem!.id).toBeDefined()
-        expect(firstItem!.published_at).toBeDefined()
-        expect(firstItem!.url).toBeDefined()
-        expect(firstItem!.rss_feed).toBeDefined()
-
-        // Verify feed metadata was updated
-        await updateRssFeedById(feed.id, {})
-        // Feed should have last_fetched_at set (though update returns undefined if no changes)
-        // We can verify by fetching again and checking it doesn't throw the rate limit error immediately
-        await expect(fetchRssFeed(feed.id, 0)).resolves.toBeDefined()
-      } catch (err: unknown) {
-        // Skip test if network is unavailable or external feed returns HTTP error
-        if (isCrawlerOrNetworkError(err)) return
-        throw err
-      }
-    },
-    15_000,
-  )
+    let caught: unknown
+    try {
+      await fetchRssFeed(feed.id, 0)
+    } catch (err) {
+      caught = err
+    }
+    expect(caught).toBeInstanceOf(CrawlerHttpClientError)
+    expect(caught).toMatchObject({ status: 404 })
+    expect(await getRssFeedDeletedAt(feed.id)).toBeInstanceOf(Date)
+  })
 
   it('fetchRssFeed returns empty array for disabled feed', async () => {
     const random = Math.random().toString(36).slice(2, 15)
@@ -91,7 +60,7 @@ describe('fetch.generated', () => {
     const feed = await createRssFeed({
       provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
-      rss_feed_url: `https://thepointsguy.com/feed/?test-rate-limit-${random}`,
+      rss_feed_url: `https://example.net/feed/?test-rate-limit-${random}`,
       topic_id: topic.id,
       title: `Test Feed ${random}`,
     })
@@ -129,7 +98,7 @@ describe('fetch.generated', () => {
     const feed = await createRssFeed({
       provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
-      rss_feed_url: `https://thepointsguy.com/feed/?test-future-${random}`,
+      rss_feed_url: `https://example.org/feed/?test-future-${random}`,
       topic_id: topic.id,
       title: `Test Feed ${random}`,
     })
@@ -140,49 +109,26 @@ describe('fetch.generated', () => {
     await expect(fetchRssFeed(feed.id)).resolves.toEqual([])
   })
 
-  it.skipIf(process.env.CI === 'true')(
-    'fetchRssFeed allows forced fetch even if recently fetched',
-    async () => {
-      try {
-        const random = Math.random().toString(36).slice(2, 15)
-        const topic = await createTestTopic({ hostname: `forced-${random}.example.com` })
+  it('fetchRssFeed still requests example.net when a forced fetch bypasses the recent-fetch skip', async () => {
+    const random = Math.random().toString(36).slice(2, 15)
+    const topic = await createTestTopic({ hostname: `forced-${random}.example.com` })
+    const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
+      skipRemoteValidation: true,
+      rss_feed_url: `https://example.net/feed.xml?test-forced-${random}`,
+      topic_id: topic.id,
+      title: `Test Feed ${random}`,
+    })
+    await updateRssFeedById(feed.id, { is_enabled: true, last_fetched_at: true })
 
-        const feed = await createRssFeed({
-          provenance: WEB_PROVENANCE,
-          skipRemoteValidation: true,
-          rss_feed_url: `https://thepointsguy.com/feed/?test-forced-${random}`,
-          topic_id: topic.id,
-          title: `Test Feed ${random}`,
-        })
-        await updateRssFeedById(feed.id, { is_enabled: true, last_fetched_at: true })
-
-        // Should not throw when ttl=0
-        const result = await fetchRssFeed(feed.id, 0)
-        expect(Array.isArray(result)).toBe(true)
-      } catch (err: unknown) {
-        // Skip test if network is unavailable or external feed returns HTTP error
-        if (isCrawlerOrNetworkError(err)) return
-        throw err
-      }
-    },
-    15_000,
-  )
-
-  function isCrawlerOrNetworkError(error: unknown): boolean {
-    if (error instanceof CrawlerHttpClientError) return true
-    if (typeof error === 'string') return true
-    if (!(error instanceof Error)) return false
-    const msg = error.message
-    return (
-      msg.includes('network') ||
-      msg.includes('timeout') ||
-      msg.includes('timed out') ||
-      msg.includes('ENOTFOUND') ||
-      msg.includes('fetch failed') ||
-      msg.includes('AbortError') ||
-      error.name === 'AbortError' ||
-      error.name === 'TypeError' ||
-      error.name === 'CrawlerTimeoutError'
-    )
-  }
+    let caught: unknown
+    try {
+      await fetchRssFeed(feed.id, 0)
+    } catch (err) {
+      caught = err
+    }
+    expect(caught).toBeInstanceOf(CrawlerHttpClientError)
+    expect(caught).toMatchObject({ status: 404 })
+    expect(await getRssFeedDeletedAt(feed.id)).toBeInstanceOf(Date)
+  })
 })

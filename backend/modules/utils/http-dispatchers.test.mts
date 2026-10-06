@@ -190,7 +190,7 @@ describe('http-dispatchers', () => {
         { address: '::1', family: 6 as const },
         { address: '127.0.0.1', family: 4 as const },
       ])
-      const response = await undiciFetch(`http://ordered.test:${address.port}/`, { dispatcher })
+      const response = await undiciFetch(`http://example.com:${address.port}/`, { dispatcher })
 
       expect(await response.text()).toBe('IPv6')
     } finally {
