@@ -106,14 +106,25 @@ jobs:
               echo "::warning::Could not read the jobs of run $id"
             elif [[ "$holds_failure" == "true" ]]; then
               result='kept: holds a failed job'
-            elif error=$(gh api --method POST "repos/$GITHUB_REPOSITORY/actions/runs/$id/cancel" 2>&1 >/dev/null); then
-              result=cancelled
-            elif [[ "$error" == *"HTTP 409"* ]]; then
-              result='already completed'
             else
-              result='failed'
-              failed=1
-              echo "::warning::Could not cancel run $id: $error"
+              # HTTP 502, 503, and 504 from the cancel API are retried up to three attempts,
+              # one second apart. A persistent gateway error still fails this run and the job.
+              for attempt in 1 2 3; do
+                if error=$(gh api --method POST "repos/$GITHUB_REPOSITORY/actions/runs/$id/cancel" 2>&1 >/dev/null); then
+                  result=cancelled
+                  break
+                elif [[ "$error" == *"HTTP 409"* ]]; then
+                  result='already completed'
+                  break
+                elif [[ "$attempt" -lt 3 && ( "$error" == *"HTTP 502"* || "$error" == *"HTTP 503"* || "$error" == *"HTTP 504"* ) ]]; then
+                  sleep 1
+                else
+                  result='failed'
+                  failed=1
+                  echo "::warning::Could not cancel run $id: $error"
+                  break
+                fi
+              done
             fi
             echo "$result: $name run $id on $branch"
             rows="$rows| $name | [$id]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$id) | \`$branch\` | $result |"$'\n'

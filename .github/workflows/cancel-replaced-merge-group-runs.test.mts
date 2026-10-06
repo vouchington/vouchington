@@ -44,6 +44,19 @@ if [[ "$*" == *"--method POST"* ]]; then
   id="\${id%/cancel}"
   case " $FAKE_CONFLICT_IDS " in *" $id "*) echo 'gh: Cannot cancel a workflow run that is completed. (HTTP 409)' >&2; exit 1 ;; esac
   case " $FAKE_ERROR_IDS " in *" $id "*) echo 'gh: Internal Server Error (HTTP 500)' >&2; exit 1 ;; esac
+  case " $FAKE_TRANSIENT_IDS " in
+    *" $id "*)
+      count_file="$FAKE_GH_DIR/transient-$id"
+      count=0
+      if [[ -f "$count_file" ]]; then count=$(cat "$count_file"); fi
+      count=$((count + 1))
+      printf '%s\\n' "$count" > "$count_file"
+      if [[ "$count" -le "\${FAKE_TRANSIENT_FAILURES:-1}" ]]; then
+        echo 'gh: Server Error (HTTP 502)' >&2
+        exit 1
+      fi
+      ;;
+  esac
   printf '%s\\n' "$id" >> "$FAKE_GH_DIR/cancelled"
   exit 0
 fi
@@ -60,6 +73,8 @@ type Scenario = {
   pages?: Partial<Record<Statuses, string[]>>
   conflicts?: number[]
   errors?: number[]
+  transient?: number[]
+  transientFailures?: number
 }
 
 let directory = ''
@@ -83,6 +98,8 @@ function execute(scenario: Scenario) {
       FAKE_GH_DIR: directory,
       FAKE_CONFLICT_IDS: (scenario.conflicts ?? []).join(' '),
       FAKE_ERROR_IDS: (scenario.errors ?? []).join(' '),
+      FAKE_TRANSIENT_IDS: (scenario.transient ?? []).join(' '),
+      FAKE_TRANSIENT_FAILURES: String(scenario.transientFailures ?? 1),
       GH_TOKEN: 'token',
       HEAD_REF: scenario.headRef ?? `refs/heads/${entry}`,
       GITHUB_REPOSITORY: 'vouchington/vouchington',
@@ -220,6 +237,30 @@ describe('cancel replaced merge-group runs script', () => {
     expect(result.summary).toContain('already completed')
   })
 
+  it('retries a transient HTTP 502 and then cancels the run', () => {
+    const result = execute({
+      pages: { in_progress: [page(run(60, 'Web', branch(14, 'a')))] },
+      transient: [60],
+    })
+    expect(result.status).toBe(0)
+    expect(result.cancelled).toEqual([60])
+    expect(result.summary).toContain('| cancelled |')
+    expect(result.calls.filter(call => call.includes('--method POST'))).toHaveLength(2)
+  })
+
+  it('fails the job when a cancel HTTP 502 persists past three attempts', () => {
+    const result = execute({
+      pages: { in_progress: [page(run(61, 'Web', branch(14, 'a')))] },
+      transient: [61],
+      transientFailures: 3,
+    })
+    expect(result.status).toBe(1)
+    expect(result.cancelled).toEqual([])
+    expect(result.stdout).toContain('::warning::Could not cancel run 61')
+    expect(result.summary).toContain('| failed |')
+    expect(result.calls.filter(call => call.includes('--method POST'))).toHaveLength(3)
+  })
+
   it('keeps cancelling after a cancel error, then fails the job', () => {
     const result = execute({
       pages: {
@@ -230,6 +271,7 @@ describe('cancel replaced merge-group runs script', () => {
     expect(result.status).toBe(1)
     expect(result.cancelled).toEqual([51])
     expect(result.stdout).toContain('::warning::Could not cancel run 50')
+    expect(result.calls.filter(call => call.includes('/runs/50/cancel'))).toHaveLength(1)
   })
 
   it('fails without touching the API when the merge-group ref is unexpected', () => {
