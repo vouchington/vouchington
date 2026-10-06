@@ -8,8 +8,6 @@ import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-deliver
 import { createHostedImagePost } from '@voucha/test-helpers/services/copyright-notices/hosted-post-audience'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyright-statement-notices'
-import { receiveEuCopyrightNoticeInTransaction } from './eu-notice-receipt.mts'
-import { receiveUkCopyrightNoticeInTransaction } from './uk-notice-receipt.mts'
 import {
   acknowledgeEuCopyrightNotice,
   acknowledgeUkCopyrightNotice,
@@ -28,6 +26,7 @@ import {
   submitEuCopyrightRedress,
   submitUkCopyrightRedress,
 } from './index.mts'
+import { receiveTerritorialCopyrightNoticeInTransaction } from './territorial-notice-receipt.mts'
 import {
   concealJurisdictionPolicyApprovals,
   readCopyrightTerritorialContractShape,
@@ -152,8 +151,9 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
       await concealJurisdictionPolicyApprovals(transaction, 'eu_dsa', administrator.id)
       expect((await getCopyrightJurisdictionAvailability(transaction)).eu_dsa).toBe(false)
       await expect(
-        receiveEuCopyrightNoticeInTransaction(
+        receiveTerritorialCopyrightNoticeInTransaction(
           { user: claimant, identity: `user:${claimant.id}` },
+          'eu_dsa',
           crypto.randomUUID(),
           euNoticeRequest(),
           transaction,
@@ -245,8 +245,9 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
       await concealJurisdictionPolicyApprovals(transaction, 'uk', administrator.id)
       expect((await getCopyrightJurisdictionAvailability(transaction)).uk).toBe(false)
       await expect(
-        receiveUkCopyrightNoticeInTransaction(
+        receiveTerritorialCopyrightNoticeInTransaction(
           { user: claimant, identity: `user:${claimant.id}` },
+          'uk',
           crypto.randomUUID(),
           noticeRequest(),
           transaction,
