@@ -6,6 +6,11 @@ import {
   type CopyrightSweepPageOptions,
 } from './sweep-id-pages.mts'
 import { buildCopyrightDsaStatementPayload } from './dsa-statement-payload.mts'
+import {
+  getDsaStatementBuildFailureCode,
+  recordDsaStatementBuildFailure,
+  reportDsaStatementBuildFailure,
+} from './dsa-statement-submission-build-failure.mts'
 import { isDsaTransparencyDatabaseConfigured } from './dsa-statement-submission-config.mts'
 import { isCopyrightDsaSorDatabaseEnabled, getCopyrightDsaSorDatabaseFrom } from './config.mts'
 import sql from 'sql-template-strings'
@@ -19,6 +24,7 @@ export type DsaStatementSweepDependencies = {
   getFrom: typeof getCopyrightDsaSorDatabaseFrom
   recordConfigMissing: typeof recordScheduledJobConfigMissing
   buildPayload: typeof buildCopyrightDsaStatementPayload
+  reportBuildFailure: typeof reportDsaStatementBuildFailure
   url: () => string | undefined
   token: () => string | undefined
   isConfigured: typeof isDsaTransparencyDatabaseConfigured
@@ -29,6 +35,7 @@ const defaultDependencies: DsaStatementSweepDependencies = {
   getFrom: getCopyrightDsaSorDatabaseFrom,
   recordConfigMissing: recordScheduledJobConfigMissing,
   buildPayload: buildCopyrightDsaStatementPayload,
+  reportBuildFailure: reportDsaStatementBuildFailure,
   url: () => process.env.DSA_TRANSPARENCY_DATABASE_URL,
   token: () => process.env.DSA_TRANSPARENCY_DATABASE_TOKEN,
   isConfigured: isDsaTransparencyDatabaseConfigured,
@@ -46,7 +53,7 @@ export async function prepareDsaStatementSubmissionSweep(
     return null
   }
 
-  await materializeDsaStatementSubmissions(from, dependencies.buildPayload)
+  await materializeDsaStatementSubmissions(from, dependencies)
   if (
     !dependencies.isConfigured({ url: dependencies.url() ?? '', token: dependencies.token() ?? '' })
   ) {
@@ -56,11 +63,18 @@ export async function prepareDsaStatementSubmissionSweep(
   return from
 }
 
-/** Pages immutable restriction ids so work is recorded even if the restriction is lifted later. */
+/**
+ * Pages immutable restriction ids so work is recorded even if the restriction is lifted later.
+ * A restriction whose payload cannot be built becomes a terminal failed row, so it leaves the
+ * work predicate and cannot stall the restrictions after it. Returns the payload rows inserted.
+ */
 export async function materializeDsaStatementSubmissions(
   from: Date,
-  buildPayload: typeof buildCopyrightDsaStatementPayload = buildCopyrightDsaStatementPayload,
+  overrides: Partial<
+    Pick<DsaStatementSweepDependencies, 'buildPayload' | 'reportBuildFailure'>
+  > = {},
 ): Promise<number> {
+  const dependencies = { ...defaultDependencies, ...overrides }
   // One bounded page per scheduled run. Inserted rows disappear from the next run's
   // NOT EXISTS work predicate, so the table itself is the durable resume marker.
   const page = await queryCopyrightSweepIdPage(
@@ -83,9 +97,26 @@ export async function materializeDsaStatementSubmissions(
   let inserted = 0
   for (const restrictionId of page.results) {
     // oxlint-disable-next-line no-await-in-loop -- each payload and insert is one transaction.
-    if (await insertDsaStatementSubmission(restrictionId, from, buildPayload)) inserted += 1
+    if (await materializeDsaStatementSubmission(restrictionId, from, dependencies)) inserted += 1
   }
   return inserted
+}
+
+/** Returns true when a payload row was inserted. Only a builder HttpError is recorded and skipped. */
+async function materializeDsaStatementSubmission(
+  restrictionId: string,
+  from: Date,
+  dependencies: Pick<DsaStatementSweepDependencies, 'buildPayload' | 'reportBuildFailure'>,
+): Promise<boolean> {
+  try {
+    return await insertDsaStatementSubmission(restrictionId, from, dependencies.buildPayload)
+  } catch (err) {
+    const failureCode = getDsaStatementBuildFailureCode(err)
+    if (!failureCode) throw err
+    if (await recordDsaStatementBuildFailure(restrictionId, from, failureCode))
+      dependencies.reportBuildFailure({ restrictionId, failureCode })
+    return false
+  }
 }
 
 async function insertDsaStatementSubmission(
@@ -123,6 +154,7 @@ export function searchRecoverableDsaStatementSubmissionIds(
         JOIN copyright_restrictions restriction
           ON restriction.id = submission.copyright_restriction_id
         WHERE submission.submitted_at IS NULL
+          AND submission.failed_at IS NULL
           AND submission.available_at <= CURRENT_TIMESTAMP
           AND (submission.lease_token IS NULL OR submission.lease_expires_at <= CURRENT_TIMESTAMP)
           AND restriction.imposed_at >= ${options.from}

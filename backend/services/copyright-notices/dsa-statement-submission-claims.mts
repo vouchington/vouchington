@@ -104,7 +104,8 @@ async function lockDsaStatementSubmission(
     FROM copyright_dsa_statement_submissions submission
     JOIN copyright_restrictions restriction
       ON restriction.id = submission.copyright_restriction_id
-    WHERE submission.id = ${submissionId} AND restriction.imposed_at >= ${from}
+    WHERE submission.id = ${submissionId} AND submission.failed_at IS NULL
+      AND restriction.imposed_at >= ${from}
     FOR UPDATE OF submission
   `)
   return rows[0] ?? null

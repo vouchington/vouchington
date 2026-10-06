@@ -21579,7 +21579,11 @@
       "checkConstraints": {
         "copyright_dsa_statement_submissions_check": "CHECK ((((lease_token IS NULL) AND (leased_at IS NULL) AND (lease_expires_at IS NULL)) OR ((lease_token IS NOT NULL) AND (leased_at IS NOT NULL) AND (lease_expires_at IS NOT NULL) AND (lease_expires_at > leased_at))))",
         "copyright_dsa_statement_submissions_check1": "CHECK (((submitted_at IS NULL) = (transparency_database_uuid IS NULL)))",
-        "copyright_dsa_statement_submissions_payload_check": "CHECK ((jsonb_typeof(payload) = 'object'::text))"
+        "copyright_dsa_statement_submissions_check2": "CHECK (((payload IS NULL) = (failed_at IS NOT NULL)))",
+        "copyright_dsa_statement_submissions_check3": "CHECK (((failed_at IS NULL) = (failure_code IS NULL)))",
+        "copyright_dsa_statement_submissions_check4": "CHECK (((failed_at IS NULL) OR ((submitted_at IS NULL) AND (lease_token IS NULL))))",
+        "copyright_dsa_statement_submissions_failure_code_check": "CHECK (((failure_code IS NULL) OR ((char_length(failure_code) >= 1) AND (char_length(failure_code) <= 128))))",
+        "copyright_dsa_statement_submissions_payload_check": "CHECK (((payload IS NULL) OR (jsonb_typeof(payload) = 'object'::text)))"
       },
       "columns": {
         "available_at": {
@@ -21590,7 +21594,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "copyright_restriction_id": {
@@ -21612,8 +21616,30 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
+        },
+        "failed_at": {
+          "collation": null,
+          "comment": "Time the payload build failed terminally; the item is never claimed until an administrator replay rebuilds the payload and clears it.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "failure_code": {
+          "collation": null,
+          "comment": "Fixed http_<status> class of the payload build failure, never an error message or personal data.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "text"
         },
         "id": {
           "collation": null,
@@ -21634,7 +21660,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "lease_token": {
@@ -21645,7 +21671,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 7,
           "type": "uuid"
         },
         "leased_at": {
@@ -21656,17 +21682,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "payload": {
           "collation": null,
-          "comment": "Validated, personal-data-free API JSON, frozen across retries and replay.",
+          "comment": "Validated, personal-data-free API JSON, frozen across retries and replay once built; null only while failed_at records a payload build failure.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": false,
+          "nullable": true,
           "ordinalPosition": 3,
           "type": "jsonb"
         },
@@ -21678,7 +21704,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         },
         "transparency_database_uuid": {
@@ -21689,7 +21715,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 11,
           "type": "uuid"
         },
         "updated_at": {
@@ -21700,7 +21726,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         }
       },
@@ -21761,7 +21787,7 @@
         "idx_copyright_dsa_statement_submissions__available": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_dsa_statement_submissions__available ON public.copyright_dsa_statement_submissions USING btree (available_at, id) WHERE (submitted_at IS NULL)",
+          "definition": "CREATE INDEX idx_copyright_dsa_statement_submissions__available ON public.copyright_dsa_statement_submissions USING btree (available_at, id) WHERE ((submitted_at IS NULL) AND (failed_at IS NULL))",
           "includedColumns": [],
           "keys": [
             {
@@ -21779,7 +21805,7 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": "(submitted_at IS NULL)",
+          "predicate": "((submitted_at IS NULL) AND (failed_at IS NULL))",
           "primary": false,
           "ready": true,
           "unique": false,

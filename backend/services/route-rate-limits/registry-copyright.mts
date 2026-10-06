@@ -2,9 +2,13 @@ import type { RouteRateLimitEntry } from './types.mts'
 
 /** Copyright intake and staff decisions share the sensitive route tier. */
 export const COPYRIGHT_ROUTE_REGISTRY: Record<string, RouteRateLimitEntry> = {
-  // Copyright intake — sensitive and scarce; claimant submissions fail closed when the limiter is down
+  // Copyright intake — sensitive and scarce; US and EU claimant submissions fail closed when the limiter is down
   'POST:/api/v1/copyright-notices': { category: 'sensitive', ttlSeconds: 3600, failClosed: true },
-  'POST:/api/v1/copyright-eu-notices': { category: 'sensitive', ttlSeconds: 3600 },
+  'POST:/api/v1/copyright-eu-notices': {
+    category: 'sensitive',
+    ttlSeconds: 3600,
+    failClosed: true,
+  },
   'POST:/api/v1/copyright-eu-notices/:id/acknowledgment-failures': { category: 'sensitive' },
   'POST:/api/v1/copyright-eu-notices/:id/statements-of-reasons': { category: 'sensitive' },
   'POST:/api/v1/copyright-eu-notices/:id/redress-requests': {

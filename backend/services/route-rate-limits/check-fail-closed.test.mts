@@ -8,8 +8,15 @@ import { checkRouteRateLimit, routeRateLimiters } from './check.mts'
 import { routeRateLimitConfig } from './config.mts'
 import type { RateLimitIdentities } from './types.mts'
 
-const CLAIMANT_NOTICE_ROUTE = 'POST:/api/v1/copyright-notices'
-const SIBLING_SENSITIVE_ROUTE = 'POST:/api/v1/copyright-uk-notices'
+const CLAIMANT_NOTICE_ROUTES = [
+  'POST:/api/v1/copyright-notices',
+  'POST:/api/v1/copyright-eu-notices',
+] as const
+const SIBLING_SENSITIVE_ROUTES = [
+  'POST:/api/v1/copyright-uk-notices',
+  'POST:/api/v1/copyright-eu-notices/:id/statements-of-reasons',
+  'POST:/api/v1/copyright-eu-notices/:id/redress-requests',
+] as const
 
 /** A Valkey outage as the limiter sees it; tagged so the error reporter stays quiet. */
 function valkeyOutage(): Error {
@@ -37,28 +44,34 @@ describe('route rate limit failure mode', () => {
     return { ip: `192.0.2.${randomUUID()}` }
   }
 
-  it('fails closed for the claimant copyright-notice submission when Valkey errors', async () => {
+  it.each(CLAIMANT_NOTICE_ROUTES)(
+    'fails closed for the %s claimant submission when Valkey errors',
+    async route => {
+      vi.spyOn(routeRateLimiters.sensitive, 'addAndCheck').mockRejectedValue(valkeyOutage())
+
+      const result = await checkRouteRateLimit(route, identities(), null)
+
+      expect(result).toMatchObject({ limited: true, retryAfterSeconds: 3600, remaining: 0 })
+      expect(result.limit).toBeGreaterThan(0)
+    },
+  )
+
+  it.each(SIBLING_SENSITIVE_ROUTES)('still fails open for %s when Valkey errors', async route => {
     vi.spyOn(routeRateLimiters.sensitive, 'addAndCheck').mockRejectedValue(valkeyOutage())
 
-    const result = await checkRouteRateLimit(CLAIMANT_NOTICE_ROUTE, identities(), null)
-
-    expect(result).toMatchObject({ limited: true, retryAfterSeconds: 3600, remaining: 0 })
-    expect(result.limit).toBeGreaterThan(0)
-  })
-
-  it('still fails open for every other route when Valkey errors', async () => {
-    vi.spyOn(routeRateLimiters.sensitive, 'addAndCheck').mockRejectedValue(valkeyOutage())
-
-    const result = await checkRouteRateLimit(SIBLING_SENSITIVE_ROUTE, identities(), null)
+    const result = await checkRouteRateLimit(route, identities(), null)
 
     expect(result).toMatchObject({ limited: false, retryAfterSeconds: 0 })
     expect(result.remaining).toBe(result.limit)
   })
 
-  it('does not limit the claimant submission while Valkey is healthy', async () => {
-    const result = await checkRouteRateLimit(CLAIMANT_NOTICE_ROUTE, identities(), null)
+  it.each(CLAIMANT_NOTICE_ROUTES)(
+    'does not limit the %s claimant submission while Valkey is healthy',
+    async route => {
+      const result = await checkRouteRateLimit(route, identities(), null)
 
-    expect(result.limited).toBe(false)
-    expect(result.remaining).toBeGreaterThan(0)
-  })
+      expect(result.limited).toBe(false)
+      expect(result.remaining).toBeGreaterThan(0)
+    },
+  )
 })
