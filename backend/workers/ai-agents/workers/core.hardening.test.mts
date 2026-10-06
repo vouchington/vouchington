@@ -32,36 +32,51 @@ describe('AI spend-cap registration timing', () => {
   })
   afterEach(() => vi.useRealTimers())
 
-  it.each([
-    { day: '2026-08-16', now: '2026-08-16T23:59:30.000Z', expectedDelayMs: 30_000 },
-    { day: '2026-08-15', now: '2026-08-16T12:00:00.000Z', expectedDelayMs: 0 },
-  ])(
-    'registers the $day generation before moving the job to its UTC day end',
-    async ({ day, now, expectedDelayMs }) => {
-      vi.setSystemTime(new Date(now))
-      const job = delayedJob({} as AIAgentJobData)
-      const register = vi
-        .fn<typeof registerSpendCapDelayedJob>()
-        .mockResolvedValue({ accepted: true, generation: 'generation-a' })
-      const enqueue = vi.fn<typeof enqueueSpendCapRecheck>().mockResolvedValue(null)
+  it('registers the current UTC generation before moving the job to its day end', async () => {
+    const day = '2026-08-16'
+    vi.setSystemTime(new Date('2026-08-16T23:59:30.000Z'))
+    const job = delayedJob({} as AIAgentJobData)
+    const register = vi
+      .fn<typeof registerSpendCapDelayedJob>()
+      .mockResolvedValue({ accepted: true, generation: 'generation-a' })
+    const enqueue = vi.fn<typeof enqueueSpendCapRecheck>().mockResolvedValue(null)
 
-      await expect(
-        processAIAgentWorkerJob(job, mockWorker(), {
-          waitForSpendCapConfig: () => Promise.resolve(),
-          getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
-          getDailyAiCostTotalMicrounits: () =>
-            Promise.resolve({ totalMicrounits: 1, hasUnpricedRows: false, day }),
-          registerSpendCapRecheck: (registeredJob, registeredDay) =>
-            registerRecheck(registeredJob, registeredDay, Date.now(), {
-              registerSpendCapDelayedJob: register,
-              enqueueSpendCapRecheck: enqueue,
-            }),
-        }),
-      ).rejects.toThrow('delayed')
+    await expect(
+      processAIAgentWorkerJob(job, mockWorker(), {
+        waitForSpendCapConfig: () => Promise.resolve(),
+        getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
+        getDailyAiCostTotalMicrounits: () =>
+          Promise.resolve({ totalMicrounits: 1, hasUnpricedRows: false, day }),
+        registerSpendCapRecheck: (registeredJob, registeredDay) =>
+          registerRecheck(registeredJob, registeredDay, Date.now(), {
+            registerSpendCapDelayedJob: register,
+            enqueueSpendCapRecheck: enqueue,
+          }),
+      }),
+    ).rejects.toThrow('delayed')
 
-      expect(register).toHaveBeenCalledExactlyOnceWith(job, day)
-      expect(enqueue).toHaveBeenCalledExactlyOnceWith(day, 'generation-a', expectedDelayMs)
-      expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(getDayBounds(day).endMs)
-    },
-  )
+    expect(register).toHaveBeenCalledExactlyOnceWith(job, day)
+    expect(enqueue).toHaveBeenCalledExactlyOnceWith(day, 'generation-a', 30_000)
+    expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(getDayBounds(day).endMs)
+  })
+
+  it('queues an expired UTC-day generation for immediate recheck', async () => {
+    vi.setSystemTime(new Date('2026-08-16T12:00:00.000Z'))
+    const day = '2026-08-15'
+    const job = delayedJob({} as AIAgentJobData)
+    const register = vi
+      .fn<typeof registerSpendCapDelayedJob>()
+      .mockResolvedValue({ accepted: true, generation: 'generation-a' })
+    const enqueue = vi.fn<typeof enqueueSpendCapRecheck>().mockResolvedValue(null)
+
+    await expect(
+      registerRecheck(job, day, Date.now(), {
+        registerSpendCapDelayedJob: register,
+        enqueueSpendCapRecheck: enqueue,
+      }),
+    ).resolves.toBe(true)
+
+    expect(register).toHaveBeenCalledExactlyOnceWith(job, day)
+    expect(enqueue).toHaveBeenCalledExactlyOnceWith(day, 'generation-a', 0)
+  })
 })
