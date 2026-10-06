@@ -108,9 +108,9 @@ gh pr checks <N> --json name,state,link        # CI check list
   action/status/URL, per `ci/transient-retry/AGENTS.md`; a rule that hardcodes one
   resource re-fails the moment a different resource hits the same underlying race.
 - **The hard cases:** when you cannot classify a failure (no rerun-success evidence
-  either way), the correct disposition is a narrow `maxAttempts: 1` interim rule scoped
-  tightly to this exact fingerprint **and** a linked root-cause issue in the same PR —
-  never a wide `maxAttempts` bump as a substitute for classification. Watch for the
+  either way), never add or bump a retry rule as a substitute for classification. Fix the
+  best-supported cause and capture the evidence the next occurrence needs, per the
+  [CI failure core](../../../docs/prompts/automation/ci-failure-core.md). Watch for the
   **treadmill signature**: a rule whose `maxAttempts` gets bumped again on a later PR,
   for the same consumer/root-cause pair, without the underlying cause changing — that
   pair is repository-owned and was mis-elevated the first time; bumping it again repeats
@@ -119,8 +119,7 @@ gh pr checks <N> --json name,state,link        # CI check list
   existing open issue covering the same pair rather than duplicating); `## Follow-ups:
 None` on a PR whose root cause is repository-owned is a signal to push back, not
   accept as-is. For deterministic and repository-owned failures, elevate to the
-  root-cause fix — close the band-aid (or merge it as an interim stopgap clearly
-  described as such in the PR body / Shepherd Journal) and delegate a follow-up issue
+  root-cause fix — close the band-aid and delegate a follow-up issue
   for the general fix to the `github-issue-agent` under the shared
   [github-issue](../github-issue/SKILL.md) policy, or re-scope an existing issue.
   **Generalize-or-elevate beats a plain close.**

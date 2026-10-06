@@ -13,7 +13,9 @@ Automation prompt text lives here so workflow YAML stays focused on triggers, pe
 Automation templates use `{{UPPER_SNAKE_CASE}}` placeholders. Workflows render them with the `jonathanong/auto-harness/actions/harness-render-prompt` action, passing short values as `vars` lines (`NAME=value`) and multiline or user-provided values as `var-files` lines (`NAME=path`). The action prepends the Auto Harness session preamble and appends the CI merge-authority guard.
 
 The main-branch fix template is [fix-main.md](automation/fix-main.md), and merge-queue ejections
-are triaged with [merge-queue-ejection.md](automation/merge-queue-ejection.md). Scheduled runs use the
+are triaged with [merge-queue-ejection.md](automation/merge-queue-ejection.md). Both inject the
+shared [CI failure core](automation/ci-failure-core.md) as the `CI_FAILURE_CORE` var-file, so they
+classify and fix failures by the same rules. Scheduled runs use the
 [scheduled prompt template](automation/scheduled-prompt.md) or the
 [scheduled issue template](automation/scheduled-issue.md), depending on the selected prompt scope.
 See the complete [Scheduled Prompt Catalog](SCHEDULED.md) for all scheduled prompt files and

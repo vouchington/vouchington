@@ -14,7 +14,7 @@ trusted host with repository-scoped git and GitHub CLI credentials.
 | ------------------------------------------------------------------------------ | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | [Fix Main](../../../../.github/workflows/fix-main.yml)                         | failed main workflow                                   | exact run/attempt/conclusion, transient triage, concurrency-id dedupe                                    | one draft fix PR                                                                                                               |
 | [Fix Main Self Retry](../../../../.github/workflows/fix-main-self-retry.yml)   | Fix Main's own completed run failed                    | run-attempt ceiling, transient triage, no self-resubscription, unhandled-disposition escalation fallback | rerun of Fix Main's failed job(s), or a fallback `needs-human` issue                                                           |
-| [Merge Queue Ejection](../../../../.github/workflows/merge-queue-ejection.yml) | merge queue removed a PR for `CI_FAILURE`/`CI_TIMEOUT` | reason filter, no PR checkout, queue-wide concurrency-id dedupe                                          | per root cause, one flaky-test fix PR from `main` or one issue; one comment per ejected PR and stack layer; never changes them |
+| [Merge Queue Ejection](../../../../.github/workflows/merge-queue-ejection.yml) | merge queue removed a PR for `CI_FAILURE`/`CI_TIMEOUT` | reason filter, no PR checkout, queue-wide concurrency-id dedupe                                          | per root cause, one issue and fix PR from `main`, or one issue; one comment per ejected PR and stack layer; never changes them |
 | [Fix Dependabot](../../../../.github/workflows/fix-dependabot.yml)             | failed Dependabot PR                                   | bot/fork/ref/SHA checks, transient triage, dedupe                                                        | exact-lease update to that PR branch                                                                                           |
 | [Fix Issue](../../../../.github/workflows/fix-issue.yml)                       | authorized standalone `/fix`                           | association, issue state, concurrency-id dedupe                                                          | one draft fix PR, or one `## Automation stopped` issue comment                                                                 |
 | [Plan](../../../../.github/workflows/plan.yml)                                 | authorized standalone `/plan`                          | association and issue state                                                                              | one issue plan comment, no code changes                                                                                        |
@@ -199,6 +199,14 @@ was accepted or reused.
 
 ## Completion-specific safeguards
 
+- Fix Main and Merge Queue Ejection render their own intake prompt around one shared
+  [CI failure core](../../../prompts/automation/ci-failure-core.md), passed as the
+  `CI_FAILURE_CORE` var-file, so both classify failures and fix them by the same rules. Each group
+  ends in an outcome, never only options; a flaky test or in-repository defect gets an issue and a
+  draft fix PR on the best-supported cause; and a fix never raises a timeout, adds a retry for a
+  repository-owned failure, skips a test, or breaks the test suite rules. The intakes differ only in
+  where failures come from, how a failure caused by the change under test is handled (Fix Main fixes
+  its commit; ejection triage comments on the ejected PR), the fix base, and the PR title.
 - Fix Main revalidates the exact source run before prompt rendering and dispatch. Dedup relies solely
   on the SHA-scoped concurrency ID; the dispatched agent is responsible for searching related open
   PRs/issues and avoiding duplicate work.
@@ -255,9 +263,10 @@ completed deploy`, so Automation Fix Main can never legally subscribe to itself,
   the native stack and includes every layer GitHub removed at the same moment with a stack cascade
   reason (`stack_*`, such as `stack_invalidated`). It classifies each removal on its own, so an
   unchanged PR ejected twice can land in two groups, and groups removals by failure fingerprint.
-  Per group it comments its analysis when the PR is the root cause, opens one flaky-test fix PR from
-  `main`, files or updates one CI or architecture issue, or reports a transient; finishing one group
-  moves on to the next. It never pushes to, edits, merges, enqueues, or dequeues an ejected PR or
+  Per group it comments its analysis when the PR is the root cause, files one issue and opens one
+  fix PR from `main` for a flaky test or an in-repository CI or architecture defect, files or updates
+  one issue for a defect outside the repository, or reports a transient; finishing one group moves
+  on to the next, under the shared CI failure rules above. It never pushes to, edits, merges, enqueues, or dequeues an ejected PR or
   stack layer. Each of them gets at most one comment per removal, carrying a PR/head marker that is
   rechecked for a duplicate immediately before posting. An ejected PR's comment is always posted as
   the record of its triage; when the PR has moved on, it reports the outcome for the ejected head

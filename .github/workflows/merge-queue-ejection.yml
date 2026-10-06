@@ -50,6 +50,8 @@ jobs:
         with:
           template: docs/prompts/automation/merge-queue-ejection.md
           merge-authority-doc: docs/development/merge-authority.md
+          var-files: |
+            CI_FAILURE_CORE=docs/prompts/automation/ci-failure-core.md
           vars: |
             REPOSITORY=${{ github.repository }}
             PR_NUMBER=${{ github.event.pull_request.number }}

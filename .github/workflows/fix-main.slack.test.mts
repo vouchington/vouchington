@@ -17,7 +17,9 @@ describe('fix-main workflow', () => {
   })
 
   it('keeps candidate handling bounded and deduplicated', () => {
-    expect(fixMainPrompt).toContain('Closes #N')
+    expect(fixMainPrompt).toContain('none is a mutation target')
+    expect(fixMainPrompt).toContain('Repeat this search immediately before creating the PR')
+    expect(fixMainPrompt).toContain('The fix PR closes it.')
   })
 
   it('passes source context for Slack automation threads', () => {
@@ -39,10 +41,9 @@ describe('fix-main workflow', () => {
     expect(fixMainPrompt).toContain('## Options considered')
   })
 
-  it('stops and reports options when materially different approaches remain', () => {
-    expect(fixMainPrompt).toContain('`## Problem`')
-    expect(fixMainPrompt).toContain('`## Options`')
-    expect(fixMainPrompt).toContain('`## Recommendation`')
+  it('acts on the best-supported cause instead of stopping at options', () => {
+    expect(fixMainPrompt).toContain('never in a list of options')
+    expect(fixMainPrompt).not.toContain('`## Recommendation`')
   })
 
   it('passes automation:auto-fix label from fix-main dispatch', () => {
