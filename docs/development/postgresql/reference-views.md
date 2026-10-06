@@ -9,6 +9,9 @@
 - Prefer durable `CREATE OR REPLACE VIEW` statements in `views/**`.
 - Write managed views as `CREATE OR REPLACE VIEW name AS SELECT ...;` without outer parentheses
   around the `SELECT`. This keeps view SQL parseable by Squawk, which runs against `views/**`.
+- A materialized view replaced on every `runViews` is the exception in
+  [schema object buckets](reference-migrations-views-and-config-driven.md#schema-object-buckets):
+  drop it before `CREATE MATERIALIZED VIEW` and mark that drop with `squawk-ignore ban-drop-view`.
 
 ### `view_embedded_users` vs `view_users_public`
 

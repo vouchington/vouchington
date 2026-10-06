@@ -1,5 +1,6 @@
 -- Rolling public-content aggregate for signed-in topic recommendations. Exact source rows retain
 -- authored casing; the view chooses the most frequently observed spelling without exposing sources.
+-- squawk-ignore ban-drop-view -- PostgreSQL has no CREATE OR REPLACE for materialized views. Every runViews reapplies this definition by dropping the view first.
 DROP MATERIALIZED VIEW IF EXISTS mv_top_hashtags;
 
 CREATE MATERIALIZED VIEW mv_top_hashtags AS
