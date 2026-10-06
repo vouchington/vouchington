@@ -7,7 +7,7 @@ import {
 
 export type RuntimeRequestContractsBundle = {
   version: 1
-  source: 'compiler-extracted-request-contracts'
+  source: 'checked-in-request-contracts'
   components: Record<string, unknown>
   operations: Record<string, { body?: unknown; header?: unknown; path?: unknown; query?: unknown }>
 }

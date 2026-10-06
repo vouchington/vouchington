@@ -93,9 +93,9 @@ describe('resolveRouteResponse', () => {
     ).toEqual({ type: 'object', properties: { total: { type: 'number' } } })
   })
 
-  it('names the route when it has no generated response contract', () => {
+  it('names the route when it has no checked-in response contract', () => {
     expect(() => resolveRouteResponse(ENDPOINT, {}, components)).toThrow(
-      'No generated response contract for GET:/api/v1/things',
+      'No checked-in response contract for GET:/api/v1/things',
     )
   })
 
@@ -110,7 +110,7 @@ describe('resolveRouteResponse', () => {
   })
 })
 
-describe('generated route contracts', () => {
+describe('checked-in route contracts', () => {
   it('resolves a shipped route into a schema that needs no document around it', () => {
     const schema = routeResponseSchema({ method: 'GET', path: '/api/v1/my/cards' })
 
@@ -122,7 +122,7 @@ describe('generated route contracts', () => {
   it('fails loudly for a route that documents its response inline', () => {
     expect(() =>
       routeResponseSchema({ method: 'GET', path: '/api/v1/my/financial-profile' }),
-    ).toThrow('No generated response contract')
+    ).toThrow('No checked-in response contract')
   })
 
   it('resolves a named component the same way', () => {

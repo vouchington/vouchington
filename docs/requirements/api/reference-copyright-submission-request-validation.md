@@ -4,7 +4,7 @@
 
 The copyright notice routes under `backend/api/v1/copyright-notices/` validate their path, query, and
 JSON body with `validateRequestContract` immediately before the first service call.
-[Request validation](reference-request-validation.md) owns the ordering and the generated contract
+[Request validation](reference-request-validation.md) owns the ordering and the declared contract
 mechanics; the [Copyright Notices API](v1/copyright-notices/README.md) owns the legal flow. This page
 records the covered operations, the order each handler keeps, and which status each malformed input
 keeps or changes. Other copyright route families (guest capabilities, repeat-infringer and staff
@@ -24,11 +24,10 @@ names only the carrier (`Invalid request body` or `Invalid request query`).
 | `GET /copyright-notices`                           | `after` and `limit` (1 to 100, default 100) query.                                      |
 | `GET /copyright-notices/:id` and `.../participant` | `id` path only; the plain-string path cannot reject more than `validateUUIDParam` does. |
 
-The request types live in `request-types.mts` beside the routes, and the compiler extracts the
-schema from them, so the OpenAPI document, the request-contract bundle, and the runtime check share
-one source. Compiler-built assertions in
-[`copyright-submission-request-contract-coverage.test.mts`](../../../backend/test-helpers/api-fixtures/openapi/copyright-submission-request-contract-coverage.test.mts)
-verify the emitted carriers, and
+The request types live in `request-types.mts` beside the routes. Maintain the checked-in request
+contract schemas alongside these types; compiler discovery is removed. See the
+[fixture update flow](../../development/testing/backend/api-fixtures.md#update-flow).
+Runtime tests in
 [`submission-request-validation.test.mts`](../../../backend/api/v1/copyright-notices/submission-request-validation.test.mts)
 verifies order, status, and no-write behavior against the real database.
 
@@ -71,14 +70,14 @@ notice `jurisdiction` is the literal `us_dmca`. Array bounds match
 or App Attest check and `COPYRIGHT_INTAKE_ENABLED` stay where they were; `cf_turnstile_response` is
 optional because App Attest callers send none.
 
-## Carriers the generated schema does not check
+## Carriers the declared schema does not check
 
 `GET /copyright-notices` declares its query with `apiQuery` and validates through
 `parseAndValidatePaginatedRequest`, but the shared pagination parser owns every query rejection
 (`400` for a repeated or malformed `after`, and for a `limit` outside 1 to 100) and runs first. The
 carrier is therefore a drift guard: it cannot turn a request the parser accepted into a `422`.
 
-String lengths and email format are not in the generated schema; the field parsers enforce them
+String lengths and email format are not in the declared schema; the field parsers enforce them
 with field-named messages. The `Idempotency-Key` header is checked locally rather than through a
 header contract, to keep the `400` status.
 

@@ -3,15 +3,16 @@
 [Back to My API](README.md#request-validation)
 
 Protected `/api/v1/my/**` routes that declare a path, header, query, or JSON body carrier validate it
-against the generated `@voucha/api-fixtures/v1/request-contracts.json` schema through
+against the checked-in `@voucha/api-fixtures/v1/request-contracts.json` schema through
 `validateRequestContract`. See
 [`@services/runtime-request-validation`](../../../../overview/architecture/services/runtime-request-validation/README.md#security-boundary)
 for the general ordering rule and
 [`docs/requirements/api/README.md`](../../README.md#route-helpers) for the adapter's call pattern.
 A malformed body, an unrecognized top-level field, or a wrong-typed field returns `422` with a
-redacted diagnostic. The schema is generated from the DTO type each handler casts
-`ctx.request.json(...)` to, so the type and the runtime check cannot drift. After changing one, run
-`pnpm run openapi:generate` and `pnpm run api-fixtures:generate`.
+redacted diagnostic. The checked-in schema is maintained alongside each handler DTO and its
+consumers. Update the explicit contract data and fixture cases together, following the
+[fixture update flow](../../../../development/testing/backend/api-fixtures.md#update-flow);
+compiler discovery and request-schema generation are removed.
 
 API keys and the assistant chat routes are validated with their own slice and are not described
 here, except for their list reads: the paginated `GET /my/api-keys`, `/my/oauth-apps`, and
@@ -132,7 +133,7 @@ Covers `POST`/`PATCH`/`DELETE` on `/my/cards`, `/my/rewards-program-point-valuat
 `/my/rewards-program-statuses`, and `/my/spending-categories`.
 
 `Money` and `ScaledMoney` fields (`credit_limit`, `amount`, `value_per_point`) are validated by the
-generated schema: a strict object with an integer minor-unit amount, a known currency, and, for
+declared schema: a strict object with an integer minor-unit amount, a known currency, and, for
 `ScaledMoney`, `scale: 6`. It replaces the per-field `isMoney`/`isScaledMoney` asserts, which
 answered `422` for the same inputs. Spending-category `spending_frequency` is an enum of `monthly`
 and `annually`, and `spending_category_id` and `household_id` are UUIDs.
@@ -216,7 +217,7 @@ Ordering notes:
 
 ## Cross-client verification
 
-Every web caller that builds a body for these routes was read against the generated schemas. None
+Every web caller that builds a body for these routes was read against the checked-in schemas. None
 sends an unknown field, a wrong-typed value, or `null` where the schema does not allow it, and the
 web client shows the same generic copy for `400` and `422` on these endpoints, so the status change
 does not alter what a user sees. No checkout of the native clients

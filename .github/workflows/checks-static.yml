@@ -54,14 +54,16 @@ jobs:
       - name: Check backend dependencies
         run: pnpm exec depcruise --config backend/.dependency-cruiser.cjs --output-type err --cache --cache-strategy content backend ts-shared
         timeout-minutes: 3
-      - name: Check compiled API contracts
-        run: pnpm run api-contracts:check
+      - name: Check PostgreSQL contracts and API fixtures
+        run: |
+          pnpm run backend-row-contracts:check
+          pnpm run api-fixtures:check
         timeout-minutes: 10
       - name: Check canonical API snapshot git state
         shell: bash
         run: |
-          git diff --exit-code -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses api-fixtures/v1/openapi.json api-fixtures/v1/request-contracts.json
-          untracked_generated_files="$(git ls-files --others --exclude-standard -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses api-fixtures/v1/openapi.json api-fixtures/v1/request-contracts.json)"
+          git diff --exit-code -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses api-fixtures/v1/request-contracts.json
+          untracked_generated_files="$(git ls-files --others --exclude-standard -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses api-fixtures/v1/request-contracts.json)"
           if [ -n "$untracked_generated_files" ]; then
             echo "::error::Generated API fixture files are untracked:"
             printf '%s\n' "$untracked_generated_files"

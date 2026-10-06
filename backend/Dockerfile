@@ -88,9 +88,9 @@ RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store,sharin
 # backend builds should not invalidate this layer on unrelated web source edits.
 # @services/runtime-request-validation and @voucha/tools (MCP output schemas)
 # import @voucha/api-fixtures: request validation loads request-contracts.json,
-# and admin tool response schemas also load openapi.json. Other files are test and client fixture
+# and admin tool response schemas load the same request bundle. Other files are test and client fixture
 # payload; copying that tree would ship it through pnpm deploy into every image.
-COPY api-fixtures/v1/request-contracts.json api-fixtures/v1/openapi.json ./api-fixtures/v1/
+COPY api-fixtures/v1/request-contracts.json ./api-fixtures/v1/
 COPY email-templates/ ./email-templates/
 COPY static-code-analysis/docker-deploy/ ./static-code-analysis/docker-deploy/
 COPY ts-shared/ ./ts-shared/

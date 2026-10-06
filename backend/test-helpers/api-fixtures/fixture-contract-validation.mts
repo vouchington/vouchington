@@ -3,8 +3,8 @@ import { validateFixtureContracts as validateFixtureContractsFromTooling } from 
 import {
   responseStatusCodesForContract,
   routeShape,
-} from 'vouchington-tooling/api-contract-discovery'
-import type { BackendResponseContract } from './response-contract-types.mts'
+  type BackendResponseContract,
+} from './response-contract-types.mts'
 import type { ResolvedApiFixtureCase } from './types.mts'
 
 type FixtureContractValidationCase = Pick<

@@ -7,23 +7,23 @@ import searchUsersTool from './search-users.mts'
 import type { Tool } from '@services/openai-agents/tool-types'
 
 type JsonSchema = Record<string, unknown>
-type OpenApi = {
-  components: { schemas: Record<string, JsonSchema> }
+type RequestContracts = {
+  components: Record<string, JsonSchema>
   paths: Record<string, { get?: unknown }>
 }
 
-const openApi = JSON.parse(
-  readFileSync(new URL('../../api-fixtures/v1/openapi.json', import.meta.url), 'utf8'),
-) as OpenApi
+const contracts = JSON.parse(
+  readFileSync(new URL('../../api-fixtures/v1/request-contracts.json', import.meta.url), 'utf8'),
+) as RequestContracts
 
 const propertiesOf = (schema: JsonSchema) => schema['properties'] as Record<string, JsonSchema>
 
-// The public user contract is a map value in the generated OpenAPI document.
+// The public user contract is a map value in the generated runtime contract bundle.
 function documentedUser(field: string): unknown {
-  const entry = openApi.components.schemas['Record_string_PublicUser']?.['additionalProperties']
+  const entry = contracts.components['Record_string_PublicUser']?.['additionalProperties']
   const documented = propertiesOf(entry as JsonSchema)[field]
-  if (!documented) throw new Error(`PublicUser.${field} is not in the OpenAPI document`)
-  return inlineSchemaReferences(documented, openApi.components.schemas)
+  if (!documented) throw new Error(`PublicUser.${field} is not in the runtime contract bundle`)
+  return inlineSchemaReferences(documented, contracts.components)
 }
 
 function branches(tool: { meta?: Tool['meta'] }): JsonSchema[] {
@@ -86,7 +86,6 @@ describe('user read tool output schemas', () => {
   it.each(TOOLS)('names the documented REST twin of %s', (_name, tool, path) => {
     const [endpoint] = tool.meta?.api ?? []
 
-    expect(openApi.paths[path]?.get).toBeDefined()
     expect(endpoint?.method).toBe('GET')
     expect(endpoint?.path.replace(/:(\w+)/g, '{$1}')).toBe(path)
   })

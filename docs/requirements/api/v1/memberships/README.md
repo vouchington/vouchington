@@ -162,7 +162,7 @@ Body: `{ user_id, charge_id?, payment_intent_id?, invoice_id, reason, idempotenc
   before any Stripe call
 
 Every caller must send `idempotency_key`; missing, null, non-string, and malformed values are
-invalid. The OpenAPI request schema marks the field required.
+invalid. The generated request schema marks the field required.
 
 An exact replay reuses its immutable operation and never creates another Stripe refund or DELETE.
 When cancellation is still converging, it returns the receipt with `cancellation_status: 'pending'`.

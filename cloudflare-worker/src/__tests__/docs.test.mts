@@ -52,11 +52,11 @@ describe('resolveDocsObjectKey', () => {
   })
 
   it('resolves extensionless paths to <path>/index.html', () => {
-    expect(resolveDocsObjectKey('/openapi')).toBe('openapi/index.html')
+    expect(resolveDocsObjectKey('/mcp')).toBe('mcp/index.html')
   })
 
   it('leaves paths with a file extension unchanged', () => {
-    expect(resolveDocsObjectKey('/openapi/openapi.json')).toBe('openapi/openapi.json')
+    expect(resolveDocsObjectKey('/mcp/mcp.json')).toBe('mcp/mcp.json')
   })
 })
 
@@ -142,11 +142,11 @@ describe('serveDocs', () => {
   })
 
   it('resolves extensionless paths through the R2 sync directory convention', async () => {
-    const { bucket } = createFakeBucket({ 'openapi/index.html': '<h1>openapi</h1>' })
-    const response = await serveDocs(authenticatedRequest('/openapi'), configuredEnv(bucket))
+    const { bucket } = createFakeBucket({ 'mcp/index.html': '<h1>mcp</h1>' })
+    const response = await serveDocs(authenticatedRequest('/mcp'), configuredEnv(bucket))
 
     expect(response.status).toBe(200)
-    await expect(response.text()).resolves.toBe('<h1>openapi</h1>')
+    await expect(response.text()).resolves.toBe('<h1>mcp</h1>')
   })
 
   it('returns 404 when the R2 object is missing', async () => {

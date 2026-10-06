@@ -78,7 +78,7 @@ locks and revalidates the SKU inside the grant transaction and rejects retired S
 different plan. Administrators revoke queued or active grants through
 `DELETE /api/v1/membership-grants/:grantId` with a required reason.
 
-Swift and .NET consume the same fixture and OpenAPI contract in separate client PRs. Their grant
+Swift and .NET consume the same fixture and request contract in separate client PRs. Their grant
 surfaces snapshot and revalidate the selected user, plan, SKU, and duration before submitting the
 same guarded request; this Vouchington change does not implement those client surfaces.
 

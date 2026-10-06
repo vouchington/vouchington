@@ -26,13 +26,10 @@ diagnostic. A contract `422` names only the carrier (`Invalid request body` or `
 | `POST /copyright-email-intakes/:id/correspondence`            | Closed `CopyrightEmailCorrespondenceRequest` and path          |
 | `POST /copyright-email-intakes/:id/correspondence-rejections` | Closed `CopyrightEmailCorrespondenceRejectionRequest` and path |
 
-The four request types live in `email-intake-request-types.mts` beside the routes. The decision
-handlers share one body reader, so each declares its type with `apiRequestContract`; the compiler
-cannot see through the shared helper. The compiler extracts the schema from the types, so the OpenAPI
-document, the request-contract bundle, and the runtime check share one source. Compiler-built
-assertions in
-[`copyright-email-intake-request-contract-coverage.test.mts`](../../../backend/test-helpers/api-fixtures/openapi/copyright-email-intake-request-contract-coverage.test.mts)
-verify the emitted carriers, and
+The four request types live in `email-intake-request-types.mts` beside the routes. Maintain the
+checked-in request contract schemas alongside those types; compiler discovery is removed.
+See the [fixture update flow](../../development/testing/backend/api-fixtures.md#update-flow).
+Runtime tests in
 [`email-intake-request-validation.test.mts`](../../../backend/api/v1/copyright-notices/email-intake-request-validation.test.mts)
 verifies order, status, and no-write behavior against the real database. Valid queue requests are
 covered by `email-intake-queue-pagination.test.mts`, which also walks a queue with an unknown query

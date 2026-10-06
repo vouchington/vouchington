@@ -8,7 +8,7 @@
 | [Publish Web Images](../../../../.github/workflows/publish-web-images.yml)               | Reusable   | Mixed           | Yes    | Validates the web image on PRs, publishes it from merge groups, and verifies or fills an authenticated missing target on main.  |
 | [Dispatch Completed Deploy](../../../../.github/workflows/dispatch-completed-deploy.yml) | Standalone | `ubuntu-slim`   | No     | Dispatches trusted successful source metadata to route-specific `vouchington-infra` receivers.                                  |
 | [Sync Articles](../../../../.github/workflows/sync-articles.yml)                         | Standalone | `ubuntu-slim`   | No     | Packages an immutable article artifact for private infrastructure dispatch.                                                     |
-| [Docs Publish](../../../../.github/workflows/docs-publish.yml)                           | Standalone | `ubuntu-latest` | No     | Builds an immutable OpenAPI, MCP-catalog, and PostgreSQL-schema documentation artifact for private infrastructure dispatch.     |
+| [Docs Publish](../../../../.github/workflows/docs-publish.yml)                           | Standalone | `ubuntu-latest` | No     | Builds an immutable MCP-catalog and PostgreSQL-schema documentation artifact for private infrastructure dispatch.               |
 
 Vouchington validates source, publishes product-owned runtime artifacts, and dispatches its
 revision asynchronously. `vouchington-infra` owns artifact materialization and every deployment

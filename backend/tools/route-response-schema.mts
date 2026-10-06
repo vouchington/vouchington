@@ -14,9 +14,8 @@ const COMPONENT_PREFIX = '#/components/schemas/'
 /**
  * The response schema of a tool's REST twin, self-contained for MCP clients.
  *
- * It comes from the generated `request-contracts.json` (`pnpm run openapi:generate`), the same
- * compiler-extracted source as the REST route, so the tool cannot drift from it. A route without
- * a named 200 response type has no contract and fails loudly when the tool module loads.
+ * It comes from the canonical checked-in `request-contracts.json`. Update that contract together
+ * with the REST route. A route without a named response schema fails loudly when the tool loads.
  */
 export function routeResponseSchema(endpoint: ToolApiEndpoint): ToolOutputSchema {
   return resolveRouteResponse(endpoint, responses, components)
@@ -32,7 +31,7 @@ export function resolveRouteResponse(
   const response = contracts[key]
   if (!response) {
     throw new Error(
-      `No generated response contract for ${key}. Give the route a named response type and run pnpm run openapi:generate.`,
+      `No checked-in response contract for ${key}. Update api-fixtures/v1/request-contracts.json with the current route schema.`,
     )
   }
   const schema = inlineSchemaReferences(response, source)

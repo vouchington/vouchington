@@ -5,7 +5,7 @@ Source entrypoint: [backend/modules/pagination/README.md](../../../../../../back
 All paginated endpoints use the unified pagination module at `modules/pagination/`.
 The public API and client behavior are canonical in [Cross-Surface Cursor Pagination](../../../pagination.md); this page owns backend parser and cursor utilities.
 
-The module is a compatibility adapter over [`@vouchington/pagination`](https://www.npmjs.com/package/@vouchington/pagination). It re-exports generic cursor envelopes, guards, and scoped decoders directly instead of maintaining local facade shells. Local adapters retain Voucha's response field names, filter catalogs, parser configuration, and query-contract types needed for exact OpenAPI literal inference while delegating their generic runtime behavior to the package.
+The module is a compatibility adapter over [`@vouchington/pagination`](https://www.npmjs.com/package/@vouchington/pagination). It re-exports generic cursor envelopes, guards, and scoped decoders directly instead of maintaining local facade shells. Local adapters retain Voucha's response field names, filter catalogs, parser configuration, and query-contract types needed for exact query-contract literal inference while delegating their generic runtime behavior to the package.
 
 ## Standards
 
@@ -30,7 +30,7 @@ Search-parameter parsers compose that metadata with their route-specific descrip
 `withQueryContract()`.
 
 The metadata is descriptive: parsing remains the runtime authority, and a route is included in the
-generated OpenAPI query surface only when its handler explicitly calls `apiQuery(...)`. Array
+generated query-contract surface only when its handler explicitly calls `apiQuery(...)`. Array
 filters are published as comma-separated query values (`style: form`, `explode: false`); the runtime
 parser may also retain repeated-key compatibility.
 
