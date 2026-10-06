@@ -43,9 +43,9 @@ export async function countTestMicrosoftStoreVerifications(options: {
 
 export async function makeTestMembershipVerificationDue(verificationId: string): Promise<void> {
   await write(sql`
-    /* makeTestMembershipVerificationDue */ UPDATE membership_verifications
-    SET next_processing_at = CURRENT_TIMESTAMP
-    WHERE id = ${verificationId}`)
+    /* makeTestMembershipVerificationDue */ UPDATE membership_verification_processing_work_items
+    SET available_at = CURRENT_TIMESTAMP
+    WHERE membership_verification_id = ${verificationId}`)
 }
 
 export async function listTestMicrosoftStoreSourceIds(options: {

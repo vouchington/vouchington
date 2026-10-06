@@ -1,3 +1,5 @@
+import { write } from '@data-stores/psql'
+import sql from 'sql-template-strings'
 import { createTestUser } from './entities/users.mts'
 import { getTestPostImagePlacement } from './entities/post-images.mts'
 import { createHostedImagePost } from './services/copyright-notices/hosted-post-audience.mts'
@@ -65,6 +67,11 @@ export async function createTestTimedDsaReportAction(input: {
   const restricted = await getCopyrightNoticePrivateAggregate(notice.id)
   const withholdId = restricted?.actionIntents.find(intent => intent.action === 'withhold')?.id
   if (!withholdId) throw new Error('Timed report withhold intent missing')
+  // This historical reporting fixture queues the owned work at its controlled legal clock.
+  await write(sql`/* createTestTimedDsaReportAction:availability */
+    UPDATE copyright_notice_action_work_items SET available_at = ${input.imposedAt}
+    WHERE id = ${withholdId} AND state = 'pending' AND attempt_count = 0
+  `)
   const dependencies = createTestCopyrightDeliveryDependencies(async () => undefined)
   const result = await processCopyrightActionIntent(withholdId, input.completedAt, dependencies)
   if (result !== 'applied') throw new Error(`Timed report action was ${result}`)

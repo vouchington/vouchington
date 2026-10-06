@@ -15,7 +15,10 @@ import {
 import { createEmbeddingCreationWorker } from '../workers/bedrock-embeddings-batch-creation.mts'
 import { delayEmbeddingCreationJob } from '@queues/bedrock-embeddings-batch/payload/creation-deferral'
 import { getIsolatedDatabaseCaseMode } from '../../../../test-helpers/vitest-isolated-database-cases.mts'
-import { runIsolatedDatabaseCase } from '../../../../test-helpers/vitest-isolated-database-case.mts'
+import {
+  ISOLATED_DATABASE_PARENT_TIMEOUT_MS,
+  runIsolatedDatabaseCase,
+} from '../../../../test-helpers/vitest-isolated-database-case.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
@@ -157,61 +160,65 @@ describe('same-job embedding continuation', () => {
     },
   )
 
-  it('yields an image capacity delay to text work while preserving the global creation cap', async () => {
-    if (getIsolatedDatabaseCaseMode('embedding-creation-fairness') === 'parent') {
-      await runIsolatedDatabaseCase('embedding-creation-fairness')
-      return
-    }
-    const id = `image-size-capacity-${randomUUID()}`
-    await insertTestEmbeddingsBatch({
-      id,
-      bedrockStatus: 'Submitted',
-      batchData: { metadata: { inputSizeMB: 1100 } },
-    })
-    const restore = overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
-      max_inflight_jobs: 100,
-      max_file_size_gb: 2,
-      max_job_size_gb: 2,
-      min_records_per_job: 200,
-      max_scan_rows_per_run: 1000,
-      creation_retry_delay_ms: 30000,
-    })
-    const queue = new Queue(`embedding_creation_mixed_${randomUUID()}`, connection)
-    const setConcurrency = vi.spyOn(queue, 'setGlobalConcurrency')
-    const firstWorker = await createEmbeddingCreationWorker(queue)
-    const secondWorker = await createEmbeddingCreationWorker(queue)
-    const textCompleted = Promise.withResolvers<void>()
-    for (const worker of [firstWorker, secondWorker])
-      worker.on('completed', job => {
-        if (job.name === 'topics') textCompleted.resolve()
+  it(
+    'yields an image capacity delay to text work while preserving the global creation cap',
+    async () => {
+      if (getIsolatedDatabaseCaseMode('embedding-creation-fairness') === 'parent') {
+        await runIsolatedDatabaseCase('embedding-creation-fairness')
+        return
+      }
+      const id = `image-size-capacity-${randomUUID()}`
+      await insertTestEmbeddingsBatch({
+        id,
+        bedrockStatus: 'Submitted',
+        batchData: { metadata: { inputSizeMB: 1100 } },
       })
-    const cursor = {
-      sweepStartedAt: new Date().toISOString(),
-      afterId: '00000000-0000-7000-8000-000000000001',
-    }
-    try {
-      await Promise.all([firstWorker.waitUntilReady(), secondWorker.waitUntilReady()])
-      expect(setConcurrency).toHaveBeenCalledTimes(2)
-      expect(setConcurrency).toHaveBeenCalledWith(1)
-      const image = await queue.add('images', { cursor }, creationJobOptions('mixed_images'))
-      if (!image) throw new Error('Expected image chain')
-      await vi.waitFor(async () => expect(await image.getState()).toBe('delayed'), {
-        timeout: 10000,
+      const restore = overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
+        max_inflight_jobs: 100,
+        max_file_size_gb: 2,
+        max_job_size_gb: 2,
+        min_records_per_job: 200,
+        max_scan_rows_per_run: 1000,
+        creation_retry_delay_ms: 30000,
       })
-      const text = await queue.add('topics', { cursor }, creationJobOptions('mixed_topics'))
-      if (!text) throw new Error('Expected text job')
-      await textCompleted.promise
-      expect(await image.getState()).toBe('delayed')
-      expect((await queue.getJob(image.id))?.data).toEqual({ cursor })
-      expect(await queue.add('images', {}, creationJobOptions('mixed_images'))).toBeNull()
-    } finally {
-      await Promise.all([firstWorker.close(true), secondWorker.close(true)])
-      await queue.obliterate({ force: true })
-      await queue.close()
-      restore()
-      await cleanupTestEmbeddingsBatches([id])
-    }
-  }, 240_000)
+      const queue = new Queue(`embedding_creation_mixed_${randomUUID()}`, connection)
+      const setConcurrency = vi.spyOn(queue, 'setGlobalConcurrency')
+      const firstWorker = await createEmbeddingCreationWorker(queue)
+      const secondWorker = await createEmbeddingCreationWorker(queue)
+      const textCompleted = Promise.withResolvers<void>()
+      for (const worker of [firstWorker, secondWorker])
+        worker.on('completed', job => {
+          if (job.name === 'topics') textCompleted.resolve()
+        })
+      const cursor = {
+        sweepStartedAt: new Date().toISOString(),
+        afterId: '00000000-0000-7000-8000-000000000001',
+      }
+      try {
+        await Promise.all([firstWorker.waitUntilReady(), secondWorker.waitUntilReady()])
+        expect(setConcurrency).toHaveBeenCalledTimes(2)
+        expect(setConcurrency).toHaveBeenCalledWith(1)
+        const image = await queue.add('images', { cursor }, creationJobOptions('mixed_images'))
+        if (!image) throw new Error('Expected image chain')
+        await vi.waitFor(async () => expect(await image.getState()).toBe('delayed'), {
+          timeout: 10000,
+        })
+        const text = await queue.add('topics', { cursor }, creationJobOptions('mixed_topics'))
+        if (!text) throw new Error('Expected text job')
+        await textCompleted.promise
+        expect(await image.getState()).toBe('delayed')
+        expect((await queue.getJob(image.id))?.data).toEqual({ cursor })
+        expect(await queue.add('images', {}, creationJobOptions('mixed_images'))).toBeNull()
+      } finally {
+        await Promise.all([firstWorker.close(true), secondWorker.close(true)])
+        await queue.obliterate({ force: true })
+        await queue.close()
+        restore()
+        await cleanupTestEmbeddingsBatches([id])
+      }
+    },
+    ISOLATED_DATABASE_PARENT_TIMEOUT_MS,
+  )
 })
 
 describe('creation queue global concurrency', () => {

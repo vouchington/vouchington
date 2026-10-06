@@ -88,23 +88,20 @@ CREATE OR REPLACE TRIGGER trigger_published_topic_alias_identities_updated_at BE
 CREATE OR REPLACE TRIGGER trigger_published_story_identities_updated_at BEFORE UPDATE ON post_publication_story_identities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TABLE IF NOT EXISTS post_publication_identity_bridge_cleanup_progress (
-  singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CONSTRAINT chk_post_publicatio_identity_bridge_cleanup_progress__singleton CHECK (singleton),
-  family post_publication_identity_bridge_cleanup_families NOT NULL DEFAULT 'post' CHECK (family IN ('post', 'community', 'rss_feed_item', 'author', 'rss_feed', 'topic_alias', 'story')),
+CREATE TABLE IF NOT EXISTS post_publication_identity_bridge_cleanup_cursors (
+  family post_publication_identity_bridge_families PRIMARY KEY,
   cursor_identity_id UUID,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trg_post_publicati_identity_bridge_cleanup_progress__updated_at
-BEFORE UPDATE ON post_publication_identity_bridge_cleanup_progress
+CREATE OR REPLACE TRIGGER trg_post_publicatio_identity_bridge_cleanup_cursors__updated_at
+BEFORE UPDATE ON post_publication_identity_bridge_cleanup_cursors
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
-INSERT INTO post_publication_identity_bridge_cleanup_progress (singleton) VALUES (TRUE) ON CONFLICT DO NOTHING;
-COMMENT ON TABLE post_publication_identity_bridge_cleanup_progress IS 'Checked singleton rotates bounded identity bridge sweeps across concrete entity tables.';
-COMMENT ON COLUMN post_publication_identity_bridge_cleanup_progress.singleton IS 'One independent bridge cleanup cursor.';
-COMMENT ON COLUMN post_publication_identity_bridge_cleanup_progress.family IS 'Current concrete table sweep, not an entity relationship.';
-COMMENT ON COLUMN post_publication_identity_bridge_cleanup_progress.cursor_identity_id IS 'Deletion-stable last raw candidate key, not an entity relationship.';
-COMMENT ON COLUMN post_publication_identity_bridge_cleanup_progress.updated_at IS 'Last committed bounded bridge sweep.';
+COMMENT ON TABLE post_publication_identity_bridge_cleanup_cursors IS 'One independently locked cursor per concrete identity bridge family; least recently advanced families receive bounded sweeps.';
+COMMENT ON COLUMN post_publication_identity_bridge_cleanup_cursors.family IS 'Concrete bridge family owning its independent cyclic keyset sweep.';
+COMMENT ON COLUMN post_publication_identity_bridge_cleanup_cursors.cursor_identity_id IS 'Deletion-stable last raw candidate key, not an entity relationship.';
+COMMENT ON COLUMN post_publication_identity_bridge_cleanup_cursors.updated_at IS 'Last committed bounded bridge sweep.';
 
 ALTER TABLE post_publication_projection_receipts ADD CONSTRAINT fk_post_publication_projection_receipts__post_identity FOREIGN KEY (post_identity_id) REFERENCES post_publication_post_identities (id) ON DELETE RESTRICT NOT VALID; -- fk-index-guard-allow: the receipt primary key leads with post_identity_id in the canonical creator; this cross-file FK does not repeat that index.
 ALTER TABLE post_publication_projection_receipts VALIDATE CONSTRAINT fk_post_publication_projection_receipts__post_identity;

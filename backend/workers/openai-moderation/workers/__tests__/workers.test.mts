@@ -1,6 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { getIsolatedDatabaseCaseMode } from '../../../../../test-helpers/vitest-isolated-database-cases.mts'
-import { runIsolatedDatabaseCase } from '../../../../../test-helpers/vitest-isolated-database-case.mts'
+import {
+  ISOLATED_DATABASE_PARENT_TIMEOUT_MS,
+  runIsolatedDatabaseCase,
+} from '../../../../../test-helpers/vitest-isolated-database-case.mts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Job, Worker } from 'glide-mq'
 import {
@@ -121,58 +124,68 @@ describe('openai moderation single worker', () => {
     ).toBe(true)
   })
 
-  it('requeues due source work and moves deadline-exhausted posts to review', async () => {
-    if (getIsolatedDatabaseCaseMode('openai-moderation-reconciliation') === 'parent') {
-      await runIsolatedDatabaseCase('openai-moderation-reconciliation')
-      return
-    }
-    const creator = await createTestUser()
-    expect(creator).toBeTruthy()
-    const duePostId = await insertTestPost({
-      title: `OpenAI reconcile due ${randomUUID()}`,
-      slug: `openai-reconcile-due-${randomUUID()}`,
-      createdById: creator!.id,
-      markdown: 'Reconciliation due work.',
-      clearanceStatus: 'pending',
-    })
-    const expiredPostId = await insertTestPost({
-      title: `OpenAI reconcile expired ${randomUUID()}`,
-      slug: `openai-reconcile-expired-${randomUUID()}`,
-      createdById: creator!.id,
-      markdown: 'Reconciliation expired work.',
-      clearanceStatus: 'pending',
-    })
-    await ensureCurrentPostModerationVersion(duePostId)
-    const expiredVersion = await ensureCurrentPostModerationVersion(expiredPostId)
-    await expireTestPostModerationVersion(expiredVersion.id)
+  it(
+    'requeues due source work and moves deadline-exhausted posts to review',
+    async () => {
+      if (getIsolatedDatabaseCaseMode('openai-moderation-reconciliation') === 'parent') {
+        await runIsolatedDatabaseCase('openai-moderation-reconciliation')
+        return
+      }
+      const creator = await createTestUser()
+      expect(creator).toBeTruthy()
+      const duePostId = await insertTestPost({
+        title: `OpenAI reconcile due ${randomUUID()}`,
+        slug: `openai-reconcile-due-${randomUUID()}`,
+        createdById: creator!.id,
+        markdown: 'Reconciliation due work.',
+        clearanceStatus: 'pending',
+      })
+      const expiredPostId = await insertTestPost({
+        title: `OpenAI reconcile expired ${randomUUID()}`,
+        slug: `openai-reconcile-expired-${randomUUID()}`,
+        createdById: creator!.id,
+        markdown: 'Reconciliation expired work.',
+        clearanceStatus: 'pending',
+      })
+      await ensureCurrentPostModerationVersion(duePostId)
+      const expiredVersion = await ensureCurrentPostModerationVersion(expiredPostId)
+      await expireTestPostModerationVersion(expiredVersion.id)
 
-    const result = (await handleOpenAIModerationOmniSingleJob(
-      makeJob('reconcile_post_moderation', randomUUID()),
-      {} as Worker,
-    )) as { enqueued: number; moved_to_review: number }
-
-    expect(result.enqueued).toBeGreaterThanOrEqual(2)
-    expect(result.moved_to_review).toBeGreaterThanOrEqual(1)
-    await expect(getPostClearanceStatus(expiredPostId)).resolves.toBe('in_review')
-
-    const openaiJobs = await readAllQueueJobs(openai_moderation_omni_single)
-    expect(
-      openaiJobs.some(job => job.name === 'post' && (job.data as { id?: string }).id === duePostId),
-    ).toBe(true)
-  }, 240_000)
-
-  it('runs image quarantine reconciliation jobs', async () => {
-    if (getIsolatedDatabaseCaseMode('openai-image-quarantine-reconciliation') === 'parent') {
-      await runIsolatedDatabaseCase('openai-image-quarantine-reconciliation')
-      return
-    }
-    await expect(
-      handleOpenAIModerationOmniSingleJob(
-        makeJob('reconcile_image_quarantines', randomUUID()),
+      const result = (await handleOpenAIModerationOmniSingleJob(
+        makeJob('reconcile_post_moderation', randomUUID()),
         {} as Worker,
-      ),
-    ).resolves.toEqual({ reconciled: 0 })
-  }, 240_000)
+      )) as { enqueued: number; moved_to_review: number }
+
+      expect(result.enqueued).toBeGreaterThanOrEqual(2)
+      expect(result.moved_to_review).toBeGreaterThanOrEqual(1)
+      await expect(getPostClearanceStatus(expiredPostId)).resolves.toBe('in_review')
+
+      const openaiJobs = await readAllQueueJobs(openai_moderation_omni_single)
+      expect(
+        openaiJobs.some(
+          job => job.name === 'post' && (job.data as { id?: string }).id === duePostId,
+        ),
+      ).toBe(true)
+    },
+    ISOLATED_DATABASE_PARENT_TIMEOUT_MS,
+  )
+
+  it(
+    'runs image quarantine reconciliation jobs',
+    async () => {
+      if (getIsolatedDatabaseCaseMode('openai-image-quarantine-reconciliation') === 'parent') {
+        await runIsolatedDatabaseCase('openai-image-quarantine-reconciliation')
+        return
+      }
+      await expect(
+        handleOpenAIModerationOmniSingleJob(
+          makeJob('reconcile_image_quarantines', randomUUID()),
+          {} as Worker,
+        ),
+      ).resolves.toEqual({ reconciled: 0 })
+    },
+    ISOLATED_DATABASE_PARENT_TIMEOUT_MS,
+  )
 
   it('records a retryable failed attempt when the provider is unavailable', async () => {
     const creator = await createTestUser()

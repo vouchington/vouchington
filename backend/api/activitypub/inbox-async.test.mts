@@ -194,14 +194,14 @@ async function postSignedCreateAndClaimDelivery(input: {
     candidate => candidate.name === 'processDelivery' && !existingJobIds.has(candidate.id ?? ''),
   )
   expect(job).toBeDefined()
-  const payload = job?.data as { deliveryId: string; processingAttemptId: string } | undefined
+  const payload = job?.data as { deliveryId: string; leaseToken: string } | undefined
   expect(payload).toEqual({
     deliveryId: expect.any(String),
-    processingAttemptId: expect.any(String),
+    leaseToken: expect.any(String),
   })
   if (!payload) throw new Error('Expected a durable ActivityPub inbox job payload')
 
-  const delivery = await claimTestDelivery(payload.deliveryId, payload.processingAttemptId)
+  const delivery = await claimTestDelivery(payload.deliveryId, payload.leaseToken)
   expect(delivery).toMatchObject({
     requestMethod: 'POST',
     requestTarget: '/ap/inbox',
@@ -218,7 +218,7 @@ async function postSignedCreateAndClaimDelivery(input: {
   expect(delivery?.rawBody.equals(Buffer.from(body))).toBe(true)
 
   onTestFinished(async () => {
-    await rejectTestDelivery(payload.deliveryId, payload.processingAttemptId)
+    await rejectTestDelivery(payload.deliveryId, payload.leaseToken)
   })
   return { delivery, remoteActor }
 }

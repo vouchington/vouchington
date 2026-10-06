@@ -9,9 +9,21 @@ CREATE TABLE IF NOT EXISTS bluesky_link_authorizations (
   user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
   handle TEXT CHECK (handle IS NULL OR (char_length(handle) > 0 AND char_length(handle) <= 253)),
   callback_mode oauth_callback_modes NOT NULL CHECK (callback_mode IN ('web', 'native')),
-  status bluesky_link_authorization_statuses NOT NULL DEFAULT 'pending' CHECK (
-    status IN ('pending', 'callback_claimed', 'handoff_ready', 'attached', 'revoked', 'expired', 'rejected')
-  ),
+  status bluesky_link_authorization_statuses GENERATED ALWAYS AS (
+    CASE WHEN revoked_at IS NOT NULL THEN 'revoked'::bluesky_link_authorization_statuses
+      WHEN expired_at IS NOT NULL THEN 'expired'::bluesky_link_authorization_statuses
+      WHEN rejected_at IS NOT NULL THEN 'rejected'::bluesky_link_authorization_statuses
+      WHEN attached_at IS NOT NULL THEN 'attached'::bluesky_link_authorization_statuses
+      WHEN handoff_ready_at IS NOT NULL THEN 'handoff_ready'::bluesky_link_authorization_statuses
+      WHEN callback_claimed_at IS NOT NULL THEN 'callback_claimed'::bluesky_link_authorization_statuses
+      ELSE 'pending'::bluesky_link_authorization_statuses END
+  ) STORED NOT NULL,
+  callback_claimed_at TIMESTAMPTZ,
+  handoff_ready_at TIMESTAMPTZ,
+  attached_at TIMESTAMPTZ,
+  revoked_at TIMESTAMPTZ,
+  expired_at TIMESTAMPTZ,
+  rejected_at TIMESTAMPTZ,
   completion_proof_challenge TEXT,
   claimed_did TEXT,
   expires_at TIMESTAMPTZ NOT NULL,
@@ -27,7 +39,14 @@ CREATE TABLE IF NOT EXISTS bluesky_link_authorizations (
     (status IN ('revoked', 'expired', 'rejected') AND handle IS NULL)
     OR (status NOT IN ('revoked', 'expired', 'rejected') AND handle IS NOT NULL)
   ),
-  CHECK (status NOT IN ('callback_claimed', 'handoff_ready', 'attached', 'revoked') OR claimed_did IS NOT NULL)
+  CHECK ((callback_claimed_at IS NULL) = (claimed_did IS NULL)),
+  CHECK (handoff_ready_at IS NULL OR (callback_claimed_at IS NOT NULL AND handoff_ready_at >= callback_claimed_at)),
+  CHECK (attached_at IS NULL OR (callback_claimed_at IS NOT NULL AND attached_at >= callback_claimed_at AND (handoff_ready_at IS NULL OR attached_at >= handoff_ready_at))),
+  CHECK (revoked_at IS NULL OR (attached_at IS NOT NULL AND revoked_at >= attached_at)),
+  CHECK (num_nonnulls(revoked_at, expired_at, rejected_at) <= 1),
+  CHECK (attached_at IS NULL OR (expired_at IS NULL AND rejected_at IS NULL)),
+  CHECK (expired_at IS NULL OR expired_at >= GREATEST(callback_claimed_at, handoff_ready_at)),
+  CHECK (rejected_at IS NULL OR rejected_at >= GREATEST(callback_claimed_at, handoff_ready_at))
 );
 
 CREATE OR REPLACE TRIGGER trigger_bluesky_link_authorizations_updated_at
@@ -50,7 +69,13 @@ COMMENT ON TABLE bluesky_link_authorizations IS 'Durable Bluesky OAuth link stat
 COMMENT ON COLUMN bluesky_link_authorizations.user_id IS 'Voucha user who authenticated the begin request and exclusively owns this authorization lifecycle.';
 COMMENT ON COLUMN bluesky_link_authorizations.handle IS 'Handle supplied when authorization began; display-only because Bluesky DIDs are authoritative, and scrubbed when the authorization becomes terminal.';
 COMMENT ON COLUMN bluesky_link_authorizations.callback_mode IS 'web for cookie-bound browser attachment; native for proof-bound custom-scheme completion.';
-COMMENT ON COLUMN bluesky_link_authorizations.status IS 'Explicit lifecycle: pending, callback_claimed, handoff_ready, attached, revoked, expired, or rejected.';
+COMMENT ON COLUMN bluesky_link_authorizations.status IS 'Generated current lifecycle derived exclusively from ordered authorization timestamps.';
+COMMENT ON COLUMN bluesky_link_authorizations.callback_claimed_at IS 'First successful provider callback claiming the exact DID for this authorization.';
+COMMENT ON COLUMN bluesky_link_authorizations.handoff_ready_at IS 'Native proof-bound completion became available after the provider callback.';
+COMMENT ON COLUMN bluesky_link_authorizations.attached_at IS 'Exact authorization generation attached its credential to the initiating user.';
+COMMENT ON COLUMN bluesky_link_authorizations.revoked_at IS 'Previously attached authorization generation permanently revoked.';
+COMMENT ON COLUMN bluesky_link_authorizations.expired_at IS 'Unattached authorization generation permanently expired after its deadline.';
+COMMENT ON COLUMN bluesky_link_authorizations.rejected_at IS 'Unattached authorization generation permanently rejected.';
 COMMENT ON COLUMN bluesky_link_authorizations.completion_proof_challenge IS 'Native-only base64url SHA-256 challenge. The app retains the verifier; an intercepted custom-scheme bearer token is insufficient to attach.';
 COMMENT ON COLUMN bluesky_link_authorizations.claimed_did IS 'DID exclusively claimed by the first successful provider callback for this authorization.';
 COMMENT ON COLUMN bluesky_link_authorizations.expires_at IS 'Authorization deadline. Cleanup uses this timestamp and status, never UUID ordering.';

@@ -6,7 +6,6 @@ import {
   createTestUser,
   getTestMembershipProviderObservation,
   getTestMembershipSourceState,
-  setStripeEventReceivedAtForTest,
 } from '@voucha/test-helpers'
 import { createMembership } from '@services/memberships'
 import { insertStripeEvent } from './insert-event.mts'
@@ -108,10 +107,13 @@ describe('Stripe membership provider facts', () => {
     const equal = makeStripeEvent(`evt_a_${randomUUID()}`, subscriptionId, true, 200)
     const sameInstant = makeStripeEvent(`evt_b_${randomUUID()}`, subscriptionId, true, 200)
     const terminal = makeStripeEvent(`evt_0_${randomUUID()}`, subscriptionId, true, 100)
-    await Promise.all([latest, stale, equal, sameInstant, terminal].map(insertStripeEvent))
-    await setStripeEventReceivedAtForTest(latest.id, new Date('2030-01-01T00:00:00.000Z'))
-    await setStripeEventReceivedAtForTest(equal.id, new Date('2030-01-01T00:00:01.000Z'))
-    await setStripeEventReceivedAtForTest(sameInstant.id, new Date('2030-01-01T00:00:01.000Z'))
+    await Promise.all([
+      insertStripeEvent(latest, new Date('2030-01-01T00:00:00.000Z')),
+      insertStripeEvent(equal, new Date('2030-01-01T00:00:01.000Z')),
+      insertStripeEvent(sameInstant, new Date('2030-01-01T00:00:01.000Z')),
+      insertStripeEvent(stale),
+      insertStripeEvent(terminal),
+    ])
     const observedAt = new Date('2030-01-01T00:00:02.000Z')
     const active = makeSubscription(subscriptionId, sku.stripe_price_id, 500, 'usd', true)
     const laterReceiptResult = await recordStripeMembershipProviderFacts({

@@ -1,19 +1,18 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TABLE IF NOT EXISTS post_publication_identity_cleanup_progress (
-  singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (singleton),
+CREATE TABLE IF NOT EXISTS post_publication_identity_snapshot_cleanup_cursors (
+  is_singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (is_singleton),
   cursor_snapshot_id UUID,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trg_post_publication_identity_cleanup_progress__updated_at
-BEFORE UPDATE ON post_publication_identity_cleanup_progress
+CREATE OR REPLACE TRIGGER trg_post_publicat_identity_snapshot_cleanup_cursors__updated_at
+BEFORE UPDATE ON post_publication_identity_snapshot_cleanup_cursors
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
-INSERT INTO post_publication_identity_cleanup_progress (singleton) VALUES (TRUE) ON CONFLICT DO NOTHING;
-COMMENT ON TABLE post_publication_identity_cleanup_progress IS 'Bounded cyclic snapshot-header sweep, independent from publication writers.';
-COMMENT ON COLUMN post_publication_identity_cleanup_progress.singleton IS 'Checked singleton key serializes only cleanup sweeps.';
-COMMENT ON COLUMN post_publication_identity_cleanup_progress.cursor_snapshot_id IS 'Last examined header; no FK because reclaimed headers are deleted.';
-COMMENT ON COLUMN post_publication_identity_cleanup_progress.updated_at IS 'Last committed sweep progress.';
+COMMENT ON TABLE post_publication_identity_snapshot_cleanup_cursors IS 'Bounded cyclic snapshot-header sweep, independent from publication writers.';
+COMMENT ON COLUMN post_publication_identity_snapshot_cleanup_cursors.is_singleton IS 'Checked singleton key serializes only cleanup sweeps.';
+COMMENT ON COLUMN post_publication_identity_snapshot_cleanup_cursors.cursor_snapshot_id IS 'Last examined header; no FK because reclaimed headers are deleted.';
+COMMENT ON COLUMN post_publication_identity_snapshot_cleanup_cursors.updated_at IS 'Last committed sweep progress.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_publication_identity_snapshots (

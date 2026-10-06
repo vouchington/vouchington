@@ -47,9 +47,10 @@ export async function getTestWonDisputeRecovery(
     receipt_amount_minor_units: string | null
   }>(sql`/* getTestWonDisputeRecovery */
     SELECT operation.completed_at, operation.operation_kind,
-      operation.execution_claim_token IS NOT NULL AS has_execution_claim,
+      work.lease_token IS NOT NULL AS has_execution_claim,
       receipt.amount_minor_units::TEXT AS receipt_amount_minor_units
     FROM membership_operations operation
+    LEFT JOIN membership_operation_execution_work_items work ON work.membership_operation_id = operation.id
     INNER JOIN membership_provider_lineages lineage
       ON lineage.id = operation.membership_provider_lineage_id
     LEFT JOIN membership_automatic_refund_receipts receipt
@@ -73,6 +74,7 @@ export async function getTestIneligiblePurchaseReversalExecutionClaimCount(
   }>(sql`/* getTestIneligiblePurchaseReversalExecutionClaimCount */
     SELECT COUNT(*)::TEXT AS count
     FROM membership_operations operation
+    LEFT JOIN membership_operation_execution_work_items work ON work.membership_operation_id = operation.id
     INNER JOIN membership_sources source ON source.id = operation.membership_source_id
     INNER JOIN membership_provider_lineages lineage
       ON lineage.id = source.membership_provider_lineage_id
@@ -80,7 +82,7 @@ export async function getTestIneligiblePurchaseReversalExecutionClaimCount(
       AND lineage.environment = ${environment}
       AND lineage.provider_lineage_id = ${subscriptionId}
       AND operation.operation_kind IN ('ineligible_purchase_reversal', 'cancel_source')
-      AND operation.execution_claim_token IS NOT NULL
+      AND work.lease_token IS NOT NULL
   `)
   return Number(rows[0]!.count)
 }

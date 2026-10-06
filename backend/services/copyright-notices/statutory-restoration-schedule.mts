@@ -81,7 +81,7 @@ function appendDueStatutoryRestorationSource(query: SQLStatement, now: Date): vo
       AND deadline.resolved_at IS NULL AND deadline.cancelled_at IS NULL
       AND restriction.lifted_at IS NULL AND restriction.human_reviewed_at IS NOT NULL
       AND NOT EXISTS (
-        SELECT 1 FROM copyright_notice_action_intents intent
+        SELECT 1 FROM copyright_notice_action_work_items intent
         WHERE intent.copyright_restriction_id = restriction.id
           AND intent.copyright_notice_deadline_id = deadline.id
           AND intent.action = 'restore'

@@ -106,7 +106,7 @@ changes its revision/deadline, or gates its delivery workers.
 ## Delivery obligations
 
 Each claimant receipt, poster restriction notice, status update, counter-notice forwarding, and
-staff information request is recorded as an idempotent `copyright_notice_delivery_intents` row before it reaches a transport.
+staff information request is recorded as an idempotent `copyright_notice_delivery_work_items` row before it reaches a transport.
 The row is staff-visible through the private case aggregate and transitions from `pending` to
 `claimed`, then `sent`, `failed`, or `bounced`. A retryable failure returns to `pending`; bounded
 retry uses exponential backoff and stops after five attempts so poison deliveries cannot

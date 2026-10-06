@@ -39,30 +39,30 @@ export async function claimCopyrightActionIntent(
   const { rows } = await transaction<CopyrightClaimedActionIntent>(sql`
     /* claimCopyrightActionIntent */
     WITH exhausted AS (
-      UPDATE copyright_notice_action_intents intent
-      SET state = 'failed', completed_at = ${now}, completed_at_reason = 'failed',
+      UPDATE copyright_notice_action_work_items intent
+      SET completed_at = ${now}, completed_at_reason = 'failed',
         failure_message = 'A claimed copyright action exceeded the maximum delivery attempts.',
-        next_attempt_at = NULL
+        available_at = clock_timestamp()
       WHERE intent.id = ${intentId}
         AND intent.state = 'claimed'
-        AND intent.claimed_at <= ${new Date(now.getTime() - CLAIM_TIMEOUT_MS)}
-        AND intent.delivery_attempt_count >= ${MAX_ATTEMPTS}
+        AND intent.lease_expires_at <= ${now}
+        AND intent.attempt_count >= ${MAX_ATTEMPTS}
     ), candidate AS (
       SELECT intent.id
-      FROM copyright_notice_action_intents intent
+      FROM copyright_notice_action_work_items intent
       WHERE intent.id = ${intentId}
         AND (
-          (intent.state = 'pending' AND (intent.next_attempt_at IS NULL OR intent.next_attempt_at <= ${now}))
-          OR (intent.state = 'claimed' AND intent.claimed_at <= ${new Date(now.getTime() - CLAIM_TIMEOUT_MS)})
+          (intent.state = 'pending' AND (intent.available_at IS NULL OR intent.available_at <= ${now}))
+          OR (intent.state = 'claimed' AND intent.lease_expires_at <= ${now})
         )
       FOR UPDATE SKIP LOCKED
     ), claimed AS (
-      UPDATE copyright_notice_action_intents intent
-    SET lease_token = uuidv7(), state = 'claimed', delivery_attempt_count = intent.delivery_attempt_count + 1,
-      claimed_at = ${now}, next_attempt_at = NULL, failure_message = NULL
+      UPDATE copyright_notice_action_work_items intent
+    SET lease_token = uuidv7(), attempt_count = intent.attempt_count + 1,
+      leased_at = clock_timestamp(), lease_expires_at = clock_timestamp() + ${CLAIM_TIMEOUT_MS} * interval '1 millisecond', available_at = clock_timestamp(), failure_message = NULL
     FROM candidate
     WHERE intent.id = candidate.id
-      AND intent.delivery_attempt_count < ${MAX_ATTEMPTS}
+      AND intent.attempt_count < ${MAX_ATTEMPTS}
       RETURNING intent.*
     )
     SELECT claimed.*, target.placement_id, target_image.image_id
@@ -88,12 +88,12 @@ export function searchRecoverableCopyrightActionIntentIds(
     'rowId',
     sql`/* searchRecoverableCopyrightActionIntentIds */
       SELECT id
-      FROM copyright_notice_action_intents
+      FROM copyright_notice_action_work_items
       WHERE completed_at IS NULL
         AND (
-          (state = 'pending' AND (next_attempt_at IS NULL OR next_attempt_at <= ${options.now}))
+          (state = 'pending' AND (available_at IS NULL OR available_at <= ${options.now}))
           OR (state = 'claimed'
-            AND claimed_at <= ${new Date(options.now.getTime() - CLAIM_TIMEOUT_MS)})
+            AND lease_expires_at <= ${options.now})
         )`,
     statement => read(statement),
   )
@@ -105,9 +105,9 @@ export async function reopenCopyrightRestoreIntentInTransaction(
 ): Promise<boolean> {
   const { rows } = await query<{ id: string }>(sql`
     /* reopenCopyrightRestoreIntentInTransaction */
-    WITH reopened AS (UPDATE copyright_notice_action_intents intent
-    SET state = 'pending', delivery_attempt_count = 0, claimed_at = NULL,
-      completed_at = NULL, completed_at_reason = NULL, next_attempt_at = NULL,
+    WITH reopened AS (UPDATE copyright_notice_action_work_items intent
+    SET attempt_count = 0, leased_at = NULL,
+      completed_at = NULL, completed_at_reason = NULL, available_at = clock_timestamp(),
       failure_message = 'Reopened after the legal blocker was resolved.'
     FROM copyright_restrictions restriction
     JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
@@ -136,7 +136,7 @@ export async function replayFailedCopyrightActionIntent(input: {
   await using transaction = await beginTransaction()
   const { rows: targets } = await transaction<{ placement_id: string }>(sql`
     /* replayFailedCopyrightActionIntent:identity */
-    SELECT target.placement_id FROM copyright_notice_action_intents intent
+    SELECT target.placement_id FROM copyright_notice_action_work_items intent
     JOIN copyright_restrictions restriction ON restriction.id = intent.copyright_restriction_id
     JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
     WHERE intent.id = ${input.intentId} AND target.copyright_notice_id = ${input.noticeId}
@@ -147,16 +147,16 @@ export async function replayFailedCopyrightActionIntent(input: {
   `)
   const { rows } = await transaction<{ copyright_notice_id: string }>(sql`
     /* replayFailedCopyrightActionIntent */
-    UPDATE copyright_notice_action_intents
-    SET state = 'pending', delivery_attempt_count = 0, claimed_at = NULL, completed_at = NULL,
-      completed_at_reason = NULL, next_attempt_at = NULL,
+    UPDATE copyright_notice_action_work_items
+    SET attempt_count = 0, leased_at = NULL, completed_at = NULL,
+      completed_at_reason = NULL, available_at = clock_timestamp(),
       failure_message = 'Explicit operator replay after external delivery failure.'
     FROM copyright_restrictions restriction
     JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
-    WHERE copyright_notice_action_intents.id = ${input.intentId}
-      AND copyright_notice_action_intents.copyright_restriction_id = restriction.id
+    WHERE copyright_notice_action_work_items.id = ${input.intentId}
+      AND copyright_notice_action_work_items.copyright_restriction_id = restriction.id
       AND target.copyright_notice_id = ${input.noticeId}
-      AND copyright_notice_action_intents.state = 'failed'
+      AND copyright_notice_action_work_items.state = 'failed'
     RETURNING target.copyright_notice_id
   `)
   const replayed = rows[0]

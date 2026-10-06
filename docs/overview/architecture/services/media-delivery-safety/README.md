@@ -126,3 +126,10 @@ flowchart LR
   repair --> outbox[Fresh registry generation]
   outbox --> publisher[Locked exact-tuple publisher]
 ```
+
+Current media projection leases live in `media_delivery_registry_projection_work_items`, keyed by
+exact delivery authority and generation. Claim, failure and acknowledgement compare a UUID token
+and live expiry; completion removes work while immutable registry transitions remain. Denial
+publication takes a fresh nontransactional generation and claims inside the retained legal
+transaction. Regular publication of an already-completed generation is idempotent. Each AWS
+command has a two-minute abort deadline within the five-minute projection lease.

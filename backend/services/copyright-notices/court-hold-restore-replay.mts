@@ -19,7 +19,7 @@ export async function selectBlockedCopyrightRestoreIntentIds(
   query: TransactionQuery,
 ): Promise<string[]> {
   const { rows } = await query<{ id: string }>(sql`/* selectBlockedCopyrightRestoreIntentIds */
-    SELECT intent.id FROM copyright_notice_action_intents intent
+    SELECT intent.id FROM copyright_notice_action_work_items intent
     JOIN copyright_restrictions restriction ON restriction.id = intent.copyright_restriction_id
     JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
     WHERE target.copyright_notice_id = ${noticeId}

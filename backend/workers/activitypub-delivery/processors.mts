@@ -5,6 +5,7 @@ import {
   commitActivityDistributionPage,
   deliverActivityToInbox,
   prepareActivityDistributionPage,
+  releaseActivityDistributionPage,
 } from '@services/activitypub-delivery'
 import { getActorPrivateKeyPem } from '@services/ap-actor-keys'
 import { isFederationEnabledForUser } from '@services/users'
@@ -21,6 +22,7 @@ type DistributeActivityDependencies = {
   isFederationEnabledForUser: typeof isFederationEnabledForUser
   prepareActivityDistributionPage: typeof prepareActivityDistributionPage
   commitActivityDistributionPage: typeof commitActivityDistributionPage
+  releaseActivityDistributionPage: typeof releaseActivityDistributionPage
 }
 
 type DeliverActivityDependencies = {
@@ -52,6 +54,7 @@ export async function distributeActivity(
     isFederationEnabledForUser,
     prepareActivityDistributionPage,
     commitActivityDistributionPage,
+    releaseActivityDistributionPage,
     ...dependencies,
   }
 
@@ -82,9 +85,17 @@ export async function distributeActivity(
 
   const page = await deps.prepareActivityDistributionPage(data.activityId, data.sourceUserId)
   if (page.status === 'completed') return { enqueued: 0, completed: true }
+  if (page.status === 'busy') {
+    return { enqueued: 0, busy: true, retryAfterMs: page.retryAfterMs }
+  }
 
-  if (page.inboxUrls.length > 0) {
-    await deps.enqueueBulkDeliverActivity(page.inboxUrls.map(inboxUrl => ({ ...data, inboxUrl })))
+  try {
+    if (page.inboxUrls.length > 0) {
+      await deps.enqueueBulkDeliverActivity(page.inboxUrls.map(inboxUrl => ({ ...data, inboxUrl })))
+    }
+  } catch (err) {
+    await deps.releaseActivityDistributionPage(data.activityId, page.leaseToken)
+    throw err
   }
 
   const completed = !page.hasMore
@@ -94,8 +105,12 @@ export async function distributeActivity(
     page.expectedRemoteActorId,
     page.nextRemoteActorId,
     completed,
+    page.leaseToken,
   )
-  if (!committed) return { enqueued: page.inboxUrls.length, completed: false, stale: true }
+  if (!committed) {
+    await deps.enqueueDistributeActivity(data)
+    return { enqueued: page.inboxUrls.length, completed: false, stale: true }
+  }
   if (page.hasMore) await deps.enqueueDistributeActivity(data)
   return { enqueued: page.inboxUrls.length, completed }
 }

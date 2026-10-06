@@ -1,3 +1,4 @@
+import { readTestCopyrightDeliveryAttempts } from '@voucha/test-helpers/copyright-attempt-history'
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import {
@@ -39,10 +40,10 @@ describe('replaying the failed reply to a declined email intake', () => {
     ).resolves.toBe(declined.intentId)
 
     const replayed = await readTestCopyrightDeliveryIntentReplayFacts(declined.intentId)
-    expect(failed).toMatchObject({ state: 'failed', delivery_attempt_count: 5 })
+    expect(failed).toMatchObject({ state: 'failed', attempt_count: 5 })
     expect(replayed).toMatchObject({
       state: 'pending',
-      delivery_attempt_count: 0,
+      attempt_count: 0,
       failed_at: null,
       body_ciphertext: failed.body_ciphertext,
     })
@@ -54,6 +55,10 @@ describe('replaying the failed reply to a declined email intake', () => {
       },
     ])
     const resend = await prepareCopyrightEmailDelivery(declined.intentId)
+    expect(await readTestCopyrightDeliveryAttempts(declined.intentId)).toEqual([
+      { attempt_number: 1, generation: '1', sent: false, failed: true, abandoned: false },
+      { attempt_number: 2, generation: '2', sent: false, failed: false, abandoned: false },
+    ])
     expect(resend).toMatchObject({
       text: firstSend.text,
       subject: firstSend.subject,
@@ -115,7 +120,7 @@ describe('replaying the failed reply to a declined email intake', () => {
     expect([first.id, second.id]).toContain(events[0]!.changed_by_id)
     await expect(
       readTestCopyrightDeliveryIntentReplayFacts(declined.intentId),
-    ).resolves.toMatchObject({ state: 'pending', delivery_attempt_count: 0 })
+    ).resolves.toMatchObject({ state: 'pending', attempt_count: 0 })
   })
 
   it('retries a reply that failed again, because the guard is the failed state and not a count', async () => {

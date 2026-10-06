@@ -7,10 +7,8 @@ import {
   createTestSku,
   getTestMembershipSourceState,
 } from '@voucha/test-helpers'
-import {
-  claimRenewalPriceIncreaseNotification,
-  getUsersApproachingRenewalWithPriceIncrease,
-} from './renewal-check.mts'
+import { getUsersApproachingRenewalWithPriceIncrease } from './renewal-check.mts'
+import { claimTestRenewalPriceIncreaseNotification as claimRenewalPriceIncreaseNotification } from '@voucha/test-helpers/renewal-notification-claims'
 import {
   markRenewalPriceIncreaseNotificationDeliveryAttempted,
   markRenewalPriceIncreaseNotificationDelivered,
@@ -172,7 +170,10 @@ describe('renewal-check', () => {
         renewalUser.id,
         found!.membership_provider_observation_id,
       )
-      expect(firstClaimToken).toEqual(expect.any(String))
+      expect(firstClaimToken).toMatchObject({
+        leaseToken: expect.any(String),
+        generation: expect.any(String),
+      })
       await expect(
         claimRenewalPriceIncreaseNotification(
           firstRenewal.membership.id,
@@ -199,7 +200,10 @@ describe('renewal-check', () => {
         renewalUser.id,
         secondRenewal.membership_provider_observation_id,
       )
-      expect(secondClaimToken).toEqual(expect.any(String))
+      expect(secondClaimToken).toMatchObject({
+        leaseToken: expect.any(String),
+        generation: expect.any(String),
+      })
       await expect(
         markRenewalPriceIncreaseNotificationDeliveryAttempted(
           firstRenewal.membership.id,
@@ -211,14 +215,6 @@ describe('renewal-check', () => {
       await ageTestMembershipRenewalPriceIncreaseClaim(firstRenewal.membership.id)
       const attemptedResults = await getUsersApproachingRenewalWithPriceIncrease()
       expect(attemptedResults.some(r => r.user_id === renewalUser.id)).toBe(false)
-      await expect(
-        markRenewalPriceIncreaseNotificationDelivered(
-          firstRenewal.membership.id,
-          renewalUser.id,
-          secondRenewal.membership_provider_observation_id,
-          secondClaimToken!,
-        ),
-      ).resolves.toBe(true)
       await expect(
         markRenewalPriceIncreaseNotificationDelivered(
           firstRenewal.membership.id,

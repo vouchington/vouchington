@@ -1,3 +1,4 @@
+import { DSA_SUBMISSION_UUID_COLUMNS_WITHOUT_KEYS } from './dsa-submission-uuid-allowlists.mts'
 /* v8 ignore start -- declarative schema-test allowlists have no executable branches */
 import { POST_PUBLICATION_UUID_COLUMNS_WITHOUT_KEYS } from './post-publication-allowlists.mts'
 import { ALLOWED_MEMBERSHIP_UUID_COLUMNS_WITHOUT_KEYS } from './membership-uuid-allowlists.mts'
@@ -7,24 +8,42 @@ import { USER_DELETION_UUID_COLUMNS_WITHOUT_KEYS } from './user-deletion-uuid-al
 export const ALLOWED_UNCOMMENTED_RELATIONS = new Map<string, string>([])
 export const ALLOWED_UNCOMMENTED_COLUMNS = new Map<string, string>([])
 export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
+  ...DSA_SUBMISSION_UUID_COLUMNS_WITHOUT_KEYS,
   [
-    'copyright_dsa_statement_submissions.lease_token',
-    'Random worker claim fencing token, not a durable relation.',
+    'copyright_notice_form_screening_work_items.lease_token',
+    'Opaque current screening ownership fence.',
   ],
   [
-    'copyright_dsa_statement_submissions.transparency_database_uuid',
-    'External Commission statement UUID returned by the DSA protocol; no local parent row exists.',
+    'copyright_notice_action_attempts.lease_token',
+    'Immutable opaque execution fence; not a relationship.',
   ],
   [
-    'retained_identity_cleanup_progress.cursor_identity_id',
+    'copyright_notice_delivery_attempts.lease_token',
+    'Immutable opaque execution fence; not a relationship.',
+  ],
+  [
+    'media_delivery_registry_projection_work_items.lease_token',
+    'Opaque projection ownership token; not a relationship.',
+  ],
+  [
+    'follower_distributions.cursor_recipient_id',
+    'Deletion-stable recipient UUIDv7 keyset position, not a relationship.',
+  ],
+  [
+    'retained_identity_cleanup_cursors.cursor_identity_id',
+
     'Operational keyset scan position can outlive its prior root row; it is not a relationship.',
   ],
   [
-    'retained_relation_identity_cleanup_progress.cursor_subject_id',
+    'retained_image_placement_binding_cleanup_cursors.cursor_placement_id',
+    'Operational placement UUIDv7 position survives deletion of the swept binding; it is not a relationship.',
+  ],
+  [
+    'retained_relation_identity_cleanup_cursors.cursor_subject_id',
     'Operational composite keyset scan position can outlive its prior owner; it is not a relationship.',
   ],
   [
-    'retained_relation_identity_cleanup_progress.cursor_relation_id',
+    'retained_relation_identity_cleanup_cursors.cursor_relation_id',
     'Operational composite keyset scan position can outlive its prior owner; it is not a relationship.',
   ],
   ...POST_PUBLICATION_UUID_COLUMNS_WITHOUT_KEYS,
@@ -33,18 +52,26 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
   ...STORY_POST_RELATED_URL_PROJECTION_UUID_COLUMNS_WITHOUT_KEYS,
   ...USER_DELETION_UUID_COLUMNS_WITHOUT_KEYS,
   [
-    'copyright_notice_action_intents.lease_token',
+    'copyright_notice_action_work_items.lease_token',
     'Opaque worker fencing token, not a durable relation.',
   ],
   [
-    'copyright_notice_form_screening_attempts.lease_token',
+    'copyright_notice_form_screening_attempts.execution_token',
     'Opaque worker fencing token, not a durable relation.',
   ],
   [
-    'copyright_notice_delivery_intents.lease_token',
+    'copyright_notice_delivery_work_items.lease_token',
     'Opaque worker fencing token, not a durable relation.',
   ],
-  ['post_admission_claims.lease_id', 'Fencing token, not a durable relation.'],
+  [
+    'community_activity_digest_work_items.lease_token',
+    'Opaque batch-chain fencing token, not a relationship.',
+  ],
+  ['post_admission_claims.lease_token', 'Fencing token, not a durable relation.'],
+  [
+    'post_admission_attempts.lease_token',
+    'Immutable attempt fencing token, not a durable relation.',
+  ],
   ['agent_moderations.moderation_transparency_community_id', 'Trigger-maintained scope snapshot.'],
   ['moderation_appeals.moderation_transparency_community_id', 'Immutable scope snapshot.'],
   [
@@ -60,11 +87,15 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'Immutable scope snapshot intentionally survives post and community deletion so global release eligibility cannot change.',
   ],
   [
-    'activitypub_inbox_deliveries.processing_attempt_id',
+    'activitypub_inbox_delivery_work_items.lease_token',
     'Ephemeral fencing token rotated for each queue dispatch lease; it intentionally identifies no durable relation.',
   ],
   [
-    'activitypub_distribution_checkpoints.last_remote_actor_id',
+    'activitypub_distribution_work_items.lease_token',
+    'Opaque worker fencing token, not a relationship.',
+  ],
+  [
+    'activitypub_distribution_work_items.cursor_remote_actor_id',
     'Durable keyset cursor intentionally survives remote actor deletion so completed fan-out progress cannot rewind.',
   ],
   [

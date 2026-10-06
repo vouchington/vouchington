@@ -22,7 +22,7 @@ describe('stripe-event processing failures', () => {
       processStripeEvent(
         {
           stripeEventRecordId: storedEvent.id,
-          processingAttemptId: 'attempt-1',
+          leaseToken: 'attempt-1',
           stripeSubscriptionId: null,
           isLiveMode: false,
         },

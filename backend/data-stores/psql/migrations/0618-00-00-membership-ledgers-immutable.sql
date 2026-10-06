@@ -35,6 +35,7 @@ BEFORE UPDATE OR DELETE ON membership_grants
 FOR EACH ROW
 EXECUTE FUNCTION fn_reject_membership_grant_mutation();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_membership_operation_mutation()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -68,84 +69,33 @@ BEGIN
     RAISE EXCEPTION 'membership operations cannot decrease reconciliation attempts';
   END IF;
 
-  IF OLD.failed_at IS NOT NULL
-    AND OLD.execution_claim_token IS NULL
-    AND NEW.failed_at IS NOT NULL
-    AND NEW.execution_claim_token IS NULL
+  -- Retry reconciliation may reduce a failed operation's refundable balance while unleased.
+  IF OLD.failed_at IS NOT NULL AND NEW.failed_at IS NOT DISTINCT FROM OLD.failed_at
+    AND NEW.failure_message IS NOT DISTINCT FROM OLD.failure_message
     AND NEW.completed_at IS NULL
     AND NEW.provider_refund_id IS NOT DISTINCT FROM OLD.provider_refund_id
     AND NEW.remaining_refundable_minor_units <= OLD.remaining_refundable_minor_units
     AND NEW.reconciliation_attempt_ordinal = OLD.reconciliation_attempt_ordinal
-  THEN
-    RETURN NEW;
-  END IF;
+    AND EXISTS (SELECT 1 FROM membership_operation_execution_work_items work
+      WHERE work.membership_operation_id = OLD.id AND work.lease_token IS NULL)
+  THEN RETURN NEW; END IF;
 
-  IF OLD.execution_claim_token IS NULL
-    AND NEW.execution_claim_token IS NOT NULL
-    AND NEW.completed_at IS NULL
-    AND NEW.failed_at IS NULL
+  -- A committed receipt can independently prove completion after a worker crash.
+  IF NEW.completed_at IS NOT NULL AND NEW.failed_at IS NULL
+    AND NEW.remaining_refundable_minor_units IS NOT DISTINCT FROM OLD.remaining_refundable_minor_units
     AND NEW.provider_refund_id IS NOT DISTINCT FROM OLD.provider_refund_id
-    AND NEW.remaining_refundable_minor_units IS NOT DISTINCT FROM OLD.remaining_refundable_minor_units
-    AND (
-      NEW.reconciliation_attempt_ordinal = OLD.reconciliation_attempt_ordinal + 1
-      OR (
-        OLD.operation_kind <> 'administrator_refund'
-        AND NEW.reconciliation_attempt_ordinal = OLD.reconciliation_attempt_ordinal
-      )
-    )
-  THEN
-    RETURN NEW;
-  END IF;
-
-  IF OLD.execution_claim_token IS NOT NULL
-    AND NEW.execution_claim_token IS NOT DISTINCT FROM OLD.execution_claim_token
-    AND NEW.completed_at IS NULL
-    AND NEW.failed_at IS NULL
-    AND NEW.remaining_refundable_minor_units IS NOT DISTINCT FROM OLD.remaining_refundable_minor_units
     AND NEW.reconciliation_attempt_ordinal = OLD.reconciliation_attempt_ordinal
-  THEN
-    RETURN NEW;
-  END IF;
+    AND EXISTS (SELECT 1 FROM membership_automatic_refund_receipts receipt
+      WHERE receipt.membership_operation_id = OLD.id)
+  THEN RETURN NEW; END IF;
 
-  IF OLD.execution_claim_token IS NOT NULL
-    AND OLD.execution_claimed_at < CURRENT_TIMESTAMP - INTERVAL '5 minutes'
-    AND NEW.execution_claim_token IS NOT NULL
-    AND NEW.execution_claim_token IS DISTINCT FROM OLD.execution_claim_token
-    AND NEW.execution_claimed_at > OLD.execution_claimed_at
-    AND NEW.completed_at IS NULL
-    AND NEW.failed_at IS NULL
-    AND NEW.provider_refund_id IS NOT DISTINCT FROM OLD.provider_refund_id
-    AND NEW.remaining_refundable_minor_units IS NOT DISTINCT FROM OLD.remaining_refundable_minor_units
-    AND (
-      NEW.reconciliation_attempt_ordinal = OLD.reconciliation_attempt_ordinal + 1
-      OR (
-        OLD.operation_kind <> 'administrator_refund'
-        AND NEW.reconciliation_attempt_ordinal = OLD.reconciliation_attempt_ordinal
-      )
-    )
-  THEN
-    RETURN NEW;
-  END IF;
-
-  IF OLD.execution_claim_token IS NOT NULL
-    AND NEW.execution_claim_token IS NULL
-    AND NEW.completed_at IS NULL
-    AND NEW.failed_at IS NOT NULL
-    AND NEW.remaining_refundable_minor_units IS NOT DISTINCT FROM OLD.remaining_refundable_minor_units
-    AND NEW.reconciliation_attempt_ordinal = OLD.reconciliation_attempt_ordinal
-  THEN
-    RETURN NEW;
-  END IF;
-
-  IF OLD.execution_claim_token IS NOT NULL
-    AND NEW.execution_claim_token IS NULL
-    AND NEW.completed_at IS NOT NULL
-    AND NEW.failed_at IS NULL
-    AND NEW.remaining_refundable_minor_units IS NOT DISTINCT FROM OLD.remaining_refundable_minor_units
-    AND NEW.reconciliation_attempt_ordinal = OLD.reconciliation_attempt_ordinal
-  THEN
-    RETURN NEW;
-  END IF;
+  IF NEW.remaining_refundable_minor_units IS NOT DISTINCT FROM OLD.remaining_refundable_minor_units
+    AND NEW.reconciliation_attempt_ordinal BETWEEN OLD.reconciliation_attempt_ordinal
+      AND OLD.reconciliation_attempt_ordinal + 1
+    AND EXISTS (SELECT 1 FROM membership_operation_execution_work_items work
+      WHERE work.membership_operation_id = OLD.id AND work.lease_token IS NOT NULL
+        AND work.lease_expires_at > clock_timestamp())
+  THEN RETURN NEW; END IF;
 
   RAISE EXCEPTION 'membership operations only allow claimed provider execution lifecycle transitions';
 END $$;

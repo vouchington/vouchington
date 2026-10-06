@@ -19,6 +19,6 @@ function deriveStripeEventProcessingStatus(row: StripeEventRow): StripeEventReco
   if (row.failed_at) return 'failed'
   if (row.ignored_at) return 'ignored'
   if (row.processed_at) return 'processed'
-  if (row.processing_started_at) return 'processing'
+  if (row.leased_at) return 'processing'
   return 'received'
 }

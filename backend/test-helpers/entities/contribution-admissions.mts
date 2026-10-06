@@ -17,8 +17,12 @@ export async function createExpiredContributionAdmissionClaimForTest(input: {
   const reservationId = reservation.rows[0]?.id
   if (!reservationId) throw new Error('Test contribution admission reservation was not created')
   await write(sql`/* createExpiredContributionAdmissionClaimForTest.claim */
-    INSERT INTO post_admission_claims (reservation_id, lease_id, expires_at)
-    VALUES (${reservationId}, ${randomUUID()}, NOW() - INTERVAL '1 second')`)
+    WITH claimed AS (
+      INSERT INTO post_admission_claims (reservation_id, lease_token, leased_at, lease_expires_at)
+      VALUES (${reservationId}, ${randomUUID()}, NOW() - INTERVAL '2 seconds', NOW() - INTERVAL '1 second')
+      RETURNING reservation_id, lease_token, leased_at
+    ) INSERT INTO post_admission_attempts (reservation_id, attempt_number, lease_token, started_at)
+      SELECT reservation_id, 1, lease_token, leased_at FROM claimed`)
 }
 
 export async function expireContributionAdmissionClaimForTest(input: {
@@ -27,7 +31,7 @@ export async function expireContributionAdmissionClaimForTest(input: {
 }): Promise<void> {
   await write(sql`/* expireContributionAdmissionClaimForTest */
     UPDATE post_admission_claims c
-    SET expires_at = NOW() - INTERVAL '1 second'
+    SET leased_at = NOW() - INTERVAL '2 seconds', lease_expires_at = NOW() - INTERVAL '1 second'
     FROM post_admission_reservations r
     WHERE c.reservation_id = r.id
       AND r.actor_user_id = ${input.actorId}

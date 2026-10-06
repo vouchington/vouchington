@@ -95,13 +95,10 @@ describe('ActivityPub inbox durable storage bounds', () => {
       unverifiedRawBodyBytes: measured.before.unverifiedRawBodyBytes,
     })
 
-    await activityPubInboxDeliveryTransitions.claim(
-      delivery.deliveryId,
-      delivery.processingAttemptId,
-    )
+    await activityPubInboxDeliveryTransitions.claim(delivery.deliveryId, delivery.leaseToken)
     await activityPubInboxDeliveryTransitions.verify(
       delivery.deliveryId,
-      delivery.processingAttemptId,
+      delivery.leaseToken,
       actor.id,
     )
 
@@ -113,13 +110,10 @@ describe('ActivityPub inbox durable storage bounds', () => {
   it('records the first operational failure and preserves its sticky deadline through rearm', async () => {
     const actor = await createRemoteActorFixture()
     const delivery = await accept(makeEnvelope(), actor.id)
-    await activityPubInboxDeliveryTransitions.claim(
-      delivery.deliveryId,
-      delivery.processingAttemptId,
-    )
+    await activityPubInboxDeliveryTransitions.claim(delivery.deliveryId, delivery.leaseToken)
     await activityPubInboxDeliveryTransitions.exhaust(
       delivery.deliveryId,
-      delivery.processingAttemptId,
+      delivery.leaseToken,
       new Error('failed'),
     )
     const failed = await getActivityPubInboxRetentionStateForTest(delivery.deliveryId)
@@ -138,10 +132,7 @@ describe('ActivityPub inbox durable storage bounds', () => {
     await expireActivityPubInboxDeliveryForTest(delivery.deliveryId)
 
     expect(
-      await activityPubInboxDeliveryTransitions.claim(
-        delivery.deliveryId,
-        delivery.processingAttemptId,
-      ),
+      await activityPubInboxDeliveryTransitions.claim(delivery.deliveryId, delivery.leaseToken),
     ).toEqual({ outcome: 'stale' })
     expect(
       await activityPubInboxDeliveryTransitions.recover([delivery.deliveryId]),

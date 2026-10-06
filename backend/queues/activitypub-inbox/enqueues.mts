@@ -111,7 +111,7 @@ function deliveryJobOptions(
   data: ActivityPubInboxDeliveryJob,
   priority = PROCESS_PRIORITY,
 ): Partial<JobOptions> {
-  const jobId = `activitypub-inbox__${data.deliveryId}__${data.processingAttemptId}`
+  const jobId = `activitypub-inbox__${data.deliveryId}__${data.leaseToken}`
   return {
     jobId,
     priority,

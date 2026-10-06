@@ -123,11 +123,11 @@ describe('recordAndDispatchInboundActivity', () => {
 
     await activityPubInboxDeliveryTransitions.claim(
       accepted.value.deliveryId,
-      accepted.value.processingAttemptId,
+      accepted.value.leaseToken,
     )
     await activityPubInboxDeliveryTransitions.reject(
       accepted.value.deliveryId,
-      accepted.value.processingAttemptId,
+      accepted.value.leaseToken,
     )
   })
 })

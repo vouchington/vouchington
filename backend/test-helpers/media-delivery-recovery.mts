@@ -72,6 +72,13 @@ export async function setTestMediaRecoveryState(
     FROM media_delivery_registry_current_records
     WHERE delivery_key = ANY(${deliveryKeys}::text[])
   `)
+  if (input.state === 'claimed')
+    await write(sql`/* setTestMediaRecoveryState:lease */
+      UPDATE media_delivery_registry_projection_work_items
+      SET lease_token = ${crypto.randomUUID()}::uuid, leased_at = ${input.at}::timestamptz,
+        lease_expires_at = ${input.at}::timestamptz + interval '5 minutes', attempt_count = ${input.attempts}
+      WHERE delivery_key = ANY(${deliveryKeys}::text[])
+    `)
   if (input.createdAt)
     await write(
       sql`UPDATE media_delivery_registry_records SET created_at = ${input.createdAt}::timestamptz WHERE delivery_key = ANY(${deliveryKeys}::text[])`,

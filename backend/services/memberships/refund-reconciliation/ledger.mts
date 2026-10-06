@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto'
 import { beginTransaction, write, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
@@ -9,7 +8,7 @@ import {
 } from './ledger-mappers.mts'
 import type { RefundReconciliationAttempt, RefundReconciliationLease } from './types.mts'
 
-const RECONCILIATION_LEASE_TTL_SECONDS = 300
+import { claimMembershipOperationExecutionWork } from '../operation-execution-work.mts'
 
 export class RefundReconciliationInProgressError extends Error {
   constructor(operationId: string) {
@@ -28,25 +27,17 @@ export async function leaseDueRefundReconciliation(
     await transaction.commit()
     return lease
   }
-  const leaseToken = randomUUID()
+  const leaseToken = await claimMembershipOperationExecutionWork(operationId, query, true)
+  if (!leaseToken) return null
   const { rows } = await query(sql`/* leaseDueRefundReconciliation */
-    UPDATE membership_operations
-    SET execution_claim_token = ${leaseToken}, execution_claimed_at = CURRENT_TIMESTAMP,
-      failed_at = NULL, failure_message = NULL,
-      reconciliation_attempt_ordinal = reconciliation_attempt_ordinal + 1
-    WHERE id = ${operationId}
-      AND completed_at IS NULL
-      AND reconciliation_due_at IS NOT NULL
-      AND reconciliation_due_at <= CURRENT_TIMESTAMP
-      AND (
-        execution_claim_token IS NULL
-        OR execution_claimed_at < CURRENT_TIMESTAMP - make_interval(secs => ${RECONCILIATION_LEASE_TTL_SECONDS})
-      )
-    RETURNING id, execution_claim_token AS "leaseToken",
+    SELECT operation.id, work.lease_token AS "leaseToken",
       reconciliation_attempt_ordinal AS "attemptOrdinal",
       provider, environment AS "providerEnvironment", application_id AS "providerApplicationId",
       provider_refund_id AS "providerRefundId",
       remaining_refundable_minor_units::TEXT AS "amountMinorUnits", currency_code AS currency
+    FROM membership_operations operation
+    JOIN membership_operation_execution_work_items work ON work.membership_operation_id = operation.id
+    WHERE operation.id = ${operationId} AND work.lease_token = ${leaseToken}
   `)
   const row = rows[0] as ReconciliationLeaseRow | undefined
   return row ? mapLease(row) : null
@@ -61,13 +52,15 @@ export async function recordRefundReconciliationAttempt(
       membership_operation_id, provider, environment, application_id,
       attempt_ordinal, provider_idempotency_key,
       amount_minor_units, currency_code
-    ) SELECT id, provider, environment, application_id,
+    ) SELECT operation.id, provider, environment, application_id,
       reconciliation_attempt_ordinal, ${providerIdempotencyKey},
       remaining_refundable_minor_units, currency_code
-    FROM membership_operations
-    WHERE id = ${lease.id} AND execution_claim_token = ${lease.leaseToken}
+    FROM membership_operations operation
+    JOIN membership_operation_execution_work_items work ON work.membership_operation_id = operation.id
+    WHERE operation.id = ${lease.id} AND work.lease_token = ${lease.leaseToken}
+      AND work.lease_expires_at > clock_timestamp() AND operation.completed_at IS NULL
       AND reconciliation_attempt_ordinal = ${lease.attemptOrdinal}
-    ORDER BY id ASC NULLS LAST, reconciliation_attempt_ordinal ASC NULLS LAST
+    ORDER BY operation.id ASC NULLS LAST, reconciliation_attempt_ordinal ASC NULLS LAST
     ON CONFLICT (membership_operation_id, attempt_ordinal) DO NOTHING
     RETURNING id, membership_operation_id AS "membershipOperationId",
       attempt_ordinal AS "attemptOrdinal", provider_idempotency_key AS "providerIdempotencyKey",
@@ -136,12 +129,19 @@ export async function scheduleRefundReconciliationRetry(
   failureMessage: string,
 ): Promise<void> {
   const { rows } = await write(sql`/* scheduleRefundReconciliationRetry */
-    UPDATE membership_operations
-    SET failed_at = CURRENT_TIMESTAMP, failure_message = ${failureMessage},
-      reconciliation_due_at = ${dueAt}, execution_claim_token = NULL, execution_claimed_at = NULL
-    WHERE id = ${lease.id} AND completed_at IS NULL
-      AND execution_claim_token = ${lease.leaseToken}
-    RETURNING id
+    WITH candidate AS (
+      SELECT id FROM membership_operations WHERE id = ${lease.id} AND completed_at IS NULL FOR UPDATE
+    ), scheduled AS (
+      UPDATE membership_operation_execution_work_items work SET available_at = ${dueAt}
+      FROM candidate
+      WHERE work.membership_operation_id = candidate.id AND work.lease_token = ${lease.leaseToken}
+        AND work.lease_expires_at > clock_timestamp()
+      RETURNING work.membership_operation_id
+    )
+    UPDATE membership_operations operation
+    SET failed_at = clock_timestamp(), failure_message = ${failureMessage}
+    FROM scheduled WHERE operation.id = scheduled.membership_operation_id
+    RETURNING operation.id
   `)
   if (rows.length === 0) throw new RefundReconciliationInProgressError(lease.id)
 }
@@ -153,10 +153,13 @@ export async function completeRefundReconciliation(
   const run = query ?? write
   const { rows } = await run(sql`/* completeRefundReconciliation */
     UPDATE membership_operations
-    SET completed_at = CURRENT_TIMESTAMP, failed_at = NULL, failure_message = NULL,
-      reconciliation_due_at = NULL, execution_claim_token = NULL, execution_claimed_at = NULL
+    SET completed_at = clock_timestamp(), failed_at = NULL, failure_message = NULL
     WHERE id = ${lease.id} AND completed_at IS NULL
-      AND execution_claim_token = ${lease.leaseToken}
+      AND EXISTS (
+        SELECT 1 FROM membership_operation_execution_work_items work
+        WHERE work.membership_operation_id = membership_operations.id
+          AND work.lease_token = ${lease.leaseToken} AND work.lease_expires_at > clock_timestamp()
+      )
     RETURNING id
   `)
   if (rows.length === 0) throw new RefundReconciliationInProgressError(lease.id)

@@ -68,7 +68,7 @@ describe('processMembershipJob', () => {
     }
     const stripeData = {
       stripeEventRecordId: 'event-1',
-      processingAttemptId: 'attempt-1',
+      leaseToken: 'attempt-1',
       stripeSubscriptionId: 'sub-1',
       isLiveMode: false,
     }
@@ -233,7 +233,7 @@ describe('recoverStripeEvents', () => {
     const events = [
       {
         stripeEventRecordId: 'event-1',
-        processingAttemptId: 'attempt-1',
+        leaseToken: 'attempt-1',
         stripeSubscriptionId: 'sub-1',
         isLiveMode: false,
       },

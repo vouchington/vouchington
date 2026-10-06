@@ -24,7 +24,7 @@ describe('copyright action delivery branches', () => {
     const withhold = (await getActionIntent(notice.id, 'withhold'))!
     const placement = currentPlacement(target)
     await expect(
-      processCopyrightActionIntent(withhold.id, new Date('2026-07-01T12:01:00.000Z'), {
+      processCopyrightActionIntent(withhold.id, new Date(), {
         getImagePlacementForCopyright: async () => placement,
         withholdImagePlacementForCopyright: async () => ({ status: 'stale', placement }),
         ...createTestCopyrightDeliveryDependencies(async () => undefined),
@@ -93,7 +93,7 @@ describe('copyright action delivery branches', () => {
     })
     const withhold = (await getActionIntent(notice.id, 'withhold'))!
     await expect(
-      processCopyrightActionIntent(withhold.id, new Date('2026-07-01T12:01:00.000Z'), {
+      processCopyrightActionIntent(withhold.id, new Date(), {
         ...createTestCopyrightDeliveryDependencies(async () => undefined),
       }),
     ).resolves.toBe('applied')

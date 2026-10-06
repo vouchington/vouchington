@@ -144,7 +144,7 @@ export const COPYRIGHT_RETENTION_ERASURE: readonly CopyrightRetentionErasureTabl
       .append(')'),
   ),
   table('copyright_notice_correspondence_messages', { body_ciphertext: 'redact' }),
-  table('copyright_notice_delivery_intents', {
+  table('copyright_notice_delivery_work_items', {
     body_ciphertext: 'redact',
     failure_ciphertext: 'redact',
   }),
@@ -152,7 +152,7 @@ export const COPYRIGHT_RETENTION_ERASURE: readonly CopyrightRetentionErasureTabl
     'copyright_notice_delivery_recipients',
     { email_ciphertext: 'redact' },
     id =>
-      sql`copyright_notice_delivery_intent_id IN (SELECT id FROM copyright_notice_delivery_intents
+      sql`copyright_notice_delivery_intent_id IN (SELECT id FROM copyright_notice_delivery_work_items
         WHERE copyright_notice_id = ${id})`,
   ),
   table('copyright_notice_lifecycle_change_rationales', { review_rationale_ciphertext: 'redact' }),

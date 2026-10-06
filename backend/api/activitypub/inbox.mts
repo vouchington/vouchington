@@ -134,7 +134,7 @@ app.route('/ap/inbox').post(async (ctx: Context) => {
       await enqueueActivityPubInboxDelivery(delivery)
       await activityPubInboxDeliveryTransitions.acknowledgeEnqueue(
         delivery.deliveryId,
-        delivery.processingAttemptId,
+        delivery.leaseToken,
       )
     } catch (err) {
       onError(err instanceof Error ? err : new Error(String(err)))

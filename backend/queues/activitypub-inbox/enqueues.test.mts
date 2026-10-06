@@ -13,8 +13,8 @@ import { activitypubInbox } from './queues.mts'
 
 describe('ActivityPub inbox enqueues', () => {
   it('uses the durable delivery and attempt ids for both job and simple dedup ids', async () => {
-    const data = { deliveryId: randomUUID(), processingAttemptId: randomUUID() }
-    const jobId = `activitypub-inbox__${data.deliveryId}__${data.processingAttemptId}`
+    const data = { deliveryId: randomUUID(), leaseToken: randomUUID() }
+    const jobId = `activitypub-inbox__${data.deliveryId}__${data.leaseToken}`
     await enqueueActivityPubInboxDelivery(data)
     const jobs = await readAllQueueJobs(activitypubInbox)
     expect(jobs.find(job => job.id === jobId)).toMatchObject({
@@ -33,8 +33,8 @@ describe('ActivityPub inbox enqueues', () => {
   })
 
   it('preserves the same logical ids and uses recovery priority for recovered bulk jobs', async () => {
-    const data = { deliveryId: randomUUID(), processingAttemptId: randomUUID() }
-    const jobId = `activitypub-inbox__${data.deliveryId}__${data.processingAttemptId}`
+    const data = { deliveryId: randomUUID(), leaseToken: randomUUID() }
+    const jobId = `activitypub-inbox__${data.deliveryId}__${data.leaseToken}`
     const [job] = await enqueueBulkActivityPubInboxDeliveries([data])
     expect(job).toMatchObject({
       id: jobId,
@@ -44,8 +44,8 @@ describe('ActivityPub inbox enqueues', () => {
   })
 
   it('keeps delayed deliveries at ordinary processing priority', async () => {
-    const data = { deliveryId: randomUUID(), processingAttemptId: randomUUID() }
-    const jobId = `activitypub-inbox__${data.deliveryId}__${data.processingAttemptId}`
+    const data = { deliveryId: randomUUID(), leaseToken: randomUUID() }
+    const jobId = `activitypub-inbox__${data.deliveryId}__${data.leaseToken}`
 
     const job = await enqueueDelayedActivityPubInboxDelivery(data, 1_000)
 

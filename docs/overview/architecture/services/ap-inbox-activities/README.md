@@ -5,7 +5,7 @@ Source entrypoint: [backend/services/ap-inbox-activities/README.md](../../../../
 Replay-dedup ledger and dispatch logic for inbound ActivityPub activities (Phase C2). Backed by
 `activitypub_inbox_activities` (migration `0562`) — a pure operational log, not an entity table; it has no
 soft-delete and is never read by anything other than this service's own unique-constraint check.
-Durable unverified request envelopes are stored separately in `activitypub_inbox_deliveries` (migrations
+Durable unverified request envelopes are stored separately in `activitypub_inbox_delivery_work_items` (migrations
 `0584` and `0604`) until a worker reaches a final protocol outcome or the bounded retention
 deadline.
 
@@ -46,7 +46,7 @@ checkpointed actor is inactive, the delivery is terminally rejected without netw
 ## Durable delivery lifecycle
 
 `activityPubInboxDeliveryTransitions` is the only mutation surface for
-`activitypub_inbox_deliveries`. The contract uses lifecycle states
+`activitypub_inbox_delivery_work_items`. The contract uses lifecycle states
 `available | processing | deferred | failed` and checkpoints
 `unverified | verified | sender-allowed`; timestamps remain the database representation rather
 than adding a second status column.

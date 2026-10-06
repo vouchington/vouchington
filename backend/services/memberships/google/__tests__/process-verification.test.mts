@@ -94,11 +94,11 @@ describe('processGooglePlayMembershipVerification terminalization failure', () =
       })
       const retry = await getTestGooglePlayVerificationRetryState(verification.id)
       expect(retry).toMatchObject({
-        processing_claim_token: null,
-        processing_claimed_at: null,
+        lease_token: null,
+        leased_at: null,
         last_error: error.message,
       })
-      expect(retry?.next_processing_at?.getTime()).toBeGreaterThan(Date.now())
+      expect(retry?.available_at?.getTime()).toBeGreaterThan(Date.now())
       await expect(getMembershipByUserId(user.id)).resolves.toEqual(membership)
       agent.assertNoPendingInterceptors()
     } finally {

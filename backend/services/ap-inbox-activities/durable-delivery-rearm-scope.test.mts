@@ -36,28 +36,24 @@ describe('ActivityPub rearm scope', () => {
     ])
     await Promise.all(
       [selected, unrelated].map(delivery =>
-        claimTestDelivery(delivery.deliveryId, delivery.processingAttemptId),
+        claimTestDelivery(delivery.deliveryId, delivery.leaseToken),
       ),
     )
     await Promise.all(
       [selected, unrelated].map(delivery =>
-        exhaustTestDelivery(
-          delivery.deliveryId,
-          delivery.processingAttemptId,
-          new Error('provider outage'),
-        ),
+        exhaustTestDelivery(delivery.deliveryId, delivery.leaseToken, new Error('provider outage')),
       ),
     )
 
     const rearmed = await activityPubInboxDeliveryTransitions.rearm([selected.deliveryId])
     expect(rearmed.map(delivery => delivery.deliveryId)).toEqual([selected.deliveryId])
-    expect(rearmed[0]?.processingAttemptId).not.toBe(selected.processingAttemptId)
-    expect(await claimTestDelivery(unrelated.deliveryId, unrelated.processingAttemptId)).toBeNull()
+    expect(rearmed[0]?.leaseToken).not.toBe(selected.leaseToken)
+    expect(await claimTestDelivery(unrelated.deliveryId, unrelated.leaseToken)).toBeNull()
     const unrelatedRearmed = await activityPubInboxDeliveryTransitions.rearm([unrelated.deliveryId])
     expect(unrelatedRearmed.map(delivery => delivery.deliveryId)).toEqual([unrelated.deliveryId])
     await Promise.all([
-      rejectTestDelivery(selected.deliveryId, rearmed[0]!.processingAttemptId),
-      rejectTestDelivery(unrelated.deliveryId, unrelatedRearmed[0]!.processingAttemptId),
+      rejectTestDelivery(selected.deliveryId, rearmed[0]!.leaseToken),
+      rejectTestDelivery(unrelated.deliveryId, unrelatedRearmed[0]!.leaseToken),
     ])
   })
 })

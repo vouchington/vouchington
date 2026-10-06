@@ -26,7 +26,7 @@ export async function createCounterNoticeForwardingInTransaction(
     JOIN copyright_notice_submissions submission ON submission.id = assessment.copyright_notice_submission_id
     JOIN copyright_notice_deadlines deadline
       ON deadline.qualifying_counter_notice_assessment_id = assessment.id
-    JOIN copyright_notice_delivery_intents receipt
+    JOIN copyright_notice_delivery_work_items receipt
       ON receipt.copyright_notice_id = submission.copyright_notice_id
       AND receipt.recipient_role = 'claimant' AND receipt.channel = 'email'
       AND receipt.delivery_kind = 'claimant_receipt'

@@ -21,7 +21,7 @@ export async function readTestCopyrightStatementIntents(noticeId: string) {
   }>(sql`/* readTestCopyrightStatementIntents */
     SELECT intent.id, intent.delivery_kind, intent.channel, intent.recipient_user_id, intent.recipient_role, intent.sent_at,
       message.body_ciphertext, message.id AS correspondence_id, recipient.email_ciphertext
-    FROM copyright_notice_delivery_intents intent
+    FROM copyright_notice_delivery_work_items intent
     LEFT JOIN copyright_notice_correspondence_messages message ON message.id = intent.copyright_notice_correspondence_message_id
     LEFT JOIN copyright_notice_delivery_recipients recipient ON recipient.copyright_notice_delivery_intent_id = intent.id
     WHERE intent.copyright_notice_id = ${noticeId}
@@ -72,7 +72,7 @@ export async function replayTestCopyrightClaimantDecision(
 export async function eraseTestCopyrightStatementBody(intentId: string): Promise<void> {
   await write(sql`/* eraseTestCopyrightStatementBody */
     UPDATE copyright_notice_correspondence_messages SET body_ciphertext = 'erased'
-    WHERE id = (SELECT copyright_notice_correspondence_message_id FROM copyright_notice_delivery_intents WHERE id = ${intentId})
+    WHERE id = (SELECT copyright_notice_correspondence_message_id FROM copyright_notice_delivery_work_items WHERE id = ${intentId})
   `)
 }
 

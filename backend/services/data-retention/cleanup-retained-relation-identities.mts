@@ -51,7 +51,7 @@ async function cleanupRelationFamily(
   if (!keys)
     await query(
       `/* ensureRetainedRelationCleanupProgress */
-       INSERT INTO retained_relation_identity_cleanup_progress (entity_relation)
+       INSERT INTO retained_relation_identity_cleanup_cursors (entity_relation)
        VALUES ($1) ON CONFLICT (entity_relation) DO NOTHING`,
       [relationTable],
     )
@@ -64,7 +64,7 @@ async function cleanupRelationFamily(
         }>(
           `/* lockRetainedRelationCleanupProgress */
            SELECT cursor_subject_id, cursor_relation_id
-           FROM retained_relation_identity_cleanup_progress
+           FROM retained_relation_identity_cleanup_cursors
            WHERE entity_relation = $1 FOR UPDATE`,
           [relationTable],
         )
@@ -107,7 +107,7 @@ async function cleanupRelationFamily(
   if (!keys)
     await query(
       `/* checkpointRetainedRelationCleanup */
-       UPDATE retained_relation_identity_cleanup_progress
+       UPDATE retained_relation_identity_cleanup_cursors
        SET cursor_subject_id = $2, cursor_relation_id = $3
        WHERE entity_relation = $1`,
       [relationTable, last?.subject_id ?? null, last?.id ?? null],

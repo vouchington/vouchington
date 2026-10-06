@@ -104,7 +104,7 @@ export function copyrightStaffQueueKeysSql({
         )))
       UNION ALL
       SELECT target.copyright_notice_id, 'action_failed', intent.updated_at
-      FROM copyright_notice_action_intents intent
+      FROM copyright_notice_action_work_items intent
       JOIN copyright_restrictions restriction ON restriction.id = intent.copyright_restriction_id
       JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
       WHERE intent.state = 'failed'
@@ -124,7 +124,7 @@ export function copyrightStaffQueueKeysSql({
       UNION ALL
       SELECT intent.copyright_notice_id, 'delivery_failed',
         COALESCE(intent.bounced_at, intent.failed_at, intent.updated_at)
-      FROM copyright_notice_delivery_intents intent
+      FROM copyright_notice_delivery_work_items intent
       WHERE intent.state IN ('failed', 'bounced') AND intent.copyright_notice_id IS NOT NULL
         AND NOT EXISTS (
           SELECT 1 FROM copyright_notice_retention_erasures erased

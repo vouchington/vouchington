@@ -4,7 +4,10 @@ import { recordMembershipChange } from '../changes.mts'
 import { activateOldestQueuedGrant } from '../grants/activate-queued.mts'
 import { pauseOpenGrantActivations } from '../grants/pause-open-activations.mts'
 import type { MembershipPlanSlug } from '../types.mts'
-import { moveRenewalPriceIncreaseNotificationState } from './renewal-notification-state.mts'
+import {
+  moveRenewalPriceIncreaseNotificationState,
+  restoreRenewalPriceIncreaseNotificationState,
+} from './renewal-notification-state.mts'
 import { retainOldestQueuedGrantPerPlan } from './retain-oldest-queued-grant-per-plan.mts'
 import { selectHighestPriorityMembershipSource } from './select-highest-priority-source.mts'
 
@@ -77,31 +80,17 @@ export async function restoreFallbackAfterCurrentAccessEndsInTransaction(
   const { rows } = await query(sql`/* restoreFallbackAfterCurrentAccessEnds: project fallback */
     INSERT INTO memberships (
       user_id, membership_source_id, membership_product_id, effective_at, expires_at,
-      cancelled_at, expired_at, past_due_at, paused_at, should_cancel_at_period_end,
-      renewal_price_increase_notified_observation_id,
-      renewal_price_increase_notified_provider_product_id,
-      renewal_price_increase_notified_minor_units,
-      renewal_price_increase_notified_currency_code,
-      renewal_price_increase_notified_effective_at, renewal_price_increase_notified_at,
-      renewal_price_increase_claim_token, renewal_price_increase_claimed_at,
-      renewal_price_increase_delivery_attempted_at
+      cancelled_at, expired_at, past_due_at, paused_at, should_cancel_at_period_end
     ) VALUES (
       ${userId}, ${fallback.membership_source_id}, ${fallback.membership_product_id},
       ${fallback.effective_at}, ${fallback.expires_at}, NULL, NULL,
       ${fallback.source_kind === 'direct' ? fallback.past_due_at : null}, NULL,
-      ${fallback.source_kind === 'direct' && !fallback.should_auto_renew},
-      ${renewalNotification?.renewal_price_increase_notified_observation_id ?? null},
-      ${renewalNotification?.renewal_price_increase_notified_provider_product_id ?? null},
-      ${renewalNotification?.renewal_price_increase_notified_minor_units ?? null},
-      ${renewalNotification?.renewal_price_increase_notified_currency_code ?? null},
-      ${renewalNotification?.renewal_price_increase_notified_effective_at ?? null},
-      ${renewalNotification?.renewal_price_increase_notified_at ?? null},
-      ${renewalNotification?.renewal_price_increase_claim_token ?? null},
-      ${renewalNotification?.renewal_price_increase_claimed_at ?? null},
-      ${renewalNotification?.renewal_price_increase_delivery_attempted_at ?? null}
+      ${fallback.source_kind === 'direct' && !fallback.should_auto_renew}
     ) RETURNING id`)
   const restored = rows[0] as { id: string } | undefined
   if (!restored) return false
+  if (renewalNotification)
+    await restoreRenewalPriceIncreaseNotificationState(restored.id, renewalNotification, query)
   await recordMembershipChange({
     membershipId: restored.id,
     userId,

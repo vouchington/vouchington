@@ -8,19 +8,19 @@ import {
 } from '../services/memberships/google/lineage.mts'
 
 export async function getTestGooglePlayVerificationRetryState(id: string): Promise<{
-  processing_claim_token: string | null
-  processing_claimed_at: Date | null
-  next_processing_at: Date | null
+  lease_token: string | null
+  leased_at: Date | null
+  available_at: Date | null
   last_error: string | null
 } | null> {
   const { rows } = await write<{
-    processing_claim_token: string | null
-    processing_claimed_at: Date | null
-    next_processing_at: Date | null
+    lease_token: string | null
+    leased_at: Date | null
+    available_at: Date | null
     last_error: string | null
   }>(sql`/* getTestGooglePlayVerificationRetryState */
-    SELECT processing_claim_token, processing_claimed_at, next_processing_at, last_error
-    FROM membership_verifications WHERE id = ${id}
+    SELECT lease_token, leased_at, available_at, last_error
+    FROM membership_verification_processing_work_items WHERE membership_verification_id = ${id}
   `)
   return rows[0] ?? null
 }

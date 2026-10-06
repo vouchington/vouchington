@@ -10,7 +10,7 @@ export async function getCopyrightClaimantEmail(
   const { rows } = await transaction<{ id: string; email_ciphertext: string }>(
     sql`/* getCopyrightClaimantEmail */
     SELECT receipt.id, recipient.email_ciphertext
-    FROM copyright_notice_delivery_intents receipt
+    FROM copyright_notice_delivery_work_items receipt
     JOIN copyright_notice_delivery_recipients recipient
       ON recipient.copyright_notice_delivery_intent_id = receipt.id
     WHERE receipt.copyright_notice_id = ${noticeId}

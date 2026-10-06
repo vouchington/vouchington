@@ -1,5 +1,5 @@
-import { getMembershipWorkLimit } from '@services/memberships/work-limits'
-import { beginTransaction, read, write } from '@data-stores/psql'
+import { deferClaimedMembershipVerification } from '../verification-work.mts'
+import { beginTransaction, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { DirectMembershipSourceRejectedError } from '../direct-source-authority.mts'
 import {
@@ -35,27 +35,22 @@ export async function processAppleMembershipVerification(
   const claim = await claimPendingMembershipVerification(verificationId)
   if (!claim) return
   try {
-    await processClaimedAppleVerification(claim.id, claim.processingClaimToken, dependencies)
+    await processClaimedAppleVerification(claim.id, claim.leaseToken, dependencies)
   } catch (err) {
     if (err instanceof AppleVerificationConflictError) {
-      await terminalizeAppleVerification(
-        claim.id,
-        claim.processingClaimToken,
-        'conflict',
-        err.reasonCode,
-      )
+      await terminalizeAppleVerification(claim.id, claim.leaseToken, 'conflict', err.reasonCode)
       return
     }
     if (err instanceof DirectMembershipSourceRejectedError) {
       await terminalizeAppleVerification(
         claim.id,
-        claim.processingClaimToken,
+        claim.leaseToken,
         'conflict',
         'competing_direct_source',
       )
       return
     }
-    await deferAppleVerification(claim.id, claim.processingClaimToken)
+    await deferAppleVerification(claim.id, claim.leaseToken)
   }
 }
 
@@ -72,13 +67,13 @@ export async function processMembershipVerification(
 
 async function processClaimedAppleVerification(
   verificationId: string,
-  processingClaimToken: string,
+  leaseToken: string,
   dependencies: AppleVerificationDependencies,
 ): Promise<void> {
   await using query = await beginTransaction()
-  const context = await getClaimedAppleVerification(verificationId, processingClaimToken, query)
+  const context = await getClaimedAppleVerification(verificationId, leaseToken, query)
   if (!context) return
-  if (await finalizeAppleVerificationFromPriorAttempt(context, processingClaimToken, query)) {
+  if (await finalizeAppleVerificationFromPriorAttempt(context, leaseToken, query)) {
     await query.commit()
     return
   }
@@ -94,12 +89,12 @@ async function processClaimedAppleVerification(
   try {
     decoded = await verifier.verifyAndDecodeTransaction(evidence.signed_transaction_info)
   } catch {
-    await rejectAndCommitAppleVerification(context, processingClaimToken, 'invalid_evidence', query)
+    await rejectAndCommitAppleVerification(context, leaseToken, 'invalid_evidence', query)
     return
   }
   const mapping = await getAppleVerificationProduct(context, decoded.productId, query)
   if (!mapping) {
-    await rejectAndCommitAppleVerification(context, processingClaimToken, 'wrong_product', query)
+    await rejectAndCommitAppleVerification(context, leaseToken, 'wrong_product', query)
     return
   }
   const result = await verifyAppleSignedTransactionEvidence({
@@ -113,7 +108,7 @@ async function processClaimedAppleVerification(
     verifier,
   })
   if (!result.accepted) {
-    await rejectAndCommitAppleVerification(context, processingClaimToken, result.reasonCode, query)
+    await rejectAndCommitAppleVerification(context, leaseToken, result.reasonCode, query)
     return
   }
   if (result.observation.sourceKind === 'direct') {
@@ -125,48 +120,32 @@ async function processClaimedAppleVerification(
         query,
       ))
     ) {
-      await rejectAndCommitAppleVerification(context, processingClaimToken, 'wrong_account', query)
+      await rejectAndCommitAppleVerification(context, leaseToken, 'wrong_account', query)
       return
     }
   } else if (context.purchaseIntentId) {
-    await rejectAndCommitAppleVerification(context, processingClaimToken, 'wrong_account', query)
+    await rejectAndCommitAppleVerification(context, leaseToken, 'wrong_account', query)
     return
   }
-  await persistAndFinalizeAppleVerification(
-    context,
-    processingClaimToken,
-    mapping,
-    result.observation,
-    query,
-  )
+  await persistAndFinalizeAppleVerification(context, leaseToken, mapping, result.observation, query)
 }
 
 async function terminalizeAppleVerification(
   verificationId: string,
-  processingClaimToken: string,
+  leaseToken: string,
   disposition: 'conflict',
   reasonCode: 'competing_direct_source' | 'wrong_account',
 ): Promise<void> {
   await using query = await beginTransaction()
-  const context = await getClaimedAppleVerification(verificationId, processingClaimToken, query)
+  const context = await getClaimedAppleVerification(verificationId, leaseToken, query)
   if (!context) return
   await query(sql`/* acceptConflictedAppleVerificationEvidence */
     UPDATE membership_provider_evidence_records SET verified_at = CURRENT_TIMESTAMP
     WHERE id = ${context.evidenceId} AND verified_at IS NULL AND rejected_at IS NULL`)
-  await finalizeAppleVerification(context, processingClaimToken, disposition, reasonCode, query)
+  await finalizeAppleVerification(context, leaseToken, disposition, reasonCode, query)
   await query.commit()
 }
 
-async function deferAppleVerification(
-  verificationId: string,
-  processingClaimToken: string,
-): Promise<void> {
-  const MEMBERSHIPS_VERIFICATION_RETRY_MINUTES = getMembershipWorkLimit(
-    'verification_retry_minutes',
-  )
-  await write(sql`/* deferAppleVerification */
-    UPDATE membership_verifications SET processing_claim_token = NULL, processing_claimed_at = NULL,
-      next_processing_at = CURRENT_TIMESTAMP + ${MEMBERSHIPS_VERIFICATION_RETRY_MINUTES}::integer * INTERVAL '1 minute', last_error = 'apple_verification_retry'
-    WHERE id = ${verificationId} AND processing_claim_token = ${processingClaimToken}
-      AND verified_at IS NULL AND conflicted_at IS NULL AND rejected_at IS NULL`)
+async function deferAppleVerification(verificationId: string, leaseToken: string): Promise<void> {
+  await deferClaimedMembershipVerification(verificationId, leaseToken, 'apple_verification_retry')
 }

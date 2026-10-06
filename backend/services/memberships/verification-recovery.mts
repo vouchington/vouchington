@@ -1,75 +1,48 @@
 import { getMembershipWorkLimit } from './work-limits.mts'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { deferClaimedMembershipVerification } from './verification-work.mts'
 
-export type MembershipVerificationClaim = {
-  id: string
-  processingClaimToken: string
-}
+export type MembershipVerificationClaim = { id: string; leaseToken: string }
 
 export async function deferMembershipVerificationUntilAdapterAvailable(
-  verificationId: string,
+  id: string,
 ): Promise<boolean> {
-  const MEMBERSHIPS_VERIFICATION_RETRY_MINUTES = getMembershipWorkLimit(
-    'verification_retry_minutes',
-  )
-  const claim = await claimPendingMembershipVerification(verificationId)
-  if (!claim) return false
-  const { rowCount } = await write(sql`/* deferMembershipVerificationUntilAdapterAvailable */
-    UPDATE membership_verifications
-    SET processing_claim_token = NULL,
-      processing_claimed_at = NULL,
-      next_processing_at = CURRENT_TIMESTAMP + ${MEMBERSHIPS_VERIFICATION_RETRY_MINUTES}::integer * INTERVAL '1 minute',
-      last_error = 'provider_adapter_unavailable'
-    WHERE id = ${claim.id}
-      AND processing_claim_token = ${claim.processingClaimToken}
-      AND verified_at IS NULL AND conflicted_at IS NULL AND rejected_at IS NULL`)
-  return rowCount === 1
+  const claim = await claimPendingMembershipVerification(id)
+  return claim
+    ? deferClaimedMembershipVerification(id, claim.leaseToken, 'provider_adapter_unavailable')
+    : false
 }
 
 export async function claimPendingMembershipVerification(
-  verificationId: string,
+  id: string,
 ): Promise<MembershipVerificationClaim | null> {
-  const MEMBERSHIPS_VERIFICATION_CLAIM_MINUTES = getMembershipWorkLimit(
-    'verification_claim_minutes',
-  )
+  const duration = getMembershipWorkLimit('verification_claim_minutes')
   const { rows } = await write<{
     id: string
-    processing_claim_token: string
+    lease_token: string
   }>(sql`/* claimPendingMembershipVerification */
-    UPDATE membership_verifications
-    SET processing_claim_token = uuidv7(),
-      processing_claimed_at = CURRENT_TIMESTAMP,
-      processing_attempts = processing_attempts + 1,
-      last_error = NULL
-    WHERE id = ${verificationId}
-      AND verified_at IS NULL AND conflicted_at IS NULL AND rejected_at IS NULL
-      AND next_processing_at <= CURRENT_TIMESTAMP
-      AND (
-        processing_claim_token IS NULL
-        OR processing_claimed_at < CURRENT_TIMESTAMP - ${MEMBERSHIPS_VERIFICATION_CLAIM_MINUTES}::integer * INTERVAL '1 minute'
-      )
-    RETURNING id, processing_claim_token`)
-  const row = rows[0]
-  if (!row) return null
-  return { id: row.id, processingClaimToken: row.processing_claim_token }
+    UPDATE membership_verification_processing_work_items work
+    SET lease_token = uuidv7(), leased_at = clock_timestamp(),
+      lease_expires_at = clock_timestamp() + ${duration}::integer * INTERVAL '1 minute',
+      attempt_count = attempt_count + 1, last_error = NULL
+    FROM membership_verifications verification
+    WHERE work.membership_verification_id = ${id} AND verification.id = work.membership_verification_id
+      AND verification.verified_at IS NULL AND verification.conflicted_at IS NULL AND verification.rejected_at IS NULL
+      AND work.completed_at IS NULL AND work.available_at <= clock_timestamp()
+      AND (work.lease_token IS NULL OR work.lease_expires_at <= clock_timestamp())
+    RETURNING work.membership_verification_id AS id, work.lease_token
+  `)
+  return rows[0] ? { id: rows[0].id, leaseToken: rows[0].lease_token } : null
 }
 
 export async function findRecoverableMembershipVerificationIds(): Promise<string[]> {
-  const MEMBERSHIPS_VERIFICATION_CLAIM_MINUTES = getMembershipWorkLimit(
-    'verification_claim_minutes',
-  )
-  const WORK_PAGE_SIZE = getMembershipWorkLimit('verification_recovery_batch_size')
+  const limit = getMembershipWorkLimit('verification_recovery_batch_size')
   const { rows } = await read<{ id: string }>(sql`/* findRecoverableMembershipVerificationIds */
-    SELECT id
-    FROM membership_verifications
-    WHERE verified_at IS NULL AND conflicted_at IS NULL AND rejected_at IS NULL
-      AND next_processing_at <= CURRENT_TIMESTAMP
-      AND (
-        processing_claim_token IS NULL
-        OR processing_claimed_at < CURRENT_TIMESTAMP - ${MEMBERSHIPS_VERIFICATION_CLAIM_MINUTES}::integer * INTERVAL '1 minute'
-      )
-    ORDER BY next_processing_at, id
-    LIMIT ${WORK_PAGE_SIZE}`)
+    SELECT work.membership_verification_id AS id FROM membership_verification_processing_work_items work
+    WHERE work.completed_at IS NULL AND work.available_at <= clock_timestamp()
+      AND (work.lease_token IS NULL OR work.lease_expires_at <= clock_timestamp())
+    ORDER BY work.available_at, work.membership_verification_id LIMIT ${limit}
+  `)
   return rows.map(row => row.id)
 }

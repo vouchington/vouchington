@@ -99,7 +99,7 @@ describe('historical blocked copyright restoration recovery', () => {
     const before = await getCopyrightNoticePrivateAggregate(scene.notice.id)
     expect(before?.actionIntents.find(intent => intent.id === failed.restore.id)).toMatchObject({
       state: 'failed',
-      delivery_attempt_count: 5,
+      attempt_count: 5,
     })
     await recordHistoricalResolution(scene)
     await expect(
@@ -122,8 +122,8 @@ describe('historical blocked copyright restoration recovery', () => {
       expected_placement_revision: scene.restore.expected_placement_revision,
       action: 'restore',
       state: 'pending',
-      delivery_attempt_count: 0,
-      claimed_at: null,
+      attempt_count: 0,
+      leased_at: null,
       completed_at: null,
     })
     expect(recovered?.actionIntents.find(intent => intent.id === failed.restore.id)).toEqual(

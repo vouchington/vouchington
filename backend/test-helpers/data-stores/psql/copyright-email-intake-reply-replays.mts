@@ -25,18 +25,18 @@ export async function readTestCopyrightDeliveryIntentReplayEvents(intentId: stri
 /** What a replay resets and what it must leave alone, read straight from the intent row. */
 export async function readTestCopyrightDeliveryIntentReplayFacts(intentId: string): Promise<{
   state: string
-  delivery_attempt_count: number
+  attempt_count: number
   failed_at: Date | null
   body_ciphertext: string | null
 }> {
   const { rows } = await read<{
     state: string
-    delivery_attempt_count: number
+    attempt_count: number
     failed_at: Date | null
     body_ciphertext: string | null
   }>(sql`/* readTestCopyrightDeliveryIntentReplayFacts */
-    SELECT state, delivery_attempt_count, failed_at, body_ciphertext
-    FROM copyright_notice_delivery_intents
+    SELECT state, attempt_count, failed_at, body_ciphertext
+    FROM copyright_notice_delivery_work_items
     WHERE id = ${intentId}
   `)
   return rows[0]!

@@ -178,7 +178,7 @@ export async function createEligibleCopyrightRestoreIntent(input: {
   assert(currentPlacement, 409, 'Copyright placement is unavailable')
   const { rows: intentRows } =
     await transaction<CopyrightActionIntentRecord>(sql`/* createEligibleCopyrightRestoreIntent */
-    INSERT INTO copyright_notice_action_intents (
+    INSERT INTO copyright_notice_action_work_items (
       copyright_restriction_id, copyright_notice_deadline_id, expected_placement_revision, action
     ) VALUES (${input.restrictionId}, ${input.deadlineId}, ${currentPlacement.revision}, 'restore')
     ON CONFLICT (copyright_restriction_id, expected_placement_revision, action) DO NOTHING

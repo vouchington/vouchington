@@ -13,17 +13,19 @@ export type StripeEventRecord = {
   event_type: string
   is_live_mode: boolean
   api_version: string | null
-  stripe_created_at: Date
+  occurred_at: Date
   customer_id: string | null
   subscription_id: string | null
   invoice_id: string | null
   checkout_session_id: string | null
   status: StripeEventProcessingStatus
   received_at: Date
-  processing_attempt_id: string
+  lease_token: string
   dispatched_at: Date
-  processing_started_at: Date | null
-  processing_attempts: number
+  lease_expires_at: Date | null
+  available_at: Date
+  leased_at: Date | null
+  attempt_count: number
   processed_at: Date | null
   ignored_at: Date | null
   failed_at: Date | null

@@ -25,10 +25,11 @@ followers, then delivers the signed AS2 activity to each follower's inbox (Phase
   - Checks the acting user has federation enabled — and, for Follow/Undo-Follow, that the target
     user does too (announcing a follow of a non-federated user would leak their actor URI/follow
     edge without their opt-in) — then uses the durable PostgreSQL
-    `activitypub_distribution_checkpoints` cursor to read one strict keyset page of at most 500
+    `activitypub_distribution_work_items` lease and cursor to read one strict keyset page of at most 500
     active follower candidates from `@services/remote-actors`, resolving current delivery
     eligibility only within that bounded page.
-  - Bulk-enqueues the page's distinct inbox URLs, compare-and-swap commits the last remote actor
+  - Claims a bounded page with an expiring token, then bulk-enqueues its distinct inbox URLs.
+    A token-fenced compare-and-swap commits the last remote actor
     only after that enqueue succeeds, then enqueues one continuation when another page remains.
     `distributeActivity` jobs are ordered at concurrency `1` per activity ID, so a large fan-out
     yields between pages instead of occupying a worker for its entire follower set.
@@ -41,13 +42,19 @@ followers, then delivers the signed AS2 activity to each follower's inbox (Phase
     `distributeActivity` retries re-enqueueing an inbox that was already queued. It is not a
     durable per-inbox receipt and cannot make the remote HTTP side effect exactly once.
 
+A busy lease delays the same GlideMQ job until expiry without consuming its retry attempts.
+A rejected bulk enqueue releases only the matching lease and leaves the cursor unchanged.
+An expired worker cannot commit or release a successor's lease; a failed commit retries the
+activity from durable progress. The bounded lease duration is configured through the existing
+remote-actors work configuration and covers page preparation and queue handoff, not remote HTTP.
+
 ## Durability boundary
 
-The checkpoint records only that Valkey accepted a bounded page, not that a remote inbox consumed
-or acknowledged it. A failure between that acceptance and the checkpoint commit can replay the
+The work item records only that Valkey accepted a bounded page, not that a remote inbox consumed
+or acknowledged it. A failure between that acceptance and the work-item commit can replay the
 page; delivery-job simple deduplication narrows duplicate active jobs, while an ambiguous remote
 HTTP outcome still makes delivery at least once. There is no per-inbox receipt table and no
-reconstruction after a Valkey wipe. Completed checkpoints intentionally remain until their source
+reconstruction after a Valkey wipe. Completed work items intentionally remain until their source
 user is deleted, preventing a later duplicate distribution job from restarting fan-out.
 
 ## Related

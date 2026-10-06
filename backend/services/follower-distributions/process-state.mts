@@ -33,8 +33,8 @@ export async function getNextRecipientBatch(
       WHERE recipients.distribution_id = ${distribution.id}
         AND users.deleted_at IS NULL
         AND (
-          ${distribution.last_processed_recipient_user_id}::uuid IS NULL
-          OR recipients.recipient_user_id > ${distribution.last_processed_recipient_user_id}
+          ${distribution.cursor_recipient_id}::uuid IS NULL
+          OR recipients.recipient_user_id > ${distribution.cursor_recipient_id}
         )
       ORDER BY recipients.recipient_user_id
       LIMIT ${chunkSize}
@@ -52,8 +52,8 @@ export async function getNextRecipientBatch(
         OR deleted_at > ${distribution.created_at}
       )
       AND (
-        ${distribution.last_processed_recipient_user_id}::uuid IS NULL
-        OR subject_id > ${distribution.last_processed_recipient_user_id}
+        ${distribution.cursor_recipient_id}::uuid IS NULL
+        OR subject_id > ${distribution.cursor_recipient_id}
       )
     ORDER BY subject_id
     LIMIT ${chunkSize}
@@ -109,7 +109,7 @@ export async function updateDistributionCursor(
 ) {
   await query(sql`/* updateDistributionCursor */
     UPDATE follower_distributions
-    SET last_processed_recipient_user_id = ${recipientId}
+    SET cursor_recipient_id = ${recipientId}
     WHERE id = ${distributionId}
   `)
 }

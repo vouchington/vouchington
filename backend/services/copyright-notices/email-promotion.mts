@@ -230,7 +230,7 @@ async function recordEmailPromotion(
   const { rows: arrivalReceipt } = await transaction<{
     id: string
   }>(sql`/* recordEmailPromotion:arrivalReceipt */
-    SELECT id FROM copyright_notice_delivery_intents WHERE copyright_notice_email_intake_id = ${intake.id}
+    SELECT id FROM copyright_notice_delivery_work_items WHERE copyright_notice_email_intake_id = ${intake.id}
       AND delivery_kind = 'email_intake_received' AND state NOT IN ('failed', 'bounced')
   `)
   const claimantReceipt = await createDeterministicCopyrightCorrespondenceInTransaction(

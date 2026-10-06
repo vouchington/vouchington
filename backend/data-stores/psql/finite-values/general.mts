@@ -46,8 +46,7 @@ export const GENERAL_FINITE_VALUES = {
   mcp_call_audit_event_surfaces: ['mcp', 'admin_mcp'],
   media_delivery_desired_states: ['allow', 'withheld'],
   media_placement_retirement_reasons: ['asset_deleted', 'owner_removed'],
-  membership_google_play_recovery_families: ['notifications', 'active_sources', 'acknowledgements'],
-  membership_microsoft_store_recovery_families: ['active_sources'],
+  membership_google_play_recovery_sweeps: ['notifications', 'active_sources', 'acknowledgements'],
   moderation_transparency_metrics: [
     'reports',
     'moderation_actions',
@@ -75,9 +74,9 @@ export const GENERAL_FINITE_VALUES = {
   oauth_client_types: ['public', 'confidential'],
   oauth_client_token_endpoint_auth_methods: ['none', 'client_secret_basic'],
   post_admission_quota_consumption_modes: ['all_windows', 'daily_only'],
-  post_admission_reservation_states: ['in_progress', 'committed', 'retryable_failed', 'expired'],
+  post_admission_reservation_states: ['in_progress', 'committed'],
   post_classifier_local_outcome_classifications: ['ai', 'human'],
-  post_publication_identity_bridge_cleanup_families: [
+  post_publication_identity_bridge_families: [
     'post',
     'community',
     'rss_feed_item',
@@ -87,16 +86,6 @@ export const GENERAL_FINITE_VALUES = {
     'story',
   ],
   post_topic_alias_source_types: ['title', 'markdown', 'explicit'],
-  retained_identity_cleanup_families: [
-    'user',
-    'api_key',
-    'topic',
-    'post',
-    'rss_feed_item',
-    'image',
-    'membership',
-    'image_placement_binding',
-  ],
   user_deletion_external_work_kinds: [
     'cloudflare-cache-tag',
     'entity-relation-effects',

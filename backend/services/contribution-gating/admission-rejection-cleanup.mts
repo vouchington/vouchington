@@ -3,9 +3,9 @@ import { discardRejectedContributionAdmission } from './admission-reservations.m
 
 export async function cleanupRejectedContributionAdmission(
   reservationId: string,
-  leaseId: string,
+  leaseToken: string,
 ): Promise<void> {
-  await attemptCleanup(() => discardRejectedContributionAdmission(reservationId, leaseId))
+  await attemptCleanup(() => discardRejectedContributionAdmission(reservationId, leaseToken))
 }
 
 async function attemptCleanup(cleanup: () => Promise<void>): Promise<void> {

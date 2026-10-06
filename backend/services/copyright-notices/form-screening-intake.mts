@@ -45,7 +45,7 @@ export async function getCopyrightFormIntakeForScreening(
       char_length(notice.claimant_contact_ciphertext) > 0 AS has_claimant_contact,
       EXISTS (
         SELECT 1
-        FROM copyright_notice_delivery_intents receipt
+        FROM copyright_notice_delivery_work_items receipt
         JOIN copyright_notice_delivery_recipients recipient
           ON recipient.copyright_notice_delivery_intent_id = receipt.id
         WHERE receipt.copyright_notice_id = notice.id

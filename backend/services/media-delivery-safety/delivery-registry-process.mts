@@ -1,13 +1,16 @@
 import { beginTransaction } from '@data-stores/psql'
 import { isMediaDeliveryRegistryPublicationEnabled } from '@modules/aws/media-delivery-registry'
 import sql from 'sql-template-strings'
-import type { ImageDeliveryRecord, MediaDeliveryDependencies } from './delivery-registry-types.mts'
+import type { MediaDeliveryDependencies } from './delivery-registry-types.mts'
+import {
+  claimMediaDeliveryProjection,
+  type MediaDeliveryClaim,
+} from './delivery-registry-claims.mts'
 import { publishStagedMediaDeliveryRecord } from './delivery-registry-publish.mts'
 
 import {
   MEDIA_DELIVERY_MAX_ATTEMPTS as MAX_ATTEMPTS,
   MEDIA_DELIVERY_RETRY_MS as RETRY_BASE_MS,
-  mediaDeliveryClaimable,
 } from './delivery-registry-policy.mts'
 
 export async function processMediaDeliveryRegistryRecord(
@@ -19,12 +22,11 @@ export async function processMediaDeliveryRegistryRecord(
   const record = await claimMediaDeliveryRegistryRecord(deliveryKey, now)
   if (!record) return 'not_claimed'
   try {
-    await publishStagedMediaDeliveryRecord(record.delivery_key, { dependencies })
+    await publishStagedMediaDeliveryRecord(record.delivery_key, { dependencies, claim: record })
     return 'completed'
   } catch (err) {
     await failMediaDeliveryRegistryRecord(
-      record.delivery_key,
-      record.generation,
+      record,
       now,
       err instanceof Error ? err.message : String(err),
     )
@@ -35,7 +37,7 @@ export async function processMediaDeliveryRegistryRecord(
 async function claimMediaDeliveryRegistryRecord(
   deliveryKey: string,
   now: Date,
-): Promise<ImageDeliveryRecord | null> {
+): Promise<MediaDeliveryClaim | null> {
   await using transaction = await beginTransaction()
   const { rows: locked } = await transaction(sql`/* claimMediaDeliveryRegistryRecord:lock */
     SELECT delivery_key FROM media_delivery_registry_records
@@ -45,47 +47,35 @@ async function claimMediaDeliveryRegistryRecord(
     await transaction.commit()
     return null
   }
-  const statement = sql`/* claimMediaDeliveryRegistryRecord */
-    INSERT INTO media_delivery_registry_changes(delivery_key, generation, change_type,
-      claimed_at, delivery_attempt_count)
-    SELECT delivery_key, generation, 'claimed', ${now}, delivery_attempt_count + 1
-    FROM media_delivery_registry_current_records WHERE delivery_key = ${deliveryKey} AND `
-  statement.append(mediaDeliveryClaimable(now)).append(sql`
-    RETURNING delivery_key
-  `)
-  const { rows: claimed } = await transaction(statement)
-  const { rows } = claimed.length
-    ? await transaction<ImageDeliveryRecord>(sql`/* claimMediaDeliveryRegistryRecord:read */
-    SELECT delivery_key, desired_state, placement_id, placement_revision, image_id, generation
-    FROM media_delivery_registry_records WHERE delivery_key = ${deliveryKey}
-  `)
-    : { rows: [] }
+  const record = await claimMediaDeliveryProjection(transaction, deliveryKey, now)
   await transaction.commit()
-  return rows[0] ?? null
+  return record
 }
 
 async function failMediaDeliveryRegistryRecord(
-  deliveryKey: string,
-  generation: string,
+  claim: MediaDeliveryClaim,
   now: Date,
   failureMessage: string,
 ): Promise<void> {
   await using transaction = await beginTransaction()
   await transaction(sql`/* failMediaDeliveryRegistryRecord:lock */
-    SELECT delivery_key FROM media_delivery_registry_records WHERE delivery_key = ${deliveryKey} FOR UPDATE
+    SELECT delivery_key FROM media_delivery_registry_records WHERE delivery_key = ${claim.delivery_key} FOR UPDATE
   `)
   await transaction(sql`/* failMediaDeliveryRegistryRecord */
-    INSERT INTO media_delivery_registry_changes(delivery_key, generation, change_type,
-      delivery_attempt_count, claimed_at, completed_at, next_attempt_at, failure_message)
+    WITH released AS (
+      UPDATE media_delivery_registry_projection_work_items
+      SET lease_token = NULL, leased_at = NULL, lease_expires_at = NULL,
+        available_at = ${new Date(now.getTime() + RETRY_BASE_MS)}
+      WHERE delivery_key = ${claim.delivery_key} AND generation = ${claim.generation}
+        AND lease_token = ${claim.lease_token}::uuid AND lease_expires_at > clock_timestamp()
+      RETURNING *
+    ) INSERT INTO media_delivery_registry_changes(delivery_key, generation, change_type,
+      delivery_attempt_count, completed_at, next_attempt_at, failure_message)
     SELECT delivery_key, generation,
-      CASE WHEN delivery_attempt_count >= ${MAX_ATTEMPTS} THEN 'failed'::media_delivery_registry_change_types ELSE 'pending'::media_delivery_registry_change_types END,
-      delivery_attempt_count,
-      CASE WHEN delivery_attempt_count >= ${MAX_ATTEMPTS} THEN claimed_at ELSE NULL END,
-      CASE WHEN delivery_attempt_count >= ${MAX_ATTEMPTS} THEN ${now} ELSE NULL::timestamptz END,
-      CASE WHEN delivery_attempt_count >= ${MAX_ATTEMPTS} THEN NULL::timestamptz ELSE ${new Date(now.getTime() + RETRY_BASE_MS)} END,
-      ${failureMessage.slice(0, 4096)}
-    FROM media_delivery_registry_current_records
-    WHERE delivery_key = ${deliveryKey} AND state = 'claimed' AND generation = ${generation}
+      CASE WHEN attempt_count >= ${MAX_ATTEMPTS} THEN 'failed'::media_delivery_registry_change_types ELSE 'pending'::media_delivery_registry_change_types END,
+      attempt_count, CASE WHEN attempt_count >= ${MAX_ATTEMPTS} THEN clock_timestamp() ELSE NULL::timestamptz END,
+      CASE WHEN attempt_count >= ${MAX_ATTEMPTS} THEN NULL::timestamptz ELSE available_at END,
+      ${failureMessage.slice(0, 4096)} FROM released
   `)
   await transaction.commit()
 }

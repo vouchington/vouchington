@@ -64,7 +64,7 @@ export const CORE_BACKFILLS: BackfillEntry[] = [
     queue_name: 'entity-listeners',
     job_name: 'reconcileEntities',
     description: 'Reconcile recently changed active entities from the durable checkpoint',
-    source_table: 'queue_reconciliation_checkpoints,users,topics,posts,images,urls',
+    source_table: 'entity_listener_reconciliation_cursors,users,topics,posts,images,urls',
     trigger: createBackfillTrigger(enqueueReconcileEntities),
   },
   {

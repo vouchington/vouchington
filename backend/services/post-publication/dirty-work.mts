@@ -48,7 +48,7 @@ export async function updatePostPublicationDirtyWorkCursors(
     SET cursor_post_id = CASE WHEN $1 THEN $2::uuid ELSE cursor_post_id END,
       cursor_topic_id = CASE WHEN $3 THEN $4::uuid ELSE cursor_topic_id END,
       cursor_key_id = CASE WHEN $5 THEN $6::uuid ELSE cursor_key_id END,
-      cursor_updated_at = CURRENT_TIMESTAMP
+      cursor_advanced_at = CURRENT_TIMESTAMP
     WHERE id = $7 AND generation = $8 AND lease_token = $9 AND lease_expires_at > CURRENT_TIMESTAMP`,
     [
       cursors.postId !== undefined,

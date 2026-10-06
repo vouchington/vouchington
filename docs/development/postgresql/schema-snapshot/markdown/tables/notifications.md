@@ -119,4 +119,5 @@ _none_
 
 - `trigger_notifications_capture_push_intent`: `CREATE TRIGGER trigger_notifications_capture_push_intent AFTER INSERT OR UPDATE OF id ON public.notifications FOR EACH ROW EXECUTE FUNCTION fn_project_capture_notification_push_intent()`
 - `trigger_notifications_preserve_publication_target`: `CREATE TRIGGER trigger_notifications_preserve_publication_target BEFORE INSERT OR UPDATE OF post_id, rss_feed_item_id ON public.notifications FOR EACH ROW EXECUTE FUNCTION fn_update_notification_publication_target()`
+- `trigger_notifications_retire_push_intent`: `CREATE TRIGGER trigger_notifications_retire_push_intent BEFORE UPDATE OF id ON public.notifications FOR EACH ROW WHEN ((old.id IS DISTINCT FROM new.id)) EXECUTE FUNCTION fn_project_retire_notification_push_intent()`
 - `trigger_notifications_updated_at`: `CREATE TRIGGER trigger_notifications_updated_at BEFORE UPDATE ON public.notifications FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

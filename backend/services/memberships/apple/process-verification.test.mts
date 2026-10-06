@@ -4,24 +4,25 @@ import {
   InAppOwnershipType,
   type JWSTransactionDecodedPayload,
 } from '@apple/app-store-server-library'
+import type { AppleTransactionVerifier } from './types.mts'
 import {
   createMembershipVerification,
   getMembershipByUserId,
   getMembershipVerification,
 } from '@services/memberships'
 import {
-  createTestLaunchedNativeMembershipPurchaseIntent,
   createTestMembershipProviderLineage,
-  createTestNativeMembershipProviderProduct,
-  createTestSku,
   createTestUser,
   getTestMembershipProviderLineageAccountId,
   claimTestMembershipVerification,
   getTestMembershipVerificationProcessingState,
 } from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
-import type { AppleTransactionVerifier } from './types.mts'
 import { processMembershipVerification } from './process-verification.mts'
+import {
+  createTestAppleVerificationFixture as createAppleVerificationFixture,
+  submitTestAppleVerification as submitAppleVerification,
+} from '@voucha/test-helpers/apple-membership-verification'
 
 describe('Apple membership verification processing', () => {
   it('projects and finalizes valid direct Apple evidence for its launched purchase intent', async () => {
@@ -97,7 +98,10 @@ describe('Apple membership verification processing', () => {
       await processMembershipVerification(verification.id, {
         createVerifier: () =>
           transaction
-            ? makeVerifier(fixture, { ...transaction, appAccountToken: fixture.purchaseIntentId })
+            ? makeVerifier(fixture, {
+                ...transaction,
+                appAccountToken: fixture.purchaseIntentId,
+              })
             : makeVerifier(fixture, {}, new Error('signature rejected')),
       })
 
@@ -172,6 +176,27 @@ describe('Apple membership verification processing', () => {
     })
   })
 
+  it('rejects a direct restore without a launched purchase intent', async () => {
+    const user = await createTestUser()
+    const fixture = await createAppleVerificationFixture(user.id)
+    const verification = await createMembershipVerification({
+      userId: user.id,
+      provider: 'apple_app_store',
+      purchaseIntentId: null,
+      idempotencyKey: randomUUID(),
+      trustedProviderContext: { environment: 'test', applicationId: fixture.applicationId },
+      evidence: { signed_transaction_info: `signed-${randomUUID()}` },
+    })
+    await processMembershipVerification(verification.id, {
+      createVerifier: () => makeVerifier(fixture, { appAccountToken: fixture.purchaseIntentId }),
+    })
+    await expect(getMembershipVerification(user.id, verification.id)).resolves.toMatchObject({
+      status: 'rejected',
+      reason_code: 'wrong_account',
+    })
+    await expect(getMembershipByUserId(user.id)).resolves.toBeNull()
+  })
+
   it('fills a notification-first lineage account token exactly once', async () => {
     const user = await createTestUser()
     const fixture = await createAppleVerificationFixture(user.id)
@@ -227,53 +252,19 @@ describe('Apple membership verification processing', () => {
     })
 
     await expect(getTestMembershipVerificationProcessingState(fenced.id)).resolves.toMatchObject({
-      processing_claim_token: claimToken,
-      processing_attempts: 0,
+      lease_token: claimToken,
+      attempt_count: 0,
     })
     await expect(getTestMembershipVerificationProcessingState(retryable.id)).resolves.toMatchObject(
       {
-        processing_claim_token: null,
-        processing_attempts: 1,
+        lease_token: null,
+        attempt_count: 1,
         last_error: 'apple_verification_retry',
-        next_processing_at: expect.any(Date),
+        available_at: expect.any(Date),
       },
     )
   })
 })
-
-async function createAppleVerificationFixture(
-  userId: string,
-  applicationId = `ai.voucha.apple-${randomUUID()}`,
-) {
-  const sku = await createTestSku({ plan: 'plus' })
-  const providerProductId = `ai.voucha.plus.${randomUUID()}`
-  const providerProduct = await createTestNativeMembershipProviderProduct({
-    membershipProductId: sku.id,
-    provider: 'apple_app_store',
-    environment: 'test',
-    applicationId,
-    providerProductId,
-  })
-  const purchaseIntentId = await createTestLaunchedNativeMembershipPurchaseIntent({
-    userId,
-    membershipProviderProductId: providerProduct.id,
-  })
-  return { applicationId, providerProductId, purchaseIntentId }
-}
-
-async function submitAppleVerification(
-  userId: string,
-  fixture: { purchaseIntentId: string },
-  signedTransactionInfo: string,
-) {
-  return createMembershipVerification({
-    userId,
-    provider: 'apple_app_store',
-    purchaseIntentId: fixture.purchaseIntentId,
-    idempotencyKey: randomUUID(),
-    evidence: { signed_transaction_info: signedTransactionInfo },
-  })
-}
 
 function makeVerifier(
   fixture: { applicationId: string; providerProductId: string },

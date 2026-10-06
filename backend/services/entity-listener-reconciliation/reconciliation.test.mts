@@ -1,4 +1,5 @@
-import { randomUUID } from 'node:crypto'
+import { runIsolatedDatabaseCase } from '../../../test-helpers/vitest-isolated-database-case.mts'
+import { getIsolatedDatabaseCaseMode } from '../../../test-helpers/vitest-isolated-database-cases.mts'
 import { describe, expect, it } from 'vitest'
 import {
   createTestPost,
@@ -36,14 +37,18 @@ async function* streamCompleteWindow(window: EntityReconciliationWindow) {
 
 describe('entity-listener reconciliation', () => {
   it('resumes from the durable checkpoint with overlap and replica-lag margin', async () => {
+    if (getIsolatedDatabaseCaseMode('entity-reconciliation-cursor') === 'parent') {
+      await runIsolatedDatabaseCase('entity-reconciliation-cursor')
+      return
+    }
     const now = new Date()
     const completedThrough = new Date(now.getTime() - 120_000)
-    const checkpointName = `entity-listeners-test-${randomUUID()}`
-    await advanceEntityReconciliationCheckpoint(completedThrough, checkpointName)
-    const window = await getEntityReconciliationWindow(3600, now, checkpointName)
+
+    await advanceEntityReconciliationCheckpoint(completedThrough)
+    const window = await getEntityReconciliationWindow(3600, now)
     expect(window.end).toEqual(new Date(now.getTime() - 60_000))
     expect(window.start.getTime()).toBe(completedThrough.getTime() - 300_000)
-  })
+  }, 240_000)
 
   it('streams active current-state entities in bounded batches', async () => {
     const referrer = await createTestUser()

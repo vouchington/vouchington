@@ -42,6 +42,7 @@ export async function putMediaDeliveryRegistryRecord(
         ':state': { S: record.state },
       },
     }),
+    { abortSignal: AbortSignal.timeout(120_000) },
   )
 }
 
@@ -63,6 +64,7 @@ export async function invalidateMediaDeliveryPath(
         Paths: { Quantity: 1, Items: [path] },
       },
     }),
+    { abortSignal: AbortSignal.timeout(120_000) },
   )
 }
 

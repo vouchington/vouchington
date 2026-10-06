@@ -6,16 +6,16 @@ import {
 } from '@queues/notifications/enqueues'
 import { createCommunityActivityDigestBatch } from '@services/notifications/community-activity-digest'
 import {
-  markCommunityActivityDigestDispatchWindowCompleted,
-  refreshCommunityActivityDigestDispatchWindowActivity,
+  completeCommunityActivityDigestWorkItem,
+  renewCommunityActivityDigestWorkItem,
 } from '@services/notifications/community-activity-digest-dispatch'
 
 type Dependencies = {
   enqueueBulkDeliverNotificationPushIntents: typeof enqueueBulkDeliverNotificationPushIntents
   enqueueCommunityActivityDigestBatch: typeof enqueueCommunityActivityDigestBatch
   createCommunityActivityDigestBatch: typeof createCommunityActivityDigestBatch
-  markCommunityActivityDigestDispatchWindowCompleted: typeof markCommunityActivityDigestDispatchWindowCompleted
-  refreshCommunityActivityDigestDispatchWindowActivity: typeof refreshCommunityActivityDigestDispatchWindowActivity
+  completeCommunityActivityDigestWorkItem: typeof completeCommunityActivityDigestWorkItem
+  renewCommunityActivityDigestWorkItem: typeof renewCommunityActivityDigestWorkItem
 }
 
 export async function processCommunityActivityDigestDispatch(
@@ -24,7 +24,10 @@ export async function processCommunityActivityDigestDispatch(
 ): Promise<void> {
   const enqueueBatch =
     dependencies?.enqueueCommunityActivityDigestBatch ?? enqueueCommunityActivityDigestBatch
-  await enqueueBatch({ windowStart: data.windowStart, windowEnd: data.windowEnd })
+  const renew =
+    dependencies?.renewCommunityActivityDigestWorkItem ?? renewCommunityActivityDigestWorkItem
+  if (!(await renew(new Date(data.windowStart), data.leaseToken))) return
+  await enqueueBatch(data)
 }
 
 export async function processCommunityActivityDigestBatch(
@@ -32,6 +35,7 @@ export async function processCommunityActivityDigestBatch(
   dependencies?: Partial<Dependencies>,
 ): Promise<void> {
   const result = await refreshActivityAndCreateBatch(data, dependencies)
+  if (!result) return
   if (result.nextUserId) {
     const enqueueBatch =
       dependencies?.enqueueCommunityActivityDigestBatch ?? enqueueCommunityActivityDigestBatch
@@ -39,9 +43,8 @@ export async function processCommunityActivityDigestBatch(
     return
   }
   const markCompleted =
-    dependencies?.markCommunityActivityDigestDispatchWindowCompleted ??
-    markCommunityActivityDigestDispatchWindowCompleted
-  await markCompleted(new Date(data.windowStart))
+    dependencies?.completeCommunityActivityDigestWorkItem ?? completeCommunityActivityDigestWorkItem
+  await markCompleted(new Date(data.windowStart), data.leaseToken)
 }
 
 async function refreshActivityAndCreateBatch(
@@ -49,9 +52,8 @@ async function refreshActivityAndCreateBatch(
   dependencies?: Partial<Dependencies>,
 ) {
   const refreshActivity =
-    dependencies?.refreshCommunityActivityDigestDispatchWindowActivity ??
-    refreshCommunityActivityDigestDispatchWindowActivity
-  await refreshActivity(new Date(data.windowStart))
+    dependencies?.renewCommunityActivityDigestWorkItem ?? renewCommunityActivityDigestWorkItem
+  if (!(await refreshActivity(new Date(data.windowStart), data.leaseToken))) return null
   return createBatchAndDispatchPushes(data, dependencies)
 }
 

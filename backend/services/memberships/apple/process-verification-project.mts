@@ -17,13 +17,13 @@ type AppleProductMapping = {
 
 export async function persistAndFinalizeAppleVerification(
   context: AppleVerificationContext,
-  processingClaimToken: string,
+  leaseToken: string,
   mapping: AppleProductMapping,
   observation: AppleMembershipObservation,
   query: Awaited<ReturnType<typeof beginTransaction>>,
 ): Promise<void> {
   await persistAndProjectAppleVerification(context, mapping, observation, query)
-  await finalizeAppleVerificationAndCommit(context, processingClaimToken, query)
+  await finalizeAppleVerificationAndCommit(context, leaseToken, query)
 }
 
 async function persistAndProjectAppleVerification(
@@ -70,26 +70,26 @@ async function acceptAndProjectAppleVerification(
 
 async function finalizeAppleVerificationAndCommit(
   context: AppleVerificationContext,
-  processingClaimToken: string,
+  leaseToken: string,
   query: Awaited<ReturnType<typeof beginTransaction>>,
 ): Promise<void> {
-  await finalizeAppleVerification(context, processingClaimToken, 'verified', 'verified', query)
+  await finalizeAppleVerification(context, leaseToken, 'verified', 'verified', query)
   await query.commit()
 }
 
 export async function rejectAndCommitAppleVerification(
   context: AppleVerificationContext,
-  processingClaimToken: string,
+  leaseToken: string,
   reasonCode: string,
   query: Awaited<ReturnType<typeof beginTransaction>>,
 ): Promise<void> {
-  await rejectAppleEvidenceAndFinalize(context, processingClaimToken, reasonCode, query)
+  await rejectAppleEvidenceAndFinalize(context, leaseToken, reasonCode, query)
   await query.commit()
 }
 
 async function rejectAppleEvidenceAndFinalize(
   context: AppleVerificationContext,
-  processingClaimToken: string,
+  leaseToken: string,
   reasonCode: string,
   query: Awaited<ReturnType<typeof beginTransaction>>,
 ): Promise<void> {
@@ -97,5 +97,5 @@ async function rejectAppleEvidenceAndFinalize(
     UPDATE membership_provider_evidence_records SET rejected_at = CURRENT_TIMESTAMP,
       rejection_reason = ${reasonCode}
     WHERE id = ${context.evidenceId} AND verified_at IS NULL AND rejected_at IS NULL`)
-  await finalizeAppleVerification(context, processingClaimToken, 'rejected', reasonCode, query)
+  await finalizeAppleVerification(context, leaseToken, 'rejected', reasonCode, query)
 }

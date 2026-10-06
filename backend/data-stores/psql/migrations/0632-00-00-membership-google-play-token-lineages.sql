@@ -30,12 +30,13 @@ CREATE SEQUENCE IF NOT EXISTS membership_google_play_observation_order_seq AS BI
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_google_play_recovery_cursors (
-  id membership_google_play_recovery_families PRIMARY KEY CHECK (id IN ('notifications', 'active_sources', 'acknowledgements')),
-  last_evidence_id UUID,
-  sweep_upper_bound_id UUID,
+  recovery_sweep membership_google_play_recovery_sweeps PRIMARY KEY,
+  cursor_evidence_id UUID,
+  sweep_upper_bound_evidence_id UUID,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE OR REPLACE TRIGGER trigger_membership_google_play_recovery_cursors_updated_at BEFORE UPDATE ON membership_google_play_recovery_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 COMMENT ON TABLE membership_google_play_recovery_cursors IS 'Bounded Google Play notification, acknowledgement, and active-source recovery scans advance only after their queue fan-out succeeds.';
-COMMENT ON COLUMN membership_google_play_recovery_cursors.last_evidence_id IS 'Durable UUIDv7 keyset position within the current bounded recovery sweep.';
-COMMENT ON COLUMN membership_google_play_recovery_cursors.sweep_upper_bound_id IS 'Inclusive UUIDv7 high-water mark captured before a sweep so sustained inserts cannot starve older pending work.';
+COMMENT ON COLUMN membership_google_play_recovery_cursors.recovery_sweep IS 'Concrete recovery sweep sharing one compare-and-set cursor across dispatchers.';
+COMMENT ON COLUMN membership_google_play_recovery_cursors.cursor_evidence_id IS 'Durable UUIDv7 keyset position within the current bounded recovery sweep.';
+COMMENT ON COLUMN membership_google_play_recovery_cursors.sweep_upper_bound_evidence_id IS 'Inclusive UUIDv7 high-water mark captured before a sweep so sustained inserts cannot starve older pending work.';

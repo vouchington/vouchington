@@ -15,7 +15,7 @@ export type InboxActivityResult =
 
 export type DurableInboxCompletion = {
   deliveryId: string
-  processingAttemptId: string
+  leaseToken: string
 }
 
 class StaleDurableInboxCompletionError extends Error {}
@@ -69,7 +69,7 @@ async function completeDurableDeliveryOrThrow(
   if (!completion) return
   const completed = await activityPubInboxDeliveryTransitions.complete(
     completion.deliveryId,
-    completion.processingAttemptId,
+    completion.leaseToken,
     { query },
   )
   if (completed.outcome === 'stale') throw new StaleDurableInboxCompletionError()

@@ -76,7 +76,7 @@ describe('topic import retry', () => {
       getTopicImportRequestCountByRecommendationForTest(user.id, first.response.id),
     ).resolves.toBe(1)
 
-    await discardRejectedContributionAdmission(heldClaim.reservationId, heldClaim.leaseId)
+    await discardRejectedContributionAdmission(heldClaim.reservationId, heldClaim.leaseToken)
     const heldOwner = await admitImportedTopicRecommendation(
       user,
       WEB_PROVENANCE,

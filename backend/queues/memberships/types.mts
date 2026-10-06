@@ -24,7 +24,7 @@ export type MembershipsJobs =
 
 export type ProcessStripeEventData = {
   stripeEventRecordId: string
-  processingAttemptId: string
+  leaseToken: string
   stripeSubscriptionId: string | null
   isLiveMode: boolean
 }
@@ -48,6 +48,7 @@ export type ReconcileGooglePlayActiveSourceData = { sourceId: string }
 export type ReconcileMicrosoftStoreSourceData = { sourceId: string }
 
 export type ProcessSendRenewalPriceIncreaseEmailData = {
+  generation: string
   userId: string
   membershipId: string
   membershipProviderObservationId: string

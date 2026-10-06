@@ -13,7 +13,6 @@ import { recoveryLineageIdentity } from './recovery-recurrence.mts'
 import type { MicrosoftStoreSourceRecoveryContext } from './source-recovery-context.mts'
 import type { MicrosoftStoreClient } from './types.mts'
 
-const RECOVERY_CURSOR_ID = 'active_sources'
 const SWEEP_BUCKET_MS = 60 * 60 * 1000
 export type MicrosoftStoreSourceRecoveryBatch = {
   sourceIds: string[]
@@ -49,7 +48,7 @@ export async function advanceMicrosoftStoreSourceRecoveryCursor(
   const lastSourceId = batch.completesSweep ? null : batch.nextCursor
   const upperBound = batch.completesSweep ? null : batch.sweepUpperBound
   const { rowCount } = await write(
-    sql`/* advanceMicrosoftStoreSourceRecoveryCursor */ INSERT INTO membership_microsoft_store_recovery_cursors (id, last_source_id, sweep_upper_bound_id) VALUES (${RECOVERY_CURSOR_ID}, ${lastSourceId}::UUID, ${upperBound}::UUID) ON CONFLICT (id) DO UPDATE SET last_source_id = EXCLUDED.last_source_id, sweep_upper_bound_id = EXCLUDED.sweep_upper_bound_id WHERE membership_microsoft_store_recovery_cursors.last_source_id IS NOT DISTINCT FROM ${batch.previousCursor}::UUID AND membership_microsoft_store_recovery_cursors.sweep_upper_bound_id IS NOT DISTINCT FROM ${batch.previousUpperBound}::UUID`,
+    sql`/* advanceMicrosoftStoreSourceRecoveryCursor */ INSERT INTO membership_microsoft_store_recovery_cursors (is_singleton, cursor_source_id, sweep_upper_bound_source_id) VALUES (TRUE, ${lastSourceId}::UUID, ${upperBound}::UUID) ON CONFLICT (is_singleton) DO UPDATE SET cursor_source_id = EXCLUDED.cursor_source_id, sweep_upper_bound_source_id = EXCLUDED.sweep_upper_bound_source_id WHERE membership_microsoft_store_recovery_cursors.cursor_source_id IS NOT DISTINCT FROM ${batch.previousCursor}::UUID AND membership_microsoft_store_recovery_cursors.sweep_upper_bound_source_id IS NOT DISTINCT FROM ${batch.previousUpperBound}::UUID`,
   )
   return rowCount === 1
 }
@@ -107,15 +106,18 @@ async function findRecoveryCursor(): Promise<{
   previousCursor: string | null
   previousUpperBound: string | null
 }> {
+  await write(sql`/* ensureMicrosoftStoreRecoveryCursor */
+    INSERT INTO membership_microsoft_store_recovery_cursors (is_singleton)
+    VALUES (TRUE) ON CONFLICT DO NOTHING`)
   const { rows } = await write<{
-    last_source_id: string | null
-    sweep_upper_bound_id: string | null
+    cursor_source_id: string | null
+    sweep_upper_bound_source_id: string | null
   }>(
-    sql`/* findMicrosoftStoreSourceRecoveryCursor */ SELECT last_source_id, sweep_upper_bound_id FROM membership_microsoft_store_recovery_cursors WHERE id = ${RECOVERY_CURSOR_ID}`,
+    sql`/* findMicrosoftStoreSourceRecoveryCursor */ SELECT cursor_source_id, sweep_upper_bound_source_id FROM membership_microsoft_store_recovery_cursors WHERE is_singleton`,
   )
   return {
-    previousCursor: rows[0]?.last_source_id ?? null,
-    previousUpperBound: rows[0]?.sweep_upper_bound_id ?? null,
+    previousCursor: rows[0]?.cursor_source_id ?? null,
+    previousUpperBound: rows[0]?.sweep_upper_bound_source_id ?? null,
   }
 }
 async function findSourcesAfterCursor(

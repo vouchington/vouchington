@@ -18,13 +18,13 @@ describe('Stripe event recovery', () => {
     const unstarted = (await claimRecoverableStripeEvents()).find(
       candidate => candidate.stripeEventRecordId === event.id,
     )
-    expect(unstarted?.processingAttemptId).toBe(event.processing_attempt_id)
+    expect(unstarted?.leaseToken).toBe(event.lease_token)
 
     await makeStripeEventRecoverableForTest(event.id, 'stale')
     const stale = (await claimRecoverableStripeEvents()).find(
       candidate => candidate.stripeEventRecordId === event.id,
     )
-    expect(stale?.processingAttemptId).not.toBe(event.processing_attempt_id)
+    expect(stale?.leaseToken).not.toBe(event.lease_token)
   })
 
   it('returns the durable subscription identity needed to serialize recovery jobs', async () => {
@@ -41,12 +41,12 @@ describe('Stripe event recovery', () => {
 
   it('fences lifecycle writes by the persisted processing attempt id', async () => {
     const event = await insertStripeEvent(makeEvent())
-    const acquired = await markStripeEventProcessing(event.id, event.processing_attempt_id)
+    const acquired = await markStripeEventProcessing(event.id, event.lease_token)
     expect(acquired).not.toBeNull()
     await markStripeEventCompleted(event.id, 'processed', event.id)
     await markStripeEventFailed(event.id, 'stale failure', event.id, true)
     expect((await getStripeEventById(event.id))?.status).toBe('processing')
-    await markStripeEventCompleted(event.id, 'processed', event.processing_attempt_id)
+    await markStripeEventCompleted(event.id, 'processed', event.lease_token)
     expect((await getStripeEventById(event.id))?.status).toBe('processed')
   })
 

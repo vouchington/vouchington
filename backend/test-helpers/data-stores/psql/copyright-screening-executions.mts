@@ -43,7 +43,7 @@ export async function readTestCopyrightScreeningExecution(intakeId: string) {
     failed_at: Date | null
   }>(sql`/* readTestCopyrightScreeningExecution */
     SELECT attempt_number, state, copyright_notice_form_screening_id,
-      started_at, claimed_at, completed_at, failed_at
+      started_at, execution_started_at AS claimed_at, completed_at, failed_at
     FROM copyright_notice_form_screening_attempts
     WHERE copyright_notice_form_intake_id = ${intakeId} ORDER BY attempt_number DESC LIMIT 1
   `)
@@ -89,7 +89,7 @@ export async function readTestCopyrightStaffScreening(noticeId: string) {
 /** Move the retry cutoff forward without rewriting the immutable claim facts. */
 export async function getTestExpiredCopyrightScreeningClaimTime(intakeId: string): Promise<Date> {
   const { rows } = await write<{ cutoff: Date }>(sql`/* getTestExpiredCopyrightScreeningClaimTime */
-    SELECT claimed_at + INTERVAL '16 minutes' AS cutoff
+    SELECT execution_started_at + INTERVAL '16 minutes' AS cutoff
     FROM copyright_notice_form_screening_attempts WHERE copyright_notice_form_intake_id = ${intakeId}
     ORDER BY attempt_number DESC LIMIT 1
   `)

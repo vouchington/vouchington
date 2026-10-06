@@ -6,7 +6,7 @@ export async function cleanupActivityPubInboxStorageFixturesForTest(
 ): Promise<void> {
   if (claimedActivityIds.length === 0) return
   await write(sql`/* cleanupActivityPubInboxStorageFixturesForTest */
-    DELETE FROM activitypub_inbox_deliveries
+    DELETE FROM activitypub_inbox_delivery_work_items
     WHERE claimed_activity_id = ANY(${claimedActivityIds})
   `)
 }
@@ -15,7 +15,7 @@ export async function deleteActivityPubInboxDeliveriesForTest(
   deliveryIds: readonly string[],
 ): Promise<void> {
   await write(sql`/* deleteActivityPubInboxDeliveriesForTest */
-    DELETE FROM activitypub_inbox_deliveries WHERE id = ANY(${deliveryIds})
+    DELETE FROM activitypub_inbox_delivery_work_items WHERE id = ANY(${deliveryIds})
   `)
 }
 
@@ -37,18 +37,19 @@ export async function getActivityPubInboxStorageTriggerDefinitionsForTest(): Pro
 
 export async function expireActivityPubInboxDeliveryForTest(deliveryId: string): Promise<void> {
   await write(sql`/* expireActivityPubInboxDeliveryForTest */
-    UPDATE activitypub_inbox_deliveries
+    UPDATE activitypub_inbox_delivery_work_items
     SET retention_expires_at = CURRENT_TIMESTAMP - INTERVAL '1 minute',
         received_at = CURRENT_TIMESTAMP - INTERVAL '2 hours',
-        enqueued_at = CURRENT_TIMESTAMP - INTERVAL '10 minutes'
+        dispatched_at = CURRENT_TIMESTAMP - INTERVAL '10 minutes'
     WHERE id = ${deliveryId}
   `)
 }
 
 export async function makeActivityPubInboxFailureExpiredForTest(deliveryId: string): Promise<void> {
   await write(sql`/* makeActivityPubInboxFailureExpiredForTest */
-    UPDATE activitypub_inbox_deliveries
-    SET processing_at = CURRENT_TIMESTAMP - INTERVAL '31 minutes',
+    UPDATE activitypub_inbox_delivery_work_items
+    SET leased_at = CURRENT_TIMESTAMP - INTERVAL '31 minutes',
+        lease_expires_at = CURRENT_TIMESTAMP - INTERVAL '1 minute',
         failed_at = CURRENT_TIMESTAMP - INTERVAL '8 days',
         last_error = 'expired'
     WHERE id = ${deliveryId}
@@ -61,14 +62,18 @@ export async function ageActivityPubInboxCleanupFixturesForTest(
   idleDeliveryId: string,
 ): Promise<void> {
   await write(sql`/* ageActivityPubInboxCleanupFixturesForTest */
-    UPDATE activitypub_inbox_deliveries
+    UPDATE activitypub_inbox_delivery_work_items
     SET received_at = CURRENT_TIMESTAMP - INTERVAL '2 hours',
         retention_expires_at = CURRENT_TIMESTAMP - INTERVAL '1 hour',
-        processing_at = CASE
+        leased_at = CASE
           WHEN id = ${activeDeliveryId} THEN CURRENT_TIMESTAMP
           WHEN id = ${staleDeliveryId} THEN CURRENT_TIMESTAMP - INTERVAL '31 minutes'
           ELSE NULL
-        END
+        END,
+        lease_expires_at = CASE
+          WHEN id = ${activeDeliveryId} THEN CURRENT_TIMESTAMP + INTERVAL '30 minutes'
+          WHEN id = ${staleDeliveryId} THEN CURRENT_TIMESTAMP - INTERVAL '1 minute'
+          ELSE NULL END
     WHERE id IN (${activeDeliveryId}, ${staleDeliveryId}, ${idleDeliveryId})
   `)
 }
@@ -79,7 +84,7 @@ export async function getExistingActivityPubInboxDeliveryIdsForTest(
   const { rows } = await read<{
     id: string
   }>(sql`/* getExistingActivityPubInboxDeliveryIdsForTest */
-    SELECT id FROM activitypub_inbox_deliveries WHERE id = ANY(${deliveryIds}) ORDER BY id
+    SELECT id FROM activitypub_inbox_delivery_work_items WHERE id = ANY(${deliveryIds}) ORDER BY id
   `)
   return rows.map(row => row.id)
 }
@@ -100,7 +105,7 @@ export async function insertActivityPubInboxDeliveryThenRollbackForTest(envelope
   {
     await using transaction = await beginTransaction()
     await transaction(sql`/* insertActivityPubInboxDeliveryThenRollbackForTest */
-        INSERT INTO activitypub_inbox_deliveries (
+        INSERT INTO activitypub_inbox_delivery_work_items (
           request_method, request_target, expected_host, signature_header, digest_header,
           date_header, raw_body, claimed_activity_id, claimed_activity_type,
           claimed_actor_uri, sender_hostname
@@ -122,7 +127,7 @@ export async function getActivityPubInboxRetentionStateForTest(deliveryId: strin
     retention_expires_at: Date | null
   }>(sql`/* getActivityPubInboxRetentionStateForTest */
     SELECT received_at, first_failed_at, retention_expires_at
-    FROM activitypub_inbox_deliveries
+    FROM activitypub_inbox_delivery_work_items
     WHERE id = ${deliveryId}
   `)
   const row = rows[0]
@@ -136,7 +141,7 @@ export async function insertActivityPubInboxCapacityDeliveriesForTest(
   expired = false,
 ): Promise<void> {
   await write(sql`/* insertActivityPubInboxCapacityDeliveriesForTest */
-    INSERT INTO activitypub_inbox_deliveries (
+    INSERT INTO activitypub_inbox_delivery_work_items (
       request_method, request_target, expected_host, signature_header, digest_header, date_header,
       raw_body, claimed_activity_id, claimed_activity_type, claimed_actor_uri, sender_hostname,
       received_at, retention_expires_at

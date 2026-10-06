@@ -22,7 +22,7 @@ describe('ActivityPub inbox processor', () => {
   it('treats a stale fencing token as an idempotent no-op', async () => {
     await expect(
       processDelivery(
-        { deliveryId: randomUUID(), processingAttemptId: randomUUID() },
+        { deliveryId: randomUUID(), leaseToken: randomUUID() },
         { isFinalAttempt: false },
       ),
     ).resolves.toBeUndefined()
@@ -33,11 +33,11 @@ describe('ActivityPub inbox processor', () => {
     const activityId = `${actor.actorUri}/activities/${randomUUID()}`
     const first = await createSignedDelivery(actor, { activityId })
     await processDelivery(first, { isFinalAttempt: false })
-    expect(await claimTestDelivery(first.deliveryId, first.processingAttemptId)).toBeNull()
+    expect(await claimTestDelivery(first.deliveryId, first.leaseToken)).toBeNull()
 
     const duplicate = await createSignedDelivery(actor, { activityId })
     await processDelivery(duplicate, { isFinalAttempt: false })
-    expect(await claimTestDelivery(duplicate.deliveryId, duplicate.processingAttemptId)).toBeNull()
+    expect(await claimTestDelivery(duplicate.deliveryId, duplicate.leaseToken)).toBeNull()
   })
 
   it('deletes a terminal actor-mismatch rejection and skips remaining retries', async () => {
@@ -49,52 +49,50 @@ describe('ActivityPub inbox processor', () => {
     await expect(processDelivery(delivery, { isFinalAttempt: false })).rejects.toBeInstanceOf(
       UnrecoverableError,
     )
-    expect(await claimTestDelivery(delivery.deliveryId, delivery.processingAttemptId)).toBeNull()
+    expect(await claimTestDelivery(delivery.deliveryId, delivery.leaseToken)).toBeNull()
   })
 
   it('deletes a delivery when its instance is no longer approved', async () => {
     const delivery = await createSignedDelivery(makeUnavailableActor())
     onTestFinished(async () => {
-      await rejectTestDelivery(delivery.deliveryId, delivery.processingAttemptId)
+      await rejectTestDelivery(delivery.deliveryId, delivery.leaseToken)
     })
 
     await expect(processDelivery(delivery, { isFinalAttempt: false })).rejects.toBeInstanceOf(
       UnrecoverableError,
     )
-    expect(await claimTestDelivery(delivery.deliveryId, delivery.processingAttemptId)).toBeNull()
+    expect(await claimTestDelivery(delivery.deliveryId, delivery.leaseToken)).toBeNull()
   })
 
   it('fetches the actor and verifies the signature for an unverified delivery', async () => {
     const actor = await createApprovedRemoteActor()
     const delivery = await createSignedDelivery(actor, { corruptSignature: true })
     onTestFinished(async () => {
-      await rejectTestDelivery(delivery.deliveryId, delivery.processingAttemptId)
+      await rejectTestDelivery(delivery.deliveryId, delivery.leaseToken)
     })
 
     await expect(processDelivery(delivery, { isFinalAttempt: false })).rejects.toBeInstanceOf(
       UnrecoverableError,
     )
-    expect(await claimTestDelivery(delivery.deliveryId, delivery.processingAttemptId)).toBeNull()
+    expect(await claimTestDelivery(delivery.deliveryId, delivery.leaseToken)).toBeNull()
   })
 
   it('reuses a durable verification checkpoint from primary without refetching or reverifying', async () => {
     const actor = await createApprovedRemoteActor()
     const delivery = await createSignedDelivery(actor, { corruptSignature: true })
 
-    expect(
-      await claimTestDelivery(delivery.deliveryId, delivery.processingAttemptId),
-    ).not.toBeNull()
+    expect(await claimTestDelivery(delivery.deliveryId, delivery.leaseToken)).not.toBeNull()
     expect(
       await markActivityPubInboxDeliveryVerified(
         delivery.deliveryId,
-        delivery.processingAttemptId,
+        delivery.leaseToken,
         actor.remoteActorId!,
       ),
     ).toBe(true)
     expect(
       await releaseActivityPubInboxDeliveryForRetry(
         delivery.deliveryId,
-        delivery.processingAttemptId,
+        delivery.leaseToken,
         new Error('simulated crash after verification'),
       ),
     ).toBe(true)
@@ -102,27 +100,25 @@ describe('ActivityPub inbox processor', () => {
     // The signature is intentionally invalid. Success proves the retry trusted the paired durable
     // checkpoint; a refetch/reverification path would reject this envelope.
     await expect(processDelivery(delivery, { isFinalAttempt: false })).resolves.toBeUndefined()
-    expect(await claimTestDelivery(delivery.deliveryId, delivery.processingAttemptId)).toBeNull()
+    expect(await claimTestDelivery(delivery.deliveryId, delivery.leaseToken)).toBeNull()
   })
 
   it('rejects a checkpoint whose remote actor was soft-deleted on primary', async () => {
     const actor = await createApprovedRemoteActor()
     const delivery = await createSignedDelivery(actor)
 
-    expect(
-      await claimTestDelivery(delivery.deliveryId, delivery.processingAttemptId),
-    ).not.toBeNull()
+    expect(await claimTestDelivery(delivery.deliveryId, delivery.leaseToken)).not.toBeNull()
     expect(
       await markActivityPubInboxDeliveryVerified(
         delivery.deliveryId,
-        delivery.processingAttemptId,
+        delivery.leaseToken,
         actor.remoteActorId!,
       ),
     ).toBe(true)
     expect(
       await releaseActivityPubInboxDeliveryForRetry(
         delivery.deliveryId,
-        delivery.processingAttemptId,
+        delivery.leaseToken,
         new Error('simulated crash after verification'),
       ),
     ).toBe(true)
@@ -131,7 +127,7 @@ describe('ActivityPub inbox processor', () => {
     await expect(processDelivery(delivery, { isFinalAttempt: false })).rejects.toBeInstanceOf(
       UnrecoverableError,
     )
-    expect(await claimTestDelivery(delivery.deliveryId, delivery.processingAttemptId)).toBeNull()
+    expect(await claimTestDelivery(delivery.deliveryId, delivery.leaseToken)).toBeNull()
   })
 
   it('retains and re-arms a final retryable remote-actor availability failure', async () => {
@@ -151,7 +147,7 @@ describe('ActivityPub inbox processor', () => {
     const rearmed = (await rearmFailedActivityPubInboxDeliveries([delivery.deliveryId])).find(
       candidate => candidate.deliveryId === delivery.deliveryId,
     )
-    expect(rearmed?.processingAttemptId).not.toBe(delivery.processingAttemptId)
+    expect(rearmed?.leaseToken).not.toBe(delivery.leaseToken)
   })
 
   it('releases a non-final retryable remote-actor failure for another attempt', async () => {
@@ -159,41 +155,34 @@ describe('ActivityPub inbox processor', () => {
     await approveInstance(actor.hostname)
     const delivery = await createSignedDelivery(actor)
     onTestFinished(async () => {
-      await rejectTestDelivery(delivery.deliveryId, delivery.processingAttemptId)
+      await rejectTestDelivery(delivery.deliveryId, delivery.leaseToken)
     })
 
     await expect(processDelivery(delivery, { isFinalAttempt: false })).rejects.not.toBeInstanceOf(
       UnrecoverableError,
     )
-    expect(
-      await claimTestDelivery(delivery.deliveryId, delivery.processingAttemptId),
-    ).not.toBeNull()
+    expect(await claimTestDelivery(delivery.deliveryId, delivery.leaseToken)).not.toBeNull()
   })
 })
 
 async function markActivityPubInboxDeliveryVerified(
   deliveryId: string,
-  processingAttemptId: string,
+  leaseToken: string,
   remoteActorId: string,
 ) {
   return (
-    (
-      await activityPubInboxDeliveryTransitions.verify(
-        deliveryId,
-        processingAttemptId,
-        remoteActorId,
-      )
-    ).outcome === 'applied'
+    (await activityPubInboxDeliveryTransitions.verify(deliveryId, leaseToken, remoteActorId))
+      .outcome === 'applied'
   )
 }
 
 async function releaseActivityPubInboxDeliveryForRetry(
   deliveryId: string,
-  processingAttemptId: string,
+  leaseToken: string,
   error: unknown,
 ) {
   return (
-    (await activityPubInboxDeliveryTransitions.release(deliveryId, processingAttemptId, error))
-      .outcome === 'applied'
+    (await activityPubInboxDeliveryTransitions.release(deliveryId, leaseToken, error)).outcome ===
+    'applied'
   )
 }

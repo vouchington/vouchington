@@ -4,7 +4,9 @@
 
 CREATE OR REPLACE FUNCTION fn_reject_copyright_action_intent()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE next_state copyright_notice_action_intent_states;
 BEGIN
+  next_state := CASE WHEN NEW.completed_at IS NOT NULL THEN NEW.completed_at_reason WHEN NEW.leased_at IS NOT NULL THEN 'claimed'::copyright_notice_action_intent_states ELSE 'pending'::copyright_notice_action_intent_states END;
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'copyright action intents are durable saga records' USING ERRCODE = 'check_violation';
   END IF;
@@ -14,35 +16,35 @@ BEGIN
       NEW.expected_placement_revision, NEW.action) THEN
     RAISE EXCEPTION 'copyright action intent identity and revision fence are immutable' USING ERRCODE = 'check_violation';
   END IF;
-  IF OLD.state IN ('completed', 'stale') AND NEW.state IS DISTINCT FROM OLD.state THEN
+  IF OLD.state IN ('completed', 'stale') AND next_state IS DISTINCT FROM OLD.state THEN
     RAISE EXCEPTION 'terminal copyright action intent cannot change' USING ERRCODE = 'check_violation';
   END IF;
-  IF OLD.state IN ('blocked', 'failed') AND NEW.state IS DISTINCT FROM OLD.state
-    AND NOT (NEW.state = 'pending' AND NEW.completed_at IS NULL
-      AND NEW.completed_at_reason IS NULL AND NEW.claimed_at IS NULL
-      AND NEW.delivery_attempt_count = 0) THEN
+  IF OLD.state IN ('blocked', 'failed') AND next_state IS DISTINCT FROM OLD.state
+    AND NOT (next_state = 'pending' AND NEW.completed_at IS NULL
+      AND NEW.completed_at_reason IS NULL AND NEW.leased_at IS NULL
+      AND NEW.attempt_count = 0) THEN
     RAISE EXCEPTION 'blocked and failed copyright actions may only be explicitly replayed' USING ERRCODE = 'check_violation';
   END IF;
-  IF (NEW.delivery_attempt_count < OLD.delivery_attempt_count
-      AND NOT (OLD.state IN ('blocked', 'failed') AND NEW.state = 'pending'
-        AND NEW.delivery_attempt_count = 0))
-    OR NEW.delivery_attempt_count > OLD.delivery_attempt_count + 1 THEN
+  IF (NEW.attempt_count < OLD.attempt_count
+      AND NOT (OLD.state IN ('blocked', 'failed') AND next_state = 'pending'
+        AND NEW.attempt_count = 0))
+    OR NEW.attempt_count > OLD.attempt_count + 1 THEN
     RAISE EXCEPTION 'copyright action intent attempts must advance one at a time' USING ERRCODE = 'check_violation';
   END IF;
   IF OLD.completed_at IS NOT NULL AND OLD.completed_at IS DISTINCT FROM NEW.completed_at
-    AND NOT (OLD.state IN ('blocked', 'failed') AND NEW.state = 'pending' AND NEW.completed_at IS NULL) THEN
+    AND NOT (OLD.state IN ('blocked', 'failed') AND next_state = 'pending' AND NEW.completed_at IS NULL) THEN
     RAISE EXCEPTION 'copyright action intent completion is immutable' USING ERRCODE = 'check_violation';
   END IF;
   RETURN NEW;
 END;
 $$;
 
-COMMENT ON COLUMN copyright_notice_action_intents.state IS 'Durable media-delivery state: pending, worker-claimed, or terminal completed, stale, blocked, or failed.';
-COMMENT ON COLUMN copyright_notice_action_intents.delivery_attempt_count IS 'Bounded count of worker claims for this media-delivery saga.';
-COMMENT ON COLUMN copyright_notice_action_intents.claimed_at IS 'Latest time a worker claimed the intent before rechecking and applying the placement transition.';
-COMMENT ON COLUMN copyright_notice_action_intents.completed_at_reason IS 'Terminal action-delivery outcome, retained with its completion timestamp.';
-COMMENT ON COLUMN copyright_notice_action_intents.failure_message IS 'Bounded staff-visible reason for a transient or terminal delivery failure.';
-COMMENT ON COLUMN copyright_notice_action_intents.next_attempt_at IS 'Earliest durable retry time after a retryable media-delivery failure.';
+COMMENT ON COLUMN copyright_notice_action_work_items.state IS 'Durable media-delivery state: pending, worker-claimed, or terminal completed, stale, blocked, or failed.';
+COMMENT ON COLUMN copyright_notice_action_work_items.attempt_count IS 'Bounded count of worker claims for this media-delivery saga.';
+COMMENT ON COLUMN copyright_notice_action_work_items.leased_at IS 'Latest time a worker claimed the intent before rechecking and applying the placement transition.';
+COMMENT ON COLUMN copyright_notice_action_work_items.completed_at_reason IS 'Terminal action-delivery outcome, retained with its completion timestamp.';
+COMMENT ON COLUMN copyright_notice_action_work_items.failure_message IS 'Bounded staff-visible reason for a transient or terminal delivery failure.';
+COMMENT ON COLUMN copyright_notice_action_work_items.available_at IS 'Earliest durable retry time after a retryable media-delivery failure.';
 
 -- The registry is an application outbox, not a cache.  The edge function reads DynamoDB on every
 -- request, while this table supplies exactly-once desired-state convergence across PostgreSQL and
@@ -61,6 +63,31 @@ CREATE TABLE media_delivery_registry_records (
   CONSTRAINT media_delivery_registry_records_exact_key
     CHECK (delivery_key = concat('image-placement:', placement_id, ':', placement_revision, ':', image_id))
 );
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE media_delivery_registry_projection_work_items (
+  delivery_key text PRIMARY KEY REFERENCES media_delivery_registry_records(delivery_key) ON DELETE CASCADE,
+  generation bigint NOT NULL CHECK (generation >= 0),
+  lease_token uuid,
+  leased_at timestamptz,
+  lease_expires_at timestamptz,
+  attempt_count integer NOT NULL DEFAULT 0 CHECK (attempt_count BETWEEN 0 AND 5),
+  available_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  CHECK ((lease_token IS NULL AND leased_at IS NULL AND lease_expires_at IS NULL)
+    OR (lease_token IS NOT NULL AND leased_at IS NOT NULL AND lease_expires_at > leased_at))
+);
+CREATE INDEX idx_media_delivery_projection_work__available
+  ON media_delivery_registry_projection_work_items(available_at, delivery_key) WHERE lease_token IS NULL;
+CREATE INDEX idx_media_delivery_projection_work__expired
+  ON media_delivery_registry_projection_work_items(lease_expires_at, delivery_key) WHERE lease_token IS NOT NULL;
+COMMENT ON TABLE media_delivery_registry_projection_work_items IS 'Current edge projection ownership; deleted on terminal publication while immutable transitions survive.';
+COMMENT ON COLUMN media_delivery_registry_projection_work_items.delivery_key IS 'Exact delivery authority being projected.';
+COMMENT ON COLUMN media_delivery_registry_projection_work_items.generation IS 'Current nontransactional edge authority generation.';
+COMMENT ON COLUMN media_delivery_registry_projection_work_items.lease_token IS 'Opaque worker ownership token, never an entity reference.';
+COMMENT ON COLUMN media_delivery_registry_projection_work_items.leased_at IS 'Database time the current lease began.';
+COMMENT ON COLUMN media_delivery_registry_projection_work_items.lease_expires_at IS 'Deadline after which the owner cannot publish or finalize.';
+COMMENT ON COLUMN media_delivery_registry_projection_work_items.attempt_count IS 'Claims in this projection generation or explicit replay cycle.';
+COMMENT ON COLUMN media_delivery_registry_projection_work_items.available_at IS 'Earliest time an idle projection can be claimed.';
 
 CREATE TYPE media_delivery_registry_change_types AS ENUM ('pending', 'claimed', 'completed', 'failed');
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -102,6 +129,27 @@ END;
 $$;
 CREATE TRIGGER trigger_media_delivery_registry_changes_generation BEFORE INSERT ON media_delivery_registry_changes
 FOR EACH ROW EXECUTE FUNCTION fn_update_media_delivery_change_authority();
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE FUNCTION fn_schedule_media_delivery_projection() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.change_type = 'pending' THEN
+    INSERT INTO media_delivery_registry_projection_work_items(delivery_key, generation, attempt_count, available_at)
+      VALUES (NEW.delivery_key, NEW.generation, NEW.delivery_attempt_count, COALESCE(NEW.next_attempt_at, clock_timestamp()))
+    ON CONFLICT (delivery_key) DO UPDATE SET generation = EXCLUDED.generation,
+      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL,
+      attempt_count = EXCLUDED.attempt_count, available_at = EXCLUDED.available_at
+    WHERE media_delivery_registry_projection_work_items.generation <> EXCLUDED.generation
+      OR media_delivery_registry_projection_work_items.lease_token IS NULL;
+  ELSIF NEW.change_type IN ('completed', 'failed') THEN
+    DELETE FROM media_delivery_registry_projection_work_items
+      WHERE delivery_key = NEW.delivery_key AND generation = NEW.generation;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_media_delivery_projection_schedule AFTER INSERT ON media_delivery_registry_changes
+FOR EACH ROW EXECUTE FUNCTION fn_schedule_media_delivery_projection();
 
 CREATE VIEW media_delivery_registry_current_records AS
 SELECT record.delivery_key, record.placement_id, record.placement_revision, record.image_id,

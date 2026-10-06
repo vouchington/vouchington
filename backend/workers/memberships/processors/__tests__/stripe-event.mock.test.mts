@@ -230,7 +230,7 @@ describe('stripe-event', () => {
       await processStripeEvent(toJobData(storedEvent), true, undefined, applicationContext)
 
       const processedEvent = await getStripeEventByStripeEventId(storedEvent.stripe_event_id)
-      expect(processedEvent?.processing_attempts).toBe(1)
+      expect(processedEvent?.attempt_count).toBe(1)
 
       const raw = await getTestMembershipRaw(membership.id)
       expect(raw?.status).toBe('past_due')

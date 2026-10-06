@@ -16,7 +16,7 @@ export async function pruneExpiredContributionAdmissions(
         AND NOT EXISTS (
           SELECT 1 FROM post_admission_claims c
           WHERE c.reservation_id = r.id
-            AND c.expires_at > COALESCE(${now ?? null}::timestamptz, NOW())
+            AND c.lease_expires_at > COALESCE(${now ?? null}::timestamptz, NOW())
         )
         AND (${lowerBoundDate ?? null}::timestamptz IS NULL
           OR r.retention_expires_at >= ${lowerBoundDate ?? null}::timestamptz)
@@ -32,30 +32,47 @@ export async function pruneExpiredContributionAdmissions(
 
 export async function markContributionAdmissionRetryableFailure(
   reservationId: string,
-  leaseId: string,
+  leaseToken: string,
   error: unknown,
 ): Promise<void> {
   await using transaction = await beginTransaction()
-  await transaction(sql`/* markContributionAdmissionRetryableFailure.update */
-    UPDATE post_admission_reservations SET state = 'retryable_failed', retryable_failure = ${JSON.stringify(serializeContributionAdmissionFailure(error))}::jsonb, retention_expires_at = NOW() + INTERVAL '48 hours'
-      WHERE id = ${reservationId} AND EXISTS (
-        SELECT 1 FROM post_admission_claims WHERE reservation_id = ${reservationId} AND lease_id = ${leaseId}
-      )`)
+  const { rowCount } = await transaction(sql`/* markContributionAdmissionRetryableFailure.update */
+    INSERT INTO post_admission_attempt_results (post_admission_attempt_id, failed_at, failure)
+    SELECT attempt.id, clock_timestamp(), ${JSON.stringify(serializeContributionAdmissionFailure(error))}::jsonb
+    FROM post_admission_attempts attempt JOIN post_admission_claims claim
+      ON claim.reservation_id = attempt.reservation_id AND claim.lease_token = attempt.lease_token
+    WHERE claim.reservation_id = ${reservationId} AND claim.lease_token = ${leaseToken}
+      AND claim.lease_expires_at > clock_timestamp()
+    ORDER BY attempt.id ASC NULLS LAST
+    ON CONFLICT (post_admission_attempt_id) DO NOTHING`)
+  if (rowCount !== 1) {
+    await transaction.commit()
+    return
+  }
+  await transaction(sql`/* markContributionAdmissionRetryableFailure.extendRetention */
+    UPDATE post_admission_reservations
+    SET retention_expires_at = clock_timestamp() + INTERVAL '48 hours'
+    WHERE id = ${reservationId} AND EXISTS (
+      SELECT 1 FROM post_admission_claims
+      WHERE reservation_id = ${reservationId} AND lease_token = ${leaseToken}
+        AND lease_expires_at > clock_timestamp()
+    )`)
   await transaction(sql`/* markContributionAdmissionRetryableFailure.release */
-    DELETE FROM post_admission_claims WHERE reservation_id = ${reservationId} AND lease_id = ${leaseId}`)
+    DELETE FROM post_admission_claims WHERE reservation_id = ${reservationId} AND lease_token = ${leaseToken}`)
   await transaction.commit()
 }
 
 export async function discardRejectedContributionAdmission(
   reservationId: string,
-  leaseId: string,
+  leaseToken: string,
 ): Promise<void> {
   await using transaction = await beginTransaction()
   await transaction(sql`/* discardRejectedContributionAdmission */
     DELETE FROM post_admission_reservations
     WHERE id = ${reservationId} AND EXISTS (
       SELECT 1 FROM post_admission_claims
-      WHERE reservation_id = ${reservationId} AND lease_id = ${leaseId}
+      WHERE reservation_id = ${reservationId} AND lease_token = ${leaseToken}
+        AND lease_expires_at > clock_timestamp()
     )`)
   await transaction.commit()
 }

@@ -53,7 +53,7 @@ export async function appendCopyrightSubmissionAssessmentInTransaction(
         )
         AND EXISTS (
           SELECT 1
-          FROM copyright_notice_delivery_intents receipt
+          FROM copyright_notice_delivery_work_items receipt
           JOIN copyright_notice_delivery_recipients recipient
             ON recipient.copyright_notice_delivery_intent_id = receipt.id
           WHERE receipt.copyright_notice_id = n.id

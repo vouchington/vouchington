@@ -3,8 +3,8 @@ import sql from 'sql-template-strings'
 
 export async function makeTestGooglePlayVerificationDue(verificationId: string): Promise<void> {
   await write(sql`/* makeTestGooglePlayVerificationDue */
-    UPDATE membership_verifications SET next_processing_at = CURRENT_TIMESTAMP
-    WHERE id = ${verificationId}`)
+    UPDATE membership_verification_processing_work_items SET available_at = CURRENT_TIMESTAMP
+    WHERE membership_verification_id = ${verificationId}`)
 }
 
 export async function getTestGooglePlaySourceExpiredAt(userId: string): Promise<Date | null> {

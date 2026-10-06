@@ -8,10 +8,8 @@ import {
   updateTestMembershipCancelAtPeriodEnd,
 } from '@voucha/test-helpers'
 import { createMembership } from '../create.mts'
-import {
-  claimRenewalPriceIncreaseNotification,
-  getUsersApproachingRenewalWithPriceIncrease,
-} from '../renewal-check.mts'
+import { getUsersApproachingRenewalWithPriceIncrease } from '../renewal-check.mts'
+import { claimTestRenewalPriceIncreaseNotification as claimRenewalPriceIncreaseNotification } from '@voucha/test-helpers/renewal-notification-claims'
 
 function createPlusSku(priceMinorUnits: number, providerApplicationId: string) {
   return createTestSku({

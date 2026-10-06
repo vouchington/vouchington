@@ -39,7 +39,7 @@ export function copyrightActionDeliveryFacts() {
           hold_restriction.copyright_notice_legal_hold_assessment_id
       WHERE hold_restriction.copyright_restriction_id = restriction.id
     ) AS hold_resolution_authorized
-    FROM copyright_notice_action_intents intent
+    FROM copyright_notice_action_work_items intent
     JOIN copyright_restrictions restriction ON restriction.id = intent.copyright_restriction_id
     JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
     JOIN copyright_notice_target_images target_image

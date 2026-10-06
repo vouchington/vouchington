@@ -41,7 +41,7 @@ export async function createCopyrightEmailIntakeResponseInTransaction(
   const id = uuidv7()
   const deliveryKind: CopyrightEmailIntakeDeliveryKind = `email_intake_${input.responseKind}`
   await transaction(sql`/* createCopyrightEmailIntakeResponseInTransaction */
-    INSERT INTO copyright_notice_delivery_intents (
+    INSERT INTO copyright_notice_delivery_work_items (
       id, copyright_notice_email_intake_id, recipient_role, delivery_kind, channel,
       idempotency_key, body_ciphertext
     ) VALUES (

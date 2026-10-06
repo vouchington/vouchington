@@ -36,7 +36,7 @@ export async function selectTerritorialStaffRecipients(
       MIN(intent.sent_at) FILTER (WHERE intent.state = 'sent' AND intent.sent_at >= ${decidedAt}) AS informed_at,
       (array_agg(intent.state ORDER BY intent.id DESC))[1] AS state
     FROM recipients recipient
-    LEFT JOIN copyright_notice_delivery_intents intent
+    LEFT JOIN copyright_notice_delivery_work_items intent
       ON intent.copyright_notice_id = ${noticeId}
       AND intent.recipient_role::text = recipient.role
       AND (recipient.role = 'claimant' OR intent.recipient_user_id = recipient.user_id)

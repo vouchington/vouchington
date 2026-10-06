@@ -1,6 +1,6 @@
 export const POST_PUBLICATION_UUID_COLUMNS_WITHOUT_KEYS = [
   [
-    'post_publication_identity_bridge_cleanup_progress.cursor_identity_id',
+    'post_publication_identity_bridge_cleanup_cursors.cursor_identity_id',
     'Deletion-stable raw sweep cursor; not an entity relationship.',
   ],
   [
@@ -37,7 +37,7 @@ export const POST_PUBLICATION_UUID_COLUMNS_WITHOUT_KEYS = [
   ],
 
   [
-    'post_publication_identity_cleanup_progress.cursor_snapshot_id',
+    'post_publication_identity_snapshot_cleanup_cursors.cursor_snapshot_id',
     'Sweep checkpoint tombstone intentionally survives deletion of reclaimed snapshot headers.',
   ],
   ['post_publication_dirty_work.cursor_post_id', 'Cursor tombstone is not a durable relation.'],
@@ -48,7 +48,7 @@ export const POST_PUBLICATION_UUID_COLUMNS_WITHOUT_KEYS = [
     'Opaque worker fencing token identifies no durable relation.',
   ],
   [
-    'post_publication_reconciliation_audit_checkpoints.cursor_post_id',
+    'post_publication_reconciliation_audit_cursors.cursor_post_id',
     'UUID cursor is a checkpoint tombstone, not a durable relation; deletion must not invalidate an operator scan.',
   ],
 ] as const

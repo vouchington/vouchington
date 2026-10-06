@@ -20,33 +20,24 @@ export async function claimOAuthAuthorizationExchange(
 ): Promise<ClaimedOAuthAuthorization | null> {
   const claimId = uuidv7()
   const { rows } = await write(
-    `/* claimOAuthAuthorizationExchange */ UPDATE oauth_authorizations
-     SET status = 'exchanging',
-         exchange_claim_id = $2,
-         exchange_attempts = exchange_attempts + 1,
-         exchange_started_at = CURRENT_TIMESTAMP
-     WHERE id = $1
-       AND expires_at > CURRENT_TIMESTAMP
-       AND exchange_attempts < $4
-       AND (
-         provider <> 'x'
-         OR callback_received_at >
-           CURRENT_TIMESTAMP - make_interval(secs => $5)
-       )
-       AND (
-         status = 'callback_received'
-         OR (
-           status = 'exchanging'
-           AND updated_at < CURRENT_TIMESTAMP - make_interval(secs => $3)
-         )
-       )
-     RETURNING
-       id,
-       provider,
-       redirect_uri,
-       callback_code_ciphertext,
-       pkce_verifier_ciphertext,
-       exchange_claim_id`,
+    `/* claimOAuthAuthorizationExchange */ WITH candidate AS (
+       SELECT id, exchange_claim_id, updated_at
+       FROM oauth_authorization_current_records
+       WHERE id = $1 AND expires_at > clock_timestamp() AND exchange_attempts < $4
+         AND (provider <> 'x' OR callback_received_at > clock_timestamp() - make_interval(secs => $5))
+         AND (status = 'callback_received' OR
+           (status = 'exchanging' AND exchange_started_at < clock_timestamp() - make_interval(secs => $3)))
+       FOR UPDATE
+     )
+     UPDATE oauth_authorizations flow
+     SET exchange_claim_id = $2,
+         exchange_started_at = COALESCE(flow.exchange_started_at, clock_timestamp())
+     FROM candidate
+     WHERE flow.id = candidate.id AND flow.status = 'callback_received'
+       AND flow.updated_at = candidate.updated_at
+       AND flow.exchange_claim_id IS NOT DISTINCT FROM candidate.exchange_claim_id
+     RETURNING flow.id, flow.provider, flow.redirect_uri,
+       flow.callback_code_ciphertext, flow.pkce_verifier_ciphertext, flow.exchange_claim_id`,
     [
       flowId,
       claimId,
@@ -70,14 +61,15 @@ export async function rejectExhaustedOAuthAuthorizationExchange(
 ): Promise<boolean> {
   const { rowCount } = await write(
     `/* rejectExhaustedOAuthAuthorizationExchange */ UPDATE oauth_authorizations
-     SET status = 'rejected',
+     SET rejected_at = COALESCE(rejected_at, clock_timestamp()),
          callback_error = 'provider_exchange_failed',
          callback_code_ciphertext = NULL,
          exchange_claim_id = NULL
      WHERE id = $1
-       AND status = 'exchanging'
+       AND status = 'callback_received'
        AND exchange_claim_id = $2
-       AND exchange_attempts >= $3`,
+       AND (SELECT MAX(attempt_number) FROM oauth_authorization_exchange_attempts
+         WHERE oauth_authorization_id = oauth_authorizations.id) >= $3`,
     [flowId, claimId, MAX_EXCHANGE_ATTEMPTS],
   )
   return rowCount === 1
@@ -89,10 +81,9 @@ export async function releaseOAuthAuthorizationExchangeClaim(
 ): Promise<void> {
   await write(
     `/* releaseOAuthAuthorizationExchangeClaim */ UPDATE oauth_authorizations
-     SET status = 'callback_received',
-         exchange_claim_id = NULL
+     SET exchange_claim_id = NULL
      WHERE id = $1
-       AND status = 'exchanging'
+       AND status = 'callback_received'
        AND exchange_claim_id = $2`,
     [flowId, claimId],
   )
@@ -101,19 +92,19 @@ export async function releaseOAuthAuthorizationExchangeClaim(
 async function rejectExpiredXAuthorizationCode(flowId: string): Promise<void> {
   await write(
     `/* rejectExpiredXAuthorizationCode */ UPDATE oauth_authorizations
-     SET status = 'rejected',
+     SET rejected_at = COALESCE(rejected_at, clock_timestamp()),
          callback_error = 'provider_code_expired',
          callback_code_ciphertext = NULL,
          exchange_claim_id = NULL
      WHERE id = $1
        AND provider = 'x'
-       AND (
-         status = 'callback_received'
-         OR (
-           status = 'exchanging'
-           AND updated_at < CURRENT_TIMESTAMP - make_interval(secs => $3)
-         )
-       )
+       AND status = 'callback_received'
+       AND (exchange_claim_id IS NULL OR EXISTS (
+         SELECT 1 FROM oauth_authorization_exchange_attempts attempt
+         WHERE attempt.oauth_authorization_id = oauth_authorizations.id
+           AND attempt.exchange_claim_id = oauth_authorizations.exchange_claim_id
+           AND attempt.started_at < clock_timestamp() - make_interval(secs => $3)
+       ))
        AND callback_received_at <=
          CURRENT_TIMESTAMP - make_interval(secs => $2)`,
     [flowId, X_MAX_QUEUE_DELAY_SECONDS, STALE_EXCHANGE_CLAIM_SECONDS],
@@ -123,7 +114,7 @@ async function rejectExpiredXAuthorizationCode(flowId: string): Promise<void> {
 async function expireOAuthAuthorization(flowId: string): Promise<void> {
   await write(
     `/* expireOAuthAuthorization */ UPDATE oauth_authorizations
-     SET status = 'expired',
+     SET expired_at = CASE WHEN rejected_at IS NULL THEN COALESCE(expired_at, clock_timestamp()) ELSE expired_at END,
          callback_code_ciphertext = NULL,
          completion_token_ciphertext = NULL,
          exchange_claim_id = NULL

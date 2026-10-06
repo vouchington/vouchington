@@ -6,7 +6,6 @@ import {
   createTestUser,
   getTestMembershipProviderEvidenceId,
   getTestMembershipSourceState,
-  setStripeEventReceivedAtForTest,
 } from '@voucha/test-helpers'
 import {
   createMembership,
@@ -59,7 +58,6 @@ describe('Stripe membership sync provider facts', () => {
       ),
     ).rejects.toThrow('was not durably ingested')
   })
-
   it('records authoritative facts when a retained source is reactivated', async () => {
     const user = await createTestUser()
     const sku = await createTestSku({
@@ -232,8 +230,10 @@ describe('Stripe membership sync provider facts', () => {
       subscriptionId,
       1_800_000_000,
     )
-    await Promise.all([insertStripeEvent(pastDueEvent), insertStripeEvent(recoveryEvent)])
-    await setStripeEventReceivedAtForTest(pastDueEvent.id, new Date('2024-01-01T00:00:00.000Z'))
+    await Promise.all([
+      insertStripeEvent(pastDueEvent, new Date('2024-01-01T00:00:00.000Z')),
+      insertStripeEvent(recoveryEvent),
+    ])
     mockGetStripeSubscription
       .mockResolvedValueOnce(makeSubscription(subscriptionId, sku.stripe_price_id, 'past_due'))
       .mockResolvedValueOnce(makeSubscription(subscriptionId, sku.stripe_price_id, 'active'))

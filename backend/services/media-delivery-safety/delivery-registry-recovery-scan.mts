@@ -11,11 +11,7 @@ import {
 import { decodeScopedAliasCursor, encodeScopedAliasCursor } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
 import sql from 'sql-template-strings'
-import {
-  MEDIA_DELIVERY_CLAIM_TIMEOUT_MS,
-  MEDIA_DELIVERY_MAX_ATTEMPTS,
-  mediaDeliveryClaimable,
-} from './delivery-registry-policy.mts'
+import { MEDIA_DELIVERY_MAX_ATTEMPTS, mediaDeliveryClaimable } from './delivery-registry-policy.mts'
 
 /** The primary database owns exact cutoff precision and read-after-write visibility. */
 export async function getMediaDeliveryRegistryScanBefore(): Promise<string> {
@@ -36,20 +32,20 @@ export async function failExpiredExhaustedMediaDeliveryRegistryRecords(
     delivery_key: string
   }>(sql`/* failExpiredExhaustedMediaDeliveryRegistryRecords:lock */
     SELECT record.delivery_key FROM media_delivery_registry_records record
-    JOIN media_delivery_registry_current_records current USING (delivery_key)
-    WHERE current.state = 'claimed' AND current.delivery_attempt_count >= ${MEDIA_DELIVERY_MAX_ATTEMPTS}
+    JOIN media_delivery_registry_projection_work_items current USING (delivery_key)
+    WHERE current.lease_token IS NOT NULL AND current.attempt_count >= ${MEDIA_DELIVERY_MAX_ATTEMPTS}
       AND (${deliveryKeys ?? null}::text[] IS NULL OR record.delivery_key = ANY(${deliveryKeys ?? null}::text[]))
-      AND current.claimed_at <= ${now}::timestamptz - ${MEDIA_DELIVERY_CLAIM_TIMEOUT_MS} * interval '1 millisecond'
+      AND current.lease_expires_at <= ${now}::timestamptz
     ORDER BY record.delivery_key LIMIT ${MEDIA_DELIVERY_RECOVERY_PAGE_SIZE} FOR UPDATE OF record SKIP LOCKED
   `)
   const { rowCount } = await transaction(sql`/* failExpiredExhaustedMediaDeliveryRegistryRecords */
     INSERT INTO media_delivery_registry_changes(delivery_key, generation, change_type, delivery_attempt_count, claimed_at, completed_at, failure_message)
-    SELECT delivery_key, generation, 'failed', delivery_attempt_count, claimed_at, ${now}::timestamptz,
+    SELECT delivery_key, generation, 'failed', attempt_count, leased_at, ${now}::timestamptz,
       'Final media delivery claim expired before publication completed. Operator replay required.'
-    FROM media_delivery_registry_current_records
+    FROM media_delivery_registry_projection_work_items
     WHERE delivery_key = ANY(${candidates.map(row => row.delivery_key)}::text[])
-      AND state = 'claimed' AND delivery_attempt_count >= ${MEDIA_DELIVERY_MAX_ATTEMPTS}
-      AND claimed_at <= ${now}::timestamptz - ${MEDIA_DELIVERY_CLAIM_TIMEOUT_MS} * interval '1 millisecond'
+      AND lease_token IS NOT NULL AND attempt_count >= ${MEDIA_DELIVERY_MAX_ATTEMPTS}
+      AND lease_expires_at <= ${now}::timestamptz
   `)
   await transaction.commit()
   return rowCount ?? 0
@@ -84,12 +80,13 @@ export async function listRecoverableMediaDeliveryRegistryKeys(input: {
     deliveryKeys ? sharedDbIdsScope(deliveryKeys) : sharedDbCursorScope(after),
   )
   const statement = sql`/* listRecoverableMediaDeliveryRegistryKeys */
-    SELECT delivery_key FROM media_delivery_registry_current_records
-    WHERE created_at <= ${input.scanBefore}::timestamptz
-      AND (${deliveryKeys}::text[] IS NULL OR delivery_key = ANY(${deliveryKeys}::text[]))
-      AND (${after}::text IS NULL OR delivery_key > ${after}) AND `
+    SELECT work.delivery_key FROM media_delivery_registry_projection_work_items work
+    JOIN media_delivery_registry_records record USING (delivery_key)
+    WHERE record.created_at <= ${input.scanBefore}::timestamptz
+      AND (${deliveryKeys}::text[] IS NULL OR work.delivery_key = ANY(${deliveryKeys}::text[]))
+      AND (${after}::text IS NULL OR work.delivery_key > ${after}) AND `
   statement.append(mediaDeliveryClaimable(input.scanBefore))
-  statement.append(sql` ORDER BY delivery_key LIMIT ${input.limit + 1}`)
+  statement.append(sql` ORDER BY work.delivery_key LIMIT ${input.limit + 1}`)
   const { rows } = await write<{ delivery_key: string }>(statement)
   const results = rows.slice(0, input.limit).map(row => row.delivery_key)
   const encode = (alias: string) => encodeScopedAliasCursor(alias, scope)

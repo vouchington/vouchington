@@ -27,7 +27,7 @@ const GUARD_REJECTION = { rejectedWith: '23514' }
  * rewrites and whose body is only ever set on intake-linked intents, which a notice never reaches.
  */
 const changesWithoutPermit = (spec: (typeof COPYRIGHT_RETENTION_ERASURE)[number]) =>
-  spec.table === 'copyright_notice_delivery_intents' ||
+  spec.table === 'copyright_notice_delivery_work_items' ||
   Object.values(spec.columns).every(kind => kind === 'null')
 
 /**

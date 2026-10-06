@@ -40,9 +40,9 @@ export async function ageTestMembershipRenewalPriceIncreaseClaim(
   membershipId: string,
 ): Promise<void> {
   await write(sql`/* ageTestMembershipRenewalPriceIncreaseClaim */
-    UPDATE memberships
-    SET renewal_price_increase_claimed_at = CURRENT_TIMESTAMP - INTERVAL '2 hours'
-    WHERE id = ${membershipId}
+    UPDATE membership_renewal_price_increase_notification_work_items
+    SET leased_at = clock_timestamp() - INTERVAL '2 hours', lease_expires_at = clock_timestamp() - INTERVAL '1 hour'
+    WHERE membership_id = ${membershipId}
   `)
 }
 

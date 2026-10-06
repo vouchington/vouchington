@@ -1,3 +1,5 @@
+import { runIsolatedDatabaseCase } from '../../../test-helpers/vitest-isolated-database-case.mts'
+import { getIsolatedDatabaseCaseMode } from '../../../test-helpers/vitest-isolated-database-cases.mts'
 import { describe, expect, it } from 'vitest'
 import {
   beginTransaction,
@@ -27,7 +29,6 @@ import { retainStoredPublicationIdentities } from './retain-stored-identities.mt
 import { acknowledgePostPublicationProjectionReceipts } from './receipts.mts'
 import { runPostPublicationShadowAudit } from './shadow-audit.mts'
 import { reconcilePostPublicationDirtyWork } from './reconcile.mts'
-import { randomUUID } from 'node:crypto'
 
 describe('bounded publication identity snapshots', () => {
   it('requires a completed snapshot receipt without an activation switch', async () => {
@@ -202,6 +203,10 @@ describe('bounded publication identity snapshots', () => {
     })
   })
   it('detects and repairs exact relational audit discrepancies', async () => {
+    if (getIsolatedDatabaseCaseMode('publication-audit-relational-identities') === 'parent') {
+      await runIsolatedDatabaseCase('publication-audit-relational-identities')
+      return
+    }
     const { work, candidate, user } = await createSnapshotWork()
     const snapshot = await materializePostPublicationIdentitySnapshot(work, candidate, 100)
     candidate.identity_snapshot_id = snapshot.snapshotId
@@ -223,17 +228,16 @@ describe('bounded publication identity snapshots', () => {
       (await runPostPublicationShadowAudit({ dryRun: true, cursor, limit: 1 })).discrepanciesByScope
         .post,
     ).toBe(1)
-    const checkpointName = `identity-audit-${randomUUID()}`
-    await setTestPostPublicationShadowAuditCheckpoint(checkpointName, cursor)
+
+    await setTestPostPublicationShadowAuditCheckpoint(cursor)
     expect(
-      (await runPostPublicationShadowAudit({ dryRun: false, checkpointName, limit: 1 }))
-        .discrepanciesByScope.post,
+      (await runPostPublicationShadowAudit({ dryRun: false, limit: 1 })).discrepanciesByScope.post,
     ).toBe(1)
     expect(await readTestPublicationReceipt(candidate.id)).toEqual({
       snapshotId: snapshot.snapshotId,
       fingerprint: candidate.eligibility_fingerprint,
     })
-  })
+  }, 240_000)
 })
 
 async function createSnapshotWork() {

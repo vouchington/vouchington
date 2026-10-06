@@ -26,17 +26,18 @@ export async function getMembershipPendingState(userId: string) {
       reason_code: MembershipVerificationReasonCode | null
       next_processing_at: Date | null
     }>(sql`/* getMembershipPendingState.verifications */
-      SELECT id, provider,
+      SELECT verification.id, verification.provider,
         CASE
           WHEN verified_at IS NOT NULL THEN 'verified'
           WHEN conflicted_at IS NOT NULL THEN 'conflict'
           WHEN rejected_at IS NOT NULL THEN 'rejected'
           ELSE 'pending'
         END AS status,
-        result_code AS reason_code, next_processing_at
-      FROM membership_verifications
+        result_code AS reason_code, CASE WHEN work.completed_at IS NULL THEN work.available_at END AS next_processing_at
+      FROM membership_verifications verification
+      JOIN membership_verification_processing_work_items work ON work.membership_verification_id = verification.id
       WHERE user_id = ${userId}
-      ORDER BY id DESC
+      ORDER BY verification.id DESC
       LIMIT ${verificationPageSize}`),
     read<{
       id: string

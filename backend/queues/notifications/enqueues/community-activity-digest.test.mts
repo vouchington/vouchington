@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
   enqueueCommunityActivityDigestBatch,
@@ -18,11 +19,16 @@ describe('community activity digest queue wiring', () => {
     })
   })
   it('assigns simultaneous and retried cursor jobs the same throttle identity', async () => {
-    await enqueueCommunityActivityDigestDispatch()
+    const leaseToken = randomUUID()
+    await enqueueCommunityActivityDigestDispatch({
+      ...getCommunityActivityDigestDispatchData(),
+      leaseToken,
+    })
     const batch = {
       windowStart: '2026-07-06T00:00:00.000Z',
       windowEnd: '2026-07-13T00:00:00.000Z',
       afterUserId: '00000000-0000-7000-8000-000000000001',
+      leaseToken,
     }
     await Promise.all([
       enqueueCommunityActivityDigestBatch(batch),
@@ -31,10 +37,15 @@ describe('community activity digest queue wiring', () => {
     await enqueueCommunityActivityDigestBatch(batch)
 
     const jobs = await readAllQueueJobs(notifications)
-    const dispatch = jobs.find(job => job.name === 'processCommunityActivityDigestDispatch')
+    const dispatch = jobs.find(
+      job =>
+        job.name === 'processCommunityActivityDigestDispatch' &&
+        (job.data as { leaseToken?: string }).leaseToken === leaseToken,
+    )
     const cursors = jobs.filter(
       job =>
         job.name === 'processCommunityActivityDigestBatch' &&
+        (job.data as { leaseToken?: string }).leaseToken === leaseToken &&
         (job.data as { windowStart?: string }).windowStart === batch.windowStart &&
         (job.data as { afterUserId?: string }).afterUserId === batch.afterUserId,
     )
@@ -44,7 +55,7 @@ describe('community activity digest queue wiring', () => {
     // reaches the dedup check first actually enqueues.
     expect(cursors).toHaveLength(1)
     expect(cursors[0]?.opts.deduplication).toEqual({
-      id: `processCommunityActivityDigestBatch__${batch.windowStart}__${batch.afterUserId}`,
+      id: `processCommunityActivityDigestBatch__${batch.windowStart}__${batch.leaseToken}__${batch.afterUserId}`,
       mode: 'throttle',
       ttl: COMMUNITY_ACTIVITY_DIGEST_INACTIVITY_TIMEOUT_MS,
     })

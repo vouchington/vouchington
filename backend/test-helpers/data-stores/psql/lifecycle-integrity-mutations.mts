@@ -48,17 +48,17 @@ export async function insertContradictoryRssImportRowLifecycle(userId: string): 
 export async function insertTerminalBlueskyAuthorizationHandle(userId: string): Promise<void> {
   await write(sql`/* rejectTerminalBlueskyAuthorizationHandle */
     INSERT INTO bluesky_link_authorizations (
-      user_id, handle, callback_mode, status, expires_at
+      user_id, handle, callback_mode, rejected_at, expires_at
     ) VALUES (
-      ${userId}, 'retained-handle.bsky.social', 'web', 'rejected', CURRENT_TIMESTAMP
+      ${userId}, 'retained-handle.bsky.social', 'web', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
     )`)
 }
 
 export async function insertActiveBlueskyAuthorizationWithoutHandle(userId: string): Promise<void> {
   await write(sql`/* rejectActiveBlueskyAuthorizationWithoutHandle */
     INSERT INTO bluesky_link_authorizations (
-      user_id, handle, callback_mode, status, expires_at
-    ) VALUES (${userId}, NULL, 'web', 'pending', CURRENT_TIMESTAMP)`)
+      user_id, handle, callback_mode, expires_at
+    ) VALUES (${userId}, NULL, 'web', CURRENT_TIMESTAMP)`)
 }
 
 export async function rewriteTerminalImage(userId: string): Promise<void> {

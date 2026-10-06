@@ -131,13 +131,13 @@ async function insertTestTerritorialDecisionIntentInTransaction(
     transaction,
   )
   await transaction(sql`/* insertTestTerritorialDecisionIntent */
-    INSERT INTO copyright_notice_delivery_intents (
+    INSERT INTO copyright_notice_delivery_work_items (
       copyright_notice_id, copyright_notice_correspondence_message_id,
       recipient_user_id, recipient_role, delivery_kind, channel,
-      state, delivery_attempt_count, idempotency_key, delivery_attempted_at, sent_at,
+      attempt_count, idempotency_key, delivery_attempted_at, sent_at,
       failed_at, bounced_at
     ) VALUES (
-      ${input.noticeId}, ${correspondence.id}, ${input.userId}, ${input.role}, ${kind}, 'email', ${state},
+      ${input.noticeId}, ${correspondence.id}, ${input.userId}, ${input.role}, ${kind}, 'email',
       ${state === 'pending' ? 0 : 1}, ${`historical-eu:${crypto.randomUUID()}`},
       ${attemptedAt}, ${sentAt}, ${failedAt}, ${bouncedAt}
     )

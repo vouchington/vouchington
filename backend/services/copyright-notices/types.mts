@@ -131,13 +131,13 @@ export type CopyrightActionIntentRecord = {
   expected_placement_revision: number
   action: FiniteValue<'copyright_notice_action_intent_actions'>
   state: FiniteValue<'copyright_notice_action_intent_states'>
-  delivery_attempt_count: number
-  claimed_at: Date | null
+  attempt_count: number
+  leased_at: Date | null
   completed_at: Date | null
   completed_at_reason: Extract<
     FiniteValue<'copyright_notice_action_intent_states'>,
     'completed' | 'stale' | 'blocked' | 'failed'
   > | null
   failure_message: string | null
-  next_attempt_at: Date | null
+  available_at: Date | null
 }

@@ -3,7 +3,7 @@ import sql from 'sql-template-strings'
 
 type PublishFinalizedContributionResponseInput = Readonly<{
   reservationId: string
-  leaseId: string
+  leaseToken: string
 }>
 
 export type FinalizedContributionResponsePublishResult<T> =
@@ -18,7 +18,7 @@ export async function publishFinalizedContributionResponse<T>(
 
   const owned = await query(sql`/* publishFinalizedContributionResponse.lockClaim */
       SELECT reservation_id FROM post_admission_claims
-      WHERE reservation_id = ${input.reservationId} AND lease_id = ${input.leaseId} AND expires_at > NOW()
+      WHERE reservation_id = ${input.reservationId} AND lease_token = ${input.leaseToken} AND lease_expires_at > clock_timestamp()
       FOR UPDATE`)
   if (owned.rowCount !== 1) {
     await query.commit()
@@ -26,7 +26,7 @@ export async function publishFinalizedContributionResponse<T>(
   }
   const response = await persistFinalizedContributionResponse<T>(query, input.reservationId)
   await query(sql`/* publishFinalizedContributionResponse.release */
-      DELETE FROM post_admission_claims WHERE reservation_id = ${input.reservationId} AND lease_id = ${input.leaseId}`)
+      DELETE FROM post_admission_claims WHERE reservation_id = ${input.reservationId} AND lease_token = ${input.leaseToken}`)
   await query.commit()
   return { kind: 'published', response }
 }

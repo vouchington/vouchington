@@ -1,4 +1,3 @@
-import { getCopyrightNoticesWorkLimit } from './work-limits.mts'
 import { read } from '@data-stores/psql'
 import { buildPageInfo, decodeUuidCursor, isSimpleCursor } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
@@ -61,7 +60,6 @@ export async function getPendingCopyrightAgentDispatches(
 }
 
 function buildPendingCopyrightAgentDispatchesQuery() {
-  const screeningLeaseMinutes = getCopyrightNoticesWorkLimit('screening_lease_minutes')
   return sql`/* getPendingCopyrightAgentDispatches */
     SELECT kind, id FROM (
       SELECT 'email'::text AS kind, intake.id
@@ -86,7 +84,7 @@ function buildPendingCopyrightAgentDispatchesQuery() {
       FROM copyright_notice_form_intakes intake
       JOIN LATERAL (SELECT * FROM copyright_notice_form_screening_attempts attempt WHERE attempt.copyright_notice_form_intake_id = intake.id ORDER BY attempt.attempt_number DESC LIMIT 1) execution ON true
       WHERE execution.state = 'failed' OR (execution.state = 'pending'
-        AND (execution.claimed_at IS NULL OR execution.claimed_at < CURRENT_TIMESTAMP - ${screeningLeaseMinutes}::integer * INTERVAL '1 minute'))
+        AND (execution.execution_started_at IS NULL OR EXISTS (SELECT 1 FROM copyright_notice_form_screening_work_items work WHERE work.attempt_id = execution.id AND work.lease_expires_at <= clock_timestamp())))
       UNION ALL
       SELECT 'form-effect'::text AS kind, intake.copyright_notice_submission_id AS id
       FROM copyright_notice_form_intakes intake
@@ -133,7 +131,7 @@ function buildPendingCopyrightAgentDispatchesQuery() {
             AND char_length(btrim(target.hosted_use_url)) > 0
         )
         AND EXISTS (
-          SELECT 1 FROM copyright_notice_delivery_intents receipt
+          SELECT 1 FROM copyright_notice_delivery_work_items receipt
           JOIN copyright_notice_delivery_recipients recipient
             ON recipient.copyright_notice_delivery_intent_id = receipt.id
           WHERE receipt.copyright_notice_id = intake.copyright_notice_id

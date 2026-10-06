@@ -32,45 +32,55 @@ export async function completeIneligiblePurchaseReversal(
 }
 
 export async function recordIneligiblePurchaseReversalProviderRefund(
-  reversal: Pick<ClaimedReversal, 'id' | 'executionClaimToken'>,
+  reversal: Pick<ClaimedReversal, 'id' | 'leaseToken'>,
   providerRefundId: string,
 ): Promise<void> {
   const { rows } = await write(sql`/* recordIneligiblePurchaseReversalProviderRefund */
     UPDATE membership_operations
     SET provider_refund_id = ${providerRefundId}
     WHERE id = ${reversal.id} AND completed_at IS NULL
-      AND execution_claim_token = ${reversal.executionClaimToken}
+      AND EXISTS (
+        SELECT 1 FROM membership_operation_execution_work_items work
+        WHERE work.membership_operation_id = membership_operations.id
+          AND work.lease_token = ${reversal.leaseToken} AND work.lease_expires_at > clock_timestamp()
+      )
     RETURNING id
   `)
   if (rows.length === 0) throw new IneligiblePurchaseReversalInProgressError(reversal.id)
 }
 
 export async function markIneligiblePurchaseReversalCompleted(
-  reversal: Pick<ClaimedReversal, 'id' | 'executionClaimToken'>,
+  reversal: Pick<ClaimedReversal, 'id' | 'leaseToken'>,
   query?: QueryExecutor,
 ): Promise<void> {
   const run = query ?? write
   const { rows } = await run(sql`/* completeIneligiblePurchaseReversal:operation */
     UPDATE membership_operations
-    SET completed_at = CURRENT_TIMESTAMP, failed_at = NULL, failure_message = NULL,
-      execution_claim_token = NULL, execution_claimed_at = NULL
+    SET completed_at = CURRENT_TIMESTAMP, failed_at = NULL, failure_message = NULL
     WHERE id = ${reversal.id} AND completed_at IS NULL
-      AND execution_claim_token = ${reversal.executionClaimToken}
+      AND EXISTS (
+        SELECT 1 FROM membership_operation_execution_work_items work
+        WHERE work.membership_operation_id = membership_operations.id
+          AND work.lease_token = ${reversal.leaseToken} AND work.lease_expires_at > clock_timestamp()
+      )
     RETURNING id
   `)
   if (rows.length === 0) throw new IneligiblePurchaseReversalInProgressError(reversal.id)
 }
 
 export async function failIneligiblePurchaseReversal(
-  reversal: Pick<ClaimedReversal, 'id' | 'executionClaimToken'>,
+  reversal: Pick<ClaimedReversal, 'id' | 'leaseToken'>,
   error: unknown,
 ): Promise<void> {
   const failureMessage = getIneligiblePurchaseReversalFailureMessage(error)
   await write(sql`/* failIneligiblePurchaseReversal */
     UPDATE membership_operations
-    SET failed_at = CURRENT_TIMESTAMP, failure_message = ${failureMessage},
-      execution_claim_token = NULL, execution_claimed_at = NULL
+    SET failed_at = CURRENT_TIMESTAMP, failure_message = ${failureMessage}
     WHERE id = ${reversal.id} AND completed_at IS NULL
-      AND execution_claim_token = ${reversal.executionClaimToken}
+      AND EXISTS (
+        SELECT 1 FROM membership_operation_execution_work_items work
+        WHERE work.membership_operation_id = membership_operations.id
+          AND work.lease_token = ${reversal.leaseToken} AND work.lease_expires_at > clock_timestamp()
+      )
   `)
 }

@@ -1,7 +1,8 @@
+import { getContext } from './verification-context.mts'
 import { beginTransaction, write, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { projectVerifiedProviderMembershipObservation } from '../provider-observation-projection.mts'
-import { finalizeVerified, getContext } from './verification-persistence.mts'
+import { finalizeVerified } from './verification-persistence.mts'
 
 type KnownSource = {
   userId: string

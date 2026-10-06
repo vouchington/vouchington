@@ -1,3 +1,4 @@
+import type { RenewalPriceIncreaseNotificationClaim } from './renewal-check.mts'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { parsePostgresMoneyAmount, type Money } from '@ts-shared/money'
@@ -14,7 +15,7 @@ export async function getCurrentRenewalPriceIncreaseDetails(
   membershipId: string,
   userId: string,
   membershipProviderObservationId: string,
-  claimToken: string,
+  claim: RenewalPriceIncreaseNotificationClaim,
 ): Promise<RenewalPriceIncreaseDetails | null> {
   const { rows } = await write(sql`/* getCurrentRenewalPriceIncreaseDetails */
     WITH target AS MATERIALIZED (
@@ -23,8 +24,9 @@ export async function getCurrentRenewalPriceIncreaseDetails(
       CROSS JOIN LATERAL (
         SELECT projection.id
         FROM memberships projection
+        JOIN membership_renewal_price_increase_notification_work_items candidate_work ON candidate_work.membership_id = projection.id
         WHERE projection.membership_source_id = original.membership_source_id
-          AND projection.renewal_price_increase_claim_token = ${claimToken}
+          AND candidate_work.lease_token = ${claim.leaseToken} AND candidate_work.generation = ${claim.generation}::bigint
         ORDER BY projection.projection_ended_at IS NULL DESC,
           projection.projection_ended_at DESC NULLS LAST, projection.id DESC
         LIMIT 1
@@ -39,6 +41,7 @@ export async function getCurrentRenewalPriceIncreaseDetails(
       observation.renewal_effective_at AS expires_at
     FROM target
     INNER JOIN memberships m ON m.id = target.id
+    INNER JOIN membership_renewal_price_increase_notification_work_items work ON work.membership_id = m.id
     INNER JOIN membership_source_states state
       ON state.membership_source_id = m.membership_source_id
       AND state.membership_product_id = m.membership_product_id
@@ -51,12 +54,13 @@ export async function getCurrentRenewalPriceIncreaseDetails(
     INNER JOIN membership_products product ON product.id = m.membership_product_id
     WHERE m.user_id = ${userId}
       AND observation.id = ${membershipProviderObservationId}
-      AND m.renewal_price_increase_notified_observation_id = observation.id
-      AND m.renewal_price_increase_claim_token = ${claimToken}
-      AND m.renewal_price_increase_notified_provider_product_id = observation.renewal_membership_provider_product_id
-      AND m.renewal_price_increase_notified_minor_units = observation.renewal_price_minor_units
-      AND m.renewal_price_increase_notified_currency_code = observation.renewal_price_currency_code
-      AND m.renewal_price_increase_notified_effective_at = observation.renewal_effective_at
+      AND work.membership_provider_observation_id = observation.id
+      AND work.lease_token = ${claim.leaseToken}
+      AND work.generation = ${claim.generation}::bigint AND work.lease_expires_at > clock_timestamp()
+      AND work.membership_provider_product_id = observation.renewal_membership_provider_product_id
+      AND work.price_minor_units = observation.renewal_price_minor_units
+      AND work.currency_code = observation.renewal_price_currency_code
+      AND work.effective_at = observation.renewal_effective_at
       AND observation.renewal_price_currency_code = observation.observed_price_currency_code
       AND observation.renewal_price_minor_units > observation.observed_price_minor_units
     LIMIT 1

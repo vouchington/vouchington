@@ -17,14 +17,17 @@ export async function beginGooglePlayRecoverySweep(options: {
   cursorId: 'active_sources' | 'notifications' | 'acknowledgements'
   findUpperBound: () => Promise<string | null>
 }): Promise<GooglePlayRecoveryCursor> {
+  await write(sql`/* ensureGooglePlayRecoveryCursor */
+    INSERT INTO membership_google_play_recovery_cursors (recovery_sweep)
+    VALUES (${options.cursorId}) ON CONFLICT DO NOTHING`)
   const { rows } = await write<{
-    last_evidence_id: string | null
-    sweep_upper_bound_id: string | null
+    cursor_evidence_id: string | null
+    sweep_upper_bound_evidence_id: string | null
   }>(sql`/* beginGooglePlayRecoverySweep */
-    SELECT last_evidence_id, sweep_upper_bound_id
-    FROM membership_google_play_recovery_cursors WHERE id = ${options.cursorId}`)
-  const previousCursor = rows[0]?.last_evidence_id ?? null
-  const previousUpperBound = rows[0]?.sweep_upper_bound_id ?? null
+    SELECT cursor_evidence_id, sweep_upper_bound_evidence_id
+    FROM membership_google_play_recovery_cursors WHERE recovery_sweep = ${options.cursorId}`)
+  const previousCursor = rows[0]?.cursor_evidence_id ?? null
+  const previousUpperBound = rows[0]?.sweep_upper_bound_evidence_id ?? null
   return {
     previousCursor,
     previousUpperBound,
@@ -59,13 +62,13 @@ export async function advanceGooglePlayRecoverySweep(options: {
   const sweepUpperBoundId = options.completesSweep ? null : options.sweepUpperBound
   await write(sql`/* advanceGooglePlayRecoverySweep */
     INSERT INTO membership_google_play_recovery_cursors (
-      id, last_evidence_id, sweep_upper_bound_id
+      recovery_sweep, cursor_evidence_id, sweep_upper_bound_evidence_id
     ) VALUES (${options.cursorId}, ${lastEvidenceId}::UUID, ${sweepUpperBoundId}::UUID)
-    ON CONFLICT (id) DO UPDATE
-      SET last_evidence_id = EXCLUDED.last_evidence_id,
-        sweep_upper_bound_id = EXCLUDED.sweep_upper_bound_id
-      WHERE membership_google_play_recovery_cursors.last_evidence_id
+    ON CONFLICT (recovery_sweep) DO UPDATE
+      SET cursor_evidence_id = EXCLUDED.cursor_evidence_id,
+        sweep_upper_bound_evidence_id = EXCLUDED.sweep_upper_bound_evidence_id
+      WHERE membership_google_play_recovery_cursors.cursor_evidence_id
           IS NOT DISTINCT FROM ${options.previousCursor}::UUID
-        AND membership_google_play_recovery_cursors.sweep_upper_bound_id
+        AND membership_google_play_recovery_cursors.sweep_upper_bound_evidence_id
           IS NOT DISTINCT FROM ${options.previousUpperBound}::UUID`)
 }

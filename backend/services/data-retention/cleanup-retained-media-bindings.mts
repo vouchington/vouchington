@@ -20,13 +20,19 @@ export async function cleanupRetainedMediaBindings(
   if (placementIds?.length === 0) return { scanned: 0, deleted: 0, hasMore: false }
   observeSharedDbScope('cleanupRetainedMediaBindings', sharedDbIdsScope(placementIds))
   await using query = await beginTransaction()
+  if (!placementIds)
+    await query(
+      `/* ensureRetainedMediaBindingCleanupCursor */
+        INSERT INTO retained_image_placement_binding_cleanup_cursors (is_singleton)
+        VALUES (TRUE) ON CONFLICT DO NOTHING`,
+    )
   const progress = placementIds
     ? null
     : (
-        await query<{ cursor_identity_id: string | null }>(
+        await query<{ cursor_placement_id: string | null }>(
           `/* lockRetainedMediaBindingCleanupProgress */
-           SELECT cursor_identity_id FROM retained_identity_cleanup_progress
-           WHERE family = 'image_placement_binding' FOR UPDATE`,
+           SELECT cursor_placement_id FROM retained_image_placement_binding_cleanup_cursors
+           WHERE is_singleton FOR UPDATE`,
         )
       ).rows[0]
   const { rows: candidates } = await query<{ placement_id: string; image_id: string }>(
@@ -35,7 +41,7 @@ export async function cleanupRetainedMediaBindings(
      WHERE ($1::uuid[] IS NOT NULL AND placement_id = ANY($1::uuid[]))
         OR ($1::uuid[] IS NULL AND ($2::uuid IS NULL OR placement_id > $2::uuid))
      ORDER BY placement_id LIMIT $3`,
-    [placementIds ?? null, progress?.cursor_identity_id ?? null, pageSize + 1],
+    [placementIds ?? null, progress?.cursor_placement_id ?? null, pageSize + 1],
   )
   const page = candidates.slice(0, pageSize)
   const pagePlacementIds = page.map(row => row.placement_id)
@@ -72,9 +78,9 @@ export async function cleanupRetainedMediaBindings(
   if (!placementIds)
     await query(
       `/* checkpointRetainedMediaBindingCleanup */
-       UPDATE retained_identity_cleanup_progress
-       SET cursor_identity_id = $1
-       WHERE family = 'image_placement_binding'`,
+       UPDATE retained_image_placement_binding_cleanup_cursors
+       SET cursor_placement_id = $1
+       WHERE is_singleton`,
       [hasMore ? page.at(-1)!.placement_id : null],
     )
   await query.commit()

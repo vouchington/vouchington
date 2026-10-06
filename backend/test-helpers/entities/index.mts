@@ -128,6 +128,7 @@ export {
   getTestMembershipProviderEvidenceTerminalState,
   createTestPendingMembershipVerification,
   claimTestMembershipVerification,
+  expireTestMembershipVerificationLease,
   getTestMembershipVerificationProcessingState,
 } from './memberships/provider-evidence.mts'
 export * from './memberships-stripe-catalog.mts'

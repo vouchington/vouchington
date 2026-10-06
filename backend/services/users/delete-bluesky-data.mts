@@ -56,7 +56,8 @@ export async function deleteBlueskyDataForUserBatch(
   )
   await query(sql`/* deleteBlueskyDataForUserBatch:retireAuthorizations */
     UPDATE bluesky_link_authorizations
-    SET status = (CASE WHEN status = 'attached' THEN 'revoked' ELSE 'rejected' END)::bluesky_link_authorization_statuses,
+    SET revoked_at = CASE WHEN attached_at IS NOT NULL THEN clock_timestamp() ELSE revoked_at END,
+        rejected_at = CASE WHEN attached_at IS NULL THEN clock_timestamp() ELSE rejected_at END,
         handle = NULL
     WHERE id = ANY(${authorizations.map(row => row.id)}::uuid[])
       AND user_id = ${userId}`)

@@ -1,10 +1,11 @@
 import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { claimMembershipOperationExecutionWork } from '../../services/memberships/operation-execution-work.mts'
 
 export async function getRefundOperationLeaseTokenForTest(operationId: string): Promise<string> {
-  const { rows } = await read<{ executionClaimToken: string }>(sql`/* getRefundMetadataScanLease */
-    SELECT execution_claim_token AS "executionClaimToken" FROM membership_operations WHERE id = ${operationId}`)
-  return rows[0]!.executionClaimToken
+  const { rows } = await read<{ leaseToken: string }>(sql`/* getRefundMetadataScanLease */
+    SELECT lease_token AS "leaseToken" FROM membership_operation_execution_work_items WHERE membership_operation_id = ${operationId}`)
+  return rows[0]!.leaseToken
 }
 
 export async function getRefundOperationRetryStateForTest(operationId: string) {
@@ -13,8 +14,10 @@ export async function getRefundOperationRetryStateForTest(operationId: string) {
     failed: boolean
     leased: boolean
   }>(sql`/* administratorProviderExceptionRetry */
-    SELECT reconciliation_due_at > CURRENT_TIMESTAMP AS due, failed_at IS NOT NULL AS failed,
-      execution_claim_token IS NOT NULL AS leased FROM membership_operations WHERE id = ${operationId}`)
+    SELECT work.available_at > CURRENT_TIMESTAMP AS due, operation.failed_at IS NOT NULL AS failed,
+      work.lease_token IS NOT NULL AS leased FROM membership_operations operation
+      JOIN membership_operation_execution_work_items work ON work.membership_operation_id = operation.id
+      WHERE operation.id = ${operationId}`)
   return rows[0]
 }
 
@@ -55,8 +58,8 @@ export async function getRefundCancellationConvergenceForTest(
 }
 
 export async function makeRefundOperationDueForTest(operationId: string): Promise<void> {
-  await write(sql`/* makeAdministratorRefundOperationDue */ UPDATE membership_operations
-    SET reconciliation_due_at = CURRENT_TIMESTAMP WHERE id = ${operationId}`)
+  await write(sql`/* makeAdministratorRefundOperationDue */ UPDATE membership_operation_execution_work_items
+    SET available_at = clock_timestamp() WHERE membership_operation_id = ${operationId}`)
 }
 
 export async function cleanupRefundReconciliationOperationsForTest(
@@ -65,17 +68,15 @@ export async function cleanupRefundReconciliationOperationsForTest(
   if (operationIds.length === 0) return
 
   await using transaction = await beginTransaction()
-  await transaction(sql`/* claimRefundReconciliationDispatcherTestCleanup */ UPDATE membership_operations
-    SET execution_claim_token = uuidv7(), execution_claimed_at = CURRENT_TIMESTAMP,
-      failed_at = NULL, failure_message = NULL,
-      reconciliation_attempt_ordinal = reconciliation_attempt_ordinal + 1
-    WHERE id = ANY(${operationIds}::uuid[]) AND completed_at IS NULL
-      AND execution_claim_token IS NULL`)
-  await transaction(sql`/* completeRefundReconciliationDispatcherTestCleanup */ UPDATE membership_operations
-    SET completed_at = CURRENT_TIMESTAMP, reconciliation_due_at = NULL, execution_claim_token = NULL,
-      execution_claimed_at = NULL, failed_at = NULL, failure_message = NULL
-    WHERE id = ANY(${operationIds}::uuid[]) AND completed_at IS NULL
-      AND execution_claim_token IS NOT NULL`)
+  for (const operationId of operationIds) {
+    const token = await claimMembershipOperationExecutionWork(operationId, transaction, true)
+    if (!token) continue
+    await transaction(sql`/* completeRefundReconciliationDispatcherTestCleanup */
+      UPDATE membership_operations operation SET completed_at = clock_timestamp(), failed_at = NULL, failure_message = NULL
+      WHERE operation.id = ${operationId} AND operation.completed_at IS NULL
+        AND EXISTS (SELECT 1 FROM membership_operation_execution_work_items work
+          WHERE work.membership_operation_id = operation.id AND work.lease_token = ${token})`)
+  }
   await transaction.commit()
 }
 
@@ -90,6 +91,7 @@ export async function withLockedRefundOperationForTest<T>(
 }
 
 export async function ageRefundReconciliationLeaseForTest(operationId: string): Promise<void> {
-  await write(sql`/* ageRefundReconciliationLease */ UPDATE membership_operations
-    SET execution_claimed_at = CURRENT_TIMESTAMP - INTERVAL '6 minutes' WHERE id = ${operationId}`)
+  await write(sql`/* ageRefundReconciliationLease */ UPDATE membership_operation_execution_work_items
+    SET leased_at = clock_timestamp() - INTERVAL '6 minutes', lease_expires_at = clock_timestamp() - INTERVAL '1 minute'
+    WHERE membership_operation_id = ${operationId}`)
 }

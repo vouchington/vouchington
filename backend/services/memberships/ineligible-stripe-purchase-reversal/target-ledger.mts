@@ -113,15 +113,14 @@ async function claimIneligiblePurchaseReversal(options: {
   if (row.hasReceipt) {
     await options.query(sql`/* claimIneligiblePurchaseReversal:completeReceipt */
       UPDATE membership_operations
-      SET completed_at = CURRENT_TIMESTAMP, failed_at = NULL, failure_message = NULL,
-        execution_claim_token = NULL, execution_claimed_at = NULL
+      SET completed_at = CURRENT_TIMESTAMP, failed_at = NULL, failure_message = NULL
       WHERE id = ${row.id} AND completed_at IS NULL
     `)
     return completedReversal(row, idempotencyKey, target)
   }
   return {
     completed: false,
-    executionClaimToken: await claimIneligiblePurchaseReversalExecution(row.id, options.query),
+    leaseToken: await claimIneligiblePurchaseReversalExecution(row.id, options.query),
     hasReceipt: false,
     id: row.id,
     idempotencyKey,
@@ -137,7 +136,7 @@ function completedReversal(
 ): ClaimedReversal {
   return {
     completed: true,
-    executionClaimToken: null,
+    leaseToken: null,
     hasReceipt: true,
     id: row.id,
     idempotencyKey,

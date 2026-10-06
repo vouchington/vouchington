@@ -40,7 +40,7 @@ export async function completeOAuthAuthorizationTransaction(
       if (authorization.status !== 'completed') {
         await query(
           `/* completeOAuthAuthorization */ UPDATE oauth_authorizations
-           SET status = 'expired',
+           SET expired_at = CASE WHEN rejected_at IS NULL THEN COALESCE(expired_at, clock_timestamp()) ELSE expired_at END,
                callback_code_ciphertext = NULL,
                completion_token_ciphertext = NULL,
                exchange_claim_id = NULL

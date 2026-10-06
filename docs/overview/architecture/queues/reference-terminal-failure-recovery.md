@@ -68,9 +68,9 @@ guarantee exactly-once delivery. Each processor must choose and test one of thes
   but a provider rejection or ambiguous failure after the marker is committed can lose the email.
 
 The one-time engagement processors use `user_engagement_email_sends.delivery_attempted_at`; renewal
-price-increase emails use `memberships.renewal_price_increase_delivery_attempted_at`. Both markers
+price-increase emails use `membership_renewal_price_increase_notification_work_items.delivery_attempted_at`. Both markers
 are committed before SES is called. Engagement `sent_at` and
-`memberships.renewal_price_increase_notified_at` are written only after SES accepts the message,
+`membership_renewal_price_increase_notification_work_items.completed_at` are written only after SES accepts the message,
 but a failed attempt remains terminal and must not be cleared for a queue retry.
 
 Community moderation summary delivery is retryable. Its durable claim prevents duplicate dispatcher

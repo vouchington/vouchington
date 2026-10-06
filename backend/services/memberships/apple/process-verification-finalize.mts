@@ -1,3 +1,4 @@
+import { finalizeClaimedMembershipVerification } from '../verification-work.mts'
 import type { QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { AppleMembershipObservation } from './types.mts'
@@ -15,7 +16,7 @@ export class AppleVerificationConflictError extends Error {
 
 export async function finalizeAppleVerificationFromPriorAttempt(
   context: AppleVerificationContext,
-  processingClaimToken: string,
+  leaseToken: string,
   query: QueryExecutor,
 ): Promise<boolean> {
   const { rows } = await query(sql`/* findPriorAppleVerificationAttempt */
@@ -45,7 +46,7 @@ export async function finalizeAppleVerificationFromPriorAttempt(
     const sameUser = prior.user_id === context.userId
     await finalizeAppleVerification(
       context,
-      processingClaimToken,
+      leaseToken,
       sameUser ? 'verified' : 'conflict',
       sameUser ? 'verified' : 'wrong_account',
       query,
@@ -55,7 +56,7 @@ export async function finalizeAppleVerificationFromPriorAttempt(
   const disposition = prior.rejected_at ? 'rejected' : 'conflict'
   await finalizeAppleVerification(
     context,
-    processingClaimToken,
+    leaseToken,
     disposition,
     prior.result_code ?? (disposition === 'rejected' ? 'invalid_evidence' : 'wrong_account'),
     query,
@@ -132,31 +133,19 @@ export async function acceptAppleVerificationObservation(
 
 export async function finalizeAppleVerification(
   context: AppleVerificationContext,
-  processingClaimToken: string,
+  leaseToken: string,
   disposition: 'verified' | 'conflict' | 'rejected',
   reasonCode: string,
   query: QueryExecutor,
 ): Promise<void> {
-  const { rowCount } =
-    disposition === 'verified'
-      ? await query(sql`/* finalizeAppleVerification.verified */
-          UPDATE membership_verifications SET verified_at = CURRENT_TIMESTAMP,
-            result_code = ${reasonCode}, processing_claim_token = NULL, processing_claimed_at = NULL,
-            next_processing_at = NULL, last_error = NULL
-          WHERE id = ${context.verificationId} AND processing_claim_token = ${processingClaimToken}
-            AND verified_at IS NULL AND conflicted_at IS NULL AND rejected_at IS NULL`)
-      : disposition === 'conflict'
-        ? await query(sql`/* finalizeAppleVerification.conflict */
-            UPDATE membership_verifications SET conflicted_at = CURRENT_TIMESTAMP,
-              result_code = ${reasonCode}, processing_claim_token = NULL, processing_claimed_at = NULL,
-              next_processing_at = NULL, last_error = NULL
-            WHERE id = ${context.verificationId} AND processing_claim_token = ${processingClaimToken}
-              AND verified_at IS NULL AND conflicted_at IS NULL AND rejected_at IS NULL`)
-        : await query(sql`/* finalizeAppleVerification.rejected */
-            UPDATE membership_verifications SET rejected_at = CURRENT_TIMESTAMP,
-              result_code = ${reasonCode}, processing_claim_token = NULL, processing_claimed_at = NULL,
-              next_processing_at = NULL, last_error = NULL
-            WHERE id = ${context.verificationId} AND processing_claim_token = ${processingClaimToken}
-              AND verified_at IS NULL AND conflicted_at IS NULL AND rejected_at IS NULL`)
-  if (rowCount !== 1) throw new Error('Apple verification claim was superseded')
+  if (
+    !(await finalizeClaimedMembershipVerification(
+      query,
+      context.verificationId,
+      leaseToken,
+      disposition,
+      reasonCode,
+    ))
+  )
+    throw new Error('Apple verification claim was superseded')
 }

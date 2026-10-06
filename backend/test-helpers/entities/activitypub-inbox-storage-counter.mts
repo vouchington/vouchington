@@ -52,14 +52,14 @@ export async function measureActivityPubInboxOwnedStorageCounterForTest(
       )
     }
     await transaction(sql`/* measureActivityPubInboxOwnedStorageCounterForTest */
-      UPDATE activitypub_inbox_deliveries
+      UPDATE activitypub_inbox_delivery_work_items
       SET verified_at = CURRENT_TIMESTAMP,
           remote_actor_id = ${verificationActorId}
       WHERE id = ${deliveryId}
     `)
   } else if (scenario === 'insert-delete') {
     await transaction(sql`/* measureActivityPubInboxOwnedStorageCounterForTest */
-      DELETE FROM activitypub_inbox_deliveries WHERE id = ANY(${deliveryIds})
+      DELETE FROM activitypub_inbox_delivery_work_items WHERE id = ANY(${deliveryIds})
     `)
   } else {
     // oxlint-disable-next-line no-mistakes/postgres-no-manual-transaction -- rewinds a savepoint inside the real transaction owner; it does not end the transaction.
@@ -81,7 +81,7 @@ async function readStorageCounter(
   }>(sql`/* measureActivityPubInboxOwnedStorageCounterForTest */
     SELECT retained_rows, retained_raw_body_bytes, unverified_rows, unverified_raw_body_bytes
     FROM activitypub_inbox_delivery_storage_counters
-    WHERE singleton
+    WHERE is_singleton
     FOR UPDATE
   `)
   const row = rows[0]
@@ -102,7 +102,7 @@ async function insertUnverifiedDelivery(
   const actor = `https://${suffix}.example/users/alice`
   const { rows } = await transaction<{ id: string }>(
     sql`/* measureActivityPubInboxOwnedStorageCounterForTest */
-      INSERT INTO activitypub_inbox_deliveries (
+      INSERT INTO activitypub_inbox_delivery_work_items (
         request_method, request_target, expected_host, signature_header, digest_header,
         date_header, raw_body, claimed_activity_id, claimed_activity_type,
         claimed_actor_uri, sender_hostname

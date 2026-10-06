@@ -46,7 +46,6 @@ export async function insertTestBlueskyLinkedAccount(options: {
   }
   const authorizationId = options.authorizationId ?? v7()
   const callbackMode = nativeFlowId === null ? 'web' : 'native'
-  const status = options.userId === null ? 'callback_claimed' : 'attached'
   const proofChallenge =
     callbackMode === 'native'
       ? createHash('sha256')
@@ -57,11 +56,13 @@ export async function insertTestBlueskyLinkedAccount(options: {
   await using transaction = await beginTransaction()
   await transaction(sql`/* insertTestBlueskyLinkAuthorization */
         INSERT INTO bluesky_link_authorizations (
-          id, user_id, handle, callback_mode, status, completion_proof_challenge,
-          claimed_did, expires_at
+          id, user_id, handle, callback_mode, callback_claimed_at, attached_at,
+          completion_proof_challenge, claimed_did, expires_at
         ) VALUES (
           ${authorizationId}, ${authorizationUserId}, ${handle ?? `${v7()}.bsky.social`},
-          ${callbackMode}, ${status}, ${proofChallenge}, ${did},
+          ${callbackMode}, CURRENT_TIMESTAMP,
+          CASE WHEN ${options.userId !== null} THEN CURRENT_TIMESTAMP END,
+          ${proofChallenge}, ${did},
           ${options.authorizationExpiresAt ?? new Date(Date.now() + 10 * 60 * 1000)}
         )`)
   const { rows } = await transaction(sql`/* insertTestBlueskyLinkedAccount */
@@ -126,7 +127,7 @@ export async function insertTestBlueskyLinkCompletion(options: {
   if (options.claimOwnership !== false) {
     const { rowCount } = await write(sql`/* insertTestBlueskyLinkCompletion:claimOwnership */
       UPDATE bluesky_link_authorizations
-      SET status = 'handoff_ready'
+      SET handoff_ready_at = COALESCE(handoff_ready_at, CURRENT_TIMESTAMP)
       WHERE id = ${options.flowId}
         AND user_id = ${options.userId}
         AND claimed_did = ${options.did}

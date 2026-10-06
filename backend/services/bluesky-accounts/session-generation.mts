@@ -39,7 +39,7 @@ async function retireRejectedBlueskyGeneration(
       AND link_authorization_id = ${authorizationId}`)
   await query(sql`/* deleteBlueskySessionForRejectedAuthorization:authorization */
     UPDATE bluesky_link_authorizations
-    SET status = 'rejected', handle = NULL
+    SET rejected_at = clock_timestamp(), handle = NULL
     WHERE id = ${authorizationId}
       AND user_id = ${userId}
       AND status IN ('pending', 'callback_claimed', 'handoff_ready')`)
@@ -92,7 +92,8 @@ export async function revokeExactBlueskySession(
   if (!rowCount) throw createBlueskySessionLifecycleConflict(did)
   await query(sql`/* revokeExactBlueskySession:authorization */
     UPDATE bluesky_link_authorizations
-    SET status = ${authorization.owner.kind === 'attached' ? 'revoked' : 'rejected'},
+    SET revoked_at = CASE WHEN ${authorization.owner.kind === 'attached'} THEN clock_timestamp() ELSE revoked_at END,
+        rejected_at = CASE WHEN ${authorization.owner.kind !== 'attached'} THEN clock_timestamp() ELSE rejected_at END,
         handle = NULL
     WHERE id = ${authorization.authorizationId}
       AND user_id = ${authorization.owner.userId}

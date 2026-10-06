@@ -41,14 +41,23 @@ export function claimMembershipOperationExecutionLease(
   claimToken: string,
 ): Promise<QueryResult> {
   return write(sql`/* claimMembershipOperationExecutionLease */
-    UPDATE membership_operations
-    SET execution_claim_token = ${claimToken}, execution_claimed_at = CURRENT_TIMESTAMP
-    WHERE id = ${operationId}`)
+    UPDATE membership_operation_execution_work_items
+    SET lease_token = ${claimToken}, leased_at = clock_timestamp(),
+      lease_expires_at = clock_timestamp() + INTERVAL '5 minutes', attempt_count = attempt_count + 1
+    WHERE membership_operation_id = ${operationId}`)
 }
 
 export function expireMembershipOperationExecutionLease(operationId: string): Promise<QueryResult> {
   return write(sql`/* expireMembershipOperationExecutionLease */
-    UPDATE membership_operations
-    SET execution_claimed_at = CURRENT_TIMESTAMP - INTERVAL '6 minutes'
-    WHERE id = ${operationId}`)
+    UPDATE membership_operation_execution_work_items
+    SET leased_at = clock_timestamp() - INTERVAL '6 minutes', lease_expires_at = clock_timestamp() - INTERVAL '1 minute'
+    WHERE membership_operation_id = ${operationId}`)
+}
+
+export async function getMembershipOperationExecutionWork(operationId: string) {
+  const { rows } = await write<{ lease_token: string | null; attempt_count: number }>(
+    sql`/* getMembershipOperationExecutionWork */ SELECT lease_token, attempt_count
+    FROM membership_operation_execution_work_items WHERE membership_operation_id = ${operationId}`,
+  )
+  return rows[0] ?? null
 }

@@ -67,7 +67,7 @@ describe('ineligible Stripe purchase reversal receipt recovery', () => {
         reversals: [
           expect.objectContaining({
             completed: true,
-            executionClaimToken: null,
+            leaseToken: null,
             hasReceipt: true,
             id: reversal.id,
           }),

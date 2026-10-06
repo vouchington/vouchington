@@ -79,7 +79,7 @@ export async function resolveCopyrightLegalHoldInTransaction(
   `)
   await transaction(sql`
     /* resolveCopyrightLegalHold:insertRestoreIntents */
-    INSERT INTO copyright_notice_action_intents (
+    INSERT INTO copyright_notice_action_work_items (
       copyright_restriction_id, copyright_notice_deadline_id, expected_placement_revision, action
     ) SELECT restriction.id, NULL, placement.revision, 'restore'
     FROM copyright_legal_hold_restrictions source
@@ -99,7 +99,7 @@ export async function resolveCopyrightLegalHoldInTransaction(
     JOIN copyright_restrictions restriction ON restriction.id = source.copyright_restriction_id
     JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
     JOIN media_placements placement ON placement.id = target.placement_id
-    JOIN copyright_notice_action_intents intent
+    JOIN copyright_notice_action_work_items intent
       ON intent.copyright_restriction_id = restriction.id
       AND intent.expected_placement_revision = placement.revision AND intent.action = 'restore'
     WHERE source.copyright_notice_legal_hold_assessment_id = ${input.assessmentId}

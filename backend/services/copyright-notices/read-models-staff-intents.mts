@@ -9,7 +9,7 @@ export async function selectStaffActionIntents(
   const { rows } = await query<CopyrightStaffCase['action_intents'][number]>(sql`
     /* getPendingCopyrightStaffCase:actionIntents */
     SELECT intent.id, intent.action, intent.state, intent.failure_message
-    FROM copyright_notice_action_intents intent
+    FROM copyright_notice_action_work_items intent
     JOIN copyright_restrictions restriction ON restriction.id = intent.copyright_restriction_id
     JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
     WHERE target.copyright_notice_id = ${noticeId}
@@ -24,8 +24,8 @@ export async function selectStaffDeliveryIntents(
 ): Promise<CopyrightStaffCase['delivery_intents']> {
   const { rows } = await query<CopyrightStaffCase['delivery_intents'][number]>(sql`
     /* getPendingCopyrightStaffCase:deliveryIntents */
-    SELECT id, delivery_kind, channel, state, delivery_attempt_count
-    FROM copyright_notice_delivery_intents
+    SELECT id, delivery_kind, channel, state, attempt_count AS delivery_attempt_count
+    FROM copyright_notice_delivery_work_items
     WHERE copyright_notice_id = ${noticeId}
     ORDER BY id
   `)

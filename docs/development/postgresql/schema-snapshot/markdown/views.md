@@ -187,6 +187,62 @@ Rolling 30-day top-hashtag recommendations from public posts and discoverable RS
   WHERE (aggregate.contributor_count >= 3);
 ```
 
+## `oauth_authorization_current_records`
+
+Current OAuth lifecycle and active exchange projected from timestamp facts and immutable exchange history; outer row restrictions reach the authorization directly.
+
+```sql
+ SELECT id,
+    provider,
+    purpose,
+    callback_mode,
+        CASE
+            WHEN ((status = 'callback_received'::oauth_authorization_statuses) AND (exchange_claim_id IS NOT NULL) AND (EXISTS ( SELECT 1
+               FROM oauth_authorization_exchange_attempts attempt
+              WHERE ((attempt.oauth_authorization_id = flow.id) AND (attempt.exchange_claim_id = flow.exchange_claim_id) AND (NOT (EXISTS ( SELECT 1
+                       FROM oauth_authorization_exchange_attempt_results result
+                      WHERE (result.oauth_authorization_exchange_attempt_id = attempt.id)))))))) THEN 'exchanging'::oauth_authorization_statuses
+            ELSE status
+        END AS status,
+    initiating_user_id,
+    initiating_device_id,
+    initiating_session_id,
+    redirect_uri,
+    state_hash,
+    pkce_verifier_ciphertext,
+    completion_proof_challenge,
+    callback_code_ciphertext,
+    callback_error,
+    completion_token_hash,
+    completion_token_ciphertext,
+    facebook_user_id,
+    x_user_id,
+    github_user_id,
+    result_kind,
+    result_user_id,
+    result_device_id,
+    result_session_id,
+    login_attempt_id,
+    exchange_claim_id,
+    expires_at,
+    callback_received_at,
+    ( SELECT attempt.started_at
+           FROM oauth_authorization_exchange_attempts attempt
+          WHERE (attempt.oauth_authorization_id = flow.id)
+          ORDER BY attempt.attempt_number DESC
+         LIMIT 1) AS exchange_started_at,
+    completion_ready_at,
+    completed_at,
+    created_at,
+    updated_at,
+    rejected_at,
+    expired_at,
+    (COALESCE((( SELECT max(attempt.attempt_number) AS max
+           FROM oauth_authorization_exchange_attempts attempt
+          WHERE (attempt.oauth_authorization_id = flow.id)))::integer, 0))::smallint AS exchange_attempts
+   FROM oauth_authorizations flow;
+```
+
 ## `view_community_list_items`
 
 Community list content projection; callers enforce list visibility and row access.

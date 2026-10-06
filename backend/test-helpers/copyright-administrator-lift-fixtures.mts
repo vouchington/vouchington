@@ -135,7 +135,7 @@ export async function readTestLiftDeliveryIntents(noticeId: string) {
     target_path: string | null
   }>(sql`/* readTestLiftDeliveryIntents */
     SELECT id, delivery_kind, channel, recipient_user_id, recipient_role, target_path
-    FROM copyright_notice_delivery_intents
+    FROM copyright_notice_delivery_work_items
     WHERE copyright_notice_id = ${noticeId}
     ORDER BY id
   `)

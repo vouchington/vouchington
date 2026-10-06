@@ -40,16 +40,16 @@ export async function processStripeEvent(
   const stripeEvent = await getEvent(data.stripeEventRecordId)
   if (!stripeEvent) return
   const stripeEventRecordId = stripeEvent.id
-  const processingAttemptId = data.processingAttemptId
+  const leaseToken = data.leaseToken
 
-  const processingAcquired = await markProcessing(stripeEventRecordId, processingAttemptId)
+  const processingAcquired = await markProcessing(stripeEventRecordId, leaseToken)
   if (!processingAcquired) return
 
   try {
     const outcome = await handleEvent(stripeEvent.payload, undefined, applicationContext)
-    await markCompleted(stripeEventRecordId, outcome, processingAttemptId)
+    await markCompleted(stripeEventRecordId, outcome, leaseToken)
   } catch (err) {
-    await markFailed(stripeEventRecordId, getErrorMessage(err), processingAttemptId, isFinalAttempt)
+    await markFailed(stripeEventRecordId, getErrorMessage(err), leaseToken, isFinalAttempt)
     throw err
   }
 }

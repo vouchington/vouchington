@@ -108,5 +108,5 @@ export function rejectCopyrightLifecycleWrongSourceShape(fixture: CopyrightNotic
 
 export function rejectCopyrightActionIntentDeletion(fixture: CopyrightNoticeSchemaFixture) {
   return write(sql`/* rejectCopyrightIntentDelete */
-    DELETE FROM copyright_notice_action_intents WHERE id = ${fixture.actionIntentId}`)
+    DELETE FROM copyright_notice_action_work_items WHERE id = ${fixture.actionIntentId}`)
 }

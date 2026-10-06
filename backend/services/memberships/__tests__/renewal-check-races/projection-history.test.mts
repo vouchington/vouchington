@@ -11,7 +11,8 @@ import {
 import { createMembership, grantMembership } from '../../create.mts'
 import { expireElapsedMembershipsForUser } from '../../grants/expire-elapsed.mts'
 import { getMembershipByUserId } from '../../get.mts'
-import { claimRenewalPriceIncreaseNotification } from '../../renewal-check.mts'
+
+import { claimTestRenewalPriceIncreaseNotification as claimRenewalPriceIncreaseNotification } from '@voucha/test-helpers/renewal-notification-claims'
 import {
   markRenewalPriceIncreaseNotificationDelivered,
   markRenewalPriceIncreaseNotificationDeliveryAttempted,
@@ -57,7 +58,10 @@ async function createRetiredClaimOwner() {
     user.id,
     observation.membership_provider_observation_id,
   )
-  expect(claimToken).toEqual(expect.any(String))
+  expect(claimToken).toMatchObject({
+    leaseToken: expect.any(String),
+    generation: expect.any(String),
+  })
 
   await endTestMembershipProjection(membership.id)
   const grantSku = await createTestSku({ plan: 'pro', interval: 'yearly' })

@@ -9,12 +9,12 @@ import { cleanupRetainedRelationIdentities } from '../cleanup-retained-relation-
 
 const rootEvent = (ids: string[]): SharedDbScopeEvent => ({
   operation: 'cleanupRetainedIdentityRoots',
-  table: 'retained_identity_cleanup_progress',
+  table: 'retained_identity_cleanup_cursors',
   scope: { kind: 'ids', ids },
 })
 const relationEvent = (ids: string[]): SharedDbScopeEvent => ({
   operation: 'cleanupRetainedRelationIdentities',
-  table: 'retained_relation_identity_cleanup_progress',
+  table: 'retained_relation_identity_cleanup_cursors',
   scope: { kind: 'ids', ids },
 })
 
@@ -92,14 +92,14 @@ describe('retained cleanup shared-database scope observation', () => {
     expect(roots.events).toEqual([
       {
         operation: 'cleanupRetainedIdentityRoots',
-        table: 'retained_identity_cleanup_progress',
+        table: 'retained_identity_cleanup_cursors',
         scope: { kind: 'global' },
       },
     ])
     expect(relations.events).toEqual([
       {
         operation: 'cleanupRetainedRelationIdentities',
-        table: 'retained_relation_identity_cleanup_progress',
+        table: 'retained_relation_identity_cleanup_cursors',
         scope: { kind: 'global' },
       },
     ])

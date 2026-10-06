@@ -104,7 +104,7 @@ export async function createCopyrightReplayFixture() {
 async function applyCopyrightActionAndLoadPlacement(
   fixture: Awaited<ReturnType<typeof createCopyrightReplayFixture>>,
 ) {
-  await processCopyrightActionIntent(fixture.intentId, new Date('2026-07-01T12:01:00.000Z'))
+  await processCopyrightActionIntent(fixture.intentId, new Date())
   const placement = await getTestPostImagePlacement(fixture.postId, fixture.imageId)
   if (!placement) throw new Error('copyright media delivery placement disappeared')
   return placement

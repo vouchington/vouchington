@@ -1,6 +1,6 @@
 export type ActivityPubInboxDeliveryJob = {
   deliveryId: string
-  processingAttemptId: string
+  leaseToken: string
 }
 
 export type ActivityPubInboxJobs =

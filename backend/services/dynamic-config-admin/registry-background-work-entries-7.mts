@@ -42,6 +42,7 @@ export const backgroundWorkRegistryEntries7 = {
     maxValues: remoteActorsWorkMaxValues,
     descriptions: {
       follower_inbox_batch_size: 'Follower inbox batch size for remote actors processing.',
+      distribution_lease_ms: 'Lease duration for one durable follower distribution page.',
     },
   }),
   'stories-work-config': defineBoundedWorkNamespace({

@@ -10,9 +10,6 @@ export async function recoverActivityPubInboxDeliveries(
   const AP_INBOX_ACTIVITIES_DISPATCH_TIMEOUT_MINUTES = getApInboxActivitiesWorkLimit(
     'dispatch_timeout_minutes',
   )
-  const AP_INBOX_ACTIVITIES_PROCESSING_TIMEOUT_MINUTES = getApInboxActivitiesWorkLimit(
-    'processing_timeout_minutes',
-  )
   const WORK_PAGE_SIZE = getApInboxActivitiesWorkLimit('delivery_transition_recovery_batch_size')
   if (deliveryIds?.length === 0) return []
   observeSharedDbScope('recoverActivityPubInboxDeliveries', sharedDbIdsScope(deliveryIds))
@@ -20,32 +17,32 @@ export async function recoverActivityPubInboxDeliveries(
   const { rows } = await write(sql`/* recoverActivityPubInboxDeliveries */
     WITH candidates AS (
       SELECT delivery.id
-      FROM activitypub_inbox_deliveries delivery
+      FROM activitypub_inbox_delivery_work_items delivery
       WHERE delivery.failed_at IS NULL
         AND (${idScope}::uuid[] IS NULL OR delivery.id = ANY(${idScope}::uuid[]))
         AND (delivery.retention_expires_at IS NULL OR delivery.retention_expires_at > CURRENT_TIMESTAMP)
-        AND (delivery.earliest_retry_at IS NULL OR delivery.earliest_retry_at <= CURRENT_TIMESTAMP)
+        AND (delivery.available_at IS NULL OR delivery.available_at <= CURRENT_TIMESTAMP)
         AND (
           (
-            delivery.processing_at IS NULL
-            AND COALESCE(delivery.enqueued_at, delivery.earliest_retry_at, delivery.received_at)
+            delivery.leased_at IS NULL
+            AND COALESCE(delivery.dispatched_at, delivery.available_at, delivery.received_at)
               < NOW() - ${AP_INBOX_ACTIVITIES_DISPATCH_TIMEOUT_MINUTES}::integer * INTERVAL '1 minute'
           )
-          OR delivery.processing_at < NOW() - ${AP_INBOX_ACTIVITIES_PROCESSING_TIMEOUT_MINUTES}::integer * INTERVAL '1 minute'
+          OR delivery.lease_expires_at <= clock_timestamp()
         )
       ORDER BY delivery.id
       LIMIT ${WORK_PAGE_SIZE}
       FOR UPDATE SKIP LOCKED
     )
-    UPDATE activitypub_inbox_deliveries delivery
-    SET processing_attempt_id = uuidv7(),
-        processing_at = NULL,
-        enqueued_at = CURRENT_TIMESTAMP,
-        earliest_retry_at = NULL,
+    UPDATE activitypub_inbox_delivery_work_items delivery
+    SET lease_token = uuidv7(),
+        leased_at = NULL, lease_expires_at = NULL,
+        dispatched_at = CURRENT_TIMESTAMP,
+        available_at = NULL,
         last_error = NULL
     FROM candidates
     WHERE delivery.id = candidates.id
-    RETURNING delivery.id, delivery.processing_attempt_id
+    RETURNING delivery.id, delivery.lease_token
   `)
   return mapRecoverableRows(rows)
 }
@@ -60,7 +57,7 @@ export async function rearmFailedActivityPubInboxDeliveries(
   const { rows } = await write(sql`/* rearmFailedActivityPubInboxDeliveries */
     WITH candidates AS (
       SELECT delivery.id
-      FROM activitypub_inbox_deliveries delivery
+      FROM activitypub_inbox_delivery_work_items delivery
       WHERE delivery.failed_at IS NOT NULL
         AND (${idScope}::uuid[] IS NULL OR delivery.id = ANY(${idScope}::uuid[]))
         AND delivery.retention_expires_at > CURRENT_TIMESTAMP
@@ -68,23 +65,23 @@ export async function rearmFailedActivityPubInboxDeliveries(
       LIMIT ${WORK_PAGE_SIZE}
       FOR UPDATE SKIP LOCKED
     )
-    UPDATE activitypub_inbox_deliveries delivery
-    SET processing_attempt_id = uuidv7(),
-        processing_at = NULL,
-        enqueued_at = CURRENT_TIMESTAMP,
+    UPDATE activitypub_inbox_delivery_work_items delivery
+    SET lease_token = uuidv7(),
+        leased_at = NULL, lease_expires_at = NULL,
+        dispatched_at = CURRENT_TIMESTAMP,
         failed_at = NULL,
-        earliest_retry_at = NULL,
+        available_at = NULL,
         last_error = NULL
     FROM candidates
     WHERE delivery.id = candidates.id
-    RETURNING delivery.id, delivery.processing_attempt_id
+    RETURNING delivery.id, delivery.lease_token
   `)
   return mapRecoverableRows(rows)
 }
 
 function mapRecoverableRows(rows: unknown[]): RecoverableActivityPubInboxDelivery[] {
   return rows.map(row => {
-    const typed = row as { id: string; processing_attempt_id: string }
-    return { deliveryId: typed.id, processingAttemptId: typed.processing_attempt_id }
+    const typed = row as { id: string; lease_token: string }
+    return { deliveryId: typed.id, leaseToken: typed.lease_token }
   })
 }

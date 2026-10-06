@@ -1,6 +1,16 @@
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
+export async function getFollowerDistributionCursorForTest(
+  distributionId: string,
+): Promise<string | null | undefined> {
+  const { rows } = await read<{ cursor_recipient_id: string | null }>(sql`
+    /* getFollowerDistributionCursorForTest */ SELECT cursor_recipient_id
+    FROM follower_distributions WHERE id = ${distributionId}
+  `)
+  return rows[0]?.cursor_recipient_id
+}
+
 export async function getFollowerDistributionFailureReasonsForTest(
   distributionIds: string[],
 ): Promise<string[]> {

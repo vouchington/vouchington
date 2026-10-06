@@ -46,39 +46,40 @@ describe('durable ActivityPub inbox deliveries', () => {
     expect(
       constraints.find(
         constraint =>
-          constraint.constraintName === 'activitypub_inbox_deliveries__verified_actor_paired',
+          constraint.constraintName === 'activitypub_inbox_work_items__verified_actor_paired',
       )?.definition,
     ).toContain('(verified_at IS NULL) = (remote_actor_id IS NULL)')
     expect(
       constraints.find(
         constraint =>
-          constraint.constraintName === 'activitypub_inbox_deliveries_remote_actor_id_fkey',
+          constraint.constraintName ===
+          'activitypub_inbox_delivery_work_items_remote_actor_id_fkey',
       )?.deleteAction,
     ).toBe('RESTRICT')
     expect(
       constraints.find(
         constraint =>
           constraint.constraintName ===
-          'activitypub_inbox_deliveries__sender_requires_verification',
+          'activitypub_inbox_work_items__sender_requires_verification',
       )?.definition,
     ).toContain('sender_allowed_at IS NULL')
     expect(
       constraints.find(
         constraint =>
-          constraint.constraintName === 'activitypub_inbox_deliveries__deferral_state_valid',
+          constraint.constraintName === 'activitypub_inbox_work_items__deferral_state_valid',
       )?.definition,
-    ).toContain('processing_at IS NULL')
+    ).toContain('leased_at IS NULL')
     expect(
       constraints.find(
         constraint =>
-          constraint.constraintName === 'activitypub_inbox_deliveries__failure_state_valid',
+          constraint.constraintName === 'activitypub_inbox_work_items__failure_state_valid',
       )?.definition,
-    ).toContain('processing_at IS NOT NULL')
+    ).toContain('leased_at IS NOT NULL')
     expect(
       constraints.find(
         constraint =>
           constraint.constraintName ===
-          'activitypub_inbox_deliveries__terminal_diagnostics_present',
+          'activitypub_inbox_work_items__terminal_diagnostics_present',
       )?.definition,
     ).toContain('last_error IS NOT NULL')
   })
@@ -86,17 +87,14 @@ describe('durable ActivityPub inbox deliveries', () => {
   it('round-trips the exact request bytes, signed headers, and untrusted claims', async () => {
     const envelope = makeEnvelope()
     const created = await createActivityPubInboxDelivery(envelope)
-    const claimed = await claimActivityPubInboxDelivery(
-      created.deliveryId,
-      created.processingAttemptId,
-    )
+    const claimed = await claimActivityPubInboxDelivery(created.deliveryId, created.leaseToken)
 
     expect(claimed).toMatchObject(envelope)
     expect(claimed?.rawBody.equals(envelope.rawBody)).toBe(true)
     expect(claimed?.remoteActorId).toBeNull()
     expect(claimed?.verifiedAt).toBeNull()
     expect(claimed?.senderAllowedAt).toBeNull()
-    await deleteActivityPubInboxDelivery(created.deliveryId, created.processingAttemptId)
+    await deleteActivityPubInboxDelivery(created.deliveryId, created.leaseToken)
   })
 
   it('fences stale queue jobs by processing-attempt token', async () => {
@@ -104,40 +102,40 @@ describe('durable ActivityPub inbox deliveries', () => {
 
     expect(await claimActivityPubInboxDelivery(created.deliveryId, randomUUID())).toBeNull()
     expect(
-      await claimActivityPubInboxDelivery(created.deliveryId, created.processingAttemptId),
+      await claimActivityPubInboxDelivery(created.deliveryId, created.leaseToken),
     ).not.toBeNull()
-    await deleteActivityPubInboxDelivery(created.deliveryId, created.processingAttemptId)
+    await deleteActivityPubInboxDelivery(created.deliveryId, created.leaseToken)
   })
 
   it('allows exactly one concurrent claim for the same processing-attempt token', async () => {
     const created = await createActivityPubInboxDelivery(makeEnvelope())
 
     const claims = await Promise.all([
-      claimActivityPubInboxDelivery(created.deliveryId, created.processingAttemptId),
-      claimActivityPubInboxDelivery(created.deliveryId, created.processingAttemptId),
+      claimActivityPubInboxDelivery(created.deliveryId, created.leaseToken),
+      claimActivityPubInboxDelivery(created.deliveryId, created.leaseToken),
     ])
 
     expect(claims.filter(Boolean)).toHaveLength(1)
-    await deleteActivityPubInboxDelivery(created.deliveryId, created.processingAttemptId)
+    await deleteActivityPubInboxDelivery(created.deliveryId, created.leaseToken)
   })
 
   it('allows a non-final retry after the active claim releases its lease', async () => {
     const created = await createActivityPubInboxDelivery(makeEnvelope())
     expect(
-      await claimActivityPubInboxDelivery(created.deliveryId, created.processingAttemptId),
+      await claimActivityPubInboxDelivery(created.deliveryId, created.leaseToken),
     ).not.toBeNull()
 
     expect(
       await releaseActivityPubInboxDeliveryForRetry(
         created.deliveryId,
-        created.processingAttemptId,
+        created.leaseToken,
         new Error('temporary failure'),
       ),
     ).toBe(true)
     expect(
-      await claimActivityPubInboxDelivery(created.deliveryId, created.processingAttemptId),
+      await claimActivityPubInboxDelivery(created.deliveryId, created.leaseToken),
     ).not.toBeNull()
-    await deleteActivityPubInboxDelivery(created.deliveryId, created.processingAttemptId)
+    await deleteActivityPubInboxDelivery(created.deliveryId, created.leaseToken)
   })
 
   it('leases a recovered row so an immediate second recovery cannot rotate its token again', async () => {
@@ -159,12 +157,9 @@ describe('durable ActivityPub inbox deliveries', () => {
       unrelated.deliveryId,
     ])
     expect(unrelatedRecovery.map(delivery => delivery.deliveryId)).toEqual([unrelated.deliveryId])
-    if (first) await deleteActivityPubInboxDelivery(created.deliveryId, first.processingAttemptId)
+    if (first) await deleteActivityPubInboxDelivery(created.deliveryId, first.leaseToken)
     if (unrelatedRecovery[0])
-      await deleteActivityPubInboxDelivery(
-        unrelated.deliveryId,
-        unrelatedRecovery[0].processingAttemptId,
-      )
+      await deleteActivityPubInboxDelivery(unrelated.deliveryId, unrelatedRecovery[0].leaseToken)
   })
 
   it('rotates the fencing token when recovering a crashed processing lease', async () => {
@@ -174,64 +169,52 @@ describe('durable ActivityPub inbox deliveries', () => {
     const recovered = (await claimRecoverableActivityPubInboxDeliveries([created.deliveryId])).find(
       delivery => delivery.deliveryId === created.deliveryId,
     )
-    expect(recovered?.processingAttemptId).not.toBe(created.processingAttemptId)
-    if (recovered)
-      await deleteActivityPubInboxDelivery(created.deliveryId, recovered.processingAttemptId)
+    expect(recovered?.leaseToken).not.toBe(created.leaseToken)
+    if (recovered) await deleteActivityPubInboxDelivery(created.deliveryId, recovered.leaseToken)
   })
 
   it('rotates the token and excludes a delivery until a sender deferral is due', async () => {
     const created = await createActivityPubInboxDelivery(makeEnvelope())
     const actor = await createRemoteActorFixture()
-    await claimActivityPubInboxDelivery(created.deliveryId, created.processingAttemptId)
-    await markActivityPubInboxDeliveryVerified(
-      created.deliveryId,
-      created.processingAttemptId,
-      actor.id,
-    )
+    await claimActivityPubInboxDelivery(created.deliveryId, created.leaseToken)
+    await markActivityPubInboxDeliveryVerified(created.deliveryId, created.leaseToken, actor.id)
     const deferred = await deferActivityPubInboxDelivery(
       created.deliveryId,
-      created.processingAttemptId,
+      created.leaseToken,
       new Date(Date.now() + 60_000),
     )
 
-    expect(deferred?.processingAttemptId).not.toBe(created.processingAttemptId)
+    expect(deferred?.leaseToken).not.toBe(created.leaseToken)
     expect(
-      await claimActivityPubInboxDelivery(
-        created.deliveryId,
-        deferred?.processingAttemptId ?? randomUUID(),
-      ),
+      await claimActivityPubInboxDelivery(created.deliveryId, deferred?.leaseToken ?? randomUUID()),
     ).toBeNull()
   })
 
   it('does not recover an old received row only one minute after its sender deferral is due', async () => {
     const created = await createActivityPubInboxDelivery(makeEnvelope())
     const actor = await createRemoteActorFixture()
-    let cleanupAttemptId = created.processingAttemptId
+    let cleanupAttemptId = created.leaseToken
 
     try {
-      await claimActivityPubInboxDelivery(created.deliveryId, created.processingAttemptId)
-      await markActivityPubInboxDeliveryVerified(
-        created.deliveryId,
-        created.processingAttemptId,
-        actor.id,
-      )
+      await claimActivityPubInboxDelivery(created.deliveryId, created.leaseToken)
+      await markActivityPubInboxDeliveryVerified(created.deliveryId, created.leaseToken, actor.id)
       const deferred = await deferActivityPubInboxDelivery(
         created.deliveryId,
-        created.processingAttemptId,
+        created.leaseToken,
         new Date(Date.now() - 60_000),
       )
       expect(deferred).not.toBeNull()
       if (!deferred) return
-      cleanupAttemptId = deferred.processingAttemptId
+      cleanupAttemptId = deferred.leaseToken
       await ageActivityPubInboxDeliveryReceivedAtForTest(created.deliveryId)
 
       const recovered = (
         await claimRecoverableActivityPubInboxDeliveries([created.deliveryId])
       ).find(delivery => delivery.deliveryId === created.deliveryId)
-      if (recovered) cleanupAttemptId = recovered.processingAttemptId
+      if (recovered) cleanupAttemptId = recovered.leaseToken
       expect(recovered).toBeUndefined()
       expect(
-        await claimActivityPubInboxDelivery(created.deliveryId, deferred.processingAttemptId),
+        await claimActivityPubInboxDelivery(created.deliveryId, deferred.leaseToken),
       ).not.toBeNull()
     } finally {
       await deleteActivityPubInboxDelivery(created.deliveryId, cleanupAttemptId)
@@ -241,23 +224,19 @@ describe('durable ActivityPub inbox deliveries', () => {
   it('recovers an old received row more than five minutes after its sender deferral is due', async () => {
     const created = await createActivityPubInboxDelivery(makeEnvelope())
     const actor = await createRemoteActorFixture()
-    let cleanupAttemptId = created.processingAttemptId
+    let cleanupAttemptId = created.leaseToken
 
     try {
-      await claimActivityPubInboxDelivery(created.deliveryId, created.processingAttemptId)
-      await markActivityPubInboxDeliveryVerified(
-        created.deliveryId,
-        created.processingAttemptId,
-        actor.id,
-      )
+      await claimActivityPubInboxDelivery(created.deliveryId, created.leaseToken)
+      await markActivityPubInboxDeliveryVerified(created.deliveryId, created.leaseToken, actor.id)
       const deferred = await deferActivityPubInboxDelivery(
         created.deliveryId,
-        created.processingAttemptId,
+        created.leaseToken,
         new Date(Date.now() - 6 * 60_000),
       )
       expect(deferred).not.toBeNull()
       if (!deferred) return
-      cleanupAttemptId = deferred.processingAttemptId
+      cleanupAttemptId = deferred.leaseToken
       await ageActivityPubInboxDeliveryReceivedAtForTest(created.deliveryId)
 
       const recovered = (
@@ -265,13 +244,13 @@ describe('durable ActivityPub inbox deliveries', () => {
       ).find(delivery => delivery.deliveryId === created.deliveryId)
       expect(recovered).toBeDefined()
       if (!recovered) return
-      cleanupAttemptId = recovered.processingAttemptId
-      expect(recovered.processingAttemptId).not.toBe(deferred.processingAttemptId)
+      cleanupAttemptId = recovered.leaseToken
+      expect(recovered.leaseToken).not.toBe(deferred.leaseToken)
       expect(
-        await claimActivityPubInboxDelivery(created.deliveryId, deferred.processingAttemptId),
+        await claimActivityPubInboxDelivery(created.deliveryId, deferred.leaseToken),
       ).toBeNull()
       expect(
-        await claimActivityPubInboxDelivery(created.deliveryId, recovered.processingAttemptId),
+        await claimActivityPubInboxDelivery(created.deliveryId, recovered.leaseToken),
       ).not.toBeNull()
     } finally {
       await deleteActivityPubInboxDelivery(created.deliveryId, cleanupAttemptId)

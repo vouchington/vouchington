@@ -40,10 +40,11 @@ The receipt status deliberately expresses notification delivery rather than subs
 both terminal failure classes use `permanently_failed`, while subscription deletion remains limited
 to 404 and 410.
 
-The capture trigger starts with notifications created or regenerated after this feature is
-deployed. Migration does not infer pending delivery for older rows from `pushed_at IS NULL`, because
-that state also includes read notifications and notifications created when push was unavailable or
-the user had no subscription; replaying those rows could send stale alerts to newly added devices.
+The capture trigger creates a pending intent with each new notification. When direct-message or
+modmail aggregation regenerates the notification UUID, a before-update trigger first deletes the
+old intent and its endpoint receipts. The after-update capture then creates fresh work, so foreign
+key cascades cannot carry terminal delivery facts into the new effect. Exact replay of an unchanged
+notification keeps its existing intent and terminal receipts.
 
 ## Web Push Subject
 

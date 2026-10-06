@@ -105,11 +105,8 @@ export async function deliverInitialCopyrightWithhold(
     intent => intent.action === 'withhold',
   )
   if (!withhold) throw new Error('initial withhold intent disappeared')
-  await processCopyrightActionIntent(
-    withhold.id,
-    new Date('2026-07-01T12:01:00.000Z'),
-    dependencies,
-  )
+  const result = await processCopyrightActionIntent(withhold.id, new Date(), dependencies)
+  if (result !== 'applied') throw new Error(`Initial withhold was not applied: ${result}`)
 }
 
 /** Accepts a counter-notice through the production moderator review and returns its deadline row. */

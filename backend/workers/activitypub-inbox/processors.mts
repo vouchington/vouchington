@@ -51,33 +51,22 @@ export async function processDelivery(
   options: { isFinalAttempt: boolean },
 ): Promise<void> {
   try {
-    const result = await processDurableActivityPubInboxDelivery(
-      data.deliveryId,
-      data.processingAttemptId,
-    )
+    const result = await processDurableActivityPubInboxDelivery(data.deliveryId, data.leaseToken)
     if (result.outcome !== 'deferred') return
 
     await enqueueDelayedActivityPubInboxDelivery(
-      { deliveryId: result.deliveryId, processingAttemptId: result.processingAttemptId },
+      { deliveryId: result.deliveryId, leaseToken: result.leaseToken },
       Math.max(0, result.deferredUntil.getTime() - Date.now()),
     )
   } catch (err) {
     if (isTerminalProtocolError(err)) {
-      await activityPubInboxDeliveryTransitions.reject(data.deliveryId, data.processingAttemptId)
+      await activityPubInboxDeliveryTransitions.reject(data.deliveryId, data.leaseToken)
       throw new UnrecoverableError(err instanceof Error ? err.message : String(err))
     }
     if (options.isFinalAttempt) {
-      await activityPubInboxDeliveryTransitions.exhaust(
-        data.deliveryId,
-        data.processingAttemptId,
-        err,
-      )
+      await activityPubInboxDeliveryTransitions.exhaust(data.deliveryId, data.leaseToken, err)
     } else {
-      await activityPubInboxDeliveryTransitions.release(
-        data.deliveryId,
-        data.processingAttemptId,
-        err,
-      )
+      await activityPubInboxDeliveryTransitions.release(data.deliveryId, data.leaseToken, err)
     }
     throw err
   }

@@ -21,7 +21,7 @@ describe('createOrRetrieveIneligiblePurchaseReversalRefund', () => {
       createOrRetrieveIneligiblePurchaseReversalRefund(
         {
           completed: false,
-          executionClaimToken: 'claim-token',
+          leaseToken: 'claim-token',
           hasReceipt: false,
           id: 'operation-settled',
           idempotencyKey: 'ineligible-purchase-reversal:operation-settled',
@@ -46,7 +46,7 @@ describe('createOrRetrieveIneligiblePurchaseReversalRefund', () => {
   it('rejects a missing retrieval operation and a pending recorded refund', async () => {
     const reversal = {
       completed: false,
-      executionClaimToken: 'claim-token',
+      leaseToken: 'claim-token',
       hasReceipt: false,
       id: 'operation-pending',
       idempotencyKey: 'key',

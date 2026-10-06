@@ -75,25 +75,35 @@ export async function createTestPendingMembershipVerification(userId: string): P
 
 export async function getTestMembershipVerificationProcessingState(verificationId: string) {
   const { rows } = await read<{
-    processing_claim_token: string | null
-    processing_claimed_at: Date | null
-    processing_attempts: number
-    next_processing_at: Date | null
+    lease_token: string | null
+    leased_at: Date | null
+    attempt_count: number
+    available_at: Date | null
     last_error: string | null
   }>(sql`
-    SELECT processing_claim_token, processing_claimed_at, processing_attempts,
-      next_processing_at, last_error
-    FROM membership_verifications WHERE id = ${verificationId}`)
+    SELECT lease_token, leased_at, attempt_count,
+      available_at, last_error
+    FROM membership_verification_processing_work_items WHERE membership_verification_id = ${verificationId}`)
   return rows[0] ?? null
 }
 
 export async function claimTestMembershipVerification(
   verificationId: string,
-  processingClaimToken: string,
+  leaseToken: string,
 ): Promise<void> {
   const { rowCount } = await write(sql`/* claimTestMembershipVerification */
-    UPDATE membership_verifications
-    SET processing_claim_token = ${processingClaimToken}, processing_claimed_at = CURRENT_TIMESTAMP
-    WHERE id = ${verificationId} AND processing_claim_token IS NULL`)
+    UPDATE membership_verification_processing_work_items
+    SET lease_token = ${leaseToken}, leased_at = CURRENT_TIMESTAMP, lease_expires_at = CURRENT_TIMESTAMP + INTERVAL '30 minutes'
+    WHERE membership_verification_id = ${verificationId} AND lease_token IS NULL`)
   if (rowCount !== 1) throw new Error('Membership verification was not available for a test claim')
+}
+
+export async function expireTestMembershipVerificationLease(verificationId: string): Promise<void> {
+  const { rowCount } = await write(sql`/* expireTestMembershipVerificationLease */
+    UPDATE membership_verification_processing_work_items
+    SET leased_at = clock_timestamp() - INTERVAL '2 minutes',
+        lease_expires_at = clock_timestamp() - INTERVAL '1 minute'
+    WHERE membership_verification_id = ${verificationId}
+      AND lease_token IS NOT NULL AND completed_at IS NULL`)
+  if (rowCount !== 1) throw new Error('Membership verification has no active test lease')
 }

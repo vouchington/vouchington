@@ -79,12 +79,12 @@ describe('membership enqueues', () => {
 
   it('uses Stripe record and attempt database ids as the job and dedup ids', async () => {
     const stripeEventRecordId = randomUUID()
-    const processingAttemptId = randomUUID()
+    const leaseToken = randomUUID()
     const stripeSubscriptionId = `sub_${randomUUID()}`
-    const jobId = `stripe-event__${stripeEventRecordId}__${processingAttemptId}`
+    const jobId = `stripe-event__${stripeEventRecordId}__${leaseToken}`
     await enqueueProcessStripeEvent({
       stripeEventRecordId,
-      processingAttemptId,
+      leaseToken,
       stripeSubscriptionId,
       isLiveMode: true,
     })
@@ -93,7 +93,7 @@ describe('membership enqueues', () => {
     ).flat()
     expect(jobs.find(job => job.id === jobId)).toMatchObject({
       id: jobId,
-      data: { stripeEventRecordId, processingAttemptId, stripeSubscriptionId, isLiveMode: true },
+      data: { stripeEventRecordId, leaseToken, stripeSubscriptionId, isLiveMode: true },
       opts: {
         deduplication: { id: jobId, mode: 'simple' },
         ordering: { key: `stripe-subscription:production:${stripeSubscriptionId}`, concurrency: 1 },
@@ -103,11 +103,11 @@ describe('membership enqueues', () => {
 
   it('does not serialize Stripe events without a normalized subscription id', async () => {
     const stripeEventRecordId = randomUUID()
-    const processingAttemptId = randomUUID()
-    const jobId = `stripe-event__${stripeEventRecordId}__${processingAttemptId}`
+    const leaseToken = randomUUID()
+    const jobId = `stripe-event__${stripeEventRecordId}__${leaseToken}`
     await enqueueProcessStripeEvent({
       stripeEventRecordId,
-      processingAttemptId,
+      leaseToken,
       stripeSubscriptionId: null,
       isLiveMode: false,
     })
@@ -117,7 +117,7 @@ describe('membership enqueues', () => {
     expect(jobs.find(job => job.id === jobId)).toMatchObject({
       data: {
         stripeEventRecordId,
-        processingAttemptId,
+        leaseToken,
         stripeSubscriptionId: null,
         isLiveMode: false,
       },
@@ -128,11 +128,11 @@ describe('membership enqueues', () => {
   it('uses the same logical ids for recovered bulk jobs', async () => {
     const data = {
       stripeEventRecordId: randomUUID(),
-      processingAttemptId: randomUUID(),
+      leaseToken: randomUUID(),
       stripeSubscriptionId: `sub_${randomUUID()}`,
       isLiveMode: false,
     }
-    const jobId = `stripe-event__${data.stripeEventRecordId}__${data.processingAttemptId}`
+    const jobId = `stripe-event__${data.stripeEventRecordId}__${data.leaseToken}`
     const [job] = await enqueueBulkProcessStripeEvents([data])
     expect(job).toMatchObject({
       id: jobId,
@@ -147,11 +147,12 @@ describe('membership enqueues', () => {
     })
   })
 
-  it('deduplicates renewal delivery by membership and provider observation', async () => {
+  it('deduplicates renewal delivery by membership, observation and generation', async () => {
     const data = {
       userId: randomUUID(),
       membershipId: randomUUID(),
       membershipProviderObservationId: randomUUID(),
+      generation: '1',
     }
     await enqueueBulkSendRenewalPriceIncreaseEmail([data])
     const jobs = (await Promise.all(QUEUE_STATES.map(state => memberships.getJobs(state)))).flat()
@@ -162,7 +163,7 @@ describe('membership enqueues', () => {
       data,
       opts: {
         deduplication: {
-          id: `processSendRenewalPriceIncreaseEmail__${data.membershipId}__${data.membershipProviderObservationId}`,
+          id: `processSendRenewalPriceIncreaseEmail__${data.membershipId}__${data.membershipProviderObservationId}__${data.generation}`,
           mode: 'debounce',
         },
       },

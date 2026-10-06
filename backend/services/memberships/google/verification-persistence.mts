@@ -1,4 +1,7 @@
-import { getMembershipWorkLimit } from '@services/memberships/work-limits'
+import {
+  finalizeClaimedMembershipVerification,
+  deferClaimedMembershipVerification,
+} from '../verification-work.mts'
 import { beginTransaction, write, type QueryExecutor } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
@@ -23,26 +26,9 @@ export async function terminalizeGooglePlayConflict(
   token: string,
   reason: 'wrong_account' | 'competing_direct_source',
 ): Promise<void> {
-  await write(
-    sql`/* terminalizeGooglePlayConflict */ UPDATE membership_verifications SET conflicted_at = CURRENT_TIMESTAMP, result_code = ${reason}, processing_claim_token = NULL, processing_claimed_at = NULL, next_processing_at = NULL, last_error = NULL WHERE id = ${id} AND processing_claim_token = ${token} AND verified_at IS NULL AND conflicted_at IS NULL AND rejected_at IS NULL`,
-  )
-}
-
-export async function getContext(
-  id: string,
-  token: string,
-  query: QueryExecutor,
-): Promise<Context | null> {
-  const { rows } = await query<Context>(sql`/* getClaimedGooglePlayVerification */
-    SELECT verification.id AS "verificationId", verification.user_id AS "userId", verification.membership_purchase_intent_id AS "purchaseIntentId",
-      verification.environment, verification.application_id AS "applicationId", evidence.id AS "evidenceId", evidence.encrypted_evidence AS "encryptedEvidence", evidence.evidence_lookup_sha256 AS "evidenceLookupSha256",
-      evidence.rejected_at AS "evidenceRejectedAt", evidence.rejection_reason AS "evidenceRejectionReason",
-      evidence.verified_at AS "evidenceVerifiedAt", evidence.membership_provider_lineage_id AS "evidenceLineageId"
-    FROM membership_verifications verification INNER JOIN membership_provider_evidence_records evidence ON evidence.id = verification.membership_provider_evidence_record_id
-    WHERE verification.id = ${id} AND verification.provider = 'google_play' AND verification.processing_claim_token = ${token}
-      AND verification.verified_at IS NULL AND verification.conflicted_at IS NULL AND verification.rejected_at IS NULL
-    FOR UPDATE OF verification, evidence`)
-  return rows[0] ?? null
+  await using query = await beginTransaction()
+  if (!(await finalizeClaimedMembershipVerification(query, id, token, 'conflict', reason))) return
+  await query.commit()
 }
 export function getPurchaseToken(context: Context): string | null {
   const plaintext = decryptSecret(
@@ -167,10 +153,16 @@ export async function finalizeVerified(
   token: string,
   query: QueryExecutor,
 ): Promise<void> {
-  const { rowCount } = await query(
-    sql`/* finalizeGooglePlayVerification */ UPDATE membership_verifications SET verified_at = CURRENT_TIMESTAMP, result_code = 'verified', processing_claim_token = NULL, processing_claimed_at = NULL, next_processing_at = NULL, last_error = NULL WHERE id = ${context.verificationId} AND processing_claim_token = ${token} AND verified_at IS NULL AND conflicted_at IS NULL AND rejected_at IS NULL`,
+  if (
+    !(await finalizeClaimedMembershipVerification(
+      query,
+      context.verificationId,
+      token,
+      'verified',
+      'verified',
+    ))
   )
-  if (rowCount !== 1) throw new Error('Google Play verification claim was superseded')
+    throw new Error('Google Play verification claim was superseded')
 }
 export async function reject(
   context: Context,
@@ -179,12 +171,19 @@ export async function reject(
   query: Awaited<ReturnType<typeof beginTransaction>>,
 ): Promise<void> {
   if (reason !== 'wrong_account')
-    await query(
-      sql`/* rejectGooglePlayVerification */ UPDATE membership_provider_evidence_records SET rejected_at = CURRENT_TIMESTAMP, rejection_reason = ${reason} WHERE id = ${context.evidenceId} AND verified_at IS NULL AND rejected_at IS NULL`,
-    )
-  await query(
-    sql`/* finalizeRejectedGooglePlayVerification */ UPDATE membership_verifications SET rejected_at = CURRENT_TIMESTAMP, result_code = ${reason}, processing_claim_token = NULL, processing_claimed_at = NULL, next_processing_at = NULL, last_error = NULL WHERE id = ${context.verificationId} AND processing_claim_token = ${token} AND verified_at IS NULL AND conflicted_at IS NULL AND rejected_at IS NULL`,
+    await query(sql`/* rejectGooglePlayVerificationEvidence */
+      UPDATE membership_provider_evidence_records SET rejected_at = clock_timestamp(), rejection_reason = ${reason}
+      WHERE id = ${context.evidenceId} AND verified_at IS NULL AND rejected_at IS NULL`)
+  if (
+    !(await finalizeClaimedMembershipVerification(
+      query,
+      context.verificationId,
+      token,
+      'rejected',
+      reason,
+    ))
   )
+    throw new Error('Google Play verification claim was superseded')
   await query.commit()
 }
 export async function deferGooglePlayVerification(
@@ -192,9 +191,9 @@ export async function deferGooglePlayVerification(
   token: string,
   error: unknown,
 ): Promise<void> {
-  const retryMinutes = getMembershipWorkLimit('verification_retry_minutes')
-  const message = error instanceof Error ? error.message : 'Google Play verification retry'
-  await write(
-    sql`/* deferGooglePlayVerification */ UPDATE membership_verifications SET processing_claim_token = NULL, processing_claimed_at = NULL, next_processing_at = CURRENT_TIMESTAMP + ${retryMinutes}::integer * INTERVAL '1 minute', last_error = ${message.slice(0, 1000)} WHERE id = ${id} AND processing_claim_token = ${token} AND verified_at IS NULL AND conflicted_at IS NULL AND rejected_at IS NULL`,
+  await deferClaimedMembershipVerification(
+    id,
+    token,
+    error instanceof Error ? error.message : 'Google Play verification retry',
   )
 }

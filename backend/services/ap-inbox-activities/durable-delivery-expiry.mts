@@ -1,4 +1,3 @@
-import { getApInboxActivitiesWorkLimit } from './work-limits.mts'
 import { write } from '@data-stores/psql'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import {
@@ -17,9 +16,6 @@ export function buildExpireActivityPubInboxDeliveriesQuery(
   category: ActivityPubInboxExpiryCategory,
   limit: number = ACTIVITYPUB_INBOX_STORAGE_POLICY.cleanupBatchSize,
 ): SQLStatement {
-  const AP_INBOX_ACTIVITIES_PROCESSING_TIMEOUT_MINUTES = getApInboxActivitiesWorkLimit(
-    'processing_timeout_minutes',
-  )
   if (
     !Number.isInteger(limit) ||
     limit < 1 ||
@@ -32,7 +28,7 @@ export function buildExpireActivityPubInboxDeliveriesQuery(
   const query = sql`/* expireActivityPubInboxDeliveries */
     WITH candidates AS (
       SELECT delivery.id
-      FROM activitypub_inbox_deliveries delivery
+      FROM activitypub_inbox_delivery_work_items delivery
       WHERE delivery.retention_expires_at <= CURRENT_TIMESTAMP
         AND `
   query.append(
@@ -43,14 +39,14 @@ export function buildExpireActivityPubInboxDeliveriesQuery(
   query.append(sql`
         AND (
           delivery.failed_at IS NOT NULL
-          OR delivery.processing_at IS NULL
-          OR delivery.processing_at < CURRENT_TIMESTAMP - ${AP_INBOX_ACTIVITIES_PROCESSING_TIMEOUT_MINUTES}::integer * INTERVAL '1 minute'
+          OR delivery.leased_at IS NULL
+          OR delivery.lease_expires_at <= clock_timestamp()
         )
       ORDER BY delivery.retention_expires_at, delivery.id
       LIMIT ${limit}
       FOR UPDATE SKIP LOCKED
     ), deleted AS (
-      DELETE FROM activitypub_inbox_deliveries delivery
+      DELETE FROM activitypub_inbox_delivery_work_items delivery
       USING candidates
       WHERE delivery.id = candidates.id
       RETURNING OCTET_LENGTH(delivery.raw_body) AS raw_body_bytes
@@ -85,7 +81,7 @@ export async function getActivityPubInboxStorageSnapshot(): Promise<ActivityPubI
   }>(sql`/* getActivityPubInboxStorageSnapshot */
     SELECT retained_rows, retained_raw_body_bytes, unverified_rows, unverified_raw_body_bytes
     FROM activitypub_inbox_delivery_storage_counters
-    WHERE singleton
+    WHERE is_singleton
   `)
   const row = rows[0]
   if (!row) throw new Error('ActivityPub inbox storage counter singleton is missing')

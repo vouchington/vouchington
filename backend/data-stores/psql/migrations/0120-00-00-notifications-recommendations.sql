@@ -338,27 +338,42 @@ ON notifications (user_warning_id)
 WHERE user_warning_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TABLE IF NOT EXISTS community_activity_digest_dispatch_windows (
+CREATE TABLE IF NOT EXISTS community_activity_digest_work_items (
   window_starts_at TIMESTAMPTZ PRIMARY KEY,
   window_ends_at TIMESTAMPTZ NOT NULL,
-  enqueued_at TIMESTAMPTZ,
+  lease_token UUID,
+  leased_at TIMESTAMPTZ,
+  lease_expires_at TIMESTAMPTZ,
+  attempt_count INTEGER NOT NULL DEFAULT 0 CHECK (attempt_count >= 0),
+  available_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   completed_at TIMESTAMPTZ,
+  CHECK ((lease_token IS NULL) = (leased_at IS NULL)),
+  CHECK ((lease_token IS NULL) = (lease_expires_at IS NULL)),
+  CHECK (lease_expires_at > leased_at),
+  CHECK (completed_at IS NULL OR lease_token IS NULL),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CHECK (window_ends_at = window_starts_at + INTERVAL '7 days')
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trigger_community_activity_digest_dispatch_windows_updated_at
-BEFORE UPDATE ON community_activity_digest_dispatch_windows
+CREATE OR REPLACE TRIGGER trigger_community_activity_digest_work_items_updated_at
+BEFORE UPDATE ON community_activity_digest_work_items
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
-COMMENT ON TABLE community_activity_digest_dispatch_windows IS 'Durable weekly cursor and queue-enqueue state for community activity digest dispatch.';
-COMMENT ON COLUMN community_activity_digest_dispatch_windows.window_starts_at IS 'Inclusive UTC start of the closed weekly digest window.';
-COMMENT ON COLUMN community_activity_digest_dispatch_windows.window_ends_at IS 'Exclusive UTC end of the closed weekly digest window.';
-COMMENT ON COLUMN community_activity_digest_dispatch_windows.enqueued_at IS 'Latest dispatch acceptance or batch activity time; stale incomplete windows are retryable.';
-COMMENT ON COLUMN community_activity_digest_dispatch_windows.completed_at IS 'Time every recipient batch for the window completed; incomplete stale enqueues are eligible for replay.';
-COMMENT ON COLUMN community_activity_digest_dispatch_windows.updated_at IS 'Time this dispatch-window state was last updated.';
+COMMENT ON TABLE community_activity_digest_work_items IS 'Leased weekly digest dispatch work. Completed rows retain the window high-water mark and replay protection.';
+COMMENT ON COLUMN community_activity_digest_work_items.window_starts_at IS 'Inclusive UTC start of the closed weekly digest window.';
+COMMENT ON COLUMN community_activity_digest_work_items.window_ends_at IS 'Exclusive UTC end of the closed weekly digest window.';
+COMMENT ON COLUMN community_activity_digest_work_items.lease_token IS 'Opaque token shared by the current dispatch and recipient batch chain; stale chains cannot renew or complete.';
+COMMENT ON COLUMN community_activity_digest_work_items.leased_at IS 'Time the current batch-chain lease was claimed.';
+COMMENT ON COLUMN community_activity_digest_work_items.lease_expires_at IS 'Expiry renewed by each live recipient batch; incomplete expired work is reclaimable.';
+COMMENT ON COLUMN community_activity_digest_work_items.attempt_count IS 'Number of dispatch-chain claims including recovery after expiry.';
+COMMENT ON COLUMN community_activity_digest_work_items.available_at IS 'Earliest time this digest window may be claimed.';
+CREATE INDEX IF NOT EXISTS idx_community_activity_digest_work_items__claim
+ON community_activity_digest_work_items (available_at, window_starts_at)
+WHERE completed_at IS NULL;
+COMMENT ON COLUMN community_activity_digest_work_items.completed_at IS 'Time every recipient batch for the window completed; incomplete stale enqueues are eligible for replay.';
+COMMENT ON COLUMN community_activity_digest_work_items.updated_at IS 'Time this dispatch-window state was last updated.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_notifications__user_id__post_id

@@ -2,14 +2,22 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type {
   commitActivityDistributionPage,
   prepareActivityDistributionPage,
+  releaseActivityDistributionPage,
 } from '@services/activitypub-delivery'
 import type { isFederationEnabledForUser } from '@services/users'
 import type {
   enqueueBulkDeliverActivity,
   enqueueDistributeActivity,
-  DistributeActivityData,
 } from '@queues/activitypub-delivery/enqueues'
 import { distributeActivity } from './processors.mts'
+import {
+  FOLLOW_DATA,
+  UNDO_FOLLOW_DATA,
+  LIKE_DATA,
+  LEGACY_UNDO_FOLLOW_DATA,
+  LEGACY_UNDO_LIKE_DATA,
+  BLANK_UNDO_LIKE_DATA,
+} from '@voucha/test-helpers/activitypub-distribution-worker-fixtures'
 
 const enqueueBulkDeliverActivityMock = vi.fn<typeof enqueueBulkDeliverActivity>()
 const enqueueDistributeActivityMock = vi.fn<typeof enqueueDistributeActivity>()
@@ -17,49 +25,7 @@ const isFederationEnabledForUserMock = vi.fn<typeof isFederationEnabledForUser>(
 const prepareActivityDistributionPageMock = vi.fn<typeof prepareActivityDistributionPage>()
 const commitActivityDistributionPageMock = vi.fn<typeof commitActivityDistributionPage>()
 
-const FOLLOW_DATA: DistributeActivityData = {
-  activityId: 'activity-1',
-  activityType: 'Follow',
-  sourceUserId: 'user-1',
-  targetUserId: 'user-2',
-}
-
-const UNDO_FOLLOW_DATA: DistributeActivityData = {
-  activityId: 'activity-3',
-  activityType: 'UndoFollow',
-  originalActivityId: 'activity-1',
-  sourceUserId: 'user-1',
-  targetUserId: 'user-2',
-}
-
-const LIKE_DATA: DistributeActivityData = {
-  activityId: 'activity-2',
-  activityType: 'Like',
-  sourceUserId: 'user-1',
-  targetPostId: 'post-1',
-}
-
-const LEGACY_UNDO_FOLLOW_DATA = {
-  activityId: 'legacy-undo-follow',
-  activityType: 'UndoFollow',
-  sourceUserId: 'user-1',
-  targetUserId: 'user-2',
-} as unknown as DistributeActivityData
-
-const LEGACY_UNDO_LIKE_DATA = {
-  activityId: 'legacy-undo-like',
-  activityType: 'UndoLike',
-  sourceUserId: 'user-1',
-  targetPostId: 'post-1',
-} as unknown as DistributeActivityData
-
-const BLANK_UNDO_LIKE_DATA: DistributeActivityData = {
-  activityId: 'blank-undo-like',
-  activityType: 'UndoLike',
-  originalActivityId: '   ',
-  sourceUserId: 'user-1',
-  targetPostId: 'post-1',
-}
+const releaseActivityDistributionPageMock = vi.fn<typeof releaseActivityDistributionPage>()
 
 function distributeDeps() {
   return {
@@ -68,6 +34,7 @@ function distributeDeps() {
     isFederationEnabledForUser: isFederationEnabledForUserMock,
     prepareActivityDistributionPage: prepareActivityDistributionPageMock,
     commitActivityDistributionPage: commitActivityDistributionPageMock,
+    releaseActivityDistributionPage: releaseActivityDistributionPageMock,
   }
 }
 
@@ -79,12 +46,28 @@ describe('distributeActivity', () => {
     enqueueDistributeActivityMock.mockResolvedValue(undefined as never)
     prepareActivityDistributionPageMock.mockResolvedValue({
       status: 'ready',
+      leaseToken: 'lease-one',
       expectedRemoteActorId: null,
       nextRemoteActorId: 'remote-actor-1',
       inboxUrls: ['https://a.example/inbox'],
       hasMore: false,
     })
     commitActivityDistributionPageMock.mockResolvedValue(true)
+  })
+
+  it('returns the lease delay without admitting delivery or continuation jobs', async () => {
+    prepareActivityDistributionPageMock.mockResolvedValueOnce({
+      status: 'busy',
+      retryAfterMs: 1000,
+    })
+    await expect(distributeActivity(FOLLOW_DATA, distributeDeps())).resolves.toEqual({
+      enqueued: 0,
+      busy: true,
+      retryAfterMs: 1000,
+    })
+    expect(enqueueBulkDeliverActivityMock).not.toHaveBeenCalled()
+    expect(enqueueDistributeActivityMock).not.toHaveBeenCalled()
+    expect(commitActivityDistributionPageMock).not.toHaveBeenCalled()
   })
 
   it.each([
@@ -139,6 +122,7 @@ describe('distributeActivity', () => {
   it('enqueues one bounded prepared page before committing its cursor', async () => {
     prepareActivityDistributionPageMock.mockResolvedValueOnce({
       status: 'ready',
+      leaseToken: 'lease-one',
       expectedRemoteActorId: 'remote-actor-0',
       nextRemoteActorId: 'remote-actor-3',
       inboxUrls: ['https://a.example/inbox', 'https://b.example/inbox'],
@@ -158,6 +142,7 @@ describe('distributeActivity', () => {
       'remote-actor-0',
       'remote-actor-3',
       true,
+      'lease-one',
     )
     expect(enqueueBulkDeliverActivityMock.mock.invocationCallOrder[0]).toBeLessThan(
       commitActivityDistributionPageMock.mock.invocationCallOrder[0]!,
@@ -167,6 +152,7 @@ describe('distributeActivity', () => {
   it('enqueues exactly one continuation after committing a nonterminal page', async () => {
     prepareActivityDistributionPageMock.mockResolvedValueOnce({
       status: 'ready',
+      leaseToken: 'lease-one',
       expectedRemoteActorId: null,
       nextRemoteActorId: 'remote-actor-1',
       inboxUrls: ['https://a.example/inbox'],
@@ -186,6 +172,7 @@ describe('distributeActivity', () => {
     await expect(distributeActivity(FOLLOW_DATA, distributeDeps())).rejects.toBe(error)
 
     expect(commitActivityDistributionPageMock).not.toHaveBeenCalled()
+    expect(releaseActivityDistributionPageMock).toHaveBeenCalledWith('activity-1', 'lease-one')
     expect(enqueueDistributeActivityMock).not.toHaveBeenCalled()
   })
 
@@ -194,6 +181,7 @@ describe('distributeActivity', () => {
     const readCursors: Array<string | null> = []
     const pageOne = {
       status: 'ready' as const,
+      leaseToken: 'lease-one',
       expectedRemoteActorId: null,
       nextRemoteActorId: 'remote-actor-500',
       inboxUrls: ['https://page-one.example/inbox'],
@@ -201,6 +189,7 @@ describe('distributeActivity', () => {
     }
     const pageTwo = {
       status: 'ready' as const,
+      leaseToken: 'lease-one',
       expectedRemoteActorId: 'remote-actor-500',
       nextRemoteActorId: 'remote-actor-501',
       inboxUrls: ['https://page-two.example/inbox'],
@@ -243,6 +232,7 @@ describe('distributeActivity', () => {
     const error = new Error('Valkey rejected the continuation')
     prepareActivityDistributionPageMock.mockResolvedValueOnce({
       status: 'ready',
+      leaseToken: 'lease-one',
       expectedRemoteActorId: null,
       nextRemoteActorId: 'remote-actor-1',
       inboxUrls: ['https://a.example/inbox'],
@@ -269,6 +259,7 @@ describe('distributeActivity', () => {
   it('commits an empty page without enqueueing a delivery batch', async () => {
     prepareActivityDistributionPageMock.mockResolvedValueOnce({
       status: 'ready',
+      leaseToken: 'lease-one',
       expectedRemoteActorId: null,
       nextRemoteActorId: null,
       inboxUrls: [],
@@ -285,15 +276,16 @@ describe('distributeActivity', () => {
       null,
       null,
       true,
+      'lease-one',
     )
   })
 
-  it('does not enqueue a continuation after a stale checkpoint compare-and-swap', async () => {
+  it('retries the current page after losing its lease or cursor compare-and-swap', async () => {
     commitActivityDistributionPageMock.mockResolvedValueOnce(false)
 
     const result = await distributeActivity(FOLLOW_DATA, distributeDeps())
 
     expect(result).toEqual({ enqueued: 1, completed: false, stale: true })
-    expect(enqueueDistributeActivityMock).not.toHaveBeenCalled()
+    expect(enqueueDistributeActivityMock).toHaveBeenCalledWith(FOLLOW_DATA)
   })
 })

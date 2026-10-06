@@ -1,6 +1,10 @@
 /* v8 ignore start -- declarative schema-test allowlists have no executable branches */
 export const OAUTH_AUTHORIZATION_UUID_COLUMNS_WITHOUT_KEYS = [
   [
+    'oauth_authorization_exchange_attempts.exchange_claim_id',
+    'Immutable snapshot of the one-shot authorization CAS token; not a relationship.',
+  ],
+  [
     'oauth_authorizations.exchange_claim_id',
     'Ephemeral fencing token rotated for each provider exchange claim; it intentionally identifies no durable relation.',
   ],

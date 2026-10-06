@@ -6,13 +6,14 @@ Short-lived exclusive leases that serialize execution of one admission reservati
 
 Not partitioned — growth: bounded.
 
-| Column           | Type                       | Nullable | Default | Identity | Generated | Collation | Comment                                                                     |
-| ---------------- | -------------------------- | -------- | ------- | -------- | --------- | --------- | --------------------------------------------------------------------------- |
-| `reservation_id` | `uuid`                     | no       |         |          |           |           | Admission reservation exclusively owned while this lease remains unexpired. |
-| `lease_id`       | `uuid`                     | no       |         |          |           |           | Opaque fencing token rotated whenever an expired claim is taken over.       |
-| `expires_at`     | `timestamp with time zone` | no       |         |          |           |           | Lease expiration after which another worker may take over the reservation.  |
-| `created_at`     | `timestamp with time zone` | no       | `now()` |          |           |           |                                                                             |
-| `updated_at`     | `timestamp with time zone` | no       | `now()` |          |           |           | Last lease takeover timestamp used to audit claim ownership changes.        |
+| Column             | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                     |
+| ------------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------- |
+| `reservation_id`   | `uuid`                     | no       |                     |          |           |           | Admission reservation exclusively owned while this lease remains unexpired. |
+| `lease_token`      | `uuid`                     | no       |                     |          |           |           | Opaque fencing token rotated whenever an expired claim is taken over.       |
+| `leased_at`        | `timestamp with time zone` | no       | `clock_timestamp()` |          |           |           | When the current fenced admission attempt acquired this claim.              |
+| `lease_expires_at` | `timestamp with time zone` | no       |                     |          |           |           | Lease expiration after which another worker may take over the reservation.  |
+| `created_at`       | `timestamp with time zone` | no       | `now()`             |          |           |           |                                                                             |
+| `updated_at`       | `timestamp with time zone` | no       | `now()`             |          |           |           | Last lease takeover timestamp used to audit claim ownership changes.        |
 
 **Primary key:** `PRIMARY KEY (reservation_id)`
 
@@ -20,7 +21,8 @@ Not partitioned — growth: bounded.
 _none_
 
 **Check constraints:**
-_none_
+
+- `post_admission_claims_check`: `CHECK ((lease_expires_at > leased_at))`
 
 **Foreign keys:**
 
@@ -28,7 +30,7 @@ _none_
 
 **Indexes:**
 
-- `idx_post_admission_claims__expires_at`: `CREATE INDEX idx_post_admission_claims__expires_at ON public.post_admission_claims USING btree (expires_at)`
+- `idx_post_admission_claims__lease_expires_at`: `CREATE INDEX idx_post_admission_claims__lease_expires_at ON public.post_admission_claims USING btree (lease_expires_at)`
 - `post_admission_claims_pkey`: `CREATE UNIQUE INDEX post_admission_claims_pkey ON public.post_admission_claims USING btree (reservation_id)`
 
 **Triggers:**

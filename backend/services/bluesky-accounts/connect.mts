@@ -128,7 +128,7 @@ async function connectBlueskyAccountInTransaction(
   const { rowCount: authorizationUpdates } =
     await query(sql`/* connectBlueskyAccountToUser:attach */
     UPDATE bluesky_link_authorizations
-    SET status = 'attached'
+    SET attached_at = COALESCE(attached_at, clock_timestamp())
     WHERE id = ${linkAuthorizationId}
       AND user_id = ${userId}
       AND claimed_did = ${did}

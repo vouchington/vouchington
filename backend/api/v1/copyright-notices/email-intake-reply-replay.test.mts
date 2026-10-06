@@ -33,7 +33,7 @@ describe('POST /api/v1/copyright-email-intakes/:id/reply/replays', () => {
     expect(second.body).toEqual({ replayed: false })
     await expect(
       readTestCopyrightDeliveryIntentReplayFacts(declined.intentId),
-    ).resolves.toMatchObject({ state: 'pending', delivery_attempt_count: 0 })
+    ).resolves.toMatchObject({ state: 'pending', attempt_count: 0 })
     await expect(readTestCopyrightDeliveryIntentReplayEvents(declined.intentId)).resolves.toEqual([
       {
         copyright_notice_id: null,

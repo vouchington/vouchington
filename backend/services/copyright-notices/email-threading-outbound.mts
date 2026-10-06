@@ -13,7 +13,7 @@ export async function findOutboundCopyrightEmailThreadMatch(references: string[]
   }>(sql`/* findOutboundCopyrightEmailThreadMatch */
     SELECT copyright_notice_id AS "noticeId",
       trim(BOTH '<>' FROM amazon_ses_message_id) AS "matchedReference"
-    FROM copyright_notice_delivery_intents
+    FROM copyright_notice_delivery_work_items
     WHERE channel = 'email' AND state = 'sent' AND amazon_ses_message_id IS NOT NULL
       AND copyright_notice_id IS NOT NULL
       AND trim(BOTH '<>' FROM amazon_ses_message_id) = ANY(${references})

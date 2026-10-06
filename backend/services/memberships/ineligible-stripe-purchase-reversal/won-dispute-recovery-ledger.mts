@@ -147,14 +147,13 @@ async function claimExistingRecovery(
   if (operation.hasReceipt && !operation.completed)
     await query(sql`/* claimWonStripeDisputeRecovery:completeReceipt */
       UPDATE membership_operations
-      SET completed_at = CURRENT_TIMESTAMP, failed_at = NULL, failure_message = NULL,
-        execution_claim_token = NULL, execution_claimed_at = NULL
+      SET completed_at = CURRENT_TIMESTAMP, failed_at = NULL, failure_message = NULL
       WHERE id = ${operation.id} AND completed_at IS NULL
     `)
   if (operation.completed || operation.hasReceipt)
     return {
       completed: true,
-      executionClaimToken: null,
+      leaseToken: null,
       hasReceipt: true,
       id: operation.id,
       idempotencyKey,
@@ -163,7 +162,7 @@ async function claimExistingRecovery(
     }
   return {
     completed: false,
-    executionClaimToken: await claimIneligiblePurchaseReversalExecution(operation.id, query),
+    leaseToken: await claimIneligiblePurchaseReversalExecution(operation.id, query),
     hasReceipt: false,
     id: operation.id,
     idempotencyKey,

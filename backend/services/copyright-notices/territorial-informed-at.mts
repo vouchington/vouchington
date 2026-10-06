@@ -22,7 +22,7 @@ export async function getTerritorialInformedWindow(
     /* getTerritorialInformedWindow */
     WITH informed AS (
       SELECT intent.recipient_role, MIN(intent.sent_at) AS informed_at
-      FROM copyright_notice_delivery_intents intent
+      FROM copyright_notice_delivery_work_items intent
       WHERE intent.copyright_notice_id = ${input.noticeId}
         AND intent.state = 'sent'
         AND intent.sent_at >= ${input.decidedAt}

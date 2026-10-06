@@ -46,7 +46,7 @@ flowchart TD
     A -- "instance-classification helper" --> B["Phase B: instance directory + voting"]
     B --> BP["+ fediverse_instance_topics, topic_votes, hostname_votes"]
     B --> C["Phase C: outbound ActivityPub (Shipped — resurrected AP routes)"]
-    C --> CP["+ relation__user__follow__*, post_activitypub_like_tallies/activitypub_post_likes, activitypub_actor_keys, activitypub_inbox_activities, activitypub_inbox_deliveries"]
+    C --> CP["+ relation__user__follow__*, post_activitypub_like_tallies/activitypub_post_likes, activitypub_actor_keys, activitypub_inbox_activities, activitypub_inbox_delivery_work_items"]
     C -- "shared user-follow write-path" --> D["Phase D: Bluesky account-linking + follows (Shipped)"]
     D --> DP["+ bluesky_linked_accounts (keyed by DID), bluesky_follow_records"]
 ```
@@ -59,7 +59,7 @@ flowchart TD
   `activitypub_post_likes` — an isolated ledger, deliberately never `post_votes`, so a remote actor can never
   move local ranking), AP actor keys (`activitypub_actor_keys`, encrypted via `@modules/token-secrets`), and
   inbox-dedup references (`activitypub_inbox_activities`), and pending unverified inbox envelopes
-  (`activitypub_inbox_deliveries`, deleted after a final protocol outcome). New and resurrected local
+  (`activitypub_inbox_delivery_work_items`, deleted after a final protocol outcome). New and resurrected local
   user-follow rows store their outbound Follow generation ID, and append-only post vote events
   carry the active outbound Like generation so retries and Undo activities reference stable wire
   identities. Follow/Like generations created before durable identity tracking retain an unknown
