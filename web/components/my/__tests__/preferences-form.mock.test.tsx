@@ -215,6 +215,7 @@ describe('PreferencesForm', () => {
     const toasted = Promise.withResolvers<void>()
     mockToastSuccess.mockImplementation(message => {
       if (message === 'Hacker News discussions updated') toasted.resolve()
+      return 'hn-toast'
     })
     renderForm()
     fireEvent.click(screen.getByLabelText('Hacker News discussions'))
