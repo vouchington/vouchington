@@ -4,7 +4,10 @@ import { enqueueStaydownHash } from '@queues/images/enqueues'
 import sql from 'sql-template-strings'
 import { isCopyrightStaydownMatchingEnabled } from './config.mts'
 import { syncCopyrightRepeatInfringerIncidents } from './repeat-infringer-incidents.mts'
-import { anyReversalSourceSql } from './restriction-reversal-sources-sql.mts'
+import {
+  anyReversalSourceSql,
+  statutoryRestorationSourceSql,
+} from './restriction-reversal-sources-sql.mts'
 
 /**
  * Registers the images of a case's moderator-confirmed, still-active restrictions for staydown and
@@ -36,7 +39,11 @@ async function registerCopyrightStaydownEntriesInTransaction(
           WHERE review.copyright_restriction_id = restriction.id AND review.action = 'confirm'
         )
       )
-      AND NOT `.append(anyReversalSourceSql).append(sql`
+      AND NOT `
+      .append(anyReversalSourceSql)
+      .append(sql`
+      AND NOT `)
+      .append(statutoryRestorationSourceSql).append(sql`
     ON CONFLICT (copyright_restriction_id) DO NOTHING
     RETURNING image_id
   `),

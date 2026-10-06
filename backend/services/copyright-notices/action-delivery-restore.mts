@@ -11,6 +11,7 @@ import {
   liftCopyrightRestrictionInTransaction,
   type LockedCopyrightActionDelivery,
 } from './action-delivery-state.mts'
+import { syncCopyrightIncidentsAfterStatutoryRestoreInTransaction } from './statutory-restoration-incidents.mts'
 
 export async function completeUnavailableRestore(input: {
   intentId: string
@@ -37,6 +38,7 @@ export async function completeUnavailableRestore(input: {
           'Restoration resolved without delivery because the placement is unavailable.',
         query: input.query,
       }),
+    () => syncCopyrightIncidentsAfterStatutoryRestoreInTransaction(input.legal, input.query),
     () =>
       insertCopyrightActionLifecycleEvent(
         input.legal,
@@ -77,6 +79,7 @@ export async function completeRestoreRetainingPlacement(input: {
         completedAt: input.now,
         query: input.query,
       }),
+    () => syncCopyrightIncidentsAfterStatutoryRestoreInTransaction(input.legal, input.query),
     () =>
       insertCopyrightActionLifecycleEvent(
         input.legal,

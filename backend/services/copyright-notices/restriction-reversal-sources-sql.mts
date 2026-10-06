@@ -37,6 +37,22 @@ export const territorialAssessmentRevokedSql = sql`EXISTS (
     AND territorial_redress.staff_disposition = 'revoke'
 )`
 
+/**
+ * The restriction was restored under the 17 U.S.C. 512(g) counter-notice process: a completed
+ * restore intent carries the counter-notice deadline that authorized it. The notifier filed no
+ * court action, so this is a procedural outcome rather than a finding that the restriction was
+ * wrong, and it is deliberately not part of `anyReversalSourceSql`. Only the repeat-infringer
+ * incident sync and staydown registration treat it as ending the restriction's consequences.
+ * `state = 'completed'` matters: `stale`, `blocked` and `failed` intents also set `completed_at`.
+ */
+export const statutoryRestorationSourceSql = sql`EXISTS (
+  SELECT 1 FROM copyright_notice_action_intents statutory_intent
+  WHERE statutory_intent.copyright_restriction_id = restriction.id
+    AND statutory_intent.action = 'restore'
+    AND statutory_intent.state = 'completed'
+    AND statutory_intent.copyright_notice_deadline_id IS NOT NULL
+)`
+
 export const anyReversalSourceSql = sql`(`
   .append(reverseReviewSourceSql)
   .append(sql` OR `)
