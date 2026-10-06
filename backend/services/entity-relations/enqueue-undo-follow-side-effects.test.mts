@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { flushPendingTasks, readAllQueueJobs, waitForQueueJobs } from '@voucha/test-helpers'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { readAllQueueJobs } from '@voucha/test-helpers'
 import { activitypubDelivery } from '@queues/activitypub-delivery/queues'
 import type { DistributeActivityData } from '@queues/activitypub-delivery/enqueues'
 import { blueskyFollowPropagation } from '@queues/bluesky-follow-propagation/queues'
@@ -30,12 +30,24 @@ const deletedPair: DeletedFollowPair = {
 }
 
 describe('enqueueUndoFollowSideEffects', () => {
-  beforeEach(clearQueues)
-  afterEach(clearQueues)
+  const pendingEnqueues: Promise<unknown>[] = []
+
+  beforeEach(async () => {
+    pendingEnqueues.length = 0
+    vi.restoreAllMocks()
+    trackBulkEnqueue(activitypubDelivery, pendingEnqueues)
+    trackBulkEnqueue(blueskyFollowPropagation, pendingEnqueues)
+    await clearQueues()
+  })
+
+  afterEach(async () => {
+    vi.restoreAllMocks()
+    await clearQueues()
+  })
 
   it('does not enqueue for another relation', async () => {
     enqueueUndoFollowSideEffects(muteRelation, [deletedPair])
-    await flushPendingTasks()
+    await settleEnqueues(pendingEnqueues)
 
     expect(await readAllQueueJobs(activitypubDelivery)).toEqual([])
     expect(await readAllQueueJobs(blueskyFollowPropagation)).toEqual([])
@@ -43,7 +55,7 @@ describe('enqueueUndoFollowSideEffects', () => {
 
   it('does not enqueue for an empty Follow deletion result', async () => {
     enqueueUndoFollowSideEffects(followRelation, [])
-    await flushPendingTasks()
+    await settleEnqueues(pendingEnqueues)
 
     expect(await readAllQueueJobs(activitypubDelivery)).toEqual([])
     expect(await readAllQueueJobs(blueskyFollowPropagation)).toEqual([])
@@ -51,8 +63,9 @@ describe('enqueueUndoFollowSideEffects', () => {
 
   it('enqueues matching ActivityPub UndoFollow and Bluesky reconciliation jobs', async () => {
     enqueueUndoFollowSideEffects(followRelation, [deletedPair])
+    await settleEnqueues(pendingEnqueues)
 
-    const activityPubJobs = await waitForQueueJobs(activitypubDelivery, jobs => jobs.length === 1)
+    const activityPubJobs = await readAllQueueJobs(activitypubDelivery)
     expect(activityPubJobs).toHaveLength(1)
     expect(activityPubJobs[0]?.name).toBe('distributeActivity')
     expect(activityPubJobs[0]?.data as DistributeActivityData).toEqual({
@@ -63,7 +76,7 @@ describe('enqueueUndoFollowSideEffects', () => {
       targetUserId: 'followee',
     })
 
-    const blueskyJobs = await waitForQueueJobs(blueskyFollowPropagation, jobs => jobs.length === 1)
+    const blueskyJobs = await readAllQueueJobs(blueskyFollowPropagation)
     expect(blueskyJobs).toHaveLength(1)
     expect(blueskyJobs[0]?.name).toBe('reconcileFollow')
     expect(blueskyJobs[0]?.data as ReconcileFollowData).toEqual({
@@ -81,10 +94,10 @@ describe('enqueueUndoFollowSideEffects', () => {
       },
     ])
 
-    await flushPendingTasks()
+    await settleEnqueues(pendingEnqueues)
     expect(await readAllQueueJobs(activitypubDelivery)).toEqual([])
 
-    const blueskyJobs = await waitForQueueJobs(blueskyFollowPropagation, jobs => jobs.length === 1)
+    const blueskyJobs = await readAllQueueJobs(blueskyFollowPropagation)
     expect(blueskyJobs).toHaveLength(1)
     expect(blueskyJobs[0]?.data as ReconcileFollowData).toEqual({
       followerUserId: 'legacy-follower',
@@ -96,4 +109,20 @@ describe('enqueueUndoFollowSideEffects', () => {
 async function clearQueues(): Promise<void> {
   await activitypubDelivery.obliterate({ force: true })
   await blueskyFollowPropagation.obliterate({ force: true })
+}
+
+function trackBulkEnqueue(
+  queue: { addBulk: (jobs: { name: string; data: unknown }[]) => Promise<unknown> },
+  pending: Promise<unknown>[],
+): void {
+  const addBulk = queue.addBulk
+  vi.spyOn(queue, 'addBulk').mockImplementation(jobs => {
+    const enqueued = addBulk.call(queue, jobs)
+    pending.push(enqueued)
+    return enqueued
+  })
+}
+
+async function settleEnqueues(pending: Promise<unknown>[]): Promise<void> {
+  await Promise.all(pending)
 }

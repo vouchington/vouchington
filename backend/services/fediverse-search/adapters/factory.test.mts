@@ -1,7 +1,6 @@
 import type { FediverseProviderAdapter, FediverseSearchBucket } from '../types.mts'
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it } from 'vitest'
-import { pollUntilNotNull } from '@voucha/test-helpers'
+import { describe, expect, it, vi } from 'vitest'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import { cacheValkeyClient } from '@data-stores/valkey/clients'
 import { stableSerialize } from '@services/entity-cache'
@@ -33,12 +32,29 @@ describe('cacheAdapter', () => {
     }))
     const wrapped = cacheAdapter(adapter)
     const options = { q: randomUUID() }
+    const key = stableSerialize(options)
+    const writes: Promise<unknown>[] = []
+    const set = ValkeyCache.prototype.set
+    const spy = vi.spyOn(ValkeyCache.prototype, 'set').mockImplementation(function (
+      this: ValkeyCache,
+      cacheKey,
+      value,
+      ttl,
+    ) {
+      const result = set.call(this, cacheKey, value, ttl)
+      writes.push(result)
+      return result
+    })
 
-    const first = await wrapped.search(options)
+    let first: FediverseSearchBucket
+    try {
+      first = await wrapped.search(options)
+      await Promise.all(writes)
+    } finally {
+      spy.mockRestore()
+    }
     const probe = new ValkeyCache({ prefix: 'fediverse-search:mastodon', ttlSeconds: 60 })
-    await expect(pollUntilNotNull(() => probe.get(stableSerialize(options)))).resolves.toEqual(
-      first,
-    )
+    await expect(probe.get(key)).resolves.toEqual(first)
     const second = await wrapped.search(options)
 
     expect(first).toEqual(second)

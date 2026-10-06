@@ -7,10 +7,10 @@ import {
   createTestPost,
   createTestTopic,
   createTestUser,
-  waitForQueueJobs,
+  readAllQueueJobs,
 } from '@voucha/test-helpers'
 import { notifications } from '@queues/notifications/queues'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 function hasPostNotification(
   jobs: Awaited<ReturnType<typeof notifications.getJobs>>,
@@ -34,51 +34,55 @@ describe('entity-relation notification transaction ownership', () => {
       predicate: 'category',
     })
 
-    await runEntityRelationNotificationTestTransaction(async rollback => {
-      await upsertEntityRelation(creator, relation, post, [topic], {
-        query: rollback,
-        deferNotificationReconcile: true,
-      })
-      expect(
-        hasPostNotification(
-          await waitForQueueJobs(
-            notifications,
-            waiting => hasPostNotification(waiting, post.id),
-            200,
-          ),
-          post.id,
-        ),
-      ).toBe(false)
-    })
-    expect(
-      hasPostNotification(
-        await waitForQueueJobs(
-          notifications,
-          waiting => hasPostNotification(waiting, post.id),
-          200,
-        ),
-        post.id,
-      ),
-    ).toBe(false)
-    expect(
-      await getEntityRelations('post', post.id, 'category', 'topic', {
-        viewer: SYSTEM_ENTITY_RELATION_VIEWER,
-        readOnly: false,
-      }),
-    ).toEqual([])
-
-    await runEntityRelationNotificationTestTransaction(
-      async commit => {
+    const pendingEnqueues: Promise<unknown>[] = []
+    trackBulkEnqueue(notifications, pendingEnqueues)
+    try {
+      await runEntityRelationNotificationTestTransaction(async rollback => {
         await upsertEntityRelation(creator, relation, post, [topic], {
-          query: commit,
+          query: rollback,
           deferNotificationReconcile: true,
         })
-      },
-      { commit: true },
-    )
-    const jobs = await waitForQueueJobs(notifications, waiting =>
-      hasPostNotification(waiting, post.id),
-    )
-    expect(hasPostNotification(jobs, post.id)).toBe(true)
+        await settleEnqueues(pendingEnqueues)
+        expect(hasPostNotification(await readAllQueueJobs(notifications), post.id)).toBe(false)
+      })
+      await settleEnqueues(pendingEnqueues)
+      expect(hasPostNotification(await readAllQueueJobs(notifications), post.id)).toBe(false)
+      expect(
+        await getEntityRelations('post', post.id, 'category', 'topic', {
+          viewer: SYSTEM_ENTITY_RELATION_VIEWER,
+          readOnly: false,
+        }),
+      ).toEqual([])
+
+      await runEntityRelationNotificationTestTransaction(
+        async commit => {
+          await upsertEntityRelation(creator, relation, post, [topic], {
+            query: commit,
+            deferNotificationReconcile: true,
+          })
+        },
+        { commit: true },
+      )
+      await settleEnqueues(pendingEnqueues)
+      expect(hasPostNotification(await readAllQueueJobs(notifications), post.id)).toBe(true)
+    } finally {
+      vi.restoreAllMocks()
+    }
   })
 })
+
+function trackBulkEnqueue(
+  queue: { addBulk: (jobs: { name: string; data: unknown }[]) => Promise<unknown> },
+  pending: Promise<unknown>[],
+): void {
+  const addBulk = queue.addBulk
+  vi.spyOn(queue, 'addBulk').mockImplementation(jobs => {
+    const enqueued = addBulk.call(queue, jobs)
+    pending.push(enqueued)
+    return enqueued
+  })
+}
+
+async function settleEnqueues(pending: Promise<unknown>[]): Promise<void> {
+  await Promise.all(pending)
+}

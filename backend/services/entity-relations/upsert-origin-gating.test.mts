@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
+import { afterEach, describe, it, expect, beforeAll, beforeEach, vi } from 'vitest'
 import { upsertEntityRelation } from './upsert.mts'
 import { entityRelationMetadatum, type EntityRelationMetadata } from './metadata.mts'
-import { createTestUser, waitForQueueJobs, readAllQueueJobs } from '@voucha/test-helpers'
+import { createTestUser, readAllQueueJobs } from '@voucha/test-helpers'
 import { notifications } from '@queues/notifications/queues'
 import { activitypubDelivery } from '@queues/activitypub-delivery/queues'
 import type { DistributeActivityData } from '@queues/activitypub-delivery/enqueues'
@@ -23,25 +23,22 @@ describe('upsertEntityRelation origin gating (Phase C3 loop prevention)', () => 
     )!
   })
 
+  const pendingEnqueues: Promise<unknown>[] = []
+
   beforeEach(async () => {
+    pendingEnqueues.length = 0
+    vi.restoreAllMocks()
+    trackBulkEnqueue(notifications, pendingEnqueues)
+    trackBulkEnqueue(activitypubDelivery, pendingEnqueues)
+    trackBulkEnqueue(blueskyFollowPropagation, pendingEnqueues)
     await notifications.obliterate()
     await activitypubDelivery.obliterate({ force: true })
     await blueskyFollowPropagation.obliterate({ force: true })
   })
 
-  // Poll until predicate is satisfied or timeout elapses, then return the final job list.
-  async function waitForNotificationJobs(
-    predicate: (jobs: Awaited<ReturnType<typeof notifications.getJobs>>) => boolean,
-    timeoutMs = 1000,
-  ): Promise<Awaited<ReturnType<typeof notifications.getJobs>>> {
-    const deadline = Date.now() + timeoutMs
-    while (Date.now() < deadline) {
-      const jobs = await readAllQueueJobs(notifications)
-      if (predicate(jobs)) return jobs
-      await new Promise<void>(resolve => setImmediate(resolve))
-    }
-    return readAllQueueJobs(notifications)
-  }
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
 
   function hasFollowJobFor(
     jobs: Awaited<ReturnType<typeof notifications.getJobs>>,
@@ -74,8 +71,8 @@ describe('upsertEntityRelation origin gating (Phase C3 loop prevention)', () => 
       origin: 'remote',
     })
 
-    // Poll briefly; a follow-notification job would appear within the timeout if the gate failed.
-    const jobs = await waitForNotificationJobs(j => hasFollowJobFor(j, followee.id), 200)
+    await settleEnqueues(pendingEnqueues)
+    const jobs = await readAllQueueJobs(notifications)
     expect(hasFollowJobFor(jobs, followee.id)).toBe(false)
   })
 
@@ -84,7 +81,8 @@ describe('upsertEntityRelation origin gating (Phase C3 loop prevention)', () => 
 
     await upsertEntityRelation(follower, userFollowUserMetadata, follower, [followee])
 
-    const jobs = await waitForNotificationJobs(j => hasFollowJobFor(j, followee.id))
+    await settleEnqueues(pendingEnqueues)
+    const jobs = await readAllQueueJobs(notifications)
     expect(hasFollowJobFor(jobs, followee.id)).toBe(true)
   })
 
@@ -98,11 +96,8 @@ describe('upsertEntityRelation origin gating (Phase C3 loop prevention)', () => 
       origin: 'remote',
     })
 
-    const jobs = await waitForQueueJobs(
-      activitypubDelivery,
-      j => hasFollowDistributeJobFor(j, followee.id),
-      200,
-    )
+    await settleEnqueues(pendingEnqueues)
+    const jobs = await readAllQueueJobs(activitypubDelivery)
     expect(hasFollowDistributeJobFor(jobs, followee.id)).toBe(false)
   })
 
@@ -111,25 +106,10 @@ describe('upsertEntityRelation origin gating (Phase C3 loop prevention)', () => 
 
     await upsertEntityRelation(follower, userFollowUserMetadata, follower, [followee])
 
-    const jobs = await waitForQueueJobs(activitypubDelivery, j =>
-      hasFollowDistributeJobFor(j, followee.id),
-    )
+    await settleEnqueues(pendingEnqueues)
+    const jobs = await readAllQueueJobs(activitypubDelivery)
     expect(hasFollowDistributeJobFor(jobs, followee.id)).toBe(true)
   })
-
-  // Poll until predicate is satisfied or timeout elapses, then return the final job list.
-  async function waitForBlueskyReconcileJobs(
-    predicate: (jobs: Awaited<ReturnType<typeof blueskyFollowPropagation.getJobs>>) => boolean,
-    timeoutMs = 1000,
-  ): Promise<Awaited<ReturnType<typeof blueskyFollowPropagation.getJobs>>> {
-    const deadline = Date.now() + timeoutMs
-    while (Date.now() < deadline) {
-      const jobs = await readAllQueueJobs(blueskyFollowPropagation)
-      if (predicate(jobs)) return jobs
-      await new Promise<void>(resolve => setImmediate(resolve))
-    }
-    return readAllQueueJobs(blueskyFollowPropagation)
-  }
 
   function hasBlueskyReconcileJobFor(
     jobs: Awaited<ReturnType<typeof blueskyFollowPropagation.getJobs>>,
@@ -151,10 +131,8 @@ describe('upsertEntityRelation origin gating (Phase C3 loop prevention)', () => 
       origin: 'remote',
     })
 
-    const jobs = await waitForBlueskyReconcileJobs(
-      j => hasBlueskyReconcileJobFor(j, followee.id),
-      200,
-    )
+    await settleEnqueues(pendingEnqueues)
+    const jobs = await readAllQueueJobs(blueskyFollowPropagation)
     expect(hasBlueskyReconcileJobFor(jobs, followee.id)).toBe(false)
   })
 
@@ -163,7 +141,24 @@ describe('upsertEntityRelation origin gating (Phase C3 loop prevention)', () => 
 
     await upsertEntityRelation(follower, userFollowUserMetadata, follower, [followee])
 
-    const jobs = await waitForBlueskyReconcileJobs(j => hasBlueskyReconcileJobFor(j, followee.id))
+    await settleEnqueues(pendingEnqueues)
+    const jobs = await readAllQueueJobs(blueskyFollowPropagation)
     expect(hasBlueskyReconcileJobFor(jobs, followee.id)).toBe(true)
   })
 })
+
+function trackBulkEnqueue(
+  queue: { addBulk: (jobs: { name: string; data: unknown }[]) => Promise<unknown> },
+  pending: Promise<unknown>[],
+): void {
+  const addBulk = queue.addBulk
+  vi.spyOn(queue, 'addBulk').mockImplementation(jobs => {
+    const enqueued = addBulk.call(queue, jobs)
+    pending.push(enqueued)
+    return enqueued
+  })
+}
+
+async function settleEnqueues(pending: Promise<unknown>[]): Promise<void> {
+  await Promise.all(pending)
+}

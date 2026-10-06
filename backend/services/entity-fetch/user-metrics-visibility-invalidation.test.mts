@@ -1,19 +1,10 @@
 import { caches } from '@services/entity-cache/caches'
 import type { UpdateUserOptions } from '@services/users/types'
 import { updateUserFields } from '@services/users/update-fields'
-import { createTestUser, pollUntilNotNull } from '@voucha/test-helpers'
+import { createTestUser } from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
+import { trackUserMetricsFills } from '../../test-helpers/user-metrics-cache-fills.mts'
 import { getUserMetricsByAnyCached } from './metrics.mts'
-
-/** Waits for the fire-and-forget fill of one `user_metrics` key; throws if it never lands. */
-function waitForCachedMetrics(key: string): Promise<unknown> {
-  return pollUntilNotNull(
-    () => caches.user_metrics.get(key),
-    2000,
-    25,
-    `the user metrics entry for ${key}`,
-  )
-}
 
 describe('updateUserFields user metrics invalidation', () => {
   it('invalidates cached anonymous profile metrics for every count visibility field', async () => {
@@ -32,9 +23,8 @@ describe('updateUserFields user metrics invalidation', () => {
 
       // A read by id fills only the id key; the by-username read fills the username key the
       // invalidation must also clear.
-      await getUserMetricsByAnyCached(user.id)
-      await getUserMetricsByAnyCached(user.username!)
-      await Promise.all([waitForCachedMetrics(user.id), waitForCachedMetrics(user.username!)])
+      await fillCachedMetrics(user.id)
+      await fillCachedMetrics(user.username!)
 
       await updateUserFields(user.id, { [field]: 'nobody' })
 
@@ -53,8 +43,7 @@ describe('updateUserFields user metrics invalidation', () => {
     ] as const satisfies ReadonlyArray<keyof UpdateUserOptions>
     const user = await createTestUser()
 
-    await getUserMetricsByAnyCached(user.id)
-    await waitForCachedMetrics(user.id)
+    await fillCachedMetrics(user.id)
 
     for (const field of visibilityFields) {
       await updateUserFields(user.id, { [field]: 'nobody' })
@@ -63,3 +52,14 @@ describe('updateUserFields user metrics invalidation', () => {
     }
   })
 })
+
+async function fillCachedMetrics(key: string): Promise<void> {
+  const fills: Promise<unknown>[] = []
+  const stop = trackUserMetricsFills(caches.user_metrics, fills)
+  try {
+    await getUserMetricsByAnyCached(key)
+    if ((await caches.user_metrics.get(key)) == null) await Promise.all(fills)
+  } finally {
+    stop()
+  }
+}
