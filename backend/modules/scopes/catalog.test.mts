@@ -56,9 +56,14 @@ describe('listScopeCatalog', () => {
     expect(catalog.find(entry => entry.scope === 'cards:read')?.description_key).toBeNull()
   })
 
-  it('pairs every write scope with a read prerequisite that validates', () => {
-    for (const entry of listScopeCatalog().filter(item => item.action === 'write')) {
-      expect(entry.requires).not.toBeNull()
+  it('pairs every write scope with a read prerequisite, bar the one declared write-only scope', () => {
+    const writes = listScopeCatalog().filter(item => item.action === 'write')
+    // `reports:write` is deliberately write-only: filing a report has no member-readable
+    // counterpart (`GET /reports` is staff-only), so a read prerequisite would grant nothing.
+    expect(writes.filter(entry => entry.requires === null).map(entry => entry.scope)).toEqual([
+      'reports:write',
+    ])
+    for (const entry of writes) {
       for (const surface of entry.surfaces) {
         expect(
           validateScopeSet(withScopePrerequisites([entry.scope as ApiScope]), {

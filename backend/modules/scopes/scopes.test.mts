@@ -26,7 +26,7 @@ describe('validateScopeSet', () => {
     expect(hasEveryScope(['cards:read', 'cards:write'], ['cards:write'])).toBe(true)
   })
 
-  it('treats communities:read as a read-only resource scope under the user umbrella', () => {
+  it('treats communities:read as a prerequisite-free resource scope under the user umbrella', () => {
     expect(hasScope(['mcp.user:read'], 'communities:read')).toBe(true)
     expect(hasScope(['communities:read'], 'communities:read')).toBe(true)
     expect(hasScope(['posts:read'], 'communities:read')).toBe(false)
@@ -140,6 +140,34 @@ describe('validateScopeSet', () => {
       action: 'write',
       requires: 'cards:read',
     })
+  })
+
+  it.each([['appeals'], ['bookmarks'], ['communities'], ['disputes'], ['lists']] as const)(
+    'declares %s read and write resource scopes that the user umbrella grants',
+    resource => {
+      const read = `${resource}:read` as const
+      const write = `${resource}:write` as const
+
+      expect(SCOPE_DEFINITIONS[write]).toMatchObject({ requires: read, resource })
+      expect(withScopePrerequisites([write])).toEqual([read, write])
+      expect(hasScope(['mcp.user:read', 'mcp.user:write'], write)).toBe(true)
+    },
+  )
+
+  it('declares reports:write as a write-only scope with no read prerequisite', () => {
+    expect(SCOPE_DEFINITIONS['reports:write']).toMatchObject({
+      action: 'write',
+      audience: 'user',
+      resource: 'reports',
+      surfaces: ['api-key', 'oauth'],
+    })
+    expect(SCOPE_DEFINITIONS['reports:write']).not.toHaveProperty('requires')
+    expect(withScopePrerequisites(['reports:write'])).toEqual(['reports:write'])
+    expect(hasScope(['mcp.user:write'], 'reports:write')).toBe(true)
+    expect(hasScope(['mcp.user:read'], 'reports:write')).toBe(false)
+    expect(
+      validateScopeSet(['reports:write'], { surface: 'oauth', allowMixedAudiences: false }),
+    ).toMatchObject({ valid: true, scopes: ['reports:write'] })
   })
 
   it.each([['bookmarks'], ['lists'], ['notifications'], ['preferences'], ['profile']] as const)(

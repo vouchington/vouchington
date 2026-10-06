@@ -69,6 +69,12 @@ Domain authorization and preparation use the existing service commands, and crea
 records the MCP channel and OAuth client through request provenance. A separate smaller
 quota for token-created content is deferred until abuse requires it.
 
+Creates with no post to bind admission to (community, content report, review dispute, moderation
+appeal and community application) keep the same required key, replay and conflict codes through
+`runDelegatedCreate`, which records the attempt in `user_mcp_create_attempts` per credential owner
+instead of a post admission identity. See
+[Community, Report, Dispute and Appeal Tools](../../overview/architecture/agent-tools/community-report-appeal-write-tools.md#creation-and-idempotency).
+
 ## Related
 
 - [SEO machine-readable discovery](../seo/SEO.md#machine-readable-discovery)

@@ -215,6 +215,19 @@ Metadata Document consent name and hostname changes therefore remain in that hos
 surface and do not change native REST DTOs or fixture consumers. A discovered native DTO or
 consumer change requires the normal linked client validation PR.
 
+### Community, report, dispute and appeal MCP tool handoff
+
+Eleven user MCP tools write or read community membership, content reports, review disputes and
+moderation appeals for the credential owner (see
+[Community, Report, Dispute and Appeal Tools](../overview/architecture/agent-tools/community-report-appeal-write-tools.md)).
+They are MCP-only: none carries the `client` surface or enters `backend/tools/manifest.json`, REST
+routes, DTOs and fixtures do not change, and web and native clients gain no screen. The new
+`communities:write`, `disputes:read/write`, `appeals:read/write` and `reports:write` scopes arrive
+through the generated scope catalogue, so the web and native credential pickers, which filter that
+catalogue and resolve its description keys through their localisation catalogues, list them without
+a client change. Each tool's own-case reads are narrower than the member REST list, and account
+suspension appeals remain a web flow. No `vouchington-clients` work follows.
+
 ## Member-chat transcript handoff
 
 #228 publishes one conversation/message DTO contract with ordered message IDs for duplicate-safe

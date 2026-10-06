@@ -59,6 +59,24 @@
       "audience": "user",
       "description_key": null,
       "requires": null,
+      "resource": "appeals",
+      "scope": "appeals:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "user",
+      "description_key": null,
+      "requires": "appeals:read",
+      "resource": "appeals",
+      "scope": "appeals:write",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "user",
+      "description_key": null,
+      "requires": null,
       "resource": "bookmarks",
       "scope": "bookmarks:read",
       "surfaces": ["api-key", "oauth"]
@@ -100,6 +118,15 @@
       "surfaces": ["api-key", "oauth"]
     },
     {
+      "action": "write",
+      "audience": "user",
+      "description_key": null,
+      "requires": "communities:read",
+      "resource": "communities",
+      "scope": "communities:write",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
       "action": "read",
       "audience": "admin",
       "description_key": null,
@@ -124,6 +151,24 @@
       "requires": null,
       "resource": "data-points",
       "scope": "data-points:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "user",
+      "description_key": null,
+      "requires": null,
+      "resource": "disputes",
+      "scope": "disputes:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "user",
+      "description_key": null,
+      "requires": "disputes:read",
+      "resource": "disputes",
+      "scope": "disputes:write",
       "surfaces": ["api-key", "oauth"]
     },
     {
@@ -439,6 +484,15 @@
       "requires": "referral-links:read",
       "resource": "referral-links",
       "scope": "referral-links:write",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "user",
+      "description_key": null,
+      "requires": null,
+      "resource": "reports",
+      "scope": "reports:write",
       "surfaces": ["api-key", "oauth"]
     },
     {

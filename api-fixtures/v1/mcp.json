@@ -1890,6 +1890,1452 @@
         },
         {
           "tool": {
+            "name": "create_community",
+            "title": "Create Community",
+            "description": "Create a community the current user owns. name is required, has at least 3 words and at most 100 characters, and has no leading or trailing whitespace. slug is optional and generated from the name when omitted; a taken slug is CONFLICT. visibility is public (default) or private. member_roster_visibility says who can list the members: public (default), users, members or moderators. member_invites_allowed lets members invite others, and post_approval_required sends every new post to moderators for approval; both default to false. should_allow_review_posts and should_allow_data_point_posts default to false. Profile and banner images are set on the web. Creating communities counts against the same daily and short-term quota as the web, and CONTRIBUTION_QUOTA_EXCEEDED means try later. A username is required (FORBIDDEN otherwise). Reuse the same UUID idempotency_key and arguments to safely retry; the first result is replayed. Returns the community id, slug, visibility and creation time.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "idempotency_key": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "A UUID for this community and its retries."
+                },
+                "name": {
+                  "type": "string",
+                  "description": "The community name: 3 or more words, up to 100 characters."
+                },
+                "slug": {
+                  "type": "string",
+                  "description": "Optional URL slug."
+                },
+                "markdown": {
+                  "type": "string",
+                  "description": "Optional description, in Markdown."
+                },
+                "visibility": {
+                  "type": "string",
+                  "enum": ["public", "private"]
+                },
+                "default_language": {
+                  "type": "string",
+                  "description": "Optional BCP 47 content language tag."
+                },
+                "should_allow_review_posts": {
+                  "type": "boolean"
+                },
+                "should_allow_data_point_posts": {
+                  "type": "boolean"
+                },
+                "member_roster_visibility": {
+                  "type": "string",
+                  "enum": ["public", "users", "members", "moderators"]
+                },
+                "member_invites_allowed": {
+                  "type": "boolean"
+                },
+                "post_approval_required": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["idempotency_key", "name"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "community": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "slug": {
+                      "type": "string"
+                    },
+                    "visibility": {
+                      "enum": ["public", "private"]
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": ["id", "slug", "visibility", "created_at"],
+                  "additionalProperties": false
+                }
+              },
+              "required": ["success", "community"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["communities:read", "communities:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/communities"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "join_community",
+            "title": "Join Community",
+            "description": "Join a public community as a member, by its UUID or slug. Joining a private community needs an invitation or an application (apply_to_community). The call is refused with CONFLICT if the current user is already a member, and with FORBIDDEN if the community is archived or private, the user is banned from it, or it is temporarily limited to approved members. Returns the community_id.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "community_id": {
+                  "type": "string",
+                  "description": "Community UUID or slug"
+                }
+              },
+              "required": ["community_id"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "community_id": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "required": ["success", "community_id"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["communities:read", "communities:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/communities/:idOrSlug/members"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "leave_community",
+            "title": "Leave Community",
+            "description": "Leave a community the current user is a member of, by its UUID or slug. Leaving ends the membership; a private community needs a new invitation or application to rejoin. The call is refused with NOT_FOUND if the user is not a member, with INVALID_INPUT if the user owns the community (transfer ownership first), and with FORBIDDEN if the community is archived. Returns the community_id.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "community_id": {
+                  "type": "string",
+                  "description": "Community UUID or slug"
+                }
+              },
+              "required": ["community_id"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "community_id": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "required": ["success", "community_id"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["communities:read", "communities:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "DELETE",
+              "path": "/api/v1/communities/:idOrSlug/members"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "apply_to_community",
+            "title": "Apply to Community",
+            "description": "Apply to join a private community, by its UUID or slug. answers maps each application question id to its answer: a string for short_text, long_text and single_select questions, an array of strings for multi_select, a boolean for checkbox. Pass an empty object when the community asks no questions. An unknown question id, a missing answer to a required question or an answer of the wrong type is INVALID_INPUT. message is an optional note to the moderators of at most 5000 characters. The call is refused with CONFLICT if the user already has a pending application or is a member, and with FORBIDDEN if the user is banned from the community. An archived community is CONFLICT, and applying to a public community is INVALID_INPUT; join it with join_community instead. Reuse the same UUID idempotency_key and arguments to safely retry; the first result is replayed. Returns the application id and its pending status; moderators decide it.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "idempotency_key": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "A UUID for this application and its retries."
+                },
+                "community_id": {
+                  "type": "string",
+                  "description": "Community UUID or slug"
+                },
+                "answers": {
+                  "type": "object",
+                  "description": "Answers keyed by application question id.",
+                  "additionalProperties": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "message": {
+                  "type": "string",
+                  "description": "Optional note to the moderators."
+                }
+              },
+              "required": ["idempotency_key", "community_id", "answers"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "application": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "community_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "const": "pending"
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": ["id", "community_id", "status", "created_at"],
+                  "additionalProperties": false
+                }
+              },
+              "required": ["success", "application"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["communities:read", "communities:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/communities/:idOrSlug/applications"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "create_content_report",
+            "title": "Report Content",
+            "description": "Report a post, comment, user, hostname or RSS feed item to the moderators. Reports are about user content only; copyright claims use the copyright process. Reporting something you already have an open report on updates that report and returns is_duplicate true. Reuse the same UUID idempotency_key and arguments to safely retry; the first result is replayed. The note is optional and at most 1000 characters. The vote_manipulation reason is for posts only.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "idempotency_key": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "A UUID for this report and its retries."
+                },
+                "entity_type": {
+                  "type": "string",
+                  "enum": ["rss_feed_item", "post", "comment", "user", "url_hostname"]
+                },
+                "entity_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "The ID of the reported entity."
+                },
+                "reason": {
+                  "type": "string",
+                  "enum": [
+                    "spam",
+                    "harassment",
+                    "misinformation",
+                    "illegal_content",
+                    "vote_manipulation",
+                    "other"
+                  ]
+                },
+                "note": {
+                  "type": "string",
+                  "description": "Optional context for the moderators."
+                }
+              },
+              "required": ["idempotency_key", "entity_type", "entity_id", "reason"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "report": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "entity_type": {
+                      "enum": ["rss_feed_item", "post", "comment", "user", "url_hostname"]
+                    },
+                    "entity_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "reason": {
+                      "enum": [
+                        "spam",
+                        "harassment",
+                        "misinformation",
+                        "illegal_content",
+                        "vote_manipulation",
+                        "other"
+                      ]
+                    },
+                    "status": {
+                      "const": "pending"
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": ["id", "entity_type", "entity_id", "reason", "status", "created_at"],
+                  "additionalProperties": false
+                },
+                "is_duplicate": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["success", "report", "is_duplicate"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["reports:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/reports"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "create_review_dispute",
+            "title": "Dispute Review",
+            "description": "Dispute a review of a topic the current user holds a verified claim on, because the review is inaccurate or breaks the rules. post_id is the review post. topic_id picks which of its rated topics is disputed and defaults to the first. reason is one of the listed codes and claim_text is the case for the moderators, at most 4000 characters. The call is refused with NOT_FOUND for an unknown post, INVALID_INPUT when the post is not a review, has no rating for the topic or has been removed, and FORBIDDEN without a verified claim on the topic. Disputing a review that already has an open dispute from the user updates that dispute and returns is_duplicate true. Moderators decide the dispute; read the outcome with get_my_review_dispute. Reuse the same UUID idempotency_key and arguments to safely retry; the first result is replayed. Returns the dispute.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "idempotency_key": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "A UUID for this dispute and its retries."
+                },
+                "post_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "The ID of the review post."
+                },
+                "reason": {
+                  "type": "string",
+                  "enum": [
+                    "factually_inaccurate",
+                    "defamatory",
+                    "impersonation",
+                    "privacy_violation",
+                    "other"
+                  ]
+                },
+                "claim_text": {
+                  "type": "string",
+                  "description": "The case for the moderators."
+                },
+                "topic_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "The disputed topic, when the review rates several."
+                }
+              },
+              "required": ["idempotency_key", "post_id", "reason", "claim_text"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "dispute": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "post_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "topic_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "reason": {
+                      "enum": [
+                        "factually_inaccurate",
+                        "defamatory",
+                        "impersonation",
+                        "privacy_violation",
+                        "other"
+                      ]
+                    },
+                    "status": {
+                      "enum": ["pending", "resolved", "dismissed"]
+                    },
+                    "is_overdue": {
+                      "type": "boolean"
+                    },
+                    "resolution_action": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "enum": ["no_action", "remove", "annotate", "dismiss"]
+                        }
+                      ]
+                    },
+                    "public_response": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "resolved_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      ]
+                    },
+                    "sent_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      ]
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "post_id",
+                    "topic_id",
+                    "reason",
+                    "status",
+                    "resolution_action",
+                    "public_response",
+                    "resolved_at",
+                    "sent_at",
+                    "created_at",
+                    "updated_at"
+                  ],
+                  "additionalProperties": false
+                },
+                "is_duplicate": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["success", "dispute", "is_duplicate"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["disputes:read", "disputes:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/disputes"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "list_my_review_disputes",
+            "title": "List My Review Disputes",
+            "description": "List the review disputes the current user filed, newest first. status is pending (default) for the ones the moderators have not decided, resolved for the decided ones, or dismissed for the ones the moderators dismissed. Each dispute has its id, the post_id and topic_id it disputes, the reason code, its status, is_overdue while pending, the resolution_action once decided, and the moderators' public_response, fenced as external content, once it was sent. Returns at most 100 disputes per page (default 25) and page_info.end_cursor; pass it as after, with the same status, for the next page. A malformed cursor, or one from a different status, returns { success: false, error: \"Invalid cursor\" }. Other users' disputes are never listed.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": ["pending", "resolved", "dismissed"]
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100,
+                  "description": "Disputes per page, from 1 to 100 (default: 25)"
+                },
+                "after": {
+                  "type": "string",
+                  "description": "Opaque cursor from the previous page_info.end_cursor, for the next page."
+                }
+              },
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "disputes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "post_id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "topic_id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "reason": {
+                            "enum": [
+                              "factually_inaccurate",
+                              "defamatory",
+                              "impersonation",
+                              "privacy_violation",
+                              "other"
+                            ]
+                          },
+                          "status": {
+                            "enum": ["pending", "resolved", "dismissed"]
+                          },
+                          "is_overdue": {
+                            "type": "boolean"
+                          },
+                          "resolution_action": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "enum": ["no_action", "remove", "annotate", "dismiss"]
+                              }
+                            ]
+                          },
+                          "public_response": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "resolved_at": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            ]
+                          },
+                          "sent_at": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            ]
+                          },
+                          "created_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updated_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "post_id",
+                          "topic_id",
+                          "reason",
+                          "status",
+                          "resolution_action",
+                          "public_response",
+                          "resolved_at",
+                          "sent_at",
+                          "created_at",
+                          "updated_at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page_info": {
+                      "type": "object",
+                      "properties": {
+                        "has_next_page": {
+                          "type": "boolean"
+                        },
+                        "start_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "end_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["has_next_page", "start_cursor", "end_cursor"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["success", "disputes", "page_info"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["disputes:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/disputes"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_my_review_dispute",
+            "title": "Get My Review Dispute",
+            "description": "Get one review dispute the current user filed, by id: the post_id and topic_id it disputes, the reason code, its status, is_overdue while pending, the resolution_action once decided, and the moderators' public_response, fenced as external content, once it was sent. The call is refused with NOT_FOUND for an unknown id and with FORBIDDEN for another user's dispute.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "dispute_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "The ID of the dispute."
+                }
+              },
+              "required": ["dispute_id"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "dispute": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "post_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "topic_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "reason": {
+                      "enum": [
+                        "factually_inaccurate",
+                        "defamatory",
+                        "impersonation",
+                        "privacy_violation",
+                        "other"
+                      ]
+                    },
+                    "status": {
+                      "enum": ["pending", "resolved", "dismissed"]
+                    },
+                    "is_overdue": {
+                      "type": "boolean"
+                    },
+                    "resolution_action": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "enum": ["no_action", "remove", "annotate", "dismiss"]
+                        }
+                      ]
+                    },
+                    "public_response": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "resolved_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      ]
+                    },
+                    "sent_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      ]
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "post_id",
+                    "topic_id",
+                    "reason",
+                    "status",
+                    "resolution_action",
+                    "public_response",
+                    "resolved_at",
+                    "sent_at",
+                    "created_at",
+                    "updated_at"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": ["success", "dispute"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["disputes:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/disputes/:id"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "create_moderation_appeal",
+            "title": "Appeal Moderation Decision",
+            "description": "Appeal a moderation decision against the current user: a warning, a community ban or the removal of one of their posts. target_type says which and target_id is the id of the warning, the ban or the removed post. post_removal_kind is only for a removal, and tells a platform removal from a community removal when the post has both. appeal_reason is the case for the moderators, at most 4000 characters. The call is refused with NOT_FOUND when the decision does not exist or is already revoked or lifted, with FORBIDDEN when it is not the current user's, and with INVALID_INPUT when the post has not been removed. Appealing a decision that already has an open appeal from the user updates that appeal and returns is_duplicate true. Moderators decide the appeal; read the outcome with get_my_moderation_appeal. A suspended account cannot use MCP at all, so an account suspension is appealed on the web. Reuse the same UUID idempotency_key and arguments to safely retry; the first result is replayed. Returns the appeal.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "idempotency_key": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "A UUID for this appeal and its retries."
+                },
+                "target_type": {
+                  "type": "string",
+                  "enum": ["warning", "ban", "removal"]
+                },
+                "target_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "The ID of the warning, community ban or removed post."
+                },
+                "appeal_reason": {
+                  "type": "string",
+                  "description": "The case for the moderators."
+                },
+                "post_removal_kind": {
+                  "type": "string",
+                  "enum": ["platform", "community"]
+                }
+              },
+              "required": ["idempotency_key", "target_type", "target_id", "appeal_reason"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "appeal": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "target_type": {
+                      "enum": ["warning", "ban", "removal", "suspension"]
+                    },
+                    "target_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "community_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string",
+                          "format": "uuid"
+                        }
+                      ]
+                    },
+                    "post_removal_kind": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "enum": ["platform", "community"]
+                        }
+                      ]
+                    },
+                    "status": {
+                      "enum": ["pending", "resolved", "dismissed"]
+                    },
+                    "is_overdue": {
+                      "type": "boolean"
+                    },
+                    "resolution_action": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "enum": ["accept", "deny", "reduce"]
+                        }
+                      ]
+                    },
+                    "public_response": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "resolved_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      ]
+                    },
+                    "sent_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      ]
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "target_type",
+                    "target_id",
+                    "community_id",
+                    "post_removal_kind",
+                    "status",
+                    "resolution_action",
+                    "public_response",
+                    "resolved_at",
+                    "sent_at",
+                    "created_at",
+                    "updated_at"
+                  ],
+                  "additionalProperties": false
+                },
+                "is_duplicate": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["success", "appeal", "is_duplicate"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["appeals:read", "appeals:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/appeals"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "list_my_moderation_appeals",
+            "title": "List My Moderation Appeals",
+            "description": "List the moderation appeals the current user filed, newest first. status is pending (default) for the ones the moderators have not decided, resolved for the accepted or reduced ones, or dismissed for the denied ones. Each appeal has its id, target_type and target_id (the warning, community ban, removed post or suspension it contests), the community_id and post_removal_kind where they apply, its status, is_overdue while pending, the resolution_action once decided, and the moderators' public_response, fenced as external content, once it was sent. Returns at most 100 appeals per page (default 25) and page_info.end_cursor; pass it as after, with the same status, for the next page. A malformed cursor, or one from a different status, returns { success: false, error: \"Invalid cursor\" }. Other users' appeals are never listed.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": ["pending", "resolved", "dismissed"]
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100,
+                  "description": "Appeals per page, from 1 to 100 (default: 25)"
+                },
+                "after": {
+                  "type": "string",
+                  "description": "Opaque cursor from the previous page_info.end_cursor, for the next page."
+                }
+              },
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "appeals": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "target_type": {
+                            "enum": ["warning", "ban", "removal", "suspension"]
+                          },
+                          "target_id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "community_id": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string",
+                                "format": "uuid"
+                              }
+                            ]
+                          },
+                          "post_removal_kind": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "enum": ["platform", "community"]
+                              }
+                            ]
+                          },
+                          "status": {
+                            "enum": ["pending", "resolved", "dismissed"]
+                          },
+                          "is_overdue": {
+                            "type": "boolean"
+                          },
+                          "resolution_action": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "enum": ["accept", "deny", "reduce"]
+                              }
+                            ]
+                          },
+                          "public_response": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "resolved_at": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            ]
+                          },
+                          "sent_at": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            ]
+                          },
+                          "created_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updated_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "target_type",
+                          "target_id",
+                          "community_id",
+                          "post_removal_kind",
+                          "status",
+                          "resolution_action",
+                          "public_response",
+                          "resolved_at",
+                          "sent_at",
+                          "created_at",
+                          "updated_at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page_info": {
+                      "type": "object",
+                      "properties": {
+                        "has_next_page": {
+                          "type": "boolean"
+                        },
+                        "start_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "end_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["has_next_page", "start_cursor", "end_cursor"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["success", "appeals", "page_info"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["appeals:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/appeals"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_my_moderation_appeal",
+            "title": "Get My Moderation Appeal",
+            "description": "Get one moderation appeal the current user filed, by id: its target_type and target_id (the warning, community ban, removed post or suspension it contests), the community_id and post_removal_kind where they apply, its status, is_overdue while pending, the resolution_action once decided, and the moderators' public_response, fenced as external content, once it was sent. The call is refused with NOT_FOUND for an unknown id and with FORBIDDEN for another user's appeal.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "appeal_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "The ID of the appeal."
+                }
+              },
+              "required": ["appeal_id"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "appeal": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "target_type": {
+                      "enum": ["warning", "ban", "removal", "suspension"]
+                    },
+                    "target_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "community_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string",
+                          "format": "uuid"
+                        }
+                      ]
+                    },
+                    "post_removal_kind": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "enum": ["platform", "community"]
+                        }
+                      ]
+                    },
+                    "status": {
+                      "enum": ["pending", "resolved", "dismissed"]
+                    },
+                    "is_overdue": {
+                      "type": "boolean"
+                    },
+                    "resolution_action": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "enum": ["accept", "deny", "reduce"]
+                        }
+                      ]
+                    },
+                    "public_response": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "resolved_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      ]
+                    },
+                    "sent_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      ]
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "target_type",
+                    "target_id",
+                    "community_id",
+                    "post_removal_kind",
+                    "status",
+                    "resolution_action",
+                    "public_response",
+                    "resolved_at",
+                    "sent_at",
+                    "created_at",
+                    "updated_at"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": ["success", "appeal"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["appeals:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/appeals/:id"
+            }
+          ]
+        },
+        {
+          "tool": {
             "name": "get_community_list_item_counts",
             "title": "Get Community List Item Counts",
             "description": "Count the entries on a public community's curated list, by its UUID or slug, for each item_type: topic, rss_feed, post, url_hostname and url. The counts are what a signed-out reader sees, so post leaves out a post the public cannot see, and they match what get_community_list_items pages through. A private, deleted or unknown community returns { success: false, error: \"Community not found\" }.",

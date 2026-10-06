@@ -59,14 +59,19 @@
 - `account-enforcement:vote-weight`
 - `account-enforcement:write`
 - `analytics:read`
+- `appeals:read`
+- `appeals:write`
 - `bookmarks:read`
 - `bookmarks:write`
 - `cards:read`
 - `cards:write`
 - `communities:read`
+- `communities:write`
 - `copyright-notices:read`
 - `copyright-notices:write`
 - `data-points:read`
+- `disputes:read`
+- `disputes:write`
 - `domain-ratings:read`
 - `editorial:read`
 - `editorial:write`
@@ -102,6 +107,7 @@
 - `reference-data:read`
 - `referral-links:read`
 - `referral-links:write`
+- `reports:write`
 - `rewards-statuses:read`
 - `rewards-statuses:write`
 - `rss-feed-items:read`

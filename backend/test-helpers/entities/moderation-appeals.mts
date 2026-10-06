@@ -111,6 +111,23 @@ export async function resolveTestModerationAppeal(options: {
   `)
 }
 
+/** Marks an appeal decided and its approved public response delivered, as the moderators do. */
+export async function sendTestModerationAppealResponse(options: {
+  appealId: string
+  publicResponse: string
+  resolutionAction?: 'accept' | 'reduce' | 'deny'
+}): Promise<void> {
+  await write(sql`/* sendTestModerationAppealResponse */
+    UPDATE moderation_appeals
+    SET public_response = ${options.publicResponse},
+        approved_at = CURRENT_TIMESTAMP,
+        sent_at = CURRENT_TIMESTAMP,
+        resolved_at = CURRENT_TIMESTAMP,
+        resolution_action = ${options.resolutionAction ?? 'accept'}
+    WHERE id = ${options.appealId}::uuid
+  `)
+}
+
 /** Clears a mutable appeal resolution to exercise trigger decrement maintenance. */
 export async function clearTestModerationAppealResolution(appealId: string): Promise<void> {
   await write(sql`/* clearTestModerationAppealResolution */

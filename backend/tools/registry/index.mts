@@ -1,4 +1,4 @@
-import { postWriteTools } from './post-write-tools.mts'
+import { userWriteTools } from './user-write-tools.mts'
 import { adminEditorialStoryTools } from '../admin/editorial-stories.mts'
 import { adminEditorialImportTools } from '../admin/editorial-imports.mts'
 import { adminEditorialCategoryTools } from '../admin/editorial-categories.mts'
@@ -97,7 +97,7 @@ import { searchReferenceReadTools } from './search-reference-read-tools.mts'
 import { rssReadTools } from './rss-read-tools.mts'
 
 export const ALL_TOOLS: readonly Tool[] = [
-  ...postWriteTools,
+  ...userWriteTools,
   ...adminEditorialStoryTools,
   ...adminEditorialImportTools,
   ...adminEditorialCategoryTools,
