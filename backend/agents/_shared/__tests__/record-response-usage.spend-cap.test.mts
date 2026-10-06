@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { findAiUsageRecordForAgent, pollUntilNotNull } from '@voucha/test-helpers'
+import { findAiUsageRecordForAgent } from '@voucha/test-helpers'
 import type { OwnedBackgroundResponseLease } from '@services/openai-background-responses'
 import type { SpendCapBreach } from '@services/ai-usage'
 import { callRecordingAgentResponseUsage } from '../record-response-usage.mts'
@@ -35,9 +35,9 @@ describe('callRecordingAgentResponseUsage spend-cap recheck', () => {
 
     expect(checkSpendCap).toHaveBeenCalledExactlyOnceWith(agentSlug)
     expect(response.id).toBe(responseId)
-    await pollUntilNotNull(() =>
+    await expect(
       findAiUsageRecordForAgent(agentSlug, { inputTokens: 106, outputTokens: 57 }),
-    )
+    ).resolves.not.toBeNull()
   })
 
   it('throws SpendCapBreachError without invoking fn when the recheck reports a breach', async () => {

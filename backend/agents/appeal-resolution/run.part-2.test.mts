@@ -5,7 +5,6 @@ import {
   insertTestPost,
   markPostFlaggedForModeration,
   findAiUsageRecordForPost,
-  pollUntilNotNull,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { createModerationAppeal } from '@services/moderation-appeals/create'
@@ -52,11 +51,12 @@ describe('runAppealResolutionAgent', () => {
       'OpenAI response incomplete: max_output_tokens',
     )
 
-    const row = await pollUntilNotNull(() => findAiUsageRecordForPost(postId, 'appeal-resolution'))
-    expect(row.model).toBe('gpt-5.4-nano-2026-03-17')
-    expect(row.service_tier).toBe('flex')
-    expect(row.input_tokens).toBe(180)
-    expect(row.output_tokens).toBe(35)
-    expect(row.pricing_status).toBe('priced')
+    await expect(findAiUsageRecordForPost(postId, 'appeal-resolution')).resolves.toMatchObject({
+      model: 'gpt-5.4-nano-2026-03-17',
+      service_tier: 'flex',
+      input_tokens: 180,
+      output_tokens: 35,
+      pricing_status: 'priced',
+    })
   })
 })

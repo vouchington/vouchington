@@ -3,7 +3,7 @@ import { Response } from 'undici'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { StructuredDecisionFetch } from '@modules/structured-decisions'
 import { spendCapConfig, SpendCapBreachError } from '@services/ai-usage'
-import { findAiUsageRecordForPost, pollUntilNotNull } from '@voucha/test-helpers'
+import { findAiUsageRecordForPost } from '@voucha/test-helpers'
 import { createAutotaggerPostFixture } from '@voucha/test-helpers/data-stores/psql/classifier-runs/autotagger-fixture'
 import { listAiUsageRecordsForClassifierRun } from '@voucha/test-helpers/entities/ai-usage'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
@@ -73,9 +73,9 @@ describe('createAutotaggerClient', () => {
 
     await client.decide(request)
 
-    await expect(
-      pollUntilNotNull(() => findAiUsageRecordForPost(post.id, 'autotagger-agent')),
-    ).resolves.toMatchObject({ input_tokens: 5 })
+    await expect(findAiUsageRecordForPost(post.id, 'autotagger-agent')).resolves.toMatchObject({
+      input_tokens: 5,
+    })
     expect(await findAiUsageRecordForPost(post.id, 'autotagger')).toBeNull()
     expect(await listAiUsageRecordsForClassifierRun(runId)).toMatchObject([
       { classifier_run_id: runId, agent_slug: 'autotagger-agent', input_tokens: 5 },

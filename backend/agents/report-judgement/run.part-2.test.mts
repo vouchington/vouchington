@@ -5,7 +5,6 @@ import {
   insertTestPost,
   insertTestModerationReport,
   findAiUsageRecordForPost,
-  pollUntilNotNull,
 } from '@voucha/test-helpers'
 import { runReportJudgementAgent } from './run.mts'
 import { OpenAIResponseNotCompletedError } from '@modules/openai-utils/create-response'
@@ -51,11 +50,12 @@ describe('runReportJudgementAgent', () => {
       ),
     ).rejects.toThrow('OpenAI response incomplete: max_output_tokens')
 
-    const row = await pollUntilNotNull(() => findAiUsageRecordForPost(postId, 'report-judgement'))
-    expect(row.model).toBe('gpt-5.4-nano-2026-03-17')
-    expect(row.service_tier).toBe('flex')
-    expect(row.input_tokens).toBe(200)
-    expect(row.output_tokens).toBe(40)
-    expect(row.pricing_status).toBe('priced')
+    await expect(findAiUsageRecordForPost(postId, 'report-judgement')).resolves.toMatchObject({
+      model: 'gpt-5.4-nano-2026-03-17',
+      service_tier: 'flex',
+      input_tokens: 200,
+      output_tokens: 40,
+      pricing_status: 'priced',
+    })
   })
 })

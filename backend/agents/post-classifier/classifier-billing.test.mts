@@ -1,11 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { Response } from 'undici'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import {
-  countAiUsageRecordsForResponseId,
-  findAiUsageRecordForPost,
-  pollUntilNotNull,
-} from '@voucha/test-helpers'
+import { countAiUsageRecordsForResponseId, findAiUsageRecordForPost } from '@voucha/test-helpers'
 import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import { getAccountingUncertaintySource, SpendCapBreachError } from '@services/ai-usage'
 import { claimClassifierRun } from '@services/classifier-runs'
@@ -106,7 +102,7 @@ describe('post classifier billing', () => {
       expect(await executePostClassifierRun(input, dependencies)).toBe('replay')
       expect(fetch).toHaveBeenCalledOnce()
       await expect(
-        pollUntilNotNull(() => findAiUsageRecordForPost(input.post.id, 'post-classifier')),
+        findAiUsageRecordForPost(input.post.id, 'post-classifier'),
       ).resolves.toMatchObject({
         input_tokens: 12,
         output_tokens: 3,
@@ -229,7 +225,7 @@ describe('post classifier billing', () => {
         executePostClassifierRun(input, createBillingDependencies(input, fetch)),
       ).rejects.toMatchObject({ code: 'invalid-response' })
       await expect(
-        pollUntilNotNull(() => findAiUsageRecordForPost(input.post.id, 'post-classifier')),
+        findAiUsageRecordForPost(input.post.id, 'post-classifier'),
       ).resolves.toMatchObject({ pricing_status: 'priced', community_id: input.community.id })
       await expect(countAiUsageRecordsForResponseId(responseId)).resolves.toBe(1)
     })

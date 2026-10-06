@@ -1,6 +1,6 @@
 import { it, expect, vi, beforeEach, describe } from 'vitest'
 import { OpenAIResponseNotCompletedError } from '@modules/openai-utils/create-response'
-import { findAiUsageRecordForAgent, pollUntilNotNull } from '@voucha/test-helpers'
+import { findAiUsageRecordForAgent } from '@voucha/test-helpers'
 import { callStoryPostAgent } from './agent.mts'
 import type { Story } from '@services/stories/types'
 import type { Response } from 'openai/resources/responses/responses'
@@ -179,11 +179,12 @@ describe('agent', () => {
       callStoryPostAgent(makeStory(), itemSummaries, { createOpenAIResponse }),
     ).rejects.toThrow('OpenAI response incomplete: max_output_tokens')
 
-    const row = await pollUntilNotNull(() =>
+    await expect(
       findAiUsageRecordForAgent('story-post', { inputTokens: 411, outputTokens: 61 }),
-    )
-    expect(row.model).toBe('gpt-5.4-nano-2026-03-17')
-    expect(row.service_tier).toBe('flex')
-    expect(row.pricing_status).toBe('priced')
+    ).resolves.toMatchObject({
+      model: 'gpt-5.4-nano-2026-03-17',
+      service_tier: 'flex',
+      pricing_status: 'priced',
+    })
   })
 })
