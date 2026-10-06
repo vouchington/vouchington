@@ -212,13 +212,16 @@ describe('PreferencesForm', () => {
   })
 
   it('enables Hacker News discussions and shows a toast', async () => {
+    const toasted = Promise.withResolvers<void>()
+    mockToastSuccess.mockImplementation(message => {
+      if (message === 'Hacker News discussions updated') toasted.resolve()
+    })
     renderForm()
     fireEvent.click(screen.getByLabelText('Hacker News discussions'))
     expect(mockUpdateMyUser).toHaveBeenCalledWith('user-1', {
       should_import_hacker_news_discussions: true,
     })
-    await vi.waitFor(() => {
-      expect(mockToastSuccess).toHaveBeenCalledWith('Hacker News discussions updated')
-    })
+    await toasted.promise
+    expect(mockToastSuccess).toHaveBeenCalledWith('Hacker News discussions updated')
   })
 })

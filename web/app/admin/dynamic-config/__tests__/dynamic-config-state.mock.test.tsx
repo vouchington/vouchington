@@ -77,36 +77,25 @@ describe('useDynamicConfigState background refresh', () => {
   })
 
   it('reloads the active namespace from the polling interval', async () => {
-    const intervalHandlers: VoidFunction[] = []
-    const originalSetInterval = globalThis.setInterval
-    const setIntervalSpy = vi
-      .spyOn(globalThis, 'setInterval')
-      .mockImplementation((handler, timeout) => {
-        if (timeout === 10_000 && typeof handler === 'function') {
-          intervalHandlers.push(() => {
-            handler()
-          })
-          return 0 as unknown as ReturnType<typeof setInterval>
-        }
-        return originalSetInterval(handler, timeout)
-      })
-
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
     try {
       const { result } = renderHook(() => useDynamicConfigState())
-      await waitFor(() => expect(result.current.loading).toBe(false))
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0)
+      })
+      expect(result.current.loading).toBe(false)
       vi.clearAllMocks()
 
-      const intervalHandler = intervalHandlers[0]
-      if (!intervalHandler) throw new Error('Expected background refresh interval')
       await act(async () => {
-        intervalHandler()
+        await vi.advanceTimersByTimeAsync(10_000)
+        await vi.advanceTimersByTimeAsync(0)
       })
 
-      await waitFor(() => expect(mockedFetchNamespaces).toHaveBeenCalledOnce())
+      expect(mockedFetchNamespaces).toHaveBeenCalledOnce()
       expect(mockedFetchNamespace).toHaveBeenCalledWith('feature-flags')
       expect(mockedFetchHistory).toHaveBeenCalledWith('feature-flags')
     } finally {
-      setIntervalSpy.mockRestore()
+      vi.useRealTimers()
     }
   })
 

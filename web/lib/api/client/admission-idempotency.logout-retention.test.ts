@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { AdmissionIdempotency } from './admission-idempotency'
 import { MemoryLockManager, MemoryStorage } from './admission-idempotency-fixtures'
 
@@ -17,13 +17,18 @@ describe('AdmissionIdempotency logout retention', () => {
     const key = crypto.randomUUID()
     const intent = { route: 'posts.create', body: { markdown: 'Hello' } }
     const response = makeDeferred<string>()
+    const claimed = Promise.withResolvers<void>()
     const keys = new AdmissionIdempotency(() => key, {
       actorId: 'actor-a',
       lockManager,
       storage,
     })
-    const active = keys.run(intent, () => response.promise)
-    await vi.waitFor(() => expect(storage.length).toBe(1))
+    const active = keys.run(intent, () => {
+      claimed.resolve()
+      return response.promise
+    })
+    await claimed.promise
+    expect(storage.length).toBe(1)
 
     keys.pause()
     await expect(keys.drain(1)).resolves.toBe(false)

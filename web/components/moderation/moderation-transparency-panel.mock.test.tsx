@@ -70,13 +70,11 @@ describe('ModerationTransparencyPanel', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Load more' }))
 
-    await vi.waitFor(() =>
-      expect(fetchModerationTransparencyMock).toHaveBeenCalledWith({
-        range: 'all',
-        after: 'older',
-      }),
-    )
-    await vi.waitFor(() => expect(screen.getByText('30')).toBeDefined())
+    expect(fetchModerationTransparencyMock).toHaveBeenCalledWith({
+      range: 'all',
+      after: 'older',
+    })
+    expect(await screen.findByText('30')).toBeDefined()
     expect(screen.queryByRole('button', { name: 'Load more' })).toBeNull()
   })
 
@@ -86,13 +84,11 @@ describe('ModerationTransparencyPanel', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Load more' }))
 
-    await vi.waitFor(() =>
-      expect(
-        screen.getByRole('heading', {
-          name: 'Moderation transparency is available with Plus or Pro.',
-        }),
-      ).toBeDefined(),
-    )
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Moderation transparency is available with Plus or Pro.',
+      }),
+    ).toBeDefined()
     expect(screen.queryByText('25')).toBeNull()
     expect(screen.queryByRole('button', { name: 'Load more' })).toBeNull()
   })

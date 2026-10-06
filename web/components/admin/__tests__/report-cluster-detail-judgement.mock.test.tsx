@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { AdminModerationReport } from '../reports-client'
 import { ReportDetail } from '../report-cluster-detail'
@@ -107,10 +107,11 @@ describe('ReportDetail judgement freshness', () => {
       onBanEvasionAction: handleBanEvasionAction,
     })
 
-    fireEvent.click(screen.getByRole('button', { name: /confirm ban evasion/i }))
-    await vi.waitFor(() =>
-      expect(mockConfirmBanEvasion).toHaveBeenCalledWith('community-1', 'suspect-1'),
-    )
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /confirm ban evasion/i }))
+      await Promise.resolve()
+    })
+    expect(mockConfirmBanEvasion).toHaveBeenCalledWith('community-1', 'suspect-1')
     expect(handleBanEvasionAction).toHaveBeenCalledWith('report-1')
 
     rerender(
@@ -123,10 +124,11 @@ describe('ReportDetail judgement freshness', () => {
         onBanEvasionAction={handleBanEvasionAction}
       />,
     )
-    fireEvent.click(screen.getByRole('button', { name: /dismiss ban-evasion flag/i }))
-    await vi.waitFor(() =>
-      expect(mockDismissBanEvasion).toHaveBeenCalledWith('community-1', 'suspect-1'),
-    )
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /dismiss ban-evasion flag/i }))
+      await Promise.resolve()
+    })
+    expect(mockDismissBanEvasion).toHaveBeenCalledWith('community-1', 'suspect-1')
     expect(handleBanEvasionAction).toHaveBeenCalledTimes(2)
   })
 
@@ -144,13 +146,16 @@ describe('ReportDetail judgement freshness', () => {
     const dismiss = screen.getByRole('button', { name: /dismiss ban-evasion flag/i })
     fireEvent.click(confirm)
 
-    await vi.waitFor(() => expect(confirm).toBeDisabled())
+    expect(confirm).toBeDisabled()
     expect(dismiss).toBeDisabled()
     fireEvent.click(confirm)
     expect(mockConfirmBanEvasion).toHaveBeenCalledTimes(1)
 
-    resolveConfirm?.()
-    await vi.waitFor(() => expect(confirm).toBeEnabled())
+    await act(async () => {
+      resolveConfirm?.()
+      await Promise.resolve()
+    })
+    expect(confirm).toBeEnabled()
   })
 
   it('disables clustered ban-evasion actions when the queue is disabled', () => {
@@ -166,13 +171,14 @@ describe('ReportDetail judgement freshness', () => {
     renderDetail(makeBanEvasionReport())
 
     const confirm = screen.getByRole('button', { name: /confirm ban evasion/i })
-    fireEvent.click(confirm)
+    await act(async () => {
+      fireEvent.click(confirm)
+      await Promise.resolve()
+    })
 
-    await vi.waitFor(() =>
-      expect(mockOnError).toHaveBeenCalledWith(error, {
-        fallback: 'Failed to confirm ban evasion',
-      }),
-    )
+    expect(mockOnError).toHaveBeenCalledWith(error, {
+      fallback: 'Failed to confirm ban evasion',
+    })
     expect(confirm).toBeEnabled()
     expect(screen.getByRole('button', { name: /dismiss ban-evasion flag/i })).toBeEnabled()
   })

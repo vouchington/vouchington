@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { act, render, screen, fireEvent } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { AdminModerationReport } from './reports-client-types'
 import { banEvasionReport as banEvasionReportFixture } from '@/storybook/entities/admin-reports.fixtures'
@@ -230,15 +230,15 @@ describe('AdminReportRow', () => {
     const onBanEvasionAction = vi.fn<VitestLooseMock>()
 
     const { container: confirmContainer } = renderBanEvasionRow({ onBanEvasionAction })
-    fireEvent.click(confirmContainer.querySelector('[data-pw="ban-evasion-confirm"]')!)
-    await vi.waitFor(() => expect(onBanEvasionAction).toHaveBeenCalledWith(banEvasionReport.id))
+    await settleClick(confirmContainer.querySelector('[data-pw="ban-evasion-confirm"]')!)
+    expect(onBanEvasionAction).toHaveBeenCalledWith(banEvasionReport.id)
     expect(confirmCommunityBanEvasion).toHaveBeenCalledWith('community-1', 'user-suspect')
 
     vi.clearAllMocks()
 
     const { container: dismissContainer } = renderBanEvasionRow({ onBanEvasionAction })
-    fireEvent.click(dismissContainer.querySelector('[data-pw="ban-evasion-dismiss"]')!)
-    await vi.waitFor(() => expect(onBanEvasionAction).toHaveBeenCalledWith(banEvasionReport.id))
+    await settleClick(dismissContainer.querySelector('[data-pw="ban-evasion-dismiss"]')!)
+    expect(onBanEvasionAction).toHaveBeenCalledWith(banEvasionReport.id)
     expect(dismissCommunityBanEvasion).toHaveBeenCalledWith('community-1', 'user-suspect')
   })
 
@@ -247,26 +247,20 @@ describe('AdminReportRow', () => {
     vi.mocked(confirmCommunityBanEvasion).mockRejectedValueOnce(err)
 
     const { container } = renderBanEvasionRow()
-    fireEvent.click(container.querySelector('[data-pw="ban-evasion-confirm"]')!)
-
-    await vi.waitFor(() =>
-      expect(vi.mocked(onError)).toHaveBeenCalledWith(err, {
-        fallback: 'Failed to confirm ban evasion',
-      }),
-    )
+    await settleClick(container.querySelector('[data-pw="ban-evasion-confirm"]')!)
+    expect(vi.mocked(onError)).toHaveBeenCalledWith(err, {
+      fallback: 'Failed to confirm ban evasion',
+    })
   })
   it('calls onError when dismissCommunityBanEvasion fails', async () => {
     const err = new Error('dismiss failed')
     vi.mocked(dismissCommunityBanEvasion).mockRejectedValueOnce(err)
 
     const { container } = renderBanEvasionRow()
-    fireEvent.click(container.querySelector('[data-pw="ban-evasion-dismiss"]')!)
-
-    await vi.waitFor(() =>
-      expect(vi.mocked(onError)).toHaveBeenCalledWith(err, {
-        fallback: 'Failed to dismiss ban-evasion flag',
-      }),
-    )
+    await settleClick(container.querySelector('[data-pw="ban-evasion-dismiss"]')!)
+    expect(vi.mocked(onError)).toHaveBeenCalledWith(err, {
+      fallback: 'Failed to dismiss ban-evasion flag',
+    })
   })
 
   it('renders source_user_id span in popover when source_username is null', () => {
@@ -298,3 +292,9 @@ describe('AdminReportRow', () => {
     expect(screen.getByText(sourceUserId!)).toBeInTheDocument()
   })
 })
+async function settleClick(target: Element): Promise<void> {
+  await act(async () => {
+    fireEvent.click(target)
+    await Promise.resolve()
+  })
+}

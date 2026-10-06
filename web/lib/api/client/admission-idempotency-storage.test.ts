@@ -151,11 +151,17 @@ describe('AdmissionEntryStore bounded persistence', () => {
       },
     )
     let releaseActive!: () => void
+    const started = Promise.withResolvers<void>()
     const active = idempotency.run(
       { route: 'active' },
-      () => new Promise<void>(resolve => (releaseActive = resolve)),
+      () =>
+        new Promise<void>(resolve => {
+          releaseActive = resolve
+          started.resolve()
+        }),
     )
-    await vi.waitFor(() => expect(releaseActive).toBeTypeOf('function'))
+    await started.promise
+    expect(releaseActive).toBeTypeOf('function')
     now += 1
     for (let index = 0; index < MAX_ADMISSION_STORAGE_ENTRIES - 1; index++) {
       writeStoredEntry(storage, storageKey(`inactive-${index}`), {
@@ -201,19 +207,28 @@ describe('AdmissionEntryStore bounded persistence', () => {
     const second = new AdmissionIdempotency(() => crypto.randomUUID(), options)
     let releaseFirst!: () => void
     let releaseSecond!: () => void
+    const firstStarted = Promise.withResolvers<void>()
+    const secondStarted = Promise.withResolvers<void>()
 
     const firstRun = first.run(
       { route: 'first' },
-      () => new Promise<void>(resolve => (releaseFirst = resolve)),
+      () =>
+        new Promise<void>(resolve => {
+          releaseFirst = resolve
+          firstStarted.resolve()
+        }),
     )
     const secondRun = second.run(
       { route: 'second' },
-      () => new Promise<void>(resolve => (releaseSecond = resolve)),
+      () =>
+        new Promise<void>(resolve => {
+          releaseSecond = resolve
+          secondStarted.resolve()
+        }),
     )
-    await vi.waitFor(() => {
-      expect(releaseFirst).toBeTypeOf('function')
-      expect(releaseSecond).toBeTypeOf('function')
-    })
+    await Promise.all([firstStarted.promise, secondStarted.promise])
+    expect(releaseFirst).toBeTypeOf('function')
+    expect(releaseSecond).toBeTypeOf('function')
 
     expect(
       lockManager.requestedNames.filter(name => name === 'voucha:admission-storage:v1'),
