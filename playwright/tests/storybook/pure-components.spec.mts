@@ -82,7 +82,7 @@ test.describe('Storybook pure component stories', () => {
         .filter({ hasText: 'Neutral' })
         .getByTestId('semantic-vote-choice'),
     ).toBeVisible()
-    await expect(page.getByTestId('semantic-vote-clear')).toHaveCount(0)
+    await expect(page.getByTestId('semantic-vote-clear')).toBeVisible()
   })
 
   test('renders shared bookmark and upload buttons', async ({ page }) => {
