@@ -297,6 +297,14 @@ rejects plans that scan more than 501 follower-relation, `remote_actors`, `topic
 `fediverse_instance_topics` rows. This preserves the bounded durable fan-out contract documented by the
 [ActivityPub delivery queue](../../../overview/architecture/queues/activitypub-delivery/README.md).
 
+The `copyright-statement-facts` scenario calls `selectCopyrightStatementFacts` for the target of the
+post-image notice that `backend/scripts/seeds/dev-seed.mts` files, which the workflow runs before the
+EXPLAIN seed. Its required plan gate rejects any hashed SubPlan that reads `posts`,
+`image_placements` or `image_surface_placements`, requires the target's own `image_placements` row to
+be looked up, and caps the post rows read at 10. An `EXISTS` inside an `OR` once let PostgreSQL hash
+`view_public_post_eligibility` for every post in the database on each execution, which took seconds
+per statement on a busy test shard (#2207).
+
 ## Covered service queries
 
 [`scenario-manifest.mts`](../../../../backend/scripts/explain-analyze/scenario-manifest.mts) ratchet-enforces the set of scenario identities via
