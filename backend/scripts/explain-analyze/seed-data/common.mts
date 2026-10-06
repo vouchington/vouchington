@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { resolveSeedAnchor, SEED_ANCHOR_DATE_ENV } from './seed-anchor.mts'
+import { resolveSeedAnchor } from './seed-anchor.mts'
 
 export const HOSTNAME_COUNT = 1000
 export const FEED_URL_COUNT = 2500
@@ -33,7 +33,7 @@ const POST_SEED_MINUTES_APART_MS = 60_000
 // Day granularity keeps a post within ~12h of "now" — safely inside the `time_range: '1w'` window
 // the heavy feed scenarios filter on.
 const { dayAnchorMs: POST_SEED_ANCHOR_MS, monthUuidv7Prefix } = resolveSeedAnchor(
-  process.env[SEED_ANCHOR_DATE_ENV],
+  process.env.EXPLAIN_SEED_ANCHOR_DATE,
 )
 
 export const CRAWL_SEED_PREFIX = monthUuidv7Prefix

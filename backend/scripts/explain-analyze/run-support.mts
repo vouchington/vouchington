@@ -103,7 +103,7 @@ export async function assertSeedAnchorMatches(postId: string = seedPostId): Prom
     [postId],
   )
   if (rows.length === 0) {
-    const pinnedDay = process.env[SEED_ANCHOR_DATE_ENV]
+    const pinnedDay = process.env.EXPLAIN_SEED_ANCHOR_DATE
     const anchorSource =
       pinnedDay === undefined
         ? `${SEED_ANCHOR_DATE_ENV} is unset, so a UTC midnight between the two process runs splits them`
