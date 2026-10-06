@@ -825,9 +825,10 @@ This section records the outcomes of the evaluation in #5044 so the tracking iss
   [no-mistakes catalog](../../postgresql/schema-snapshot/README.md#no-mistakes-catalog). It requires the conflict
   target and source `ORDER BY` to begin with the same unique-index key sequence. The
   catalog-backed `postgres-lock-ordering` configuration applies that prefix to multi-row row locks,
-  while the repository-wide configuration continues to require deterministic ordering. Tests, test
-  helpers, and fixtures are excluded; migrations, views, manually invoked scripts, and EXPLAIN data
-  generators remain outside the production include paths. Dynamic SQL that reaches the parser fails
+  while a second configuration without a catalog requires deterministic ordering for the paths the
+  catalog configuration excludes. Tests, test helpers, and fixtures are excluded from the catalog
+  configuration; migrations, views, manually invoked scripts, and EXPLAIN data generators remain
+  outside the production include paths. Dynamic SQL that reaches the parser fails
   closed. The current upstream analyzer cannot recover wholly opaque executor arguments, so this
   rollout pairs a manual production-writer audit with an exact, test-enforced inventory of narrow
   directives used only when ordering is enforced outside the analyzable statement. Reproduce with

@@ -121,16 +121,26 @@ describe('PostgreSQL ordering guard config', () => {
       .map(rule => rule?.options as { include: string[]; exclude: string[] })
     // Without a catalog every IN/ANY filter reads as multi-row, so the plain entry fails closed on
     // locks the catalog entry proves single-row. It scans only what the catalog entry excludes.
+    const backendPaths = trackedFiles(repoRoot, ['backend'])
     const scoped = (options: { include: string[]; exclude: string[] }) =>
-      trackedFiles(repoRoot, ['backend']).filter(
+      backendPaths.filter(
         path =>
           options.include.some(pattern => matchesGlob(path, pattern)) &&
           !options.exclude.some(pattern => matchesGlob(path, pattern)),
       )
     const plainPaths = scoped(plainLocks!)
     const catalogPaths = new Set(scoped(catalogLocks!))
+    const uncovered = backendPaths.filter(
+      path =>
+        /\.m?ts$/u.test(path) &&
+        !plainLocks!.exclude.some(pattern => matchesGlob(path, pattern)) &&
+        !catalogPaths.has(path) &&
+        !plainPaths.includes(path),
+    )
 
     expect(plainPaths.length).toBeGreaterThan(0)
     expect(plainPaths.filter(path => catalogPaths.has(path))).toEqual([])
+    // Every non-test backend source file is checked by exactly one of the two entries.
+    expect(uncovered).toEqual([])
   })
 })
