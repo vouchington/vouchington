@@ -1,5 +1,6 @@
 import { execFile, spawn } from 'node:child_process'
 import { once } from 'node:events'
+import { readFileSync, watch } from 'node:fs'
 import { chmod, lstat, readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
@@ -14,6 +15,42 @@ import {
 } from '../test-helpers/reset-worktree.mts'
 
 const execFileAsync = promisify(execFile)
+
+function readWhenNonEmpty(directory: string, filename: string): Promise<string> {
+  const file = join(directory, filename)
+  const read = (): string | undefined => {
+    try {
+      const contents = readFileSync(file, 'utf8')
+      return contents === '' ? undefined : contents
+    } catch {
+      return undefined
+    }
+  }
+  return new Promise((resolve, reject) => {
+    let settled = false
+    let watcher!: ReturnType<typeof watch>
+    const finish = (contents: string) => {
+      if (settled) return
+      settled = true
+      watcher.close()
+      resolve(contents)
+    }
+    watcher = watch(directory, (_event, name) => {
+      if (name !== filename) return
+      const contents = read()
+      if (contents === undefined) return
+      finish(contents)
+    })
+    watcher.on('error', err => {
+      if (settled) return
+      settled = true
+      watcher.close()
+      reject(err)
+    })
+    const existing = read()
+    if (existing !== undefined) finish(existing)
+  })
+}
 
 describe('reset-worktree concurrency (#10849)', () => {
   afterEach(cleanupResetWorktreeTestDirs)
@@ -96,20 +133,10 @@ wait
       })
       const exited = once(reset, 'exit')
       try {
-        await expect.poll(async () => readFile(childFile, 'utf8').catch(() => '')).not.toBe('')
-        const pid = Number(await readFile(childFile, 'utf8'))
+        const pid = Number(await readWhenNonEmpty(cwd, 'database-child.pid'))
         reset.kill('SIGTERM')
         expect((await exited)[0]).toBe(143)
-        await expect
-          .poll(async () => {
-            try {
-              await execFileAsync('kill', ['-0', String(pid)])
-              return false
-            } catch {
-              return true
-            }
-          })
-          .toBe(true)
+        await expect(execFileAsync('kill', ['-0', String(pid)])).rejects.toThrow('No such process')
         await writeFile(join(binDir, 'dropdb'), '#!/usr/bin/env bash\nexit 0\n')
         expectResetSuccess(await runResetWorktree({ binDir, cwd }))
       } finally {
@@ -145,7 +172,7 @@ wait
     })
     const exited = once(reset, 'exit')
     try {
-      await expect.poll(async () => readFile(lockFile, 'utf8').catch(() => '')).not.toBe('')
+      await readWhenNonEmpty(cwd, 'git-index.lock')
       reset.kill('SIGTERM')
       expect((await exited)[0]).toBe(143)
       await expect(lstat(lockFile)).rejects.toMatchObject({ code: 'ENOENT' })

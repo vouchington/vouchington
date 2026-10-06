@@ -82,9 +82,11 @@ describe('background OpenAI response lease integration', () => {
       makeSdkResponse({ status: 'cancelled', id: 'resp-barrier' }),
     )
     const stopAndSettle = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
+    const responseCreated = Promise.withResolvers<void>()
     const onResponseCreated = vi.fn<
       (responseId: string) => Promise<{ stopAndSettle: () => Promise<void> }>
     >(async () => {
+      responseCreated.resolve()
       await registrationGate
       return { stopAndSettle }
     })
@@ -93,7 +95,8 @@ describe('background OpenAI response lease integration', () => {
       createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
     )
     const responseRejection = response.catch((err: unknown) => err)
-    await vi.waitFor(() => expect(onResponseCreated).toHaveBeenCalledTimes(1))
+    await responseCreated.promise
+    expect(onResponseCreated).toHaveBeenCalledTimes(1)
     expect(openAIMocks.cancel).not.toHaveBeenCalled()
 
     releaseRegistration?.()

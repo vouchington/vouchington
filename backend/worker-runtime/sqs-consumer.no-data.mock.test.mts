@@ -29,6 +29,13 @@ function hangUntilAborted(command: unknown, options?: { abortSignal?: AbortSigna
   return Promise.resolve({})
 }
 
+function receiveThatSignals(onReceive: () => void) {
+  return (command: unknown, options?: { abortSignal?: AbortSignal }) => {
+    if (command instanceof ReceiveMessageCommand) onReceive()
+    return hangUntilAborted(command, options)
+  }
+}
+
 describe('createSqsConsumer against the real SQSClient port', () => {
   beforeEach(() => {
     mocks.mockSend.mockReset()
@@ -93,12 +100,15 @@ describe('createSqsConsumer against the real SQSClient port', () => {
     })
     const handleMessage = vi.fn<SqsConsumerHandler>(() => Promise.resolve())
 
+    const hangingReceive = Promise.withResolvers<void>()
+    mocks.mockSend.mockImplementation(receiveThatSignals(() => hangingReceive.resolve()))
     const consumer = createSqsConsumer({ name: 'test', queueUrl: QUEUE_URL, handleMessage })
     // The second (hanging) receive() call only fires once the first batch finished processing --
     // proof every message in it was filtered out rather than handed to the handler.
-    await vi.waitFor(() => expect(mocks.mockSend).toHaveBeenCalledTimes(2))
+    await hangingReceive.promise
     await consumer.close()
 
+    expect(mocks.mockSend).toHaveBeenCalledTimes(2)
     expect(handleMessage).not.toHaveBeenCalled()
   })
 
@@ -106,9 +116,13 @@ describe('createSqsConsumer against the real SQSClient port', () => {
     mocks.mockSend.mockResolvedValueOnce({})
     const handleMessage = vi.fn<SqsConsumerHandler>(() => Promise.resolve())
 
+    const hangingReceive = Promise.withResolvers<void>()
+    mocks.mockSend.mockImplementation(receiveThatSignals(() => hangingReceive.resolve()))
     const consumer = createSqsConsumer({ name: 'test', queueUrl: QUEUE_URL, handleMessage })
-    await vi.waitFor(() => expect(mocks.mockSend).toHaveBeenCalledTimes(2))
+    await hangingReceive.promise
     await consumer.close()
+
+    expect(mocks.mockSend).toHaveBeenCalledTimes(2)
 
     expect(handleMessage).not.toHaveBeenCalled()
   })

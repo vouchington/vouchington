@@ -1,6 +1,7 @@
+import { once } from 'node:events'
 import type { Job } from 'glide-mq'
 import { TestWorker } from 'glide-mq/testing'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { addAndFlush, addBulkAndFlush } from './glide-mq-vitest-flush.mts'
 import { getOrCreateQueue } from './glide-mq-vitest-internals.mts'
 
@@ -31,8 +32,10 @@ describe('GlideMQ test flush across job states', () => {
     const job = await addAndFlush(queue, 'later', { n: 1 }, { delay: 60_000 })
 
     expect(await queue.getJobs('delayed')).toHaveLength(1)
+    const completed = once(queue, 'completed')
     await job!.promote()
-    await vi.waitFor(async () => expect(await queue.getJobs('completed')).toHaveLength(1))
+    await completed
+    expect(await queue.getJobs('completed')).toHaveLength(1)
   })
 
   it('still throws for a failed job whose record removeOnFail already deleted', async () => {

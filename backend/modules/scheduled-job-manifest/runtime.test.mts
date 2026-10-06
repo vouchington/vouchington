@@ -112,16 +112,7 @@ describe('upsertScheduledJobManifest', () => {
 
   it('preserves sequential registration before the following parallel batch', async () => {
     const events: string[] = []
-    const releases = new Map<string, () => void>()
-    const upsertJobScheduler = vi.fn<ScheduledJobQueue['upsertJobScheduler']>(schedulerId => {
-      events.push(`start:${schedulerId}`)
-      return new Promise<void>(resolve => {
-        releases.set(schedulerId, () => {
-          events.push(`finish:${schedulerId}`)
-          resolve()
-        })
-      })
-    })
+    const { releases, startGate, upsertJobScheduler } = gatedScheduler(events)
     const manifest = defineScheduledJobManifest('example', [
       { ...job('first'), registration: 'sequential' },
       { ...job('second'), registration: 'sequential' },
@@ -130,20 +121,21 @@ describe('upsertScheduledJobManifest', () => {
     ])
 
     const completion = upsertScheduledJobManifest(makeQueue(upsertJobScheduler), manifest)
-    await vi.waitFor(() => expect(events).toEqual(['start:first']))
+    await startGate('first').promise
+    expect(events).toEqual(['start:first'])
     releases.get('first')!()
-    await vi.waitFor(() => expect(events).toEqual(['start:first', 'finish:first', 'start:second']))
+    await startGate('second').promise
+    expect(events).toEqual(['start:first', 'finish:first', 'start:second'])
     releases.get('second')!()
-    await vi.waitFor(() =>
-      expect(events).toEqual([
-        'start:first',
-        'finish:first',
-        'start:second',
-        'finish:second',
-        'start:parallel-a',
-        'start:parallel-b',
-      ]),
-    )
+    await Promise.all([startGate('parallel-a').promise, startGate('parallel-b').promise])
+    expect(events).toEqual([
+      'start:first',
+      'finish:first',
+      'start:second',
+      'finish:second',
+      'start:parallel-a',
+      'start:parallel-b',
+    ])
     releases.get('parallel-a')!()
     releases.get('parallel-b')!()
     await completion
@@ -151,16 +143,7 @@ describe('upsertScheduledJobManifest', () => {
 
   it('waits for the preceding parallel batch before sequential registration', async () => {
     const events: string[] = []
-    const releases = new Map<string, () => void>()
-    const upsertJobScheduler = vi.fn<ScheduledJobQueue['upsertJobScheduler']>(schedulerId => {
-      events.push(`start:${schedulerId}`)
-      return new Promise<void>(resolve => {
-        releases.set(schedulerId, () => {
-          events.push(`finish:${schedulerId}`)
-          resolve()
-        })
-      })
-    })
+    const { releases, startGate, upsertJobScheduler } = gatedScheduler(events)
     const manifest = defineScheduledJobManifest('example', [
       job('parallel-a'),
       job('parallel-b'),
@@ -168,21 +151,19 @@ describe('upsertScheduledJobManifest', () => {
     ])
 
     const completion = upsertScheduledJobManifest(makeQueue(upsertJobScheduler), manifest)
-    await vi.waitFor(() => expect(events).toEqual(['start:parallel-a', 'start:parallel-b']))
+    await Promise.all([startGate('parallel-a').promise, startGate('parallel-b').promise])
+    expect(events).toEqual(['start:parallel-a', 'start:parallel-b'])
     releases.get('parallel-a')!()
-    await vi.waitFor(() =>
-      expect(events).toEqual(['start:parallel-a', 'start:parallel-b', 'finish:parallel-a']),
-    )
+    expect(events).toEqual(['start:parallel-a', 'start:parallel-b', 'finish:parallel-a'])
     releases.get('parallel-b')!()
-    await vi.waitFor(() =>
-      expect(events).toEqual([
-        'start:parallel-a',
-        'start:parallel-b',
-        'finish:parallel-a',
-        'finish:parallel-b',
-        'start:sequential',
-      ]),
-    )
+    await startGate('sequential').promise
+    expect(events).toEqual([
+      'start:parallel-a',
+      'start:parallel-b',
+      'finish:parallel-a',
+      'finish:parallel-b',
+      'start:sequential',
+    ])
     releases.get('sequential')!()
     await completion
   })
@@ -230,6 +211,29 @@ describe('upsertScheduledJobManifest', () => {
     )
   })
 })
+
+function gatedScheduler(events: string[]) {
+  const releases = new Map<string, () => void>()
+  const started = new Map<string, ReturnType<typeof Promise.withResolvers<void>>>()
+  const startGate = (schedulerId: string) => {
+    const existing = started.get(schedulerId)
+    if (existing) return existing
+    const created = Promise.withResolvers<void>()
+    started.set(schedulerId, created)
+    return created
+  }
+  const upsertJobScheduler = vi.fn<ScheduledJobQueue['upsertJobScheduler']>(schedulerId => {
+    events.push(`start:${schedulerId}`)
+    return new Promise<void>(resolve => {
+      releases.set(schedulerId, () => {
+        events.push(`finish:${schedulerId}`)
+        resolve()
+      })
+      startGate(schedulerId).resolve()
+    })
+  })
+  return { releases, startGate, upsertJobScheduler }
+}
 
 function makeQueue(
   upsertJobScheduler: ScheduledJobQueue['upsertJobScheduler'],

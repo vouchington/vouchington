@@ -47,6 +47,7 @@ describe('wrangler dev supervised restart', () => {
   })
 
   afterEach(() => {
+    vi.useRealTimers()
     vi.unstubAllEnvs()
     rmSync(runtimeRoot, { force: true, recursive: true })
   })
@@ -66,16 +67,15 @@ describe('wrangler dev supervised restart', () => {
         return true
       })
 
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
     await import('./start.mts')
     expect(spawnMock).toHaveBeenCalledTimes(1)
 
     // signal: null means the child died on its own (a crash), not an external kill -- the case
     // start.mts's close handler must restart, computing burst-relative uptime and attempt.
     processes[0]!.emit('close', 1, null)
-
-    await vi.waitFor(() => {
-      expect(spawnMock).toHaveBeenCalledTimes(2)
-    })
+    await vi.advanceTimersByTimeAsync(100)
+    expect(spawnMock).toHaveBeenCalledTimes(2)
 
     expect(stderrWrites.some(line => line.includes('restarting wrangler (attempt 1/5)'))).toBe(true)
 
