@@ -32,6 +32,23 @@ describe('PostgreSQL test session configuration', () => {
     expect(env.DATABASE_URL).toBe(once)
   })
 
+  it('preserves literal and encoded plus signs in existing options for both pools', () => {
+    const env = {
+      DATABASE_URL: 'postgres://localhost/owned?options=-c%20application_name=ci+1',
+      READ_DATABASE_URL: 'postgres://localhost/owned_read?options=-c%20application_name=ci%2B2',
+    }
+    configureTestPostgresSessions(env)
+    expect(new URL(env.DATABASE_URL).searchParams.get('options')).toContain('application_name=ci+1')
+    expect(new URL(env.READ_DATABASE_URL).searchParams.get('options')).toContain(
+      'application_name=ci+2',
+    )
+    expect(env.DATABASE_URL).toContain('ci%2B1')
+    expect(env.READ_DATABASE_URL).toContain('ci%2B2')
+    const once = { ...env }
+    configureTestPostgresSessions(env)
+    expect(env).toEqual(once)
+  })
+
   it('does not invent a connection when no database URL is present', () => {
     const env = {}
     configureTestPostgresSessions(env)
