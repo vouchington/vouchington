@@ -1,26 +1,5 @@
 # Codex reads checked-in AGENTS.md files. Do not add a CLAUDE.md fallback.
-plan_mode_reasoning_effort = "xhigh"
-model_reasoning_effort = "medium"
-sandbox_mode = "workspace-write"
-approval_policy = "on-request"
-approvals_reviewer = "auto_review"
-
-[sandbox_workspace_write]
-network_access = true
-writable_roots = [
-  "~/.cargo",
-  "~/Library/pnpm",
-  "~/.local/share/pnpm",
-  "~/.pnpm-store",
-  "~/Library/Caches/no-mistakes",
-  "~/Library/Caches/pnpm",
-  "~/.pnpm-state",
-  "~/.cache/no-mistakes",
-  "~/.cache/pnpm",
-  "~/.local/state/pnpm",
-  "/var/folders",
-  "/private/var/folders",
-]
+# Sandbox, approval, and model settings belong to the user's Codex config (vouchington-machines).
 
 [[hooks.PreToolUse]]
 matcher = "Bash|Edit|Write|apply_patch"

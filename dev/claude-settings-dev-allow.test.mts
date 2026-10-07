@@ -8,15 +8,15 @@ import { plainForcePushReason } from './plain-force-push.mts'
 
 // Claude Code matches a Bash rule against the whole command text, with `*` standing in for any
 // text; a trailing ` *` that is the rule's only wildcard also matches the bare command. The
-// blanket dev/ allow rules skip review for every checked-in dev/ entrypoint; each dev/ command
-// that leaves the OS sandbox also keeps a narrow allow rule, because auto mode may drop the blanket
-// ones and Claude Code documents that it keeps narrow rules. The `/../` deny rules refuse the plain
-// spelling of a path that escapes dev/. Rationale:
+// blanket dev/ allow rules skip review for every checked-in dev/ entrypoint; each dev/ command that
+// runs outside the OS sandbox on a machine also keeps a narrow allow rule, as an exact entry plus a
+// trailing-wildcard twin, because auto mode may drop the blanket ones and Claude Code documents
+// that it keeps narrow rules. The `/../` deny rules refuse the plain spelling of a path that
+// escapes dev/. The sandbox itself is machine policy. Rationale:
 // docs/development/agent-sandbox.md#claude-review-skip-for-dev-commands.
 
 type ClaudeSettings = {
   permissions: { allow: string[]; deny: string[] }
-  sandbox: { excludedCommands: string[] }
 }
 
 const claudeSettings = JSON.parse(
@@ -48,11 +48,17 @@ const isDevCommand = (command: string) =>
   command.startsWith('./dev') || command.startsWith('node dev')
 
 describe('Claude review-skip for dev/ commands', () => {
-  it('pre-approves dev/ commands through the blanket rules plus one narrow rule per unsandboxed command', () => {
-    const unsandboxedDevCommands = claudeSettings.sandbox.excludedCommands.filter(isDevCommand)
-    expect(allowPatterns.filter(isDevCommand).toSorted()).toEqual(
-      ['./dev/*', 'node dev/*', ...unsandboxedDevCommands].toSorted(),
-    )
+  it('pre-approves dev/ commands through the blanket rules plus narrow exact and wildcard pairs', () => {
+    const blanket = ['./dev/*', 'node dev/*']
+    const narrow = allowPatterns.filter(isDevCommand).filter(rule => !blanket.includes(rule))
+    expect(allowPatterns).toEqual(expect.arrayContaining(blanket))
+    expect(narrow.length).toBeGreaterThan(0)
+    for (const rule of narrow) {
+      const command = rule.endsWith(' *') ? rule.slice(0, -2) : rule
+      expect(narrow).toContain(command)
+      expect(narrow).toContain(`${command} *`)
+      expect(rule).not.toContain('..')
+    }
   })
 
   it.each([

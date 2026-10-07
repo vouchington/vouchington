@@ -93,8 +93,8 @@ async function probeAdvisory(payload: Record<string, unknown>): Promise<string |
   if (payload.source === 'compact') return undefined
   if (process.env.CHECK_BLACKBOARD_SKIP === '1') return undefined
 
-  // The Claude Code sandbox unsets AGENT_BLACKBOARD_TOKEN (sandbox.credentials.envVars
-  // deny; docs/development/agent-sandbox.md#sandbox-credential-deny-list) and blocks egress
+  // The Claude Code sandbox unsets AGENT_BLACKBOARD_TOKEN (the machine's credential deny list;
+  // docs/development/agent-sandbox.md#sandbox-credential-deny-list) and blocks egress
   // to the deployment, so a sandboxed run cannot tell "the deployment is down" apart from
   // "I was never given the credential to check". Reporting that as an outage is a false
   // stop-work directive — see docs/development/agent-blackboard.md.

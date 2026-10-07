@@ -5,5 +5,5 @@ Perform a security audit. Find one concrete, bounded improvement that is safe to
 - New mutation routes (`POST`/`DELETE`/`PATCH`) must apply the domain's full guard set, not just `requireAuth` — suspension (`assertNotSuspended`), the domain's `currentUserCan*` gate, and domain limits (participant caps, target-user existence, block/mute). For messaging mutation routes (`backend/api/v1/my/messages*.mts` → `backend/services/messaging/**`), follow the cross-file contract summary in [authorization.mts](../../../backend/services/messaging/authorization.mts) and verify a rejection-path integration test exists for each guard.
 - Add or tighten tests for the selected security issue when practical.
 - This prompt is scoped to application threat models; agent tooling and sandbox permission surfaces
-  (`.claude/settings.json`, `.codex/rules`, `sandbox.excludedCommands`) are audited separately by
+  (`.claude/settings.json`, `.codex/rules`) are audited separately by
   [agent-sandbox-policy.md](agent-sandbox-policy.md).
