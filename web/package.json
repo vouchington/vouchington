@@ -98,9 +98,11 @@
     "@typescript/native": "npm:typescript@^7.0.2",
     "babel-plugin-react-compiler": "^1.0.0",
     "jsdom": "^30.1.2",
+    "no-mistakes": "^0.78.1",
     "storybook": "^10.6.1",
     "tailwindcss": "^4",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
-    "vite": "^8.3.2"
+    "vite": "^8.3.2",
+    "vouchington-tooling": "^0.37.2"
   }
 }

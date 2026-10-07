@@ -4,6 +4,20 @@ Source entrypoint: [web/storybook/README.md](../../../../web/storybook/README.md
 
 CI-failure diagnosis and key files for `web/storybook/`. For imperative story-authoring rules, see [AGENTS.md](../../../../web/storybook/AGENTS.md).
 
+## Component story coverage
+
+`web/storybook/__tests__/component-story-coverage.test.ts` checks exported components in
+`web/components/**/*.tsx` files containing `data-pw`. A runtime PascalCase named export or any
+runtime default export needs a directly reachable Storybook import. This includes lower-case values
+assigned to a default export and PascalCase runtime values such as enums; the test may therefore
+require a story for an export that is not itself a React component. Type-only exports do not count.
+The exclusions file remains empty, and used namespace imports from component modules are rejected.
+
+The test obtains module facts from `no-mistakes` and resolves local imports and reexports through
+`vouchington-tooling/source-module-graph`. Incomplete module facts fail the coverage check instead
+of silently reducing its inventory. Run the focused check with
+`pnpm exec vitest run --project web-storybook-component-coverage`.
+
 ## Diagnosing CI failures
 
 - **Silent browser startup or stalled Storybook modules** — `ci/storybook-browser-runner.mts` owns one monotonic 300-second session budget across at most three attempts, while Vitest's browser connection deadline uses the same `STORYBOOK_BROWSER_HANG_MS` value as the runner's 120-second pre-test hang threshold. Each eligible retry waits for the previous Vitest/Chromium process group to close, then starts a new process group on a distinct browser API port. Once the `vitest-storybook-progress-reporter` emits a bounded `module-collected`, `module-start`, or `module-end` marker, a later stall or assertion failure is terminal. Localhost dynamic-module fetch failures and add-on setup-file `Vitest failed to find the runner` before `|web-storybook-browser` output remain retryable even after those module markers. Attempt 1 uses the persistent Vite cache `.cache/vite/storybook-browser` unless `STORYBOOK_BROWSER_PERSISTENT_CACHE=0` disables it or `STORYBOOK_BROWSER_PERSISTENT_CACHE_DIR` overrides the path. Pure browser/session failures reuse the ready Vite cache; optimizer stalls, module-fetch failures, and missing-runner evidence rotate a suspect cache. The runner always captures the low-volume Vitest Playwright milestones and browser request failures, filters Vitest browser-API command noise, and adds bounded `pw:browser*` lifecycle diagnostics only after a prior browser hang. It removes `pw:protocol*`: raw protocol traffic previously produced a 1.73 GB log without showing repository-owned test progress. On failure, download `browser-debug-log-storybook`; `storybook-browser-diagnostics.log` contains all attempt summaries plus a bounded output tail and can never exceed 1 MiB. For faster local fault injection, lower `STORYBOOK_BROWSER_HANG_MS` or `STORYBOOK_BROWSER_SESSION_BUDGET_MS`.
