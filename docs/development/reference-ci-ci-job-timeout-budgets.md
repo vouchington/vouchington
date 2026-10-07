@@ -63,10 +63,9 @@ repository's default job maximum rather than reserving the sum of its step ceili
 its own ceiling, so a hang is still attributed to the step that hung. `checks-static.test.mts`
 asserts that the cap exceeds the largest step and stays below the step sum.
 
-The static backend job retains its additive model with a 21-minute job ceiling: six minutes for
-setup, three for dependency analysis, ten for PostgreSQL contracts, API fixtures, and the live MCP
-catalog checks, one for generated-file Git state, and one for Valkey service provisioning and drain
-headroom.
+The static backend job retains its additive model with a 14-minute job ceiling: five minutes for
+setup, two for dependency analysis, four for PostgreSQL contracts, API fixtures, and the live MCP
+catalog checks, one for generated-file Git state, and provisioning and drain headroom.
 
 Lambda tests retain an additive budget that covers every declared step ceiling, including artifact
 fallbacks, with provisioning and drain headroom. The workflow test verifies this relationship and
