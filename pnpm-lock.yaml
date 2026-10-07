@@ -143,8 +143,8 @@ importers:
         specifier: ^1.63.0
         version: 1.63.0
       pr-shepherd:
-        specifier: ^0.56.4
-        version: 0.56.4(supports-color@10.2.2)
+        specifier: ^0.56.5
+        version: 0.56.5(supports-color@10.2.2)
       squawk-cli:
         specifier: ^2.67.0
         version: 2.67.0
@@ -21860,8 +21860,8 @@ packages:
     resolution: {integrity: sha512-9ZhXKM/rw350N1ovuWHbGxnGh/SNJ4cnxHiM0rxE4VN41wsg8P8zWn9hv/buK00RP4WvlOyr/RBDiptyxVbkZQ==}
     engines: {node: '>=0.10.0'}
 
-  pr-shepherd@0.56.4:
-    resolution: {integrity: sha512-AtNKpaMb6EwLKvT/9+CMgwscIsFIWRWoGgbr2XM1DeC/uwOGC7K1ZFb1m+uTxoLQBcXQSG0qy5dSzg25KuVmsw==}
+  pr-shepherd@0.56.5:
+    resolution: {integrity: sha512-d9C3qfgI4I76sd4kL5TwymtkhIr4UYKqzqUcHB3d1Jx9rjAgOwsM70Y+ixGV9sySNtU6+0p1PcNYFBvLG+zOug==}
     engines: {node: '>=22.18.0'}
     hasBin: true
 
@@ -31080,7 +31080,7 @@ snapshots:
     dependencies:
       xtend: 4.0.2
 
-  pr-shepherd@0.56.4(supports-color@10.2.2):
+  pr-shepherd@0.56.5(supports-color@10.2.2):
     dependencies:
       '@modelcontextprotocol/sdk': 1.32.0(supports-color@10.2.2)(zod@4.6.5)
       picomatch: 4.0.7
