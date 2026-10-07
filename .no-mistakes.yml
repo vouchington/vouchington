@@ -2646,15 +2646,14 @@ rules:
         # Static lambdas setup, typecheck, depcruise, smoke, and diagnostics step budgets sum 15m; cap adds buffer. See PR #8489.
         - job: '.github/workflows/checks-static.yml#static-lambdas'
           maxMinutes: 18
-        # Static web setup, retry install, pages-router, dependency, typecheck, build, and smoke budgets sum 29m; cap adds buffer. See PR #8489.
-        - job: '.github/workflows/checks-static.yml#static-web'
-          maxMinutes: 35
-        # A standalone Playwright run plans shards and produces one shared web build before shards start.
+        # A standalone Playwright run plans shards and produces one shared web build before shards
+        # start: setup (5m), shard plan (1m), and the bounded 6m web build sum 12m plus 1m headroom.
         - job: '.github/workflows/tests-playwright.yml#shards'
-          maxMinutes: 20
-        # A standalone web-integration run prepares its matrix and shared web build before shards start.
+          maxMinutes: 13
+        # A standalone web-integration run prepares its matrix and shared web build before shards
+        # start: setup (5m) and the bounded 6m web build sum 11m plus 2m for the unbounded steps.
         - job: '.github/workflows/tests-web-integration.yml#prep'
-          maxMinutes: 20
+          maxMinutes: 13
         # setup-node-pnpm (5m) plus the strictly serial sweep engine (20m) sum 25m; cap adds
         # buffer for the unbounded checkout/workspace-restore steps ahead of them. See #11280.
         - job: '.github/workflows/cleanup-artifacts.yml#cleanup-sweep'
@@ -2712,12 +2711,12 @@ rules:
         # main 48s, coverage PR 75s. See docs/development/reference-ci-ci-job-timeout-budgets.md.
         - job: '.github/workflows/tests-lambdas.yml#lambdas-tests'
           maxMinutes: 30
-        # Fail-safe for backend/browser setup plus the bounded 13m web build before the sharded browser runtime begins.
+        # Fail-safe for backend/browser setup plus the bounded 6m web build before the sharded browser runtime begins.
         - job: '.github/workflows/tests-playwright.yml#playwright-tests'
-          maxMinutes: 30
-        # Fail-safe for backend/browser setup plus the bounded 13m web build before credentialed browser setup and execution begin.
+          maxMinutes: 23
+        # Fail-safe for backend/browser setup plus the bounded 6m web build before credentialed browser setup and execution begin.
         - job: '.github/workflows/tests-playwright-credentialed.yml#playwright-credentialed-tests'
-          maxMinutes: 20
+          maxMinutes: 13
         # Fail-safe ceiling for setup/test/GitHub-artifact-upload steps, retained from the
         # pre-revert coverage-transport budget.
         - job: '.github/workflows/tests-portability.yml#portability-linux'
@@ -2734,9 +2733,9 @@ rules:
         - job: '.github/workflows/tests-ts-shared.yml#ts-shared'
           maxMinutes: 17
         # Fail-safe ceiling for setup/test/GitHub-artifact-upload steps, retained from the
-        # pre-revert coverage-transport budget.
+        # pre-revert coverage-transport budget less the 7m cut from the bounded web build step.
         - job: '.github/workflows/tests-web-integration.yml#web-integration-tests'
-          maxMinutes: 26
+          maxMinutes: 19
         # Raised from 24m alongside the "Run web tests" step's 10m -> 20m watchdog bump: on
         # GitHub-hosted ubuntu-latest (2 vCPUs) with coverage instrumentation enabled, real failing
         # shards were killed at the step's prior 10m ceiling without ever completing, so neither

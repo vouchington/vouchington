@@ -87,10 +87,9 @@ describe('checks-static workflow', () => {
     }
   })
 
-  it('budgets each job above its serial critical step timeouts', () => {
+  it('budgets each additive job above its serial critical step timeouts', () => {
     const expectedBudgets = new Map([
       ['static-backend', 21],
-      ['static-web', 35],
       ['static-lambdas', 18],
       ['static-cloudflare', 20],
     ])
@@ -100,6 +99,19 @@ describe('checks-static workflow', () => {
       expect(jobBudget).toBe(expectedBudget)
       expect(jobBudget).toBeGreaterThan(serialCriticalStepBudget(jobName))
     }
+  })
+
+  it('gives the static-web gate a fail-fast budget between its largest step and the step sum', () => {
+    const jobBudget = numberField(parsed.jobs?.['static-web']?.['timeout-minutes'], 'static-web')
+    const stepTimeouts = (parsed.jobs?.['static-web']?.steps ?? []).map(step =>
+      typeof step['timeout-minutes'] === 'number' ? step['timeout-minutes'] : 0,
+    )
+
+    expect(jobBudget).toBe(10)
+    // Provisioning headroom above the largest single step, but no reserve for every step
+    // degrading to its own ceiling in one run.
+    expect(jobBudget).toBeGreaterThan(Math.max(...stepTimeouts))
+    expect(jobBudget).toBeLessThan(serialCriticalStepBudget('static-web'))
   })
 
   it('uses setup-backend on the static backend job', () => {
@@ -168,9 +180,8 @@ fi\n`,
     const job = jobSection('static-web')
     expect(job).toContain('uses: ./.github/actions/build-web-targets')
     expect(job).toContain('artifact-suffix: static-web')
-    // The step's timeout-minutes value is asserted once, generically, by
-    // build-lock-timeouts.test.mts's strictNextBuildJobs loop (which now covers
-    // checks-static.yml#static-web) — restating the literal here would duplicate it.
+    // build-web-targets-timeouts.test.mts sizes this step's timeout-minutes from the composite's
+    // build deadline for every caller; restating the value here would duplicate it.
   })
 
   it('produces the shared build with the composite production profile', () => {
