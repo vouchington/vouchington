@@ -9,7 +9,7 @@ type NativeLocalizationInputs = Readonly<{
   catalogs?: NativeCatalogs
 }>
 
-export async function runNativeLocalization(
+async function runNativeLocalization(
   argv: readonly string[],
   inputs: NativeLocalizationInputs = {},
 ): Promise<void> {
@@ -30,6 +30,15 @@ export async function runNativeLocalization(
     check,
     ...inputs,
   })
+}
+
+export async function runNativeLocalizationCli(
+  argv: readonly string[],
+  inputs: NativeLocalizationInputs = {},
+  isMain = import.meta.main,
+): Promise<void> {
+  if (!isMain) return
+  await runNativeLocalization(argv, inputs)
 }
 
 function optionalAbsolutePath(args: string[], flag: string): string | undefined {
@@ -59,6 +68,4 @@ function usage(): string {
   )
 }
 
-if (import.meta.main) {
-  await runNativeLocalization(process.argv.slice(2))
-}
+await runNativeLocalizationCli(process.argv.slice(2))
