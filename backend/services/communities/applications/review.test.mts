@@ -4,7 +4,7 @@ import {
   createTestUserDirect,
   insertTestCommunity,
   insertTestCommunityMember,
-  readAllQueueJobs,
+  readEnqueuedJob,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { createApplication } from './create.mts'
@@ -68,27 +68,21 @@ describe('review', () => {
       const community = await createPrivateCommunityOwnedBy(owner.id)
       const app = await createApplication(applicant.id, WEB_PROVENANCE, community.id, {})
 
-      await approveApplication(owner, app.id)
-
-      await expect
-        .poll(async () => {
-          const jobs = await readAllQueueJobs(emails)
-          return jobs.some(job => {
-            const data = job.data as {
-              input?: { emailAddress?: string; userId?: string }
-              variables?: { communityName?: string; communityUrl?: string; status?: string }
-            }
-            return (
-              job.name === 'processSendCommunityApplicationDecisionEmail' &&
-              data.input?.userId === applicant.id &&
-              data.input?.emailAddress === undefined &&
-              data.variables?.communityName === community.name &&
-              data.variables?.communityUrl === getSiteUrl(`/communities/${community.slug}`) &&
-              data.variables?.status === 'approved'
-            )
-          })
-        })
-        .toBe(true)
+      const { decisionEmailEnqueue } = await approveApplication(owner, app.id)
+      expect(decisionEmailEnqueue).not.toBeNull()
+      const job = await readEnqueuedJob(emails, await decisionEmailEnqueue)
+      const data = job.data as {
+        input?: { emailAddress?: string; userId?: string }
+        variables?: { communityName?: string; communityUrl?: string; status?: string }
+      }
+      expect(
+        job.name === 'processSendCommunityApplicationDecisionEmail' &&
+          data.input?.userId === applicant.id &&
+          data.input?.emailAddress === undefined &&
+          data.variables?.communityName === community.name &&
+          data.variables?.communityUrl === getSiteUrl(`/communities/${community.slug}`) &&
+          data.variables?.status === 'approved',
+      ).toBe(true)
     })
 
     it('queues a user-targeted decision email when the approved applicant has no email address', async () => {
@@ -96,21 +90,15 @@ describe('review', () => {
       const community = await createPrivateCommunityOwnedBy(owner.id)
       const app = await createApplication(applicant.id, WEB_PROVENANCE, community.id, {})
 
-      await approveApplication(owner, app.id)
-
-      await expect
-        .poll(async () => {
-          const jobs = await readAllQueueJobs(emails)
-          return jobs.some(job => {
-            const data = job.data as { input?: { emailAddress?: string; userId?: string } }
-            return (
-              job.name === 'processSendCommunityApplicationDecisionEmail' &&
-              data.input?.userId === applicant.id &&
-              data.input?.emailAddress === undefined
-            )
-          })
-        })
-        .toBe(true)
+      const { decisionEmailEnqueue } = await approveApplication(owner, app.id)
+      expect(decisionEmailEnqueue).not.toBeNull()
+      const job = await readEnqueuedJob(emails, await decisionEmailEnqueue)
+      const data = job.data as { input?: { emailAddress?: string; userId?: string } }
+      expect(
+        job.name === 'processSendCommunityApplicationDecisionEmail' &&
+          data.input?.userId === applicant.id &&
+          data.input?.emailAddress === undefined,
+      ).toBe(true)
     })
   })
 
@@ -151,26 +139,20 @@ describe('review', () => {
       const community = await createPrivateCommunityOwnedBy(owner.id)
       const app = await createApplication(applicant.id, WEB_PROVENANCE, community.id, {})
 
-      await rejectApplication(owner, app.id, 'Not a good fit')
-
-      await expect
-        .poll(async () => {
-          const jobs = await readAllQueueJobs(emails)
-          return jobs.some(job => {
-            const data = job.data as {
-              input?: { emailAddress?: string; userId?: string }
-              variables?: { status?: string; rejectionReason?: string }
-            }
-            return (
-              job.name === 'processSendCommunityApplicationDecisionEmail' &&
-              data.input?.userId === applicant.id &&
-              data.input?.emailAddress === undefined &&
-              data.variables?.status === 'rejected' &&
-              data.variables?.rejectionReason === 'Not a good fit'
-            )
-          })
-        })
-        .toBe(true)
+      const { decisionEmailEnqueue } = await rejectApplication(owner, app.id, 'Not a good fit')
+      expect(decisionEmailEnqueue).not.toBeNull()
+      const job = await readEnqueuedJob(emails, await decisionEmailEnqueue)
+      const data = job.data as {
+        input?: { emailAddress?: string; userId?: string }
+        variables?: { status?: string; rejectionReason?: string }
+      }
+      expect(
+        job.name === 'processSendCommunityApplicationDecisionEmail' &&
+          data.input?.userId === applicant.id &&
+          data.input?.emailAddress === undefined &&
+          data.variables?.status === 'rejected' &&
+          data.variables?.rejectionReason === 'Not a good fit',
+      ).toBe(true)
     })
 
     it('uses the no-reason copy and queues a user-targeted rejection email', async () => {
@@ -178,7 +160,7 @@ describe('review', () => {
       const community = await createPrivateCommunityOwnedBy(owner.id)
       const app = await createApplication(applicant.id, WEB_PROVENANCE, community.id, {})
 
-      await rejectApplication(owner, app.id)
+      const { decisionEmailEnqueue } = await rejectApplication(owner, app.id)
 
       expect(Object.values((await listNotifications(applicant.id)).notifications)).toEqual(
         expect.arrayContaining([
@@ -190,19 +172,14 @@ describe('review', () => {
         ]),
       )
 
-      await expect
-        .poll(async () => {
-          const jobs = await readAllQueueJobs(emails)
-          return jobs.some(job => {
-            const data = job.data as { input?: { emailAddress?: string; userId?: string } }
-            return (
-              job.name === 'processSendCommunityApplicationDecisionEmail' &&
-              data.input?.userId === applicant.id &&
-              data.input?.emailAddress === undefined
-            )
-          })
-        })
-        .toBe(true)
+      expect(decisionEmailEnqueue).not.toBeNull()
+      const job = await readEnqueuedJob(emails, await decisionEmailEnqueue)
+      const data = job.data as { input?: { emailAddress?: string; userId?: string } }
+      expect(
+        job.name === 'processSendCommunityApplicationDecisionEmail' &&
+          data.input?.userId === applicant.id &&
+          data.input?.emailAddress === undefined,
+      ).toBe(true)
     })
   })
 })

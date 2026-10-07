@@ -14,6 +14,12 @@ Handles community CRUD, membership management, community post reviews, invites, 
 - **Applications**: submit, get, and review join applications with custom questions
 - **Authorization**: role-based checks for all mutating operations
 
+Application approval and rejection commit the review before queuing the decision email. The
+service returns `decisionEmailEnqueue` as an optional completion promise for callers that need to
+observe queue admission; the API does not await it. Enqueue failures retain the queue's internal
+error reporting, so a decision-email enqueue rejection does not turn a committed review into an API
+failure.
+
 ## Community Creation
 
 Any authenticated user with a username may create communities. There is no tier gate and no limit on how many communities a user may own.

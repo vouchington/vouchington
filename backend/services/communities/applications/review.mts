@@ -5,7 +5,7 @@ import type { PrivateUser } from '@services/users/types'
 import { getPrivateUserByAny } from '@services/users/get'
 import { getCommunityMember } from '../members/get.mts'
 import { currentUserCanModerateCommunity } from '../authorization.mts'
-import { getCommunity } from '../get.mts'
+import { getCommunity, type CommunityWithOwner } from '../get.mts'
 import { lockAndAssertNotBanned } from '../bans/lock.mts'
 import { getApplication } from './get.mts'
 import { recordModeratorAction } from '@services/moderator-actions'
@@ -17,10 +17,12 @@ import {
 } from '@services/notifications'
 import { invalidateCommunityMemberUserMetrics } from '../members/invalidate-user-metrics.mts'
 
+type DecisionEmailEnqueue = ReturnType<typeof enqueueSendCommunityApplicationDecisionEmail>
+
 export async function approveApplication(
   currentUser: PrivateUser,
   applicationId: string,
-): Promise<void> {
+): Promise<{ decisionEmailEnqueue: DecisionEmailEnqueue | null }> {
   const application = await getApplication(applicationId)
   assert(application, 404, 'Application not found')
   assert(
@@ -90,18 +92,10 @@ export async function approveApplication(
     }),
     getPrivateUserByAny(application.user_id),
   ])
-  if (applicant) {
-    void enqueueSendCommunityApplicationDecisionEmail(
-      {
-        userId: applicant.id,
-        uiLocale: applicant.ui_locale ?? null,
-      },
-      {
-        communityName: community.name,
-        communityUrl: getSiteUrl(`/communities/${community.slug}`),
-        status: 'approved',
-      },
-    )
+  return {
+    decisionEmailEnqueue: applicant
+      ? enqueueApplicationDecisionEmail(applicant, community, 'approved')
+      : null,
   }
 }
 
@@ -109,7 +103,7 @@ export async function rejectApplication(
   currentUser: PrivateUser,
   applicationId: string,
   reason?: string,
-): Promise<void> {
+): Promise<{ decisionEmailEnqueue: DecisionEmailEnqueue | null }> {
   const application = await getApplication(applicationId)
   assert(application, 404, 'Application not found')
   assert(
@@ -167,29 +161,36 @@ export async function rejectApplication(
   await query.commit()
   if (notification) await enqueueCommunityLifecycleNotificationPush([notification])
   const wasRejected = notification !== null
-  if (wasRejected) {
-    await recordModeratorAction(currentUser.id, {
-      actionType: 'reject',
-      communityId: application.community_id,
-      communityApplicationId: applicationId,
-      targetUserId: application.user_id,
-      reason: reason ?? null,
-    })
+  if (!wasRejected) return { decisionEmailEnqueue: null }
+  await recordModeratorAction(currentUser.id, {
+    actionType: 'reject',
+    communityId: application.community_id,
+    communityApplicationId: applicationId,
+    targetUserId: application.user_id,
+    reason: reason ?? null,
+  })
 
-    const applicant = await getPrivateUserByAny(application.user_id)
-    if (applicant) {
-      void enqueueSendCommunityApplicationDecisionEmail(
-        {
-          userId: applicant.id,
-          uiLocale: applicant.ui_locale ?? null,
-        },
-        {
-          communityName: community.name,
-          communityUrl: getSiteUrl(`/communities/${community.slug}`),
-          status: 'rejected',
-          rejectionReason: reason ?? undefined,
-        },
-      )
-    }
+  const applicant = await getPrivateUserByAny(application.user_id)
+  return {
+    decisionEmailEnqueue: applicant
+      ? enqueueApplicationDecisionEmail(applicant, community, 'rejected', reason)
+      : null,
   }
+}
+
+function enqueueApplicationDecisionEmail(
+  applicant: PrivateUser,
+  community: Pick<CommunityWithOwner, 'name' | 'slug'>,
+  status: 'approved' | 'rejected',
+  rejectionReason?: string,
+): DecisionEmailEnqueue {
+  return enqueueSendCommunityApplicationDecisionEmail(
+    { userId: applicant.id, uiLocale: applicant.ui_locale ?? null },
+    {
+      communityName: community.name,
+      communityUrl: getSiteUrl(`/communities/${community.slug}`),
+      status,
+      ...(status === 'rejected' ? { rejectionReason } : {}),
+    },
+  )
 }
