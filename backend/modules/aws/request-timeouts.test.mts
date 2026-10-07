@@ -6,8 +6,8 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { listenOnEphemeralPort } from '@ts-shared/utils/ephemeral-ports'
 import {
   AWS_CONNECTION_TIMEOUT_MS,
-  AWS_REQUEST_TIMEOUT_MS,
-  AWS_SQS_REQUEST_TIMEOUT_MS,
+  AWS_SOCKET_TIMEOUT_MS,
+  AWS_SQS_SOCKET_TIMEOUT_MS,
   createAwsRequestHandler,
 } from './config.mts'
 
@@ -30,13 +30,13 @@ describe('AWS request timeouts', () => {
 
   it('defines the shared production connect and socket-idle timeout defaults', () => {
     expect(AWS_CONNECTION_TIMEOUT_MS).toBe(3_000)
-    expect(AWS_REQUEST_TIMEOUT_MS).toBe(10_000)
-    expect(AWS_SQS_REQUEST_TIMEOUT_MS).toBeGreaterThan(20_000)
+    expect(AWS_SOCKET_TIMEOUT_MS).toBe(10_000)
+    expect(AWS_SQS_SOCKET_TIMEOUT_MS).toBeGreaterThan(20_000)
   })
 
   it('keeps protocol and idempotency exceptions explicit at their client boundaries', () => {
     const sqsSource = readFileSync('backend/modules/aws/sqs.mts', 'utf8')
-    expect(sqsSource).toContain('requestTimeout: AWS_SQS_REQUEST_TIMEOUT_MS')
+    expect(sqsSource).toContain('socketTimeout: AWS_SQS_SOCKET_TIMEOUT_MS')
 
     const sesSource = readFileSync('backend/modules/aws/ses.mts', 'utf8')
     expect(sesSource).toMatch(/maxAttempts:\s*1/)
@@ -68,7 +68,7 @@ describe('AWS request timeouts', () => {
       region: 'us-west-2',
       requestHandler: createAwsRequestHandler({
         connectionTimeout: TEST_TIMEOUT_MS,
-        requestTimeout: TEST_TIMEOUT_MS,
+        socketTimeout: TEST_TIMEOUT_MS,
       }),
     })
 
@@ -89,7 +89,7 @@ describe('AWS request timeouts', () => {
       region: 'us-west-2',
       requestHandler: createAwsRequestHandler({
         connectionTimeout: TEST_TIMEOUT_MS,
-        requestTimeout: TEST_TIMEOUT_MS,
+        socketTimeout: TEST_TIMEOUT_MS,
       }),
     })
 
