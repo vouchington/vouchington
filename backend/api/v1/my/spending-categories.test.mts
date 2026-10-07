@@ -150,6 +150,19 @@ describe('POST /api/v1/my/spending-categories', () => {
       .expect(422)
   })
 
+  it('reports the canonical topic field when a valid unknown category cannot be created', async () => {
+    const request = createRequest()
+    await request.authenticateAs(user)
+    const response = await request
+      .post('/api/v1/my/spending-categories')
+      .send({
+        spending_category_topic_id: crypto.randomUUID(),
+        amount: { amount: 10_000, currency: 'usd' },
+      })
+      .expect(422)
+    expect(response.body.message).toBe('Invalid spending_category_topic_id')
+  })
+
   it('returns 422 for non-string spending_frequency', async () => {
     const categoryId = await insertTestSpendingCategory({ createdById: user.id })
     const request = createRequest()
