@@ -85,10 +85,9 @@ app.route('/api/v1/admin/article-syncs/:jobId/stream').get(async (ctx: Context) 
 
     /* v8 ignore next 2 -- socket abort timing is covered deterministically by watchForAbortBeforeSSE tests */
     if (abortBeforeSSE.wasAborted()) return
-    /* v8 ignore next -- successful article streams require live queue timing; watcher stop is unit-tested */
     abortBeforeSSE.stop()
     sse = startSSE(ctx)
-    await pipeChannelToSSE({
+    const channelCompletion = pipeChannelToSSE({
       emit: event =>
         sse!.stream.write(apiSseFrame('GET:/api/v1/admin/article-syncs/:jobId/stream', event)),
       subscription,
@@ -97,6 +96,8 @@ app.route('/api/v1/admin/article-syncs/:jobId/stream').get(async (ctx: Context) 
       isTerminal: (s: ArticleSyncStatus) => s.status === 'completed' || s.status === 'failed',
       initialValue,
     })
+    ctx.res.flushHeaders()
+    await channelCompletion
   } finally {
     abortBeforeSSE.stop()
     closeSubscription()
