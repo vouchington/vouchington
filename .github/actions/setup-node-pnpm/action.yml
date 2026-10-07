@@ -13,10 +13,15 @@ runs:
   steps:
     # setup-node must precede pnpm/action-setup: the action picks its pnpm
     # bootstrap from the Node on PATH, and pnpm's shims run that Node.
+    # setup-node can still exit 0 without changing PATH. Require the .nvmrc
+    # Node before those shims freeze the runner image Node.
     - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
       with:
         node-version-file: '.nvmrc'
         package-manager-cache: false
+    - name: Require the .nvmrc Node
+      shell: bash
+      run: node .github/actions/setup-node-pnpm/require-nvmrc-node.mjs
     - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
       with:
         version: latest-12

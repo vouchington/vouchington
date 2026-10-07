@@ -33,11 +33,18 @@ describe('setup-node-pnpm composite action', () => {
     })
   })
 
-  it('activates the .nvmrc Node and then pnpm', () => {
+  it('activates the .nvmrc Node before pnpm binds its shims', () => {
     // pnpm-activation.test.mts owns the pnpm/action-setup inputs across every call site.
-    const [node, pnpm] = steps
+    // setup-node can exit 0 without putting that Node on PATH. The next step has to
+    // repair PATH before pnpm/action-setup freezes the image Node into its shims.
+    const [node, requireNode, pnpm] = steps
     expect(node?.uses).toMatch(/^actions\/setup-node@/)
     expect(node?.with).toEqual({ 'node-version-file': '.nvmrc', 'package-manager-cache': false })
+    expect(requireNode).toMatchObject({
+      name: 'Require the .nvmrc Node',
+      shell: 'bash',
+      run: 'node .github/actions/setup-node-pnpm/require-nvmrc-node.mjs',
+    })
     expect(pnpm?.uses).toMatch(/^pnpm\/action-setup@/)
   })
 

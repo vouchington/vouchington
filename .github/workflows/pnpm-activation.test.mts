@@ -32,6 +32,13 @@ describe('pnpm activation via pnpm/action-setup', () => {
     expect(offenders.map(setup => setup.owner)).toEqual([])
   })
 
+  it('requires the .nvmrc Node before pnpm/action-setup binds its shims', () => {
+    const requiresNvmrcNode = (step: PolicyStep) =>
+      step.run?.includes('require-nvmrc-node.mjs') === true
+    const offenders = pnpmSetups.filter(setup => !setup.prior.some(requiresNvmrcNode))
+    expect(offenders.map(setup => setup.owner)).toEqual([])
+  })
+
   it('passes only latest-<major>, the same one at every call site', () => {
     // `latest-<major>` self-updates to the newest release in that line that pnpm's
     // minimumReleaseAge admits. A bare major keeps the action's bundled release, which lags
