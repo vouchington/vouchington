@@ -55,6 +55,17 @@ jobs:
           VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}
         run: node ci/tooling-test-runner.mts --workflow-projects --bail=3
         timeout-minutes: 16
+      - name: Upload tooling JUnit report
+        if: ${{ !cancelled() }}
+        timeout-minutes: 1
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          overwrite: true
+          name: tooling-junit
+          path: tooling-test-report.junit.xml
+          retention-days: 1
+          if-no-files-found: warn
       - name: Preserve full tooling LCOV
         if: ${{ !cancelled() && inputs.publish_coverage }}
         shell: bash

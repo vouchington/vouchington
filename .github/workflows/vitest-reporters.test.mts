@@ -9,8 +9,14 @@ const workflowDir = '.github/workflows'
 const workflowFiles = readdirSync(workflowDir).filter(file => /\.(ya?ml)$/.test(file))
 
 type WorkflowStep = {
+  name?: string
   env?: Record<string, unknown>
   run?: string
+  if?: string
+  'continue-on-error'?: boolean
+  'timeout-minutes'?: number
+  uses?: string
+  with?: Record<string, unknown>
 }
 type Workflow = {
   jobs?: Record<string, { steps?: WorkflowStep[] }>
@@ -18,6 +24,46 @@ type Workflow = {
 
 describe('Vitest CI reporters', () => {
   afterEach(() => vi.unstubAllEnvs())
+
+  it.each([
+    ['tests-web.yml', 'web-tests', 'Run web tests', 'web-test-report-shard-${{ matrix.shard }}'],
+    [
+      'tests-backend-modules.yml',
+      'backend-modules',
+      'Run backend module tests',
+      'backend-modules-junit',
+    ],
+    ['tests-tooling.yml', 'tooling', 'Run tooling tests', 'tooling-junit'],
+    ['tests-ts-shared.yml', 'ts-shared', 'Run ts-shared tests', 'ts-shared-junit'],
+  ])(
+    '%s retains its existing JUnit report after completed test runs',
+    (file, job, runName, name) => {
+      const parsed = load(readFileSync(join(workflowDir, file), 'utf8')) as Workflow
+      const steps = parsed.jobs?.[job]?.steps ?? []
+      const runIndex = steps.findIndex(step => step.name === runName)
+      const outputFile = steps[runIndex]?.env?.VITEST_JUNIT_OUTPUT_FILE
+      const uploads = steps.filter(
+        step => step.uses?.startsWith('actions/upload-artifact@') && step.with?.path === outputFile,
+      )
+
+      expect(runIndex).toBeGreaterThanOrEqual(0)
+      expect(outputFile).toMatch(/\.junit\.xml$/)
+      expect(uploads).toHaveLength(1)
+      expect(steps.indexOf(uploads[0])).toBe(runIndex + 1)
+      expect(uploads[0]).toMatchObject({
+        if: '${{ !cancelled() }}',
+        'continue-on-error': true,
+        uses: expect.stringMatching(/^actions\/upload-artifact@[0-9a-f]{40}$/),
+        with: {
+          name,
+          path: outputFile,
+          'retention-days': 1,
+          'if-no-files-found': 'warn',
+        },
+      })
+      expect(uploads[0]?.['timeout-minutes']).toBeGreaterThan(0)
+    },
+  )
 
   it('uses configured CI reporters for every workflow Vitest command', () => {
     const commands = workflowFiles.flatMap(file => {

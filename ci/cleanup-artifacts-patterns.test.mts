@@ -18,6 +18,10 @@ const KEEP_NAMES = [
   // Per-shard backend JUnit reports are per-file duration evidence for shard-size audits; keep
   // them for their one-day retention instead of sweeping them after a successful run.
   'backend-junit-shard-2',
+  'backend-modules-junit',
+  'tooling-junit',
+  'ts-shared-junit',
+  'web-test-report-shard-1',
   'playwright-junit-shard-2',
   'playwright-credentialed-junit',
   'wrangler-logs-2',
@@ -30,7 +34,7 @@ const DELETE_NAMES = [
   'browser-debug-log-storybook',
   'web-integration-artifacts',
   'web-integration-shard-2-artifacts',
-  'web-test-report-shard-1',
+  'web-test-report-debug',
   'explain-analyze-results',
   'gitleaks-report',
   'trivy-backend-abc123',
@@ -54,8 +58,9 @@ describe('classifyArtifact', () => {
 })
 
 describe('isExplicitlyClassified', () => {
-  it('explicitly classifies sharded web failure reports', () => {
+  it('keeps and explicitly classifies sharded web JUnit reports', () => {
     expect(isExplicitlyClassified('web-test-report-shard-12')).toBe(true)
+    expect(classifyArtifact('web-test-report-shard-12')).toBe('keep')
     expect(isExplicitlyClassified('web-test-report')).toBe(false)
   })
 
