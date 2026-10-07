@@ -487,7 +487,7 @@ Default `Array(1536).fill(0.1)` embeddings are identical across all test entitie
 - When a test asserts a fixture ranks in ANN (`<=>`-ordered) results for a query vector, give **each fixture row its own `makeNearbyEmbedding(queryVector)`** — never store one identical vector on many rows. HNSW links duplicate vectors to each other at distance 0, forming a cluster whose graph reachability can fail and drop every fixture from results at once (issue #6781).
 - For behavior tests that call `getCachedSearchEmbedding()`, seed the real Valkey cache first with `seedSearchEmbeddingCache(query, makeRandomEmbedding())`; reserve live Bedrock calls for the direct [embedding smoke test](../../../../backend/services/bedrock-embeddings/single/__tests__/index.bedrock.test.mts).
 - Pass custom embeddings via the `embedding` option in `addDummyEmbeddingToPost` / `addDummyEmbeddingToRssFeedItem`.
-- HNSW is approximate even with good fixtures, so `vitest.setup.data-stores.mts` raises the test database's `hnsw.ef_search` to `TEST_HNSW_EF_SEARCH` (see `vector-search-recall.mts`), making ANN scans effectively exhaustive at test-database scale.
+- HNSW is approximate even with good fixtures, so the shared PostgreSQL session setup sets each owned connection's `hnsw.ef_search` to `TEST_HNSW_EF_SEARCH` (see `vector-search-recall.mts`), making ANN scans effectively exhaustive at test-database scale.
 
 ### Hardcoded identifiers
 

@@ -261,7 +261,7 @@ describe('backend Vitest project config', () => {
   })
 
   it('keeps TEST_STATEMENT_TIMEOUT_MS strictly below the backend-data-stores project testTimeout', () => {
-    // Guards the boundStatementTimeoutForTestDatabase() call in vitest.setup.data-stores.mts:
+    // Guards the session startup deadline installed by the Vitest database setup:
     // without it, statement_timeout is unbounded in tests (0, from getPsqlPoolConfiguration()'s
     // test branch) and a stuck query fails only via vitest's opaque, unattributed testTimeout.
     // A hardcoded fallback here would defeat the point: this must track the real config so the

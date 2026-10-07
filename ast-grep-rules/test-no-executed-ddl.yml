@@ -60,7 +60,6 @@ ignores:
   - 'backend/data-stores/psql/migration-runner/views.hardening.test.mts'
   - 'backend/test-helpers/data-stores/psql/forced-views.mts'
   - 'backend/test-helpers/data-stores/psql/shared-mutation-trigger.mts'
-  - 'backend/test-helpers/data-stores/psql/statement-timeout.mts'
   - 'backend/test-helpers/dsa-statement-build-failure-fixtures.mts'
   - 'backend/test-helpers/entities/moderation-transparency-date-reservation.mts'
   - 'backend/test-helpers/injected-failures.mts'
@@ -68,8 +67,6 @@ ignores:
   - 'backend/test-helpers/monthly-partition-retirement.mts'
   - 'backend/test-helpers/notification-push-pre-capture.mts'
   - 'backend/test-helpers/notification-push-recovery.mts'
-  - 'backend/test-helpers/statement-timeout.mts'
-  - 'backend/test-helpers/vector-search-recall.mts'
 rule:
   any:
     - kind: string

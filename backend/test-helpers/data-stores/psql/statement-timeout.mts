@@ -1,20 +1,19 @@
+import { randomUUID } from 'node:crypto'
 import { read, write } from '@data-stores/psql'
-import { beginBoundedTransaction } from '@data-stores/psql/setup'
+import {
+  advisoryLockPool,
+  beginBoundedTransaction,
+  beginTransaction,
+} from '@data-stores/psql/setup'
 
-// @data-stores/psql cannot depend on @voucha/test-helpers (see vector-search-recall.mts in this
-// directory for why). Straight duplicate of test-helpers' statement-timeout.mts constant, used by
-// __tests__/statement-timeout.test.mts. boundStatementTimeoutForTestDatabase() is intentionally
-// not duplicated here — it's only called from the repo-root vitest globalSetup, never from a psql
-// test file directly.
+import { TEST_STATEMENT_TIMEOUT_MS } from '../../statement-timeout-constant.mts'
 
-export const TEST_STATEMENT_TIMEOUT_MS =
-  Number.parseInt(process.env.PG_TEST_STATEMENT_TIMEOUT_MS ?? '', 10) || 20_000
+export { TEST_STATEMENT_TIMEOUT_MS }
 
 type PoolQuery = typeof read
 
 /**
- * `read` and `write` are separate `createPsql()` pools; the ALTER DATABASE default is
- * database-level, but this checks both explicitly rather than assuming they behave identically.
+ * `read` and `write` are separate pools; check each owned session explicitly.
  */
 export async function getSessionStatementTimeout(query: PoolQuery = read): Promise<number> {
   // pg_settings.setting reports the raw base-unit (ms) integer as text. current_setting() /
@@ -34,10 +33,21 @@ export function getWritePoolStatementTimeout(): Promise<number> {
 }
 
 export async function runStatementTimeoutAttributionProbe(): Promise<void> {
+  const lockKey = randomUUID()
+  // Hold on the primary advisory-lock pool so a write-pool size of one still leaves a
+  // connection for the timed query. The read pool may point at a separate replica.
+  await using holder = await beginTransaction({ client: advisoryLockPool })
+  await holder(
+    '/* holdStatementTimeoutProbe */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
+    [lockKey],
+  )
   await using transaction = await beginBoundedTransaction({
     connectionTimeoutMs: 10_000,
     statementTimeoutMs: 750,
   })
-  await transaction('/* guardStatementTimeoutProbe */ SELECT pg_sleep(2)')
+  await transaction(
+    '/* guardStatementTimeoutProbe */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
+    [lockKey],
+  )
   await transaction.commit()
 }

@@ -20,20 +20,13 @@ promise. An idle-client event alone does not mean that a concurrent schema read 
 
 Pool configuration includes:
 
-- `statement_timeout = 30s` (production/dev). In tests `getPsqlPoolConfiguration()` sets this to
-  `0` (unbounded) instead, since fixtures are legitimately slow — but `0` is falsy, so `pg`
-  (`pg/lib/client.js`) omits `statement_timeout` from the startup packet entirely rather than
-  sending `0`, and every test session falls through to the database's own default. A
-  `boundStatementTimeoutForTestDatabase()` `ALTER DATABASE … SET statement_timeout` in
-  `vitest.setup.data-stores.mts`, run once in `globalSetup` before workers fork, uses exactly that
-  fallthrough to bind test sessions to `TEST_STATEMENT_TIMEOUT_MS`
-  (`backend/test-helpers/statement-timeout.mts`, default 20s, below the 30s `testTimeout`) with no
-  `@vouchington/postgres` change. A stuck test statement now fails as an attributable `57014`
-  instead of an opaque vitest timeout — see the adjacent stderr-attribution note in
-  [query-telemetry.mts](../../../backend/data-stores/psql/query-telemetry.mts) and the guard test at
-  [`__tests__/statement-timeout.test.mts`](../../../backend/data-stores/psql/__tests__/statement-timeout.test.mts). Migrations,
-  `beginBoundedTransaction`, and the advisory-lock helpers all set their own session/transaction-local
-  `statement_timeout` and are unaffected by this database-level default.
+- `statement_timeout = 30s` (production/dev). DB-backed Vitest setup supplies a per-session
+  startup deadline through [connection URL options](../../../test-helpers/vitest-postgres-session-settings.mts),
+  preserving existing options and leaving database-wide defaults unchanged. It applies before
+  global setup and worker pools open, including primary and read URLs. A stuck statement fails
+  as an attributable `57014`; see [query telemetry](../../../backend/data-stores/psql/query-telemetry.mts)
+  and the [statement timeout test](../../../backend/data-stores/psql/__tests__/statement-timeout.test.mts).
+  Migrations and bounded transactions retain their explicit local deadlines.
 - `idle_in_transaction_session_timeout = 10s`
 - separate production read/write sizing via `PG_READ_POOL_MAX` and `PG_WRITE_POOL_MAX`, with
   `PG_POOL_MAX` as the compatibility fallback
