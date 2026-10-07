@@ -171,7 +171,7 @@ not add `.cursor/hooks.json`: Cursor loads it as well, so every hook would doubl
 - Tool names: Cursor's shell tool is `Shell`, and the Claude `Bash` matchers fire for it; its file
   tools fire the `Edit|Write` PostToolUse group with `file_path`. `readHookPayload` maps `Shell` to
   `Bash` and lifts the `tool_output` JSON string `{exitCode, output}` onto `tool_response`
-  `{exit_code, stdout}`, so the tmux reminder and friction recorder see
+  `{exit_code, stdout}`, so the tmux reminder sees
   Cursor shell calls.
 - Runtime: `CURSOR_VERSION` / `CURSOR_PROJECT_DIR`, or the payload `cursor_version`, override argv
   `claude`. Cursor inherits `CLAUDE_CODE_SESSION_ATTENDED=1` from a Claude parent shell; resolved

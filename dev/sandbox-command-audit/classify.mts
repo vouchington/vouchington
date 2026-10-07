@@ -53,8 +53,8 @@ export type ClassifyOptions = {
 }
 
 // Section 1's Claude side comes from claudeSandboxFailures (real permission/access
-// failures). Codex `with_escalated_permissions` uses are captured live by the
-// dev/session-friction hook, not here.
+// failures). Codex `with_escalated_permissions` uses are not scanned here: the agent journals them
+// as `sandbox-escalation` blocks, which the retrospective composer reports.
 function classifyGenuineBypassCandidates(
   scan: ScanResult,
   policy: SandboxPolicy,

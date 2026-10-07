@@ -42,6 +42,20 @@ this one-line grammar, then optional brief prose:
 - `recurring|one-off` — <finding> — <file path(s)> — <evidence: PR / commit / exact command> — <issue #N|none>
 ```
 
+A denied or escalated command uses this block grammar instead, one block per entry, because the
+retrospective's `## Sandbox & Permission Audit` is built only from entries that match it:
+
+```
+- `sandbox-escalation` — <command and subcommand only: no paths, hosts, branches or secrets> — <what needed elevated access>
+  - Outcome: requested|approved|denied|unknown
+  - Evidence: <sanitized denial or approval text>
+  - Disposition: <allowlist change, issue #N, or none>
+```
+
+Use `sandbox-failure` (a sandbox refusal) or `ambiguous-failure` (a failure whose cause is unclear)
+in place of `sandbox-escalation` for a command that failed without an escalation; those blocks omit
+the `Outcome` line.
+
 A CI failure uses this block grammar instead, one block per root cause, not per run. A flake counts,
 even one that passed on a later run with no code change. Record whether it was flaky, the gotcha, how
 to get passing CI in fewer commits, and whether the `no-mistakes` test impact assessment selected the

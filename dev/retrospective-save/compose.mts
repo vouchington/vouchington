@@ -11,7 +11,7 @@ import type { ResolveOptions } from 'vouchington-tooling/retrospective-transcrip
 import type { BlackboardEntriesClient } from '../blackboard/client.mts'
 import { parseFlagArgs } from '../blackboard/parse-flag-args.mts'
 import { validateRetroDoc } from '../retrospective-validate.mts'
-import { frictionReportOptions } from '../session-friction/report.mts'
+import { loadJournalEntries } from './journal-loader.mts'
 
 type Unassessed = { status: 'unavailable' | 'not-assessed'; reason: string }
 type SerializableFacts =
@@ -20,7 +20,7 @@ type SerializableFacts =
 type SerializableTranscript = Omit<ResolveOptions, 'env' | 'jsonlPath'> | Unassessed
 type SerializableCompositionInput = Omit<
   RetrospectiveCompositionInput,
-  'facts' | 'transcript' | 'friction'
+  'facts' | 'transcript' | 'friction' | 'journal'
 > & { facts: SerializableFacts; transcript: SerializableTranscript }
 
 function optionRecord(value: unknown, name: string): Record<string, unknown> {
@@ -79,7 +79,8 @@ function serializableInput(value: unknown): SerializableCompositionInput {
   return input as SerializableCompositionInput
 }
 
-// The portable composer owns generated facts, transcript normalization, friction and assessments.
+// The portable composer owns generated facts, transcript normalization, the journal-derived CI and
+// sandbox audit, and assessments.
 // JSON contains options and narrative, never executable collectors or transport implementations.
 export async function runCompose(
   argv: string[],
@@ -98,7 +99,7 @@ export async function runCompose(
       'status' in input.transcript
         ? input.transcript
         : { ...input.transcript, sessionId: input.sessionId, env },
-    friction: frictionReportOptions(env, entriesClient),
+    journal: { journalLoader: id => loadJournalEntries(id, env, entriesClient) },
   })
   const repositories = createFeedbackEnvelope({
     schemaVersion: 1,

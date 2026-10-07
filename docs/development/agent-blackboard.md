@@ -184,26 +184,22 @@ fallback.
 
 ### Root Codex sessions
 
-An interactive root Codex process always explicitly identifies itself to the journal, retrospective,
-or session-friction scripts with `--root-codex`; it does not use the MCP procedure, whose calls
+An interactive root Codex process always explicitly identifies itself to the journal or retrospective
+scripts with `--root-codex`; it does not use the MCP procedure, whose calls
 require an already-known explicit id. Once at the beginning of a new root session with no
 `CODEX_THREAD_ID`, it also passes `--new-root-codex-session`, which ignores any old fallback and
 persists a fresh URL-safe `codex-<UUID>` at the ignored `.local/codex-session-id`. Later root
 invocations reuse that value with only `--root-codex`. A real `CODEX_THREAD_ID` always wins; on a
 root-aware invocation it replaces the generated value. An explicit `--session-id` and
 `--root-codex` are mutually exclusive.
-Root-aware commands locate the enclosing worktree root, and read commands (`entries`, retrospective
-`check`, and session-friction `report`) refresh and read back its persistence file before contacting
-the server.
+Root-aware commands locate the enclosing worktree root, and read commands (`entries` and retrospective
+`check`) refresh and read back its persistence file before contacting the server.
 The flags are deliberately explicit: runtime hints, transcript paths, hooks,
 detached processes, and children never generate a Codex id, and Codex never reads Cursor or Grok
 persistence files. Root authority is self-attested rather than detectable; a child that violates
 the workflow and passes either root flag inherits the root identity. Automatic hooks keep using
 their explicit payload id and never write the root
 file because hook metadata cannot distinguish a root from a spawned Codex child.
-Consequently, an ID-less root session cannot join hook-recorded friction evidence
-recorded under a distinct hook payload id; that evidence is out of scope until the runtime supplies
-a trustworthy root `CODEX_THREAD_ID`.
 Children continue to stop when they lack their own identity. `./dev/reset-worktree` preserves the
 file so a reset within the same root session does not rotate identity; the next absent-thread root
 session explicitly rotates it once with `--new-root-codex-session`.
@@ -246,7 +242,9 @@ also stages canonical `repositories`; save preserves the list and rejects confli
 `--repository` flags. Manually staged files without repository metadata use explicit flags or
 the current default.
 The `compose --input <json-file>` adapter accepts serializable facts and transcript options, then
-constructs its own friction collector from the same session's local log and hosted journal. Caller
+constructs its own journal collector from the same session's hosted journal and builds
+`## CI Failures` and `## Sandbox & Permission Audit` from the journal entries alone. A session
+unknown to the hosted blackboard reports both as unavailable. Caller
 JSON cannot supply a collector, credential environment, executable callback, or direct transcript
 path; discovery is bound to the composition session ID.
 

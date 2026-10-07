@@ -6,9 +6,6 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { afterEach, describe, expect, it } from 'vitest'
-import { recordFriction } from 'vouchington-tooling/session-friction'
-
-import { frictionLogDirectory } from '../../session-friction/config.mts'
 
 const execFileAsync = promisify(execFile)
 const scriptPath = fileURLToPath(new URL('../../retrospective-save.mts', import.meta.url))
@@ -61,7 +58,7 @@ describe('retrospective-save CLI', () => {
     expect(result.stdout).toContain('check [--session-id')
   })
 
-  it('collects the local friction log in the actual compose process', async () => {
+  it('builds the CI and sandbox audit from the hosted journal in the actual compose process', async () => {
     const dir = await makeTempDir()
     const env = {
       ...process.env,
@@ -77,10 +74,10 @@ describe('retrospective-save CLI', () => {
         date: '2026-09-27',
         issues: [],
         prs: [],
-        description: 'CLI friction capture',
+        description: 'CLI journal audit',
         repositories: ['vouchington/vouchington'],
         workOutcome: 'no-change',
-        feedbackCoverage: { status: 'partial', sources: ['friction'], droppedCount: 0 },
+        feedbackCoverage: { status: 'partial', sources: ['journal'], droppedCount: 0 },
         narrative: '# Retrospective\nNo substantive work.',
         facts: { status: 'unavailable', reason: 'repository evidence unavailable' },
         transcript: { status: 'unavailable', reason: 'transcript unavailable' },
@@ -88,19 +85,15 @@ describe('retrospective-save CLI', () => {
         architecture: { status: 'not-assessed', reason: 'no architecture work' },
       }),
     )
-    recordFriction(
-      'sess-compose',
-      { type: 'permission-request', command: 'git push' },
-      {
-        directory: frictionLogDirectory(env),
-      },
-    )
     const result = await execFileAsync(process.execPath, [scriptPath, 'compose', '--input', file], {
       env,
     })
-    expect(result.stdout).toContain('## CI Failures\nStatus: unavailable')
-    expect(result.stdout).toContain('## Sandbox & Permission Audit')
-    expect(result.stdout).toContain('git push')
+    // With no hosted connection the journal source is unreachable: both audit sections say so
+    // instead of reporting an empty journal.
+    expect(result.stdout).toContain('## CI Failures\nStatus: unavailable (blackboard unreachable)')
+    expect(result.stdout).toContain(
+      '## Sandbox & Permission Audit\nStatus: unavailable (blackboard unreachable)',
+    )
   })
 
   it('rejects an unknown subcommand with usage on stderr and exit code 1', async () => {

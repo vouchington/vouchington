@@ -64,7 +64,7 @@ describe('parseArgs', () => {
   })
 
   // #8204 — mirrors the --session-id convention shared by this repo's other session-scoped
-  // CLIs (e.g. dev/session-friction/report.mts), reusing agent-session-id/valid-id.mts rather
+  // CLIs (e.g. dev/retrospective-save.mts check), reusing agent-session-id/valid-id.mts rather
   // than re-deriving the format check.
   it('parses --session-id and sets it on the returned options', () => {
     const options = parseArgs(['--session-id', 'abc-123_DEF'], {})

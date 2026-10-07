@@ -3,16 +3,16 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { RetrospectiveCompositionInput } from 'vouchington-tooling/agent-blackboard'
-import { recordFriction } from 'vouchington-tooling/session-friction'
 
 import {
+  blackboardStatusError,
   entriesClientFixture,
   entriesIterable,
   entryFixture,
+  failingEntriesIterable,
   feedbackStore,
   HOSTED_ENV,
 } from '../../test-helpers/blackboard/client-fixtures.mts'
-import { frictionLogDirectory } from '../../session-friction/config.mts'
 import { runCompose } from '../compose.mts'
 import { runSave } from '../save.mts'
 
@@ -21,6 +21,13 @@ const CI_OBSERVATION = [
   '  - Evidence: CI run #1234 failed twice with the same timeout',
   '  - Root diagnostic: shared runner oversubscription',
   '  - Disposition: retried and passed; tracked in issue #9000',
+].join('\n')
+
+const SANDBOX_ESCALATION = [
+  '- `sandbox-escalation` — `git push` — push needed network access outside the sandbox',
+  '  - Outcome: approved',
+  '  - Evidence: dangerouslyDisableSandbox retry after the sandbox refused the ssh connection',
+  '  - Disposition: one-off; the push is already on the escalation allowlist',
 ].join('\n')
 
 function input(): RetrospectiveCompositionInput {
@@ -32,7 +39,7 @@ function input(): RetrospectiveCompositionInput {
     description: 'bounded session',
     repositories: ['vouchington/vouchington'],
     workOutcome: 'no-change',
-    feedbackCoverage: { status: 'partial', sources: ['journal', 'friction'], droppedCount: 0 },
+    feedbackCoverage: { status: 'partial', sources: ['journal'], droppedCount: 0 },
     narrative: '# Retrospective\nNo substantive work.',
     facts: { status: 'unavailable', reason: 'repository evidence unavailable' },
     transcript: { status: 'unavailable', reason: 'runtime did not capture transcript' },
@@ -67,18 +74,13 @@ describe('shared retrospective composition', () => {
     }
   })
 
-  it('collects hosted CI and local sandbox observations through compose and save', async () => {
+  it('collects hosted CI and sandbox observations from the journal through compose and save', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'retrospective-composition-'))
     try {
       const env = { ...HOSTED_ENV, TMPDIR: directory }
       const file = join(directory, 'input.json')
       const staged = join(directory, 'retrospective.md')
       await writeFile(file, JSON.stringify(input()))
-      recordFriction(
-        'thread-1',
-        { type: 'permission-request', command: 'git push' },
-        { directory: frictionLogDirectory(env) },
-      )
       let journalReads = 0
       const entries = entriesClientFixture({
         get: ({ sessionId }) => {
@@ -86,13 +88,18 @@ describe('shared retrospective composition', () => {
           expect(sessionId).toBe('thread-1')
           return entriesIterable([
             entryFixture({ data: { type: 'journal', markdown: CI_OBSERVATION } }),
+            entryFixture({ data: { type: 'journal', markdown: SANDBOX_ESCALATION } }),
           ])
         },
       })
       const markdown = await runCompose(['--input', file], env, entries)
       expect(journalReads).toBe(1)
+      expect(markdown).toContain('## CI Failures\nStatus: failures observed')
       expect(markdown).toContain('shared runner oversubscription')
-      expect(markdown).toContain('git push')
+      expect(markdown).toContain('## Sandbox & Permission Audit\nStatus: events observed')
+      expect(markdown).toContain('- `sandbox-escalation` — ')
+      expect(markdown).toContain('push needed network access outside the sandbox')
+      expect(markdown).toContain('  - Outcome: approved')
       await writeFile(staged, markdown)
       const store = feedbackStore()
       await runSave(
@@ -171,6 +178,7 @@ describe('shared retrospective composition', () => {
 
   it.each([
     { friction: { directory: '/tmp/forged', journalLoader: 'fake' } },
+    { journal: { journalLoader: 'fake' } },
     { journalLoader: 'fake' },
     { facts: { ...input().facts, execute: 'fake' } },
     { facts: { repo: 'vouchington/vouchington', execute: 'fake' } },
@@ -248,35 +256,24 @@ describe('shared retrospective composition', () => {
     }
   })
 
-  it('shows unavailable journal coverage and rejects an understated dropped count', async () => {
+  it('reports a session without a journal as unavailable, not as an empty journal', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'retrospective-composition-'))
     try {
-      const env = { TMPDIR: directory }
       const file = join(directory, 'input.json')
-      const logDirectory = frictionLogDirectory(env)
-      recordFriction(
-        'thread-1',
-        { type: 'permission-request', command: 'git push' },
-        { directory: logDirectory, maxEvents: 1 },
-      )
-      recordFriction(
-        'thread-1',
-        { type: 'permission-request', command: 'git fetch' },
-        { directory: logDirectory, maxEvents: 1 },
-      )
       await writeFile(file, JSON.stringify(input()))
-      await expect(runCompose(['--input', file], env)).rejects.toThrow(/dropped count/)
-      await writeFile(
-        file,
-        JSON.stringify({
-          ...input(),
-          feedbackCoverage: { ...input().feedbackCoverage, droppedCount: 1 },
-        }),
+      const entries = entriesClientFixture({
+        get: () => failingEntriesIterable(blackboardStatusError(404)),
+      })
+      const markdown = await runCompose(
+        ['--input', file],
+        { ...HOSTED_ENV, TMPDIR: directory },
+        entries,
       )
-      const markdown = await runCompose(['--input', file], env)
-      expect(markdown).toContain('Status: unavailable')
-      expect(markdown).toContain('Dropped records: 1')
-      expect(markdown).toContain('Status: partial')
+      expect(markdown).toContain('## CI Failures\nStatus: unavailable (no journal for session)')
+      expect(markdown).toContain(
+        '## Sandbox & Permission Audit\nStatus: unavailable (no journal for session)',
+      )
+      expect(markdown).toContain('Feedback coverage: partial')
     } finally {
       await rm(directory, { recursive: true, force: true })
     }

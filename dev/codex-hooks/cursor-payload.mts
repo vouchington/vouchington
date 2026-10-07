@@ -6,8 +6,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 // Cursor runs the Claude-compat hooks from .claude/settings.json but names its shell tool `Shell`
 // and reports the result as `tool_output`, a JSON string `{exitCode, output}`. Normalizing both
-// to Claude's shape here means every hook (policy, tmux reminder, friction)
-// reads one payload dialect. An existing `tool_response` is never overwritten.
+// to Claude's shape here means every hook (policy, tmux reminder) reads one payload dialect. An
+// existing `tool_response` is never overwritten.
 export function normalizeCursorShellPayload(payload: HookPayload): HookPayload {
   if (payload.tool_name !== 'Shell') return payload
   const result = cursorShellResult(payload.tool_output)

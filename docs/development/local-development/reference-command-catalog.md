@@ -172,7 +172,6 @@ preserves that metadata and rejects contradictory explicit outcome or coverage f
 | `pnpm exec pr-shepherd journal extract --body-file <path>`                                               | Reads one explicit local Markdown body file and prints the typed Shepherd Journal extraction JSON plus newline. It never accepts stdin or logs the source body; invalid arguments and file-read errors exit nonzero, while typed `ok: false` extraction results are normal JSON output. |
 | `node dev/cloc.mts`                                                                                      | Produces the repository's classified line-count report.                                                                                                                                                                                                                                 |
 | `node dev/sandbox-command-audit.mts`                                                                     | Reports sandbox-bypass/denial candidates and escalation pressure from past sessions.                                                                                                                                                                                                    |
-| `node dev/session-friction/report.mts [--session-id <id> \| --root-codex [--new-root-codex-session]]`    | Accepts at most one identity override; prints the session's retro blocks. Root mode refreshes the worktree-local identity. Absent-thread root Codex passes the new-session flag once, then only `--root-codex`; a real thread id replaces its fallback.                                 |
 
 #### Retrospective transcript facts
 
@@ -193,15 +192,14 @@ commands: `check-fresh-base`, `check-web-init`, `node dev/check-blackboard.mts`,
 `.codex/config.toml`; launched by the agent runtime, not run directly),
 `node dev/codex-hooks/persist-session-id.mts claude`,
 `node dev/codex-hooks/post-tool-use-command.mts <claude|codex>`,
-`node dev/session-friction/record.mts [permission-request]`,
 `check-worktree-ports`, `check-db-backed-test-setup.mts`, `playwright-server-check`,
 `tmux-agent-reminder`, `host-storage-preflight.mts`, `otel-register.mts`, and the `codex-hooks/`
 policy entrypoints. Files under `dev/lib/` are sourced implementation helpers, not standalone
 commands.
 
 `node dev/codex-hooks/post-tool-use-command.mts <claude|codex>` is the merged PostToolUse hook: it
-runs session-friction recording and the tmux reminder in-process, replacing three separately-spawned
-Codex hook processes per tool call with one. No hook appends Blackboard journal entries; agents
-write their own, following [the `blackboard` skill](../../../.agents/skills/blackboard/SKILL.md).
+runs the tmux reminder in-process, replacing three separately-spawned Codex hook processes per tool
+call with one. No hook records session evidence or appends Blackboard journal entries; agents write
+their own, following [the `blackboard` skill](../../../.agents/skills/blackboard/SKILL.md).
 See [reference-agent-session-hooks.md](reference-agent-session-hooks.md) and
 [agent-blackboard](../agent-blackboard.md#agent-written-journal-entries).
