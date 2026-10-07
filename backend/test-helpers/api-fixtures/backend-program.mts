@@ -1,122 +1,62 @@
-import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import ts from 'typescript'
-
 import {
-  compilerHostProbesAreFresh,
+  createCompilerProgramCache,
   trackCompilerHost,
   type CompilerHostProbeSnapshot,
+  type CompilerProgramGeneration,
 } from 'vouchington-tooling/compiler-build'
 
-import { settleBackendProgramBuild } from './backend-program-settlement.mts'
-import { formatDiagnostics, normalizePath } from './program-paths.mts'
+import { normalizePath } from './program-paths.mts'
 import { backendApiRouteRootFileNames } from './route-file-roots.mts'
 
 const repoRoot = fileURLToPath(new URL('../../..', import.meta.url))
-declare const backendProgramGenerationBrand: unique symbol
-export type BackendProgramGeneration = {
-  readonly [backendProgramGenerationBrand]: true
-}
+const maximumBuildAttempts = 3
+const programCache = createCompilerProgramCache({
+  ts,
+  configPath: resolve(repoRoot, 'backend/tsconfig.json'),
+  rootNames: configuration => backendApiRouteRootFileNames(configuration.fileNames),
+  maximumAttempts: maximumBuildAttempts,
+})
+
+export type BackendProgramGeneration = CompilerProgramGeneration
 export type BackendProgram = {
   generation: BackendProgramGeneration
   program: ts.Program
   routeFiles: ts.SourceFile[]
 }
 
-type CachedBackendProgram = BackendProgram & {
-  probeSnapshot: CompilerHostProbeSnapshot
-  rootSignature: string
-}
-
-let cachedProgram: CachedBackendProgram | undefined
-let buildCount = 0
-
-/**
- * Memoizes the single `ts.Program` shared by every backend contract loader while its complete
- * compiler input set is unchanged. The tracked CompilerHost records every filesystem decision
- * TypeScript makes, including module-resolution package metadata and failed lookups. Warm calls
- * replay that exact graph; a changed probe or root set rebuilds and advances the opaque generation.
- */
+/** Loads the shared program while its selected roots and compiler inputs remain fresh. */
 export function loadBackendProgram(): BackendProgram {
-  const configuration = readBackendProgramConfiguration()
-  if (cachedProgram) {
+  let snapshot
+  try {
+    snapshot = programCache.load()
+  } catch (err) {
     if (
-      cachedProgram.rootSignature === configuration.rootSignature &&
-      compilerHostProbesAreFresh(cachedProgram.probeSnapshot)
+      err instanceof Error &&
+      err.message === `Inputs changed during ${maximumBuildAttempts} consecutive build attempts`
     ) {
-      return cachedProgram
-    }
-  }
-  return buildBackendProgram(configuration)
-}
-
-function buildBackendProgram(configuration: BackendProgramConfiguration): CachedBackendProgram {
-  // Release the previous generation before building the next: nothing below reads `cachedProgram`
-  // during the build, and holding it reachable here would keep its ~870 MB retained heap live for the
-  // entire ~1.4 GB transient build, nearly doubling peak memory in a forked-worker heap for no reason.
-  cachedProgram = undefined
-  const settled = settleBackendProgramBuild(configuration, {
-    buildAttempt(currentConfiguration) {
-      const { probeSnapshot, program } = createTrackedBackendProgramForTest(
-        currentConfiguration.rootFileNames,
-        currentConfiguration.parsed.options,
+      throw new Error(
+        `Backend TypeScript inputs changed during ${maximumBuildAttempts} consecutive program builds`,
+        { cause: err },
       )
-      buildCount += 1
-      return { configuration: currentConfiguration, probeSnapshot, program }
-    },
-    confirmAttempt(currentConfiguration, { probeSnapshot }) {
-      const confirmedConfiguration = readBackendProgramConfiguration()
-      return {
-        configuration: confirmedConfiguration,
-        settled:
-          currentConfiguration.rootSignature === confirmedConfiguration.rootSignature &&
-          compilerHostProbesAreFresh(probeSnapshot),
-      }
-    },
-  })
-  const routeFiles = settled.program
-    .getSourceFiles()
-    .filter(file => normalizePath(file.fileName).includes('/backend/api/v1/'))
-  cachedProgram = {
-    generation: Object.freeze({}) as BackendProgramGeneration,
-    probeSnapshot: settled.probeSnapshot,
-    program: settled.program,
-    rootSignature: settled.configuration.rootSignature,
-    routeFiles,
+    }
+    throw err
   }
-  return cachedProgram
+  return {
+    generation: snapshot.generation,
+    program: snapshot.program,
+    routeFiles: snapshot.program
+      .getSourceFiles()
+      .filter(file => normalizePath(file.fileName).includes('/backend/api/v1/')),
+  }
 }
 
-type BackendProgramConfiguration = {
-  parsed: ts.ParsedCommandLine
-  rootFileNames: string[]
-  rootSignature: string
-}
-
-function readBackendProgramConfiguration(): BackendProgramConfiguration {
-  const configPath = resolve(repoRoot, 'backend/tsconfig.json')
-  const config = ts.readConfigFile(configPath, path => readFileSync(path, 'utf8'))
-  if (config.error) throw new Error(formatDiagnostics([config.error]))
-  const parsed = ts.parseJsonConfigFileContent(config.config, ts.sys, resolve(repoRoot, 'backend'))
-  if (parsed.errors.length > 0) throw new Error(formatDiagnostics(parsed.errors))
-  const rootFileNames = backendApiRouteRootFileNames(parsed.fileNames)
-  const rootSignature = JSON.stringify({
-    config: config.config,
-    options: parsed.options,
-    projectReferences: parsed.projectReferences?.map(reference => reference.path),
-    rootFileNames: rootFileNames.toSorted(),
-  })
-  return { parsed, rootFileNames, rootSignature }
-}
-
-/**
- * Number of times loadBackendProgram() has actually built a `ts.Program` (cache misses only,
- * never cache hits) during this process. The canonical compilation job verifies warm reuse.
- */
+/** Number of program builds performed by this process, excluding warm cache hits. */
 export function getBackendProgramBuildCount(): number {
-  return buildCount
+  return programCache.buildCount
 }
 
 export function createTrackedBackendProgramForTest(

@@ -15,6 +15,9 @@ response contract data. Fixture cases remain the source for generated example bo
 metadata. `pnpm run api-fixtures:check` validates those cases against the declared contracts and
 checks the manifest, schema lock, and response snapshots without discovering backend routes.
 `pnpm run backend-row-contracts:check` independently verifies PostgreSQL producer row types.
+The row check uses the shared compiler cache with local root selection; see
+[compiler-backed contract tests](../../reference-tests-parallel-safety-and-test-root-hygiene.md#compiler-backed-contract-tests)
+for its freshness and test boundary.
 
 Compiler-based API contract discovery and OpenAPI publication are removed pending contract
 redesign. Current request, response, and MCP schema payloads are preserved. These checks do not
