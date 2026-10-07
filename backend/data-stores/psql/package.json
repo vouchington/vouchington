@@ -25,7 +25,6 @@
   "dependencies": {
     "@data-stores/analytics": "workspace:^",
     "@data-stores/graceful-shutdown": "workspace:^",
-    "@libpg-query/parser": "^18.0.0",
     "@modules/on-error": "workspace:^",
     "@modules/scopes": "workspace:^",
     "@modules/utils": "workspace:^",
@@ -33,12 +32,12 @@
     "@voucha/types": "workspace:^",
     "@vouchington/postgres": "^0.0.12",
     "pg": "^8.23.1",
-    "sql-template-strings": "^2.2.2"
+    "sql-template-strings": "^2.2.2",
+    "vouchington-tooling": "^0.37.0"
   },
   "devDependencies": {
     "no-mistakes": "^0.77.0",
     "oxfmt": "^0.72.0",
-    "typescript": "npm:@typescript/typescript6@^6.0.2",
-    "vouchington-tooling": "^0.36.1"
+    "typescript": "npm:@typescript/typescript6@^6.0.2"
   }
 }

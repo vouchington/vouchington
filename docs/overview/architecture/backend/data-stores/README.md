@@ -22,10 +22,8 @@ For connections to close cleanly:
 - Valkey: [valkey/AGENTS.md](../../../../../backend/data-stores/valkey/AGENTS.md)
 - Backend context: [../AGENTS.md](../../../../../backend/AGENTS.md)
 
-## Provisional export status (#1360)
+## PostgreSQL index-shape extraction
 
-These package exports are retained pending intended-use review. External production use is
-unconfirmed; the exports may be made private or removed after review. Their implementations and
-current owner behavior remain unchanged.
-
-- `extractIndexShapes`
+`@data-stores/psql/migration-runner/index-sql` no longer exports `extractIndexShapes`. The
+implementation and its callers now use `extractIndexShapes` from
+`vouchington-tooling/sql-ast`; initialize SQL AST support with `initSqlAst()` before calling it.

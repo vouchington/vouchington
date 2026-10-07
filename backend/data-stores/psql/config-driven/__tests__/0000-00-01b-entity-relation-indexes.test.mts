@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { extractIndexShapes } from '../../migration-runner/index-sql.mts'
-import { loadSqlParserModule } from '../../migration-runner/sql-statements.mts'
+import { extractIndexShapes } from 'vouchington-tooling/sql-ast'
+import { initSqlAst, loadSqlParserModule } from '../../migration-runner/sql-statements.mts'
 import idempotent from '../0000-00-01b-entity-relation-indexes.mts'
 
 // Groups by shapeKey (canonical body, name-independent) and reports every table whose
@@ -21,7 +21,7 @@ function findIndexShapeCollisions(
 }
 
 describe('0000-00-01b-entity-relation-indexes', () => {
-  beforeAll(() => loadSqlParserModule())
+  beforeAll(() => Promise.all([loadSqlParserModule(), initSqlAst()]))
 
   it('should generate valid SQL for entity relation indexes', () => {
     const sql = idempotent()
@@ -116,7 +116,7 @@ describe('0000-00-01b-entity-relation-indexes', () => {
 })
 
 describe('extractIndexShapes', () => {
-  beforeAll(() => loadSqlParserModule())
+  beforeAll(() => Promise.all([loadSqlParserModule(), initSqlAst()]))
 
   it('returns an empty array for blank SQL without invoking the parser', () => {
     expect(extractIndexShapes('')).toEqual([])
