@@ -32,7 +32,9 @@ async function runCommand(
       // Piping stderr (rather than inheriting it) is only needed to observe stderr lines live;
       // every byte is still forwarded to the real stderr below so build output and failure
       // diagnostics are unaffected.
-      stdio: ['inherit', 'inherit', options.onStderrLine ? 'pipe' : 'inherit'],
+      // Ignore stdin. GitHub Actions leaves the step stdin open, and a child that reads it
+      // waits until the job ceiling. The composite step timeout did not reap that group.
+      stdio: ['ignore', 'inherit', options.onStderrLine ? 'pipe' : 'inherit'],
     })
 
     const onStderrLine = options.onStderrLine

@@ -54,8 +54,17 @@ await timeStep('cloudflare-worker-build', () =>
 await timeStep('storybook-build', async () => {
   await runPnpm(
     ROOT_DIR,
-    ['--dir', 'web', 'exec', 'storybook', 'build', '--output-dir', 'storybook-static'],
-    { STORYBOOK_BASE_PATH: '/storybook/' },
+    [
+      '--dir',
+      'web',
+      'exec',
+      'storybook',
+      'build',
+      '--output-dir',
+      'storybook-static',
+      '--disable-telemetry',
+    ],
+    { STORYBOOK_BASE_PATH: '/storybook/', STORYBOOK_DISABLE_TELEMETRY: '1' },
   )
   // The worker CSP allows same-origin scripts and blocks inline scripts. Storybook's
   // preview iframe keeps its runtime config in inline scripts, so move those into files.
@@ -64,6 +73,7 @@ await timeStep('storybook-build', async () => {
 await timeStep('next-build', () =>
   runPnpm(ROOT_DIR, ['--dir', 'web', 'build'], {
     NODE_ENV: 'production',
+    NEXT_TELEMETRY_DISABLED: '1',
     NEXT_TEST_BUILD: process.env.NEXT_TEST_BUILD ?? '1',
     ...(imageOrigin !== undefined ? { IMAGE_ORIGIN: imageOrigin } : {}),
     NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY:
