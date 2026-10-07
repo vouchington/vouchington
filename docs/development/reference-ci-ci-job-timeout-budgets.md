@@ -80,7 +80,14 @@ lock-acquisition budget and a command circuit breaker specific to a shared self-
 GitHub-hosted runners are ephemeral, single-job VMs, so the composite no longer acquires a lock
 before building. The 13-minute value is retained as-is pending re-derivation against GitHub-hosted
 build telemetry rather than recomputed here, and remains the strict Next-build ceiling, not a
-repository-wide step-timeout maximum.
+repository-wide step-timeout maximum. The build command itself also runs under
+[`ci/run-bounded.py`](../../ci/run-bounded.py), inside that ceiling, because `timeout-minutes` on
+the composite step did not reap a hung child process group. Merge-group run
+[37572766026](https://github.com/vouchington/vouchington/actions/runs/37572766026) stayed in
+`build-web-targets` until the 35-minute job cap, and GitHub did not retain the job log. The bounded
+runner kills the process group and exits so the composite's timing upload still runs. Healthy runs
+of the same step finish in about 90 seconds. The build ignores stdin and disables Next and Storybook
+telemetry, both of which can wait on an open pipe or a stalled network call.
 
 The backend image build smoke tests validate worker startup, Valkey connectivity, and universal
 heartbeat job processing. The `worker-cpu` smoke test also imports `vurst-ai` from the deployed

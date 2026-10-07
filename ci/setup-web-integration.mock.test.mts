@@ -124,14 +124,15 @@ describe('setup-web-integration', () => {
     expect(buildEvents).toEqual([
       'start:--dir cloudflare-worker build',
       'exit:--dir cloudflare-worker build',
-      'start:--dir web exec storybook build --output-dir storybook-static',
-      'exit:--dir web exec storybook build --output-dir storybook-static',
+      'start:--dir web exec storybook build --output-dir storybook-static --disable-telemetry',
+      'exit:--dir web exec storybook build --output-dir storybook-static --disable-telemetry',
       'start:--dir web build',
       'exit:--dir web build',
     ])
-    expect(spawnCalls.find(call => call.args.includes('storybook'))?.env.STORYBOOK_BASE_PATH).toBe(
-      '/storybook/',
-    )
+    const storybook = spawnCalls.find(call => call.args.includes('storybook'))
+    expect(storybook?.env.STORYBOOK_BASE_PATH).toBe('/storybook/')
+    expect(storybook?.env.STORYBOOK_DISABLE_TELEMETRY).toBe('1')
+    expect(webBuildEnv().NEXT_TELEMETRY_DISABLED).toBe('1')
     const root = process.cwd()
     expect(vi.mocked(fs.cpSync)).toHaveBeenCalledWith(
       resolve(root, 'web/storybook-static'),

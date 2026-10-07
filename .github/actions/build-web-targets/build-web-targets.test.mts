@@ -127,6 +127,11 @@ describe('build-web-targets composite action', () => {
     expect(buildRun.indexOf('export NEXT_TEST_BUILD=0')).toBeLessThan(
       buildRun.indexOf('node ci/setup-web-integration.mts'),
     )
+    // 720s stays inside the 13-minute composite ceiling and reaps the child group. The caller's
+    // timeout-minutes left merge-group run 37572766026 inside this step until the 35-minute job cap.
+    expect(buildRun).toContain(
+      'python3 "$GITHUB_WORKSPACE/ci/run-bounded.py" 720 node ci/setup-web-integration.mts',
+    )
 
     const saveStep = step('Save shared web build runtime paths')
     const stampStep = step('Stamp shared web build manifest')

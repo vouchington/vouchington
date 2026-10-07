@@ -6,12 +6,13 @@ interface SpawnCall {
   args: string[]
   cwd: string | undefined
   env: NodeJS.ProcessEnv
+  stdin: unknown
 }
 
 type MockSpawn = (
   command: string,
   args?: readonly string[],
-  options?: { cwd?: string; env?: NodeJS.ProcessEnv },
+  options?: { cwd?: string; env?: NodeJS.ProcessEnv; stdio?: unknown },
 ) => ReturnType<typeof import('node:child_process').spawn>
 
 interface MockChildProcess extends EventEmitter {
@@ -43,6 +44,7 @@ vi.mock<typeof import('node:child_process')>(
           args: Array.isArray(args) ? args.map(String) : [],
           cwd: typeof options?.cwd === 'string' ? options.cwd : undefined,
           env: options?.env ?? {},
+          stdin: Array.isArray(options?.stdio) ? options.stdio[0] : undefined,
         })
         const child = new EventEmitter() as unknown as MockChildProcess
         child.stderr = new EventEmitter()
@@ -83,6 +85,9 @@ describe('run-pnpm-command', () => {
       expect.objectContaining({ command: 'pnpm', args: ['--dir', 'web', 'build'], cwd: '/repo' }),
     ])
     expect(spawnCalls[0]!.env.NODE_ENV).toBe('production')
+    // GitHub Actions keeps the step stdin open. A child that reads it waits forever, and the
+    // composite step timeout did not reap that process group (merge-group run 37572766026).
+    expect(spawnCalls[0]!.stdin).toBe('ignore')
   })
 
   it('rejects when the child process exits non-zero', async () => {
