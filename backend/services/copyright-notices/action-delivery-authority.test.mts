@@ -23,7 +23,7 @@ import {
   reconcileTestDeliveryRepairMarker,
 } from '@voucha/test-helpers/entities/media-delivery-repair'
 import { lockImageDeliveryLegalAuthority } from '../media-delivery-safety/delivery-authority.mts'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { appendCopyrightNoticeSubmission, processCopyrightActionIntent } from './index.mts'
 import { openHeldCounterNoticeRestore } from '@voucha/test-helpers/copyright-restoration-hold-scene'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
@@ -175,6 +175,14 @@ describe('copyright action persisted delivery authority', () => {
     await stageImagePlacementDeliveryRecord({ ...tuple, state: 'allow' })
     await markTestMediaDeliveryRecordFailed(deliveryKey)
     await using authority = await beginTransaction()
+    let rollback: Promise<void> | undefined
+    const releaseAuthority = () => (rollback ??= authority.rollback())
+    let replay: Promise<number> | undefined
+    // A timed-out test releases the lock, then drains any replay it unblocked.
+    onTestFinished(async () => {
+      await releaseAuthority()
+      if (replay) await Promise.allSettled([replay])
+    })
     await lockImageDeliveryLegalAuthority(authority, {
       placement_id: current.placementId,
     })
@@ -184,27 +192,15 @@ describe('copyright action persisted delivery authority', () => {
         code: '55P03',
       })
     }
-    const replay = replayFailedMediaDeliveryRegistryRecords({
+    replay = replayFailedMediaDeliveryRegistryRecords({
       actorUserId: scene.moderator.id,
       deliveryKeys: [deliveryKey],
     })
-    let result: PromiseSettledResult<Awaited<typeof replay>> | undefined
-    const observedReplay = replay.then(
-      value => {
-        result = { status: 'fulfilled', value }
-        return value
-      },
-      err => {
-        result = { status: 'rejected', reason: err }
-      },
-    )
     try {
-      await vi.waitFor(() => expect(result).toBeDefined())
-      if (result?.status === 'rejected') throw result.reason
+      await expect(replay).resolves.toBe(1)
       expect(await getTestMediaDeliveryRecord(deliveryKey)).toMatchObject({ state: 'pending' })
     } finally {
-      await authority.rollback()
-      await observedReplay
+      await releaseAuthority()
     }
   })
 })
