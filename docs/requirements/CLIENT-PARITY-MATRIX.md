@@ -142,28 +142,28 @@ Table B lists every web copyright surface (policy pages, member cases, notice fi
 responses, guest filing, and the four staff surfaces). Swift and .NET render none of them, and
 Table C tracks each `copyright-*` capability as a native gap.
 
-### Agent tool manifest handoff
+### Native agent MCP access
 
-`backend/tools/manifest.json` no longer lists `get_topic_hierarchy`: `get_topic_details` returns
-parents and one bounded page of children through its optional `hierarchy`, `children_after` and
-`children_limit` arguments. `search_posts`, `search_topics`, `get_trending_posts` and
-`get_trending_topics` keep their names and gain optional `after` and `limit` arguments plus
-`page_info` in their results. The absorbed `search_posts_semantic`, `search_topics_semantic` and
-`search_topics_text` were MCP-only and never in the manifest. A `vouchington-clients` follow-up
-regenerates its copy of the manifest and drops any dispatch of `get_topic_hierarchy`.
+Native agents are ordinary clients of the user MCP server. They use OAuth authorization code with
+S256 PKCE and call `/api/v1/mcp` with `tools/list` and `tools/call`. Their first-party Client ID
+Metadata Document IDs are `<site origin>/api/v1/oauth/native-clients/ios`, `/macos`, and `/windows`.
+The hosted OAuth consent screen always appears. Every mutating user-MCP tool requires Plus, so a
+Free member's in-app agent receives read tools only; there is no native exception. Native app
+implementation is tracked by [vouchington-clients#210](https://github.com/vouchington/vouchington-clients/issues/210).
 
-The paged search arguments are a deliberate breaking change with no compatibility path, accepted by
-the plan owner because native clients do not call these tools. `search_posts` no longer accepts
-`sort: 'ranking'`, which had no effect; its sorts are `new`, `best`, `hot`, `relevance` and
-`following_new`. `limit` on both search tools is now an integer of at least 1 (values over 100 are
-clamped to 100). The default rose from 5 to 25 for `search_posts` and from 10 to 25 for
-`search_topics`. A malformed or foreign `after` cursor returns
-`{ success: false, error: "Invalid cursor" }` instead of throwing.
+Native agents receive MCP tool schemas and results, including the same authorization, plan, scope,
+rate-limit, quota, audit, and untrusted-content handling as other user-MCP clients. This includes
+the current paged contracts: `get_topic_details` returns parents and one bounded page of children
+through `hierarchy`, `children_after`, and `children_limit`; `search_posts`, `search_topics`,
+`get_trending_posts`, and `get_trending_topics` support `after` and `limit` and return `page_info`.
+The absorbed `search_posts_semantic`, `search_topics_semantic`, and `search_topics_text` remain
+removed. `search_posts` accepts `new`, `best`, `hot`, `relevance`, and `following_new`; limits are
+clamped to 100 and malformed cursors return `{ success: false, error: "Invalid cursor" }`.
 
-`search_posts` now applies the MCP post read policy on every surface, so its author no longer sees
-their own private, audience-limited or unapproved posts, and a `similar_post_id` seed that
-`get_post` refuses returns an empty page. The arguments and result shape do not change, and native
-clients do not call this tool, so no client work follows.
+`search_posts` applies the MCP post read policy on every surface, so its author cannot see their own
+private, audience-limited or unapproved posts, and a `similar_post_id` seed that `get_post` refuses
+returns an empty page. Native agents receive this behavior through user MCP; the client switch is
+part of [vouchington-clients#210](https://github.com/vouchington/vouchington-clients/issues/210).
 
 ### Media placement contract handoff
 
@@ -201,11 +201,11 @@ retain that wire field. The SQL read projection resolves the public field explic
 
 The `copyright-notices:read` admin MCP grant exposes structured email intakes, guest-capability
 lists, participant case detail, and the existing review queue with contact redaction. Those tools
-are exclusive to the OAuth-only admin MCP; they do not add a native client surface. Copyright
+are exclusive to the OAuth-only admin MCP and are not available to native agents on the user MCP. Copyright
 decision tools use the separate exact OAuth `copyright-notices:write` grant, which requires
 `copyright-notices:read`, and the default-off `copyright.mcpDecisionTools` switch. Umbrella grants
 cover neither copyright grant. These 17 staff tools remain admin MCP only: they introduce no
-native tool-manifest capability or native staff screen. Consent and credential pickers use the
+native user-MCP capability or native staff screen. Consent and credential pickers use the
 generated scope catalog and retain explicit selection for exact grants. Email approval takes the
 same caller-stated notice form as the staff REST route, with the recommendation as guidance only;
 admission uses server-owned recommendation fields rather than caller contact details; replies are
@@ -226,13 +226,15 @@ consumer change requires the normal linked client validation PR.
 Eleven user MCP tools write or read community membership, content reports, review disputes and
 moderation appeals for the credential owner (see
 [Community, Report, Dispute and Appeal Tools](../overview/architecture/agent-tools/community-report-appeal-write-tools.md)).
-They are MCP-only: none carries the `client` surface or enters `backend/tools/manifest.json`, REST
-routes, DTOs and fixtures do not change, and web and native clients gain no screen. The new
+They are user-MCP tools, so native agents can call them through the same OAuth MCP connection when
+their scopes and plan allow it. REST routes, DTOs and fixtures do not change, and the web client
+gains no screen. Native MCP adoption is tracked by
+[vouchington-clients#210](https://github.com/vouchington/vouchington-clients/issues/210). The new
 `communities:write`, `disputes:read/write`, `appeals:read/write` and `reports:write` scopes arrive
 through the generated scope catalogue, so the web and native credential pickers, which filter that
-catalogue and resolve its description keys through their localisation catalogues, list them without
-a client change. Each tool's own-case reads are narrower than the member REST list, and account
-suspension appeals remain a web flow. No `vouchington-clients` work follows.
+catalogue and resolve its description keys through their localisation catalogues, list them through
+the existing credential-picker flow. Each tool's own-case reads are narrower than the member REST
+list, and account suspension appeals remain a web flow.
 
 ## Member-chat transcript handoff
 
@@ -262,12 +264,10 @@ need no change, but must not rely on a model switch under reused message IDs: ge
 
 ## Orphan tool removal handoff
 
-#1566 removes `search_wikipedia` and `get_wikipedia_summary` from the generated native tool
-manifest and MCP catalog, and removes `wikipedia:read` from the shared scope catalog. The fixture
-and manifest shapes are unchanged. The native client source audit found no hardcoded calls or
-scope consumers to migrate; clients consume the reduced generated catalog. Topic Wikipedia IDs
-and URLs remain content fields and are unaffected. Hosted research/discovery package deletion
-remains owned by #1546; this change only removes their references to retired tools.
+#1566 removes `search_wikipedia` and `get_wikipedia_summary` from the MCP catalog and removes
+`wikipedia:read` from the shared scope catalog. Topic Wikipedia IDs and URLs remain content fields
+and are unaffected. Hosted research/discovery package deletion remains owned by #1546; this change
+only removes their references to retired tools.
 
 ## Community automod action handoff
 
@@ -422,9 +422,9 @@ success from `success_rate` and `total_closed`, and display names from `display_
 the staff moderation ops row stays full. Swift and .NET drop both decoder fields in
 [vouchington-clients#194](https://github.com/vouchington/vouchington-clients/pull/194).
 
-Financial scope consent (#1271): hosted OAuth consent and the web API-key picker describe financial profile and spending exact grants. Native clients have no consent screen; their shared `native.credentials.mcpUserFullAccess` copy now states that financial profile and spending require separate grants. Native presets must explicitly list financial scopes when they intend to access those resources.
+Financial scope consent (#1271): hosted OAuth consent and the web API-key picker describe financial profile and spending exact grants. Native OAuth clients use the hosted consent screen; the apps' shared `native.credentials.mcpUserFullAccess` copy states that financial profile and spending require separate grants. Native presets must explicitly list financial scopes when they intend to access those resources.
 
-Admin MCP tools (#209): the admin server remains OAuth-only. Ordinary moderation, account enforcement, and site-operation reads can use matching admin umbrella grants; destructive approval, AI rerun, agent votes, account sanctions, operational writes, copyright, analytics, and editorial scopes require explicit grants and appear in hosted sensitive consent. Tools remain exclusive to `admin_mcp` and do not enter the native client tool manifest. The vote-ring penalty REST contract now requires `{ flag, penalized_user_count }`; web consumes that flag directly. Swift and .NET must regenerate their shared contracts and apply the returned flag before release; [clients #200](https://github.com/vouchington/vouchington-clients/issues/200) owns this pending parity work. The client implementation is prepared locally, with canonical staging and native toolchain/publication checks still blocked. Copyright MCP decisions additionally require the exact write grant and default-off switch described above; their required rationale uses the existing encrypted per-call audit, including path-only operations, without adding a rationale read API or changing append-only retention. MCP decisions skip training feedback until an independent staff/user action supplies evidence through the existing workflow.
+Admin MCP tools (#209): the admin server remains OAuth-only. Ordinary moderation, account enforcement, and site-operation reads can use matching admin umbrella grants; destructive approval, AI rerun, agent votes, account sanctions, operational writes, copyright, analytics, and editorial scopes require explicit grants and appear in hosted sensitive consent. These tools remain exclusive to `admin_mcp`; native agents use the user MCP server. The vote-ring penalty REST contract now requires `{ flag, penalized_user_count }`; web consumes that flag directly. Swift and .NET must regenerate their shared contracts and apply the returned flag before release; [clients #200](https://github.com/vouchington/vouchington-clients/issues/200) owns this pending parity work. The client implementation is prepared locally, with canonical staging and native toolchain/publication checks still blocked. Copyright MCP decisions additionally require the exact write grant and default-off switch described above; their required rationale uses the existing encrypted per-call audit, including path-only operations, without adding a rationale read API or changing append-only retention. MCP decisions skip training feedback until an independent staff/user action supplies evidence through the existing workflow.
 
 ## Manual crawl fanout count
 

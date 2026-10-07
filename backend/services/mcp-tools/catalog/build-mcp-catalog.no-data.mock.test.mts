@@ -36,7 +36,7 @@ const userRead = fixtureTool({
   name: 'user_read',
   parameters: TOPICS_SCHEMA,
   meta: {
-    surfaces: ['mcp', 'client'],
+    surfaces: ['mcp'],
     title: 'User Read',
     requiredScopes: { mcp: ['topics:read'] },
     annotations: { readOnlyHint: true },

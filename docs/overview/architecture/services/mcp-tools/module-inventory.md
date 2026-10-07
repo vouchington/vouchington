@@ -17,7 +17,7 @@
 | `instructions.mts`                   | Per-surface server `instructions` sent on `initialize`                                      |
 | `index.mts`                          | Barrel: exports request handlers, helpers, and user/admin MCP configs                       |
 | `catalog/build-mcp-catalog.mts`      | Build the `api-fixtures/v1/mcp.json` catalog from the registered tools                      |
-| `catalog/agent-tool-catalog.mts`     | Render the agent-tools catalog table and the native-client `manifest.json`                  |
+| `catalog/agent-tool-catalog.mts`     | Render the agent-tools catalog table                                                        |
 | `catalog/build-mcp-catalog.test.mts` | Snapshot every generated catalog artifact; fail any MCP tool with no output schema          |
 
 `catalog/find-api-hint-conflicts.mts` finds tools whose MCP hints disagree with the REST operations

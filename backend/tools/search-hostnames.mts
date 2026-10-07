@@ -62,7 +62,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp', 'client'],
+    surfaces: ['internal', 'mcp'],
     title: 'Search Hostnames',
     requiredScopes: { mcp: ['hostnames:read'] },
     annotations: { readOnlyHint: true },

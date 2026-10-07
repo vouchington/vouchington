@@ -83,7 +83,7 @@ export const listRssFeedCrawlsTool: Tool<ListArgs, ListResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp', 'client'],
+    surfaces: ['internal', 'mcp'],
     title: 'List RSS Feed Crawls',
     plan: 'free',
     requiredScopes: { mcp: ['rss-feeds:read'] },
@@ -129,7 +129,7 @@ export const getRssFeedCrawlTool: Tool<DetailArgs, DetailResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp', 'client'],
+    surfaces: ['internal', 'mcp'],
     title: 'Get RSS Feed Crawl',
     plan: 'free',
     requiredScopes: { mcp: ['rss-feeds:read'] },

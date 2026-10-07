@@ -3,11 +3,7 @@ import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { format } from 'oxfmt'
-import {
-  buildClientManifest,
-  renderCatalogTable,
-  spliceCatalogTable,
-} from './agent-tool-catalog.mts'
+import { renderCatalogTable, spliceCatalogTable } from './agent-tool-catalog.mts'
 import { buildMcpCatalog } from './build-mcp-catalog.mts'
 
 const repoRoot = fileURLToPath(new URL('../../../../', import.meta.url))
@@ -30,7 +26,6 @@ async function generate(
       path: markdownPath,
       raw: spliceCatalogTable(await readFile(markdownPath, 'utf8'), renderCatalogTable(tools)),
     },
-    { path: repoPath('backend/tools/manifest.json'), raw: toJson(buildClientManifest(tools)) },
   ]
   // Format every artifact before writing any, so formatter errors do not partially publish.
   const formatted = await Promise.all(

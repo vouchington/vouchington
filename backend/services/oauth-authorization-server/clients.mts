@@ -13,6 +13,7 @@ import {
   validateResponseTypes,
 } from './client-metadata-validation.mts'
 import { validateRedirectUris } from './redirect-uri-validation.mts'
+import { matchesRegisteredRedirectUri } from './registered-redirect-uri.mts'
 import { parseOAuthScopes } from './validation.mts'
 import {
   resolveClientIdMetadataDocument,
@@ -181,7 +182,7 @@ export function assertClientAuthorizationRequest(
   redirectUri: string,
   scopes: OAuthClient['scopes'],
 ): void {
-  if (!client.redirect_uris.includes(redirectUri)) {
+  if (!matchesRegisteredRedirectUri(redirectUri, client.redirect_uris)) {
     throw invalidRequest('redirect_uri is not registered for this client')
   }
   // Uses the same coverage rule as tool authorization, so a client registered with

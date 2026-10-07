@@ -32,7 +32,7 @@ const getReferralLinkFeedTool: Tool<ReferralArgs, ReferralResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp', 'client'],
+    surfaces: ['internal', 'mcp'],
     title: 'Get Referral Link Feed',
     plan: 'free',
     requiredScopes: { mcp: ['feeds:read'] },

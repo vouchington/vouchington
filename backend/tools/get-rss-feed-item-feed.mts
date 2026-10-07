@@ -39,7 +39,7 @@ const getRssFeedItemFeedTool: Tool<ItemArgs, FeedResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp', 'client'],
+    surfaces: ['internal', 'mcp'],
     title: 'Get RSS Feed Item Feed',
     plan: 'free',
     requiredScopes: { mcp: ['feeds:read'] },

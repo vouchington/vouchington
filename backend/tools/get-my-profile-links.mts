@@ -16,7 +16,7 @@ const tool: Tool<Record<string, never>, ToolResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp', 'client'],
+    surfaces: ['internal', 'mcp'],
     title: 'Get My Profile Links',
     requiredScopes: { mcp: ['profile:read'] },
     annotations: { readOnlyHint: true },

@@ -19,7 +19,7 @@ const tool: Tool<Record<string, never>, ToolResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp', 'client'],
+    surfaces: ['internal', 'mcp'],
     title: 'Get My Email Preferences',
     requiredScopes: { mcp: ['preferences:read'] },
     annotations: { readOnlyHint: true },

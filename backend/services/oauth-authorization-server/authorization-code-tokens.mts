@@ -11,6 +11,7 @@ import { authenticateLockedOAuthClient } from './clients.mts'
 import { OAuthProtocolError } from './errors.mts'
 import { insertOAuthTokenPair } from './token-pairs.mts'
 import { assertTokenRequestResource, validatePkceVerifier } from './validation.mts'
+import { matchesRegisteredRedirectUri } from './registered-redirect-uri.mts'
 import type { ApiScope } from '@modules/scopes'
 import type { OAuthClient, OAuthTokenResponse } from './types.mts'
 
@@ -27,6 +28,7 @@ type AuthorizationCodeRow = {
   grant_revoked_at: Date | null
   user_id: string
   owner_user_id: string | null
+  redirect_uris: string[]
 }
 
 export async function exchangeOAuthAuthorizationCode(input: {
@@ -109,13 +111,13 @@ async function lockAuthorizationCode(
        code.consumed_at,
        oauth_grant.revoked_at AS grant_revoked_at,
        oauth_grant.user_id,
-       client.owner_user_id
+       client.owner_user_id,
+       client.redirect_uris
      FROM oauth_authorization_codes AS code
      JOIN oauth_grants AS oauth_grant ON oauth_grant.id = code.grant_id
      JOIN oauth_clients AS client ON client.id = oauth_grant.client_id
      WHERE code.code_hash = $1
        AND client.revoked_at IS NULL
-       AND code.redirect_uri = ANY(client.redirect_uris)
        AND NOT EXISTS (
          SELECT 1
          FROM user_suspensions AS suspension
@@ -125,7 +127,8 @@ async function lockAuthorizationCode(
      FOR UPDATE OF code, oauth_grant FOR SHARE OF client`,
     [hashToken(OAUTH_SECRET_PURPOSES.authorizationCode, rawCode)],
   )
-  return result.rows[0] ?? null
+  const code = result.rows[0]
+  return code && matchesRegisteredRedirectUri(code.redirect_uri, code.redirect_uris) ? code : null
 }
 
 function assertCodeExchange(

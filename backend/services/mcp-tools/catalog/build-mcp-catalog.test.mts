@@ -32,7 +32,7 @@ function fixtureTool(name: string, meta: FixtureMeta, roles?: Tool['roles']): To
 function fixtureRegistry(): Tool[] {
   return [
     fixtureTool('user_read', {
-      surfaces: ['mcp', 'client'],
+      surfaces: ['mcp'],
       requiredScopes: { mcp: ['topics:read'] },
       api: [{ method: 'GET', path: '/api/v1/topics/:id' }],
     }),

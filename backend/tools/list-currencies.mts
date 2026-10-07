@@ -41,7 +41,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp', 'client'],
+    surfaces: ['internal', 'mcp'],
     title: 'List Currencies',
     requiredScopes: { mcp: ['reference-data:read'] },
     annotations: { readOnlyHint: true },

@@ -1,11 +1,7 @@
 /* eslint-disable no-mistakes/vitest-mock-test-file-naming -- This pure catalog-renderer test uses the DB/Valkey-free project selected by the .no-data.mock suffix. */
 import type { Tool, ToolMeta } from '@services/openai-agents/tool-types'
 import { describe, expect, it } from 'vitest'
-import {
-  buildClientManifest,
-  renderCatalogTable,
-  spliceCatalogTable,
-} from './agent-tool-catalog.mts'
+import { renderCatalogTable, spliceCatalogTable } from './agent-tool-catalog.mts'
 
 function fixtureTool(name: string, description: string | null, meta?: Partial<ToolMeta>): Tool {
   return {
@@ -25,7 +21,7 @@ describe('renderCatalogTable', () => {
         annotations: { readOnlyHint: true },
       }),
       fixtureTool('mutating', 'mutating description', {
-        surfaces: ['client'],
+        surfaces: ['internal', 'mcp'],
         title: 'Mutating',
         requiredScopes: { mcp: undefined },
         annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
@@ -46,7 +42,7 @@ describe('renderCatalogTable', () => {
         '| Tool | Title | Description | Surfaces | Plan | Required scopes | Hints | REST Equivalent |',
         '| ---- | ----- | ----------- | -------- | ---- | --------------- | ----- | --------------- |',
         '| `piped` | Piped | Compare a \\| b side by side | internal, mcp | free | topics:read, posts:read | read-only | — |',
-        '| `mutating` | Mutating | mutating description | client | — | — | write, destructive | `POST /api/v1/cards`, `DELETE /api/v1/cards/:id` |',
+        '| `mutating` | Mutating | mutating description | internal, mcp | free | — | write, destructive | `POST /api/v1/cards`, `DELETE /api/v1/cards/:id` |',
         '| `upsert` | Upsert | upsert description | internal | — | — | write, idempotent | — |',
         '| `bare` | — | — | internal | — | — | — | — |',
       ].join('\n'),
@@ -70,32 +66,5 @@ describe('spliceCatalogTable', () => {
     expect(() => spliceCatalogTable(markdown, '| new |')).toThrow(
       'The agent tool catalog is missing <!-- BEGIN GENERATED --> / <!-- END GENERATED --> markers',
     )
-  })
-})
-
-describe('buildClientManifest', () => {
-  it('lists client-surface tools with their declared scopes and REST equivalents', () => {
-    const tools = [
-      fixtureTool('user_read', 'user_read description', {
-        surfaces: ['mcp', 'client'],
-        requiredScopes: { mcp: ['topics:read'] },
-        api: [{ method: 'GET', path: '/api/v1/topics/:id' }],
-      }),
-      fixtureTool('mcp_only', 'mcp_only description', { surfaces: ['mcp'] }),
-      fixtureTool('client_only', null, { surfaces: ['client'] }),
-    ]
-
-    expect(buildClientManifest(tools)).toEqual({
-      tools: [
-        {
-          name: 'user_read',
-          description: 'user_read description',
-          parameters: null,
-          api: [{ method: 'GET', path: '/api/v1/topics/:id' }],
-          requiredScopes: ['topics:read'],
-        },
-        { name: 'client_only', description: null, parameters: null, api: null, requiredScopes: [] },
-      ],
-    })
   })
 })

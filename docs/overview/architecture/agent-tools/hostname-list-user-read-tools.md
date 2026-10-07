@@ -1,8 +1,8 @@
 # Hostname, List and User Read Tools
 
 Seven MCP read tools read hostnames, lists and public user profiles. Each is read-only
-(`readOnlyHint`), names its REST twin in `meta.api`, sits on the `internal`, `mcp` and `client`
-surfaces, and needs no paid plan. The generated [tool catalog](catalog.md) holds each tool's
+(`readOnlyHint`), names its REST twin in `meta.api`, sits on the `internal` and `mcp` surfaces, and
+needs no paid plan. The generated [tool catalog](catalog.md) holds each tool's
 description and scopes; the [agent tools overview](README.md) covers metadata and plan gating, and
 the [post, story and community read tools](../services/mcp-tools/read-tools.md) share the result
 shape and paging rules described here.

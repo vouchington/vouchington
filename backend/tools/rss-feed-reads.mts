@@ -49,7 +49,7 @@ export const searchRssFeedsTool: Tool<ListArgs, ListResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp', 'client'],
+    surfaces: ['internal', 'mcp'],
     title: 'Search RSS Feeds',
     plan: 'free',
     requiredScopes: { mcp: ['rss-feeds:read'] },
@@ -112,7 +112,7 @@ export const getRssFeedTool: Tool<DetailArgs, DetailResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp', 'client'],
+    surfaces: ['internal', 'mcp'],
     title: 'Get RSS Feed',
     plan: 'free',
     requiredScopes: { mcp: ['rss-feeds:read'] },

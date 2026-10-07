@@ -9,6 +9,7 @@ export type AuthorizationRequestRow = {
   resource: string
   scopes: ApiScope[]
   client_scopes: ApiScope[]
+  redirect_uris: string[]
   code_challenge: string
   owner_user_id: string | null
 }

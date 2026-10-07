@@ -3,6 +3,7 @@ import { readResponseBodyAsBuffer } from '@modules/utils/http'
 import { safeFetch } from 'ssrf-guard/node'
 import { unavailableClientIdMetadata } from './client-id-metadata-errors.mts'
 import { parseClientIdMetadataUrl } from './client-id-metadata-url.mts'
+import { findNativeOAuthClientDocument } from './native-clients.mts'
 import {
   validateAuthMethod,
   validateClientName,
@@ -49,13 +50,19 @@ export async function resolveClientIdMetadataDocument(
   clientId: string,
   dependencies: Partial<ClientIdMetadataDependencies> = {},
 ): Promise<OAuthClient | null> {
-  const metadataUrl = parseClientIdMetadataUrl(clientId)
+  const nativeDocument = findNativeOAuthClientDocument(clientId)
+  const metadataUrl = nativeDocument ? clientId : parseClientIdMetadataUrl(clientId)
   if (!metadataUrl) return null
   const deps = { ...defaultDependencies, ...dependencies }
   const cached = await getFreshClientIdMetadataClient(metadataUrl, deps.query)
   if (cached) return cached
   const refresh = await beginClientIdMetadataRefresh(deps.query)
-  const fetched = await fetchAndValidateClientIdMetadataDocument(metadataUrl, deps)
+  const fetched = nativeDocument
+    ? {
+        metadata: validateClientIdMetadata(metadataUrl, nativeDocument),
+        response: { headers: new Headers() },
+      }
+    : await fetchAndValidateClientIdMetadataDocument(metadataUrl, deps)
   const metadataExpiresAt = getClientIdMetadataExpiry(fetched.response.headers, refresh.startedAt)
   const client = await upsertClientIdMetadataClient(
     metadataUrl,

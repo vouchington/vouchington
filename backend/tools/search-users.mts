@@ -39,7 +39,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp', 'client'],
+    surfaces: ['internal', 'mcp'],
     title: 'Search Users',
     requiredScopes: { mcp: ['users:read'] },
     annotations: { readOnlyHint: true },

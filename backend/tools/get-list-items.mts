@@ -49,7 +49,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp', 'client'],
+    surfaces: ['internal', 'mcp'],
     title: 'Get List Items',
     requiredScopes: { mcp: ['lists:read'] },
     annotations: { readOnlyHint: true },

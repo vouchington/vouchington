@@ -68,7 +68,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp', 'client'],
+    surfaces: ['internal', 'mcp'],
     title: 'Compare Topics',
     requiredScopes: { mcp: ['topics:read'] },
     annotations: { readOnlyHint: true },
