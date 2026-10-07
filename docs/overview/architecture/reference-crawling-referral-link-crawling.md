@@ -28,6 +28,7 @@ Auto-deactivation sets `activated_at = NULL`, `deactivated_at = CURRENT_TIMESTAM
 ## robots.txt Compliance
 
 - User-Agent: `voucha-bot https://voucha.ai/article/voucha-bot`
+- robots.txt groups match the `voucha-bot` product token, not the comment URL in that header
 - Robots.txt cached in Valkey for 24 hours
 - RFC 9309 §2.4: 4xx → ALLOW (bot cannot access rules file)
 - 5xx after 3 retries → ALLOW (temporary server error)

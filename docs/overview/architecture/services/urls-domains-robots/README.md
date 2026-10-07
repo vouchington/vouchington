@@ -24,6 +24,7 @@ See [docs/overview/architecture/crawling.md](../../crawling.md) for runtime beha
 
 - `@vouchington/robots` owns generic robots.txt parsing; blacklist, fetch, retry, status fallback, Valkey caching, and rate-limit policy remain in this service
 - `Crawl-delay` values from robots.txt are in seconds; `getCrawlDelayMs` converts to milliseconds via `Math.ceil(delay * 1000)`
+- Allow, disallow, and crawl-delay groups match the User-Agent product token: the first token, without a `/version` suffix. `voucha-bot https://voucha.ai/article/voucha-bot` matches `User-agent: voucha-bot`. The HTTP header stays the full crawler string. A matching specific group does not inherit the `*` group's crawl delay.
 - robots.txt fetches use the shared backend external-request dispatcher so repeated hostname checks reuse sockets instead of opening a fresh connection per request
 
 ## Related
