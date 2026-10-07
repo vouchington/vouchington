@@ -1,4 +1,4 @@
-import { describe, it, beforeAll, beforeEach, expect } from 'vitest'
+import { describe, it, beforeAll, expect } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import { articleSync } from '@queues/article-sync/queues'
@@ -15,10 +15,6 @@ describe('GET /api/v1/admin/article-syncs/:jobId/stream', () => {
       createTestUser(),
     ])
     await import('./article-syncs.mts')
-  })
-
-  beforeEach(async () => {
-    await articleSync.obliterate({ force: true })
   })
 
   it('returns 401 when not authenticated', async () => {
@@ -45,25 +41,31 @@ describe('GET /api/v1/admin/article-syncs/:jobId/stream', () => {
     expect(job).toBeTruthy()
     if (!job) throw new Error('Article sync job was not enqueued')
     const terminal = { status: 'failed' as const, error: 'Source unavailable — retry later' }
-    let received = false
-    const response = request
+    let publicationCompletion: Promise<void> | undefined
+    const streamRequest = request
       .get(`/api/v1/admin/article-syncs/${job.id}/stream`)
       .timeout(5000)
+      .buffer(true)
+    const response = await streamRequest
+      .parse((stream, done) => {
+        let body = ''
+        stream.setEncoding('utf8')
+        stream.on('data', (chunk: string) => {
+          body += chunk
+        })
+        stream.on('end', () => done(null, body))
+        stream.on('error', done)
+        function failPublication(err: Error) {
+          done(err, undefined)
+          streamRequest.abort()
+        }
+        publicationCompletion = articleSyncPubSub.publish(job.id, terminal)
+        void publicationCompletion.catch(failPublication)
+      })
       .expect('Content-Type', /text\/event-stream/)
       .expect(200)
-      .then(result => {
-        received = true
-        return result
-      })
-    await expect
-      .poll(
-        async () => {
-          await articleSyncPubSub.publish(job.id, terminal)
-          return received
-        },
-        { timeout: 5000 },
-      )
-      .toBe(true)
-    expect((await response).text).toBe(`event: status\ndata: ${JSON.stringify(terminal)}\n\n`)
+    expect(publicationCompletion).toBeDefined()
+    await publicationCompletion
+    expect(response.body).toBe(`event: status\ndata: ${JSON.stringify(terminal)}\n\n`)
   })
 })
