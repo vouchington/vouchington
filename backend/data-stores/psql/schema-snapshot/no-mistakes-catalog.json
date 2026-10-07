@@ -36689,7 +36689,7 @@
           "ordinalPosition": 1
         },
         "copyright_notice_target_id": {
-          "comment": "Confirmed target whose placement belonged to the incident account when the incident was synchronized.",
+          "comment": "Strike-eligible target whose placement belonged to the incident account when the incident was synchronized.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
@@ -36699,7 +36699,7 @@
           "ordinalPosition": 3
         },
         "copyright_repeat_infringer_incident_id": {
-          "comment": "Account incident supported by the confirmed target.",
+          "comment": "Account incident potentially supported by the target.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
@@ -36719,7 +36719,7 @@
           "ordinalPosition": 4
         }
       },
-      "comment": "Immutable target provenance tying each account incident to the confirmed placements that can keep it operative after account erasure.",
+      "comment": "Immutable target provenance tying each account incident to strike-eligible placements that may keep it operative after account erasure.",
       "foreignKeys": {
         "fk_copyr_repeat_infringe_incident_targets__incident": {
           "columns": ["copyright_repeat_infringer_incident_id", "copyright_notice_id"],
