@@ -20,6 +20,14 @@ observe queue admission; the API does not await it. Enqueue failures retain the 
 error reporting, so a decision-email enqueue rejection does not turn a committed review into an API
 failure.
 
+Invite creation, member role changes, and ownership transfers also expose the resulting email
+enqueue promises to service callers that need to observe admission. `createInvite()` keeps the
+invite-row return used by the API; `createInviteWithEmailEnqueue()` additionally returns
+`emailEnqueue`. Role changes return `roleChangeEmailEnqueue`, and ownership transfers return
+separate `newOwnerEmailEnqueue` and `previousOwnerEmailEnqueue` promises. These handles are
+optional when no email is queued. The API callers do not await them, preserving post-commit
+best-effort email behavior and the queue's internal error reporting.
+
 ## Community Creation
 
 Any authenticated user with a username may create communities. There is no tier gate and no limit on how many communities a user may own.

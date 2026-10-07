@@ -23,6 +23,18 @@ export async function createInvite(
   communityId: string,
   input: CreateInviteInput,
 ): Promise<CommunityInvite> {
+  const { invite } = await createInviteWithEmailEnqueue(currentUserId, communityId, input)
+  return invite
+}
+
+export async function createInviteWithEmailEnqueue(
+  currentUserId: string,
+  communityId: string,
+  input: CreateInviteInput,
+): Promise<{
+  invite: CommunityInvite
+  emailEnqueue: ReturnType<typeof enqueueSendCommunityInviteEmail> | null
+}> {
   assert(input.username || input.email, 422, 'Either username or email is required')
   assert(!(input.username && input.email), 422, 'Provide either username or email, not both')
 
@@ -73,21 +85,30 @@ export async function createInvite(
 
   const invite = rows[0] as CommunityInvite
 
-  if (invitedEmail) {
-    void enqueueSendCommunityInviteEmail(
-      {
-        emailAddress: invitedEmail,
-        uiLocale: await getCommunityInviteRecipientUiLocale(invitedEmail),
-      },
-      {
-        communityName: community.name,
+  const emailEnqueue = invitedEmail
+    ? enqueueInviteEmail(
+        invitedEmail,
+        await getCommunityInviteRecipientUiLocale(invitedEmail),
+        community.name,
         inviterName,
         code,
-      },
-    )
-  }
+      )
+    : null
 
-  return invite
+  return { invite, emailEnqueue }
+}
+
+function enqueueInviteEmail(
+  emailAddress: string,
+  uiLocale: string | null,
+  communityName: string,
+  inviterName: string,
+  code: string,
+): ReturnType<typeof enqueueSendCommunityInviteEmail> {
+  return enqueueSendCommunityInviteEmail(
+    { emailAddress, uiLocale },
+    { communityName, inviterName, code },
+  )
 }
 
 type CommunityInviteRecipientUiLocaleLookup = (emailAddress: string) => Promise<string | null>

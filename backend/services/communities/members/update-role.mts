@@ -1,7 +1,7 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
-import { getCommunity } from '../get.mts'
+import { getCommunity, type CommunityWithOwner } from '../get.mts'
 import { getCommunityMember } from './get.mts'
 import { enqueueOnCommunityAgentPromptsDeactivated } from '@queues/entity-listeners/enqueues'
 import { enqueueSendCommunityRoleChangeEmail } from '@queues/emails/enqueues'
@@ -10,6 +10,7 @@ import type { CommunityMemberRole } from '../types.mts'
 import { recordModeratorAction } from '@services/moderator-actions'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { getPrivateUserByAny } from '@services/users/get'
+import type { PrivateUser } from '@services/users/types'
 import { getSiteUrl } from '@modules/utils'
 import {
   createCommunityLifecycleNotification,
@@ -24,7 +25,9 @@ export async function updateMemberRole(
   communityId: string,
   targetUserId: string,
   role: CommunityMemberRole,
-): Promise<void> {
+): Promise<{
+  roleChangeEmailEnqueue: ReturnType<typeof enqueueSendCommunityRoleChangeEmail> | null
+}> {
   assert(currentUserId !== targetUserId, 422, 'You cannot change your own role')
   const community = await getCommunity(communityId)
   assert(community, 404, 'Community not found')
@@ -78,6 +81,7 @@ export async function updateMemberRole(
   const notification = notificationInTransaction
   if (notification) await enqueueCommunityLifecycleNotificationPush([notification])
 
+  let roleChangeEmailEnqueue: ReturnType<typeof enqueueSendCommunityRoleChangeEmail> | null = null
   // Only log when the role actually changed — PostgreSQL reports rowCount=1 even for no-ops
   if (updated && previousRole !== role) {
     const [, , , targetUser] = await Promise.all([
@@ -94,18 +98,7 @@ export async function updateMemberRole(
     if (targetUser) {
       const direction: 'promoted' | 'demoted' =
         ROLE_RANK[role] > ROLE_RANK[previousRole] ? 'promoted' : 'demoted'
-      void enqueueSendCommunityRoleChangeEmail(
-        {
-          userId: targetUser.id,
-          uiLocale: targetUser.ui_locale ?? null,
-        },
-        {
-          communityName: community.name,
-          communityUrl: getSiteUrl(`/communities/${community.slug}`),
-          newRole: role,
-          direction,
-        },
-      )
+      roleChangeEmailEnqueue = enqueueRoleChangeEmail(targetUser, community, role, direction)
     }
   }
 
@@ -113,4 +106,22 @@ export async function updateMemberRole(
   if (shouldDeactivatePrompts) {
     void enqueueOnCommunityAgentPromptsDeactivated(currentUserId, targetUserId, communityId)
   }
+  return { roleChangeEmailEnqueue }
+}
+
+function enqueueRoleChangeEmail(
+  targetUser: PrivateUser,
+  community: Pick<CommunityWithOwner, 'name' | 'slug'>,
+  role: CommunityMemberRole,
+  direction: 'promoted' | 'demoted',
+): ReturnType<typeof enqueueSendCommunityRoleChangeEmail> {
+  return enqueueSendCommunityRoleChangeEmail(
+    { userId: targetUser.id, uiLocale: targetUser.ui_locale ?? null },
+    {
+      communityName: community.name,
+      communityUrl: getSiteUrl(`/communities/${community.slug}`),
+      newRole: role,
+      direction,
+    },
+  )
 }
