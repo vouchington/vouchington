@@ -1,6 +1,11 @@
 import { SQSClient as CreateSQSClient } from '@aws-sdk/client-sqs'
 import createHttpError from 'http-errors'
-import { AWS_DUALSTACK_CLIENT_CONFIG, AWS_REGION } from './config.mts'
+import {
+  AWS_DUALSTACK_CLIENT_CONFIG,
+  AWS_REGION,
+  AWS_SQS_SOCKET_TIMEOUT_MS,
+  createAwsRequestHandler,
+} from './config.mts'
 import { getSqsCredentials, hasSqsCredentials } from './credentials.mts'
 
 let client: CreateSQSClient | undefined
@@ -25,6 +30,7 @@ function getSQSClient(): CreateSQSClient {
     client = new CreateSQSClient({
       credentials: getSqsClientCredentials(),
       region: AWS_REGION,
+      requestHandler: createAwsRequestHandler({ socketTimeout: AWS_SQS_SOCKET_TIMEOUT_MS }),
       ...AWS_DUALSTACK_CLIENT_CONFIG,
       // QueueUrls are provisioned with the IPv4 sqs.<region>.amazonaws.com host. The SDK defaults
       // useQueueUrlAsEndpoint to true, which overrides the resolved dual-stack endpoint with that

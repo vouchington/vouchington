@@ -1,5 +1,5 @@
 import createHttpError from 'http-errors'
-import { AWS_DUALSTACK_CLIENT_CONFIG, AWS_REGION } from './config.mts'
+import { AWS_DUALSTACK_CLIENT_CONFIG, AWS_REGION, createAwsRequestHandler } from './config.mts'
 import { getSESCredentials, hasSESCredentials } from './credentials.mts'
 import { buildRawEmailMessage } from './ses-mime.mts'
 import onError from '@modules/on-error'
@@ -113,7 +113,11 @@ function getSESClient(): CreateSESClient {
   if (!client) {
     client = new CreateSESClient({
       credentials: getSesClientCredentials(),
+      // SES sends have no idempotency token. Retrying after an ambiguous response timeout can
+      // deliver the same email twice, so callers own any deliberate retry as a new attempt.
+      maxAttempts: 1,
       region: AWS_REGION,
+      requestHandler: createAwsRequestHandler(),
       ...AWS_DUALSTACK_CLIENT_CONFIG,
     })
   }
