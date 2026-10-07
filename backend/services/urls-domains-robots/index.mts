@@ -145,7 +145,7 @@ export const isUrlCrawlable = async (
     return !(await checkDomainBlacklisted(domain))
   }
   const parser = await getParsedRobots(domain, options?.dependencies)
-  return parser.isAllowed(url, userAgent) ?? false
+  return parser.isAllowed(url, robotsUserAgentToken(userAgent)) ?? false
 }
 
 export async function computeHostnameRateLimitMs(
@@ -169,6 +169,14 @@ async function getCrawlDelayMs(
   dependencyOverrides: Partial<RobotsDependencies>,
 ): Promise<number | null> {
   const parser = await getParsedRobots(domain, dependencyOverrides)
-  const crawlDelay = parser.getCrawlDelay(userAgent)
+  const crawlDelay = parser.getCrawlDelay(robotsUserAgentToken(userAgent))
   return crawlDelay != null ? Math.ceil(crawlDelay * 1000) : null
+}
+
+/** RFC 9309 product token: the first User-Agent token, without a `/version` suffix. */
+function robotsUserAgentToken(userAgent: string): string {
+  const firstToken = userAgent.trim().split(/[ \t]+/, 1)[0] ?? ''
+  const slashIndex = firstToken.indexOf('/')
+  const token = (slashIndex === -1 ? firstToken : firstToken.slice(0, slashIndex)).trim()
+  return token || '*'
 }
