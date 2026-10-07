@@ -3,7 +3,7 @@ import sql from 'sql-template-strings'
 
 export type NotificationPushInput = { userId: string; notificationId: string }
 
-/** Ensures replayed pre-capture notifications enter the durable delivery path. */
+/** Restores missing durable push intents for eligible notifications. */
 export async function ensureNotificationPushIntents(
   notifications: NotificationPushInput[],
   options: QueryOptions = {},

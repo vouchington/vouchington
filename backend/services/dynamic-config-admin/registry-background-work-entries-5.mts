@@ -80,6 +80,7 @@ export const backgroundWorkRegistryEntries5 = {
       community_digest_recipient_batch_size:
         'Community digest recipient batch size for notifications processing.',
       reconcile_batch_size: 'Reconcile batch size for notifications processing.',
+      push_intent_recovery_page_size: 'Page size for durable notification push intent recovery.',
     },
   }),
   'bookmarks-work-config': defineBoundedWorkNamespace({

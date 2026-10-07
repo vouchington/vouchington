@@ -410,9 +410,12 @@ receives the real transport and request count; server and dispatcher close after
 
 Use `withTestNotificationPushRecoveryBacklog()` from
 `@voucha/test-helpers/notification-push-recovery` for a fixed recovery snapshot spanning multiple
-pages. It pins owned intent timestamps to one isolated cursor window, exposes a frozen ordered ID
-snapshot and endpoint-state readers, and deletes only its owned notifications after the callback
-settles.
+pages. Its normal notification insert captures intents with one transaction timestamp. It derives
+the cursor from those owned rows and keeps PostgreSQL's timestamp text to preserve microseconds,
+exposes a frozen ordered ID snapshot and endpoint-state readers, and deletes only its owned
+notifications after the callback settles. `createTestNotificationWithoutPushIntent()` creates a
+normal notification, then removes only its owned intent to exercise missing-intent recovery with
+all constraints and triggers enabled.
 
 ## Image Moderation Fixtures
 
