@@ -45,7 +45,7 @@ BEGIN
 END;
 $$;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TRIGGER trigger_google_play_acknowledgements_work AFTER INSERT ON membership_google_play_acknowledgments
+CREATE TRIGGER trigger_google_play_acknowledgments_work AFTER INSERT ON membership_google_play_acknowledgments
 FOR EACH ROW EXECUTE FUNCTION fn_create_google_play_acknowledgment_work();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_membership_google_play_acknowledgments_updated_at BEFORE UPDATE ON membership_google_play_acknowledgments FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
