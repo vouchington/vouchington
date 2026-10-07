@@ -154,8 +154,8 @@ the record pending in the outbox, reported with its `pendingCount`.
 
 An automated session may have neither the server nor a trusted CLI: no repository registers
 either, and a host has them only when its own user configuration was run through
-`./configure-agents.sh` (each Auto Harness profile has its own home, so it needs
-`--home <profile home>`). Nothing in this repository checks for that: there is no dispatch or
+`./configure-agents.sh` (a profile that uses its own home directory needs
+`--home <profile home>`; whether the Auto Harness profiles do is not documented here). Nothing in this repository checks for that: there is no dispatch or
 prompt preflight, and a missing server does not stop a run. The run continues its primary work and
 states in its final report that journaling was unavailable and why, any pending outbox state, and
 the findings it would have journaled, as the [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md)
@@ -285,7 +285,7 @@ advisory context; emitting context cannot mechanically stop an agent.
   `conversation_id`), accepted only when it is a plain token, so no inherited environment or
   persisted file can leak in. A payload with no id prints no line; the
   [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md) then names the harness's own
-  environment id as the only fallback. A child agent never reuses this id; it gets its own through
+  environment id as the only fallback. A spawned child never reuses its parent's id; it takes its own, from its own SessionStart line or runtime environment, and registers it through
   `session_ensure`.
 - **Deployment probe.** Unless the run is a compaction restart or `CHECK_BLACKBOARD_SKIP=1`, the
   hook makes a bounded `sessions.list({ limit: 1 })` request and says loudly when the hosted

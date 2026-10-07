@@ -169,8 +169,8 @@ namespaced with `vouchington:` (`vouchington:shepherd:<PR>`, `vouchington:plan:<
 
 Dispatch does not check for an MCP server or a journaling CLI, and no prompt gates on one. This
 repository registers neither: a host has the `vouchington-tooling` server (and Sentry) only when
-its user configuration was written by vouchington-machines, which for an Auto Harness profile
-with its own home means `./configure-agents.sh --home <profile home>`. A session without them
+its user configuration was written by vouchington-machines, which for a profile with its own
+home directory means `./configure-agents.sh --home <profile home>`. A session without them
 continues its primary work and reports the unavailability and any pending outbox state in its
 final report, as the [`blackboard` skill](../../../../.agents/skills/blackboard/SKILL.md)
 requires; the run is never stopped or failed for it. See
