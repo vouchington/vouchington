@@ -7,6 +7,7 @@ import {
   readCopyrightTerritorialContractShape,
   withRolledBackTerritorialTransaction,
 } from '@voucha/test-helpers/data-stores/psql/copyright-eu-uk-contracts'
+import { tryCommitCopyrightJurisdictionPolicyApproval } from '@voucha/test-helpers/data-stores/psql/copyright-jurisdiction-policy-writes'
 import {
   acknowledgeUkCopyrightNotice,
   recordUkCopyrightAcknowledgmentFailure,
@@ -29,6 +30,26 @@ function noticeRequest(): TerritorialNoticeRequest {
 }
 
 describe('UK copyright notice contracts', () => {
+  it('blocks a concurrent jurisdiction approval while concealed approvals are uncommitted', async () => {
+    const claimant = await createTestUser()
+    const policyVersion = `uk-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`
+    await withRolledBackTerritorialTransaction(async transaction => {
+      await concealJurisdictionPolicyApprovals(transaction, 'uk', claimant.id)
+      await expect(
+        tryCommitCopyrightJurisdictionPolicyApproval('uk', policyVersion, claimant.id),
+      ).resolves.toBe(false)
+      await expect(
+        receiveTerritorialCopyrightNoticeInTransaction(
+          { user: claimant, identity: `user:${claimant.id}` },
+          'uk',
+          crypto.randomUUID(),
+          noticeRequest(),
+          transaction,
+        ),
+      ).rejects.toMatchObject({ status: 403, message: 'UK copyright notices are not available' })
+    })
+  })
+
   it('fails closed without an approved policy and after that approval is withdrawn', async () => {
     const claimant = await createTestUser()
     await withRolledBackTerritorialTransaction(async transaction => {
