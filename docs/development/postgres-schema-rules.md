@@ -631,7 +631,7 @@ History details (decision 15):
   id or time bound.
 - **A child row is never older than its parent** (decision 20). A reader of a `RANGE (id)` child
   table by its parent's UUIDv7 id adds `id >= min_uuidv7(uuid_extract_timestamp(<parent id>) -
-  interval '1 hour')` through the shared helper, so partitions from before the parent existed are
+  interval '1 hour')` through the TypeScript `getMinUUIDv7ForParentHistory` helper, so partitions from before the parent existed are
   skipped. The hour covers clock skew between id generators.
 - **A rate limit reads the table keyed by the actor.** A check like "this sender did X in the last
   day" reads a table partitioned or indexed by sender (`follower_distributions`), never the fan-out

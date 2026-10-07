@@ -172,4 +172,9 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'vote-aggregation-post',
   'vote-aggregation-topic',
   'vote-weight-factors',
+  'follower-distribution-rate-limit-post_share',
+  'follower-distribution-rate-limit-post_send',
+  'follower-distribution-rate-limit-rss_feed_item_share',
+  'follower-distribution-rate-limit-rss_feed_item_send',
+  'post-creation-moderation-bypass',
 ] as const

@@ -76,16 +76,6 @@ export async function assertNoRecentDistribution(
       `You can only ${action.includes('share') ? 'share' : 'send'} this once per day`,
     )
   }
-
-  const previousRows = await query(
-    recentTargetRowsQuery(senderUserId, action, entityId, recentCutoffId),
-  )
-  if (previousRows.rows.length > 0) {
-    throw createError(
-      429,
-      `You can only ${action.includes('share') ? 'share' : 'send'} this once per day`,
-    )
-  }
 }
 
 export function dedupLockKey(
@@ -107,10 +97,9 @@ function recentDistributionQuery(
     FROM follower_distributions
     WHERE sender_user_id = ${senderUserId}
       AND action = ${action}
-      AND failed_at IS NULL
       AND id > ${recentCutoffId}
       AND (
-        completed_at IS NULL
+        (failed_at IS NULL AND completed_at IS NULL)
         OR EXISTS (
           SELECT 1
           FROM follower_distribution_deliveries
@@ -125,48 +114,4 @@ function recentDistributionQuery(
   }
   statement.append(sql` LIMIT 1`)
   return statement
-}
-
-function recentTargetRowsQuery(
-  senderUserId: string,
-  action: FollowerDistributionAction,
-  entityId: string,
-  recentCutoffId: string,
-) {
-  switch (action) {
-    case 'post_share':
-      return sql`/* recentTargetRowsQuery */
-        SELECT 1 FROM post_feed_shares
-        WHERE shared_by_id = ${senderUserId}
-          AND post_id = ${entityId}
-          AND id > ${recentCutoffId}
-        LIMIT 1
-      `
-    case 'post_send':
-      return sql`/* recentTargetRowsQuery */
-        SELECT 1 FROM notifications
-        WHERE sent_by_id = ${senderUserId}
-          AND post_id = ${entityId}
-          AND delivery_type = 'manual_send'
-          AND id > ${recentCutoffId}
-        LIMIT 1
-      `
-    case 'rss_feed_item_share':
-      return sql`/* recentTargetRowsQuery */
-        SELECT 1 FROM rss_feed_item_feed_shares
-        WHERE shared_by_id = ${senderUserId}
-          AND rss_feed_item_id = ${entityId}
-          AND id > ${recentCutoffId}
-        LIMIT 1
-      `
-    case 'rss_feed_item_send':
-      return sql`/* recentTargetRowsQuery */
-        SELECT 1 FROM notifications
-        WHERE sent_by_id = ${senderUserId}
-          AND rss_feed_item_id = ${entityId}
-          AND delivery_type = 'manual_send'
-          AND id > ${recentCutoffId}
-        LIMIT 1
-      `
-  }
 }

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { resolveSeedAnchor } from './seed-anchor.mts'
 
+export const FOLLOWER_DISTRIBUTION_SEED_COUNT = 20_000
 export const HOSTNAME_COUNT = 1000
 export const FEED_URL_COUNT = 2500
 export const ITEM_URL_POOL = 600

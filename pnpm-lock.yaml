@@ -3233,6 +3233,9 @@ importers:
       '@services/feeds':
         specifier: workspace:^
         version: link:../services/feeds
+      '@services/follower-distributions':
+        specifier: workspace:^
+        version: link:../services/follower-distributions
       '@services/friend-recommendations':
         specifier: workspace:^
         version: link:../services/friend-recommendations

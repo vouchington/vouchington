@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest'
-
 import { randomUUID } from 'node:crypto'
-
 import {
   createTestPost,
   createTestRssFeedItemWithUrl,
@@ -21,16 +19,13 @@ import {
   softDeleteRssFeedItemsForTest,
   softDeleteUser,
 } from '@voucha/test-helpers'
-
 import {
   sendPostToFollowers,
   sendRssFeedItemToFollowers,
   sharePostWithFollowers,
   shareRssFeedItemWithFollowers,
 } from '../create.mts'
-
 import { processFollowerDistributionChunk } from '../process.mts'
-
 import { streamIncompleteFollowerDistributionIdBatches } from '../backfill.mts'
 
 import {
@@ -95,6 +90,63 @@ describe('processFollowerDistributionChunk', () => {
     await expect(sharePostWithFollowers(sender, post.id)).rejects.toThrow(
       'You can only share this once per day',
     )
+  })
+
+  it.each(['post_share', 'post_send', 'rss_feed_item_share', 'rss_feed_item_send'] as const)(
+    'blocks a failed %s distribution after at least one recipient was delivered',
+    async action => {
+      const sender = await createTestUser()
+      const creator = await createTestUser()
+      const follower = await createTestUser()
+      await followUser(follower, sender)
+
+      let distributionId: string
+      let retry: () => Promise<unknown>
+      if (action === 'post_share' || action === 'post_send') {
+        const post = await createTestPost({ user: creator, privacy: 'public' })
+        const distribution =
+          action === 'post_share'
+            ? await sharePostWithFollowers(sender, post.id)
+            : await sendPostToFollowers(sender, post.id, { audience: 'all_followers' })
+        distributionId = distribution.distribution_id
+        retry = () =>
+          action === 'post_share'
+            ? sharePostWithFollowers(sender, post.id)
+            : sendPostToFollowers(sender, post.id, { audience: 'all_followers' })
+      } else {
+        const topic = await createTestTopic()
+        const feedId = await createTestRssFeedWithTiming(topic.id)
+        const item = await createTestRssFeedItemWithUrl(feedId)
+        const distribution =
+          action === 'rss_feed_item_share'
+            ? await shareRssFeedItemWithFollowers(sender, item.id)
+            : await sendRssFeedItemToFollowers(sender, item.id, { audience: 'all_followers' })
+        distributionId = distribution.distribution_id
+        retry = () =>
+          action === 'rss_feed_item_share'
+            ? shareRssFeedItemWithFollowers(sender, item.id)
+            : sendRssFeedItemToFollowers(sender, item.id, { audience: 'all_followers' })
+      }
+
+      await expect(processFollowerDistributionChunk(distributionId)).resolves.toMatchObject({
+        processed: 1,
+      })
+      await markFollowerDistributionFailedForTest(distributionId)
+
+      await expect(retry()).rejects.toThrow(/You can only (share|send) this once per day/)
+    },
+  )
+
+  it('allows retrying a failed distribution that delivered to no recipients', async () => {
+    const sender = await createTestUser()
+    const creator = await createTestUser()
+    const post = await createTestPost({ user: creator, privacy: 'public' })
+    const distribution = await sharePostWithFollowers(sender, post.id)
+    await markFollowerDistributionFailedForTest(distribution.distribution_id)
+
+    await expect(sharePostWithFollowers(sender, post.id)).resolves.toMatchObject({
+      status: 'accepted',
+    })
   })
 
   it('completes a distribution with no matching recipients', async () => {

@@ -45,6 +45,7 @@
     "@services/entity-fetch": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@services/feeds": "workspace:^",
+    "@services/follower-distributions": "workspace:^",
     "@services/friend-recommendations": "workspace:^",
     "@services/individuals-households": "workspace:^",
     "@services/jwt-session": "workspace:^",
