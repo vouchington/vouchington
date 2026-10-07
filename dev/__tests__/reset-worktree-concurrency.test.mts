@@ -29,14 +29,22 @@ function readWhenNonEmpty(directory: string, filename: string): Promise<string> 
   return new Promise((resolve, reject) => {
     let settled = false
     let watcher!: ReturnType<typeof watch>
+    const timeout = AbortSignal.timeout(5_000)
+    const onTimeout = () => {
+      if (settled) return
+      settled = true
+      watcher.close()
+      reject(new Error(`Timed out waiting for ${filename}`))
+    }
     const finish = (contents: string) => {
       if (settled) return
       settled = true
+      timeout.removeEventListener('abort', onTimeout)
       watcher.close()
       resolve(contents)
     }
     watcher = watch(directory, (_event, name) => {
-      if (name !== filename) return
+      if (name && name !== filename) return
       const contents = read()
       if (contents === undefined) return
       finish(contents)
@@ -44,9 +52,11 @@ function readWhenNonEmpty(directory: string, filename: string): Promise<string> 
     watcher.on('error', err => {
       if (settled) return
       settled = true
+      timeout.removeEventListener('abort', onTimeout)
       watcher.close()
       reject(err)
     })
+    timeout.addEventListener('abort', onTimeout, { once: true })
     const existing = read()
     if (existing !== undefined) finish(existing)
   })
@@ -129,14 +139,16 @@ wait
           DATABASE_CHILD_FILE: childFile,
           BASH_ENV: bashEnv,
         },
-        stdio: 'ignore',
+        stdio: ['ignore', 'pipe', 'ignore'],
       })
       const exited = once(reset, 'exit')
+      const descendantsExited = once(reset.stdout!, 'end')
+      reset.stdout!.resume()
       try {
-        const pid = Number(await readWhenNonEmpty(cwd, 'database-child.pid'))
+        await readWhenNonEmpty(cwd, 'database-child.pid')
         reset.kill('SIGTERM')
         expect((await exited)[0]).toBe(143)
-        await expect(execFileAsync('kill', ['-0', String(pid)])).rejects.toThrow('No such process')
+        await descendantsExited
         await writeFile(join(binDir, 'dropdb'), '#!/usr/bin/env bash\nexit 0\n')
         expectResetSuccess(await runResetWorktree({ binDir, cwd }))
       } finally {

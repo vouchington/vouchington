@@ -99,11 +99,20 @@ describe('web-integration asset metadata cache', () => {
     )
 
     try {
-      await saturated.promise
+      await Promise.race([
+        saturated.promise,
+        new Promise<void>((_resolve, reject) => {
+          AbortSignal.timeout(5_000).addEventListener(
+            'abort',
+            () => reject(new Error('Timed out waiting for six active requests')),
+            { once: true },
+          )
+        }),
+      ])
     } finally {
       releaseLeases()
+      await requests
     }
-    await requests
     expect(maximum).toBe(6)
   })
 })
