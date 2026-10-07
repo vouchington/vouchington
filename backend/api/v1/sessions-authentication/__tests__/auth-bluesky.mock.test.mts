@@ -13,13 +13,8 @@ import type { NodeOAuthClient } from '@modules/bluesky-oauth'
 const beginBlueskyAuthorizationMock = vi.hoisted(() => vi.fn<VitestLooseMock>())
 const completeBlueskyCallbackMock = vi.hoisted(() => vi.fn<VitestLooseMock>())
 const revokeBlueskySessionMock = vi.hoisted(() => vi.fn<VitestLooseMock>())
-// createBlueskyOAuthClient constructs a real @atproto/oauth-client-node NodeOAuthClient, which
-// validates its client-metadata shape (client_id/redirect_uris) against the resolved site origin
-// at construction time. That validation requires a real https origin (see
-// backend/modules/bluesky-oauth/client-metadata.mts) — local/CI worktrees resolve to a localhost
-// origin, which the SDK correctly rejects. This is the @modules/bluesky-oauth SDK boundary (see
-// backend/AGENTS.md § Provider-wide SDK boundaries), so it's mocked here rather than exercised for
-// real, mirroring backend/services/bluesky-accounts/link.mock.test.mts and disconnect.mock.test.mts.
+// SDK client metadata requires HTTPS and rejects localhost test origins.
+// Mock only the @modules/bluesky-oauth provider boundary (see backend/AGENTS.md).
 const createBlueskyOAuthClientMock = vi.hoisted(() => vi.fn<VitestLooseMock>())
 vi.mock<typeof import('@modules/bluesky-oauth')>(
   import('@modules/bluesky-oauth'),
@@ -31,9 +26,7 @@ vi.mock<typeof import('@modules/bluesky-oauth')>(
     createBlueskyOAuthClient: createBlueskyOAuthClientMock,
   }),
 )
-// getBlueskyOAuthClient() memoizes its result for the lifetime of the module, so this mock is
-// invoked at most once across the whole file — configure a stable fake up front rather than in
-// each test's beforeEach.
+// The client is memoized; configure one stable fake for this file.
 createBlueskyOAuthClientMock.mockReturnValue({} as NodeOAuthClient)
 
 const { BlueskySessionStore } = await import('@services/bluesky-accounts')
@@ -168,9 +161,7 @@ describe('POST /api/v1/auth/bluesky/link', () => {
   })
 })
 
-// GET /api/v1/auth/bluesky/callback tests live in auth-bluesky-callback.mock.test.mts — split out
-// (Codex review round 2, fix #7) to stay under the 300-line file cap once the requireAuth-gating
-// regression tests were added.
+// Callback route cases live in auth-bluesky-callback.mock.test.mts.
 
 describe('DELETE /api/v1/auth/bluesky/link', () => {
   beforeEach(() => {
@@ -214,10 +205,8 @@ describe('DELETE /api/v1/auth/bluesky/link', () => {
   })
 })
 
-// Phase D3 web UI: GET /api/v1/my/identity is the only place a linked Bluesky account persists
-// across a page reload (the callback's `?bluesky=linked` query param is a one-shot flash). Both
-// connect and accepted-generation disconnect enqueue processUserUpdated to bust the cached
-// identity read — see connect.mts/disconnect.mts and the Bluesky-account service README.
+// GET /api/v1/my/identity persists the link across reloads; processUserUpdated
+// invalidates its cache after connect and accepted-generation disconnect.
 describe('bluesky_account on GET /api/v1/my/identity', () => {
   beforeEach(() => {
     revokeBlueskySessionMock.mockReset()
@@ -246,11 +235,36 @@ describe('bluesky_account on GET /api/v1/my/identity', () => {
       did,
       linkingUserId: user.id,
     })
-    await withTestEntityListenerCompletion('processUserUpdated', user.id, () =>
-      connectBlueskyAccountToUser(user.id, did, handle, {
-        linkAuthorizationId: linked.link_authorization_id,
-      }),
+    const admissionStarted = Promise.withResolvers<void>()
+    const releaseAdmission = Promise.withResolvers<void>()
+    const completion = withTestEntityListenerCompletion(
+      'processUserUpdated',
+      user.id,
+      () =>
+        connectBlueskyAccountToUser(user.id, did, handle, {
+          linkAuthorizationId: linked.link_authorization_id,
+        }),
+      {
+        beforeAdd: () => {
+          admissionStarted.resolve()
+          return releaseAdmission.promise
+        },
+        release: () => releaseAdmission.resolve(),
+      },
     )
+    try {
+      expect(
+        await Promise.race([
+          admissionStarted.promise.then(() => true),
+          completion.then(() => false),
+        ]),
+      ).toBe(true)
+      const stillCached = await request.get('/api/v1/my/identity').expect(200)
+      expect(stillCached.body.identity.bluesky_account).toBeNull()
+    } finally {
+      releaseAdmission.resolve()
+    }
+    await completion
 
     const after = await request.get('/api/v1/my/identity').expect(200)
     expect(after.body.identity.bluesky_account).toEqual({ did, handle })
@@ -274,9 +288,9 @@ describe('bluesky_account on GET /api/v1/my/identity', () => {
     const linked = await request.get('/api/v1/my/identity').expect(200)
     expect(linked.body.identity.bluesky_account).not.toBeNull()
 
-    await withTestEntityListenerCompletion('processUserUpdated', user.id, async () => {
-      await request.delete('/api/v1/auth/bluesky/link').expect(204)
-    })
+    await withTestEntityListenerCompletion('processUserUpdated', user.id, () =>
+      request.delete('/api/v1/auth/bluesky/link').expect(204),
+    )
 
     const after = await request.get('/api/v1/my/identity').expect(200)
     expect(after.body.identity.bluesky_account).toBeNull()
