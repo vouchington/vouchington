@@ -42,6 +42,14 @@ Bookmark bloom-filter suites share
 [`registerBookmarkBloomFixture`](../../../../backend/test-helpers/bookmark-bloom-fixture.mts).
 Its getters expose the user and relation names after setup. Hooks drain pending bloom work before
 deleting that user's filter and restore the original configuration on suite teardown.
+URL and email blocklist recovery tests share
+[`withOwnedBlocklistBloomFilter`](../../../../backend/test-helpers/owned-blocklist-bloom-filter.mts)
+and
+[`registerOwnedBlocklistBloomRecoveryTests`](../../../../backend/test-helpers/blocklist-bloom-recovery-tests.mts).
+Each suite keeps its filter name, check, and add functions. The registrar owns the unreadable-marker,
+missing-filter, corrupted-filter, and add-recovery cases. The helper owns a private Valkey filter,
+ready marker, and that filter's read target so a parallel fork or the in-process rebuild worker
+cannot replace those keys during the assertion.
 Copyright email-intake and form-screening enqueue tests share
 [`copyright-agent-enqueue-recovery-tests.mts`](../../../../backend/test-helpers/copyright-agent-enqueue-recovery-tests.mts).
 Each file keeps its queue name, payload, and expected job options.

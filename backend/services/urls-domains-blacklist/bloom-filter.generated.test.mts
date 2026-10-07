@@ -14,6 +14,7 @@ import {
   insertTestUrlHostname,
   hasUrlTypeDomainBlacklists,
 } from '@voucha/test-helpers'
+import { registerOwnedBlocklistBloomRecoveryTests } from '@voucha/test-helpers/blocklist-bloom-recovery-tests'
 import { bloomValkeyClient } from '@data-stores/valkey'
 import { unlinkReadyMarkerIfValue } from './ready-marker.mts'
 
@@ -47,41 +48,12 @@ describe('bloom-filter.generated', () => {
     expect(result).toBeNull()
   })
 
-  it('checkBloomFilter returns null when the ready marker is not readable', async () => {
-    await bloomValkeyClient.customCommand([
-      'LPUSH',
-      'bloom-filter:url-blocklist:ready',
-      'not-a-string-marker',
-    ])
-
-    const result = await checkBloomFilter('wrong-ready-type.com')
-
-    expect(result).toBeNull()
-    expect(enqueueSpy).toHaveBeenCalled()
-    await settleOwnedRebuildEnqueues()
-  })
-
-  it('checkBloomFilter keeps ready marker valid when missing-filter repair runs', async () => {
-    await bloomValkeyClient.set('bloom-filter:url-blocklist:ready', '1')
-
-    const result = await checkBloomFilter('missing-filter.com')
-    expect(enqueueSpy).toHaveBeenCalled()
-    await settleOwnedRebuildEnqueues()
-    expect(result).toBeNull()
-    const readyMarker = await bloomValkeyClient.get('bloom-filter:url-blocklist:ready')
-    expect(readyMarker == null || readyMarker.toString().startsWith('ready:')).toBe(true)
-  })
-
-  it('checkBloomFilter keeps ready marker valid when corrupted-filter repair runs', async () => {
-    await bloomValkeyClient.set('bloom-filter:url-blocklist:ready', '1')
-    await bloomValkeyClient.set('bloom-filter:url-blocklist', 'corrupted')
-
-    const result = await checkBloomFilter('corrupted-filter.com')
-    expect(enqueueSpy).toHaveBeenCalled()
-    await settleOwnedRebuildEnqueues()
-    expect(result).toBeNull()
-    const readyMarker = await bloomValkeyClient.get('bloom-filter:url-blocklist:ready')
-    expect(readyMarker == null || readyMarker.toString().startsWith('ready:')).toBe(true)
+  registerOwnedBlocklistBloomRecoveryTests({
+    filter: 'url-blocklist',
+    check: checkBloomFilter,
+    add: addDomainsToBloomFilter,
+    wasRebuildEnqueued: () => enqueueSpy.mock.calls.length > 0,
+    settleRebuildEnqueues: settleOwnedRebuildEnqueues,
   })
 
   it('unlinkReadyMarkerIfValue preserves refreshed ready markers', async () => {
@@ -258,21 +230,5 @@ describe('bloom-filter.generated', () => {
     await bloomValkeyClient.set('bloom-filter:url-blocklist', 'corrupted')
     // Should resolve without throwing — error recovery is internal
     await expect(addDomainsToBloomFilter(['blocked.com'])).resolves.toBeUndefined()
-  })
-
-  it('addDomainsToBloomFilter swallows unreadable ready marker recovery errors', async () => {
-    await bloomValkeyClient.customCommand([
-      'LPUSH',
-      'bloom-filter:url-blocklist:ready',
-      'not-a-string-marker',
-    ])
-    await bloomValkeyClient.set('bloom-filter:url-blocklist', 'corrupted')
-
-    await expect(addDomainsToBloomFilter(['blocked.com'])).resolves.toBeUndefined()
-    expect(enqueueSpy).toHaveBeenCalled()
-    await settleOwnedRebuildEnqueues()
-    expect(
-      await bloomValkeyClient.customCommand(['TYPE', 'bloom-filter:url-blocklist:ready']),
-    ).not.toBe('list')
   })
 })
