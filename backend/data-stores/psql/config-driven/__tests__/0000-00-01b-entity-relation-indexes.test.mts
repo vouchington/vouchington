@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { extractIndexShapes } from '../../migration-runner/index-sql.mts'
+import { extractIndexShapes } from 'vouchington-tooling/sql-ast'
 import { initSqlAst, loadSqlParserModule } from '../../migration-runner/sql-statements.mts'
 import idempotent from '../0000-00-01b-entity-relation-indexes.mts'
 
