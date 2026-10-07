@@ -6,6 +6,8 @@ import {
   withTestNotificationPushRecoveryBacklog,
 } from '@voucha/test-helpers/notification-push-recovery'
 import { createTestUserDirect } from '@voucha/test-helpers'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { notificationsWorkConfig } from '@services/notifications/work-limits'
 import {
   enqueueContinueNotificationPushIntentReconciliation,
   enqueueDeliverNotificationPushIntent,
@@ -39,7 +41,11 @@ type RecordedEnqueue =
       data: Required<ReconcileNotificationPushIntentsData>
     } & EnqueueResult)
 describe('notification push-intent recovery across pages', () => {
+  let restoreWorkLimits: (() => void) | undefined
   beforeEach(() => {
+    restoreWorkLimits = overrideDynamicConfigFieldsForTest(notificationsWorkConfig, {
+      push_intent_recovery_page_size: 2,
+    })
     vi.stubEnv('WEB_PUSH_PUBLIC_KEY', 'test-public-key')
     vi.stubEnv('WEB_PUSH_PRIVATE_KEY', 'test-private-key')
     vi.stubEnv('WEB_PUSH_SUBJECT', 'mailto:tests+push-recovery-pages@voucha.ai')
@@ -47,14 +53,15 @@ describe('notification push-intent recovery across pages', () => {
     vi.mocked(webpush.sendNotification).mockResolvedValue(successfulSendResult())
   })
   afterEach(() => {
+    restoreWorkLimits?.()
     vi.unstubAllEnvs()
   })
-  it('drains distinct 100-item and 1-item pages without resending a successful endpoint', async () => {
+  it('drains distinct 2-item and 1-item pages without resending a successful endpoint', async () => {
     const recipient = await createTestUserDirect()
     const enqueues: RecordedEnqueue[] = []
     let notificationIds: readonly string[] = []
     await withTestNotificationPushRecoveryBacklog(
-      { userId: recipient.id, count: 101 },
+      { userId: recipient.id, count: 3 },
       async fixture => {
         notificationIds = fixture.notificationIds
         try {
@@ -63,25 +70,25 @@ describe('notification push-intent recovery across pages', () => {
               { scanBefore: fixture.scanBefore, after: fixture.after },
               recoveryDependencies(enqueues, fixture.notificationIds),
             ),
-          ).resolves.toEqual({ enqueued: 100 })
+          ).resolves.toEqual({ enqueued: 2 })
           const firstPage = enqueues.filter(
             (enqueue): enqueue is Extract<RecordedEnqueue, { kind: 'delivery' }> =>
               enqueue.kind === 'delivery',
           )
           const firstContinuation = enqueues.find(enqueue => enqueue.kind === 'continuation')
-          expect(firstPage).toHaveLength(100)
+          expect(firstPage).toHaveLength(2)
           expect(firstContinuation).toBeDefined()
           const firstPageNotificationIds = firstPage.map(enqueue => enqueue.data.notificationId)
-          expect(firstPageNotificationIds).toEqual(fixture.notificationIds.slice(0, 100))
+          expect(firstPageNotificationIds).toEqual(fixture.notificationIds.slice(0, 2))
           expect(enqueues.map(enqueue => enqueue.kind)).toEqual([
-            ...Array<string>(100).fill('delivery'),
+            ...Array<string>(2).fill('delivery'),
             'continuation',
           ])
-          expectSameTimestamp(firstContinuation!.data.scanBefore, fixture.scanBefore)
-          expectSameTimestamp(firstContinuation!.data.after.updatedAt, fixture.scanBefore)
+          expect(firstContinuation!.data.scanBefore).toBe(fixture.scanBefore)
+          expect(firstContinuation!.data.after.updatedAt).toBe(fixture.scanBefore)
           expect(firstContinuation!.data.after).toMatchObject({
             userId: recipient.id,
-            notificationId: fixture.notificationIds[99],
+            notificationId: fixture.notificationIds[1],
           })
           const firstPageJobs = await Promise.all(
             firstPage.map(enqueue => readEnqueuedJob(notifications, enqueue.enqueued)),
@@ -118,9 +125,9 @@ describe('notification push-intent recovery across pages', () => {
               (enqueue): enqueue is Extract<RecordedEnqueue, { kind: 'delivery' }> =>
                 enqueue.kind === 'delivery',
             )
-            .slice(100)
+            .slice(2)
           expect(secondPage.map(enqueue => enqueue.data)).toEqual([
-            { userId: recipient.id, notificationId: fixture.notificationIds[100] },
+            { userId: recipient.id, notificationId: fixture.notificationIds[2] },
           ])
           expect(enqueues.filter(enqueue => enqueue.kind === 'continuation')).toHaveLength(1)
           const secondJob = await readEnqueuedJob(notifications, secondPage[0]!.enqueued)
@@ -128,15 +135,15 @@ describe('notification push-intent recovery across pages', () => {
             name: 'processDeliverNotificationPushIntent',
             opts: { priority: PRIORITY_DEFAULT },
           })
-          for (const enqueue of firstPage.slice(0, 99)) {
+          for (const enqueue of firstPage.slice(0, 1)) {
             await expect(processDeliverNotificationPushIntent(enqueue.data)).resolves.toEqual({
               delivered: 0,
               suppressed: false,
             })
           }
-          const partialDelivery = firstPage[99]!
-          const successfulEndpoint = 'https://push.example.com/recovery-success'
-          const retryableEndpoint = 'https://push.example.com/recovery-retry'
+          const partialDelivery = firstPage[1]!
+          const successfulEndpoint = `https://push.example.com/recovery-success/${recipient.id}`
+          const retryableEndpoint = `https://push.example.com/recovery-retry/${recipient.id}`
           const [successfulSubscription, retryableSubscription] = await Promise.all([
             createSubscription(recipient.id, successfulEndpoint),
             createSubscription(recipient.id, retryableEndpoint),
@@ -286,10 +293,6 @@ async function deleteRecordedTestQueueJobs(enqueues: RecordedEnqueue[]): Promise
     jobIds.map(() => null),
   )
 }
-function expectSameTimestamp(actual: string, expected: string): void {
-  expect(new Date(actual).getTime()).toBe(new Date(expected).getTime())
-}
-
 async function captureEnqueue(recorded: RecordedEnqueue, enqueue: () => unknown): Promise<unknown> {
   recorded.enqueued = await enqueue()
   return recorded.enqueued
