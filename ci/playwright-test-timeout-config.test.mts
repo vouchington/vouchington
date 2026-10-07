@@ -1,4 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { existsSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { describe, expect, it, vi } from 'vitest'
 import { createPlaywrightConfig } from '../playwright/config/shared-config.mts'
 import {
   assertResolvedPlaywrightTimeouts,
@@ -14,6 +17,22 @@ const baseOptions = {
 }
 
 describe('Playwright test deadline cap', () => {
+  it('resolves the localization global setup from its config directory', async () => {
+    vi.stubEnv('WORKER_PORT', '8787')
+    vi.stubEnv('LOCALIZATION_TMUX_WORKER_URL', 'http://localhost:8787')
+    try {
+      const { default: config } = await import('../playwright/localization-tmux.config.mts')
+      const configPath = fileURLToPath(
+        new URL('../playwright/localization-tmux.config.mts', import.meta.url),
+      )
+      const setup = config.globalSetup
+      if (typeof setup !== 'string') throw new TypeError('Expected one localization global setup')
+      expect(existsSync(resolve(dirname(configPath), setup))).toBe(true)
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
   it.each([0, -1, 30_001, Number.POSITIVE_INFINITY, Number.NaN])(
     'rejects invalid test timeout %s',
     timeout => {

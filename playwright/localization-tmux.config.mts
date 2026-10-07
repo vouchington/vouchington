@@ -19,7 +19,7 @@ export default validatePlaywrightConfigTimeouts(
   defineConfig({
     testDir: './tests/routes',
     testMatch: 'localization-tmux-smoke.spec.mts',
-    globalSetup: './playwright/localization-timeout-setup.mts',
+    globalSetup: './localization-timeout-setup.mts',
     retries: 0,
     timeout: 30_000,
     expect: { timeout: 10_000 },
