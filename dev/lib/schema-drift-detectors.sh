@@ -106,7 +106,7 @@ detect_migration_checksum_schema_drift() {
   local database_url=$1 migrations_directory=$2 migration_rows migration_drift
 
   migration_rows=$(PGCONNECT_TIMEOUT="${PGCONNECT_TIMEOUT:-10}" psql "$database_url" --no-password -At -F $'\t' -c "SELECT id, checksum FROM migrations ORDER BY id")
-  migration_drift=$(printf '%s\n' "$migration_rows" | node "$REPO_ROOT/backend/data-stores/psql/migration-runner/ledger-drift.mts" "$migrations_directory")
+  migration_drift=$(printf '%s\n' "$migration_rows" | node "$REPO_ROOT/dev/lib/migration-ledger-drift.mts" "$migrations_directory")
 
   if [ -n "$migration_drift" ]; then
     printf '%s\n' "$migration_drift"
