@@ -64,6 +64,35 @@ describe('PostgreSQL test session configuration', () => {
     expect(env).toEqual(once)
   })
 
+  it('extends the last effective options value when the parameter is repeated', () => {
+    const env = {
+      DATABASE_URL:
+        'postgres://localhost/owned?options=-c%20jit%3Don&sslmode=disable&options=-c%20application_name%3Dci',
+    }
+    configureTestPostgresSessions(env)
+    expect(env.DATABASE_URL).toContain('sslmode=disable')
+    expect(env.DATABASE_URL).not.toContain('jit%3Don')
+    expect(env.DATABASE_URL.match(/[?&]options=/gu)).toHaveLength(1)
+    expect(new URL(env.DATABASE_URL).searchParams.get('options')).toContain('application_name=ci')
+    const once = env.DATABASE_URL
+    configureTestPostgresSessions(env)
+    expect(env.DATABASE_URL).toBe(once)
+  })
+
+  it('preserves hostless PostgreSQL socket URLs', () => {
+    const env = {
+      DATABASE_URL: 'postgresql://tester@/owned?host=%2Fvar%2Frun%2Fpostgresql',
+    }
+    configureTestPostgresSessions(env)
+    expect(env.DATABASE_URL).toMatch(
+      /^postgresql:\/\/tester@\/owned\?host=%2Fvar%2Frun%2Fpostgresql&options=/u,
+    )
+    expect(env.DATABASE_URL).toContain('statement_timeout%3D')
+    const once = env.DATABASE_URL
+    configureTestPostgresSessions(env)
+    expect(env.DATABASE_URL).toBe(once)
+  })
+
   it('does not invent a connection when no database URL is present', () => {
     const env = {}
     configureTestPostgresSessions(env)

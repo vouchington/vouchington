@@ -5,18 +5,22 @@ export function configureTestPostgresSessions(env: NodeJS.ProcessEnv = process.e
   for (const key of ['DATABASE_URL', 'READ_DATABASE_URL'] as const) {
     const value = env[key]
     if (!value) continue
-    const url = new URL(value)
     const settings = `-c statement_timeout=${TEST_STATEMENT_TIMEOUT_MS} -c hnsw.ef_search=${TEST_HNSW_EF_SEARCH}`
-    const parts = url.search ? url.search.slice(1).split('&') : []
+    const fragmentAt = value.indexOf('#')
+    const beforeFragment = fragmentAt < 0 ? value : value.slice(0, fragmentAt)
+    const fragment = fragmentAt < 0 ? '' : value.slice(fragmentAt)
+    const queryAt = beforeFragment.indexOf('?')
+    const connection = queryAt < 0 ? beforeFragment : beforeFragment.slice(0, queryAt)
+    const query = queryAt < 0 ? '' : beforeFragment.slice(queryAt + 1)
+    const parts = query ? query.split('&') : []
+    const lastOptionsIndex = parts.findLastIndex(part => new URLSearchParams(part).has('options'))
     const updated: string[] = []
-    let foundOptions = false
-    for (const part of parts) {
+    for (const [index, part] of parts.entries()) {
       if (!new URLSearchParams(part).has('options')) {
         updated.push(part)
         continue
       }
-      if (foundOptions) continue
-      foundOptions = true
+      if (index !== lastOptionsIndex) continue
       // libpq treats a raw '+' in options literally; URLSearchParams decodes it as a space.
       const equalsAt = part.indexOf('=')
       const rawOptions = equalsAt < 0 ? '' : part.slice(equalsAt + 1)
@@ -25,9 +29,9 @@ export function configureTestPostgresSessions(env: NodeJS.ProcessEnv = process.e
       const next = previous.endsWith(settings) ? previous : `${previous} ${settings}`
       updated.push(`options=${encodeURIComponent(next)}`)
     }
-    if (!foundOptions) updated.push(`options=${encodeURIComponent(`-c jit=off ${settings}`)}`)
-    // Only rewrite options: URLSearchParams.set() would change %20 to '+' in unrelated values.
-    url.search = `?${updated.join('&')}`
-    env[key] = url.toString()
+    if (lastOptionsIndex < 0)
+      updated.push(`options=${encodeURIComponent(`-c jit=off ${settings}`)}`)
+    // Keep the original URI and unrelated query bytes, including hostless socket URLs and %20.
+    env[key] = `${connection}?${updated.join('&')}${fragment}`
   }
 }
