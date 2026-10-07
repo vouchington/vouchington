@@ -42,7 +42,7 @@ jobs:
   static-backend:
     if: inputs.backend
     runs-on: ubuntu-latest
-    timeout-minutes: 21
+    timeout-minutes: 14
     permissions:
       actions: read
       contents: read
@@ -61,10 +61,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-backend
         id: setup-backend
-        timeout-minutes: 6
+        timeout-minutes: 5
       - name: Check backend dependencies
         run: pnpm exec depcruise --config backend/.dependency-cruiser.cjs --output-type err --cache --cache-strategy content backend ts-shared
-        timeout-minutes: 3
+        timeout-minutes: 2
       - name: Check PostgreSQL contracts, API fixtures, and MCP catalog
         run: |
           pnpm run backend-row-contracts:check
@@ -81,7 +81,7 @@ jobs:
           export S3_BUCKET_QUARANTINE=test-quarantine
           node ci/check-live-mcp-catalog.mjs
           pnpm run mcp:catalog -- --check
-        timeout-minutes: 10
+        timeout-minutes: 4
       - name: Check canonical API snapshot git state
         shell: bash
         run: |
@@ -135,7 +135,7 @@ jobs:
   static-lambdas:
     if: inputs.lambdas
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:
@@ -144,7 +144,7 @@ jobs:
         timeout-minutes: 5
       - name: Check lambda dependencies
         run: pnpm exec depcruise --config lambdas/.dependency-cruiser.cjs --output-type err --cache --cache-strategy content lambdas
-        timeout-minutes: 3
+        timeout-minutes: 2
       - name: Smoke test image lambda
         run: ./lambdas/image-resize/scripts/tests/smoke-test-image-lambda.sh
         timeout-minutes: 2
@@ -152,7 +152,7 @@ jobs:
   static-cloudflare:
     if: inputs.cloudflare-worker
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:

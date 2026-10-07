@@ -71,7 +71,7 @@ permissions:
 jobs:
   storybook:
     runs-on: ubuntu-latest
-    timeout-minutes: 94
+    timeout-minutes: 30
     # No write permissions here: this job checks out and runs PR-controlled code.
     permissions:
       actions: read
@@ -103,7 +103,7 @@ jobs:
         id: full-lcov-1
         if: ${{ inputs.publish_coverage }}
         continue-on-error: true
-        timeout-minutes: 3
+        timeout-minutes: 1
         uses: ./.github/actions/upload-full-lcov
         with:
           suite: web-storybook
@@ -111,7 +111,7 @@ jobs:
         id: full-lcov-1-retry
         if: ${{ inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure' }}
         continue-on-error: true
-        timeout-minutes: 3
+        timeout-minutes: 1
         uses: ./.github/actions/upload-full-lcov
         with:
           suite: web-storybook
@@ -170,7 +170,7 @@ jobs:
         id: full-lcov-2
         if: ${{ inputs.publish_coverage }}
         continue-on-error: true
-        timeout-minutes: 3
+        timeout-minutes: 1
         uses: ./.github/actions/upload-full-lcov
         with:
           suite: web-storybook-browser
@@ -178,7 +178,7 @@ jobs:
         id: full-lcov-2-retry
         if: ${{ inputs.publish_coverage && steps.full-lcov-2.outcome == 'failure' }}
         continue-on-error: true
-        timeout-minutes: 3
+        timeout-minutes: 1
         uses: ./.github/actions/upload-full-lcov
         with:
           suite: web-storybook-browser

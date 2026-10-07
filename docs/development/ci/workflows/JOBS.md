@@ -38,9 +38,9 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `cancel-dequeued-merge-group-runs.yml` | `cancel`                        | job    | `ubuntu-slim`                         | 5             |
 | `cancel-replaced-merge-group-runs.yml` | `cancel`                        | job    | `ubuntu-slim`                         | 5             |
 | `checks-backend-smoke.yml`             | `smoke`                         | job    | `ubuntu-latest`                       | 10            |
-| `checks-static.yml`                    | `static-backend`                | job    | `ubuntu-latest`                       | 21            |
-| `checks-static.yml`                    | `static-cloudflare`             | job    | `ubuntu-latest`                       | 20            |
-| `checks-static.yml`                    | `static-lambdas`                | job    | `ubuntu-latest`                       | 18            |
+| `checks-static.yml`                    | `static-backend`                | job    | `ubuntu-latest`                       | 14            |
+| `checks-static.yml`                    | `static-cloudflare`             | job    | `ubuntu-latest`                       | 10            |
+| `checks-static.yml`                    | `static-lambdas`                | job    | `ubuntu-latest`                       | 10            |
 | `checks-static.yml`                    | `static-web`                    | job    | `ubuntu-24.04-arm`                    | 10            |
 | `ci-area-coverage.yml`                 | `coverage`                      | job    | `ubuntu-latest`                       | 10            |
 | `ci-detect-changes.yml`                | `detect-changes`                | job    | `ubuntu-slim`                         | 3             |
@@ -78,7 +78,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `ghcr-cleanup.yml`                     | `cleanup`                       | job    | `ubuntu-slim`                         | 14            |
 | `gitleaks.yml`                         | `gitleaks`                      | job    | `ubuntu-slim`                         | 5             |
 | `harness-dispatch.yml`                 | `dispatch`                      | job    | `ubuntu-latest`                       | 8             |
-| `initialize-smoke-test.yml`            | `initialize-smoke-test`         | job    | `ubuntu-latest`                       | 25            |
+| `initialize-smoke-test.yml`            | `initialize-smoke-test`         | job    | `ubuntu-latest`                       | 23            |
 | `label-pr.yml`                         | `label`                         | job    | `ubuntu-slim`                         | 5             |
 | `lambdas.yml`                          | `changes`                       | job    | → `ci-detect-changes.yml`             | 360           |
 | `lambdas.yml`                          | `codecov`                       | job    | → `ci-upload-codecov.yml`             | 360           |
@@ -127,32 +127,32 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `shepherd.yml`                         | `escalate`                      | job    | `ubuntu-slim`                         | 2             |
 | `shepherd.yml`                         | `gate`                          | job    | `ubuntu-latest`                       | 8             |
 | `shepherd.yml`                         | `render-prompt`                 | job    | `ubuntu-latest`                       | 5             |
-| `static-code-analysis.yml`             | `no-mistakes`                   | job    | `ubuntu-latest`                       | 30            |
-| `static-code-analysis.yml`             | `static-code-analysis`          | job    | `ubuntu-latest`                       | 30            |
+| `static-code-analysis.yml`             | `no-mistakes`                   | job    | `ubuntu-latest`                       | 20            |
+| `static-code-analysis.yml`             | `static-code-analysis`          | job    | `ubuntu-latest`                       | 24            |
 | `static.yml`                           | `static`                        | job    | `ubuntu-latest`                       | 5             |
 | `static.yml`                           | `static-code-analysis`          | job    | → `static-code-analysis.yml`          | 360           |
-| `storybook.yml`                        | `storybook`                     | job    | `ubuntu-latest`                       | 94            |
+| `storybook.yml`                        | `storybook`                     | job    | `ubuntu-latest`                       | 30            |
 | `sync-articles.yml`                    | `publish`                       | job    | `ubuntu-slim`                         | 5             |
 | `tests-backend-credentialed.yml`       | `backend-credentialed-tests`    | job    | `ubuntu-latest`                       | 20            |
-| `tests-backend-modules.yml`            | `backend-modules`               | job    | `ubuntu-latest`                       | 22            |
+| `tests-backend-modules.yml`            | `backend-modules`               | job    | `ubuntu-latest`                       | 26            |
 | `tests-backend-unit.yml`               | `backend-tests`                 | matrix | `ubuntu-latest`                       | 29            |
 | `tests-backend-unit.yml`               | `prep`                          | job    | `ubuntu-latest`                       | 8             |
-| `tests-cloudflare-worker.yml`          | `cloudflare-worker-tests`       | job    | `ubuntu-latest`                       | 17            |
-| `tests-lambdas.yml`                    | `lambdas-tests`                 | job    | `ubuntu-latest`                       | 30            |
+| `tests-cloudflare-worker.yml`          | `cloudflare-worker-tests`       | job    | `ubuntu-latest`                       | 20            |
+| `tests-lambdas.yml`                    | `lambdas-tests`                 | job    | `ubuntu-latest`                       | 13            |
 | `tests-playwright-credentialed.yml`    | `playwright-credentialed-tests` | job    | `ubuntu-24.04-arm`                    | 13            |
 | `tests-playwright.yml`                 | `playwright-tests`              | matrix | `ubuntu-24.04-arm`                    | 23            |
 | `tests-playwright.yml`                 | `shards`                        | job    | `ubuntu-24.04-arm`                    | 13            |
-| `tests-portability.yml`                | `portability-linux`             | job    | `ubuntu-latest`                       | 17            |
+| `tests-portability.yml`                | `portability-linux`             | job    | `ubuntu-latest`                       | 20            |
 | `tests-postgres-schema.yml`            | `postgres-schema-tests`         | job    | `ubuntu-latest`                       | 20            |
 | `tests-tooling.yml`                    | `i18n-route-bounds`             | job    | `ubuntu-latest`                       | 10            |
-| `tests-tooling.yml`                    | `tooling`                       | job    | `ubuntu-latest`                       | 32            |
-| `tests-ts-shared.yml`                  | `ts-shared`                     | job    | `ubuntu-latest`                       | 17            |
+| `tests-tooling.yml`                    | `tooling`                       | job    | `ubuntu-latest`                       | 27            |
+| `tests-ts-shared.yml`                  | `ts-shared`                     | job    | `ubuntu-latest`                       | 20            |
 | `tests-web-api.yml`                    | `prep`                          | job    | `ubuntu-24.04-arm`                    | 8             |
 | `tests-web-api.yml`                    | `web-api-tests`                 | matrix | `ubuntu-24.04-arm`                    | 27            |
 | `tests-web-integration.yml`            | `prep`                          | job    | `ubuntu-24.04-arm`                    | 13            |
 | `tests-web-integration.yml`            | `web-integration-tests`         | matrix | `ubuntu-24.04-arm`                    | 19            |
 | `tests-web.yml`                        | `prep`                          | job    | `ubuntu-24.04-arm`                    | 8             |
-| `tests-web.yml`                        | `web-tests`                     | matrix | `ubuntu-24.04-arm`                    | 32            |
+| `tests-web.yml`                        | `web-tests`                     | matrix | `ubuntu-24.04-arm`                    | 30            |
 | `tooling.yml`                          | `changes`                       | job    | → `ci-detect-changes.yml`             | 360           |
 | `tooling.yml`                          | `codecov`                       | job    | → `ci-upload-codecov.yml`             | 360           |
 | `tooling.yml`                          | `coverage`                      | job    | → `ci-area-coverage.yml`              | 360           |

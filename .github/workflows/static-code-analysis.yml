@@ -10,7 +10,7 @@ permissions:
 jobs:
   static-code-analysis:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 24
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -118,7 +118,7 @@ jobs:
 
   no-mistakes:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -132,16 +132,16 @@ jobs:
         timeout-minutes: 3
       - name: Run no-mistakes
         run: pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check --tsconfig tsconfig.json
-        timeout-minutes: 10
+        timeout-minutes: 3
       - name: Check no-mistakes use in Vitest tests
         run: node ci/check-no-mistakes-test-policy.mts
         timeout-minutes: 1
       - name: Check live workflow topology
         run: node ci/check-live-workflow-topology.mts
-        timeout-minutes: 5
+        timeout-minutes: 3
       - name: Check web route localization selector map
         run: node static-code-analysis/i18n-extract/route-selector-map.mts --check --diagnostics
-        timeout-minutes: 5
+        timeout-minutes: 2
       - name: Verify no dependency changes needed
         timeout-minutes: 1
         run: |

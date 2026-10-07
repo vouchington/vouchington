@@ -29,8 +29,9 @@ disables both no-mistakes' execution deadline and its machine-wide lock-wait dea
 Route-selector `--check` is a second production consumer through the Node `analyzeProject` API. The `no-mistakes` job starts in parallel with the
 `static-code-analysis` job; its CLI and route-selector checks share a hosted runner, where the local `invocation.lock` protects any overlapping invocations.
 Separate hosted jobs have isolated workspaces, so there is no cross-PR job queue; the
-workflow-level concurrency still cancels a superseded PR run. Both concrete jobs have 30-minute
-safety caps, while recent public runs finished each in about four minutes. Oxlint, knip, and
+workflow-level concurrency still cancels a superseded PR run. The static-analysis job has a
+24-minute safety cap and no-mistakes has a 20-minute cap, while recent public runs finished each
+in about four minutes. Oxlint, knip, and
 typecheck stay on the per-PR `static-code-analysis` job.
 
 Oxlint enforces `no-mistakes/no-inline-noop-promise-catch` for production `backend/**` and

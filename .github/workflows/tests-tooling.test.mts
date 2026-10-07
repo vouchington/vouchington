@@ -90,7 +90,7 @@ describe('tests-tooling.yml setup timing', () => {
     expect(verifyTools?.['timeout-minutes']).toBeGreaterThan(0)
   })
 
-  it('allows setup-backend enough time for slow Rust NAPI cache restores', () => {
+  it('uses the shared setup-backend deadline', () => {
     const toolingJob = workflow.jobs?.tooling
     expect(toolingJob).toBeDefined()
 
@@ -100,10 +100,10 @@ describe('tests-tooling.yml setup timing', () => {
     expect(setupBackend).toBeDefined()
 
     const setupTimeout = numberField(setupBackend?.['timeout-minutes'], 'setup-backend timeout')
-    expect(setupTimeout).toBeGreaterThanOrEqual(10)
+    expect(setupTimeout).toBe(5)
   })
 
-  it('keeps the job timeout above setup and test step budgets', () => {
+  it('reserves the serial setup and test budget', () => {
     const toolingJob = workflow.jobs?.tooling
     expect(toolingJob).toBeDefined()
 
@@ -143,7 +143,7 @@ describe('tests-tooling.yml setup timing', () => {
     expect(runToolingTests).toBeDefined()
 
     const testTimeout = numberField(runToolingTests?.['timeout-minutes'], 'tooling test timeout')
-    expect(testTimeout).toBeGreaterThanOrEqual(8)
+    expect(testTimeout).toBe(8)
   })
 
   it('runs the tooling workflow projects through setup-backend', () => {

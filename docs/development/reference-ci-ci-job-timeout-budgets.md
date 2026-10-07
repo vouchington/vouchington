@@ -13,6 +13,17 @@ Step and job timeouts guard different failure modes. A step timeout bounds one h
 job timeout bounds unhealthy end-to-end execution. The Docker image jobs intentionally do not
 reserve the worst-case ceiling of every sequential step:
 
+### GitHub-hosted re-derivation
+
+Issue [#2260](https://github.com/vouchington/vouchington/issues/2260) pooled successful main,
+pull-request, and merge-group jobs from 2026-10-05 through 2026-10-07. Its 555 Storybook jobs had
+a 347-second maximum, Web Tests' 1,552 jobs had a 381-second maximum (337 seconds for the test
+step), and Static Analysis' 75 jobs had a 442-second maximum. The remaining touched jobs ranged
+from 58 seconds (static Cloudflare) to 345 seconds (tooling). The job ceilings therefore leave
+provisioning headroom and bounded recovery work, rather than preserving retired self-hosted-runner
+or unobserved retry budgets. Additive jobs still reserve their serial artifact retry path; jobs
+with independent diagnostic step caps use the fail-fast relationship below.
+
 ```
 max(step_timeout, observed_healthy_job_runtime + buffer)
   ≤ job_timeout
@@ -52,10 +63,9 @@ repository's default job maximum rather than reserving the sum of its step ceili
 its own ceiling, so a hang is still attributed to the step that hung. `checks-static.test.mts`
 asserts that the cap exceeds the largest step and stays below the step sum.
 
-The static backend job retains its additive model with a 21-minute job ceiling: six minutes for
-setup, three for dependency analysis, ten for PostgreSQL contracts, API fixtures, and the live MCP
-catalog checks, one for generated-file Git state, and one for Valkey service provisioning and drain
-headroom.
+The static backend job retains its additive model with a 14-minute job ceiling: five minutes for
+setup, two for dependency analysis, four for PostgreSQL contracts, API fixtures, and the live MCP
+catalog checks, one for generated-file Git state, and provisioning and drain headroom.
 
 Lambda tests retain an additive budget that covers every declared step ceiling, including artifact
 fallbacks, with provisioning and drain headroom. The workflow test verifies this relationship and

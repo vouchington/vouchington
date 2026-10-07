@@ -16,7 +16,7 @@ permissions:
 jobs:
   portability-linux:
     runs-on: ubuntu-latest
-    timeout-minutes: 17
+    timeout-minutes: 20
     permissions:
       actions: read
       contents: read
