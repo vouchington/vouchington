@@ -26,7 +26,8 @@ Retrospectives are saved only through `node dev/retrospective-save.mts`, never `
 Hooks do not journal on your behalf, so your contemporaneous entries are the only journal source.
 
 The SessionStart hook prints `Blackboard sessionId: <id>`. Pass it as the explicit `sessionId` of
-every tool, and as `--session-id` to the CLI. When the line is absent, take the id from your own
+every tool, and as `--session-id` to the CLI. An id that the user or task assigns explicitly (for
+example a child id its assignment names) wins over the printed line. When the line is absent, take the id from your own
 harness only. Claude Code exports `CLAUDE_CODE_SESSION_ID` and Codex exports `CODEX_THREAD_ID`.
 Cursor and Grok shells export no session id, so read the worktree-local file their SessionStart
 hook persisted, the same source `dev/agent-session-id` uses: `.local/cursor-session-id` for
@@ -45,6 +46,17 @@ server is not registered or not connected, use the canonical skill's CLI fallbac
 worktree's `node_modules/.bin`, `pnpm exec`, or a repository-controlled `PATH`; `pnpm exec
 agent-blackboard` is not the fallback. A permission denial is not unavailability.
 
+- **Where the machine CLI lives.** Neither the CLI nor its Node is on `PATH`.
+  - vouchington-machines installs the CLI at
+    `$HOME/vouchington-machines/node_modules/vouchington-tooling/bin/vouchington.mjs`; set
+    `BLACKBOARD_CLI` to its realpath.
+  - Set `BLACKBOARD_NODE` to the absolute `command` of the `vouchington-tooling` entry that
+    machines registered: `mcpServers.vouchington-tooling.command` in `~/.claude.json`, or
+    `mcp_servers.vouchington-tooling.command` in `~/.codex/config.toml`. Read only that key, for
+    example `jq -r '.mcpServers["vouchington-tooling"].command' ~/.claude.json`; never print the
+    rest of either file.
+  - The canonical skill's verification (source, version, outside the worktree) and its `env -i`
+    rules still apply. This only says where to look.
 - **Tell whoever is watching.** An interactive agent tells the user when it falls back, in the
   same turn: MCP is unavailable and the CLI is in use. An automated session states the fallback in
   its final report.

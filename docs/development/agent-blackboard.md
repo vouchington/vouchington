@@ -144,7 +144,11 @@ is unavailable.
 
 When the server is not registered or connected, the `blackboard` skill uses the canonical CLI
 fallback: a machine-installed `vouchington` at a verified absolute path outside the worktree,
-never the worktree's `node_modules/.bin` or `pnpm exec`. An interactive agent tells the user it is
+never the worktree's `node_modules/.bin` or `pnpm exec`. vouchington-machines installs it at
+`$HOME/vouchington-machines/node_modules/vouchington-tooling/bin/vouchington.mjs`, run with the
+absolute Node it registered for the `vouchington-tooling` server (`mcpServers.vouchington-tooling.command`
+in `~/.claude.json`, `mcp_servers.vouchington-tooling.command` in `~/.codex/config.toml`); neither is
+on `PATH`. An interactive agent tells the user it is
 falling back when it happens, and an automated session says so in its final report. Claude's and
 Codex's machine sandboxes hide `AGENT_BLACKBOARD_TOKEN` from shell commands, so a fallback append
 runs unsandboxed through the harness's normal one-command approval path; a denied approval leaves
