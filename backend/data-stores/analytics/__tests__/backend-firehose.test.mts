@@ -123,7 +123,6 @@ describe('backend-firehose', () => {
       writeRecord('queue_workers', makeQueueWorkerRecord({ event_id: `event-${index}` }))
     }
 
-    await new Promise(resolve => setImmediate(resolve))
     await flush()
 
     expect(calls).toHaveLength(2)

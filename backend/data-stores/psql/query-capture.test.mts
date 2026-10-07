@@ -104,15 +104,15 @@ describe('query capture', () => {
   })
 
   it('omits queries scheduled outside the captured operation', async () => {
-    const outsideQueryDone = new Promise<void>(resolve => {
-      setImmediate(() => {
-        captureQueryOutsideOperation()
-        resolve()
-      })
+    const outsideQueryReady = Promise.withResolvers<void>()
+    const outsideQueryDone = outsideQueryReady.promise.then(() => {
+      captureQueryOutsideOperation()
+      return undefined
     })
 
     const { queries } = await withCapturedTestQueries(async () => {
       captureQueryInsideOperation()
+      outsideQueryReady.resolve()
       await outsideQueryDone
     })
 
