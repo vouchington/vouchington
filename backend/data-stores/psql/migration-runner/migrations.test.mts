@@ -1,10 +1,9 @@
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
-import { randomUUID } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import type pg from 'pg'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { QueryExecutor, QueryInput } from '../types.mts'
 import { runConfigDriven } from './migrations.mts'
@@ -76,19 +75,64 @@ SELECT 3;
     )
   })
 
-  it('runs split config-driven file statements in one transaction on one client', async () => {
+  it('runs split config-driven file statements in one transaction group', async () => {
     const folder = await makeConfigDrivenDir()
-    const suffix = randomUUID().replaceAll('-', '')
     await writeFile(
       join(folder, '0010-session-state.sql'),
       `
-CREATE TEMP TABLE config_driven_session_${suffix} (id INTEGER) ON COMMIT DROP;
-INSERT INTO config_driven_session_${suffix} (id) VALUES (1);
-SELECT id FROM config_driven_session_${suffix};
+CREATE TEMP TABLE config_driven_session (id INTEGER) ON COMMIT DROP;
+INSERT INTO config_driven_session (id) VALUES (1);
+SELECT id FROM config_driven_session;
 `,
     )
+    const writes: string[] = []
 
-    await expect(runConfigDriven('/unused-root', { folder })).resolves.toBeUndefined()
+    await runConfigDriven('/unused-root', { folder, writer: makeWriter(writes) })
+
+    expect(writes).toEqual(
+      transactionWrites(
+        'CREATE TEMP TABLE config_driven_session (id INTEGER) ON COMMIT DROP',
+        'INSERT INTO config_driven_session (id) VALUES (1)',
+        'SELECT id FROM config_driven_session',
+      ),
+    )
+  })
+
+  it('uses the bounded jittered retry wait by default', async () => {
+    const folder = await makeConfigDrivenDir()
+    await writeFile(join(folder, '0010-retry.sql'), 'ALTER TABLE active_table ADD COLUMN x INT;')
+    const writes: string[] = []
+    const retryDelay = makeDeferred<number>()
+    let attempts = 0
+
+    vi.useFakeTimers()
+    const originalSetTimeout = globalThis.setTimeout
+    const setTimeoutSpy = vi
+      .spyOn(globalThis, 'setTimeout')
+      .mockImplementation((callback, delay, ...args) => {
+        retryDelay.resolve(Number(delay))
+        return originalSetTimeout(callback, delay, ...args)
+      })
+    try {
+      const migration = runConfigDriven('/unused-root', {
+        folder,
+        writer: makeWriter(writes, sql => {
+          if (!sql.includes('ALTER TABLE')) return
+          attempts += 1
+          if (attempts === 1) throw Object.assign(new Error('lock timeout'), { code: '55P03' })
+        }),
+      })
+      const delayMs = await retryDelay.promise
+      expect(delayMs).toBeGreaterThanOrEqual(1_000)
+      expect(delayMs).toBeLessThanOrEqual(2_000)
+      await vi.advanceTimersByTimeAsync(delayMs)
+      await migration
+    } finally {
+      setTimeoutSpy.mockRestore()
+      vi.useRealTimers()
+    }
+
+    expect(attempts).toBe(2)
   })
 
   it('logs and rethrows config-driven migration failures', async () => {
@@ -143,4 +187,12 @@ function transactionWrites(...statements: string[]): string[] {
     ...statements.map(statement => `/* runConfigDrivenStatements */ ${statement}`),
     '/* runConfigDrivenStatementsInTransaction */ COMMIT',
   ]
+}
+
+function makeDeferred<Value>() {
+  let resolve!: (value: Value) => void
+  const promise = new Promise<Value>(resolvePromise => {
+    resolve = resolvePromise
+  })
+  return { promise, resolve }
 }
