@@ -549,11 +549,12 @@ Notes for operators:
    administrator records reinstatement. Reinstatement does not unsuspend the account. Do that from
    the user admin panel after the reinstatement row exists. The decision, any new suspension,
    moderator action, and publication invalidation work commit together after the account lifecycle
-   lock; a failed decision leaves the review open for retry.
-4. Account deletion returns 409 while an operative incident remains, while an unresolved
-   qualifying legal hold covers a placement for which the account is a retained party, or while an administrator has an
-   open [preservation hold](#dmca-512h-subpoenas) on the account. An open review alone does not
-   refuse deletion.
+   lock; a failed decision leaves the review open for retry. If the account is already deleted,
+   restrict or terminate records the retained outcome without creating a suspension or moderator
+   action for the retained identity.
+4. Operative incidents and open reviews do not refuse account deletion. Deletion returns 409 while
+   an unresolved qualifying legal hold covers a placement for which the account is a retained party,
+   or while an administrator has an open [preservation hold](#dmca-512h-subpoenas) on the account.
 5. An operative incident keeps its case out of the retention sweep, and incidents never age out.
    The retention period is an approved-policy gate; see
    [Evidence retention deletion](#evidence-retention-deletion).

@@ -123,7 +123,9 @@ already soft-deleted, so they have no second check.
 
 An operative repeat-infringer incident does not block deletion. The normal deletion phases erase
 the account's personal data. Incident rows and repeat-infringer review outcomes and dates remain
-linked to `retained_user_identities` as the minimal 17 USC 512(i) record.
+linked to `retained_user_identities` as the minimal 17 USC 512(i) record. Staff may finish an open
+review after deletion; a restrict or terminate outcome is recorded without attempting to suspend
+the deleted account.
 
 A preservation hold keeps an account's records while the owner decides, on a lawyer's advice, what
 a subpoena requires (see the

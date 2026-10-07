@@ -928,7 +928,9 @@ and `terminate` require an administrator. Both call the existing account suspens
 Reinstatement does not itself unsuspend the account. Restrict and terminate also require two
 operative incidents at decision time. The outcome, a newly needed suspension, its moderator action,
 and publication dirty work share one account-lifecycle-serialized transaction, so a failed outcome
-does not partially enforce and the still-open review can be retried.
+does not partially enforce and the still-open review can be retried. If the account has already
+been deleted, restrict and terminate still close the retained review but do not create a suspension,
+moderator action, or publication work for the retained identity.
 
 `deleteUser` returns 409 while the account has an unresolved qualifying legal hold on a placement
 for which that account belongs to the retention set above. A qualifying hold is an assessment
