@@ -1,5 +1,5 @@
 import { readTestJwtStaleMarker } from '@voucha/test-helpers/jwt-stale-markers'
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, onTestFinished, vi } from 'vitest'
 import { randomBytes } from 'node:crypto'
 import { v7 as uuidv7 } from 'uuid'
 import { createRequest } from '@voucha/test-helpers/api/server'
@@ -13,16 +13,15 @@ import {
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { applyReportAbusePenalty } from '@services/report-integrity/apply-penalty'
+import * as jwtInvalidation from '@services/jwt-session/invalidation'
 import { clearJwtStaleIfCurrent, isJwtStale } from '@data-stores/valkey/jwt-stale'
 
 describe('report-integrity penalties API', () => {
   const randomUsername = () => `test-ri-pen-${randomBytes(4).toString('hex')}`
-
   let admin: PrivateUser
   let member: PrivateUser
   let moderator: PrivateUser
   let support: PrivateUser
-
   beforeAll(async () => {
     ;[admin, member, moderator, support] = await Promise.all([
       createTestUser({ administrator: true, username: randomUsername() }),
@@ -30,17 +29,14 @@ describe('report-integrity penalties API', () => {
       createTestUser({ extraRoles: ['moderator'], username: randomUsername() }),
       createTestUser({ extraRoles: ['customer_support'], username: randomUsername() }),
     ])
-  }, 60_000)
-
+  }, 30_000)
   function getNonAdmin(role: 'member' | 'moderator' | 'support'): PrivateUser {
     return { member, moderator, support }[role]
   }
-
   describe('GET /api/v1/report-integrity/penalties', () => {
     it('returns 401 when not authenticated', async () => {
       await createRequest().get('/api/v1/report-integrity/penalties').expect(401)
     })
-
     it.each(['moderator', 'support', 'member'] as const)('returns 403 for %s', async role => {
       const request = createRequest()
       await request.authenticateAs(getNonAdmin(role))
@@ -70,7 +66,6 @@ describe('report-integrity penalties API', () => {
       })
       const request = createRequest()
       await request.authenticateAs(admin)
-
       const all = await request
         .get(`/api/v1/report-integrity/penalties?user_id=${user.id}`)
         .expect(200)
@@ -85,7 +80,7 @@ describe('report-integrity penalties API', () => {
         .get(`/api/v1/report-integrity/penalties?user_id=${user.id}&status=revoked`)
         .expect(200)
       expect(revoked.body.results).toEqual([expect.objectContaining({ id: revokedId })])
-    }, 60_000)
+    }, 30_000)
 
     it('filters by user and source flag without leaking dirty database rows', async () => {
       const [user, otherUser] = await Promise.all([
@@ -118,7 +113,7 @@ describe('report-integrity penalties API', () => {
         .get(`/api/v1/report-integrity/penalties?user_id=${user!.id}&source_flag_id=${flagId}`)
         .expect(200)
       expect(response.body.results).toEqual([expect.objectContaining({ id: expectedId })])
-    }, 60_000)
+    }, 30_000)
 
     it('paginates without gaps or duplicates and rejects a cursor under changed filters', async () => {
       const user = await createTestUser({ username: randomUsername() })
@@ -146,14 +141,14 @@ describe('report-integrity penalties API', () => {
           `/api/v1/report-integrity/penalties?user_id=${user.id}&status=active&limit=2&after=${first.body.page_info.end_cursor}`,
         )
         .expect(400)
-    }, 60_000)
+    }, 30_000)
   })
 
   describe('DELETE /api/v1/report-integrity/penalties/:id', () => {
     it('returns 401 when not authenticated', async () => {
       const request = createRequest()
       await request.delete(`/api/v1/report-integrity/penalties/${uuidv7()}`).expect(401)
-    }, 60_000)
+    }, 30_000)
 
     it.each(['moderator', 'support', 'member'] as const)('returns 403 for %s', async role => {
       const request = createRequest()
@@ -165,8 +160,7 @@ describe('report-integrity penalties API', () => {
       const request = createRequest()
       await request.authenticateAs(admin)
       await request.delete(`/api/v1/report-integrity/penalties/${uuidv7()}`).expect(404)
-    }, 60_000)
-
+    }, 30_000)
     it('revokes an active penalty and returns the result', async () => {
       const targetUser = await createTestUserDirect({ username: randomUsername() })
       const reporterUser = await createTestUserDirect({ username: randomUsername() })
@@ -175,17 +169,14 @@ describe('report-integrity penalties API', () => {
         reporterUserIds: [reporterUser!.id],
         reporterCount: 5,
       })
-
       const { penalties } = await applyReportAbusePenalty(admin.id, flagId)
       expect(penalties).toHaveLength(1)
       const penaltyId = penalties[0]!.id
-
       const request = createRequest()
       await request.authenticateAs(admin)
       const res = await request
         .delete(`/api/v1/report-integrity/penalties/${penaltyId}`)
         .expect(200)
-
       expect(res.body).toHaveProperty('penaltyId', penaltyId)
       expect(res.body).toHaveProperty('userId', reporterUser!.id)
       expect(res.body.penalty).toMatchObject({
@@ -194,7 +185,7 @@ describe('report-integrity penalties API', () => {
         revoked_by_id: admin.id,
       })
       expect(res.body.penalty.revoked_at).not.toBeNull()
-    }, 60_000)
+    }, 30_000)
 
     it('returns the authoritative revoked penalty while preserving legacy identifiers', async () => {
       const user = await createTestUser({ username: randomUsername() })
@@ -220,7 +211,7 @@ describe('report-integrity penalties API', () => {
           }),
         }),
       )
-    }, 60_000)
+    }, 30_000)
 
     it('allows exactly one concurrent revocation and preserves trust-stamp side effects', async () => {
       const targetUser = await createTestUserDirect({ username: randomUsername() })
@@ -239,7 +230,7 @@ describe('report-integrity penalties API', () => {
       ])
       expect(responses.map(response => response.status).toSorted()).toEqual([200, 404])
       expect(await getTestUserBadFaithReporterAt(reporterUser!.id)).toBeNull()
-    }, 60_000)
+    }, 30_000)
 
     it('serializes concurrent revocation of two active penalties for the same user', async () => {
       const [target1, target2, reporter] = await Promise.all([
@@ -257,29 +248,53 @@ describe('report-integrity penalties API', () => {
           reporterUserIds: [reporter!.id],
         }),
       ])
+      const batchInvalidation = vi.spyOn(jwtInvalidation, 'markJwtStaleBatch')
+      const singleInvalidation = vi.spyOn(jwtInvalidation, 'markJwtStale')
+      const ownedWrites = () => [
+        ...batchInvalidation.mock.results.flatMap((result, index) =>
+          batchInvalidation.mock.calls[index]?.[0].includes(reporter!.id) ? [result.value] : [],
+        ),
+        ...singleInvalidation.mock.results.flatMap((result, index) =>
+          singleInvalidation.mock.calls[index]?.[0] === reporter!.id ? [result.value] : [],
+        ),
+      ]
+      onTestFinished(async () => {
+        try {
+          await Promise.allSettled(ownedWrites())
+        } finally {
+          batchInvalidation.mockRestore()
+          singleInvalidation.mockRestore()
+        }
+      })
       const [{ penalties: penalties1 }, { penalties: penalties2 }] = await Promise.all([
         applyReportAbusePenalty(admin.id, flag1),
         applyReportAbusePenalty(admin.id, flag2),
       ])
-      await expect.poll(() => isJwtStale(reporter!.id)).toBe(true)
+      const batchWrites = ownedWrites()
+      expect(batchWrites).toHaveLength(2)
+      await Promise.all(batchWrites)
+      expect(await isJwtStale(reporter!.id)).toBe(true)
       const marker = await readTestJwtStaleMarker(reporter!.id)
       expect(marker).not.toBeNull()
       await expect(clearJwtStaleIfCurrent(reporter!.id, marker!)).resolves.toBe(true)
-
       const [request1, request2] = [createRequest(), createRequest()]
       await Promise.all([request1.authenticateAs(admin), request2.authenticateAs(admin)])
       const responses = await Promise.all([
         request1.delete(`/api/v1/report-integrity/penalties/${penalties1[0]!.id}`),
         request2.delete(`/api/v1/report-integrity/penalties/${penalties2[0]!.id}`),
       ])
-
       expect(responses.map(response => response.status)).toEqual([200, 200])
       const persisted = await getTestReportAbusePenaltiesByUserId(reporter!.id)
       expect(persisted.filter(penalty => penalty.revoked_at !== null)).toHaveLength(2)
       expect(await getTestUserBadFaithReporterAt(reporter!.id)).toBeNull()
-      await expect.poll(() => isJwtStale(reporter!.id)).toBe(true)
+      const singleWrites = singleInvalidation.mock.results.flatMap((result, index) =>
+        singleInvalidation.mock.calls[index]?.[0] === reporter!.id ? [result.value] : [],
+      )
+      expect(singleWrites).toHaveLength(1)
+      await Promise.all(singleWrites)
+      expect(await isJwtStale(reporter!.id)).toBe(true)
       expect(await isJwtStale(target1!.id)).toBe(false)
       expect(await isJwtStale(target2!.id)).toBe(false)
-    }, 60_000)
+    }, 30_000)
   })
 })
