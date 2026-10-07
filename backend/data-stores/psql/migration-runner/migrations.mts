@@ -6,11 +6,10 @@ import { silentMigrationLogger, type MigrationLogger } from './migration-logger.
 
 export { type MigrationLogger } from './migration-logger.mts'
 
-const isTest = process.env.NODE_ENV === 'test'
 const postgresDeadlockSqlstate = '40P01'
 const postgresLockTimeoutSqlstate = '55P03'
 const configDrivenMaxAttempts = 3
-const configDrivenRetryDelayMs = isTest ? 0 : 1000
+const configDrivenRetryDelayMs = 1000
 const configDrivenLockTimeoutMs = 5_000
 
 export interface RunConfigDrivenOptions {
@@ -18,12 +17,14 @@ export interface RunConfigDrivenOptions {
   logger?: MigrationLogger
   writer?: QueryExecutor
   lockTimeoutMs?: number
+  waitForRetry?: (attempt: number) => Promise<void>
 }
 
 export async function runConfigDriven(rootDir: string, options: RunConfigDrivenOptions = {}) {
   const logger = options.logger ?? silentMigrationLogger
   const configDrivenFolder = options.folder ?? path.resolve(rootDir, 'config-driven')
   const lockTimeoutMs = options.lockTimeoutMs ?? configDrivenLockTimeoutMs
+  const waitForRetry = options.waitForRetry ?? waitForConfigDrivenRetry
   const configDriven = getFilesFromFolder(configDrivenFolder)
 
   async function runConfigDrivenAt(index: number): Promise<void> {
@@ -32,7 +33,7 @@ export async function runConfigDriven(rootDir: string, options: RunConfigDrivenO
 
     // ast-grep-ignore: no-three-sequential-awaits -- config-driven files must read and execute in sorted order
     const string = await readMigrationFile(configDrivenFolder, file)
-    await runConfigDrivenFile(file, string, logger, options.writer, lockTimeoutMs)
+    await runConfigDrivenFile(file, string, logger, options.writer, lockTimeoutMs, waitForRetry)
 
     await runConfigDrivenAt(index + 1)
   }
@@ -46,6 +47,7 @@ async function runConfigDrivenFile(
   logger: MigrationLogger,
   writer: QueryExecutor | undefined,
   lockTimeoutMs: number,
+  waitForRetry: (attempt: number) => Promise<void>,
   attempt = 1,
 ): Promise<void> {
   // Retries replay the whole config-driven file, which is safe only for the idempotent
@@ -62,8 +64,8 @@ async function runConfigDrivenFile(
         attempt + 1,
         configDrivenMaxAttempts,
       )
-      await waitForConfigDrivenRetry(attempt)
-      await runConfigDrivenFile(file, sql, logger, writer, lockTimeoutMs, attempt + 1)
+      await waitForRetry(attempt)
+      await runConfigDrivenFile(file, sql, logger, writer, lockTimeoutMs, waitForRetry, attempt + 1)
       return
     }
 
