@@ -45,6 +45,8 @@ export const ROOT_FAMILIES = {
       ['user_legal_preservation_holds', 'account_user_id'],
       ['user_legal_preservation_holds', 'placed_by_id'],
       ['user_legal_preservation_holds', 'released_by_id'],
+      ['copyright_repeat_infringer_incidents', 'account_user_id'],
+      ['copyright_repeat_infringer_reviews', 'account_user_id'],
       ['copyright_notice_targets', 'surface_owner_user_id'],
       ['copyright_territorial_notice_receipts', 'requester_user_id'],
       ['copyright_territorial_redress_requests', 'submitted_by_id'],

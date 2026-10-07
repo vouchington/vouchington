@@ -32598,7 +32598,7 @@
         },
         "retention_days": {
           "collation": null,
-          "comment": "Counsel-approved retention period, in days, that was in force when the case was erased.",
+          "comment": "Owner-approved retention period, in days, that was in force when the case was erased.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -34564,7 +34564,7 @@
         },
         "jurisdiction": {
           "collation": null,
-          "comment": "Procedure selected for this allegation: US DMCA, EU DSA, UK, or other counsel-reviewed handling.",
+          "comment": "Procedure selected for this allegation: US DMCA, EU DSA, UK, or other owner-approved handling after AI advisor review recorded on issue 1230; this is not a legal determination.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -34954,12 +34954,163 @@
         }
       }
     },
+    "copyright_repeat_infringer_incident_targets": {
+      "checkConstraints": {},
+      "columns": {
+        "copyright_notice_id": {
+          "collation": null,
+          "comment": "Parent notice scope shared by the incident and target foreign keys.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "copyright_notice_target_id": {
+          "collation": null,
+          "comment": "Strike-eligible target whose placement belonged to the incident account when the incident was synchronized.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "copyright_repeat_infringer_incident_id": {
+          "collation": null,
+          "comment": "Account incident potentially supported by the target.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Immutable target provenance tying each account incident to strike-eligible placements that may keep it operative after account erasure.",
+      "foreignKeys": {
+        "fk_copyr_repeat_infringe_incident_targets__incident": {
+          "columns": ["copyright_repeat_infringer_incident_id", "copyright_notice_id"],
+          "definition": "FOREIGN KEY (copyright_repeat_infringer_incident_id, copyright_notice_id) REFERENCES copyright_repeat_infringer_incidents(id, copyright_notice_id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "copyright_notice_id"],
+          "referencedTable": "copyright_repeat_infringer_incidents",
+          "validated": true
+        },
+        "fk_copyr_repeat_infringe_incident_targets__target": {
+          "columns": ["copyright_notice_id", "copyright_notice_target_id"],
+          "definition": "FOREIGN KEY (copyright_notice_id, copyright_notice_target_id) REFERENCES copyright_notice_targets(copyright_notice_id, id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["copyright_notice_id", "id"],
+          "referencedTable": "copyright_notice_targets",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_repeat_infringer_incident_targets_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_repeat_infringer_incident_targets_pkey ON public.copyright_repeat_infringer_incident_targets USING btree (copyright_repeat_infringer_incident_id, copyright_notice_target_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_repeat_infringer_incident_id",
+              "descending": false,
+              "expression": "copyright_repeat_infringer_incident_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "copyright_notice_target_id",
+              "descending": false,
+              "expression": "copyright_notice_target_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_repeat_infringer_incident_targets__notice": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_repeat_infringer_incident_targets__notice ON public.copyright_repeat_infringer_incident_targets USING btree (copyright_notice_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_repeat_infringer_incident_targets__target": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_repeat_infringer_incident_targets__target ON public.copyright_repeat_infringer_incident_targets USING btree (copyright_notice_target_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_target_id",
+              "descending": false,
+              "expression": "copyright_notice_target_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["copyright_repeat_infringer_incident_id", "copyright_notice_target_id"],
+        "definition": "PRIMARY KEY (copyright_repeat_infringer_incident_id, copyright_notice_target_id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_repeat_infringer_incident_targets_immutable": "CREATE TRIGGER trigger_copyright_repeat_infringer_incident_targets_immutable BEFORE DELETE OR UPDATE ON public.copyright_repeat_infringer_incident_targets FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()"
+      },
+      "uniqueConstraints": {}
+    },
     "copyright_repeat_infringer_incidents": {
       "checkConstraints": {},
       "columns": {
         "account_user_id": {
           "collation": null,
-          "comment": "Post author who owned the confirmed placement. Guest placements do not create an incident.",
+          "comment": "Retained identity of the post author who owned the confirmed placement. Guest placements do not create an incident.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -35028,11 +35179,11 @@
       "foreignKeys": {
         "copyright_repeat_infringer_incidents_account_user_id_fkey": {
           "columns": ["account_user_id"],
-          "definition": "FOREIGN KEY (account_user_id) REFERENCES users(id) ON DELETE RESTRICT",
+          "definition": "FOREIGN KEY (account_user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
-          "referencedTable": "users",
+          "referencedTable": "retained_user_identities",
           "validated": true
         },
         "copyright_repeat_infringer_incidents_copyright_notice_id_fkey": {
@@ -35133,6 +35284,33 @@
           "ready": true,
           "unique": true,
           "valid": true
+        },
+        "uq_copyright_repeat_infringer_incidents__id__notice": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_copyright_repeat_infringer_incidents__id__notice ON public.copyright_repeat_infringer_incidents USING btree (id, copyright_notice_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
         }
       },
       "partition": null,
@@ -35150,6 +35328,10 @@
         "uq_copyrig_repeat_infringe_incident__account_user_id__notice_id": {
           "columns": ["account_user_id", "copyright_notice_id"],
           "definition": "UNIQUE (account_user_id, copyright_notice_id)"
+        },
+        "uq_copyright_repeat_infringer_incidents__id__notice": {
+          "columns": ["id", "copyright_notice_id"],
+          "definition": "UNIQUE (id, copyright_notice_id)"
         }
       }
     },
@@ -35163,7 +35345,7 @@
       "columns": {
         "account_user_id": {
           "collation": null,
-          "comment": "Account whose second operative incident opened this review.",
+          "comment": "Retained account identity whose second operative incident opened this review.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -35265,11 +35447,11 @@
       "foreignKeys": {
         "copyright_repeat_infringer_reviews_account_user_id_fkey": {
           "columns": ["account_user_id"],
-          "definition": "FOREIGN KEY (account_user_id) REFERENCES users(id) ON DELETE RESTRICT",
+          "definition": "FOREIGN KEY (account_user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
-          "referencedTable": "users",
+          "referencedTable": "retained_user_identities",
           "validated": true
         },
         "copyright_repeat_infringer_reviews_outcome_by_id_fkey": {
@@ -123599,7 +123781,7 @@
           "type": "uuid"
         }
       },
-      "comment": "Staff-placed legal-process preservation holds on a user account (for example a DMCA 512(h) subpoena). A hold with released_at NULL is open and blocks account deletion; at most one hold per account is open at a time. Rows are append-only apart from a single release, and survive the account: every user reference targets retained_user_identities, so a released hold never blocks the 90-day hard delete and an open hold cannot coexist with a deleted account (placement refuses one). Counsel decides scope and duration, so neither is stored.",
+      "comment": "Staff-placed legal-process preservation holds on a user account (for example a DMCA 512(h) subpoena). A hold with released_at NULL is open and blocks account deletion; at most one hold per account is open at a time. Rows are append-only apart from a single release, and survive the account: every user reference targets retained_user_identities, so a released hold never blocks the 90-day hard delete and an open hold cannot coexist with a deleted account (placement refuses one). The owner decides scope and duration on a lawyer's advice, so neither is stored.",
       "foreignKeys": {
         "user_legal_preservation_holds_account_user_id_fkey": {
           "columns": ["account_user_id"],

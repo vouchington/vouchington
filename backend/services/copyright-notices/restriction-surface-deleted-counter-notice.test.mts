@@ -22,10 +22,7 @@ import {
   reviewCopyrightCounterNotice,
 } from './index.mts'
 import { calculateUsCounterNoticeRestorationWindow } from './deadlines.mts'
-import {
-  getCopyrightRepeatInfringerAccount,
-  recordCopyrightRepeatInfringerDisposition,
-} from './repeat-infringer-incidents.mts'
+import { getCopyrightRepeatInfringerAccount } from './repeat-infringer-incidents.mts'
 import { createDueStatutoryCopyrightRestoreIntentsForDeadline } from './statutory-restoration-schedule.mts'
 
 describe('deleted community image setters and copyright response flows', () => {
@@ -132,8 +129,8 @@ describe('deleted community image setters and copyright response flows', () => {
   })
 
   it.each([
-    ['accepted before deletion', false],
-    ['accepted after deletion', true],
+    ['before deletion', false],
+    ['after deletion', true],
   ] as const)(
     'restores a surface image by the counter-notice receipt window when accepted %s',
     async (_label, deleteBeforeAcceptance) => {
@@ -179,15 +176,7 @@ describe('deleted community image setters and copyright response flows', () => {
         },
       )
       const receivedAt = counterNotice.submission.received_at
-      await expect(deleteUserAndDrainForTest(setter, setter)).rejects.toMatchObject({ status: 409 })
       if (deleteBeforeAcceptance) {
-        await recordCopyrightRepeatInfringerDisposition({
-          currentUser: restricted.moderator,
-          incidentId: incident.id,
-          disposition: 'withdrawn',
-          rationale: `The setter requested deletion ${crypto.randomUUID()}.`,
-          recordedAt: new Date(),
-        })
         await deleteUserAndDrainForTest(setter, setter)
       }
       const review = await reviewCopyrightCounterNotice({
@@ -198,15 +187,14 @@ describe('deleted community image setters and copyright response flows', () => {
       })
       if (!review.deadlineId) throw new Error('Counter-notice deadline missing')
       if (!deleteBeforeAcceptance) {
-        await recordCopyrightRepeatInfringerDisposition({
-          currentUser: restricted.moderator,
-          incidentId: incident.id,
-          disposition: 'withdrawn',
-          rationale: `The setter requested deletion ${crypto.randomUUID()}.`,
-          recordedAt: new Date(),
-        })
         await deleteUserAndDrainForTest(setter, setter)
       }
+
+      await expect(getCopyrightRepeatInfringerAccount(fixture.actorUserId)).resolves.toMatchObject({
+        incidents: expect.arrayContaining([
+          expect.objectContaining({ id: incident.id, is_operative: true }),
+        ]),
+      })
 
       const window = calculateUsCounterNoticeRestorationWindow(receivedAt)
       const reviewed = await getCopyrightNoticePrivateAggregate(restricted.noticeId)

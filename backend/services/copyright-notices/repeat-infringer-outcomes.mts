@@ -95,18 +95,26 @@ async function recordCopyrightRepeatInfringerReviewOutcomeInTransaction(
   `)
   const review = rows[0]
   assert(review, 404, 'Copyright repeat-infringer review not found')
+  let shouldSuspendActiveAccount = false
   if (suspendingOutcome) {
-    const { rows: is_operative } = await transaction<{ id: string }>(sql`
+    const { rows: operativeIncidents } = await transaction<{
+      id: string
+      account_is_active: boolean
+    }>(sql`
       /* recordCopyrightRepeatInfringerReviewOutcome:is_operative */
-      SELECT id FROM copyright_repeat_infringer_incidents
+      SELECT id, EXISTS (
+        SELECT 1 FROM users WHERE id = ${review.account_user_id} AND deleted_at IS NULL
+      ) AS account_is_active
+      FROM copyright_repeat_infringer_incidents
       WHERE account_user_id = ${review.account_user_id} AND is_operative
       FOR UPDATE
     `)
     assert(
-      is_operative.length >= 2,
+      operativeIncidents.length >= 2,
       409,
       'Restrict and terminate require two is_operative incidents',
     )
+    shouldSuspendActiveAccount = operativeIncidents[0]?.account_is_active ?? false
   }
   const { rows: updated } = await transaction<{ account_user_id: string }>(sql`
     /* recordCopyrightRepeatInfringerReviewOutcome:update */
@@ -123,7 +131,7 @@ async function recordCopyrightRepeatInfringerReviewOutcomeInTransaction(
   `)
   assert(updated[0], 409, 'Copyright repeat-infringer review is already decided')
   let newlySuspended = false
-  if (suspendingOutcome) {
+  if (suspendingOutcome && shouldSuspendActiveAccount) {
     const suspension = await ensureUserSuspendedInTransaction(transaction, {
       actorId: input.currentUser.id,
       userId: review.account_user_id,

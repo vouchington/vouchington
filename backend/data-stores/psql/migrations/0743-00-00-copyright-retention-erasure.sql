@@ -1,5 +1,5 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
--- Copyright evidence retention erasure (#1101). A case that has aged past the counsel-approved
+-- Copyright evidence retention erasure (#1101). A case that has aged past the owner-approved
 -- retention period keeps its legal skeleton (receipt, decisions, dates, repeat-infringer facts) but
 -- loses claimant personal data and stored evidence. Legal-record guards stay in force; they allow a
 -- transaction that sets app.copyright_retention_erasure to overwrite only the columns listed in
@@ -59,7 +59,7 @@ $$;
 
 COMMENT ON TABLE copyright_notice_retention_erasures IS 'Append-only record that a case''s personal data and stored evidence were erased after the retention period. Its presence ends every reader and sweep touch of the case''s erased columns; the case keeps its legal skeleton and repeat-infringer facts.';
 COMMENT ON COLUMN copyright_notice_retention_erasures.copyright_notice_id IS 'The erased case; one row per case, so the sweep is idempotent.';
-COMMENT ON COLUMN copyright_notice_retention_erasures.retention_days IS 'Counsel-approved retention period, in days, that was in force when the case was erased.';
+COMMENT ON COLUMN copyright_notice_retention_erasures.retention_days IS 'Owner-approved retention period, in days, that was in force when the case was erased.';
 COMMENT ON COLUMN copyright_notice_retention_erasures.erased_object_count IS 'Count of stored evidence object keys the case referenced; every version of each was removed from the evidence bucket before this row was written.';
 COMMENT ON COLUMN copyright_notice_retention_erasures.created_at IS 'Time the case was erased, derived from the UUIDv7 id; the row is append-only.';
 COMMENT ON FUNCTION fn_copyright_retention_erasable_columns(text) IS 'Columns, per table, that a retention-erasure transaction may overwrite in place; NULL for any table that is never erased. The TypeScript erasure spec must list exactly these columns.';

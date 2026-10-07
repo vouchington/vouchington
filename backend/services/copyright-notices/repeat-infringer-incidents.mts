@@ -10,6 +10,7 @@ import {
   statutoryRestorationSourceSql,
 } from './restriction-reversal-sources-sql.mts'
 import { copyrightPlacementPartiesSql } from '@services/media-delivery-safety/copyright-placement-parties'
+import { recordCopyrightRepeatInfringerTargetProvenance } from './repeat-infringer-target-provenance.mts'
 
 export type CopyrightRepeatInfringerDisposition = 'withdrawn' | 'duplicate' | 'abusive'
 
@@ -23,17 +24,18 @@ export async function syncCopyrightRepeatInfringerIncidents(
   transaction: OwnedTransaction,
 ): Promise<void> {
   const accountIds = await lockCopyrightRepeatInfringerNoticeAccounts(noticeId, transaction)
-  await transaction(
-    sql`
+  const statement = sql`
     /* syncCopyrightRepeatInfringerIncidents */
-    WITH owners AS (
-      SELECT DISTINCT party.user_id AS account_user_id
+    WITH eligible_targets AS (
+      SELECT target.*,
+        NOT (`
+  statement.append(anyReversalSourceSql)
+  statement.append(sql`) AND NOT (`)
+  statement.append(statutoryRestorationSourceSql)
+  statement.append(sql`) AS is_operative_restriction
       FROM copyright_notice_targets target
       JOIN copyright_restrictions restriction
         ON restriction.copyright_notice_target_id = target.id
-      CROSS JOIN LATERAL `
-      .append(copyrightPlacementPartiesSql('strike'))
-      .append(sql` party
       WHERE target.copyright_notice_id = ${noticeId}
         AND (
           restriction.human_review_action = 'confirm'
@@ -42,11 +44,28 @@ export async function syncCopyrightRepeatInfringerIncidents(
             WHERE review.copyright_restriction_id = restriction.id AND review.action = 'confirm'
           )
         )
-        AND NOT `)
-      .append(anyReversalSourceSql)
-      .append(sql`
-        AND NOT `)
-      .append(statutoryRestorationSourceSql).append(sql`
+    ), current_target_owners AS (
+      SELECT DISTINCT target.id AS copyright_notice_target_id,
+        party.user_id AS account_user_id
+      FROM eligible_targets target
+      CROSS JOIN LATERAL `)
+  statement.append(copyrightPlacementPartiesSql('strike'))
+  statement.append(sql` party
+    ), owners AS (
+      SELECT DISTINCT owner.account_user_id
+      FROM current_target_owners owner
+      JOIN eligible_targets target ON target.id = owner.copyright_notice_target_id
+      WHERE target.is_operative_restriction
+      UNION
+      SELECT incident.account_user_id
+      FROM copyright_repeat_infringer_incident_targets provenance
+      JOIN copyright_repeat_infringer_incidents incident
+        ON incident.id = provenance.copyright_repeat_infringer_incident_id
+        AND incident.copyright_notice_id = provenance.copyright_notice_id
+      JOIN eligible_targets target
+        ON target.id = provenance.copyright_notice_target_id
+        AND target.is_operative_restriction
+      WHERE provenance.copyright_notice_id = ${noticeId}
     ), desired AS (
       SELECT owners.account_user_id,
         NOT EXISTS (
@@ -79,16 +98,19 @@ export async function syncCopyrightRepeatInfringerIncidents(
     SELECT account_user_id, is_operative FROM upserted
     UNION ALL
     SELECT account_user_id, false FROM cleared
-  `),
-  )
+  `)
+  await transaction(statement)
+  await recordCopyrightRepeatInfringerTargetProvenance(noticeId, transaction)
   if (accountIds.length === 0) return
   await transaction(sql`
     /* syncCopyrightRepeatInfringerIncidents:openReview */
     INSERT INTO copyright_repeat_infringer_reviews (account_user_id, opened_at)
     SELECT incident.account_user_id, CURRENT_TIMESTAMP
     FROM copyright_repeat_infringer_incidents incident
-    JOIN UNNEST(${accountIds}::uuid[]) AS account(id)
-      ON incident.account_user_id = account.id
+    JOIN users live_account
+      ON live_account.id = incident.account_user_id AND live_account.deleted_at IS NULL
+    JOIN UNNEST(${accountIds}::uuid[]) AS candidate(id)
+      ON incident.account_user_id = candidate.id
     WHERE incident.is_operative
     GROUP BY incident.account_user_id
     HAVING count(*) >= 2

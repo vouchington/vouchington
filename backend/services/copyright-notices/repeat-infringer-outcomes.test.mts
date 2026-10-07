@@ -5,6 +5,7 @@ import {
   getTestPostPublicationDirtyWorkForScope,
 } from '@voucha/test-helpers'
 import { confirmTestRepeatInfringerNotice } from '@voucha/test-helpers/services/copyright-notices/repeat-infringer'
+import { getTestCopyrightRepeatInfringerReview } from '@voucha/test-helpers/copyright-repeat-infringer'
 import { deleteUser } from '@services/users/delete'
 import { getPrivateUserByAny } from '@services/users/get'
 import { suspendUser, unsuspendUser } from '@services/users/suspension'
@@ -186,33 +187,50 @@ describe('copyright repeat-infringer review outcomes', () => {
     ).rejects.toMatchObject({ status: 409 })
   })
 
-  it('refuses deletion for an is_operative incident and allows it once none remain', async () => {
-    const [poster, moderator] = await Promise.all([
-      createTestUser(),
-      createTestUser({ extraRoles: ['moderator'] }),
-    ])
-    const firstNoticeId = await confirmTestRepeatInfringerNotice(poster.id, moderator)
-    const secondNoticeId = await confirmTestRepeatInfringerNotice(poster.id, moderator)
-    await expect(deleteUser(poster, poster)).rejects.toMatchObject({ status: 409 })
-    await expect(getPrivateUserByAny(poster.id)).resolves.toEqual(
-      expect.objectContaining({ id: poster.id }),
-    )
-    for (const noticeId of [firstNoticeId, secondNoticeId]) {
-      const accounts = await listCopyrightRepeatInfringerAccountsForNotice(moderator, noticeId)
-      const incidentId = accounts[0]?.incident_id
-      if (!incidentId || !accounts[0]?.is_operative) continue
-      await recordCopyrightRepeatInfringerDisposition({
-        currentUser: moderator,
-        incidentId,
-        disposition: 'withdrawn',
-        rationale: 'The claimant withdrew this notice.',
-        recordedAt: new Date('2026-07-03T12:00:00.000Z'),
+  it.each(['restrict', 'terminate'] as const)(
+    'records %s after deletion without suspending a retained identity',
+    async outcome => {
+      const [poster, moderator, admin] = await Promise.all([
+        createTestUser(),
+        createTestUser({ extraRoles: ['moderator'] }),
+        createTestUser({ administrator: true }),
+      ])
+      const firstNoticeId = await confirmTestRepeatInfringerNotice(poster.id, moderator)
+      const secondNoticeId = await confirmTestRepeatInfringerNotice(poster.id, moderator)
+      const accounts = await listCopyrightRepeatInfringerAccountsForNotice(moderator, firstNoticeId)
+      expect(accounts).toEqual([
+        expect.objectContaining({
+          account_user_id: poster.id,
+          is_operative: true,
+          open_review_id: expect.any(String),
+        }),
+      ])
+      const reviewId = accounts[0]?.open_review_id
+      if (!reviewId) throw new Error('open review disappeared')
+      await expect(
+        listCopyrightRepeatInfringerAccountsForNotice(moderator, secondNoticeId),
+      ).resolves.toEqual([expect.objectContaining({ is_operative: true })])
+      await expect(deleteUser(poster, poster)).resolves.toEqual(
+        expect.objectContaining({ requestId: expect.any(String) }),
+      )
+
+      const recordedAt = new Date('2026-07-04T12:00:00.000Z')
+      await expect(
+        recordCopyrightRepeatInfringerReviewOutcome({
+          currentUser: admin,
+          reviewId,
+          outcome,
+          rationale: 'Two retained operative incidents remain after account deletion.',
+          recordedAt,
+        }),
+      ).resolves.toEqual(expect.objectContaining({ account_user_id: poster.id, outcome }))
+      await expect(getTestCopyrightRepeatInfringerReview(reviewId)).resolves.toMatchObject({
+        outcome,
+        outcome_at: recordedAt,
       })
-    }
-    await expect(deleteUser(poster, poster)).resolves.toEqual(
-      expect.objectContaining({ requestId: expect.any(String) }),
-    )
-  })
+      await expect(getModeratorActionRowsForTest({ targetUserId: poster.id })).resolves.toEqual([])
+    },
+  )
 
   it('refuses deletion for an unresolved qualifying hold and allows it after resolution', async () => {
     const { aggregate, claimant, moderator, notice } = await createCopyrightRestorationHoldFixture()

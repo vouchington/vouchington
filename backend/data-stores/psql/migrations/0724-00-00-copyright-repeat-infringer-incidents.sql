@@ -6,13 +6,22 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_repeat_infringer_incidents (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  account_user_id uuid NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+  account_user_id uuid NOT NULL,
   copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE RESTRICT,
   is_operative boolean NOT NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT uq_copyright_repeat_infringer_incidents__id__notice UNIQUE (id, copyright_notice_id),
   CONSTRAINT uq_copyrig_repeat_infringe_incident__account_user_id__notice_id UNIQUE (account_user_id, copyright_notice_id)
 );
+
+ALTER TABLE copyright_repeat_infringer_incidents
+  ADD CONSTRAINT copyright_repeat_infringer_incidents_account_user_id_fkey
+  FOREIGN KEY (account_user_id)
+  REFERENCES retained_user_identities(id) ON DELETE RESTRICT NOT VALID;
+
+ALTER TABLE copyright_repeat_infringer_incidents
+  VALIDATE CONSTRAINT copyright_repeat_infringer_incidents_account_user_id_fkey;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_copyright_repeat_infringer_incidents_updated_at
@@ -26,6 +35,32 @@ CREATE INDEX idx_copyright_repeat_infringer_incidents__operative_account
 
 CREATE INDEX idx_copyright_repeat_infringer_incidents__notice
   ON copyright_repeat_infringer_incidents (copyright_notice_id);
+
+-- Durable target provenance is required after privacy erasure removes the live placement owner.
+CREATE TABLE copyright_repeat_infringer_incident_targets (
+  copyright_notice_id uuid NOT NULL,
+  copyright_repeat_infringer_incident_id uuid NOT NULL,
+  copyright_notice_target_id uuid NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (copyright_repeat_infringer_incident_id, copyright_notice_target_id),
+  CONSTRAINT fk_copyr_repeat_infringe_incident_targets__incident
+    FOREIGN KEY (copyright_repeat_infringer_incident_id, copyright_notice_id)
+    REFERENCES copyright_repeat_infringer_incidents(id, copyright_notice_id) ON DELETE RESTRICT
+);
+
+ALTER TABLE copyright_repeat_infringer_incident_targets
+  ADD CONSTRAINT fk_copyr_repeat_infringe_incident_targets__target
+  FOREIGN KEY (copyright_notice_id, copyright_notice_target_id)
+  REFERENCES copyright_notice_targets(copyright_notice_id, id) ON DELETE RESTRICT NOT VALID;
+
+ALTER TABLE copyright_repeat_infringer_incident_targets
+  VALIDATE CONSTRAINT fk_copyr_repeat_infringe_incident_targets__target;
+
+CREATE INDEX idx_copyright_repeat_infringer_incident_targets__target
+  ON copyright_repeat_infringer_incident_targets (copyright_notice_target_id);
+
+CREATE INDEX idx_copyright_repeat_infringer_incident_targets__notice
+  ON copyright_repeat_infringer_incident_targets (copyright_notice_id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_repeat_infringer_dispositions (
@@ -43,7 +78,7 @@ CREATE INDEX idx_copyright_repeat_infringer_dispositions__recorded_by
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_repeat_infringer_reviews (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  account_user_id uuid NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+  account_user_id uuid NOT NULL,
   opened_at timestamptz NOT NULL,
   outcome copyright_repeat_infringer_review_outcomes CHECK (outcome IN ('warning', 'no_action', 'restrict', 'terminate', 'reinstatement')),
   outcome_at timestamptz,
@@ -56,6 +91,14 @@ CREATE TABLE copyright_repeat_infringer_reviews (
   CHECK ((outcome IS NULL) = (outcome_at IS NULL)),
   CHECK ((outcome IS NULL) = (rationale_ciphertext IS NULL))
 );
+
+ALTER TABLE copyright_repeat_infringer_reviews
+  ADD CONSTRAINT copyright_repeat_infringer_reviews_account_user_id_fkey
+  FOREIGN KEY (account_user_id)
+  REFERENCES retained_user_identities(id) ON DELETE RESTRICT NOT VALID;
+
+ALTER TABLE copyright_repeat_infringer_reviews
+  VALIDATE CONSTRAINT copyright_repeat_infringer_reviews_account_user_id_fkey;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_copyright_repeat_infringer_reviews_updated_at
@@ -115,6 +158,10 @@ CREATE TRIGGER trigger_copyright_repeat_infringer_incidents_guard
   BEFORE UPDATE OR DELETE ON copyright_repeat_infringer_incidents
   FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_repeat_infringer_incident();
 
+CREATE TRIGGER trigger_copyright_repeat_infringer_incident_targets_immutable
+  BEFORE UPDATE OR DELETE ON copyright_repeat_infringer_incident_targets
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
+
 CREATE TRIGGER trigger_copyright_repeat_infringer_dispositions_immutable
   BEFORE UPDATE OR DELETE ON copyright_repeat_infringer_dispositions
   FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('recorded_by_id');
@@ -128,9 +175,13 @@ CREATE TRIGGER trigger_copyright_repeat_infringer_reviews_guard
   FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_repeat_infringer_review();
 
 COMMENT ON TABLE copyright_repeat_infringer_incidents IS 'One account incident per copyright notice. Operative means a human confirm or modify still stands and no withdrawal, duplicate, or abusive disposition exists.';
-COMMENT ON COLUMN copyright_repeat_infringer_incidents.account_user_id IS 'Post author who owned the confirmed placement. Guest placements do not create an incident.';
+COMMENT ON COLUMN copyright_repeat_infringer_incidents.account_user_id IS 'Retained identity of the post author who owned the confirmed placement. Guest placements do not create an incident.';
 COMMENT ON COLUMN copyright_repeat_infringer_incidents.copyright_notice_id IS 'Copyright notice this incident belongs to. Several targets on one notice are still one incident.';
 COMMENT ON COLUMN copyright_repeat_infringer_incidents.is_operative IS 'Whether this notice still counts toward the repeat-infringer review threshold.';
+COMMENT ON TABLE copyright_repeat_infringer_incident_targets IS 'Immutable target provenance tying each account incident to strike-eligible placements that may keep it operative after account erasure.';
+COMMENT ON COLUMN copyright_repeat_infringer_incident_targets.copyright_notice_id IS 'Parent notice scope shared by the incident and target foreign keys.';
+COMMENT ON COLUMN copyright_repeat_infringer_incident_targets.copyright_repeat_infringer_incident_id IS 'Account incident potentially supported by the target.';
+COMMENT ON COLUMN copyright_repeat_infringer_incident_targets.copyright_notice_target_id IS 'Strike-eligible target whose placement belonged to the incident account when the incident was synchronized.';
 COMMENT ON TABLE copyright_repeat_infringer_dispositions IS 'Staff decision that a confirmed incident no longer counts: withdrawn, duplicate, or abusive.';
 COMMENT ON COLUMN copyright_repeat_infringer_dispositions.copyright_repeat_infringer_incident_id IS 'Incident this disposition removes from the operative count.';
 COMMENT ON COLUMN copyright_repeat_infringer_dispositions.disposition IS 'Why the incident stopped counting. Restoration is not a disposition.';
@@ -138,7 +189,7 @@ COMMENT ON COLUMN copyright_repeat_infringer_dispositions.rationale_ciphertext I
 COMMENT ON COLUMN copyright_repeat_infringer_dispositions.recorded_at IS 'Time the moderator recorded the disposition.';
 COMMENT ON COLUMN copyright_repeat_infringer_dispositions.recorded_by_id IS 'Moderator who recorded the disposition. Null after that account is erased.';
 COMMENT ON TABLE copyright_repeat_infringer_reviews IS 'Required staff review opened when an account reaches two operative incidents. Opening a review does not suspend the account.';
-COMMENT ON COLUMN copyright_repeat_infringer_reviews.account_user_id IS 'Account whose second operative incident opened this review.';
+COMMENT ON COLUMN copyright_repeat_infringer_reviews.account_user_id IS 'Retained account identity whose second operative incident opened this review.';
 COMMENT ON COLUMN copyright_repeat_infringer_reviews.opened_at IS 'Time the second operative incident opened the review.';
 COMMENT ON COLUMN copyright_repeat_infringer_reviews.outcome IS 'Staff outcome. Null while the review is open. Restrict and terminate are applied by a later administrator action.';
 COMMENT ON COLUMN copyright_repeat_infringer_reviews.outcome_at IS 'Time the moderator recorded the outcome. Null while the review is open.';

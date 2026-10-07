@@ -111,8 +111,7 @@ block the internal completion marker while the immediate database privacy fence 
 a copyright incident or legal hold is unresolved`, for the account holder and for an administrator
 alike, in any of these cases:
 
-- the account has an operative repeat-infringer incident;
-- an unresolved qualifying court or CCB hold covers a placement the account owns (both in
+- an unresolved qualifying court or CCB hold covers a placement the account owns (in
   [copyright notices](../moderation/COPYRIGHT-NOTICES.md)); or
 - an administrator has an open **legal-process preservation hold** on the account (below).
 
@@ -122,8 +121,15 @@ applies, so it does not tell the account holder that legal process exists. `dele
 path that sets `deleted_at`. The retention cron and the erasure phases act only on accounts that are
 already soft-deleted, so they have no second check.
 
-A preservation hold keeps an account's records while the owner decides, on a lawyer's advice, what a subpoena requires (see
-the [§512(h) runbook](../../runbooks/copyright-notices.md#dmca-512h-subpoenas)). It stores who
+An operative repeat-infringer incident does not block deletion. The normal deletion phases erase
+the account's personal data. Incident rows and repeat-infringer review outcomes and dates remain
+linked to `retained_user_identities` as the minimal 17 USC 512(i) record. Staff may finish an open
+review after deletion; a restrict or terminate outcome is recorded without attempting to suspend
+the deleted account.
+
+A preservation hold keeps an account's records while the owner decides, on a lawyer's advice, what
+a subpoena requires (see the
+[§512(h) runbook](../../runbooks/copyright-notices.md#dmca-512h-subpoenas)). It stores who
 placed it, when, an encrypted short matter reference, and who released it and when. It has no
 duration or scope, because the owner decides both. Release writes the release columns once and the
 row is never deleted, so the history persists. All three user references target

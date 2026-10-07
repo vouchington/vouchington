@@ -549,11 +549,12 @@ Notes for operators:
    administrator records reinstatement. Reinstatement does not unsuspend the account. Do that from
    the user admin panel after the reinstatement row exists. The decision, any new suspension,
    moderator action, and publication invalidation work commit together after the account lifecycle
-   lock; a failed decision leaves the review open for retry.
-4. Account deletion returns 409 while an operative incident remains, while an unresolved
-   qualifying legal hold covers a placement for which the account is a retained party, or while an administrator has an
-   open [preservation hold](#dmca-512h-subpoenas) on the account. An open review alone does not
-   refuse deletion.
+   lock; a failed decision leaves the review open for retry. If the account is already deleted,
+   restrict or terminate records the retained outcome without creating a suspension or moderator
+   action for the retained identity.
+4. Operative incidents and open reviews do not refuse account deletion. Deletion returns 409 while
+   an unresolved qualifying legal hold covers a placement for which the account is a retained party,
+   or while an administrator has an open [preservation hold](#dmca-512h-subpoenas) on the account.
 5. An operative incident keeps its case out of the retention sweep, and incidents never age out.
    The retention period is an approved-policy gate; see
    [Evidence retention deletion](#evidence-retention-deletion).
@@ -855,9 +856,10 @@ sufficient to identify an alleged infringer, to the extent Voucha has it.
      the owner decides when it ends, on the lawyer's advice, and an administrator releases it from
      the same card. Only one hold is open per account at a time.
    - **Effect.** While a hold is open, deletion of the account by the user or by an administrator
-     returns the same `409` as for an operative incident or a court or CCB hold. The message does
-     not say which, so it does not reveal that legal process exists. A hold does not copy or freeze
-     any other record. It only stops the account being deleted.
+     returns `409`. An operative incident does not block deletion; see the canonical
+     [repeat-infringer deletion rule](#repeat-infringer-review) above for the distinct qualifying
+     legal-hold rule. The message does not reveal that legal process exists. A preservation hold
+     does not copy or freeze any other record. It only stops the account being deleted.
    - **Audit.** Placing and releasing each write a moderator action (`preservation_hold_place`,
      `preservation_hold_release`), visible to administrators in the admin modlog and to no
      community. The hold row records who placed it and when, and who released it and when. Rows are
