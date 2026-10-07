@@ -1,5 +1,5 @@
 import { recordModeratorAction } from '@services/moderator-actions'
-import { beginTransaction } from '@data-stores/psql'
+import { runWithTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { TopicClaim } from './config.mts'
@@ -16,10 +16,11 @@ const CLAIM_RETURNING = sql`
 export async function adminVerifyTopicClaim(
   staffUserId: string,
   claimId: string,
+  options: { query?: TransactionQuery } = {},
 ): Promise<TopicClaim> {
-  await using transaction = await beginTransaction()
-  const { rows } = await transaction(
-    sql`/* adminVerifyTopicClaim */
+  return runWithTransaction(options.query, async transaction => {
+    const { rows } = await transaction(
+      sql`/* adminVerifyTopicClaim */
     UPDATE topic_claims
     SET verification_method = 'manual_admin',
         submitted_at = COALESCE(submitted_at, NOW()),
@@ -29,27 +30,28 @@ export async function adminVerifyTopicClaim(
       AND verified_at IS NULL
       AND rejected_at IS NULL
     RETURNING `.append(CLAIM_RETURNING),
-  )
-  const updated = rows[0] as TopicClaim | undefined
-  assert(updated, 404, 'Claim not found or already resolved')
-  await recordModeratorAction(
-    staffUserId,
-    { actionType: 'topic_claim_verify', topicClaimId: claimId },
-    { query: transaction },
-  )
-  await transaction.commit()
-  return updated
+    )
+    const updated = rows[0] as TopicClaim | undefined
+    assert(updated, 404, 'Claim not found or already resolved')
+    await recordModeratorAction(
+      staffUserId,
+      { actionType: 'topic_claim_verify', topicClaimId: claimId },
+      { query: transaction },
+    )
+    return updated
+  })
 }
 
 export async function rejectTopicClaim(
   staffUserId: string,
   claimId: string,
   rejectionReason: string,
+  options: { query?: TransactionQuery } = {},
 ): Promise<TopicClaim> {
   assert(rejectionReason.trim().length > 0, 422, 'rejection_reason is required')
-  await using transaction = await beginTransaction()
-  const { rows } = await transaction(
-    sql`/* rejectTopicClaim */
+  return runWithTransaction(options.query, async transaction => {
+    const { rows } = await transaction(
+      sql`/* rejectTopicClaim */
     UPDATE topic_claims
     SET rejected_at = NOW(),
         rejected_by_id = ${staffUserId},
@@ -58,14 +60,14 @@ export async function rejectTopicClaim(
       AND verified_at IS NULL
       AND rejected_at IS NULL
     RETURNING `.append(CLAIM_RETURNING),
-  )
-  const updated = rows[0] as TopicClaim | undefined
-  assert(updated, 404, 'Claim not found or already resolved')
-  await recordModeratorAction(
-    staffUserId,
-    { actionType: 'topic_claim_reject', topicClaimId: claimId, reason: rejectionReason.trim() },
-    { query: transaction },
-  )
-  await transaction.commit()
-  return updated
+    )
+    const updated = rows[0] as TopicClaim | undefined
+    assert(updated, 404, 'Claim not found or already resolved')
+    await recordModeratorAction(
+      staffUserId,
+      { actionType: 'topic_claim_reject', topicClaimId: claimId, reason: rejectionReason.trim() },
+      { query: transaction },
+    )
+    return updated
+  })
 }

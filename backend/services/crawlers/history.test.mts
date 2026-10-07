@@ -73,12 +73,16 @@ describe('crawlers staff history', () => {
       const before = await readStaffEditorialRows(actor.id)
       const history = await readStaffActionHistory(actor.id)
       await expect(
-        withRejectedStaffActionHistory(actor.id, async () => {
+        withRejectedStaffActionHistory(async query => {
           if (action === 'create')
-            return createCrawler(actor, { hostname_id: hostnameId, crawler_type: 'fetch' })
+            return createCrawler(
+              actor,
+              { hostname_id: hostnameId, crawler_type: 'fetch' },
+              { query },
+            )
           if (action === 'update')
-            return updateCrawler(actor, crawler!.id, { description: 'Changed' })
-          return deleteCrawler(actor, crawler!.id)
+            return updateCrawler(actor, crawler!.id, { description: 'Changed' }, { query })
+          return deleteCrawler(actor, crawler!.id, { query })
         }),
       ).rejects.toThrow('staff history rejected')
       expect(await readStaffEditorialRows(actor.id)).toEqual(before)

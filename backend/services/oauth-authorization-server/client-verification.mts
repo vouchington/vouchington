@@ -1,5 +1,5 @@
 import { recordModeratorAction } from '@services/moderator-actions'
-import { read, beginTransaction } from '@data-stores/psql'
+import { read, runWithTransaction, type TransactionQuery } from '@data-stores/psql'
 import type {
   AdminOAuthClientView,
   OAuthClientVerificationFilter,
@@ -114,14 +114,15 @@ export async function verifyOAuthClient(
   currentUserId: string,
   id: string,
   reviewed: OAuthClientVerificationReview,
+  options: { query?: TransactionQuery } = {},
 ): Promise<OAuthClientVerificationResult> {
-  await using query = await beginTransaction()
-  const { rows: previous } = await query<{ verified_at: Date | null }>(
-    '/* verifyOAuthClient:previous */ SELECT verified_at FROM oauth_clients WHERE id = $1 FOR UPDATE',
-    [id],
-  )
-  const { rows } = await query<AdminOAuthClientView>(
-    `/* verifyOAuthClient */ UPDATE oauth_clients
+  return runWithTransaction(options.query, async query => {
+    const { rows: previous } = await query<{ verified_at: Date | null }>(
+      '/* verifyOAuthClient:previous */ SELECT verified_at FROM oauth_clients WHERE id = $1 FOR UPDATE',
+      [id],
+    )
+    const { rows } = await query<AdminOAuthClientView>(
+      `/* verifyOAuthClient */ UPDATE oauth_clients
      SET verified_at = CURRENT_TIMESTAMP,
          verified_by_id = $2
      WHERE id = $1
@@ -131,59 +132,63 @@ export async function verifyOAuthClient(
        AND revoked_at IS NULL
      RETURNING id, client_id, client_name, client_type, redirect_uris, scopes::text[] AS scopes, owner_user_id,
        verified_at, verified_by_id, created_at`,
-    [id, currentUserId, reviewed.client_name, reviewed.redirect_uris],
-  )
-  const client = rows[0]
-  if (client) {
-    await recordModeratorAction(
-      currentUserId,
-      {
-        actionType: 'oauth_client_verify',
-        oauthClientId: id,
-        metadata: {
-          before: { verified_at: previous[0]?.verified_at ?? null },
-          after: {
-            verified_at: client.verified_at,
-            client_name: client.client_name,
-            redirect_uris: client.redirect_uris,
+      [id, currentUserId, reviewed.client_name, reviewed.redirect_uris],
+    )
+    const client = rows[0]
+    if (client) {
+      await recordModeratorAction(
+        currentUserId,
+        {
+          actionType: 'oauth_client_verify',
+          oauthClientId: id,
+          metadata: {
+            before: { verified_at: previous[0]?.verified_at ?? null },
+            after: {
+              verified_at: client.verified_at,
+              client_name: client.client_name,
+              redirect_uris: client.redirect_uris,
+            },
           },
         },
-      },
-      { query },
+        { query },
+      )
+      return { outcome: 'verified', client }
+    }
+    const existing = await query(
+      `/* verifyOAuthClient exists */ SELECT 1 FROM oauth_clients WHERE id = $1`,
+      [id],
     )
-    await query.commit()
-    return { outcome: 'verified', client }
-  }
-  const existing = await query(
-    `/* verifyOAuthClient exists */ SELECT 1 FROM oauth_clients WHERE id = $1`,
-    [id],
-  )
-  return existing.rowCount === 0 ? { outcome: 'not_found' } : { outcome: 'conflict' }
+    return existing.rowCount === 0 ? { outcome: 'not_found' } : { outcome: 'conflict' }
+  })
 }
 
 /** Clears verification. Returns false when no such client exists. */
-export async function unverifyOAuthClient(currentUserId: string, id: string): Promise<boolean> {
-  await using query = await beginTransaction()
-  const { rows } = await query<OAuthClientVerificationReview & { verified_at: Date | null }>(
-    '/* unverifyOAuthClient:previous */ SELECT client_name, redirect_uris, verified_at FROM oauth_clients WHERE id = $1 FOR UPDATE',
-    [id],
-  )
-  const previous = rows[0]
-  if (!previous) return false
-  await query(
-    `/* unverifyOAuthClient */ UPDATE oauth_clients
+export async function unverifyOAuthClient(
+  currentUserId: string,
+  id: string,
+  options: { query?: TransactionQuery } = {},
+): Promise<boolean> {
+  return runWithTransaction(options.query, async query => {
+    const { rows } = await query<OAuthClientVerificationReview & { verified_at: Date | null }>(
+      '/* unverifyOAuthClient:previous */ SELECT client_name, redirect_uris, verified_at FROM oauth_clients WHERE id = $1 FOR UPDATE',
+      [id],
+    )
+    const previous = rows[0]
+    if (!previous) return false
+    await query(
+      `/* unverifyOAuthClient */ UPDATE oauth_clients
     SET verified_at = NULL, verified_by_id = NULL WHERE id = $1`,
-    [id],
-  )
-  await recordModeratorAction(
-    currentUserId,
-    {
-      actionType: 'oauth_client_unverify',
-      oauthClientId: id,
-      metadata: { before: previous, after: { verified_at: null } },
-    },
-    { query },
-  )
-  await query.commit()
-  return true
+      [id],
+    )
+    await recordModeratorAction(
+      currentUserId,
+      {
+        actionType: 'oauth_client_unverify',
+        oauthClientId: id,
+        metadata: { before: previous, after: { verified_at: null } },
+      },
+      { query },
+    )
+    return true
+  })
 }

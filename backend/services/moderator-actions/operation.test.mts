@@ -1,11 +1,30 @@
 import { describe, expect, it, vi } from 'vitest'
-import { withRejectedStaffActionHistory } from '@voucha/test-helpers/staff-action-history'
+import { rejectStaffActionHistoryWrite } from '@voucha/test-helpers/staff-action-history'
 import { createTestUser } from '@voucha/test-helpers'
+import { withPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
 import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.sentry-mock'
 import { recordStaffOperation } from './operation.mts'
 import { searchModeratorActions } from './search.mts'
 
 describe('staff external-operation history', () => {
+  it('rejects an uncommitted intent writer before running the external action', async () => {
+    const execute = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
+    await withPostgresTransactionForTest(async query => {
+      await expect(
+        recordStaffOperation(
+          crypto.randomUUID(),
+          { actionType: 'queue_pause' },
+          execute,
+          undefined,
+          {
+            query,
+          },
+        ),
+      ).rejects.toThrow('Staff operation history writer must autocommit')
+    })
+    expect(execute).not.toHaveBeenCalled()
+  })
+
   it('commits intent before execution and links the successful outcome', async () => {
     const actor = await createTestUser()
     const queueName = `audit-${crypto.randomUUID()}`
@@ -73,18 +92,12 @@ describe('staff external-operation history', () => {
     const actor = await createTestUser()
     const execute = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
     await expect(
-      withRejectedStaffActionHistory(
+      recordStaffOperation(
         actor.id,
-        () =>
-          recordStaffOperation(
-            actor.id,
-            {
-              actionType: 'queue_pause',
-              queueName: `audit-${crypto.randomUUID()}`,
-            },
-            execute,
-          ),
-        'finished',
+        { actionType: 'queue_pause', queueName: `audit-${crypto.randomUUID()}` },
+        execute,
+        undefined,
+        { query: rejectStaffActionHistoryWrite('finished') },
       ),
     ).resolves.toBeUndefined()
     expect(execute).toHaveBeenCalledTimes(1)
@@ -101,13 +114,12 @@ describe('staff external-operation history', () => {
     const actor = await createTestUser()
     const failure = new Error('original execution failure')
     await expect(
-      withRejectedStaffActionHistory(
+      recordStaffOperation(
         actor.id,
-        () =>
-          recordStaffOperation(actor.id, { actionType: 'queue_pause' }, () =>
-            Promise.reject(failure),
-          ),
-        'finished',
+        { actionType: 'queue_pause' },
+        () => Promise.reject(failure),
+        undefined,
+        { query: rejectStaffActionHistoryWrite('finished') },
       ),
     ).rejects.toBe(failure)
     expect(sentryCaptureExceptionMock).toHaveBeenCalledOnce()

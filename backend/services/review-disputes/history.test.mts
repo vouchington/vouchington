@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { TransactionQuery } from '@data-stores/psql'
 import {
   createStaffResolutionFixture,
   readStaffResolutionState,
@@ -15,8 +16,8 @@ describe('review-disputes staff history', () => {
     { name: 'remove', run: resolveReviewDisputeRemove, action: 'resolve_report' },
     {
       name: 'annotate',
-      run: (actor: string, id: string) =>
-        resolveReviewDisputeAnnotate(actor, id, 'Staff annotation', 'staff_or_user'),
+      run: (actor: string, id: string, _evidence: string, options?: { query?: TransactionQuery }) =>
+        resolveReviewDisputeAnnotate(actor, id, 'Staff annotation', 'staff_or_user', options),
       action: 'resolve_report',
     },
     { name: 'dismiss', run: dismissReviewDispute, action: 'dismiss_report' },
@@ -37,8 +38,8 @@ describe('review-disputes staff history', () => {
     const { actorId, id } = await createStaffResolutionFixture('dispute')
     const before = await readStaffResolutionState('dispute', id)
     await expect(
-      withRejectedStaffActionHistory(actorId, async () => {
-        await run(actorId, id, 'staff_or_user')
+      withRejectedStaffActionHistory(async query => {
+        await run(actorId, id, 'staff_or_user', { query })
       }),
     ).rejects.toThrow('staff history rejected')
     expect(await readStaffResolutionState('dispute', id)).toEqual(before)

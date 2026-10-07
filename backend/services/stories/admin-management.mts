@@ -2,6 +2,7 @@ import assert from 'http-assert'
 import { isUUID } from '@modules/utils'
 import { isAdminUser, assertNotSuspended } from '@services/users'
 import type { PrivateUser } from '@services/users/types'
+import type { TransactionQuery } from '@data-stores/psql'
 import { getStoryById } from '@services/feeds/rss-feed-items/get-story-by-id'
 import { getStoryItemIds } from './get.mts'
 import { adminAssignItemToStory, adminRemoveItemFromStory } from './assign.mts'
@@ -28,21 +29,23 @@ export async function addEditorialStoryItem(
   user: PrivateUser,
   storyId: string,
   itemId: string,
+  options: { query?: TransactionQuery } = {},
 ): Promise<void> {
   assertStaffWrite(user, storyId)
   await assertStoryItem(storyId, itemId, false)
-  assert(await adminAssignItemToStory(user.id, storyId, itemId), 404, 'Item not found')
+  assert(await adminAssignItemToStory(user.id, storyId, itemId, options), 404, 'Item not found')
 }
 
 export async function removeEditorialStoryItem(
   user: PrivateUser,
   storyId: string,
   itemId: string,
+  options: { query?: TransactionQuery } = {},
 ): Promise<void> {
   assertStaffWrite(user, storyId)
   await assertStoryItem(storyId, itemId, true)
   assert(
-    await adminRemoveItemFromStory(user.id, itemId, { expectedStoryId: storyId }),
+    await adminRemoveItemFromStory(user.id, itemId, { ...options, expectedStoryId: storyId }),
     404,
     'Item not found',
   )
@@ -52,20 +55,26 @@ export async function setEditorialStoryOfficialItem(
   user: PrivateUser,
   storyId: string,
   itemId: string,
+  options: { query?: TransactionQuery } = {},
 ) {
   assertStaffWrite(user, storyId)
   await assertStoryItem(storyId, itemId, true)
-  const story = await adminSetStoryOfficialItem(user.id, storyId, itemId)
+  const story = await adminSetStoryOfficialItem(user.id, storyId, itemId, options)
   assert(story, 404, 'Story not found')
   return { story }
 }
 
-export async function renameEditorialStory(user: PrivateUser, storyId: string, input: string) {
+export async function renameEditorialStory(
+  user: PrivateUser,
+  storyId: string,
+  input: string,
+  options: { query?: TransactionQuery } = {},
+) {
   assertStaffWrite(user, storyId)
   const title = typeof input === 'string' ? input.trim() : ''
   assert(title.length > 0, 400, 'title is required')
   assert(title.length <= 500, 400, 'title must be at most 500 characters')
-  const story = await updateStoryTitle(user.id, storyId, title)
+  const story = await updateStoryTitle(user.id, storyId, title, options)
   assert(story, 404, 'Story not found')
   return { story }
 }

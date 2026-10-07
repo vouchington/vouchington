@@ -1,5 +1,5 @@
 import createError from 'http-errors'
-import { beginTransaction, write } from '@data-stores/psql'
+import { runWithTransaction, write, type TransactionQuery } from '@data-stores/psql'
 import { recordModeratorAction } from '@services/moderator-actions'
 import sql from 'sql-template-strings'
 import { assertItemInCommunity } from './scope.mts'
@@ -10,6 +10,7 @@ export async function releaseModerationQueueItem(
     communityId?: string | null
     reportId?: string | null
     postId?: string | null
+    query?: TransactionQuery
   },
 ): Promise<void> {
   const { communityId, reportId, postId } = options
@@ -32,18 +33,18 @@ export async function releaseModerationQueueItem(
         AND released_at IS NULL
     `)
     query.append(sql` RETURNING community_id`)
-    await using transaction = await beginTransaction()
-    const { rows } = await transaction<{ community_id: string }>(query)
-    await Promise.all(
-      rows.map(row =>
-        recordModeratorAction(
-          currentUserId,
-          { actionType: 'report_unclaim', communityId: row.community_id, reportId },
-          { query: transaction },
+    await runWithTransaction(options.query, async transaction => {
+      const { rows } = await transaction<{ community_id: string }>(query)
+      await Promise.all(
+        rows.map(row =>
+          recordModeratorAction(
+            currentUserId,
+            { actionType: 'report_unclaim', communityId: row.community_id, reportId },
+            { query: transaction },
+          ),
         ),
-      ),
-    )
-    await transaction.commit()
+      )
+    })
     return
   }
 
@@ -57,5 +58,5 @@ export async function releaseModerationQueueItem(
   query.append(sql` AND claimed_by_id = ${currentUserId}
       AND released_at IS NULL
   `)
-  await write(query)
+  await write(query, { query: options.query })
 }

@@ -1,11 +1,21 @@
-import { write } from '@data-stores/psql'
+import {
+  beginTransaction,
+  write,
+  type QueryExecutor,
+  type TransactionQuery,
+} from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getEntityRelationMetadataOrThrow } from '../services/entity-relations/metadata.mts'
 import { getEntityRelationVoteTableName } from '@voucha/types/entities/entity-relations-metadata'
-import {
-  postCategoryTopicVoteTable as voteTable,
-  withInjectedFailure,
-} from './injected-failures.mts'
+import { rejectQuery } from './injected-failures.mts'
+
+const voteTable = getEntityRelationVoteTableName(
+  getEntityRelationMetadataOrThrow({
+    subjectType: 'post',
+    objectType: 'topic',
+    predicate: 'category',
+  }),
+)
 
 const hashtagVoteTable = getEntityRelationVoteTableName(
   getEntityRelationMetadataOrThrow({
@@ -15,12 +25,23 @@ const hashtagVoteTable = getEntityRelationVoteTableName(
   }),
 )
 
-/** Rejects only the fresh fixture actor's category votes, preserving parallel test isolation. */
-export function withRejectedPostCategoryVotes<T>(
-  actorId: string,
-  execute: () => Promise<T>,
+/** Reject the post author's topic-category vote through this executor only. */
+export function rejectPostCategoryVotesQuery<Query extends QueryExecutor>(query: Query): Query {
+  return rejectQuery(
+    query,
+    statement =>
+      statement.startsWith('/* upsertEntityRelationElectionVotes */') &&
+      statement.includes(`INSERT INTO ${voteTable} `),
+    'category vote rejected for test',
+  )
+}
+
+/** Lend a rejecting query to one mutation; disposal rolls back any partial writes. */
+export async function withRejectedPostCategoryVotes<T>(
+  execute: (query: TransactionQuery) => Promise<T>,
 ): Promise<T> {
-  return withInjectedFailure('post_category_topic_vote', actorId, execute)
+  await using transaction = await beginTransaction()
+  return await execute(rejectPostCategoryVotesQuery(transaction))
 }
 
 /** Reads the fixture actor's committed rows from the primary after a failed admission. */

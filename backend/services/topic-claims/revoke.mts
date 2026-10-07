@@ -1,5 +1,5 @@
 import { recordModeratorAction } from '@services/moderator-actions'
-import { beginTransaction } from '@data-stores/psql'
+import { runWithTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { TopicClaim } from './config.mts'
@@ -8,10 +8,11 @@ export async function revokeTopicClaim(
   staffUserId: string,
   claimId: string,
   revocationReason: string,
+  options: { query?: TransactionQuery } = {},
 ): Promise<TopicClaim> {
   assert(revocationReason.trim().length > 0, 422, 'revocation_reason is required')
-  await using transaction = await beginTransaction()
-  const { rows } = await transaction(sql`/* revokeTopicClaim */
+  return runWithTransaction(options.query, async transaction => {
+    const { rows } = await transaction(sql`/* revokeTopicClaim */
     UPDATE topic_claims
     SET revoked_at = NOW(),
         revoked_by_id = ${staffUserId},
@@ -27,13 +28,13 @@ export async function revokeTopicClaim(
       verification_hostname_id, verification_token_issued_at,
       domain_verified_at, created_at, updated_at
   `)
-  const updated = rows[0] as TopicClaim | undefined
-  assert(updated, 404, 'Claim not found or not verified/already revoked')
-  await recordModeratorAction(
-    staffUserId,
-    { actionType: 'topic_claim_revoke', topicClaimId: claimId, reason: revocationReason.trim() },
-    { query: transaction },
-  )
-  await transaction.commit()
-  return updated
+    const updated = rows[0] as TopicClaim | undefined
+    assert(updated, 404, 'Claim not found or not verified/already revoked')
+    await recordModeratorAction(
+      staffUserId,
+      { actionType: 'topic_claim_revoke', topicClaimId: claimId, reason: revocationReason.trim() },
+      { query: transaction },
+    )
+    return updated
+  })
 }

@@ -1,6 +1,10 @@
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
-import { beginTransaction } from '@data-stores/psql'
+import {
+  registerPostCommitAction,
+  runWithTransaction,
+  type TransactionQuery,
+} from '@data-stores/psql'
 import { maybeResolveCase } from '@services/moderation-cases'
 import {
   recordModerationTrainingFeedback,
@@ -53,58 +57,63 @@ export async function finalizeDeliveredModerationAppeal(
   appealId: string,
   resolution: DeliveredAppealResolution,
   trainingEvidence: ModerationTrainingEvidence,
+  options: { query?: TransactionQuery } = {},
 ): Promise<ModerationAppealResponse> {
   await assertModerationAppealDelivered(appealId)
   const now = new Date()
-  await using query = await beginTransaction()
-  const { rows } = await query(
-    sql`/* finalizeDeliveredModerationAppeal */
+  let afterCommit: (() => Promise<void>) | undefined
+  const response = await runWithTransaction(options.query, async query => {
+    const { rows } = await query(
+      sql`/* finalizeDeliveredModerationAppeal */
       UPDATE moderation_appeals
       SET resolved_at = ${now},
           resolved_by_id = ${staffUserId},
           resolution_action = ${resolution.resolutionAction}
       WHERE id = ${appealId} AND sent_at IS NOT NULL AND resolved_at IS NULL
       RETURNING `.append(APPEAL_RETURNING),
-  )
-  const row = rows[0] as ModerationAppeal | undefined
-  assert(row, 404, 'Appeal not found or already resolved')
+    )
+    const row = rows[0] as ModerationAppeal | undefined
+    assert(row, 404, 'Appeal not found or already resolved')
 
-  const lifecycleId = await appendAppealLifecycleChange(
-    appealId,
-    resolution.lifecycle,
-    staffUserId,
-    {},
-    { query },
-  )
-  await Promise.all([
-    query(sql`/* finalizeDeliveredModerationAppeal:setLifecycle */
+    const lifecycleId = await appendAppealLifecycleChange(
+      appealId,
+      resolution.lifecycle,
+      staffUserId,
+      {},
+      { query },
+    )
+    await Promise.all([
+      query(sql`/* finalizeDeliveredModerationAppeal:setLifecycle */
         UPDATE moderation_appeals SET latest_lifecycle_change_id = ${lifecycleId} WHERE id = ${appealId}
       `),
-    recordModerationTrainingFeedback(
-      {
-        trainingEvidence,
-        sourceType: 'moderation_appeal',
-        eventType: 'appeal_resolved',
-        label: resolution.trainingLabel,
-        humanAction: resolution.humanAction,
-        actorUserId: staffUserId,
-        communityId: row.community_id,
-        postId: row.post_id,
-        moderationAppealId: appealId,
-        metadata: { recommended_action: row.recommended_action },
-      },
+      recordModerationTrainingFeedback(
+        {
+          trainingEvidence,
+          sourceType: 'moderation_appeal',
+          eventType: 'appeal_resolved',
+          label: resolution.trainingLabel,
+          humanAction: resolution.humanAction,
+          actorUserId: staffUserId,
+          communityId: row.community_id,
+          postId: row.post_id,
+          moderationAppealId: appealId,
+          metadata: { recommended_action: row.recommended_action },
+        },
+        { query },
+      ),
+    ])
+    await logAppealResolution(
+      staffUserId,
+      resolution.modlogAction,
+      appealId,
+      row.appellant_user_id,
+      row.community_id,
       { query },
-    ),
-  ])
-  await logAppealResolution(
-    staffUserId,
-    resolution.modlogAction,
-    appealId,
-    row.appellant_user_id,
-    row.community_id,
-    { query },
-  )
-  await query.commit()
-  await maybeResolveCase(row.case_id, staffUserId)
-  return await getModerationAppealAfterMutation(appealId)
+    )
+    afterCommit = () => maybeResolveCase(row.case_id, staffUserId)
+    if (options.query) registerPostCommitAction(query, afterCommit)
+    return getModerationAppealAfterMutation(appealId, { query })
+  })
+  if (!options.query) await afterCommit?.()
+  return response
 }

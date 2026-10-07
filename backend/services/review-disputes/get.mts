@@ -106,8 +106,11 @@ async function queryReviewDisputeById(
   return row ? addIsOverdue(row) : null
 }
 
-export async function getReviewDisputeAfterMutation(id: string): Promise<ReviewDisputeResponse> {
-  const dispute = await getReviewDisputeByIdFromPrimary(id)
+export async function getReviewDisputeAfterMutation(
+  id: string,
+  options?: QueryOptions,
+): Promise<ReviewDisputeResponse> {
+  const dispute = await getReviewDisputeByIdFromPrimary(id, options)
   assert(dispute, 500, 'Dispute disappeared after mutation')
   return dispute
 }

@@ -1,16 +1,17 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
+import { createTestUser, insertTestTopic, WEB_PROVENANCE } from '@voucha/test-helpers'
 import {
   getPostCategoryMutationCounts,
   withRejectedPostCategoryVotes,
 } from '@voucha/test-helpers/post-category-vote-failures'
+import { createPost } from '@services/posts/create'
 import { getPostByAny } from '@services/posts/get'
 import { updatePost } from '@services/posts/update'
 
 describe('POST /api/v1/posts category atomicity', () => {
-  it('returns 5xx on a vote failure, rolls back all post rows, and permits a same-key retry', async () => {
+  it('rolls back a failed category vote and replays the committed route response', async () => {
     const user = await createTestUser({ administrator: true })
     const request = createRequest()
     await request.authenticateAs(user)
@@ -24,15 +25,15 @@ describe('POST /api/v1/posts category atomicity', () => {
     const body = {
       title: `Atomic post ${suffix}`,
       markdown: `Atomic category #atomic${suffix}`,
-      categories: [{ type: 'topic', topic_id: topicId }],
+      categories: [{ type: 'topic' as const, topic_id: topicId }],
     }
     const before = await getPostCategoryMutationCounts(user.id)
 
-    await withRejectedPostCategoryVotes(user.id, async () => {
-      const failed = await request.post('/api/v1/posts').set('Idempotency-Key', key).send(body)
-      expect(failed.status).toBeGreaterThanOrEqual(500)
-      expect(failed.status).toBeLessThan(600)
-    })
+    await expect(
+      withRejectedPostCategoryVotes(query =>
+        createPost(user, WEB_PROVENANCE, body, null, { query }),
+      ),
+    ).rejects.toThrow('category vote rejected for test')
     expect(await getPostCategoryMutationCounts(user.id)).toEqual(before)
 
     const created = await request

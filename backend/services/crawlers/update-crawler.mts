@@ -2,7 +2,7 @@ import { recordModeratorAction } from '@services/moderator-actions'
 import { crawlerHistorySnapshot } from './history.mts'
 import type { PrivateUser } from '@services/users/types'
 import { isUUID } from '@modules/utils'
-import { beginTransaction, write } from '@data-stores/psql'
+import { runWithTransaction, write, type TransactionQuery } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import { getCrawlerById, toCrawler } from './get.mts'
 import assert from 'http-assert'
@@ -14,6 +14,7 @@ export const updateCrawler = async (
   updater: PrivateUser,
   crawlerId: string,
   updates: UpdateCrawlerUpdates,
+  options: { query?: TransactionQuery } = {},
 ): Promise<Crawler> => {
   assert(crawlerId, 422, 'Crawler ID is required')
   if (updates.hostname_id && !isUUID(updates.hostname_id)) {
@@ -48,34 +49,34 @@ export const updateCrawler = async (
     return crawler
   }
 
-  await using transaction = await beginTransaction()
-  await transaction(
-    sql`/* updateCrawler:lock */ SELECT id FROM hostname_crawler_configurations WHERE id = ${crawlerId} AND deleted_at IS NULL FOR UPDATE`,
-  )
-  const previous = await getCrawlerById(crawlerId, { query: transaction })
-  if (!previous) throw createError(404, `Crawler not found: ${crawlerId}`)
-  const query = sql`/* updateCrawler */ UPDATE hostname_crawler_configurations SET updated_by_id = ${updater.id}`
-  if (hostnameId !== undefined) query.append(sql`, hostname_id = ${hostnameId}`)
-  if (updates.description !== undefined) query.append(sql`, description = ${updates.description}`)
-  if (updates.crawler_type !== undefined)
-    query.append(sql`, crawler_type = ${updates.crawler_type}`)
-  if (updates.priority !== undefined) query.append(sql`, priority = ${updates.priority}`)
-  if (updates.css_selectors_to_remove !== undefined) {
-    query.append(sql`, css_selectors_to_remove = ${updates.css_selectors_to_remove}`)
-  }
-  if (updates.link_text_content_to_remove !== undefined) {
-    query.append(sql`, link_text_content_to_remove = ${updates.link_text_content_to_remove}`)
-  }
-  if (updates.link_hrefs_to_remove !== undefined) {
-    query.append(sql`, link_hrefs_to_remove = ${updates.link_hrefs_to_remove}`)
-  }
-  if (updates.content_selectors !== undefined) {
-    query.append(sql`, content_selectors = ${updates.content_selectors}`)
-  }
-  if (updates.referral_program_id !== undefined) {
-    query.append(sql`, referral_program_topic_id = ${updates.referral_program_id}`)
-  }
-  query.append(sql`
+  return runWithTransaction(options.query, async transaction => {
+    await transaction(
+      sql`/* updateCrawler:lock */ SELECT id FROM hostname_crawler_configurations WHERE id = ${crawlerId} AND deleted_at IS NULL FOR UPDATE`,
+    )
+    const previous = await getCrawlerById(crawlerId, { query: transaction })
+    if (!previous) throw createError(404, `Crawler not found: ${crawlerId}`)
+    const query = sql`/* updateCrawler */ UPDATE hostname_crawler_configurations SET updated_by_id = ${updater.id}`
+    if (hostnameId !== undefined) query.append(sql`, hostname_id = ${hostnameId}`)
+    if (updates.description !== undefined) query.append(sql`, description = ${updates.description}`)
+    if (updates.crawler_type !== undefined)
+      query.append(sql`, crawler_type = ${updates.crawler_type}`)
+    if (updates.priority !== undefined) query.append(sql`, priority = ${updates.priority}`)
+    if (updates.css_selectors_to_remove !== undefined) {
+      query.append(sql`, css_selectors_to_remove = ${updates.css_selectors_to_remove}`)
+    }
+    if (updates.link_text_content_to_remove !== undefined) {
+      query.append(sql`, link_text_content_to_remove = ${updates.link_text_content_to_remove}`)
+    }
+    if (updates.link_hrefs_to_remove !== undefined) {
+      query.append(sql`, link_hrefs_to_remove = ${updates.link_hrefs_to_remove}`)
+    }
+    if (updates.content_selectors !== undefined) {
+      query.append(sql`, content_selectors = ${updates.content_selectors}`)
+    }
+    if (updates.referral_program_id !== undefined) {
+      query.append(sql`, referral_program_topic_id = ${updates.referral_program_id}`)
+    }
+    query.append(sql`
     WHERE id = ${crawlerId} AND deleted_at IS NULL
     RETURNING id, hostname_id, description, crawler_type, priority,
       css_selectors_to_remove, link_text_content_to_remove, link_hrefs_to_remove,
@@ -83,23 +84,23 @@ export const updateCrawler = async (
       created_at, updated_at, deleted_at
   `)
 
-  const { rows } = await write(query, { query: transaction })
-  if (rows.length === 0) throw createError(404, `Crawler not found: ${crawlerId}`)
-  const crawler = toCrawler(rows[0])
-  await recordModeratorAction(
-    updater.id,
-    {
-      actionType: 'crawler_update',
-      crawlerId,
-      metadata: {
-        before: crawlerHistorySnapshot(previous),
-        after: crawlerHistorySnapshot(crawler),
+    const { rows } = await write(query, { query: transaction })
+    if (rows.length === 0) throw createError(404, `Crawler not found: ${crawlerId}`)
+    const crawler = toCrawler(rows[0])
+    await recordModeratorAction(
+      updater.id,
+      {
+        actionType: 'crawler_update',
+        crawlerId,
+        metadata: {
+          before: crawlerHistorySnapshot(previous),
+          after: crawlerHistorySnapshot(crawler),
+        },
       },
-    },
-    { query: transaction },
-  )
-  await transaction.commit()
-  return crawler
+      { query: transaction },
+    )
+    return crawler
+  })
 }
 
 export const updateCrawlerCssSelectorsByHostname = async (

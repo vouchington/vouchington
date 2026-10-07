@@ -12,7 +12,9 @@ describe('admin-imports staff history', () => {
     const actor = await createTestUser({ administrator: true })
     const input = [{ slug: `import-${crypto.randomUUID()}`, name: 'Synthetic topic' }]
     await expect(
-      withRejectedStaffActionHistory(actor.id, () => createImportBatch(actor, 'topic', input)),
+      withRejectedStaffActionHistory(query =>
+        createImportBatch(actor, 'topic', input, undefined, { query }),
+      ),
     ).rejects.toThrow('staff history rejected')
     expect((await readStaffEditorialRows(actor.id)).batches).toEqual([])
     expect(await readStaffActionHistory(actor.id)).toEqual([])

@@ -1,5 +1,5 @@
 import { recordModeratorAction } from '@services/moderator-actions'
-import { beginTransaction, read, type TransactionQuery } from '@data-stores/psql'
+import { read, runWithTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { decodeCursor, buildPageInfo, isScoreCursor } from '@modules/pagination'
@@ -107,75 +107,83 @@ export async function getUnmappedRssFeedItemCategories(
 export async function rejectRssFeedItemCategory(
   currentUser: PrivateUser,
   categoryText: string,
+  options: { query?: TransactionQuery } = {},
 ): Promise<void> {
   assert(currentUserCanManageRssFeedCategories(currentUser), 403, 'Forbidden')
   const normalized = categoryText.trim().toLowerCase()
   assert(normalized, 422, 'category_text is required')
-  await using query = await beginTransaction()
-  const { rowCount } = await query(sql`/* rejectRssFeedItemCategory */
+  return runWithTransaction(options.query, async query => {
+    const { rowCount } = await query(sql`/* rejectRssFeedItemCategory */
     INSERT INTO rss_feed_item_category_rejections (category_text, created_by_id)
     VALUES (${normalized}, ${currentUser.id})
     ON CONFLICT (category_text) DO NOTHING
   `)
-  await recordModeratorAction(
-    currentUser.id,
-    {
-      actionType: 'rss_category_reject',
-      rssCategoryText: normalized,
-      metadata: { before: { rejected: !rowCount }, after: { rejected: true } },
-    },
-    { query },
-  )
-  await query.commit()
+    await recordModeratorAction(
+      currentUser.id,
+      {
+        actionType: 'rss_category_reject',
+        rssCategoryText: normalized,
+        metadata: { before: { rejected: !rowCount }, after: { rejected: true } },
+      },
+      { query },
+    )
+  })
 }
 
 export async function unrejectRssFeedItemCategory(
   currentUser: PrivateUser,
   categoryText: string,
+  options: { query?: TransactionQuery } = {},
 ): Promise<void> {
   assert(currentUserCanManageRssFeedCategories(currentUser), 403, 'Forbidden')
   const normalized = categoryText.trim().toLowerCase()
   assert(normalized, 422, 'category_text is required')
-  await using query = await beginTransaction()
-  const { rowCount } = await query(sql`/* unrejectRssFeedItemCategory */
+  return runWithTransaction(options.query, async query => {
+    const { rowCount } = await query(sql`/* unrejectRssFeedItemCategory */
     DELETE FROM rss_feed_item_category_rejections
     WHERE category_text = ${normalized}
   `)
-  await recordModeratorAction(
-    currentUser.id,
-    {
-      actionType: 'rss_category_unreject',
-      rssCategoryText: normalized,
-      metadata: { before: { rejected: Boolean(rowCount) }, after: { rejected: false } },
-    },
-    { query },
-  )
-  await query.commit()
+    await recordModeratorAction(
+      currentUser.id,
+      {
+        actionType: 'rss_category_unreject',
+        rssCategoryText: normalized,
+        metadata: { before: { rejected: Boolean(rowCount) }, after: { rejected: false } },
+      },
+      { query },
+    )
+  })
 }
 
 export async function assignRssFeedItemCategoryToTopic(
   currentUser: PrivateUser,
   { categoryText, topicId }: { categoryText: string; topicId: string },
+  options: { query?: TransactionQuery } = {},
 ): Promise<{ updated: number }> {
   assert(currentUserCanManageRssFeedCategories(currentUser), 403, 'Forbidden')
   const normalized = categoryText.trim().toLowerCase()
   assert(normalized, 422, 'category_text is required')
   assert(topicId, 422, 'topic_id is required')
 
-  await using query = await beginTransaction()
-  const { updated } = await assignCategoryInTransaction(currentUser.id, topicId, normalized, query)
-  await recordModeratorAction(
-    currentUser.id,
-    {
-      actionType: 'rss_category_assign',
+  return runWithTransaction(options.query, async query => {
+    const { updated } = await assignCategoryInTransaction(
+      currentUser.id,
       topicId,
-      rssCategoryText: normalized,
-      metadata: { after: { updated } },
-    },
-    { query },
-  )
-  await query.commit()
-  return { updated }
+      normalized,
+      query,
+    )
+    await recordModeratorAction(
+      currentUser.id,
+      {
+        actionType: 'rss_category_assign',
+        topicId,
+        rssCategoryText: normalized,
+        metadata: { after: { updated } },
+      },
+      { query },
+    )
+    return { updated }
+  })
 }
 
 async function assignCategoryInTransaction(

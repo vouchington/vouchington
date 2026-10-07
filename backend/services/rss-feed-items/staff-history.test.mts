@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { TransactionQuery } from '@data-stores/psql'
 import { createTestUser, createTestTopic } from '@voucha/test-helpers'
 import {
   readStaffActionHistory,
@@ -19,17 +20,21 @@ describe('rss-feed-items staff history', () => {
       const topic = await createTestTopic({ user: actor })
       const category = `staff-audit-${crypto.randomUUID()}`
       if (action === 'unreject') await rejectRssFeedItemCategory(actor, category)
-      const execute = async () => {
-        if (action === 'reject') return rejectRssFeedItemCategory(actor, category)
-        if (action === 'unreject') return unrejectRssFeedItemCategory(actor, category)
-        return assignRssFeedItemCategoryToTopic(actor, {
-          categoryText: category,
-          topicId: topic.id,
-        })
+      const execute = async (query?: TransactionQuery) => {
+        if (action === 'reject') return rejectRssFeedItemCategory(actor, category, { query })
+        if (action === 'unreject') return unrejectRssFeedItemCategory(actor, category, { query })
+        return assignRssFeedItemCategoryToTopic(
+          actor,
+          {
+            categoryText: category,
+            topicId: topic.id,
+          },
+          { query },
+        )
       }
       const before = await readStaffCategoryState(category)
       const history = await readStaffActionHistory(actor.id)
-      await expect(withRejectedStaffActionHistory(actor.id, execute)).rejects.toThrow(
+      await expect(withRejectedStaffActionHistory(execute)).rejects.toThrow(
         'staff history rejected',
       )
       expect(await readStaffCategoryState(category)).toEqual(before)

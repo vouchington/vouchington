@@ -1,7 +1,11 @@
 import { clearMovedStoryOfficialItem } from './clear-moved-official-item.mts'
 import { dispatchPostCommitEffectsBestEffort } from './assignment-effects.mts'
 import { recordModeratorAction } from '@services/moderator-actions'
-import { beginTransaction } from '@data-stores/psql'
+import {
+  registerPostCommitAction,
+  runWithTransaction,
+  type TransactionQuery,
+} from '@data-stores/psql'
 import onError from '@modules/on-error'
 import sql from 'sql-template-strings'
 import { enqueueStoryPostAgent } from '@queues/ai-agents/enqueues/story-post'
@@ -12,13 +16,12 @@ import { lockStoryLifecycles } from '@services/post-publication/story-lifecycle-
 
 type AssignmentDependencies = {
   expectedStoryId?: string
-
+  query?: TransactionQuery
   refreshStoryPostForStory?: typeof refreshStoryPostForStory
   invalidateStories?: typeof invalidateStories
   enqueueStoryPostAgent?: typeof enqueueStoryPostAgent
   onError?: typeof onError
 }
-
 /**
  * Admin-only: assign item to story and lock the assignment.
  * Refreshes story-posts before invalidating stories after a successful assignment.
@@ -33,86 +36,88 @@ export async function adminAssignItemToStory(
   const enqueueStoryPost = dependencies.enqueueStoryPostAgent ?? enqueueStoryPostAgent
   const reportError = dependencies.onError ?? onError
   let refreshResults: Array<{ storyId: string; result: StoryPostRefreshResult | null }> = []
-
-  await using query = await beginTransaction()
-  const prior = await query(
-    sql`/* adminAssignItemToStory:item */
+  let afterCommit: (() => Promise<void>) | undefined
+  const assignedId = await runWithTransaction(dependencies.query, async query => {
+    const prior = await query(
+      sql`/* adminAssignItemToStory:item */
       SELECT id, story_id FROM rss_feed_items
       WHERE id = ${itemId} AND deleted_at IS NULL
       FOR UPDATE`,
-  )
-  const lockedItem = prior.rows[0] as { id: string; story_id: string | null } | undefined
-  if (!lockedItem) {
-    await query.commit()
-    return null
-  }
-  const storyIds = [storyId]
-  if (lockedItem.story_id) storyIds.push(lockedItem.story_id)
-  await lockStoryLifecycles(query, [...new Set(storyIds)].toSorted())
-  const updated = await query(
-    sql`/* adminAssignItemToStory */
+    )
+    const lockedItem = prior.rows[0] as { id: string; story_id: string | null } | undefined
+    if (!lockedItem) {
+      return null
+    }
+    const storyIds = [storyId]
+    if (lockedItem.story_id) storyIds.push(lockedItem.story_id)
+    await lockStoryLifecycles(query, [...new Set(storyIds)].toSorted())
+    const updated = await query(
+      sql`/* adminAssignItemToStory */
       UPDATE rss_feed_items
       SET story_id = ${storyId}, story_locked_at = CURRENT_TIMESTAMP
       WHERE id = ${lockedItem.id}
       RETURNING id`,
-  )
-  const updatedRow = updated.rows[0] as { id: string } | undefined
-  const row = updatedRow ? { id: updatedRow.id, prior_story_id: lockedItem.story_id } : undefined
-  if (row) {
-    if (row.prior_story_id !== storyId)
-      await clearMovedStoryOfficialItem(query, row.prior_story_id, itemId)
-    const affectedStoryIds = [
-      ...new Set(
-        [storyId, row.prior_story_id].filter(
-          (candidate): candidate is string => candidate !== null,
+    )
+    const updatedRow = updated.rows[0] as { id: string } | undefined
+    const row = updatedRow ? { id: updatedRow.id, prior_story_id: lockedItem.story_id } : undefined
+    if (row) {
+      if (row.prior_story_id !== storyId)
+        await clearMovedStoryOfficialItem(query, row.prior_story_id, itemId)
+      const affectedStoryIds = [
+        ...new Set(
+          [storyId, row.prior_story_id].filter(
+            (candidate): candidate is string => candidate !== null,
+          ),
         ),
-      ),
-    ].toSorted()
-    for (const affectedStoryId of affectedStoryIds) {
-      // oxlint-disable-next-line no-await-in-loop -- sorted refreshes acquire story relation locks in one global order.
-      const refreshResult = await refreshStoryPost(
-        affectedStoryId,
-        { query },
-        { enqueueAgent: false },
-      )
-      refreshResults.push({ storyId: affectedStoryId, result: refreshResult })
-      if (refreshResult) {
-        // oxlint-disable-next-line no-await-in-loop -- capture follows the same global story order as refresh.
-        await recordPostPublicationChange(query, {
-          scope: { type: 'post', postId: refreshResult.postId },
-          reason: 'post_updated',
-          impactedTopicIds: refreshResult.impactedTopicIds,
-        })
+      ].toSorted()
+      for (const affectedStoryId of affectedStoryIds) {
+        // oxlint-disable-next-line no-await-in-loop -- sorted refreshes acquire story relation locks in one global order.
+        const refreshResult = await refreshStoryPost(
+          affectedStoryId,
+          { query },
+          { enqueueAgent: false },
+        )
+        refreshResults.push({ storyId: affectedStoryId, result: refreshResult })
+        if (refreshResult) {
+          // oxlint-disable-next-line no-await-in-loop -- capture follows the same global story order as refresh.
+          await recordPostPublicationChange(query, {
+            scope: { type: 'post', postId: refreshResult.postId },
+            reason: 'post_updated',
+            impactedTopicIds: refreshResult.impactedTopicIds,
+          })
+        }
       }
     }
-  }
-  if (row)
-    await recordModeratorAction(
-      actorId,
-      {
-        actionType: 'story_item_add',
-        metadata: {
-          story_id: storyId,
-          rss_feed_item_id: itemId,
-          prior_story_id: row.prior_story_id,
+    if (row)
+      await recordModeratorAction(
+        actorId,
+        {
+          actionType: 'story_item_add',
+          metadata: {
+            story_id: storyId,
+            rss_feed_item_id: itemId,
+            prior_story_id: row.prior_story_id,
+          },
         },
-      },
-      { query },
-    )
-  await query.commit()
-  if (!row) return null
-  const priorStoryId = row.prior_story_id
-  await dispatchPostCommitEffectsBestEffort(
-    refreshResults.flatMap(({ result }) => (result ? [result] : [])),
-    reportError,
-  )
-  for (const { result } of refreshResults) {
-    if (result) void enqueueStoryPost(result.postId, { force: true })
-  }
-  await (dependencies.invalidateStories ?? invalidateStories)(storyId, priorStoryId)
-  return row.id
+        { query },
+      )
+    if (!row) return null
+    afterCommit = async () => {
+      await dispatchPostCommitEffectsBestEffort(
+        refreshResults.flatMap(({ result }) => (result ? [result] : [])),
+        reportError,
+      )
+      for (const { result } of refreshResults) {
+        if (result) void enqueueStoryPost(result.postId, { force: true })
+      }
+      await (dependencies.invalidateStories ?? invalidateStories)(storyId, row.prior_story_id)
+    }
+    if (dependencies.query) registerPostCommitAction(query, afterCommit)
+    return row.id
+  })
+  if (!dependencies.query) await afterCommit?.()
+  return assignedId
 }
-
 /**
  * Admin-only: remove item from its story and lock to prevent re-assignment.
  * Refreshes the former story-post before invalidating stories.
@@ -126,12 +131,12 @@ export async function adminRemoveItemFromStory(
   const enqueueStoryPost = dependencies.enqueueStoryPostAgent ?? enqueueStoryPostAgent
   const reportError = dependencies.onError ?? onError
   let refreshResults: StoryPostRefreshResult[] = []
-
+  let afterCommit: (() => Promise<void>) | undefined
   // Use a CTE to capture the old story_id before the SET clause nulls it.
   // PostgreSQL RETURNING reflects post-update values, so story_id would be NULL after SET.
-  await using query = await beginTransaction()
-  const result = await query(
-    sql`/* adminRemoveItemFromStory */
+  const removedId = await runWithTransaction(dependencies.query, async query => {
+    const result = await query(
+      sql`/* adminRemoveItemFromStory */
     WITH old AS (
       SELECT id, story_id
       FROM rss_feed_items
@@ -155,37 +160,40 @@ export async function adminRemoveItemFromStory(
     WHERE rss_feed_items.id = old.id
     RETURNING rss_feed_items.id, old.story_id AS prior_story_id
       `,
-  )
-  const row = result.rows[0] as { id: string; prior_story_id: string | null } | undefined
-  if (row?.prior_story_id) {
-    const priorStoryId = row.prior_story_id
-    await clearMovedStoryOfficialItem(query, priorStoryId, itemId)
-    const refreshResult = await refreshStoryPost(priorStoryId, { query }, { enqueueAgent: false })
-    if (refreshResult) {
-      refreshResults = [refreshResult]
-      await recordPostPublicationChange(query, {
-        scope: { type: 'post', postId: refreshResult.postId },
-        reason: 'post_updated',
-        impactedTopicIds: refreshResult.impactedTopicIds,
-      })
-    }
-  }
-  const { rows } = result
-  if (row)
-    await recordModeratorAction(
-      actorId,
-      {
-        actionType: 'story_item_remove',
-        metadata: { story_id: row.prior_story_id, rss_feed_item_id: itemId },
-      },
-      { query },
     )
-  await query.commit()
-  if (!rows[0]) return null
-  const priorStoryId = rows[0].prior_story_id as string | null
-  await dispatchPostCommitEffectsBestEffort(refreshResults, reportError)
-  for (const refreshResult of refreshResults)
-    void enqueueStoryPost(refreshResult.postId, { force: true })
-  await (dependencies.invalidateStories ?? invalidateStories)(priorStoryId)
-  return rows[0].id as string
+    const row = result.rows[0] as { id: string; prior_story_id: string | null } | undefined
+    if (row?.prior_story_id) {
+      const priorStoryId = row.prior_story_id
+      await clearMovedStoryOfficialItem(query, priorStoryId, itemId)
+      const refreshResult = await refreshStoryPost(priorStoryId, { query }, { enqueueAgent: false })
+      if (refreshResult) {
+        refreshResults = [refreshResult]
+        await recordPostPublicationChange(query, {
+          scope: { type: 'post', postId: refreshResult.postId },
+          reason: 'post_updated',
+          impactedTopicIds: refreshResult.impactedTopicIds,
+        })
+      }
+    }
+    if (row)
+      await recordModeratorAction(
+        actorId,
+        {
+          actionType: 'story_item_remove',
+          metadata: { story_id: row.prior_story_id, rss_feed_item_id: itemId },
+        },
+        { query },
+      )
+    if (!row) return null
+    afterCommit = async () => {
+      await dispatchPostCommitEffectsBestEffort(refreshResults, reportError)
+      for (const refreshResult of refreshResults)
+        void enqueueStoryPost(refreshResult.postId, { force: true })
+      await (dependencies.invalidateStories ?? invalidateStories)(row.prior_story_id)
+    }
+    if (dependencies.query) registerPostCommitAction(query, afterCommit)
+    return row.id
+  })
+  if (!dependencies.query) await afterCommit?.()
+  return removedId
 }

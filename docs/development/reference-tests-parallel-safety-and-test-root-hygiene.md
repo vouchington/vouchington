@@ -346,38 +346,20 @@ requests inside the image storage lifecycle lock) held `dsa-statement-payload.te
   load the setup, as do the `.mock.test.mts` projects.
 - Other AWS clients (SQS, SES, DynamoDB, CloudFront) are not covered by this default.
 
-### Failure injection uses control rows, never shared-table DDL
+### Failure injection uses a query executor
 
-New failure injection passes a `QueryExecutor` that throws on the targeted write. The real transaction still rolls back. Do not add DDL. The trigger installer below is existing debt; the schema-cleanup issue removes it.
+Pass a throwing `QueryExecutor` through the production query option to the targeted write. Wrap a
+real transaction query for atomic mutations: other writes still reach PostgreSQL, and disposing the
+transaction after the rejected write rolls them back. The wrapper belongs to one test call, so it
+does not affect concurrent tests on the shared database. For a staff operation that durably records
+intent before an external effect, wrap its independent history writer and reject only the finished
+outcome when testing that phase.
 
-`CREATE TRIGGER` takes `SHARE ROW EXCLUSIVE` and `DROP TRIGGER` takes `ACCESS EXCLUSIVE` on the
-table. Backend tests share one parallel database, so per-test DDL on a shared table waits behind
-every other file that reads or writes it and fails past the test connection's ~1 s `lock_timeout`
-(#2107 run 37396114629, tracked in #2115). The cleanup `DROP FUNCTION` then failed with `2BP01` and
-hid the original error, and the trigger stayed on the table.
-
-- `backend/test-helpers/injected-failures.mts` owns the pattern. A test-database-only trigger on each
-  target table raises when `NEW.<actor column>` has a row in `test_failure_injection.rejected_actors`
-  for the trigger's scope. `withInjectedFailure(scope, actorId, execute)` inserts a committed row for
-  the fresh fixture actor, runs `execute()`, and deletes the row in cleanup: row locks only. Other
-  tests keep passing because each uses its own actor. `withRejectedStaffActionHistory` (with its
-  `'finished'` phase scope) and `withRejectedPostCategoryVotes` are thin wrappers.
-- Add a failure site by adding a scope and an `injectedFailureTriggers` entry; never run `CREATE`,
-  `DROP` or `ALTER` against a shared table from a test or helper. Rename a trigger when its
-  definition changes, because installation skips triggers that already exist.
-- `test-helpers/vitest.setup.failure-injection.mts` installs the schema, control table, functions and
-  triggers idempotently under an advisory lock. Only the `backend-data-stores` project registers it.
-  The triggers appear in the live trigger catalog, so `backend-activitypub-capacity`, which shares a
-  database with `generate.mts --check` in `tests-postgres-schema.yml`, must not install them;
-  `ci/vitest-failure-injection-config.test.mts` pins both. The objects live in their own
-  `test_failure_injection` schema so `public`-only catalog tests never see the control table.
-- Local worktree databases keep the objects after a run, so a local `pnpm run db:snapshot:check`
-  needs a freshly migrated database (`./dev/reset`).
-- `runThenCleanup` (`backend/test-helpers/run-then-cleanup.mts`) is the shared shape for "cleanup
-  must not mask the failure": a cleanup error is thrown only when the run itself succeeded.
-- `backend/data-stores/psql/__tests__/test-failure-injection.test.mts` guards that the triggers are
-  installed, that a repeated install changes nothing, and that using the helpers leaves the shared
-  tables' trigger list untouched.
+[`rejectQuery`](../../backend/test-helpers/injected-failures.mts) supplies the scoped executor
+wrapper. The staff-history and post-category-vote helpers select their SQL writes. Tests and setup
+never install schema objects for failure injection. `CREATE TRIGGER` and `DROP TRIGGER` take locks on
+shared tables; a prior trigger-based helper caused lock timeouts and left a trigger behind after
+cleanup failed (#2115). No database reset is needed after these tests for `db:snapshot:check`.
 
 ### DB-backed user fixtures
 

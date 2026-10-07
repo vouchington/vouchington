@@ -1,5 +1,9 @@
 import { recordModeratorAction } from '@services/moderator-actions'
-import { beginTransaction } from '@data-stores/psql'
+import {
+  registerPostCommitAction,
+  runWithTransaction,
+  type TransactionQuery,
+} from '@data-stores/psql'
 import onError from '@modules/on-error'
 import { markJwtStaleBatch } from '@services/jwt-session/invalidation'
 import createHttpError from 'http-errors'
@@ -30,39 +34,41 @@ export type ApplyReportAbusePenaltyResult = {
 export async function applyReportAbusePenalty(
   currentUserId: string,
   flagId: string,
+  options: { query?: TransactionQuery } = {},
 ): Promise<ApplyReportAbusePenaltyResult> {
   const flag = await getReportIntegrityFlagByIdFromPrimary(flagId)
   if (!flag) throw createHttpError(404, 'Report integrity flag not found')
 
-  await using query = await beginTransaction()
-  const result = await applyPenaltyInTransaction()
-  await recordModeratorAction(
-    currentUserId,
-    {
-      actionType: 'report_integrity_penalty_apply',
-      reportIntegrityFlagId: flagId,
-      metadata: {
-        before: { resolution: null },
-        after: { resolution: 'penalized', penalized_user_count: result.penalties.length },
+  return runWithTransaction(options.query, async query => {
+    const result = await applyPenaltyInTransaction(query)
+    await recordModeratorAction(
+      currentUserId,
+      {
+        actionType: 'report_integrity_penalty_apply',
+        reportIntegrityFlagId: flagId,
+        metadata: {
+          before: { resolution: null },
+          after: { resolution: 'penalized', penalized_user_count: result.penalties.length },
+        },
       },
-    },
-    { query },
-  )
-  await query.commit()
+      { query },
+    )
+    // Fire-and-forget: invalidate the JWT tt claim for each penalized user so
+    // computeTrustTier picks up the penalty on the next session cold-path refresh.
+    if (result.penalties.length > 0) {
+      registerPostCommitAction(query, async () => {
+        invalidateSessionsAsync(result.penalties.map(p => p.user_id))
+      })
+    }
 
-  // Fire-and-forget: invalidate the JWT tt claim for each penalized user so
-  // computeTrustTier picks up the penalty on the next session cold-path refresh.
-  if (result.penalties.length > 0) {
-    invalidateSessionsAsync(result.penalties.map(p => p.user_id))
-  }
+    return {
+      flag: result.flag,
+      penalized_user_count: result.penalties.length,
+      penalties: result.penalties,
+    }
+  })
 
-  return {
-    flag: result.flag,
-    penalized_user_count: result.penalties.length,
-    penalties: result.penalties,
-  }
-
-  async function applyPenaltyInTransaction(): Promise<{
+  async function applyPenaltyInTransaction(query: TransactionQuery): Promise<{
     flag: ReportIntegrityFlag
     penalties: AppliedReportAbusePenalty[]
   }> {

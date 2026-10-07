@@ -1,5 +1,5 @@
 import { recordModeratorAction } from '@services/moderator-actions'
-import { beginTransaction } from '@data-stores/psql'
+import { runWithTransaction, type TransactionQuery } from '@data-stores/psql'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import type { VoteIntegrityFlag } from './create-flag.mts'
@@ -10,9 +10,10 @@ export async function resolveVoteIntegrityFlag(
   flagId: string,
   resolvedById: string,
   resolution: VoteIntegrityResolution,
+  options: { query?: TransactionQuery } = {},
 ): Promise<VoteIntegrityFlag> {
-  await using transaction = await beginTransaction()
-  const query = sql`/* resolveVoteIntegrityFlag */
+  return runWithTransaction(options.query, async transaction => {
+    const query = sql`/* resolveVoteIntegrityFlag */
     UPDATE vote_integrity_flags
     SET
       resolved_at = CURRENT_TIMESTAMP,
@@ -21,20 +22,20 @@ export async function resolveVoteIntegrityFlag(
     WHERE id = ${flagId}
       AND resolved_at IS NULL
     RETURNING `
-  query.append(VOTE_INTEGRITY_FLAG_PROJECTION)
-  const { rows } = await transaction(query)
+    query.append(VOTE_INTEGRITY_FLAG_PROJECTION)
+    const { rows } = await transaction(query)
 
-  const flag = rows[0] as VoteIntegrityFlag | undefined
-  if (!flag) throw createHttpError(404, 'Flag not found or already resolved')
-  await recordModeratorAction(
-    resolvedById,
-    {
-      actionType: 'vote_integrity_flag_review',
-      voteIntegrityFlagId: flagId,
-      metadata: { before: { resolution: null }, after: { resolution } },
-    },
-    { query: transaction },
-  )
-  await transaction.commit()
-  return flag
+    const flag = rows[0] as VoteIntegrityFlag | undefined
+    if (!flag) throw createHttpError(404, 'Flag not found or already resolved')
+    await recordModeratorAction(
+      resolvedById,
+      {
+        actionType: 'vote_integrity_flag_review',
+        voteIntegrityFlagId: flagId,
+        metadata: { before: { resolution: null }, after: { resolution } },
+      },
+      { query: transaction },
+    )
+    return flag
+  })
 }
