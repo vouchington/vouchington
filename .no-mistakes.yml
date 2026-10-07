@@ -2993,6 +2993,7 @@ rules:
         # Healthy maximum was 442 seconds across 75 GitHub-hosted successes in #2260.
         - job: '.github/workflows/static-code-analysis.yml#static-code-analysis'
           maxMinutes: 24
+        # Healthy maximum was 150 seconds across 80 GitHub-hosted successes in #2260.
         - job: '.github/workflows/static-code-analysis.yml#no-mistakes'
           maxMinutes: 20
         # Healthy maximum was 347 seconds across 555 GitHub-hosted successes in #2260.
