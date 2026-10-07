@@ -1,16 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import {
-  createTestUserDirect,
-  softDeleteUser,
-  getTestPostImagePlacement,
-  insertTestPost,
-  insertTestImage,
-  insertTestPostImage,
-} from '@voucha/test-helpers'
+import { createTestUserDirect, softDeleteUser } from '@voucha/test-helpers'
 import {
   confirmTestRepeatInfringerNoticesConcurrently,
   readTestRepeatInfringerOpenReviewIds,
 } from '@voucha/test-helpers/copyright-repeat-infringer'
+import { createTestRepeatInfringerNotice } from '@voucha/test-helpers/services/copyright-notices/repeat-infringer'
 import type { PrivateUser } from '@services/users/types'
 import {
   createCopyrightAppeal,
@@ -18,14 +12,10 @@ import {
   completeCopyrightMandatoryHumanReview,
   recordCopyrightRepeatInfringerReviewOutcome,
 } from './index.mts'
-import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
-import { appendCopyrightSubmissionAssessment } from './compliance.mts'
 import {
   getCopyrightRepeatInfringerAccount,
   recordCopyrightRepeatInfringerDisposition,
 } from './repeat-infringer-incidents.mts'
-import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
-import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 async function createActors() {
   const [poster, otherPoster, moderatorRecord] = await Promise.all([
     createTestUserDirect(),
@@ -199,68 +189,6 @@ describe('copyright effective incident authority', () => {
     ).rejects.toMatchObject({ status: 409 })
   })
 })
-
-async function createTestRepeatInfringerNotice(ownerIds: string[], moderator: PrivateUser) {
-  const targets = await Promise.all(
-    ownerIds.map(async ownerId => {
-      const postId = await insertTestPost({
-        title: `copyright ${crypto.randomUUID()}`,
-        slug: `copyright-${crypto.randomUUID()}`,
-        createdById: ownerId,
-        markdown: 'image',
-      })
-      const imageId = await insertTestImage(ownerId)
-      await insertTestPostImage({ postId, imageId })
-      const placement = await getTestPostImagePlacement(postId, imageId)
-      if (!placement) throw new Error('Test placement missing')
-      return {
-        placementId: placement.placement_id,
-        placementRevision: placement.placement_revision,
-        imageId,
-        bindingFamily: 'post' as const,
-        hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,
-      }
-    }),
-  )
-  const notice = await createCopyrightNoticeAggregate({
-    jurisdiction: 'us_dmca',
-    receivedAt: new Date(),
-    claimantUserId: null,
-    claimantDisplayName: 'Claimant',
-    claimantContactCiphertext: crypto.randomUUID(),
-    workDescription: crypto.randomUUID(),
-    policyVersion: 'test-v1',
-    initialSubmission: {
-      kind: 'notice',
-      sourceKind: 'signed_in_form',
-      bodyCiphertext: crypto.randomUUID(),
-    },
-    targets,
-  })
-  const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
-  if (!aggregate) throw new Error('Test notice missing')
-  const assessment = await appendCopyrightSubmissionAssessment({
-    submissionId: aggregate.submissions[0]!.id,
-    assessedAt: new Date(),
-    currentUser: moderator,
-    substantiallyCompliant: true,
-  })
-  const restrictions = []
-  const targetsByPlacement = new Map(aggregate.targets.map(target => [target.placement_id, target]))
-  for (const target of targets) {
-    const saved = targetsByPlacement.get(target.placementId)
-    if (!saved) throw new Error('Test target missing')
-    const restriction = await acceptCopyrightNoticeAndImposeRestriction({
-      noticeId: notice.id,
-      targetId: saved.id,
-      assessmentId: assessment.id,
-      imposedAt: new Date(),
-      imposedById: null,
-    })
-    restrictions.push({ id: restriction.id, targetId: saved.id })
-  }
-  return { noticeId: notice.id, restrictions }
-}
 
 async function confirmTestRepeatInfringerRestriction(
   fixture: Awaited<ReturnType<typeof createTestRepeatInfringerNotice>>,

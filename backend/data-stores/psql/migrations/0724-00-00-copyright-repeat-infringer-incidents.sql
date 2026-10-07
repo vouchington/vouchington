@@ -6,7 +6,7 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_repeat_infringer_incidents (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  account_user_id uuid NOT NULL REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
+  account_user_id uuid NOT NULL,
   copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE RESTRICT,
   is_operative boolean NOT NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -14,6 +14,14 @@ CREATE TABLE copyright_repeat_infringer_incidents (
   CONSTRAINT uq_copyright_repeat_infringer_incidents__id__notice UNIQUE (id, copyright_notice_id),
   CONSTRAINT uq_copyrig_repeat_infringe_incident__account_user_id__notice_id UNIQUE (account_user_id, copyright_notice_id)
 );
+
+ALTER TABLE copyright_repeat_infringer_incidents
+  ADD CONSTRAINT copyright_repeat_infringer_incidents_account_user_id_fkey
+  FOREIGN KEY (account_user_id)
+  REFERENCES retained_user_identities(id) ON DELETE RESTRICT NOT VALID;
+
+ALTER TABLE copyright_repeat_infringer_incidents
+  VALIDATE CONSTRAINT copyright_repeat_infringer_incidents_account_user_id_fkey;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trg_copyright_repeat_infringer_incidents__updated_at
@@ -70,7 +78,7 @@ CREATE INDEX idx_copyright_repeat_infringer_dispositions__recorded_by
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_repeat_infringer_reviews (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  account_user_id uuid NOT NULL REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
+  account_user_id uuid NOT NULL,
   opened_at timestamptz NOT NULL,
   outcome copyright_repeat_infringer_review_outcomes CHECK (outcome IN ('warning', 'no_action', 'restrict', 'terminate', 'reinstatement')),
   outcome_at timestamptz,
@@ -83,6 +91,14 @@ CREATE TABLE copyright_repeat_infringer_reviews (
   CHECK ((outcome IS NULL) = (outcome_at IS NULL)),
   CHECK ((outcome IS NULL) = (rationale_ciphertext IS NULL))
 );
+
+ALTER TABLE copyright_repeat_infringer_reviews
+  ADD CONSTRAINT copyright_repeat_infringer_reviews_account_user_id_fkey
+  FOREIGN KEY (account_user_id)
+  REFERENCES retained_user_identities(id) ON DELETE RESTRICT NOT VALID;
+
+ALTER TABLE copyright_repeat_infringer_reviews
+  VALIDATE CONSTRAINT copyright_repeat_infringer_reviews_account_user_id_fkey;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trg_copyright_repeat_infringer_reviews__updated_at
@@ -162,10 +178,10 @@ COMMENT ON TABLE copyright_repeat_infringer_incidents IS 'One account incident p
 COMMENT ON COLUMN copyright_repeat_infringer_incidents.account_user_id IS 'Retained identity of the post author who owned the confirmed placement. Guest placements do not create an incident.';
 COMMENT ON COLUMN copyright_repeat_infringer_incidents.copyright_notice_id IS 'Copyright notice this incident belongs to. Several targets on one notice are still one incident.';
 COMMENT ON COLUMN copyright_repeat_infringer_incidents.is_operative IS 'Whether this notice still counts toward the repeat-infringer review threshold.';
-COMMENT ON TABLE copyright_repeat_infringer_incident_targets IS 'Immutable target provenance tying each account incident to the confirmed placements that can keep it operative after account erasure.';
+COMMENT ON TABLE copyright_repeat_infringer_incident_targets IS 'Immutable target provenance tying each account incident to strike-eligible placements that may keep it operative after account erasure.';
 COMMENT ON COLUMN copyright_repeat_infringer_incident_targets.copyright_notice_id IS 'Parent notice scope shared by the incident and target foreign keys.';
-COMMENT ON COLUMN copyright_repeat_infringer_incident_targets.copyright_repeat_infringer_incident_id IS 'Account incident supported by the confirmed target.';
-COMMENT ON COLUMN copyright_repeat_infringer_incident_targets.copyright_notice_target_id IS 'Confirmed target whose placement belonged to the incident account when the incident was synchronized.';
+COMMENT ON COLUMN copyright_repeat_infringer_incident_targets.copyright_repeat_infringer_incident_id IS 'Account incident potentially supported by the target.';
+COMMENT ON COLUMN copyright_repeat_infringer_incident_targets.copyright_notice_target_id IS 'Strike-eligible target whose placement belonged to the incident account when the incident was synchronized.';
 COMMENT ON TABLE copyright_repeat_infringer_dispositions IS 'Staff decision that a confirmed incident no longer counts: withdrawn, duplicate, or abusive.';
 COMMENT ON COLUMN copyright_repeat_infringer_dispositions.copyright_repeat_infringer_incident_id IS 'Incident this disposition removes from the operative count.';
 COMMENT ON COLUMN copyright_repeat_infringer_dispositions.disposition IS 'Why the incident stopped counting. Restoration is not a disposition.';
