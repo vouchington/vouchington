@@ -45,7 +45,6 @@ export async function replaceTestRssFeedItemCategorySnapshotReconciliation(
     VALUES (${rssFeedItemId}, ${JSON.stringify(categories)}::jsonb)
     ON CONFLICT (rss_feed_item_id) DO UPDATE
     SET categories = EXCLUDED.categories,
-        generation = rss_feed_item_category_snapshot_reconciliations.generation + 1,
-        updated_at = CURRENT_TIMESTAMP
+        generation = rss_feed_item_category_snapshot_reconciliations.generation + 1
   `)
 }

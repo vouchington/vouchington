@@ -74,7 +74,7 @@ export async function runConcurrentTestRetainedMembershipProductReconciliation<T
           SELECT id FROM membership_sources WHERE id = ${options.membershipSourceId} FOR UPDATE`)
       await query(sql`/* runConcurrentTestRetainedMembershipProductReconciliation:source state update */
           UPDATE membership_source_states
-          SET updated_at = CURRENT_TIMESTAMP
+          SET should_auto_renew = should_auto_renew
           WHERE membership_source_id = ${options.membershipSourceId}`)
       await transaction.commit()
       return result

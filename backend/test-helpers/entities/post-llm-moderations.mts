@@ -81,7 +81,7 @@ export async function setTestAgentModerationDeletedAt(
 export async function touchTestAgentModeration(moderationId: string): Promise<void> {
   await write(sql`
     UPDATE agent_moderations
-    SET updated_at = updated_at
+    SET is_flagged = is_flagged
     WHERE id = ${moderationId}::uuid
   `)
 }

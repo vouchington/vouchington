@@ -160,8 +160,7 @@ export async function attachTestStripeProductionProviderObservation(
       SET membership_provider_observation_id = ${observation.id},
         cancelled_at = ${lifecycle.cancelledAt}, expired_at = ${lifecycle.expiredAt},
         past_due_at = ${lifecycle.pastDueAt}, paused_at = ${lifecycle.pausedAt},
-        should_auto_renew = ${autoRenews},
-        updated_at = CURRENT_TIMESTAMP
+        should_auto_renew = ${autoRenews}
       WHERE membership_source_id = ${target.membership_source_id}`)
   const result = {
     membership_provider_evidence_record_id: evidence.id,

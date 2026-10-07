@@ -1,17 +1,9 @@
 /* v8 ignore start -- declarative schema-test allowlists have no executable branches */
-import { FINITE_LOOKUP_MISSING_UPDATED_AT } from '../../../finite-lookup-timestamp-exceptions.mts'
 import * as postPublication from './post-publication-allowlists.mts'
 import * as postModeration from './moderation-ledger-allowlists.mts'
-import {
-  CLASSIFIER_RUN_TABLES_WITHOUT_CREATED_AT,
-  CLASSIFIER_RUN_TABLES_WITHOUT_UPDATED_AT,
-} from './classifier-run-allowlists.mts'
-import { ALLOWED_MEMBERSHIP_MISSING_UPDATED_AT } from './membership-timestamp-allowlists.mts'
+import { CLASSIFIER_RUN_TABLES_WITHOUT_CREATED_AT } from './classifier-run-allowlists.mts'
 import { SOCIAL_GRAPH_TABLES_WITHOUT_CREATED_AT } from './social-graph-timestamp-allowlists.mts'
 import { AUTHORIZATION_TABLES_WITHOUT_CREATED_AT } from './oauth-authorization-allowlists.mts'
-import { MEDIA_PLACEMENT_MISSING_UPDATED_AT } from './media-placement-allowlists.mts'
-import { COMMUNITY_APPLICATION_MISSING_UPDATED_AT } from './community-application-allowlists.mts'
-import { RETAINED_MISSING_UPDATED_AT } from '../../../schema-growth-test-policies.mts'
 
 export const ALLOWED_NON_UUIDV7_CREATED_AT = new Map<string, string>([])
 export const ALLOWED_MISSING_CREATED_AT = new Map<string, string>([
@@ -63,130 +55,4 @@ export const ALLOWED_MISSING_CREATED_AT = new Map<string, string>([
   ...SOCIAL_GRAPH_TABLES_WITHOUT_CREATED_AT,
 ])
 
-export const ALLOWED_MISSING_UPDATED_AT = new Map<string, string>([
-  ...FINITE_LOOKUP_MISSING_UPDATED_AT,
-  ['image_surface_placement_activations', 'Immutable provenance; bound_at records activation.'],
-  ...postModeration.HISTORY_WORKFLOW_TABLES_WITHOUT_UPDATED_AT,
-  [
-    'user_agent_strings',
-    'Insert-only normalized string lookup shared by sessions and votes; existing rows never update.',
-  ],
-  ...RETAINED_MISSING_UPDATED_AT,
-  ...ALLOWED_MISSING_CREATED_AT,
-  ...postPublication.POST_PUBLICATION_TABLES_WITHOUT_UPDATED_AT,
-  ...ALLOWED_MEMBERSHIP_MISSING_UPDATED_AT,
-  ...MEDIA_PLACEMENT_MISSING_UPDATED_AT,
-  ...COMMUNITY_APPLICATION_MISSING_UPDATED_AT,
-  [
-    'moderation_transparency_daily_rollups',
-    'Trigger-maintained aggregate projection; latest_occurred_at is the only lifecycle timestamp used by its release contract.',
-  ],
-  [
-    'moderation_transparency_released_daily_rollups',
-    'Immutable aggregate projection; released_at records the only lifecycle transition and rows never update.',
-  ],
-  [
-    'ai_usage_provider_response_keys',
-    'Permanent response-id reservation rows are inserted atomically with one ledger row and never updated.',
-  ],
-  [
-    'rss_feed_item_guids',
-    'Permanent identity rows have no semantic updates; conflict tuple bumps exist only to return the established id.',
-  ],
-  [
-    'openai_background_responses',
-    'Lease mutations carry their own lease_expires_at lifecycle timestamp; a generic updated_at would not participate in ownership decisions.',
-  ],
-  [
-    'app_attestation_keys',
-    'last_used_at tracks the meaningful mutation (assertion sign-count bump); a generic updated_at would be redundant.',
-  ],
-  [
-    'rss_feed_item_read_states',
-    'Read-state rows use composite PK; read_at is the only timestamp and is set once on insert.',
-  ],
-  [
-    'post_read_states',
-    'Read-state rows use composite PK; read_at is the only timestamp and is set once on insert.',
-  ],
-  [
-    'user_list_posts',
-    'Append-only list membership rows; item fields are never updated, only soft-deleted via removed_at.',
-  ],
-  [
-    'user_list_rss_feed_items',
-    'Append-only list membership rows; item fields are never updated, only soft-deleted via removed_at.',
-  ],
-  ['community_agent_prompt_revisions', 'Append-only audit log of community agent prompt changes.'],
-  ['dynamic_configuration_revisions', 'Append-only audit log of dynamic configuration changes.'],
-  ['agent_moderations', 'Append-only moderation output keyed by post and agent.'],
-  ['ai_usage_records', 'Append-only LLM cost ledger; rows are never updated after insertion.'],
-  ['conversation_messages', 'Append-only conversation message log.'],
-  ['email_referral_attributions', 'Append-only referral attribution event.'],
-  [
-    'fediverse_instance_integration_changes',
-    'Append-only fediverse instance integration status audit log.',
-  ],
-  ['moderation_report_judgements', 'Append-only AI judgement log; no updates after insertion.'],
-  [
-    'moderation_reports',
-    'Report review state changes are tracked by reviewed/resolved timestamps.',
-  ],
-  ['post_clearance_changes', 'Append-only clearance audit log.'],
-  ...postModeration.POST_MODERATION_TABLES_WITHOUT_UPDATED_AT,
-  ...postModeration.MODERATION_LINK_TABLES_WITHOUT_UPDATED_AT,
-  ['post_revisions', 'Append-only post revision history.'],
-  ['rss_feed_crawls', 'Append-only crawl history partitioned by UUIDv7 id.'],
-  ['rss_feed_setting_changes', 'Append-only discoverability audit log.'],
-  ['rss_feed_items', 'Feed item content is immutable after ingestion.'],
-  [
-    'rss_feed_item_category_rejections',
-    'Insert-only rejection log; rows are deleted (not updated) when a category is un-rejected.',
-  ],
-  ['rss_feed_item_sources', 'Composite source mapping for feed items.'],
-  ['rss_feed_urls', 'Feed URL alias table; crawl state lives elsewhere.'],
-  ['session_referral_attributions', 'Append-only referral attribution event.'],
-  ['amazon_ses_bounce_events', 'Append-only SES bounce event log.'],
-  ['stripe_events', 'Append-only Stripe event log.'],
-  ['post_dispute_annotations', 'Append-only annotation; removal tracked by removed_at.'],
-  ['moderation_appeal_lifecycle_changes', 'Append-only lifecycle audit log.'],
-  ['review_dispute_lifecycle_changes', 'Append-only lifecycle audit log.'],
-  ['topic_history', 'Append-only topic lifecycle history.'],
-  ['topic_revisions', 'Append-only topic revision history.'],
-  ['user_history', 'Append-only user lifecycle history.'],
-  [
-    'user_moderator_notes',
-    'Append-only moderator note log; deletion tracked by deleted_at, notes are never edited.',
-  ],
-  ['user_import_requests', 'Import request lifecycle uses explicit state timestamps.'],
-  ['user_warnings', 'Append-only warning records; no fields change after issuance.'],
-  ['user_legal_preservation_holds', 'Only release mutates a row; released_at records it.'],
-  [
-    'user_aside_preferences',
-    'dismissed_at is the meaningful timestamp; upsert-on-conflict refreshes dismissed_at, so a generic updated_at would be redundant.',
-  ],
-  [
-    'curated_aside_items',
-    'position reorders and soft-deletes are the only mutations; deleted_at tracks the deletion lifecycle; no generic updated_at needed.',
-  ],
-  ['moderator_actions', 'Append-only unified moderator action log; no updates after insertion.'],
-  [
-    'moderation_media_reveals',
-    'Append-only audit log of disturbing-media reveals by moderators; rows are never updated.',
-  ],
-  [
-    'moderation_queue_claims',
-    'Claim lifecycle uses claimed_at / released_at; the only mutation is releasing a claim (writing released_at), so a generic updated_at is redundant.',
-  ],
-  ...CLASSIFIER_RUN_TABLES_WITHOUT_UPDATED_AT,
-  [
-    'activitypub_inbox_activities',
-    'Append-only replay-dedup ledger; rows are inserted once by the inbox receiver and never updated.',
-  ],
-  [
-    'activitypub_post_likes',
-    'Undo/resurrect toggles deleted_at; redelivery refreshes like_activitypub_id.',
-  ],
-  ['bluesky_follow_records', 'Redelivery refreshes record_uri; unfollow deletes the row.'],
-])
 /* v8 ignore stop */

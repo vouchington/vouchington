@@ -1,17 +1,12 @@
 import { afterAll, describe, expect, it } from 'vitest'
 import { read, onGracefulShutdown } from '../index.mts'
 import { formatTypeViolations } from '../../../test-helpers/data-stores/psql/schema-static-analysis/name-helpers.mts'
-import {
-  getCommentViolations,
-  getTypeViolations,
-} from '../../../test-helpers/data-stores/psql/schema-static-analysis/queries.mts'
+import { getTypeViolations } from '../../../test-helpers/data-stores/psql/schema-static-analysis/queries.mts'
 import { getUuidConventionViolations } from '../../../test-helpers/data-stores/psql/schema-static-analysis/uuid-query.mts'
 import { getTimestampConventionViolations } from '../../../test-helpers/data-stores/psql/schema-static-analysis/timestamp-query.mts'
 import {
-  formatCommentViolation,
   formatTimestampConventionViolation,
   formatUuidConventionViolation,
-  isAllowedCommentViolation,
   isAllowedTimestampConventionViolation,
   isAllowedUuidConventionViolation,
 } from '../../../test-helpers/data-stores/psql/schema-static-analysis/conventions.mts'
@@ -58,16 +53,6 @@ describe('PostgreSQL schema static analysis', () => {
     ).toEqual([])
   })
 
-  it('documents tables, views and non-standard table columns', async () => {
-    const violations = await getCommentViolations()
-
-    expect(
-      violations.flatMap(violation =>
-        !isAllowedCommentViolation(violation) ? [formatCommentViolation(violation)] : [],
-      ),
-    ).toEqual([])
-  })
-
   it('uses UUID columns only for keys or documented exceptions', async () => {
     const violations = await getUuidConventionViolations()
 
@@ -80,7 +65,7 @@ describe('PostgreSQL schema static analysis', () => {
     ).toEqual([])
   })
 
-  it('uses UUIDv7-derived created_at and explicit updated_at conventions', async () => {
+  it('uses UUIDv7-derived created_at values and enabled updated_at triggers', async () => {
     const violations = await getTimestampConventionViolations()
 
     expect(

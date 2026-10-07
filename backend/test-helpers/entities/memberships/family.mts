@@ -13,6 +13,7 @@ type CreateTestFamilyMembershipOptions = {
   providerAccountId?: string
   sourceEffectiveAt?: Date
   sourceExpiresAt?: Date
+  sourceUpdatedAt?: Date
   sourceStatus?: MembershipStatus
   userId: string
 }
@@ -27,6 +28,7 @@ export async function createTestFamilyMembership({
   sourceEffectiveAt = effectiveAt,
   sourceExpiresAt = expiresAt,
   sourceStatus = 'active',
+  sourceUpdatedAt = new Date(),
   userId,
 }: CreateTestFamilyMembershipOptions): Promise<{ id: string }> {
   const fixtureId = randomUUID()
@@ -75,11 +77,11 @@ export async function createTestFamilyMembership({
       INSERT INTO membership_source_states (
         membership_source_id, source_kind, membership_provider_lineage_id,
         membership_provider_observation_id, membership_product_id,
-        effective_at, expires_at, cancelled_at, expired_at, past_due_at, paused_at, should_auto_renew
+        effective_at, expires_at, cancelled_at, expired_at, past_due_at, paused_at, should_auto_renew, updated_at
       ) SELECT source.id, 'family', source.membership_provider_lineage_id,
         observation.id, ${membershipProductId}, ${sourceEffectiveAt}, ${sourceExpiresAt},
         ${sourceLifecycle.cancelledAt}, ${sourceLifecycle.expiredAt},
-        ${sourceLifecycle.pastDueAt}, ${sourceLifecycle.pausedAt}, true
+        ${sourceLifecycle.pastDueAt}, ${sourceLifecycle.pausedAt}, true, ${sourceUpdatedAt}
       FROM source CROSS JOIN observation
       RETURNING membership_source_id
     )

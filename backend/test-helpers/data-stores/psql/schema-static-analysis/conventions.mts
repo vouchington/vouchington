@@ -1,24 +1,10 @@
 /* v8 ignore start -- test support module exercised by schema-static-analysis.test.mts */
-import {
-  ALLOWED_UNCOMMENTED_COLUMNS,
-  ALLOWED_UNCOMMENTED_RELATIONS,
-  ALLOWED_UUID_COLUMNS_WITHOUT_KEYS,
-  COMMENT_EXEMPT_COLUMN_NAMES,
-  COMMENT_EXEMPT_COLUMN_PATTERNS,
-} from './uuid-allowlists.mts'
+import { ALLOWED_UUID_COLUMNS_WITHOUT_KEYS } from './uuid-allowlists.mts'
 import { NON_DEFAULT_ID_EXCEPTIONS } from '../../../schema-growth-test-policies.mts'
 import {
   ALLOWED_MISSING_CREATED_AT,
   ALLOWED_NON_UUIDV7_CREATED_AT,
 } from './timestamp-allowlists.mts'
-
-export { COMMENT_EXEMPT_COLUMN_NAMES }
-
-export type CommentViolation = {
-  kind: string
-  relation_name: string
-  column_name: string | null
-}
 
 export type UuidConventionViolation = {
   table_name: string
@@ -30,16 +16,6 @@ export type TimestampConventionViolation = {
   table_name: string
   problem: string
   detail: string | null
-}
-
-export function isAllowedCommentViolation(violation: CommentViolation): boolean {
-  if (violation.relation_name === 'migrations') return true
-  if (violation.column_name != null && isConventionallyNamedColumn(violation.column_name)) {
-    return true
-  }
-  const key = getCommentViolationKey(violation)
-  if (violation.column_name == null) return ALLOWED_UNCOMMENTED_RELATIONS.has(key)
-  return ALLOWED_UNCOMMENTED_COLUMNS.has(key)
 }
 
 export function isAllowedUuidConventionViolation(violation: UuidConventionViolation): boolean {
@@ -63,7 +39,7 @@ export function isAllowedUuidConventionViolation(violation: UuidConventionViolat
 export function isAllowedTimestampConventionViolation(
   violation: TimestampConventionViolation,
 ): boolean {
-  if (violation.problem === 'updated-at-trigger-mismatch') return false
+  if (violation.problem === 'disabled-updated-at-trigger') return false
   if (isGeneratedRelationTable(violation.table_name)) return true
   if (isGeneratedVoteTable(violation.table_name)) return true
   if (violation.problem === 'created-at-not-derived-from-uuidv7-id') {
@@ -73,10 +49,6 @@ export function isAllowedTimestampConventionViolation(
     return ALLOWED_MISSING_CREATED_AT.has(violation.table_name)
   }
   return false
-}
-
-export function formatCommentViolation(violation: CommentViolation): string {
-  return `${violation.kind}:${getCommentViolationKey(violation)}`
 }
 
 export function formatUuidConventionViolation(violation: UuidConventionViolation): string {
@@ -99,13 +71,4 @@ function isGeneratedVoteTable(name: string): boolean {
   return name.endsWith('_votes')
 }
 
-function isConventionallyNamedColumn(name: string): boolean {
-  if (COMMENT_EXEMPT_COLUMN_NAMES.includes(name)) return true
-  return COMMENT_EXEMPT_COLUMN_PATTERNS.some(pattern => pattern.test(name))
-}
-
-function getCommentViolationKey(violation: CommentViolation): string {
-  if (violation.column_name == null) return violation.relation_name
-  return `${violation.relation_name}.${violation.column_name}`
-}
 /* v8 ignore stop */

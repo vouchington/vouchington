@@ -2678,6 +2678,73 @@ rules:
       normalizeIdentifiers: true
       normalizeRaise: true
 
+  - name: updated_at columns require their maintenance trigger
+    rule: postgres-column-requires-trigger
+    scope: repository
+    options:
+      schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
+      requirements:
+        - column: updated_at
+          function: fn_update_updated_at
+          timing: before
+          events: [update]
+          forEachRow: true
+          allowColumnList: false
+      allow:
+        - object: table:posts
+          reason: 'posts.updated_at records content edits; its trigger intentionally fires only for content-column updates.'
+
+  - name: updated_at clock triggers preserve their required structure
+    rule: postgres-column-requires-trigger
+    scope: repository
+    options:
+      schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
+      requirements:
+        - column: updated_at
+          function: fn_update_updated_at
+          timing: before
+          events: [update]
+          forEachRow: true
+          allowColumnList: true
+
+  - name: tables views and columns have schema comments
+    rule: postgres-required-comments
+    scope: repository
+    options:
+      schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
+      objects: [table, view, materialized-view, column]
+      # These patterns carry forward COMMENT_EXEMPT_COLUMN_NAMES and
+      # COMMENT_EXEMPT_COLUMN_PATTERNS from the replaced live-DB helper.
+      exemptColumnNamePatterns:
+        - '^(id|created_at|updated_at|created_by_id|updated_by_id|deleted_at|deleted_by_id)$'
+        - '^bedrock_nova_multimodal_v1_'
+        - '^lingua_rs_'
+        - '^llm_moderation_'
+        - '^openai_omni_moderation_'
+        - '^(search_vector$|votes_(count|score)_)'
+      allow:
+        - object: table:migrations
+          reason: 'The migration runner owns this internal ledger.'
+        - object: column:migrations.checksum
+          reason: 'The checksum is migration-runner integrity metadata.'
+
+  - name: runtime DML omits trigger-maintained updated_at
+    rule: postgres-no-generated-column-writes
+    scope: repository
+    exclude: ['**/test-helpers/**']
+    options:
+      importSpecifier: '@data-stores/psql'
+      executorFactoryNames: [beginTransaction, beginBoundedTransaction]
+      executorTypeNames: [TransactionQuery, QueryExecutor]
+      sqlInclude:
+        - backend/data-stores/psql/migrations/**/*.sql
+      include:
+        - backend/**/*.{ts,mts,tsx,js,sql}
+        - integration-tests/**/*.{ts,mts,tsx,js,sql}
+        - playwright/**/*.{ts,mts,tsx,js,sql}
+        - web/**/*.{ts,mts,tsx,js,sql}
+      triggerMaintainedColumns: [updated_at]
+
   - name: topics queries keep the active-topic filter
     rule: postgres-required-predicates
     scope: repository

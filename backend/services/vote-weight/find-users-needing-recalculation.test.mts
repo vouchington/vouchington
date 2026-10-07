@@ -6,7 +6,6 @@ import {
   createTestSku,
   createTestUserDirect,
   rejectTestMembershipProviderEvidence,
-  setTestMembershipSourceStateUpdatedAt,
   setTestUserVoteWeightRecalculatedAt,
   updateTestMembershipExpiresAt,
 } from '@voucha/test-helpers'
@@ -150,15 +149,15 @@ describe('findUsersNeedingVoteWeightRecalculation', () => {
       plan: 'plus',
       provider_application_id: `vote-weight-effective-family-${randomUUID()}`,
     })
-    const family = await createTestFamilyMembership({
+    await createTestFamilyMembership({
       applicationId: sku.provider_application_id,
       expiresAt: new Date('2030-01-01T00:00:00.000Z'),
       membershipProductId: sku.id,
       membershipProviderProductId: sku.membership_provider_product_id,
+      sourceUpdatedAt: new Date(Date.now() - 180_000),
       sourceEffectiveAt: new Date(Date.now() - 60_000),
       userId: user!.id,
     })
-    await setTestMembershipSourceStateUpdatedAt(family.id, new Date(Date.now() - 180_000))
     await setTestUserVoteWeightRecalculatedAt(user!.id, new Date(Date.now() - 90_000))
 
     const { userIds } = await findUsersNeedingVoteWeightRecalculation(afterId, 10_000)
@@ -172,17 +171,17 @@ describe('findUsersNeedingVoteWeightRecalculation', () => {
       plan: 'plus',
       provider_application_id: `vote-weight-projection-family-${randomUUID()}`,
     })
-    const family = await createTestFamilyMembership({
+    await createTestFamilyMembership({
       applicationId: sku.provider_application_id,
       effectiveAt: new Date(Date.now() - 180_000),
       expiresAt: new Date(Date.now() - 60_000),
       membershipProductId: sku.id,
       membershipProviderProductId: sku.membership_provider_product_id,
+      sourceUpdatedAt: new Date(Date.now() - 180_000),
       sourceEffectiveAt: new Date(Date.now() - 180_000),
       sourceExpiresAt: new Date('2030-01-01T00:00:00.000Z'),
       userId: user!.id,
     })
-    await setTestMembershipSourceStateUpdatedAt(family.id, new Date(Date.now() - 180_000))
     await setTestUserVoteWeightRecalculatedAt(user!.id, new Date(Date.now() - 90_000))
 
     const { userIds } = await findUsersNeedingVoteWeightRecalculation(afterId, 10_000)

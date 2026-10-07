@@ -59,18 +59,3 @@ export const POST_PUBLICATION_TABLES_WITHOUT_CREATED_AT = [
     'Retained-key rows are ordered by UUIDv7 id and cascade on acknowledgement; timing lives on the work parent.',
   ],
 ] as const
-
-export const POST_PUBLICATION_TABLES_WITHOUT_UPDATED_AT = [
-  [
-    'post_publication_identity_snapshot_keys',
-    'Snapshot identity rows are immutable; attempt checkpoints own progress timing.',
-  ],
-  [
-    'post_publication_dirty_work_keys',
-    'Retained-key rows are inserted once and cascade on acknowledgement; parent updated_at owns lifecycle timing.',
-  ],
-  [
-    'post_publication_projection_receipts',
-    'applied_at is the lifecycle mutation timestamp refreshed on every successful projection receipt.',
-  ],
-] as const

@@ -15,8 +15,7 @@ export async function updateTestMembershipExpiresAt(
       `)
     await query(sql`/* updateTestMembershipExpiresAt: mirror source state */
         UPDATE membership_source_states state
-        SET effective_at = LEAST(state.effective_at, ${expiresAt}), expires_at = ${expiresAt},
-            updated_at = CURRENT_TIMESTAMP
+        SET effective_at = LEAST(state.effective_at, ${expiresAt}), expires_at = ${expiresAt}
         FROM memberships membership
         WHERE membership.id = ${membershipId}
           AND state.membership_source_id = membership.membership_source_id
@@ -54,19 +53,6 @@ export async function updateTestMembershipCancelAtPeriodEnd(
     UPDATE memberships
     SET should_cancel_at_period_end = ${cancelAtPeriodEnd}
     WHERE id = ${membershipId}
-  `)
-}
-
-export async function setTestMembershipSourceStateUpdatedAt(
-  membershipId: string,
-  updatedAt: Date,
-): Promise<void> {
-  await write(sql`/* setTestMembershipSourceStateUpdatedAt */
-    UPDATE membership_source_states source_state
-    SET updated_at = ${updatedAt}
-    FROM memberships membership
-    WHERE membership.id = ${membershipId}
-      AND source_state.membership_source_id = membership.membership_source_id
   `)
 }
 
