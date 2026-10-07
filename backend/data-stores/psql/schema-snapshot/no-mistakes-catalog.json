@@ -72266,7 +72266,7 @@
           "validated": true
         },
         "oauth_clients_metadata_url_check": {
-          "definition": "CHECK (((metadata_url IS NULL) OR ((char_length(metadata_url) <= 2048) AND (metadata_url ~* '^https://[^/?#@[:space:][:cntrl:]]+/[^#[:space:][:cntrl:]]*$'::text) AND (POSITION((chr(92)) IN (metadata_url)) = 0) AND (split_part(metadata_url, '?'::text, 1) !~ '/\\.\\.?(/|$)'::text))))",
+          "definition": "CHECK (((metadata_url IS NULL) OR ((char_length(metadata_url) <= 2048) AND ((metadata_url ~* '^https://[^/?#@[:space:][:cntrl:]]+/[^#[:space:][:cntrl:]]*$'::text) OR (metadata_url ~ '^http://(localhost|127\\.0\\.0\\.1|\\[::1\\])(:[0-9]{1,5})?/api/v1/oauth/native-clients/(ios|macos|windows)$'::text)) AND (POSITION((chr(92)) IN (metadata_url)) = 0) AND (split_part(metadata_url, '?'::text, 1) !~ '/\\.\\.?(/|$)'::text))))",
           "validated": true
         },
         "oauth_clients_redirect_uris_check": {
@@ -72392,7 +72392,7 @@
           "ordinalPosition": 4
         },
         "metadata_url": {
-          "comment": "HTTPS URL of the Client ID Metadata Document for a client identified by URL; NULL for clients registered through dynamic client registration.",
+          "comment": "HTTPS URL of the Client ID Metadata Document, or a local HTTP first-party native client document URL; NULL for dynamically registered clients.",
           "dataType": "text",
           "defaultExpression": null,
           "generated": null,
