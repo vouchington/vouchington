@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, rmSync } from 'node:fs'
+import { readFileSync, rmSync } from 'node:fs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   formatExitStatus,
@@ -21,11 +21,9 @@ describe('web integration managed processes', () => {
       startTestProcess('log-capture', [
         String.raw`process.stdout.write('stdout line\n')`,
         String.raw`process.stderr.write('stderr line\n')`,
-        'setInterval(() => {}, 1000)',
       ]),
       async managedProcess => {
-        await waitForLog(managedProcess.logPath, 'stdout line')
-        await waitForLog(managedProcess.logPath, 'stderr line')
+        await expect(managedProcess.exited).resolves.toMatchObject({ code: 0, signal: null })
 
         const log = readFileSync(managedProcess.logPath, 'utf8')
         expect(log).toContain('stdout line')
@@ -96,9 +94,14 @@ describe('web integration managed processes', () => {
       await withManagedProcess(
         startTestProcess('ready-then-exit', [
           "const http = require('node:http')",
-          "const server = http.createServer((_request, response) => response.end('ok'))",
+          String.raw`const server = http.createServer((request, response) => {
+            if (request.url === '/exit') {
+              response.end('closing', () => server.close(() => process.exit(0)))
+              return
+            }
+            response.end('ok')
+          })`,
           `server.listen(${String(reservation.port)}, '127.0.0.1', () => {`,
-          '  setTimeout(() => server.close(() => process.exit(0)), 1500)',
           '})',
         ]),
         async managedProcess => {
@@ -110,6 +113,9 @@ describe('web integration managed processes', () => {
               managedProcess,
             ),
           ).resolves.toBeUndefined()
+          await expect(
+            fetch(`http://127.0.0.1:${String(reservation.port)}/exit`),
+          ).resolves.toMatchObject({ status: 200 })
           const exit = await managedProcess.exited
           expect(writtenStderr(stderrSpy)).toContain(
             `${POST_READY_EXIT_MARKER_PREFIX} backend exited unexpectedly after ready: ${formatExitStatus(exit)}`,
@@ -169,15 +175,6 @@ async function withManagedProcess<T>(
   } finally {
     await managedProcess.stop()
   }
-}
-
-async function waitForLog(logPath: string, text: string): Promise<void> {
-  await expect
-    .poll(() => existsSync(logPath) && readFileSync(logPath, 'utf8').includes(text), {
-      interval: 50,
-      timeout: 5000,
-    })
-    .toBe(true)
 }
 
 // Reserves a port then immediately releases it so a spawned test child can bind it
