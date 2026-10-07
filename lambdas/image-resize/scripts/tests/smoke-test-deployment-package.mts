@@ -48,7 +48,12 @@ try {
   }
   linkHostSharpBinary(runtimeModules)
 
-  const png = readPngResponse(invokePackagedHandler(root, taskDir))
+  const ogEvent = signedOgEvent()
+  // A request that never renders leaves a failed import-time load unhandled, which crashes the
+  // process the way it crashes every deployed request, not only OG cards.
+  const rejected = { ...ogEvent, queryStringParameters: { sig: 'unsigned' } }
+  invokePackagedHandler(root, taskDir, rejected, 403)
+  const png = readPngResponse(invokePackagedHandler(root, taskDir, ogEvent, 200))
   process.stdout.write(`✓ Deployment package rendered a ${png.byteLength}-byte OG card\n`)
 } finally {
   rmSync(root, { recursive: true, force: true })
@@ -84,7 +89,7 @@ function linkPackage(source: string, destination: string): void {
   symlinkSync(realpathSync(source), destination, 'dir')
 }
 
-function invokePackagedHandler(root: string, taskDir: string): HandlerResponse {
+function signedOgEvent() {
   const payload = {
     type: 'generic',
     eyebrow: 'Smoke test',
@@ -94,13 +99,22 @@ function invokePackagedHandler(root: string, taskDir: string): HandlerResponse {
   }
   const ogBase64url = Buffer.from(JSON.stringify(payload)).toString('base64url')
   const path = `/og/${ogBase64url}`
-  const event = {
+  return {
     path,
     pathParameters: { ogBase64url },
     queryStringParameters: { sig: signPath(path, [TEST_SIDELOAD_SIGNING_KEY]) },
     headers: {},
   }
-  const responsePath = join(root, 'response.json')
+}
+
+// Each invocation is a fresh process, like a cold start.
+function invokePackagedHandler(
+  root: string,
+  taskDir: string,
+  event: ReturnType<typeof signedOgEvent>,
+  expectedStatus: number,
+): HandlerResponse {
+  const responsePath = join(root, `response-${expectedStatus}.json`)
   const program = `
     const { writeFileSync } = await import('node:fs')
     const { handler } = await import(${JSON.stringify(pathToFileURL(join(taskDir, 'index.mjs')).href)})
@@ -128,7 +142,7 @@ function invokePackagedHandler(root: string, taskDir: string): HandlerResponse {
     )
   }
   const response = JSON.parse(readFileSync(responsePath, 'utf8')) as HandlerResponse
-  if (response.statusCode !== 200) {
+  if (response.statusCode !== expectedStatus) {
     throw new Error(
       `The packaged handler returned ${response.statusCode} ${response.body}:\n${result.stderr}`,
     )
