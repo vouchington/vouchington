@@ -28,6 +28,16 @@ describe('RSS feed refresh request validation', () => {
     expect(response.body.force).toBe(expected)
   })
 
+  it('uses query force when a JSON body also supplies force', async () => {
+    const { request, feedId } = await createAdminFeed()
+    const response = await request
+      .post(`/api/v1/rss-feeds/${feedId}/refreshes?force=true`)
+      .send({ force: false })
+      .expect(200)
+
+    expect(response.body.force).toBe(true)
+  })
+
   it.each([null, [], 'sometimes'])(
     'rejects invalid JSON force %j without enqueueing',
     async force => {
@@ -36,6 +46,15 @@ describe('RSS feed refresh request validation', () => {
       await expect(readAllQueueJobs(rss_feeds)).resolves.toHaveLength(0)
     },
   )
+
+  it('rejects unknown JSON body fields without enqueueing', async () => {
+    const { request, feedId } = await createAdminFeed()
+    await request
+      .post(`/api/v1/rss-feeds/${feedId}/refreshes`)
+      .send({ force: false, extra: 'unexpected' })
+      .expect(422)
+    await expect(readAllQueueJobs(rss_feeds)).resolves.toHaveLength(0)
+  })
 
   it('rejects a parsed JSON body over 1mb without enqueueing', async () => {
     const { request, feedId } = await createAdminFeed()

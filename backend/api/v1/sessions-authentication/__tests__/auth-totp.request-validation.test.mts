@@ -1,8 +1,9 @@
-import { describe, it, beforeAll } from 'vitest'
+import { describe, it, beforeAll, expect } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { createTestUser } from '@voucha/test-helpers'
+import { createTestUser, insertTestTotpAuthenticator } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { v7 } from 'uuid'
+import { createReAuthToken } from '@services/mfa/re-auth'
 
 // Covers the post-parse runtime request-contract validation added for issue #322 on the
 // authenticated TOTP management routes (mirrors auth-passkeys.mts). These are protected routes:
@@ -66,5 +67,56 @@ describe('TOTP routes - request contract validation', () => {
 
       await req[method](`/api/v1/auth/totp/${v7()}`).send(body).expect(422)
     })
+  })
+
+  describe('DELETE /api/v1/auth/totp/:id', () => {
+    it('rejects unknown JSON fields without deleting the authenticator', async () => {
+      const freshUser = await createTestUser()
+      const suffix = `invalid-delete-${crypto.randomUUID()}`
+      const authenticator = await insertTestTotpAuthenticator(freshUser.id, suffix)
+      await insertTestTotpAuthenticator(freshUser.id, `${suffix}-second`)
+
+      const req = createRequest()
+      await req.authenticateAs(freshUser)
+
+      await req
+        .delete(`/api/v1/auth/totp/${authenticator.id}`)
+        .send({ re_auth_token: 'unused', extra: 'unexpected' })
+        .expect(422)
+
+      const listRes = await req.get('/api/v1/auth/totp').expect(200)
+      expect(
+        listRes.body.results.some((item: { id: string }) => item.id === authenticator.id),
+      ).toBe(true)
+    }, 20_000)
+
+    it('deletes with no JSON body', async () => {
+      const freshUser = await createTestUser()
+      const suffix = `non-json-delete-${crypto.randomUUID()}`
+      const authenticator = await insertTestTotpAuthenticator(freshUser.id, suffix)
+      await insertTestTotpAuthenticator(freshUser.id, `${suffix}-second`)
+
+      const req = createRequest()
+      await req.authenticateAs(freshUser)
+
+      await req.delete(`/api/v1/auth/totp/${authenticator.id}`).expect(204)
+    }, 20_000)
+
+    it('passes a JSON re-auth token through to the protected delete', async () => {
+      const freshUser = await createTestUser()
+      const authenticator = await insertTestTotpAuthenticator(
+        freshUser.id,
+        `reauth-delete-${crypto.randomUUID()}`,
+      )
+      const reAuthToken = await createReAuthToken(freshUser.id)
+
+      const req = createRequest()
+      await req.authenticateAs(freshUser)
+
+      await req
+        .delete(`/api/v1/auth/totp/${authenticator.id}`)
+        .send({ re_auth_token: reAuthToken })
+        .expect(204)
+    }, 20_000)
   })
 })

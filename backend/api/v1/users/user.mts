@@ -36,7 +36,6 @@ import {
   apiRequestContract,
   apiResponse,
 } from '../../response-contract.mts'
-
 import type { ElectionVoteRequest } from '@voucha/types/entities/election'
 import type { PrivateUser } from '@services/users/types'
 import { userProfileQueryContract } from './user-profile-query-helpers.mts'
@@ -56,6 +55,7 @@ app
     const recognizedIncludeBio = ctx.query.include_bio === '1' || ctx.query.include_bio === '0'
     apiQuery('GET:/api/v1/users/:idOrSlug', userProfileQueryContract)
     validateRequestContract(ctx, 'GET:/api/v1/users/:idOrSlug', {
+      path: ctx.params,
       query: recognizedIncludeBio ? { include_bio: ctx.query.include_bio } : {},
     })
     const idOrSlug = ctx.params.idOrSlug!
@@ -115,7 +115,7 @@ app
     const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/users/:idOrSlug')
     assertNotSuspended(currentUser)
     const body = (await ctx.request.json('1mb')) as UpdateUserOptions
-    validateRequestContract(ctx, 'PATCH:/api/v1/users/:idOrSlug', { body })
+    validateRequestContract(ctx, 'PATCH:/api/v1/users/:idOrSlug', { path: ctx.params, body })
     const updated = await updateUser(currentUser, ctx.params.idOrSlug!, body)
     ctx.json({ user: updated })
   })
@@ -124,6 +124,7 @@ app
       ctx,
       'DELETE:/api/v1/users/:idOrSlug',
     )
+    validateRequestContract(ctx, 'DELETE:/api/v1/users/:idOrSlug', { path: ctx.params })
     const user = await getPrivateUserByIdOrSlug(ctx.params.idOrSlug!)
     ctx.assert(user, 404, 'User not found')
     if (currentUser.id !== user.id) assertNotSuspended(currentUser)
@@ -175,9 +176,9 @@ app.route('/api/v1/users/:id/vouch-vote').delete(async ctx => {
 
 app.route('/api/v1/users/:id/vouch-context').get(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/users/:id/vouch-context')
+  validateRequestContract(ctx, 'GET:/api/v1/users/:id/vouch-context', { path: ctx.params })
   const target = await getPublicUserByAny(ctx.params.id!)
   ctx.assert(target, 404, 'User not found')
-
   const response: Awaited<ReturnType<typeof getUserVouchContextResponse>> =
     target.id === currentUser.id
       ? {
@@ -186,7 +187,6 @@ app.route('/api/v1/users/:id/vouch-context').get(async (ctx: Context) => {
           election_vote: null,
         }
       : await getUserVouchContextResponse(currentUser, target.id)
-
   ctx.json(apiResponse('GET:/api/v1/users/:id/vouch-context', response))
 })
 
