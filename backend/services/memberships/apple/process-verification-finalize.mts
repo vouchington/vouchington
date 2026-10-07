@@ -28,7 +28,7 @@ export async function finalizeAppleVerificationFromPriorAttempt(
     ORDER BY
       (user_id = ${context.userId} AND verified_at IS NOT NULL) DESC,
       (verified_at IS NOT NULL) DESC,
-      created_at ASC
+      id ASC
     LIMIT 1
     FOR KEY SHARE`)
   const prior = rows[0] as

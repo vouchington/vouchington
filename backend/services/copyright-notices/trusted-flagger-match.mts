@@ -17,16 +17,18 @@ export async function recordCopyrightTrustedFlaggerMatch(
       SELECT change.change_type
       FROM copyright_trusted_flagger_changes change
       WHERE change.copyright_trusted_flagger_id = flagger.id
+        -- no-mistakes-disable-next-line postgres-generated-column-predicates: UUIDv7 has no timestamp-to-bound helper; notice receipt time is the legal event cutoff.
         AND change.created_at <= notice.received_at
       ORDER BY change.id DESC LIMIT 1
     ) latest_change ON true
     WHERE notice.id = ${noticeId} AND notice.jurisdiction = 'eu_dsa'
       AND notice.claimant_user_id IS NOT NULL
+      -- no-mistakes-disable-next-line postgres-generated-column-predicates: UUIDv7 has no timestamp-to-bound helper; notice receipt time is the legal event cutoff.
       AND flagger.created_at <= notice.received_at
       AND flagger.awarded_on <= (notice.received_at AT TIME ZONE 'UTC')::date
       AND (latest_change.change_type IS NULL OR latest_change.change_type = 'reinstated')
     ORDER BY CASE WHEN flagger.area_of_expertise = 'intellectual_property' THEN 0 ELSE 1 END,
-      flagger.created_at DESC, flagger.id DESC
+      flagger.id DESC
     LIMIT 1
     ON CONFLICT (copyright_notice_id) DO NOTHING
   `)

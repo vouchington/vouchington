@@ -9,24 +9,20 @@ describe('PostgreSQL runtime source guardrails', () => {
     const annotated = `import { read } from '@data-stores/psql'; const query = sql\`/* getPost */ SELECT id FROM posts WHERE id = \${id}\`; await read(query)`
     const unannotated = `import { read } from '@data-stores/psql'; const query = sql\`SELECT id FROM posts WHERE id = \${id}\`; await read(query)`
 
-    expect(
-      checkPostgresRuntimeSource('backend/services/posts/get.mts', annotated, new Set()),
-    ).toEqual([])
-    expect(
-      checkPostgresRuntimeSource('backend/services/posts/get.mts', unannotated, new Set()),
-    ).toEqual([expect.stringContaining('query execution must start with a /* name */ annotation')])
+    expect(checkPostgresRuntimeSource('backend/services/posts/get.mts', annotated)).toEqual([])
+    expect(checkPostgresRuntimeSource('backend/services/posts/get.mts', unannotated)).toEqual([
+      expect.stringContaining('query execution must start with a /* name */ annotation'),
+    ])
     expect(
       checkPostgresRuntimeSource(
         'backend/services/posts/get.mts',
         `import { read } from '@data-stores/psql'; function find() { if (true) { var query = sql\`SELECT id FROM posts\` } return read(query) }`,
-        new Set(),
       ),
     ).toEqual([expect.stringContaining('query execution must start with a /* name */ annotation')])
     expect(
       checkPostgresRuntimeSource(
         'backend/services/posts/get.mts',
         `import { read } from '@data-stores/psql'; function find() { var query = sql\`SELECT id FROM posts\`; return read(query) }`,
-        new Set(),
       ),
     ).toEqual([expect.stringContaining('query execution must start with a /* name */ annotation')])
   })
@@ -36,14 +32,12 @@ describe('PostgreSQL runtime source guardrails', () => {
       checkPostgresRuntimeSource(
         'backend/services/posts/get.mts',
         `import { read } from '@data-stores/psql'; const predicate = sql\`WHERE id = \${id}\`; await read(sql\` SELECT * FROM posts \${predicate}\`)`,
-        new Set(),
       ),
     ).toEqual([expect.stringContaining('query execution must start with a /* name */ annotation')])
     expect(
       checkPostgresRuntimeSource(
         'backend/services/posts/get.mts',
         `import { read } from '@data-stores/psql'; const predicate = sql\`WHERE id = \${id}\`; await read(sql\`  /* getPost */ SELECT * FROM posts \${predicate}\`)`,
-        new Set(),
       ),
     ).toEqual([])
   })
@@ -52,21 +46,13 @@ describe('PostgreSQL runtime source guardrails', () => {
     const source = `import { write } from '@data-stores/psql'; await write(sql\`INSERT INTO users DEFAULT VALUES\`)`
 
     expect(
-      checkPostgresRuntimeSource(
-        'backend/test-helpers/entities/users-direct.mts',
-        source,
-        new Set(),
-      ),
+      checkPostgresRuntimeSource('backend/test-helpers/entities/users-direct.mts', source),
     ).toEqual([expect.stringContaining('query execution must start with a /* name */ annotation')])
     expect(
-      checkPostgresRuntimeSource(
-        './backend/test-helpers/entities/users-direct.mts',
-        source,
-        new Set(),
-      ),
+      checkPostgresRuntimeSource('./backend/test-helpers/entities/users-direct.mts', source),
     ).toEqual([expect.stringContaining('query execution must start with a /* name */ annotation')])
     expect(
-      checkPostgresRuntimeSource('backend/test-helpers/entities/unrelated.mts', source, new Set()),
+      checkPostgresRuntimeSource('backend/test-helpers/entities/unrelated.mts', source),
     ).toEqual([])
   })
 
@@ -75,14 +61,12 @@ describe('PostgreSQL runtime source guardrails', () => {
       checkPostgresRuntimeSource(
         'backend/services/users/create.mts',
         `import { write } from '@data-stores/psql'; const query = sql\`INSERT INTO users DEFAULT VALUES\`; await write(query)`,
-        new Set(),
       ),
     ).toEqual([expect.stringContaining('query execution must start with a /* name */ annotation')])
     expect(
       checkPostgresRuntimeSource(
         'backend/services/users/create.mts',
         `import { write } from '@data-stores/psql'; const query = sql\`/* createUser */ INSERT INTO users DEFAULT VALUES\`; await write(query)`,
-        new Set(),
       ),
     ).toEqual([])
     expect(
@@ -99,7 +83,6 @@ describe('PostgreSQL runtime source guardrails', () => {
             return write(query)
           }
         `,
-        new Set(),
       ),
     ).toEqual([expect.stringContaining('query execution must start with a /* name */ annotation')])
     expect(
@@ -112,19 +95,8 @@ describe('PostgreSQL runtime source guardrails', () => {
           }
           const query = sql\`INSERT INTO users DEFAULT VALUES\`
         `,
-        new Set(),
       ),
     ).toEqual([expect.stringContaining('query execution must start with a /* name */ annotation')])
-  })
-
-  it('rejects created_at predicates on UUIDv7 timestamp tables', () => {
-    expect(
-      checkPostgresRuntimeSource(
-        'backend/services/posts/get.mts',
-        `import { read } from '@data-stores/psql'; await read(sql\`/* recentPosts */ SELECT p.id FROM posts p WHERE p.created_at > \${cutoff}\`)`,
-        new Set(['posts']),
-      ),
-    ).toEqual([expect.stringContaining('filter UUIDv7 tables by id instead of created_at')])
   })
 })
 

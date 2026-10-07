@@ -13,18 +13,21 @@ const NO_MISTAKES_PATH = join(REPO_ROOT, '.no-mistakes.yml')
 const MIGRATIONS_DIR = join(REPO_ROOT, 'backend/data-stores/psql/migrations')
 const PLACEHOLDER_PATH = join(MIGRATIONS_DIR, '.no-mistakes-schema-placeholder.sql')
 const MIGRATIONS_SQL_INCLUDE = 'backend/data-stores/psql/migrations/**/*.sql'
+const PREDICATE_RULE = 'postgres-generated-column-predicates'
 const CREATE_TABLE_NAME =
   /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:"([^"]+)"|([A-Za-z_][A-Za-z0-9_]*))/gi
 
 type ExtraGeneratedColumn = {
   table?: unknown
   column?: unknown
+  sourceColumn?: unknown
 }
 
 type NoMistakesRule = {
   rule?: unknown
   options?: {
     extraGeneratedColumns?: ExtraGeneratedColumn[]
+    requireArgumentIsPrimaryKey?: unknown
     sqlInclude?: unknown
   }
 }
@@ -36,9 +39,20 @@ describe('extraGeneratedColumns freshness', () => {
     expect(existsSync(PLACEHOLDER_PATH)).toBe(false)
   })
 
-  it('lists only snapshot generated created_at tables without a migration CREATE TABLE', async () => {
-    const extras = [...(await loadExtraGeneratedCreatedAtTables())].toSorted()
-    expect(extras).toEqual((await leftoverGeneratedCreatedAtTables()).toSorted())
+  it('keeps both predicate entries aligned with config-driven generated created_at tables', async () => {
+    const expected = (await leftoverGeneratedCreatedAtTables()).toSorted()
+    expect([...extraGeneratedCreatedAtTables(await loadGeneratedColumnRule())].toSorted()).toEqual(
+      expected,
+    )
+    const rules = await loadGeneratedPredicateRules()
+    expect(rules).toHaveLength(2)
+    for (const rule of rules) {
+      expect([...extraGeneratedCreatedAtTables(rule)].toSorted()).toEqual(expected)
+      expect(rule.options?.extraGeneratedColumns?.every(entry => entry.sourceColumn === 'id')).toBe(
+        true,
+      )
+      expect(rule.options?.requireArgumentIsPrimaryKey).toBe(false)
+    }
   })
 })
 
@@ -85,9 +99,14 @@ async function loadGeneratedColumnRule(): Promise<NoMistakesRule> {
   return rule
 }
 
-async function loadExtraGeneratedCreatedAtTables(): Promise<Set<string>> {
+async function loadGeneratedPredicateRules(): Promise<NoMistakesRule[]> {
+  const parsed = parseYaml(await readFile(NO_MISTAKES_PATH, 'utf8')) as { rules?: NoMistakesRule[] }
+  return parsed.rules?.filter(entry => entry.rule === PREDICATE_RULE) ?? []
+}
+
+function extraGeneratedCreatedAtTables(rule: NoMistakesRule): Set<string> {
   const extras = new Set<string>()
-  for (const entry of (await loadGeneratedColumnRule()).options?.extraGeneratedColumns ?? []) {
+  for (const entry of rule.options?.extraGeneratedColumns ?? []) {
     if (typeof entry.table !== 'string' || entry.column !== 'created_at') continue
     extras.add(entry.table)
   }

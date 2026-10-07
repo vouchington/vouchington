@@ -5,7 +5,6 @@ import {
   propertyName,
   walk,
 } from '../targeted-guardrails/ast-utils.mts'
-import { findUuidv7CreatedAtPredicate } from './uuidv7-created-at-guard.mts'
 import { executedQueryText, sqlStatementBindings } from './postgres-runtime-query-text.mts'
 
 type Node = import('../targeted-guardrails/ast-utils.mts').UnknownNode
@@ -64,12 +63,7 @@ function callArguments(node: Node): Node[] {
   return Array.isArray(node.arguments) ? node.arguments.filter(isNode) : []
 }
 
-export function checkPostgresRuntimeSource(
-  file: string,
-  code: string,
-  uuidv7Tables: Set<string>,
-  parsedAst?: Node,
-): string[] {
+export function checkPostgresRuntimeSource(file: string, code: string, parsedAst?: Node): string[] {
   const normalizedFile = file.replace(/^(?:\.\/)+/, '')
   if (
     !DEVELOPMENT_RUNTIME_TEST_HELPERS.has(normalizedFile) &&
@@ -91,12 +85,6 @@ export function checkPostgresRuntimeSource(
     if (!SQL_ANNOTATION_RE.test(text)) {
       errors.push(
         `::error file=${normalizedFile},line=${nodeLine(node)}::query execution must start with a /* name */ annotation`,
-      )
-    }
-    const table = findUuidv7CreatedAtPredicate(text, uuidv7Tables)
-    if (table) {
-      errors.push(
-        `::error file=${normalizedFile},line=${nodeLine(node)}::filter UUIDv7 tables by id instead of created_at (${table})`,
       )
     }
   })

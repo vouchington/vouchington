@@ -2392,6 +2392,10 @@ rules:
         - '**/__tests__/**'
         - '**/test-helpers/**'
         - backend/scripts/**
+      sqlInclude:
+        - backend/data-stores/psql/views/**/*.sql
+        - backend/data-stores/psql/migrations/**/*.sql
+        - backend/data-stores/psql/config-driven/**/*.sql
 
   - name: runtime queries identify executed statements
     rule: postgres-require-query-annotation
@@ -2415,10 +2419,16 @@ rules:
       importSpecifier: '@data-stores/psql'
       executorFactoryNames: [beginTransaction, beginBoundedTransaction]
       executorTypeNames: [TransactionQuery, QueryExecutor]
+      bannedShapes: [correlated-exists-set-operation, not-in-subquery, count-for-existence]
       sqlInclude:
         - backend/data-stores/psql/config-driven/**/*.sql
+        - backend/data-stores/psql/views/**/*.sql
+        - backend/data-stores/psql/migrations/**/*.sql
       include:
         - backend/**/*.{ts,mts,js}
+        - backend/data-stores/psql/config-driven/**/*.sql
+        - backend/data-stores/psql/views/**/*.sql
+        - backend/data-stores/psql/migrations/**/*.sql
       exclude:
         - '**/*.test.*'
         - '**/__tests__/**'
@@ -2427,6 +2437,142 @@ rules:
       # Skip dynamically interpolated executor SQL. The deleted topics-active-filter
       # and EXISTS-shape guards only judged recoverable SQL; fail would flag every
       # composed `read`/`write` wrapper. Parsed queries still fail-closed.
+      unanalyzableSql: ignore
+
+  - name: generated UUIDv7 timestamps are not query predicates
+    rule: postgres-generated-column-predicates
+    scope: repository
+    options:
+      importSpecifier: '@data-stores/psql'
+      executorFactoryNames: [beginTransaction, beginBoundedTransaction]
+      executorTypeNames: [TransactionQuery, QueryExecutor]
+      sqlInclude:
+        - backend/data-stores/psql/migrations/**/*.sql
+        - backend/data-stores/psql/views/**/*.sql
+        - backend/data-stores/psql/config-driven/**/*.sql
+      include:
+        - backend/**/*.{ts,mts}
+      exclude:
+        - '**/*.test.*'
+        - '**/__tests__/**'
+        - '**/test-helpers/**'
+        - backend/scripts/seeds/**
+        - backend/data-stores/psql/migration-runner/**
+      functions: [uuid_extract_timestamp]
+      requireArgumentIsPrimaryKey: false
+      clauses: [where, join, order-by]
+      extraGeneratedColumns:
+        - { table: agent_moderation_votes, column: created_at, sourceColumn: id }
+        - { table: hostname_votes, column: created_at, sourceColumn: id }
+        - { table: post_votes, column: created_at, sourceColumn: id }
+        - { table: relation__post__category__topic__votes, column: created_at, sourceColumn: id }
+        - {
+            table: relation__post__category__topic_alias__votes,
+            column: created_at,
+            sourceColumn: id,
+          }
+        - { table: relation__post__related__post__votes, column: created_at, sourceColumn: id }
+        - { table: relation__post__related__url__votes, column: created_at, sourceColumn: id }
+        - {
+            table: relation__rss_feed_item__category__topic__votes,
+            column: created_at,
+            sourceColumn: id,
+          }
+        - {
+            table: relation__rss_feed_item__category__topic_alias__votes,
+            column: created_at,
+            sourceColumn: id,
+          }
+        - { table: relation__topic__category__topic__votes, column: created_at, sourceColumn: id }
+        - { table: relation__topic__faq__post__votes, column: created_at, sourceColumn: id }
+        - { table: relation__topic__faq__url__votes, column: created_at, sourceColumn: id }
+        - { table: relation__topic__guide__url__votes, column: created_at, sourceColumn: id }
+        - { table: relation__topic__landing_page__url__votes, column: created_at, sourceColumn: id }
+        - {
+            table: relation__topic__publisher_type__topic__votes,
+            column: created_at,
+            sourceColumn: id,
+          }
+        - { table: relation__topic__related__post__votes, column: created_at, sourceColumn: id }
+        - { table: relation__topic__related__topic__votes, column: created_at, sourceColumn: id }
+        - { table: relation__topic__related__url__votes, column: created_at, sourceColumn: id }
+        - {
+            table: relation__topic__terms_of_service__url__votes,
+            column: created_at,
+            sourceColumn: id,
+          }
+        - { table: relation__user__category__topic__votes, column: created_at, sourceColumn: id }
+        - { table: rss_feed_item_votes, column: created_at, sourceColumn: id }
+        - { table: topic_votes, column: created_at, sourceColumn: id }
+        - { table: user_deletion_relation_impacts, column: created_at, sourceColumn: id }
+        - { table: user_vouch_votes, column: created_at, sourceColumn: id }
+      unanalyzableSql: ignore
+
+  - name: development-runtime helpers avoid generated UUIDv7 timestamp predicates
+    rule: postgres-generated-column-predicates
+    scope: repository
+    options:
+      importSpecifier: '@data-stores/psql'
+      executorFactoryNames: [beginTransaction, beginBoundedTransaction]
+      executorTypeNames: [TransactionQuery, QueryExecutor]
+      sqlInclude:
+        - backend/data-stores/psql/migrations/**/*.sql
+        - backend/data-stores/psql/views/**/*.sql
+        - backend/data-stores/psql/config-driven/**/*.sql
+      include:
+        - backend/test-helpers/entities/create-test-entities.mts
+        - backend/test-helpers/entities/rss-feeds.mts
+        - backend/test-helpers/entities/topics/core.mts
+        - backend/test-helpers/entities/urls.mts
+        - backend/test-helpers/entities/users-direct.mts
+      functions: [uuid_extract_timestamp]
+      requireArgumentIsPrimaryKey: false
+      clauses: [where, join, order-by]
+      extraGeneratedColumns:
+        - { table: agent_moderation_votes, column: created_at, sourceColumn: id }
+        - { table: hostname_votes, column: created_at, sourceColumn: id }
+        - { table: post_votes, column: created_at, sourceColumn: id }
+        - { table: relation__post__category__topic__votes, column: created_at, sourceColumn: id }
+        - {
+            table: relation__post__category__topic_alias__votes,
+            column: created_at,
+            sourceColumn: id,
+          }
+        - { table: relation__post__related__post__votes, column: created_at, sourceColumn: id }
+        - { table: relation__post__related__url__votes, column: created_at, sourceColumn: id }
+        - {
+            table: relation__rss_feed_item__category__topic__votes,
+            column: created_at,
+            sourceColumn: id,
+          }
+        - {
+            table: relation__rss_feed_item__category__topic_alias__votes,
+            column: created_at,
+            sourceColumn: id,
+          }
+        - { table: relation__topic__category__topic__votes, column: created_at, sourceColumn: id }
+        - { table: relation__topic__faq__post__votes, column: created_at, sourceColumn: id }
+        - { table: relation__topic__faq__url__votes, column: created_at, sourceColumn: id }
+        - { table: relation__topic__guide__url__votes, column: created_at, sourceColumn: id }
+        - { table: relation__topic__landing_page__url__votes, column: created_at, sourceColumn: id }
+        - {
+            table: relation__topic__publisher_type__topic__votes,
+            column: created_at,
+            sourceColumn: id,
+          }
+        - { table: relation__topic__related__post__votes, column: created_at, sourceColumn: id }
+        - { table: relation__topic__related__topic__votes, column: created_at, sourceColumn: id }
+        - { table: relation__topic__related__url__votes, column: created_at, sourceColumn: id }
+        - {
+            table: relation__topic__terms_of_service__url__votes,
+            column: created_at,
+            sourceColumn: id,
+          }
+        - { table: relation__user__category__topic__votes, column: created_at, sourceColumn: id }
+        - { table: rss_feed_item_votes, column: created_at, sourceColumn: id }
+        - { table: topic_votes, column: created_at, sourceColumn: id }
+        - { table: user_deletion_relation_impacts, column: created_at, sourceColumn: id }
+        - { table: user_vouch_votes, column: created_at, sourceColumn: id }
       unanalyzableSql: ignore
 
   - name: topics queries keep the active-topic filter

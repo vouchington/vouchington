@@ -54,7 +54,7 @@ describe('checkPostgresRuntimeGuard', () => {
       )
 
       const errors: string[] = []
-      checkPostgresRuntimeGuard(dir, [file], new Set(), schema, errors)
+      checkPostgresRuntimeGuard(dir, [file], schema, errors)
 
       expect(errors).toEqual([
         expect.stringContaining('query execution must start with a /* name */ annotation'),
@@ -72,7 +72,7 @@ describe('checkPostgresRuntimeGuard', () => {
     )
 
     const errors: string[] = []
-    checkPostgresRuntimeGuard(dir, [file], new Set(), schema, errors)
+    checkPostgresRuntimeGuard(dir, [file], schema, errors)
 
     expect(errors).toEqual([])
   })
@@ -83,7 +83,7 @@ describe('checkPostgresRuntimeGuard', () => {
     await track(dir, file, `export const UUID_ALLOWLIST = [['removed_table.id', 'reason']]\n`)
 
     const errors: string[] = []
-    checkPostgresRuntimeGuard(dir, [file], new Set(), schema, errors)
+    checkPostgresRuntimeGuard(dir, [file], schema, errors)
 
     expect(errors).toEqual([
       expect.stringContaining('stale PostgreSQL schema allowlist entry: removed_table.id'),

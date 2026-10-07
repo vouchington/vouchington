@@ -30,6 +30,7 @@ export async function createReferralClickNotification(
       WHERE n.user_id = ${referrerId}
         AND n.entity_type = 'referral_click'
         AND n.delivery_type = 'subscription'
+        -- no-mistakes-disable-next-line postgres-generated-column-predicates: No SQL UUIDv7 timestamp-to-bound helper exists; preserve the database-clock five-minute deduplication cutoff.
         AND n.created_at >= now() - interval '5 minutes'
         AND n.deleted_at IS NULL
     )
