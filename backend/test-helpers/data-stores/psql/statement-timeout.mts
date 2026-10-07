@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { read, write } from '@data-stores/psql'
-import { beginBoundedTransaction } from '@data-stores/psql/setup'
+import {
+  advisoryLockPool,
+  beginBoundedTransaction,
+  beginTransaction,
+} from '@data-stores/psql/setup'
 
 import { TEST_STATEMENT_TIMEOUT_MS } from '../../statement-timeout-constant.mts'
 
@@ -30,10 +34,9 @@ export function getWritePoolStatementTimeout(): Promise<number> {
 
 export async function runStatementTimeoutAttributionProbe(): Promise<void> {
   const lockKey = randomUUID()
-  await using holder = await beginBoundedTransaction({
-    connectionTimeoutMs: 10_000,
-    statementTimeoutMs: 5_000,
-  })
+  // Hold on the primary advisory-lock pool so a write-pool size of one still leaves a
+  // connection for the timed query. The read pool may point at a separate replica.
+  await using holder = await beginTransaction({ client: advisoryLockPool })
   await holder(
     '/* holdStatementTimeoutProbe */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
     [lockKey],
