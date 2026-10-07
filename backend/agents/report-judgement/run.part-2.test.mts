@@ -52,7 +52,7 @@ describe('runReportJudgementAgent', () => {
 
     await expect(findAiUsageRecordForPost(postId, 'report-judgement')).resolves.toMatchObject({
       model: 'gpt-5.4-nano-2026-03-17',
-      service_tier: 'flex',
+      openai_service_tier_id: 'flex',
       input_tokens: 200,
       output_tokens: 40,
       pricing_status: 'priced',

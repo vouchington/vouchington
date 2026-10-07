@@ -53,7 +53,7 @@ describe('runAppealResolutionAgent', () => {
 
     await expect(findAiUsageRecordForPost(postId, 'appeal-resolution')).resolves.toMatchObject({
       model: 'gpt-5.4-nano-2026-03-17',
-      service_tier: 'flex',
+      openai_service_tier_id: 'flex',
       input_tokens: 180,
       output_tokens: 35,
       pricing_status: 'priced',

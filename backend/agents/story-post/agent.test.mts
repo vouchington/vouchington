@@ -183,7 +183,7 @@ describe('agent', () => {
       findAiUsageRecordForAgent('story-post', { inputTokens: 411, outputTokens: 61 }),
     ).resolves.toMatchObject({
       model: 'gpt-5.4-nano-2026-03-17',
-      service_tier: 'flex',
+      openai_service_tier_id: 'flex',
       pricing_status: 'priced',
     })
   })
