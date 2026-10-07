@@ -83,8 +83,8 @@ importers:
         specifier: ^18.5.0
         version: 18.5.0
       eslint-plugin-no-mistakes:
-        specifier: ^0.77.1
-        version: 0.77.1(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
+        specifier: ^0.78.0
+        version: 0.78.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
       eslint-plugin-playwright:
         specifier: ^2.12.0
         version: 2.12.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
@@ -116,8 +116,8 @@ importers:
         specifier: ^6
         version: 6.40.0
       no-mistakes:
-        specifier: ^0.77.1
-        version: 0.77.1
+        specifier: ^0.78.0
+        version: 0.78.0
       oxfmt:
         specifier: ^0.72.0
         version: 0.72.0
@@ -1414,8 +1414,8 @@ importers:
         version: 0.37.0(@modelcontextprotocol/sdk@1.32.0(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(vitest@5.0.3)
     devDependencies:
       no-mistakes:
-        specifier: ^0.77.1
-        version: 0.77.1
+        specifier: ^0.78.0
+        version: 0.78.0
       oxfmt:
         specifier: ^0.72.0
         version: 0.72.0
@@ -13372,8 +13372,8 @@ importers:
         specifier: ^3.3.1
         version: 3.3.1
       no-mistakes:
-        specifier: ^0.77.1
-        version: 0.77.1
+        specifier: ^0.78.0
+        version: 0.78.0
       picomatch:
         specifier: ^4.0.4
         version: 4.0.7
@@ -13629,8 +13629,8 @@ importers:
         specifier: ^8.20.0
         version: 8.20.0
       no-mistakes:
-        specifier: ^0.77.1
-        version: 0.77.1
+        specifier: ^0.78.0
+        version: 0.78.0
       oxfmt:
         specifier: ^0.72.0
         version: 0.72.0
@@ -20110,8 +20110,8 @@ packages:
     resolution: {integrity: sha512-/veY75JbMK4j1yjvuUxuVsiS/hr/4iHs9FTT6cgTexxdE0Ly/glccBAkloH/DofkjRbZU3bnoj38mOmhkZ0lHw==}
     engines: {node: '>=12'}
 
-  eslint-plugin-no-mistakes@0.77.1:
-    resolution: {integrity: sha512-70kByvg2zlylwgGpp1Lpw+Hq3+plGg1lSdp0oV9J/z8j6pCXn01zJnPRZuQRmmtqzxIBzyL0MoPyq89PqWV8Cw==}
+  eslint-plugin-no-mistakes@0.78.0:
+    resolution: {integrity: sha512-ANvMGMQbdxok9s0uWNDzyInaLS3qEWbDkkGPKW69ZbuqsSgUeIDFuAlcBwgof7hIPI+vkaBKD8heZVAwRiTeCw==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
     peerDependencies:
       eslint: '>=9'
@@ -21456,30 +21456,30 @@ packages:
       sass:
         optional: true
 
-  no-mistakes-darwin-arm64@0.77.1:
-    resolution: {integrity: sha512-4KL3Z9pQpJJwbdXRt63HBjjvGElyF2wgqDf7ESLM12iryDA47xjRUZVWxOl/2u3L9aXR3vOpLU86eFhjGHJX5Q==}
+  no-mistakes-darwin-arm64@0.78.0:
+    resolution: {integrity: sha512-nHoqX1tFP4dHPxACbeq9evJJydkW6x8afJD7R6NGkMSnzo0OzxpYCvz/hldI4ENerBh9odu9H/8k7Zx6zPzyTw==}
     cpu: [arm64]
     os: [darwin]
 
-  no-mistakes-linux-arm64-gnu@0.77.1:
-    resolution: {integrity: sha512-OKZLIe4FLcxkb6U+nYdzV7MnxYhdMD5qBTVTURjahAYEH/eQGHVnkXCXFjOM/Uq/JA/r/N5st2GlWol+X9B7MQ==}
+  no-mistakes-linux-arm64-gnu@0.78.0:
+    resolution: {integrity: sha512-j48kB6c+/HTmq/6zpmZaiJ3reYS6KYqwnWkZo2SWNUhn+SIUEOyHChMVSk9Nc9FWua+WS+qO8eaHXNoazeyluw==}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  no-mistakes-linux-x64-gnu@0.77.1:
-    resolution: {integrity: sha512-7F1Tt19QciXOIbYIi5xTnZS50Yi7aKrHVAv61MK4pwkaOqYBzc0IKYeafCi2lM2LippLraS1A4LjlOtX0xqZcw==}
+  no-mistakes-linux-x64-gnu@0.78.0:
+    resolution: {integrity: sha512-C3PZfYKCSoMEabfAglai0vUocqY9UN4yMbnZarNBrxxPbBKGJ72OcTR2aa8lj6w7xtSpcHzO3Loe9Tb0tXHF9w==}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  no-mistakes-win32-x64-msvc@0.77.1:
-    resolution: {integrity: sha512-zbF/TtoV4hu0hbfA0IWnTdF3Slu1L3YBexx2LNiuQt4LaQIfEtse9705C3Oh6c7nMDLl9Ki8uSRs6nTfwv84BQ==}
+  no-mistakes-win32-x64-msvc@0.78.0:
+    resolution: {integrity: sha512-1lyau7pf0VkW0zo3FALvgaB8NQBCgdVgrjMwBCtakfw8vPg69He3SSHBhsTdQ+luqbXE+OKSD2RGh2ZmS4mHdg==}
     cpu: [x64]
     os: [win32]
 
-  no-mistakes@0.77.1:
-    resolution: {integrity: sha512-ABVXZhTOINqL7ITWLXGFAH9VKficWwt19wNKgyJIdiE3fWdXPpeVVb1qYnzVD02C5zGRrvKDgLUBSc3vOP4+dg==}
+  no-mistakes@0.78.0:
+    resolution: {integrity: sha512-BCrT+nj5+YUqj+XJbDFlitWbj6vFHYNz4Lo6FCB62kEWSFb1rNxOHLCDRUB3waZ4qMklIdF/bspF2xzvJFDQhQ==}
     hasBin: true
 
   node-app-attest@1.0.1:
@@ -29079,7 +29079,7 @@ snapshots:
 
   escape-string-regexp@5.0.0: {}
 
-  eslint-plugin-no-mistakes@0.77.1(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
+  eslint-plugin-no-mistakes@0.78.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
     dependencies:
       eslint: 10.5.0(jiti@2.7.0)(supports-color@10.2.2)
 
@@ -30584,24 +30584,24 @@ snapshots:
       - '@babel/core'
       - babel-plugin-macros
 
-  no-mistakes-darwin-arm64@0.77.1:
+  no-mistakes-darwin-arm64@0.78.0:
     optional: true
 
-  no-mistakes-linux-arm64-gnu@0.77.1:
+  no-mistakes-linux-arm64-gnu@0.78.0:
     optional: true
 
-  no-mistakes-linux-x64-gnu@0.77.1:
+  no-mistakes-linux-x64-gnu@0.78.0:
     optional: true
 
-  no-mistakes-win32-x64-msvc@0.77.1:
+  no-mistakes-win32-x64-msvc@0.78.0:
     optional: true
 
-  no-mistakes@0.77.1:
+  no-mistakes@0.78.0:
     optionalDependencies:
-      no-mistakes-darwin-arm64: 0.77.1
-      no-mistakes-linux-arm64-gnu: 0.77.1
-      no-mistakes-linux-x64-gnu: 0.77.1
-      no-mistakes-win32-x64-msvc: 0.77.1
+      no-mistakes-darwin-arm64: 0.78.0
+      no-mistakes-linux-arm64-gnu: 0.78.0
+      no-mistakes-linux-x64-gnu: 0.78.0
+      no-mistakes-win32-x64-msvc: 0.78.0
 
   node-app-attest@1.0.1:
     dependencies:
