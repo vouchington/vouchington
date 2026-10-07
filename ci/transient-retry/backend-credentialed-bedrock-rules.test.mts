@@ -36,12 +36,12 @@ const matchingBedrockInternalFailureLog = buildBackendCredentialedFailureLog([
 
 // Excerpt from PR #10800 attempt 1, run 33783131824, job 100742259504 (timestamps stripped; the
 // pnpm store package version is synthetic) — the AWS-SDK abort/timeout this rule previously
-// could not see because `backend/tools/search-posts-semantic.bedrock.test.mts` had never been
+// could not see because `backend/mcp/search-posts-semantic.bedrock.test.mts` had never been
 // hand-fingerprinted (see #10806/#10825).
 const realPr10800AbortTimeoutLog = [
   'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend-aws --project backend-bedrock --project backend-openai --project backend-openrouter --project backend-stripe --coverage "${FILES[@]}"',
-  ' ❯  backend-bedrock  backend/tools/search-posts-semantic.bedrock.test.mts (1 test | 1 failed) 6185ms',
-  ' FAIL   backend-bedrock  backend/tools/search-posts-semantic.bedrock.test.mts > search-posts-semantic tool Bedrock integration > returns results from real semantic search and clamps limits',
+  ' ❯  backend-bedrock  backend/mcp/search-posts-semantic.bedrock.test.mts (1 test | 1 failed) 6185ms',
+  ' FAIL   backend-bedrock  backend/mcp/search-posts-semantic.bedrock.test.mts > search-posts-semantic tool Bedrock integration > returns results from real semantic search and clamps limits',
   'AbortError: Request aborted',
   ' ❯ buildAbortError node_modules/.pnpm/@smithy+node-http-handler@0.0.0/node_modules/@smithy/node-http-handler/dist-cjs/index.js:15:32',
   ' ❯ requestBedrockEmbedding backend/services/bedrock-embeddings/single/request.mts:89:20',

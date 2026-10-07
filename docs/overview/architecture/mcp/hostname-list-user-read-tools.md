@@ -48,7 +48,7 @@ private lists out of the page and its cursor as if they did not exist.
 
 Every denial is the same `{ success: false, error: "List not found" }`: another user's private
 list, a private list read without the grant, a removed list, an unknown id and a malformed id
-cannot be told apart. `loadReadableList` (`backend/tools/list-read-access.mts`) decides this for
+cannot be told apart. `loadReadableList` (`backend/mcp/list-read-access.mts`) decides this for
 `get_list` and `get_list_items`, and `hasOwnedPrivateGrant` answers false instead of throwing, so a
 read never reveals which condition failed.
 

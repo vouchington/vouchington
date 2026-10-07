@@ -1,4 +1,4 @@
-import { findSchemaViolation } from '@voucha/tools/schema-validator'
+import { findSchemaViolation } from '@voucha/mcp/schema-validator'
 
 const NO_PARAMETERS = { type: 'object', properties: {} }
 

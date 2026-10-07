@@ -5,7 +5,7 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
-import { ALL_TOOLS } from '@voucha/tools/registry/index'
+import { ALL_TOOLS } from '@voucha/mcp/registry/index'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { getOptionalRequestOrigin } from '@modules/request-client-info'
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'

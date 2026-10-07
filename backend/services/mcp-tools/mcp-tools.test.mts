@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, vi } from 'vitest'
 import { ErrorCode } from '@modelcontextprotocol/sdk/types.js'
 import { createTestUser } from '@voucha/test-helpers'
-import { ALL_TOOLS } from '@voucha/tools/registry/index'
+import { ALL_TOOLS } from '@voucha/mcp/registry/index'
 import type { PrivateUser } from '@services/users/types'
 import { listMcpToolsForUser } from './list-tools.mts'
 import { callMcpTool } from './call-tool.mts'
@@ -176,8 +176,8 @@ describe('callMcpTool', () => {
 
   it('throws McpError when tool scope is absent', async () => {
     // find a write-only tool (readOnlyHint !== true)
-    const { listToolsForSurface, isToolMcpEligible } = await import('@voucha/tools/registry/select')
-    const { ALL_TOOLS } = await import('@voucha/tools/registry/index')
+    const { listToolsForSurface, isToolMcpEligible } = await import('@voucha/mcp/registry/select')
+    const { ALL_TOOLS } = await import('@voucha/mcp/registry/index')
     const writeTool = listToolsForSurface('mcp', ALL_TOOLS).find(
       t => isToolMcpEligible(t) && t.meta?.annotations?.readOnlyHint !== true,
     )

@@ -64,7 +64,7 @@ The bundled Rust N-API module is compiled for `aarch64-unknown-linux-gnu` with
   - `queues/*` aka `@queues/*` - GlideMQ queue clients, configuration, and enqueue APIs grouped by domain
   - `workers/*` aka `@workers/*` - worker registrations and processors grouped by domain
   - `agents/*` aka `@agents/*` - LLM Agents
-  - `tools/*` aka `@tools/*` - tools for LLM Agents
+  - `mcp/*` aka `@voucha/mcp/*` - tool definitions shared by MCP clients and internal agents
   - `api/*` aka `@voucha/api` - API route definitions
   - [`entrypoints/api/`](../../../../backend/entrypoints/api/) aka `@entrypoints/api` - the entry point for the API server
   - [`entrypoints/worker-cpu/`](../../../../backend/entrypoints/worker-cpu/) aka `@entrypoints/worker-cpu` - the entry point for the CPU worker (Rust NAPI, Lightpanda, sharp), which runs CPU-bound `@workers/*`

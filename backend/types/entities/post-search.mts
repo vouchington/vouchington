@@ -33,7 +33,7 @@ type PostSearchFilterOptions = {
   exclude_for_user_id?: string // Exclude muted/blocked hostnames, topics, and users for this user
   // Judge every candidate as a signed-out reader would, whoever `currentUser` is, so private data
   // stays out of the results even for its owner or an administrator. Only MCP `search_posts` sets it:
-  // it must stay aligned with `resolveReadableThread` in backend/tools/mcp-post-access.mts.
+  // it must stay aligned with `resolveReadableThread` in backend/mcp/mcp-post-access.mts.
   // Viewer-keyed filters (`exclude_for_user_id`, the `following_new` join) still follow `currentUser`.
   public_eligibility_only?: boolean
 

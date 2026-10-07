@@ -36,7 +36,7 @@ export const backendDataProjects: TestProjectConfiguration[] = [
       name: 'backend-data-stores',
       runner: './test-helpers/vitest.runner.glide-mq-worker-attachment-guard.mts',
       include: [
-        'backend/{agents,api,data-stores,entrypoints,md,queues,rss,scripts,service-registrations,services,sitemaps,tools,worker-runtime,workers}/**/*.test.mts',
+        'backend/{agents,api,data-stores,entrypoints,md,queues,rss,scripts,service-registrations,services,sitemaps,mcp,worker-runtime,workers}/**/*.test.mts',
         'backend/test-helpers/election-vote-stats.test.mts',
         'backend/test-helpers/services/posts/test-support.test.mts',
         'backend/test-helpers/services/users/test-support.test.mts',
@@ -127,7 +127,7 @@ export const backendDataProjects: TestProjectConfiguration[] = [
       name: 'backend-mocks',
       runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
       include: [
-        'backend/{agents,api,modules,data-stores,entrypoints,queues,scripts,services,sitemaps,tools,worker-runtime,workers}/**/*.mock.test.mts',
+        'backend/{agents,api,modules,data-stores,entrypoints,queues,scripts,services,sitemaps,mcp,worker-runtime,workers}/**/*.mock.test.mts',
       ],
       exclude: [
         '**/node_modules/**',

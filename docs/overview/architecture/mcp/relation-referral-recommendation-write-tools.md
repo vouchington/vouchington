@@ -117,5 +117,5 @@ body conflicts, and an in-progress submission returns its retry delay. See the
 [admission policy](../../../requirements/platform/agent-access.md#delegated-contribution-admission).
 
 The result schemas come from the checked-in request-contract components (`UserReferralLink`, `Post`), and
-`backend/tools/registry/referral-link-recommendation-output-schema.test.mts` pins them to the documented REST
+`backend/mcp/registry/referral-link-recommendation-output-schema.test.mts` pins them to the documented REST
 bodies.

@@ -1,6 +1,6 @@
 import type { Tool, ToolMeta } from '@services/openai-agents/tool-types'
-import { toolToMcpTool } from '@voucha/tools/registry/adapters'
-import { isToolMcpEligible, listToolsForSurface } from '@voucha/tools/registry/select'
+import { toolToMcpTool } from '@voucha/mcp/registry/adapters'
+import { isToolMcpEligible, listToolsForSurface } from '@voucha/mcp/registry/select'
 import { describe, expect, it } from 'vitest'
 import type { McpServerConfig } from '../config.mts'
 import { buildMcpCatalog } from './build-mcp-catalog.mts'

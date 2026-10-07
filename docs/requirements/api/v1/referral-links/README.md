@@ -68,7 +68,7 @@ service commands as the owner routes above, so ownership, administrator access t
 links, the child-link rule, link validation and the paid unfurl gate are identical. They need the
 `referral-links:read` and `referral-links:write` scopes and a Plus plan, and refuse a suspended
 account first. The validation and rule routes and the list and prioritized routes have no write
-tool. See [Write tools for relations, referral links and topic recommendations](../../../../overview/architecture/agent-tools/relation-referral-recommendation-write-tools.md).
+tool. See [Write tools for relations, referral links and topic recommendations](../../../../overview/architecture/mcp/relation-referral-recommendation-write-tools.md).
 
 ## POST /api/v1/referral-link-validations/:validationId/rules
 

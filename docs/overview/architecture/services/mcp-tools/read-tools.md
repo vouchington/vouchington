@@ -9,7 +9,7 @@ is not one of them but follows their [privacy rule](#privacy). The
 [community read tools](#community-read-tools) follow the same shape with the `communities:read`
 scope. The hostname, list and user read tools share
 this shape and are described in
-[Hostname, List and User Read Tools](../../agent-tools/hostname-list-user-read-tools.md).
+[Hostname, List and User Read Tools](../../mcp/hostname-list-user-read-tools.md).
 
 - `get_post`: `GET /api/v1/posts/:idOrSlug`; `post_id` (UUID or slug).
 - `get_post_ancestors`: `GET /api/v1/posts/:idOrSlug/ancestors`; `post_id` (UUID or slug).
@@ -18,7 +18,7 @@ this shape and are described in
 
 ## Result shape
 
-Each tool owns a closed output schema (`backend/tools/mcp-post-output.mts`, `mcp-story-output.mts`)
+Each tool owns a closed output schema (`backend/mcp/mcp-post-output.mts`, `mcp-story-output.mts`)
 whose fields are picked from the checked-in REST `Post`, `Story`, `ViewRssFeedItem` and `PageInfo`
 components, and `post-read-tools.output-schema.test.mts` pins every field to `request-contracts.json`. The
 result is `{ success: true, ... }` or `{ success: false, error }`, so expected bad input (a missing
@@ -30,7 +30,7 @@ like the `search_posts` and `search_rss_feed_items` results.
 
 ## Privacy
 
-MCP is parity minus private data. `resolveReadableThread` (`backend/tools/mcp-post-access.mts`)
+MCP is parity minus private data. `resolveReadableThread` (`backend/mcp/mcp-post-access.mts`)
 answers a post as `Post not found` unless every live node of its parent chain passes the shared
 `canViewPostsBatch` policy both as the credential owner and as a signed-out reader. A post the owner
 sees only through private visibility (a private audience, a private community, or their own
@@ -87,7 +87,7 @@ page that has no `q` filter (pinned posts are left out of every unfiltered page,
 
 The tools act as a signed-out reader for every caller, so they are parity minus private data. Each
 tool resolves its community through `loadCommunityForViewer(null, idOrSlug)`
-(`backend/tools/mcp-community-output.mts`), and a private, deleted or unknown community is
+(`backend/mcp/mcp-community-output.mts`), and a private, deleted or unknown community is
 `{ success: false, error: "Community not found" }` for its member, moderator, owner and an
 administrator alike. `search_communities` filters to public communities. Posts and pins use the
 public post eligibility filter, so a pinned post the public can no longer read is left out, and

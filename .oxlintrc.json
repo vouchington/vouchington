@@ -1201,6 +1201,14 @@
   },
   "overrides": [
     {
+      "files": ["**/backend/mcp/**/*.mts"],
+      "rules": {
+        // React Doctor skipped this style rule under /tools/. Preserve that treatment after
+        // the MCP package rename rather than refactoring tool implementations in a path change.
+        "react-doctor/js-combine-iterations": "off"
+      }
+    },
+    {
       "files": ["**/backend/**/*.mts", "**/backend/**/*.ts"],
       "rules": {
         "no-mistakes/postgres-no-manual-transaction": [

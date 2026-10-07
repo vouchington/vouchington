@@ -22,7 +22,7 @@
     "@services/oauth-authorization-server": "workspace:^",
     "@services/openai-agents": "workspace:^",
     "@services/users": "workspace:^",
-    "@voucha/tools": "workspace:^",
+    "@voucha/mcp": "workspace:^",
     "@voucha/types": "workspace:^",
     "http-errors": "^2.0.1",
     "uuid": "^14.0.2"

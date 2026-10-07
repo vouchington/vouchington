@@ -30,7 +30,7 @@ whole-response bound (step 4), so JSON escaping counts for them too.
 **One source of truth.** The checked-in `api-fixtures/v1/request-contracts.json` carries a
 `responses` map with the response schema of every route whose 200 body is a named response type,
 keyed like `operations`, and a `components` map of every named type. `route-response-schema.mts` in
-`backend/tools` resolves an entry into a self-contained schema (recursive components stay a `$ref`
+`backend/mcp` resolves an entry into a self-contained schema (recursive components stay a `$ref`
 into a root `$defs`). `createGetMyEntityListTool` derives its `{ success, result }` schema from its
 single `meta.api` endpoint this way. A tool that reshapes the REST body, or has no REST twin, owns
 its schema, built from those components and the shapes in `output-schema-shapes.mts`, with a test
@@ -165,7 +165,7 @@ argument/result logging.
 
 ## Related
 
-- Registry: [tools registry](../../../../../backend/tools/registry/)
+- Registry: [tools registry](../../../../../backend/mcp/registry/)
 - API: [MCP API](../../../../../backend/api/v1/mcp/)
 - API Keys: [api-keys service](../../../../../backend/services/api-keys/)
 

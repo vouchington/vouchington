@@ -67,7 +67,7 @@ export type ToolMeta = {
   // Human-readable name that MCP clients display instead of the snake_case tool name.
   title: string
   // Minimum membership plan required to dispatch this tool on the external user `mcp` surface
-  // (`tools/list`/`tools/call`; see backend/tools/registry/select.mts#isToolAllowedForPlan).
+  // (`tools/list`/`tools/call`; see backend/mcp/registry/select.mts#isToolAllowedForPlan).
   // Default 'free'. Native agents use the same MCP dispatch boundary. This paywall does not gate
   // direct REST routes or internal-agent calls. Must stay unset (or
   // 'free') on any tool exposed on `admin_mcp`, including a tool that also carries `mcp` — a
@@ -87,9 +87,9 @@ export type ToolMeta = {
   // Declares the result shape. The MCP adapter publishes it as `outputSchema` and returns the
   // result as `structuredContent`, validated against it. A tool that returns its REST twin's
   // body unchanged derives it from the generated response contract
-  // (backend/tools/route-response-schema.mts). A tool that reshapes the body, or has no REST twin,
+  // (backend/mcp/route-response-schema.mts). A tool that reshapes the body, or has no REST twin,
   // owns it, built from the named components that contract carries. A lookup tool that reports a
-  // miss as a normal result must admit that result too (backend/tools/output-schema-shapes.mts).
+  // miss as a normal result must admit that result too (backend/mcp/output-schema-shapes.mts).
   outputSchema?: ToolOutputSchema
 }
 

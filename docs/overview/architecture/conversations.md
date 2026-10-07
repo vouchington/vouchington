@@ -56,7 +56,7 @@ sanitizes them as external prompt content and records the model call's usage. SS
 in the API use the shared [cycle-expiry signal](backend/modules/sse-lifecycle/README.md).
 
 Native agents use the user MCP server over OAuth for agent tools. Conversation transcripts remain
-on the REST API described above. See [Agent Tools](agent-tools/README.md).
+on the REST API described above. See [MCP Tools](mcp/README.md).
 
 ## Context Links
 

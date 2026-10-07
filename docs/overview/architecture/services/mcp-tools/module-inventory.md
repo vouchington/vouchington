@@ -12,7 +12,7 @@
 | `call-tool.mts`                      | Execute a tool call with full authorization enforcement                                     |
 | `serialize-mcp-tool-result.mts`      | Bounded JSON serializer for MCP tool results                                                |
 | `build-tool-result.mts`              | Build the `tools/call` result; validate and attach `structuredContent` for declared schemas |
-| `@voucha/tools/schema-validator`     | The one Ajv setup for tool arguments and output schemas                                     |
+| `@voucha/mcp/schema-validator`       | The one Ajv setup for tool arguments and output schemas                                     |
 | `handle-request.mts`                 | Stateless per-request MCP transport using `WebStandardStreamableHTTPServerTransport`        |
 | `instructions.mts`                   | Per-surface server `instructions` sent on `initialize`                                      |
 | `index.mts`                          | Barrel: exports request handlers, helpers, and user/admin MCP configs                       |
@@ -21,4 +21,4 @@
 | `catalog/build-mcp-catalog.test.mts` | Snapshot every generated catalog artifact; fail any MCP tool with no output schema          |
 
 `catalog/find-api-hint-conflicts.mts` finds tools whose MCP hints disagree with the REST operations
-in `meta.api`; see [MCP Metadata](../../agent-tools/README.md#mcp-metadata).
+in `meta.api`; see [MCP Metadata](../../mcp/README.md#mcp-metadata).

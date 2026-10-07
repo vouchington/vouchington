@@ -200,7 +200,7 @@ describe('backend Vitest project config', () => {
       expect(owners[0]?.test?.globalSetup).toBeUndefined()
     }
     expect(dataMocks?.include).toContain(
-      'backend/{agents,api,modules,data-stores,entrypoints,queues,scripts,services,sitemaps,tools,worker-runtime,workers}/**/*.mock.test.mts',
+      'backend/{agents,api,modules,data-stores,entrypoints,queues,scripts,services,sitemaps,mcp,worker-runtime,workers}/**/*.mock.test.mts',
     )
     expect(dataMocks?.exclude).toContain('**/*.no-data.mock.test.mts')
   })

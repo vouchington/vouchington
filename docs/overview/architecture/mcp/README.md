@@ -1,6 +1,6 @@
-# Agent Tools
+# MCP Tools
 
-Reference for all LLM tool definitions registered in `backend/tools/registry/`. Tools are
+Reference for all LLM tool definitions registered in `backend/mcp/registry/`. Tools are
 the callable primitives exposed to server-side agents and MCP clients. Native agents connect
 to the user MCP server over OAuth, as described in [OAuth](../../../requirements/api/oauth/README.md).
 
@@ -8,9 +8,9 @@ See also:
 
 - [Generated tool catalog](catalog.md)
 - [Generated MCP catalog](../../../../api-fixtures/v1/mcp.json)
-- [Tool registry source](../../../../backend/tools/registry/index.mts)
+- [Tool registry source](../../../../backend/mcp/registry/index.mts)
 - [Tool type definitions](../../../../backend/services/openai-agents/tool-types.mts)
-- [Tool implementation directory](../../../../backend/tools/)
+- [Tool implementation directory](../../../../backend/mcp/)
 - [Agents that use these tools](../../../../backend/agents/AGENTS.md)
 
 ---
@@ -58,7 +58,7 @@ A tool may set `meta.outputSchema` (JSON Schema, `object` root) so `tools/call` 
 
 `meta.plan` sets the minimum membership plan required to dispatch a tool on the external
 user `mcp` surface (`tools/list` / `tools/call`; enforced by
-[`isToolAllowedForPlan`](../../../../backend/tools/registry/select.mts) in both
+[`isToolAllowedForPlan`](../../../../backend/mcp/registry/select.mts) in both
 `listMcpToolsForUser` and `callMcpTool`). Possible values:
 
 - `'free'` (default when absent) — available to all authenticated users
@@ -75,7 +75,7 @@ calls are outside this MCP gate. First-party native OAuth clients use the client
 The plan must stay unset (or `'free'`) on any tool exposed on `admin_mcp` — a single `plan`
 field cannot express separate per-surface plans, so a mutating tool cannot share the `mcp`
 and `admin_mcp` surfaces until the metadata model can (enforced by the registry invariant
-tests in `backend/tools/registry/registry.test.mts`).
+tests in `backend/mcp/registry/registry.test.mts`).
 
 Every mutating tool currently exposed on the user `mcp` surface requires `plan: 'plus'`; every
 user-`mcp` read tool stays `'free'`. No production tool requires `'pro'` yet — see the generated

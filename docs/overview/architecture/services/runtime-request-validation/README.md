@@ -34,7 +34,7 @@ contract data alongside handler and consumer changes; compiler discovery and its
 commands are removed. Follow the [fixture update flow](../../../../development/testing/backend/api-fixtures.md#update-flow).
 
 The same file carries a `responses` map, which this registry ignores: only `operations` define
-request coverage. `@voucha/tools` reads `responses` to derive MCP output schemas.
+request coverage. `@voucha/mcp` reads `responses` to derive MCP output schemas.
 
 ## Adoption
 

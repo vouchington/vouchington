@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { ErrorCode, LATEST_PROTOCOL_VERSION } from '@modelcontextprotocol/sdk/types.js'
 import { createTestUser } from '@voucha/test-helpers'
-import { ALL_TOOLS } from '@voucha/tools/registry/index'
+import { ALL_TOOLS } from '@voucha/mcp/registry/index'
 import type { PrivateUser } from '@services/users/types'
 import { ADMIN_MCP_SERVER_CONFIG, USER_MCP_SERVER_CONFIG, type McpServerConfig } from './config.mts'
 import { handleMcpHttpRequest } from './handle-request.mts'

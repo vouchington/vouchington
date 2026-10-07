@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, vi } from 'vitest'
 import { ErrorCode } from '@modelcontextprotocol/sdk/types.js'
 import { createTestUser } from '@voucha/test-helpers'
-import { ALL_TOOLS } from '@voucha/tools/registry/index'
+import { ALL_TOOLS } from '@voucha/mcp/registry/index'
 import type { Tool } from '@services/openai-agents/tool-types'
 import type { ApiScope } from '@modules/scopes'
 import type { PrivateUser } from '@services/users/types'
@@ -13,7 +13,7 @@ type McpUser = PrivateUser & { membership_plan: 'plus' | 'pro' | null }
 
 // Every mutating tool currently exposed on the user mcp surface. Kept in sync with the
 // `plan: 'plus'` metadata on each tool and the registry invariant in
-// backend/tools/registry/registry.test.mts ('every user-mcp mutating tool declares a plus or
+// backend/mcp/registry/registry.test.mts ('every user-mcp mutating tool declares a plus or
 // pro plan').
 const PLUS_GATED_WRITE_TOOL_NAMES = [
   'activate_referral_link',

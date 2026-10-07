@@ -2,7 +2,7 @@
 
 Source entrypoint: [backend/services/openai-agents/README.md](../../../../../backend/services/openai-agents/README.md)
 
-The `Tool` contract shared by the MCP tool catalog and `backend/tools`.
+The `Tool` contract shared by the MCP tool catalog and `backend/mcp`.
 
 ## Key exports
 

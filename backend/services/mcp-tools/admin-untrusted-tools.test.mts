@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { ALL_TOOLS } from '@voucha/tools/registry/index'
+import { ALL_TOOLS } from '@voucha/mcp/registry/index'
 import { createTestUser } from '@voucha/test-helpers'
 import { readStaffActionHistory } from '@voucha/test-helpers/staff-action-history'
 import { SCOPE_DEFINITIONS, type ApiScope } from '@modules/scopes'

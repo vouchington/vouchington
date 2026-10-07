@@ -1,8 +1,8 @@
 import { isDeepStrictEqual } from 'node:util'
 import { SCOPE_DEFINITIONS, type ApiScope } from '@modules/scopes'
 import type { Tool } from '@services/openai-agents/tool-types'
-import type { McpToolShape } from '@voucha/tools/registry/adapters'
-import { isToolMcpEligible, listToolsForSurface } from '@voucha/tools/registry/select'
+import type { McpToolShape } from '@voucha/mcp/registry/adapters'
+import { isToolMcpEligible, listToolsForSurface } from '@voucha/mcp/registry/select'
 import {
   ADMIN_MCP_SERVER_CONFIG,
   USER_MCP_SERVER_CONFIG,

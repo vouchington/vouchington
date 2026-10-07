@@ -43,7 +43,7 @@ resource scopes for the profile, notification, and preference write tools. Each 
 read, `mcp.user:read` with `mcp.user:write` covers them, and none is an exact grant. `profile:read`
 already authorized `get_my_profile`, so a profile write grant also lets the credential read the
 profile. See
-[Profile, Notification, and Preference Write Tools](../../../agent-tools/profile-notification-write-tools.md).
+[Profile, Notification, and Preference Write Tools](../../../mcp/profile-notification-write-tools.md).
 
 `communities:write`, `disputes:read/write`, `appeals:read/write` and `reports:write` are
 user-audience resource scopes for the community, review dispute, moderation appeal and content
@@ -52,7 +52,7 @@ report tools. Each write except `reports:write` requires its read, and `mcp.user
 `disputes:read` and `appeals:read` return only the credential owner's own cases. `reports:write` is
 write-only: it carries no read prerequisite because `create_content_report` returns only the report
 it filed. See
-[Community, Report, Dispute and Appeal Tools](../../../agent-tools/community-report-appeal-write-tools.md).
+[Community, Report, Dispute and Appeal Tools](../../../mcp/community-report-appeal-write-tools.md).
 
 `hostnames:read` and `users:read` are user-audience resource scopes for the hostname and user MCP
 read tools. Both tools read as a signed-out reader whatever the credential owner's role, so neither
@@ -64,7 +64,7 @@ list on its own.
 tool and the country, currency and platform statistics tools; both read the public data the
 signed-out REST routes return, and `mcp.user:read` covers them. The trending, referral program and
 own referral link read tools reuse `communities:read`, `topics:read` and `referral-links:read`. See
-[Trending, Referral, Search and Reference Read Tools](../../../agent-tools/search-reference-read-tools.md).
+[Trending, Referral, Search and Reference Read Tools](../../../mcp/search-reference-read-tools.md).
 
 `post-relations.owned-private:write` is an exact, non-inheritable user capability. It requires
 `entity-relations:write` (and therefore read) for API keys and OAuth grants, but broad

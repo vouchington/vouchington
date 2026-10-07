@@ -58,7 +58,7 @@ export const EMAIL_PREFERENCES_RESULT_SCHEMA = successSchema({
 /**
  * The settings the preferences tool can change, each one a field of PATCH /api/v1/users/:idOrSlug.
  * Financial-data visibility, consents, federation, processing restriction and the username are
- * deliberately not here: see docs/overview/architecture/agent-tools/profile-notification-write-tools.md.
+ * deliberately not here: see docs/overview/architecture/mcp/profile-notification-write-tools.md.
  */
 export const SETTING_FIELDS = [
   'follows_visibility',

@@ -29,12 +29,12 @@ owner can still view their lists.
 The `create_list`, `update_list`, `delete_list`, `add_list_item`, and `remove_list_item` MCP tools
 run the same list commands and ownership checks as the routes above. They need the `lists:read` and
 `lists:write` scopes and a Plus plan. `POST /api/v1/lists/:id/import` has no MCP tool. See
-[Bookmark and List Write Tools](../../../../overview/architecture/agent-tools/bookmark-list-write-tools.md).
+[Bookmark and List Write Tools](../../../../overview/architecture/mcp/bookmark-list-write-tools.md).
 
 The `get_my_lists`, `get_list` and `get_list_items` MCP tools read the same lists with the
 `lists:read` scope. A private list is returned only to its owner and only when the credential
 holds `post-relations.owned-private:write`; every other denial is the same `List not found`. See
-[Hostname, List and User Read Tools](../../../../overview/architecture/agent-tools/hostname-list-user-read-tools.md).
+[Hostname, List and User Read Tools](../../../../overview/architecture/mcp/hostname-list-user-read-tools.md).
 
 ## Performance
 
