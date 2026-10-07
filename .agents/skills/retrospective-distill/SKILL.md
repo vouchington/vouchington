@@ -59,9 +59,10 @@ subagent then returns one compact disposition summary: partition index, deduplic
 themes — each carrying the session IDs that contributed to it, a mapping the root preserves through
 every later merge and deduplication — and each session's disposition. Classify a session's entries
 by `data.type`, per `dev/retrospective-save/retrospective-entry.mts` (`data.type === "retrospective"`
-marks a retrospective entry), `dev/journal-checkpoint/checkpoint-entry.mts` (`isCheckpointEntry`
-marks a mechanically auto-appended journal entry via a structural `data.checkpoint` field, never the
-rendered `## Auto-append: ` heading), and
+marks a retrospective entry), `dev/retrospective-distill/checkpoint-entry.mts` (`isCheckpointEntry`
+marks a historic hook-written journal entry via a structural `data.checkpoint` field, never the
+rendered `## Auto-append: ` heading; hooks no longer append these, so they remain only until
+archived), and
 [agent-blackboard.md](../../../docs/development/agent-blackboard.md) (the CLI's `--file` convenience
 omits `type` entirely). A session is an **entry-type-unresolved** session when it has at least one
 entry whose `type` is missing or is anything other than `"journal"`/`"retrospective"`, or whose
@@ -72,7 +73,7 @@ this run, regardless of its age, rather than treating an untyped entry as journa
 Deduplicate versioned source events by session and `sourceEventId` before theme counting; conflicting
 payloads stay quarantined. A
 **checkpoint-only** session when it has at least one entry, no retrospective entry, and
-every entry satisfies `isCheckpointEntry` (journal auto-append noise, #9337); a **journal-only**
+every entry satisfies `isCheckpointEntry` (historic hook-written journal noise, #9337); a **journal-only**
 session when it has at least one entry, no retrospective entry, and at least one entry is not a
 checkpoint; a **zero-entry-child** session when it has no entries and a non-null `parentSessionId`;
 and a **zero-entry-root** session when it has no entries and a null `parentSessionId`. The
@@ -97,8 +98,9 @@ or updates issues. Journal-only, zero-entry-child, and zero-entry-root evidence 
 issue-filing rights, subject to the same duplicate, current-state, and dependency-skip checks as
 retrospective evidence, plus the
 redaction pass in [distilling.md](distilling.md): never quote a journal entry's raw command string or
-stderr verbatim in an issue body, since a journal checkpoint (unlike a retrospective, written under
-the canonical evidence-minimization boundary) can carry unredacted secrets. An entry-type-unresolved
+stderr verbatim in an issue body, since a journal entry, including a historic hook-written
+checkpoint (unlike a retrospective, written under the canonical evidence-minimization boundary),
+can carry unredacted secrets. An entry-type-unresolved
 session gets no issue-filing pass this run.
 
 Before archiving an eligible session, re-read its current `lastEntryAt` and compare it to the value

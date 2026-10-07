@@ -25,22 +25,49 @@ same local MCP wrapper and preauthorize exactly the eight-provider-tool catalog 
 
 ## Mandatory journal triggers
 
-Append a journal entry immediately, not at session end, when a check or CI run fails, a command is
-denied or escalated, implementation leaves the accepted plan, a second fix push lands on one PR, a
-doc/tool/skill gap costs more than one turn, or `no-mistakes` fails or returns a surprising result.
-Use this one-line grammar, then optional brief prose:
+Journal only friction. Append a journal entry immediately, not at session end, when:
+
+- a command is denied or escalated;
+- a tool, doc or skill gap costs more than one turn;
+- a first-party tool (`no-mistakes`, `pr-shepherd`, `dev/*` and `vouchington` commands) returns a
+  surprising result;
+- a CI failure, once per root cause (see the CI block below).
+
+A repeated fix push and leaving the plan are not triggers on their own. The retrospective's
+`## CI Failures` is built only from the `GitHub Actions` blocks below, and its Plan vs Actual covers
+plan changes. This list replaces the canonical skill's broader list of observations to capture. Use
+this one-line grammar, then optional brief prose:
 
 ```
 - `recurring|one-off` — <finding> — <file path(s)> — <evidence: PR / commit / exact command> — <issue #N|none>
 ```
+
+A CI failure uses this block grammar instead, one block per root cause, not per run. A flake counts,
+even one that passed on a later run with no code change. Record whether it was flaky, the gotcha, how
+to get passing CI in fewer commits, and whether the `no-mistakes` test impact assessment selected the
+failing test or check:
+
+```
+- `recurring|one-off` — `GitHub Actions` — <check name>: <gotcha, or flaky: <test>>
+  - Evidence: <run URL and commit>
+  - Root diagnostic: <root cause; for a flake, the nondeterminism observed>
+  - Disposition: no-mistakes impact: selected|missed (<gap>)|n/a (<why>); <fix commit, issue #N, or none>
+```
+
+Agents should know every test to update without running the whole suite locally, and the impact
+assessment is how. A failure in a test it did not name is `missed (<gap>)`, a `no-mistakes` gap: fix
+the impact rules or file an issue, never "run the full suite locally". A flake that `no-mistakes` ran
+and that passed locally is `selected`, recorded as a flake. `n/a (<why>)` is only for a failure with
+no test or check logic behind it, such as a cancelled run or a runner outage; a test or check that
+failed on its own is always `selected` or `missed`.
 
 Journal the observation before filing or commenting through
 [github-issue](../github-issue/SKILL.md). Append its issue disposition afterward; a one-off or
 unavailable filing uses `none`. Capture first-party tool and sandbox failures with the observed
 command boundary, sanitized diagnostic, occurrence count, and disposition. Architectural findings
 need a concrete affected path, an observed contract mismatch, and evidence; distinguish a finding,
-`none observed`, and `not assessed` or `unavailable`. Automatic checkpoints are only a fail-open safety net, never a substitute for this
-contemporaneous record.
+`none observed`, and `not assessed` or `unavailable`. Hooks do not journal on your behalf, so this
+contemporaneous record is the only source of journal entries.
 
 ## Credential failures
 

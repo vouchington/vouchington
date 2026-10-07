@@ -57,8 +57,11 @@ this form:
 - `recurring|one-off` — `GitHub Actions` — <workflow/job/step>
   - Evidence: <commit/push and GitHub run URL>
   - Root diagnostic: <first actionable error, including the affected test, file, or symbol>
-  - Disposition: <fixed by commit SHA, unresolved with issue reference, or classified as infrastructure/pre-existing with evidence>
+  - Disposition: no-mistakes impact: selected|missed (<gap>)|n/a (<why>); <fixed by commit SHA, unresolved with issue reference, or classified as infrastructure/pre-existing with evidence>
 ```
+
+A journaled block already has this shape (see the [`blackboard` skill](../blackboard/SKILL.md)); keep
+its `no-mistakes impact` result when grouping.
 
 Preserve an earlier failure even when a later attempt passes. Report the first/root failure rather
 than downstream aggregate or fan-in failures, and state the occurrence count when the same signature

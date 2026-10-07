@@ -32,8 +32,8 @@ Potentially verbose machine-readable results stay outside the main agent context
    report even though all four reports come from one analysis session. On aggregate failure it
    removes stale JSON and records the same bounded diagnostic and nonzero status for every report.
 4. A nonzero status, missing output, or invalid JSON is a failed discovery step. Surface the status
-   and at most the first 10 diagnostic or warning lines, then fix or journal the failure; never infer
-   success from an empty orchestration result.
+   and at most the first 10 diagnostic or warning lines, then fix the failure (journal it only under
+   a `blackboard` trigger); never infer success from an empty orchestration result.
 5. After validating the artifact, report only its status, result counts, direct file or symbol
    names, selected test commands, and diagnostics or warnings. Each per-command summary is capped at
    4 KiB total. List at most 20 entries per field, truncate every entry to 200 characters, and
@@ -150,4 +150,4 @@ no-mistakes impact recipes](https://github.com/jonathanong/filaments/blob/9c1616
 Use the aggregate driver for generic TS/JS planning; unscoped traversals in specialized recipes are
 reserved for their domain-specific questions.
 
-Use `rg` for unsupported file types and as an unexpected-zero cross-check, not as a silent replacement for supported `no-mistakes` analysis. Journal failed invocations, warnings, false or surprising results, and unexpected zero results for the retrospective.
+Use `rg` for unsupported file types and as an unexpected-zero cross-check, not as a silent replacement for supported `no-mistakes` analysis. Journal a false, surprising or unexpected-zero result under the `blackboard` triggers.
