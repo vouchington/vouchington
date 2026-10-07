@@ -7,7 +7,6 @@ import {
   type GeneratedColumnReferences,
   type SchemaSnapshot,
 } from 'vouchington-tooling/pg-schema-snapshot'
-import { collectColumnRefs } from './on-conflict-column-refs.mts'
 import { generatedArbiterViolation } from './on-conflict-generated-arbiter.mts'
 import {
   assignedColumnsFromOnConflict,
