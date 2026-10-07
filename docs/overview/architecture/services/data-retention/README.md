@@ -20,9 +20,11 @@ boundaries, and an ineligible user releases it without deletion.
   deletion counts. `limits` (`{ batchSize, maxBatches }`) is required and supplies every cleanup's
   batch size and per-run cap; the scheduled job passes `getDataRetentionLimits()` from `config.mts`
 - `cleanupSoftDeletedUsers()` — hard-deletes users soft-deleted more than 90 days ago, but leaves a
-  user with an incomplete `user_deletion_requests` lifecycle or administrator refund operation
-  intact; this prevents retention from bypassing durable privacy, provider-cleanup, and refund
-  reconciliation fences. Final purge also
+  user with an incomplete `user_deletion_requests` lifecycle, administrator refund operation, or
+  open legal-process preservation hold intact. Both candidate selection and the locked eligibility
+  recheck apply the hold fence. Release preserves the original deletion timestamp, so an overdue
+  account becomes eligible on the next run. This prevents retention from bypassing durable privacy,
+  provider-cleanup, refund-reconciliation, and legal-preservation fences. Final purge also
   revokes retained administrator grants, terminalizes their source state, and closes open activation
   periods before removing the account while preserving the grant audit rows
   and keeps repeat-infringer incidents and reviews through their retained account identity.

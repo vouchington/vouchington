@@ -3,16 +3,22 @@ import {
   countUserDeletionRequestsForTest,
   createTestUser,
   getModeratorActionRowsForTest,
+  hardDeleteTestUser,
   safeUsername,
+  softDeleteUserAt,
 } from '@voucha/test-helpers'
 import { CONFLICT } from '@modules/on-error/error-codes'
 import { deleteUser } from './delete.mts'
 import { getPrivateUserByAny } from './get.mts'
 import {
-  listUserPreservationHolds,
+  getUserPreservationHoldState,
   placeUserPreservationHold,
   releaseUserPreservationHold,
 } from './preservation-holds.mts'
+
+async function listUserPreservationHolds(...args: Parameters<typeof getUserPreservationHoldState>) {
+  return (await getUserPreservationHoldState(...args)).holds
+}
 
 const BLOCKED_MESSAGE =
   'Account deletion is blocked while a copyright incident or legal hold is unresolved'
@@ -79,15 +85,21 @@ describe('user preservation holds', () => {
       )
     })
 
-    it('refuses a new hold on an account that was already deleted', async () => {
+    it('places and releases a hold after the account is soft-deleted', async () => {
       const admin = await createTestUser({ administrator: true })
       const user = await createTestUser({ username: safeUsername('hold-deleted') })
-      await deleteUser(user, user)
+      await softDeleteUserAt(user.id, new Date())
 
-      await expect(placeUserPreservationHold(admin, user.id, 'matter-5')).rejects.toMatchObject({
-        status: 404,
-      })
-      await expect(listUserPreservationHolds(admin, user.id)).resolves.toEqual([])
+      const placed = await placeUserPreservationHold(admin, user.id, 'matter-5')
+      const released = await releaseUserPreservationHold(admin, user.id)
+
+      expect(released).toMatchObject({ id: placed.id, released_at: expect.any(Date) })
+      await expect(listUserPreservationHolds(admin, user.id)).resolves.toEqual([released])
+      const audit = await getModeratorActionRowsForTest({ targetUserId: user.id })
+      expect(audit.map(row => row.action_type)).toEqual([
+        'preservation_hold_release',
+        'preservation_hold_place',
+      ])
     })
   })
 
@@ -154,6 +166,25 @@ describe('user preservation holds', () => {
         placeUserPreservationHold(admin, MISSING_USER_ID, 'matter'),
       ).rejects.toMatchObject({ status: 404 })
     })
+
+    it('canonicalizes an uppercase UUID before placing a hold', async () => {
+      const admin = await createTestUser({ administrator: true })
+      const user = await createTestUser()
+
+      await expect(
+        placeUserPreservationHold(admin, user.id.toUpperCase(), 'matter-uppercase'),
+      ).resolves.toMatchObject({ account_user_id: user.id })
+    })
+
+    it('returns 404 after the users row has been hard-deleted', async () => {
+      const admin = await createTestUser({ administrator: true })
+      const user = await createTestUser()
+      await hardDeleteTestUser(user.id)
+
+      await expect(placeUserPreservationHold(admin, user.id, 'matter')).rejects.toMatchObject({
+        status: 404,
+      })
+    })
   })
 
   describe('releaseUserPreservationHold', () => {
@@ -189,6 +220,16 @@ describe('user preservation holds', () => {
         code: CONFLICT,
       })
       await expect(releaseUserPreservationHold(admin, MISSING_USER_ID)).rejects.toMatchObject({
+        status: 404,
+      })
+    })
+
+    it('returns 404 after the users row has been hard-deleted', async () => {
+      const admin = await createTestUser({ administrator: true })
+      const user = await createTestUser()
+      await hardDeleteTestUser(user.id)
+
+      await expect(releaseUserPreservationHold(admin, user.id)).rejects.toMatchObject({
         status: 404,
       })
     })

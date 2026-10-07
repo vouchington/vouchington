@@ -63,7 +63,9 @@ Stale token rotation retains the displaced attempt's deterministic object key so
 purge it after the lease expires.
 
 The daily `data-retention-cleanup-daily` cron permanently deletes a soft-deleted row after 90 days
-only when its deletion request is complete. It reassigns FK references that lack `ON DELETE
+only when its deletion request is complete and no legal-process preservation hold is open. Releasing
+the hold makes the row eligible from its original `deleted_at`; the 90-day clock does not restart.
+The purge reassigns FK references that lack `ON DELETE
 CASCADE`/`SET NULL` (for example verified identities) before the
 hard delete. Before removing the account, the same transaction revokes every retained administrator
 grant with reason `account_hard_deleted`, terminalizes its source state, and closes any open
@@ -118,8 +120,9 @@ alike, in any of these cases:
 The check runs in the request transaction under the user and author lifecycle locks, before the
 privacy fence, so a refused request changes nothing. The single message does not say which case
 applies, so it does not tell the account holder that legal process exists. `deleteUser` is the only
-path that sets `deleted_at`. The retention cron and the erasure phases act only on accounts that are
-already soft-deleted, so they have no second check.
+path that sets `deleted_at`. The immediate erasure phases act only on accounts that are already
+soft-deleted and do not check preservation holds. The final retention purge checks again under the
+user advisory lock, so a hold placed after soft deletion cannot race the hard delete.
 
 An operative repeat-infringer incident does not block deletion. The normal deletion phases erase
 the account's personal data. Incident rows and repeat-infringer review outcomes and dates remain
@@ -127,16 +130,19 @@ linked to `retained_user_identities` as the minimal 17 USC 512(i) record. Staff 
 review after deletion; a restrict or terminate outcome is recorded without attempting to suspend
 the deleted account.
 
-A preservation hold keeps an account's records while the owner decides, on a lawyer's advice, what
-a subpoena requires (see the
+A preservation hold preserves what remains of an account while the owner decides, on a lawyer's
+advice, what a subpoena requires (see the
 [§512(h) runbook](../../runbooks/copyright-notices.md#dmca-512h-subpoenas)). It stores who
 placed it, when, an encrypted short matter reference, and who released it and when. It has no
 duration or scope, because the owner decides both. Release writes the release columns once and the
 row is never deleted, so the history persists. All three user references target
 `retained_user_identities` with `ON DELETE RESTRICT`: the history survives the account's hard
 delete, a released hold never blocks it, and the hold cannot be removed by deleting the user.
-Placing a hold on an account that is already deleted is refused, so an open hold never coexists
-with a deleted account. An administrator releases a hold to let deletion proceed.
+An administrator can place or release a hold while the `users` row is soft-deleted. The administrator
+uses `/user/<id>/admin`, which renders only the account id and preservation-hold controls for such an
+account. Once the final purge removes the `users` row, hold changes are refused with `404`. An open
+hold pauses that final purge only: deletion phases that began immediately after soft deletion keep
+running, and may already have erased personal data before legal process arrives.
 
 ---
 

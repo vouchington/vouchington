@@ -88,6 +88,11 @@ export async function lockEligibleSoftDeletedUserForFinalPurge(
           WHERE membership.user_id = users.id
             AND operation.completed_at IS NULL
         )
+        AND NOT EXISTS (
+          SELECT 1 FROM user_legal_preservation_holds preservation_hold
+          WHERE preservation_hold.account_user_id = users.id
+            AND preservation_hold.released_at IS NULL
+        )
       FOR UPDATE OF users`,
     [targetId, cutoffDate, lowerBoundDate ?? null],
   )

@@ -937,8 +937,9 @@ for which that account belongs to the retention set above. A qualifying hold is 
 with an original claimant, the same material, a proceeding kind, a commencement time, and a
 designated-agent receipt, and with no resolution row. An open review alone does not block deletion.
 An administrator-placed legal-process preservation hold on the account, such as for a §512(h)
-subpoena, blocks deletion with the same 409. It is separate from these court and CCB holds, changes
-no restoration behavior, and has no duration or scope. See
+subpoena, blocks deletion with the same 409 before soft deletion. If placed afterward, it pauses the
+90-day final purge but not the immediate deletion phases. It is separate from these court and CCB
+holds, changes no restoration behavior, and has no duration or scope. See
 [account deletion](../users/ACCOUNT-DELETION-DATA-REQUEST.md#deletion-refusals) and the
 [§512(h) runbook](../../runbooks/copyright-notices.md#dmca-512h-subpoenas).
 

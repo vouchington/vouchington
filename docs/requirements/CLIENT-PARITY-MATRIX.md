@@ -103,7 +103,10 @@ server per audience (members and case participants: case-facing events only; sta
 a native client renders only the event types it receives and must not treat an unrecognized type
 as display-safe. Staff guest-capability management (issue, list, revoke, and information requests)
 is web-only staff tooling; its fixtures, including `web.copyright.guest-capabilities.listed`, have
-only the web consumer. The staff case's emailed information-request delivery state (queued, sent,
+only the web consumer. Preservation-hold placement, release, and history on the user admin page are
+also web-only administrator tooling. This includes the reduced `/user/<id>/admin` view for a
+soft-deleted account; native clients have no staff preservation-hold surface. The staff case's
+emailed information-request delivery state (queued, sent,
 failed, or bounced) comes from `delivery_intents` entries whose `delivery_kind` is
 `staff_information_request`; it is web-only too, and no native client renders it. The staff case
 also carries `claimant.misuse`, the claimant account's misuse ledger counts (or null when no account

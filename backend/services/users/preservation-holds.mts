@@ -1,11 +1,10 @@
-import { beginTransaction, query as primaryQuery } from '@data-stores/psql'
+import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
 import { createCodedError } from '@modules/on-error/create-coded-error'
 import { CONFLICT } from '@modules/on-error/error-codes'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
-import { lockActiveDataRequestUser } from '@services/account-data-requests/active-user-lock'
 import { recordModeratorAction } from '@services/moderator-actions'
 import { isAdminUser } from './authorization.mts'
 import type { PrivateUser } from './types.mts'
@@ -34,6 +33,11 @@ export type UserPreservationHold = {
   released_at: Date | null
 }
 
+export type UserPreservationHoldState = {
+  accountDeletedAt: Date | null
+  holds: UserPreservationHold[]
+}
+
 /** The reference is bound to its hold id, so a ciphertext cannot be replayed onto another hold. */
 function referencePurpose(holdId: string): string {
   return `user-legal-preservation-hold:${holdId}`
@@ -55,6 +59,21 @@ function assertAdmin(currentUser: PrivateUser | null): asserts currentUser is Pr
   if (!isAdminUser(currentUser)) throw createHttpError(403, 'Forbidden')
 }
 
+async function lockPreservationHoldUser(
+  query: QueryExecutor,
+  userId: string,
+): Promise<{ deleted_at: Date | null } | undefined> {
+  await query(sql`/* lockPreservationHoldUser:advisoryLock */
+    SELECT pg_advisory_xact_lock(hashtextextended(${userId.toLowerCase()}, 0))
+  `)
+  const { rows } = await query<{
+    deleted_at: Date | null
+  }>(sql`/* lockPreservationHoldUser:userExists */
+    SELECT deleted_at FROM users WHERE id = ${userId}
+  `)
+  return rows[0]
+}
+
 /** The reference is a short matter identifier; the message never echoes the submitted text. */
 export function parsePreservationHoldReference(reference: unknown): string {
   const trimmed = typeof reference === 'string' ? reference.trim() : ''
@@ -68,16 +87,15 @@ export function parsePreservationHoldReference(reference: unknown): string {
 }
 
 /**
- * Places the account's single open hold. While it is open, `deleteUser` refuses the account
- * (`assertCopyrightEvidenceAllowsDeletion`). The placement takes the same per-user advisory lock as
- * `deleteUser` and refuses a deleted account, so a hold can never be added behind an erasure that
- * has already committed. The reference is encrypted and is not copied to the moderator audit row.
+ * Places the account's single open hold. The placement takes the account-deletion advisory lock,
+ * accepts a soft-deleted account, and refuses an account whose users row has already been purged.
+ * The reference is encrypted and is not copied to the moderator audit row.
  */
 export async function placeUserPreservationHold(
   currentUser: PrivateUser | null,
   userId: string,
   reference: unknown,
-): Promise<UserPreservationHold> {
+): Promise<UserPreservationHold & { accountDeletedAt: Date | null }> {
   assertAdmin(currentUser)
   const plaintext = parsePreservationHoldReference(reference)
   const holdId = uuidv7()
@@ -85,7 +103,8 @@ export async function placeUserPreservationHold(
 
   await using query = await beginTransaction()
   // ast-grep-ignore: no-three-sequential-awaits -- lock, insert, and audit must run in order on one transaction client.
-  if (!(await lockActiveDataRequestUser(query, userId))) {
+  const account = await lockPreservationHoldUser(query, userId)
+  if (!account) {
     throw createHttpError(404, 'User not found')
   }
   const { rows } = await query<HoldRow>(sql`/* placeUserPreservationHold */
@@ -102,7 +121,7 @@ export async function placeUserPreservationHold(
     { query },
   )
   await query.commit()
-  return toHold(row)
+  return { ...toHold(row), accountDeletedAt: account.deleted_at }
 }
 
 /** Releases the open hold by stamping the release columns; the row and its history are kept. */
@@ -114,7 +133,7 @@ export async function releaseUserPreservationHold(
 
   await using query = await beginTransaction()
   // ast-grep-ignore: no-three-sequential-awaits -- lock, release, and audit must run in order on one transaction client.
-  if (!(await lockActiveDataRequestUser(query, userId))) {
+  if (!(await lockPreservationHoldUser(query, userId))) {
     throw createHttpError(404, 'User not found')
   }
   const { rows } = await query<HoldRow>(sql`/* releaseUserPreservationHold */
@@ -134,13 +153,11 @@ export async function releaseUserPreservationHold(
   return toHold(row)
 }
 
-/** Newest first, capped at {@link HISTORY_LIMIT}: one hold is open at a time, so history stays small. */
-export async function listUserPreservationHolds(
-  currentUser: PrivateUser | null,
+async function queryUserPreservationHolds(
+  query: QueryExecutor,
   userId: string,
 ): Promise<UserPreservationHold[]> {
-  assertAdmin(currentUser)
-  const { rows } = await primaryQuery<HoldRow>(sql`/* listUserPreservationHolds */
+  const { rows } = await query<HoldRow>(sql`/* listUserPreservationHolds */
     SELECT id, account_user_id, placed_by_id, reference_ciphertext, released_at, released_by_id, created_at
     FROM user_legal_preservation_holds
     WHERE account_user_id = ${userId}
@@ -148,4 +165,22 @@ export async function listUserPreservationHolds(
     LIMIT ${HISTORY_LIMIT}
   `)
   return rows.map(toHold)
+}
+
+/** Route-facing account state. History remains queryable internally after final user deletion. */
+export async function getUserPreservationHoldState(
+  currentUser: PrivateUser | null,
+  userId: string,
+): Promise<UserPreservationHoldState> {
+  assertAdmin(currentUser)
+  await using query = await beginTransaction()
+  // ast-grep-ignore: no-three-sequential-awaits -- the lifecycle lock must cover the existence and history reads.
+  const account = await lockPreservationHoldUser(query, userId)
+  if (!account) throw createHttpError(404, 'User not found')
+  const holds = await queryUserPreservationHolds(query, userId)
+  await query.commit()
+  return {
+    accountDeletedAt: account.deleted_at,
+    holds,
+  }
 }

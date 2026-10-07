@@ -1,7 +1,12 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-mock'
 import { UserPreservationHoldCard } from '../user-preservation-hold-card'
 import type { UserPreservationHold } from '@/types/api-responses'
+
+vi.mock(import('next/navigation'), () => navMockModule)
+
+const mockNav = createNavMock()
 
 const { mockList, mockPlace, mockRelease, mockToastSuccess, mockToastError } = vi.hoisted(() => ({
   mockList: vi.fn<VitestLooseMock>(),
@@ -45,11 +50,12 @@ function renderCard() {
 describe('UserPreservationHoldCard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockNav.reset()
   })
 
   it('places a hold with the trimmed reference and then shows it as open', async () => {
-    mockList.mockResolvedValue({ holds: [] })
-    mockPlace.mockResolvedValue({ hold: makeHold() })
+    mockList.mockResolvedValue({ account_deleted_at: null, holds: [] })
+    mockPlace.mockResolvedValue({ account_deleted_at: null, hold: makeHold() })
     renderCard()
 
     const place = await screen.findByRole('button', { name: /Place hold/ })
@@ -70,7 +76,7 @@ describe('UserPreservationHoldCard', () => {
   })
 
   it('releases an open hold and keeps it in the history', async () => {
-    mockList.mockResolvedValue({ holds: [makeHold()] })
+    mockList.mockResolvedValue({ account_deleted_at: null, holds: [makeHold()] })
     mockRelease.mockResolvedValue({
       hold: makeHold({ released_by_id: 'admin-1', released_at: '2026-09-02T00:00:00.000Z' }),
     })
@@ -86,7 +92,7 @@ describe('UserPreservationHoldCard', () => {
   })
 
   it('shows the API error and keeps the entered reference when placing fails', async () => {
-    mockList.mockResolvedValue({ holds: [] })
+    mockList.mockResolvedValue({ account_deleted_at: null, holds: [] })
     mockPlace.mockRejectedValue(new Error('User already has an open preservation hold'))
     renderCard()
 
@@ -103,7 +109,7 @@ describe('UserPreservationHoldCard', () => {
   })
 
   it('shows the fallback error when releasing rejects a non-Error value', async () => {
-    mockList.mockResolvedValue({ holds: [makeHold()] })
+    mockList.mockResolvedValue({ account_deleted_at: null, holds: [makeHold()] })
     mockRelease.mockRejectedValue('unavailable')
     renderCard()
 
@@ -123,5 +129,61 @@ describe('UserPreservationHoldCard', () => {
     expect(screen.getByText('Failed to load preservation holds.')).toBeInTheDocument()
     expect(screen.queryByLabelText('Matter reference')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Place hold/ })).not.toBeInTheDocument()
+  })
+
+  it('updates the description when the account was deleted after the page rendered', async () => {
+    mockList.mockResolvedValue({
+      account_deleted_at: '2026-09-01T00:00:00.000Z',
+      holds: [],
+    })
+
+    renderCard()
+
+    expect(
+      await screen.findByText(
+        'While a hold is open, this account’s final purge is paused. Immediate deletion steps are not paused.',
+      ),
+    ).toBeInTheDocument()
+    expect(mockNav.refresh).toHaveBeenCalledOnce()
+  })
+
+  it('does not refresh again when the server already rendered the deleted-account surface', async () => {
+    mockList.mockResolvedValue({
+      account_deleted_at: '2026-09-01T00:00:00.000Z',
+      holds: [],
+    })
+
+    render(
+      <UserPreservationHoldCard
+        userId='user-1'
+        isAccountDeleted
+      />,
+    )
+
+    await screen.findByText(
+      'While a hold is open, this account’s final purge is paused. Immediate deletion steps are not paused.',
+    )
+    expect(mockNav.refresh).not.toHaveBeenCalled()
+  })
+
+  it('updates the description when deletion races with hold placement', async () => {
+    mockList.mockResolvedValue({ account_deleted_at: null, holds: [] })
+    mockPlace.mockResolvedValue({
+      account_deleted_at: '2026-09-01T00:00:00.000Z',
+      hold: makeHold(),
+    })
+    renderCard()
+
+    fireEvent.change(await screen.findByLabelText('Matter reference'), {
+      target: { value: 'Matter 2026-0042' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /Place hold/ }))
+
+    expect(
+      await screen.findByText(
+        'While a hold is open, this account’s final purge is paused. Immediate deletion steps are not paused.',
+      ),
+    ).toBeInTheDocument()
+    expect(mockNav.refresh).toHaveBeenCalledOnce()
   })
 })

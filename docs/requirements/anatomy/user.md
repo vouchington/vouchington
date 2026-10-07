@@ -29,10 +29,11 @@ This is an internal provider-observation clock; see the
 
 ## States
 
-| State     | Condition      | Behavior                                                            |
-| --------- | -------------- | ------------------------------------------------------------------- |
-| Active    | Normal account | Full access per auth tier                                           |
-| Suspended | Admin action   | Account access restricted; admin-only action from `/user/:id/admin` |
+| State        | Condition                           | Behavior                                     |
+| ------------ | ----------------------------------- | -------------------------------------------- |
+| Active       | Normal account                      | Full access per auth tier                    |
+| Suspended    | Admin action                        | Account access restricted                    |
+| Soft-deleted | Account deletion has been requested | No ordinary profile; see preservation below. |
 
 ## Surfaces
 
@@ -137,8 +138,15 @@ count, and filter contract.
 | Report              | Signed-in, non-self viewers |
 | Edit profile        | Owner (self)                |
 | Suspend / Unsuspend | Admins only                 |
+| Preservation hold   | Admins only                 |
 
 Blocking a user implicitly removes any active follow on that user.
+
+An open legal-process preservation hold blocks an active account from starting deletion. After an
+account is already soft-deleted, administrators can still place or release a hold. At that stage the
+hold pauses the 90-day final purge, but it does not pause the immediate deletion steps. Ordinary
+lookup returns not found for a soft-deleted account; an administrator with its retained id can open
+`/user/:id/admin`, which then shows only the account id and preservation-hold card.
 
 ## Related
 
