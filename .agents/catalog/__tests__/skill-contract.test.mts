@@ -135,8 +135,13 @@ describe('Vouchington workflow skill adapters', () => {
     for (const plugin of plugins) {
       expect(claudeReadme).toContain(`claude plugin details ${plugin}`)
       expect(claudeReadme).toContain(`claude plugin install ${plugin} --scope user`)
-      expect(codexReadme).toContain(`codex plugin add ${plugin}`)
     }
+    for (const plugin of plugins.map(name => name.split('@')[0])) {
+      expect(codexReadme).toContain(`\`${plugin}\``)
+    }
+    expect(codexReadme).toContain('install-dependencies.sh')
+    expect(codexReadme).not.toContain('codex plugin add')
+    expect(codexReadme).not.toContain('codex plugin marketplace add')
     expect(claudeReadme).toContain('claude plugin marketplace list')
     expect(claudeReadme).not.toContain('--scope project')
     expect(claudeReadme).toContain('`.claude-plugin`')

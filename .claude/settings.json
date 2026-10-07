@@ -379,5 +379,45 @@
         ]
       }
     ]
+  },
+  "sandbox": {
+    "excludedCommands": [
+      "./dev/tmux-name",
+      "./dev/tmux-name *",
+      "./dev/tmux-agent-reminder",
+      "./dev/tmux-agent-reminder *",
+      "./dev/initialize",
+      "./dev/initialize *",
+      "./dev/tmux",
+      "./dev/tmux *",
+      "./dev/stop-services",
+      "./dev/stop-services *",
+      "./dev/status",
+      "./dev/status *",
+      "node dev/retrospective-save.mts",
+      "node dev/retrospective-save.mts *",
+      "node dev/check-blackboard.mts",
+      "node dev/check-blackboard.mts *",
+      "node dev/codex-hooks/persist-session-id.mts",
+      "node dev/codex-hooks/persist-session-id.mts *",
+      "node dev/codex-hooks/post-tool-use-command.mts",
+      "node dev/codex-hooks/post-tool-use-command.mts *",
+      "node dev/pr-description.mts",
+      "node dev/pr-description.mts *",
+      "./dev/reset",
+      "./dev/reset *",
+      "./dev/rebase-onto-main",
+      "./dev/rebase-onto-main *",
+      "./dev/reset-worktree",
+      "./dev/reset-worktree *",
+      "./dev/teardown",
+      "./dev/teardown *",
+      "./dev/cleanup",
+      "./dev/cleanup *",
+      "./dev/unstick-locks",
+      "./dev/unstick-locks *",
+      "./dev/valkey-logs",
+      "./dev/valkey-logs *"
+    ]
   }
 }

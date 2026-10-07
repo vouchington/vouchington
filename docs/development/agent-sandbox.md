@@ -10,8 +10,10 @@ again ([contract](https://github.com/vouchington/vouchington-machines/blob/main/
 Keeping it out of the checkout lets Claude Code cloud sessions, which have no OS sandbox, start here.
 
 This repository keeps project policy only: the PreToolUse hooks, `permissions.allow` and `deny`,
-Codex `prefix_rule`s, and worktree setup. A project permission allow is not an OS sandbox
-exemption. `decision="allow"` prefixes in `.codex/rules/default.rules` do run outside Codex's
+Codex `prefix_rule`s, worktree setup, and the one sandbox key it must own, `sandbox.excludedCommands`
+for its own `dev/` scripts (each as an exact entry plus a ` *` twin). The generic exclusions (`git *`,
+`gh *`, `docker *`, `pnpm …`, the `npx` tools, `ps aux`) belong to the machine config. A project
+permission allow is not an OS sandbox exemption. `decision="allow"` prefixes in `.codex/rules/default.rules` do run outside Codex's
 sandbox without a confirmation prompt, so keep them narrow. `git rebase`, `git stash`,
 `git cherry-pick`, `gh run`, `gh api`, and `gh workflow` are not Codex-pre-approved: they skip
 Claude `permissions.allow` after jonathanong/filaments PR #9574 and skip Codex `prefix_rule` after a
@@ -61,10 +63,12 @@ forms it never reads. The one allow is a single plain merge in an attended Claud
 
 ## Claude and Codex sandbox semantics are different, not parallel
 
-- **Claude:** `sandbox.excludedCommands` in the user's config = runs _outside_ the OS sandbox.
+- **Claude:** `sandbox.excludedCommands` (the machine's list, plus this project's `dev/` scripts) =
+  runs _outside_ the OS sandbox.
   `permissions.allow` = auto-approved (no confirmation prompt). These are **independent** — a
   command can be allowed (no prompt) and still fully OS-sandboxed, or excluded (unsandboxed) and
-  still require a prompt. The project sets only `permissions.allow` and `deny`.
+  still require a prompt. The project sets `permissions.allow` and `deny`, and exclusions for
+  its own `dev/` scripts only.
 - **Codex:** `prefix_rule(pattern=[...], decision="allow")` in `.codex/rules/*.rules` = auto-approved
   **and outside the OS sandbox** for the matched command. It combines review-skip with the
   per-command OS bypass Claude configures separately. `workspace-write` governs commands without
@@ -184,8 +188,8 @@ Claude `permissions.allow` pre-approves every `dev/` entrypoint with two blanket
 the whole command text and `*` matches any text, so a new `dev/` script skips the permission prompt
 without a settings change. Grok reuses these allow/deny strings through Claude-compat.
 
-Each `dev/` command that needs to run outside the OS sandbox also keeps a narrow allow entry, as an
-exact command plus a trailing-wildcard twin, such as `Bash(./dev/reset-worktree)` and
+Every `dev/` command in `sandbox.excludedCommands` also keeps a narrow allow entry with the same
+text, as an exact command plus a trailing-wildcard twin, such as `Bash(./dev/reset-worktree)` and
 `Bash(./dev/reset-worktree *)`. Auto mode may drop the blanket rules (below). Claude Code documents
 that auto mode keeps narrow rules, so these entries keep the scripts out of the classifier either
 way, as their per-script entries did before the blanket rules existed.
@@ -207,10 +211,10 @@ Claude Code keeps the blanket rules, `dev/` commands skip the classifier as well
 it drops them, other `dev/` commands go to the classifier, and the unsandboxed scripts rely on their
 narrow entries, which the docs say auto mode keeps.
 
-This is review-skip only. OS escalation is machine policy and stays per-script: a `dev/` command
-that must leave the OS sandbox needs an exclusion in the user's Claude config, plus the narrow allow
-pair above and a Codex `prefix_rule` (next section). A `dev/` script without an exclusion runs
-pre-approved but OS-sandboxed on Claude; on Codex it follows the ordinary sandboxed execution path.
+This is review-skip only. OS escalation stays per-script: a `dev/` command that must leave the OS
+sandbox needs its own `sandbox.excludedCommands` pair, the matching narrow allow pair above, and a
+Codex `prefix_rule` (next section). A `dev/` script without those entries runs pre-approved but
+OS-sandboxed on Claude; on Codex it follows the ordinary sandboxed execution path.
 
 Two deny rules, `Bash(./dev*/../*)` and `Bash(node dev*/../*)`, refuse the plain spelling of a path
 that climbs out of `dev/`, such as `./dev/../bin/sh`. They are a guardrail, not a boundary: they
@@ -233,8 +237,9 @@ allow rules can approve it too. An ask rule for
 would prompt on every unsandboxed retry, including `git push` and `gh`.
 
 [`dev/claude-settings-dev-allow.test.mts`](../../dev/claude-settings-dev-allow.test.mts) requires
-the `dev/` allow rules to be the two blanket rules plus narrow exact-and-wildcard pairs, and checks
-representative commands against the allow and deny rules.
+the `dev/` allow rules to be exactly the two blanket rules plus one narrow entry per `dev/` command
+in `sandbox.excludedCommands`, requires every project exclusion to be a `dev/` script with a
+wildcard twin, and checks representative commands against the allow and deny rules.
 
 ## Claude review-skip for the rebase lifecycle
 
@@ -278,24 +283,25 @@ inside a lease push.
 
 ## Keeping the project allowlists narrow
 
-Adding a new pre-approved command for a _different_ tool than the ones above touches the project's
-two permission surfaces:
+Adding a `dev/` script that must leave the OS sandbox touches three project surfaces:
 
-- `permissions.allow` in `.claude/settings.json` (the `Bash(...)` entry, `./dev/` and `node dev/`
-  commands included; see [Claude review-skip for dev/ commands](#claude-review-skip-for-dev-commands))
+- `sandbox.excludedCommands` in `.claude/settings.json`: the exact command plus its ` *` twin
+- `permissions.allow` in `.claude/settings.json` (the matching `Bash(...)` pair; see
+  [Claude review-skip for dev/ commands](#claude-review-skip-for-dev-commands))
 - a `prefix_rule(pattern=[...], decision="allow")` in `.codex/rules/default.rules`, only when Codex
   needs the command to run outside its sandbox without a prompt
 
-Leaving the OS sandbox is separate and belongs to the user's agent config. Review-skip breadth is
-also a separate decision. Do not add a Codex `prefix_rule` or Claude `permissions.allow` entry for
+A generic tool or command family (`git log`, `pnpm exec`, `docker`) leaves the OS sandbox through the
+user's agent config, never through a project exclusion. Review-skip breadth is a separate decision. Do not add a Codex `prefix_rule` or Claude `permissions.allow` entry for
 `git rebase` / `stash` / `cherry-pick` or `gh run` / `api` / `workflow` to "restore" parity; those
 families stay out of both review-skip lists. The only exceptions are the Claude
 [rebase lifecycle](#claude-review-skip-for-the-rebase-lifecycle) rules, which cannot start a rebase.
 
 [`dev/agent-sandbox-config.test.mts`](../../dev/agent-sandbox-config.test.mts) is the ownership and
 narrowness guard. It fails when `.claude/settings.json`, `.codex/config.toml`, or the Cursor and
-Grok config carries a host runtime key (sandbox, approvals, models, status line, plugins,
-marketplaces, MCP servers), when a Cursor or Grok sandbox profile or native hook file comes back,
+Grok config carries a host runtime key (approvals, models, status line, plugins, marketplaces, MCP
+servers, or any Claude `sandbox` key other than `excludedCommands`), when a Claude exclusion names
+anything but a `dev/` script, when a Cursor or Grok sandbox profile or native hook file comes back,
 and on a bare `git`/`gh`/`rtk`/`npx` prefix. It also requires the remaining git/gh prefixes, forbids
 the review-bypass families in `.codex/rules/default.rules`, and parses every Codex allow prefix. See
 [sandbox-audit.md](../../.agents/skills/retrospective/sandbox-audit.md#decision-criteria) for the
@@ -310,7 +316,7 @@ A sandboxed `git rebase`, `git reset --hard`, or `git checkout` can replace ordi
 then die with `unable to unlink old '.claude/settings.json'`. `HEAD` stays unchanged and the
 worktree is dirty. The commits are intact. `git reset --hard` restores the tracked files. Run the
 same git command again outside the sandbox, through the harness's normal one-command approval
-path unless the user's config already excludes `git *` and `./dev/rebase-onto-main`. A command shape
+path unless the user's config already excludes `git *` (this project excludes `./dev/rebase-onto-main`). A command shape
 Claude keeps sandboxed (`cd`, a substitution, a redirection, or a chain that is not entirely
 excluded) is the one that can die halfway. Retry that command unsandboxed.
 

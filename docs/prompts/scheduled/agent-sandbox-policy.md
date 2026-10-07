@@ -5,8 +5,9 @@ Review the project agent integration for Claude, Codex, Grok, and Cursor for sta
   line, plugins, marketplaces, MCP servers) belongs to
   [vouchington-machines](https://github.com/vouchington/vouchington-machines/blob/main/docs/agent-config.md)
   and is written into user-level config. This checkout owns only project policy: hooks, semantic
-  deny rules, narrow project command allows, `.codex/rules/default.rules`, and worktree setup. Do
-  not restore a project sandbox block, `.cursor/sandbox.json`, `.grok/sandbox.toml`, a Codex
+  deny rules, narrow project command allows, `.codex/rules/default.rules`, worktree setup, and
+  `sandbox.excludedCommands` for its own `dev/` scripts. Do not restore any other project sandbox
+  key (writable roots, network, credentials, a generic command exclusion), `.cursor/sandbox.json`, `.grok/sandbox.toml`, a Codex
   `[sandbox*]` table or `model` / `approval_policy` keys, `enabledPlugins`, an MCP registration, a
   generic preapproval list, or a broad host path. The
   [ownership guard](../../../dev/agent-sandbox-config.test.mts) enforces this; do not re-propose its
@@ -45,7 +46,9 @@ Review the project agent integration for Claude, Codex, Grok, and Cursor for sta
   `/../` deny rules are a review-skip decision
   ([Claude review-skip for dev/ commands](../../development/agent-sandbox.md#claude-review-skip-for-dev-commands),
   guarded by `dev/claude-settings-dev-allow.test.mts`). The only per-script `dev/` allow entries are
-  narrow exact-and-wildcard pairs; do not re-propose per-script entries for other `dev/` scripts.
+  the narrow twins of `dev/` entries in `sandbox.excludedCommands`; do not re-propose per-script
+  entries for other `dev/` scripts, and do not read the blanket rules' breadth as a reason to widen
+  `sandbox.excludedCommands`.
   Claude's rebase lifecycle rules (`git rebase --continue` / `--skip` / `--abort` and the
   `git push --force-with-lease=*` lease push) are a separate documented decision that cannot start a
   rebase
@@ -53,8 +56,8 @@ Review the project agent integration for Claude, Codex, Grok, and Cursor for sta
   Do not add `git rebase` / `stash` / `cherry-pick` or `gh run` / `api` / `workflow` to a project
   allow list, and do not widen Claude `Bash(gh pr *)`. Codex still having two-token `["gh","pr"]` is
   an intentional leftover.
-- Concrete targets to check first. Every `.codex/rules/default.rules` prefix and every narrow Claude
-  `permissions.allow` entry must name a script, path, or tool that still exists (package-script
+- Concrete targets to check first. Every `sandbox.excludedCommands` entry, every
+  `.codex/rules/default.rules` prefix, and every narrow Claude `permissions.allow` entry must name a script, path, or tool that still exists (package-script
   commands, `./ci/lint-links.sh`, `dev/` scripts); a Codex allow is also an OS-sandbox bypass for
   that command, so flag one whose breadth no longer matches the rationale in
   [agent-sandbox.md](../../development/agent-sandbox.md#claude-and-codex-sandbox-semantics-are-different-not-parallel).

@@ -2,9 +2,9 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 // Host runtime policy (sandbox, approvals, models, status line, plugins, MCP servers) belongs to the
-// user's agent config, which vouchington-machines writes and `./diagnose-agents.sh --repo` checks.
-// This project owns hooks, narrow permissions, deny rules, and worktree setup, and the project
-// permissions and Codex rules below are what these guards cover. Rationale:
+// user's agent config, which vouchington-machines writes. This project owns hooks, narrow
+// permissions, deny rules, worktree setup, and the sandbox exclusions for its own dev/ scripts; the
+// project permissions and Codex rules below are what these guards cover. Rationale:
 // docs/development/agent-sandbox.md.
 
 const repoFile = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
@@ -12,12 +12,12 @@ const repoPathExists = (path: string) => existsSync(new URL(`../${path}`, import
 
 const claudeSettings = JSON.parse(repoFile('.claude/settings.json')) as Record<string, unknown> & {
   permissions: { allow: string[] } & Record<string, unknown>
+  sandbox?: { excludedCommands?: string[] } & Record<string, unknown>
 }
 const codexConfig = repoFile('.codex/config.toml')
 const codexRules = repoFile('.codex/rules/default.rules')
 
 const CLAUDE_MACHINE_KEYS = [
-  'sandbox',
   'model',
   'effortLevel',
   'advisorModel',
@@ -87,6 +87,13 @@ describe('host runtime policy stays out of the project', () => {
     const present = CLAUDE_MACHINE_KEYS.filter(key => key in claudeSettings)
     if ('defaultMode' in claudeSettings.permissions) present.push('permissions.defaultMode')
     expect(present).toEqual([])
+  })
+
+  it('keeps only dev/ script exclusions in the Claude sandbox block', () => {
+    // The 19 generic exclusions (git, gh, docker, pnpm, npx tools, ps) are machine policy.
+    expect(Object.keys(claudeSettings.sandbox ?? {})).toEqual(['excludedCommands'])
+    const excluded = claudeSettings.sandbox?.excludedCommands ?? []
+    expect(excluded.filter(entry => !/^(?:\.\/dev\/|node dev\/)/u.test(entry))).toEqual([])
   })
 
   it('keeps machine-owned keys out of Codex config', () => {
