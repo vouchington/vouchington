@@ -9,8 +9,8 @@ type RouteRateLimitSubject = {
 export type ChargedMcpCalls = {
   // The planned audit events, with each refused call recorded as `rate_limited`.
   events: McpCallAuditEvent[]
-  // The retry delay of each refused call, by JSON-RPC request id.
-  rateLimitedCalls: ReadonlyMap<string | number, number>
+  // The retry delay of each refused call, by original message index.
+  rateLimitedCalls: ReadonlyMap<number, number>
 }
 
 // Charges every `tools/call` that will run to the bucket of each REST route it exercises, under the
@@ -23,13 +23,13 @@ export async function chargeMcpToolCalls(
   { identities, owner }: RouteRateLimitSubject,
 ): Promise<ChargedMcpCalls> {
   const events = [...plan.events]
-  const rateLimitedCalls = new Map<string | number, number>()
-  for (const { eventIndex, requestId, routeKeys } of plan.charges) {
+  const rateLimitedCalls = new Map<number, number>()
+  for (const { eventIndex, routeKeys } of plan.charges) {
     for (const routeKey of routeKeys) {
       // oxlint-disable-next-line no-await-in-loop -- a batch spends its budget in call order, and a call stops at its first spent route
       const result = await checkRouteRateLimit(routeKey, identities, owner)
       if (!result.limited) continue
-      rateLimitedCalls.set(requestId, result.retryAfterSeconds)
+      rateLimitedCalls.set(eventIndex, result.retryAfterSeconds)
       // The refusal is the whole outcome, so a copyright rationale (stored only for an accepted
       // call) is not carried onto the row.
       const { jsonrpcMethod, toolName } = plan.events[eventIndex] as McpCallAuditEvent

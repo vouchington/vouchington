@@ -227,6 +227,21 @@ describe('MCP tool calls and their REST route rate limit', () => {
     ).toBe(false)
   }, 60_000)
 
+  it('keeps duplicate-id route refusals at their message positions', async () => {
+    admitSensitiveCalls(1)
+    const { user, token } = await callerWithToken()
+    const body = [reportCall(1, await newPostId()), reportCall(1, await newPostId())]
+    await settleMeteredMcpResponses(() => mcpPost(token, body).expect(200))
+    expect(await countTestModerationReportsByReporter(user.id)).toBe(1)
+    expect((await readTestMcpCallAuditEvents(user.id)).map(event => event.outcome)).toEqual([
+      'accepted',
+      'rate_limited',
+    ])
+    expect(
+      (await checkUsageQuota('mcp_user', user.id, { limit: 1, windowSeconds: 900 })).limited,
+    ).toBe(true)
+  }, 60_000)
+
   it('leaves a tool without a REST twin on the transport bucket alone', async () => {
     admitSensitiveCalls(0)
     const { user, token } = await callerWithToken()
