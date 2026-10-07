@@ -7,8 +7,7 @@ const validUUID = '123e4567-e89b-12d3-a456-426614174000'
 const validUUID2 = '987fcdeb-51a2-43d1-b789-0123456789ab'
 
 describe('createGetSearchParameters', () => {
-  const now = Date.now()
-  const pastDate = new Date(now - 3600000)
+  const pastDate = new Date('2026-10-05T22:59:40.000Z')
 
   it('should apply default limit', () => {
     const getSearchParams = createGetSearchParameters({ maxLimit: 100, defaultLimit: 25 })
