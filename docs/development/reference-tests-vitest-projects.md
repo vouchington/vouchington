@@ -62,11 +62,16 @@ such as `bluesky-link-authorizations.test.mts`, belongs to `backend-data-stores`
 Do not force a reporter for local Vitest runs; Vitest's default reporter behavior automatically uses `minimal` when it detects an AI coding agent. CI reporter wiring lives in `vitest.config.mts` and is activated by workflow env vars.
 
 Backend Vitest projects alias `glide-mq` to an inline test shim. The shim drain waits for flushed
-jobs to reach a terminal state with a bounded wall-clock timeout. Nested `Queue.add` calls from
+owned jobs to complete, fail, or park using real queue transitions and the actual retry-promotion
+and dead-letter admission promises. Inspections coalesce notifications and re-read state after
+promotion, so transient retry parking cannot finish a drain. A four-second `AbortSignal` watchdog
+bounds hangs below the intended five-second test budget; its expiration reports diagnostics and
+never polls job state. Each drain removes its waiter and abort listener on settlement.
+Nested `Queue.add` calls from
 inside a shim Worker processor enqueue and kick the child queue without waiting, matching
-production. The shim still does not honor delay, deduplication, or ordering semantics, so tests
-must assert production queue options directly and use integration tests for processor and
-data-flow behavior.
+production. Its in-memory state and deduplication checks do not establish production transport
+ordering or retry-backoff timing. Assert production queue options directly and use integration
+tests for transport and data-flow behavior.
 
 `backend-real-glide-mq` is the narrow exception for a transport contract that cannot be established
 with the shim. It runs only `backend/**/*.real-glide.mock.test.mts` against the worktree Valkey with the
