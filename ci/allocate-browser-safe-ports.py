@@ -1,97 +1,95 @@
 #!/usr/bin/env python3
+"""Run vouchington-tooling's browser-safe port allocator.
+
+The allocator is a stdlib-only script that vouchington-tooling ships in
+scripts/, next to the runner port policy and Fetch-forbidden port catalog it
+reads. An installed workspace runs that copy. A job without an install (the
+image builds) fetches the tarball pinned in pnpm-lock.yaml, checks it against
+the lockfile integrity, and runs the script from it. This never resolves the
+package's dependency tree: `pnpm dlx` did, and failed whenever a dependency
+release straddled the minimumReleaseAge cutoff.
+"""
 from __future__ import annotations
 
-import importlib.util
+import base64
+import hashlib
+import io
 import os
-import shutil
+import re
 import subprocess
 import sys
+import tarfile
+import tempfile
+import urllib.request
 from pathlib import Path
 
-_HERE = Path(__file__).resolve().parent
-_REPO = _HERE.parent
+PACKAGE = "vouchington-tooling"
+SCRIPT = "allocate-browser-safe-ports.py"
+# The allocator reads these siblings of its script at runtime.
+PACKAGED_FILES = (SCRIPT, "fetch-forbidden-ports.json", "runner-port-policy.json")
+DEFAULT_REGISTRY = "https://registry.npmjs.org/"
+REPO = Path(__file__).resolve().parent.parent
 
 
-def packaged_allocator_path() -> Path | None:
-    try:
-        output = subprocess.check_output(
-            [
-                "node",
-                "-e",
-                "const {dirname,join}=require('node:path');const {createRequire}=require('node:module');const r=createRequire(process.argv[1]);process.stdout.write(join(dirname(r.resolve('vouchington-tooling/package.json')),'scripts/allocate-browser-safe-ports.py'))",
-                str(_REPO / "package.json"),
-            ],
-            text=True,
-        ).strip()
-    except (OSError, subprocess.CalledProcessError):
-        return None
-    path = Path(output)
+def installed_allocator() -> Path | None:
+    path = REPO / "node_modules" / PACKAGE / "scripts" / SCRIPT
     return path if path.is_file() else None
 
 
-def tooling_spec() -> str:
-    output = subprocess.check_output(
-        [
-            "node",
-            "-e",
-            "const pkg=require(process.argv[1]); const spec=pkg.dependencies?.['vouchington-tooling'] ?? pkg.devDependencies?.['vouchington-tooling']; if (!spec) throw new Error('vouchington-tooling is not listed in ' + process.argv[1]); process.stdout.write(spec)",
-            str(_REPO / "package.json"),
-        ],
-        text=True,
-    ).strip()
-    return output[1:] if output.startswith("^") else output
-
-
-def _load_packaged():
-    packaged = packaged_allocator_path()
-    if packaged is None:
-        return None, None
-    spec = importlib.util.spec_from_file_location("_vouchington_allocate", packaged)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"unable to load allocator from {packaged}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    # Ephemeral (GitHub-hosted) runners never resolve a numeric runner slot, so the
-    # packaged allocator's slice-vs-fallback logic always takes the bind(0) fallback
-    # path here. That fallback still consults RUNNER_PORT_POLICY for an additional
-    # exclusion check, so a policy file must exist — but it need not be repo-owned.
-    # Use the policy/forbidden-ports files vouchington-tooling ships next to the
-    # packaged script itself instead of a committed ci/runner-port-policy.json.
-    module.configure_policy(
-        packaged.with_name("runner-port-policy.json"),
-        packaged.with_name("fetch-forbidden-ports.json"),
+def locked_package() -> tuple[str, str]:
+    """Return the root importer's locked version and its tarball integrity."""
+    lockfile = (REPO / "pnpm-lock.yaml").read_text()
+    root = re.search(r"^  \.:\n((?: {4,}.*\n)+)", lockfile, re.MULTILINE)
+    version = root and re.search(
+        rf"^      {re.escape(PACKAGE)}:\n        specifier: .*\n        version: ([^\s(]+)",
+        root.group(1),
+        re.MULTILINE,
     )
-    return module, packaged
+    if not version:
+        raise SystemExit(f"pnpm-lock.yaml does not lock {PACKAGE} for the workspace root")
+    integrity = re.search(
+        rf"^  {re.escape(PACKAGE)}@{re.escape(version.group(1))}:\n"
+        r"    resolution: \{integrity: (sha512-[A-Za-z0-9+/]+=*)\}",
+        lockfile,
+        re.MULTILINE,
+    )
+    if not integrity:
+        raise SystemExit(f"pnpm-lock.yaml has no sha512 integrity for {PACKAGE}@{version.group(1)}")
+    return version.group(1), integrity.group(1)
 
 
-_MOD, _PACKAGED = _load_packaged()
-if _MOD is not None:
-    globals().update({name: getattr(_MOD, name) for name in dir(_MOD) if not name.startswith("_")})
+def fetch_verified_tarball(version: str, integrity: str) -> bytes:
+    registry = os.environ.get("npm_config_registry") or DEFAULT_REGISTRY
+    url = f"{registry.rstrip('/')}/{PACKAGE}/-/{PACKAGE}-{version}.tgz"
+    with urllib.request.urlopen(url, timeout=60) as response:
+        tarball = response.read()
+    actual = "sha512-" + base64.b64encode(hashlib.sha512(tarball).digest()).decode()
+    if actual != integrity:
+        raise SystemExit(f"{url} does not match the pnpm-lock.yaml integrity for {PACKAGE}@{version}")
+    return tarball
+
+
+def extract_allocator(tarball: bytes, destination: Path) -> Path:
+    """Write only the allocator's own files; never extract arbitrary members."""
+    with tarfile.open(fileobj=io.BytesIO(tarball), mode="r:gz") as archive:
+        for name in PACKAGED_FILES:
+            member = archive.getmember(f"package/scripts/{name}")
+            source = archive.extractfile(member) if member.isfile() else None
+            if source is None:
+                raise SystemExit(f"{PACKAGE} tarball has no regular file scripts/{name}")
+            (destination / name).write_bytes(source.read())
+    return destination / SCRIPT
+
+
+def main(arguments: list[str]) -> int:
+    installed = installed_allocator()
+    if installed is not None:
+        os.execv(sys.executable, [sys.executable, str(installed), *arguments])
+    tarball = fetch_verified_tarball(*locked_package())
+    with tempfile.TemporaryDirectory(prefix=f"{PACKAGE}-allocator-") as directory:
+        allocator = extract_allocator(tarball, Path(directory))
+        return subprocess.run([sys.executable, str(allocator), *arguments], check=False).returncode
 
 
 if __name__ == "__main__":
-    # No policy or forbidden-ports override is forwarded here: both the exec'd
-    # packaged script and the pnpm-dlx-fetched CLI default those flags to the
-    # runner-port-policy.json/fetch-forbidden-ports.json files vouchington-tooling
-    # ships next to itself, which is exactly what we want on GitHub-hosted runners.
-    forwarded = sys.argv[1:]
-    if _PACKAGED is not None:
-        os.execv(sys.executable, [sys.executable, str(_PACKAGED), *forwarded])
-    spec = tooling_spec()
-    if shutil.which("pnpm") is None:
-        raise RuntimeError(
-            "packaged allocator missing and pnpm is not on PATH; "
-            "activate pnpm before allocating ports on a cold or stale tree"
-        )
-    os.execvp(
-        "pnpm",
-        [
-            "pnpm",
-            "dlx",
-            "--package",
-            f"vouchington-tooling@{spec}",
-            "vouchington",
-            "allocate-browser-safe-ports",
-            *forwarded,
-        ],
-    )
+    sys.exit(main(sys.argv[1:]))
