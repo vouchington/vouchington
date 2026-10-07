@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 
 import { parse as load } from 'yaml'
+import picomatch from 'picomatch'
 import { describe, expect, it } from 'vitest'
 
 function jobSection(workflow: string, jobName: string): string {
@@ -42,7 +43,9 @@ describe('main-backend workflow', () => {
     const workflow = load(readFileSync('.github/workflows/main-backend.yml', 'utf8')) as {
       on?: { push?: { paths?: string[] } }
     }
-    expect(workflow.on?.push?.paths).toContain(checker)
+    const pushPaths = workflow.on?.push?.paths ?? []
+    expect(pushPaths).toContain(checker)
+    expect(pushPaths.some(glob => picomatch.isMatch(checker, glob, { dot: true }))).toBe(true)
   })
 
   it('contains only image publication selection, intent, and publication jobs', () => {
