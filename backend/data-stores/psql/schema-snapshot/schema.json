@@ -113191,28 +113191,6 @@
           "ordinalPosition": 9,
           "type": "uuid"
         },
-        "cursor_relation_high_water_id": {
-          "collation": null,
-          "comment": "Relation ID high-water mark that excludes post-capture related links from this generation prune.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5,
-          "type": "uuid"
-        },
-        "cursor_source_high_water_id": {
-          "collation": null,
-          "comment": "RSS item ID high-water mark that bounds this generation source snapshot.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 4,
-          "type": "uuid"
-        },
         "cursor_source_id": {
           "collation": null,
           "comment": "RSS item ID keyset cursor for the bounded source projection phase.",
@@ -113343,6 +113321,28 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "sweep_upper_bound_relation_id": {
+          "collation": null,
+          "comment": "Relation ID high-water mark that excludes post-capture related links from this generation prune.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "sweep_upper_bound_source_id": {
+          "collation": null,
+          "comment": "RSS item ID high-water mark that bounds this generation source snapshot.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
           "type": "uuid"
         },
         "updated_at": {

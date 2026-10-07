@@ -118757,26 +118757,6 @@
           "nullable": true,
           "ordinalPosition": 9
         },
-        "cursor_relation_high_water_id": {
-          "comment": "Relation ID high-water mark that excludes post-capture related links from this generation prune.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5
-        },
-        "cursor_source_high_water_id": {
-          "comment": "RSS item ID high-water mark that bounds this generation source snapshot.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 4
-        },
         "cursor_source_id": {
           "comment": "RSS item ID keyset cursor for the bounded source projection phase.",
           "dataType": "uuid",
@@ -118896,6 +118876,26 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2
+        },
+        "sweep_upper_bound_relation_id": {
+          "comment": "Relation ID high-water mark that excludes post-capture related links from this generation prune.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5
+        },
+        "sweep_upper_bound_source_id": {
+          "comment": "RSS item ID high-water mark that bounds this generation source snapshot.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4
         },
         "updated_at": {
           "comment": null,
