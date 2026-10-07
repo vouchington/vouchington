@@ -102,6 +102,17 @@ detect_posts_language_schema_drift() {
   fi
 }
 
+detect_migration_checksum_schema_drift() {
+  local database_url=$1 migrations_directory=$2 migration_rows migration_drift
+
+  migration_rows=$(PGCONNECT_TIMEOUT="${PGCONNECT_TIMEOUT:-10}" psql "$database_url" --no-password -At -F $'\t' -c "SELECT id, checksum FROM migrations ORDER BY id")
+  migration_drift=$(printf '%s\n' "$migration_rows" | node "$REPO_ROOT/dev/lib/migration-ledger-drift.mts" "$migrations_directory")
+
+  if [ -n "$migration_drift" ]; then
+    printf '%s\n' "$migration_drift"
+  fi
+}
+
 readonly -a SCHEMA_DRIFT_DETECTORS=(
   detect_recently_viewed_schema_drift
   detect_community_auto_tagger_schema_drift
@@ -109,7 +120,7 @@ readonly -a SCHEMA_DRIFT_DETECTORS=(
 )
 
 detect_stale_schema_reason() {
-  local database_url=$1 detector stale_schema_reason
+  local database_url=$1 migrations_directory=${2:-"$REPO_ROOT/backend/data-stores/psql/migrations"} detector stale_schema_reason
 
   for detector in "${SCHEMA_DRIFT_DETECTORS[@]}"; do
     stale_schema_reason=$("$detector" "$database_url")
@@ -118,4 +129,6 @@ detect_stale_schema_reason() {
       return 0
     fi
   done
+
+  detect_migration_checksum_schema_drift "$database_url" "$migrations_directory"
 }
