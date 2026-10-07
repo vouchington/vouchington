@@ -386,6 +386,26 @@ The seed maintenance pass runs `ANALYZE` on each seeded table that contributes t
 including RSS feed-item join tables such as `rss_feed_item_sources`, so replayed feed queries use
 fresh local planner statistics.
 
+## Declarative plan contracts
+
+Declare a scenario's plan contract next to its service call in `run-scenarios/`.
+The registry validates scenario identities and expectation kinds, then verifies that every
+registered scenario produced a captured result. The evaluator in `plan-gates.mts` implements
+`maxProcessedRows`, `usesIndexes`, `queryBinds`, `forbidCorrelatedAggregates`, and `singleLeaf`.
+Structural checks that do not fit these kinds have names in the same registry.
+All gates traverse plans through `collectPlanNodes`; processed work counts returned rows,
+filter removals, and index rechecks, multiplied by actual loops.
+
+Universal checks apply to every captured scenario. An executing read of an unbounded partitioned
+parent must use one leaf unless that scenario declares a `crossPartition` reason for the parent.
+Retention-window queries that span leaves also declare a reason. The sequential-scan gate
+compares a scenario's declared fixture counts against `SEQUENTIAL_SCAN_SEEDED_ROW_THRESHOLD` in
+`plan-gates.mts`; an executing `Seq Scan` on an unbounded relation above that threshold fails.
+A nonempty scan without a declared fixture count also fails, so new relations cannot silently bypass
+the check.
+Keep fixture counts current when changing seeds, and declare intentional cross-partition work
+beside the scenario instead of bypassing the evaluator.
+
 ## Adding more queries
 
 Add service calls through `runAndCapture()` and update `scenario-manifest.mts` with the new stable

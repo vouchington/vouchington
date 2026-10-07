@@ -2,6 +2,7 @@ import { read } from '@data-stores/psql'
 import { isFirstCommunityPost } from '@services/communities/ban-evasion'
 import { runAndCapture } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
+import { registerScenarioContract } from '../plan-expectations.mts'
 
 export async function runEmbeddingReconciliationScenarios(): Promise<void> {
   const { rows: posts } = await read<{ id: string; community_id: string; created_by_id: string }>(
@@ -23,6 +24,12 @@ export async function runEmbeddingReconciliationScenarios(): Promise<void> {
   if (!post?.community_id || !post.created_by_id) {
     throw new Error('Missing seeded community post for first-post lookup')
   }
+  registerScenarioContract('first-community-post-id-index', {
+    expectations: [{ kind: 'custom', name: 'embeddingFirstPost' }],
+    crossPartition: {
+      posts: 'The first-post lookup checks an author and community across post id ranges.',
+    },
+  })
   await runAndCapture('first-community-post-id-index', async () => {
     const first = await isFirstCommunityPost(post.community_id, post.created_by_id, post.id)
     if (!first) throw new Error('Selected post must be the first live post in its community')

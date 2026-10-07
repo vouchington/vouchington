@@ -13,6 +13,7 @@ import type { PrivateUser } from '@services/users/types'
 import { writeFileSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { assertRequiredPlanShape } from './plan-gates.mts'
+import { ensureScenarioContract } from './plan-expectations.mts'
 import { seedUuid } from './seed-data/common.mts'
 import { SEED_ANCHOR_DATE_ENV } from './seed-data/seed-anchor.mts'
 
@@ -135,6 +136,7 @@ export async function runAndCapture(
   captureQueryName?: string | readonly string[],
   explainOptions: { localSettings?: Readonly<Record<string, string>> } = {},
 ): Promise<void> {
+  ensureScenarioContract(label)
   console.log(`Running: ${label}`)
   clearCapturedQueries()
   enableQueryCapture()

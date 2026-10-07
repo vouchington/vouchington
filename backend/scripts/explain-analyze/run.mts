@@ -3,10 +3,12 @@ import {
   assertScenarioManifest,
   assertSeedAnchorMatches,
   getCompletedScenarioIds,
+  getResults,
   prepareOutputDir,
   writeResults,
 } from './run-support.mts'
 import { EXPLAIN_SCENARIO_MANIFEST } from './scenario-manifest.mts'
+import { assertPlanRegistry } from './plan-expectations.mts'
 import { runEntityAndCommunityScenarios } from './run-scenarios/entities-and-communities.mts'
 import { runFeedAndMetricScenarios } from './run-scenarios/feed-and-metrics.mts'
 import { runHeavyFollowScenarios } from './run-scenarios/heavy-follows.mts'
@@ -43,6 +45,7 @@ async function main() {
     await runCopyrightStatementFactsScenarios()
     await runEmbeddingReconciliationScenarios()
     assertScenarioManifest(getCompletedScenarioIds(), EXPLAIN_SCENARIO_MANIFEST)
+    assertPlanRegistry(getResults().map(result => result.scenario_id ?? ''))
   } finally {
     writeResults()
   }

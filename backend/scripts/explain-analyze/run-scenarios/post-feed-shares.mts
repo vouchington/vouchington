@@ -4,9 +4,14 @@ import { getPostFeedIds } from '@services/feeds'
 import { heavyFollowUser, runAndCapture, seedUser } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
 import { POST_SHARE_EMPTY_USER_INDEX } from '../seed-data/post-feed-shares.mts'
+import { registerScenarioContract } from '../plan-expectations.mts'
 
 export async function runPostFeedShareScenarios(): Promise<void> {
   for (const feedType of ['all', 'follow_topics'] as const) {
+    registerScenarioContract(`post-feed-shares-disabled-${feedType}`, {
+      expectations: [{ kind: 'custom', name: 'postShareTargets' }],
+      crossPartition: { posts: 'The feed ranks direct posts across id ranges.' },
+    })
     await runAndCapture(`post-feed-shares-disabled-${feedType}`, async () => {
       const page = await getPostFeedIds(heavyFollowUser as PrivateUser, {
         feed_type: feedType,
@@ -16,6 +21,10 @@ export async function runPostFeedShareScenarios(): Promise<void> {
         throw new Error('Disabled share feed must return direct deliveries only')
     })
   }
+  registerScenarioContract('post-feed-shares-empty', {
+    expectations: [{ kind: 'custom', name: 'postShareTargets' }],
+    crossPartition: { posts: 'The feed ranks direct posts across id ranges.' },
+  })
   await runAndCapture('post-feed-shares-empty', async () => {
     const page = await getPostFeedIds(
       { ...seedUser, id: seedUuid(POST_SHARE_EMPTY_USER_INDEX, '01') } as PrivateUser,
@@ -44,6 +53,10 @@ async function runSharePages(
   options: PostFeedOptions,
 ): Promise<void> {
   let first: PostFeedResponse | undefined
+  registerScenarioContract(scenarioId, {
+    expectations: [{ kind: 'custom', name: 'postShareTargets' }],
+    crossPartition: { posts: 'The feed ranks direct and shared posts across id ranges.' },
+  })
   await runAndCapture(scenarioId, async () => {
     first = await getPostFeedIds(user, options)
     if (!first.results.some(row => row.delivery_type === 'share'))
@@ -53,6 +66,10 @@ async function runSharePages(
   if (!first?.page_info.has_next_page || !after)
     throw new Error(`${scenarioId} must have a continuation page`)
   const previousIds = new Set(first.results.map(row => row.id))
+  registerScenarioContract(`${scenarioId}-after`, {
+    expectations: [{ kind: 'custom', name: 'postShareTargets' }],
+    crossPartition: { posts: 'The feed ranks direct and shared posts across id ranges.' },
+  })
   await runAndCapture(`${scenarioId}-after`, async () => {
     const next = await getPostFeedIds(user, { ...options, after })
     if (!next.results.length || next.results.some(row => previousIds.has(row.id)))

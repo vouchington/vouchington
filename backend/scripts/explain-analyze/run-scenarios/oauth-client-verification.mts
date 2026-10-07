@@ -8,6 +8,7 @@ import {
   oauthClientVerificationSeedId,
 } from '../seed-data/oauth-client-verification.mts'
 import { runAndCapture } from '../run-support.mts'
+import { registerScenarioContract } from '../plan-expectations.mts'
 
 const OAUTH_CLIENT_VERIFICATION_PAGE_LIMIT = 50
 const OAUTH_CLIENT_VERIFICATION_LATE_CURSOR_REMAINING_VERIFIED_COUNT =
@@ -18,6 +19,9 @@ const OAUTH_CLIENT_VERIFICATION_LATE_CURSOR_INDEX =
 
 export async function runOAuthClientVerificationScenarios(): Promise<void> {
   await assertOAuthClientVerificationSeed()
+  registerScenarioContract('oauth-client-verification-verified-page', {
+    expectations: [{ kind: 'custom', name: 'paginationSpecial' }],
+  })
   await runAndCapture('oauth-client-verification-verified-page', async () => {
     const page = await listOAuthClientsForVerification({
       verification: 'verified',

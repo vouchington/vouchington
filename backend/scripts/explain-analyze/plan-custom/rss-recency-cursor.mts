@@ -1,6 +1,5 @@
 import type { ExplainResult } from '@data-stores/psql'
-import { collectPlanNodes } from './plan-nodes.mts'
-import { RSS_RECENCY_LATE_CURSOR_PAGE_SIZE } from './seed-data/common.mts'
+import { collectPlanNodes } from '../plan-nodes.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 export function assertRssRecencyLateCursorPlan(result: ExplainResult): void {
@@ -18,22 +17,10 @@ export function assertRssRecencyLateCursorPlan(result: ExplainResult): void {
       /ROW\(published_at, id\) < ROW\(/u.test(condition)
     )
   })
-  const sourceWork = scans.reduce(
-    (work, node) =>
-      work +
-      (Number(node['Actual Rows'] ?? 0) +
-        Number(node['Rows Removed by Filter'] ?? 0) +
-        Number(node['Rows Removed by Index Recheck'] ?? 0)) *
-        Number(node['Actual Loops'] ?? 1),
-    0,
-  )
-  if (
-    !hasCursorBound ||
-    scans.some(node => node['Node Type'] === 'Seq Scan') ||
-    sourceWork > RSS_RECENCY_LATE_CURSOR_PAGE_SIZE + 1
-  ) {
+
+  if (!hasCursorBound || scans.some(node => node['Node Type'] === 'Seq Scan')) {
     throw new Error(
-      `${result.name} must use the precise (published_at, id) cursor as an index bound with at most ${RSS_RECENCY_LATE_CURSOR_PAGE_SIZE + 1} RSS candidate rows; observed ${sourceWork}`,
+      `${result.name} must use the precise (published_at, id) cursor as an index bound`,
     )
   }
 }

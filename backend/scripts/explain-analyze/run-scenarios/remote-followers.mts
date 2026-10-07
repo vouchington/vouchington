@@ -9,6 +9,7 @@ import {
 import { seedUuid } from '../seed-data/common.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import * as services from '../run-services.mts'
+import { registerScenarioContract } from '../plan-expectations.mts'
 
 const { listRemoteFollowerInboxPage } = services
 const REMOTE_FOLLOWER_PAGE_LIMIT = getRemoteActorsWorkLimit('follower_inbox_batch_size') + 1
@@ -16,6 +17,9 @@ const LATE_CURSOR_INDEX = REMOTE_FOLLOWER_SEED_COUNT - REMOTE_FOLLOWER_PAGE_LIMI
 
 export async function runRemoteFollowerScenarios(): Promise<void> {
   await assertRemoteFollowerSeed()
+  registerScenarioContract('remote-follower-inbox-late-cursor', {
+    expectations: [{ kind: 'custom', name: 'remoteFollowers' }],
+  })
   await runAndCapture('remote-follower-inbox-late-cursor', async () => {
     const page = await listRemoteFollowerInboxPage(
       seedUser.id,

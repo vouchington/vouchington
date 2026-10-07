@@ -16,6 +16,7 @@ import {
   writeResults,
 } from './run-support.mts'
 import { EXPLAIN_SCENARIO_MANIFEST } from './scenario-manifest.mts'
+import { registerScenarioContract, resetScenarioContracts } from './plan-expectations.mts'
 
 describe('EXPLAIN query capture', () => {
   it('rejects scenarios that capture no SQL', () => {
@@ -50,7 +51,15 @@ describe('EXPLAIN query capture', () => {
 })
 
 describe('collectAndGate', () => {
+  beforeEach(() => {
+    resetResults()
+    resetScenarioContracts()
+  })
+
   it('collects a result before its plan-shape gate throws', () => {
+    registerScenarioContract('entity-relations-newest', {
+      expectations: [{ kind: 'custom', name: 'relationListingOrder' }],
+    })
     const failing: ExplainResult = {
       name: 'entity-relations-newest',
       query_text: '',
@@ -80,9 +89,21 @@ describe('assertSeedAnchorMatches', () => {
 describe('writeResults', () => {
   beforeEach(() => {
     resetResults()
+    resetScenarioContracts()
   })
 
   it('persists a gate-rejected result to the output artifact', () => {
+    registerScenarioContract('membership-refunds-already-refunded-batch', {
+      expectations: [
+        {
+          kind: 'usesIndexes',
+          indexes: [
+            'idx_membership_refunds__stripe_charge_id',
+            'idx_membership_refunds__stripe_payment_intent_id',
+          ],
+        },
+      ],
+    })
     prepareOutputDir()
     const before = new Set(readdirSync(OUTPUT_DIR))
     const failing: ExplainResult = {
@@ -96,7 +117,7 @@ describe('writeResults', () => {
     }
 
     expect(() => collectAndGate(failing)).toThrow(
-      'membership-refunds-already-refunded-batch (membership-refunds-already-refunded-batch) must use index(es) idx_membership_refunds__stripe_charge_id, idx_membership_refunds__stripe_payment_intent_id',
+      'membership-refunds-already-refunded-batch must use index(es) idx_membership_refunds__stripe_charge_id, idx_membership_refunds__stripe_payment_intent_id',
     )
 
     writeResults()

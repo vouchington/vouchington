@@ -1,37 +1,27 @@
 import { SEED_PREFIX, runAndCapture, seedPostId, seedTopicId, seedUser } from '../run-support.mts'
+import { registerScenarioContract } from '../plan-expectations.mts'
 import * as services from '../run-services.mts'
 import { runPartitionPruningScenarios } from './partition-pruning.mts'
-import { runAdminUserSearchScenarios } from './admin-user-search.mts'
+import { runEntityTailScenarios } from './entity-tail.mts'
 
 const {
   aggregateElectionVoteStatsFromReplica,
   gatherVoteWeightFactors,
-  getConversationsByCreatedById,
-  getCommunityModmailInbox,
   getFollowedUsersByElectionVote,
   getFriendTrustedHostnames,
   getLatestSuccessfulCrawl,
-  getPlatformStats,
-  getMyDirectConversations,
   getPostByAny,
   getPublicUserByAny,
   getRecommendedRssFeeds,
   getTopicByAny,
-  getTopicDataPointInsights,
   getTrendingCommunities,
   getTrendingPosts,
   getTrendingRssFeeds,
-  getUserBookmarkCounts,
-  listUserRemovedPosts,
   POST_ELECTION_CONFIG,
   searchCommunities,
   searchCommunityPosts,
-  searchDataPoints,
   searchPendingPosts,
-  searchTopHostnames,
-  searchTopicAliases,
   TOPIC_ELECTION_CONFIG,
-  updateTopicRatingStats,
 } = services
 
 export async function runEntityAndCommunityScenarios() {
@@ -47,6 +37,12 @@ export async function runEntityAndCommunityScenarios() {
 
   // Crawl lookup by URL ID
   const seedCrawlUrlId = `${SEED_PREFIX}-0300-7000-8000-000000000000`
+  registerScenarioContract('crawl-latest-successful', {
+    expectations: [],
+    crossPartition: {
+      crawls: 'Latest successful crawl by URL searches retained monthly crawl history.',
+    },
+  })
   await runAndCapture('crawl-latest-successful', () => getLatestSuccessfulCrawl(seedCrawlUrlId))
 
   // User lookup by username
@@ -72,14 +68,25 @@ export async function runEntityAndCommunityScenarios() {
   )
 
   // Trending posts — CTE with exponential time-decay scoring
+  registerScenarioContract('trending-posts', {
+    expectations: [],
+    crossPartition: { posts: 'Trending ranks eligible posts from the requested week.' },
+  })
   await runAndCapture('trending-posts', () => getTrendingPosts({ timeRange: 'week', limit: 25 }))
 
   // Trending posts filtered by topic
+  registerScenarioContract('trending-posts-by-topic', {
+    expectations: [],
+    crossPartition: { posts: 'Topic trending ranks eligible posts from the requested week.' },
+  })
   await runAndCapture('trending-posts-by-topic', () =>
     getTrendingPosts({ timeRange: 'week', topicId: seedTopicId, limit: 25 }),
   )
 
   // Trending communities — candidates come from windowed post activity, then counts aggregate only for those
+  registerScenarioContract('trending-communities', {
+    expectations: [{ kind: 'custom', name: 'trendingCommunities' }],
+  })
   await runAndCapture('trending-communities', () => getTrendingCommunities({ limit: 25 }))
 
   // Trending RSS feeds — 3 CTEs with aggregations across follows and items
@@ -94,24 +101,41 @@ export async function runEntityAndCommunityScenarios() {
 
   // Community post search — JOIN with NOT EXISTS subquery for muted topics
   const seedCommunityId = `${SEED_PREFIX}-1400-7000-8000-000000000000`
+  registerScenarioContract('search-community-posts', {
+    expectations: [],
+    crossPartition: { posts: 'Community search lists posts across the community history.' },
+  })
   await runAndCapture('search-community-posts', () =>
     searchCommunityPosts(seedCommunityId, { limit: 25 }),
   )
+  registerScenarioContract('search-pending-community-posts', {
+    expectations: [],
+    crossPartition: { posts: 'Pending community search lists posts across the community history.' },
+  })
   await runAndCapture('search-pending-community-posts', () =>
     searchPendingPosts(seedCommunityId, { limit: 25 }),
   )
 
   // Community search — JOIN with metrics view, sorted by members
+  registerScenarioContract('search-communities', {
+    expectations: [{ kind: 'custom', name: 'searchCommunitiesEligibility' }],
+  })
   await runAndCapture(
     'search-communities',
     () => searchCommunities({ sort: 'members', limit: 25 }),
     'members',
   )
+  registerScenarioContract('search-communities-virtual-subscriptions', {
+    expectations: [{ kind: 'custom', name: 'searchCommunitiesEligibility' }],
+  })
   await runAndCapture(
     'search-communities-virtual-subscriptions',
     () => searchCommunities({ sort: 'virtual_subscriptions', limit: 25 }),
     'virtual-subscriptions',
   )
+  registerScenarioContract('search-communities-has-list-items', {
+    expectations: [{ kind: 'custom', name: 'searchCommunitiesEligibility' }],
+  })
   await runAndCapture(
     'search-communities-has-list-items',
     () => searchCommunities({ hasListItems: true, sort: 'virtual_subscriptions', limit: 25 }),
@@ -119,70 +143,23 @@ export async function runEntityAndCommunityScenarios() {
   )
 
   // Community search — text search variant
+  registerScenarioContract('search-communities-text', {
+    expectations: [{ kind: 'custom', name: 'searchCommunitiesEligibility' }],
+  })
   await runAndCapture(
     'search-communities-text',
     () => searchCommunities({ search: 'seed', sort: 'name', limit: 25 }),
     'text',
   )
 
+  registerScenarioContract('search-communities-member', {
+    expectations: [{ kind: 'custom', name: 'searchCommunitiesEligibility' }],
+  })
   await runAndCapture(
     'search-communities-member',
     () => searchCommunities({ memberUserId: seedUser.id, sort: 'name', limit: 25 }),
     'member',
   )
 
-  await runAndCapture('topic-data-point-insights', () => getTopicDataPointInsights(seedTopicId))
-
-  await runAndCapture('topic-rating-stats', () => updateTopicRatingStats(seedTopicId))
-
-  await runAndCapture('search-top-hostnames', () => searchTopHostnames({ limit: 25 }))
-
-  // Top hostnames filtered by topic
-  await runAndCapture('search-top-hostnames-by-topic', () =>
-    searchTopHostnames({ topic_id: seedTopicId, limit: 25 }),
-  )
-
-  await runAdminUserSearchScenarios()
-
-  // Topic alias search — autocomplete prefix query
-  await runAndCapture('search-topic-aliases', () =>
-    searchTopicAliases({ prefixQuery: 'seed', limit: 25 }),
-  )
-
-  // Data point search — JSONB + EXISTS subquery
-  await runAndCapture('search-data-points', () =>
-    searchDataPoints({ topic_id: seedTopicId, limit: 25 }),
-  )
-
-  // User bookmark counts — dynamic UNION ALL of COUNT queries across bookmark tables
-  await runAndCapture('user-bookmark-counts', () => getUserBookmarkCounts(seedUser.id))
-
-  // Conversations list by user
-  await runAndCapture('conversations-by-user', () =>
-    getConversationsByCreatedById(seedUser.id, { limit: 25 }),
-  )
-  await runAndCapture('direct-message-inbox-page', () =>
-    getMyDirectConversations(seedUser.id, {
-      after: {
-        timestamp: '2026-01-01T00:08:20.000000Z',
-        id: `${SEED_PREFIX}-0c00-7000-8000-0000000001f4`,
-      },
-      limit: 25,
-    }),
-  )
-  await runAndCapture('modmail-inbox-page', () =>
-    getCommunityModmailInbox(`${SEED_PREFIX}-1400-7000-8000-000000000000`, {
-      after: {
-        timestamp: '2026-01-01T00:08:20.000000Z',
-        id: `${SEED_PREFIX}-0d00-7000-8000-0000000001f4`,
-      },
-      limit: 25,
-    }),
-  )
-  await runAndCapture('user-removed-posts-page', () =>
-    listUserRemovedPosts(seedUser.id, { includePlatform: true, limit: 25 }),
-  )
-
-  // Platform stats — 6 scalar COUNT subqueries
-  await runAndCapture('platform-stats', () => getPlatformStats())
+  await runEntityTailScenarios()
 }

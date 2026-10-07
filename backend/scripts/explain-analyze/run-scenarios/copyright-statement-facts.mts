@@ -1,6 +1,7 @@
 import { beginTransaction, read } from '@data-stores/psql'
 import { selectCopyrightStatementFacts } from '@services/copyright-notices/statement-of-reasons-facts'
 import { runAndCapture } from '../run-support.mts'
+import { registerScenarioContract } from '../plan-expectations.mts'
 
 /**
  * The development seed (`backend/scripts/seeds/dev-seed.mts`, which the EXPLAIN workflow runs
@@ -22,6 +23,12 @@ export async function runCopyrightStatementFactsScenarios(): Promise<void> {
       'The copyright statement facts scenario needs the development seed notice; run backend/scripts/seeds/dev-seed.mts before the EXPLAIN seed',
     )
   }
+  registerScenarioContract('copyright-statement-facts', {
+    expectations: [
+      { kind: 'custom', name: 'copyrightFacts' },
+      { kind: 'maxProcessedRows', relation: 'posts', max: 10 },
+    ],
+  })
   await runAndCapture(
     'copyright-statement-facts',
     async () => {

@@ -1,11 +1,18 @@
 import { write } from '@data-stores/psql'
 import { runAndCapture, seedUser } from '../run-support.mts'
+import { registerScenarioContract } from '../plan-expectations.mts'
 
 const EXPLAIN_TOPIC_IMPORT_ATTEMPT_KEY = '019e0000-1800-7000-8000-000000000000'
 
 export async function runTopicImportAttemptScenarios(): Promise<void> {
   const now = new Date()
   const lowerBoundDate = new Date(now.getTime() - 2 * 60 * 60 * 1000)
+  registerScenarioContract('topic-import-attempts-retention', {
+    expectations: [
+      { kind: 'usesIndexes', indexes: ['idx_user_topic_import_attempts__retention'] },
+      { kind: 'custom', name: 'topicImportAttempts' },
+    ],
+  })
   await runAndCapture('topic-import-attempts-retention', () =>
     write(
       `/* pruneExpiredTopicImportAttempts */ WITH expired AS (
@@ -24,6 +31,12 @@ export async function runTopicImportAttemptScenarios(): Promise<void> {
       [now, lowerBoundDate, lowerBoundDate, 100],
     ),
   )
+  registerScenarioContract('topic-import-attempts-user-key', {
+    expectations: [
+      { kind: 'usesIndexes', indexes: ['user_topic_import_attempts_user_key_unique'] },
+      { kind: 'custom', name: 'topicImportAttempts' },
+    ],
+  })
   await runAndCapture('topic-import-attempts-user-key', () =>
     write(
       `/* claimTopicImportAttempt.get */

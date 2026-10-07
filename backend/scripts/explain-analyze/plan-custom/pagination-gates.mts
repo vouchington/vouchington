@@ -1,20 +1,8 @@
 import type { ExplainResult } from '@data-stores/psql'
-import { collectPlanNodes } from './plan-nodes.mts'
-import { isBoundedStoryPresentationSort } from './story-presentation-sort.mts'
+import { collectPlanNodes } from '../plan-nodes.mts'
+import { isBoundedStoryPresentationSort } from '../story-presentation-sort.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
-const PAGINATION_INDEXES_BY_SCENARIO = new Map<string, string[]>([
-  ['direct-message-inbox-page', ['idx_conversations__direct_message_activity']],
-  ['modmail-inbox-page', ['idx_conversations__modmail_community_activity']],
-  ['individual-cards-page', ['idx_individual_cards__individual_id_id']],
-  ['point-valuations-page', ['idx_individua_rewards_program_point_valuation__individual_id_id']],
-  [
-    'spending-categories-page',
-    ['idx_spending_entries__individual_id_id', 'idx_spending_entries__household_id_id'],
-  ],
-  ['rewards-program-statuses-page', ['idx_individual_rewards_program_statuses__individual_id_id']],
-  ['profile-posts-page', ['idx_relation__user__save__post__subject__newest']],
-])
 const RSS_FEED_ITEMS_GLOBAL_CURSOR_INDEX = 'idx_rss_feed_items__published_at__id'
 const RSS_FEED_ITEMS_CHILD_INDEX_SUFFIX = '_published_at_id_idx'
 const STORY_PROJECTION_SOURCE_INDEX = 'idx_rss_feed_items__story_id__id__url_id'
@@ -32,53 +20,6 @@ export function assertPaginationPlanShape(result: ExplainResult): void {
   }
   if (result.scenario_id === 'story-post-related-url-projection-source-page') {
     assertStoryProjectionSourcePagePlan(result)
-    return
-  }
-
-  const requiredIndexes = PAGINATION_INDEXES_BY_SCENARIO.get(result.scenario_id ?? '')
-  if (!requiredIndexes) return
-  if (
-    result.scenario_id === 'individual-cards-page' &&
-    !result.query_text.includes('FROM individual_cards')
-  ) {
-    return
-  }
-  if (
-    result.scenario_id === 'spending-categories-page' &&
-    !result.query_text.includes('FROM spending_entries')
-  ) {
-    return
-  }
-  if (
-    result.scenario_id === 'point-valuations-page' &&
-    !result.query_text.includes('FROM individual_rewards_program_point_valuations')
-  ) {
-    return
-  }
-  if (
-    result.scenario_id === 'rewards-program-statuses-page' &&
-    !result.query_text.includes('FROM individual_rewards_program_statuses')
-  ) {
-    return
-  }
-  if (
-    result.scenario_id === 'profile-posts-page' &&
-    !result.query_text.includes('FROM relation__user__save__post')
-  ) {
-    return
-  }
-
-  const nodes = collectPlanNodes(result.plan)
-  const missingIndexes = requiredIndexes.filter(
-    requiredIndex => !nodes.some(node => node['Index Name'] === requiredIndex),
-  )
-  const explicitSort = nodes.some(node =>
-    stringFromUnknown(node['Node Type'] ?? '').includes('Sort'),
-  )
-  if (missingIndexes.length > 0 || explicitSort) {
-    throw new Error(
-      `${result.name} must paginate in ${requiredIndexes.join(' and ')} order without an explicit Sort`,
-    )
   }
 }
 

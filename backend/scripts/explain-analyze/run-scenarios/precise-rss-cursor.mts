@@ -5,6 +5,7 @@ import {
   searchRssFeedItems,
 } from '../run-services.mts'
 import { runAndCapture } from '../run-support.mts'
+import { registerScenarioContract } from '../plan-expectations.mts'
 
 import { RSS_RECENCY_LATE_CURSOR_PAGE_SIZE } from '../seed-data/common.mts'
 
@@ -25,6 +26,19 @@ export async function runPreciseRssRecencyCursorScenario(): Promise<void> {
     getRssFeedItemSearchCursorScope(options),
   )
   if (!after) throw new Error('RSS late cursor boundary must produce a continuation cursor')
+  registerScenarioContract('rss-feed-items-search-global-late-cursor', {
+    expectations: [
+      { kind: 'custom', name: 'rssRecencyCursor' },
+      {
+        kind: 'maxProcessedRows',
+        relation: 'rss_feed_items',
+        max: RSS_RECENCY_LATE_CURSOR_PAGE_SIZE + 1,
+      },
+    ],
+    crossPartition: {
+      rss_feed_items: 'The published-at cursor orders RSS items across id ranges.',
+    },
+  })
   await runAndCapture('rss-feed-items-search-global-late-cursor', async () => {
     const result = await searchRssFeedItems({ ...options, after })
     if (result.results.length !== options.limit || !result.page_info.has_next_page) {

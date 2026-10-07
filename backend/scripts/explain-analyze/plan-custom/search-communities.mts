@@ -1,4 +1,5 @@
 import type { ExplainResult } from '@data-stores/psql'
+import { collectPlanNodes } from '../plan-nodes.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 // searchCommunities() (and the single-community getCommunityMetrics() read) used to pay for
@@ -16,7 +17,7 @@ import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 // The fix flattens the view to a single CTE-free, UNION-free SELECT so it pulls up, which turns
 // every posts access correlated to a candidate/root post into an ordinary parameterized index
 // lookup. Row-count and wall-time assertions are inert here for the same reason
-// plan-trending-communities-gate.mts rejects them: this repo's dev/CI database is shared and
+// the trendingCommunities custom check rejects them: this repo's dev/CI database is shared and
 // growing, so a fixed row-count/timing threshold stops meaning anything once the seed outgrows
 // it. The signal that survives seed scale is plan shape: every `posts` base-relation access must
 // carry a non-empty `Index Cond`, either directly or on a Bitmap Index Scan below a Bitmap Heap
@@ -93,16 +94,4 @@ function getBitmapPlans(node: PlanNode): unknown[] {
     const nodeType = stringFromUnknown((value as PlanNode)['Node Type'] ?? '')
     return nodeType === 'Bitmap Index Scan' || nodeType === 'BitmapAnd' || nodeType === 'BitmapOr'
   })
-}
-
-function collectPlanNodes(value: unknown, nodes: PlanNode[] = []): PlanNode[] {
-  if (value == null || typeof value !== 'object' || Array.isArray(value)) return nodes
-  const node = value as PlanNode
-  if (typeof node['Node Type'] === 'string') nodes.push(node)
-  const plans = node['Plans']
-  if (Array.isArray(plans)) {
-    for (const child of plans) collectPlanNodes(child, nodes)
-  }
-  collectPlanNodes(node['Plan'], nodes)
-  return nodes
 }
