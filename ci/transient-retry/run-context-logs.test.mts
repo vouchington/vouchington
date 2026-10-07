@@ -103,6 +103,8 @@ describe('createLogFetchers', () => {
       conclusion: 'failure' as const,
     }))
     const streamCalls = new Map<string, number>()
+    const streamStarted = Promise.withResolvers<void>()
+    const releaseStream = Promise.withResolvers<void>()
     const invalidUtf8Log = Buffer.alloc(800 * 1024, 0xff)
     const fetchers = createLogFetchers({
       allJobEntries: jobs,
@@ -113,15 +115,20 @@ describe('createLogFetchers', () => {
       streamLog: path =>
         (async function* () {
           streamCalls.set(path, (streamCalls.get(path) ?? 0) + 1)
-          await new Promise(resolve => setImmediate(resolve))
+          streamStarted.resolve()
+          await releaseStream.promise
           yield invalidUtf8Log
         })(),
     })
 
-    const [logs] = await Promise.all([
+    const requests = Promise.all([
       fetchers.failedJobLogs(),
       ...jobs.map(job => fetchers.jobLogs([job.name])),
     ])
+    await streamStarted.promise
+    expect(streamCalls.size).toBe(1)
+    releaseStream.resolve()
+    const [logs] = await requests
     const retainedBytes = [...logs.values()].reduce(
       (total, log) => total + Buffer.byteLength(log),
       0,
