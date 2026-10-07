@@ -46,7 +46,7 @@ jobs:
     needs: [prep]
     # Native ARM64 matches the production image architecture and draws from a separate hosted pool.
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 32
+    timeout-minutes: 20
     permissions:
       actions: read
       contents: read
@@ -75,7 +75,7 @@ jobs:
         # Fewer, longer-running shards (see ci/vitest/project-ownership.mts) need a watchdog
         # distinct from the sub-ten-minute job KPI. This job owns a four-worker candidate on public
         # 4-vCPU runners; retain or retune it only after candidate-run KPI evidence.
-        timeout-minutes: 20
+        timeout-minutes: 17
       - name: Upload web-shard-${{ matrix.shard }} JUnit report
         if: ${{ !cancelled() }}
         timeout-minutes: 1

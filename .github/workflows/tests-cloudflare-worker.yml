@@ -16,7 +16,7 @@ permissions:
 jobs:
   cloudflare-worker-tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 17
+    timeout-minutes: 14
     permissions:
       actions: read
       contents: read

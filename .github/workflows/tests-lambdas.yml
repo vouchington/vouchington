@@ -16,7 +16,7 @@ permissions:
 jobs:
   lambdas-tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 13
     permissions:
       actions: read
       contents: read

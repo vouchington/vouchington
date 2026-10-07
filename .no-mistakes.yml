@@ -2952,16 +2952,10 @@ rules:
       maxMinutes: 10
       rejectStepExceedingJob: true
       allow:
-        # 6m setup + 3m dependencies + 10m API compiler + 1m snapshot Git guard + 1m overhead.
-        # Keep the additive model documented in docs/development/reference-ci-ci-job-timeout-budgets.md.
+        # Serial setup, dependency, contract, and snapshot steps total 12m; healthy max was 75s
+        # across 67 GitHub-hosted successes in #2260.
         - job: '.github/workflows/checks-static.yml#static-backend'
-          maxMinutes: 21
-        # Static Cloudflare setup, retry install, typecheck, smoke, and dry-run budgets sum 17m; cap adds buffer. See PR #8489.
-        - job: '.github/workflows/checks-static.yml#static-cloudflare'
-          maxMinutes: 20
-        # Static lambdas setup, typecheck, depcruise, smoke, and diagnostics step budgets sum 15m; cap adds buffer. See PR #8489.
-        - job: '.github/workflows/checks-static.yml#static-lambdas'
-          maxMinutes: 18
+          maxMinutes: 14
         # A standalone Playwright run plans shards and produces one shared web build before shards
         # start: setup (5m), shard plan (1m), and the bounded 6m web build sum 12m plus 1m headroom.
         - job: '.github/workflows/tests-playwright.yml#shards'
@@ -2988,78 +2982,61 @@ rules:
         # measured build/smoke/scan margin plus the 8m-capped GHCR publication step.
         - job: '.github/workflows/publish-web-images.yml#build'
           maxMinutes: 25
-        # Backend setup (5m), migration (3m), a 5m Vitest watchdog, report persistence, and headroom
-        # for the GitHub-artifact coverage upload, retained from the pre-revert coverage-transport
-        # budget. The outer cap is fail-safe, not a runtime target.
+        # Healthy maximum was 219 seconds across 558 GitHub-hosted successes in #2260; independent
+        # step deadlines remain diagnostic guards, while this is the fail-fast end-to-end cap.
         - job: '.github/workflows/tests-web-api.yml#web-api-tests'
-          maxMinutes: 27
-        # Step budgets across worktree prep (1) + three ./dev/initialize passes (5 each, monorepo/backend/web) + Postgres provisioning (5) sum 21m; cap adds buffer for the unbounded checkout/setup-node/pnpm-setup steps ahead of them. See #10850.
+          maxMinutes: 12
+        # Three serial initialize modes and disposable services retain their additive budget;
+        # healthy max was 97 seconds across 78 GitHub-hosted successes in #2260.
         - job: '.github/workflows/initialize-smoke-test.yml#initialize-smoke-test'
-          maxMinutes: 25
-        # Remaining lint/typecheck/knip/depcruise step budgets plus setup-node-pnpm; the 25m
-        # route-selector --check moved to the no-mistakes job.
+          maxMinutes: 23
+        # Healthy maximum was 442 seconds across 75 GitHub-hosted successes in #2260.
         - job: '.github/workflows/static-code-analysis.yml#static-code-analysis'
-          maxMinutes: 50
-        # setup-node-pnpm (5m) + mise (3m) + no-mistakes check (10m) + topology (5m) +
-        # route-selector --check (25m) plus checkout/drain headroom. Cap must exceed the 25m step.
-        - job: '.github/workflows/static-code-analysis.yml#no-mistakes'
-          maxMinutes: 55
-        # Unexercised 30m GH-Pages build plus a ~20m test-retry watchdog budget. See #8078.
+          maxMinutes: 24
+        # Healthy maximum was 347 seconds across 555 GitHub-hosted successes in #2260.
         - job: '.github/workflows/storybook.yml#storybook'
-          maxMinutes: 94
-        # Fail-safe ceiling for setup/test/GitHub-artifact-upload steps, retained from the
-        # pre-revert coverage-transport budget.
+          maxMinutes: 18
+        # Existing backend-credentialed budget; no #2260 change.
         - job: '.github/workflows/tests-backend-credentialed.yml#backend-credentialed-tests'
           maxMinutes: 20
-        # Fail-safe ceiling for setup/test/GitHub-artifact-upload steps, retained from the
-        # pre-revert coverage-transport budget.
+        # Healthy maximum was 134 seconds across 65 GitHub-hosted successes in #2260.
         - job: '.github/workflows/tests-backend-modules.yml#backend-modules'
-          maxMinutes: 22
-        # Fail-safe ceiling for setup/test/GitHub-artifact-upload steps, retained from the
-        # pre-revert coverage-transport budget.
+          maxMinutes: 12
+        # Existing backend-unit budget; no #2260 change.
         - job: '.github/workflows/tests-backend-unit.yml#backend-tests'
           maxMinutes: 29
-        # Fail-safe ceiling for setup/test/GitHub-artifact-upload steps, retained from the
-        # pre-revert coverage-transport budget.
+        # Healthy maximum was 87 seconds across 37 GitHub-hosted successes in #2260.
         - job: '.github/workflows/tests-cloudflare-worker.yml#cloudflare-worker-tests'
-          maxMinutes: 17
-        # Step budgets sum 28m plus 2m provisioning/drain headroom. Measured healthy jobs:
-        # main 48s, coverage PR 75s. See docs/development/reference-ci-ci-job-timeout-budgets.md.
+          maxMinutes: 14
+        # Additive retry/upload step budgets sum 11m; healthy maximum was 91 seconds across 22
+        # GitHub-hosted successes in #2260.
         - job: '.github/workflows/tests-lambdas.yml#lambdas-tests'
-          maxMinutes: 30
+          maxMinutes: 13
         # Fail-safe for backend/browser setup plus the bounded 6m web build before the sharded browser runtime begins.
         - job: '.github/workflows/tests-playwright.yml#playwright-tests'
           maxMinutes: 23
         # Fail-safe for backend/browser setup plus the bounded 6m web build before credentialed browser setup and execution begin.
         - job: '.github/workflows/tests-playwright-credentialed.yml#playwright-credentialed-tests'
           maxMinutes: 13
-        # Fail-safe ceiling for setup/test/GitHub-artifact-upload steps, retained from the
-        # pre-revert coverage-transport budget.
+        # Healthy maximum was 78 seconds across 81 GitHub-hosted successes in #2260.
         - job: '.github/workflows/tests-portability.yml#portability-linux'
-          maxMinutes: 17
+          maxMinutes: 14
         # Step budgets sum ~23m; real max ~1.3m (n=24) via proxy data. See #8078.
         - job: '.github/workflows/tests-postgres-schema.yml#postgres-schema-tests'
           maxMinutes: 20
-        # Fail-safe ceiling for setup/test/GitHub-artifact-upload steps, retained from the
-        # pre-revert coverage-transport budget.
+        # Healthy maximum was 345 seconds across 75 GitHub-hosted successes in #2260.
         - job: '.github/workflows/tests-tooling.yml#tooling'
-          maxMinutes: 32
-        # Fail-safe ceiling for setup/test/GitHub-artifact-upload steps, retained from the
-        # pre-revert coverage-transport budget.
+          maxMinutes: 16
+        # Healthy maximum was 100 seconds across 81 GitHub-hosted successes in #2260.
         - job: '.github/workflows/tests-ts-shared.yml#ts-shared'
-          maxMinutes: 17
+          maxMinutes: 16
         # Fail-safe ceiling for setup/test/GitHub-artifact-upload steps, retained from the
         # pre-revert coverage-transport budget less the 7m cut from the bounded web build step.
         - job: '.github/workflows/tests-web-integration.yml#web-integration-tests'
           maxMinutes: 19
-        # Raised from 24m alongside the "Run web tests" step's 10m -> 20m watchdog bump: on
-        # GitHub-hosted ubuntu-latest (2 vCPUs) with coverage instrumentation enabled, real failing
-        # shards were killed at the step's prior 10m ceiling without ever completing, so neither
-        # number has an observed-completion basis yet. 32m leaves 12m of headroom over the 20m step
-        # for setup-node-pnpm plus the coverage/blob upload and report-persistence steps that
-        # follow; tune both down once a passing run reports a real per-shard duration.
+        # Healthy max was 381 seconds (the test step 337) across 1,552 GitHub-hosted successes in #2260.
         - job: '.github/workflows/tests-web.yml#web-tests'
-          maxMinutes: 32
+          maxMinutes: 20
 
   - name: tracked TypeScript files belong to a tsconfig program
     rule: tsconfig-file-coverage

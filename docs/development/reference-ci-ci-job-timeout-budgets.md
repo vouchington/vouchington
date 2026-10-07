@@ -13,6 +13,17 @@ Step and job timeouts guard different failure modes. A step timeout bounds one h
 job timeout bounds unhealthy end-to-end execution. The Docker image jobs intentionally do not
 reserve the worst-case ceiling of every sequential step:
 
+### GitHub-hosted re-derivation
+
+Issue [#2260](https://github.com/vouchington/vouchington/issues/2260) pooled successful main,
+pull-request, and merge-group jobs from 2026-10-05 through 2026-10-07. Its 555 Storybook jobs had
+a 347-second maximum, Web Tests' 1,552 jobs had a 381-second maximum (337 seconds for the test
+step), and Static Analysis' 75 jobs had a 442-second maximum. The remaining touched jobs ranged
+from 58 seconds (static Cloudflare) to 345 seconds (tooling). The job ceilings therefore leave
+provisioning headroom and bounded recovery work, rather than preserving retired self-hosted-runner
+or unobserved retry budgets. Additive jobs still reserve their serial artifact retry path; jobs
+with independent diagnostic step caps use the fail-fast relationship below.
+
 ```
 max(step_timeout, observed_healthy_job_runtime + buffer)
   ≤ job_timeout

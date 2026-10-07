@@ -27,7 +27,7 @@ jobs:
   tooling:
     if: inputs.run_tooling
     runs-on: ubuntu-latest
-    timeout-minutes: 32
+    timeout-minutes: 16
     permissions:
       actions: read
       contents: read
@@ -38,7 +38,7 @@ jobs:
           fetch-depth: 1
       - uses: ./.github/actions/setup-backend
         id: setup-backend
-        timeout-minutes: 10
+        timeout-minutes: 5
       - name: Install Gitleaks and Lychee for tooling tests
         uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
         with:
@@ -54,7 +54,7 @@ jobs:
           VITEST_JUNIT_OUTPUT_FILE: tooling-test-report.junit.xml
           VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}
         run: node ci/tooling-test-runner.mts --workflow-projects --bail=3
-        timeout-minutes: 16
+        timeout-minutes: 8
       - name: Upload tooling JUnit report
         if: ${{ !cancelled() }}
         timeout-minutes: 1

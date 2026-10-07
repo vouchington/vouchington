@@ -15,7 +15,7 @@ jobs:
     # See the .no-mistakes.yml github-actions-job-timeouts allow-list entry for
     # this job (repository default cap is 10m) for the step-budget accounting
     # behind this value.
-    timeout-minutes: 25
+    timeout-minutes: 23
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
