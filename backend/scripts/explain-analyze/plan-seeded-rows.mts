@@ -1,5 +1,5 @@
-/** Approximate seeded relation totals from seed.mts, including its auxiliary fixtures. */
-// Covers captured relations without dedicated EXPLAIN seed counts; dev fixtures stay small.
+/** Explicit seed.mts fixture counts plus conservative bounds for captured ancillary relations. */
+// Ancillary relations have no dedicated EXPLAIN seed count; refresh this bound if fixtures grow.
 const ANCILLARY_SEED_ROW_UPPER_BOUND = 1_000
 
 export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
@@ -44,7 +44,7 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   facebook_accounts: 2,
   facebook_friends: 1,
   hostname_votes: 1,
-  households: 21_000,
+  households: 100,
   membership_products: 4,
   membership_provider_observations: 0,
   membership_source_states: 300,
@@ -89,11 +89,11 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   github_accounts: ANCILLARY_SEED_ROW_UPPER_BOUND,
   github_friends: ANCILLARY_SEED_ROW_UPPER_BOUND,
   google_accounts: ANCILLARY_SEED_ROW_UPPER_BOUND,
-  household_members: ANCILLARY_SEED_ROW_UPPER_BOUND,
+  household_members: 101,
   image_placements: ANCILLARY_SEED_ROW_UPPER_BOUND,
   image_surface_placements: ANCILLARY_SEED_ROW_UPPER_BOUND,
   images: ANCILLARY_SEED_ROW_UPPER_BOUND,
-  individuals: 20_000,
+  individuals: 100,
   linkedin_accounts: ANCILLARY_SEED_ROW_UPPER_BOUND,
   media_placements: ANCILLARY_SEED_ROW_UPPER_BOUND,
   media_types: ANCILLARY_SEED_ROW_UPPER_BOUND,
@@ -101,7 +101,7 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   membership_refunds: ANCILLARY_SEED_ROW_UPPER_BOUND,
   microsoft_accounts: ANCILLARY_SEED_ROW_UPPER_BOUND,
   moderation_reports: ANCILLARY_SEED_ROW_UPPER_BOUND,
-  post_clearance_changes: 103_000,
+  post_clearance_changes: 100_000,
   post_data_point_topics: 1_000,
   post_explicit_topic_categories: 1_000,
   post_images: ANCILLARY_SEED_ROW_UPPER_BOUND,
@@ -113,7 +113,7 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   post_topic_recommendation_landing_page_urls: ANCILLARY_SEED_ROW_UPPER_BOUND,
   post_topic_recommendations: ANCILLARY_SEED_ROW_UPPER_BOUND,
   relation__community__mute__topic: ANCILLARY_SEED_ROW_UPPER_BOUND,
-  relation__post__category__topic: 55_000,
+  relation__post__category__topic: 50_000,
   relation__post__category__topic__votes: 1_000,
   relation__post__category__topic_alias: ANCILLARY_SEED_ROW_UPPER_BOUND,
   relation__post__related__post: ANCILLARY_SEED_ROW_UPPER_BOUND,
