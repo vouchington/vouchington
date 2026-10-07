@@ -24,6 +24,7 @@ vi.mock(
   () => ({ notFound: mockNotFound }) as unknown as typeof import('next/navigation'),
 )
 vi.mock(import('@/lib/api/server'), () => ({
+  GET_USER_PROFILE_WITH_BIO: { includeBio: true } as const,
   getUserProfile: mockGetUserProfile,
   getUserPreservationHoldState: mockGetUserPreservationHoldState,
 }))
@@ -93,6 +94,7 @@ describe('UserAdminPage', () => {
 
     expect(isValidElement(result)).toBe(true)
     expect(result.key).toBe('user-1')
+    expect(mockGetUserProfile).toHaveBeenCalledWith('alice', { includeBio: true })
   })
 
   it('scopes membership refund attempts to the signed-in actor and target user', async () => {

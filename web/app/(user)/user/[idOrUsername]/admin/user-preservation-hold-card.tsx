@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useId, useState, type FormEvent } from 'react'
+import { useEffect, useId, useState, useTransition, type FormEvent } from 'react'
+import { useRouter } from 'next/navigation'
 import { LockKeyhole, LockKeyholeOpen } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
@@ -18,12 +19,10 @@ import type { UserPreservationHold } from '@/types/api-responses'
 import { UserPreservationHoldHistory } from './user-preservation-hold-history'
 
 type HoldsState =
-  | { status: 'loading' }
-  | { status: 'error' }
+  | { status: 'loading' | 'error' }
   | { status: 'loaded'; holds: UserPreservationHold[] }
 
-// Administrator-only legal-process preservation hold (issue #1449). The reference is sensitive:
-// it is rendered for administrators and never sent to the toast or any error reporter.
+// Administrator-only: the sensitive reference is rendered here and never sent to error reporting.
 export function UserPreservationHoldCard({
   userId,
   isAccountDeleted = false,
@@ -32,6 +31,7 @@ export function UserPreservationHoldCard({
   isAccountDeleted?: boolean
 }) {
   const t = useTranslations()
+  const router = useRouter()
   const referenceId = useId()
   const [state, setState] = useState<HoldsState>({ status: 'loading' })
   const [loadedAccount, setLoadedAccount] = useState<{
@@ -40,6 +40,7 @@ export function UserPreservationHoldCard({
   } | null>(null)
   const [reference, setReference] = useState('')
   const [isBusy, setIsBusy] = useState(false)
+  const [isRefreshing, startRefresh] = useTransition()
 
   useEffect(() => {
     let cancelled = false
@@ -83,6 +84,7 @@ export function UserPreservationHoldCard({
       setState({ status: 'loaded', holds: [hold, ...holds] })
       setReference('')
       toast.success(t('extracted.admin.userPreservationHoldCard.preservationHoldPlaced_e9e2c131'))
+      if (deletedAt) startRefresh(() => router.refresh())
     } catch (err) {
       toast.error(
         err instanceof Error
@@ -154,7 +156,7 @@ export function UserPreservationHoldCard({
               type='button'
               variant='outline'
               className='self-start'
-              disabled={isBusy}
+              disabled={isBusy || isRefreshing}
               onClick={handleRelease}
             >
               <LockKeyholeOpen data-icon='inline-start' />
@@ -177,14 +179,14 @@ export function UserPreservationHoldCard({
                 onChange={event => setReference(event.target.value)}
                 maxLength={500}
                 autoComplete='off'
-                disabled={isBusy}
+                disabled={isBusy || isRefreshing}
               />
             </div>
             <Button
               type='submit'
               variant='destructive'
               className='self-start'
-              disabled={isBusy || !reference.trim()}
+              disabled={isBusy || isRefreshing || !reference.trim()}
             >
               <LockKeyhole data-icon='inline-start' />
               {t('extracted.admin.userPreservationHoldCard.placeHold_22ce9e8b')}

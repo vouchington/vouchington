@@ -1,6 +1,10 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import { getUserPreservationHoldState, getUserProfile } from '@/lib/api/server'
+import {
+  GET_USER_PROFILE_WITH_BIO,
+  getUserPreservationHoldState,
+  getUserProfile,
+} from '@/lib/api/server'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { getAdminLandingPagesForUser } from '@/lib/api/server/admin-landing-pages'
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
@@ -26,7 +30,7 @@ export default async function UserAdminPage({ params }: PageProps) {
   }
 
   const { idOrUsername } = await params
-  const profileData = await getUserProfile(idOrUsername)
+  const profileData = await getUserProfile(idOrUsername, GET_USER_PROFILE_WITH_BIO)
   if (!profileData) {
     if (!isUUID(idOrUsername)) notFound()
     const holdState = await getUserPreservationHoldState(idOrUsername)

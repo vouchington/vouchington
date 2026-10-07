@@ -1,7 +1,12 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-mock'
 import { UserPreservationHoldCard } from '../user-preservation-hold-card'
 import type { UserPreservationHold } from '@/types/api-responses'
+
+vi.mock(import('next/navigation'), () => navMockModule)
+
+const mockNav = createNavMock()
 
 const { mockList, mockPlace, mockRelease, mockToastSuccess, mockToastError } = vi.hoisted(() => ({
   mockList: vi.fn<VitestLooseMock>(),
@@ -45,6 +50,7 @@ function renderCard() {
 describe('UserPreservationHoldCard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockNav.reset()
   })
 
   it('places a hold with the trimmed reference and then shows it as open', async () => {
@@ -158,5 +164,6 @@ describe('UserPreservationHoldCard', () => {
         'While a hold is open, this account’s final purge is paused. Immediate deletion steps are not paused.',
       ),
     ).toBeInTheDocument()
+    expect(mockNav.refresh).toHaveBeenCalledOnce()
   })
 })

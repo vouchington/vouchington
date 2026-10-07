@@ -142,11 +142,11 @@ count, and filter contract.
 
 Blocking a user implicitly removes any active follow on that user.
 
-An open legal-process preservation hold can be placed before or after soft deletion. It pauses the
-90-day final purge, but it does not pause the immediate deletion steps. Releasing the hold is also
-allowed after soft deletion so the final purge can resume. Ordinary lookup returns not found for a
-soft-deleted account; an administrator with its retained id can open `/user/:id/admin`, which then
-shows only the account id and preservation-hold card.
+An open legal-process preservation hold blocks an active account from starting deletion. After an
+account is already soft-deleted, administrators can still place or release a hold. At that stage the
+hold pauses the 90-day final purge, but it does not pause the immediate deletion steps. Ordinary
+lookup returns not found for a soft-deleted account; an administrator with its retained id can open
+`/user/:id/admin`, which then shows only the account id and preservation-hold card.
 
 ## Related
 

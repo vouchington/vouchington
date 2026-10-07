@@ -159,7 +159,14 @@ export async function listUserPreservationHolds(
   userId: string,
 ): Promise<UserPreservationHold[]> {
   assertAdmin(currentUser)
-  const { rows } = await primaryQuery<HoldRow>(sql`/* listUserPreservationHolds */
+  return queryUserPreservationHolds(primaryQuery, userId)
+}
+
+async function queryUserPreservationHolds(
+  query: QueryExecutor,
+  userId: string,
+): Promise<UserPreservationHold[]> {
+  const { rows } = await query<HoldRow>(sql`/* listUserPreservationHolds */
     SELECT id, account_user_id, placed_by_id, reference_ciphertext, released_at, released_by_id, created_at
     FROM user_legal_preservation_holds
     WHERE account_user_id = ${userId}
@@ -175,13 +182,14 @@ export async function getUserPreservationHoldState(
   userId: string,
 ): Promise<UserPreservationHoldState> {
   assertAdmin(currentUser)
-  const { rows } = await primaryQuery<{ deleted_at: Date | null }>(
-    sql`/* getUserPreservationHoldState */ SELECT deleted_at FROM users WHERE id = ${userId}`,
-  )
-  const user = rows[0]
-  if (!user) throw createHttpError(404, 'User not found')
+  await using query = await beginTransaction()
+  // ast-grep-ignore: no-three-sequential-awaits -- the lifecycle lock must cover the existence and history reads.
+  const account = await lockPreservationHoldUser(query, userId)
+  if (!account) throw createHttpError(404, 'User not found')
+  const holds = await queryUserPreservationHolds(query, userId)
+  await query.commit()
   return {
-    accountDeletedAt: user.deleted_at,
-    holds: await listUserPreservationHolds(currentUser, userId),
+    accountDeletedAt: account.deleted_at,
+    holds,
   }
 }
