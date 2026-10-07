@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
+import { lockCopyrightJurisdictionPolicy } from '../services/copyright-notices/jurisdiction-policy.mts'
 import { territorialLabels } from '../services/copyright-notices/territorial-labels.mts'
 import { getTerritorialInformedWindow } from '../services/copyright-notices/territorial-informed-at.mts'
 import { createDeterministicCopyrightCorrespondenceInTransaction } from '../services/copyright-notices/correspondence.mts'
@@ -36,6 +37,7 @@ export async function createTestHistoricalEuDecisionWindow(
   const notifierEmail = `historical-${key}@example.test`
   const labels = territorialLabels('eu_dsa')
   await using transaction = await beginTransaction()
+  await lockCopyrightJurisdictionPolicy('eu_dsa', transaction)
   const { rows: approvals } = await transaction<{ id: string }>(sql`
     /* createTestHistoricalEuDecisionWindow:approval */
     INSERT INTO copyright_jurisdiction_policy_approvals (jurisdiction, policy_version, approved_at)

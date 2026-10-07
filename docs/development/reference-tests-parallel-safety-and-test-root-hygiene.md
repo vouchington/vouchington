@@ -49,6 +49,16 @@ Do not replace these locks and owned cleanup with a production filter, unreserve
 a single global lock; those alter product semantics, remain probabilistic, or unnecessarily
 serialize parallel tests.
 
+### Jurisdiction policy approvals share one lock per jurisdiction
+
+EU and UK intake reads the current unwithdrawn policy approval. A test that conceals those
+approvals inside an uncommitted transaction still sees a policy insert that another test commits
+before the next statement, because PostgreSQL read committed shows that insert.
+`concealJurisdictionPolicyApprovals` takes `lockCopyrightJurisdictionPolicy` for the rest of its
+transaction. Every insert that commits an `eu_dsa` or `uk` approval takes the same transaction
+advisory lock first, so the insert waits until the concealment rolls back or commits. Do not
+replace that lock with `LOCK TABLE`.
+
 ### Stateful test helpers must be parallel-safe
 
 ### Catalogued shared-DB scan guard

@@ -1,10 +1,12 @@
 import { afterAll, describe, expect, it } from 'vitest'
 import {
-  readTerritorialContractTableNames,
   readTerritorialClockColumnNames,
+  readTerritorialContractTableNames,
+} from '../../../test-helpers/data-stores/psql/copyright-eu-uk-contracts.mts'
+import {
   rejectEuReceiptForUsNotice,
   rejectUsJurisdictionPolicyApproval,
-} from '../../../test-helpers/data-stores/psql/copyright-eu-uk-contracts.mts'
+} from '../../../test-helpers/data-stores/psql/copyright-jurisdiction-policy-writes.mts'
 import { onGracefulShutdown } from '../index.mts'
 
 describe('copyright EU and UK contract schema', () => {
