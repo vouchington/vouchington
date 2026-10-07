@@ -9,7 +9,6 @@ import { markJwtStaleBatch } from '@services/jwt-session/invalidation'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import { FLAG_COLUMNS } from './flag-columns.mts'
-import { getReportIntegrityFlagByIdFromPrimary } from './get-flags.mts'
 import type { ReportIntegrityFlag } from './create-flag.mts'
 
 export type AppliedReportAbusePenalty = {
@@ -36,9 +35,6 @@ export async function applyReportAbusePenalty(
   flagId: string,
   options: { query?: TransactionQuery } = {},
 ): Promise<ApplyReportAbusePenaltyResult> {
-  const flag = await getReportIntegrityFlagByIdFromPrimary(flagId)
-  if (!flag) throw createHttpError(404, 'Report integrity flag not found')
-
   return runWithTransaction(options.query, async query => {
     const result = await applyPenaltyInTransaction(query)
     await recordModeratorAction(
@@ -83,7 +79,14 @@ export async function applyReportAbusePenalty(
       RETURNING`.append(FLAG_COLUMNS),
     )
     const resolvedFlag = resolvedRows[0] as ReportIntegrityFlag | undefined
-    if (!resolvedFlag) throw createHttpError(409, 'Flag is already resolved')
+    if (!resolvedFlag) {
+      const { rows } = await query(sql`/* applyReportAbusePenalty_flagExists */
+        SELECT EXISTS(SELECT 1 FROM report_integrity_flags WHERE id = ${flagId}) AS flag_exists
+      `)
+      throw rows[0]?.flag_exists
+        ? createHttpError(409, 'Flag is already resolved')
+        : createHttpError(404, 'Report integrity flag not found')
+    }
 
     // Insert penalty records for the detection-time reporter set. A reporter hard-deleted
     // since detection has already left the set (CASCADE), so one deleted account does not

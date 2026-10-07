@@ -1,9 +1,4 @@
-import {
-  beginTransaction,
-  write,
-  type QueryExecutor,
-  type TransactionQuery,
-} from '@data-stores/psql'
+import { write, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getEntityRelationMetadataOrThrow } from '../services/entity-relations/metadata.mts'
 import { getEntityRelationVoteTableName } from '@voucha/types/entities/entity-relations-metadata'
@@ -34,14 +29,6 @@ export function rejectPostCategoryVotesQuery<Query extends QueryExecutor>(query:
       statement.includes(`INSERT INTO ${voteTable} `),
     'category vote rejected for test',
   )
-}
-
-/** Lend a rejecting query to one mutation; disposal rolls back any partial writes. */
-export async function withRejectedPostCategoryVotes<T>(
-  execute: (query: TransactionQuery) => Promise<T>,
-): Promise<T> {
-  await using transaction = await beginTransaction()
-  return await execute(rejectPostCategoryVotesQuery(transaction))
 }
 
 /** Reads the fixture actor's committed rows from the primary after a failed admission. */
