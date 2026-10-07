@@ -4,6 +4,7 @@ import {
   withRejectedStaffActionHistory,
 } from '@voucha/test-helpers/staff-action-history'
 import { randomBytes } from 'node:crypto'
+import type { TransactionQuery } from '@data-stores/psql'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import {
@@ -63,12 +64,12 @@ describe('staff OAuth client verification', () => {
       const client = await registerTestClient()
       if (action === 'unverify') await verifyOAuthClient(admin.id, client.id, client.reviewed)
       const before = await readStaffActionTarget('oauth_client', client.id)
-      const mutate = () =>
+      const mutate = (query?: TransactionQuery) =>
         action === 'verify'
-          ? verifyOAuthClient(actor.id, client.id, client.reviewed)
-          : unverifyOAuthClient(actor.id, client.id)
-      await withRejectedStaffActionHistory(actor.id, async () => {
-        await expect(mutate()).rejects.toThrow('staff history rejected for test')
+          ? verifyOAuthClient(actor.id, client.id, client.reviewed, { query })
+          : unverifyOAuthClient(actor.id, client.id, { query })
+      await withRejectedStaffActionHistory(async query => {
+        await expect(mutate(query)).rejects.toThrow('staff history rejected for test')
       })
       expect(await readStaffActionTarget('oauth_client', client.id)).toEqual(before)
       expect(await readStaffActionHistory(actor.id)).toEqual([])

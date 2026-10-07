@@ -1,5 +1,9 @@
 import { recordModeratorAction } from '@services/moderator-actions'
-import { beginTransaction } from '@data-stores/psql'
+import {
+  registerPostCommitAction,
+  runWithTransaction,
+  type TransactionQuery,
+} from '@data-stores/psql'
 import { enqueueRecalculateUserVoteWeight } from '@queues/vote-weight/enqueues'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
@@ -19,9 +23,10 @@ export type VoteWeightPenalty = {
 export async function revokeVoteWeightPenalty(
   penaltyId: string,
   revokedById: string,
+  options: { query?: TransactionQuery } = {},
 ): Promise<VoteWeightPenalty> {
-  await using transaction = await beginTransaction()
-  const { rows } = await transaction(sql`/* revokeVoteWeightPenalty */
+  return runWithTransaction(options.query, async transaction => {
+    const { rows } = await transaction(sql`/* revokeVoteWeightPenalty */
     UPDATE vote_weight_penalties
     SET
       revoked_at = CURRENT_TIMESTAMP,
@@ -40,21 +45,23 @@ export async function revokeVoteWeightPenalty(
       created_at
   `)
 
-  const penalty = rows[0] as VoteWeightPenalty | undefined
-  if (!penalty) throw createHttpError(404, 'Penalty not found or already revoked')
+    const penalty = rows[0] as VoteWeightPenalty | undefined
+    if (!penalty) throw createHttpError(404, 'Penalty not found or already revoked')
 
-  await recordModeratorAction(
-    revokedById,
-    {
-      actionType: 'vote_integrity_penalty_revoke',
-      voteWeightPenaltyId: penaltyId,
-      metadata: { before: { revoked_at: null }, after: { revoked_at: penalty.revoked_at } },
-    },
-    { query: transaction },
-  )
-  await transaction.commit()
-  // No JWT invalidation: vote weight is read live, not cached in session claims.
-  void enqueueRecalculateUserVoteWeight(penalty.user_id, true)
+    await recordModeratorAction(
+      revokedById,
+      {
+        actionType: 'vote_integrity_penalty_revoke',
+        voteWeightPenaltyId: penaltyId,
+        metadata: { before: { revoked_at: null }, after: { revoked_at: penalty.revoked_at } },
+      },
+      { query: transaction },
+    )
+    // No JWT invalidation: vote weight is read live, not cached in session claims.
+    registerPostCommitAction(transaction, async () => {
+      void enqueueRecalculateUserVoteWeight(penalty.user_id, true)
+    })
 
-  return penalty
+    return penalty
+  })
 }

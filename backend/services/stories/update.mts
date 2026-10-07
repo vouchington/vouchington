@@ -1,6 +1,6 @@
 import { lockStoryLifecycles } from '@services/post-publication/story-lifecycle-lock'
 import { recordModeratorAction } from '@services/moderator-actions'
-import { beginTransaction, write } from '@data-stores/psql'
+import { registerPostCommitAction, runWithTransaction, write } from '@data-stores/psql'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import type { PostStory, Story } from './types.mts'
@@ -10,10 +10,11 @@ export async function updateStoryTitle(
   actorId: string,
   storyId: string,
   title: string,
+  options: { query?: TransactionQuery } = {},
 ): Promise<Story | null> {
-  await using query = await beginTransaction()
-  const { rows } = await write(
-    sql`/* updateStoryTitle */
+  const story = await runWithTransaction(options.query, async query => {
+    const { rows } = await write(
+      sql`/* updateStoryTitle */
     UPDATE stories
     SET title = ${title}
     WHERE id = ${storyId}
@@ -29,17 +30,19 @@ export async function updateStoryTitle(
       updated_at,
       deleted_at
   `,
-    { query },
-  )
-  const story = (rows[0] as Story) ?? null
-  if (story)
-    await recordModeratorAction(
-      actorId,
-      { actionType: 'story_rename', metadata: { story_id: storyId, title } },
       { query },
     )
-  await query.commit()
-  if (story) await invalidateStories(story.id)
+    const story = (rows[0] as Story) ?? null
+    if (story)
+      await recordModeratorAction(
+        actorId,
+        { actionType: 'story_rename', metadata: { story_id: storyId, title } },
+        { query },
+      )
+    if (story && options.query) registerPostCommitAction(query, () => invalidateStories(story.id))
+    return story
+  })
+  if (story && !options.query) await invalidateStories(story.id)
   return story
 }
 
@@ -50,11 +53,12 @@ export async function adminSetStoryOfficialItem(
   actorId: string,
   storyId: string,
   officialItemId: string,
+  options: { query?: TransactionQuery } = {},
 ): Promise<Story | null> {
-  await using query = await beginTransaction()
-  await lockOfficialItemMembership(query, storyId, officialItemId)
-  const { rows } = await write(
-    sql`/* adminSetStoryOfficialItem */
+  const story = await runWithTransaction(options.query, async query => {
+    await lockOfficialItemMembership(query, storyId, officialItemId)
+    const { rows } = await write(
+      sql`/* adminSetStoryOfficialItem */
     UPDATE stories
     SET
       official_rss_feed_item_id = ${officialItemId},
@@ -73,20 +77,22 @@ export async function adminSetStoryOfficialItem(
       updated_at,
       deleted_at
   `,
-    { query },
-  )
-  const story = (rows[0] as Story) ?? null
-  if (story)
-    await recordModeratorAction(
-      actorId,
-      {
-        actionType: 'story_official_item_set',
-        metadata: { story_id: storyId, rss_feed_item_id: officialItemId },
-      },
       { query },
     )
-  await query.commit()
-  if (story) await invalidateStories(story.id)
+    const story = (rows[0] as Story) ?? null
+    if (story)
+      await recordModeratorAction(
+        actorId,
+        {
+          actionType: 'story_official_item_set',
+          metadata: { story_id: storyId, rss_feed_item_id: officialItemId },
+        },
+        { query },
+      )
+    if (story && options.query) registerPostCommitAction(query, () => invalidateStories(story.id))
+    return story
+  })
+  if (story && !options.query) await invalidateStories(story.id)
   return story
 }
 

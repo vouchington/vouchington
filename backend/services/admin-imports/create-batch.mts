@@ -1,6 +1,6 @@
 import { getAdminImportsWorkLimit } from '@queues/admin-imports/config'
 import { recordModeratorAction } from '@services/moderator-actions'
-import { beginTransaction, write } from '@data-stores/psql'
+import { runWithTransaction, write, type TransactionQuery } from '@data-stores/psql'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
 import sql from 'sql-template-strings'
@@ -19,16 +19,16 @@ export async function createImportBatch(
   importType: ImportType,
   inputRows: Record<string, unknown>[],
   metadata?: Record<string, unknown>,
+  options: { query?: TransactionQuery } = {},
 ): Promise<CreateBatchResult> {
   const CHUNK_SIZE = getAdminImportsWorkLimit('insert_chunk_size')
   const totalRows = inputRows.length
   assert(totalRows > 0, 400, 'Batch must have at least one row')
   assert(totalRows <= MAX_ROWS, 400, `Batch must not exceed ${MAX_ROWS} rows`)
 
-  await using query = await beginTransaction()
-
-  const { rows: batchRows } = await write(
-    sql`/* createImportBatch */
+  return runWithTransaction(options.query, async query => {
+    const { rows: batchRows } = await write(
+      sql`/* createImportBatch */
       INSERT INTO admin_import_batches (
         import_type,
         created_by_id,
@@ -43,19 +43,19 @@ export async function createImportBatch(
       )
       RETURNING *
     `,
-    { query },
-  )
+      { query },
+    )
 
-  const batch = batchRows[0] as ImportBatch
+    const batch = batchRows[0] as ImportBatch
 
-  // Insert rows in chunks to avoid huge single UNNEST calls
-  const allRows: ImportRow[] = []
-  for (let i = 0; i < inputRows.length; i += CHUNK_SIZE) {
-    const chunk = inputRows.slice(i, i + CHUNK_SIZE)
-    const chunkIndices = chunk.map((_, j) => i + j)
-    // oxlint-disable-next-line no-await-in-loop -- transaction-scoped chunks insert row indexes in deterministic batch order
-    const { rows: chunkRows } = await write(
-      sql`/* createImportBatch */
+    // Insert rows in chunks to avoid huge single UNNEST calls
+    const allRows: ImportRow[] = []
+    for (let i = 0; i < inputRows.length; i += CHUNK_SIZE) {
+      const chunk = inputRows.slice(i, i + CHUNK_SIZE)
+      const chunkIndices = chunk.map((_, j) => i + j)
+      // oxlint-disable-next-line no-await-in-loop -- transaction-scoped chunks insert row indexes in deterministic batch order
+      const { rows: chunkRows } = await write(
+        sql`/* createImportBatch */
         INSERT INTO admin_import_rows (batch_id, row_index, input_data)
         SELECT ${batch.id}, row_index, input_data
         FROM UNNEST(
@@ -64,24 +64,24 @@ export async function createImportBatch(
         ) AS t(row_index, input_data)
         RETURNING *, NULL::UUID AS created_entity_id
       `,
+        { query },
+      )
+      allRows.push(...(chunkRows as ImportRow[]))
+    }
+    const rows = allRows
+    const rowIds = rows.map(r => r.id)
+
+    const result = { batch, rows, rowIds }
+
+    await recordModeratorAction(
+      creator.id,
+      {
+        actionType: 'import_batch_create',
+        adminImportBatchId: batch.id,
+        metadata: { after: { import_type: importType, total_rows: totalRows } },
+      },
       { query },
     )
-    allRows.push(...(chunkRows as ImportRow[]))
-  }
-  const rows = allRows
-  const rowIds = rows.map(r => r.id)
-
-  const result = { batch, rows, rowIds }
-
-  await recordModeratorAction(
-    creator.id,
-    {
-      actionType: 'import_batch_create',
-      adminImportBatchId: batch.id,
-      metadata: { after: { import_type: importType, total_rows: totalRows } },
-    },
-    { query },
-  )
-  await query.commit()
-  return result
+    return result
+  })
 }

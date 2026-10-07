@@ -32,8 +32,8 @@ describe('moderation-appeals staff history', () => {
     const { actorId, id } = await createStaffResolutionFixture('appeal')
     const before = await readStaffResolutionState('appeal', id)
     await expect(
-      withRejectedStaffActionHistory(actorId, async () => {
-        await run(actorId, id, 'staff_or_user')
+      withRejectedStaffActionHistory(async query => {
+        await run(actorId, id, 'staff_or_user', { query })
       }),
     ).rejects.toThrow('staff history rejected')
     expect(await readStaffResolutionState('appeal', id)).toEqual(before)

@@ -1,4 +1,4 @@
-import { read, write } from '@data-stores/psql'
+import { read, write, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export type TestReportIntegrityFlag = {
@@ -131,6 +131,7 @@ export async function insertTestReportAbusePenalty(options: {
 }
 
 export async function insertTestReportIntegrityFlag(options: {
+  query?: TransactionQuery
   postId?: string
   reportedUserId?: string
   hostnameId?: string
@@ -153,7 +154,9 @@ export async function insertTestReportIntegrityFlag(options: {
     resolution = null,
   } = options
 
-  const { rows } = await write<{ id: string }>(sql`/* insertTestReportIntegrityFlag */
+  const { rows } = await (options.query ?? write)<{
+    id: string
+  }>(sql`/* insertTestReportIntegrityFlag */
     WITH flag AS (
       INSERT INTO report_integrity_flags
         (post_id, reported_user_id, hostname_id, rss_feed_item_id,

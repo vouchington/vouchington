@@ -1,16 +1,27 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  getContributionAdmissionReservationStateForTest,
+  insertTestTopic,
+  WEB_PROVENANCE,
+} from '@voucha/test-helpers'
 import {
   getPostCategoryMutationCounts,
-  withRejectedPostCategoryVotes,
+  rejectPostCategoryVotesQuery,
 } from '@voucha/test-helpers/post-category-vote-failures'
+import {
+  admitRouteContribution,
+  contributionPolicySourceForPostType,
+} from '@services/contribution-gating'
 import { getPostByAny } from '@services/posts/get'
 import { updatePost } from '@services/posts/update'
+import { getAuthorizedPostContributionMembershipPlan } from '@services/posts/authorization'
+import { executeCreatePostContribution } from '@services/posts/execute-contribution'
 
 describe('POST /api/v1/posts category atomicity', () => {
-  it('returns 5xx on a vote failure, rolls back all post rows, and permits a same-key retry', async () => {
+  it('retries the same HTTP key after an admitted category vote rolls back', async () => {
     const user = await createTestUser({ administrator: true })
     const request = createRequest()
     await request.authenticateAs(user)
@@ -24,15 +35,37 @@ describe('POST /api/v1/posts category atomicity', () => {
     const body = {
       title: `Atomic post ${suffix}`,
       markdown: `Atomic category #atomic${suffix}`,
-      categories: [{ type: 'topic', topic_id: topicId }],
+      categories: [{ type: 'topic' as const, topic_id: topicId }],
     }
+    const failedAttemptBody = structuredClone(body)
+    const membershipPlan = await getAuthorizedPostContributionMembershipPlan(user)
     const before = await getPostCategoryMutationCounts(user.id)
 
-    await withRejectedPostCategoryVotes(user.id, async () => {
-      const failed = await request.post('/api/v1/posts').set('Idempotency-Key', key).send(body)
-      expect(failed.status).toBeGreaterThanOrEqual(500)
-      expect(failed.status).toBeLessThan(600)
-    })
+    await expect(
+      admitRouteContribution({
+        currentUser: user,
+        membershipPlan,
+        source: contributionPolicySourceForPostType('discussion', true),
+        scope: 'global',
+        postType: 'discussion',
+        idempotencyKeyHeader: key,
+        intent: { route: 'posts.create', body: failedAttemptBody },
+        execute: query =>
+          executeCreatePostContribution(
+            rejectPostCategoryVotesQuery(query),
+            user,
+            WEB_PROVENANCE,
+            failedAttemptBody,
+            membershipPlan,
+          ),
+      }),
+    ).rejects.toThrow('category vote rejected for test')
+    expect(
+      await getContributionAdmissionReservationStateForTest({
+        actorId: user.id,
+        idempotencyKey: key,
+      }),
+    ).toBe('in_progress')
     expect(await getPostCategoryMutationCounts(user.id)).toEqual(before)
 
     const created = await request
@@ -40,6 +73,12 @@ describe('POST /api/v1/posts category atomicity', () => {
       .set('Idempotency-Key', key)
       .send(body)
       .expect(201)
+    expect(
+      await getContributionAdmissionReservationStateForTest({
+        actorId: user.id,
+        idempotencyKey: key,
+      }),
+    ).toBe('committed')
     expect(created.body.post.post_related_topics).toEqual(
       expect.arrayContaining([expect.objectContaining({ id: topicId })]),
     )

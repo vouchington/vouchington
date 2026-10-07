@@ -1,6 +1,11 @@
-import { write } from '@data-stores/psql'
+import {
+  beginTransaction,
+  write,
+  type QueryExecutor,
+  type TransactionQuery,
+} from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { withInjectedFailure } from './injected-failures.mts'
+import { rejectQuery } from './injected-failures.mts'
 
 export async function readStaffActionHistory(actorId: string) {
   const { rows } = await write<{
@@ -24,20 +29,33 @@ export async function readStaffActionHistory(actorId: string) {
   return rows
 }
 
-/**
- * A unique actor predicate keeps the failure injection isolated from concurrent tests. With
- * `phase: 'finished'` only the operation's outcome row is rejected, not its requested row.
- */
-export function withRejectedStaffActionHistory<T>(
-  actorId: string,
-  execute: () => Promise<T>,
+/** Only this executor's history insert fails; `finished` leaves the request insert durable. */
+export function rejectStaffActionHistoryQuery<Query extends QueryExecutor>(
+  query: Query,
   phase?: 'finished',
-): Promise<T> {
-  return withInjectedFailure(
-    phase ? 'staff_action_history_finished' : 'staff_action_history',
-    actorId,
-    execute,
+): Query {
+  return rejectQuery(
+    query,
+    (statement, values) =>
+      statement.startsWith('/* recordModeratorAction') &&
+      statement.includes('moderator_actions') &&
+      (!phase ||
+        values.some(value => typeof value === 'string' && value.includes('"phase":"finished"'))),
+    'staff history rejected for test',
   )
+}
+
+/** Wrap the primary writer for operations that commit intent outside a transaction. */
+export function rejectStaffActionHistoryWrite(phase?: 'finished'): QueryExecutor {
+  return rejectStaffActionHistoryQuery(write, phase)
+}
+
+/** Lend a rejecting query to one mutation; disposal rolls back any partial writes. */
+export async function withRejectedStaffActionHistory<T>(
+  execute: (query: TransactionQuery) => Promise<T>,
+): Promise<T> {
+  await using transaction = await beginTransaction()
+  return await execute(rejectStaffActionHistoryQuery(transaction))
 }
 
 const HISTORY_TARGET_TABLES = {

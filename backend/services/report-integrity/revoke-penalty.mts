@@ -1,5 +1,9 @@
 import { recordModeratorAction } from '@services/moderator-actions'
-import { beginTransaction } from '@data-stores/psql'
+import {
+  registerPostCommitAction,
+  runWithTransaction,
+  type TransactionQuery,
+} from '@data-stores/psql'
 import onError from '@modules/on-error'
 import { markJwtStale } from '@services/jwt-session/invalidation'
 import createHttpError from 'http-errors'
@@ -15,9 +19,10 @@ export type RevokeReportAbusePenaltyResult = {
 export async function revokeReportAbusePenalty(
   currentUserId: string,
   penaltyId: string,
+  options: { query?: TransactionQuery } = {},
 ): Promise<RevokeReportAbusePenaltyResult> {
-  await using query = await beginTransaction()
-  const { rows } = await query(sql`/* revokeReportAbusePenalty */
+  return runWithTransaction(options.query, async query => {
+    const { rows } = await query(sql`/* revokeReportAbusePenalty */
       UPDATE report_abuse_penalties
       SET
         revoked_at    = NOW(),
@@ -36,20 +41,20 @@ export async function revokeReportAbusePenalty(
         updated_at
     `)
 
-  const penalty = rows[0] as ReportAbusePenalty | undefined
-  if (!penalty) throw createHttpError(404, 'Report abuse penalty not found or already revoked')
+    const penalty = rows[0] as ReportAbusePenalty | undefined
+    if (!penalty) throw createHttpError(404, 'Report abuse penalty not found or already revoked')
 
-  // Serialize the final active-penalty check for this user. Different penalty rows do not
-  // conflict with each other, so without this user lock two concurrent revocations could each
-  // observe the other's uncommitted penalty as active and both leave the trust stamp behind.
-  await query(sql`/* revokeReportAbusePenalty_lockUser */
+    // Serialize the final active-penalty check for this user. Different penalty rows do not
+    // conflict with each other, so without this user lock two concurrent revocations could each
+    // observe the other's uncommitted penalty as active and both leave the trust stamp behind.
+    await query(sql`/* revokeReportAbusePenalty_lockUser */
       SELECT id
       FROM users
       WHERE id = ${penalty.user_id}
       FOR UPDATE
     `)
 
-  const cleared = await query(sql`/* revokeReportAbusePenalty_clearStamp */
+    const cleared = await query(sql`/* revokeReportAbusePenalty_clearStamp */
       UPDATE users
       SET bad_faith_reporter_at = NULL
       WHERE id = ${penalty.user_id}
@@ -62,23 +67,24 @@ export async function revokeReportAbusePenalty(
       RETURNING id
     `)
 
-  const clearedUserId = (cleared.rows[0] as { id: string } | undefined)?.id
-  await recordModeratorAction(
-    currentUserId,
-    {
-      actionType: 'report_integrity_penalty_revoke',
-      reportAbusePenaltyId: penaltyId,
-      targetUserId: penalty.user_id,
-      metadata: { before: { revoked_at: null }, after: { revoked_at: penalty.revoked_at } },
-    },
-    { query },
-  )
-  await query.commit()
+    const clearedUserId = (cleared.rows[0] as { id: string } | undefined)?.id
+    await recordModeratorAction(
+      currentUserId,
+      {
+        actionType: 'report_integrity_penalty_revoke',
+        reportAbusePenaltyId: penaltyId,
+        targetUserId: penalty.user_id,
+        metadata: { before: { revoked_at: null }, after: { revoked_at: penalty.revoked_at } },
+      },
+      { query },
+    )
+    // Invalidate the JWT so the trust-tier penalty is lifted on next refresh.
+    if (clearedUserId) {
+      registerPostCommitAction(query, async () => {
+        void markJwtStale(clearedUserId).catch(onError)
+      })
+    }
 
-  // Invalidate the JWT so the trust-tier penalty is lifted on next refresh.
-  if (clearedUserId) {
-    void markJwtStale(clearedUserId).catch(onError)
-  }
-
-  return { penalty, penaltyId: penalty.id, userId: penalty.user_id }
+    return { penalty, penaltyId: penalty.id, userId: penalty.user_id }
+  })
 }

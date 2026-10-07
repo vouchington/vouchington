@@ -16,6 +16,7 @@ import { revokeReportAbusePenalty } from './revoke-penalty.mts'
 import { resolveReportIntegrityFlag } from './resolve-flag.mts'
 import type { PrivateUser } from '@services/users/types'
 import { isJwtStale } from '@data-stores/valkey/jwt-stale'
+import { withPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
 
 describe('applyReportAbusePenalty / revokeReportAbusePenalty', () => {
   const randomUsername = () => `test-ri-penalty-${randomBytes(4).toString('hex')}`
@@ -101,13 +102,33 @@ describe('applyReportAbusePenalty / revokeReportAbusePenalty', () => {
     const first = await applyReportAbusePenalty(adminUser.id, flagId)
     expect(first.penalized_user_count).toBe(1)
 
-    await expect(applyReportAbusePenalty(adminUser.id, flagId)).rejects.toThrow(
-      'Flag is already resolved',
-    )
+    await expect(applyReportAbusePenalty(adminUser.id, flagId)).rejects.toMatchObject({
+      status: 409,
+      message: 'Flag is already resolved',
+    })
 
     const penalties = await getTestReportAbusePenaltiesByFlagId(flagId)
     expect(penalties).toHaveLength(1)
   }, 60_000)
+
+  it('claims a flag inserted in the supplied transaction without requiring another client', async () => {
+    const targetUser = await createTestUserDirect({ username: randomUsername() })
+    await withPostgresTransactionForTest(async query => {
+      const flagId = await insertTestReportIntegrityFlag({
+        reportedUserId: targetUser.id,
+        query,
+      })
+      const result = await applyReportAbusePenalty(adminUser.id, flagId, { query })
+      expect(result.flag).toMatchObject({ id: flagId, resolution: 'penalized' })
+    })
+    expect(await getTestReportIntegrityFlagsByUserId(targetUser.id)).toEqual([])
+  }, 30_000)
+
+  it('distinguishes a missing flag from an already resolved flag', async () => {
+    await expect(applyReportAbusePenalty(adminUser.id, crypto.randomUUID())).rejects.toMatchObject({
+      status: 404,
+    })
+  }, 30_000)
 
   it('commits exactly one terminal outcome when dismissal races reporter penalties', async () => {
     const targetUser = await createTestUserDirect({ username: randomUsername() })

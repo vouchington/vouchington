@@ -45,7 +45,14 @@ describe('route contribution admission contract', () => {
       expect(route).toContain('admitRouteContribution')
       expect(route).toContain("ctx.req.headers['idempotency-key']")
       expect(route).toContain(source)
-      expect(route).toContain('executePreparedContribution')
+      const usesPostExecutor = file.includes('posts-create-post.mts')
+      const executor = usesPostExecutor
+        ? await readFile(new URL('../posts/execute-contribution.mts', import.meta.url), 'utf8')
+        : route
+      expect(route).toContain(
+        usesPostExecutor ? 'executeCreatePostContribution' : 'executePreparedContribution',
+      )
+      expect(executor).toContain('executePreparedContribution')
       expect(route.lastIndexOf('admitRouteContribution')).toBeGreaterThan(
         route.indexOf('assertCanContribute'),
       )

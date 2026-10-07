@@ -1,5 +1,9 @@
 import { assertReviewDisputeDelivered } from './assert-delivered.mts'
-import { beginTransaction } from '@data-stores/psql'
+import {
+  registerPostCommitAction,
+  runWithTransaction,
+  type TransactionQuery,
+} from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import onError from '@modules/on-error'
@@ -20,55 +24,58 @@ export async function resolveReviewDisputeRemove(
   staffUserId: string,
   disputeId: string,
   trainingEvidence: ModerationTrainingEvidence,
+  options: { query?: TransactionQuery } = {},
 ): Promise<ReviewDisputeResponse> {
-  await assertReviewDisputeDelivered(disputeId)
   const now = new Date()
-  await using query = await beginTransaction()
-  const { rows } = await query(
-    sql`/* resolveReviewDisputeRemove */
+  return runWithTransaction(options.query, async query => {
+    await assertReviewDisputeDelivered(disputeId, { query })
+    const { rows } = await query(
+      sql`/* resolveReviewDisputeRemove */
       UPDATE review_disputes
       SET resolution_action = 'remove',
           resolved_at = ${now},
           resolved_by_id = ${staffUserId}
       WHERE id = ${disputeId} AND resolved_at IS NULL
       RETURNING `.append(DISPUTE_RETURNING),
-  )
-  const row = rows[0] as ReviewDisputeResolutionRow | undefined
-  assert(row, 404, 'Dispute not found or already resolved')
+    )
+    const row = rows[0] as ReviewDisputeResolutionRow | undefined
+    assert(row, 404, 'Dispute not found or already resolved')
 
-  const [, lifecycleId] = await Promise.all([
-    setPostClearanceStatus(row.post_id, 'rejected', staffUserId, { query }),
-    appendLifecycleChange(disputeId, 'resolve_remove', staffUserId, {}, { query }),
-  ])
-  await query(sql`/* resolveReviewDisputeRemove:setLifecycle */
+    const [, lifecycleId] = await Promise.all([
+      setPostClearanceStatus(row.post_id, 'rejected', staffUserId, { query }),
+      appendLifecycleChange(disputeId, 'resolve_remove', staffUserId, {}, { query }),
+    ])
+    await query(sql`/* resolveReviewDisputeRemove:setLifecycle */
       UPDATE review_disputes SET latest_lifecycle_change_id = ${lifecycleId} WHERE id = ${disputeId}
     `)
-  await recordModerationTrainingFeedback(
-    {
-      trainingEvidence,
-      sourceType: 'review_dispute',
-      eventType: 'dispute_resolved',
-      label: 'accepted',
-      humanAction: 'resolve_remove',
-      actorUserId: staffUserId,
-      communityId: row.community_id,
-      postId: row.post_id,
-      reviewDisputeId: disputeId,
-      metadata: { reason: row.reason, recommended_action: row.recommended_action },
-    },
-    { query },
-  )
-  const updated = row
-  await logDisputeResolution(staffUserId, 'resolve_report', disputeId, updated.post_id, { query })
-  await query.commit()
-  if (updated.post_author_id) {
-    import('@services/notifications/create-review-actioned-notification')
-      .then(({ createReviewActionedNotification }) =>
-        createReviewActionedNotification(updated.post_author_id!, disputeId, 'remove'),
-      )
-      .catch(onError)
-  }
-  return await getReviewDisputeAfterMutation(disputeId)
+    await recordModerationTrainingFeedback(
+      {
+        trainingEvidence,
+        sourceType: 'review_dispute',
+        eventType: 'dispute_resolved',
+        label: 'accepted',
+        humanAction: 'resolve_remove',
+        actorUserId: staffUserId,
+        communityId: row.community_id,
+        postId: row.post_id,
+        reviewDisputeId: disputeId,
+        metadata: { reason: row.reason, recommended_action: row.recommended_action },
+      },
+      { query },
+    )
+    const updated = row
+    await logDisputeResolution(staffUserId, 'resolve_report', disputeId, updated.post_id, { query })
+    if (updated.post_author_id) {
+      registerPostCommitAction(query, async () => {
+        import('@services/notifications/create-review-actioned-notification')
+          .then(({ createReviewActionedNotification }) =>
+            createReviewActionedNotification(updated.post_author_id!, disputeId, 'remove'),
+          )
+          .catch(onError)
+      })
+    }
+    return getReviewDisputeAfterMutation(disputeId, { query })
+  })
 }
 
 export async function resolveReviewDisputeAnnotate(
@@ -76,62 +83,65 @@ export async function resolveReviewDisputeAnnotate(
   disputeId: string,
   bodyText: string,
   trainingEvidence: ModerationTrainingEvidence,
+  options: { query?: TransactionQuery } = {},
 ): Promise<ReviewDisputeResponse> {
   assert(bodyText.trim().length > 0, 422, 'body_text is required for annotation')
   assert(bodyText.length <= 2000, 422, 'body_text too long')
   const trimmedBody = bodyText.trim()
-  await assertReviewDisputeDelivered(disputeId)
   const now = new Date()
 
-  await using query = await beginTransaction()
-  const { rows: disputeRows } = await query(
-    sql`/* resolveReviewDisputeAnnotate:resolve */
+  return runWithTransaction(options.query, async query => {
+    await assertReviewDisputeDelivered(disputeId, { query })
+    const { rows: disputeRows } = await query(
+      sql`/* resolveReviewDisputeAnnotate:resolve */
       UPDATE review_disputes
       SET resolution_action = 'annotate',
           resolved_at = ${now},
           resolved_by_id = ${staffUserId}
       WHERE id = ${disputeId} AND resolved_at IS NULL
       RETURNING `.append(DISPUTE_RETURNING),
-  )
-  const row = disputeRows[0] as ReviewDisputeResolutionRow | undefined
-  assert(row, 404, 'Dispute not found or already resolved')
+    )
+    const row = disputeRows[0] as ReviewDisputeResolutionRow | undefined
+    assert(row, 404, 'Dispute not found or already resolved')
 
-  const [lifecycleId] = await Promise.all([
-    appendLifecycleChange(disputeId, 'resolve_annotate', staffUserId, {}, { query }),
-    query(sql`/* resolveReviewDisputeAnnotate:annotation */
+    const [lifecycleId] = await Promise.all([
+      appendLifecycleChange(disputeId, 'resolve_annotate', staffUserId, {}, { query }),
+      query(sql`/* resolveReviewDisputeAnnotate:annotation */
         INSERT INTO post_dispute_annotations (post_id, review_dispute_id, body_text, created_by_id)
         VALUES (${row.post_id}, ${disputeId}, ${trimmedBody}, ${staffUserId})
         ON CONFLICT DO NOTHING
       `),
-  ])
-  await query(sql`/* resolveReviewDisputeAnnotate:setLifecycle */
+    ])
+    await query(sql`/* resolveReviewDisputeAnnotate:setLifecycle */
       UPDATE review_disputes SET latest_lifecycle_change_id = ${lifecycleId} WHERE id = ${disputeId}
     `)
-  await recordModerationTrainingFeedback(
-    {
-      trainingEvidence,
-      sourceType: 'review_dispute',
-      eventType: 'dispute_resolved',
-      label: 'edited',
-      humanAction: 'resolve_annotate',
-      actorUserId: staffUserId,
-      communityId: row.community_id,
-      postId: row.post_id,
-      reviewDisputeId: disputeId,
-      note: trimmedBody,
-      metadata: { reason: row.reason, recommended_action: row.recommended_action },
-    },
-    { query },
-  )
-  const updated = row
-  await logDisputeResolution(staffUserId, 'resolve_report', disputeId, updated.post_id, { query })
-  await query.commit()
-  if (updated.post_author_id) {
-    import('@services/notifications/create-review-actioned-notification')
-      .then(({ createReviewActionedNotification }) =>
-        createReviewActionedNotification(updated.post_author_id!, disputeId, 'annotate'),
-      )
-      .catch(onError)
-  }
-  return await getReviewDisputeAfterMutation(disputeId)
+    await recordModerationTrainingFeedback(
+      {
+        trainingEvidence,
+        sourceType: 'review_dispute',
+        eventType: 'dispute_resolved',
+        label: 'edited',
+        humanAction: 'resolve_annotate',
+        actorUserId: staffUserId,
+        communityId: row.community_id,
+        postId: row.post_id,
+        reviewDisputeId: disputeId,
+        note: trimmedBody,
+        metadata: { reason: row.reason, recommended_action: row.recommended_action },
+      },
+      { query },
+    )
+    const updated = row
+    await logDisputeResolution(staffUserId, 'resolve_report', disputeId, updated.post_id, { query })
+    if (updated.post_author_id) {
+      registerPostCommitAction(query, async () => {
+        import('@services/notifications/create-review-actioned-notification')
+          .then(({ createReviewActionedNotification }) =>
+            createReviewActionedNotification(updated.post_author_id!, disputeId, 'annotate'),
+          )
+          .catch(onError)
+      })
+    }
+    return getReviewDisputeAfterMutation(disputeId, { query })
+  })
 }

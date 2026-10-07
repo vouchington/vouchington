@@ -1,5 +1,9 @@
 import { recordModeratorAction } from '@services/moderator-actions'
-import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
+import {
+  registerPostCommitAction,
+  runWithTransaction,
+  type TransactionQuery,
+} from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { enqueueBulkUpdateAgentModerationElectionVoteStats } from '@queues/elections/enqueues'
 import type {
@@ -40,6 +44,7 @@ export async function upsertAgentModerationElectionVotes(
   votes: Array<{ entityId: string; score: ElectionVoteScore }>,
   context: VoteEventContext = NULL_VOTE_CONTEXT,
   onVote?: (vote: ElectionVoteMutationResult, query: TransactionQuery) => Promise<void>,
+  options: { query?: TransactionQuery } = {},
 ): Promise<ElectionVoteMutationResult[]> {
   if (votes.length === 0) return []
 
@@ -59,26 +64,28 @@ export async function upsertAgentModerationElectionVotes(
   values.sort((a, b) => a.agentModerationId.localeCompare(b.agentModerationId))
 
   // Upsert user agent into lookup table if provided (counts as the 1st of 2 allowed DB calls)
-  const userAgentId = await upsertUserAgentString(context.userAgent?.trim() || null)
+  const userAgentId = await upsertUserAgentString(context.userAgent?.trim() || null, options)
 
-  await using query = await beginTransaction()
-  await lockAgentModerationVoteMutation(
-    query,
-    userId,
-    values.map(vote => vote.agentModerationId),
-  )
-  const { rows: previousVotes } = await query<{
-    agent_moderation_id: string
-    score: ElectionVoteScore
-  }>(sql`/* upsertAgentModerationElectionVotes:previous */
+  return runWithTransaction(options.query, async query => {
+    await lockAgentModerationVoteMutation(
+      query,
+      userId,
+      values.map(vote => vote.agentModerationId),
+    )
+    const { rows: previousVotes } = await query<{
+      agent_moderation_id: string
+      score: ElectionVoteScore
+    }>(sql`/* upsertAgentModerationElectionVotes:previous */
     SELECT DISTINCT ON (agent_moderation_id) agent_moderation_id, score
     FROM agent_moderation_votes
     WHERE user_id = ${userId}
       AND agent_moderation_id = ANY(${values.map(vote => vote.agentModerationId)}::uuid[])
     ORDER BY agent_moderation_id, id DESC
   `)
-  const previousScores = new Map(previousVotes.map(vote => [vote.agent_moderation_id, vote.score]))
-  const result = await query(sql`/* upsertAgentModerationElectionVotes */
+    const previousScores = new Map(
+      previousVotes.map(vote => [vote.agent_moderation_id, vote.score]),
+    )
+    const result = await query(sql`/* upsertAgentModerationElectionVotes */
   WITH input_votes AS (
     SELECT *
     FROM UNNEST(
@@ -103,37 +110,38 @@ export async function upsertAgentModerationElectionVotes(
   ORDER BY input_votes.agent_moderation_id
   RETURNING agent_moderation_id AS entity_id, post_id, user_id, score, created_at
   `)
-  const inserted = result.rows as (ElectionVoteMutationResult & { post_id: string })[]
-  if (onVote) {
-    await Promise.all(inserted.map(vote => onVote(vote, query)))
-  }
-  await Promise.all(
-    inserted.map(vote =>
-      recordModeratorAction(
-        userId,
-        {
-          actionType:
-            vote.score === null ? 'agent_moderation_vote_delete' : 'agent_moderation_vote_set',
-          agentModerationId: vote.entity_id,
-          agentModerationPostId: vote.post_id,
-          postId: vote.post_id,
-          metadata: {
-            before: { score: previousScores.get(vote.entity_id) ?? null },
-            after: { score: vote.score },
+    const inserted = result.rows as (ElectionVoteMutationResult & { post_id: string })[]
+    if (onVote) {
+      await Promise.all(inserted.map(vote => onVote(vote, query)))
+    }
+    await Promise.all(
+      inserted.map(vote =>
+        recordModeratorAction(
+          userId,
+          {
+            actionType:
+              vote.score === null ? 'agent_moderation_vote_delete' : 'agent_moderation_vote_set',
+            agentModerationId: vote.entity_id,
+            agentModerationPostId: vote.post_id,
+            postId: vote.post_id,
+            metadata: {
+              before: { score: previousScores.get(vote.entity_id) ?? null },
+              after: { score: vote.score },
+            },
           },
-        },
-        { query },
+          { query },
+        ),
       ),
-    ),
-  )
-  const rows = inserted.map(({ post_id: _postId, ...vote }) => vote)
+    )
+    const rows = inserted.map(({ post_id: _postId, ...vote }) => vote)
 
-  await query.commit()
+    const entityIds = [...valuesByEntityId.keys()]
+    // Re-enqueue current no-op retries too: their preceding committed ballot may have outlived a
+    // transient aggregate-enqueue failure. The queue boundary reports failures independently.
+    registerPostCommitAction(query, async () => {
+      void enqueueBulkUpdateAgentModerationElectionVoteStats(entityIds)
+    })
 
-  const entityIds = [...valuesByEntityId.keys()]
-  // Re-enqueue current no-op retries too: their preceding committed ballot may have outlived a
-  // transient aggregate-enqueue failure. The queue boundary reports failures independently.
-  void enqueueBulkUpdateAgentModerationElectionVoteStats(entityIds)
-
-  return rows
+    return rows
+  })
 }

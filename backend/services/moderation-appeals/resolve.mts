@@ -1,4 +1,8 @@
-import { beginTransaction } from '@data-stores/psql'
+import {
+  registerPostCommitAction,
+  runWithTransaction,
+  type TransactionQuery,
+} from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { setPostClearanceStatus } from '@services/post-clearance'
@@ -34,119 +38,130 @@ export async function resolveModerationAppealAccept(
   staffUserId: string,
   appealId: string,
   trainingEvidence: ModerationTrainingEvidence,
+  options: { query?: TransactionQuery } = {},
 ): Promise<ModerationAppealResponse> {
-  await assertModerationAppealDelivered(appealId)
   const now = new Date()
-  await using query = await beginTransaction()
-  await lockSuspensionAppealAuthorLifecycle(query, appealId)
-  const { rows } = await query(
-    sql`/* resolveModerationAppealAccept */
+  let afterCommit: (() => Promise<void>) | undefined
+  const response = await runWithTransaction(options.query, async query => {
+    await Promise.all([
+      assertModerationAppealDelivered(appealId, { query }),
+      lockSuspensionAppealAuthorLifecycle(query, appealId),
+    ])
+    const { rows } = await query(
+      sql`/* resolveModerationAppealAccept */
       UPDATE moderation_appeals
       SET resolution_action = 'accept',
           resolved_at = ${now},
           resolved_by_id = ${staffUserId}
       WHERE id = ${appealId} AND sent_at IS NOT NULL AND resolved_at IS NULL
       RETURNING `.append(APPEAL_RETURNING),
-  )
-  const row = rows[0] as ModerationAppeal | undefined
-  assert(row, 404, 'Appeal not found or already resolved')
+    )
+    const row = rows[0] as ModerationAppeal | undefined
+    assert(row, 404, 'Appeal not found or already resolved')
 
-  // Undo the original action based on which FK is set
-  if (row.user_warning_id) {
-    await revokeUserWarning(staffUserId, row.user_warning_id, { query })
-  } else if (row.community_ban_id) {
-    await liftCommunityBanById(staffUserId, row.community_ban_id, { query })
-  } else if (row.user_suspension_id) {
-    const { rows: adminRows } = await query(sql`/* resolveModerationAppealAccept:checkAdmin */
+    // Undo the original action based on which FK is set
+    if (row.user_warning_id) {
+      await revokeUserWarning(staffUserId, row.user_warning_id, { query })
+    } else if (row.community_ban_id) {
+      await liftCommunityBanById(staffUserId, row.community_ban_id, { query })
+    } else if (row.user_suspension_id) {
+      const { rows: adminRows } = await query(sql`/* resolveModerationAppealAccept:checkAdmin */
         SELECT ur.user_id
         FROM user_roles ur
         JOIN user_role_types urt ON urt.id = ur.role_type_id
         WHERE ur.user_id = ${staffUserId} AND urt.slug = 'administrator'
         LIMIT 1
       `)
-    assert(adminRows.length > 0, 403, 'Only administrators may accept suspension appeals')
-    await liftUserSuspensionById(staffUserId, row.user_suspension_id, { query })
-  } else if (row.post_id) {
-    if (row.post_removal_kind === 'community') {
-      await lockPostPublication(query, row.post_id)
-      const { rows: reinstatedReviews } = await query<{ community_id: string }>(
-        sql`/* resolveModerationAppealAccept:clearCommunityUnpublish */
+      assert(adminRows.length > 0, 403, 'Only administrators may accept suspension appeals')
+      await liftUserSuspensionById(staffUserId, row.user_suspension_id, { query })
+    } else if (row.post_id) {
+      if (row.post_removal_kind === 'community') {
+        await lockPostPublication(query, row.post_id)
+        const { rows: reinstatedReviews } = await query<{ community_id: string }>(
+          sql`/* resolveModerationAppealAccept:clearCommunityUnpublish */
   UPDATE community_post_reviews
   SET unpublished_at = NULL, unpublished_by_id = NULL
   WHERE post_id = ${row.post_id} AND unpublished_at IS NOT NULL
   RETURNING community_id`,
-      )
-      const reinstatedReview = reinstatedReviews[0]
-      if (reinstatedReview) {
-        await recordPostPublicationChange(query, {
-          scope: { type: 'post', postId: row.post_id },
-          reason: 'community_publication_changed',
-          impactedCommunityIds: [reinstatedReview.community_id],
-          footprint: { priorCommunityId: reinstatedReview.community_id },
-        })
+        )
+        const reinstatedReview = reinstatedReviews[0]
+        if (reinstatedReview) {
+          await recordPostPublicationChange(query, {
+            scope: { type: 'post', postId: row.post_id },
+            reason: 'community_publication_changed',
+            impactedCommunityIds: [reinstatedReview.community_id],
+            footprint: { priorCommunityId: reinstatedReview.community_id },
+          })
+        }
+      } else {
+        await setPostClearanceStatus(row.post_id, 'approved', staffUserId, { query })
       }
-    } else {
-      await setPostClearanceStatus(row.post_id, 'approved', staffUserId, { query })
     }
-  }
 
-  const lifecycleId = await appendAppealLifecycleChange(
-    appealId,
-    'resolve_accept',
-    staffUserId,
-    {},
-    { query },
-  )
-  await Promise.all([
-    query(sql`/* resolveModerationAppealAccept:setLifecycle */
+    const lifecycleId = await appendAppealLifecycleChange(
+      appealId,
+      'resolve_accept',
+      staffUserId,
+      {},
+      { query },
+    )
+    await Promise.all([
+      query(sql`/* resolveModerationAppealAccept:setLifecycle */
         UPDATE moderation_appeals SET latest_lifecycle_change_id = ${lifecycleId} WHERE id = ${appealId}
       `),
-    recordModerationTrainingFeedback(
-      {
-        trainingEvidence,
-        sourceType: 'moderation_appeal',
-        eventType: 'appeal_resolved',
-        label: 'accepted',
-        humanAction: 'resolve_accept',
-        actorUserId: staffUserId,
-        communityId: row.community_id,
-        postId: row.post_id,
-        moderationAppealId: appealId,
-        metadata: { recommended_action: row.recommended_action },
-      },
+      recordModerationTrainingFeedback(
+        {
+          trainingEvidence,
+          sourceType: 'moderation_appeal',
+          eventType: 'appeal_resolved',
+          label: 'accepted',
+          humanAction: 'resolve_accept',
+          actorUserId: staffUserId,
+          communityId: row.community_id,
+          postId: row.post_id,
+          moderationAppealId: appealId,
+          metadata: { recommended_action: row.recommended_action },
+        },
+        { query },
+      ),
+    ])
+    const updated = row
+    await logAppealResolution(
+      staffUserId,
+      'resolve_appeal',
+      appealId,
+      updated.appellant_user_id,
+      updated.community_id,
       { query },
-    ),
-  ])
-  const updated = row
-  await logAppealResolution(
-    staffUserId,
-    'resolve_appeal',
-    appealId,
-    updated.appellant_user_id,
-    updated.community_id,
-    { query },
-  )
-  await query.commit()
-  const postCommitWork: Promise<unknown>[] = [maybeResolveCase(updated.case_id, staffUserId)]
-  if (updated.user_suspension_id) {
-    postCommitWork.push(invalidate.users(updated.appellant_user_id))
-  }
-  if (updated.user_suspension_id || updated.post_id) {
-    void enqueueRefreshTopHashtags()
-  }
-  await Promise.all(postCommitWork)
-  return await getModerationAppealAfterMutation(appealId)
+    )
+    afterCommit = async () => {
+      const postCommitWork: Promise<unknown>[] = [maybeResolveCase(updated.case_id, staffUserId)]
+      if (updated.user_suspension_id) {
+        postCommitWork.push(invalidate.users(updated.appellant_user_id))
+      }
+      if (updated.user_suspension_id || updated.post_id) {
+        void enqueueRefreshTopHashtags()
+      }
+      await Promise.all(postCommitWork)
+    }
+    if (options.query) registerPostCommitAction(query, afterCommit)
+    return getModerationAppealAfterMutation(appealId, { query })
+  })
+  if (!options.query) await afterCommit?.()
+  return response
 }
 
 export async function resolveModerationAppealReduce(
   staffUserId: string,
   appealId: string,
   trainingEvidence: ModerationTrainingEvidence,
+  options: { query?: TransactionQuery } = {},
 ): Promise<ModerationAppealResponse> {
   return finalizeDeliveredModerationAppeal(
     staffUserId,
     appealId,
     REDUCE_DELIVERED_APPEAL_RESOLUTION,
     trainingEvidence,
+    options,
   )
 }

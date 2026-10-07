@@ -9,10 +9,10 @@ import { assessRecaptchaToken } from '@services/recaptcha'
 import {
   admitRouteContribution,
   contributionPolicySourceForPostType,
-  executePreparedContribution,
 } from '@services/contribution-gating'
 import { isHoneypotTriggered } from '@services/honeypot'
-import { preparePostWithCommunityReviews, type CreatePostInput } from '@services/posts'
+import type { CreatePostInput } from '@services/posts'
+import { executeCreatePostContribution } from '@services/posts/execute-contribution'
 import { isSupportedPostType, validateCreatePostInput } from '@services/posts/create/validation'
 import { assertCanCreateAdminOnlyPostType } from '@services/posts/create/admin-only-post-type'
 import {
@@ -157,19 +157,7 @@ app.route('/api/v1/posts').post(async (ctx: Context) => {
         ip: ctx.ip,
       }),
     execute: query =>
-      executePreparedContribution(query, async () => {
-        const prepared = await preparePostWithCommunityReviews(
-          currentUser,
-          provenance,
-          body,
-          membershipPlan,
-          { query },
-        )
-        return {
-          response: prepared.response.post,
-          finalize: async () => (await prepared.finalize()).post,
-        }
-      }),
+      executeCreatePostContribution(query, currentUser, provenance, body, membershipPlan),
   })
   if (admission.kind === 'in_progress') {
     ctx.set('Retry-After', String(admission.retryAfterSeconds))

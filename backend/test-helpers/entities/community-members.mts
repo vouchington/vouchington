@@ -1,4 +1,4 @@
-import { read, write } from '@data-stores/psql'
+import { read, write, type TransactionQuery } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
@@ -12,6 +12,7 @@ type InsertTestCommunityMemberOptions = {
   approvedById?: string | null
   createdAt?: Date
   entities?: unknown[]
+  query?: TransactionQuery
 }
 
 export async function insertTestCommunityMember(
@@ -31,6 +32,7 @@ export async function insertTestCommunityMember(
         )
         RETURNING *
         `,
+        { query: options.query },
       )
     : await write(
         sql`/* insertTestCommunityMember */
@@ -43,6 +45,7 @@ export async function insertTestCommunityMember(
         )
         RETURNING *
         `,
+        { query: options.query },
       )
   return rows[0] as CommunityMember
 }

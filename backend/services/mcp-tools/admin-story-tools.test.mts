@@ -54,14 +54,14 @@ describe('shared editorial story operations', () => {
       })
       if (operation !== 'add') await setTestItemStoryId(itemId, story.id)
       const before = await getStoryItemIds(story.id)
-      await withRejectedStaffActionHistory(admin.id, async () => {
+      await withRejectedStaffActionHistory(async query => {
         const mutation =
           operation === 'add'
             ? addEditorialStoryItem
             : operation === 'remove'
               ? removeEditorialStoryItem
               : setEditorialStoryOfficialItem
-        await expect(mutation(admin, story.id, itemId)).rejects.toThrow(
+        await expect(mutation(admin, story.id, itemId, { query })).rejects.toThrow(
           'staff history rejected for test',
         )
       })
@@ -121,8 +121,8 @@ describe('shared editorial story operations', () => {
   it('rolls back the story rename when staff history fails', async () => {
     const user = await createTestUserDirect({ administrator: true })
     const story = await insertTestStory({ title: 'Before' })
-    await withRejectedStaffActionHistory(user.id, async () => {
-      await expect(renameEditorialStory(user, story.id, 'After')).rejects.toThrow(
+    await withRejectedStaffActionHistory(async query => {
+      await expect(renameEditorialStory(user, story.id, 'After', { query })).rejects.toThrow(
         'staff history rejected for test',
       )
     })
