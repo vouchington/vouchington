@@ -122,13 +122,13 @@ describe('applyReportAbusePenalty / revokeReportAbusePenalty', () => {
       expect(result.flag).toMatchObject({ id: flagId, resolution: 'penalized' })
     })
     expect(await getTestReportIntegrityFlagsByUserId(targetUser.id)).toEqual([])
-  }, 60_000)
+  }, 30_000)
 
   it('distinguishes a missing flag from an already resolved flag', async () => {
     await expect(applyReportAbusePenalty(adminUser.id, crypto.randomUUID())).rejects.toMatchObject({
       status: 404,
     })
-  }, 60_000)
+  }, 30_000)
 
   it('commits exactly one terminal outcome when dismissal races reporter penalties', async () => {
     const targetUser = await createTestUserDirect({ username: randomUsername() })
