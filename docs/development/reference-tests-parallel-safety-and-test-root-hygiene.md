@@ -318,7 +318,7 @@ stuck statement below vitest's own `testTimeout: 30_000`. Two changes close that
   `beginBoundedTransaction`, and the advisory-lock helpers set their own session/transaction-local
   `statement_timeout` and are unaffected.
 - `query-telemetry.mts`'s `recordQueryTiming` writes a `[pg-query-failed] annotation=<name>
-pool=<pool> ms=<durationMs>` line to stderr for any errored query slower than
+  pool=<pool> ms=<durationMs>` line to stderr for any errored query slower than
   `SLOW_QUERY_FAILURE_LOG_THRESHOLD_MS` (500ms) while running under test — the Postgres `57014`
   error itself carries no query text, so this is the only place that names the query.
 

@@ -20,7 +20,7 @@ for the full policy.
 
 1. Use typed dynamic-import mocks: `vi.mock(import('specifier'), () => ({ ... }))`. Preserve the
    factory's runtime shape; use a whole-module compatibility assertion (`as unknown as typeof
-import(...)`) only when TypeScript rejects an intentional partial implementation. Do not add
+   import(...)`) only when TypeScript rejects an intentional partial implementation. Do not add
    file-level suppressions for `vitest/prefer-import-in-mock` or `jest/no-untyped-mock-factory`.
 2. Mock `next/navigation` hooks only through the shared singleton —
    `navMockModule`/`createNavMock()` from `web/test-helpers/next-navigation-mock.ts` — imported

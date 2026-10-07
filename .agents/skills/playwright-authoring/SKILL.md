@@ -27,7 +27,7 @@ fixture, viewport, hydration, and debugging examples.
 ## Interaction and locators
 
 - Never use raw `page.goto(url)` — use `navigateTo(page, url)`. Exception: `const response = await
-page.goto(url)` when the response object is needed.
+  page.goto(url)` when the response object is needed.
 - Use `pressSequentially()` instead of `fill()` for inputs with React event handlers, and
   `withMonitoredPage()` for extra pages instead of `browser.newPage()`.
 - **`data-pw` / `getByTestId` is the first-choice locator.** For duplicated aside content, use

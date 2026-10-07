@@ -39,7 +39,7 @@ Current packages:
   canonical `en` key set; its typed native-consumer manifest generates deterministic Swift and
   .NET resources in the external native-client checkout through
   `node dev/native-localization.mts --output-root <absolute-client-root> --consumer-root
-<absolute-client-root>`. Native-only catalog additions live in durable feature modules under
+  <absolute-client-root>`. Native-only catalog additions live in durable feature modules under
   `ui-messages/locale-catalogs.mts` and `localization/catalog/`; the tooling-only generator composes
   the matching native locale with the canonical web locale, so web bundles and hydration payloads
   never include `native.*`.

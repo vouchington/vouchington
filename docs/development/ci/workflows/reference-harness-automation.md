@@ -218,7 +218,7 @@ was accepted or reused.
   Fix Main's completed runs via `workflow_run` and reruns known-transient failures once. It is not,
   and must never become, part of `fix-main.yml`'s own `on.workflow_run.workflows:` subscription list —
   `fix-main.dispatch.test.mts` pins that list to exactly the main-push workflows plus `Dispatch
-completed deploy`, so Automation Fix Main can never legally subscribe to itself, and nothing watches
+  completed deploy`, so Automation Fix Main can never legally subscribe to itself, and nothing watches
   Fix Main Self Retry back. That gives the self-monitoring chain a fixed depth of two runs. Termination
   is layered: only `failure` conclusions are actionable; each transient-retry rule's own `maxAttempts`
   ceiling applies (both rules that can match a Fix Main failure cap at 1); and a structural refusal

@@ -48,7 +48,7 @@ parser may also retain repeated-key compatibility.
 - `ranking`: `{ ranking: number, id: string }` - For ranking-based sorting
 - `timestamp`: `{ timestamp: number, id: string }` - For time-based sorting
 - Resource-bound time lists use `ScopedTimestampCursor`: `{ timestamp: number, id: string,
-scope: string }`. Decode with `decodeScopedTimestampUuidCursor()` to validate the UUID and reject
+  scope: string }`. Decode with `decodeScopedTimestampUuidCursor()` to validate the UUID and reject
   replay against another normalized owner, filter set, or order.
 - `precise_timestamp`: `{ timestamp: string, id: string }` - Canonical UTC microsecond timestamps
   for PostgreSQL keysets whose precision must remain exact
