@@ -1,7 +1,6 @@
-import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { loadCatalogDirectory } from '@vouchington/localization-compiler'
 import {
+  assertScannableWebAliases,
   closureIssuesForFile,
   computedDynamicImportHit,
   formatClosureScanFailure,
@@ -33,22 +32,28 @@ describe('quotedAliasesFromText', () => {
     )
   })
 
-  it('recognizes the first segment of every web catalog alias', async () => {
-    const { catalog } = await loadCatalogDirectory(
-      join(import.meta.dirname, '../../localization/catalog'),
-    )
-    const namespaces = new Set<string>()
-    for (const row of catalog.aliases) {
-      if (row.consumer === 'web') namespaces.add(row.alias.split('.')[0] ?? '')
-    }
-    const unscanned = [...namespaces].filter(
-      namespace =>
-        !quotedAliasesFromText(`t('${namespace}.page.title')`).has(`${namespace}.page.title`),
-    )
+  it('recognizes the first segment of every supported web alias', () => {
+    expect(() =>
+      assertScannableWebAliases([
+        'common.page.title',
+        'extracted.page.title',
+        'moderation.page.title',
+        'nav.page.title',
+        'settings.page.title',
+        'shared.page.title',
+      ]),
+    ).not.toThrow()
+  })
 
-    expect(namespaces.size).toBeGreaterThan(0)
-    expect(unscanned).toEqual([])
-  }, 60_000)
+  it('rejects unsupported namespaces even alongside recognized aliases', () => {
+    expect(() =>
+      assertScannableWebAliases(['nav.home', 'zzz.one', 'future.one', 'zzz.two']),
+    ).toThrow(new Error('Web catalog namespaces are not scanned: future, zzz'))
+  })
+
+  it('rejects a catalog with no web aliases', () => {
+    expect(() => assertScannableWebAliases([])).toThrow(new Error('No web catalog aliases found'))
+  })
 })
 
 describe('unboundedTranslationKeyHit', () => {

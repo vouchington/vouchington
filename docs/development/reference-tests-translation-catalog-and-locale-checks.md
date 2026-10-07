@@ -80,8 +80,9 @@ checks guard that request-selection contract instead of catalog content:
   exclusion list (empty until an entry is justified). Package specifiers stay external. The
   generator also fails computed `import()` lexically, along with unbounded `t()` assembly and
   production `as MessageKey` casts. It then matches quoted alias-shaped literals (first segment is a web
-  catalog namespace listed in `route-source-scan.mts`; `route-source-scan.test.mts` fails when the
-  catalog gains a namespace missing from that list) and fails when a quoted token is not a web
+  catalog namespace listed in `route-source-scan.mts`). Before route discovery, the CLI rejects
+  an empty web alias catalog or any catalog namespace the recognizer cannot scan;
+  `route-source-scan.test.mts` checks that guard using small alias sets. It fails when a quoted token is not a web
   catalog alias. It does not parse `t()` with an AST, and
   `dynamic-import-closure.mts` does not exist. Finite registries of quoted aliases must live in a
   module the route/layout/chrome graph can reach. Add `--diagnostics` for stderr-only phase timings
