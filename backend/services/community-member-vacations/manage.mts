@@ -2,19 +2,23 @@ import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { CommunityMemberVacation, CommunityMemberVacationSettings } from './types.mts'
 
+type CommunityVacationDependencies = { clock?: () => Date }
+
 export async function setMyCommunityVacation(
   currentUserId: string,
   options: {
     communityId: string
     endsAt?: string | null
   },
+  dependencies: CommunityVacationDependencies = {},
 ): Promise<CommunityMemberVacation> {
   const { communityId, endsAt } = options
+  const observedTime = observeCommunityVacationTime(dependencies)
   const { rows } = await write<CommunityMemberVacation>(sql`/* setMyCommunityVacation */
     INSERT INTO community_member_vacations (community_id, user_id, starts_at, ends_at)
-    VALUES (${communityId}, ${currentUserId}, now(), ${endsAt ?? null})
+    VALUES (${communityId}, ${currentUserId}, COALESCE(${observedTime}::timestamptz, now()), ${endsAt ?? null})
     ON CONFLICT (community_id, user_id) DO UPDATE SET
-      starts_at  = now(),
+      starts_at  = COALESCE(${observedTime}::timestamptz, now()),
       ends_at    = EXCLUDED.ends_at
     RETURNING community_id, user_id, starts_at, ends_at, created_at, updated_at
   `)
@@ -39,14 +43,16 @@ export async function clearMyCommunityVacation(
 export async function getMyCommunityVacation(
   currentUserId: string,
   options: { communityId: string },
+  dependencies: CommunityVacationDependencies = {},
 ): Promise<CommunityMemberVacation | null> {
+  const observedTime = observeCommunityVacationTime(dependencies)
   const { rows } = await read<CommunityMemberVacation>(sql`/* getMyCommunityVacation */
     SELECT community_id, user_id, starts_at, ends_at, created_at, updated_at
     FROM community_member_vacations
     WHERE community_id = ${options.communityId}
       AND user_id      = ${currentUserId}
-      AND starts_at    <= now()
-      AND (ends_at IS NULL OR ends_at > now())
+      AND starts_at    <= COALESCE(${observedTime}::timestamptz, now())
+      AND (ends_at IS NULL OR ends_at > COALESCE(${observedTime}::timestamptz, now()))
     LIMIT 1
   `)
   return rows[0] ?? null
@@ -55,7 +61,9 @@ export async function getMyCommunityVacation(
 export async function getMyCommunityVacationSettings(
   currentUserId: string,
   options: { communityId: string },
+  dependencies: CommunityVacationDependencies = {},
 ): Promise<CommunityMemberVacationSettings> {
+  const observedTime = observeCommunityVacationTime(dependencies)
   const { rows } = await read<
     CommunityMemberVacation & { should_suppress_community_digests_while_on_vacation: boolean }
   >(sql`/* getMyCommunityVacationSettings */
@@ -71,8 +79,8 @@ export async function getMyCommunityVacationSettings(
     LEFT JOIN community_member_vacations v
       ON v.community_id = cm.community_id
       AND v.user_id = cm.user_id
-      AND v.starts_at <= now()
-      AND (v.ends_at IS NULL OR v.ends_at > now())
+      AND v.starts_at <= COALESCE(${observedTime}::timestamptz, now())
+      AND (v.ends_at IS NULL OR v.ends_at > COALESCE(${observedTime}::timestamptz, now()))
     WHERE cm.community_id = ${options.communityId}
       AND cm.user_id = ${currentUserId}
       AND cm.removed_at IS NULL
@@ -112,4 +120,13 @@ export async function setSuppressCommunityDigestsWhileOnVacation(
     RETURNING should_suppress_community_digests_while_on_vacation
   `)
   return rows[0]?.should_suppress_community_digests_while_on_vacation ?? false
+}
+
+function observeCommunityVacationTime({ clock }: CommunityVacationDependencies): Date | null {
+  if (!clock) return null
+  const observedTime = clock()
+  if (!Number.isFinite(observedTime.getTime())) {
+    throw new RangeError('Community vacation clock must return a valid Date')
+  }
+  return observedTime
 }
