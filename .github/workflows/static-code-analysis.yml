@@ -85,7 +85,7 @@ jobs:
         run: node static-code-analysis/run-node-checks.mts --checks config-inventory-policy,repo-file-policy,scc-complexity,targeted-guardrails,dependency-license-policy
         timeout-minutes: 5
       - name: Check native localization resources
-        run: node dev/native-localization.mts --validate
+        run: node ci/check-live-native-resources.mts
         timeout-minutes: 2
       - name: Check localization catalog format
         run: pnpm exec vouchington-localization format --check --source localization/catalog

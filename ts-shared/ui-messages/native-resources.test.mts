@@ -2,36 +2,38 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { describe, expect, it } from 'vitest'
-import type { CatalogLeaf } from './index.mts'
 import type { MessageDescriptor, PluralForms } from './message-descriptors.mts'
 import type { NativeConsumerManifestEntry } from './native-consumer-manifest.mts'
 import {
   getNativeCatalogLeaf,
   nativeLeafVariants,
   validateNativeManifestCatalogs,
-  type NativeCatalogs,
 } from './native-resource-catalog.mts'
 import { writeNativeResourceFiles } from './native-resource-writer.mts'
 import { generateNativeResourceFiles } from './native-resources.mts'
-import { enMessages, esMessages, frMessages, ptMessages } from './locale-catalogs.mts'
+import {
+  nativeCatalogsFromEntries,
+  catalogsWith,
+  PLURAL_NATIVE_CATALOGS,
+  PLURAL_NATIVE_MANIFEST,
+  SIMPLE_NATIVE_INPUTS,
+  MODERATION_NATIVE_INPUTS,
+} from '../test-helpers/native-resource-fixtures.mts'
+import {
+  assertNativeResourceLayout,
+  assertNativeModerationResources,
+  assertNoRetiredDotnetResources,
+} from './native-resource-contracts.mts'
 
-const CATALOGS = { en: enMessages, es: esMessages, fr: frMessages, pt: ptMessages }
 const ONE_OTHER: PluralForms = { one: '{count} item', other: '{count} items' }
-
-function catalogsWith(en: CatalogLeaf, es: CatalogLeaf = en): NativeCatalogs {
-  return {
-    en: { test: en },
-    es: { test: es },
-    fr: { test: en },
-    pt: { test: en },
-  }
-}
-
 describe('native UI message resources', () => {
   it('generates deterministic Swift and .NET resources from the native consumer manifest', () => {
-    const first = generateNativeResourceFiles()
-    const second = generateNativeResourceFiles()
-
+    const first = generateNativeResourceFiles(SIMPLE_NATIVE_INPUTS)
+    const second = generateNativeResourceFiles(SIMPLE_NATIVE_INPUTS)
+    assertNativeResourceLayout(first, second)
+    expect(() => assertNativeResourceLayout(first.toReversed(), second)).toThrow('sorted')
+    expect(() => assertNativeResourceLayout(first, [])).toThrow('deterministic')
+    expect(() => assertNativeResourceLayout([], [])).toThrow('Missing native resource output')
     expect(second).toEqual(first)
     expect(first.map(file => file.path)).toEqual([...first.map(file => file.path)].toSorted())
     expect(first.some(file => file.path.endsWith('/en.lproj/Localizable.strings'))).toBe(true)
@@ -41,12 +43,8 @@ describe('native UI message resources', () => {
   })
 
   it('expands plural descriptors into internal resource variants', () => {
-    const manifest = [
-      { key: 'settings.language.supportedCount', consumers: ['swift'] },
-      { key: 'shared.countLabel.format', consumers: ['dotnet'] },
-      { key: 'shared.timeAgo.relativeDuration', consumers: ['swift'] },
-    ] as const satisfies readonly NativeConsumerManifestEntry[]
-    const files = generateNativeResourceFiles({ manifest })
+    const manifest = PLURAL_NATIVE_MANIFEST
+    const files = generateNativeResourceFiles({ manifest, catalogs: PLURAL_NATIVE_CATALOGS })
     const swiftEnglish = files.find(file => file.path.endsWith('/en.lproj/Localizable.strings'))!
     const dotnetFrench = files.find(file => file.path.endsWith('/UiMessages.fr.resx'))!
 
@@ -62,10 +60,22 @@ describe('native UI message resources', () => {
   })
 
   it('exports provider-neutral moderation summaries for both native clients', () => {
-    const files = generateNativeResourceFiles()
+    const files = generateNativeResourceFiles(MODERATION_NATIVE_INPUTS)
     const swiftEnglish = files.find(file => file.path.endsWith('/en.lproj/Localizable.strings'))!
     const dotnetEnglish = files.find(file => file.path.endsWith('/UiMessages.resx'))!
 
+    assertNativeModerationResources(files)
+    expect(() =>
+      assertNativeModerationResources(generateNativeResourceFiles(SIMPLE_NATIVE_INPUTS)),
+    ).toThrow('Missing native moderation resource')
+    expect(() =>
+      assertNativeModerationResources(
+        files.map(file => ({
+          ...file,
+          content: `${file.content}native.swift.moderationReports.reviewQueueSpam`,
+        })),
+      ),
+    ).toThrow('Retired native moderation resource')
     for (const content of [swiftEnglish.content, dotnetEnglish.content]) {
       expect(content).toContain('native.moderation.summary.title')
       expect(content).toContain('native.moderation.summary.disposition.pass')
@@ -83,9 +93,18 @@ describe('native UI message resources', () => {
   })
 
   it('does not export retired .NET agent-inspector messages', () => {
-    const files = generateNativeResourceFiles()
+    const files = generateNativeResourceFiles(SIMPLE_NATIVE_INPUTS)
     const dotnetEnglish = files.find(file => file.path.endsWith('/UiMessages.resx'))!
 
+    assertNoRetiredDotnetResources(files)
+    expect(() =>
+      assertNoRetiredDotnetResources(
+        files.map(file => ({
+          ...file,
+          content: `${file.content}<data name="native.swift.routeSurface.created" />`,
+        })),
+      ),
+    ).toThrow('Retired .NET resource')
     for (const key of [
       'native.dotnet.engineering.agentConversationTitle',
       'native.dotnet.engineering.agentConversationsTitle',
@@ -98,15 +117,7 @@ describe('native UI message resources', () => {
   })
 
   it('escapes resource values without changing their placeholders', () => {
-    const catalogs = {
-      en: structuredClone(enMessages),
-      es: structuredClone(esMessages),
-      fr: structuredClone(frMessages),
-      pt: structuredClone(ptMessages),
-    }
-    for (const catalog of Object.values(catalogs)) {
-      ;(catalog.common as { save: string }).save = 'Save "A&B" {name}'
-    }
+    const catalogs = nativeCatalogsFromEntries({ 'common.save': 'Save "A&B" {name}' })
     const manifest = [
       { key: 'common.save', consumers: ['swift', 'dotnet'] },
     ] as const satisfies readonly NativeConsumerManifestEntry[]
@@ -124,15 +135,17 @@ describe('native UI message resources', () => {
     const unknownManifest = [
       { key: 'missing.key', consumers: ['swift'] },
     ] as const satisfies readonly NativeConsumerManifestEntry[]
-    expect(() => generateNativeResourceFiles({ manifest: unknownManifest })).toThrow(
-      'Unknown native message key "missing.key"',
-    )
+    expect(() =>
+      generateNativeResourceFiles({
+        manifest: unknownManifest,
+        catalogs: SIMPLE_NATIVE_INPUTS.catalogs,
+      }),
+    ).toThrow('Unknown native message key "missing.key"')
 
-    const catalogs = { ...CATALOGS, es: structuredClone(esMessages) }
-    catalogs.es = {
-      ...catalogs.es,
-      common: { ...(catalogs.es.common as { save: string }), save: 'Guardar {value}' },
-    }
+    const catalogs = nativeCatalogsFromEntries(
+      { 'common.save': 'Save' },
+      { 'common.save': 'Guardar {value}' },
+    )
     const manifest = [
       { key: 'common.save', consumers: ['swift'] },
     ] as const satisfies readonly NativeConsumerManifestEntry[]
@@ -147,9 +160,9 @@ describe('native UI message resources', () => {
       { key: 'common.cancel', consumers: ['dotnet'] },
     ] as const satisfies readonly NativeConsumerManifestEntry[]
 
-    expect(() => generateNativeResourceFiles({ manifest })).toThrow(
-      'Native consumer manifest keys must be sorted',
-    )
+    expect(() =>
+      generateNativeResourceFiles({ manifest, catalogs: SIMPLE_NATIVE_INPUTS.catalogs }),
+    ).toThrow('Native consumer manifest keys must be sorted')
   })
 
   it('rejects catalog paths that continue through a leaf or stop at a namespace', () => {
@@ -224,7 +237,7 @@ describe('native UI message resources', () => {
 
   it('detects stale, missing, and extra generated files in check mode', async () => {
     const root = await mkdtemp(join(tmpdir(), 'voucha-native-localization-'))
-    const files = generateNativeResourceFiles()
+    const files = generateNativeResourceFiles(SIMPLE_NATIVE_INPUTS)
     try {
       await expect(
         writeNativeResourceFiles({ outputRoot: root, check: true, files }),

@@ -22,8 +22,15 @@ producer contract:
   `native-resource-export.test.mts`, and
   `native-consumer-usage.test.mts` — native manifest/catalog validity, CLI generate/check against an
   isolated consumer checkout, real Swift/C#/XAML consumer ownership, placeholder and descriptor
-  parity, deterministic output, escaping, and stale/missing/extra file detection. Catalog CLI
-  subprocesses use a 30s timeout, matching `index.test.mts` locale assembly.
+  parity, deterministic output, escaping, and stale/missing/extra file detection. Native generator
+  unit cases use minimal real catalogs and manifests; they do not assemble the complete default
+  catalog. Default locale trees are cached on first use; committed catalog JSON imports remain.
+- [`ci/check-live-native-resources.mts`](../../ci/check-live-native-resources.mts) — the existing
+  two-minute native localization static-analysis step validates the complete default producer,
+  deterministic output, provider-neutral moderation resources and retired-resource exclusions.
+  Tiny unit fixtures exercise these output contracts without claiming whole-catalog parity.
+  `node dev/native-localization.mts --validate` retains normal default validation; external-client
+  generate/check still validates the real consumer checkout.
 
 Every live web server and browser fetches `GET /api/v1/localization` for a versioned web-chrome
 selector plus one versioned exact current-route selector (`web/lib/i18n/webSelectorsForPath`). The server resolves those

@@ -11,11 +11,25 @@ export const NATIVE_RESOURCE_LOCALES = ['en', 'es', 'fr', 'pt'] as const
 export type NativeResourceLocale = (typeof NATIVE_RESOURCE_LOCALES)[number]
 export type NativeCatalogs = Readonly<Record<NativeResourceLocale, Catalog>>
 
+const defaultCatalogs: Partial<Record<NativeResourceLocale, Catalog>> = {}
+
+function defaultCatalog(locale: NativeResourceLocale): Catalog {
+  return (defaultCatalogs[locale] ??= catalogTreeForLocale(locale, ['web', 'swift', 'dotnet']))
+}
+
 export const DEFAULT_NATIVE_CATALOGS: NativeCatalogs = {
-  en: catalogTreeForLocale('en', ['web', 'swift', 'dotnet']),
-  es: catalogTreeForLocale('es', ['web', 'swift', 'dotnet']),
-  fr: catalogTreeForLocale('fr', ['web', 'swift', 'dotnet']),
-  pt: catalogTreeForLocale('pt', ['web', 'swift', 'dotnet']),
+  get en() {
+    return defaultCatalog('en')
+  },
+  get es() {
+    return defaultCatalog('es')
+  },
+  get fr() {
+    return defaultCatalog('fr')
+  },
+  get pt() {
+    return defaultCatalog('pt')
+  },
 }
 
 export function getNativeCatalogLeaf(catalog: Catalog, key: string): CatalogLeaf {
