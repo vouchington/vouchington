@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS ai_usage_records (
   classifier_run_id UUID,
   agent_slug TEXT NOT NULL,
   model TEXT NOT NULL,
-  service_tier TEXT NOT NULL REFERENCES openai_service_tiers(id) ON DELETE RESTRICT,
+  openai_service_tier_id TEXT NOT NULL REFERENCES openai_service_tiers(id) ON DELETE RESTRICT,
   input_tokens INTEGER NOT NULL CHECK (input_tokens >= 0),
   cached_input_tokens INTEGER NOT NULL DEFAULT 0 CHECK (cached_input_tokens >= 0),
   output_tokens INTEGER NOT NULL CHECK (output_tokens >= 0),
@@ -89,7 +89,7 @@ COMMENT ON COLUMN ai_usage_records.post_id IS 'The post that was moderated; null
 COMMENT ON COLUMN ai_usage_records.classifier_run_id IS 'The classifier run whose provider attempt made this call; NULL for every other agent, and after the run receipt is deleted.';
 COMMENT ON COLUMN ai_usage_records.agent_slug IS 'The slug of the agent that made the LLM call (a moderator, or another agent workload identifier).';
 COMMENT ON COLUMN ai_usage_records.model IS 'The OpenAI model actually served, from the response (e.g. gpt-5.4-nano-2026-03-17) — not necessarily the requested alias.';
-COMMENT ON COLUMN ai_usage_records.service_tier IS 'The OpenAI service tier actually served, from the response (e.g. flex, default) — not necessarily the requested tier.';
+COMMENT ON COLUMN ai_usage_records.openai_service_tier_id IS 'The OpenAI service tier actually served, from the response (e.g. flex, default) — not necessarily the requested tier.';
 COMMENT ON COLUMN ai_usage_records.input_tokens IS 'Number of input tokens billed for this call, including any cached_input_tokens.';
 COMMENT ON COLUMN ai_usage_records.cached_input_tokens IS 'Of input_tokens, the number served from the prompt cache at the discounted cached-input rate.';
 COMMENT ON COLUMN ai_usage_records.output_tokens IS 'Number of output tokens billed for this call.';
@@ -101,5 +101,5 @@ COMMENT ON COLUMN ai_usage_provider_response_keys.response_id IS 'Provider respo
 COMMENT ON COLUMN ai_usage_provider_response_keys.ai_usage_record_id IS 'The one ai_usage_records row reserved for this provider response or decision id.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_ai_usage_records__service_tier
-  ON ai_usage_records (service_tier);
+CREATE INDEX IF NOT EXISTS idx_ai_usage_records__openai_service_tier_id
+  ON ai_usage_records (openai_service_tier_id);

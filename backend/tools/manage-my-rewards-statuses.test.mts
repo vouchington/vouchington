@@ -31,7 +31,7 @@ describe('manage_my_rewards_statuses tool — real DB', () => {
     const execute = manageMyRewardsStatusesTool.function(user)
     const result = await execute({
       action: 'add',
-      rewards_program_status_id: rewardsProgramStatusId,
+      rewards_program_status_topic_id: rewardsProgramStatusId,
     })
     expect(result.success).toBe(true)
     expect(result.result).toHaveProperty('id')
@@ -58,7 +58,7 @@ describe('manage_my_rewards_statuses tool — real DB', () => {
     const freshUser = await createTestUser()
     const statusId = await insertTestRewardsProgramStatus({ createdById: freshUser.id })
     const addExecute = manageMyRewardsStatusesTool.function(freshUser)
-    const added = (await addExecute({ action: 'add', rewards_program_status_id: statusId }))
+    const added = (await addExecute({ action: 'add', rewards_program_status_topic_id: statusId }))
       .result as { id: string }
 
     const execute = manageMyRewardsStatusesTool.function(freshUser)
@@ -77,7 +77,7 @@ describe('manage_my_rewards_statuses tool — real DB', () => {
     const freshUser = await createTestUser()
     const statusId = await insertTestRewardsProgramStatus({ createdById: freshUser.id })
     const addExecute = manageMyRewardsStatusesTool.function(freshUser)
-    const added = (await addExecute({ action: 'add', rewards_program_status_id: statusId }))
+    const added = (await addExecute({ action: 'add', rewards_program_status_topic_id: statusId }))
       .result as { id: string }
 
     const execute = manageMyRewardsStatusesTool.function(freshUser)
@@ -101,7 +101,7 @@ describe('manage_my_rewards_statuses tool — real DB', () => {
       const suspendedUser = await createTestUser()
       const statusId = await insertTestRewardsProgramStatus({ createdById: suspendedUser.id })
       const add = manageMyRewardsStatusesTool.function(suspendedUser)
-      const existing = (await add({ action: 'add', rewards_program_status_id: statusId }))
+      const existing = (await add({ action: 'add', rewards_program_status_topic_id: statusId }))
         .result as {
         id: string
       }
@@ -110,7 +110,7 @@ describe('manage_my_rewards_statuses tool — real DB', () => {
       const execute = manageMyRewardsStatusesTool.function(suspendedUser)
       const mutation =
         action === 'add'
-          ? execute({ action, rewards_program_status_id: statusId })
+          ? execute({ action, rewards_program_status_topic_id: statusId })
           : action === 'update'
             ? execute({ action, id: existing.id, started_on: '2026-01-01' })
             : execute({ action, id: existing.id })

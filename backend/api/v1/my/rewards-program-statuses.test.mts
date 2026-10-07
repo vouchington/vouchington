@@ -42,7 +42,7 @@ describe('GET /api/v1/my/rewards-program-statuses', () => {
     for (const rewardsProgramStatusId of statusIds) {
       const response = await request
         .post('/api/v1/my/rewards-program-statuses')
-        .send({ rewards_program_status_id: rewardsProgramStatusId })
+        .send({ rewards_program_status_topic_id: rewardsProgramStatusId })
         .expect(201)
       created.push(response.body.rewards_program_status.id)
     }
@@ -76,7 +76,7 @@ describe('GET /api/v1/my/rewards-program-statuses', () => {
     const statusId = await insertTestRewardsProgramStatus({ createdById: user.id })
     await request
       .post('/api/v1/my/rewards-program-statuses')
-      .send({ rewards_program_status_id: statusId })
+      .send({ rewards_program_status_topic_id: statusId })
     const page = await request.get('/api/v1/my/rewards-program-statuses?limit=1').expect(200)
     const cursor = page.body.page_info.end_cursor
     await request.get('/api/v1/my/rewards-program-statuses?after=not-a-cursor').expect(400)
@@ -112,14 +112,14 @@ describe('GET /api/v1/my/rewards-program-statuses', () => {
     const statusId = await insertTestRewardsProgramStatus({ createdById: user.id })
     await request
       .post('/api/v1/my/rewards-program-statuses')
-      .send({ rewards_program_status_id: statusId })
+      .send({ rewards_program_status_topic_id: statusId })
     await softDeleteTopic(statusId, user.id)
 
     const response = await request.get('/api/v1/my/rewards-program-statuses').expect(200)
     expect(
       response.body.results.some(
-        (result: { rewards_program_status_id: string }) =>
-          result.rewards_program_status_id === statusId,
+        (result: { rewards_program_status_topic_id: string }) =>
+          result.rewards_program_status_topic_id === statusId,
       ),
     ).toBe(false)
   })
@@ -143,11 +143,11 @@ describe('POST /api/v1/my/rewards-program-statuses', () => {
     await request
       .post('/api/v1/my/rewards-program-statuses')
       .set('Content-Type', 'text/plain')
-      .send('rewards_program_status_id=x')
+      .send('rewards_program_status_topic_id=x')
       .expect(415)
   })
 
-  it('returns 422 when rewards_program_status_id is missing', async () => {
+  it('returns 422 when rewards_program_status_topic_id is missing', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
 
@@ -161,9 +161,9 @@ describe('POST /api/v1/my/rewards-program-statuses', () => {
 
     const response = await request
       .post('/api/v1/my/rewards-program-statuses')
-      .send({ rewards_program_status_id: statusId })
+      .send({ rewards_program_status_topic_id: statusId })
       .expect(201)
-    expect(response.body.rewards_program_status.rewards_program_status_id).toBe(statusId)
+    expect(response.body.rewards_program_status.rewards_program_status_topic_id).toBe(statusId)
   })
 })
 
@@ -196,7 +196,7 @@ describe('PATCH /api/v1/my/rewards-program-statuses/:id', () => {
 
     const created = await request
       .post('/api/v1/my/rewards-program-statuses')
-      .send({ rewards_program_status_id: statusId })
+      .send({ rewards_program_status_topic_id: statusId })
       .expect(201)
     await request
       .patch(`/api/v1/my/rewards-program-statuses/${created.body.rewards_program_status.id}`)
@@ -211,7 +211,7 @@ describe('PATCH /api/v1/my/rewards-program-statuses/:id', () => {
 
     const created = await request
       .post('/api/v1/my/rewards-program-statuses')
-      .send({ rewards_program_status_id: statusId })
+      .send({ rewards_program_status_topic_id: statusId })
       .expect(201)
 
     await request

@@ -49,7 +49,7 @@ describe('money summaries', () => {
     seedMessages('es', esMessages)
     const category: SpendingCategory = {
       id: 'spending-1',
-      spending_category_id: 'category-1',
+      spending_category_topic_id: 'category-1',
       amount: { amount: 15_000, currency: 'usd' },
       spending_frequency: 'monthly',
       note: null,

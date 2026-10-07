@@ -136,12 +136,12 @@ Covers `POST`/`PATCH`/`DELETE` on `/my/cards`, `/my/rewards-program-point-valuat
 declared schema: a strict object with an integer minor-unit amount, a known currency, and, for
 `ScaledMoney`, `scale: 6`. It replaces the per-field `isMoney`/`isScaledMoney` asserts, which
 answered `422` for the same inputs. Spending-category `spending_frequency` is an enum of `monthly`
-and `annually`, and `spending_category_id` and `household_id` are UUIDs.
+and `annually`, and `spending_category_topic_id` and `household_id` are UUIDs.
 
 Status changes from `400` to `422`:
 
 - A missing required field (`card_topic_id`, `rewards_program_id`, `value_per_point`,
-  `rewards_program_status_id`, `spending_category_id`, `amount`) or a non-object body.
+  `rewards_program_status_topic_id`, `spending_category_topic_id`, `amount`) or a non-object body.
 
 Other behavior changes:
 

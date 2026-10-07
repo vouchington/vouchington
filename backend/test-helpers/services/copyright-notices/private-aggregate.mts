@@ -145,7 +145,7 @@ async function selectLifecycleChanges(
       change.copyright_notice_legal_hold_assessment_id, change.copyright_notice_legal_hold_resolution_id,
       change.copyright_notice_deadline_id, change.copyright_restriction_id,
       change.copyright_notice_action_intent_id, change.copyright_notice_email_intake_id,
-      change.copyright_notice_delivery_intent_id, change.media_delivery_registry_key,
+      change.copyright_notice_delivery_work_item_id, change.media_delivery_registry_record_delivery_key,
       change.copyright_notice_guest_capability_id, change.review_action,
       rationale.review_rationale_ciphertext, change.is_counter_notice_accepted,
       change.recovery_source, change.replay_reason, change.created_at

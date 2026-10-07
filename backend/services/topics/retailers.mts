@@ -42,7 +42,7 @@ export async function getRetailerCountries(topic: Topic): Promise<Country[]> {
     SELECT c.id, c.name, c.code
     FROM countries c
     JOIN retailer_countries rc ON rc.country_id = c.id
-    WHERE rc.retailer_id = ${topic.id}
+    WHERE rc.retailer_topic_id = ${topic.id}
     ORDER BY c.name ASC
   `)
   return rows
@@ -79,12 +79,12 @@ export async function updateRetailerCountries(
   await using query = await beginTransaction()
   await query(sql`/* updateRetailerCountries delete */
     DELETE FROM retailer_countries
-    WHERE retailer_id = ${topic.id}
+    WHERE retailer_topic_id = ${topic.id}
   `)
 
   if (uniqueCountryIds.length > 0) {
     await query(sql`/* updateRetailerCountries insert */
-      INSERT INTO retailer_countries (retailer_id, country_id)
+      INSERT INTO retailer_countries (retailer_topic_id, country_id)
       SELECT ${topic.id}, UNNEST(${uniqueCountryIds}::int[])
     `)
   }

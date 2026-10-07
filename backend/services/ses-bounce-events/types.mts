@@ -4,7 +4,7 @@ export type SesBounceType = 'permanent' | 'transient' | 'undetermined'
 export interface CreateSesBounceEventInput {
   notification_type: SesNotificationType
   bounce_type?: SesBounceType | null
-  bounce_sub_type?: string | null
+  amazon_ses_bounce_subtype_id?: string | null
   recipients: string[]
   amazon_ses_message_id?: string | null
   amazon_ses_feedback_id?: string | null
@@ -19,7 +19,7 @@ export interface SesBounceEvent {
   created_at: Date
   notification_type: SesNotificationType
   bounce_type: SesBounceType | null
-  bounce_sub_type: string | null
+  amazon_ses_bounce_subtype_id: string | null
   recipients: string[]
   amazon_ses_message_id: string | null
   amazon_ses_feedback_id: string | null

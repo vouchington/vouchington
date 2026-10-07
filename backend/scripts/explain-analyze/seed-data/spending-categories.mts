@@ -103,11 +103,11 @@ export function spendingEntryUpsertSql(
   rows: string[],
 ): string {
   return `/* seedExplainData */ INSERT INTO spending_entries
-           (id, ${ownerColumn}, spending_category_id, amount_minor_units, currency_code)
+           (id, ${ownerColumn}, spending_category_topic_id, amount_minor_units, currency_code)
          VALUES ${rows.join(', ')}
          ON CONFLICT (id) DO UPDATE
          SET ${ownerColumn} = EXCLUDED.${ownerColumn},
-             spending_category_id = EXCLUDED.spending_category_id,
+             spending_category_topic_id = EXCLUDED.spending_category_topic_id,
              amount_minor_units = EXCLUDED.amount_minor_units,
              currency_code = EXCLUDED.currency_code`
 }

@@ -11,13 +11,13 @@
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS retailer_countries (
-  retailer_id UUID NOT NULL REFERENCES retailer_topics ON DELETE CASCADE,
+  retailer_topic_id UUID NOT NULL REFERENCES retailer_topics ON DELETE CASCADE,
   country_id SMALLINT NOT NULL REFERENCES countries ON DELETE CASCADE,
-  PRIMARY KEY (retailer_id, country_id)
+  PRIMARY KEY (retailer_topic_id, country_id)
 );
 
 COMMENT ON TABLE retailer_countries IS 'Junction table mapping retailers to the countries they operate in.';
-COMMENT ON COLUMN retailer_countries.retailer_id IS 'The retailer topic.';
+COMMENT ON COLUMN retailer_countries.retailer_topic_id IS 'The retailer topic.';
 COMMENT ON COLUMN retailer_countries.country_id IS 'The country the retailer operates in.';
 
 -- Current indexes for fresh schema bootstrap.

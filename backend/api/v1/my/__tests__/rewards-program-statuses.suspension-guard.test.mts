@@ -30,7 +30,7 @@ describe('rewards program status suspension guards', () => {
         method === 'post'
           ? await request
               .post('/api/v1/my/rewards-program-statuses')
-              .send({ rewards_program_status_id: statusId })
+              .send({ rewards_program_status_topic_id: statusId })
           : method === 'patch'
             ? await request
                 .patch(`/api/v1/my/rewards-program-statuses/${existing.id}`)

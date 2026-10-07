@@ -16,7 +16,7 @@ export async function readTestCopyrightDeliveryIntentReplayEvents(intentId: stri
   }>(sql`/* readTestCopyrightDeliveryIntentReplayEvents */
     SELECT copyright_notice_id, change_type, changed_by_id
     FROM copyright_notice_lifecycle_changes
-    WHERE copyright_notice_delivery_intent_id = ${intentId}
+    WHERE copyright_notice_delivery_work_item_id = ${intentId}
     ORDER BY id
   `)
   return rows

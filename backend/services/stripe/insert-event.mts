@@ -23,7 +23,7 @@ export async function insertStripeEvent(
       )
        , inserted_event AS (INSERT INTO stripe_events (
         stripe_event_id,
-        event_type,
+        stripe_event_type_id,
         is_live_mode,
         api_version,
         occurred_at,
@@ -47,7 +47,7 @@ export async function insertStripeEvent(
         ${payload}::jsonb
       FROM registered_type
       ON CONFLICT (stripe_event_id) DO NOTHING
-      RETURNING id, stripe_event_id, event_type, is_live_mode, api_version, occurred_at,
+      RETURNING id, stripe_event_id, stripe_event_type_id, is_live_mode, api_version, occurred_at,
         customer_id, subscription_id, invoice_id, checkout_session_id, received_at, payload, created_at
       ), inserted_work AS (
         INSERT INTO stripe_event_processing_work_items (stripe_event_id)

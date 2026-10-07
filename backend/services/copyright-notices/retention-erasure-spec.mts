@@ -152,7 +152,7 @@ export const COPYRIGHT_RETENTION_ERASURE: readonly CopyrightRetentionErasureTabl
     'copyright_notice_delivery_recipients',
     { email_ciphertext: 'redact' },
     id =>
-      sql`copyright_notice_delivery_intent_id IN (SELECT id FROM copyright_notice_delivery_work_items
+      sql`copyright_notice_delivery_work_item_id IN (SELECT id FROM copyright_notice_delivery_work_items
         WHERE copyright_notice_id = ${id})`,
   ),
   table('copyright_notice_lifecycle_change_rationales', { review_rationale_ciphertext: 'redact' }),

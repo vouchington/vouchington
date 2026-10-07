@@ -30,7 +30,7 @@ describe('spending category client helpers', () => {
   ])('rejects invalid create money before sending a request', amount => {
     expect(() =>
       createMySpendingCategory({
-        spending_category_id: spendingCategoryId,
+        spending_category_topic_id: spendingCategoryId,
         amount: amount as Money,
       }),
     ).toThrow('amount must be valid money')

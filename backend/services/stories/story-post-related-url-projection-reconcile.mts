@@ -110,9 +110,9 @@ async function prunePage(
       ORDER BY relation.id LIMIT $5`,
     [
       work.post_id,
-      work.relation_high_water_id,
+      work.sweep_upper_bound_relation_id,
       work.relation_snapshot_at,
-      work.prune_cursor_id,
+      work.cursor_prune_id,
       STORY_POST_RELATED_URL_PROJECTION_PAGE_SIZE,
     ],
   )
@@ -182,7 +182,7 @@ async function prunePage(
     return { processed: 0, continue: false }
   await write(
     `/* advanceStoryPostRelatedUrlProjectionPruneCursor */
-      UPDATE story_post_related_url_projection_jobs SET prune_cursor_id = $1
+      UPDATE story_post_related_url_projection_jobs SET cursor_prune_id = $1
       WHERE post_id = $2 AND generation = $3 AND lease_token = $4
         AND lease_expires_at > clock_timestamp()`,
     [relationIds.at(-1), work.post_id, work.generation, work.lease_token],

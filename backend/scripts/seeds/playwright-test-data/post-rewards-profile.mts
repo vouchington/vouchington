@@ -63,11 +63,11 @@ async function seedPlaywrightRewardsProfile(query: TransactionQuery): Promise<vo
     [testIndividualId],
   )
   await query(
-    `INSERT INTO spending_entries (id, individual_id, spending_category_id, amount_minor_units, currency_code, spending_frequency) VALUES ( '019c64e6-c200-7000-b000-000000000001', $1, '019c64e6-b300-7000-b000-000000000001', 50000, 'usd', 'monthly' ) ON CONFLICT (id) DO UPDATE SET individual_id = EXCLUDED.individual_id, spending_category_id = EXCLUDED.spending_category_id, amount_minor_units = EXCLUDED.amount_minor_units, currency_code = EXCLUDED.currency_code, spending_frequency = EXCLUDED.spending_frequency`,
+    `INSERT INTO spending_entries (id, individual_id, spending_category_topic_id, amount_minor_units, currency_code, spending_frequency) VALUES ( '019c64e6-c200-7000-b000-000000000001', $1, '019c64e6-b300-7000-b000-000000000001', 50000, 'usd', 'monthly' ) ON CONFLICT (id) DO UPDATE SET individual_id = EXCLUDED.individual_id, spending_category_topic_id = EXCLUDED.spending_category_topic_id, amount_minor_units = EXCLUDED.amount_minor_units, currency_code = EXCLUDED.currency_code, spending_frequency = EXCLUDED.spending_frequency`,
     [testIndividualId],
   )
   await query(
-    `INSERT INTO individual_rewards_program_statuses (id, individual_id, rewards_program_status_id) VALUES ( '019c64e6-c300-7000-b000-000000000001', $1, '019c64e6-b200-7000-b000-000000000001' ) ON CONFLICT (id) DO UPDATE SET individual_id = EXCLUDED.individual_id, rewards_program_status_id = EXCLUDED.rewards_program_status_id`,
+    `INSERT INTO individual_rewards_program_statuses (id, individual_id, rewards_program_status_topic_id) VALUES ( '019c64e6-c300-7000-b000-000000000001', $1, '019c64e6-b200-7000-b000-000000000001' ) ON CONFLICT (id) DO UPDATE SET individual_id = EXCLUDED.individual_id, rewards_program_status_topic_id = EXCLUDED.rewards_program_status_topic_id`,
     [testIndividualId],
   )
   await query(

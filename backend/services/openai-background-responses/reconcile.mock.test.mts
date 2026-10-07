@@ -89,7 +89,7 @@ describe('reconcileExpiredBackgroundResponse', () => {
     })
     expect(record).toMatchObject({
       model: 'gpt-5.4-nano-2026-03-17',
-      service_tier: 'flex',
+      openai_service_tier_id: 'flex',
     })
   })
 

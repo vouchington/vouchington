@@ -20,7 +20,7 @@ describe('spending category database failures', () => {
     ).rejects.toMatchObject({ code: '22021' })
 
     const page = await getHouseholdSpendingCategoriesByUserId(user, user, {
-      spending_category_id: categoryId,
+      spending_category_topic_id: categoryId,
       readOnly: false,
     })
     expect(page.results).toEqual([existing])

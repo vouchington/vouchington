@@ -53,7 +53,7 @@ export const REWARDS_STATUSES_DECLARATIONS = [
     nativeRewardsStatusesCreateDefault,
     context =>
       context.client.my.createMyRewardsProgramStatus({
-        rewards_program_status_id: '00000000-0000-7000-8000-000000000751',
+        rewards_program_status_topic_id: '00000000-0000-7000-8000-000000000751',
       }),
   ),
   defineWebApiFixture<RewardsProgramStatusResponseBody>()(

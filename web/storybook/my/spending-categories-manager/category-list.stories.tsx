@@ -17,7 +17,7 @@ type Story = StoryObj<typeof meta>
 const categories: SpendingCategory[] = [
   {
     id: 'spend-groceries',
-    spending_category_id: 'topic-groceries',
+    spending_category_topic_id: 'topic-groceries',
     amount: { amount: 60_000, currency: 'usd' },
     spending_frequency: 'monthly',
     note: 'Weekly supermarket runs.',
@@ -25,7 +25,7 @@ const categories: SpendingCategory[] = [
   },
   {
     id: 'spend-dining',
-    spending_category_id: 'topic-dining',
+    spending_category_topic_id: 'topic-dining',
     amount: { amount: 25_000, currency: 'usd' },
     spending_frequency: 'monthly',
     note: 'Restaurants that earn 3x on Sapphire Reserve.',

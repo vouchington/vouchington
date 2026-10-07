@@ -12,18 +12,18 @@ export async function markStoryPostRelatedUrlProjection(
   storyId: string,
 ): Promise<void> {
   const { rows: highWaterRows } = await query<{
-    source_high_water_id: string | null
-    relation_high_water_id: string | null
+    sweep_upper_bound_source_id: string | null
+    sweep_upper_bound_relation_id: string | null
     relation_snapshot_at: Date
   }>(
     `/* markStoryPostRelatedUrlProjection:highWater */
       SELECT
         (SELECT id FROM rss_feed_items
          WHERE story_id = $1 AND deleted_at IS NULL
-         ORDER BY id DESC LIMIT 1) AS source_high_water_id,
+         ORDER BY id DESC LIMIT 1) AS sweep_upper_bound_source_id,
         (SELECT id FROM relation__post__related__url
          WHERE subject_id = $2 AND deleted_at IS NULL
-         ORDER BY id DESC LIMIT 1) AS relation_high_water_id,
+         ORDER BY id DESC LIMIT 1) AS sweep_upper_bound_relation_id,
         clock_timestamp() AS relation_snapshot_at`,
     [storyId, postId],
   )
@@ -31,23 +31,23 @@ export async function markStoryPostRelatedUrlProjection(
   await query(
     `/* markStoryPostRelatedUrlProjection */
       INSERT INTO story_post_related_url_projection_jobs
-        (post_id, story_id, source_high_water_id, relation_high_water_id, relation_snapshot_at)
+        (post_id, story_id, sweep_upper_bound_source_id, sweep_upper_bound_relation_id, relation_snapshot_at)
       VALUES ($1, $2, $3, $4, $5)
       ON CONFLICT (post_id) DO UPDATE
       SET story_id = EXCLUDED.story_id,
           generation = story_post_related_url_projection_jobs.generation + 1,
-          source_high_water_id = EXCLUDED.source_high_water_id,
-          relation_high_water_id = EXCLUDED.relation_high_water_id,
+          sweep_upper_bound_source_id = EXCLUDED.sweep_upper_bound_source_id,
+          sweep_upper_bound_relation_id = EXCLUDED.sweep_upper_bound_relation_id,
           relation_snapshot_at = EXCLUDED.relation_snapshot_at,
-          source_cursor_id = NULL,
+          cursor_source_id = NULL,
           source_completed_at = NULL,
-          prune_cursor_id = NULL,
+          cursor_prune_id = NULL,
           lease_token = NULL, leased_at = NULL, lease_expires_at = NULL`,
     [
       postId,
       storyId,
-      highWater.source_high_water_id,
-      highWater.relation_high_water_id,
+      highWater.sweep_upper_bound_source_id,
+      highWater.sweep_upper_bound_relation_id,
       highWater.relation_snapshot_at,
     ],
   )
@@ -88,9 +88,9 @@ export async function claimStoryPostRelatedUrlProjectionWork(
       FROM available
       WHERE work.post_id = available.post_id
         AND (work.lease_expires_at IS NULL OR work.lease_expires_at <= clock_timestamp())
-      RETURNING work.post_id, work.story_id, work.generation, work.source_high_water_id,
-        work.relation_high_water_id, work.relation_snapshot_at, work.source_cursor_id,
-        work.source_completed_at, work.prune_cursor_id, work.lease_token`,
+      RETURNING work.post_id, work.story_id, work.generation, work.sweep_upper_bound_source_id,
+        work.sweep_upper_bound_relation_id, work.relation_snapshot_at, work.cursor_source_id,
+        work.source_completed_at, work.cursor_prune_id, work.lease_token`,
     [postId ?? null, LEASE_SECONDS, postIds ?? null],
   )
   return rows[0] ?? null
@@ -156,7 +156,7 @@ export async function advanceStoryPostRelatedUrlProjectionSourceCursor(
   const { rowCount } = await write(
     `/* advanceStoryPostRelatedUrlProjectionSourceCursor */
       UPDATE story_post_related_url_projection_jobs
-      SET source_cursor_id = $1
+      SET cursor_source_id = $1
       WHERE post_id = $2 AND generation = $3 AND lease_token = $4
         AND lease_expires_at > clock_timestamp()`,
     [cursor, work.post_id, work.generation, work.lease_token],

@@ -44,7 +44,9 @@ const cases: readonly ManageCase[] = [
     scopes: ['rewards-statuses:read', 'rewards-statuses:write'],
     reader: { tool: 'get_my_rewards_statuses', scope: 'rewards-statuses:read' },
     add: async user => ({
-      rewards_program_status_id: await insertTestRewardsProgramStatus({ createdById: user.id }),
+      rewards_program_status_topic_id: await insertTestRewardsProgramStatus({
+        createdById: user.id,
+      }),
     }),
     update: { started_on: '2024-01-01', expires_on: '2024-12-31' },
   },
@@ -53,7 +55,7 @@ const cases: readonly ManageCase[] = [
     scopes: ['spending:read', 'spending:write'],
     reader: { tool: 'get_my_spending', scope: 'spending:read' },
     add: async user => ({
-      spending_category_id: await insertTestSpendingCategory({ createdById: user.id }),
+      spending_category_topic_id: await insertTestSpendingCategory({ createdById: user.id }),
       amount: { amount: 1_000_000, currency: 'usd' },
       spending_frequency: 'monthly',
       note: 'groceries',

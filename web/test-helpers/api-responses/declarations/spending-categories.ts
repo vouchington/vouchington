@@ -81,7 +81,7 @@ export const SPENDING_CATEGORIES_DECLARATIONS = [
       context.client.my.createMySpendingCategory({
         amount: { amount: 42_550, currency: 'usd' },
         note: 'Family groceries',
-        spending_category_id: '00000000-0000-7000-8000-000000000741',
+        spending_category_topic_id: '00000000-0000-7000-8000-000000000741',
         spending_frequency: 'monthly',
       }),
   ),

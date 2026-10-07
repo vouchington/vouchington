@@ -12,7 +12,7 @@ const scope = `my-spending-categories:${individualId}:id-asc`
 const spendingCategory = { ...topic, id: categoryId, name: 'Groceries', slug: 'groceries' }
 const personalEntry = {
   id: firstEntryId,
-  spending_category_id: categoryId,
+  spending_category_topic_id: categoryId,
   amount: { amount: 42_550, currency: 'usd' },
   spending_frequency: 'monthly',
   note: 'Family groceries',
@@ -142,7 +142,7 @@ export const nativeSpendingCategoryApiFixtureCases: ApiFixtureCase[] = [
     path: '/api/v1/my/spending-categories',
     route: { routeTemplate: '/api/v1/my/spending-categories' },
     requestBody: {
-      spending_category_id: categoryId,
+      spending_category_topic_id: categoryId,
       amount: personalEntry.amount,
       spending_frequency: 'monthly',
       note: personalEntry.note,

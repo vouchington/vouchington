@@ -51,7 +51,10 @@ describe('spending category visibility', () => {
     const page = await getHouseholdSpendingCategoriesByUserId(user, user, { limit: 1 })
 
     expect(page.results).toEqual([
-      expect.objectContaining({ id: visibleEntry.id, spending_category_id: visibleCategoryId }),
+      expect.objectContaining({
+        id: visibleEntry.id,
+        spending_category_topic_id: visibleCategoryId,
+      }),
     ])
   })
 

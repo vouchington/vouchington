@@ -103,7 +103,7 @@ const mockUpdate = vi.mocked(updateMySpendingCategory)
 const initialCategories: SpendingCategory[] = [
   {
     id: 'sc-1',
-    spending_category_id: 'cat-1',
+    spending_category_topic_id: 'cat-1',
     amount: { amount: 15_000, currency: 'usd' },
     spending_frequency: 'monthly',
     note: 'Some note',
@@ -125,7 +125,7 @@ describe('SpendingCategoriesManager keyboard submit', () => {
       mockCreate.mockResolvedValue({
         spending_category: {
           id: 'sc-2',
-          spending_category_id: 'cat-2',
+          spending_category_topic_id: 'cat-2',
           amount: { amount: 20_000, currency: 'usd' },
           spending_frequency: 'monthly',
           note: null,

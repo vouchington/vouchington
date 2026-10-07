@@ -18,7 +18,7 @@ import type { Money } from '@ts-shared/money'
 type SpendingFrequency = 'monthly' | 'annually'
 
 type CreateSpendingCategoryRequest = {
-  spending_category_id: ApiUuidContract
+  spending_category_topic_id: ApiUuidContract
   amount: Money
   spending_frequency?: SpendingFrequency
   household_id?: ApiUuidContract
@@ -59,7 +59,7 @@ app.route('/api/v1/my/spending-categories').post(async (ctx: Context) => {
   const spendingCategory = await createHouseholdSpendingCategory(
     currentUser,
     currentUser,
-    body.spending_category_id,
+    body.spending_category_topic_id,
     { amount: body.amount, spending_frequency: body.spending_frequency, note: body.note },
     body.household_id,
   )

@@ -176,7 +176,7 @@ describe('conversation title input and model owners', () => {
       await expect(findAiUsageRecordForResponseId(responseId)).resolves.toMatchObject({
         agent_slug: 'chat-generate-title',
         model: 'gpt-5.4-nano-2026-03-17',
-        service_tier: 'flex',
+        openai_service_tier_id: 'flex',
         input_tokens: 1,
         output_tokens: 1,
         pricing_status: 'priced',
@@ -254,7 +254,7 @@ describe('conversation title input and model owners', () => {
         expect(row).toMatchObject({
           agent_slug: 'chat-generate-title',
           model: 'gpt-5.4-nano-2026-03-17',
-          service_tier: 'flex',
+          openai_service_tier_id: 'flex',
           input_tokens: 84_732,
           output_tokens: 6391,
           pricing_status: 'priced',

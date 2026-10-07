@@ -17992,11 +17992,11 @@
     "CreateRewardsProgramStatusRequest": {
       "additionalProperties": false,
       "properties": {
-        "rewards_program_status_id": {
+        "rewards_program_status_topic_id": {
           "type": "string"
         }
       },
-      "required": ["rewards_program_status_id"],
+      "required": ["rewards_program_status_topic_id"],
       "type": "object"
     },
     "CreateRssFeedBody": {
@@ -18045,7 +18045,7 @@
         "note": {
           "type": "string"
         },
-        "spending_category_id": {
+        "spending_category_topic_id": {
           "format": "uuid",
           "type": "string"
         },
@@ -18054,7 +18054,7 @@
           "type": "string"
         }
       },
-      "required": ["amount", "spending_category_id"],
+      "required": ["amount", "spending_category_topic_id"],
       "type": "object"
     },
     "CreateTopicAliasesBody": {
@@ -20716,7 +20716,7 @@
           "required": ["id", "name", "slug"],
           "type": "object"
         },
-        "spending_category_id": {
+        "spending_category_topic_id": {
           "type": "string"
         },
         "spending_frequency": {
@@ -20731,7 +20731,7 @@
         "note",
         "owner_type",
         "spending_category",
-        "spending_category_id",
+        "spending_category_topic_id",
         "spending_frequency"
       ],
       "type": "object"
@@ -21294,7 +21294,7 @@
         "rewards_program_status": {
           "$ref": "#/components/schemas/RewardsProgramStatusTopic"
         },
-        "rewards_program_status_id": {
+        "rewards_program_status_topic_id": {
           "type": "string"
         },
         "started_on": {
@@ -21312,7 +21312,7 @@
         "expires_on",
         "id",
         "rewards_program_status",
-        "rewards_program_status_id",
+        "rewards_program_status_topic_id",
         "started_on"
       ],
       "type": "object"

@@ -29,7 +29,7 @@ describe('spending category continuation state', () => {
 function category(id: string, amount: number, canManage = true): SpendingCategory {
   return {
     id,
-    spending_category_id: `${id}-topic`,
+    spending_category_topic_id: `${id}-topic`,
     amount: { amount, currency: 'usd' },
     spending_frequency: 'monthly' as const,
     note: null,

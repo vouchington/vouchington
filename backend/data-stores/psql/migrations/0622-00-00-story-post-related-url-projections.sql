@@ -5,12 +5,12 @@ CREATE TABLE IF NOT EXISTS story_post_related_url_projection_jobs (
   post_id UUID PRIMARY KEY,
   story_id UUID NOT NULL,
   generation BIGINT NOT NULL DEFAULT 1 CHECK (generation > 0),
-  source_high_water_id UUID,
-  relation_high_water_id UUID,
+  sweep_upper_bound_source_id UUID,
+  sweep_upper_bound_relation_id UUID,
   relation_snapshot_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
-  source_cursor_id UUID,
+  cursor_source_id UUID,
   source_completed_at TIMESTAMPTZ,
-  prune_cursor_id UUID,
+  cursor_prune_id UUID,
   invalidation_required_at TIMESTAMPTZ,
   invalidation_completed_at TIMESTAMPTZ,
   lease_token UUID,
@@ -132,12 +132,12 @@ COMMENT ON TABLE story_post_related_url_projection_jobs IS 'Durable, generation-
 COMMENT ON COLUMN story_post_related_url_projection_jobs.post_id IS 'Story post receiving the projected related URL relations.';
 COMMENT ON COLUMN story_post_related_url_projection_jobs.story_id IS 'Current story whose active RSS item URLs are projected.';
 COMMENT ON COLUMN story_post_related_url_projection_jobs.generation IS 'Monotonic source snapshot generation; stale workers cannot mutate a newer generation.';
-COMMENT ON COLUMN story_post_related_url_projection_jobs.source_high_water_id IS 'RSS item ID high-water mark that bounds this generation source snapshot.';
-COMMENT ON COLUMN story_post_related_url_projection_jobs.relation_high_water_id IS 'Relation ID high-water mark that excludes post-capture related links from this generation prune.';
+COMMENT ON COLUMN story_post_related_url_projection_jobs.sweep_upper_bound_source_id IS 'RSS item ID high-water mark that bounds this generation source snapshot.';
+COMMENT ON COLUMN story_post_related_url_projection_jobs.sweep_upper_bound_relation_id IS 'Relation ID high-water mark that excludes post-capture related links from this generation prune.';
 COMMENT ON COLUMN story_post_related_url_projection_jobs.relation_snapshot_at IS 'Wall-clock boundary that excludes relations reactivated after this generation was captured.';
-COMMENT ON COLUMN story_post_related_url_projection_jobs.source_cursor_id IS 'RSS item ID keyset cursor for the bounded source projection phase.';
+COMMENT ON COLUMN story_post_related_url_projection_jobs.cursor_source_id IS 'RSS item ID keyset cursor for the bounded source projection phase.';
 COMMENT ON COLUMN story_post_related_url_projection_jobs.source_completed_at IS 'Time the bounded source projection phase reached its high-water mark.';
-COMMENT ON COLUMN story_post_related_url_projection_jobs.prune_cursor_id IS 'Relation ID keyset cursor for the stale-relation pruning phase.';
+COMMENT ON COLUMN story_post_related_url_projection_jobs.cursor_prune_id IS 'Relation ID keyset cursor for the stale-relation pruning phase.';
 COMMENT ON COLUMN story_post_related_url_projection_jobs.invalidation_required_at IS 'Time a committed relation mutation made the story cache invalidation due.';
 COMMENT ON COLUMN story_post_related_url_projection_jobs.invalidation_completed_at IS 'Time the required story cache invalidation completed for this generation.';
 COMMENT ON COLUMN story_post_related_url_projection_jobs.lease_token IS 'Opaque fencing token rotated for each worker lease claim.';

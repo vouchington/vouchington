@@ -145,7 +145,7 @@ COMMENT ON COLUMN copyright_notice_delivery_work_items.lease_expires_at IS 'Curr
 
 ALTER TABLE copyright_notice_lifecycle_changes
   ADD CONSTRAINT copyright_lifecycle_event_delivery_intent_fk
-  FOREIGN KEY (copyright_notice_delivery_intent_id)
+  FOREIGN KEY (copyright_notice_delivery_work_item_id)
   REFERENCES copyright_notice_delivery_work_items(id) ON DELETE RESTRICT NOT VALID;
 ALTER TABLE copyright_notice_lifecycle_changes
   VALIDATE CONSTRAINT copyright_lifecycle_event_delivery_intent_fk;

@@ -73,7 +73,7 @@ export function useSpendingCategoryManagement({
       activeMutationsRef.current.add('add')
       await runWithLoadingId('add', async () => {
         const { spending_category: category } = await createMySpendingCategory({
-          spending_category_id: newCategoryId,
+          spending_category_topic_id: newCategoryId,
           amount,
           spending_frequency: newFrequency,
           note: newNote || undefined,

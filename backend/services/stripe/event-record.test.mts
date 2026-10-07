@@ -5,7 +5,7 @@ import type { StripeEventRow } from './events-types.mts'
 const baseRow: StripeEventRow = {
   id: '01912345-1234-7234-8234-123456789abc',
   stripe_event_id: 'evt_test_record',
-  event_type: 'invoice.paid',
+  stripe_event_type_id: 'invoice.paid',
   is_live_mode: false,
   api_version: '2025-09-30.clover',
   occurred_at: new Date('2026-01-01T00:00:00.000Z'),

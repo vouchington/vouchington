@@ -67,7 +67,7 @@ export interface PointValuation {
 
 export interface RewardsProgramStatus {
   id: string
-  rewards_program_status_id: string
+  rewards_program_status_topic_id: string
   started_on: string | null
   expires_on: string | null
   rewards_program_status: {

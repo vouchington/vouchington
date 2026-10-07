@@ -6,15 +6,15 @@ Rewards program tier statuses held by individuals (e.g. Marriott Platinum Elite)
 
 Not partitioned — growth: unbounded.
 
-| Column                      | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                              |
-| --------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------- |
-| `id`                        | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                      |
-| `individual_id`             | `uuid`                     | no       |                              |          |           |           | The individual who holds this status.                                |
-| `rewards_program_status_id` | `uuid`                     | no       |                              |          |           |           | The specific tier status (references rewards_program_status_topics). |
-| `started_on`                | `date`                     | yes      |                              |          |           |           | Date the status was earned or started.                               |
-| `expires_on`                | `date`                     | yes      |                              |          |           |           | Date the status expires. NULL if ongoing.                            |
-| `created_at`                | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                      |
-| `updated_at`                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                      |
+| Column                            | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                              |
+| --------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------- |
+| `id`                              | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                      |
+| `individual_id`                   | `uuid`                     | no       |                              |          |           |           | The individual who holds this status.                                |
+| `rewards_program_status_topic_id` | `uuid`                     | no       |                              |          |           |           | The specific tier status (references rewards_program_status_topics). |
+| `started_on`                      | `date`                     | yes      |                              |          |           |           | Date the status was earned or started.                               |
+| `expires_on`                      | `date`                     | yes      |                              |          |           |           | Date the status expires. NULL if ongoing.                            |
+| `created_at`                      | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                      |
+| `updated_at`                      | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                      |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -27,13 +27,13 @@ _none_
 
 **Foreign keys:**
 
-- `fk_individual_rewards_program_statuses__rewards_program_status`: `FOREIGN KEY (rewards_program_status_id) REFERENCES rewards_program_status_topics(topic_id) ON DELETE CASCADE`
+- `fk_individual_rewards_program_statuses__rewards_program_status`: `FOREIGN KEY (rewards_program_status_topic_id) REFERENCES rewards_program_status_topics(topic_id) ON DELETE CASCADE`
 - `individual_rewards_program_statuses_individual_id_fkey`: `FOREIGN KEY (individual_id) REFERENCES individuals(id) ON DELETE CASCADE`
 
 **Indexes:**
 
-- `idx_individ_rewards_program_statuses__rewards_program_status_id`: `CREATE INDEX idx_individ_rewards_program_statuses__rewards_program_status_id ON public.individual_rewards_program_statuses USING btree (rewards_program_status_id)`
 - `idx_individual_rewards_program_statuses__individual_id_id`: `CREATE INDEX idx_individual_rewards_program_statuses__individual_id_id ON public.individual_rewards_program_statuses USING btree (individual_id, id)`
+- `idx_individual_rewards_program_statuses__status_topic_id`: `CREATE INDEX idx_individual_rewards_program_statuses__status_topic_id ON public.individual_rewards_program_statuses USING btree (rewards_program_status_topic_id)`
 - `individual_rewards_program_statuses_pkey`: `CREATE UNIQUE INDEX individual_rewards_program_statuses_pkey ON public.individual_rewards_program_statuses USING btree (id)`
 
 **Triggers:**

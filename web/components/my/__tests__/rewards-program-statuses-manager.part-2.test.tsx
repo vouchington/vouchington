@@ -51,7 +51,7 @@ describe('RewardsProgramStatusesManager Integration Flow', () => {
     mockUpdate.mockReturnValueOnce(firstSave)
     const secondStatus: RewardsProgramStatus = {
       id: 'status-user-2',
-      rewards_program_status_id: 'stat-2',
+      rewards_program_status_topic_id: 'stat-2',
       started_on: null,
       expires_on: null,
       rewards_program_status: {

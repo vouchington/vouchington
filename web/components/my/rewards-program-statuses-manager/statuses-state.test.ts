@@ -3,7 +3,7 @@ import { mergeRewardsProgramStatusPages } from './statuses-state'
 
 const first = {
   id: '00000000-0000-7000-8000-000000000001',
-  rewards_program_status_id: 'topic-1',
+  rewards_program_status_topic_id: 'topic-1',
   started_on: null,
   expires_on: null,
   rewards_program_status: { id: 'topic-1', name: 'Gold', slug: 'gold' },

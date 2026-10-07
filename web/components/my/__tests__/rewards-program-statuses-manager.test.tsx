@@ -45,7 +45,7 @@ describe('RewardsProgramStatusesManager Integration Flow', () => {
 
     await waitFor(() => {
       expect(mockCreate).toHaveBeenCalledWith({
-        rewards_program_status_id: 'stat-2',
+        rewards_program_status_topic_id: 'stat-2',
       })
       expect(mockOnSuccess).toHaveBeenCalledWith('Status added')
       expect(screen.getByText('Marriott Bonvoy Platinum')).toBeInTheDocument()

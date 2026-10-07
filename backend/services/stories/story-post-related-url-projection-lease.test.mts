@@ -47,12 +47,12 @@ function projectionWork(): ProjectionWork {
     post_id: crypto.randomUUID(),
     story_id: crypto.randomUUID(),
     generation: '1',
-    source_high_water_id: crypto.randomUUID(),
-    relation_high_water_id: null,
+    sweep_upper_bound_source_id: crypto.randomUUID(),
+    sweep_upper_bound_relation_id: null,
     relation_snapshot_at: new Date(),
-    source_cursor_id: null,
+    cursor_source_id: null,
     source_completed_at: null,
-    prune_cursor_id: null,
+    cursor_prune_id: null,
     lease_token: crypto.randomUUID(),
   }
 }

@@ -19,7 +19,7 @@
         "name": "Groceries",
         "slug": "groceries"
       },
-      "spending_category_id": "00000000-0000-7000-8000-000000000741",
+      "spending_category_topic_id": "00000000-0000-7000-8000-000000000741",
       "spending_frequency": "annually"
     }
   ]

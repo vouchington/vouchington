@@ -6,18 +6,18 @@ Intent-scoped encrypted email recipients for legal delivery. This avoids reusing
 
 Not partitioned — growth: unbounded.
 
-| Column                                | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                     |
-| ------------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------- |
-| `id`                                  | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                             |
-| `copyright_notice_delivery_intent_id` | `uuid`                     | no       |                              |          |           |           | Email delivery obligation that owns this recipient address. |
-| `email_ciphertext`                    | `text`                     | no       |                              |          |           |           | Intent-scoped encrypted recipient email address.            |
-| `created_at`                          | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                             |
+| Column                                   | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                     |
+| ---------------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------- |
+| `id`                                     | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                             |
+| `copyright_notice_delivery_work_item_id` | `uuid`                     | no       |                              |          |           |           | Email delivery obligation that owns this recipient address. |
+| `email_ciphertext`                       | `text`                     | no       |                              |          |           |           | Intent-scoped encrypted recipient email address.            |
+| `created_at`                             | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                             |
 
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
 
-- `uq_copyright_notice_delivery_recipients__intent_id`: `UNIQUE (copyright_notice_delivery_intent_id)`
+- `uq_copyright_notice_delivery_recipients__intent_id`: `UNIQUE (copyright_notice_delivery_work_item_id)`
 
 **Check constraints:**
 
@@ -25,12 +25,12 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `fk_copyright_notice_delivery_recipients__intent`: `FOREIGN KEY (copyright_notice_delivery_intent_id) REFERENCES copyright_notice_delivery_work_items(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_delivery_recipients__intent`: `FOREIGN KEY (copyright_notice_delivery_work_item_id) REFERENCES copyright_notice_delivery_work_items(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
 - `copyright_notice_delivery_recipients_pkey`: `CREATE UNIQUE INDEX copyright_notice_delivery_recipients_pkey ON public.copyright_notice_delivery_recipients USING btree (id)`
-- `uq_copyright_notice_delivery_recipients__intent_id`: `CREATE UNIQUE INDEX uq_copyright_notice_delivery_recipients__intent_id ON public.copyright_notice_delivery_recipients USING btree (copyright_notice_delivery_intent_id)`
+- `uq_copyright_notice_delivery_recipients__intent_id`: `CREATE UNIQUE INDEX uq_copyright_notice_delivery_recipients__intent_id ON public.copyright_notice_delivery_recipients USING btree (copyright_notice_delivery_work_item_id)`
 
 **Triggers:**
 

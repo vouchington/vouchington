@@ -12,7 +12,7 @@ type Story = StoryObj<typeof meta>
 const fixtureCategories: SpendingCategory[] = [
   {
     id: 'sc-1',
-    spending_category_id: 'cat-1',
+    spending_category_topic_id: 'cat-1',
     amount: { amount: 15_000, currency: 'usd' },
     spending_frequency: 'monthly',
     note: 'Morning coffee and tea',
@@ -24,7 +24,7 @@ const fixtureCategories: SpendingCategory[] = [
   },
   {
     id: 'sc-2',
-    spending_category_id: 'cat-2',
+    spending_category_topic_id: 'cat-2',
     amount: { amount: 60_000, currency: 'usd' },
     spending_frequency: 'monthly',
     note: null,
@@ -36,7 +36,7 @@ const fixtureCategories: SpendingCategory[] = [
   },
   {
     id: 'sc-3',
-    spending_category_id: 'cat-3',
+    spending_category_topic_id: 'cat-3',
     amount: { amount: 3000, currency: 'jpy' },
     spending_frequency: 'annually',
     note: 'Flights and hotels',

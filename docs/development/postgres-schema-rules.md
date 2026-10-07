@@ -179,7 +179,7 @@ examples describe the review baseline, rather than the current generated snapsho
     FKs into an extension are named for it under R2:
     `hostname_crawler_configurations.referral_program_id` and
     `user_referral_program_links.referral_program_id` become `referral_program_topic_id`,
-    `retailer_countries.retailer_id` becomes `retailer_topic_id`, and so on. The join table
+    `retailer_countries.retailer_topic_id` becomes `retailer_topic_id`, and so on. The join table
     `topics__referral_program_link_validations` becomes
     `referral_program_topic_link_validation_rule_sets`.
 
@@ -242,8 +242,8 @@ examples describe the review baseline, rather than the current generated snapsho
     the PR.
   - **Values an outside system defines** (it adds new ones without a migration) are stored by who
     sets them. An enum would reject a new value and lose the record.
-    - A vendor we authenticate (`stripe_events.event_type`, `ses_bounce_events.bounce_sub_type`,
-      `ai_usage_records.service_tier`, `verified_identities.document_type`): a lookup table that
+    - A vendor we authenticate (`stripe_events.stripe_event_type_id`, `amazon_ses_bounce_events.amazon_ses_bounce_subtype_id`,
+      `ai_usage_records.openai_service_tier_id`, `verified_identities.identity_document_type_id`): a lookup table that
       the writer fills on first sight, using the `upsertMediaTypes` pattern
       (`backend/services/urls/content-types.mts`: normalize, advisory lock, insert).
     - MIME types (the 3 copyright email/evidence `mime_type` columns and

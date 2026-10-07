@@ -2404,7 +2404,7 @@
     },
     "native.rewards-statuses.create.default": {
       "fixtureIds": ["native.rewards-statuses.create.default"],
-      "hash": "3ecc0a954b99d62ea4df81ceca61617bc16c1d25791b7f2c5973497989f68c78"
+      "hash": "662015745db785a319ee2832d3d48b33611e0d6b195fc3ea2775c542e56c2789"
     },
     "native.rewards-statuses.delete.default": {
       "fixtureIds": ["native.rewards-statuses.delete.default"],
@@ -2416,19 +2416,19 @@
     },
     "native.rewards-statuses.page-1": {
       "fixtureIds": ["native.rewards-statuses.page-1"],
-      "hash": "9106941684616be029650f2ea3f2c8b96c6cfd1b4136374c01df21af33a10e8e"
+      "hash": "c4c4a6891fbc63d25875339c460158aa62a15013f01a8367c3d5c4dd63f37574"
     },
     "native.rewards-statuses.page-2": {
       "fixtureIds": ["native.rewards-statuses.page-2"],
-      "hash": "9436990418a728adc9b82363afaffb5de22bdb22f4920c71488841133ef7e456"
+      "hash": "a02165f52c76ad1681f95b5596a1b0090309acfa07007bc32ab50fb0bdbb892d"
     },
     "native.rewards-statuses.update.clear-dates": {
       "fixtureIds": ["native.rewards-statuses.update.clear-dates"],
-      "hash": "3ecc0a954b99d62ea4df81ceca61617bc16c1d25791b7f2c5973497989f68c78"
+      "hash": "662015745db785a319ee2832d3d48b33611e0d6b195fc3ea2775c542e56c2789"
     },
     "native.rewards-statuses.update.full": {
       "fixtureIds": ["native.rewards-statuses.update.full"],
-      "hash": "016c0016ee3b96f8e842734445c5c515b48849f5b4a291286d0d954c26358d41"
+      "hash": "174baaf3d6c9a4a9f4eaae16a637bc23a6ddc237c9c6125bc17c428d6da4d680"
     },
     "native.rss-feed-item.detail.default": {
       "fixtureIds": ["native.rss-feed-item.detail.default"],
@@ -2444,7 +2444,7 @@
     },
     "native.spending-categories.create.default": {
       "fixtureIds": ["native.spending-categories.create.default"],
-      "hash": "ca80a26abb02deda268538b75a78428440f2c3b8b6592df3d88fe9e52a41b6e3"
+      "hash": "8c73a9b1d44517ff09bc3889c1921a19435b5a4498607ada7b479c0345c3833d"
     },
     "native.spending-categories.delete.default": {
       "fixtureIds": ["native.spending-categories.delete.default"],
@@ -2456,19 +2456,19 @@
     },
     "native.spending-categories.owned-household": {
       "fixtureIds": ["native.spending-categories.owned-household"],
-      "hash": "09c84c100b084ea9c70a7cffd57f7f7445766231b45d8b5b2b3aab17190e79d2"
+      "hash": "b42c49de6005028df6cc6147251569dcaed92e9a30779919da0ec65055875579"
     },
     "native.spending-categories.page-1": {
       "fixtureIds": ["native.spending-categories.page-1"],
-      "hash": "44fb0fc89333d0eaed657f03a95a47f27246969c56b4c8542aebc6593882f584"
+      "hash": "24e783b64f3362d615e4566e901788ed001680e154df37f8d3a55899624c5d91"
     },
     "native.spending-categories.page-2": {
       "fixtureIds": ["native.spending-categories.page-2"],
-      "hash": "5a578674ac966bfa7305d51360fd9cdf5b717dcc3adfd23743a5303aa4bef515"
+      "hash": "104e195aadd3e46b3e19a5889fd071189eee48dbdc4c612c92de751945ea90bf"
     },
     "native.spending-categories.update.clear-note": {
       "fixtureIds": ["native.spending-categories.update.clear-note"],
-      "hash": "63a79f441c7f48778a0f6ca827d21d8dcc99e605179df9014682b36d6a02bb98"
+      "hash": "781b914634fe226e6be92ac361166528bd35b4d5f3cfe54b043b0718a655eaa4"
     },
     "native.spending-category-topics.search.default": {
       "fixtureIds": ["native.spending-category-topics.search.default"],

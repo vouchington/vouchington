@@ -11,7 +11,7 @@ export default createManageEntityTool({
   toolName: 'manage_my_spending',
   description: "Manage the current user's spending by category.",
   addProperties: {
-    spending_category_id: {
+    spending_category_topic_id: {
       type: 'string',
       description: 'The topic UUID of the spending category (required for action=add)',
     },
@@ -36,7 +36,7 @@ export default createManageEntityTool({
     },
   },
   addFn: (user, args) =>
-    createHouseholdSpendingCategory(user, user, args.spending_category_id as string, {
+    createHouseholdSpendingCategory(user, user, args.spending_category_topic_id as string, {
       amount: args.amount as Money,
       spending_frequency: args.spending_frequency as 'monthly' | 'annually' | undefined,
       note: args.note as string | undefined,

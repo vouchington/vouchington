@@ -13,7 +13,7 @@ import {
 import { assertNotSuspended } from '@services/users'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
-type CreateRewardsProgramStatusRequest = { rewards_program_status_id: string }
+type CreateRewardsProgramStatusRequest = { rewards_program_status_topic_id: string }
 
 type UpdateRewardsProgramStatusRequest = {
   started_on?: string | null
@@ -48,7 +48,7 @@ app.route('/api/v1/my/rewards-program-statuses').post(async (ctx: Context) => {
   const status = await createIndividualRewardsProgramStatus(
     currentUser,
     currentUser,
-    body.rewards_program_status_id,
+    body.rewards_program_status_topic_id,
   )
 
   ctx.setStatus(201)

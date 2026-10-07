@@ -92,7 +92,7 @@ describe('callRecordingAgentResponseUsage', () => {
       findAiUsageRecordForAgent(agentSlug, { inputTokens: 101, outputTokens: 52 }),
     ).resolves.toMatchObject({
       model: 'gpt-5.4-nano-2026-03-17',
-      service_tier: 'flex',
+      openai_service_tier_id: 'flex',
     })
 
     // The registration row must already be gone -- this path's own compare-and-set claimed it, so

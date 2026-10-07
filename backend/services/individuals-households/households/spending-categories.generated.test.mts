@@ -30,7 +30,7 @@ describe('spending-categories.generated', () => {
     expect(spendingCategory).toBeDefined()
     expect(spendingCategory!.amount).toEqual({ amount: 10_050, currency: 'usd' })
     expect(spendingCategory!.spending_frequency).toBe('monthly')
-    expect(spendingCategory!.spending_category_id).toBe(topicId)
+    expect(spendingCategory!.spending_category_topic_id).toBe(topicId)
     expect(spendingCategory!.spending_category).toBeDefined()
     expect(spendingCategory!.spending_category.id).toBe(topicId)
     expect(spendingCategory!.owner_type).toBe('individual')
@@ -179,7 +179,7 @@ describe('spending-categories.generated', () => {
     expect(spendingCategory!.amount).toEqual({ amount: 15_000, currency: 'usd' })
     expect(spendingCategory!.owner_type).toBe('household')
     expect(spendingCategory!.can_manage).toBe(true)
-    expect(spendingCategory!.spending_category_id).toBe(topicId)
+    expect(spendingCategory!.spending_category_topic_id).toBe(topicId)
   })
 
   it('getHouseholdSpendingCategoriesByUserId - returns both individual and household entries', async () => {
