@@ -1,10 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { sentryCaptureExceptionMock as captureException } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import { valkeyEvents } from 'valkyries'
-import {
-  initializeValkeyAppIntegration,
-  waitForValkeyCacheMetricCompletions,
-} from './app-integration.mts'
+import { initializeValkeyAppIntegration } from './app-integration.mts'
 
 type EmittedAnalyticsEvent = [string, Record<string, unknown>]
 
@@ -20,6 +17,7 @@ function getIntegrationState(): IntegrationState {
   return state
 }
 let ownedLoads: NonNullable<IntegrationState['analyticsPromise']>[] = []
+let waitForCacheMetricCompletions: () => Promise<void>
 function useAnalyticsLoader(loader: IntegrationState['loadAnalytics']) {
   const state = getIntegrationState()
   if (state.analyticsPromise) ownedLoads.push(state.analyticsPromise)
@@ -45,14 +43,14 @@ describe('valkey app integration', () => {
     ownedLoads = []
     getIntegrationState().analyticsPromise = null
     valkeyEvents.removeAllListeners('cache:call')
-    initializeValkeyAppIntegration()
+    waitForCacheMetricCompletions = initializeValkeyAppIntegration().waitForCacheMetricCompletions
   })
 
   afterEach(async () => {
     const state = getIntegrationState()
     if (state.analyticsPromise) ownedLoads.push(state.analyticsPromise)
     await Promise.allSettled(ownedLoads)
-    await waitForValkeyCacheMetricCompletions()
+    await waitForCacheMetricCompletions()
     Object.assign(state, originalState)
     valkeyEvents.removeAllListeners('cache:call')
     for (const listener of originalListeners) valkeyEvents.on('cache:call', listener)
@@ -76,7 +74,7 @@ describe('valkey app integration', () => {
       durationMs: 1,
     })
 
-    await waitForValkeyCacheMetricCompletions()
+    await waitForCacheMetricCompletions()
     expect(emitted.filter(([, payload]) => payload.cache_name === cacheName)).toHaveLength(1)
   })
 
@@ -94,7 +92,7 @@ describe('valkey app integration', () => {
       durationMs: 12.5,
     })
 
-    await waitForValkeyCacheMetricCompletions()
+    await waitForCacheMetricCompletions()
     expect(emitted.filter(([, payload]) => payload.cache_name === cacheName)).toHaveLength(1)
 
     const [event, payload] = emitted.find(([, entry]) => entry.cache_name === cacheName)!
@@ -131,7 +129,7 @@ describe('valkey app integration', () => {
       durationMs: 2,
     })
 
-    await waitForValkeyCacheMetricCompletions()
+    await waitForCacheMetricCompletions()
     expect(emitted.filter(([, payload]) => payload.cache_name === cacheName)).toHaveLength(1)
   })
 
@@ -177,7 +175,7 @@ describe('valkey app integration', () => {
       durationMs: 8,
     })
 
-    await waitForValkeyCacheMetricCompletions()
+    await waitForCacheMetricCompletions()
     expect(emitted.filter(([, payload]) => payload.cache_name === cacheName)).toHaveLength(1)
 
     expect(
@@ -225,7 +223,7 @@ describe('valkey app integration', () => {
       durationMs: 3,
     })
 
-    await waitForValkeyCacheMetricCompletions()
+    await waitForCacheMetricCompletions()
     expect(emitted.filter(([, payload]) => payload.cache_name === cacheName)).toHaveLength(1)
   })
 
@@ -244,7 +242,7 @@ describe('valkey app integration', () => {
         bloomMisses: 0,
         durationMs: 1,
       })
-      await waitForValkeyCacheMetricCompletions()
+      await waitForCacheMetricCompletions()
       expect(emitSpy).toHaveBeenCalledWith(
         'valkey_cache_calls',
         expect.objectContaining({ cache_name: cacheName }),
@@ -277,7 +275,7 @@ describe('valkey app integration', () => {
       durationMs: 1,
     })
 
-    await waitForValkeyCacheMetricCompletions()
+    await waitForCacheMetricCompletions()
     expect(captureException).toHaveBeenCalledWith(error, expect.anything())
   })
 })

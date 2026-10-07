@@ -36,7 +36,9 @@ function getValkeyAppIntegrationState(): ValkeyAppIntegrationState {
   return globalState[valkeyAppIntegrationStateKey]
 }
 
-export function initializeValkeyAppIntegration(): void {
+export function initializeValkeyAppIntegration(): {
+  waitForCacheMetricCompletions: () => Promise<void>
+} {
   const state = getValkeyAppIntegrationState()
 
   setValkeyErrorHandler(onError)
@@ -47,10 +49,11 @@ export function initializeValkeyAppIntegration(): void {
     if (isValkeyCacheMetricBridge(listener)) valkeyEvents.off('cache:call', listener)
   }
   valkeyEvents.on('cache:call', state.bridge)
+  return { waitForCacheMetricCompletions: waitForValkeyCacheMetricCompletions }
 }
 
 /** Waits until all cache-call analytics events emitted so far finish loading and dispatching. */
-export async function waitForValkeyCacheMetricCompletions(): Promise<void> {
+async function waitForValkeyCacheMetricCompletions(): Promise<void> {
   const pending = getValkeyAppIntegrationState().pendingMetricCompletions
   if (!pending) return
   await Promise.all([...pending])
