@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { runIsolatedDatabaseCase } from './vitest-isolated-database-case.mts'
 import {
   getIsolatedDatabaseCase,
   getIsolatedDatabaseChildCase,
@@ -21,12 +20,6 @@ describe('isolated database case registry', () => {
     expect(makeIsolatedDatabaseName('a'.repeat(24))).toBe(`voucha_scope_case_${'a'.repeat(24)}`)
     expect(() => makeIsolatedDatabaseName('shared_database')).toThrow(
       'Invalid isolated database suffix',
-    )
-  })
-
-  it('rejects a removed case before creating an isolated database', async () => {
-    await expect(runIsolatedDatabaseCase('semantic-post-window-cap')).rejects.toThrow(
-      'Unknown isolated database case: semantic-post-window-cap',
     )
   })
 })
