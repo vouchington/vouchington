@@ -11,6 +11,7 @@ export interface UserPreservationHold {
 }
 
 export interface UserPreservationHoldsResponse {
+  account_deleted_at: string | null
   holds: UserPreservationHold[]
 }
 

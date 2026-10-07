@@ -855,19 +855,23 @@ sufficient to identify an alleged infringer, to the extent Voucha has it.
      encrypted, shown only to administrators, and never logged. The hold has no duration or scope:
      the owner decides when it ends, on the lawyer's advice, and an administrator releases it from
      the same card. Only one hold is open per account at a time.
-   - **Effect.** While a hold is open, deletion of the account by the user or by an administrator
-     returns `409`. An operative incident does not block deletion; see the canonical
-     [repeat-infringer deletion rule](#repeat-infringer-review) above for the distinct qualifying
-     legal-hold rule. The message does not reveal that legal process exists. A preservation hold
-     does not copy or freeze any other record. It only stops the account being deleted.
+   - **Effect.** Before soft deletion, an open hold makes deletion by the user or an administrator
+     return the same `409` as for a court or CCB hold. An operative incident does not block
+     deletion; see the canonical [repeat-infringer deletion rule](#repeat-infringer-review). The
+     message does not say which blocker applies, so it does not reveal that legal process exists.
+     After soft deletion, a hold pauses only the 90-day final purge. It does not pause the immediate
+     deletion phases, which normally finish within minutes, and it does not restore data those
+     phases already erased.
    - **Audit.** Placing and releasing each write a moderator action (`preservation_hold_place`,
      `preservation_hold_release`), visible to administrators in the admin modlog and to no
      community. The hold row records who placed it and when, and who released it and when. Rows are
      never deleted, so this history outlives the account and its eventual hard delete (see
      [account deletion](../requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md#deletion-refusals)).
-   - **Already deleted.** A hold cannot be placed on an account that is already deleted. If the
-     subpoena arrives after deletion, tell the owner the same day: the account's personal data was
-     scrubbed at deletion, and the soft-deleted row is purged 90 days after it.
+   - **Soft-deleted account.** Get the account id from the copyright case page and open
+     `/user/<id>/admin`. For a soft-deleted account, administrators see only the account id and the
+     preservation-hold card. Place or release the hold there. If the account was deleted more than
+     90 days ago, act promptly: without an open hold it is eligible for the next final-purge run.
+     A missing account returns not found because its final purge has already removed the `users` row.
    - **Case evidence.** Copyright case records are append-only, and the only thing that destroys
      case evidence is the evidence retention sweep, which is off by default. A preservation hold
      keeps the sweep away from every case the held account is a party to, as claimant, as the

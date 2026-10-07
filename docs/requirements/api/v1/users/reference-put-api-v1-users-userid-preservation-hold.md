@@ -28,7 +28,8 @@ Places a legal-process preservation hold on an account. Admin only. While the ho
 }
 ```
 
-Returns 401 if unauthenticated, 403 if not admin, 404 if the user does not exist or is deleted, 409
-if the user already has an open hold, and 422 for a blank, over-long, or non-string `reference` or an
+Returns 401 if unauthenticated, 403 if not admin, 404 once no `users` row exists, 409 if the user
+already has an open hold, and 422 for a blank, over-long, or non-string `reference` or an
 unknown body key (the message never echoes the submitted text). The placement is recorded in the
-moderator audit log as `preservation_hold_place` in the same transaction.
+moderator audit log as `preservation_hold_place` in the same transaction. Soft-deleted accounts
+remain eligible while their row awaits final purge.

@@ -1,11 +1,10 @@
-import { beginTransaction, query as primaryQuery } from '@data-stores/psql'
+import { beginTransaction, query as primaryQuery, type QueryExecutor } from '@data-stores/psql'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
 import { createCodedError } from '@modules/on-error/create-coded-error'
 import { CONFLICT } from '@modules/on-error/error-codes'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
-import { lockActiveDataRequestUser } from '@services/account-data-requests/active-user-lock'
 import { recordModeratorAction } from '@services/moderator-actions'
 import { isAdminUser } from './authorization.mts'
 import type { PrivateUser } from './types.mts'
@@ -34,6 +33,11 @@ export type UserPreservationHold = {
   released_at: Date | null
 }
 
+export type UserPreservationHoldState = {
+  accountDeletedAt: Date | null
+  holds: UserPreservationHold[]
+}
+
 /** The reference is bound to its hold id, so a ciphertext cannot be replayed onto another hold. */
 function referencePurpose(holdId: string): string {
   return `user-legal-preservation-hold:${holdId}`
@@ -55,6 +59,16 @@ function assertAdmin(currentUser: PrivateUser | null): asserts currentUser is Pr
   if (!isAdminUser(currentUser)) throw createHttpError(403, 'Forbidden')
 }
 
+async function lockPreservationHoldUser(query: QueryExecutor, userId: string): Promise<boolean> {
+  await query(sql`/* lockPreservationHoldUser:advisoryLock */
+    SELECT pg_advisory_xact_lock(hashtextextended(${userId}, 0))
+  `)
+  const { rows } = await query<{ id: string }>(sql`/* lockPreservationHoldUser:userExists */
+    SELECT id FROM users WHERE id = ${userId}
+  `)
+  return rows.length > 0
+}
+
 /** The reference is a short matter identifier; the message never echoes the submitted text. */
 export function parsePreservationHoldReference(reference: unknown): string {
   const trimmed = typeof reference === 'string' ? reference.trim() : ''
@@ -68,10 +82,9 @@ export function parsePreservationHoldReference(reference: unknown): string {
 }
 
 /**
- * Places the account's single open hold. While it is open, `deleteUser` refuses the account
- * (`assertCopyrightEvidenceAllowsDeletion`). The placement takes the same per-user advisory lock as
- * `deleteUser` and refuses a deleted account, so a hold can never be added behind an erasure that
- * has already committed. The reference is encrypted and is not copied to the moderator audit row.
+ * Places the account's single open hold. The placement takes the account-deletion advisory lock,
+ * accepts a soft-deleted account, and refuses an account whose users row has already been purged.
+ * The reference is encrypted and is not copied to the moderator audit row.
  */
 export async function placeUserPreservationHold(
   currentUser: PrivateUser | null,
@@ -85,7 +98,7 @@ export async function placeUserPreservationHold(
 
   await using query = await beginTransaction()
   // ast-grep-ignore: no-three-sequential-awaits -- lock, insert, and audit must run in order on one transaction client.
-  if (!(await lockActiveDataRequestUser(query, userId))) {
+  if (!(await lockPreservationHoldUser(query, userId))) {
     throw createHttpError(404, 'User not found')
   }
   const { rows } = await query<HoldRow>(sql`/* placeUserPreservationHold */
@@ -114,7 +127,7 @@ export async function releaseUserPreservationHold(
 
   await using query = await beginTransaction()
   // ast-grep-ignore: no-three-sequential-awaits -- lock, release, and audit must run in order on one transaction client.
-  if (!(await lockActiveDataRequestUser(query, userId))) {
+  if (!(await lockPreservationHoldUser(query, userId))) {
     throw createHttpError(404, 'User not found')
   }
   const { rows } = await query<HoldRow>(sql`/* releaseUserPreservationHold */
@@ -148,4 +161,21 @@ export async function listUserPreservationHolds(
     LIMIT ${HISTORY_LIMIT}
   `)
   return rows.map(toHold)
+}
+
+/** Route-facing account state. History remains queryable internally after final user deletion. */
+export async function getUserPreservationHoldState(
+  currentUser: PrivateUser | null,
+  userId: string,
+): Promise<UserPreservationHoldState> {
+  assertAdmin(currentUser)
+  const { rows } = await primaryQuery<{ deleted_at: Date | null }>(
+    sql`/* getUserPreservationHoldState */ SELECT deleted_at FROM users WHERE id = ${userId}`,
+  )
+  const user = rows[0]
+  if (!user) throw createHttpError(404, 'User not found')
+  return {
+    accountDeletedAt: user.deleted_at,
+    holds: await listUserPreservationHolds(currentUser, userId),
+  }
 }

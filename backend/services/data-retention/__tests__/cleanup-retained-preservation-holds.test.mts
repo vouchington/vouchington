@@ -12,6 +12,7 @@ import {
   releaseUserPreservationHold,
 } from '@services/users'
 import { cleanupSoftDeletedUsers } from '../cleanup.mts'
+import { cleanupSoftDeletedUser } from '../cleanup-soft-deleted-user.mts'
 import { cleanupRetainedIdentityRoots } from '../cleanup-retained-identities.mts'
 
 describe('legal preservation holds and final user purge', () => {
@@ -25,6 +26,40 @@ describe('legal preservation holds and final user purge', () => {
   afterEach(() => {
     vi.unstubAllEnvs()
   })
+
+  it('pauses an eligible final purge until the hold is released', async () => {
+    const window = createTestRetentionWindow()
+    const admin = await createTestUser({ administrator: true })
+    const user = await createTestUser()
+    await softDeleteUserAt(user.id, window.firstEligibleDate)
+    await placeUserPreservationHold(admin, user.id, 'matter-purge-pause')
+
+    await expect(
+      cleanupSoftDeletedUser(user.id, window.upperBoundDate, window.lowerBoundDate),
+    ).resolves.toEqual({ deleted: 0, hasMore: false })
+    expect(await getTestUserRaw(user.id)).not.toBeNull()
+
+    await releaseUserPreservationHold(admin, user.id)
+    await cleanupSoftDeletedUsers(window)
+
+    expect(await getTestUserRaw(user.id)).toBeNull()
+  }, 60_000)
+
+  it('skips a held account in batch selection while purging an eligible sibling', async () => {
+    const window = createTestRetentionWindow()
+    const admin = await createTestUser({ administrator: true })
+    const [held, sibling] = await Promise.all([createTestUser(), createTestUser()])
+    await Promise.all([
+      softDeleteUserAt(held.id, window.firstEligibleDate),
+      softDeleteUserAt(sibling.id, window.firstEligibleDate),
+    ])
+    await placeUserPreservationHold(admin, held.id, 'matter-purge-batch')
+
+    await cleanupSoftDeletedUsers(window)
+
+    expect(await getTestUserRaw(sibling.id)).toBeNull()
+    expect(await getTestUserRaw(held.id)).not.toBeNull()
+  }, 60_000)
 
   it('keeps a released hold and the identities it names after the account is hard-deleted', async () => {
     const window = createTestRetentionWindow()

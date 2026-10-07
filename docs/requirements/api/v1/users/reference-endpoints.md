@@ -22,7 +22,7 @@
 | PUT          | `/api/v1/users/:userId/suspension`                 | Admin only               | Suspend a user                                               |
 | DELETE       | `/api/v1/users/:userId/suspension`                 | Admin only               | Unsuspend a user                                             |
 | GET          | `/api/v1/users/:userId/preservation-hold`          | Admin only               | List legal-process preservation holds                        |
-| PUT          | `/api/v1/users/:userId/preservation-hold`          | Admin only               | Place a hold that blocks account deletion                    |
+| PUT          | `/api/v1/users/:userId/preservation-hold`          | Admin only               | Place a hold that blocks deletion or pauses final purge      |
 | DELETE       | `/api/v1/users/:userId/preservation-hold`          | Admin only               | Release the open hold                                        |
 | GET          | `/api/v1/users/:userId/moderation-context`         | Mod+ only                | User mod context (account age, counts, notes)                |
 | GET          | `/api/v1/users/:userId/mod-notes`                  | Mod+ only                | List moderator notes (visibility-scoped)                     |

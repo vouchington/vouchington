@@ -1,12 +1,14 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import { getUserProfile } from '@/lib/api/server'
+import { getUserPreservationHoldState, getUserProfile } from '@/lib/api/server'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { getAdminLandingPagesForUser } from '@/lib/api/server/admin-landing-pages'
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
 import { UserAdminPanel } from './user-admin-panel'
 import { MembershipRefundPanel } from './membership-refund-panel'
 import { LandingPageAnalyticsCard } from './landing-page-analytics-card'
+import { DeletedUserPreservationHoldPanel } from './deleted-user-preservation-hold-panel'
+import { isUUID } from '@ts-shared/utils/validation-core'
 
 interface PageProps {
   params: Promise<{ idOrUsername: string }>
@@ -26,7 +28,10 @@ export default async function UserAdminPage({ params }: PageProps) {
   const { idOrUsername } = await params
   const profileData = await getUserProfile(idOrUsername)
   if (!profileData) {
-    notFound()
+    if (!isUUID(idOrUsername)) notFound()
+    const holdState = await getUserPreservationHoldState(idOrUsername)
+    if (!holdState?.account_deleted_at) notFound()
+    return <DeletedUserPreservationHoldPanel userId={idOrUsername} />
   }
 
   let landingPagesData: Awaited<ReturnType<typeof getAdminLandingPagesForUser>> = null

@@ -1,7 +1,12 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { createTestUser, getModeratorActionRowsForTest } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  getModeratorActionRowsForTest,
+  hardDeleteTestUser,
+  softDeleteUserAt,
+} from '@voucha/test-helpers'
 
 type Method = 'get' | 'put' | 'delete'
 
@@ -77,6 +82,7 @@ describe('user preservation hold routes', () => {
         .get(`/api/v1/users/${user.id}/preservation-hold`)
         .expect(200)
       expect(listed.body.holds).toEqual([placed.body.hold])
+      expect(listed.body.account_deleted_at).toBeNull()
 
       const released = await adminRequest
         .delete(`/api/v1/users/${user.id}/preservation-hold`)
@@ -168,6 +174,38 @@ describe('user preservation hold routes', () => {
         .put(`/api/v1/users/${randomUUID()}/preservation-hold`)
         .send({ reference: 'matter' })
         .expect(404)
+    })
+
+    it('returns the deletion timestamp and permits hold changes for a soft-deleted account', async () => {
+      const [admin, user] = await Promise.all([
+        createTestUser({ administrator: true }),
+        createTestUser(),
+      ])
+      const deletedAt = new Date('2026-01-02T03:04:05.000Z')
+      await softDeleteUserAt(user.id, deletedAt)
+      const request = createRequest()
+      await request.authenticateAs(admin)
+      const path = `/api/v1/users/${user.id}/preservation-hold`
+
+      await request.put(path).send({ reference: 'matter-deleted' }).expect(200)
+      const listed = await request.get(path).expect(200)
+      expect(listed.body.account_deleted_at).toBe(deletedAt.toISOString())
+      await request.delete(path).expect(200)
+    })
+
+    it('returns 404 for every operation after the users row is gone', async () => {
+      const [admin, user] = await Promise.all([
+        createTestUser({ administrator: true }),
+        createTestUser(),
+      ])
+      await hardDeleteTestUser(user.id)
+      const request = createRequest()
+      await request.authenticateAs(admin)
+      const path = `/api/v1/users/${user.id}/preservation-hold`
+
+      await request.get(path).expect(404)
+      await request.put(path).send({ reference: 'matter' }).expect(404)
+      await request.delete(path).expect(404)
     })
   })
 })

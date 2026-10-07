@@ -9,6 +9,7 @@ open; released holds stay as history.
 
 ```json
 {
+  "account_deleted_at": "2026-03-15T00:00:00.000Z",
   "holds": [
     {
       "id": "...",
@@ -23,7 +24,9 @@ open; released holds stay as history.
 }
 ```
 
-The decrypted `reference` is returned to administrators only. See
+`account_deleted_at` is the account's soft-deletion timestamp, or `null` for a live account. The
+decrypted `reference` is returned to administrators only. See
 [PUT](./reference-put-api-v1-users-userid-preservation-hold.md) for field meanings.
 
-Returns 401 if unauthenticated, 403 if not admin, 404 if the user does not exist or is deleted.
+Returns 401 if unauthenticated, 403 if not admin, and 404 once no `users` row exists. Soft-deleted
+accounts remain available until their final purge.

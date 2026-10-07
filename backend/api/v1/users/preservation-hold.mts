@@ -7,8 +7,8 @@ import {
   validateUUIDParam,
 } from '../../response-helpers.mts'
 import {
+  getUserPreservationHoldState,
   isAdminUser,
-  listUserPreservationHolds,
   placeUserPreservationHold,
   releaseUserPreservationHold,
 } from '@services/users'
@@ -17,8 +17,8 @@ import {
 // blank and length checks in the service keep their 422 responses without echoing the reference.
 type PlacePreservationHoldRequest = { reference: string }
 
-// Administrator-only legal-process preservation hold (issue #1449). An open hold blocks account
-// deletion; the reference is sensitive and is never logged or copied to the moderator audit log.
+// Administrator-only legal-process preservation hold (issue #1449). An open hold pauses final
+// account purging; the reference is sensitive and is never logged or copied to the audit log.
 app
   .route('/api/v1/users/:userId/preservation-hold')
   .get(async (ctx: Context) => {
@@ -32,7 +32,8 @@ app
       path: ctx.params,
     })
 
-    ctx.json({ holds: await listUserPreservationHolds(currentUser, userId) })
+    const state = await getUserPreservationHoldState(currentUser, userId)
+    ctx.json({ account_deleted_at: state.accountDeletedAt, holds: state.holds })
   })
   .put(async (ctx: Context) => {
     const currentUser = await requireAuthAndRateLimit(
