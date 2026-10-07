@@ -1,10 +1,10 @@
 import { existsSync, mkdtempDisposableSync, readFileSync, writeFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-import { catalogMarkdown, main, renderMcpDocs } from './render-mcp-docs.mts'
+import { catalogMarkdown, main, renderMcpDocs, resolveMcpCatalogPath } from './render-mcp-docs.mts'
 
 const SAMPLE_CATALOG = {
   servers: [
@@ -42,6 +42,16 @@ const SAMPLE_CATALOG = {
   ],
 }
 const SAMPLE_CATALOG_RAW = `${JSON.stringify(SAMPLE_CATALOG, null, 2)}\n`
+
+describe('resolveMcpCatalogPath', () => {
+  it('selects the committed catalog by default and preserves a supplied path', () => {
+    expect(resolveMcpCatalogPath()).toBe(
+      resolve(import.meta.dirname, '../api-fixtures/v1/mcp.json'),
+    )
+    const suppliedPath = join(tmpdir(), 'sample-mcp-catalog.json')
+    expect(resolveMcpCatalogPath(suppliedPath)).toBe(suppliedPath)
+  })
+})
 
 describe('catalogMarkdown', () => {
   it('describes each server and every tool gate, with fences longer than any backtick run', () => {
