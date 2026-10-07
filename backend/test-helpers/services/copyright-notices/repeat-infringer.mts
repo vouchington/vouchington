@@ -6,10 +6,13 @@ import {
 } from '../../entities/index.mts'
 import type { PrivateUser } from '../../../services/users/types.mts'
 import { completeCopyrightMandatoryHumanReview } from '../../../services/copyright-notices/index.mts'
+import { getCopyrightRepeatInfringerAccount } from '../../../services/copyright-notices/repeat-infringer-incidents.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from '../../../services/copyright-notices/restrictions.mts'
 import { appendCopyrightSubmissionAssessment } from '../../../services/copyright-notices/compliance.mts'
 import { createCopyrightNoticeAggregate } from './create-notice-aggregate.mts'
 import { getCopyrightNoticePrivateAggregate } from './private-aggregate.mts'
+
+export const getTestCopyrightRepeatInfringerAccount = getCopyrightRepeatInfringerAccount
 
 export async function confirmTestRepeatInfringerNotice(
   posterId: string,

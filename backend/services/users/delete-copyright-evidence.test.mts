@@ -4,7 +4,10 @@ import {
   createTestCopyrightImageFixture,
   createTestCopyrightRestrictionForImage,
 } from '@voucha/test-helpers/copyright-surface-target-fixtures'
-import { confirmTestRepeatInfringerNotice } from '@voucha/test-helpers/services/copyright-notices/repeat-infringer'
+import {
+  confirmTestRepeatInfringerNotice,
+  getTestCopyrightRepeatInfringerAccount,
+} from '@voucha/test-helpers/services/copyright-notices/repeat-infringer'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { hardDeleteTestUser, getTestPrivateUserById } from '@voucha/test-helpers/entities/users'
 import { hasTestRetainedIdentityRoot } from '@voucha/test-helpers/entities/retained-identities'
@@ -12,7 +15,6 @@ import { cleanupRetainedIdentityRoots } from '../data-retention/cleanup-retained
 import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 import { readTestCopyrightSurfaceRetainedEvidence } from '@voucha/test-helpers/copyright-surface-retained-evidence'
 import { selectCopyrightPlacementPartyUserIds } from '@services/media-delivery-safety/copyright-placement-parties'
-import { getCopyrightRepeatInfringerAccount } from '@services/copyright-notices/repeat-infringer-incidents'
 
 describe('deleted copyright surface evidence', () => {
   it('keeps repeat-infringer incidents, reviews, and case evidence after account deletion', async () => {
@@ -25,7 +27,7 @@ describe('deleted copyright surface evidence', () => {
       await confirmTestRepeatInfringerNotice(poster.id, moderator, 'deletion retention'),
     ]
     const casesBefore = await Promise.all(noticeIds.map(readRetainedCopyrightCase))
-    const repeatInfringerBefore = await getCopyrightRepeatInfringerAccount(poster.id)
+    const repeatInfringerBefore = await getTestCopyrightRepeatInfringerAccount(poster.id)
     expect(repeatInfringerBefore.incidents).toHaveLength(2)
     expect(repeatInfringerBefore.open_review_id).toEqual(expect.any(String))
 
@@ -35,7 +37,7 @@ describe('deleted copyright surface evidence', () => {
 
     await expect(getTestPrivateUserById(poster.id)).resolves.toBeNull()
     await expect(hasTestRetainedIdentityRoot('user', poster.id)).resolves.toBe(true)
-    await expect(getCopyrightRepeatInfringerAccount(poster.id)).resolves.toEqual(
+    await expect(getTestCopyrightRepeatInfringerAccount(poster.id)).resolves.toEqual(
       repeatInfringerBefore,
     )
     await expect(Promise.all(noticeIds.map(readRetainedCopyrightCase))).resolves.toEqual(
