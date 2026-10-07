@@ -6,6 +6,7 @@ import { rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { FullConfig } from '@playwright/test'
+import { assertResolvedPlaywrightTimeouts } from './config/test-timeout.mts'
 import { assertPlaywrightSeedData } from '../backend/scripts/seeds/playwright-seed-assertions.mts'
 import { seedPlaywrightTestData } from '../backend/scripts/seeds/playwright-test-data.mts'
 import { pinPlaywrightSeedCrawlAnchor } from '../backend/scripts/seeds/crawl-ids.mts'
@@ -31,7 +32,8 @@ const PLAYWRIGHT_TOPIC_IDS = [
   '019c64e6-b400-7000-b000-000000000001',
 ]
 
-export default async function globalSetup(_config: FullConfig) {
+export default async function globalSetup(config: FullConfig) {
+  assertResolvedPlaywrightTimeouts(config)
   // The runner may use NODE_ENV=production alongside the standalone web build. Its direct database
   // calls are test fixtures and should use the query guard's test exemption.
   process.env.NODE_ENV = 'test'

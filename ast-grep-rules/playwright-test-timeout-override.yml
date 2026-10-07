@@ -1,0 +1,140 @@
+id: playwright-test-timeout-override
+language: Tsx
+severity: error
+message: >-
+  Playwright tests have a 30-second maximum. Do not change the test deadline in a spec;
+  shorten the scenario or seed closer to the behavior under test.
+files:
+  - 'playwright/**/*.ts'
+  - 'playwright/**/*.tsx'
+  - 'playwright/**/*.mts'
+  - 'tests/routes/**/*.spec.ts'
+  - 'tests/routes/**/*.spec.mts'
+rule:
+  any:
+    - pattern: '$OBJ.setTimeout'
+    - pattern: '$OBJ["setTimeout"]'
+    - pattern: "$OBJ['setTimeout']"
+    - pattern: '$OBJ.slow'
+    - pattern: '$OBJ["slow"]'
+    - pattern: "$OBJ['slow']"
+    - pattern: '$OBJ.describe.configure({ timeout: $VALUE })'
+    - pattern: '$OBJ.describe.configure({ timeout: $VALUE, $$$ })'
+    - pattern: '$OBJ.describe.configure({ $$$, timeout: $VALUE })'
+    - pattern: '$OBJ.describe.configure({ $$$BEFORE, timeout: $VALUE, $$$AFTER })'
+    - pattern: '$OBJ.describe.configure({ ...$SPREAD })'
+    - pattern: '$OBJ.describe.configure({ ...$SPREAD, $$$ })'
+    - pattern: '$OBJ.describe.configure({ $$$, ...$SPREAD })'
+    - pattern: '$OBJ.describe.configure($OPTIONS)'
+    - pattern: 'const $ALIAS = $OBJ.describe.configure'
+    - pattern: '$OBJ.describe["configure"]'
+    - pattern: "$OBJ.describe['configure']"
+    - pattern: 'const { setTimeout } = $OBJ'
+    - pattern: 'const { setTimeout: $ALIAS } = $OBJ'
+    - pattern: 'const { slow } = $OBJ'
+    - pattern: 'const { slow: $ALIAS } = $OBJ'
+    - pattern: 'const { configure } = $OBJ.describe'
+    - pattern: '$OBJ.use({ timeout: $VALUE })'
+    - pattern: '$OBJ.use({ timeout: $VALUE, $$$ })'
+    - pattern: '$OBJ.use({ $$$, timeout: $VALUE })'
+    - pattern: '$OBJ.use({ $$$BEFORE, timeout: $VALUE, $$$AFTER })'
+constraints:
+  OPTIONS:
+    not:
+      kind: object
+examples:
+  - code: |
+      test.setTimeout(60_000)
+    isValid: false
+    file: 'playwright/tests/timeout.spec.mts'
+  - code: |
+      testInfo.setTimeout(0)
+    isValid: false
+    file: 'playwright/credentialed/timeout.spec.mts'
+  - code: |
+      const deadline = 60_000
+      testInfo.setTimeout(deadline)
+    isValid: false
+    file: 'playwright/tests/timeout.spec.mts'
+  - code: |
+      const extendDeadline = testInfo.setTimeout.bind(testInfo)
+      extendDeadline(60_000)
+    isValid: false
+    file: 'playwright/tests/timeout.spec.mts'
+  - code: |
+      test['setTimeout'](60_000)
+    isValid: false
+    file: 'playwright/tests/timeout.spec.mts'
+  - code: |
+      testInfo["setTimeout"](0)
+    isValid: false
+    file: 'playwright/tests/timeout.spec.mts'
+  - code: |
+      const { setTimeout: extend } = testInfo
+      extend(60_000)
+    isValid: false
+    file: 'playwright/tests/timeout.spec.mts'
+  - code: |
+      test.slow()
+    isValid: false
+    file: 'playwright/tests/timeout.spec.mts'
+  - code: |
+      browserTest.slow()
+    isValid: false
+    file: 'playwright/tests/timeout.spec.mts'
+  - code: |
+      test['slow']()
+    isValid: false
+    file: 'playwright/tests/timeout.spec.mts'
+  - code: |
+      const slow = test.slow
+      slow()
+    isValid: false
+    file: 'playwright/tests/timeout.spec.mts'
+  - code: |
+      const { slow } = browserTest
+      slow()
+    isValid: false
+    file: 'playwright/tests/timeout.spec.mts'
+  - code: |
+      test.describe.configure({ mode: 'parallel', timeout: 60_000 })
+    isValid: false
+    file: 'playwright/tests/timeout.spec.mts'
+  - code: |
+      test.describe.configure({ mode: 'parallel', timeout: 60_000, retries: 1 })
+    isValid: false
+    file: 'playwright/tests/timeout.spec.mts'
+  - code: |
+      const budget = { timeout: 60_000 }
+      browserTest.describe.configure({ ...budget })
+    isValid: false
+    file: 'playwright/tests/timeout.spec.mts'
+  - code: |
+      const { configure } = test.describe
+      configure({ timeout: 60_000 })
+    isValid: false
+    file: 'playwright/tests/timeout.spec.mts'
+  - code: |
+      test.use({ timeout: 0, storageState: AUTH_STATE })
+    isValid: false
+    file: 'playwright/tests/timeout.spec.mts'
+  - code: |
+      test('uploads logo', async ({ page }) => {
+        await page.waitForResponse(response => response.ok(), { timeout: 15_000 })
+      })
+    isValid: true
+    file: 'playwright/credentialed/image-upload.spec.mts'
+  - code: |
+      test.describe.configure({ mode: 'serial' })
+    isValid: true
+    file: 'playwright/tests/admin/topic-recommendations.spec.mts'
+  - code: |
+      const FAKE_OPTIONS = { challenge: 'abc', timeout: 60_000 }
+      expect.configure({ timeout: 10_000 })
+      test('passkey', async () => {})
+    isValid: true
+    file: 'playwright/tests/auth/passkeys-signin.spec.mts'
+  - code: |
+      test.setTimeout(60_000)
+    isValid: true
+    file: 'backend/services/example.test.mts'

@@ -15,7 +15,7 @@ const ORIGINAL_NEXT_PUBLIC_GTM_ID = process.env.NEXT_PUBLIC_GTM_ID
 
 function loadPlaywrightConfig() {
   vi.resetModules()
-  return import('../../config/shared-config.mts')
+  return import('../playwright/config/shared-config.mts')
 }
 
 describe('Playwright shared config', () => {
@@ -133,7 +133,7 @@ describe('Playwright shared config', () => {
         projects: [{ name: 'chromium', use: CHROMIUM_USE }],
         reuseExistingServer: false,
         testDir: './playwright/tests',
-        timeout: 60_000,
+        timeout: 30_000,
       })
 
       const webServers = Array.isArray(config.webServer) ? config.webServer : []
@@ -167,7 +167,7 @@ describe('Playwright shared config', () => {
       projects: [{ name: 'chromium', use: CHROMIUM_USE }],
       reuseExistingServer: false,
       testDir: './playwright/tests',
-      timeout: 60_000,
+      timeout: 30_000,
     })
 
     const webServers = Array.isArray(config.webServer) ? config.webServer : []
@@ -185,7 +185,7 @@ describe('Playwright shared config', () => {
       projects: [{ name: 'chromium', use: CHROMIUM_USE }],
       reuseExistingServer: false,
       testDir: './playwright/tests',
-      timeout: 60_000,
+      timeout: 30_000,
     })
 
     const webServers = Array.isArray(config.webServer) ? config.webServer : []
@@ -203,7 +203,7 @@ describe('Playwright shared config', () => {
       projects: [{ name: 'chromium', use: CHROMIUM_USE }],
       reuseExistingServer: false,
       testDir: './playwright/tests',
-      timeout: 60_000,
+      timeout: 30_000,
     })
 
     const webServers = Array.isArray(config.webServer) ? config.webServer : []
@@ -254,7 +254,7 @@ describe('Playwright shared config', () => {
       projects: [{ name: 'chromium', use: CHROMIUM_USE }],
       reuseExistingServer: false,
       testDir: './playwright/tests',
-      timeout: 60_000,
+      timeout: 30_000,
     })
     const webServers = Array.isArray(config.webServer) ? config.webServer : []
     const workerServer = webServers.find(server => server.name === 'cloudflare-worker')

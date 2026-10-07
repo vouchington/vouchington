@@ -11,6 +11,7 @@ import {
   BLOCKED_EXTERNAL_REQUEST_FAILURE_ALLOWLIST,
   installBlockedExternalNetwork,
 } from './blocked-external-network.mts'
+import { playwrightTestTimeout } from '../config/test-timeout.mts'
 
 interface BrowserErrorFixtures {
   browserErrors: BrowserIssueMonitor
@@ -25,6 +26,7 @@ export async function browserErrorsFixture(
   run: (monitor: BrowserIssueMonitor) => Promise<void>,
   testInfo: TestInfo,
 ) {
+  playwrightTestTimeout(testInfo.timeout, 'Playwright effective test timeout')
   const monitor = new BrowserIssueMonitor(testInfo, {
     allowlist: BLOCKED_EXTERNAL_REQUEST_FAILURE_ALLOWLIST,
   })

@@ -45,6 +45,7 @@ function createTestInfo(
     attach: vi.fn<(...args: Array<never>) => unknown>(() => Promise.resolve()),
     expectedStatus: overrides.expectedStatus ?? 'passed',
     status: overrides.status ?? 'passed',
+    timeout: 30_000,
   } as unknown as TestInfo
 }
 

@@ -10,17 +10,20 @@
 
 import { defineConfig } from '@playwright/test'
 import { CHROMIUM_USE, CI, createPlaywrightConfig } from './playwright/config/shared-config.mts'
+import { validatePlaywrightConfigTimeouts } from './playwright/config/test-timeout.mts'
 
 const reuseExistingServer = !CI
 
-export default defineConfig(
-  createPlaywrightConfig({
-    testDir: './playwright/credentialed',
-    timeout: 90_000,
-    junitOutputFile: 'credentialed-test-report.junit.xml',
-    backendCommand: 'NODE_ENV=test PLAYWRIGHT_TEST=true node backend/entrypoints/api/serve.mts',
-    reuseExistingServer,
-    projects: [{ name: 'chromium', use: CHROMIUM_USE }],
-    globalSetup: './playwright/global-setup.mts',
-  }),
+export default validatePlaywrightConfigTimeouts(
+  defineConfig(
+    createPlaywrightConfig({
+      testDir: './playwright/credentialed',
+      timeout: 30_000,
+      junitOutputFile: 'credentialed-test-report.junit.xml',
+      backendCommand: 'NODE_ENV=test PLAYWRIGHT_TEST=true node backend/entrypoints/api/serve.mts',
+      reuseExistingServer,
+      projects: [{ name: 'chromium', use: CHROMIUM_USE }],
+      globalSetup: './playwright/global-setup.mts',
+    }),
+  ),
 )
