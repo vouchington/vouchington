@@ -220,9 +220,11 @@ already-exempted type-guard consumer), so it is a direct-edge check only: a new 
 stays owned by the scope-aware Oxlint rule. Unlike the Oxlint/AST-grep
 pair, this guard cannot distinguish program construction from type-guard-only usage (`ts.SyntaxKind`,
 `ts.isInterfaceDeclaration(...)`), so it carries a closed, non-growing allowlist of files already
-doing the latter as of its introduction and does not flag any file today. Contract tests must
-consume the owners rather than constructing programs
-themselves. The companion `backend-contract-virtual-program-matrix-lifecycle`
+doing the latter as of its introduction: `backend-program.mts` owns construction, and
+`backend-program.probes.test.mts` uses compiler type guards. The retired `program-paths.mts`
+facade is not exempt; it now contains only path normalization and has no TypeScript dependency.
+Contract tests must consume the owners rather than constructing programs themselves. The companion
+`backend-contract-virtual-program-matrix-lifecycle`
 rule requires a contract test's matrix build to live inside the function callback directly passed
 to `beforeAll`: that callback must be the build call's nearest enclosing function boundary. It also
 scans non-test API-fixture helper modules, preventing wrappers from hiding per-call, module-scope,

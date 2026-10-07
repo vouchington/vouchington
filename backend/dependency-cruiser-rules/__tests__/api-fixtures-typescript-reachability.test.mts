@@ -68,7 +68,7 @@ describe('no-api-fixtures-typescript-reachability', () => {
     ).toBe(false)
   })
 
-  it('retains only the program owner and representative type-guard consumers', () => {
+  it('retains only the program owner and probe type-guard consumer', () => {
     expect(
       exemptions.some(pattern =>
         pattern.test('backend/test-helpers/api-fixtures/backend-program.mts'),
@@ -83,7 +83,7 @@ describe('no-api-fixtures-typescript-reachability', () => {
       exemptions.some(pattern =>
         pattern.test('backend/test-helpers/api-fixtures/program-paths.mts'),
       ),
-    ).toBe(true)
+    ).toBe(false)
     expect(
       exemptions.some(pattern =>
         pattern.test('backend/test-helpers/api-fixtures/backend-program.probes.test.mts'),
@@ -101,8 +101,8 @@ describe('no-api-fixtures-typescript-reachability', () => {
     ).toBe(false)
   })
 
-  it('allowlists exactly the program owner and the two runtime consumers', () => {
-    const runtimeConsumers = ['program-paths', 'backend-program.probes.test']
+  it('allowlists exactly the program owner and probe type-guard consumer', () => {
+    const runtimeConsumers = ['backend-program.probes.test']
     expect(noApiFixturesTypescriptReachability.from.pathNot).toEqual([
       '^backend/test-helpers/api-fixtures/backend-program\\.mts$',
       `^backend/test-helpers/api-fixtures/(?:${runtimeConsumers.map(name => RegExp.escape(name)).join('|')})\\.mts$`,
@@ -141,7 +141,7 @@ describe('no-api-fixtures-typescript-reachability', () => {
     ])
   })
 
-  it('keeps the two in-repo runtime consumers and does not exempt the row-contract checker', async () => {
+  it('keeps node-only program-paths outside the exemption and retains compiler consumers', async () => {
     await expect(
       violationsFor(
         noApiFixturesTypescriptReachability,
