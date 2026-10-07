@@ -609,10 +609,13 @@ and keeps only config-driven tables in `extraGeneratedColumns`. Snapshot freshne
 after migration by the database-backed CI schema phases.
 
 The catalog-backed `postgres-column-requires-trigger` and `postgres-required-comments` rules own
-updated-at trigger structure and schema comments. The retained live database tests cover created-at
-clocks and timestamp types. A separate `postgres-no-generated-column-writes` entry rejects writes to
-trigger-maintained `updated_at`; fixture helpers are excluded because some deliberately construct
-clock boundaries, while ordinary fixture updates let the trigger maintain the clock.
+updated-at trigger structure and schema comments. The strict update-clock entry rejects column-list
+triggers, except the documented `posts` content clock; a second catalog entry permits that list while
+still validating its function, timing, events, row mode, and orphan-trigger check. The retained live
+database tests cover created-at clocks and timestamp types. A separate
+`postgres-no-generated-column-writes` entry rejects writes to trigger-maintained `updated_at`; fixture
+helpers are excluded because some deliberately construct clock boundaries, while ordinary fixture
+updates let the trigger maintain the clock.
 
 Optional `.no-mistakes.yml` ignore and exclude entries have derived freshness checks: [`no-mistakes-config.test.mts`](../../../../ci/no-mistakes-config.test.mts) derives ignored Playwright routes from the analyzer report, while [`no-mistakes-config-freshness.test.mts`](../../../../ci/no-mistakes-config-freshness.test.mts) verifies provider/environment globs and filesystem exceptions against current repository state. Do not add a baseline or parallel exception registry. Provider annotation placement is documented in [Tests and Checks](../../tests.md#vitest-mock-typing).
 

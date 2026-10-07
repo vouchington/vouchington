@@ -2694,6 +2694,19 @@ rules:
         - object: table:posts
           reason: 'posts.updated_at records content edits; its trigger intentionally fires only for content-column updates.'
 
+  - name: updated_at clock triggers preserve their required structure
+    rule: postgres-column-requires-trigger
+    scope: repository
+    options:
+      schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
+      requirements:
+        - column: updated_at
+          function: fn_update_updated_at
+          timing: before
+          events: [update]
+          forEachRow: true
+          allowColumnList: true
+
   - name: tables views and columns have schema comments
     rule: postgres-required-comments
     scope: repository
