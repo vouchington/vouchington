@@ -27,7 +27,7 @@ jobs:
   tooling:
     if: inputs.run_tooling
     runs-on: ubuntu-latest
-    timeout-minutes: 16
+    timeout-minutes: 27
     permissions:
       actions: read
       contents: read

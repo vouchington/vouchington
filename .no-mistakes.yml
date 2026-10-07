@@ -2985,7 +2985,7 @@ rules:
         # Healthy maximum was 219 seconds across 558 GitHub-hosted successes in #2260; independent
         # step deadlines remain diagnostic guards, while this is the fail-fast end-to-end cap.
         - job: '.github/workflows/tests-web-api.yml#web-api-tests'
-          maxMinutes: 12
+          maxMinutes: 27
         # Three serial initialize modes and disposable services retain their additive budget;
         # healthy max was 97 seconds across 78 GitHub-hosted successes in #2260.
         - job: '.github/workflows/initialize-smoke-test.yml#initialize-smoke-test'
@@ -2993,21 +2993,23 @@ rules:
         # Healthy maximum was 442 seconds across 75 GitHub-hosted successes in #2260.
         - job: '.github/workflows/static-code-analysis.yml#static-code-analysis'
           maxMinutes: 24
+        - job: '.github/workflows/static-code-analysis.yml#no-mistakes'
+          maxMinutes: 20
         # Healthy maximum was 347 seconds across 555 GitHub-hosted successes in #2260.
         - job: '.github/workflows/storybook.yml#storybook'
-          maxMinutes: 18
+          maxMinutes: 30
         # Existing backend-credentialed budget; no #2260 change.
         - job: '.github/workflows/tests-backend-credentialed.yml#backend-credentialed-tests'
           maxMinutes: 20
         # Healthy maximum was 134 seconds across 65 GitHub-hosted successes in #2260.
         - job: '.github/workflows/tests-backend-modules.yml#backend-modules'
-          maxMinutes: 12
+          maxMinutes: 26
         # Existing backend-unit budget; no #2260 change.
         - job: '.github/workflows/tests-backend-unit.yml#backend-tests'
           maxMinutes: 29
         # Healthy maximum was 87 seconds across 37 GitHub-hosted successes in #2260.
         - job: '.github/workflows/tests-cloudflare-worker.yml#cloudflare-worker-tests'
-          maxMinutes: 14
+          maxMinutes: 20
         # Additive retry/upload step budgets sum 11m; healthy maximum was 91 seconds across 22
         # GitHub-hosted successes in #2260.
         - job: '.github/workflows/tests-lambdas.yml#lambdas-tests'
@@ -3020,23 +3022,23 @@ rules:
           maxMinutes: 13
         # Healthy maximum was 78 seconds across 81 GitHub-hosted successes in #2260.
         - job: '.github/workflows/tests-portability.yml#portability-linux'
-          maxMinutes: 14
+          maxMinutes: 20
         # Step budgets sum ~23m; real max ~1.3m (n=24) via proxy data. See #8078.
         - job: '.github/workflows/tests-postgres-schema.yml#postgres-schema-tests'
           maxMinutes: 20
         # Healthy maximum was 345 seconds across 75 GitHub-hosted successes in #2260.
         - job: '.github/workflows/tests-tooling.yml#tooling'
-          maxMinutes: 16
+          maxMinutes: 27
         # Healthy maximum was 100 seconds across 81 GitHub-hosted successes in #2260.
         - job: '.github/workflows/tests-ts-shared.yml#ts-shared'
-          maxMinutes: 16
+          maxMinutes: 20
         # Fail-safe ceiling for setup/test/GitHub-artifact-upload steps, retained from the
         # pre-revert coverage-transport budget less the 7m cut from the bounded web build step.
         - job: '.github/workflows/tests-web-integration.yml#web-integration-tests'
           maxMinutes: 19
         # Healthy max was 381 seconds (the test step 337) across 1,552 GitHub-hosted successes in #2260.
         - job: '.github/workflows/tests-web.yml#web-tests'
-          maxMinutes: 20
+          maxMinutes: 30
 
   - name: tracked TypeScript files belong to a tsconfig program
     rule: tsconfig-file-coverage

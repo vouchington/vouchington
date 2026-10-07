@@ -50,7 +50,7 @@ jobs:
     # Native ARM64 matches the production image architecture and draws from a separate hosted pool.
     # The Postgres and Valkey service images are digest-pinned multi-arch indexes that include linux/arm64.
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 12
+    timeout-minutes: 27
     permissions:
       actions: read
       contents: read

@@ -103,7 +103,7 @@ describe('tests-tooling.yml setup timing', () => {
     expect(setupTimeout).toBe(5)
   })
 
-  it('uses a fail-fast job deadline above each bounded operation', () => {
+  it('reserves the serial setup and test budget', () => {
     const toolingJob = workflow.jobs?.tooling
     expect(toolingJob).toBeDefined()
 
@@ -131,9 +131,6 @@ describe('tests-tooling.yml setup timing', () => {
     const testTimeout = numberField(runToolingTests?.['timeout-minutes'], 'tooling test timeout')
 
     expect(jobTimeout).toBeGreaterThan(
-      Math.max(setupTimeout, toolsInstallTimeout, toolsVerifyTimeout, testTimeout),
-    )
-    expect(jobTimeout).toBeLessThan(
       setupTimeout + toolsInstallTimeout + toolsVerifyTimeout + testTimeout,
     )
   })

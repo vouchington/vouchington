@@ -127,32 +127,32 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `shepherd.yml`                         | `escalate`                      | job    | `ubuntu-slim`                         | 2             |
 | `shepherd.yml`                         | `gate`                          | job    | `ubuntu-latest`                       | 8             |
 | `shepherd.yml`                         | `render-prompt`                 | job    | `ubuntu-latest`                       | 5             |
-| `static-code-analysis.yml`             | `no-mistakes`                   | job    | `ubuntu-latest`                       | 10            |
+| `static-code-analysis.yml`             | `no-mistakes`                   | job    | `ubuntu-latest`                       | 20            |
 | `static-code-analysis.yml`             | `static-code-analysis`          | job    | `ubuntu-latest`                       | 24            |
 | `static.yml`                           | `static`                        | job    | `ubuntu-latest`                       | 5             |
 | `static.yml`                           | `static-code-analysis`          | job    | → `static-code-analysis.yml`          | 360           |
-| `storybook.yml`                        | `storybook`                     | job    | `ubuntu-latest`                       | 18            |
+| `storybook.yml`                        | `storybook`                     | job    | `ubuntu-latest`                       | 30            |
 | `sync-articles.yml`                    | `publish`                       | job    | `ubuntu-slim`                         | 5             |
 | `tests-backend-credentialed.yml`       | `backend-credentialed-tests`    | job    | `ubuntu-latest`                       | 20            |
-| `tests-backend-modules.yml`            | `backend-modules`               | job    | `ubuntu-latest`                       | 12            |
+| `tests-backend-modules.yml`            | `backend-modules`               | job    | `ubuntu-latest`                       | 26            |
 | `tests-backend-unit.yml`               | `backend-tests`                 | matrix | `ubuntu-latest`                       | 29            |
 | `tests-backend-unit.yml`               | `prep`                          | job    | `ubuntu-latest`                       | 8             |
-| `tests-cloudflare-worker.yml`          | `cloudflare-worker-tests`       | job    | `ubuntu-latest`                       | 14            |
+| `tests-cloudflare-worker.yml`          | `cloudflare-worker-tests`       | job    | `ubuntu-latest`                       | 20            |
 | `tests-lambdas.yml`                    | `lambdas-tests`                 | job    | `ubuntu-latest`                       | 13            |
 | `tests-playwright-credentialed.yml`    | `playwright-credentialed-tests` | job    | `ubuntu-24.04-arm`                    | 13            |
 | `tests-playwright.yml`                 | `playwright-tests`              | matrix | `ubuntu-24.04-arm`                    | 23            |
 | `tests-playwright.yml`                 | `shards`                        | job    | `ubuntu-24.04-arm`                    | 13            |
-| `tests-portability.yml`                | `portability-linux`             | job    | `ubuntu-latest`                       | 14            |
+| `tests-portability.yml`                | `portability-linux`             | job    | `ubuntu-latest`                       | 20            |
 | `tests-postgres-schema.yml`            | `postgres-schema-tests`         | job    | `ubuntu-latest`                       | 20            |
 | `tests-tooling.yml`                    | `i18n-route-bounds`             | job    | `ubuntu-latest`                       | 10            |
-| `tests-tooling.yml`                    | `tooling`                       | job    | `ubuntu-latest`                       | 16            |
-| `tests-ts-shared.yml`                  | `ts-shared`                     | job    | `ubuntu-latest`                       | 16            |
+| `tests-tooling.yml`                    | `tooling`                       | job    | `ubuntu-latest`                       | 27            |
+| `tests-ts-shared.yml`                  | `ts-shared`                     | job    | `ubuntu-latest`                       | 20            |
 | `tests-web-api.yml`                    | `prep`                          | job    | `ubuntu-24.04-arm`                    | 8             |
-| `tests-web-api.yml`                    | `web-api-tests`                 | matrix | `ubuntu-24.04-arm`                    | 12            |
+| `tests-web-api.yml`                    | `web-api-tests`                 | matrix | `ubuntu-24.04-arm`                    | 27            |
 | `tests-web-integration.yml`            | `prep`                          | job    | `ubuntu-24.04-arm`                    | 13            |
 | `tests-web-integration.yml`            | `web-integration-tests`         | matrix | `ubuntu-24.04-arm`                    | 19            |
 | `tests-web.yml`                        | `prep`                          | job    | `ubuntu-24.04-arm`                    | 8             |
-| `tests-web.yml`                        | `web-tests`                     | matrix | `ubuntu-24.04-arm`                    | 20            |
+| `tests-web.yml`                        | `web-tests`                     | matrix | `ubuntu-24.04-arm`                    | 30            |
 | `tooling.yml`                          | `changes`                       | job    | → `ci-detect-changes.yml`             | 360           |
 | `tooling.yml`                          | `codecov`                       | job    | → `ci-upload-codecov.yml`             | 360           |
 | `tooling.yml`                          | `coverage`                      | job    | → `ci-area-coverage.yml`              | 360           |

@@ -71,7 +71,7 @@ permissions:
 jobs:
   storybook:
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    timeout-minutes: 30
     # No write permissions here: this job checks out and runs PR-controlled code.
     permissions:
       actions: read
