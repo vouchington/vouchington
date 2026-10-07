@@ -6,21 +6,21 @@ Ingested Stripe events with explicit processing lifecycle timestamps.
 
 Not partitioned — growth: unbounded.
 
-| Column                | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                     |
-| --------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------- |
-| `id`                  | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                             |
-| `stripe_event_id`     | `text`                     | no       |                              |          |           |           | Unique Stripe event identity used for deduplication.        |
-| `event_type`          | `text`                     | no       |                              |          |           |           | Stripe event type.                                          |
-| `is_live_mode`        | `boolean`                  | no       | `false`                      |          |           |           | Whether Stripe issued the event in live mode.               |
-| `api_version`         | `text`                     | yes      |                              |          |           |           | Stripe API version that generated the event.                |
-| `occurred_at`         | `timestamp with time zone` | no       |                              |          |           |           | When Stripe created the event.                              |
-| `customer_id`         | `text`                     | yes      |                              |          |           |           | Optional Stripe Customer identity from the payload.         |
-| `subscription_id`     | `text`                     | yes      |                              |          |           |           | Optional Stripe Subscription identity from the payload.     |
-| `invoice_id`          | `text`                     | yes      |                              |          |           |           | Optional Stripe Invoice identity from the payload.          |
-| `checkout_session_id` | `text`                     | yes      |                              |          |           |           | Optional Stripe Checkout Session identity from the payload. |
-| `received_at`         | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | When the event was durably received.                        |
-| `payload`             | `jsonb`                    | no       |                              |          |           |           | Full Stripe event payload stored as JSONB.                  |
-| `created_at`          | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                             |
+| Column                 | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                     |
+| ---------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------- |
+| `id`                   | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                             |
+| `stripe_event_id`      | `text`                     | no       |                              |          |           |           | Unique Stripe event identity used for deduplication.        |
+| `stripe_event_type_id` | `text`                     | no       |                              |          |           |           | Stripe event type.                                          |
+| `is_live_mode`         | `boolean`                  | no       | `false`                      |          |           |           | Whether Stripe issued the event in live mode.               |
+| `api_version`          | `text`                     | yes      |                              |          |           |           | Stripe API version that generated the event.                |
+| `occurred_at`          | `timestamp with time zone` | no       |                              |          |           |           | When Stripe created the event.                              |
+| `customer_id`          | `text`                     | yes      |                              |          |           |           | Optional Stripe Customer identity from the payload.         |
+| `subscription_id`      | `text`                     | yes      |                              |          |           |           | Optional Stripe Subscription identity from the payload.     |
+| `invoice_id`           | `text`                     | yes      |                              |          |           |           | Optional Stripe Invoice identity from the payload.          |
+| `checkout_session_id`  | `text`                     | yes      |                              |          |           |           | Optional Stripe Checkout Session identity from the payload. |
+| `received_at`          | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | When the event was durably received.                        |
+| `payload`              | `jsonb`                    | no       |                              |          |           |           | Full Stripe event payload stored as JSONB.                  |
+| `created_at`           | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                             |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -32,12 +32,12 @@ _none_
 
 **Foreign keys:**
 
-- `stripe_events_event_type_fkey`: `FOREIGN KEY (event_type) REFERENCES stripe_event_types(id) ON DELETE RESTRICT`
+- `stripe_events_stripe_event_type_id_fkey`: `FOREIGN KEY (stripe_event_type_id) REFERENCES stripe_event_types(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
 - `idx_stripe_events__customer_id`: `CREATE INDEX idx_stripe_events__customer_id ON public.stripe_events USING btree (customer_id, id DESC) WHERE (customer_id IS NOT NULL)`
-- `idx_stripe_events__event_type`: `CREATE INDEX idx_stripe_events__event_type ON public.stripe_events USING btree (event_type, id DESC)`
+- `idx_stripe_events__stripe_event_type_id`: `CREATE INDEX idx_stripe_events__stripe_event_type_id ON public.stripe_events USING btree (stripe_event_type_id, id DESC)`
 - `idx_stripe_events__subscription_id`: `CREATE INDEX idx_stripe_events__subscription_id ON public.stripe_events USING btree (subscription_id, id DESC) WHERE (subscription_id IS NOT NULL)`
 - `stripe_events_pkey`: `CREATE UNIQUE INDEX stripe_events_pkey ON public.stripe_events USING btree (id)`
 - `uq_stripe_events__stripe_event_id`: `CREATE UNIQUE INDEX uq_stripe_events__stripe_event_id ON public.stripe_events USING btree (stripe_event_id)`

@@ -6,12 +6,12 @@ Junction table mapping retailers to the countries they operate in.
 
 Not partitioned — growth: unbounded.
 
-| Column        | Type       | Nullable | Default | Identity | Generated | Collation | Comment                               |
-| ------------- | ---------- | -------- | ------- | -------- | --------- | --------- | ------------------------------------- |
-| `retailer_id` | `uuid`     | no       |         |          |           |           | The retailer topic.                   |
-| `country_id`  | `smallint` | no       |         |          |           |           | The country the retailer operates in. |
+| Column              | Type       | Nullable | Default | Identity | Generated | Collation | Comment                               |
+| ------------------- | ---------- | -------- | ------- | -------- | --------- | --------- | ------------------------------------- |
+| `retailer_topic_id` | `uuid`     | no       |         |          |           |           | The retailer topic.                   |
+| `country_id`        | `smallint` | no       |         |          |           |           | The country the retailer operates in. |
 
-**Primary key:** `PRIMARY KEY (retailer_id, country_id)`
+**Primary key:** `PRIMARY KEY (retailer_topic_id, country_id)`
 
 **Unique constraints:**
 _none_
@@ -22,12 +22,12 @@ _none_
 **Foreign keys:**
 
 - `retailer_countries_country_id_fkey`: `FOREIGN KEY (country_id) REFERENCES countries(id) ON DELETE CASCADE`
-- `retailer_countries_retailer_id_fkey`: `FOREIGN KEY (retailer_id) REFERENCES retailer_topics(topic_id) ON DELETE CASCADE`
+- `retailer_countries_retailer_topic_id_fkey`: `FOREIGN KEY (retailer_topic_id) REFERENCES retailer_topics(topic_id) ON DELETE CASCADE`
 
 **Indexes:**
 
 - `idx_retailer_countries__country_id`: `CREATE INDEX idx_retailer_countries__country_id ON public.retailer_countries USING btree (country_id) WHERE (country_id IS NOT NULL)`
-- `retailer_countries_pkey`: `CREATE UNIQUE INDEX retailer_countries_pkey ON public.retailer_countries USING btree (retailer_id, country_id)`
+- `retailer_countries_pkey`: `CREATE UNIQUE INDEX retailer_countries_pkey ON public.retailer_countries USING btree (retailer_topic_id, country_id)`
 
 **Triggers:**
 _none_

@@ -1272,7 +1272,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_create_user_individual_household()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  new_individual_id UUID;\n  new_household_id UUID;\nBEGIN\n  -- Create individual\n  INSERT INTO individuals DEFAULT VALUES\n  RETURNING id INTO new_individual_id;\n\n  -- Link individual to user\n  UPDATE users\n  SET individual_id = new_individual_id\n  WHERE id = NEW.id;\n\n  -- Create household owned by user\n  INSERT INTO households (owner_user_id)\n  VALUES (NEW.id)\n  RETURNING id INTO new_household_id;\n\n  -- Create membership linking individual to household\n  INSERT INTO household_members (household_id, individual_id)\n  VALUES (new_household_id, new_individual_id);\n\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_current_copyright_form_screening(submission_id uuid, screening_id uuid)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_current_copyright_form_screening(submission_id uuid, screening_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT EXISTS (\n    SELECT 1 FROM copyright_notice_form_intakes intake\n    JOIN LATERAL (SELECT * FROM copyright_notice_form_screening_attempts attempt WHERE attempt.copyright_notice_form_intake_id = intake.id ORDER BY attempt.attempt_number DESC LIMIT 1) execution ON execution.state = 'completed'\n    JOIN copyright_notice_form_screenings screening\n      ON screening.id = execution.copyright_notice_form_screening_id\n    JOIN copyright_notice_submissions submission ON submission.id = intake.copyright_notice_submission_id\n    JOIN copyright_notices notice ON notice.id = intake.copyright_notice_id\n    WHERE submission.id = submission_id AND screening.id = screening_id\n      AND screening.recommendation = 'not_obviously_invalid'\n      AND submission.kind = 'notice' AND submission.source_kind = 'signed_in_form'\n      AND intake.requester_user_id IS NOT NULL AND notice.jurisdiction = 'us_dmca'\n      AND char_length(notice.claimant_contact_ciphertext) > 0\n      AND char_length(btrim(notice.work_description)) > 0\n      AND intake.has_good_faith_belief AND intake.has_accuracy_authority_under_penalty_of_perjury\n      AND char_length(intake.electronic_signature_ciphertext) > 0\n      AND EXISTS (\n        SELECT 1 FROM copyright_notice_targets target\n        JOIN copyright_notice_target_images image ON image.copyright_notice_target_id = target.id\n        WHERE target.copyright_notice_id = notice.id AND char_length(btrim(target.hosted_use_url)) > 0\n      )\n      AND EXISTS (\n        SELECT 1 FROM copyright_notice_delivery_work_items receipt\n        JOIN copyright_notice_delivery_recipients recipient ON recipient.copyright_notice_delivery_intent_id = receipt.id\n        WHERE receipt.copyright_notice_id = notice.id AND receipt.recipient_role = 'claimant'\n          AND receipt.channel = 'email' AND receipt.delivery_kind = 'claimant_receipt'\n      )\n      AND NOT EXISTS (\n        SELECT 1 FROM copyright_notice_form_intake_reviews review\n        WHERE review.copyright_notice_form_intake_id = intake.id AND NOT review.is_accepted\n      )\n  );\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_current_copyright_form_screening(submission_id uuid, screening_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT EXISTS (\n    SELECT 1 FROM copyright_notice_form_intakes intake\n    JOIN LATERAL (SELECT * FROM copyright_notice_form_screening_attempts attempt WHERE attempt.copyright_notice_form_intake_id = intake.id ORDER BY attempt.attempt_number DESC LIMIT 1) execution ON execution.state = 'completed'\n    JOIN copyright_notice_form_screenings screening\n      ON screening.id = execution.copyright_notice_form_screening_id\n    JOIN copyright_notice_submissions submission ON submission.id = intake.copyright_notice_submission_id\n    JOIN copyright_notices notice ON notice.id = intake.copyright_notice_id\n    WHERE submission.id = submission_id AND screening.id = screening_id\n      AND screening.recommendation = 'not_obviously_invalid'\n      AND submission.kind = 'notice' AND submission.source_kind = 'signed_in_form'\n      AND intake.requester_user_id IS NOT NULL AND notice.jurisdiction = 'us_dmca'\n      AND char_length(notice.claimant_contact_ciphertext) > 0\n      AND char_length(btrim(notice.work_description)) > 0\n      AND intake.has_good_faith_belief AND intake.has_accuracy_authority_under_penalty_of_perjury\n      AND char_length(intake.electronic_signature_ciphertext) > 0\n      AND EXISTS (\n        SELECT 1 FROM copyright_notice_targets target\n        JOIN copyright_notice_target_images image ON image.copyright_notice_target_id = target.id\n        WHERE target.copyright_notice_id = notice.id AND char_length(btrim(target.hosted_use_url)) > 0\n      )\n      AND EXISTS (\n        SELECT 1 FROM copyright_notice_delivery_work_items receipt\n        JOIN copyright_notice_delivery_recipients recipient ON recipient.copyright_notice_delivery_work_item_id = receipt.id\n        WHERE receipt.copyright_notice_id = notice.id AND receipt.recipient_role = 'claimant'\n          AND receipt.channel = 'email' AND receipt.delivery_kind = 'claimant_receipt'\n      )\n      AND NOT EXISTS (\n        SELECT 1 FROM copyright_notice_form_intake_reviews review\n        WHERE review.copyright_notice_form_intake_id = intake.id AND NOT review.is_accepted\n      )\n  );\n$function$\n"
     },
     "fn_ensure_retained_actor_identity": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_retained_actor_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE actor_user_id UUID := (to_jsonb(NEW) ->> TG_ARGV[0])::uuid;\nBEGIN\n  IF actor_user_id IS NOT NULL THEN\n    PERFORM fn_ensure_retained_identity('user', actor_user_id);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -1482,7 +1482,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_immutable_with_actor_erasure()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  actor_column text;\n  old_actor jsonb;\n  new_actor jsonb;\nBEGIN\n  IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN\n    IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;\n  END IF;\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright legal records are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF (to_jsonb(OLD) - TG_ARGV) IS DISTINCT FROM (to_jsonb(NEW) - TG_ARGV) THEN\n    RAISE EXCEPTION 'copyright legal records are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  FOREACH actor_column IN ARRAY TG_ARGV LOOP\n    old_actor := to_jsonb(OLD) -> actor_column;\n    new_actor := to_jsonb(NEW) -> actor_column;\n    IF old_actor IS DISTINCT FROM new_actor\n      AND (old_actor = 'null'::jsonb OR new_actor <> 'null'::jsonb) THEN\n      RAISE EXCEPTION 'copyright legal record actors may only be erased' USING ERRCODE = 'check_violation';\n    END IF;\n  END LOOP;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_reject_copyright_lifecycle_event_source_notice": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_lifecycle_event_source_notice()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n\n  -- A NULL notice pairs only with an email-intake reply, which is the one intent with no notice.\n  IF NEW.copyright_notice_delivery_intent_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM copyright_notice_delivery_work_items source\n    WHERE source.id = NEW.copyright_notice_delivery_intent_id\n      AND source.copyright_notice_id IS NOT DISTINCT FROM NEW.copyright_notice_id\n  ) THEN RAISE EXCEPTION 'lifecycle delivery intent belongs to another notice' USING ERRCODE = 'check_violation'; END IF;\n\n  IF NEW.media_delivery_registry_key IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM media_delivery_registry_records source\n    JOIN copyright_notice_targets target ON target.placement_id = source.placement_id\n    WHERE source.delivery_key = NEW.media_delivery_registry_key\n      AND target.copyright_notice_id = NEW.copyright_notice_id\n  ) THEN RAISE EXCEPTION 'lifecycle media delivery record belongs to another notice' USING ERRCODE = 'check_violation'; END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_lifecycle_event_source_notice()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n\n  -- A NULL notice pairs only with an email-intake reply, which is the one intent with no notice.\n  IF NEW.copyright_notice_delivery_work_item_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM copyright_notice_delivery_work_items source\n    WHERE source.id = NEW.copyright_notice_delivery_work_item_id\n      AND source.copyright_notice_id IS NOT DISTINCT FROM NEW.copyright_notice_id\n  ) THEN RAISE EXCEPTION 'lifecycle delivery intent belongs to another notice' USING ERRCODE = 'check_violation'; END IF;\n\n  IF NEW.media_delivery_registry_record_delivery_key IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM media_delivery_registry_records source\n    JOIN copyright_notice_targets target ON target.placement_id = source.placement_id\n    WHERE source.delivery_key = NEW.media_delivery_registry_record_delivery_key\n      AND target.copyright_notice_id = NEW.copyright_notice_id\n  ) THEN RAISE EXCEPTION 'lifecycle media delivery record belongs to another notice' USING ERRCODE = 'check_violation'; END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_reject_copyright_notice_identity": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_notice_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN\n    IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;\n  END IF;\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright notices are retained legal records' USING ERRCODE = 'check_violation';\n  END IF;\n  IF ROW(\n    OLD.jurisdiction,\n    OLD.legal_basis,\n    OLD.received_at,\n    OLD.claimant_display_name,\n    OLD.claimant_contact_ciphertext,\n    OLD.work_description,\n    OLD.policy_version\n  ) IS DISTINCT FROM ROW(\n    NEW.jurisdiction,\n    NEW.legal_basis,\n    NEW.received_at,\n    NEW.claimant_display_name,\n    NEW.claimant_contact_ciphertext,\n    NEW.work_description,\n    NEW.policy_version\n  ) THEN\n    RAISE EXCEPTION 'copyright notice identity and receipt snapshot are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.claimant_user_id IS DISTINCT FROM NEW.claimant_user_id AND NEW.claimant_user_id IS NOT NULL THEN\n    RAISE EXCEPTION 'copyright notice claimant account cannot be reassigned' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -5280,6 +5280,17 @@
           "ordinalPosition": 6,
           "type": "text"
         },
+        "openai_service_tier_id": {
+          "collation": null,
+          "comment": "The OpenAI service tier actually served, from the response (e.g. flex, default) — not necessarily the requested tier.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "text"
+        },
         "output_tokens": {
           "collation": null,
           "comment": "Number of output tokens billed for this call.",
@@ -5312,17 +5323,6 @@
           "nullable": false,
           "ordinalPosition": 12,
           "type": "ai_usage_record_pricing_statuses"
-        },
-        "service_tier": {
-          "collation": null,
-          "comment": "The OpenAI service tier actually served, from the response (e.g. flex, default) — not necessarily the requested tier.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 7,
-          "type": "text"
         }
       },
       "comment": "Append-only per-call LLM usage and cost ledger for every agent that calls OpenAI, not only community moderation.",
@@ -5345,6 +5345,15 @@
           "referencedTable": "currencies",
           "validated": true
         },
+        "ai_usage_records_openai_service_tier_id_fkey": {
+          "columns": ["openai_service_tier_id"],
+          "definition": "FOREIGN KEY (openai_service_tier_id) REFERENCES openai_service_tiers(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "openai_service_tiers",
+          "validated": true
+        },
         "ai_usage_records_post_id_fkey": {
           "columns": ["post_id"],
           "definition": "FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE SET NULL",
@@ -5352,15 +5361,6 @@
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "posts",
-          "validated": true
-        },
-        "ai_usage_records_service_tier_fkey": {
-          "columns": ["service_tier"],
-          "definition": "FOREIGN KEY (service_tier) REFERENCES openai_service_tiers(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "openai_service_tiers",
           "validated": true
         },
         "fk_ai_usage_records__classifier_run": {
@@ -5462,6 +5462,26 @@
           "unique": false,
           "valid": true
         },
+        "idx_ai_usage_records__openai_service_tier_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_ai_usage_records__openai_service_tier_id ON ONLY public.ai_usage_records USING btree (openai_service_tier_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "openai_service_tier_id",
+              "descending": false,
+              "expression": "openai_service_tier_id",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_ai_usage_records__post_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -5477,26 +5497,6 @@
             }
           ],
           "predicate": "(post_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_ai_usage_records__service_tier": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_ai_usage_records__service_tier ON ONLY public.ai_usage_records USING btree (service_tier)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "service_tier",
-              "descending": false,
-              "expression": "service_tier",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            }
-          ],
-          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,
@@ -5524,14 +5524,25 @@
     },
     "amazon_ses_bounce_events": {
       "checkConstraints": {
+        "amazon_ses_bounce_events_amazon_ses_bounce_subtype_id_check": "CHECK (((amazon_ses_bounce_subtype_id IS NULL) OR ((char_length(amazon_ses_bounce_subtype_id) <= 255) AND (TRIM(BOTH FROM amazon_ses_bounce_subtype_id) = amazon_ses_bounce_subtype_id))))",
         "amazon_ses_bounce_events_amazon_ses_feedback_id_check": "CHECK (((amazon_ses_feedback_id IS NULL) OR ((char_length(amazon_ses_feedback_id) <= 1024) AND (TRIM(BOTH FROM amazon_ses_feedback_id) = amazon_ses_feedback_id))))",
         "amazon_ses_bounce_events_amazon_ses_message_id_check": "CHECK (((amazon_ses_message_id IS NULL) OR ((char_length(amazon_ses_message_id) <= 1024) AND (TRIM(BOTH FROM amazon_ses_message_id) = amazon_ses_message_id))))",
-        "amazon_ses_bounce_events_bounce_sub_type_check": "CHECK (((bounce_sub_type IS NULL) OR ((char_length(bounce_sub_type) <= 255) AND (TRIM(BOTH FROM bounce_sub_type) = bounce_sub_type))))",
         "amazon_ses_bounce_events_dedup_key_check": "CHECK (((dedup_key IS NULL) OR (char_length(dedup_key) = 64)))",
         "amazon_ses_bounce_events_diagnostic_code_check": "CHECK (((diagnostic_code IS NULL) OR ((char_length(diagnostic_code) <= 1024) AND (TRIM(BOTH FROM diagnostic_code) = diagnostic_code))))",
         "amazon_ses_bounce_events_reporting_mta_check": "CHECK (((reporting_mta IS NULL) OR ((char_length(reporting_mta) <= 255) AND (TRIM(BOTH FROM reporting_mta) = reporting_mta))))"
       },
       "columns": {
+        "amazon_ses_bounce_subtype_id": {
+          "collation": null,
+          "comment": "Detailed bounce sub-type from SES (e.g. General, NoEmail).",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "text"
+        },
         "amazon_ses_feedback_id": {
           "collation": null,
           "comment": "SES feedback ID for the notification.",
@@ -5552,17 +5563,6 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 7,
-          "type": "text"
-        },
-        "bounce_sub_type": {
-          "collation": null,
-          "comment": "Detailed bounce sub-type from SES (e.g. General, NoEmail).",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5,
           "type": "text"
         },
         "bounce_type": {
@@ -5678,9 +5678,9 @@
       },
       "comment": "Records email bounce, complaint, and delivery notifications received from AWS SES.",
       "foreignKeys": {
-        "amazon_ses_bounce_events_bounce_sub_type_fkey": {
-          "columns": ["bounce_sub_type"],
-          "definition": "FOREIGN KEY (bounce_sub_type) REFERENCES amazon_ses_bounce_subtypes(id) ON DELETE RESTRICT",
+        "amazon_ses_bounce_events_amazon_ses_bounce_subtype_id_fkey": {
+          "columns": ["amazon_ses_bounce_subtype_id"],
+          "definition": "FOREIGN KEY (amazon_ses_bounce_subtype_id) REFERENCES amazon_ses_bounce_subtypes(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
@@ -5710,6 +5710,26 @@
           "unique": true,
           "valid": true
         },
+        "idx_amazon_ses_bounce_events__amazon_ses_bounce_subtype_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_amazon_ses_bounce_events__amazon_ses_bounce_subtype_id ON public.amazon_ses_bounce_events USING btree (amazon_ses_bounce_subtype_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "amazon_ses_bounce_subtype_id",
+              "descending": false,
+              "expression": "amazon_ses_bounce_subtype_id",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_amazon_ses_bounce_events__amazon_ses_message_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -5725,26 +5745,6 @@
             }
           ],
           "predicate": "(amazon_ses_message_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_amazon_ses_bounce_events__bounce_sub_type": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_amazon_ses_bounce_events__bounce_sub_type ON public.amazon_ses_bounce_events USING btree (bounce_sub_type)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "bounce_sub_type",
-              "descending": false,
-              "expression": "bounce_sub_type",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            }
-          ],
-          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,
@@ -26342,7 +26342,7 @@
         "copyright_notice_delivery_recipients_email_ciphertext_check": "CHECK (((char_length(email_ciphertext) >= 1) AND (char_length(email_ciphertext) <= 1048576)))"
       },
       "columns": {
-        "copyright_notice_delivery_intent_id": {
+        "copyright_notice_delivery_work_item_id": {
           "collation": null,
           "comment": "Email delivery obligation that owns this recipient address.",
           "defaultExpression": null,
@@ -26390,8 +26390,8 @@
       "comment": "Intent-scoped encrypted email recipients for legal delivery. This avoids reusing or guessing evidence-encryption purposes.",
       "foreignKeys": {
         "fk_copyright_notice_delivery_recipients__intent": {
-          "columns": ["copyright_notice_delivery_intent_id"],
-          "definition": "FOREIGN KEY (copyright_notice_delivery_intent_id) REFERENCES copyright_notice_delivery_work_items(id) ON DELETE RESTRICT",
+          "columns": ["copyright_notice_delivery_work_item_id"],
+          "definition": "FOREIGN KEY (copyright_notice_delivery_work_item_id) REFERENCES copyright_notice_delivery_work_items(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
@@ -26424,13 +26424,13 @@
         "uq_copyright_notice_delivery_recipients__intent_id": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX uq_copyright_notice_delivery_recipients__intent_id ON public.copyright_notice_delivery_recipients USING btree (copyright_notice_delivery_intent_id)",
+          "definition": "CREATE UNIQUE INDEX uq_copyright_notice_delivery_recipients__intent_id ON public.copyright_notice_delivery_recipients USING btree (copyright_notice_delivery_work_item_id)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "copyright_notice_delivery_intent_id",
+              "column": "copyright_notice_delivery_work_item_id",
               "descending": false,
-              "expression": "copyright_notice_delivery_intent_id",
+              "expression": "copyright_notice_delivery_work_item_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -26454,8 +26454,8 @@
       },
       "uniqueConstraints": {
         "uq_copyright_notice_delivery_recipients__intent_id": {
-          "columns": ["copyright_notice_delivery_intent_id"],
-          "definition": "UNIQUE (copyright_notice_delivery_intent_id)"
+          "columns": ["copyright_notice_delivery_work_item_id"],
+          "definition": "UNIQUE (copyright_notice_delivery_work_item_id)"
         }
       }
     },
@@ -31717,7 +31717,7 @@
     "copyright_notice_lifecycle_changes": {
       "checkConstraints": {
         "copyright_lifecycle_event_notice_scope": "CHECK (((copyright_notice_id IS NOT NULL) OR (change_type = 'delivery_intent_replayed'::copyright_notice_lifecycle_change_types)))",
-        "copyright_lifecycle_event_source_shape": "CHECK (((num_nonnulls(copyright_notice_submission_id, copyright_notice_submission_assessment_id, copyright_notice_evidence_artifact_id, copyright_notice_correspondence_id, copyright_notice_legal_hold_assessment_id, copyright_notice_legal_hold_resolution_id, copyright_notice_deadline_id, copyright_restriction_id, copyright_notice_action_intent_id, copyright_notice_email_intake_id, copyright_notice_delivery_intent_id, media_delivery_registry_key, copyright_notice_guest_capability_id) =\nCASE\n    WHEN (change_type = 'notice_received'::copyright_notice_lifecycle_change_types) THEN 0\n    ELSE 1\nEND) AND\nCASE\n    WHEN (change_type = 'notice_received'::copyright_notice_lifecycle_change_types) THEN true\n    WHEN (change_type = ANY (ARRAY['supplement_received'::copyright_notice_lifecycle_change_types, 'appeal_received'::copyright_notice_lifecycle_change_types, 'counter_notice_received'::copyright_notice_lifecycle_change_types, 'withdrawal_received'::copyright_notice_lifecycle_change_types, 'court_or_ccb_hold_received'::copyright_notice_lifecycle_change_types, 'appeal_reviewed'::copyright_notice_lifecycle_change_types, 'counter_notice_reviewed'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_submission_id IS NOT NULL)\n    WHEN (change_type = 'submission_assessed'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_submission_assessment_id IS NOT NULL)\n    WHEN (change_type = 'evidence_artifact_recorded'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_evidence_artifact_id IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['outbound_correspondence_created'::copyright_notice_lifecycle_change_types, 'agent_correspondence_approved'::copyright_notice_lifecycle_change_types, 'email_correspondence_admitted'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_correspondence_id IS NOT NULL)\n    WHEN (change_type = 'legal_hold_assessed'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_legal_hold_assessment_id IS NOT NULL)\n    WHEN (change_type = 'legal_hold_resolved'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_legal_hold_resolution_id IS NOT NULL)\n    WHEN (change_type = 'counter_notice_deadline_started'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_deadline_id IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['provisional_restriction_imposed'::copyright_notice_lifecycle_change_types, 'mandatory_human_review_completed'::copyright_notice_lifecycle_change_types, 'restriction_lifted_by_administrator'::copyright_notice_lifecycle_change_types])) THEN (copyright_restriction_id IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['restoration_intent_created'::copyright_notice_lifecycle_change_types, 'reversal_restoration_intent_created'::copyright_notice_lifecycle_change_types, 'copyright_action_replayed'::copyright_notice_lifecycle_change_types, 'restoration_unavailable'::copyright_notice_lifecycle_change_types, 'restriction_lifted_placement_retained'::copyright_notice_lifecycle_change_types, 'restoration_authorized_pending_delivery'::copyright_notice_lifecycle_change_types, 'placement_withheld'::copyright_notice_lifecycle_change_types, 'placement_restored'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_action_intent_id IS NOT NULL)\n    WHEN (change_type = 'email_correspondence_rejected'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_email_intake_id IS NOT NULL)\n    WHEN (change_type = 'delivery_intent_replayed'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_delivery_intent_id IS NOT NULL)\n    WHEN (change_type = 'media_delivery_registry_replayed'::copyright_notice_lifecycle_change_types) THEN (media_delivery_registry_key IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['guest_capability_issued'::copyright_notice_lifecycle_change_types, 'guest_capability_revoked'::copyright_notice_lifecycle_change_types, 'guest_capability_revoked_by_withdrawal'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_guest_capability_id IS NOT NULL)\n    ELSE false\nEND))",
+        "copyright_lifecycle_event_source_shape": "CHECK (((num_nonnulls(copyright_notice_submission_id, copyright_notice_submission_assessment_id, copyright_notice_evidence_artifact_id, copyright_notice_correspondence_id, copyright_notice_legal_hold_assessment_id, copyright_notice_legal_hold_resolution_id, copyright_notice_deadline_id, copyright_restriction_id, copyright_notice_action_intent_id, copyright_notice_email_intake_id, copyright_notice_delivery_work_item_id, media_delivery_registry_record_delivery_key, copyright_notice_guest_capability_id) =\nCASE\n    WHEN (change_type = 'notice_received'::copyright_notice_lifecycle_change_types) THEN 0\n    ELSE 1\nEND) AND\nCASE\n    WHEN (change_type = 'notice_received'::copyright_notice_lifecycle_change_types) THEN true\n    WHEN (change_type = ANY (ARRAY['supplement_received'::copyright_notice_lifecycle_change_types, 'appeal_received'::copyright_notice_lifecycle_change_types, 'counter_notice_received'::copyright_notice_lifecycle_change_types, 'withdrawal_received'::copyright_notice_lifecycle_change_types, 'court_or_ccb_hold_received'::copyright_notice_lifecycle_change_types, 'appeal_reviewed'::copyright_notice_lifecycle_change_types, 'counter_notice_reviewed'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_submission_id IS NOT NULL)\n    WHEN (change_type = 'submission_assessed'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_submission_assessment_id IS NOT NULL)\n    WHEN (change_type = 'evidence_artifact_recorded'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_evidence_artifact_id IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['outbound_correspondence_created'::copyright_notice_lifecycle_change_types, 'agent_correspondence_approved'::copyright_notice_lifecycle_change_types, 'email_correspondence_admitted'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_correspondence_id IS NOT NULL)\n    WHEN (change_type = 'legal_hold_assessed'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_legal_hold_assessment_id IS NOT NULL)\n    WHEN (change_type = 'legal_hold_resolved'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_legal_hold_resolution_id IS NOT NULL)\n    WHEN (change_type = 'counter_notice_deadline_started'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_deadline_id IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['provisional_restriction_imposed'::copyright_notice_lifecycle_change_types, 'mandatory_human_review_completed'::copyright_notice_lifecycle_change_types, 'restriction_lifted_by_administrator'::copyright_notice_lifecycle_change_types])) THEN (copyright_restriction_id IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['restoration_intent_created'::copyright_notice_lifecycle_change_types, 'reversal_restoration_intent_created'::copyright_notice_lifecycle_change_types, 'copyright_action_replayed'::copyright_notice_lifecycle_change_types, 'restoration_unavailable'::copyright_notice_lifecycle_change_types, 'restriction_lifted_placement_retained'::copyright_notice_lifecycle_change_types, 'restoration_authorized_pending_delivery'::copyright_notice_lifecycle_change_types, 'placement_withheld'::copyright_notice_lifecycle_change_types, 'placement_restored'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_action_intent_id IS NOT NULL)\n    WHEN (change_type = 'email_correspondence_rejected'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_email_intake_id IS NOT NULL)\n    WHEN (change_type = 'delivery_intent_replayed'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_delivery_work_item_id IS NOT NULL)\n    WHEN (change_type = 'media_delivery_registry_replayed'::copyright_notice_lifecycle_change_types) THEN (media_delivery_registry_record_delivery_key IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['guest_capability_issued'::copyright_notice_lifecycle_change_types, 'guest_capability_revoked'::copyright_notice_lifecycle_change_types, 'guest_capability_revoked_by_withdrawal'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_guest_capability_id IS NOT NULL)\n    ELSE false\nEND))",
         "copyright_notice_lifecycle_changes_check": "CHECK (((review_rationale_id IS NULL) OR (review_rationale_id = id)))",
         "copyright_notice_lifecycle_changes_check1": "CHECK ((((review_action IS NULL) AND (review_rationale_id IS NULL)) OR ((change_type = 'mandatory_human_review_completed'::copyright_notice_lifecycle_change_types) AND (review_action IS NOT NULL) AND (review_rationale_id IS NOT NULL))))",
         "copyright_notice_lifecycle_changes_check2": "CHECK (((is_counter_notice_accepted IS NULL) OR (change_type = 'counter_notice_reviewed'::copyright_notice_lifecycle_change_types)))",
@@ -31786,7 +31786,7 @@
           "ordinalPosition": 11,
           "type": "uuid"
         },
-        "copyright_notice_delivery_intent_id": {
+        "copyright_notice_delivery_work_item_id": {
           "collation": null,
           "comment": "Delivery intent replayed by this event; a reply to a declined email intake is replayed with no case, and its intake is the intent's own.",
           "defaultExpression": null,
@@ -31929,7 +31929,7 @@
           "ordinalPosition": 20,
           "type": "boolean"
         },
-        "media_delivery_registry_key": {
+        "media_delivery_registry_record_delivery_key": {
           "collation": null,
           "comment": "Media delivery registry record replayed by this event.",
           "defaultExpression": null,
@@ -31997,8 +31997,8 @@
           "validated": true
         },
         "copyright_lifecycle_event_delivery_intent_fk": {
-          "columns": ["copyright_notice_delivery_intent_id"],
-          "definition": "FOREIGN KEY (copyright_notice_delivery_intent_id) REFERENCES copyright_notice_delivery_work_items(id) ON DELETE RESTRICT",
+          "columns": ["copyright_notice_delivery_work_item_id"],
+          "definition": "FOREIGN KEY (copyright_notice_delivery_work_item_id) REFERENCES copyright_notice_delivery_work_items(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
@@ -32024,8 +32024,8 @@
           "validated": true
         },
         "copyright_lifecycle_event_media_registry_fk": {
-          "columns": ["media_delivery_registry_key"],
-          "definition": "FOREIGN KEY (media_delivery_registry_key) REFERENCES media_delivery_registry_records(delivery_key) ON DELETE RESTRICT",
+          "columns": ["media_delivery_registry_record_delivery_key"],
+          "definition": "FOREIGN KEY (media_delivery_registry_record_delivery_key) REFERENCES media_delivery_registry_records(delivery_key) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
           "referencedColumns": ["delivery_key"],
@@ -32313,18 +32313,18 @@
         "idx_copyright_notice_lifecycle_changes__delivery_intent": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_notice_lifecycle_changes__delivery_intent ON public.copyright_notice_lifecycle_changes USING btree (copyright_notice_delivery_intent_id) WHERE (copyright_notice_delivery_intent_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_copyright_notice_lifecycle_changes__delivery_intent ON public.copyright_notice_lifecycle_changes USING btree (copyright_notice_delivery_work_item_id) WHERE (copyright_notice_delivery_work_item_id IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "copyright_notice_delivery_intent_id",
+              "column": "copyright_notice_delivery_work_item_id",
               "descending": false,
-              "expression": "copyright_notice_delivery_intent_id",
+              "expression": "copyright_notice_delivery_work_item_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": "(copyright_notice_delivery_intent_id IS NOT NULL)",
+          "predicate": "(copyright_notice_delivery_work_item_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -32420,18 +32420,18 @@
         "idx_copyright_notice_lifecycle_changes__media_registry": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_notice_lifecycle_changes__media_registry ON public.copyright_notice_lifecycle_changes USING btree (media_delivery_registry_key) WHERE (media_delivery_registry_key IS NOT NULL)",
+          "definition": "CREATE INDEX idx_copyright_notice_lifecycle_changes__media_registry ON public.copyright_notice_lifecycle_changes USING btree (media_delivery_registry_record_delivery_key) WHERE (media_delivery_registry_record_delivery_key IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "media_delivery_registry_key",
+              "column": "media_delivery_registry_record_delivery_key",
               "descending": false,
-              "expression": "media_delivery_registry_key",
+              "expression": "media_delivery_registry_record_delivery_key",
               "nullsFirst": false,
               "opclass": "text_ops"
             }
           ],
-          "predicate": "(media_delivery_registry_key IS NOT NULL)",
+          "predicate": "(media_delivery_registry_record_delivery_key IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -46545,7 +46545,7 @@
           "ordinalPosition": 2,
           "type": "uuid"
         },
-        "rewards_program_status_id": {
+        "rewards_program_status_topic_id": {
           "collation": null,
           "comment": "The specific tier status (references rewards_program_status_topics).",
           "defaultExpression": null,
@@ -46582,8 +46582,8 @@
       "comment": "Rewards program tier statuses held by individuals (e.g. Marriott Platinum Elite).",
       "foreignKeys": {
         "fk_individual_rewards_program_statuses__rewards_program_status": {
-          "columns": ["rewards_program_status_id"],
-          "definition": "FOREIGN KEY (rewards_program_status_id) REFERENCES rewards_program_status_topics(topic_id) ON DELETE CASCADE",
+          "columns": ["rewards_program_status_topic_id"],
+          "definition": "FOREIGN KEY (rewards_program_status_topic_id) REFERENCES rewards_program_status_topics(topic_id) ON DELETE CASCADE",
           "onDelete": "cascade",
           "onUpdate": "no action",
           "referencedColumns": ["topic_id"],
@@ -46602,26 +46602,6 @@
       },
       "growth": "unbounded",
       "indexes": {
-        "idx_individ_rewards_program_statuses__rewards_program_status_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_individ_rewards_program_statuses__rewards_program_status_id ON public.individual_rewards_program_statuses USING btree (rewards_program_status_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "rewards_program_status_id",
-              "descending": false,
-              "expression": "rewards_program_status_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_individual_rewards_program_statuses__individual_id_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -46639,6 +46619,26 @@
               "column": "id",
               "descending": false,
               "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_individual_rewards_program_statuses__status_topic_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_individual_rewards_program_statuses__status_topic_id ON public.individual_rewards_program_statuses USING btree (rewards_program_status_topic_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "rewards_program_status_topic_id",
+              "descending": false,
+              "expression": "rewards_program_status_topic_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -103939,7 +103939,7 @@
           "ordinalPosition": 2,
           "type": "smallint"
         },
-        "retailer_id": {
+        "retailer_topic_id": {
           "collation": null,
           "comment": "The retailer topic.",
           "defaultExpression": null,
@@ -103962,9 +103962,9 @@
           "referencedTable": "countries",
           "validated": true
         },
-        "retailer_countries_retailer_id_fkey": {
-          "columns": ["retailer_id"],
-          "definition": "FOREIGN KEY (retailer_id) REFERENCES retailer_topics(topic_id) ON DELETE CASCADE",
+        "retailer_countries_retailer_topic_id_fkey": {
+          "columns": ["retailer_topic_id"],
+          "definition": "FOREIGN KEY (retailer_topic_id) REFERENCES retailer_topics(topic_id) ON DELETE CASCADE",
           "onDelete": "cascade",
           "onUpdate": "no action",
           "referencedColumns": ["topic_id"],
@@ -103997,13 +103997,13 @@
         "retailer_countries_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX retailer_countries_pkey ON public.retailer_countries USING btree (retailer_id, country_id)",
+          "definition": "CREATE UNIQUE INDEX retailer_countries_pkey ON public.retailer_countries USING btree (retailer_topic_id, country_id)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "retailer_id",
+              "column": "retailer_topic_id",
               "descending": false,
-              "expression": "retailer_id",
+              "expression": "retailer_topic_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             },
@@ -104025,8 +104025,8 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["retailer_id", "country_id"],
-        "definition": "PRIMARY KEY (retailer_id, country_id)"
+        "columns": ["retailer_topic_id", "country_id"],
+        "definition": "PRIMARY KEY (retailer_topic_id, country_id)"
       },
       "relationKind": "table",
       "triggers": {},
@@ -112238,7 +112238,7 @@
           "ordinalPosition": 8,
           "type": "text"
         },
-        "spending_category_id": {
+        "spending_category_topic_id": {
           "collation": null,
           "comment": "The spending category (references spending_category_topics).",
           "defaultExpression": null,
@@ -112301,9 +112301,9 @@
           "referencedTable": "individuals",
           "validated": true
         },
-        "spending_entries_spending_category_id_fkey": {
-          "columns": ["spending_category_id"],
-          "definition": "FOREIGN KEY (spending_category_id) REFERENCES spending_category_topics(topic_id) ON DELETE CASCADE",
+        "spending_entries_spending_category_topic_id_fkey": {
+          "columns": ["spending_category_topic_id"],
+          "definition": "FOREIGN KEY (spending_category_topic_id) REFERENCES spending_category_topics(topic_id) ON DELETE CASCADE",
           "onDelete": "cascade",
           "onUpdate": "no action",
           "referencedColumns": ["topic_id"],
@@ -112387,16 +112387,16 @@
           "unique": false,
           "valid": true
         },
-        "idx_spending_entries__spending_category_id": {
+        "idx_spending_entries__spending_category_topic_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_spending_entries__spending_category_id ON public.spending_entries USING btree (spending_category_id)",
+          "definition": "CREATE INDEX idx_spending_entries__spending_category_topic_id ON public.spending_entries USING btree (spending_category_topic_id)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "spending_category_id",
+              "column": "spending_category_topic_id",
               "descending": false,
-              "expression": "spending_category_id",
+              "expression": "spending_category_topic_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -113180,6 +113180,50 @@
           "ordinalPosition": 16,
           "type": "timestamp with time zone"
         },
+        "cursor_prune_id": {
+          "collation": null,
+          "comment": "Relation ID keyset cursor for the stale-relation pruning phase.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "uuid"
+        },
+        "cursor_relation_high_water_id": {
+          "collation": null,
+          "comment": "Relation ID high-water mark that excludes post-capture related links from this generation prune.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "cursor_source_high_water_id": {
+          "collation": null,
+          "comment": "RSS item ID high-water mark that bounds this generation source snapshot.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "cursor_source_id": {
+          "collation": null,
+          "comment": "RSS item ID keyset cursor for the bounded source projection phase.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "uuid"
+        },
         "generation": {
           "collation": null,
           "comment": "Monotonic source snapshot generation; stale workers cannot mutate a newer generation.",
@@ -113268,28 +113312,6 @@
           "ordinalPosition": 1,
           "type": "uuid"
         },
-        "prune_cursor_id": {
-          "collation": null,
-          "comment": "Relation ID keyset cursor for the stale-relation pruning phase.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9,
-          "type": "uuid"
-        },
-        "relation_high_water_id": {
-          "collation": null,
-          "comment": "Relation ID high-water mark that excludes post-capture related links from this generation prune.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5,
-          "type": "uuid"
-        },
         "relation_snapshot_at": {
           "collation": null,
           "comment": "Wall-clock boundary that excludes relations reactivated after this generation was captured.",
@@ -113311,28 +113333,6 @@
           "nullable": true,
           "ordinalPosition": 8,
           "type": "timestamp with time zone"
-        },
-        "source_cursor_id": {
-          "collation": null,
-          "comment": "RSS item ID keyset cursor for the bounded source projection phase.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 7,
-          "type": "uuid"
-        },
-        "source_high_water_id": {
-          "collation": null,
-          "comment": "RSS item ID high-water mark that bounds this generation source snapshot.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 4,
-          "type": "uuid"
         },
         "story_id": {
           "collation": null,
@@ -114370,17 +114370,6 @@
           "ordinalPosition": 7,
           "type": "text"
         },
-        "event_type": {
-          "collation": null,
-          "comment": "Stripe event type.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "text"
-        },
         "id": {
           "collation": null,
           "comment": null,
@@ -114458,6 +114447,17 @@
           "ordinalPosition": 2,
           "type": "text"
         },
+        "stripe_event_type_id": {
+          "collation": null,
+          "comment": "Stripe event type.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "text"
+        },
         "subscription_id": {
           "collation": null,
           "comment": "Optional Stripe Subscription identity from the payload.",
@@ -114472,9 +114472,9 @@
       },
       "comment": "Ingested Stripe events with explicit processing lifecycle timestamps.",
       "foreignKeys": {
-        "stripe_events_event_type_fkey": {
-          "columns": ["event_type"],
-          "definition": "FOREIGN KEY (event_type) REFERENCES stripe_event_types(id) ON DELETE RESTRICT",
+        "stripe_events_stripe_event_type_id_fkey": {
+          "columns": ["stripe_event_type_id"],
+          "definition": "FOREIGN KEY (stripe_event_type_id) REFERENCES stripe_event_types(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
@@ -114511,16 +114511,16 @@
           "unique": false,
           "valid": true
         },
-        "idx_stripe_events__event_type": {
+        "idx_stripe_events__stripe_event_type_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_stripe_events__event_type ON public.stripe_events USING btree (event_type, id DESC)",
+          "definition": "CREATE INDEX idx_stripe_events__stripe_event_type_id ON public.stripe_events USING btree (stripe_event_type_id, id DESC)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "event_type",
+              "column": "stripe_event_type_id",
               "descending": false,
-              "expression": "event_type",
+              "expression": "stripe_event_type_id",
               "nullsFirst": false,
               "opclass": "text_ops"
             },
@@ -130007,17 +130007,6 @@
           "ordinalPosition": 12,
           "type": "timestamp with time zone"
         },
-        "document_type": {
-          "collation": null,
-          "comment": "Document type (passport, id_card, driving_license, etc.).",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 7,
-          "type": "text"
-        },
         "id": {
           "collation": null,
           "comment": null,
@@ -130028,6 +130017,17 @@
           "nullable": false,
           "ordinalPosition": 1,
           "type": "uuid"
+        },
+        "identity_document_type_id": {
+          "collation": null,
+          "comment": "Document type (passport, id_card, driving_license, etc.).",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "text"
         },
         "identity_fingerprint": {
           "collation": null,
@@ -130131,9 +130131,9 @@
       },
       "comment": "Records of successfully verified identities. Raw document numbers are never stored; only a 64-char HMAC fingerprint.",
       "foreignKeys": {
-        "verified_identities_document_type_fkey": {
-          "columns": ["document_type"],
-          "definition": "FOREIGN KEY (document_type) REFERENCES identity_document_types(id) ON DELETE RESTRICT",
+        "verified_identities_identity_document_type_id_fkey": {
+          "columns": ["identity_document_type_id"],
+          "definition": "FOREIGN KEY (identity_document_type_id) REFERENCES identity_document_types(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
@@ -130161,16 +130161,16 @@
       },
       "growth": "unbounded",
       "indexes": {
-        "idx_verified_identities__document_type": {
+        "idx_verified_identities__identity_document_type_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_verified_identities__document_type ON public.verified_identities USING btree (document_type)",
+          "definition": "CREATE INDEX idx_verified_identities__identity_document_type_id ON public.verified_identities USING btree (identity_document_type_id)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "document_type",
+              "column": "identity_document_type_id",
               "descending": false,
-              "expression": "document_type",
+              "expression": "identity_document_type_id",
               "nullsFirst": false,
               "opclass": "text_ops"
             }

@@ -6,18 +6,18 @@ Spending amounts per category, associated with either a household or individual.
 
 Not partitioned — growth: unbounded.
 
-| Column                 | Type                       | Nullable | Default                           | Identity | Generated | Collation | Comment                                                                    |
-| ---------------------- | -------------------------- | -------- | --------------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------- |
-| `id`                   | `uuid`                     | no       | `uuidv7()`                        |          |           |           |                                                                            |
-| `household_id`         | `uuid`                     | yes      |                                   |          |           |           | The household this spending is for. Mutually exclusive with individual_id. |
-| `individual_id`        | `uuid`                     | yes      |                                   |          |           |           | The individual this spending is for. Mutually exclusive with household_id. |
-| `spending_category_id` | `uuid`                     | no       |                                   |          |           |           | The spending category (references spending_category_topics).               |
-| `spending_frequency`   | `spending_frequencies`     | no       | `'monthly'::spending_frequencies` |          |           |           | How often this spending occurs (monthly or annually).                      |
-| `amount_minor_units`   | `bigint`                   | no       |                                   |          |           |           | Spending amount per frequency period in the currency minor unit.           |
-| `currency_code`        | `text`                     | no       |                                   |          |           |           | Currency of the spending amount.                                           |
-| `note`                 | `text`                     | yes      |                                   |          |           |           | Free-text note about this spending entry.                                  |
-| `created_at`           | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)`      |          | virtual   |           |                                                                            |
-| `updated_at`           | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`               |          |           |           |                                                                            |
+| Column                       | Type                       | Nullable | Default                           | Identity | Generated | Collation | Comment                                                                    |
+| ---------------------------- | -------------------------- | -------- | --------------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------- |
+| `id`                         | `uuid`                     | no       | `uuidv7()`                        |          |           |           |                                                                            |
+| `household_id`               | `uuid`                     | yes      |                                   |          |           |           | The household this spending is for. Mutually exclusive with individual_id. |
+| `individual_id`              | `uuid`                     | yes      |                                   |          |           |           | The individual this spending is for. Mutually exclusive with household_id. |
+| `spending_category_topic_id` | `uuid`                     | no       |                                   |          |           |           | The spending category (references spending_category_topics).               |
+| `spending_frequency`         | `spending_frequencies`     | no       | `'monthly'::spending_frequencies` |          |           |           | How often this spending occurs (monthly or annually).                      |
+| `amount_minor_units`         | `bigint`                   | no       |                                   |          |           |           | Spending amount per frequency period in the currency minor unit.           |
+| `currency_code`              | `text`                     | no       |                                   |          |           |           | Currency of the spending amount.                                           |
+| `note`                       | `text`                     | yes      |                                   |          |           |           | Free-text note about this spending entry.                                  |
+| `created_at`                 | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)`      |          | virtual   |           |                                                                            |
+| `updated_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`               |          |           |           |                                                                            |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -35,14 +35,14 @@ _none_
 - `spending_entries_currency_code_fkey`: `FOREIGN KEY (currency_code) REFERENCES currencies(code) ON DELETE RESTRICT`
 - `spending_entries_household_id_fkey`: `FOREIGN KEY (household_id) REFERENCES households(id) ON DELETE CASCADE`
 - `spending_entries_individual_id_fkey`: `FOREIGN KEY (individual_id) REFERENCES individuals(id) ON DELETE CASCADE`
-- `spending_entries_spending_category_id_fkey`: `FOREIGN KEY (spending_category_id) REFERENCES spending_category_topics(topic_id) ON DELETE CASCADE`
+- `spending_entries_spending_category_topic_id_fkey`: `FOREIGN KEY (spending_category_topic_id) REFERENCES spending_category_topics(topic_id) ON DELETE CASCADE`
 
 **Indexes:**
 
 - `idx_spending_entries__currency_code`: `CREATE INDEX idx_spending_entries__currency_code ON public.spending_entries USING btree (currency_code)`
 - `idx_spending_entries__household_id_id`: `CREATE INDEX idx_spending_entries__household_id_id ON public.spending_entries USING btree (household_id, id) WHERE (household_id IS NOT NULL)`
 - `idx_spending_entries__individual_id_id`: `CREATE INDEX idx_spending_entries__individual_id_id ON public.spending_entries USING btree (individual_id, id) WHERE (individual_id IS NOT NULL)`
-- `idx_spending_entries__spending_category_id`: `CREATE INDEX idx_spending_entries__spending_category_id ON public.spending_entries USING btree (spending_category_id)`
+- `idx_spending_entries__spending_category_topic_id`: `CREATE INDEX idx_spending_entries__spending_category_topic_id ON public.spending_entries USING btree (spending_category_topic_id)`
 - `spending_entries_pkey`: `CREATE UNIQUE INDEX spending_entries_pkey ON public.spending_entries USING btree (id)`
 
 **Triggers:**

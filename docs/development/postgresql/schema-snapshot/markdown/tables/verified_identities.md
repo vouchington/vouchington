@@ -6,21 +6,21 @@ Records of successfully verified identities. Raw document numbers are never stor
 
 Not partitioned — growth: unbounded.
 
-| Column                   | Type                              | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                     |
-| ------------------------ | --------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------- |
-| `id`                     | `uuid`                            | no       | `uuidv7()`                   |          |           |           |                                                                                                             |
-| `user_id`                | `uuid`                            | no       |                              |          |           |           | The account that completed the verification.                                                                |
-| `provider`               | `identity_verification_providers` | no       |                              |          |           |           | Provider that performed the verification.                                                                   |
-| `provider_session_id`    | `text`                            | no       |                              |          |           |           | Provider-specific session or report ID.                                                                     |
-| `identity_fingerprint`   | `text`                            | no       |                              |          |           |           | 64-char hex HMAC-SHA256 fingerprint of (country:type:document_number). Never store the raw document number. |
-| `issuing_country`        | `text`                            | no       |                              |          |           |           | ISO country code of the issuing authority.                                                                  |
-| `document_type`          | `text`                            | no       |                              |          |           |           | Document type (passport, id_card, driving_license, etc.).                                                   |
-| `verified_at`            | `timestamp with time zone`        | no       |                              |          |           |           | When the provider confirmed the identity.                                                                   |
-| `checkout_session_id`    | `text`                            | no       |                              |          |           |           | Stripe Checkout Session that collected payment for this verification.                                       |
-| `revoked_at`             | `timestamp with time zone`        | yes      |                              |          |           |           | Set when the record is revoked by an admin.                                                                 |
-| `transferred_to_user_id` | `uuid`                            | yes      |                              |          |           |           | When transferred, the account that now holds the active record.                                             |
-| `created_at`             | `timestamp with time zone`        | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | Row creation timestamp.                                                                                     |
-| `updated_at`             | `timestamp with time zone`        | no       | `now()`                      |          |           |           | Row last-updated timestamp.                                                                                 |
+| Column                      | Type                              | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                     |
+| --------------------------- | --------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------- |
+| `id`                        | `uuid`                            | no       | `uuidv7()`                   |          |           |           |                                                                                                             |
+| `user_id`                   | `uuid`                            | no       |                              |          |           |           | The account that completed the verification.                                                                |
+| `provider`                  | `identity_verification_providers` | no       |                              |          |           |           | Provider that performed the verification.                                                                   |
+| `provider_session_id`       | `text`                            | no       |                              |          |           |           | Provider-specific session or report ID.                                                                     |
+| `identity_fingerprint`      | `text`                            | no       |                              |          |           |           | 64-char hex HMAC-SHA256 fingerprint of (country:type:document_number). Never store the raw document number. |
+| `issuing_country`           | `text`                            | no       |                              |          |           |           | ISO country code of the issuing authority.                                                                  |
+| `identity_document_type_id` | `text`                            | no       |                              |          |           |           | Document type (passport, id_card, driving_license, etc.).                                                   |
+| `verified_at`               | `timestamp with time zone`        | no       |                              |          |           |           | When the provider confirmed the identity.                                                                   |
+| `checkout_session_id`       | `text`                            | no       |                              |          |           |           | Stripe Checkout Session that collected payment for this verification.                                       |
+| `revoked_at`                | `timestamp with time zone`        | yes      |                              |          |           |           | Set when the record is revoked by an admin.                                                                 |
+| `transferred_to_user_id`    | `uuid`                            | yes      |                              |          |           |           | When transferred, the account that now holds the active record.                                             |
+| `created_at`                | `timestamp with time zone`        | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | Row creation timestamp.                                                                                     |
+| `updated_at`                | `timestamp with time zone`        | no       | `now()`                      |          |           |           | Row last-updated timestamp.                                                                                 |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -33,13 +33,13 @@ _none_
 
 **Foreign keys:**
 
-- `verified_identities_document_type_fkey`: `FOREIGN KEY (document_type) REFERENCES identity_document_types(id) ON DELETE RESTRICT`
+- `verified_identities_identity_document_type_id_fkey`: `FOREIGN KEY (identity_document_type_id) REFERENCES identity_document_types(id) ON DELETE RESTRICT`
 - `verified_identities_transferred_to_user_id_fkey`: `FOREIGN KEY (transferred_to_user_id) REFERENCES users(id) ON DELETE RESTRICT`
 - `verified_identities_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `idx_verified_identities__document_type`: `CREATE INDEX idx_verified_identities__document_type ON public.verified_identities USING btree (document_type)`
+- `idx_verified_identities__identity_document_type_id`: `CREATE INDEX idx_verified_identities__identity_document_type_id ON public.verified_identities USING btree (identity_document_type_id)`
 - `idx_verified_identities__transferred_to_user_id`: `CREATE INDEX idx_verified_identities__transferred_to_user_id ON public.verified_identities USING btree (transferred_to_user_id) WHERE (transferred_to_user_id IS NOT NULL)`
 - `idx_verified_identities__user_id`: `CREATE INDEX idx_verified_identities__user_id ON public.verified_identities USING btree (user_id) WHERE (user_id IS NOT NULL)`
 - `uq_verified_identities__fingerprint_active`: `CREATE UNIQUE INDEX uq_verified_identities__fingerprint_active ON public.verified_identities USING btree (identity_fingerprint) WHERE ((revoked_at IS NULL) AND (transferred_to_user_id IS NULL))`
