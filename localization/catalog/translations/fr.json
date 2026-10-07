@@ -337,6 +337,7 @@
 {"id":"copy.extracted.admin.userPreservationHoldCard.preservationHoldReleased_1077a4b9","value":"Conservation légale levée."},
 {"id":"copy.extracted.admin.userPreservationHoldCard.releaseHold_6efa4f01","value":"Lever la conservation"},
 {"id":"copy.extracted.admin.userPreservationHoldCard.released_35d9bc51","value":"Levée"},
+{"id":"copy.extracted.admin.userPreservationHoldCard.whileAHoldIsOpenFinalPurge_5bd30c73","value":"Tant qu’une mise sous conservation est ouverte, la purge finale de ce compte est suspendue. Les étapes de suppression immédiate ne sont pas suspendues."},
 {"id":"copy.extracted.admin.userPreservationHoldCard.whileAHoldIsOpenThisAccount_b2f34b3a","value":"Tant qu'une conservation est ouverte, ce compte ne peut pas être supprimé. La référence n'est visible que des administrateurs."},
 {"id":"copy.extracted.agents.agentDetail.id_3843971d","value":"ID"},
 {"id":"copy.extracted.agents.agentDetail.inactive_ac7c949f","value":"Inactif"},

@@ -71446,6 +71446,7 @@
 {"alias":"extracted.admin.userPreservationHoldCard.preservationHoldReleased_1077a4b9","consumer":"web","pattern":"/user/[idOrUsername]/admin"},
 {"alias":"extracted.admin.userPreservationHoldCard.releaseHold_6efa4f01","consumer":"web","pattern":"/user/[idOrUsername]/admin"},
 {"alias":"extracted.admin.userPreservationHoldCard.released_35d9bc51","consumer":"web","pattern":"/user/[idOrUsername]/admin"},
+{"alias":"extracted.admin.userPreservationHoldCard.whileAHoldIsOpenFinalPurge_5bd30c73","consumer":"web","pattern":"/user/[idOrUsername]/admin"},
 {"alias":"extracted.admin.userPreservationHoldCard.whileAHoldIsOpenThisAccount_b2f34b3a","consumer":"web","pattern":"/user/[idOrUsername]/admin"},
 {"alias":"extracted.asides.popularCommunitiesAsideContent.browseAllCommunities_c4aefba0","consumer":"web","pattern":"/user/[idOrUsername]/admin"},
 {"alias":"extracted.asides.popularCommunitiesAsideContent.yourCommunities_b7e36bbe","consumer":"web","pattern":"/user/[idOrUsername]/admin"},

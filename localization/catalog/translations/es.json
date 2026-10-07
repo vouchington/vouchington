@@ -337,6 +337,7 @@
 {"id":"copy.extracted.admin.userPreservationHoldCard.preservationHoldReleased_1077a4b9","value":"Retención de conservación liberada."},
 {"id":"copy.extracted.admin.userPreservationHoldCard.releaseHold_6efa4f01","value":"Liberar retención"},
 {"id":"copy.extracted.admin.userPreservationHoldCard.released_35d9bc51","value":"Liberada"},
+{"id":"copy.extracted.admin.userPreservationHoldCard.whileAHoldIsOpenFinalPurge_5bd30c73","value":"Mientras una retención está abierta, la purga final de esta cuenta está pausada. Los pasos de eliminación inmediata no se pausan."},
 {"id":"copy.extracted.admin.userPreservationHoldCard.whileAHoldIsOpenThisAccount_b2f34b3a","value":"Mientras haya una retención abierta, no se puede eliminar esta cuenta. La referencia solo es visible para los administradores."},
 {"id":"copy.extracted.agents.agentDetail.id_3843971d","value":"ID"},
 {"id":"copy.extracted.agents.agentDetail.inactive_ac7c949f","value":"Inactivo"},

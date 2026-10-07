@@ -11,10 +11,17 @@ vi.mock(import('@/lib/i18n/get-translations'), () => ({
 }))
 
 vi.mock(import('../user-preservation-hold-card'), () => ({
-  UserPreservationHoldCard: ({ userId }: { userId: string }) => (
+  UserPreservationHoldCard: ({
+    userId,
+    isAccountDeleted,
+  }: {
+    userId: string
+    isAccountDeleted?: boolean
+  }) => (
     <div
       data-testid='preservation-hold-card'
       data-user-id={userId}
+      data-account-deleted={isAccountDeleted}
     />
   ),
 }))
@@ -33,5 +40,9 @@ describe('DeletedUserPreservationHoldPanel', () => {
     expect(screen.getByText('Account ID')).toBeInTheDocument()
     expect(screen.getByText(userId)).toBeInTheDocument()
     expect(screen.getByTestId('preservation-hold-card')).toHaveAttribute('data-user-id', userId)
+    expect(screen.getByTestId('preservation-hold-card')).toHaveAttribute(
+      'data-account-deleted',
+      'true',
+    )
   })
 })

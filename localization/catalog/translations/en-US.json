@@ -337,6 +337,7 @@
 {"id":"copy.extracted.admin.userPreservationHoldCard.preservationHoldReleased_1077a4b9","value":"Preservation hold released."},
 {"id":"copy.extracted.admin.userPreservationHoldCard.releaseHold_6efa4f01","value":"Release hold"},
 {"id":"copy.extracted.admin.userPreservationHoldCard.released_35d9bc51","value":"Released"},
+{"id":"copy.extracted.admin.userPreservationHoldCard.whileAHoldIsOpenFinalPurge_5bd30c73","value":"While a hold is open, this account’s final purge is paused. Immediate deletion steps are not paused."},
 {"id":"copy.extracted.admin.userPreservationHoldCard.whileAHoldIsOpenThisAccount_b2f34b3a","value":"While a hold is open, this account cannot be deleted. The reference is visible to administrators only."},
 {"id":"copy.extracted.agents.agentDetail.id_3843971d","value":"ID"},
 {"id":"copy.extracted.agents.agentDetail.inactive_ac7c949f","value":"Inactive"},

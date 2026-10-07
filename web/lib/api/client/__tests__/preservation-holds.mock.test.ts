@@ -39,7 +39,7 @@ describe('preservation hold API client', () => {
   it('GETs /api/v1/users/:userId/preservation-hold', async () => {
     await expectApiWrapperCall({
       mock: vi.mocked(clientApi.get),
-      response: { holds: [hold] },
+      response: { account_deleted_at: null, holds: [hold] },
       call: () => listUserPreservationHolds('user-abc'),
       expectedArgs: ['/api/v1/users/user-abc/preservation-hold'],
     })

@@ -24,7 +24,10 @@ export async function DeletedUserPreservationHoldPanel({ userId }: { userId: str
           <p className='break-all font-mono text-sm'>{userId}</p>
         </CardContent>
       </Card>
-      <UserPreservationHoldCard userId={userId} />
+      <UserPreservationHoldCard
+        userId={userId}
+        isAccountDeleted
+      />
     </div>
   )
 }

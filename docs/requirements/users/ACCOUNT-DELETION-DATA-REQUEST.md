@@ -130,8 +130,8 @@ linked to `retained_user_identities` as the minimal 17 USC 512(i) record. Staff 
 review after deletion; a restrict or terminate outcome is recorded without attempting to suspend
 the deleted account.
 
-A preservation hold keeps an account's records while the owner decides, on a lawyer's advice, what
-a subpoena requires (see the
+A preservation hold preserves what remains of an account while the owner decides, on a lawyer's
+advice, what a subpoena requires (see the
 [§512(h) runbook](../../runbooks/copyright-notices.md#dmca-512h-subpoenas)). It stores who
 placed it, when, an encrypted short matter reference, and who released it and when. It has no
 duration or scope, because the owner decides both. Release writes the release columns once and the

@@ -48,7 +48,7 @@ describe('UserPreservationHoldCard', () => {
   })
 
   it('places a hold with the trimmed reference and then shows it as open', async () => {
-    mockList.mockResolvedValue({ holds: [] })
+    mockList.mockResolvedValue({ account_deleted_at: null, holds: [] })
     mockPlace.mockResolvedValue({ hold: makeHold() })
     renderCard()
 
@@ -70,7 +70,7 @@ describe('UserPreservationHoldCard', () => {
   })
 
   it('releases an open hold and keeps it in the history', async () => {
-    mockList.mockResolvedValue({ holds: [makeHold()] })
+    mockList.mockResolvedValue({ account_deleted_at: null, holds: [makeHold()] })
     mockRelease.mockResolvedValue({
       hold: makeHold({ released_by_id: 'admin-1', released_at: '2026-09-02T00:00:00.000Z' }),
     })
@@ -86,7 +86,7 @@ describe('UserPreservationHoldCard', () => {
   })
 
   it('shows the API error and keeps the entered reference when placing fails', async () => {
-    mockList.mockResolvedValue({ holds: [] })
+    mockList.mockResolvedValue({ account_deleted_at: null, holds: [] })
     mockPlace.mockRejectedValue(new Error('User already has an open preservation hold'))
     renderCard()
 
@@ -103,7 +103,7 @@ describe('UserPreservationHoldCard', () => {
   })
 
   it('shows the fallback error when releasing rejects a non-Error value', async () => {
-    mockList.mockResolvedValue({ holds: [makeHold()] })
+    mockList.mockResolvedValue({ account_deleted_at: null, holds: [makeHold()] })
     mockRelease.mockRejectedValue('unavailable')
     renderCard()
 
@@ -123,5 +123,25 @@ describe('UserPreservationHoldCard', () => {
     expect(screen.getByText('Failed to load preservation holds.')).toBeInTheDocument()
     expect(screen.queryByLabelText('Matter reference')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Place hold/ })).not.toBeInTheDocument()
+  })
+
+  it('describes a hold on a deleted account as pausing only final purge', () => {
+    mockList.mockResolvedValue({
+      account_deleted_at: '2026-09-01T00:00:00.000Z',
+      holds: [],
+    })
+
+    render(
+      <UserPreservationHoldCard
+        userId='user-1'
+        isAccountDeleted
+      />,
+    )
+
+    expect(
+      screen.getByText(
+        'While a hold is open, this account’s final purge is paused. Immediate deletion steps are not paused.',
+      ),
+    ).toBeInTheDocument()
   })
 })

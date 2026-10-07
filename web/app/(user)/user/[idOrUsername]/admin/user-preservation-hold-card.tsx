@@ -24,7 +24,13 @@ type HoldsState =
 
 // Administrator-only legal-process preservation hold (issue #1449). The reference is sensitive:
 // it is rendered for administrators and never sent to the toast or any error reporter.
-export function UserPreservationHoldCard({ userId }: { userId: string }) {
+export function UserPreservationHoldCard({
+  userId,
+  isAccountDeleted = false,
+}: {
+  userId: string
+  isAccountDeleted?: boolean
+}) {
   const t = useTranslations()
   const referenceId = useId()
   const [state, setState] = useState<HoldsState>({ status: 'loading' })
@@ -102,7 +108,11 @@ export function UserPreservationHoldCard({ userId }: { userId: string }) {
               {t('extracted.admin.userPreservationHoldCard.legalPreservationHold_407bcdf3')}
             </CardTitle>
             <CardDescription>
-              {t('extracted.admin.userPreservationHoldCard.whileAHoldIsOpenThisAccount_b2f34b3a')}
+              {isAccountDeleted
+                ? t('extracted.admin.userPreservationHoldCard.whileAHoldIsOpenFinalPurge_5bd30c73')
+                : t(
+                    'extracted.admin.userPreservationHoldCard.whileAHoldIsOpenThisAccount_b2f34b3a',
+                  )}
             </CardDescription>
           </div>
           {state.status === 'loaded' && (
