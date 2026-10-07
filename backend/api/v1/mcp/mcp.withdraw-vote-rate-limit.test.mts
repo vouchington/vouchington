@@ -135,7 +135,7 @@ describe('MCP withdraw vote shares the REST vote budget', () => {
     expect(
       (await checkUsageQuota('mcp_user', user.id, { limit: 1, windowSeconds: 900 })).limited,
     ).toBe(false)
-  }, 60_000)
+  }, 30_000)
 
   it('refuses REST after MCP spends the final vote', async () => {
     const { user, token, rest } = await caller()
@@ -145,7 +145,7 @@ describe('MCP withdraw vote shares the REST vote budget', () => {
     const admitted = await withdraw(token, relationId).expect(200)
     expect((admitted.body as ToolResponse).result.isError).toBeUndefined()
     await rest.delete(`/api/v1/entity-relations/${relationId}/vote`).expect(429)
-  }, 60_000)
+  }, 30_000)
 
   it('does not spend a vote for malformed, missing or suspended targets', async () => {
     const { user, token, rest } = await caller()
@@ -167,7 +167,7 @@ describe('MCP withdraw vote shares the REST vote budget', () => {
       (await withdraw(resumedToken, relationId).expect(200)).body.result.isError,
     ).toBeUndefined()
     await rest.delete(`/api/v1/entity-relations/${relationId}/vote`).expect(429)
-  }, 60_000)
+  }, 30_000)
 
   it('counts duplicate-id batch messages separately when only the later vote is refused', async () => {
     overrideDynamicConfigFieldsForTest(routeRateLimitConfig, { enabled: true })
@@ -184,7 +184,7 @@ describe('MCP withdraw vote shares the REST vote budget', () => {
     expect(
       (await checkUsageQuota('mcp_user', user.id, { limit: 1, windowSeconds: 900 })).limited,
     ).toBe(true)
-  }, 60_000)
+  }, 30_000)
 
   it('charges zero for duplicate-id batch messages that are all refused in-tool', async () => {
     overrideDynamicConfigFieldsForTest(routeRateLimitConfig, { enabled: true })
@@ -202,5 +202,5 @@ describe('MCP withdraw vote shares the REST vote budget', () => {
     expect(
       (await checkUsageQuota('mcp_user', user.id, { limit: 1, windowSeconds: 900 })).limited,
     ).toBe(false)
-  }, 60_000)
+  }, 30_000)
 })
