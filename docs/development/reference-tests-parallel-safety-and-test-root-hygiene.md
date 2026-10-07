@@ -264,7 +264,7 @@ Good examples: `cloudflare-worker/scripts/wrangler/runtime.test.mts` (sync + try
 Vector similarity queries (`ORDER BY embedding <=> $query`) scan approximate HNSW indexes, so a test asserting a fixture appears in results is asserting index recall, not just SQL filters. Two rules keep that deterministic (Main CI run 28641733831 / issue #6781 is the failure mode: all eight `semantic.test.mts` tests missed their fixtures at once):
 
 - Give each fixture row its own `makeNearbyEmbedding(queryVector)` from `@voucha/test-helpers`. Never store one identical vector on many rows — HNSW links duplicates to each other at distance 0, and the resulting cluster's graph reachability can fail wholesale.
-- `vitest.setup.data-stores.mts` raises the test database's `hnsw.ef_search` to the pgvector maximum (`TEST_HNSW_EF_SEARCH` in `backend/test-helpers/vector-search-recall.mts`), which makes ANN scans effectively exhaustive at test-database scale. `backend/data-stores/psql/__tests__/vector-search-recall.test.mts` guards the setting.
+- The shared Vitest PostgreSQL session setup sets each connection's `hnsw.ef_search` to the pgvector maximum (`TEST_HNSW_EF_SEARCH` in `backend/test-helpers/vector-search-recall-constant.mts`), which makes ANN scans effectively exhaustive at test-database scale. `backend/data-stores/psql/__tests__/vector-search-recall.test.mts` guards the setting.
 
 ### Query-plan (EXPLAIN) assertions
 
@@ -310,13 +310,11 @@ Test timed out in 30000ms.` — no query text, no annotation, no attribution —
 stuck statement below vitest's own `testTimeout: 30_000`. Two changes close that gap (CI run
 33808851418 / job 100825925020):
 
-- `vitest.setup.data-stores.mts`'s `globalSetup` binds the test database itself to
-  `TEST_STATEMENT_TIMEOUT_MS` (`backend/test-helpers/statement-timeout.mts`, default 20s) via
-  `ALTER DATABASE … SET statement_timeout`, exploiting the fact that pg's client (`pg/lib/client.js`)
-  never sends a falsy `statement_timeout` in its startup packet — so every test session falls
-  through to this database-level default instead of staying unbounded. Migrations,
-  `beginBoundedTransaction`, and the advisory-lock helpers set their own session/transaction-local
-  `statement_timeout` and are unaffected.
+- [Vitest PostgreSQL session setup](../../test-helpers/vitest-postgres-session-settings.mts) adds
+  startup options to the primary and read connection URLs before global setup and worker pools
+  open. Each owned session receives `TEST_STATEMENT_TIMEOUT_MS` and the HNSW recall floor;
+  setup preserves existing URL options and never changes database-wide defaults. Migrations,
+  bounded transactions, and advisory-lock helpers retain their own session or transaction budgets.
 - `query-telemetry.mts`'s `recordQueryTiming` writes a `[pg-query-failed] annotation=<name>
   pool=<pool> ms=<durationMs>` line to stderr for any errored query slower than
   `SLOW_QUERY_FAILURE_LOG_THRESHOLD_MS` (500ms) while running under test — the Postgres `57014`

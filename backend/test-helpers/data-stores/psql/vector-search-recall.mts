@@ -1,12 +1,6 @@
 import { read } from '@data-stores/psql'
 
-// @data-stores/psql cannot depend on @voucha/test-helpers (see users.mts in this directory for why).
-// Straight duplicate of test-helpers' vector-search-recall.mts helpers used by
-// __tests__/vector-search-recall.test.mts. raiseHnswEfSearchForTestDatabase() is intentionally not
-// duplicated here — it's only called from the repo-root vitest globalSetup, never from a psql test
-// file directly.
-
-export const TEST_HNSW_EF_SEARCH = 1000
+export { TEST_HNSW_EF_SEARCH } from '../../vector-search-recall-constant.mts'
 
 export async function getSessionHnswEfSearch(): Promise<number> {
   const { rows } = await read(`SELECT current_setting('hnsw.ef_search') AS ef_search`)

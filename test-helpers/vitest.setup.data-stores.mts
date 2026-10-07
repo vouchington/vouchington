@@ -1,3 +1,4 @@
+import { configureTestPostgresSessions } from './vitest-postgres-session-settings.mts'
 import {
   collectDbBackedTestSetupInput,
   evaluateDbBackedTestSetup,
@@ -20,6 +21,9 @@ if (!setupCheck.ok) {
   )
 }
 
+// Session startup options apply before any pool opens, including the global setup pools.
+configureTestPostgresSessions()
+
 // Required for API key HMAC checksum generation in tests
 process.env.API_KEY_CHECKSUM_SECRET ??= 'this is a fake test API key checksum secret'
 process.env.VOUCHA_OTP_TOKEN_HASH_SECRET ??= 'this is a fake test OTP HMAC secret'
@@ -29,8 +33,6 @@ process.env.VOUCHA_STORED_SECRET_ENCRYPTION_KEYS ??=
 export async function setup() {
   const [
     { Logger },
-    { raiseHnswEfSearchForTestDatabase },
-    { boundStatementTimeoutForTestDatabase },
     { default: seed },
     { warmUpEmbeddingBloomFilter },
     { warmUpUrlBlocklistBloomFilter, warmUpEmailBlocklistBloomFilter },
@@ -38,8 +40,6 @@ export async function setup() {
     { persistDynamicConfigTestBaseline },
   ] = await Promise.all([
     import('@valkey/valkey-glide'),
-    import('../backend/test-helpers/vector-search-recall.mts'),
-    import('../backend/test-helpers/statement-timeout.mts'),
     import('@voucha/scripts/seed'),
     import('@services/bedrock-embeddings'),
     import('@services/urls-domains-blacklist'),
@@ -50,9 +50,6 @@ export async function setup() {
   // Suppress WARN-level messages from Glide's Rust logger (e.g. "item exists" from BF.RESERVE)
   Logger.setLoggerConfig('error')
 
-  // Must complete before test workers fork: the setting applies to new sessions only.
-  await raiseHnswEfSearchForTestDatabase()
-  await boundStatementTimeoutForTestDatabase()
   await seed()
   await Promise.all(
     dynamicConfigRegistry.map(async ({ config }) => {

@@ -23,7 +23,7 @@ const SLOW_QUERY_FAILURE_LOG_THRESHOLD_MS = 500
  * the Postgres error code directly; `durationMs` is the available discriminator instead. Tests
  * routinely provoke and assert expected constraint-violation errors that fail in single-digit ms —
  * gating on `SLOW_QUERY_FAILURE_LOG_THRESHOLD_MS` keeps those silent while still naming a query
- * that stalls until it clears `statement_timeout` (`test-helpers/statement-timeout.mts`), which the
+ * that stalls until it clears `statement_timeout` (`test-helpers/statement-timeout-constant.mts`), which the
  * bare `canceling statement due to statement timeout` (57014) error otherwise never names.
  */
 function maybeLogTestQueryFailure(input: QueryTimingInput): void {

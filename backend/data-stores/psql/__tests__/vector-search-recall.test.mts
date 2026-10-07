@@ -7,8 +7,7 @@ import {
 } from '../../../test-helpers/data-stores/psql/vector-search-recall.mts'
 
 describe('test-database vector search recall floor', () => {
-  // Guards the raiseHnswEfSearchForTestDatabase() call in vitest.setup.data-stores.mts: without
-  // it, `<=>`-ordered queries run with pgvector's default ef_search and tests that assert a
+  // Guards the startup options applied to each owned test connection: without them, `<=>`-ordered queries run with pgvector's default ef_search and tests that assert a
   // fixture ranks in ANN results become recall-dependent flakes (issue #6781).
   it('applies TEST_HNSW_EF_SEARCH to sessions opened by test workers', async () => {
     expect(await getSessionHnswEfSearch()).toBe(TEST_HNSW_EF_SEARCH)
