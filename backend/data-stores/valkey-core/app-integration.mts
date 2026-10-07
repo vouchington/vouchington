@@ -56,7 +56,9 @@ export function initializeValkeyAppIntegration(): {
 async function waitForValkeyCacheMetricCompletions(): Promise<void> {
   const pending = getValkeyAppIntegrationState().pendingMetricCompletions
   if (!pending) return
-  await Promise.all([...pending])
+  const completions = await Promise.allSettled([...pending])
+  const failedCompletion = completions.find(completion => completion.status === 'rejected')
+  if (failedCompletion?.status === 'rejected') throw failedCompletion.reason
 }
 
 function markValkeyCacheMetricBridge(bridge: CacheCallMetricBridge): CacheCallMetricBridge {

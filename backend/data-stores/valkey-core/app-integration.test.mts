@@ -5,6 +5,9 @@ import { initializeValkeyAppIntegration } from './app-integration.mts'
 
 type EmittedAnalyticsEvent = [string, Record<string, unknown>]
 const metric = { cacheName: 'u', batch: false, hits: 0, misses: 1, bloomMisses: 0, durationMs: 1 }
+function emitCacheMetric(cacheName: string, overrides: Partial<typeof metric> = {}) {
+  valkeyEvents.emit('cache:call', { ...metric, ...overrides, cacheName })
+}
 
 type IntegrationState = {
   analyticsPromise: Promise<typeof import('@data-stores/analytics') | null> | null
@@ -67,14 +70,7 @@ describe('valkey app integration', () => {
     initializeValkeyAppIntegration()
     expect(getIntegrationState().bridge).toBe(bridge)
 
-    valkeyEvents.emit('cache:call', {
-      cacheName,
-      batch: true,
-      hits: 1,
-      misses: 0,
-      bloomMisses: 0,
-      durationMs: 1,
-    })
+    emitCacheMetric(cacheName, { batch: true, hits: 1, misses: 0 })
 
     await waitForCacheMetricCompletions()
     expect(emitted.filter(([, payload]) => payload.cache_name === cacheName)).toHaveLength(1)
@@ -85,14 +81,7 @@ describe('valkey app integration', () => {
     const cacheName = `users-${crypto.randomUUID()}`
     useAnalyticsLoader(createAnalyticsLoader(emitted))
 
-    valkeyEvents.emit('cache:call', {
-      cacheName,
-      batch: true,
-      hits: 3,
-      misses: 1,
-      bloomMisses: 2,
-      durationMs: 12.5,
-    })
+    emitCacheMetric(cacheName, { batch: true, hits: 3, bloomMisses: 2, durationMs: 12.5 })
 
     await waitForCacheMetricCompletions()
     expect(emitted.filter(([, payload]) => payload.cache_name === cacheName)).toHaveLength(1)
@@ -122,14 +111,7 @@ describe('valkey app integration', () => {
 
     initializeValkeyAppIntegration()
     initializeValkeyAppIntegration()
-    valkeyEvents.emit('cache:call', {
-      cacheName,
-      batch: false,
-      hits: 1,
-      misses: 0,
-      bloomMisses: 0,
-      durationMs: 2,
-    })
+    emitCacheMetric(cacheName, { hits: 1, misses: 0, durationMs: 2 })
 
     await waitForCacheMetricCompletions()
     expect(emitted.filter(([, payload]) => payload.cache_name === cacheName)).toHaveLength(1)
@@ -168,14 +150,7 @@ describe('valkey app integration', () => {
     valkeyEvents.on('cache:call', staleBridge)
 
     initializeValkeyAppIntegration()
-    valkeyEvents.emit('cache:call', {
-      cacheName,
-      batch: true,
-      hits: 4,
-      misses: 0,
-      bloomMisses: 1,
-      durationMs: 8,
-    })
+    emitCacheMetric(cacheName, { batch: true, hits: 4, misses: 0, bloomMisses: 1, durationMs: 8 })
 
     await waitForCacheMetricCompletions()
     expect(emitted.filter(([, payload]) => payload.cache_name === cacheName)).toHaveLength(1)
@@ -194,14 +169,7 @@ describe('valkey app integration', () => {
 
     initializeValkeyAppIntegration()
 
-    valkeyEvents.emit('cache:call', {
-      cacheName: 'users',
-      batch: true,
-      hits: 1,
-      misses: 0,
-      bloomMisses: 0,
-      durationMs: 1,
-    })
+    emitCacheMetric('users', { batch: true, hits: 1, misses: 0 })
 
     expect(staleBridge).not.toHaveBeenCalled()
     const integrationState = getIntegrationState()
@@ -216,14 +184,7 @@ describe('valkey app integration', () => {
     valkeyEvents.removeAllListeners('cache:call')
     initializeValkeyAppIntegration()
     initializeValkeyAppIntegration()
-    valkeyEvents.emit('cache:call', {
-      cacheName,
-      batch: false,
-      hits: 2,
-      misses: 1,
-      bloomMisses: 0,
-      durationMs: 3,
-    })
+    emitCacheMetric(cacheName, { hits: 2, durationMs: 3 })
 
     await waitForCacheMetricCompletions()
     expect(emitted.filter(([, payload]) => payload.cache_name === cacheName)).toHaveLength(1)
@@ -236,14 +197,7 @@ describe('valkey app integration', () => {
     const cacheName = `default-loader-${crypto.randomUUID()}`
     try {
       vi.stubEnv('ANALYTICS_BACKEND', 'disabled')
-      valkeyEvents.emit('cache:call', {
-        cacheName,
-        batch: false,
-        hits: 0,
-        misses: 1,
-        bloomMisses: 0,
-        durationMs: 1,
-      })
+      emitCacheMetric(cacheName)
       await waitForCacheMetricCompletions()
       expect(emitSpy).toHaveBeenCalledWith(
         'valkey_cache_calls',
@@ -268,14 +222,7 @@ describe('valkey app integration', () => {
     const error = new Error('analytics import failed')
     useAnalyticsLoader(() => Promise.reject(error))
 
-    valkeyEvents.emit('cache:call', {
-      cacheName: 'users',
-      batch: false,
-      hits: 0,
-      misses: 1,
-      bloomMisses: 0,
-      durationMs: 1,
-    })
+    emitCacheMetric('users')
 
     await waitForCacheMetricCompletions()
     expect(captureException).toHaveBeenCalledWith(error, expect.anything())
@@ -284,12 +231,37 @@ describe('valkey app integration', () => {
   it('clears rejected metric completions after error reporting fails', async () => {
     const emitError = new Error('analytics emit failed')
     const reportingError = new Error('Sentry capture failed')
+    const failureReported = Promise.withResolvers<void>()
+    const delayed = Promise.withResolvers<void>()
+    const delayedFinished = Promise.withResolvers<void>()
     captureException.mockImplementation(() => {
+      failureReported.resolve()
       throw reportingError
     })
-    useAnalyticsLoader(createAnalyticsLoader([], () => Promise.reject(emitError)))
-    valkeyEvents.emit('cache:call', metric)
-    await expect(waitForCacheMetricCompletions()).rejects.toBe(reportingError)
+    useAnalyticsLoader(
+      createAnalyticsLoader([], (_event, payload) =>
+        payload.cache_name === 'u'
+          ? Promise.reject(emitError)
+          : delayed.promise.then(() => delayedFinished.resolve()),
+      ),
+    )
+    emitCacheMetric('u')
+    emitCacheMetric('delayed')
+    const completions = waitForCacheMetricCompletions()
+    const completionOutcome = completions.then(
+      () => undefined,
+      err => err,
+    )
+    let settled = false
+    void completions.then(
+      () => (settled = true),
+      () => (settled = true),
+    )
+    await failureReported.promise
+    delayed.resolve()
+    await delayedFinished.promise
+    expect(settled).toBe(false)
+    expect(await completionOutcome).toBe(reportingError)
     expect(captureException).toHaveBeenCalledWith(emitError, expect.anything())
     await expect(waitForCacheMetricCompletions()).resolves.toBeUndefined()
   })
