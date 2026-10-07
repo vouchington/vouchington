@@ -6,7 +6,7 @@ import {
   hasTestRetainedIdentityRoot,
   softDeleteUserAt,
 } from '@voucha/test-helpers'
-import { readTestUserPreservationHolds } from '@voucha/test-helpers/user-preservation-holds'
+import { readPreservationHoldsForTest } from '@voucha/test-helpers/entities/user-legal-preservation-holds'
 import { placeUserPreservationHold, releaseUserPreservationHold } from '@services/users'
 import { cleanupSoftDeletedUsers } from '../cleanup.mts'
 import { cleanupSoftDeletedUser } from '../cleanup-soft-deleted-user.mts'
@@ -71,7 +71,7 @@ describe('legal preservation holds and final user purge', () => {
 
     expect(await getTestUserRaw(user.id)).toBeNull()
     expect(await hasTestRetainedIdentityRoot('user', user.id)).toBe(true)
-    expect(await readTestUserPreservationHolds(user.id)).toEqual([
+    expect(await readPreservationHoldsForTest(user.id)).toEqual([
       expect.objectContaining({
         account_user_id: user.id,
         reference: 'matter-purge-1',
