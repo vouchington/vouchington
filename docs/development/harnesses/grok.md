@@ -21,7 +21,10 @@ copied hooks, skills, or permission allowlists.
 - Session id: hook processes see `GROK_SESSION_ID`; the main shell usually does not. Claude-compat
   SessionStart/PreToolUse persist `.local/grok-session-id` (gitignored). With `GROK_AGENT` set,
   the retro CLIs resolve that file without `--session-id` and label the session `grok`. The
-  SessionStart check prints the payload id for the MCP tools.
+  SessionStart check prints the payload id for the MCP tools. When that line is absent, the
+  persisted file is the agent's only fallback for them (the
+  [`blackboard` skill](../../../.agents/skills/blackboard/SKILL.md)); with no id it stops
+  journaling and reports it.
   `./dev/reset-worktree` deletes the persist file. Do not add a `.grok/hooks/` tree: a second hook
   source double-fires.
 - Project Grok workflows live in [`.grok/workflows/`](../../../.grok/workflows/). They orchestrate skills; they

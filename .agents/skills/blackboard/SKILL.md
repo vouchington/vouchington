@@ -26,9 +26,14 @@ Retrospectives are saved only through `node dev/retrospective-save.mts`, never `
 Hooks do not journal on your behalf, so your contemporaneous entries are the only journal source.
 
 The SessionStart hook prints `Blackboard sessionId: <id>`. Pass it as the explicit `sessionId` of
-every tool, and as `--session-id` to the CLI. When the line is absent, use the session id your own
-harness exports (`CLAUDE_CODE_SESSION_ID`, `CODEX_THREAD_ID`, `GROK_SESSION_ID`,
-`CURSOR_SESSION_ID`); never guess, derive, or synthesize one.
+every tool, and as `--session-id` to the CLI. When the line is absent, take the id from your own
+harness only. Claude Code exports `CLAUDE_CODE_SESSION_ID` and Codex exports `CODEX_THREAD_ID`.
+Cursor and Grok shells export no session id, so read the worktree-local file their SessionStart
+hook persisted, the same source `dev/agent-session-id` uses: `.local/cursor-session-id` for
+Cursor, `.local/grok-session-id` for Grok. If none of these resolves, do not journal: stop and
+report that no session id is available (an automated run continues its primary work and reports
+it, see Automated runs). Never guess, derive, or synthesize an id, and never read another
+harness's variable or file.
 
 Use `interactive` mode in a human-attended session and `autonomous` mode in an automated run.
 

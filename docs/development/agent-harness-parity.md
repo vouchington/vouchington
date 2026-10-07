@@ -180,7 +180,9 @@ not add `.cursor/hooks.json`: Cursor loads it as well, so every hook would doubl
 - Session id: Cursor injects no session-id env into the agent Shell. Claude-compat SessionStart and
   PreToolUse persist the payload `session_id` (else `conversation_id`) to
   `.local/cursor-session-id`, which the retrospective scripts read, and the SessionStart check
-  prints the same payload id for the MCP tools. Pass `--session-id` for transcripts.
+  prints the same payload id for the MCP tools. When that line is absent the persisted file is
+  Cursor's only fallback for them (Grok's is `.local/grok-session-id`), since neither harness
+  exports a session id to its shell. Pass `--session-id` for transcripts.
 - Fails open on a hook crash or timeout. Claude-compat has no `failClosed`, which the old native
   `beforeShellExecution` hook set. Accepted: the hook is a mistake guardrail, not a security
   boundary.

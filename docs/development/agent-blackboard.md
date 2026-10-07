@@ -284,9 +284,12 @@ advisory context; emitting context cannot mechanically stop an agent.
   `vouchington-tooling` tools. It is the id in the hook's own payload (`session_id`, or Cursor's
   `conversation_id`), accepted only when it is a plain token, so no inherited environment or
   persisted file can leak in. A payload with no id prints no line; the
-  [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md) then names the harness's own
-  environment id as the only fallback. A spawned child never reuses its parent's id; it takes its own, from its own SessionStart line or runtime environment, and registers it through
-  `session_ensure`.
+  [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md) then names the only fallbacks:
+  `CLAUDE_CODE_SESSION_ID` for Claude Code, `CODEX_THREAD_ID` for Codex, and the persisted
+  `.local/cursor-session-id` and `.local/grok-session-id` for Cursor and Grok, whose shells export
+  no session id. With none, the agent stops journaling and reports it. A spawned child never
+  reuses its parent's id; it takes its own, from its own SessionStart line or runtime environment,
+  and registers it through `session_ensure`.
 - **Deployment probe.** Unless the run is a compaction restart or `CHECK_BLACKBOARD_SKIP=1`, the
   hook makes a bounded `sessions.list({ limit: 1 })` request and says loudly when the hosted
   deployment cannot be reached or the credential is missing, naming the CLI fallback and the duty

@@ -34,7 +34,9 @@ in this repository. It does **not** get copied skills or `AGENTS.md` files.
 - Session id: Cursor does not inject a session-id env into the agent Shell. Claude-compat
   SessionStart/PreToolUse persist `.local/cursor-session-id` (gitignored) so the retro CLIs
   resolve without `--session-id`, and the SessionStart check prints the payload id for the MCP
-  tools. Pass `--session-id` or `--jsonl` for transcript facts.
+  tools. When that line is absent, the persisted file is the agent's only fallback for the MCP
+  tools (the [`blackboard` skill](../../../.agents/skills/blackboard/SKILL.md)); with no id it stops
+  journaling and reports it. Pass `--session-id` or `--jsonl` for transcript facts.
   `./dev/reset-worktree` deletes the persist file.
 
 `worktrees/` is gitignored runtime state.
