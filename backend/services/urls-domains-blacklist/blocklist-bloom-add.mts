@@ -55,29 +55,6 @@ export function blocklistBloomAddTarget(input: {
   }
 }
 
-export function blocklistBloomReadTarget(input: {
-  filter: BlocklistFilterName
-  readyKey: string
-  bloomFilter: OwnedBlocklistBloomFilter
-}): BlocklistBloomFilterReadTarget {
-  return {
-    readyKey: input.readyKey,
-    liveKey: input.bloomFilter.getKey(),
-    existsIfReady: (readyKey, value) => input.bloomFilter.existsIfReady(readyKey, value),
-    repairUnavailableRead: () =>
-      repairBloomFilterUnavailableRead({
-        filter: input.filter,
-        readyKey: input.readyKey,
-        repairStaleReadyMarker: () =>
-          repairStaleBlocklistReadyMarker({
-            filter: input.filter,
-            readyKey: input.readyKey,
-            liveKey: input.bloomFilter.getKey(),
-          }),
-      }),
-  }
-}
-
 export async function addDomainsToBlocklistBloomFilter(
   domains: string[],
   target: BlocklistBloomAddTarget,

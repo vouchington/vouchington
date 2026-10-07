@@ -47,9 +47,9 @@ URL and email blocklist recovery tests share
 and
 [`registerOwnedBlocklistBloomRecoveryTests`](../../../../backend/test-helpers/blocklist-bloom-recovery-tests.mts).
 Each suite keeps its filter name, check, and add functions. The registrar owns the unreadable-marker,
-missing-filter, corrupted-filter, and add-recovery cases. The helper owns a private Valkey filter and
-ready marker so a parallel fork or the in-process rebuild worker cannot replace those keys during the
-assertion.
+missing-filter, corrupted-filter, and add-recovery cases. The helper owns a private Valkey filter,
+ready marker, and that filter's read target so a parallel fork or the in-process rebuild worker
+cannot replace those keys during the assertion.
 Copyright email-intake and form-screening enqueue tests share
 [`copyright-agent-enqueue-recovery-tests.mts`](../../../../backend/test-helpers/copyright-agent-enqueue-recovery-tests.mts).
 Each file keeps its queue name, payload, and expected job options.
