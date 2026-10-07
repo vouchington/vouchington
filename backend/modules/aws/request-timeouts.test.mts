@@ -137,7 +137,7 @@ describe('AWS request timeouts', () => {
       region: 'us-west-2',
       requestHandler: createAwsRequestHandler({
         connectionTimeout: TEST_TIMEOUT_MS,
-        requestTimeout: TEST_TIMEOUT_MS,
+        socketTimeout: TEST_TIMEOUT_MS,
       }),
     })
 
