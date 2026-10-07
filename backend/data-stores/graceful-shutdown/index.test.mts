@@ -63,8 +63,10 @@ describe('graceful shutdown', () => {
     })
 
     const deferred = createDeferred<void>()
+    const drainStarted = Promise.withResolvers<void>()
     addGracefulShutdownDrainCallback(async () => {
       order.push('drain-start')
+      drainStarted.resolve()
       await deferred.promise
       order.push('drain-end')
     })
@@ -80,8 +82,7 @@ describe('graceful shutdown', () => {
 
     const shutdown = onGracefulShutdown('SIGTERM')
 
-    await Promise.resolve()
-    await Promise.resolve()
+    await drainStarted.promise
 
     deferred.resolve()
     await shutdown

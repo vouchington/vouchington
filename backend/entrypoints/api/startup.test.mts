@@ -60,7 +60,8 @@ describe('startApiServer', () => {
   it('logs and reports startup errors before flushing and exiting', async () => {
     const { server, emitStartupError } = makeServer()
     const flush = Promise.withResolvers<void>()
-    const exitWithFailure = vi.fn<() => void>()
+    const exited = Promise.withResolvers<void>()
+    const exitWithFailure = vi.fn<() => void>(() => exited.resolve())
     const flushErrorReporting = vi.fn<() => Promise<void>>(() => flush.promise)
     const logError = vi.fn<(error: Error) => void>()
     const reportError = vi.fn<(error: Error) => void>()
@@ -81,8 +82,7 @@ describe('startApiServer', () => {
     expect(exitWithFailure).not.toHaveBeenCalled()
 
     flush.resolve()
-    await flush.promise
-    await new Promise(resolve => setImmediate(resolve))
+    await exited.promise
     expect(exitWithFailure).toHaveBeenCalledOnce()
   })
 

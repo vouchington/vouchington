@@ -28,20 +28,18 @@ interface BackendProject {
   }
 }
 
-const realGlideProject = (): BackendProject['test'] => {
-  const projects = config.test?.projects as BackendProject[] | undefined
-  return projects?.find(project => project.test?.name === 'backend-real-glide-mq')?.test
-}
-
 const realGlideProjectConfig = (): BackendProject | undefined => {
   const projects = config.test?.projects as BackendProject[] | undefined
   return projects?.find(project => project.test?.name === 'backend-real-glide-mq')
 }
 
-const backendProjects = (): BackendProject[] => [
-  ...(backendCoreProjects as BackendProject[]),
-  ...(backendDataProjects as BackendProject[]),
-]
+const realGlideProject = (): BackendProject['test'] => realGlideProjectConfig()?.test
+
+const backendProjects = (): BackendProject[] =>
+  (backendCoreProjects as BackendProject[]).concat(backendDataProjects as BackendProject[])
+
+const backendProjectTest = (name: string): BackendProject['test'] =>
+  backendProjects().find(project => project.test?.name === name)?.test
 
 function projectOwnsPath(project: BackendProject, path: string): boolean {
   const includes = project.test?.include ?? []
@@ -165,15 +163,10 @@ describe('backend Vitest project config', () => {
   })
 
   it('keeps no-data mocks disjoint from DB-backed mocks without service setup', () => {
-    const noDataMocks = backendProjects().find(
-      project => project.test?.name === 'backend-no-data-mocks',
-    )?.test
-    const dataMocks = backendProjects().find(
-      project => project.test?.name === 'backend-mocks',
-    )?.test
+    const noDataMocks = backendProjectTest('backend-no-data-mocks')
+    const dataMocks = backendProjectTest('backend-mocks')
 
     expect(noDataMocks).toMatchObject({
-      include: ['backend/**/*.no-data.mock.test.mts'],
       isolate: true,
       pool: 'forks',
       setupFiles: [
@@ -191,15 +184,21 @@ describe('backend Vitest project config', () => {
     expect(dataMocks?.exclude).toContain('**/*.no-data.mock.test.mts')
   })
 
-  it('keeps every no-data mock owned by exactly one project', () => {
-    const noDataMocks = backendProjects().find(
-      project => project.test?.name === 'backend-no-data-mocks',
-    )?.test
-    const dataMocks = backendProjects().find(
-      project => project.test?.name === 'backend-mocks',
-    )?.test
+  it('keeps no-data mocks and injected unit tests owned by one project without database setup', () => {
+    const noDataMocks = backendProjectTest('backend-no-data-mocks')
+    const dataMocks = backendProjectTest('backend-mocks')
 
-    expect(noDataMocks?.include).toEqual(['backend/**/*.no-data.mock.test.mts'])
+    expect(noDataMocks?.include).toContain('backend/**/*.no-data.mock.test.mts')
+    for (const path of [
+      'backend/modules/example.no-data.mock.test.mts',
+      'backend/entrypoints/api/startup.test.mts',
+      'backend/entrypoints/worker-cpu/grafana-heartbeat.test.mts',
+      'backend/data-stores/graceful-shutdown/index.test.mts',
+    ]) {
+      const owners = backendProjects().filter(project => projectOwnsPath(project, path))
+      expect(owners.map(project => project.test?.name)).toEqual(['backend-no-data-mocks'])
+      expect(owners[0]?.test?.globalSetup).toBeUndefined()
+    }
     expect(dataMocks?.include).toContain(
       'backend/{agents,api,modules,data-stores,entrypoints,queues,scripts,services,sitemaps,tools,worker-runtime,workers}/**/*.mock.test.mts',
     )

@@ -51,16 +51,18 @@ describe('worker-cpu Grafana heartbeat', () => {
       .mockRejectedValueOnce(new Error('network unavailable'))
     const onError = vi.fn<(error: Error) => void>()
     const addGracefulShutdownCallback = vi.fn<(callback: () => Promise<void>) => number>(() => 1)
-    let scheduled: (() => void) | undefined
+    const firstScheduled = Promise.withResolvers<void>()
+    let scheduled: (() => Promise<void>) | undefined
     const clearTimeout = vi.fn<typeof globalThis.clearTimeout>()
     const timer = {
       unref: vi.fn<() => ReturnType<typeof globalThis.setTimeout>>(),
     } as unknown as ReturnType<typeof globalThis.setTimeout>
     const setTimeout = vi.fn<
-      (callback: () => void, delay: number) => ReturnType<typeof globalThis.setTimeout>
+      (callback: () => Promise<void>, delay: number) => ReturnType<typeof globalThis.setTimeout>
     >((callback, delay) => {
       expect(delay).toBe(60 * 60 * 1000)
       scheduled = callback
+      if (setTimeout.mock.calls.length === 1) firstScheduled.resolve()
       return timer
     })
 
@@ -71,18 +73,17 @@ describe('worker-cpu Grafana heartbeat', () => {
       clearTimeout,
       addGracefulShutdownCallback,
     })
-    await vi.waitFor(() => {
-      expect(fetch).toHaveBeenCalledTimes(1)
-      expect(setTimeout).toHaveBeenCalledTimes(1)
-    })
+    await firstScheduled.promise
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(setTimeout).toHaveBeenCalledTimes(1)
     expect(timer.unref).toHaveBeenCalled()
     expect(addGracefulShutdownCallback).toHaveBeenCalledTimes(1)
 
-    scheduled?.()
-    await vi.waitFor(() => {
-      expect(fetch).toHaveBeenCalledTimes(2)
-      expect(onError).toHaveBeenCalledWith(new Error('network unavailable'))
-    })
+    if (!scheduled) throw new Error('Heartbeat must schedule its next run')
+    await scheduled()
+    expect(setTimeout).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledTimes(2)
+    expect(onError).toHaveBeenCalledWith(new Error('network unavailable'))
 
     stop()
     expect(clearTimeout).toHaveBeenCalledWith(timer)
@@ -95,7 +96,9 @@ describe('worker-cpu Grafana heartbeat', () => {
       fetch,
       onError: vi.fn<(error: Error) => void>(),
       setTimeout:
-        vi.fn<(callback: () => void, delay: number) => ReturnType<typeof globalThis.setTimeout>>(),
+        vi.fn<
+          (callback: () => Promise<void>, delay: number) => ReturnType<typeof globalThis.setTimeout>
+        >(),
       clearTimeout: vi.fn<typeof globalThis.clearTimeout>(),
       addGracefulShutdownCallback,
     })
@@ -106,33 +109,45 @@ describe('worker-cpu Grafana heartbeat', () => {
   })
 
   it('aborts an in-flight request during graceful shutdown without reporting an error', async () => {
-    let requestSignal: AbortSignal | undefined
-    const fetch = vi.fn<ExternalFetch>(async (_input, init) => {
-      requestSignal = init?.signal ?? undefined
-      return new Promise<Response>((_resolve, reject) => {
-        requestSignal?.addEventListener('abort', () =>
-          reject(new DOMException('aborted', 'AbortError')),
-        )
+    const scheduled = Promise.withResolvers<() => Promise<void>>()
+    const requestStarted = Promise.withResolvers<AbortSignal>()
+    const fetch = vi
+      .fn<ExternalFetch>()
+      .mockResolvedValueOnce(new Response(null, { status: 200 }))
+      .mockImplementationOnce(async (_input, init) => {
+        const signal = init?.signal
+        if (!signal) throw new Error('Heartbeat request must include an abort signal')
+        requestStarted.resolve(signal)
+        return new Promise<Response>((_resolve, reject) => {
+          signal.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')))
+        })
       })
-    })
     const onError = vi.fn<(error: Error) => void>()
-    const addGracefulShutdownCallback = vi.fn<(callback: () => Promise<void>) => number>(() => 1)
-    const setTimeout =
-      vi.fn<(callback: () => void, delay: number) => ReturnType<typeof globalThis.setTimeout>>()
+    const timer = { unref: vi.fn<() => void>() } as unknown as ReturnType<
+      typeof globalThis.setTimeout
+    >
+    const setTimeout = vi.fn<
+      (callback: () => Promise<void>, delay: number) => ReturnType<typeof globalThis.setTimeout>
+    >(callback => {
+      scheduled.resolve(callback)
+      return timer
+    })
 
     const stop = startGrafanaHeartbeat(HEARTBEAT_URL, {
       fetch,
       onError,
       setTimeout,
       clearTimeout: vi.fn<typeof globalThis.clearTimeout>(),
-      addGracefulShutdownCallback,
+      addGracefulShutdownCallback: vi.fn<(callback: () => Promise<void>) => number>(() => 1),
     })
-    await vi.waitFor(() => expect(requestSignal).toBeDefined())
-
+    const runHeartbeat = await scheduled.promise
+    // The registered timer callback returns the async heartbeat's completion promise.
+    const request = runHeartbeat()
+    const signal = await requestStarted.promise
     stop()
-
-    expect(requestSignal?.aborted).toBe(true)
-    await vi.waitFor(() => expect(onError).not.toHaveBeenCalled())
-    expect(setTimeout).not.toHaveBeenCalled()
+    expect(signal.aborted).toBe(true)
+    await request
+    expect(onError).not.toHaveBeenCalled()
+    expect(setTimeout).toHaveBeenCalledOnce()
   })
 })

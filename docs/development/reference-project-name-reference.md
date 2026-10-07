@@ -81,7 +81,7 @@ the table below highlights the projects most often used for local diagnosis.
 | `backend-platform-stats-cache`     | `backend/api/v1/platform-stats/platform-stats.test.mts`                                                                                                 | **Yes**           | Real route cache reuse with a private owned Valkey container |
 | `backend-modules`                  | `backend/modules/**/*.test.mts`                                                                                                                         | No                | Reusable backend utilities; no DB needed                     |
 | `backend/services/analytics`       | `backend/services/analytics/**/*.test.mts`, plus `backend/services/crawler-rss/index.redirect.test.mts`                                                 | No                | Isolated local analytics contracts                           |
-| `backend-no-data-mocks`            | `backend/**/*.no-data.mock.test.mts`                                                                                                                    | No                | Fully mocked tests with no service dependencies              |
+| `backend-no-data-mocks`            | `backend/**/*.no-data.mock.test.mts` plus the exact paths below                                                                                         | No                | No-data mocks and injected unit tests                        |
 | `backend-mocks`                    | `backend/{agents,api,modules,data-stores,...}/**/*.mock.test.mts`, excluding `*.no-data.mock.test.mts` and `*.real-glide.mock.test.mts`                 | **Yes**           | Mocked tests that still need backend services                |
 | `backend-postgres-schema`          | `backend/data-stores/psql/__tests__/{schema-*,lifecycle-integrity}.test.mts`                                                                            | No                | Post-migration schema invariants                             |
 | `backend-activitypub-capacity`     | ActivityPub inbox API and concurrent capacity contract tests                                                                                            | **Yes**           | Serialized durable-inbox capacity enforcement                |
@@ -111,5 +111,13 @@ The table abbreviates each project; the `include` and `exclude` arrays in
 `backend/test-helpers/entities/bluesky-link-authorizations.test.mts`, and the table omits `exclude`
 entries such as the files `backend-data-stores` leaves to the credentialed, analytics, and schema
 projects.
+
+Three ordinary `.test.mts` files are explicit `backend-no-data-mocks` includes and
+`backend-data-stores` excludes, so run them with `--project backend-no-data-mocks` without DB
+global setup:
+
+- [`backend/entrypoints/api/startup.test.mts`](../../backend/entrypoints/api/startup.test.mts)
+- [`backend/entrypoints/worker-cpu/grafana-heartbeat.test.mts`](../../backend/entrypoints/worker-cpu/grafana-heartbeat.test.mts)
+- [`backend/data-stores/graceful-shutdown/index.test.mts`](../../backend/data-stores/graceful-shutdown/index.test.mts)
 
 `backend-modules` does **not** use a DB `globalSetup` — new utilities under `backend/modules/` should not need database access. If your module needs DB, it belongs in `backend/data-stores/` or `backend/services/` and its tests in `backend-data-stores`.

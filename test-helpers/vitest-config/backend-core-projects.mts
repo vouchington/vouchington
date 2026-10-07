@@ -1,6 +1,13 @@
 import react from '@vitejs/plugin-react'
 import type { TestProjectConfiguration } from 'vitest/config'
 
+// Dependency-injected unit tests need neither database bootstrap nor module mocking.
+export const backendNoDataUnitTestFiles = [
+  'backend/entrypoints/api/startup.test.mts',
+  'backend/entrypoints/worker-cpu/grafana-heartbeat.test.mts',
+  'backend/data-stores/graceful-shutdown/index.test.mts',
+]
+
 export const backendCoreProjects: TestProjectConfiguration[] = [
   {
     extends: true,
@@ -75,7 +82,7 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
       pool: 'forks',
       isolate: true,
       name: 'backend-no-data-mocks',
-      include: ['backend/**/*.no-data.mock.test.mts'],
+      include: ['backend/**/*.no-data.mock.test.mts', ...backendNoDataUnitTestFiles],
       exclude: ['**/node_modules/**', '**/.git/**'],
       setupFiles: [
         './backend/test-helpers/vitest.setup.sentry-mock.mts',
