@@ -1,6 +1,5 @@
 import { read } from '@data-stores/psql'
 import {
-  SEED_PREFIX,
   heavyFollowUser,
   runAndCapture,
   seedHostnameIds,
@@ -10,13 +9,13 @@ import {
   seedUser,
 } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
+import { registerScenarioContract } from '../plan-expectations.mts'
 import * as services from '../run-services.mts'
-import { runSemanticRssSearchScenario } from './semantic-rss-search.mts'
+import { runRssItemSearchScenarios } from './rss-item-search.mts'
 import {
   runSemanticPostSearchScenarios,
   runSimilarPostSearchScenarios,
 } from './semantic-post-search.mts'
-import { runPreciseRssRecencyCursorScenario } from './precise-rss-cursor.mts'
 
 const {
   ANONYMOUS_ENTITY_RELATION_VIEWER,
@@ -25,7 +24,6 @@ const {
   getPostFacets,
   getPostIds,
   getRecommendedTopics,
-  searchRssFeedItems,
   searchRssFeeds,
   searchUrls,
 } = services
@@ -45,83 +43,51 @@ export async function runSearchAndFacetScenarios() {
     read(buildCommentTreeQuery(seedCommentRootId, { sort: 'best' })),
   )
 
-  // Recommended topics
   await runAndCapture('recommended-topics', () => getRecommendedTopics(seedUser, { limit: 25 }))
 
   // Post search — text search
+  registerScenarioContract('post-search-text', {
+    expectations: [],
+    crossPartition: { posts: 'Text search ranks eligible posts across the requested week.' },
+  })
   await runAndCapture('post-search-text', () =>
     getPostIds(seedUser, { text_search_query: 'seed', limit: 25, time_range: '1w' }),
   )
 
-  // RSS feed items search — by seeded feed id. The seed source rows intentionally share
-  // hostnames across feeds, so this covers the broader shared-hostname source shape.
-  const seedRssFeedId = `${SEED_PREFIX}-0800-7000-8000-000000000000`
-  await runAndCapture(
-    'rss-feed-items-search-by-rss-feed-source-group',
-    () => searchRssFeedItems({ rss_feed_ids: [seedRssFeedId], limit: 25 }),
-    'by-rss-feed-source-group',
-  )
+  await runRssItemSearchScenarios()
 
-  // RSS feed items search — by category topic
-  await runAndCapture(
-    'rss-feed-items-search-by-category-topic',
-    () => searchRssFeedItems({ category_topic_ids: [seedTopicId], limit: 25 }),
-    'by-category-topic',
-  )
-
-  // RSS feed items search — text search
-  await runAndCapture(
-    'rss-feed-items-search-text',
-    () => searchRssFeedItems({ text_search_query: 'seed', limit: 25 }),
-    'text',
-  )
-
-  // RSS feed items search — media and cursor variants
-  await runAndCapture(
-    'rss-feed-items-search-media',
-    () => searchRssFeedItems({ media_types: ['article'], limit: 25 }),
-    'media',
-  )
-  await runAndCapture(
-    'rss-feed-items-search-cursor',
-    async () => {
-      const firstPage = await searchRssFeedItems({ rss_feed_ids: [seedRssFeedId], limit: 10 })
-      const after = firstPage.page_info.end_cursor
-      if (after) await searchRssFeedItems({ rss_feed_ids: [seedRssFeedId], limit: 10, after })
-    },
-    'cursor',
-  )
-  await runAndCapture(
-    'rss-feed-items-search-global-cursor',
-    async () => {
-      const firstPage = await searchRssFeedItems({ limit: 10 })
-      const after = firstPage.page_info.end_cursor
-      if (after) await searchRssFeedItems({ limit: 10, after })
-    },
-    'global-cursor',
-  )
-  await runSemanticRssSearchScenario()
-  await runPreciseRssRecencyCursorScenario()
-
-  // RSS feed search — by topic
+  registerScenarioContract('rss-feed-search-by-topic', {
+    expectations: [{ kind: 'custom', name: 'rssStateProjection' }],
+  })
   await runAndCapture('rss-feed-search-by-topic', () =>
     searchRssFeeds({ topic_ids: [seedTopicId], limit: 25 }),
   )
 
-  // RSS feed search — by topic descendants
+  registerScenarioContract('rss-feed-search-by-topic-descendants', {
+    expectations: [{ kind: 'custom', name: 'rssStateProjection' }],
+  })
   await runAndCapture('rss-feed-search-by-topic-descendants', () =>
     searchRssFeeds({ topic_ids: [seedParentTopicId], include_descendants: true, limit: 25 }),
   )
 
-  // RSS feed search — publisher/current-user suppression variants
+  registerScenarioContract('rss-feed-search-by-publisher-type', {
+    expectations: [{ kind: 'custom', name: 'rssStateProjection' }],
+  })
   await runAndCapture('rss-feed-search-by-publisher-type', () =>
     searchRssFeeds({ publisher_type_ids: [seedTopicId], limit: 25 }),
   )
+  registerScenarioContract('rss-feed-search-current-user', {
+    expectations: [{ kind: 'custom', name: 'rssStateProjection' }],
+  })
   await runAndCapture('rss-feed-search-current-user', () =>
     searchRssFeeds({ current_user_id: seedUser.id, limit: 25 }),
   )
 
   // Post search — text search with heavy-follow user
+  registerScenarioContract('post-search-text-heavy-follows', {
+    expectations: [],
+    crossPartition: { posts: 'Text search ranks eligible posts across the requested week.' },
+  })
   await runAndCapture(
     'post-search-text-heavy-follows',
     () =>
@@ -134,6 +100,9 @@ export async function runSearchAndFacetScenarios() {
   )
 
   // Entity Relations — post→category→topic, two sort variants
+  registerScenarioContract('entity-relations-best', {
+    expectations: [{ kind: 'custom', name: 'relationListingOrder' }],
+  })
   await runAndCapture(
     'entity-relations-best',
     () =>
@@ -144,6 +113,9 @@ export async function runSearchAndFacetScenarios() {
       }),
     'best',
   )
+  registerScenarioContract('entity-relations-newest', {
+    expectations: [{ kind: 'custom', name: 'relationListingOrder' }],
+  })
   await runAndCapture(
     'entity-relations-newest',
     () =>
@@ -155,12 +127,19 @@ export async function runSearchAndFacetScenarios() {
     'newest',
   )
 
-  // Post Facets — baseline and text-search variants
+  registerScenarioContract('post-facets', {
+    expectations: [],
+    crossPartition: { posts: 'Facets aggregate eligible posts across the requested week.' },
+  })
   await runAndCapture(
     'post-facets',
     () => getPostFacets(seedUser, { limit: 25, time_range: '1w' }),
     'baseline',
   )
+  registerScenarioContract('post-facets-text', {
+    expectations: [],
+    crossPartition: { posts: 'Text facets aggregate eligible posts across the requested week.' },
+  })
   await runAndCapture(
     'post-facets-text',
     () => getPostFacets(seedUser, { text_search_query: 'seed', limit: 25, time_range: '1w' }),
@@ -168,23 +147,46 @@ export async function runSearchAndFacetScenarios() {
   )
 
   // Post search — relationship filter variants
+  registerScenarioContract('post-search-review-topic', {
+    expectations: [],
+    crossPartition: {
+      posts: 'Review-topic search ranks matching posts across id ranges.',
+      post_review_topic_ratings: 'The topic filter matches ratings across many posts.',
+    },
+  })
   await runAndCapture(
     'post-search-review-topic',
     () => getPostIds(seedUser, { review_topic_ids: [seedTopicId], limit: 25 }),
     'review-topic',
   )
+  registerScenarioContract('post-search-data-point-topic', {
+    expectations: [],
+    crossPartition: {
+      posts: 'Data-point-topic search ranks matching posts across id ranges.',
+      post_data_point_topics: 'The topic filter matches data points across many posts.',
+    },
+  })
   await runAndCapture(
     'post-search-data-point-topic',
     () => getPostIds(seedUser, { data_point_topic_ids: [seedTopicId], limit: 25 }),
     'data-point-topic',
   )
+  registerScenarioContract('post-search-universal-topic', {
+    expectations: [{ kind: 'custom', name: 'universalTopicCandidates' }],
+    crossPartition: {
+      posts: 'Universal-topic search ranks matching posts across id ranges.',
+      relation__post__category__topic:
+        'Universal-topic search reads category relations across posts.',
+      post_review_topic_ratings: 'Universal-topic search reads ratings across posts.',
+      post_data_point_topics: 'Universal-topic search reads data points across posts.',
+    },
+  })
   await runAndCapture(
     'post-search-universal-topic',
     () => getPostIds(seedUser, { universal_topic_ids: [seedTopicId], limit: 25 }),
     'universal-topic',
   )
 
-  // URL Search — baseline, text-search, and hostname filter variants
   await runAndCapture('url-search', () => searchUrls({ limit: 25 }), 'baseline')
   await runAndCapture('url-search-text', () => searchUrls({ query: 'seed', limit: 25 }), 'text')
   await runAndCapture(

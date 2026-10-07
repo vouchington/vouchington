@@ -1,194 +1,146 @@
 import type { ExplainResult } from '@data-stores/psql'
-import { assertPaginationPlanShape } from './plan-pagination-gates.mts'
-import { assertPostMetricsBatchIsCandidateBounded } from './plan-post-metrics-gate.mts'
-import { assertPlanReturnedRows } from './plan-row-count-gate.mts'
-import { assertSearchCommunitiesEligibilityIsIndexed } from './plan-search-communities-gate.mts'
-import { assertTopicMetricsBatchIsCandidateBounded } from './plan-topic-metrics-gate.mts'
-import { assertTopicViewerCountsDiscussionsUsesCandidateBind } from './plan-topic-viewer-counts-gate.mts'
-import { assertTrendingCommunitiesIsCandidateBounded } from './plan-trending-communities-gate.mts'
-import { assertUserRemovedPostsUsesIndex } from './plan-user-removed-posts-gate.mts'
-import { assertTopicImportAttemptPlanShapeIfApplicable } from './plan-topic-import-attempts-gate.mts'
-import { assertRemoteFollowerPagePlanShapeIfApplicable } from './plan-remote-followers-gate.mts'
-import { assertReviewSuccessionCandidatePlanIfApplicable } from './plan-review-succession-gate.mts'
-import { assertClassifierHumanVoteComparisonPlanIfApplicable } from './plan-classifier-human-vote-comparison-gate.mts'
-import { assertCopyrightStatementFactsIsTargetBounded } from './plan-copyright-statement-facts-gate.mts'
-import { assertRssFeedCandidatesAreSetBased } from './plan-rss-feed-candidates-gate.mts'
-import { assertRssRecencyLateCursorPlan } from './plan-rss-recency-cursor-gate.mts'
-import { assertPostShareEligibilityIsTargetBounded } from './plan-post-share-targets-gate.mts'
-import { assertAdminEmailIndexPlan } from './plan-admin-email-gate.mts'
-import { assertEmbeddingReconciliationPlanIfApplicable } from './plan-embedding-reconciliation-gate.mts'
-import { assertStoryMemberPagePlan } from './plan-story-member-pages-gate.mts'
+import {
+  PARTITION_POLICIES,
+  UNBOUNDED_UNPARTITIONED_TABLES,
+} from '@data-stores/psql/schema-growth-registry'
+import { collectPlanNodes, processedRows, baseRelationName, type PlanNode } from './plan-nodes.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
-import { assertSemanticPostCandidatePlan } from './plan-semantic-post-gate.mts'
+import { executingPartitionLeaves } from './pruning/plan-gate.mts'
+import {
+  getScenarioContract,
+  type PlanExpectation,
+  type ScenarioPlanContract,
+} from './plan-expectations.mts'
+import { assertCustomPlanCheck } from './plan-custom-checks.mts'
 
-const UNIVERSAL_TOPIC_CANDIDATE_RELATIONS = new Set([
-  'relation__post__category__topic',
-  'post_review_topic_ratings',
-  'post_data_point_topics',
-])
-const RSS_STATE_HISTORY_RELATIONS = new Set(['rss_feed_setting_changes'])
-const SINGLE_PARTITION_SCENARIOS = new Map([
-  ['post-child-by-post', { key: 'post_id', parent: 'post_review_topic_ratings' }],
-  ['crawl-chunks-by-crawl', { key: 'crawl_id', parent: 'crawl_chunks' }],
-  ['conversation-messages', { key: 'conversation_id', parent: 'conversation_messages' }],
-])
-const MEMBERSHIP_REFUND_INDEXES_BY_SCENARIO = new Map([
-  [
-    'membership-refunds-already-refunded-batch',
-    [
-      'idx_membership_refunds__stripe_charge_id',
-      'idx_membership_refunds__stripe_payment_intent_id',
-    ],
-  ],
-])
-type PlanNode = Record<string, unknown>
+/** Above the current ~102k-post fixture; larger unbounded fixtures must use indexes. */
+export const SEQUENTIAL_SCAN_SEEDED_ROW_THRESHOLD = 150_000
 
 export function assertRequiredPlanShape(result: ExplainResult): void {
-  assertSemanticPostCandidatePlan(result)
-  assertPlanReturnedRows(result)
   const scenarioId = result.scenario_id
-  if (scenarioId === 'post-search-universal-topic') assertUniversalTopicCandidatePlan(result)
+  if (!scenarioId) throw new Error('Unknown EXPLAIN scenario: missing')
+  const contract = getScenarioContract(scenarioId)
+  const nodes = collectPlanNodes(result.plan)
+  const root = nodes[0]
+  if (typeof root?.['Actual Rows'] !== 'number' || root['Actual Rows'] <= 0)
+    throw new Error(`${result.name} (${scenarioId}) produced no analyzable plan with real rows`)
+  for (const expectation of contract.expectations) evaluateExpectation(result, nodes, expectation)
   if (result.query_text.includes('view_rss_feed_current_states'))
-    assertRssStateProjectionPlan(result)
-  if (scenarioId === 'entity-relations-best' || scenarioId === 'entity-relations-newest') {
-    assertRelationListingUsesIndexOrder(result)
-  }
-  const partitionScenario = scenarioId ? SINGLE_PARTITION_SCENARIOS.get(scenarioId) : undefined
-  if (partitionScenario) assertSinglePartitionChild(result, partitionScenario)
-  if (scenarioId === 'entity-relation-votes-by-target') assertEntityRelationVotePruning(result)
-  const membershipRefundIndexes = scenarioId
-    ? MEMBERSHIP_REFUND_INDEXES_BY_SCENARIO.get(scenarioId)
-    : undefined
-  if (membershipRefundIndexes) assertMembershipRefundUsesIndexes(result, membershipRefundIndexes)
-  if (scenarioId === 'user-removed-posts-page') assertUserRemovedPostsUsesIndex(result)
-  assertRemoteFollowerPagePlanShapeIfApplicable(result)
-  assertReviewSuccessionCandidatePlanIfApplicable(result)
-  assertClassifierHumanVoteComparisonPlanIfApplicable(result)
-  assertCopyrightStatementFactsIsTargetBounded(result)
-  assertTopicImportAttemptPlanShapeIfApplicable(result)
-  if (scenarioId === 'trending-communities') assertTrendingCommunitiesIsCandidateBounded(result)
-  assertSearchCommunitiesEligibilityIsIndexed(result)
-  assertPostMetricsBatchIsCandidateBounded(result)
-  assertTopicMetricsBatchIsCandidateBounded(result)
-  assertTopicViewerCountsDiscussionsUsesCandidateBind(result)
-  assertRssFeedCandidatesAreSetBased(result)
-  assertRssRecencyLateCursorPlan(result)
-  assertPostShareEligibilityIsTargetBounded(result)
-  assertEmbeddingReconciliationPlanIfApplicable(result)
-  assertStoryMemberPagePlan(result)
-  assertAdminEmailIndexPlan(result)
-  assertPaginationPlanShape(result)
+    assertCustomPlanCheck('rssStateProjection', result)
+  assertUniversalPlanShape(result, nodes, contract)
 }
 
-function assertMembershipRefundUsesIndexes(
+function evaluateExpectation(
   result: ExplainResult,
-  requiredIndexes: readonly string[],
+  nodes: readonly PlanNode[],
+  expectation: PlanExpectation,
 ): void {
-  const usedIndexNames = new Set(
-    collectPlanNodes(result.plan)
-      .map(node => node['Index Name'])
-      .filter((name): name is string => typeof name === 'string'),
-  )
-  const missingIndexes = requiredIndexes.filter(index => !usedIndexNames.has(index))
-  if (missingIndexes.length > 0) {
-    throw new Error(
-      `${result.name} (${result.scenario_id}) must use index(es) ${missingIndexes.join(', ')}`,
-    )
+  switch (expectation.kind) {
+    case 'maxProcessedRows': {
+      const total = nodes
+        .filter(node => baseRelationName(node) === expectation.relation)
+        .reduce((sum, node) => sum + processedRows(node), 0)
+      if (total > expectation.max)
+        throw new Error(
+          `${result.name} processed ${total} rows from ${expectation.relation}; expected at most ${expectation.max}`,
+        )
+      return
+    }
+    case 'usesIndexes': {
+      if (expectation.queryContains && !result.query_text.includes(expectation.queryContains))
+        return
+      const missing = expectation.indexes.filter(
+        index => !nodes.some(node => node['Index Name'] === index),
+      )
+      if (
+        missing.length ||
+        (expectation.noSort &&
+          nodes.some(node => stringFromUnknown(node['Node Type']).includes('Sort')))
+      )
+        throw new Error(
+          `${result.name} must use index(es) ${expectation.indexes.join(', ')}${expectation.noSort ? ' without an explicit Sort' : ''}`,
+        )
+      return
+    }
+    case 'queryBinds':
+      if (!new RegExp(String.raw`\b${expectation.token}\b`).test(result.query_text))
+        throw new Error(`${result.name} must constrain the query through ${expectation.token}`)
+      return
+    case 'forbidCorrelatedAggregates':
+      if (
+        nodes.some(
+          node =>
+            stringFromUnknown(node['Subplan Name'] ?? '').startsWith('SubPlan') &&
+            stringFromUnknown(node['Node Type']).includes('Aggregate'),
+        )
+      )
+        throw new Error(`${result.name} must not execute correlated aggregate SubPlans`)
+      return
+    case 'singleLeaf':
+      assertSingleLeaf(result, nodes, expectation.parent, expectation.key)
+      return
+    case 'custom':
+      assertCustomPlanCheck(expectation.name, result)
+      return
+    default:
+      throw new Error(`Unknown plan expectation kind: ${(expectation as { kind: string }).kind}`)
   }
 }
 
-function assertSinglePartitionChild(
+function assertSingleLeaf(
   result: ExplainResult,
-  expected: { key: string; parent: string },
+  nodes: readonly PlanNode[],
+  parent: string,
+  key?: string,
 ): void {
-  const childNames = new Set(
-    collectPlanNodes(result.plan)
+  const leaves = nodes
+    .filter(node => baseRelationName(node) === parent)
+    .map(node => stringFromUnknown(node['Relation Name'] ?? ''))
+  const executed = executingPartitionLeaves(
+    result.plan as Parameters<typeof executingPartitionLeaves>[0],
+    leaves,
+  )
+  if ((key && !new RegExp(String.raw`\b${key}\b`).test(result.query_text)) || executed.length !== 1)
+    throw new Error(
+      `${result.name} must constrain ${parent}${key ? `.${key}` : ''} and execute exactly one partition leaf; observed [${executed.join(', ')}]`,
+    )
+}
+
+function assertUniversalPlanShape(
+  result: ExplainResult,
+  nodes: readonly PlanNode[],
+  contract: ScenarioPlanContract,
+): void {
+  for (const [parent] of PARTITION_POLICIES) {
+    const leaves = nodes
+      .filter(node => baseRelationName(node) === parent)
       .map(node => stringFromUnknown(node['Relation Name'] ?? ''))
-      .filter(name => name.startsWith(`${expected.parent}__`)),
-  )
-  const hasPartitionKey = new RegExp(`\\b${expected.key}\\b`).test(result.query_text)
-  if (!hasPartitionKey || childNames.size !== 1) {
-    throw new Error(
-      `${result.name} must constrain ${expected.parent}.${expected.key} and scan exactly one partition child`,
+    if (leaves.length === 0) continue
+    const executed = executingPartitionLeaves(
+      result.plan as Parameters<typeof executingPartitionLeaves>[0],
+      leaves,
     )
+    if (executed.length > 1 && !contract.crossPartition?.[parent])
+      throw new Error(
+        `${result.name} read ${executed.length} leaves of unbounded ${parent} without crossPartition reason`,
+      )
   }
-}
-
-function assertEntityRelationVotePruning(result: ExplainResult): void {
-  const voteChildren = new Set(
-    collectPlanNodes(result.plan)
-      .map(node => stringFromUnknown(node['Relation Name'] ?? ''))
-      .filter(name => /__votes__(?:default|p_\w+)$/.test(name)),
-  )
-  const hasTargetKey = ['entity_relation_id'].every(key =>
-    new RegExp(`\\b${key}\\b`).test(result.query_text),
-  )
-  const [onlyChild] = voteChildren
-  if (
-    !hasTargetKey ||
-    voteChildren.size !== 1 ||
-    !onlyChild?.startsWith('relation__post__category__topic__votes__')
-  ) {
-    throw new Error(
-      `${result.name} must constrain entity_relation_id to prune the concrete vote table`,
+  for (const node of nodes) {
+    const relation = baseRelationName(node)
+    if (
+      node['Node Type'] !== 'Seq Scan' ||
+      processedRows(node) === 0 ||
+      !(PARTITION_POLICIES.has(relation) || UNBOUNDED_UNPARTITIONED_TABLES.has(relation))
     )
+      continue
+    const seededRows = contract.seededRows?.[relation]
+    if (seededRows === undefined)
+      throw new Error(
+        `${result.name} sequentially scanned unbounded ${relation} without a declared seeded row count`,
+      )
+    if (seededRows > SEQUENTIAL_SCAN_SEEDED_ROW_THRESHOLD)
+      throw new Error(
+        `${result.name} sequentially scanned ${relation} with ${seededRows} seeded rows`,
+      )
   }
-}
-
-function assertUniversalTopicCandidatePlan(result: ExplainResult): void {
-  const nodes = collectPlanNodes(result.plan)
-  const candidateAccess = nodes.some(node =>
-    UNIVERSAL_TOPIC_CANDIDATE_RELATIONS.has(baseRelationName(node)),
-  )
-  const postAccesses = nodes.filter(
-    node => baseRelationName(node) === 'posts' && node['Alias'] === 'posts',
-  )
-  const indexedPostIdLookup = postAccesses.some(
-    node =>
-      stringFromUnknown(node['Node Type'] ?? '').includes('Index') &&
-      stringFromUnknown(node['Index Cond'] ?? '').includes('id'),
-  )
-  const scansPosts = postAccesses.some(node => node['Node Type'] === 'Seq Scan')
-
-  if (!candidateAccess || !indexedPostIdLookup || scansPosts) {
-    throw new Error(
-      `${result.name} must drive universal-topic search from reverse-indexed candidates before indexed posts.id lookups`,
-    )
-  }
-}
-
-function assertRssStateProjectionPlan(result: ExplainResult): void {
-  const nodes = collectPlanNodes(result.plan)
-  const historyAccess = nodes.find(node => RSS_STATE_HISTORY_RELATIONS.has(baseRelationName(node)))
-  const lateralNode = nodes.find(node =>
-    stringFromUnknown(node['Node Type'] ?? '').includes('Lateral'),
-  )
-  if (historyAccess || lateralNode) {
-    throw new Error(`${result.name} must read projected RSS state without lateral history scans`)
-  }
-}
-
-function assertRelationListingUsesIndexOrder(result: ExplainResult): void {
-  const sortNode = collectPlanNodes(result.plan).find(node =>
-    stringFromUnknown(node['Node Type'] ?? '').includes('Sort'),
-  )
-  if (sortNode) {
-    throw new Error(`${result.name} must use relation index order without an explicit Sort`)
-  }
-}
-
-function baseRelationName(node: PlanNode): string {
-  return stringFromUnknown(node['Relation Name'] ?? '').replace(/__(?:default|p_\w+)$/, '')
-}
-
-function collectPlanNodes(value: unknown, nodes: PlanNode[] = []): PlanNode[] {
-  if (value == null || typeof value !== 'object' || Array.isArray(value)) return nodes
-  const node = value as PlanNode
-  if (typeof node['Node Type'] === 'string') nodes.push(node)
-  const plans = node['Plans']
-  if (Array.isArray(plans)) {
-    for (const child of plans) collectPlanNodes(child, nodes)
-  }
-  collectPlanNodes(node['Plan'], nodes)
-  return nodes
 }

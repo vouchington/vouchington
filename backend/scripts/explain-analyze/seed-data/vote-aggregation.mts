@@ -66,7 +66,7 @@ export async function seedVoteAggregation(): Promise<void> {
 
 // getTopicViewerCounts (the topic-viewer-counts EXPLAIN scenario) binds a single topic's candidate
 // posts through relation__post__category__topic.object_id, and its plan gate
-// (plan-topic-viewer-counts-gate.mts) requires the planner resolve that through
+// (the topicViewerCandidateBind custom check) requires the planner resolve that through
 // idx_relation__post__category__topic__reverse_index (object_id, subject_id). But
 // seedVoteAggregation above only ever votes on ONE of the 50,000 relations seedEntityRelations
 // inserted (post 0 / topic 0), leaving idx_relation__post__category__topic__positive_score__id

@@ -1,296 +1,189 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import type { ExplainResult } from '@data-stores/psql'
-import { assertRequiredPlanShape } from './plan-gates.mts'
+import { assertRequiredPlanShape, SEQUENTIAL_SCAN_SEEDED_ROW_THRESHOLD } from './plan-gates.mts'
+import {
+  assertPlanRegistry,
+  registerScenarioContract,
+  resetScenarioContracts,
+} from './plan-expectations.mts'
 
-function result(scenarioId: string, queryText: string, plan: unknown): ExplainResult {
-  const root = (plan as { Plan?: Record<string, unknown> } | null)?.Plan
+function result(
+  scenarioId: string,
+  node: Record<string, unknown>,
+  query = 'SELECT id FROM posts',
+): ExplainResult {
   return {
-    name: scenarioId,
+    name: 'capturedQuery',
     scenario_id: scenarioId,
-    query_text: queryText,
-    plan: root ? { ...(plan as object), Plan: { ...root, 'Actual Rows': 1 } } : plan,
+    query_text: query,
+    plan: { Plan: { 'Node Type': 'Result', 'Actual Rows': 1, 'Actual Loops': 1, Plans: [node] } },
     execution_time_ms: 1,
     planning_time_ms: 1,
-    timestamp: new Date().toISOString(),
+    timestamp: '2026-01-01T00:00:00.000Z',
   }
 }
 
-describe('required EXPLAIN plan shapes', () => {
-  it('requires universal-topic candidates to drive indexed post lookups', () => {
-    const candidateDriven = result('post-search-universal-topic', 'SELECT posts', {
-      Plan: {
-        'Node Type': 'Nested Loop',
-        Plans: [
-          { 'Node Type': 'Index Scan', 'Relation Name': 'post_review_topic_ratings__default' },
-          {
-            'Node Type': 'Index Scan',
-            'Relation Name': 'posts__default',
-            Alias: 'posts',
-            'Index Cond': '(id = post_review_topic_ratings.post_id)',
-          },
-        ],
-      },
-    })
-    expect(() => assertRequiredPlanShape(candidateDriven)).not.toThrow()
-
-    const postScan = result('post-search-universal-topic', 'SELECT posts', {
-      Plan: { 'Node Type': 'Seq Scan', 'Relation Name': 'posts__default', Alias: 'posts' },
-    })
-    expect(() => assertRequiredPlanShape(postScan)).toThrow('reverse-indexed candidates')
+describe('plan expectation registry', () => {
+  afterEach(resetScenarioContracts)
+  it('rejects unknown scenario ids and expectation kinds', () => {
+    expect(() => registerScenarioContract('invented', { expectations: [] })).toThrow(
+      'Unknown EXPLAIN scenario',
+    )
+    expect(() =>
+      registerScenarioContract('post-search-new', {
+        expectations: [{ kind: 'invented' } as never],
+      }),
+    ).toThrow('Unknown plan expectation kind')
+    expect(() => assertRequiredPlanShape(result('invented', { 'Node Type': 'Result' }))).toThrow(
+      'Unknown EXPLAIN scenario',
+    )
   })
 
-  it('requires user removed-post pages to use the owner/rejection index', () => {
-    const indexed = result('user-removed-posts-page', 'SELECT FROM posts', {
-      Plan: {
+  it('rejects a registered scenario without any captured result', () => {
+    registerScenarioContract('post-search-new', { expectations: [] })
+    expect(() => assertPlanRegistry(['post-search-hot'])).toThrow('has no captured result')
+    expect(() => assertPlanRegistry(['post-search-new'])).not.toThrow()
+  })
+
+  it('evaluates query binding, index and processed-row limits from one registry entry', () => {
+    registerScenarioContract('post-metrics-batch', {
+      expectations: [
+        { kind: 'queryBinds', token: 'requested_posts' },
+        { kind: 'usesIndexes', indexes: ['posts_pkey'] },
+        { kind: 'maxProcessedRows', relation: 'posts', max: 3 },
+        { kind: 'forbidCorrelatedAggregates' },
+      ],
+    })
+    const scan = {
+      'Node Type': 'Index Scan',
+      'Relation Name': 'posts__default',
+      'Index Name': 'posts_pkey',
+      'Actual Rows': 1,
+      'Rows Removed by Filter': 1,
+      'Actual Loops': 1,
+    }
+    const good = result(
+      'post-metrics-batch',
+      scan,
+      'WITH requested_posts AS (SELECT id FROM posts) SELECT id FROM requested_posts',
+    )
+    expect(() => assertRequiredPlanShape(good)).not.toThrow()
+    expect(() =>
+      assertRequiredPlanShape(
+        result('post-metrics-batch', { ...scan, 'Rows Removed by Filter': 3 }, good.query_text),
+      ),
+    ).toThrow('processed 4 rows')
+    expect(() =>
+      assertRequiredPlanShape(result('post-metrics-batch', scan, 'SELECT id FROM posts')),
+    ).toThrow('requested_posts')
+    expect(() =>
+      assertRequiredPlanShape(
+        result('post-metrics-batch', { ...scan, 'Index Name': 'other' }, good.query_text),
+      ),
+    ).toThrow('posts_pkey')
+  })
+
+  it('fails an executing unpruned parent and passes when only one leaf executes', () => {
+    const scans = [
+      {
         'Node Type': 'Index Scan',
         'Relation Name': 'posts__default',
-        'Index Name': 'idx_posts__default__created_by_rejected_at_id',
+        'Actual Rows': 1,
+        'Actual Loops': 1,
       },
-    })
-    expect(() => assertRequiredPlanShape(indexed)).not.toThrow()
-
-    const scanned = result('user-removed-posts-page', 'SELECT FROM posts', {
-      Plan: { 'Node Type': 'Seq Scan', 'Relation Name': 'posts__default' },
-    })
-    expect(() => assertRequiredPlanShape(scanned)).toThrow('platform removals through')
-  })
-
-  it('rejects RSS state plans that scan history relations', () => {
-    const historyScan = result('rss-feed-search', 'FROM view_rss_feed_current_states', {
-      Plan: { 'Node Type': 'Index Scan', 'Relation Name': 'rss_feed_setting_changes' },
-    })
-    expect(() => assertRequiredPlanShape(historyScan)).toThrow('without lateral history scans')
-  })
-
-  it('rejects explicit sorts in relation listings', () => {
-    const sorted = result('entity-relations-best', 'SELECT relations', {
-      Plan: { 'Node Type': 'Sort' },
-    })
-    expect(() => assertRequiredPlanShape(sorted)).toThrow('without an explicit Sort')
-  })
-
-  it.each([
-    ['direct-message-inbox-page', 'idx_conversations__direct_message_activity'],
-    ['modmail-inbox-page', 'idx_conversations__modmail_community_activity'],
-  ])('requires %s to use its ordered composite index', (scenarioId, indexName) => {
-    const indexed = result(scenarioId, 'SELECT conversations', {
-      Plan: { 'Node Type': 'Index Scan', 'Index Name': indexName },
-    })
-    expect(() => assertRequiredPlanShape(indexed)).not.toThrow()
-
-    const sorted = result(scenarioId, 'SELECT conversations', {
-      Plan: {
-        'Node Type': 'Sort',
-        Plans: [{ 'Node Type': 'Seq Scan', 'Relation Name': 'conversations' }],
-      },
-    })
-    expect(() => assertRequiredPlanShape(sorted)).toThrow('without an explicit Sort')
-  })
-
-  it('requires individual-card pages to use owner-scoped UUID index order', () => {
-    const indexed = result('individual-cards-page', 'SELECT id FROM individual_cards', {
-      Plan: {
+      {
         'Node Type': 'Index Scan',
-        'Index Name': 'idx_individual_cards__individual_id_id',
+        'Relation Name': 'posts__p_later',
+        'Actual Rows': 1,
+        'Actual Loops': 1,
       },
-    })
-    expect(() => assertRequiredPlanShape(indexed)).not.toThrow()
-
-    const sorted = result('individual-cards-page', 'SELECT id FROM individual_cards', {
-      Plan: {
-        'Node Type': 'Sort',
-        Plans: [{ 'Node Type': 'Seq Scan', 'Relation Name': 'individual_cards' }],
-      },
-    })
-    expect(() => assertRequiredPlanShape(sorted)).toThrow('without an explicit Sort')
+    ]
+    const unpruned = result('post-search-new', { 'Node Type': 'Append', Plans: scans })
+    expect(() => assertRequiredPlanShape(unpruned)).toThrow('without crossPartition reason')
+    scans[1]!['Actual Loops'] = 0
+    expect(() => assertRequiredPlanShape(unpruned)).not.toThrow()
   })
 
-  it('requires point-valuation pages to use owner-scoped UUID index order', () => {
-    const query = 'SELECT id FROM individual_rewards_program_point_valuations'
-    const indexed = result('point-valuations-page', query, {
-      Plan: {
-        'Node Type': 'Index Scan',
-        'Index Name': 'idx_individua_rewards_program_point_valuation__individual_id_id',
-      },
+  it('accepts an explicit cross-partition reason for intentional fanout', () => {
+    registerScenarioContract('post-search-new', {
+      expectations: [],
+      crossPartition: { posts: 'This fixture deliberately reads adjacent date windows.' },
     })
-    expect(() => assertRequiredPlanShape(indexed)).not.toThrow()
-
-    const sorted = result('point-valuations-page', query, {
-      Plan: {
-        'Node Type': 'Sort',
-        Plans: [
-          {
-            'Node Type': 'Seq Scan',
-            'Relation Name': 'individual_rewards_program_point_valuations',
-          },
-        ],
-      },
-    })
-    expect(() => assertRequiredPlanShape(sorted)).toThrow('without an explicit Sort')
-  })
-
-  it('requires rewards-program-status pages to use owner-scoped UUID index order', () => {
-    const indexed = result(
-      'rewards-program-statuses-page',
-      'SELECT id FROM individual_rewards_program_statuses',
-      {
-        Plan: {
+    const unpruned = result('post-search-new', {
+      'Node Type': 'Append',
+      Plans: [
+        {
           'Node Type': 'Index Scan',
-          'Index Name': 'idx_individual_rewards_program_statuses__individual_id_id',
+          'Relation Name': 'posts__default',
+          'Actual Rows': 1,
+          'Actual Loops': 1,
         },
-      },
-    )
-    expect(() => assertRequiredPlanShape(indexed)).not.toThrow()
-
-    const sorted = result(
-      'rewards-program-statuses-page',
-      'SELECT id FROM individual_rewards_program_statuses',
-      { Plan: { 'Node Type': 'Sort', Plans: [{ 'Node Type': 'Seq Scan' }] } },
-    )
-    expect(() => assertRequiredPlanShape(sorted)).toThrow('without an explicit Sort')
-  })
-
-  it('requires private saved-post pages to use the scoped composite relation index', () => {
-    const indexed = result(
-      'profile-posts-page',
-      'SELECT object_id FROM relation__user__save__post',
-      {
-        Plan: {
+        {
           'Node Type': 'Index Scan',
-          'Index Name': 'idx_relation__user__save__post__subject__newest',
+          'Relation Name': 'posts__p_later',
+          'Actual Rows': 1,
+          'Actual Loops': 1,
         },
-      },
-    )
-    expect(() => assertRequiredPlanShape(indexed)).not.toThrow()
-
-    const sorted = result(
-      'profile-posts-page',
-      'SELECT object_id FROM relation__user__save__post',
-      { Plan: { 'Node Type': 'Sort', Plans: [{ 'Node Type': 'Seq Scan' }] } },
-    )
-    expect(() => assertRequiredPlanShape(sorted)).toThrow('without an explicit Sort')
+      ],
+    })
+    expect(() => assertRequiredPlanShape(unpruned)).not.toThrow()
   })
 
-  it('requires global RSS feed item cursor pages to use the published-at keyset index', () => {
-    const indexed = result(
-      'rss-feed-items-search-global-cursor',
-      'SELECT id FROM rss_feed_items ORDER BY rss_feed_items.published_at DESC, rss_feed_items.id DESC',
-      {
-        Plan: {
-          'Node Type': 'Limit',
-          Plans: [
-            {
-              'Node Type': 'Index Scan',
-              'Relation Name': 'rss_feed_items',
-              'Index Name': 'idx_rss_feed_items__published_at__id',
-            },
-            {
-              'Node Type': 'Sort',
-              'Sort Key': ['ranked.published_at DESC', 'ranked.id DESC'],
-            },
-          ],
-        },
-      },
-    )
-    expect(() => assertRequiredPlanShape(indexed)).not.toThrow()
-
-    const partitionIndexed = result(
-      'rss-feed-items-search-global-cursor',
-      'SELECT id FROM rss_feed_items ORDER BY rss_feed_items.published_at DESC, rss_feed_items.id DESC',
-      {
-        Plan: {
+  it('matches nested partition parents by their longest name', () => {
+    const scan = result('post-search-new', {
+      'Node Type': 'Append',
+      Plans: [
+        {
           'Node Type': 'Index Scan',
-          'Relation Name': 'rss_feed_items_default',
-          'Index Name': 'rss_feed_items_default_published_at_id_idx',
+          'Relation Name': 'relation__post__category__topic__votes__default',
+          'Actual Rows': 1,
+          'Actual Loops': 1,
         },
-      },
-    )
-    expect(() => assertRequiredPlanShape(partitionIndexed)).not.toThrow()
-
-    const scanned = result(
-      'rss-feed-items-search-global-cursor',
-      'SELECT id FROM rss_feed_items ORDER BY rss_feed_items.published_at DESC, rss_feed_items.id DESC',
-      {
-        Plan: {
-          'Node Type': 'Sort',
-          Plans: [{ 'Node Type': 'Seq Scan', 'Relation Name': 'rss_feed_items_default' }],
+        {
+          'Node Type': 'Index Scan',
+          'Relation Name': 'relation__post__category__topic__votes__p_later',
+          'Actual Rows': 1,
+          'Actual Loops': 1,
         },
-      },
-    )
-    expect(() => assertRequiredPlanShape(scanned)).toThrow('idx_rss_feed_items__published_at__id')
+      ],
+    })
+    expect(() => assertRequiredPlanShape(scan)).toThrow('relation__post__category__topic__votes')
   })
 
-  it.each([
-    ['post-child-by-post', 'post_id', 'post_review_topic_ratings__default'],
-    ['crawl-chunks-by-crawl', 'crawl_id', 'crawl_chunks__default'],
-    ['conversation-messages', 'conversation_id', 'conversation_messages__default'],
-  ])('requires %s to scan exactly one partition child', (scenarioId, key, child) => {
-    const pruned = result(scenarioId, `SELECT * FROM parent WHERE ${key} = $1`, {
-      Plan: { 'Node Type': 'Seq Scan', 'Relation Name': child },
+  it('rejects sequential scans only above the declared seeded-row threshold', () => {
+    const scan = result('post-search-new', {
+      'Node Type': 'Seq Scan',
+      'Relation Name': 'posts__default',
+      'Actual Rows': 1,
+      'Actual Loops': 1,
     })
-    expect(() => assertRequiredPlanShape(pruned)).not.toThrow()
-
-    const fanout = result(scenarioId, `SELECT * FROM parent WHERE ${key} = $1`, {
-      Plan: {
-        'Node Type': 'Append',
-        Plans: [
-          { 'Node Type': 'Seq Scan', 'Relation Name': child },
-          { 'Node Type': 'Seq Scan', 'Relation Name': child.replace('__default', '__p_other') },
-        ],
-      },
+    registerScenarioContract('post-search-new', {
+      expectations: [],
+      seededRows: { posts: SEQUENTIAL_SCAN_SEEDED_ROW_THRESHOLD + 1 },
     })
-    expect(() => assertRequiredPlanShape(fanout)).toThrow('exactly one partition child')
+    expect(() => assertRequiredPlanShape(scan)).toThrow('sequentially scanned posts')
+    resetScenarioContracts()
+    registerScenarioContract('post-search-new', {
+      expectations: [],
+      seededRows: { posts: SEQUENTIAL_SCAN_SEEDED_ROW_THRESHOLD },
+    })
+    expect(() => assertRequiredPlanShape(scan)).not.toThrow()
   })
 
-  it('requires entity-relation vote lookups to prune the concrete vote table partition', () => {
-    const queryText =
-      'SELECT * FROM relation__post__category__topic__votes WHERE entity_relation_id = $1'
-    const pruned = result('entity-relation-votes-by-target', queryText, {
-      Plan: {
-        'Node Type': 'Seq Scan',
-        'Relation Name': 'relation__post__category__topic__votes__default',
-      },
+  it('requires a seeded-row declaration for a nonempty unbounded sequential scan', () => {
+    const scan = result('post-search-new', {
+      'Node Type': 'Seq Scan',
+      'Relation Name': 'admin_import_rows',
+      'Actual Rows': 1,
+      'Actual Loops': 1,
     })
-    expect(() => assertRequiredPlanShape(pruned)).not.toThrow()
-
-    const fanout = result('entity-relation-votes-by-target', queryText, {
-      Plan: {
-        'Node Type': 'Append',
-        Plans: [
-          {
-            'Node Type': 'Seq Scan',
-            'Relation Name': 'relation__post__category__topic__votes__default',
-          },
-          {
-            'Node Type': 'Seq Scan',
-            'Relation Name': 'relation__topic__related__post__votes__default',
-          },
-        ],
-      },
+    expect(() => assertRequiredPlanShape(scan)).toThrow('without a declared seeded row count')
+    const empty = result('post-search-new', {
+      'Node Type': 'Seq Scan',
+      'Relation Name': 'admin_import_rows',
+      'Actual Rows': 0,
+      'Actual Loops': 1,
     })
-    expect(() => assertRequiredPlanShape(fanout)).toThrow('concrete vote table')
-  })
-
-  it('requires spending-category pages to use personal and household UUID index order', () => {
-    const indexed = result('spending-categories-page', 'SELECT id FROM spending_entries', {
-      Plan: {
-        'Node Type': 'Merge Append',
-        Plans: [
-          { 'Node Type': 'Index Scan', 'Index Name': 'idx_spending_entries__individual_id_id' },
-          { 'Node Type': 'Index Scan', 'Index Name': 'idx_spending_entries__household_id_id' },
-        ],
-      },
-    })
-    expect(() => assertRequiredPlanShape(indexed)).not.toThrow()
-
-    const personalOnly = result('spending-categories-page', 'SELECT id FROM spending_entries', {
-      Plan: {
-        'Node Type': 'Index Scan',
-        'Index Name': 'idx_spending_entries__individual_id_id',
-      },
-    })
-    expect(() => assertRequiredPlanShape(personalOnly)).toThrow(
-      'idx_spending_entries__household_id_id',
-    )
+    expect(() => assertRequiredPlanShape(empty)).not.toThrow()
   })
 })

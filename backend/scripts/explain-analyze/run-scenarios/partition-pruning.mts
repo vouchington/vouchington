@@ -1,8 +1,12 @@
 import { read } from '@data-stores/psql'
 import { runAndCapture, seedPostId } from '../run-support.mts'
 import { seedRelationIdAfterPost } from '../seed-data/common.mts'
+import { registerScenarioContract } from '../plan-expectations.mts'
 
 export async function runPartitionPruningScenarios(): Promise<void> {
+  registerScenarioContract('post-child-by-post', {
+    expectations: [{ kind: 'singleLeaf', parent: 'post_review_topic_ratings', key: 'post_id' }],
+  })
   await runAndCapture('post-child-by-post', () =>
     read(
       `/* getExplainPostChildByPost */
@@ -18,6 +22,9 @@ export async function runPartitionPruningScenarios(): Promise<void> {
   )
   const seedCrawlId = crawlRows[0]?.id
   if (!seedCrawlId) throw new Error('EXPLAIN seed crawl is missing')
+  registerScenarioContract('crawl-chunks-by-crawl', {
+    expectations: [{ kind: 'singleLeaf', parent: 'crawl_chunks', key: 'crawl_id' }],
+  })
   await runAndCapture('crawl-chunks-by-crawl', () =>
     read(
       `/* getExplainCrawlChunksByCrawl */
@@ -28,6 +35,9 @@ export async function runPartitionPruningScenarios(): Promise<void> {
     ),
   )
 
+  registerScenarioContract('entity-relation-votes-by-target', {
+    expectations: [{ kind: 'custom', name: 'entityRelationVotes' }],
+  })
   await runAndCapture('entity-relation-votes-by-target', () =>
     read(
       `/* getExplainEntityRelationVotesByTarget */

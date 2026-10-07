@@ -1,9 +1,16 @@
 import { runAndCapture } from '../run-support.mts'
 import { searchRssFeedItems } from '../run-services.mts'
+import { registerScenarioContract } from '../plan-expectations.mts'
 
 const SEMANTIC_RSS_SEARCH_EMBEDDING = [1, 0, ...Array<number>(1022).fill(0)]
 
 export async function runSemanticRssSearchScenario(): Promise<void> {
+  registerScenarioContract('rss-feed-items-search-semantic-cursor', {
+    expectations: [],
+    crossPartition: {
+      rss_feed_items: 'Semantic RSS search ranks matching items across id ranges.',
+    },
+  })
   await runAndCapture(
     'rss-feed-items-search-semantic-cursor',
     async () => {

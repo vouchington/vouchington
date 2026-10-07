@@ -1,5 +1,6 @@
 import { getClassifierHumanVoteComparison } from '@services/classifiers'
 import { runAndCapture } from '../run-support.mts'
+import { registerScenarioContract } from '../plan-expectations.mts'
 import {
   CLASSIFIER_COMPARISON_WINDOW_FROM,
   CLASSIFIER_COMPARISON_WINDOW_TO,
@@ -17,6 +18,12 @@ const planSettings = { localSettings: { random_page_cost: '0.1' } }
 
 export async function runClassifierHumanVoteComparisonScenarios(): Promise<void> {
   const rssFeedItemId = await loadClassifierComparisonRssFeedItemId()
+  registerScenarioContract('classifier-human-vote-comparison-classifier', {
+    expectations: [
+      { kind: 'custom', name: 'classifierBatch' },
+      { kind: 'maxProcessedRows', relation: 'classifier_decision_batches', max: 1_001 },
+    ],
+  })
   await runAndCapture(
     'classifier-human-vote-comparison-classifier',
     () =>
@@ -28,6 +35,12 @@ export async function runClassifierHumanVoteComparisonScenarios(): Promise<void>
     'classifierHumanVoteComparison',
     planSettings,
   )
+  registerScenarioContract('classifier-human-vote-comparison-community', {
+    expectations: [
+      { kind: 'custom', name: 'classifierBatch' },
+      { kind: 'maxProcessedRows', relation: 'classifier_decision_batches', max: 1_001 },
+    ],
+  })
   await runAndCapture(
     'classifier-human-vote-comparison-community',
     () =>
@@ -40,6 +53,12 @@ export async function runClassifierHumanVoteComparisonScenarios(): Promise<void>
     'classifierHumanVoteComparison',
     planSettings,
   )
+  registerScenarioContract('classifier-human-vote-comparison-post', {
+    expectations: [
+      { kind: 'custom', name: 'classifierBatch' },
+      { kind: 'maxProcessedRows', relation: 'classifier_decision_batches', max: 1_001 },
+    ],
+  })
   await runAndCapture(
     'classifier-human-vote-comparison-post',
     () =>
@@ -52,6 +71,12 @@ export async function runClassifierHumanVoteComparisonScenarios(): Promise<void>
     'classifierHumanVoteComparison',
     planSettings,
   )
+  registerScenarioContract('classifier-human-vote-comparison-rss-feed-item', {
+    expectations: [
+      { kind: 'custom', name: 'classifierBatch' },
+      { kind: 'maxProcessedRows', relation: 'classifier_decision_batches', max: 1_001 },
+    ],
+  })
   await runAndCapture(
     'classifier-human-vote-comparison-rss-feed-item',
     () =>

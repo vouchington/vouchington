@@ -1,4 +1,5 @@
 import type { ExplainResult } from '@data-stores/psql'
+import { collectPlanNodes } from '../plan-nodes.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 // getTrendingCommunities used to LEFT JOIN every public community against view_community_metrics,
@@ -38,16 +39,4 @@ type PlanNode = Record<string, unknown>
 
 function baseRelationName(node: PlanNode): string {
   return stringFromUnknown(node['Relation Name'] ?? '').replace(/__(?:default|p_\w+)$/, '')
-}
-
-function collectPlanNodes(value: unknown, nodes: PlanNode[] = []): PlanNode[] {
-  if (value == null || typeof value !== 'object' || Array.isArray(value)) return nodes
-  const node = value as PlanNode
-  if (typeof node['Node Type'] === 'string') nodes.push(node)
-  const plans = node['Plans']
-  if (Array.isArray(plans)) {
-    for (const child of plans) collectPlanNodes(child, nodes)
-  }
-  collectPlanNodes(node['Plan'], nodes)
-  return nodes
 }

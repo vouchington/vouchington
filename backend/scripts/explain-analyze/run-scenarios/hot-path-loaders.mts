@@ -1,5 +1,6 @@
 import { read } from '@data-stores/psql'
 import { SEED_PREFIX, runAndCapture, seedUser } from '../run-support.mts'
+import { registerScenarioContract } from '../plan-expectations.mts'
 import { seedUuid } from '../seed-data/common.mts'
 import * as services from '../run-services.mts'
 
@@ -50,6 +51,16 @@ export async function runHotPathLoaderScenarios() {
   await runAndCapture('profile-links', () => listProfileLinks(seedUser.id))
 
   const firstCardPage = await getIndividualCards(seedUser, seedUser, { limit: 25 })
+  registerScenarioContract('individual-cards-page', {
+    expectations: [
+      {
+        kind: 'usesIndexes',
+        indexes: ['idx_individual_cards__individual_id_id'],
+        queryContains: 'FROM individual_cards',
+        noSort: true,
+      },
+    ],
+  })
   await runAndCapture('individual-cards-page', () =>
     getIndividualCards(seedUser, seedUser, {
       after: firstCardPage.page_info.end_cursor!,
@@ -62,6 +73,16 @@ export async function runHotPathLoaderScenarios() {
     seedUser,
     { limit: 25 },
   )
+  registerScenarioContract('point-valuations-page', {
+    expectations: [
+      {
+        kind: 'usesIndexes',
+        indexes: ['idx_individua_rewards_program_point_valuation__individual_id_id'],
+        queryContains: 'FROM individual_rewards_program_point_valuations',
+        noSort: true,
+      },
+    ],
+  })
   await runAndCapture('point-valuations-page', () =>
     getIndividualRewardsProgramPointValuations(seedUser, seedUser, {
       after: firstPointValuationPage.page_info.end_cursor!,
@@ -74,6 +95,19 @@ export async function runHotPathLoaderScenarios() {
     seedUser,
     { limit: 25 },
   )
+  registerScenarioContract('spending-categories-page', {
+    expectations: [
+      {
+        kind: 'usesIndexes',
+        indexes: [
+          'idx_spending_entries__individual_id_id',
+          'idx_spending_entries__household_id_id',
+        ],
+        queryContains: 'FROM spending_entries',
+        noSort: true,
+      },
+    ],
+  })
   await runAndCapture('spending-categories-page', () =>
     getHouseholdSpendingCategoriesByUserId(seedUser, seedUser, {
       after: firstSpendingCategoryPage.page_info.end_cursor!,
@@ -86,6 +120,16 @@ export async function runHotPathLoaderScenarios() {
     seedUser,
     { limit: 25 },
   )
+  registerScenarioContract('rewards-program-statuses-page', {
+    expectations: [
+      {
+        kind: 'usesIndexes',
+        indexes: ['idx_individual_rewards_program_statuses__individual_id_id'],
+        queryContains: 'FROM individual_rewards_program_statuses',
+        noSort: true,
+      },
+    ],
+  })
   await runAndCapture('rewards-program-statuses-page', () =>
     getIndividualRewardsProgramStatuses(seedUser, seedUser, {
       after: firstRewardsProgramStatusPage.page_info.end_cursor!,
@@ -95,6 +139,16 @@ export async function runHotPathLoaderScenarios() {
 
   const firstSavedPostsPage = await getUserPostsCollection(seedUser, seedUser.id, 'saved', {
     limit: 25,
+  })
+  registerScenarioContract('profile-posts-page', {
+    expectations: [
+      {
+        kind: 'usesIndexes',
+        indexes: ['idx_relation__user__save__post__subject__newest'],
+        queryContains: 'FROM relation__user__save__post',
+        noSort: true,
+      },
+    ],
   })
   await runAndCapture('profile-posts-page', () =>
     getUserPostsCollection(seedUser, seedUser.id, 'saved', {

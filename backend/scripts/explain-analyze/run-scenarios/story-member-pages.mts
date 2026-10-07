@@ -8,6 +8,7 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { STORY_POST_RELATED_URL_PROJECTION_SEED } from '../seed-data/story-post-related-url-projection.mts'
 import { heavyFollowUser, runAndCapture } from '../run-support.mts'
 import * as services from '../run-services.mts'
+import { registerScenarioContract } from '../plan-expectations.mts'
 
 const { getPrivateUserByAny, getRssFeedItemFeedIds, getStoryPreviews, getStoryMemberPagesBatch } =
   services
@@ -82,6 +83,9 @@ async function capturePage(
   getPages: () => Promise<Record<string, StoryMemberPage>>,
 ): Promise<StoryMemberPage> {
   let page: StoryMemberPage | undefined
+  registerScenarioContract(scenarioId, {
+    expectations: [{ kind: 'custom', name: 'storyMemberPages' }],
+  })
   await runAndCapture(
     scenarioId,
     async () => {
@@ -121,6 +125,12 @@ async function captureHydration(
     caches.rss_feed_items.invalidateCacheGetByAny(...selected),
     caches.rss_feed_item_elections.invalidateCacheGetByAny(...selected),
   ])
+  registerScenarioContract(scenarioId, {
+    expectations: [{ kind: 'custom', name: 'storyMemberPages' }],
+    crossPartition: {
+      crawls: 'Selected-item embed hydration finds source crawls across retained months.',
+    },
+  })
   await runAndCapture(
     scenarioId,
     async () => {

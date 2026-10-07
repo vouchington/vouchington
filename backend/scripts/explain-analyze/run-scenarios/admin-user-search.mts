@@ -2,6 +2,7 @@ import { searchAdminUsers, searchUsers } from '../run-services.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import { ADMIN_EMAIL_PROBE, ADMIN_EMAIL_PROBE_INDEX } from '../seed-data/admin-emails.mts'
 import { seedUuid } from '../seed-data/common.mts'
+import { registerScenarioContract } from '../plan-expectations.mts'
 
 export async function runAdminUserSearchScenarios(): Promise<void> {
   await runAndCapture('search-users', () => searchUsers('seeduser', { limit: 25 }))
@@ -15,6 +16,9 @@ export async function runAdminUserSearchScenarios(): Promise<void> {
     () => searchAdminUsers(seedUser.id, { limit: 25 }),
     'uuid',
   )
+  registerScenarioContract('search-admin-users-email', {
+    expectations: [{ kind: 'custom', name: 'adminEmail' }],
+  })
   await runAndCapture(
     'search-admin-users-email',
     async () => {

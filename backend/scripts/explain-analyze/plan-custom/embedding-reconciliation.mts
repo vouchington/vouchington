@@ -1,5 +1,5 @@
 import type { ExplainResult } from '@data-stores/psql'
-import { collectPlanNodes } from './plan-nodes.mts'
+import { collectPlanNodes } from '../plan-nodes.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 const FIRST_POST_INDEX = 'idx_posts__created_by_id__community_id__id'

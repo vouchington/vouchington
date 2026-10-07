@@ -1,9 +1,9 @@
 import type { ExplainResult } from '@data-stores/psql'
-import { collectPlanNodes, type PlanNode } from './plan-nodes.mts'
+import { collectPlanNodes, processedRows, type PlanNode } from '../plan-nodes.mts'
 import {
   POST_SHARE_DENSE_TARGET_COUNT,
   POST_SHARE_SPARSE_TARGET_COUNT,
-} from './seed-data/post-feed-shares.mts'
+} from '../seed-data/post-feed-shares.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 export function assertPostShareEligibilityIsTargetBounded(result: ExplainResult): void {
@@ -69,13 +69,7 @@ function assertShareDeliveryJoinWork(
     Number(candidateNode?.['Actual Rows'] ?? 0) * Number(candidateNode?.['Actual Loops'] ?? 0)
   const spoolWork = nodes
     .filter(node => node['CTE Name'] === 'eligible_shared_posts')
-    .reduce(
-      (total, node) =>
-        total +
-        (Number(node['Actual Rows'] ?? 0) + Number(node['Rows Removed by Filter'] ?? 0)) *
-          Number(node['Actual Loops'] ?? 0),
-      0,
-    )
+    .reduce((total, node) => total + processedRows(node), 0)
   const rejected = nodes
     .filter(node =>
       stringFromUnknown(node['Join Filter'] ?? '').includes('eligible_shared_posts.id'),
@@ -104,15 +98,7 @@ function assertIndexedTargetWork(
       stringFromUnknown(node['Relation Name'] ?? '').startsWith('posts'),
   )
   const executingScans = scans.filter(node => Number(node['Actual Loops'] ?? 0) > 0)
-  const work = scans.reduce(
-    (total, node) =>
-      total +
-      (Number(node['Actual Rows'] ?? 0) +
-        Number(node['Rows Removed by Filter'] ?? 0) +
-        Number(node['Rows Removed by Index Recheck'] ?? 0)) *
-        Number(node['Actual Loops'] ?? 0),
-    0,
-  )
+  const work = scans.reduce((total, node) => total + processedRows(node), 0)
   const loops = scans.reduce((total, node) => total + Number(node['Actual Loops'] ?? 0), 0)
   if (work > targets || loops > targets)
     throw new Error(

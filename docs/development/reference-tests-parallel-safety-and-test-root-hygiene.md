@@ -276,9 +276,9 @@ the EXPLAIN. The same uncovered-join-partner shape existed in `household-query-p
 `analyzeHouseholdTablesForTest` covered `households, household_members` but not the `individuals` and
 `users` tables also joined by `getHouseholdMemberships`.
 
-- New plan-shape gates belong in the `explain-analyze` scenario suite (`plan-gates.mts`,
-  `plan-pagination-gates.mts`), which runs against an isolated per-job container with no concurrent
-  writers. A plan assertion inside `backend-data-stores` — a shared, dirty database written
+- New plan-shape gates belong in the `explain-analyze` scenario suite (`plan-gates.mts`
+  and expectations registered beside each scenario), which runs against an isolated per-job
+  container with no concurrent writers. A plan assertion inside `backend-data-stores` — a shared, dirty database written
   concurrently by parallel forks — is the exception, not the default.
 - When it must be the exception, `explainCapturedTestQuery` (`backend/test-helpers/query-plans.mts`)
   requires a 4th `PlanStatisticsRefresh` argument, branded so only `definePlanStatisticsRefresh()` can

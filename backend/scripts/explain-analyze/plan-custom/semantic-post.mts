@@ -1,5 +1,5 @@
 import type { ExplainResult } from '@data-stores/psql'
-import { collectPlanNodes } from './plan-nodes.mts'
+import { collectPlanNodes } from '../plan-nodes.mts'
 import { SEMANTIC_POST_CANDIDATE_LIMIT } from '@services/posts/search/query-builder/semantic-candidates'
 
 export function assertSemanticPostCandidatePlan(result: ExplainResult): void {

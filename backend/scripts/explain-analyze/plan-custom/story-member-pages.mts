@@ -1,5 +1,5 @@
 import type { ExplainResult } from '@data-stores/psql'
-import { collectPlanNodes } from './plan-nodes.mts'
+import { collectPlanNodes, processedRows } from '../plan-nodes.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 const PAGE_SHAPES = new Map<string, { limit: number; after: boolean; excluded: boolean }>()
@@ -58,7 +58,7 @@ function assertSelectorPlan(
     Number(scan['Actual Loops']) !== 1
   )
     throw new Error(`${result.name} must use one story_id index probe${after ? ' with id <' : ''}`)
-  const work = physicalRows(scan)
+  const work = processedRows(scan)
   const ceiling = limit + 1 + Number(excluded)
   if (work > ceiling)
     throw new Error(`${result.name} scanned ${work} story members for a ${ceiling}-row budget`)
@@ -93,15 +93,6 @@ function hasStoryMembershipContinuationBound(indexCondition: string): boolean {
     indexCondition.includes('id <') ||
     indexCondition.includes('ROW(story_id, id) <') ||
     indexCondition.includes('(story_id, id) <')
-  )
-}
-
-function physicalRows(node: Record<string, unknown>): number {
-  return (
-    (Number(node['Actual Rows'] ?? 0) +
-      Number(node['Rows Removed by Filter'] ?? 0) +
-      Number(node['Rows Removed by Index Recheck'] ?? 0)) *
-    Number(node['Actual Loops'] ?? 0)
   )
 }
 

@@ -1,4 +1,5 @@
 import type { ExplainResult } from '@data-stores/psql'
+import { collectPlanNodes, processedRows } from '../plan-nodes.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 const REMOTE_FOLLOWER_INDEX = 'idx_relation__remote_actor__follow__user__active_reverse'
@@ -59,11 +60,7 @@ function isNodeWorkUnbounded(node: PlanNode): boolean {
   const nodeRows = node['Actual Rows']
   const loops = node['Actual Loops']
   if (typeof nodeRows !== 'number' || typeof loops !== 'number') return true
-  const removedRows = ['Rows Removed by Filter', 'Rows Removed by Index Recheck'].reduce(
-    (total, key) => total + (typeof node[key] === 'number' ? node[key] : 0),
-    0,
-  )
-  return (nodeRows + removedRows) * loops > MAX_REMOTE_FOLLOWER_PAGE_ROWS
+  return processedRows(node) > MAX_REMOTE_FOLLOWER_PAGE_ROWS
 }
 
 function rootPlanNode(plan: unknown): PlanNode | undefined {
@@ -71,16 +68,4 @@ function rootPlanNode(plan: unknown): PlanNode | undefined {
   const root = (plan as PlanNode)['Plan']
   if (root == null || typeof root !== 'object' || Array.isArray(root)) return undefined
   return root as PlanNode
-}
-
-function collectPlanNodes(value: unknown, nodes: PlanNode[] = []): PlanNode[] {
-  if (value == null || typeof value !== 'object' || Array.isArray(value)) return nodes
-  const node = value as PlanNode
-  if (typeof node['Node Type'] === 'string') nodes.push(node)
-  const plans = node['Plans']
-  if (Array.isArray(plans)) {
-    for (const child of plans) collectPlanNodes(child, nodes)
-  }
-  collectPlanNodes(node['Plan'], nodes)
-  return nodes
 }

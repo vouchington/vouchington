@@ -1,7 +1,11 @@
 import { heavyFollowUser, runAndCapture, seedUser } from '../run-support.mts'
+import { registerScenarioContract } from '../plan-expectations.mts'
 import * as services from '../run-services.mts'
 import { STORY_POST_RELATED_URL_PROJECTION_SEED } from '../seed-data/story-post-related-url-projection.mts'
-import { runRssFeedFirstAndContinuationScenarios } from './rss-feed-pages.mts'
+import {
+  registerRssFeedCandidateScenario,
+  runRssFeedFirstAndContinuationScenarios,
+} from './rss-feed-pages.mts'
 
 const { getPostFeedIds, getPostIds, getRssFeedItemFeedIds } = services
 
@@ -10,11 +14,23 @@ export async function runHeavyFollowScenarios() {
   // follows 1000 users, 200 topics, and 200 RSS feeds.
   // Results are suffixed with ':heavy' so the comparison table can pair them
   // with the baseline results above.
+  registerScenarioContract('post-feed-heavy-follows', {
+    expectations: [],
+    crossPartition: {
+      posts: 'The heavy-follows feed ranks eligible posts across the requested week.',
+    },
+  })
   await runAndCapture(
     'post-feed-heavy-follows',
     () => getPostFeedIds(heavyFollowUser, { limit: 25, time_range: '1w' }),
     'heavy',
   )
+  registerScenarioContract('post-feed-heavy-follow-users', {
+    expectations: [],
+    crossPartition: {
+      posts: 'The heavy-follows feed ranks eligible posts across the requested week.',
+    },
+  })
   await runAndCapture(
     'post-feed-heavy-follow-users',
     () =>
@@ -25,6 +41,12 @@ export async function runHeavyFollowScenarios() {
       }),
     'heavy-follow-users',
   )
+  registerScenarioContract('post-feed-heavy-follow-topics', {
+    expectations: [],
+    crossPartition: {
+      posts: 'The heavy-follows feed ranks eligible posts across the requested week.',
+    },
+  })
   await runAndCapture(
     'post-feed-heavy-follow-topics',
     () =>
@@ -35,6 +57,12 @@ export async function runHeavyFollowScenarios() {
       }),
     'heavy-follow-topics',
   )
+  registerScenarioContract('post-feed-heavy-all', {
+    expectations: [],
+    crossPartition: {
+      posts: 'The heavy-follows feed ranks eligible posts across the requested week.',
+    },
+  })
   await runAndCapture(
     'post-feed-heavy-all',
     () =>
@@ -45,6 +73,12 @@ export async function runHeavyFollowScenarios() {
       }),
     'heavy-all',
   )
+  registerScenarioContract('post-feed-heavy-hot', {
+    expectations: [],
+    crossPartition: {
+      posts: 'The heavy-follows feed ranks eligible posts across the requested week.',
+    },
+  })
   await runAndCapture(
     'post-feed-heavy-hot',
     () => getPostFeedIds(heavyFollowUser, { sort: 'hot', limit: 25, time_range: '1w' }),
@@ -57,6 +91,7 @@ export async function runHeavyFollowScenarios() {
     { limit: 25, time_range: '1w' },
     'heavy',
   )
+  registerRssFeedCandidateScenario('rss-feed-item-feed-heavy-follow-rss-feeds')
   await runAndCapture(
     'rss-feed-item-feed-heavy-follow-rss-feeds',
     () =>
@@ -67,6 +102,7 @@ export async function runHeavyFollowScenarios() {
       }),
     'heavy-follow-rss-feeds',
   )
+  registerRssFeedCandidateScenario('rss-feed-item-feed-heavy-follow-topics')
   await runAndCapture(
     'rss-feed-item-feed-heavy-follow-topics',
     () =>
@@ -77,6 +113,7 @@ export async function runHeavyFollowScenarios() {
       }),
     'heavy-follow-topics',
   )
+  registerRssFeedCandidateScenario('rss-feed-item-feed-heavy-all')
   await runAndCapture(
     'rss-feed-item-feed-heavy-all',
     () =>
@@ -87,6 +124,7 @@ export async function runHeavyFollowScenarios() {
       }),
     'heavy-all',
   )
+  registerRssFeedCandidateScenario('rss-feed-item-feed-heavy-story-skew')
   await runAndCapture('rss-feed-item-feed-heavy-story-skew', async () => {
     const page = await getRssFeedItemFeedIds(heavyFollowUser, {
       limit: 25,
@@ -102,11 +140,20 @@ export async function runHeavyFollowScenarios() {
     }
   })
 
+  registerScenarioContract('post-search-heavy-follows', {
+    expectations: [],
+    crossPartition: { posts: 'Search ranks eligible posts across the requested week.' },
+  })
+
   await runAndCapture(
     'post-search-heavy-follows',
     () => getPostIds(heavyFollowUser, { sort: 'best', limit: 25, time_range: '1w' }),
     'heavy',
   )
+  registerScenarioContract('post-search-following-new-heavy-follows', {
+    expectations: [],
+    crossPartition: { posts: 'Following search ranks eligible posts across the requested week.' },
+  })
   await runAndCapture(
     'post-search-following-new-heavy-follows',
     () =>
@@ -117,6 +164,10 @@ export async function runHeavyFollowScenarios() {
       }),
     'following-new-heavy',
   )
+  registerScenarioContract('post-search-profile', {
+    expectations: [],
+    crossPartition: { posts: 'Profile search lists this author posts across id ranges.' },
+  })
   await runAndCapture(
     'post-search-profile',
     () => getPostIds(seedUser, { user_id: seedUser.id, limit: 25, time_range: '1w' }),

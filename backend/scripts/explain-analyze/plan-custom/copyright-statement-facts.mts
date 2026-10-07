@@ -1,13 +1,12 @@
 import type { ExplainResult } from '@data-stores/psql'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
-import { collectPlanNodes, type PlanNode } from './plan-nodes.mts'
+import { collectPlanNodes, type PlanNode } from '../plan-nodes.mts'
 
 const SCENARIO_ID = 'copyright-statement-facts'
 // A hashed SubPlan reads its whole relation once per execution, so it must never be the way the
 // query asks about the target's own placement or post.
 const TARGET_BOUND_RELATIONS = new Set(['posts', 'image_placements', 'image_surface_placements'])
 const CONDITION_KEYS = ['Filter', 'Join Filter', 'One-Time Filter', 'Index Cond', 'Recheck Cond']
-const MAX_POST_ROWS = 10
 
 /**
  * The statement facts query asks whether the target's placement has a public page. With an
@@ -39,14 +38,6 @@ export function assertCopyrightStatementFactsIsTargetBounded(result: ExplainResu
   if (placementLookups.length === 0) {
     throw new Error(`${result.name} must evaluate the seeded target's post placement`)
   }
-  const postRows = nodes
-    .filter(node => baseRelationName(node) === 'posts')
-    .reduce((total, node) => total + rowsProcessed(node), 0)
-  if (postRows > MAX_POST_ROWS) {
-    throw new Error(
-      `${result.name} read ${postRows} post rows; the target's own post needs at most ${MAX_POST_ROWS}`,
-    )
-  }
 }
 
 function hashedSubPlanNames(node: PlanNode): string[] {
@@ -59,8 +50,4 @@ function hashedSubPlanNames(node: PlanNode): string[] {
 
 function baseRelationName(node: PlanNode): string {
   return stringFromUnknown(node['Relation Name'] ?? '').replace(/__[^_].*$/, '')
-}
-
-function rowsProcessed(node: PlanNode): number {
-  return Number(node['Actual Rows'] ?? 0) * Number(node['Actual Loops'] ?? 1)
 }

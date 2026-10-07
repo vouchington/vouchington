@@ -1,8 +1,7 @@
 import type { ExplainResult } from '@data-stores/psql'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
-import { collectPlanNodes } from './plan-nodes.mts'
+import { collectPlanNodes } from '../plan-nodes.mts'
 
-const COMPARISON_BATCH_WORK_CAP = 1000 + 1
 const ALLOWED_INDEXES = new Map<string, readonly string[]>([
   ['classifier-human-vote-comparison-classifier', ['idx_classifier_decision_batches__classifier']],
   [
@@ -39,15 +38,10 @@ function batchScanIsBounded(
   allowedIndexes: readonly string[],
 ): boolean {
   const condition = stringFromUnknown(scan['Index Cond'] ?? '')
-  const work =
-    (Number(scan['Actual Rows'] ?? 0) + Number(scan['Rows Removed by Filter'] ?? 0)) *
-    Number(scan['Actual Loops'] ?? 1)
   return (
     scan['Node Type'] === 'Index Scan' &&
     allowedIndexes.includes(String(scan['Index Name'])) &&
     /\bid >= /.test(condition) &&
-    /\bid < /.test(condition) &&
-    Number.isFinite(work) &&
-    work <= COMPARISON_BATCH_WORK_CAP
+    /\bid < /.test(condition)
   )
 }

@@ -1,4 +1,5 @@
 import type { ExplainResult } from '@data-stores/psql'
+import { collectPlanNodes } from '../plan-nodes.mts'
 import {
   POST_TOPIC_ALIAS_CATEGORY_RELATION_TABLE,
   POST_TOPIC_CATEGORY_RELATION_TABLE,
@@ -66,7 +67,7 @@ function baseRelationName(node: PlanNode): string {
   return stringFromUnknown(node['Relation Name'] ?? '').replace(/__(?:default|p_\w+)$/, '')
 }
 
-// Mirrors plan-topic-metrics-gate.mts's Bitmap Heap Scan handling: the `Index Cond` for a Bitmap
+// For a Bitmap Heap Scan the `Index Cond` for a Bitmap
 // Heap Scan lives on its child `Bitmap Index Scan`, not the node itself.
 function hasIndexedAccess(node: PlanNode): boolean {
   if (stringFromUnknown(node['Node Type'] ?? '') === 'Bitmap Heap Scan') {
@@ -101,16 +102,4 @@ function getEffectiveConditionText(node: PlanNode): string {
     }
   }
   return parts.join(' ')
-}
-
-function collectPlanNodes(value: unknown, nodes: PlanNode[] = []): PlanNode[] {
-  if (value == null || typeof value !== 'object' || Array.isArray(value)) return nodes
-  const node = value as PlanNode
-  if (typeof node['Node Type'] === 'string') nodes.push(node)
-  const plans = node['Plans']
-  if (Array.isArray(plans)) {
-    for (const child of plans) collectPlanNodes(child, nodes)
-  }
-  collectPlanNodes(node['Plan'], nodes)
-  return nodes
 }

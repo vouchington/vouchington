@@ -12,7 +12,7 @@ import {
   analyzePublicationFeedItemPageForTest,
   publicationPhysicalRowsWithinBudget,
 } from '@voucha/test-helpers/entities/post-publication-query-plans'
-import { assertPaginationPlanShape } from '../../../scripts/explain-analyze/plan-pagination-gates.mts'
+import { assertCustomPlanCheck } from '../../../scripts/explain-analyze/plan-custom-checks.mts'
 import { getStoryPostRelatedUrlProjectionSourcePage } from '../story-post-related-url-projection-source.mts'
 
 let captured: CapturedTestQuery
@@ -50,7 +50,7 @@ describe('story URL source ordered index consolidation', () => {
         analyzePublicationFeedItemPageForTest,
       )
       expect(publicationPhysicalRowsWithinBudget(plan, 'rss_feed_items')).toBe(100)
-      assertPaginationPlanShape({
+      assertCustomPlanCheck('paginationSpecial', {
         name: 'story-source-index-consolidation',
         scenario_id: 'story-post-related-url-projection-source-page',
         query_text: captured.text,
