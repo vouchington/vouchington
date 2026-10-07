@@ -19,13 +19,9 @@ describe('updateCrawl language detection enqueueing', () => {
 
     await updateCrawl(crawl.id, url!.id, { language: null })
 
-    await expect
-      .poll(async () => {
-        const jobs = await readAllQueueJobs(language_detection)
-        return jobs.some(
-          job => job.name === 'crawl' && (job.data as { id?: string }).id === crawl.id,
-        )
-      })
-      .toBe(true)
+    const jobs = await readAllQueueJobs(language_detection)
+    expect(
+      jobs.some(job => job.name === 'crawl' && (job.data as { id?: string }).id === crawl.id),
+    ).toBe(true)
   })
 })

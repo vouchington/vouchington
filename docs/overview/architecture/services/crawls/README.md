@@ -55,6 +55,9 @@ Crawling:
 - Crawl stores `lang` from `<html lang="...">`, `title`, `meta_tags`, `links`, `markdown`, and
   nullable normalized `embed_metadata`, plus the crawl-local `embed_oembed_url` candidate and its
   optional `embed_oembed_resolved_at` completion timestamp.
+- Saving crawl title, markdown, or language waits for language-detection queue admission before the
+  update returns. Detection runs in the worker; a queue failure is reported without discarding the
+  saved crawl.
 - Embed metadata contains normalized provider, author, thumbnail, and authorized player fields;
   raw oEmbed HTML is not stored. YouTube and Vimeo use explicit endpoints; PeerTube endpoints and
   players are limited to the already-crawled instance and expected paths.
