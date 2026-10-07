@@ -1,3 +1,6 @@
+import { createHash } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
+import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import {
@@ -22,6 +25,69 @@ async function resetIfSchemaMismatch(worktreeDir: string, script: string) {
 
 describe('initialize stale database checks', () => {
   afterEach(cleanupWorktreeDirs)
+
+  const migrationId = '0634-00-00-copyright-notices.sql'
+  const migrationPath = fileURLToPath(
+    new URL(`../../backend/data-stores/psql/migrations/${migrationId}`, import.meta.url),
+  )
+
+  async function migrationChecksum() {
+    return createHash('sha256')
+      .update(await readFile(migrationPath, 'utf8'), 'utf8')
+      .digest('hex')
+  }
+
+  function ledgerProbe(checksum: string) {
+    return stubPsql(
+      answerPsql([
+        migratedDatabase,
+        ['recently_viewed_topics', 'f'],
+        ['community_auto_tagger_agents', 'f'],
+        ['0070-00-00-posts-feed-content.sql', ''],
+        ['SELECT id, checksum FROM migrations', `${migrationId}\t${checksum}`],
+      ]),
+    )
+  }
+
+  it('resets a disposable database before an applied migration checksum mismatch fails', async () => {
+    const output = await resetIfSchemaMismatch(
+      'feature-db-reset-checksum-mismatch',
+      `
+    DB_NAME=voucha-feature-db-reset-checksum-mismatch
+    ${ledgerProbe('a'.repeat(64))}
+    `,
+    )
+
+    expect(output).toBe(
+      'drop:voucha-feature-db-reset-checksum-mismatch\ncreate:voucha-feature-db-reset-checksum-mismatch',
+    )
+  })
+
+  it('resets a disposable database before an applied migration missing its checksum fails', async () => {
+    const output = await resetIfSchemaMismatch(
+      'feature-db-reset-missing-checksum',
+      `
+    DB_NAME=voucha-feature-db-reset-missing-checksum
+    ${ledgerProbe('')}
+    `,
+    )
+
+    expect(output).toBe(
+      'drop:voucha-feature-db-reset-missing-checksum\ncreate:voucha-feature-db-reset-missing-checksum',
+    )
+  })
+
+  it('keeps a database with matching migration checksums intact', async () => {
+    const output = await resetIfSchemaMismatch(
+      'feature-db-healthy-checksum',
+      `
+    DB_NAME=voucha-feature-db-healthy-checksum
+    ${ledgerProbe(await migrationChecksum())}
+    `,
+    )
+
+    expect(output).toBe('')
+  })
 
   it('resets a stale database when recently viewed parent tables are missing', async () => {
     const output = await resetIfSchemaMismatch(
