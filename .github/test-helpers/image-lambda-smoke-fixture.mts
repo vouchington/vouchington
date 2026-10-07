@@ -95,7 +95,7 @@ count=0
 count=$((count + 1))
 echo "$count" > "$ALLOCATIONS_FILE"
 echo allocate >> "$EVENTS_FILE"
-exec 3<>/dev/tcp/127.0.0.1/"$SMOKE_CONTROL_PORT"
+exec 3<>/dev/tcp/127.0.0.1/${address.port}
 printf 'allocate\\n' >&3
 IFS= read -r reply <&3
 echo $((41000 + count))`,
@@ -112,7 +112,7 @@ fs.writeFileSync(process.env.LAUNCHES_FILE, String(count))
 const failed = count === 1 && Boolean(process.env.FIRST_NODE_OUTPUT)
 if (failed) fs.writeSync(2, process.env.FIRST_NODE_OUTPUT + '\\n')
 else if (!process.env.FIRST_NODE_OUTPUT) fs.writeSync(1, 'Lambda dev server: http://localhost:41001\\n')
-const socket = net.connect(Number(process.env.SMOKE_CONTROL_PORT), '127.0.0.1')
+const socket = net.connect(${address.port}, '127.0.0.1')
 socket.on('error', () => process.exit(1))
 socket.on('close', () => process.exit(failed ? 1 : 0))
 socket.once('connect', () => {
@@ -125,7 +125,7 @@ for (const signal of ['SIGINT', 'SIGTERM']) {
       process.execPath,
     )
     const request = (message: string) => `set -euo pipefail
-exec 3<>/dev/tcp/127.0.0.1/"$SMOKE_CONTROL_PORT"
+exec 3<>/dev/tcp/127.0.0.1/${address.port}
 printf '${message}\\n' >&3
 IFS= read -r reply <&3
 printf '%s' "$reply"`
@@ -145,7 +145,6 @@ printf '%s' "$reply"`
             LAUNCHES_FILE: join(directory, 'launches'),
             EVENTS_FILE: join(directory, 'events'),
             FIRST_NODE_OUTPUT: firstError ?? '',
-            SMOKE_CONTROL_PORT: String(address.port),
           },
         },
         (error, stdout, stderr) =>
