@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { sentryCaptureExceptionMock as captureException } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import { valkeyEvents } from 'valkyries'
-import { initializeValkeyAppIntegration } from './app-integration.mts'
+import {
+  initializeValkeyAppIntegration,
+  waitForValkeyCacheMetricCompletions,
+} from './app-integration.mts'
 
 type EmittedAnalyticsEvent = [string, Record<string, unknown>]
 
@@ -49,6 +52,7 @@ describe('valkey app integration', () => {
     const state = getIntegrationState()
     if (state.analyticsPromise) ownedLoads.push(state.analyticsPromise)
     await Promise.allSettled(ownedLoads)
+    await waitForValkeyCacheMetricCompletions()
     Object.assign(state, originalState)
     valkeyEvents.removeAllListeners('cache:call')
     for (const listener of originalListeners) valkeyEvents.on('cache:call', listener)
@@ -72,9 +76,8 @@ describe('valkey app integration', () => {
       durationMs: 1,
     })
 
-    await vi.waitFor(() => {
-      expect(emitted.filter(([, payload]) => payload.cache_name === cacheName)).toHaveLength(1)
-    })
+    await waitForValkeyCacheMetricCompletions()
+    expect(emitted.filter(([, payload]) => payload.cache_name === cacheName)).toHaveLength(1)
   })
 
   it('bridges cache metrics into analytics events', async () => {
@@ -91,9 +94,8 @@ describe('valkey app integration', () => {
       durationMs: 12.5,
     })
 
-    await vi.waitFor(() => {
-      expect(emitted.filter(([, payload]) => payload.cache_name === cacheName)).toHaveLength(1)
-    })
+    await waitForValkeyCacheMetricCompletions()
+    expect(emitted.filter(([, payload]) => payload.cache_name === cacheName)).toHaveLength(1)
 
     const [event, payload] = emitted.find(([, entry]) => entry.cache_name === cacheName)!
     expect(event).toBe('valkey_cache_calls')
@@ -129,9 +131,8 @@ describe('valkey app integration', () => {
       durationMs: 2,
     })
 
-    await vi.waitFor(() => {
-      expect(emitted.filter(([, payload]) => payload.cache_name === cacheName)).toHaveLength(1)
-    })
+    await waitForValkeyCacheMetricCompletions()
+    expect(emitted.filter(([, payload]) => payload.cache_name === cacheName)).toHaveLength(1)
   })
 
   it('collapses duplicate cache metric bridge listeners', async () => {
@@ -176,9 +177,8 @@ describe('valkey app integration', () => {
       durationMs: 8,
     })
 
-    await vi.waitFor(() => {
-      expect(emitted.filter(([, payload]) => payload.cache_name === cacheName)).toHaveLength(1)
-    })
+    await waitForValkeyCacheMetricCompletions()
+    expect(emitted.filter(([, payload]) => payload.cache_name === cacheName)).toHaveLength(1)
 
     expect(
       valkeyEvents.listeners('cache:call').filter(listener => listener === staleBridge),
@@ -225,9 +225,8 @@ describe('valkey app integration', () => {
       durationMs: 3,
     })
 
-    await vi.waitFor(() => {
-      expect(emitted.filter(([, payload]) => payload.cache_name === cacheName)).toHaveLength(1)
-    })
+    await waitForValkeyCacheMetricCompletions()
+    expect(emitted.filter(([, payload]) => payload.cache_name === cacheName)).toHaveLength(1)
   })
 
   it('forwards cache metrics through the original analytics loader', async () => {
@@ -236,6 +235,7 @@ describe('valkey app integration', () => {
     const emitSpy = vi.spyOn(analytics, 'emit')
     const cacheName = `default-loader-${crypto.randomUUID()}`
     try {
+      vi.stubEnv('ANALYTICS_BACKEND', 'disabled')
       valkeyEvents.emit('cache:call', {
         cacheName,
         batch: false,
@@ -244,15 +244,14 @@ describe('valkey app integration', () => {
         bloomMisses: 0,
         durationMs: 1,
       })
-      await vi.waitFor(() =>
-        expect(emitSpy).toHaveBeenCalledWith(
-          'valkey_cache_calls',
-          expect.objectContaining({ cache_name: cacheName }),
-        ),
+      await waitForValkeyCacheMetricCompletions()
+      expect(emitSpy).toHaveBeenCalledWith(
+        'valkey_cache_calls',
+        expect.objectContaining({ cache_name: cacheName }),
       )
-      await getIntegrationState().analyticsPromise
     } finally {
       emitSpy.mockRestore()
+      vi.unstubAllEnvs()
     }
   })
 
@@ -278,8 +277,7 @@ describe('valkey app integration', () => {
       durationMs: 1,
     })
 
-    await vi.waitFor(() => {
-      expect(captureException).toHaveBeenCalledWith(error, expect.anything())
-    })
+    await waitForValkeyCacheMetricCompletions()
+    expect(captureException).toHaveBeenCalledWith(error, expect.anything())
   })
 })
