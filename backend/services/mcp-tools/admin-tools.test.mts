@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ALL_TOOLS } from '@voucha/tools/registry/index'
+import { ALL_TOOLS } from '@voucha/mcp/registry/index'
 import { listMcpToolsForUser } from './list-tools.mts'
 import { resolveMcpToolCall } from './resolve-tool-call.mts'
 import { ADMIN_MCP_SERVER_CONFIG, USER_MCP_SERVER_CONFIG } from './config.mts'

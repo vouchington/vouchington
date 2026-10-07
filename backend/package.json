@@ -37,7 +37,7 @@
     "test-helpers",
     "types",
     "scripts",
-    "tools",
+    "mcp",
     "rss",
     "md"
   ],

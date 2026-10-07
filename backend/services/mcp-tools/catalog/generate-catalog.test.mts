@@ -15,7 +15,7 @@ import type { Tool } from '@services/openai-agents/tool-types'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { runCatalogGeneration } from './generate-catalog.mts'
 
-const markdown = 'docs/overview/architecture/agent-tools/catalog.md'
+const markdown = 'docs/overview/architecture/mcp/catalog.md'
 const artifacts = ['api-fixtures/v1/mcp.json', markdown]
 const tools: readonly Tool[] = [
   {

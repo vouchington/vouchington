@@ -86,7 +86,7 @@ RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store,sharin
 # Copy only the source trees needed by the backend runtime build. The shared
 # root .dockerignore also admits the web workspace for web/Dockerfile, but
 # backend builds should not invalidate this layer on unrelated web source edits.
-# @services/runtime-request-validation and @voucha/tools (MCP output schemas)
+# @services/runtime-request-validation and @voucha/mcp (MCP output schemas)
 # import @voucha/api-fixtures: request validation loads request-contracts.json,
 # and admin tool response schemas load the same request bundle. Other files are test and client fixture
 # payload; copying that tree would ship it through pnpm deploy into every image.

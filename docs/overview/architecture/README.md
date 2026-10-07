@@ -38,7 +38,7 @@ System design, pipelines, and application-layer patterns for Voucha.
 | [Partitioning Strategy](./partitioning-strategy.md)                                     | When and how to partition PostgreSQL tables                                                       |
 | [Partition Pruning Hints](./partition-pruning-hints.md)                                 | UUIDv7 temporal ordering constraints for PostgreSQL RANGE partitions                              |
 | [.NET Deep Linking][client-dotnet-deep-linking]                                         | MAUI protocol activation, shell routing, and native login-link handling                           |
-| [Agent Tools](./agent-tools/README.md)                                                  | LLM tool registry: internal and MCP surfaces, type definitions, and tool implementation reference |
+| [MCP Tools](./mcp/README.md)                                                            | LLM tool registry: internal and MCP surfaces, type definitions, and tool implementation reference |
 | [Native Clients](./native-clients.md)                                                   | Platform ownership table and framework rationale (Swift: macOS/iOS/Android; MAUI: Windows)        |
 
 [client-dotnet-deep-linking]: https://github.com/vouchington/vouchington-clients/blob/main/docs/architecture/dotnet-deep-linking.md

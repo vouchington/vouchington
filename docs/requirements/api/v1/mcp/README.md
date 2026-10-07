@@ -16,7 +16,7 @@ Public discovery documents such as `/llms.txt` advertise this endpoint so that a
 
 ## Authentication
 
-The bearer credential is an OAuth access token bound to this resource, or an API key of type `mcp`. Session cookies are never read. Each tool requires its own resource scopes, such as `topics:read` or `cards:write` (see the Scopes column of the [tool catalog](../../../../overview/architecture/agent-tools/catalog.md)); the `mcp.user:read` and `mcp.user:write` compatibility grants cover every user read and write scope. See [API key permissions](../../../users/api-keys.md#permissions). Write tools also require a paid plan; see [Plan Gating](../../../../overview/architecture/agent-tools/README.md#plan-gating).
+The bearer credential is an OAuth access token bound to this resource, or an API key of type `mcp`. Session cookies are never read. Each tool requires its own resource scopes, such as `topics:read` or `cards:write` (see the Scopes column of the [tool catalog](../../../../overview/architecture/mcp/catalog.md)); the `mcp.user:read` and `mcp.user:write` compatibility grants cover every user read and write scope. See [API key permissions](../../../users/api-keys.md#permissions). Write tools also require a paid plan; see [Plan Gating](../../../../overview/architecture/mcp/README.md#plan-gating).
 
 MCP clients that support OAuth need only the endpoint URL. A request without a credential gets `401` with a `WWW-Authenticate` challenge that names the [protected-resource metadata](../../oauth/README.md#routes), and a single `tools/call` that lacks a scope gets `403` with `error="insufficient_scope"` and the scopes to re-authorize with. See [MCP challenges](../../../security/OAUTH-AUTHORIZATION-SERVER.md#mcp-challenges).
 
@@ -117,9 +117,9 @@ even to the author or an administrator, and no result carries a viewer sidecar. 
 different sort, returns `{ success: false, error: "Invalid cursor" }`. Descriptions, rules and post
 text are wrapped as external content.
 
-The [hostname read tools](../../../../overview/architecture/agent-tools/hostname-list-user-read-tools.md#hostnames)
+The [hostname read tools](../../../../overview/architecture/mcp/hostname-list-user-read-tools.md#hostnames)
 (`search_hostnames`, `get_top_hostnames`, each requiring `hostnames:read`) and
-[user read tools](../../../../overview/architecture/agent-tools/hostname-list-user-read-tools.md#users)
+[user read tools](../../../../overview/architecture/mcp/hostname-list-user-read-tools.md#users)
 (`get_user`, `search_users`, each requiring `users:read`) read as a signed-out reader for every
 caller. A hostname result carries its `topic_id` and public trust vote totals, and an
 administratively blocked hostname never appears, even to an administrator. A user result is the
@@ -127,7 +127,7 @@ public profile only, so no result carries an email address, phone number or susp
 deleted or unknown user is `{ success: false, error: "User not found" }`. The bio is wrapped as
 external content.
 
-The [list read tools](../../../../overview/architecture/agent-tools/hostname-list-user-read-tools.md#lists)
+The [list read tools](../../../../overview/architecture/mcp/hostname-list-user-read-tools.md#lists)
 (`get_my_lists`, `get_list`, `get_list_items`, each requiring `lists:read`) read a public or
 unlisted list by id, as REST does. A private list is readable only by its owner and only when the
 credential holds the exact `post-relations.owned-private:write` grant, which `mcp.user:write` does
@@ -136,13 +136,13 @@ id, is the same `{ success: false, error: "List not found" }`. `get_my_lists` le
 out without the grant, and `get_list_items` leaves out any post `get_post` would refuse, so a page
 can hold fewer than `limit` items while `has_next_page` is true. The paged tools take `limit` (1 to 25) and `after`; a malformed cursor returns `{ success: false, error: "Invalid cursor" }`.
 
-The [trending, referral, search and reference read tools](../../../../overview/architecture/agent-tools/search-reference-read-tools.md)
+The [trending, referral, search and reference read tools](../../../../overview/architecture/mcp/search-reference-read-tools.md)
 (`get_trending_communities`, `get_trending_referral_programs`, `get_topic_referral_program`,
 `get_my_referral_links`, `search_web`, `list_countries`, `list_currencies`, `get_platform_stats`)
 read public data as a signed-out reader would, so a private community never appears.
 `get_my_referral_links` returns only the caller's own links. Web snippets are external content.
 
-[Community, report, dispute and appeal tools](../../../../overview/architecture/agent-tools/community-report-appeal-write-tools.md)
+[Community, report, dispute and appeal tools](../../../../overview/architecture/mcp/community-report-appeal-write-tools.md)
 reuse the REST guards, and the dispute and appeal reads are owner-only.
 
 ### Paged results

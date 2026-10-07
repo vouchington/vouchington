@@ -97,7 +97,7 @@
     "backend/scripts": {
       "entry": ["**/*.mts"],
     },
-    "backend/tools": {
+    "backend/mcp": {
       "entry": ["**/*.mts"],
     },
     "backend/rss": {

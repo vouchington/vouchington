@@ -7,7 +7,7 @@ const PUBLIC_CONTRACT_PREFIXES = [
   'api-fixtures/v1/',
   'backend/api/response-types/',
   'backend/api/v1/',
-  'backend/tools/',
+  'backend/mcp/',
   'backend/types/',
   'web/lib/api/client/',
   'web/types/',

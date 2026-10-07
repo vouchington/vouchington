@@ -123,7 +123,7 @@ its snapshot check, the internal OpenAPI builder, and public OpenAPI/Redoc publi
 
 Only `operations` defines request coverage. The sibling `responses` map holds named 200 JSON
 response schemas and reuses `components`. MCP tools derive output schemas through
-`backend/tools/route-response-schema.mts`; see
+`backend/mcp/route-response-schema.mts`; see
 [Structured tool results](../../../overview/architecture/services/mcp-tools/README.md#structured-tool-results).
 The sibling `adminResponses` map preserves the 87 staff inline and non-200 fallback schemas
 previously consumed from OpenAPI. Runtime request validation and MCP output validation retain

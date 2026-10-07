@@ -4,7 +4,7 @@
     "package.json",
     "api-fixtures/package.json",
     "backend/package.json",
-    "backend/{api,config,md,rss,scripts,test-helpers,tools,types}/package.json",
+    "backend/{api,config,md,rss,scripts,test-helpers,mcp,types}/package.json",
     "backend/worker-runtime/package.json",
     "backend/service-registrations/package.json",
     "backend/entrypoints/*/package.json",

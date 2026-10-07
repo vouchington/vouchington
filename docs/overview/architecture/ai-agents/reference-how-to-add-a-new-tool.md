@@ -2,18 +2,18 @@
 
 [Back to Agents Architecture](../../../../backend/agents/README.md#how-to-add-a-new-tool)
 
-1. Create `backend/tools/<name>.mts` following the `Tool<TArgs, TResult>` pattern
+1. Create `backend/mcp/<name>.mts` following the `Tool<TArgs, TResult>` pattern
 2. Import service functions — wrap existing services, no new backend logic in tools
 3. Use `currentUser as unknown as PrivateUser` if the tool needs an authenticated user
 4. Add `strict: null` to the schema (repo convention: leave provider strict-mode unset)
-5. Write `backend/tools/<name>.test.mts` — real DB test with `createTestUser()` in `beforeAll`
+5. Write `backend/mcp/<name>.test.mts` — real DB test with `createTestUser()` in `beforeAll`
 6. Register the tool in the MCP tool catalog (`@services/mcp-tools`); no first-party agent loads
    tools directly, so there is no per-agent tool list to update
 
 ### Tool file structure
 
 ```typescript
-import type { Tool } from '@voucha/tools'
+import type { Tool } from '@voucha/mcp'
 import { someService } from '@services/some-service'
 
 type Args = { topic_id: string }

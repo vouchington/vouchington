@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { ErrorCode } from '@modelcontextprotocol/sdk/types.js'
 import { createTestUser } from '@voucha/test-helpers'
-import { ALL_TOOLS } from '@voucha/tools/registry/index'
+import { ALL_TOOLS } from '@voucha/mcp/registry/index'
 import type { Tool } from '@services/openai-agents/tool-types'
 import type { PrivateUser } from '@services/users/types'
 import { callMcpTool } from './call-tool.mts'

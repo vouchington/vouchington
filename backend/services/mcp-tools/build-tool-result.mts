@@ -1,6 +1,6 @@
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import type { ToolOutputSchema } from '@services/openai-agents/tool-types'
-import { findSchemaViolation } from '@voucha/tools/schema-validator'
+import { findSchemaViolation } from '@voucha/mcp/schema-validator'
 import {
   MAX_MCP_TOOL_RESULT_BYTES,
   McpToolResultTooLargeError,

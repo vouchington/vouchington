@@ -36,7 +36,7 @@ Eleven MCP tools run the same shared commands as the profile, profile-link, iden
 notification, and email-preference routes, for the caller's own account only. They need the
 `profile`, `notifications`, or `preferences` read and write scopes and a Plus plan. Usernames,
 credentials, API keys, OAuth apps, account deletion, billing, and sessions have no tool. See
-[Profile, Notification, and Preference Write Tools](../../../../overview/architecture/agent-tools/profile-notification-write-tools.md).
+[Profile, Notification, and Preference Write Tools](../../../../overview/architecture/mcp/profile-notification-write-tools.md).
 
 ## Performance
 

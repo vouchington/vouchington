@@ -1,11 +1,11 @@
 import { CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js'
-import { ALL_TOOLS } from '@voucha/tools/registry/index'
+import { ALL_TOOLS } from '@voucha/mcp/registry/index'
 import {
   getToolRequiredScopes,
   isToolAllowedForPlan,
   isToolMcpEligible,
   listToolsForSurface,
-} from '@voucha/tools/registry/select'
+} from '@voucha/mcp/registry/select'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { hasEveryScope, withScopePrerequisites, type ApiScope } from '@modules/scopes'
 import { isToolAllowedForUser } from './authorization.mts'

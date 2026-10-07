@@ -1,6 +1,6 @@
 # Agent Tool Catalog
 
-This table is generated from `backend/tools/registry/`. Run `pnpm run mcp:catalog` from the
+This table is generated from `backend/mcp/registry/`. Run `pnpm run mcp:catalog` from the
 repository root after adding or modifying tools; see
 [Generated Artifacts](README.md#generated-artifacts).
 

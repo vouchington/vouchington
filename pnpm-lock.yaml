@@ -1318,12 +1318,12 @@ importers:
       '@types/supertest':
         specifier: ^7.2.1
         version: 7.2.1
+      '@voucha/mcp':
+        specifier: workspace:^
+        version: link:../mcp
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../test-helpers
-      '@voucha/tools':
-        specifier: workspace:^
-        version: link:../tools
       '@vouchington/utils':
         specifier: ^0.5.3
         version: 0.5.3
@@ -1919,6 +1919,265 @@ importers:
       '@workers/vote-weight':
         specifier: workspace:^
         version: link:../../workers/vote-weight
+
+  backend/mcp:
+    dependencies:
+      '@jongleberry/vurst-prompt':
+        specifier: ^0.4.3
+        version: 0.4.3
+      '@modules/on-error':
+        specifier: workspace:^
+        version: link:../modules/on-error
+      '@modules/pagination':
+        specifier: workspace:^
+        version: link:../modules/pagination
+      '@modules/request-client-info':
+        specifier: workspace:^
+        version: link:../modules/request-client-info
+      '@modules/scopes':
+        specifier: workspace:^
+        version: link:../modules/scopes
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../modules/utils
+      '@queues/elections':
+        specifier: workspace:^
+        version: link:../queues/elections
+      '@queues/notifications':
+        specifier: workspace:^
+        version: link:../queues/notifications
+      '@queues/vote-weight':
+        specifier: workspace:^
+        version: link:../queues/vote-weight
+      '@services/admin-imports':
+        specifier: workspace:^
+        version: link:../services/admin-imports
+      '@services/ai-usage':
+        specifier: workspace:^
+        version: link:../services/ai-usage
+      '@services/attribution':
+        specifier: workspace:^
+        version: link:../services/attribution
+      '@services/comments':
+        specifier: workspace:^
+        version: link:../services/comments
+      '@services/communities':
+        specifier: workspace:^
+        version: link:../services/communities
+      '@services/content-provenance':
+        specifier: workspace:^
+        version: link:../services/content-provenance
+      '@services/contribution-gating':
+        specifier: workspace:^
+        version: link:../services/contribution-gating
+      '@services/copyright-notices':
+        specifier: workspace:^
+        version: link:../services/copyright-notices
+      '@services/countries':
+        specifier: workspace:^
+        version: link:../services/countries
+      '@services/crawlers':
+        specifier: workspace:^
+        version: link:../services/crawlers
+      '@services/currencies':
+        specifier: workspace:^
+        version: link:../services/currencies
+      '@services/data-points':
+        specifier: workspace:^
+        version: link:../services/data-points
+      '@services/dynamic-config-admin':
+        specifier: workspace:^
+        version: link:../services/dynamic-config-admin
+      '@services/elections-votes':
+        specifier: workspace:^
+        version: link:../services/elections-votes
+      '@services/entity-cache':
+        specifier: workspace:^
+        version: link:../services/entity-cache
+      '@services/entity-fetch':
+        specifier: workspace:^
+        version: link:../services/entity-fetch
+      '@services/entity-relation-actions':
+        specifier: workspace:^
+        version: link:../services/entity-relation-actions
+      '@services/entity-relations':
+        specifier: workspace:^
+        version: link:../services/entity-relations
+      '@services/feeds':
+        specifier: workspace:^
+        version: link:../services/feeds
+      '@services/growth-metrics':
+        specifier: workspace:^
+        version: link:../services/growth-metrics
+      '@services/individuals-households':
+        specifier: workspace:^
+        version: link:../services/individuals-households
+      '@services/landing-page-analytics':
+        specifier: workspace:^
+        version: link:../services/landing-page-analytics
+      '@services/lists':
+        specifier: workspace:^
+        version: link:../services/lists
+      '@services/memberships':
+        specifier: workspace:^
+        version: link:../services/memberships
+      '@services/moderation-analytics':
+        specifier: workspace:^
+        version: link:../services/moderation-analytics
+      '@services/moderation-appeals':
+        specifier: workspace:^
+        version: link:../services/moderation-appeals
+      '@services/moderation-reports':
+        specifier: workspace:^
+        version: link:../services/moderation-reports
+      '@services/moderator-actions':
+        specifier: workspace:^
+        version: link:../services/moderator-actions
+      '@services/my':
+        specifier: workspace:^
+        version: link:../services/my
+      '@services/notifications':
+        specifier: workspace:^
+        version: link:../services/notifications
+      '@services/openai-agents':
+        specifier: workspace:^
+        version: link:../services/openai-agents
+      '@services/pagination':
+        specifier: workspace:^
+        version: link:../services/pagination
+      '@services/post-clearance':
+        specifier: workspace:^
+        version: link:../services/post-clearance
+      '@services/posts':
+        specifier: workspace:^
+        version: link:../services/posts
+      '@services/prioritized-referral-links':
+        specifier: workspace:^
+        version: link:../services/prioritized-referral-links
+      '@services/queue-monitoring':
+        specifier: workspace:^
+        version: link:../services/queue-monitoring
+      '@services/recommended-rss-feeds':
+        specifier: workspace:^
+        version: link:../services/recommended-rss-feeds
+      '@services/recommended-topics':
+        specifier: workspace:^
+        version: link:../services/recommended-topics
+      '@services/referral-link-unfurl':
+        specifier: workspace:^
+        version: link:../services/referral-link-unfurl
+      '@services/report-integrity':
+        specifier: workspace:^
+        version: link:../services/report-integrity
+      '@services/review-disputes':
+        specifier: workspace:^
+        version: link:../services/review-disputes
+      '@services/rss-feed-items':
+        specifier: workspace:^
+        version: link:../services/rss-feed-items
+      '@services/rss-feeds':
+        specifier: workspace:^
+        version: link:../services/rss-feeds
+      '@services/runtime-request-validation':
+        specifier: workspace:^
+        version: link:../services/runtime-request-validation
+      '@services/search-params':
+        specifier: workspace:^
+        version: link:../services/search-params
+      '@services/stories':
+        specifier: workspace:^
+        version: link:../services/stories
+      '@services/topic-claims':
+        specifier: workspace:^
+        version: link:../services/topic-claims
+      '@services/topic-recommendations':
+        specifier: workspace:^
+        version: link:../services/topic-recommendations
+      '@services/topics':
+        specifier: workspace:^
+        version: link:../services/topics
+      '@services/trending-communities':
+        specifier: workspace:^
+        version: link:../services/trending-communities
+      '@services/trending-posts':
+        specifier: workspace:^
+        version: link:../services/trending-posts
+      '@services/trending-referral-programs':
+        specifier: workspace:^
+        version: link:../services/trending-referral-programs
+      '@services/trending-rss-feeds':
+        specifier: workspace:^
+        version: link:../services/trending-rss-feeds
+      '@services/trending-topics':
+        specifier: workspace:^
+        version: link:../services/trending-topics
+      '@services/urls':
+        specifier: workspace:^
+        version: link:../services/urls
+      '@services/urls-hostnames':
+        specifier: workspace:^
+        version: link:../services/urls-hostnames
+      '@services/user-financial-profiles':
+        specifier: workspace:^
+        version: link:../services/user-financial-profiles
+      '@services/user-mod-notes':
+        specifier: workspace:^
+        version: link:../services/user-mod-notes
+      '@services/user-referral-program-links':
+        specifier: workspace:^
+        version: link:../services/user-referral-program-links
+      '@services/user-warnings':
+        specifier: workspace:^
+        version: link:../services/user-warnings
+      '@services/users':
+        specifier: workspace:^
+        version: link:../services/users
+      '@services/vote-integrity':
+        specifier: workspace:^
+        version: link:../services/vote-integrity
+      '@services/vote-weight':
+        specifier: workspace:^
+        version: link:../services/vote-weight
+      '@services/web-search':
+        specifier: workspace:^
+        version: link:../services/web-search
+      '@ts-shared/data-points':
+        specifier: workspace:^
+        version: link:../../ts-shared/data-points
+      '@ts-shared/feed-capabilities':
+        specifier: workspace:^
+        version: link:../../ts-shared/feed-capabilities
+      '@ts-shared/money':
+        specifier: workspace:^
+        version: link:../../ts-shared/money
+      '@ts-shared/utils':
+        specifier: workspace:^
+        version: link:../../ts-shared/utils
+      '@voucha/api-fixtures':
+        specifier: workspace:^
+        version: link:../../api-fixtures
+      ajv:
+        specifier: ^8.20.0
+        version: 8.20.0
+      ajv-formats:
+        specifier: ^3.0.1
+        version: 3.0.1(ajv@8.20.0)
+      http-assert:
+        specifier: ^1.5.0
+        version: 1.5.0
+      http-errors:
+        specifier: ^2.0.1
+        version: 2.0.1
+    devDependencies:
+      '@services/follower-distributions':
+        specifier: workspace:^
+        version: link:../services/follower-distributions
+      '@types/http-errors':
+        specifier: ^2.0.5
+        version: 2.0.5
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../test-helpers
 
   backend/md:
     dependencies:
@@ -6815,9 +7074,9 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../users
-      '@voucha/tools':
+      '@voucha/mcp':
         specifier: workspace:^
-        version: link:../../tools
+        version: link:../../mcp
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -11153,265 +11412,6 @@ importers:
       vitest:
         specifier: ^5.0.3
         version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
-
-  backend/tools:
-    dependencies:
-      '@jongleberry/vurst-prompt':
-        specifier: ^0.4.3
-        version: 0.4.3
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../modules/on-error
-      '@modules/pagination':
-        specifier: workspace:^
-        version: link:../modules/pagination
-      '@modules/request-client-info':
-        specifier: workspace:^
-        version: link:../modules/request-client-info
-      '@modules/scopes':
-        specifier: workspace:^
-        version: link:../modules/scopes
-      '@modules/utils':
-        specifier: workspace:^
-        version: link:../modules/utils
-      '@queues/elections':
-        specifier: workspace:^
-        version: link:../queues/elections
-      '@queues/notifications':
-        specifier: workspace:^
-        version: link:../queues/notifications
-      '@queues/vote-weight':
-        specifier: workspace:^
-        version: link:../queues/vote-weight
-      '@services/admin-imports':
-        specifier: workspace:^
-        version: link:../services/admin-imports
-      '@services/ai-usage':
-        specifier: workspace:^
-        version: link:../services/ai-usage
-      '@services/attribution':
-        specifier: workspace:^
-        version: link:../services/attribution
-      '@services/comments':
-        specifier: workspace:^
-        version: link:../services/comments
-      '@services/communities':
-        specifier: workspace:^
-        version: link:../services/communities
-      '@services/content-provenance':
-        specifier: workspace:^
-        version: link:../services/content-provenance
-      '@services/contribution-gating':
-        specifier: workspace:^
-        version: link:../services/contribution-gating
-      '@services/copyright-notices':
-        specifier: workspace:^
-        version: link:../services/copyright-notices
-      '@services/countries':
-        specifier: workspace:^
-        version: link:../services/countries
-      '@services/crawlers':
-        specifier: workspace:^
-        version: link:../services/crawlers
-      '@services/currencies':
-        specifier: workspace:^
-        version: link:../services/currencies
-      '@services/data-points':
-        specifier: workspace:^
-        version: link:../services/data-points
-      '@services/dynamic-config-admin':
-        specifier: workspace:^
-        version: link:../services/dynamic-config-admin
-      '@services/elections-votes':
-        specifier: workspace:^
-        version: link:../services/elections-votes
-      '@services/entity-cache':
-        specifier: workspace:^
-        version: link:../services/entity-cache
-      '@services/entity-fetch':
-        specifier: workspace:^
-        version: link:../services/entity-fetch
-      '@services/entity-relation-actions':
-        specifier: workspace:^
-        version: link:../services/entity-relation-actions
-      '@services/entity-relations':
-        specifier: workspace:^
-        version: link:../services/entity-relations
-      '@services/feeds':
-        specifier: workspace:^
-        version: link:../services/feeds
-      '@services/growth-metrics':
-        specifier: workspace:^
-        version: link:../services/growth-metrics
-      '@services/individuals-households':
-        specifier: workspace:^
-        version: link:../services/individuals-households
-      '@services/landing-page-analytics':
-        specifier: workspace:^
-        version: link:../services/landing-page-analytics
-      '@services/lists':
-        specifier: workspace:^
-        version: link:../services/lists
-      '@services/memberships':
-        specifier: workspace:^
-        version: link:../services/memberships
-      '@services/moderation-analytics':
-        specifier: workspace:^
-        version: link:../services/moderation-analytics
-      '@services/moderation-appeals':
-        specifier: workspace:^
-        version: link:../services/moderation-appeals
-      '@services/moderation-reports':
-        specifier: workspace:^
-        version: link:../services/moderation-reports
-      '@services/moderator-actions':
-        specifier: workspace:^
-        version: link:../services/moderator-actions
-      '@services/my':
-        specifier: workspace:^
-        version: link:../services/my
-      '@services/notifications':
-        specifier: workspace:^
-        version: link:../services/notifications
-      '@services/openai-agents':
-        specifier: workspace:^
-        version: link:../services/openai-agents
-      '@services/pagination':
-        specifier: workspace:^
-        version: link:../services/pagination
-      '@services/post-clearance':
-        specifier: workspace:^
-        version: link:../services/post-clearance
-      '@services/posts':
-        specifier: workspace:^
-        version: link:../services/posts
-      '@services/prioritized-referral-links':
-        specifier: workspace:^
-        version: link:../services/prioritized-referral-links
-      '@services/queue-monitoring':
-        specifier: workspace:^
-        version: link:../services/queue-monitoring
-      '@services/recommended-rss-feeds':
-        specifier: workspace:^
-        version: link:../services/recommended-rss-feeds
-      '@services/recommended-topics':
-        specifier: workspace:^
-        version: link:../services/recommended-topics
-      '@services/referral-link-unfurl':
-        specifier: workspace:^
-        version: link:../services/referral-link-unfurl
-      '@services/report-integrity':
-        specifier: workspace:^
-        version: link:../services/report-integrity
-      '@services/review-disputes':
-        specifier: workspace:^
-        version: link:../services/review-disputes
-      '@services/rss-feed-items':
-        specifier: workspace:^
-        version: link:../services/rss-feed-items
-      '@services/rss-feeds':
-        specifier: workspace:^
-        version: link:../services/rss-feeds
-      '@services/runtime-request-validation':
-        specifier: workspace:^
-        version: link:../services/runtime-request-validation
-      '@services/search-params':
-        specifier: workspace:^
-        version: link:../services/search-params
-      '@services/stories':
-        specifier: workspace:^
-        version: link:../services/stories
-      '@services/topic-claims':
-        specifier: workspace:^
-        version: link:../services/topic-claims
-      '@services/topic-recommendations':
-        specifier: workspace:^
-        version: link:../services/topic-recommendations
-      '@services/topics':
-        specifier: workspace:^
-        version: link:../services/topics
-      '@services/trending-communities':
-        specifier: workspace:^
-        version: link:../services/trending-communities
-      '@services/trending-posts':
-        specifier: workspace:^
-        version: link:../services/trending-posts
-      '@services/trending-referral-programs':
-        specifier: workspace:^
-        version: link:../services/trending-referral-programs
-      '@services/trending-rss-feeds':
-        specifier: workspace:^
-        version: link:../services/trending-rss-feeds
-      '@services/trending-topics':
-        specifier: workspace:^
-        version: link:../services/trending-topics
-      '@services/urls':
-        specifier: workspace:^
-        version: link:../services/urls
-      '@services/urls-hostnames':
-        specifier: workspace:^
-        version: link:../services/urls-hostnames
-      '@services/user-financial-profiles':
-        specifier: workspace:^
-        version: link:../services/user-financial-profiles
-      '@services/user-mod-notes':
-        specifier: workspace:^
-        version: link:../services/user-mod-notes
-      '@services/user-referral-program-links':
-        specifier: workspace:^
-        version: link:../services/user-referral-program-links
-      '@services/user-warnings':
-        specifier: workspace:^
-        version: link:../services/user-warnings
-      '@services/users':
-        specifier: workspace:^
-        version: link:../services/users
-      '@services/vote-integrity':
-        specifier: workspace:^
-        version: link:../services/vote-integrity
-      '@services/vote-weight':
-        specifier: workspace:^
-        version: link:../services/vote-weight
-      '@services/web-search':
-        specifier: workspace:^
-        version: link:../services/web-search
-      '@ts-shared/data-points':
-        specifier: workspace:^
-        version: link:../../ts-shared/data-points
-      '@ts-shared/feed-capabilities':
-        specifier: workspace:^
-        version: link:../../ts-shared/feed-capabilities
-      '@ts-shared/money':
-        specifier: workspace:^
-        version: link:../../ts-shared/money
-      '@ts-shared/utils':
-        specifier: workspace:^
-        version: link:../../ts-shared/utils
-      '@voucha/api-fixtures':
-        specifier: workspace:^
-        version: link:../../api-fixtures
-      ajv:
-        specifier: ^8.20.0
-        version: 8.20.0
-      ajv-formats:
-        specifier: ^3.0.1
-        version: 3.0.1(ajv@8.20.0)
-      http-assert:
-        specifier: ^1.5.0
-        version: 1.5.0
-      http-errors:
-        specifier: ^2.0.1
-        version: 2.0.1
-    devDependencies:
-      '@services/follower-distributions':
-        specifier: workspace:^
-        version: link:../services/follower-distributions
-      '@types/http-errors':
-        specifier: ^2.0.5
-        version: 2.0.5
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../test-helpers
 
   backend/types:
     dependencies:

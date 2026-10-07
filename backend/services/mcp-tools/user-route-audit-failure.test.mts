@@ -10,7 +10,7 @@ import {
   issueTestUserMcpCredential,
   type UserMcpCredentialKind,
 } from '@voucha/test-helpers/mcp-user-credentials'
-import { ALL_TOOLS } from '@voucha/tools/registry/index'
+import { ALL_TOOLS } from '@voucha/mcp/registry/index'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import * as audit from './audit.mts'

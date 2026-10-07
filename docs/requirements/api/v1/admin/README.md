@@ -103,7 +103,7 @@ fixed reply to the parsed sender, or queues nothing when no sender is available.
 EU/UK redress, statement-of-reasons and territorial policy decisions, guest-capability issuance,
 staydown match review, information requests, media-delivery replay, and email legal-process
 closure are outside these tools. Raw email and `.eml` reads remain unavailable. See the generated
-[tool catalog](../../../../overview/architecture/agent-tools/catalog.md) for exact tool contracts
+[tool catalog](../../../../overview/architecture/mcp/catalog.md) for exact tool contracts
 and the [enablement runbook](../../../../runbooks/copyright-notices.md#copyright-mcp-decision-tools)
 for operator controls. Path-only operations retain their rationale in the encrypted per-call audit,
 without adding a REST request body; the

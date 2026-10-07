@@ -1,9 +1,9 @@
-import { toolToMcpTool, type McpToolShape } from '@voucha/tools/registry/adapters'
+import { toolToMcpTool, type McpToolShape } from '@voucha/mcp/registry/adapters'
 import {
   getToolRequiredScopes,
   isToolMcpEligible,
   listToolsForSurface,
-} from '@voucha/tools/registry/select'
+} from '@voucha/mcp/registry/select'
 import type { Tool, ToolApiEndpoint, ToolMeta } from '@services/openai-agents/tool-types'
 import {
   ADMIN_MCP_SERVER_CONFIG,

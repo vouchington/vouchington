@@ -113,7 +113,7 @@ rules hold, and they need the `topic-recommendations:read` and `topic-recommenda
 and a Plus plan. `list_my_topic_recommendations` lists the caller's own recommendations of any status
 (scope `topic-recommendations:read`, free plan); it sanitizes and fences their text and scopes its
 cursor to the caller and status, so the cursor is not interchangeable with this list's. Approving and rejecting have no user MCP tool, and
-`dismiss_recommendation` stays a REST-only bookmark predicate. See [Write tools for relations, referral links and topic recommendations](../../../../overview/architecture/agent-tools/relation-referral-recommendation-write-tools.md).
+`dismiss_recommendation` stays a REST-only bookmark predicate. See [Write tools for relations, referral links and topic recommendations](../../../../overview/architecture/mcp/relation-referral-recommendation-write-tools.md).
 
 ## Performance
 

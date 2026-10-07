@@ -4,7 +4,7 @@
 
 The restriction is enforced at HTTP and authorization guards (`isPlatformAccount(user)` is `account_type != null`) and, for topic and post elections, inside the writers themselves (see [Topic and post election writers](#topic-and-post-election-writers)). The other service-level writers (`upsertEntityRelation`, `writeEntityRelations`, `handleElectionVotes`, `upsertEntityRelationElectionVotes`) never check `account_type`, so a platform-account writer is blocked there only where a guard sits in front of it. Classifier actors hardcode `account_type: 'ai_agent'` in the actor literal. An election-backed relation written through `upsertEntityRelation` or `writeEntityRelations` also casts the creator's +1 vote unless the caller passes `vote: false`.
 
-Human and remote actors are out of scope. Paths are under `backend/`. This page classifies every non-test caller of those writers and of the `upsert*ElectionVotes` functions outside the election and relation service internals, and `backend/tools/` has no other vote writer. A writer is a mismatch when current behavior differs from the permissions table.
+Human and remote actors are out of scope. Paths are under `backend/`. This page classifies every non-test caller of those writers and of the `upsert*ElectionVotes` functions outside the election and relation service internals, and `backend/mcp/` has no other vote writer. A writer is a mismatch when current behavior differs from the permissions table.
 
 ## Topic and post election writers
 

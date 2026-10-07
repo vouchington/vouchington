@@ -128,8 +128,8 @@ describe('get_my_profile tool — real DB', () => {
     const cardId = await insertTestCard({ createdById: cardUser.id })
 
     // Add card to user's wallet via the same service call POST /api/v1/my/cards makes.
-    // Calling the service directly (instead of createRequest()) avoids @voucha/tools
-    // depending on @voucha/api, which itself depends on @voucha/tools.
+    // Calling the service directly (instead of createRequest()) avoids @voucha/mcp
+    // depending on @voucha/api, which itself depends on @voucha/mcp.
     await createIndividualCard(cardUser, cardUser, cardId)
 
     const execute = getMyProfileTool.function(cardUser)

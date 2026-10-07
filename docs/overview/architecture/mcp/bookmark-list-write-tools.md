@@ -39,5 +39,5 @@ as well as the list-ownership check, so under delegated credentials it is strict
 route, which adds a post without a visibility check.
 
 The result schemas are owned by the tools, because the bookmark and list REST routes document their
-bodies inline. `backend/tools/bookmark-list-output-schema.test.mts` pins them to the documented REST
+bodies inline. `backend/mcp/bookmark-list-output-schema.test.mts` pins them to the documented REST
 responses.

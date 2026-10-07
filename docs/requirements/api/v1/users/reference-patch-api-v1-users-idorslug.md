@@ -15,4 +15,4 @@ target user, so a malformed body from a caller who may not edit the target is al
 The `update_my_preferences` MCP tool runs this route's command for the caller only, with an allow-listed
 subset of the body: visibility, messaging, post defaults, country, locale, and Hacker News discussions. It
 needs the `preferences:read` and `preferences:write` scopes and a Plus plan. See
-[Profile, Notification, and Preference Write Tools](../../../../overview/architecture/agent-tools/profile-notification-write-tools.md).
+[Profile, Notification, and Preference Write Tools](../../../../overview/architecture/mcp/profile-notification-write-tools.md).

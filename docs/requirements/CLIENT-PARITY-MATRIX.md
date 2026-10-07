@@ -228,7 +228,7 @@ consumer change requires the normal linked client validation PR.
 
 Eleven user MCP tools write or read community membership, content reports, review disputes and
 moderation appeals for the credential owner (see
-[Community, Report, Dispute and Appeal Tools](../overview/architecture/agent-tools/community-report-appeal-write-tools.md)).
+[Community, Report, Dispute and Appeal Tools](../overview/architecture/mcp/community-report-appeal-write-tools.md)).
 They are user-MCP tools, so native agents can call them through the same OAuth MCP connection when
 their scopes and plan allow it. REST routes, DTOs and fixtures do not change, and the web client
 gains no screen. Native MCP adoption is tracked by

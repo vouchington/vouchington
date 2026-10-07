@@ -7,7 +7,7 @@ import type { ApiScope } from '../modules/scopes/index.mts'
 import { callMcpTool } from '../services/mcp-tools/call-tool.mts'
 import { USER_MCP_SERVER_CONFIG } from '../services/mcp-tools/config.mts'
 import type { BasicUser } from '../services/users/types.mts'
-import { getRegisteredToolByName } from '../tools/registry/index.mts'
+import { getRegisteredToolByName } from '../mcp/registry/index.mts'
 
 export type McpContractCaller = BasicUser & { membership_plan: 'plus' | 'pro' | null }
 

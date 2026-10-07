@@ -38,7 +38,7 @@ do not repeat those inventories in [docs/README.md](README.md) or the
 ### Architecture and infrastructure
 
 - [Overview](overview/README.md) · [Architecture](overview/architecture/README.md) · [Backend](overview/architecture/backend/README.md)
-- [Backend package catalogs](overview/architecture/backend/catalogs/README.md) · [AI agents](overview/architecture/ai-agents/README.md) · [Agent tools](overview/architecture/agent-tools/README.md)
+- [Backend package catalogs](overview/architecture/backend/catalogs/README.md) · [AI agents](overview/architecture/ai-agents/README.md) · [MCP tools](overview/architecture/mcp/README.md)
 - [Queues](overview/architecture/queues/README.md) · [Services](overview/architecture/services/README.md) · [Shared TypeScript](overview/architecture/typescript-shared/README.md)
 - [Web](overview/architecture/web/README.md) · [Email templates](overview/architecture/email-templates/README.md)
 - [Infrastructure](overview/infrastructure/README.md) · [Cloudflare Worker](overview/infrastructure/cloudflare-worker/README.md) · [Lambdas](overview/infrastructure/lambdas/README.md)

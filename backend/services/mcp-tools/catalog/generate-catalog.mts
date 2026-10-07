@@ -19,7 +19,7 @@ async function generate(
   if (args.some(arg => arg !== '--check') || args.length > 1)
     throw new Error('Usage: pnpm run mcp:catalog [--check]')
   const check = args.includes('--check')
-  const markdownPath = repoPath('docs/overview/architecture/agent-tools/catalog.md')
+  const markdownPath = repoPath('docs/overview/architecture/mcp/catalog.md')
   const artifacts = [
     { path: repoPath('api-fixtures/v1/mcp.json'), raw: toJson(buildMcpCatalog(tools)) },
     {

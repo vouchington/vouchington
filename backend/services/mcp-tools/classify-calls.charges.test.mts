@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { ALL_TOOLS } from '@voucha/tools/registry/index'
+import { ALL_TOOLS } from '@voucha/mcp/registry/index'
 import type { Tool, ToolApiEndpoint } from '@services/openai-agents/tool-types'
 import type { ApiScope } from '@modules/scopes'
 import { planMcpCalls } from './classify-calls.mts'

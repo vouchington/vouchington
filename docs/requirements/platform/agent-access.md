@@ -74,7 +74,7 @@ appeal and community application) keep the same required key, replay and conflic
 `admitDelegatedCreate`, which holds them in the same admission ledger as posts: one key space per
 credential owner, the create and its stored response in one transaction, a renewed lease and the
 same replay retention. See
-[Community, Report, Dispute and Appeal Tools](../../overview/architecture/agent-tools/community-report-appeal-write-tools.md#creation-and-idempotency).
+[Community, Report, Dispute and Appeal Tools](../../overview/architecture/mcp/community-report-appeal-write-tools.md#creation-and-idempotency).
 
 ## Related
 
