@@ -19,13 +19,11 @@ export const workerExitAfterPassLog = [
 // vitest-teardown-overrun-diagnostics.mts): a real trip now also logs these lines. They must
 // stay invisible to hasBackendUnitVitestFailure(), which gates the backend-unit runner-shutdown rerun.
 export const teardownInstrumentationLines = [
-  '[vitest-teardown] phase=queues start',
-  '[vitest-teardown] phase=queues done ms=42',
   '[vitest-teardown] phase=native-drain start',
   '[vitest-teardown] phase=native-drain done ms=8',
   '[vitest-teardown] phase=data-stores start',
   '[vitest-teardown] phase=data-stores done ms=19842',
-  '[vitest-teardown] total ms=19892',
+  '[vitest-teardown] total ms=19850',
   formatTeardownOverrunDiagnostics().trim(),
 ].join('\n')
 

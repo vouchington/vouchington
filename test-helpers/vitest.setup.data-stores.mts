@@ -91,18 +91,6 @@ async function timedTeardownPhase(phase: string, run: () => Promise<void>): Prom
 export async function teardown() {
   const overallStart = emitTeardownTiming ? performance.now() : 0
 
-  await timedTeardownPhase('queues', async () => {
-    /**
-     * Clean all queues to avoid unnecessary calls to external services like OpenAI.
-     */
-    const { default: queues } = await import('@services/queue-monitoring/queue-inventory')
-    await Promise.all(
-      queues.map((queue: { obliterate(opts: { force: boolean }): Promise<void> }) =>
-        queue.obliterate({ force: true }),
-      ),
-    )
-  })
-
   await timedTeardownPhase('native-drain', async () => {
     /**
      * Drain any in-flight native addon work before closing data stores.
