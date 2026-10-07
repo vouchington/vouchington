@@ -47,15 +47,15 @@ describe('run-bounded', () => {
     const dir = mkdtempSync(join(tmpdir(), 'run-bounded-'))
     const pidFile = join(dir, 'child-pid')
     const child = [
-      'import os, signal, time',
+      'import os, signal',
       'signal.signal(signal.SIGTERM, signal.SIG_IGN)',
       'open(os.environ["PID_FILE"], "w").write(str(os.getpid()))',
-      'time.sleep(30)',
+      'signal.pause()',
     ].join('; ')
     const parent = [
-      'import os, subprocess, sys, time',
+      'import os, signal, subprocess, sys',
       `subprocess.Popen([sys.executable, "-c", ${JSON.stringify(child)}], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)`,
-      'time.sleep(30)',
+      'signal.pause()',
     ].join('; ')
     let pid: number | undefined
     try {
