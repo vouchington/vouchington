@@ -22,7 +22,7 @@ The independent `community_members.should_suppress_community_digests_while_on_va
 import {
   setMyCommunityVacation,
   clearMyCommunityVacation,
-  getMyCommunityVacation,
+  getMyCommunityVacationSettings,
   currentUserCanSetOwnModeratorVacation,
 } from '@services/community-member-vacations'
 
@@ -36,12 +36,28 @@ await setMyCommunityVacation(userId, { communityId })
 await clearMyCommunityVacation(userId, { communityId })
 
 // Read own status
-const vacation = await getMyCommunityVacation(userId, { communityId })
+const { vacation } = await getMyCommunityVacationSettings(userId, { communityId })
 ```
+
+## Business-time dependency
+
+`setMyCommunityVacation`, `getMyCommunityVacation`, and `getMyCommunityVacationSettings`
+accept an optional internal third argument `{ clock: () => Date }`. Each operation samples
+and validates a finite Date once before its query. Set/upsert binds that business time into
+`starts_at`; both read predicates use the same observed time. A thrown clock error or invalid
+Date rejects before writing. Clear and preference setters have no clock dependency.
+
+Omitting the dependency retains native PostgreSQL `now()` for starts and reads. `created_at`
+and `updated_at` remain native audit defaults/triggers. REST callers omit the dependency,
+and the downstream exclusion queries below retain their native clock. An injected service
+as-of time does not change the database clock or make all downstream readers logical.
+
+The direct-module `getMyCommunityVacation` reader is not exported by the service barrel;
+the public example uses the existing exported `getMyCommunityVacationSettings`.
 
 ## Exclusion surfaces
 
-Vacation exclusion is applied inline in SQL subqueries at the two active wire-in sites:
+Vacation exclusion is applied inline in SQL subqueries at these exclusion surfaces:
 
 1. `backend/services/moderation-threads/create.mts` — `addModParticipants()`: on-vacation
    mods are excluded from the `mod_internal` thread participant insert.
