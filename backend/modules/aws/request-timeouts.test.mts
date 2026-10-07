@@ -80,6 +80,32 @@ describe('AWS request timeouts', () => {
     }
   })
 
+  it('bounds an S3 response body that stalls after headers', async () => {
+    server = createServer((_request, response) => {
+      response.writeHead(200, { 'content-type': 'application/xml' })
+      response.flushHeaders()
+    })
+    const port = await listenOnEphemeralPort(server, '127.0.0.1')
+    const client = new S3Client({
+      credentials: TEST_CREDENTIALS,
+      endpoint: `http://127.0.0.1:${port}`,
+      forcePathStyle: true,
+      maxAttempts: 1,
+      region: 'us-west-2',
+      requestHandler: createAwsRequestHandler({
+        connectionTimeout: TEST_TIMEOUT_MS,
+        socketTimeout: TEST_TIMEOUT_MS,
+      }),
+    })
+
+    try {
+      const error = await captureRejectionBeforeDeadline(client.send(new ListBucketsCommand({})))
+      expect(error).toMatchObject({ name: 'TimeoutError', code: 'ETIMEDOUT' })
+    } finally {
+      client.destroy()
+    }
+  })
+
   it('bounds a stalled SQS request through the shared handler factory', async () => {
     const endpoint = await startStalledServer()
     const client = new SQSClient({

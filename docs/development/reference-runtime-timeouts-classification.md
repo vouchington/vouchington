@@ -28,6 +28,9 @@ crawl/delivery holding a worker slot.
 | Embed resolver — DNS/SSRF resolution                 | `backend/services/crawl-embeds/embed-resolver.mts`                 | `DNS_TIMEOUT_MS`                 | 5,000  |
 | Embed resolver — total fetch budget                  | `backend/services/crawl-embeds/embed-resolver.mts`                 | `EMBED_FETCH_TIMEOUT_MS`         | 5,000  |
 | Kagi Smallweb feed list                              | `backend/services/kagi-smallweb/fetch-feed-list.mts`               | `FETCH_TIMEOUT_MS`               | 30,000 |
+| AWS SDK connection establishment                     | `backend/modules/aws/config.mts`                                   | `AWS_CONNECTION_TIMEOUT_MS`      | 3,000  |
+| AWS SDK socket inactivity                            | `backend/modules/aws/config.mts`                                   | `AWS_SOCKET_TIMEOUT_MS`          | 10,000 |
+| AWS SQS long-poll socket inactivity                  | `backend/modules/aws/config.mts`                                   | `AWS_SQS_SOCKET_TIMEOUT_MS`      | 25,000 |
 
 **HTML crawler phase budgets are independent, not shared or divided** (#10772): DNS/SSRF
 resolution, the request-to-headers phase, and the response-body download each get their own timer,
@@ -57,3 +60,8 @@ every `validateUrl` import from `ssrf-guard/node`, including aliased and namespa
 second options argument containing `timeoutMs` or `signal`. The companion
 `ast-grep-rules/backend-validate-url-bounded-dns.yml` covers only the `deps` and `dependencies`
 dependency-injection receivers that provenance analysis cannot resolve.
+
+The AWS connection and socket-inactivity bounds apply to every backend AWS SDK client. The SQS
+exception must remain above its 20-second protocol long poll. `createAwsRequestHandler` also
+re-arms the inactivity timeout on the response body because Smithy's deferred timeout registration
+can otherwise be cleared when response headers arrive before the listener is attached.
