@@ -19,10 +19,11 @@ interface BrowserErrorFixtures {
 
 interface BrowserErrorFixtureArgs {
   context: BrowserContext
+  vouchaTestTimeout?: void
 }
 
 export async function browserErrorsFixture(
-  { context }: BrowserErrorFixtureArgs,
+  { context, vouchaTestTimeout: _timeoutGuard }: BrowserErrorFixtureArgs,
   run: (monitor: BrowserIssueMonitor) => Promise<void>,
   testInfo: TestInfo,
 ) {
@@ -53,12 +54,7 @@ export async function browserErrorsFixture(
 }
 
 export const test = guardPlaywrightTestTimeouts(base).extend<BrowserErrorFixtures>({
-  browserErrors: [
-    async ({ context, vouchaTestTimeout: _timeoutGuard }, run, info) => {
-      await browserErrorsFixture({ context }, run, info)
-    },
-    { auto: true },
-  ],
+  browserErrors: [browserErrorsFixture, { auto: true }],
 })
 
 export { expect }
