@@ -14,7 +14,7 @@ import {
   insertTestDomainBlacklist,
   hasEmailTypeDomainBlacklists,
 } from '@voucha/test-helpers'
-import { withOwnedBlocklistBloomFilter } from '@voucha/test-helpers/owned-blocklist-bloom-filter'
+import { registerOwnedBlocklistBloomRecoveryTests } from '@voucha/test-helpers/blocklist-bloom-recovery-tests'
 import { bloomValkeyClient } from '@data-stores/valkey'
 
 describe('email-bloom-filter.generated', () => {
@@ -47,46 +47,12 @@ describe('email-bloom-filter.generated', () => {
     expect(result).toBeNull()
   })
 
-  it('checkEmailBloomFilter returns null when the ready marker is not readable', async () => {
-    await withOwnedBlocklistBloomFilter('email-blocklist', async ({ readyKey, readTarget }) => {
-      await bloomValkeyClient.customCommand(['LPUSH', readyKey, 'not-a-string-marker'])
-
-      const result = await checkEmailBloomFilter('wrong-ready-type.com', readTarget)
-
-      expect(result).toBeNull()
-      expect(enqueueSpy).toHaveBeenCalled()
-      await settleOwnedRebuildEnqueues()
-    })
-  })
-
-  it('checkEmailBloomFilter keeps ready marker valid when missing-filter repair runs', async () => {
-    await withOwnedBlocklistBloomFilter('email-blocklist', async ({ readyKey, readTarget }) => {
-      await bloomValkeyClient.set(readyKey, '1')
-
-      const result = await checkEmailBloomFilter('missing-filter.com', readTarget)
-      expect(enqueueSpy).toHaveBeenCalled()
-      await settleOwnedRebuildEnqueues()
-      expect(result).toBeNull()
-      const readyMarker = await bloomValkeyClient.get(readyKey)
-      expect(readyMarker == null || readyMarker.toString().startsWith('ready:')).toBe(true)
-    })
-  })
-
-  it('checkEmailBloomFilter keeps ready marker valid when corrupted-filter repair runs', async () => {
-    await withOwnedBlocklistBloomFilter(
-      'email-blocklist',
-      async ({ bloomFilter, readyKey, readTarget }) => {
-        await bloomValkeyClient.set(readyKey, '1')
-        await bloomValkeyClient.set(bloomFilter.getKey(), 'corrupted')
-
-        const result = await checkEmailBloomFilter('corrupted-filter.com', readTarget)
-        expect(enqueueSpy).toHaveBeenCalled()
-        await settleOwnedRebuildEnqueues()
-        expect(result).toBeNull()
-        const readyMarker = await bloomValkeyClient.get(readyKey)
-        expect(readyMarker == null || readyMarker.toString().startsWith('ready:')).toBe(true)
-      },
-    )
+  registerOwnedBlocklistBloomRecoveryTests({
+    filter: 'email-blocklist',
+    check: checkEmailBloomFilter,
+    add: addDomainsToEmailBloomFilter,
+    wasRebuildEnqueued: () => enqueueSpy.mock.calls.length > 0,
+    settleRebuildEnqueues: settleOwnedRebuildEnqueues,
   })
 
   it('enqueueRebuildBloomFilterBestEffortWithEnqueue runs callbacks after promise enqueues', async () => {
@@ -260,22 +226,5 @@ describe('email-bloom-filter.generated', () => {
     await bloomValkeyClient.set('bloom-filter:email-blocklist', 'corrupted')
     // Should resolve without throwing — error recovery is internal
     await expect(addDomainsToEmailBloomFilter(['blocked.com'])).resolves.toBeUndefined()
-  })
-
-  it('addDomainsToEmailBloomFilter swallows unreadable ready marker recovery errors', async () => {
-    await withOwnedBlocklistBloomFilter(
-      'email-blocklist',
-      async ({ bloomFilter, readyKey, addTarget }) => {
-        await bloomValkeyClient.customCommand(['LPUSH', readyKey, 'not-a-string-marker'])
-        await bloomValkeyClient.set(bloomFilter.getKey(), 'corrupted')
-
-        await expect(
-          addDomainsToEmailBloomFilter(['blocked.com'], addTarget),
-        ).resolves.toBeUndefined()
-        expect(enqueueSpy).toHaveBeenCalled()
-        await settleOwnedRebuildEnqueues()
-        expect(await bloomValkeyClient.customCommand(['TYPE', readyKey])).not.toBe('list')
-      },
-    )
   })
 })
