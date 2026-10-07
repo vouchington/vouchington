@@ -27,6 +27,14 @@ describe('MCP message usage meter', () => {
     expect(meter.resolveUnits(200)).toBeUndefined()
   })
 
+  it('ignores invalid callback indexes without revoking a wholly refused batch', () => {
+    const meter = createMcpMessageMeter()
+    meter.recordPlannedEvents([call('rate_limited')])
+    meter.markRateLimited(-1)
+    meter.markRateLimited(1)
+    expect(meter.resolveUnits(200)).toBe(0)
+  })
+
   it('keeps a tools/list or notification message charged', () => {
     const meter = createMcpMessageMeter()
     meter.recordPlannedEvents([
