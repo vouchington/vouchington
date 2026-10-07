@@ -77,8 +77,6 @@ before releasing the worktree lock.
   worktree; `--list` and `--dry-run` are read-only.
 - `node dev/pr-description.mts create|update ...` — Creates or replaces a GitHub PR body after
   validation; `validate` is read-only.
-- `node dev/blackboard-journal.mts append|entries ...` — Appends one session note as a journal entry
-  to the shared agent-blackboard stack, or reads a session's journal entries back.
 - `pnpm exec vouchington link-skill <name> --source-root .agents/skills --target-root .claude/skills`
   — Creates the tracked `.claude/skills/<name>` symlink after `.agents/skills/<name>/SKILL.md`
   exists; no-ops when the relative target is already correct.
@@ -115,43 +113,21 @@ one-at-a-time operations owned by the canonical
 
 #### Blackboard journal
 
-Stage each note in a non-empty UTF-8 file, then append it with:
+No repository command appends journal entries. Agents call the `journal_append` tool of the
+machine-registered `vouchington-tooling` MCP server (see
+[the `blackboard` skill](../../../.agents/skills/blackboard/SKILL.md)), or its machine-installed CLI
+fallback when the server is not connected, and read a session back with `journal_entries`. Both
+need an explicit session id, which `node dev/check-blackboard.mts` prints at SessionStart. See
+[docs/development/agent-blackboard.md](../agent-blackboard.md) for the hosted connection, the
+outbox, and the CLI fallback.
 
-```bash
-node dev/blackboard-journal.mts append --file <note-file> --mode <interactive|autonomous> --source-event-id <id> --work-outcome <outcome> --coverage-status <status> [--coverage-source <source,...>] [--dropped-count <n>] [--outbox-directory <path>] [--session-id <id>] [--parent-session-id <id>] [--agent <name>] [--version <version>] [--timestamp <iso8601>] [--repository <owner/name> ...]
-node dev/blackboard-journal.mts append --file <note-file> --mode <interactive|autonomous> --source-event-id <id> --work-outcome <outcome> --coverage-status <status> [--coverage-source <source,...>] [--dropped-count <n>] [--outbox-directory <path>] --root-codex [--new-root-codex-session] [--agent codex] [--version <version>] [--timestamp <iso8601>] [--repository <owner/name> ...]
-```
-
-Read a session's journal entries back (oldest first) with:
-
-```bash
-node dev/blackboard-journal.mts entries [--session-id <id> | --root-codex [--new-root-codex-session]]
-```
-
-`entries` accepts at most one identity override: `--session-id <id>` or interactive-root
-`--root-codex`. Root mode refreshes and reads back the worktree-local identity before the server
-read.
-
-The commands accept no positional note or stdin input. `append` reads the file without trimming,
-validates it is non-empty UTF-8, and calls `appendJournal`. `--mode`, `--source-event-id`,
-`--work-outcome`, and `--coverage-status` are required. `--coverage-source` is an optional
-comma-separated list, and an omitted `--dropped-count` means 0. Interactive mode requires
-`--outbox-directory`; autonomous mode must omit it. Success prints one JSON delivery result.
-[`agent-session-id/resolve.mts`](../../../dev/agent-session-id/resolve.mts)
-resolves a coherent harness, agent, and session when either CLI override is absent. Cursor CLI also
-reads `.local/cursor-session-id`; native Grok with `GROK_AGENT` reads
-`.local/grok-session-id`. An interactive root Codex call always passes `--root-codex`; an absent-thread
-new root session also passes `--new-root-codex-session` exactly once, then reuses
-`.local/codex-session-id`. A real thread id replaces it; children and
-detached processes must not pass either root flag. Root Codex uses this script path rather than the MCP
-procedure because only the script can invoke the root resolver.
-
-A thrown failure (missing token, unreachable blackboard stack, or rejected envelope) hard-fails
-nonzero and prints a shell-quoted `Replay with: ...` command for the same flags. Interactive
-transport trouble can instead return `pending` after the explicit outbox retains the envelope;
-that exit is 0, so read the JSON status. See
-[docs/development/agent-blackboard.md](../agent-blackboard.md) for bringing the
-stack up.
+[`agent-session-id/resolve.mts`](../../../dev/agent-session-id/resolve.mts) resolves a coherent
+harness, agent, and session for the retrospective scripts when their CLI override is absent. Cursor
+CLI also reads `.local/cursor-session-id`; native Grok with `GROK_AGENT` reads
+`.local/grok-session-id`. An interactive root Codex call always passes `--root-codex`; an
+absent-thread new root session also passes `--new-root-codex-session` exactly once, then reuses
+`.local/codex-session-id`. A real thread id replaces it; children and detached processes must not
+pass either root flag.
 
 `node dev/retrospective-save.mts compose --input <json-file>` assembles routine facts and markers,
 including validated work outcome and coverage front matter. `save --mode interactive|autonomous --file <path>`
@@ -188,8 +164,6 @@ failures, command invocations, cumulative token deltas, recursive subagent spend
 
 These are invoked by agent hooks, tests, CI, or higher-level scripts rather than as routine developer
 commands: `check-fresh-base`, `check-web-init`, `node dev/check-blackboard.mts`,
-`dev/blackboard-mcp` (the `agent-blackboard` MCP server entrypoint registered in `.mcp.json` and
-`.codex/config.toml`; launched by the agent runtime, not run directly),
 `node dev/codex-hooks/persist-session-id.mts claude`,
 `node dev/codex-hooks/post-tool-use-command.mts <claude|codex>`,
 `check-worktree-ports`, `check-db-backed-test-setup.mts`, `playwright-server-check`,

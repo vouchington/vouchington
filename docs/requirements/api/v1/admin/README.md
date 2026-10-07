@@ -47,7 +47,7 @@ For growth metrics details, see [growth-metrics/README.md](./growth-metrics/READ
 
 ## MCP Clients
 
-The admin MCP endpoint is streamable HTTP at `POST /api/v1/admin/mcp`. Leave [`.mcp.json`](../../../../../.mcp.json) unchanged. It is OAuth-only: the credential is an OAuth access token bound to the admin resource, which only administrators can authorize, carrying the scopes each tool requires. Ordinary admin tools accept matching `mcp.admin:*` grants; sensitive tools, including copyright decisions, require their exact resource grants. API keys are not accepted and get `401`. OAuth clients discover the resource from `/.well-known/oauth-protected-resource/api/v1/admin/mcp` through the `401` challenge, so register the URL without a static credential and complete the client's OAuth sign-in.
+The admin MCP endpoint is streamable HTTP at `POST /api/v1/admin/mcp`. No repository file registers it; add it per user, without a static credential. It is OAuth-only: the credential is an OAuth access token bound to the admin resource, which only administrators can authorize, carrying the scopes each tool requires. Ordinary admin tools accept matching `mcp.admin:*` grants; sensitive tools, including copyright decisions, require their exact resource grants. API keys are not accepted and get `401`. OAuth clients discover the resource from `/.well-known/oauth-protected-resource/api/v1/admin/mcp` through the `401` challenge, so register the URL without a static credential and complete the client's OAuth sign-in.
 
 Claude Code (authenticate afterwards from `/mcp`):
 

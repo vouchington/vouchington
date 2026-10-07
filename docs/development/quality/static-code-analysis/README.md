@@ -480,11 +480,12 @@ Policy Contract](../../testing/backend/api-fixtures.md#local-llm-endpoint-policy
 
 The parser-backed
 [`agent-blackboard-mcp-config.test.mts`](../../../../static-code-analysis/repo-file-policy/agent-blackboard-mcp-config.test.mts)
-check keeps the shared `.mcp.json` and Codex `.codex/config.toml` Agent Blackboard registrations
-tracked and equivalent across command, arguments, and forwarded environment-variable names. It
-also prevents the Codex server from becoming required before fresh-worktree dependencies exist and
-executes the tracked registration from a nested repository directory so the launcher cannot regain
-a root-cwd assumption.
+check keeps every repository file from registering an MCP server: it fails on a `.mcp.json`,
+`.cursor/mcp.json`, or `.grok/config.toml`, on a registration key (`enabledMcpjsonServers`, `mcp`,
+`mcpServers`, `mcp_servers`) in a harness config, and on an approval for a retired
+`agent-blackboard` tool. vouchington-machines registers the server per machine.
+[`agent-blackboard-mcp-hooks.test.mts`](../../../../static-code-analysis/repo-file-policy/agent-blackboard-mcp-hooks.test.mts)
+pins that no Claude or Codex `PreToolUse` matcher matches an `mcp__` tool name.
 
 The `run:`-scalar extraction and shell-argument scanning that rejects an unquoted `?` or `&` in a
 `gh api` argument was extracted to the published

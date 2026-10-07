@@ -11,8 +11,11 @@ in this repository. It does **not** get copied skills or `AGENTS.md` files.
 - Hooks load through Cursor's Claude-compat from [`.claude/settings.json`](../../../.claude/settings.json);
   policy stays in [`dev/codex-hooks/`](../../../dev/codex-hooks). Do not add a `hooks.json` here: a
   second hook source double-fires.
-- MCP uses [`mcp.json`](../../../.cursor/mcp.json)'s root-resolving Agent Blackboard wrapper. Its exact eight-tool
-  allowlist is kept in both [`cli.json`](../../../.cursor/cli.json) and [`permissions.json`](../../../.cursor/permissions.json).
+- MCP: no repository file registers a server. vouchington-machines registers `vouchington-tooling`
+  in `~/.cursor/mcp.json` and pre-approves `Mcp(vouchington-tooling:*)`. Cursor also keeps its
+  own MCP enable state outside its config files: after the first `./configure-agents.sh`, run
+  `cursor-agent mcp enable vouchington-tooling` once (a headless `cursor-agent -p` run needs
+  `--approve-mcps`). Search for `journal_append` before concluding the server is unavailable.
 - CLI allow/deny tokens: [`cli.json`](../../../.cursor/cli.json). Auto-review guidance:
   [`permissions.json`](../../../.cursor/permissions.json).
 - OS sandbox: [`sandbox.json`](../../../.cursor/sandbox.json). Matches Codex `workspace-write`
@@ -29,8 +32,9 @@ in this repository. It does **not** get copied skills or `AGENTS.md` files.
   Full `./dev/initialize web` stays agent-driven.
 - Capability map: [agent-harness-parity.md](../agent-harness-parity.md).
 - Session id: Cursor does not inject a session-id env into the agent Shell. Claude-compat
-  SessionStart/PreToolUse persist `.local/cursor-session-id` (gitignored) so journal and retro CLIs
-  resolve without `--session-id`. Pass `--session-id` or `--jsonl` for transcript facts.
+  SessionStart/PreToolUse persist `.local/cursor-session-id` (gitignored) so the retro CLIs
+  resolve without `--session-id`, and the SessionStart check prints the payload id for the MCP
+  tools. Pass `--session-id` or `--jsonl` for transcript facts.
   `./dev/reset-worktree` deletes the persist file.
 
 `worktrees/` is gitignored runtime state.

@@ -55,7 +55,7 @@ function formatCheckResult(
   )
 }
 
-// Read-only mirror of dev/blackboard-journal/entries.mts: does not ensureSession,
+// Read-only check: does not ensure the session,
 // so a session that was never created (the client's 404, which getEntries
 // keeps as the cause) is not an error — it just means no retrospective exists yet. Any
 // other failure (missing token, unreachable server, bad session id format)

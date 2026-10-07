@@ -167,6 +167,15 @@ namespaced with `vouchington:` (`vouchington:shepherd:<PR>`, `vouchington:plan:<
 `vouchington:fix-main:<workflow_id>:<sha>`, `vouchington:mq-eject`,
 `vouchington:scheduled:<prompt_name>`).
 
+Dispatch does not check for an MCP server or a journaling CLI, and no prompt gates on one. This
+repository registers neither: a host has the `vouchington-tooling` server (and Sentry) only when
+its user configuration was written by vouchington-machines, which for an Auto Harness profile
+with its own home means `./configure-agents.sh --home <profile home>`. A session without them
+continues its primary work and reports the unavailability and any pending outbox state in its
+final report, as the [`blackboard` skill](../../../../.agents/skills/blackboard/SKILL.md)
+requires; the run is never stopped or failed for it. See
+[Automated sessions](../../agent-blackboard.md#automated-sessions).
+
 The request/response contract itself — bounded request timeouts, typed `AutoHarnessError`/
 `AutoHarnessRequestTimeoutError` failures, id- vs name-based `target`/`fallbacks` resolution, and
 resume semantics — is Auto Harness's, documented once upstream in
