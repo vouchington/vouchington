@@ -5,7 +5,7 @@ import {
 } from '@aws-sdk/client-cloudfront'
 import { DynamoDBClient, PutItemCommand, type PutItemCommandOutput } from '@aws-sdk/client-dynamodb'
 import { randomUUID } from 'node:crypto'
-import { AWS_DUALSTACK_CLIENT_CONFIG, AWS_REGION } from './config.mts'
+import { AWS_DUALSTACK_CLIENT_CONFIG, AWS_REGION, createAwsRequestHandler } from './config.mts'
 
 export type MediaDeliveryRegistryState = 'allow' | 'withheld'
 
@@ -110,12 +110,20 @@ function getRequiredMediaDeliveryEnvironment(name: string, env: NodeJS.ProcessEn
 
 function getDynamoDbClient(region: string): DynamoDBClient {
   if (dynamoDbClient && dynamoDbClientRegion === region) return dynamoDbClient
-  dynamoDbClient = new DynamoDBClient({ region, ...AWS_DUALSTACK_CLIENT_CONFIG })
+  dynamoDbClient = new DynamoDBClient({
+    region,
+    requestHandler: createAwsRequestHandler(),
+    ...AWS_DUALSTACK_CLIENT_CONFIG,
+  })
   dynamoDbClientRegion = region
   return dynamoDbClient
 }
 
 function getCloudFrontClient(): CloudFrontClient {
-  cloudFrontClient ??= new CloudFrontClient({ region: AWS_REGION, ...AWS_DUALSTACK_CLIENT_CONFIG })
+  cloudFrontClient ??= new CloudFrontClient({
+    region: AWS_REGION,
+    requestHandler: createAwsRequestHandler(),
+    ...AWS_DUALSTACK_CLIENT_CONFIG,
+  })
   return cloudFrontClient
 }

@@ -1,9 +1,8 @@
 import { BedrockRuntimeClient } from '@aws-sdk/client-bedrock-runtime'
-import { NodeHttpHandler } from '@smithy/node-http-handler'
 import { addGracefulShutdownDrainCallback } from '@data-stores/graceful-shutdown'
 import { getApiEgressProxyUrl, isApiEgressProxyRouteEnabled } from '@modules/api-egress-proxy'
 import { HttpsProxyAgent } from 'https-proxy-agent'
-import { BEDROCK_AWS_REGION } from './config.mts'
+import { BEDROCK_AWS_REGION, createAwsRequestHandler } from './config.mts'
 import { getBedrockCredentials, hasBedrockCredentials } from './credentials.mts'
 
 type BedrockTransport = {
@@ -43,7 +42,7 @@ export function createBedrockRuntimeClients(
       proxiedBedrockRuntimeClient = new BedrockRuntimeClient({
         ...(credentials ? { credentials } : {}),
         region: BEDROCK_AWS_REGION,
-        requestHandler: new NodeHttpHandler({
+        requestHandler: createAwsRequestHandler({
           httpsAgent: new HttpsProxyAgent(transport.getApiEgressProxyUrl()),
         }),
       })
@@ -57,6 +56,7 @@ export function createBedrockRuntimeClients(
       directBedrockRuntimeClient = new BedrockRuntimeClient({
         ...(credentials ? { credentials } : {}),
         region: BEDROCK_AWS_REGION,
+        requestHandler: createAwsRequestHandler(),
       })
     }
 

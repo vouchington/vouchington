@@ -61,10 +61,11 @@ credentials are absent.
   a 10-second socket-idle timeout. The handler throws on timeout, and clients retain the SDK's
   default three attempts. A fully stalled call therefore spends roughly 30 seconds across three
   idle windows, plus retry backoff. An upload that keeps transferring data does not hit the idle
-  timeout. The S3 images and uploads, SQS, SES, CloudWatch, S3 Bedrock batch, and Bedrock control
-  clients use this handler. SQS raises its idle timeout to 25 seconds so the protocol's 20-second
-  long poll can finish normally. SES uses one attempt because its send operations have no
-  idempotency token and retrying an ambiguous response timeout could deliver duplicate mail.
+  timeout. Every backend AWS client in this module uses this handler, including both Bedrock runtime
+  transports and the DynamoDB and CloudFront clients used by the media-delivery registry. SQS raises
+  its idle timeout to 25 seconds so the protocol's 20-second long poll can finish normally. SES uses
+  one attempt because its send operations have no idempotency token and retrying an ambiguous
+  response timeout could deliver duplicate mail.
 - `MEDIA_DELIVERY_REGISTRY_REGION` — required whenever media delivery registry publication is
   enabled, and therefore for edge enforcement; the DynamoDB registry region (`us-east-1` for the
   Lambda@Edge viewer authorization), independent of the application `AWS_REGION`. All five

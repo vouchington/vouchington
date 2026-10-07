@@ -1,5 +1,6 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { createServer, type Server } from 'node:http'
+import { FirehoseClient, ListDeliveryStreamsCommand } from '@aws-sdk/client-firehose'
 import { ListBucketsCommand, S3Client } from '@aws-sdk/client-s3'
 import { ListQueuesCommand, SQSClient } from '@aws-sdk/client-sqs'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -42,19 +43,19 @@ describe('AWS request timeouts', () => {
     expect(sesSource).toMatch(/maxAttempts:\s*1/)
   })
 
-  it('wires every client in this layer through the shared handler factory', () => {
-    const expectedFactoryCallsByModule = new Map([
-      ['bedrock-control.mts', 1],
-      ['cloudwatch.mts', 1],
-      ['s3-bedrock-batch.mts', 1],
-      ['s3.mts', 2],
-      ['ses.mts', 1],
-      ['sqs.mts', 1],
-    ])
+  it('wires every production AWS client through the shared handler factory', () => {
+    const productionModules = readdirSync('backend/modules/aws').filter(
+      moduleName => moduleName.endsWith('.mts') && !moduleName.includes('.test.'),
+    )
 
-    for (const [moduleName, expectedCalls] of expectedFactoryCallsByModule) {
+    for (const moduleName of productionModules) {
       const source = readFileSync(`backend/modules/aws/${moduleName}`, 'utf8')
-      expect(source.match(/requestHandler: createAwsRequestHandler\(/g)).toHaveLength(expectedCalls)
+      const clientConstructions = source.match(/new\s+\w+Client\s*\(/g) ?? []
+      const sharedHandlers = source.match(/requestHandler:\s*createAwsRequestHandler\(/g) ?? []
+      expect({ moduleName, sharedHandlerCount: sharedHandlers.length }).toEqual({
+        moduleName,
+        sharedHandlerCount: clientConstructions.length,
+      })
     }
   })
 
@@ -121,6 +122,29 @@ describe('AWS request timeouts', () => {
 
     try {
       const error = await captureRejectionBeforeDeadline(client.send(new ListQueuesCommand({})))
+      expect(error).toBeInstanceOf(Error)
+    } finally {
+      client.destroy()
+    }
+  })
+
+  it('bounds a stalled Firehose request through the shared handler factory', async () => {
+    const endpoint = await startStalledServer()
+    const client = new FirehoseClient({
+      credentials: TEST_CREDENTIALS,
+      endpoint,
+      maxAttempts: 1,
+      region: 'us-west-2',
+      requestHandler: createAwsRequestHandler({
+        connectionTimeout: TEST_TIMEOUT_MS,
+        socketTimeout: TEST_TIMEOUT_MS,
+      }),
+    })
+
+    try {
+      const error = await captureRejectionBeforeDeadline(
+        client.send(new ListDeliveryStreamsCommand({})),
+      )
       expect(error).toBeInstanceOf(Error)
     } finally {
       client.destroy()
