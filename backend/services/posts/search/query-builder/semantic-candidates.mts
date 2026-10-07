@@ -4,8 +4,9 @@ import type { PostSearchOptions } from '../types.mts'
 import { buildPostSearchAuthorFilter } from './base-filters.mts'
 import { appendPostSearchSelectAndJoins } from './select-and-joins.mts'
 import { appendPostSearchWhereClause } from './where-clause.mts'
+import { getPostsWorkLimit } from '../../work-limits.mts'
 
-export const SEMANTIC_POST_CANDIDATE_LIMIT = 1000
+export { SEMANTIC_POST_CANDIDATE_LIMIT } from '../../work-limits.mts'
 
 /** Filter before the nearest-neighbour window; apply page cursors only outside it. */
 export function buildSemanticPostCandidates(
@@ -51,7 +52,7 @@ export function buildSemanticPostCandidates(
   query.append(sql`
     ORDER BY semantic_vector_post.bedrock_nova_multimodal_v1_embedding <=>
       semantic_search_embedding.embedding
-    LIMIT ${SEMANTIC_POST_CANDIDATE_LIMIT}
+    LIMIT ${getPostsWorkLimit('semantic_post_candidate_limit')}
   )`)
   return query
 }

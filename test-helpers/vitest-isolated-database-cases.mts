@@ -6,7 +6,7 @@ import { generalIsolatedCases } from './vitest-isolated-database-general-cases.m
 import { workerSweepIsolatedCases } from './vitest-isolated-database-worker-cases.mts'
 type IsolatedDatabaseCaseDefinition = { file: string; fullName: `${string} > ${string}` }
 
-const isolatedDatabaseCases = {
+const isolatedDatabaseCases: Record<string, IsolatedDatabaseCaseDefinition> = {
   ...copyrightReportIsolatedCases,
   ...workerSweepIsolatedCases,
   ...classifierPlanIsolatedCases,
