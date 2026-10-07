@@ -84,7 +84,8 @@ The same scenarios measured generic plans at 191.694–198.306 ms. These are syn
 See [the captured validation record](https://github.com/vouchington/vouchington/pull/1636).
 
 Approximate recall and a capped result window are intentional ([#1549](https://github.com/vouchington/vouchington/issues/1549)).
-The candidate cap is defined by `SEMANTIC_POST_CANDIDATE_LIMIT` in the query builder. Ranking
+The candidate cap defaults to `SEMANTIC_POST_CANDIDATE_LIMIT` and is bounded by the
+`semantic_post_candidate_limit` posts work setting. Ranking
 formulas and the distance threshold are unchanged within those candidates. Hybrid ranking
 can omit high text-score matches outside the distance window. Recency, vote and hot sorts
 also operate within that same window.
