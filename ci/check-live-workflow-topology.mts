@@ -15,6 +15,27 @@ import { assertNoWorkflowViolations } from '../.github/test-helpers/workflow-fix
 import { githubWorkflowPaths, loadRepoTopology } from './repo-topology.mts'
 import { writeJobsInventoryDoc } from './render-workflow-runner-inventory.mts'
 
+const noMistakesPolicyCommand = 'node ci/check-no-mistakes-test-policy.mts'
+
+export function noMistakesPolicyInvocationErrors(topology: WorkflowTopology): string[] {
+  const job = topology.jobs.find(
+    job =>
+      job.workflowId === '.github/workflows/static-code-analysis.yml' && job.key === 'no-mistakes',
+  )
+  const matches =
+    job?.steps.flatMap(step =>
+      (step.run ?? '')
+        .split('\n')
+        .map(line => line.trim().split(/\s+/u).join(' '))
+        .filter(line => line === noMistakesPolicyCommand),
+    ).length ?? 0
+  return matches === 1
+    ? []
+    : [
+        `.github/workflows/static-code-analysis.yml no-mistakes job must invoke ${noMistakesPolicyCommand} exactly once (found ${matches})`,
+      ]
+}
+
 export function liveTopologyAuditErrors(topology: WorkflowTopology): string[] {
   if (topology.diagnostics.length > 0) {
     return topology.diagnostics.map(
@@ -23,6 +44,7 @@ export function liveTopologyAuditErrors(topology: WorkflowTopology): string[] {
   }
 
   return [
+    ...noMistakesPolicyInvocationErrors(topology),
     ...callerCalleePermissionMismatches(topology),
     ...missingInventoryEntries(topology).map(
       name => `secret ${name} is referenced with no SECRET_INVENTORY entry`,
