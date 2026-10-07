@@ -77,17 +77,20 @@ async function buildTemplate(): Promise<string> {
 
 function warmFile(path: string, env: Record<string, string | undefined>): Promise<void> {
   return new Promise((resolve, reject) => {
-    const child = spawn(path, [], { env, stdio: 'ignore' })
-    const timer = setTimeout(() => {
-      child.kill('SIGKILL')
-      reject(new Error(`tmux-fake-bin: warm-up of ${path} timed out`))
-    }, WARM_EXEC_TIMEOUT_MS)
+    const child = spawn(path, [], {
+      env,
+      stdio: 'ignore',
+      timeout: WARM_EXEC_TIMEOUT_MS,
+      killSignal: 'SIGKILL',
+    })
     child.once('error', error => {
-      clearTimeout(timer)
       reject(error instanceof Error ? error : new Error(String(error)))
     })
     child.once('exit', () => {
-      clearTimeout(timer)
+      if (child.killed) {
+        reject(new Error(`tmux-fake-bin: warm-up of ${path} timed out`))
+        return
+      }
       resolve()
     })
   })

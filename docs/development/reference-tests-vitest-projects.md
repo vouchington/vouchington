@@ -17,23 +17,21 @@ connection that locks that ledger row and performs the owned write. A `sequence.
 remains available for the rare case that genuinely cannot be made parallel-safe.
 
 Every project must declare an explicit `testTimeout` and `hookTimeout`, enforced by
-`dev/vitest-config.test.mts`. Without an explicit value, a project silently falls back to Vitest's
-built-in `5000`/`10000` ms defaults — invisible at the project's definition site, and how
-`ts-shared` broke `main` twice (#10762). The root config sets a `15_000`/`30_000` backstop, but that
-is only a safety net for a project added between edits; it does not exempt any project from
-declaring its own values. Start a new project at `15_000`/`30_000` and raise it only with a
-demonstrated failure, documented with a one-line comment (see `toolingTestBudget` in
-`test-helpers/vitest-config/tooling-projects.mts`) — never above the ceilings of `60_000` ms
-(`testTimeout`) / `90_000` ms (`hookTimeout`) that the same guard file enforces. A single genuinely
-slower test takes a per-test `{ timeout: ... }` override instead of raising its whole project's
-budget, so one slow test doesn't mask a regression in every other test in that project.
+`dev/vitest-config.test.mts`. Follow the [suite rules](tests.md#test-suite-rules) when choosing
+budgets for a new project or a per-test override. Existing project budgets are being reduced in
+[#2149](https://github.com/vouchington/vouchington/issues/2149); their transitional values are not
+the policy for new projects. An override belongs on the measured slow case and stays within the
+suite's cap, rather than raising the budget for every test in its project.
 
 The same headroom rule applies one layer down: a test that spawns a child process with its own
 timeout must keep that timeout strictly below its project's `testTimeout`, and must report the
 child's signal/timeout state on the result instead of coercing a kill into a generic failure code —
 use `runProcess`/`RunProcessResult` from
 [`dev/test-helpers/run-process.mts`](../../dev/test-helpers/run-process.mts), which has no default
-timeout of its own (callers opt in via `timeoutMs`). See `RUN_TMUX_TIMEOUT_MS` in
+timeout of its own (callers opt in via `timeoutMs`). The helper delegates its deadline to
+an abort signal and waits for command completion. That deadline also bounds pipe capture after
+the child exits; a successful TERM trap still reports `timedOut`, while an output-buffer error
+remains a separate failure. See `RUN_TMUX_TIMEOUT_MS` in
 [`dev/test-helpers/run-tmux.mts`](../../dev/test-helpers/run-tmux.mts) for an example caller.
 
 A first exec of a freshly written executable file is expensive on macOS — roughly 200ms idle, over

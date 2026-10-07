@@ -48,20 +48,16 @@ export async function runProcess(
   let errno: string | undefined
   let stdout = ''
   let stderr = ''
+  const deadline = timeoutMs === undefined ? undefined : AbortSignal.timeout(Math.max(1, timeoutMs))
   const pending = execFileAsync(file, args, { cwd, env })
-  // execFile's own `timeout` resolves as success when the child traps SIGTERM and exits 0,
-  // so the timer lives here and sets timedOut regardless of how the child then exits. Like
-  // execFile's timeout, it destroys the pipes first so a grandchild holding them open cannot
-  // delay the result.
-  const timer =
-    timeoutMs === undefined
-      ? undefined
-      : setTimeout(() => {
-          timedOut = true
-          pending.child.stdout?.destroy()
-          pending.child.stderr?.destroy()
-          pending.child.kill('SIGTERM')
-        }, timeoutMs)
+  function abortCommand(): void {
+    timedOut = true
+    pending.child.stdout?.destroy()
+    pending.child.stderr?.destroy()
+    pending.child.kill('SIGTERM')
+  }
+  // Bound pipe capture as well as the child: descendants can keep pipes open after exit.
+  deadline?.addEventListener('abort', abortCommand, { once: true })
   try {
     ;({ stdout, stderr } = await pending)
   } catch (err) {
@@ -72,7 +68,7 @@ export async function runProcess(
     stdout = result.stdout ?? ''
     stderr = result.stderr ?? ''
   } finally {
-    clearTimeout(timer)
+    deadline?.removeEventListener('abort', abortCommand)
   }
   return {
     code,
@@ -81,6 +77,6 @@ export async function runProcess(
     signal,
     stderr,
     stdout,
-    timedOut,
+    timedOut: timedOut && errno === undefined,
   }
 }
