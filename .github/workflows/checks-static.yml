@@ -77,7 +77,9 @@ jobs:
     # every consumer (integration, Playwright, credentialed Playwright) must run on this runner arch
     # or it misses the cache and rebuilds in each shard. Move them together.
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 35
+    # Fail-fast budget: every Web suite waits on this job, which healthy runs finish in under 4
+    # minutes. Step ceilings sum past this cap; see the CI job timeout budgets reference.
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:
@@ -94,16 +96,16 @@ jobs:
           echo "No pages router directory found"
       - name: Check web dependencies
         run: pnpm exec depcruise --config web/.dependency-cruiser.cjs --output-type err --cache --cache-strategy content web
-        timeout-minutes: 3
+        timeout-minutes: 2
       - uses: ./.github/actions/build-web-targets
-        timeout-minutes: 13
+        timeout-minutes: 6
         with:
           artifact-suffix: static-web
           shared-build-cache-mode: producer
           web-build-fs-cache-enabled: ${{ vars.WEB_BUILD_FS_CACHE_ENABLED }}
       - name: Smoke test web
         run: ./web/scripts/tests/smoke-test-web.sh
-        timeout-minutes: 8
+        timeout-minutes: 2
         env:
           IMAGE_ORIGIN: http://localhost:3100
 

@@ -78,9 +78,11 @@ runs:
         if [ -f .env ]; then set -a; source .env; set +a; fi
         export NEXT_TEST_BUILD=0
         export NEXT_PUBLIC_ASSET_PREFIX=''
-        # 720s is inside the 13-minute composite ceiling. run-bounded kills the build process
-        # group; timeout-minutes on this composite step did not (merge-group run 37572766026).
-        python3 "$GITHUB_WORKSPACE/ci/run-bounded.py" 720 node ci/setup-web-integration.mts
+        # A healthy cold build takes about 90 seconds; 300s is over three times that. Callers' step
+        # ceilings leave at least a minute after this deadline for the timing upload below.
+        # run-bounded kills the build process group; timeout-minutes on this composite step did
+        # not (merge-group run 37572766026).
+        python3 "$GITHUB_WORKSPACE/ci/run-bounded.py" 300 node ci/setup-web-integration.mts
     - name: Stamp shared web build manifest
       if: ${{ inputs.shared-build-cache-mode == 'producer' && success() }}
       shell: bash

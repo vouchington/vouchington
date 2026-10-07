@@ -27,7 +27,7 @@ jobs:
   shards:
     # Fallback producer of the shared web build; it must share the consumers' runner arch.
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 20
+    timeout-minutes: 13
     permissions:
       contents: read
     outputs:
@@ -45,7 +45,7 @@ jobs:
         run: node ci/playwright/shard-total.mts
       - uses: ./.github/actions/build-web-targets
         if: ${{ !inputs.shared_build_available && steps.shards.outputs.shard-total != '1' }}
-        timeout-minutes: 13
+        timeout-minutes: 6
         with:
           artifact-suffix: playwright-producer
           shared-build-cache-mode: producer
@@ -55,7 +55,7 @@ jobs:
     needs: [shards]
     # Consumer of the shared web build; its cache key includes runner.arch, so it matches the producer.
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 30
+    timeout-minutes: 23
     permissions:
       actions: read
       contents: read
@@ -168,7 +168,7 @@ jobs:
         run: node data-stores/psql/migrate.mts
         timeout-minutes: 3
       - uses: ./.github/actions/build-web-targets
-        timeout-minutes: 13
+        timeout-minutes: 6
         with:
           artifact-suffix: playwright-${{ matrix.shard }}
           shared-build-cache-mode: consumer

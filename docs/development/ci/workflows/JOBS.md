@@ -41,7 +41,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `checks-static.yml`                    | `static-backend`                | job    | `ubuntu-latest`                       | 21            |
 | `checks-static.yml`                    | `static-cloudflare`             | job    | `ubuntu-latest`                       | 20            |
 | `checks-static.yml`                    | `static-lambdas`                | job    | `ubuntu-latest`                       | 18            |
-| `checks-static.yml`                    | `static-web`                    | job    | `ubuntu-24.04-arm`                    | 35            |
+| `checks-static.yml`                    | `static-web`                    | job    | `ubuntu-24.04-arm`                    | 10            |
 | `ci-area-coverage.yml`                 | `coverage`                      | job    | `ubuntu-latest`                       | 10            |
 | `ci-detect-changes.yml`                | `detect-changes`                | job    | `ubuntu-slim`                         | 3             |
 | `ci-upload-codecov.yml`                | `upload-codecov`                | matrix | `ubuntu-latest`                       | 8             |
@@ -139,9 +139,9 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `tests-backend-unit.yml`               | `prep`                          | job    | `ubuntu-latest`                       | 8             |
 | `tests-cloudflare-worker.yml`          | `cloudflare-worker-tests`       | job    | `ubuntu-latest`                       | 17            |
 | `tests-lambdas.yml`                    | `lambdas-tests`                 | job    | `ubuntu-latest`                       | 30            |
-| `tests-playwright-credentialed.yml`    | `playwright-credentialed-tests` | job    | `ubuntu-24.04-arm`                    | 20            |
-| `tests-playwright.yml`                 | `playwright-tests`              | matrix | `ubuntu-24.04-arm`                    | 30            |
-| `tests-playwright.yml`                 | `shards`                        | job    | `ubuntu-24.04-arm`                    | 20            |
+| `tests-playwright-credentialed.yml`    | `playwright-credentialed-tests` | job    | `ubuntu-24.04-arm`                    | 13            |
+| `tests-playwright.yml`                 | `playwright-tests`              | matrix | `ubuntu-24.04-arm`                    | 23            |
+| `tests-playwright.yml`                 | `shards`                        | job    | `ubuntu-24.04-arm`                    | 13            |
 | `tests-portability.yml`                | `portability-linux`             | job    | `ubuntu-latest`                       | 17            |
 | `tests-postgres-schema.yml`            | `postgres-schema-tests`         | job    | `ubuntu-latest`                       | 20            |
 | `tests-tooling.yml`                    | `i18n-route-bounds`             | job    | `ubuntu-latest`                       | 10            |
@@ -149,8 +149,8 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `tests-ts-shared.yml`                  | `ts-shared`                     | job    | `ubuntu-latest`                       | 17            |
 | `tests-web-api.yml`                    | `prep`                          | job    | `ubuntu-24.04-arm`                    | 8             |
 | `tests-web-api.yml`                    | `web-api-tests`                 | matrix | `ubuntu-24.04-arm`                    | 27            |
-| `tests-web-integration.yml`            | `prep`                          | job    | `ubuntu-24.04-arm`                    | 20            |
-| `tests-web-integration.yml`            | `web-integration-tests`         | matrix | `ubuntu-24.04-arm`                    | 26            |
+| `tests-web-integration.yml`            | `prep`                          | job    | `ubuntu-24.04-arm`                    | 13            |
+| `tests-web-integration.yml`            | `web-integration-tests`         | matrix | `ubuntu-24.04-arm`                    | 19            |
 | `tests-web.yml`                        | `prep`                          | job    | `ubuntu-24.04-arm`                    | 8             |
 | `tests-web.yml`                        | `web-tests`                     | matrix | `ubuntu-24.04-arm`                    | 32            |
 | `tooling.yml`                          | `changes`                       | job    | → `ci-detect-changes.yml`             | 360           |
