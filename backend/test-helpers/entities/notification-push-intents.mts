@@ -16,14 +16,3 @@ export async function getTestNotificationPushIntentLeaseExpiry(
   if (!leaseExpiry) throw new Error('Expected notification push intent lease expiry')
   return leaseExpiry.getTime()
 }
-
-export async function waitForTestDatabaseTimestamp(timestampMs: number): Promise<void> {
-  await read(sql`/* waitForTestDatabaseTimestamp */
-    SELECT pg_sleep(
-      GREATEST(
-        EXTRACT(EPOCH FROM to_timestamp(${timestampMs} / 1000.0) - clock_timestamp()),
-        0
-      )
-    )
-  `)
-}
