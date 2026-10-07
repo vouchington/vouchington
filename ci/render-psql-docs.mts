@@ -72,15 +72,17 @@ async function schemaMarkdownFiles(schemaDir: string): Promise<Map<string, strin
   return new Map(files.toSorted(([left], [right]) => left.localeCompare(right)))
 }
 
+type RenderPsqlDocsOptions = {
+  outputDir: string
+  schemaDir?: string
+  schemaJsonPath?: string
+}
+
 export async function renderPsqlDocs({
   outputDir,
   schemaDir = DEFAULT_SCHEMA_DIR,
   schemaJsonPath = DEFAULT_SCHEMA_JSON,
-}: {
-  outputDir: string
-  schemaDir?: string
-  schemaJsonPath?: string
-}): Promise<void> {
+}: RenderPsqlDocsOptions): Promise<void> {
   const markdownFiles = await schemaMarkdownFiles(schemaDir)
   const json = await readSchemaSnapshotFile(schemaJsonPath)
   const indexMarkdown = markdownFiles.get('README.md')
@@ -128,9 +130,12 @@ export async function renderPsqlDocs({
   ])
 }
 
-export function main(argv: string[]): Promise<number> {
+export function main(
+  argv: string[],
+  schemaPaths: Pick<RenderPsqlDocsOptions, 'schemaDir' | 'schemaJsonPath'> = {},
+): Promise<number> {
   return runRenderDocsCli(argv, 'Usage: render-psql-docs.mts <output-dir>', outputDir =>
-    renderPsqlDocs({ outputDir }),
+    renderPsqlDocs({ outputDir, ...schemaPaths }),
   )
 }
 
