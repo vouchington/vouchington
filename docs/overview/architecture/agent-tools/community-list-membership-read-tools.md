@@ -2,7 +2,7 @@
 
 Four MCP read tools cover a community's curated list, which of the caller's own lists hold a post or
 feed item, and the membership plans Voucha sells. Each is read-only (`readOnlyHint`), names its REST
-twin in `meta.api`, sits on the `internal`, `mcp` and `client` surfaces, and needs no paid plan. The
+twin in `meta.api`, sits on the `internal` and `mcp` surfaces, and needs no paid plan. The
 generated [tool catalog](catalog.md) holds each tool's description and scopes; the
 [agent tools overview](README.md) covers metadata and plan gating, and the
 [hostname, list and user read tools](hostname-list-user-read-tools.md) describe the result shape

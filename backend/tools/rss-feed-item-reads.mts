@@ -57,7 +57,7 @@ export const listRssFeedItemsTool: Tool<ListArgs, ListResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp', 'client'],
+    surfaces: ['internal', 'mcp'],
     title: 'List RSS Feed Items',
     plan: 'free',
     requiredScopes: { mcp: ['rss-feed-items:read'] },
@@ -115,7 +115,7 @@ export const getRssFeedItemTool: Tool<DetailArgs, DetailResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp', 'client'],
+    surfaces: ['internal', 'mcp'],
     title: 'Get RSS Feed Item',
     plan: 'free',
     requiredScopes: { mcp: ['rss-feed-items:read'] },

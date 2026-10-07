@@ -39,7 +39,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp', 'client'],
+    surfaces: ['internal', 'mcp'],
     title: 'Get My Notifications',
     requiredScopes: { mcp: ['notifications:read'] },
     annotations: { readOnlyHint: true },

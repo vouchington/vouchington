@@ -1,8 +1,8 @@
 # Agent Tools
 
 Reference for all LLM tool definitions registered in `backend/tools/registry/`. Tools are
-the callable primitives exposed to LLM agents and to external clients via the MCP and iOS
-native SDK surfaces.
+the callable primitives exposed to server-side agents and MCP clients. Native agents connect
+to the user MCP server over OAuth, as described in [OAuth](../../../requirements/api/oauth/README.md).
 
 See also:
 
@@ -25,10 +25,9 @@ Each tool declares one or more surfaces in `meta.surfaces`. The default when abs
 | `internal`  | Available only to server-side agents. Never exposed over any external protocol.                     |
 | `mcp`       | Exposed via the user-facing Model Context Protocol server. Accessible to MCP-connected LLM clients. |
 | `admin_mcp` | Exposed via the staff-only admin Model Context Protocol server. Restricted by role, not by plan.    |
-| `client`    | Exported in `backend/tools/manifest.json` for first-party native clients (e.g., iOS Swift agent).   |
 
-A tool may be on multiple surfaces simultaneously. Most user-facing tools carry `internal`,
-`mcp`, and `client`; staff tools carry `admin_mcp` in place of `mcp`. A tool must not carry both
+A tool may be on multiple surfaces simultaneously. Most user-facing tools carry `internal` and
+`mcp`; staff tools carry `admin_mcp` in place of `mcp`. A tool must not carry both
 `mcp` and `admin_mcp` if it mutates data — see [Plan Gating](#plan-gating).
 
 ---
@@ -66,9 +65,14 @@ user `mcp` surface (`tools/list` / `tools/call`; enforced by
 - `'plus'` — requires Plus or Pro membership
 - `'pro'` — requires Pro membership
 
-The gate applies only at that MCP dispatch boundary: it never affects native/client tool
-invocation (`manifest.json` carries no plan field), direct REST routes, or internal-agent
-calls. It must stay unset (or `'free'`) on any tool exposed on `admin_mcp` — a single `plan`
+Native agents use the same user MCP dispatch boundary over OAuth, so the same plan gate applies:
+every mutating user-MCP tool requires Plus, and a Free member's in-app agent gets the read tools
+only. There is no native exception. Consent always applies. Direct REST routes and internal-agent
+calls are outside this MCP gate. First-party native OAuth clients use the client IDs
+`<site origin>/api/v1/oauth/native-clients/ios`, `/macos`, and `/windows`; see the
+[OAuth documentation](../../../requirements/api/oauth/README.md) for redirects and authorization.
+
+The plan must stay unset (or `'free'`) on any tool exposed on `admin_mcp` — a single `plan`
 field cannot express separate per-surface plans, so a mutating tool cannot share the `mcp`
 and `admin_mcp` surfaces until the metadata model can (enforced by the registry invariant
 tests in `backend/tools/registry/registry.test.mts`).
@@ -81,13 +85,12 @@ user-`mcp` read tool stays `'free'`. No production tool requires `'pro'` yet —
 
 ## Generated Artifacts
 
-The `static-backend` CI gate runs the [live registry contract check](../../../../ci/check-live-mcp-catalog.mjs) and `pnpm run mcp:catalog -- --check` once for all three committed artifacts. Run `pnpm run mcp:catalog` from the repository root after adding or modifying tools to regenerate them:
+The `static-backend` CI gate runs the [live registry contract check](../../../../ci/check-live-mcp-catalog.mjs) and `pnpm run mcp:catalog -- --check` for both committed artifacts. Run `pnpm run mcp:catalog` from the repository root after adding or modifying tools to regenerate them:
 
-| Artifact                                                                 | Contents                                                                                                                        |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| [`api-fixtures/v1/mcp.json`](../../../../api-fixtures/v1/mcp.json)       | Each MCP server's endpoint and the full `tools/list` entry, minimum plan, roles, and REST equivalent per tool                   |
-| [`catalog.md`](catalog.md)                                               | The generated tool table between its `BEGIN GENERATED` and `END GENERATED` markers                                              |
-| [`backend/tools/manifest.json`](../../../../backend/tools/manifest.json) | `client`-surface tools for first-party native clients — see [iOS Client Implementation Notes](#ios-client-implementation-notes) |
+| Artifact                                                           | Contents                                                                                                      |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| [`api-fixtures/v1/mcp.json`](../../../../api-fixtures/v1/mcp.json) | Each MCP server's endpoint and the full `tools/list` entry, minimum plan, roles, and REST equivalent per tool |
+| [`catalog.md`](catalog.md)                                         | The generated tool table between its `BEGIN GENERATED` and `END GENERATED` markers                            |
 
 The live check asserts that each server's catalog equals what `tools/list` returns to a caller
 holding every role, the Pro plan, and every scope, that every listed tool has a title and output schema,
@@ -127,7 +130,8 @@ exposing separate tools per write operation. The mapping to REST verbs is:
 The `id` parameter is required for `update` and `remove` actions; it is the row UUID
 returned by the matching `get_my_*` tool. `remove` returns only `{ id }`; see [Structured tool results](../services/mcp-tools/README.md#structured-tool-results).
 
-`add_entity_relation` is MCP-only and uses the same relation command as the session REST route.
+`add_entity_relation` has no dedicated REST endpoint and uses the same relation command as the
+session REST route.
 REST supplies first-party authority; MCP receives verified delegated credential authority. Public
 relations retain ordinary scope policy. Effectively private post work also requires the exact
 `post-relations.owned-private:write` grant and matching credential ownership of the candidate and
@@ -144,28 +148,11 @@ the referral link and topic recommendation tools do too; see [Relation, Referral
 
 ## Server-Only Tools Rationale
 
-Tools with `surfaces: ['internal']` are excluded from MCP and client surfaces for one of
+Tools with `surfaces: ['internal']` are excluded from external MCP surfaces for one of
 these reasons:
 
 - **Internal-only data** — `search_rss_feed_items` reads workflow data that is not exposed
   directly to clients.
-
----
-
-## iOS Client Implementation Notes
-
-The `backend/tools/manifest.json` file is the source of truth for native client tool
-registration. Each entry carries the tool's name, description, REST `api` mapping, and declared
-scopes; `parameters` is always `null`. The iOS Swift agent should:
-
-1. Use the `api` field to map tool calls to REST endpoints without a runtime MCP
-   connection. Each entry in `api` is `{ method, path }` where `:param` segments
-   are path parameters.
-2. Build its `@Generable` argument structs from those REST operations in
-   [`api-fixtures/v1/request-contracts.json`](../../../../api-fixtures/v1/request-contracts.json); the MCP
-   `inputSchema` in `mcp.json` describes the server-side tool, not the REST request.
-3. Authenticate requests with the app's existing session, like any other API call; no
-   separate MCP auth flow is needed for client-surface tools.
 
 ---
 

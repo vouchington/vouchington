@@ -101,7 +101,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp', 'client'],
+    surfaces: ['internal', 'mcp'],
     title: 'Get My Profile',
     requiredScopes: { mcp: ['profile:read'] },
     annotations: { readOnlyHint: true },

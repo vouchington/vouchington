@@ -1,3 +1,5 @@
+import { findNativeOAuthClientDocument } from './native-clients.mts'
+
 export type KnownOAuthClient = {
   /** Lowercase slug a public API exposes. Each client keeps its display copy for the key. */
   key: string
@@ -23,5 +25,9 @@ export function getOAuthClientDisplayName(
   metadataUrl: string,
   knownClients: KnownOAuthClients = KNOWN_OAUTH_CLIENTS,
 ): string {
-  return getKnownOAuthClient(metadataUrl, knownClients)?.name ?? new URL(metadataUrl).hostname
+  return (
+    findNativeOAuthClientDocument(metadataUrl)?.client_name ??
+    getKnownOAuthClient(metadataUrl, knownClients)?.name ??
+    new URL(metadataUrl).hostname
+  )
 }

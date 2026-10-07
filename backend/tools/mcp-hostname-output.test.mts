@@ -89,7 +89,7 @@ describe('hostname read tool output schemas', () => {
   it.each(TOOLS)('reads with the hostnames:read scope and declares %s read-only', (_n, tool) => {
     expect(tool.meta?.requiredScopes).toEqual({ mcp: ['hostnames:read'] })
     expect(tool.meta?.annotations).toEqual({ readOnlyHint: true })
-    expect(tool.meta?.surfaces).toEqual(['internal', 'mcp', 'client'])
+    expect(tool.meta?.surfaces).toEqual(['internal', 'mcp'])
     expect(tool.meta?.title).toBeTruthy()
   })
 

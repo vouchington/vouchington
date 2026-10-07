@@ -55,8 +55,8 @@ The backend also offers a synchronous title endpoint through
 sanitizes them as external prompt content and records the model call's usage. SSE streams elsewhere
 in the API use the shared [cycle-expiry signal](backend/modules/sse-lifecycle/README.md).
 
-Native clients use REST/API calls derived from `backend/tools/manifest.json` for client-surface
-tools rather than runtime MCP. See [Agent Tools](agent-tools/README.md).
+Native agents use the user MCP server over OAuth for agent tools. Conversation transcripts remain
+on the REST API described above. See [Agent Tools](agent-tools/README.md).
 
 ## Context Links
 

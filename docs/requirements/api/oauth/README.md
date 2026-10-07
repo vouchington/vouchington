@@ -11,6 +11,7 @@ pending request to another user.
 
 | Method | Path                                                     | Purpose                                              |
 | ------ | -------------------------------------------------------- | ---------------------------------------------------- |
+| GET    | `/api/v1/oauth/native-clients/{ios,macos,windows}`       | First-party public client metadata documents         |
 | GET    | `/authorize`                                             | Begin S256 PKCE for registered or URL-based clients  |
 | POST   | `/register`                                              | Dynamically register a public or confidential client |
 | POST   | `/token`                                                 | Exchange a code or rotate a refresh token            |
@@ -33,13 +34,21 @@ session boundary. It accepts exact HTTPS Client Identifier Metadata Document URL
 public-client registration metadata, and returns the URL hostname with the pending consent view so
 users can identify an unreviewed URL-based client.
 
+First-party iOS, macOS and Windows agents use these public client documents and the ordinary
+OAuth consent flow to access MCP. The backend resolves exact first-party IDs from its in-code
+definition without a self-fetch, including on local HTTP origins. Consent always applies.
+See the [native-client contract](../../security/OAUTH-AUTHORIZATION-SERVER.md#first-party-native-clients)
+for the client IDs, redirect URIs, loopback any-port registration matching and exact token-endpoint
+redirect matching.
+
 ## Performance
 
 Each protocol mutation performs bounded indexed lookups and writes. Code exchange, refresh
 rotation, consent decisions, and revocation use explicit transactions where atomic lifecycle
 changes are required. Every protocol and consent route is `no-store` and bypasses edge caching.
 The discovery documents are built from configuration without I/O and are anonymous and publicly
-cacheable. An uncached or stale URL-based client adds one SSRF-guarded metadata request bounded to
+cacheable. Native metadata documents are built without I/O; their resolver uses the same database cache
+without a network request. An uncached or stale external URL-based client adds one SSRF-guarded metadata request bounded to
 five seconds for response headers, five seconds for a 5 KiB body, and no redirects; validated
 metadata is cached for at most one hour according to response cache headers.
 

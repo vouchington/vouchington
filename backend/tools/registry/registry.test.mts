@@ -86,21 +86,18 @@ describe('tool registry', () => {
     expect(new Set(names).size).toBe(names.length)
   })
 
-  it('every mcp/admin_mcp/client tool is arity-1 (not curried)', () => {
+  it('every mcp/admin_mcp tool is arity-1 (not curried)', () => {
     const nonEligible = ALL_TOOLS.filter(tool => {
       const surfaces = new Set(tool.meta?.surfaces ?? ['internal'])
-      return (
-        (surfaces.has('mcp') || surfaces.has('admin_mcp') || surfaces.has('client')) &&
-        !isToolMcpEligible(tool)
-      )
+      return (surfaces.has('mcp') || surfaces.has('admin_mcp')) && !isToolMcpEligible(tool)
     })
     expect(nonEligible.map(t => t.schema.name)).toEqual([])
   })
 
-  it('every mcp/admin_mcp/client tool has explicit api field', () => {
+  it('every mcp/admin_mcp tool has explicit api field', () => {
     const missing = ALL_TOOLS.filter(tool => {
       const surfaces = new Set(tool.meta?.surfaces ?? ['internal'])
-      if (!surfaces.has('mcp') && !surfaces.has('admin_mcp') && !surfaces.has('client')) {
+      if (!surfaces.has('mcp') && !surfaces.has('admin_mcp')) {
         return false
       }
       return tool.meta == null || !('api' in tool.meta)
@@ -227,10 +224,12 @@ describe('tool registry', () => {
     expect(getRegisteredToolByName('nonexistent_tool')).toBeUndefined()
   })
 
+  it('does not expose a client tool surface', () => {
+    const surfaces = ALL_TOOLS.flatMap(tool => tool.meta?.surfaces ?? [])
+    expect(surfaces).not.toContain('client')
+  })
+
   it('listToolsForSurface filters correctly', () => {
-    const clientTools = listToolsForSurface('client', ALL_TOOLS)
-    const nonClientTools = clientTools.filter(t => !t.meta?.surfaces?.includes('client'))
-    expect(nonClientTools.map(t => t.schema.name)).toEqual([])
     const internalTools = listToolsForSurface('internal', ALL_TOOLS)
     expect(internalTools.map(tool => tool.schema.name)).not.toContain('add_entity_relation')
     expect(internalTools.map(tool => tool.schema.name)).toEqual(

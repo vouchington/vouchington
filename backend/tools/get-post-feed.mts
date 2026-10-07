@@ -40,7 +40,7 @@ const getPostFeedTool: Tool<PostArgs, FeedResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp', 'client'],
+    surfaces: ['internal', 'mcp'],
     title: 'Get Post Feed',
     plan: 'free',
     requiredScopes: { mcp: ['feeds:read'] },

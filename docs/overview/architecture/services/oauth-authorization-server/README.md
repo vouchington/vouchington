@@ -11,9 +11,9 @@ and account linking.
 - Authorization code with mandatory S256 PKCE and rotating refresh-token support.
 - Rotating refresh tokens with family-wide revocation when a token is reused.
 - Public RFC 7591 client registration and confidential clients using HTTP Basic authentication.
-- HTTPS Client ID Metadata Documents for public clients, with exact identifier and redirect-string
-  matching, mandatory S256 PKCE, and discovery advertisement.
-- Exact redirect URI, resource, and canonical scope binding, with RFC 8707 `resource` checks at
+- HTTPS Client ID Metadata Documents for public clients, with exact identifier matching,
+  mandatory S256 PKCE, and discovery advertisement.
+- Registered redirect URI, resource, and canonical scope binding, with RFC 8707 `resource` checks at
   the token endpoint and the RFC 9207 `iss` parameter on every authorization response.
 - Two protected resources, the user and admin MCP servers (`resources.mts`), with RFC 8414 and
   RFC 9728 metadata builders. Only administrators may authorize the admin resource
@@ -26,6 +26,19 @@ revocation requests.
 
 Implicit, password, client-credentials, OIDC, ID-token, UserInfo, and plain-PKCE flows are not
 supported.
+
+## Native MCP clients
+
+The iOS, macOS and Windows agents are ordinary OAuth clients of `/api/v1/mcp`.
+`native-clients.mts` defines their three public Client ID Metadata Documents once; the backend
+serves them at `/api/v1/oauth/native-clients/{ios,macos,windows}`. Exact first-party IDs resolve
+from that definition before HTTPS-only external URL parsing, including HTTP local site origins.
+The resolver applies the same metadata validators and `oauth_clients` cache as other CIMD clients,
+without fetching its own URLs. Consent always applies and names the app; first-party IDs grant
+no authentication or plan-gating exception.
+
+The [native-client contract](../../../../requirements/security/OAUTH-AUTHORIZATION-SERVER.md#first-party-native-clients)
+owns client IDs, redirects, scopes and the registration-versus-token matching rule.
 
 ## Library evaluation
 
@@ -45,11 +58,12 @@ rotating refresh-token families live in their own typed tables. Consent evidence
 no identity foreign keys so retention, account deletion, and client deletion cannot erase it. Codes
 and token strings are returned once and never persisted in plaintext.
 
-For a URL client identifier, `client-id-metadata-document.mts` requires an HTTPS URL with a path,
+For an external URL client identifier, `client-id-metadata-document.mts` requires an HTTPS URL with a path,
 rejects userinfo, fragments, dot segments, private and special-use addresses, and every redirect.
 DNS resolution and response headers have a 5-second budget, body reads have a separate 5-second
-budget, and documents are limited to 5 KiB. The fetched `client_id` and redirect URI strings are
-compared exactly. Shared-secret authentication, shared secrets, and private JWK material are
+budget, and documents are limited to 5 KiB. The fetched `client_id` must match exactly. Redirect matching follows the
+[loopback rule](../../../../requirements/security/OAUTH-AUTHORIZATION-SERVER.md#first-party-native-clients);
+all other redirect URI bytes remain exact. Shared-secret authentication, shared secrets, and private JWK material are
 rejected.
 
 Valid metadata is stored in the same relational client row used by grants, tokens, and provenance.
@@ -71,8 +85,8 @@ unrepresentable. Suspended grant owners cannot exchange, refresh, or authenticat
 by grant id) and revokes one owner-scoped grant with a single conditional update.
 `app-management.mts` registers, renames, re-points, rotates and revokes owner apps with
 owner-scoped statements inside the owner's active-user lock; a changed name or redirect-URI set
-clears staff verification. Consent decisions and code exchange recheck, in the same statement that
-share-locks the client row, that the client is live and the request's redirect URI is still
+clears staff verification. Consent decisions and code exchange recheck, while holding the same transaction
+share lock on the client row, that the client is live and the request's redirect URI is still
 registered, so re-pointing an app retires the removed URI even for requests already in flight.
 Code exchange, refresh and revocation authenticate the client with `authenticateLockedOAuthClient`,
 which checks the secret against the share-locked row, so rotating a secret or revoking an app

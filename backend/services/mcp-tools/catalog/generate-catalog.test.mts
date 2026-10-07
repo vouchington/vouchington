@@ -16,7 +16,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { runCatalogGeneration } from './generate-catalog.mts'
 
 const markdown = 'docs/overview/architecture/agent-tools/catalog.md'
-const artifacts = ['api-fixtures/v1/mcp.json', markdown, 'backend/tools/manifest.json']
+const artifacts = ['api-fixtures/v1/mcp.json', markdown]
 const tools: readonly Tool[] = [
   {
     schema: {
@@ -28,7 +28,7 @@ const tools: readonly Tool[] = [
     },
     function: (_user: unknown) => () => ({}),
     meta: {
-      surfaces: ['mcp', 'client'],
+      surfaces: ['mcp'],
       title: 'Tiny Read',
       api: null,
       requiredScopes: { mcp: ['topics:read'] },

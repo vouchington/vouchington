@@ -20,7 +20,7 @@ type ToolFunction<
   ...curry: TCurry
 ) => (args: TArgs, invocationContext?: ToolInvocationContext) => Promise<TResult> | TResult
 
-// Only trusted MCP dispatch constructs this context. Direct agent/client callers omit it.
+// Only trusted MCP dispatch constructs this context. Direct internal-agent calls omit it.
 export type ToolInvocationContext = {
   credentialOwnerId: string
   grantedScopes: readonly ApiScope[]
@@ -31,7 +31,7 @@ export type ToolInvocationContext = {
 // The Responses API function_call_output item a tool's formatResult returns.
 export type ToolCallOutput = { type: 'function_call_output'; call_id: string; output: string }
 
-export type ToolSurface = 'internal' | 'mcp' | 'admin_mcp' | 'client'
+export type ToolSurface = 'internal' | 'mcp' | 'admin_mcp'
 
 // MCP tool hints. A read tool carries no write hints; the MCP adapter marks every read idempotent.
 export type ReadOnlyToolAnnotations = {
@@ -68,14 +68,14 @@ export type ToolMeta = {
   title: string
   // Minimum membership plan required to dispatch this tool on the external user `mcp` surface
   // (`tools/list`/`tools/call`; see backend/tools/registry/select.mts#isToolAllowedForPlan).
-  // Default 'free'. This paywall applies only at that dispatch boundary: it never gates
-  // native/client invocation, direct REST routes, or internal-agent calls. Must stay unset (or
+  // Default 'free'. Native agents use the same MCP dispatch boundary. This paywall does not gate
+  // direct REST routes or internal-agent calls. Must stay unset (or
   // 'free') on any tool exposed on `admin_mcp`, including a tool that also carries `mcp` — a
   // single field cannot express separate per-surface plans, so a mutating tool cannot share the
   // `mcp` and `admin_mcp` surfaces until the metadata model can.
   plan?: 'free' | 'plus' | 'pro'
   annotations: ToolAnnotations
-  // Canonical scopes required for an externally callable surface. Internal and client-only tools need none.
+  // Canonical scopes required for an externally callable MCP surface. Internal-only tools need none.
   requiredScopes?: Partial<Record<'mcp' | 'admin_mcp', readonly ApiScope[]>>
   // Equivalent existing REST endpoint(s), or null if none exist.
   api: readonly ToolApiEndpoint[] | null

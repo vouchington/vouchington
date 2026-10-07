@@ -5,7 +5,7 @@ settings and topic recommendations. They are the reads for the
 [profile, notification and preference write tools](profile-notification-write-tools.md) and the
 [topic recommendation write tools](relation-referral-recommendation-write-tools.md): each reads
 what one of those tools changes. Each is read-only (`readOnlyHint`), names its REST twin in
-`meta.api`, sits on the `internal`, `mcp` and `client` surfaces, and needs no paid plan. The
+`meta.api`, sits on the `internal` and `mcp` surfaces, and needs no paid plan. The
 generated [tool catalog](catalog.md) holds each tool's description and scopes; the
 [agent tools overview](README.md) covers metadata and plan gating.
 

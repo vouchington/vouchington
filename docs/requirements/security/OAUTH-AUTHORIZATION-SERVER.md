@@ -17,7 +17,10 @@ OpenID Connect, ID-token, or UserInfo flows.
 
 ## Security invariants
 
-- Redirect URIs must be registered exactly. HTTPS is required except for HTTP loopback clients.
+- Redirect URIs use exact registration matching except port-less HTTP loopback IP registrations,
+  which accept any port on `127.0.0.1` or `[::1]` with every other byte unchanged. HTTPS and
+  `localhost` registrations remain exact. The token endpoint always matches the authorization
+  request's redirect URI exactly, including its requested port.
   The match is rechecked when the user decides on consent and when the code is exchanged, under a
   share lock on the client row, so a URI the owner has removed, even concurrently, receives neither
   a code nor tokens.
@@ -74,7 +77,7 @@ document's `client_id` must equal the requested URL byte for byte.
 
 CIMD clients are public, secretless clients and still require S256 PKCE. Their names, redirect URIs,
 grant types, response types, and scopes use the RFC 7591 validators, except redirect strings remain
-unserialized so authorization can use simple string comparison. Shared-secret methods and values,
+unserialized so authorization preserves exact bytes except the loopback-port rule below. Shared-secret methods and values,
 and private key material embedded in JWK metadata, are rejected. Public JWK metadata is permitted
 but does not change Voucha's supported `none` authentication method.
 
@@ -88,10 +91,52 @@ redirect through stale metadata. Database-ordered refresh generations prevent an
 response from overwriting a newer validated representation; the fetch-start timestamp remains the
 recorded refresh time.
 
-Consent uses a reviewed display name only when the exact document URL is in
-`known-clients.mts`. Otherwise it uses the URL hostname, and the hostname is always visible. RFC
+Consent uses the in-code app name for exact first-party native client IDs. Other CIMD clients
+use a reviewed display name only when the exact document URL is in `known-clients.mts`; otherwise
+they use the URL hostname. The hostname is always visible. RFC
 7591 registration and owned-app clients retain their existing behavior. Connected-app grant lists
 apply the same reviewed-name-or-hostname policy instead of exposing a document's mutable name.
+
+### First-party native clients
+
+Native agents use OAuth authorization code with S256 PKCE to call `tools/list` and `tools/call`
+on `/api/v1/mcp`. They receive the same wrapped external content, structured results, scope checks,
+rate limits, usage quota and audit as every other MCP client. MCP accepts OAuth tokens and API
+keys; OAuth connects native agents with mandatory consent. Every mutating user-MCP tool
+requires Plus, so a Free member's native agent gets read tools only, with no native exception.
+This is the accepted plan-gating decision for now.
+
+Let `<site origin>` be `getSiteOrigin()`, also the OAuth issuer. Each environment has its own IDs:
+
+| App                       | Public client ID                                    | Registered redirect URIs                                                                       |
+| ------------------------- | --------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| iOS (`ai.voucha.ios`)     | `<site origin>/api/v1/oauth/native-clients/ios`     | `<site origin>/oauth/native/ios/callback`                                                      |
+| macOS (`ai.voucha.macos`) | `<site origin>/api/v1/oauth/native-clients/macos`   | `<site origin>/oauth/native/macos/callback`                                                    |
+| Windows                   | `<site origin>/api/v1/oauth/native-clients/windows` | `http://127.0.0.1/oauth/native/windows/callback`, `http://[::1]/oauth/native/windows/callback` |
+
+One in-code definition serves and resolves these documents without a self-fetch. Exact first-party
+IDs are recognized before external HTTPS-only CIMD URL parsing so local HTTP origins work too.
+The local HTTP metadata URL exception in `oauth_clients_metadata_url_check` is limited to
+loopback native-client paths; external CIMD URL resolution remains HTTPS-only. The documents use
+`token_endpoint_auth_method: "none"`, authorization-code and refresh-token grants,
+`response_types: ["code"]`, and only `mcp.user:read mcp.user:write` scopes. They pass the ordinary
+metadata validation and share the ordinary `oauth_clients` cache, grants and tokens. Windows has
+no `localhost` redirect, and the .NET Mac Catalyst target has no client ID.
+
+Only a port-less `http:` registration with the literal host `127.0.0.1` or `[::1]` accepts any
+requested port. Path, query, host and scheme stay exact. The same rule applies at authorization,
+error redirects, stored-request reads, consent and the authorization-code registration recheck.
+Requests and codes retain the requested URI with its port. Token exchange must send that exact
+URI; a changed port returns `invalid_grant`.
+
+Consent always applies, including first-party clients and repeat authorizations. A local app can
+use the Windows client ID and loopback redirect, so the public client ID does not prove which app
+started the request. The consent screen uses the first-party app name and hostname.
+
+Apple's claimed HTTPS callbacks require `webcredentials` association for iOS 17.4+ and macOS
+14.4+; serving the AASA is tracked separately in
+[#70](https://github.com/vouchington/vouchington/issues/70). The native MCP/OAuth implementation is
+[vouchington-clients#210](https://github.com/vouchington/vouchington-clients/issues/210).
 
 Administrators verify dynamically registered clients through `/api/v1/admin/oauth-clients`
 ([Admin API](../api/v1/admin/README.md)). Verification records `verified_at` and

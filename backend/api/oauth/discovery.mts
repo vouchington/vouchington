@@ -4,6 +4,8 @@ import { setAnonymousPublicCacheHeaders } from '../response-helpers.mts'
 import {
   buildOAuthAuthorizationServerMetadata,
   buildOAuthProtectedResourceMetadata,
+  getNativeOAuthClientDocument,
+  NATIVE_OAUTH_CLIENT_APPS,
 } from '@services/oauth-authorization-server'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 
@@ -20,6 +22,12 @@ app.route('/.well-known/oauth-protected-resource/api/v1/mcp').get((ctx: Context)
 
 app.route('/.well-known/oauth-protected-resource/api/v1/admin/mcp').get((ctx: Context) => {
   sendDiscoveryDocument(ctx, buildOAuthProtectedResourceMetadata('admin'))
+})
+
+app.route('/api/v1/oauth/native-clients/:app').get((ctx: Context) => {
+  const nativeApp = NATIVE_OAUTH_CLIENT_APPS.find(app => app === ctx.params.app)
+  ctx.assert(nativeApp, 404, 'Not Found')
+  sendDiscoveryDocument(ctx, getNativeOAuthClientDocument(nativeApp))
 })
 
 function sendDiscoveryDocument(ctx: Context, document: object): void {

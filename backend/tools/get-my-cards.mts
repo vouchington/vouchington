@@ -10,7 +10,7 @@ export default createGetMyEntityListTool<{ after?: string; limit?: number }>({
   },
   listFn: (user, args) => getIndividualCards(user, user, args),
   meta: {
-    surfaces: ['internal', 'mcp', 'client'],
+    surfaces: ['internal', 'mcp'],
     title: 'Get My Cards',
     requiredScopes: { mcp: ['cards:read'] },
     annotations: { readOnlyHint: true },

@@ -47,7 +47,7 @@ export const getRssFeedItemFollowContextTool: Tool<DetailArgs, FollowResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp', 'client'],
+    surfaces: ['internal', 'mcp'],
     title: 'Get RSS Feed Item Follow Context',
     plan: 'free',
     requiredScopes: { mcp: ['rss-feed-items:read'] },
@@ -110,7 +110,7 @@ export const getRssFeedItemVotesTool: Tool<VotesArgs, VotesResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp', 'client'],
+    surfaces: ['internal', 'mcp'],
     title: 'Get RSS Feed Item Votes',
     plan: 'free',
     requiredScopes: { mcp: ['rss-feed-items:read'] },

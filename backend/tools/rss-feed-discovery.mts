@@ -55,7 +55,7 @@ export const getTrendingRssFeedsTool: Tool<TrendingArgs, DiscoveryResult<Trendin
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp', 'client'],
+    surfaces: ['internal', 'mcp'],
     title: 'Get Trending RSS Feeds',
     plan: 'free',
     requiredScopes: { mcp: ['rss-feeds:read'] },
@@ -100,7 +100,7 @@ export const getRecommendedRssFeedsTool: Tool<
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp', 'client'],
+    surfaces: ['internal', 'mcp'],
     title: 'Get Recommended RSS Feeds',
     plan: 'free',
     requiredScopes: { mcp: ['rss-feeds:read'] },

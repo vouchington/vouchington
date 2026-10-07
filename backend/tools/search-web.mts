@@ -60,7 +60,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp', 'client'],
+    surfaces: ['internal', 'mcp'],
     title: 'Search Web',
     requiredScopes: { mcp: ['web-search:read'] },
     annotations: { readOnlyHint: true },

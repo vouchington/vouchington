@@ -4,7 +4,7 @@
 
 `get_post`, `get_post_ancestors`, `get_post_descendants` and `get_story` read a post, its thread and
 a news story. Each requires the `posts:read` scope, is read-only, names its REST twin in `meta.api`,
-and sits on the `internal`, `mcp` and `client` surfaces like the other post tools. `search_posts`
+and sits on the `internal` and `mcp` surfaces like the other post tools. `search_posts`
 is not one of them but follows their [privacy rule](#privacy). The
 [community read tools](#community-read-tools) follow the same shape with the `communities:read`
 scope. The hostname, list and user read tools share

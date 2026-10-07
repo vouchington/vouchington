@@ -22,6 +22,7 @@ import type {
   ValidatedOAuthAuthorizationRequest,
 } from './types.mts'
 import { getOAuthClientDisplayName } from './known-clients.mts'
+import { matchesRegisteredRedirectUri } from './registered-redirect-uri.mts'
 import type { ClientIdMetadataDependencies } from './client-id-metadata-document.mts'
 
 type OAuthAuthorizationRequestParameters = {
@@ -37,18 +38,13 @@ type OAuthAuthorizationRequestParameters = {
 
 type AuthorizationRequestRow = {
   id: string
-  client_id: string
-  user_id: string
   redirect_uri: string
-  state: string
   resource: string
   scopes: OAuthClient['scopes']
-  code_challenge: string
   expires_at: Date
-  approved_at: Date | null
-  denied_at: Date | null
   client_name: string
   metadata_url: string | null
+  redirect_uris: string[]
 }
 
 /** @public #1360: external production use is unconfirmed; may be removed after intended-use review. */
@@ -160,11 +156,13 @@ export async function getOAuthAuthorizationRequestForUser(
   const result = await write<AuthorizationRequestRow>(
     `/* getOAuthAuthorizationRequestForUser */ SELECT
        request.id,
+       request.redirect_uri,
        request.resource,
        request.scopes::text[] AS scopes,
        request.expires_at,
        client.client_name,
-       client.metadata_url
+       client.metadata_url,
+       client.redirect_uris
      FROM oauth_authorization_requests AS request
      JOIN oauth_clients AS client ON client.id = request.client_id
      WHERE request.id = $1
@@ -181,12 +179,11 @@ export async function getOAuthAuthorizationRequestForUser(
          client.owner_user_id IS NULL OR EXISTS (
            SELECT 1 FROM users WHERE users.id = client.owner_user_id AND users.deleted_at IS NULL
          )
-       )
-       AND request.redirect_uri = ANY(client.redirect_uris)`,
+       )`,
     [requestId, userId, browserBindingHash],
   )
   const row = result.rows[0]
-  if (!row) return null
+  if (!row || !matchesRegisteredRedirectUri(row.redirect_uri, row.redirect_uris)) return null
   return {
     id: row.id,
     client_name: row.metadata_url ? getOAuthClientDisplayName(row.metadata_url) : row.client_name,

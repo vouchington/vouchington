@@ -50,7 +50,7 @@ export default createManageEntityTool({
   removeFn: (user, id) => deleteHouseholdSpendingCategoryById(user, id),
   entity: 'HouseholdSpendingCategory',
   meta: {
-    surfaces: ['internal', 'mcp', 'client'],
+    surfaces: ['internal', 'mcp'],
     title: 'Manage My Spending',
     plan: 'plus',
     requiredScopes: { mcp: ['spending:read', 'spending:write'] },

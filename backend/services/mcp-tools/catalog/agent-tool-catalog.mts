@@ -1,18 +1,7 @@
-import { listToolsForSurface } from '@voucha/tools/registry/select'
-import type { Tool, ToolApiEndpoint } from '@services/openai-agents/tool-types'
+import type { Tool } from '@services/openai-agents/tool-types'
 
 const CATALOG_BEGIN = '<!-- BEGIN GENERATED -->'
 const CATALOG_END = '<!-- END GENERATED -->'
-
-export type ClientToolManifest = {
-  tools: {
-    name: string
-    description: string | null
-    parameters: null
-    api: readonly ToolApiEndpoint[] | null
-    requiredScopes: string[]
-  }[]
-}
 
 export function renderCatalogTable(tools: readonly Tool[]): string {
   const rows = tools.map(tool => {
@@ -44,18 +33,6 @@ export function spliceCatalogTable(markdown: string, table: string): string {
     throw new Error(`The agent tool catalog is missing ${CATALOG_BEGIN} / ${CATALOG_END} markers`)
   const before = markdown.slice(0, beginIndex + CATALOG_BEGIN.length)
   return `${before}\n\n${table}\n\n${markdown.slice(endIndex)}`
-}
-
-export function buildClientManifest(tools: readonly Tool[]): ClientToolManifest {
-  return {
-    tools: listToolsForSurface('client', tools).map(tool => ({
-      name: tool.schema.name,
-      description: tool.schema.description ?? null,
-      parameters: null,
-      api: tool.meta?.api ?? null,
-      requiredScopes: declaredScopes(tool),
-    })),
-  }
 }
 
 function declaredScopes(tool: Tool): string[] {

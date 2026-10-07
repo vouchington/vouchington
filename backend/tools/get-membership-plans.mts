@@ -22,7 +22,7 @@ const tool: Tool<Record<string, never>, ToolResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp', 'client'],
+    surfaces: ['internal', 'mcp'],
     title: 'Get Membership Plans',
     requiredScopes: { mcp: ['reference-data:read'] },
     annotations: { readOnlyHint: true },

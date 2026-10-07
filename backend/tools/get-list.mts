@@ -26,7 +26,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp', 'client'],
+    surfaces: ['internal', 'mcp'],
     title: 'Get List',
     requiredScopes: { mcp: ['lists:read'] },
     annotations: { readOnlyHint: true },

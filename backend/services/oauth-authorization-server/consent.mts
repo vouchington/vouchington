@@ -12,6 +12,7 @@ import {
 import { OAuthProtocolError } from './errors.mts'
 import { buildOAuthAuthorizationResponseUrl } from './redirects.mts'
 import { mayUserAuthorizeOAuthResource } from './resource-authorization.mts'
+import { matchesRegisteredRedirectUri } from './registered-redirect-uri.mts'
 
 export async function decideOAuthAuthorizationRequest(
   userId: string,
@@ -143,7 +144,7 @@ async function lockAuthorizationRequest(
   const result = await query<AuthorizationRequestRow>(
     `/* lockAuthorizationRequest */ SELECT request.id, request.client_id, request.user_id, request.redirect_uri, request.client_state,
        request.resource, request.scopes::text[] AS scopes, request.code_challenge, client.owner_user_id,
-       client.scopes::text[] AS client_scopes
+       client.scopes::text[] AS client_scopes, client.redirect_uris
      FROM oauth_authorization_requests AS request
      JOIN oauth_clients AS client ON client.id = request.client_id
      WHERE request.id = $1
@@ -153,12 +154,15 @@ async function lockAuthorizationRequest(
        AND request.denied_at IS NULL
        AND request.expires_at > CURRENT_TIMESTAMP
        AND client.revoked_at IS NULL
-       AND request.redirect_uri = ANY(client.redirect_uris)
      FOR UPDATE OF request FOR SHARE OF client`,
     [requestId, userId, browserBindingHash],
   )
   const request = result.rows[0]
-  return request && hasEveryScope(request.client_scopes, request.scopes) ? request : null
+  return request &&
+    matchesRegisteredRedirectUri(request.redirect_uri, request.redirect_uris) &&
+    hasEveryScope(request.client_scopes, request.scopes)
+    ? request
+    : null
 }
 
 async function upsertGrant(

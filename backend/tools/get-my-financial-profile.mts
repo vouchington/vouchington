@@ -18,7 +18,7 @@ const tool: Tool<
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp', 'client'],
+    surfaces: ['internal', 'mcp'],
     title: 'Get My Financial Profile',
     requiredScopes: { mcp: ['financial-profile:read'] },
     annotations: { readOnlyHint: true },

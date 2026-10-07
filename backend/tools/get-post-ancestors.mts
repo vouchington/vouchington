@@ -26,7 +26,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp', 'client'],
+    surfaces: ['internal', 'mcp'],
     title: 'Get Post Ancestors',
     requiredScopes: { mcp: ['posts:read'] },
     annotations: { readOnlyHint: true },

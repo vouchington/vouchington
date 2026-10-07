@@ -67,7 +67,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp', 'client'],
+    surfaces: ['internal', 'mcp'],
     title: 'Get Referral Links',
     requiredScopes: { mcp: ['referral-links:read'] },
     annotations: { readOnlyHint: true },

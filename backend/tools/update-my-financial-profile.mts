@@ -89,7 +89,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp', 'client'],
+    surfaces: ['internal', 'mcp'],
     title: 'Update My Financial Profile',
     plan: 'plus',
     requiredScopes: { mcp: ['financial-profile:read', 'financial-profile:write'] },
