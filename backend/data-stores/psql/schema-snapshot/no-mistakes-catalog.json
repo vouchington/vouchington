@@ -34203,7 +34203,7 @@
           "ordinalPosition": 1
         },
         "retention_days": {
-          "comment": "Counsel-approved retention period, in days, that was in force when the case was erased.",
+          "comment": "Owner-approved retention period, in days, that was in force when the case was erased.",
           "dataType": "integer",
           "defaultExpression": null,
           "generated": null,
@@ -36268,7 +36268,7 @@
           "ordinalPosition": 1
         },
         "jurisdiction": {
-          "comment": "Procedure selected for this allegation: US DMCA, EU DSA, UK, or other counsel-reviewed handling.",
+          "comment": "Procedure selected for this allegation: US DMCA, EU DSA, UK, or other owner-approved handling after AI advisor review recorded on issue 1230; this is not a legal determination.",
           "dataType": "copyright_jurisdictions",
           "defaultExpression": null,
           "generated": null,
@@ -36679,7 +36679,7 @@
       "checkConstraints": {},
       "columns": {
         "account_user_id": {
-          "comment": "Post author who owned the confirmed placement. Guest placements do not create an incident.",
+          "comment": "Retained identity of the post author who owned the confirmed placement. Guest placements do not create an incident.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
@@ -36746,7 +36746,7 @@
           "onDelete": "RESTRICT",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
-          "referencedTable": "users",
+          "referencedTable": "retained_user_identities",
           "validated": true
         },
         "copyright_repeat_infringer_incidents_copyright_notice_id_fkey": {
@@ -36901,7 +36901,7 @@
       },
       "columns": {
         "account_user_id": {
-          "comment": "Account whose second operative incident opened this review.",
+          "comment": "Retained account identity whose second operative incident opened this review.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
@@ -36998,7 +36998,7 @@
           "onDelete": "RESTRICT",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
-          "referencedTable": "users",
+          "referencedTable": "retained_user_identities",
           "validated": true
         },
         "copyright_repeat_infringer_reviews_outcome_by_id_fkey": {
@@ -129678,7 +129678,7 @@
           "ordinalPosition": 6
         }
       },
-      "comment": "Staff-placed legal-process preservation holds on a user account (for example a DMCA 512(h) subpoena). A hold with released_at NULL is open and blocks account deletion; at most one hold per account is open at a time. Rows are append-only apart from a single release, and survive the account: every user reference targets retained_user_identities, so a released hold never blocks the 90-day hard delete and an open hold cannot coexist with a deleted account (placement refuses one). Counsel decides scope and duration, so neither is stored.",
+      "comment": "Staff-placed legal-process preservation holds on a user account (for example a DMCA 512(h) subpoena). A hold with released_at NULL is open and blocks account deletion; at most one hold per account is open at a time. Rows are append-only apart from a single release, and survive the account: every user reference targets retained_user_identities, so a released hold never blocks the 90-day hard delete and an open hold cannot coexist with a deleted account (placement refuses one). The owner decides scope and duration on a lawyer's advice, so neither is stored.",
       "foreignKeys": {
         "user_legal_preservation_holds_account_user_id_fkey": {
           "columns": ["account_user_id"],

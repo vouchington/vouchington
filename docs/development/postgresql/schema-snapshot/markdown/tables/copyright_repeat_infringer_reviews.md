@@ -9,7 +9,7 @@ Not partitioned — growth: unbounded.
 | Column                 | Type                                         | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                           |
 | ---------------------- | -------------------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------- |
 | `id`                   | `uuid`                                       | no       | `uuidv7()`                   |          |           |           |                                                                                                                   |
-| `account_user_id`      | `uuid`                                       | no       |                              |          |           |           | Account whose second operative incident opened this review.                                                       |
+| `account_user_id`      | `uuid`                                       | no       |                              |          |           |           | Retained account identity whose second operative incident opened this review.                                     |
 | `opened_at`            | `timestamp with time zone`                   | no       |                              |          |           |           | Time the second operative incident opened the review.                                                             |
 | `outcome`              | `copyright_repeat_infringer_review_outcomes` | yes      |                              |          |           |           | Staff outcome. Null while the review is open. Restrict and terminate are applied by a later administrator action. |
 | `outcome_at`           | `timestamp with time zone`                   | yes      |                              |          |           |           | Time the moderator recorded the outcome. Null while the review is open.                                           |
@@ -32,7 +32,7 @@ _none_
 
 **Foreign keys:**
 
-- `copyright_repeat_infringer_reviews_account_user_id_fkey`: `FOREIGN KEY (account_user_id) REFERENCES users(id) ON DELETE RESTRICT`
+- `copyright_repeat_infringer_reviews_account_user_id_fkey`: `FOREIGN KEY (account_user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 - `copyright_repeat_infringer_reviews_outcome_by_id_fkey`: `FOREIGN KEY (outcome_by_id) REFERENCES users(id) ON DELETE SET NULL`
 
 **Indexes:**
