@@ -496,40 +496,28 @@ using it makes cleanup the path of least resistance instead of an easily-forgott
 
 ### Compiler-backed contract tests
 
-`loadBackendProgram()` (`backend/test-helpers/api-fixtures/backend-program.mts`) memoizes the
-program used by independent PostgreSQL row checks while its compiler inputs and root set are unchanged.
-API request/response discovery and the internal OpenAPI builder are removed. Warm freshness checks
-reparse the backend compiler configuration
-and replay the normalized, deduplicated filesystem decisions made by the exact CompilerHost that
-built the program: file reads and existence, directory existence and listings, and realpath results.
-That graph includes source inputs, package metadata and other module-resolution-affecting files,
-failed file/directory lookups, and roots/configuration. Successful file reads use bigint `mtimeNs`,
-`ctimeNs`, and size as a fast path; changed metadata rereads the file and compares its exact text.
-Every build immediately replays its captured graph before publication and retries within a fixed
-bound when a probe or root/configuration changes, so the accepted generation cannot pair SourceFile
-text with a later disk snapshot. Added/deleted roots, deleted existing inputs, changed imported
-dependencies, package.json changes, and newly satisfied failed lookups rebuild the program and
-advance an opaque generation.
+`loadBackendProgram()` (`backend/test-helpers/api-fixtures/backend-program.mts`) uses
+`createCompilerProgramCache` from `vouchington-tooling/compiler-build` for the program shared by
+independent PostgreSQL row checks. The local `backendApiRouteRootFileNames()` callback selects
+configured backend route and declaration roots, and the consumer retains its route-file projection.
+API request/response discovery and the internal OpenAPI builder are removed.
 
-`getBackendProgramBuildCount()` exposes the independent program-build counter. Keep compiler
-invalidation tests confined to that owner; fixture and runtime-schema checks read explicit contract
-records without discovering backend handlers.
-The bounded attempt loop
-calls `settleBuild` from `vouchington-tooling/compiler-build`. `backend-program-settlement.mts`
-keeps the three-attempt bound and the backend terminal error; its exhaustive retry, configuration
-handoff, terminal error, and unexpected-error branches use in-memory tests instead of repeatedly
-building the full backend program. Filesystem-probe freshness uses `trackCompilerHost` and
-`compilerHostProbesAreFresh` from the same package, covered in `backend-program.probes.test.mts`.
-Use a small, structural filesystem host for a stable replay baseline or an individual tracked
-operation: its `fileExists`, `readFile`, directory, and realpath answers are owned by the test
-rather than ambient filesystem state that TypeScript can probe while it builds a program. Keep real
-TypeScript compiler coverage narrow and observable: isolate the program to test-owned inputs (for
-example, `noLib: true` and `types: []` for a single entry), then prove that it initially includes
-the entry, its captured snapshot is fresh, and an exact source rewrite makes it stale. An ambient
-`ts.createProgram()` capture must not use a pre-mutation freshness assertion as its baseline because
-its filesystem probes can change during capture on shared CI hosts. This boundary preserves
-regression coverage for both the tracker and its compiler integration without treating ambient
-inputs as deterministic.
+The upstream cache reparses backend compiler configuration on each load and replays the normalized,
+deduplicated filesystem decisions made by the exact CompilerHost that built the program: file reads
+and existence, directory existence and listings, and realpath results. That graph includes source
+inputs, package metadata and other module-resolution-affecting files, failed file/directory lookups,
+and roots/configuration. Successful file reads use bigint `mtimeNs`, `ctimeNs`, and size as a fast
+path; changed metadata rereads the file and compares its exact text. Every build immediately replays
+its captured graph before publication and retries within a three-attempt bound when a probe or
+root/configuration changes. Added/deleted roots, deleted existing inputs, changed imported
+dependencies, package.json changes, and newly satisfied failed lookups rebuild the program and
+advance an opaque generation. `getBackendProgramBuildCount()` exposes the upstream build counter.
+
+The local probe tests retain small test-only compiler factories and structural filesystem hosts to
+verify observable integration with TypeScript and the upstream tracker. Upstream tests own the
+cache's settlement, freshness, and retry mechanics; fixture and runtime-schema checks read explicit
+contract records without discovering backend handlers. The real compiler probe uses test-owned
+inputs (`noLib: true` and `types: []` for a single entry) so its source rewrite is deterministic.
 
 String-source contract suites use `buildVirtualProgramMatrix()` from
 `backend/test-helpers/api-fixtures/virtual-program.mts`. Declare every named source for the file,
@@ -543,15 +531,14 @@ failure case does not poison its siblings.
 Runtime request-body assertions read the checked-in executable bundle. Exercise meaningful
 carrier behavior in route tests without adding full backend discovery to schema tests.
 The configured scope-aware Oxlint `vouchington/typescript-program-location` rule keeps TypeScript
-compiler-host, program, and language-service factories owned by `backend-program.mts` and
+compiler-host, program, and language-service test factories owned by `backend-program.mts` and
 constrains virtual-matrix builds to their test lifecycle. It covers bracket and optional access,
 aliases, lexical shadows, and
 the public compiler-host family (`createCompilerHost`, `createIncrementalCompilerHost`,
 `createWatchCompilerHost`, `createSolutionBuilderHost`, and
 `createSolutionBuilderWithWatchHost`) plus the program, incremental, builder, watch,
-solution-builder, and language-service factory surface. `vouchington-tooling/compiler-build`
-tracks the structural filesystem host; the backend-program owner constructs the host and passes it
-into that tracker. Directory listings keep the host's original path array and order for TypeScript,
+solution-builder, and language-service factory surface. `vouchington-tooling/compiler-build` constructs and tracks the production compiler host;
+the backend-program owner keeps its test-only host factory. Directory listings keep the host's original path array and order for TypeScript,
 while freshness compares a normalized, sorted, unique signature.
 The rule follows protected factory provenance through direct calls and constructors, tagged
 templates, decorators, standard `call`/`apply`/`bind` and `Reflect.apply`/`Reflect.construct`
