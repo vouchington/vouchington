@@ -4,8 +4,13 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '../../entities/index.mts'
+import { read } from '@data-stores/psql'
+import sql from 'sql-template-strings'
 import type { PrivateUser } from '../../../services/users/types.mts'
-import { completeCopyrightMandatoryHumanReview } from '../../../services/copyright-notices/index.mts'
+import {
+  completeCopyrightMandatoryHumanReview,
+  recordCopyrightRepeatInfringerReviewOutcome,
+} from '../../../services/copyright-notices/index.mts'
 import { getCopyrightRepeatInfringerAccount } from '../../../services/copyright-notices/repeat-infringer-incidents.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from '../../../services/copyright-notices/restrictions.mts'
 import { appendCopyrightSubmissionAssessment } from '../../../services/copyright-notices/compliance.mts'
@@ -13,6 +18,24 @@ import { createCopyrightNoticeAggregate } from './create-notice-aggregate.mts'
 import { getCopyrightNoticePrivateAggregate } from './private-aggregate.mts'
 
 export const getTestCopyrightRepeatInfringerAccount = getCopyrightRepeatInfringerAccount
+export const recordTestCopyrightRepeatInfringerReviewOutcome =
+  recordCopyrightRepeatInfringerReviewOutcome
+
+export async function getTestCopyrightRepeatInfringerReview(reviewId: string) {
+  const { rows } = await read<{
+    id: string
+    opened_at: Date
+    outcome: string | null
+    outcome_at: Date | null
+    created_at: Date
+    updated_at: Date
+  }>(sql`/* getTestCopyrightRepeatInfringerReview */
+    SELECT id, opened_at, outcome, outcome_at, created_at, updated_at
+    FROM copyright_repeat_infringer_reviews
+    WHERE id = ${reviewId}
+  `)
+  return rows[0] ?? null
+}
 
 export async function confirmTestRepeatInfringerNotice(
   posterId: string,

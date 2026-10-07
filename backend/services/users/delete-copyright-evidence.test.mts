@@ -7,6 +7,8 @@ import {
 import {
   confirmTestRepeatInfringerNotice,
   getTestCopyrightRepeatInfringerAccount,
+  getTestCopyrightRepeatInfringerReview,
+  recordTestCopyrightRepeatInfringerReviewOutcome,
 } from '@voucha/test-helpers/services/copyright-notices/repeat-infringer'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { hardDeleteTestUser, getTestPrivateUserById } from '@voucha/test-helpers/entities/users'
@@ -27,9 +29,29 @@ describe('deleted copyright surface evidence', () => {
       await confirmTestRepeatInfringerNotice(poster.id, moderator, 'deletion retention'),
     ]
     const casesBefore = await Promise.all(noticeIds.map(readRetainedCopyrightCase))
+    const openAccount = await getTestCopyrightRepeatInfringerAccount(poster.id)
+    expect(openAccount.incidents).toHaveLength(2)
+    const reviewId = openAccount.open_review_id
+    if (!reviewId) throw new Error('repeat-infringer review disappeared')
+    const outcomeAt = new Date('2026-07-04T12:00:00.000Z')
+    await recordTestCopyrightRepeatInfringerReviewOutcome({
+      currentUser: moderator,
+      reviewId,
+      outcome: 'warning',
+      rationale: 'The retained incidents warrant a warning.',
+      recordedAt: outcomeAt,
+    })
+    const reviewBefore = await getTestCopyrightRepeatInfringerReview(reviewId)
+    expect(reviewBefore).toMatchObject({
+      id: reviewId,
+      opened_at: expect.any(Date),
+      outcome: 'warning',
+      outcome_at: outcomeAt,
+      created_at: expect.any(Date),
+      updated_at: expect.any(Date),
+    })
     const repeatInfringerBefore = await getTestCopyrightRepeatInfringerAccount(poster.id)
-    expect(repeatInfringerBefore.incidents).toHaveLength(2)
-    expect(repeatInfringerBefore.open_review_id).toEqual(expect.any(String))
+    expect(repeatInfringerBefore.open_review_id).toBeNull()
 
     await deleteUserAndDrainForTest(poster, poster)
     await hardDeleteTestUser(poster.id)
@@ -40,6 +62,7 @@ describe('deleted copyright surface evidence', () => {
     await expect(getTestCopyrightRepeatInfringerAccount(poster.id)).resolves.toEqual(
       repeatInfringerBefore,
     )
+    await expect(getTestCopyrightRepeatInfringerReview(reviewId)).resolves.toEqual(reviewBefore)
     await expect(Promise.all(noticeIds.map(readRetainedCopyrightCase))).resolves.toEqual(
       casesBefore,
     )
