@@ -79,12 +79,6 @@ export async function checkRepoFilePolicy(
   checkSplitMarkdownCanonicalLinkGuard(ctx.repoRoot, trackedFiles, errors)
   checkUuidv7CreatedAtDdl(ctx.repoRoot, trackedFiles, errors)
   checkModerationHistoryGuard(ctx.repoRoot, trackedFiles, errors)
-  const uuidv7Tables = new Set<string>()
-  for (const [tableName, table] of Object.entries(schema.tables)) {
-    if (typeof table.columns.created_at?.generatedExpression === 'string') {
-      uuidv7Tables.add(tableName)
-    }
-  }
   // One streaming pass over the union of files these guards inspect: each matched file is
   // parsed once and the AST is discarded before the next file. See ast-pass.mts.
   const [postgresRuntimeErrors] = runAstFilePass(
@@ -94,7 +88,7 @@ export async function checkRepoFilePolicy(
       {
         matches: matchesPostgresRuntimeFile,
         visit: (file, content, ast, bucket) => {
-          bucket.push(...checkPostgresRuntimeSource(file, content, uuidv7Tables, ast))
+          bucket.push(...checkPostgresRuntimeSource(file, content, ast))
         },
       },
     ],

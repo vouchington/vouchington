@@ -81,7 +81,6 @@ export function checkStaleSchemaAllowlistEntries(
 export function checkPostgresRuntimeGuard(
   repoRoot: string,
   trackedFiles: string[],
-  uuidv7Tables: Set<string>,
   schema: Pick<SchemaSnapshot, 'tables'>,
   errors: string[],
   ctx?: SharedContext,
@@ -96,7 +95,7 @@ export function checkPostgresRuntimeGuard(
     } catch {
       continue
     }
-    errors.push(...checkPostgresRuntimeSource(file, code, uuidv7Tables, ast))
+    errors.push(...checkPostgresRuntimeSource(file, code, ast))
   }
 
   checkStaleSchemaAllowlistEntries(repoRoot, trackedFiles, schema, errors)

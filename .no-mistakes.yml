@@ -2392,6 +2392,10 @@ rules:
         - '**/__tests__/**'
         - '**/test-helpers/**'
         - backend/scripts/**
+      sqlInclude:
+        - backend/data-stores/psql/views/**/*.sql
+        - backend/data-stores/psql/migrations/**/*.sql
+        - backend/data-stores/psql/config-driven/**/*.sql
 
   - name: runtime queries identify executed statements
     rule: postgres-require-query-annotation
@@ -2415,10 +2419,16 @@ rules:
       importSpecifier: '@data-stores/psql'
       executorFactoryNames: [beginTransaction, beginBoundedTransaction]
       executorTypeNames: [TransactionQuery, QueryExecutor]
+      bannedShapes: [correlated-exists-set-operation, not-in-subquery, count-for-existence]
       sqlInclude:
         - backend/data-stores/psql/config-driven/**/*.sql
+        - backend/data-stores/psql/views/**/*.sql
+        - backend/data-stores/psql/migrations/**/*.sql
       include:
         - backend/**/*.{ts,mts,js}
+        - backend/data-stores/psql/config-driven/**/*.sql
+        - backend/data-stores/psql/views/**/*.sql
+        - backend/data-stores/psql/migrations/**/*.sql
       exclude:
         - '**/*.test.*'
         - '**/__tests__/**'
@@ -2427,6 +2437,29 @@ rules:
       # Skip dynamically interpolated executor SQL. The deleted topics-active-filter
       # and EXISTS-shape guards only judged recoverable SQL; fail would flag every
       # composed `read`/`write` wrapper. Parsed queries still fail-closed.
+      unanalyzableSql: ignore
+
+  - name: generated UUIDv7 timestamps are not query predicates
+    rule: postgres-generated-column-predicates
+    scope: repository
+    options:
+      importSpecifier: '@data-stores/psql'
+      executorFactoryNames: [beginTransaction, beginBoundedTransaction]
+      executorTypeNames: [TransactionQuery, QueryExecutor]
+      sqlInclude:
+        - backend/data-stores/psql/migrations/**/*.sql
+        - backend/data-stores/psql/views/**/*.sql
+        - backend/data-stores/psql/config-driven/**/*.sql
+      include:
+        - backend/**/*.{ts,mts}
+      exclude:
+        - '**/*.test.*'
+        - '**/__tests__/**'
+        - '**/test-helpers/**'
+        - backend/scripts/**
+      functions: [uuid_extract_timestamp]
+      requireArgumentIsPrimaryKey: true
+      clauses: [where, join, order-by]
       unanalyzableSql: ignore
 
   - name: topics queries keep the active-topic filter
