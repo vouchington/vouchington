@@ -83,8 +83,8 @@ describe('create_community — real store', () => {
       TOOL,
       args({
         member_roster_visibility: 'members',
-        member_invites_allowed: true,
-        post_approval_required: true,
+        member_invites_allowed_at: true,
+        post_approval_required_at: true,
         should_allow_review_posts: true,
         should_allow_data_point_posts: true,
         default_language: 'fr-FR',
@@ -142,7 +142,7 @@ describe('create_community — real store', () => {
 
     for (const changed of [
       { name: 'Another Quiet Birdwatchers Group' },
-      { member_invites_allowed: true },
+      { member_invites_allowed_at: true },
       { visibility: 'private' },
     ]) {
       expect(await errorOf(caller, { ...input, ...changed })).toMatchObject({
@@ -222,9 +222,9 @@ describe('create_community — real store', () => {
     ['a missing name', { name: undefined }],
     ['an unknown visibility', { visibility: 'secret' }],
     ['an unknown roster visibility', { member_roster_visibility: 'everyone' }],
-    ['a non-boolean flag', { post_approval_required: 'yes' }],
+    ['a non-boolean flag', { post_approval_required_at: 'yes' }],
     ['a non-uuid idempotency key', { idempotency_key: 'not-a-uuid' }],
-    ['an image id the tool does not take', { profile_image_id: crypto.randomUUID() }],
+    ['an invalid image id', { profile_image_id: 'not-a-uuid' }],
   ])('refuses %s as invalid arguments', async (_label, extra) => {
     const caller = await createTestPlusMcpCaller()
     const text = await callRejectedMcpTool(caller, TOOL, args(extra), SCOPES)

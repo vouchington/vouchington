@@ -47,7 +47,7 @@ Constraints:
 - Message IDs are lowercase UUIDv7 values scoped to the conversation, ordered user before assistant. Save the pair locally before sending; reuse it and the exact text on retries.
 - `message` must be a non-empty string, maximum 32,768 characters
 - `assistant_content` must be a non-empty string, maximum 65,536 characters
-- `model_provider` must be `openai_compatible`, `apple_foundation`, `windows_foundry`, or `android_aicore`; hosted providers are rejected with 400
+- `model_provider` must be `openai_compatible`, `apple_foundation`, `windows_foundry`, or `android_aicore`; hosted providers are rejected with 422
 - For `openai_compatible`, `model_name` is required, trimmed, maximum 256 characters, and persisted exactly as sent by the native client
 - For fixed native providers, `model_name` is optional and must match the provider when supplied; it is persisted as `apple-foundation-system`, `windows-system-language-model`, or `android-aicore-system`. A submitted Windows `phi-silica` value is normalized to `windows-system-language-model` before persistence.
 
@@ -57,7 +57,10 @@ Both stored messages record the requesting client as private [content provenance
 
 Conversation DTOs expose only `id`, `title`, `created_at`, and `updated_at`. History remains durable and paginated, including incomplete assistant placeholders. See [the transcript identity contract](../../../../overview/architecture/conversations.md#native-client-flow).
 
-**Authorization:** The authenticated user must own the conversation. Returns 403 otherwise.
+**Authorization:** The authenticated user must own the conversation. Returns 403 otherwise. After
+authorization, unknown fields and invalid schema types, enums, UUIDv7 ids, or message lengths return
+422 `Invalid request body`. Cross-field id ordering and model normalization keep their service
+checks.
 
 ## GET /api/v1/my/conversations
 

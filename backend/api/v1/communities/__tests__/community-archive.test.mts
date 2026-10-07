@@ -192,6 +192,6 @@ describe('community archive route', () => {
       .send({ archive: 'yes' })
       .expect(422)
 
-    expect(response.body.message).toContain('archive must be a boolean')
+    expect(response.body.message).toBe('Invalid request body')
   })
 })

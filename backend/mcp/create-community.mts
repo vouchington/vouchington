@@ -19,12 +19,15 @@ type Args = {
   slug?: string
   markdown?: string
   visibility?: 'public' | 'private'
-  default_language?: string
+  default_language?: string | null
+  list_type?: 'follow' | 'mute' | null
+  profile_image_id?: string | null
+  banner_image_id?: string | null
   should_allow_review_posts?: boolean
   should_allow_data_point_posts?: boolean
   member_roster_visibility?: 'public' | 'users' | 'members' | 'moderators'
-  member_invites_allowed?: boolean
-  post_approval_required?: boolean
+  member_invites_allowed_at?: boolean
+  post_approval_required_at?: boolean
 }
 
 type Result = {
@@ -37,7 +40,7 @@ const tool: Tool<Args, Result> = {
     name: 'create_community',
     type: 'function',
     description:
-      'Create a community the current user owns. name is required, has at least 3 words and at most 100 characters, and has no leading or trailing whitespace. slug is optional and generated from the name when omitted; a taken slug is CONFLICT. visibility is public (default) or private. member_roster_visibility says who can list the members: public (default), users, members or moderators. member_invites_allowed lets members invite others, and post_approval_required sends every new post to moderators for approval; both default to false. should_allow_review_posts and should_allow_data_point_posts default to false. Profile and banner images are set on the web. Creating communities counts against the same daily and short-term quota as the web, and CONTRIBUTION_QUOTA_EXCEEDED means try later. A username is required (FORBIDDEN otherwise). Reuse the same UUID idempotency_key and arguments to safely retry; the first result is replayed. Returns the community id, slug, visibility and creation time.',
+      'Create a community the current user owns. name is required, has at least 3 words and at most 100 characters, and has no leading or trailing whitespace. slug is optional and generated from the name when omitted; a taken slug is CONFLICT. visibility is public (default) or private. member_roster_visibility says who can list the members: public (default), users, members or moderators. member_invites_allowed_at lets members invite others, and post_approval_required_at sends every new post to moderators for approval; both default to false. should_allow_review_posts and should_allow_data_point_posts default to false. Profile and banner image ids and list_type match the REST community inputs. Creating communities counts against the same daily and short-term quota as the web, and CONTRIBUTION_QUOTA_EXCEEDED means try later. A username is required (FORBIDDEN otherwise). Reuse the same UUID idempotency_key and arguments to safely retry; the first result is replayed. Returns the community id, slug, visibility and creation time.',
     parameters: {
       type: 'object',
       properties: {
@@ -53,15 +56,21 @@ const tool: Tool<Args, Result> = {
         slug: { type: 'string', description: 'Optional URL slug.' },
         markdown: { type: 'string', description: 'Optional description, in Markdown.' },
         visibility: { type: 'string', enum: ['public', 'private'] },
-        default_language: { type: 'string', description: 'Optional BCP 47 content language tag.' },
+        default_language: {
+          type: ['string', 'null'],
+          description: 'Optional BCP 47 content language tag.',
+        },
+        list_type: { type: ['string', 'null'], enum: ['follow', 'mute', null] },
+        profile_image_id: { type: ['string', 'null'], format: 'uuid' },
+        banner_image_id: { type: ['string', 'null'], format: 'uuid' },
         should_allow_review_posts: { type: 'boolean' },
         should_allow_data_point_posts: { type: 'boolean' },
         member_roster_visibility: {
           type: 'string',
           enum: ['public', 'users', 'members', 'moderators'],
         },
-        member_invites_allowed: { type: 'boolean' },
-        post_approval_required: { type: 'boolean' },
+        member_invites_allowed_at: { type: 'boolean' },
+        post_approval_required_at: { type: 'boolean' },
       },
       required: ['idempotency_key', 'name'],
       additionalProperties: false,
@@ -95,11 +104,14 @@ const tool: Tool<Args, Result> = {
       markdown: fields.markdown,
       visibility: fields.visibility,
       default_language: fields.default_language,
+      list_type: fields.list_type,
+      profile_image_id: fields.profile_image_id,
+      banner_image_id: fields.banner_image_id,
       should_allow_review_posts: fields.should_allow_review_posts,
       should_allow_data_point_posts: fields.should_allow_data_point_posts,
       member_roster_visibility: fields.member_roster_visibility,
-      member_invites_allowed_at: fields.member_invites_allowed ? new Date() : null,
-      post_approval_required_at: fields.post_approval_required ? new Date() : null,
+      member_invites_allowed_at: fields.member_invites_allowed_at ? new Date() : null,
+      post_approval_required_at: fields.post_approval_required_at ? new Date() : null,
     }
     validateCreateCommunityInput(input)
     return admitDelegatedCreate({
@@ -110,8 +122,8 @@ const tool: Tool<Args, Result> = {
       scope: 'global',
       intent: {
         ...fields,
-        member_invites_allowed: fields.member_invites_allowed === true,
-        post_approval_required: fields.post_approval_required === true,
+        member_invites_allowed_at: fields.member_invites_allowed_at === true,
+        post_approval_required_at: fields.post_approval_required_at === true,
       },
       beforeCreate: async () =>
         assertWithinContributionActionLimit(user, await getUserActivePlan(user.id), 'community'),

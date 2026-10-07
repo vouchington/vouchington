@@ -78,7 +78,7 @@ describe('index.generated', () => {
           assistant_content: 'Use transferable points first.',
           model_provider: 'openai',
         })
-        .expect(400)
+        .expect(422)
     })
 
     it('should require JSON content type for client-generated turns', async () => {

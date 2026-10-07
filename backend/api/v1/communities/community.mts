@@ -59,25 +59,13 @@ app
 
     const membership = await getCommunityMember(community.id, currentUser.id)
 
-    const rawBody = (await ctx.request.json('1mb')) as Record<string, unknown>
-    const parsedBody: unknown = rawBody
-    if (parsedBody === null || typeof parsedBody !== 'object' || Array.isArray(parsedBody)) {
-      ctx.assert(
-        currentUserCanUpdateCommunity(currentUser, community, membership),
-        403,
-        'Forbidden',
-      )
-      validateRequestContract(ctx, 'PATCH:/api/v1/communities/:idOrSlug', {
-        path: ctx.params,
-        body: parsedBody,
-      })
-      ctx.throw(422, 'Invalid request body')
-    }
-    const body = rawBody
+    const parsedBody: unknown = await ctx.request.json('1mb')
+    const isObjectBody =
+      parsedBody !== null && typeof parsedBody === 'object' && !Array.isArray(parsedBody)
+    const body = isObjectBody ? (parsedBody as Record<string, unknown>) : {}
     const { archive, ...updateBody } = body
-    if (archive !== undefined && typeof archive !== 'boolean') {
-      ctx.throw(422, 'archive must be a boolean')
-    }
+    const hasUpdateFields = Object.keys(updateBody).length > 0
+
     if (archive !== undefined) {
       ctx.assert(
         currentUserCanDeleteCommunity(currentUser, community, membership),
@@ -85,6 +73,18 @@ app
         'Forbidden',
       )
     }
+    if (archive === undefined || hasUpdateFields) {
+      ctx.assert(
+        currentUserCanUpdateCommunity(currentUser, community, membership),
+        403,
+        'Forbidden',
+      )
+    }
+    validateRequestContract(ctx, 'PATCH:/api/v1/communities/:idOrSlug', {
+      path: ctx.params,
+      body: parsedBody,
+    })
+
     const input: UpdateCommunityInput = { ...updateBody }
     if ('member_invites_allowed_at' in body)
       input.member_invites_allowed_at = body.member_invites_allowed_at
@@ -94,27 +94,6 @@ app
       input.post_approval_required_at = body.post_approval_required_at
         ? (community.post_approval_required_at ?? new Date())
         : null
-    if ('list_type' in updateBody) {
-      const lt = updateBody.list_type
-      if (lt !== null && lt !== 'follow' && lt !== 'mute') {
-        ctx.throw(422, 'list_type must be "follow", "mute", or null')
-      }
-      input.list_type = lt as 'follow' | 'mute' | null
-    }
-    if ('member_roster_visibility' in updateBody) {
-      const value = updateBody.member_roster_visibility
-      if (
-        value !== 'public' &&
-        value !== 'users' &&
-        value !== 'members' &&
-        value !== 'moderators'
-      ) {
-        ctx.throw(422, 'member_roster_visibility must be public, users, members, or moderators')
-      }
-      input.member_roster_visibility = value
-    }
-    const hasUpdateFields = Object.keys(updateBody).length > 0 || Object.keys(input).length > 0
-
     if (community.archived_at) {
       if (archive === true) {
         ctx.throw(409, 'Community is already archived')
@@ -128,42 +107,20 @@ app
 
     let updated = community
     if (archive !== undefined && hasUpdateFields) {
-      ctx.assert(
-        currentUserCanUpdateCommunity(currentUser, community, membership),
-        403,
-        'Forbidden',
-      )
-      validateRequestContract(ctx, 'PATCH:/api/v1/communities/:idOrSlug', {
-        path: ctx.params,
-        body,
-      })
       updated = await updateCommunityAndSetArchiveState(
         currentUser,
         community.id,
         input,
-        archive,
+        archive as boolean,
         membership,
       )
     } else if (archive === undefined) {
-      ctx.assert(
-        currentUserCanUpdateCommunity(currentUser, community, membership),
-        403,
-        'Forbidden',
-      )
-      validateRequestContract(ctx, 'PATCH:/api/v1/communities/:idOrSlug', {
-        path: ctx.params,
-        body,
-      })
       updated = await updateCommunity(currentUser, community.id, input, membership)
     } else {
-      validateRequestContract(ctx, 'PATCH:/api/v1/communities/:idOrSlug', {
-        path: ctx.params,
-        body,
-      })
       updated = await setCommunityArchiveState(
         currentUser,
         community.id,
-        archive,
+        archive as boolean,
         membership,
         community,
       )

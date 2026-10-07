@@ -112,12 +112,6 @@ app
       'POST:/api/v1/communities/:idOrSlug/modmail/:conversationId/messages',
       { path: ctx.params, body },
     )
-    ctx.assert(
-      typeof body.text === 'string' && body.text.trim().length > 0,
-      400,
-      'text is required',
-    )
-
     // Ensure mod/staff callers have a participant row so createConversationMessage's
     // participant guard succeeds — idempotent if they were added via openModmailThread.
     if (isMod) {

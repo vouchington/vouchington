@@ -37952,6 +37952,281 @@
         "user_id"
       ],
       "type": "object"
+    },
+    "UpdateCommunityRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "slug": {
+          "type": "string"
+        },
+        "markdown": {
+          "type": ["string", "null"]
+        },
+        "visibility": {
+          "type": "string",
+          "enum": ["public", "private"]
+        },
+        "list_type": {
+          "type": ["string", "null"],
+          "enum": ["follow", "mute", null]
+        },
+        "member_roster_visibility": {
+          "type": "string",
+          "enum": ["public", "users", "members", "moderators"]
+        },
+        "member_invites_allowed_at": {
+          "type": "boolean"
+        },
+        "post_approval_required_at": {
+          "type": "boolean"
+        },
+        "profile_image_id": {
+          "type": ["string", "null"],
+          "format": "uuid"
+        },
+        "banner_image_id": {
+          "type": ["string", "null"],
+          "format": "uuid"
+        },
+        "default_language": {
+          "type": ["string", "null"]
+        },
+        "archive": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "CreateCommunityRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "slug": {
+          "type": "string"
+        },
+        "markdown": {
+          "type": "string"
+        },
+        "visibility": {
+          "type": "string",
+          "enum": ["public", "private"]
+        },
+        "list_type": {
+          "type": ["string", "null"],
+          "enum": ["follow", "mute", null]
+        },
+        "member_roster_visibility": {
+          "type": "string",
+          "enum": ["public", "users", "members", "moderators"]
+        },
+        "member_invites_allowed_at": {
+          "type": "boolean"
+        },
+        "post_approval_required_at": {
+          "type": "boolean"
+        },
+        "profile_image_id": {
+          "type": ["string", "null"],
+          "format": "uuid"
+        },
+        "banner_image_id": {
+          "type": ["string", "null"],
+          "format": "uuid"
+        },
+        "default_language": {
+          "type": ["string", "null"]
+        },
+        "should_allow_review_posts": {
+          "type": "boolean"
+        },
+        "should_allow_data_point_posts": {
+          "type": "boolean"
+        },
+        "cf_turnstile_response": {
+          "type": "string"
+        }
+      },
+      "required": ["name"],
+      "additionalProperties": false
+    },
+    "OpenCommunityModmailRequest": {
+      "type": "object",
+      "properties": {
+        "subject_user_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "additionalProperties": false
+    },
+    "UpdateCommunityModmailRequest": {
+      "type": "object",
+      "properties": {
+        "assigned_moderator_user_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "resolved": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "CreateCommunityModmailMessageRequest": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "pattern": "\\S"
+        }
+      },
+      "required": ["text"],
+      "additionalProperties": false
+    },
+    "CreateCommunitySavedReplyRequest": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "body": {
+          "type": "string",
+          "pattern": "\\S",
+          "maxLength": 5000
+        }
+      },
+      "required": ["body"],
+      "additionalProperties": false
+    },
+    "CreateCommunityWarningRequest": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "publicMessage": {
+          "type": ["string", "null"]
+        },
+        "reportId": {
+          "type": ["string", "null"],
+          "format": "uuid"
+        },
+        "resolveReport": {
+          "type": "boolean"
+        }
+      },
+      "required": ["userId", "reason"],
+      "additionalProperties": false
+    },
+    "CreateClientGeneratedChatRequest": {
+      "type": "object",
+      "properties": {
+        "user_message_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "assistant_message_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "message": {
+          "type": "string",
+          "pattern": "\\S",
+          "maxLength": 32768
+        },
+        "assistant_content": {
+          "type": "string",
+          "pattern": "\\S",
+          "maxLength": 65536
+        },
+        "model_provider": {
+          "type": "string",
+          "enum": ["apple_foundation", "windows_foundry", "android_aicore", "openai_compatible"]
+        },
+        "model_name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "user_message_id",
+        "assistant_message_id",
+        "message",
+        "assistant_content",
+        "model_provider"
+      ],
+      "additionalProperties": false
+    },
+    "OAuthProviderRequest": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "token": {
+              "type": "string"
+            },
+            "nonce": {
+              "type": "string"
+            },
+            "userData": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "required": ["token"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "credential": {
+              "type": "string"
+            }
+          },
+          "required": ["credential"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "redirectUri": {
+              "type": "string"
+            },
+            "codeVerifier": {
+              "type": "string"
+            }
+          },
+          "required": ["code", "redirectUri"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "CreateChatConversationRequest": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
     }
   },
   "operations": {
@@ -43881,7 +44156,7 @@
     },
     "PATCH:/api/v1/communities/:idOrSlug": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/UpdateCommunityRequest"
       },
       "path": {
         "properties": {
@@ -44002,7 +44277,7 @@
     },
     "PATCH:/api/v1/communities/:idOrSlug/modmail/:conversationId": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/UpdateCommunityModmailRequest"
       },
       "path": {
         "properties": {
@@ -45003,7 +45278,7 @@
     },
     "POST:/api/v1/auth/oauth/:provider/continue": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/OAuthProviderRequest"
       },
       "path": {
         "properties": {
@@ -45082,7 +45357,7 @@
     },
     "POST:/api/v1/communities": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CreateCommunityRequest"
       }
     },
     "POST:/api/v1/communities/:idOrSlug/agent-prompts": {
@@ -45391,7 +45666,7 @@
     },
     "POST:/api/v1/communities/:idOrSlug/modmail": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/OpenCommunityModmailRequest"
       },
       "path": {
         "properties": {
@@ -45405,7 +45680,7 @@
     },
     "POST:/api/v1/communities/:idOrSlug/modmail/:conversationId/messages": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CreateCommunityModmailMessageRequest"
       },
       "path": {
         "properties": {
@@ -45716,7 +45991,7 @@
     },
     "POST:/api/v1/communities/:idOrSlug/saved-replies": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CreateCommunitySavedReplyRequest"
       },
       "path": {
         "properties": {
@@ -45730,7 +46005,7 @@
     },
     "POST:/api/v1/communities/:idOrSlug/warnings": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CreateCommunityWarningRequest"
       },
       "path": {
         "properties": {
@@ -45756,12 +46031,12 @@
     },
     "POST:/api/v1/conversations": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CreateChatConversationRequest"
       }
     },
     "POST:/api/v1/conversations/:conversationId/client-generated-chat": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CreateClientGeneratedChatRequest"
       },
       "path": {
         "properties": {
@@ -47817,7 +48092,7 @@
     },
     "PUT:/api/v1/auth/oauth/:provider/connect": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/OAuthProviderRequest"
       },
       "path": {
         "properties": {

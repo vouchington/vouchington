@@ -150,7 +150,7 @@ describe('OAuth Authentication Routes', () => {
         .put(`/api/v1/auth/oauth/${provider}/connect`)
         .send({})
         .expect(422)
-      expect(response.body.message).toContain('token is required')
+      expect(response.body.message).toBe('Invalid request body')
     })
 
     it('POST /continue should return 422 when token is missing', async () => {
@@ -159,7 +159,7 @@ describe('OAuth Authentication Routes', () => {
         .post(`/api/v1/auth/oauth/${provider}/continue`)
         .send({})
         .expect(422)
-      expect(response.body.message).toContain('token is required')
+      expect(response.body.message).toBe('Invalid request body')
     })
   })
 
@@ -169,13 +169,13 @@ describe('OAuth Authentication Routes', () => {
       const user = await createTestUser()
       await request.authenticateAs(user!)
       const response = await request.put('/api/v1/auth/oauth/google/connect').send({}).expect(422)
-      expect(response.body.message).toContain('credential is required')
+      expect(response.body.message).toBe('Invalid request body')
     })
 
     it('POST /continue should return 422 when credential is missing', async () => {
       const request = createRequest()
       const response = await request.post('/api/v1/auth/oauth/google/continue').send({}).expect(422)
-      expect(response.body.message).toContain('credential is required')
+      expect(response.body.message).toBe('Invalid request body')
     })
   })
 
@@ -188,7 +188,7 @@ describe('OAuth Authentication Routes', () => {
         .put(`/api/v1/auth/oauth/${provider}/connect`)
         .send({})
         .expect(422)
-      expect(response.body.message).toContain('code is required')
+      expect(response.body.message).toBe('Invalid request body')
     }, 15_000)
 
     it('PUT /connect should return 422 when redirectUri is missing', async () => {
@@ -199,7 +199,7 @@ describe('OAuth Authentication Routes', () => {
         .put(`/api/v1/auth/oauth/${provider}/connect`)
         .send({ code: 'fake-code' })
         .expect(422)
-      expect(response.body.message).toContain('redirectUri is required')
+      expect(response.body.message).toBe('Invalid request body')
     }, 15_000)
 
     it('PUT /connect should return 422 when codeVerifier is missing', async () => {
@@ -219,7 +219,7 @@ describe('OAuth Authentication Routes', () => {
         .post(`/api/v1/auth/oauth/${provider}/continue`)
         .send({})
         .expect(422)
-      expect(response.body.message).toContain('code is required')
+      expect(response.body.message).toBe('Invalid request body')
     })
 
     it('POST /continue should return 422 when redirectUri is missing', async () => {
@@ -228,7 +228,7 @@ describe('OAuth Authentication Routes', () => {
         .post(`/api/v1/auth/oauth/${provider}/continue`)
         .send({ code: 'fake-code' })
         .expect(422)
-      expect(response.body.message).toContain('redirectUri is required')
+      expect(response.body.message).toBe('Invalid request body')
     })
 
     it('POST /continue should return 422 when codeVerifier is missing', async () => {

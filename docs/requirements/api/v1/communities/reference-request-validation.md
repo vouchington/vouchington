@@ -2,7 +2,7 @@
 
 [Back to Communities API](../../../../../backend/api/v1/communities/README.md)
 
-Some community routes use `validateRequestContract` to check request values against the generated
+Some community routes use `validateRequestContract` to check request values against the checked-in
 `@voucha/api-fixtures/v1/request-contracts.json` schema. Validation ordering and coverage are
 route-specific; the examples below describe selected runtime behaviors and are not a complete route
 inventory. See
@@ -15,7 +15,8 @@ other access checks retain the ordering documented for each route below.
 ## Behavior changes
 
 - Community modmail and saved-reply routes return `422` instead of `400` for non-object JSON
-  bodies. Their route-specific field checks still return `400` for invalid or missing fields.
+  bodies, unknown fields, and invalid or missing schema fields. The validator supplies the redacted
+  `Invalid request body` message.
 - `GET /api/v1/communities/:idOrSlug/moderation-transparency`: an unrecognized `range` value now
   returns `422` instead of silently falling back to `30d`. Omitting `range` still defaults to `30d`.
 
@@ -23,7 +24,8 @@ other access checks retain the ordering documented for each route below.
 
 - `PATCH /api/v1/communities/:idOrSlug` returns `422` for a non-object JSON body when sent by an
   owner and preserves `403` for a member without update access. Unauthenticated callers still get
-  `401`.
+  `401`. Permission checks run before body validation and archived-community conflicts. Authorized
+  invalid requests to archived communities return `422` before `409`.
 - `POST /api/v1/communities/:idOrSlug/posts` validates the parsed body before the honeypot response.
   A non-object body such as JSON `null`, or an object with an invalid field, returns `422` after the
   contribution gates. A valid object with a filled honeypot field still receives the honeypot
