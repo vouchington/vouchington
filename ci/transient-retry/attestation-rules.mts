@@ -64,7 +64,7 @@ export const backendImageAttestationEmptyPersistErrorRule: TransientRetryRule = 
         /subject-name: ghcr\.io\/vouchington\/api\s*$/m.test(step.log) &&
         /subject-digest: sha256:[0-9a-f]{64}\s*$/m.test(step.log) &&
         publishedApiDigests.includes(
-          step.log.match(/subject-digest: sha256:([0-9a-f]{64})\s*$/m)?.[1],
+          step.log.match(/subject-digest: sha256:([0-9a-f]{64})\s*$/m)?.[1] ?? '',
         ) &&
         /push-to-registry: true\s*$/m.test(step.log) &&
         step.log.includes('Attestation type: Build Provenance') &&
