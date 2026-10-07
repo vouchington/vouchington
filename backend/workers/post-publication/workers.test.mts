@@ -27,26 +27,28 @@ describe('post publication worker integration', () => {
     const postId = await createPublicationWork('queued')
     const captured = await getRequiredWork(postId)
     const enqueueContinuation = vi.fn<() => Promise<unknown>>().mockResolvedValue(undefined)
+    const completion = Promise.withResolvers<{ reconciled: number }>()
     const queueName = `${QUEUE_NAME}-test-${randomUUID()}`
     const queue = createQueue(queueName)
     instances.push(
       queue,
-      createWorker(queueName, job =>
-        processReconcilePostPublication(job.data as Record<string, never>, {
+      createWorker(queueName, job => {
+        const pending = processReconcilePostPublication(job.data as Record<string, never>, {
           // The in-memory queue shim cannot drain a same-queue job enqueued by its active worker.
           enqueueContinuePostPublicationReconciliation: enqueueContinuation,
           listAvailablePostPublicationDirtyWork: () => Promise.resolve([captured]),
-        }),
-      ),
+        })
+        void pending.then(completion.resolve, completion.reject)
+        return pending
+      }),
     )
 
     await queue.add('processReconcilePostPublication', {})
 
-    await expect
-      .poll(() => getTestPostPublicationDirtyWorkForScope({ type: 'post', id: postId }), {
-        timeout: 5_000,
-      })
-      .toBeUndefined()
+    await expect(completion.promise).resolves.toEqual({ reconciled: 1 })
+    await expect(
+      getTestPostPublicationDirtyWorkForScope({ type: 'post', id: postId }),
+    ).resolves.toBeUndefined()
     await expect(hasTestPostPublicationProjectionReceipt(postId)).resolves.toBe(true)
     expect(enqueueContinuation).toHaveBeenCalledOnce()
   })
