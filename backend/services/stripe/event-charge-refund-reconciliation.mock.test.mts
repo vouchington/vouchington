@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
   claimAdministratorRefundRequest,
   leaseDueRefundReconciliation,
@@ -10,7 +10,7 @@ import { getMembershipRefunds } from '@services/memberships/refunds/read'
 import { createTestMembership, createTestSku, createTestUser } from '@voucha/test-helpers'
 import { getMatchedChargeRefundedReceiptForTest } from '@voucha/test-helpers/entities/membership-refund-event-state'
 import { cleanupRefundReconciliationOperationsForTest } from '@voucha/test-helpers/entities/membership-refund-reconciliation-state'
-import { readAllQueueJobs } from '@voucha/test-helpers/queue-jobs'
+import { readEnqueuedJob } from '@voucha/test-helpers/queue-jobs'
 import { memberships } from '@queues/memberships/queues'
 import type { PrivateUser } from '@services/users/types'
 
@@ -55,6 +55,10 @@ describe('charge.refunded reconciliation receipt', () => {
     } as never)
   })
 
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('records invalid-metadata receipts without enriching or waking an operation', async () => {
     const refundId = `re_wch_invalid_metadata_${randomUUID()}`
     await handle(`evt_invalid_metadata_${randomUUID()}`, {
@@ -83,6 +87,8 @@ describe('charge.refunded reconciliation receipt', () => {
   })
 
   it('enriches and wakes only the matching durable administrator attempt after receipt persistence', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-01T00:00:00.000Z'))
     const administrator = await createTestUser({ administrator: true })
     const chargeId = `ch_wch_matched_${randomUUID()}`
     const operation = await claimAdministratorRefundRequest({
@@ -99,11 +105,47 @@ describe('charge.refunded reconciliation receipt', () => {
       reason: 'other',
       requestFingerprint: randomUUID().replaceAll('-', '').repeat(2),
     })
+    let stopObservingAdmission = () => Promise.resolve()
+    let cleanup: Promise<void> | undefined
+    const cleanupOwnedOperation = () =>
+      (cleanup ??= (async () => {
+        await stopObservingAdmission()
+        await cleanupRefundReconciliationOperationsForTest([operation.id])
+      })())
+    onTestFinished(cleanupOwnedOperation)
     const lease = await leaseDueRefundReconciliation(operation.id)
     if (!lease) throw new Error('Expected administrator refund reconciliation lease')
     const attempt = await recordRefundReconciliationAttempt(lease, `provider-key-${randomUUID()}`)
     await scheduleRefundReconciliationRetry(lease, new Date(Date.now() - 1), 'await receipt')
     const refundId = `re_wch_matched_${randomUUID()}`
+    const admission = Promise.withResolvers<unknown>()
+    const add = memberships.add
+    let ownedAdd: ReturnType<typeof add> | undefined
+    const addSpy = vi
+      .spyOn(memberships, 'add')
+      .mockImplementation((...args: Parameters<typeof add>) => {
+        const job = Reflect.apply(add, memberships, args) as ReturnType<typeof add>
+        const [name, data] = args
+        if (
+          name === 'reconcileMembershipRefundOperation' &&
+          typeof data === 'object' &&
+          data !== null &&
+          (data as { operationId?: unknown }).operationId === operation.id
+        ) {
+          ownedAdd = job
+          void job.then(admission.resolve, admission.reject)
+        }
+        return job
+      })
+    let stopped: Promise<void> | undefined
+    stopObservingAdmission = () =>
+      (stopped ??= (async () => {
+        addSpy.mockRestore()
+        admission.resolve(null)
+        if (ownedAdd) await Promise.allSettled([ownedAdd])
+      })())
+    // The best-effort enqueue reports failures without failing the handler; observe its real result.
+    void admission.promise.catch(() => {})
 
     try {
       await handle(`evt_matched_${randomUUID()}`, {
@@ -126,37 +168,30 @@ describe('charge.refunded reconciliation receipt', () => {
         },
       })
 
-      await expect
-        .poll(
-          async () => {
-            const jobs = await readAllQueueJobs(memberships)
-            const reconciliationJob = jobs.find(
-              job =>
-                job.name === 'reconcileMembershipRefundOperation' &&
-                typeof job.data === 'object' &&
-                job.data !== null &&
-                (job.data as { operationId?: unknown }).operationId === operation.id,
-            )
-            if (!reconciliationJob) return null
-            return getMatchedChargeRefundedReceiptForTest({
-              applicationId: applicationContext.applicationId,
-              attemptId: attempt.id,
-              refundId,
-            })
-          },
-          { timeout: 5_000 },
-        )
-        .toEqual({
+      const job = await readEnqueuedJob(memberships, await admission.promise)
+      expect(job).toMatchObject({
+        name: 'reconcileMembershipRefundOperation',
+        data: { operationId: operation.id },
+      })
+      const { leaseToken } = job.data as { leaseToken: string }
+      expect(job.id).toBe(`membership-refund-reconciliation__${operation.id}__${leaseToken}`)
+      expect(job.opts.deduplication).toEqual({ id: job.id, mode: 'simple' })
+      await expect(
+        getMatchedChargeRefundedReceiptForTest({
           applicationId: applicationContext.applicationId,
-          contextMatches: true,
-          due: true,
-          environment: 'test',
-          providerRefundId: refundId,
-          receiptCount: '1',
-        })
+          attemptId: attempt.id,
+          refundId,
+        }),
+      ).resolves.toEqual({
+        applicationId: applicationContext.applicationId,
+        contextMatches: true,
+        due: true,
+        environment: 'test',
+        providerRefundId: refundId,
+        receiptCount: '1',
+      })
     } finally {
-      await cleanupRefundReconciliationOperationsForTest([operation.id])
-      await memberships.obliterate({ force: true })
+      await cleanupOwnedOperation()
     }
   })
 })
