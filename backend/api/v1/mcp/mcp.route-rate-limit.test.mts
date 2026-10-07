@@ -1,5 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { createApiKey } from '@services/api-keys'
+import { checkUsageQuota } from '@services/route-rate-limits'
 import { routeRateLimitConfig } from '@services/route-rate-limits/config'
 import type { PrivateUser } from '@services/users/types'
 import { rateLimitConfig } from '@services/user-rate-limits/config'
@@ -10,6 +11,7 @@ import {
   overrideDynamicConfigFieldsForTest,
 } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { settleMeteredMcpResponses } from '@voucha/test-helpers/mcp-usage-meter'
 import { closeScopedDynamicConfigContext } from '@voucha/test-helpers/dynamic-config'
 import { readTestMcpCallAuditEvents } from '@voucha/test-helpers/entities/mcp-call-audit'
 import { insertTestTopic } from '@voucha/test-helpers/entities/topics'
@@ -195,6 +197,49 @@ describe('MCP tool calls and their REST route rate limit', () => {
       'accepted',
       'rate_limited',
     ])
+  }, 60_000)
+
+  it('does not charge usage quota when its only call is refused', async () => {
+    admitSensitiveCalls(0)
+    const { user, token } = await callerWithToken()
+    const postId = await newPostId()
+    expect(refusalOf(await settleMeteredMcpResponses(() => reportOverMcp(token, postId)))).toEqual(
+      REFUSAL,
+    )
+    expect(
+      (await checkUsageQuota('mcp_user', user.id, { limit: 1, windowSeconds: 900 })).limited,
+    ).toBe(false)
+  }, 60_000)
+
+  it('charges one usage unit for a batch with a refused and an admitted call', async () => {
+    admitSensitiveCalls(1)
+    const { user, token } = await callerWithToken()
+    const body = [reportCall(1, await newPostId()), reportCall(2, await newPostId())]
+    const response = await settleMeteredMcpResponses(() => mcpPost(token, body).expect(200))
+    const results = response.body as ToolResponse[]
+    expect(results[0]?.result.isError).toBeUndefined()
+    expect(refusalOf(results[1]!)).toEqual(REFUSAL)
+    expect(
+      (await checkUsageQuota('mcp_user', user.id, { limit: 1, windowSeconds: 900 })).limited,
+    ).toBe(true)
+    expect(
+      (await checkUsageQuota('mcp_user', user.id, { limit: 2, windowSeconds: 900 })).limited,
+    ).toBe(false)
+  }, 60_000)
+
+  it('keeps duplicate-id route refusals at their message positions', async () => {
+    admitSensitiveCalls(1)
+    const { user, token } = await callerWithToken()
+    const body = [reportCall(1, await newPostId()), reportCall(1, await newPostId())]
+    await settleMeteredMcpResponses(() => mcpPost(token, body).expect(200))
+    expect(await countTestModerationReportsByReporter(user.id)).toBe(1)
+    expect((await readTestMcpCallAuditEvents(user.id)).map(event => event.outcome)).toEqual([
+      'accepted',
+      'rate_limited',
+    ])
+    expect(
+      (await checkUsageQuota('mcp_user', user.id, { limit: 1, windowSeconds: 900 })).limited,
+    ).toBe(true)
   }, 60_000)
 
   it('leaves a tool without a REST twin on the transport bucket alone', async () => {

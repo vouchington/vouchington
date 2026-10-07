@@ -114,6 +114,7 @@ export async function dispatchMcpRequest(
         stepUpScopes ? { ...plan, charges: [] } : plan,
         { identities: rateLimitIdentities, owner },
       )
+      usage.recordPlannedEvents(events)
       await audit?.record(events)
       if (stepUpScopes) {
         ctx.set(

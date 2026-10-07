@@ -34,4 +34,6 @@ export type UsageSettlement = {
   quota: UsageQuota
   statusCode: number
   durationMs: number
+  // MCP can refuse every JSON-RPC message in a successful HTTP response.
+  units?: 0 | 1
 }

@@ -35,8 +35,8 @@ still apply to the request.
   `retryable: true` and `retryAfterSeconds` set to the window `Retry-After` would carry on REST. It is
   not an HTTP 429: the response also carries the results of the other calls of its batch. The audit
   row records `rate_limited`, not `tool_error`, and carries no copyright rationale, which the audit
-  table stores only for an accepted call. Because the HTTP status is 200, the usage quota still
-  charges the request one unit, as it does for any served request. It is unchanged by design.
+  table stores only for an accepted call. A request whose every JSON-RPC message is rate limited
+  charges zero usage-quota units even though its HTTP status is 200. A mixed batch costs one unit.
 - **No REST twin**: a tool with no `meta.api` is charged to the transport bucket alone. A registry
   test requires every `mcp` and `admin_mcp` tool to declare `meta.api`, except for a reviewed list of
   read-only tools with no REST route.

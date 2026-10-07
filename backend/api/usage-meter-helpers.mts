@@ -7,7 +7,12 @@ export type UsageMeterSettings = Omit<UsageSettlement, 'statusCode' | 'durationM
 // real status known: a 2xx or 4xx is charged, a 429 or an actual 5xx is not. A client that
 // disconnects before any response header was sent has no status to charge or report, so it is
 // skipped. Shared by every metered surface so they settle identically.
-export function settleUsageOnClose(ctx: Context, settings: UsageMeterSettings, startedAt: number) {
+export function settleUsageOnClose(
+  ctx: Context,
+  settings: UsageMeterSettings,
+  startedAt: number,
+  resolveUnits?: () => 0 | 1 | undefined,
+) {
   ctx.res.once('close', () => {
     if (!ctx.res.headersSent) return
     // settleUsage reports its own Valkey and analytics failures and never rejects.
@@ -15,6 +20,7 @@ export function settleUsageOnClose(ctx: Context, settings: UsageMeterSettings, s
       ...settings,
       statusCode: ctx.res.statusCode,
       durationMs: performance.now() - startedAt,
+      units: resolveUnits?.(),
     })
   })
 }
