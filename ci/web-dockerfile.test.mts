@@ -81,4 +81,26 @@ describe('web Dockerfile dependency install', () => {
     expect(dockerfile).toContain('/usr/share/man')
     expect(dockerfile).toContain('/usr/share/info')
   })
+
+  it('snapshots the cleaned Alpine root so removed bytes are not in the pulled runtime layers', () => {
+    const removal = dockerfile.indexOf('rm -rf /usr/local/lib/node_modules/npm')
+    const snapshot = dockerfile.indexOf('COPY --from=runtime-root /out /')
+    const runner = dockerfile.indexOf('FROM runtime-base AS runner')
+
+    expect(dockerfile).toContain('FROM base-alpine AS runtime-root')
+    expect(dockerfile).toContain('FROM scratch AS runtime-base')
+    expect(dockerfile).toContain('FROM base-alpine AS web-prewarm')
+    expect(dockerfile).toContain(
+      'cp -a /bin /etc /home /lib /media /mnt /opt /root /run /sbin /srv /tmp /usr /var /out/',
+    )
+    expect(dockerfile).toContain('ENTRYPOINT ["docker-entrypoint.sh"]')
+    expect(dockerfile).toContain(
+      'ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
+    )
+    expect(dockerfile).not.toContain('COPY --from=runtime-root / /')
+    expect(removal).toBeGreaterThan(-1)
+    expect(snapshot).toBeGreaterThan(removal)
+    expect(runner).toBeGreaterThan(snapshot)
+    expect(dockerfile).not.toContain('FROM base-alpine AS runner')
+  })
 })
