@@ -34,7 +34,7 @@ export async function writeNativeResourceFiles(options: {
     options.files ??
     generateNativeResourceFiles({
       manifest,
-      ...(options.catalogs === undefined ? {} : { catalogs: options.catalogs }),
+      catalogs: options.catalogs,
     })
   const expected = new Map(files.map(file => [file.path, file.content]))
   if (options.check) return checkFiles(options.outputRoot, expected)

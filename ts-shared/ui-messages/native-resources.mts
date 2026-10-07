@@ -21,7 +21,7 @@ export type GeneratedNativeResource = Readonly<{ path: string; content: string }
 
 export function generateNativeResourceFiles(options?: {
   manifest?: readonly NativeConsumerManifestEntry[]
-  catalogs?: NativeCatalogs
+  catalogs?: NativeCatalogs | undefined
 }): GeneratedNativeResource[] {
   const manifest = options?.manifest ?? NATIVE_CONSUMER_MANIFEST
   const catalogs = options?.catalogs ?? DEFAULT_NATIVE_CATALOGS
