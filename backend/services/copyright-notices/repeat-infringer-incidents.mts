@@ -107,8 +107,10 @@ export async function syncCopyrightRepeatInfringerIncidents(
     INSERT INTO copyright_repeat_infringer_reviews (account_user_id, opened_at)
     SELECT incident.account_user_id, CURRENT_TIMESTAMP
     FROM copyright_repeat_infringer_incidents incident
-    JOIN UNNEST(${accountIds}::uuid[]) AS account(id)
-      ON incident.account_user_id = account.id
+    JOIN users live_account
+      ON live_account.id = incident.account_user_id AND live_account.deleted_at IS NULL
+    JOIN UNNEST(${accountIds}::uuid[]) AS candidate(id)
+      ON incident.account_user_id = candidate.id
     WHERE incident.is_operative
     GROUP BY incident.account_user_id
     HAVING count(*) >= 2

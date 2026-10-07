@@ -12,8 +12,8 @@ import {
 import {
   observeTestRepeatInfringerAuthorLock,
   raceTestRepeatInfringerAuthorLock,
-  readTestRepeatInfringerEnforcementState,
 } from '@voucha/test-helpers/copyright-repeat-infringer'
+import { readTestRepeatInfringerEnforcementState } from '@voucha/test-helpers/copyright-repeat-infringer-enforcement'
 import { getPrivateUserByAny } from '@services/users/get'
 import { unsuspendUser } from '@services/users/suspension'
 import {

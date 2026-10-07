@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { createTestUserDirect, softDeleteUser } from '@voucha/test-helpers'
 import {
   confirmTestRepeatInfringerNoticesConcurrently,
+  createTestRepeatInfringerNotice,
   readTestRepeatInfringerOpenReviewIds,
 } from '@voucha/test-helpers/copyright-repeat-infringer'
-import { createTestRepeatInfringerNotice } from '@voucha/test-helpers/services/copyright-notices/repeat-infringer'
 import type { PrivateUser } from '@services/users/types'
 import {
   createCopyrightAppeal,
@@ -166,6 +166,38 @@ describe('copyright effective incident authority', () => {
     expect(after.open_review_id).toEqual(expect.any(String))
     expect(after.open_review_id).not.toBe(before.open_review_id)
     expect(await readTestRepeatInfringerOpenReviewIds(poster.id)).toEqual([after.open_review_id])
+  })
+  it('does not reopen a completed review after the account is deleted', async () => {
+    const { poster, moderator } = await createActors()
+    const first = await createTestRepeatInfringerNotice([poster.id], moderator)
+    const second = await createTestRepeatInfringerNotice([poster.id], moderator)
+    await confirmTestRepeatInfringerRestriction(first, moderator)
+    await confirmTestRepeatInfringerRestriction(second, moderator)
+    const restriction = first.restrictions[0]!
+    const appeal = await createCopyrightAppeal(poster, first.noticeId, crypto.randomUUID(), {
+      reason: 'Please confirm the retained restriction.',
+      targetIds: [restriction.targetId],
+    })
+    const before = await getCopyrightRepeatInfringerAccount(poster.id)
+    await softDeleteUser(poster.id)
+    await recordCopyrightRepeatInfringerReviewOutcome({
+      currentUser: moderator,
+      reviewId: before.open_review_id!,
+      outcome: 'warning',
+      rationale: 'The retained review is complete.',
+      recordedAt: new Date(),
+    })
+
+    await reviewCopyrightAppeal({
+      submissionId: appeal.submission.id,
+      currentUser: moderator,
+      recommendationId: null,
+      manualFallbackReason: 'The retained record supports a manual review.',
+      rationale: 'The restriction remains appropriate.',
+      decisions: [{ restrictionId: restriction.id, action: 'confirm' }],
+    })
+
+    expect((await getCopyrightRepeatInfringerAccount(poster.id)).open_review_id).toBeNull()
   })
   it('retains the open review but rejects enforcement after reversal drops below two', async () => {
     const { poster, moderator } = await createActors()

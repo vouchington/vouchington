@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUser, softDeleteUser } from '@voucha/test-helpers'
-import {
-  confirmTestRepeatInfringerNotice,
-  createTestRepeatInfringerNotice,
-} from '@voucha/test-helpers/services/copyright-notices/repeat-infringer'
+import { createTestRepeatInfringerNotice } from '@voucha/test-helpers/copyright-repeat-infringer'
+import { confirmTestRepeatInfringerNotice } from '@voucha/test-helpers/services/copyright-notices/repeat-infringer'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import {
   completeCopyrightMandatoryHumanReview,
