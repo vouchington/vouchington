@@ -8,8 +8,6 @@ import { getPostByAnyCached } from '@services/entity-fetch'
 
 import type { PrivateUser } from '@voucha/types/entities/user'
 
-import { upsertPostElectionVotes } from '@services/elections-votes/post'
-
 import { getPostByAny } from '@services/posts'
 
 import { createTopicAliases } from '@services/topics/aliases'
@@ -18,7 +16,7 @@ import { getTopicByAny } from '@services/topics'
 
 import type { CreateTopicRecommendationInput } from '../types.mts'
 
-import { refreshRecommendationVoteStats } from '../../../test-helpers/services/topic-recommendations/vote-stats.mts'
+import { runWithOwnedPostElectionVoteStats } from '../../../test-helpers/election-vote-stats-admission.mts'
 
 import {
   approveTopicRecommendation,
@@ -190,28 +188,54 @@ describe('index.generated', () => {
 
     it('orders search results by best score', async () => {
       const random = Math.random().toString(36).slice(2, 10)
-      const lowScore = await createTopicRecommendation(user, WEB_PROVENANCE, {
-        markdown: `Lower score ${random}`,
-        topic_title: `Low Score Topic ${random}`,
-        topic_slug: `low-score-topic-${Date.now()}-${random}`,
+      const evidence = await runWithOwnedPostElectionVoteStats(async () => {
+        const lowScore = await createTopicRecommendation(user, WEB_PROVENANCE, {
+          markdown: `Lower score ${random}`,
+          topic_title: `Low Score Topic ${random}`,
+          topic_slug: `low-score-topic-${Date.now()}-${random}`,
+        })
+        const highScore = await createTopicRecommendation(user, WEB_PROVENANCE, {
+          markdown: `Higher score ${random}`,
+          topic_title: `High Score Topic ${random}`,
+          topic_slug: `high-score-topic-${Date.now()}-${random}`,
+        })
+        const { upsertPostElectionVotes } = await import('@services/elections-votes/post')
+        return {
+          targets: { lowScoreId: lowScore.id, highScoreId: highScore.id },
+          actions: [
+            () => upsertPostElectionVotes(user.id, [{ entityId: lowScore.id, score: 1 }]),
+            () => upsertPostElectionVotes(user.id, [{ entityId: highScore.id, score: 1 }]),
+            () => upsertPostElectionVotes(otherUser.id, [{ entityId: highScore.id, score: 1 }]),
+          ],
+        }
       })
-      const highScore = await createTopicRecommendation(user, WEB_PROVENANCE, {
-        markdown: `Higher score ${random}`,
-        topic_title: `High Score Topic ${random}`,
-        topic_slug: `high-score-topic-${Date.now()}-${random}`,
-      })
-      await upsertPostElectionVotes(user.id, [{ entityId: lowScore.id, score: 1 }])
-      await upsertPostElectionVotes(user.id, [{ entityId: highScore.id, score: 1 }])
-      await upsertPostElectionVotes(otherUser.id, [{ entityId: highScore.id, score: 1 }])
-      await refreshRecommendationVoteStats({
-        lowScoreId: lowScore.id,
-        highScoreId: highScore.id,
-      })
+      expect(evidence.logicalAdmissions).toEqual({ creation: 2, votes: 3 })
+      expect(evidence.completedJobs.map(job => job.jobId).toSorted()).toEqual(
+        evidence.ownedJobIds.toSorted(),
+      )
+      expect(evidence.completedJobs.map(job => job.target)).toEqual(
+        expect.arrayContaining(['low', 'high']),
+      )
+
+      const [lowStats, highStats] = await Promise.all([
+        import('@services/elections-votes/post').then(({ getPostElectionById }) =>
+          getPostElectionById(evidence.targets.lowScoreId),
+        ),
+        import('@services/elections-votes/post').then(({ getPostElectionById }) =>
+          getPostElectionById(evidence.targets.highScoreId),
+        ),
+      ])
+      expect(lowStats).toMatchObject({ votes_count_up: 1, votes_score_net: 1 })
+      expect(highStats).toMatchObject({ votes_count_up: 2, votes_score_net: 2 })
 
       // Use q filter with the unique random string to avoid accumulated data pushing results out
       const result = await searchTopicRecommendations({ q: random, limit: 10 })
-      const lowIndex = result.results.findIndex((item: { id: string }) => item.id === lowScore.id)
-      const highIndex = result.results.findIndex((item: { id: string }) => item.id === highScore.id)
+      const lowIndex = result.results.findIndex(
+        (item: { id: string }) => item.id === evidence.targets.lowScoreId,
+      )
+      const highIndex = result.results.findIndex(
+        (item: { id: string }) => item.id === evidence.targets.highScoreId,
+      )
 
       expect(highIndex).toBeGreaterThanOrEqual(0)
       expect(lowIndex).toBeGreaterThanOrEqual(0)
