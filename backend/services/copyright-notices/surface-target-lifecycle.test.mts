@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
+import * as cachePurgeEnqueues from '../../queues/cache-purge/enqueues.mts'
 import { cachePurge } from '../../queues/cache-purge/queues.mts'
 import { caches } from '@services/entity-cache/caches'
 import { getPostByAny } from '@services/posts/get'
@@ -209,13 +210,10 @@ describe('copyright surface target lifecycle', () => {
         id: fixture.ownerId,
       })
 
-      const purgeAdd = cache ? null : vi.spyOn(cachePurge, 'addBulk')
+      const purgeEnqueue = cache ? null : vi.spyOn(cachePurgeEnqueues, 'enqueueBulkPurgeCacheTags')
       const matchingPurgeCalls = () =>
-        purgeAdd?.mock.calls.filter(([jobs]) =>
-          jobs.some(job =>
-            (job.data as { tags?: string[] }).tags?.includes(`community:${fixture.ownerId}`),
-          ),
-        ).length ?? 0
+        purgeEnqueue?.mock.calls.filter(([tags]) => tags.includes(`community:${fixture.ownerId}`))
+          .length ?? 0
       await expect(processCopyrightActionIntent(caseRecord.withholdIntentId)).resolves.toBe(
         'applied',
       )
