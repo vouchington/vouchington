@@ -27,7 +27,7 @@
 - Before rebasing, inspect `git diff --name-only origin/main...HEAD`; for a stack also inspect the
   layer against its parent. Prefer `./dev/rebase-onto-main` for an unstacked PR; for a stack
   prefer `./dev/rebase-onto-main --stack` (add `--upstack` when upper layers must move) or `gh stack
-sync` when there are no local stack commits. Re-derive stack topology from GitHub first. The
+  sync` when there are no local stack commits. Re-derive stack topology from GitHub first. The
   helpers fetch and rebase for convenience; they are not required wrappers. An explicit Git
   rebase is allowed after verifying current refs, stack topology, and the intended commit range.
   Fetch separately before rebasing so those checks use current refs. Do not use

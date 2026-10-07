@@ -114,7 +114,7 @@ unbounded aggregate. Do not expose database unit names in public contracts; seri
 - Never add amounts from different currencies. Revenue and monetary analytics group by currency.
 - MRR first sums monthly and yearly prices per currency, converts the totals to scale six, divides
   the yearly total by 12, and rounds half-up once. The API returns `mrr_by_currency:
-ScaledMoneyAggregate[]`. Its string amount preserves a valid maximum membership price and
+  ScaledMoneyAggregate[]`. Its string amount preserves a valid maximum membership price and
   same-currency totals of any size without clipping or floating-point conversion.
 - Credit-limit medians use the lower observed `Money` value for even samples. This discrete median
   preserves the complete JSON-safe `Money` domain without unsafe scale-six multiplication.

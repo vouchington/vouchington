@@ -117,7 +117,7 @@ gh pr checks <N> --json name,state,link        # CI check list
   the mistake instead of fixing it. **Elevate, don't hide:** a repository-owned cause
   must file or link a root-cause-tracking issue as part of the disposition (reuse an
   existing open issue covering the same pair rather than duplicating); `## Follow-ups:
-None` on a PR whose root cause is repository-owned is a signal to push back, not
+  None` on a PR whose root cause is repository-owned is a signal to push back, not
   accept as-is. For deterministic and repository-owned failures, elevate to the
   root-cause fix — close the band-aid and delegate a follow-up issue
   for the general fix to the `github-issue-agent` under the shared

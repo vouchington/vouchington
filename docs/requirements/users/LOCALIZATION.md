@@ -180,7 +180,7 @@ then format and compile.
   `pnpm run native-localization:check` validates the Vouchington producer after manifest/catalog
   changes. Generate and check Swift/.NET outputs from the external native-client checkout boundary
   with `node dev/native-localization.mts --output-root <absolute-client-root> --consumer-root
-<absolute-client-root> [--check]`; the exporter rejects stale, missing, extra, or
+  <absolute-client-root> [--check]`; the exporter rejects stale, missing, extra, or
   placeholder-incompatible output and validates external product usage.
 - Provider-neutral moderation summaries use the shared `native.moderation.summary.*` namespace.
   Native review queues localize the server-owned disposition and aggregate evidence counts. They do

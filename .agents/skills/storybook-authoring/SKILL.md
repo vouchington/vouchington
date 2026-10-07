@@ -63,7 +63,7 @@ browser-runner or Vite failures.
 - **Don't worry about pre-bundling new components.** `server.warmup.clientFiles` crawls every
   `*.stories.{ts,tsx}` at dev-server startup in both the `web-storybook-browser` Vitest project
   (`vitest.config.mts`) and the Storybook builder Vite config (`web/.storybook/main.ts
-viteFinal`) — the former covers Vitest browser-mode, the latter covers Storybook dev and static
+  viteFinal`) — the former covers Vitest browser-mode, the latter covers Storybook dev and static
   builds. New story files are picked up automatically by the glob. New **published** packages
   reachable from browser stories are different: add them to `storybookBrowserOptimizeDeps` in
   `test-helpers/vitest-config/storybook-browser-optimize-deps.mts` or Vite rediscovers them after the

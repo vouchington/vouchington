@@ -375,7 +375,7 @@ This extends the prelaunch relational-storage rule.
   - `PRIMARY KEY (entity_relation_id, id)`, `PARTITION BY RANGE (entity_relation_id)` with a
     DEFAULT partition.
   - A table-level `FOREIGN KEY (subject_id, entity_relation_id) REFERENCES <relation table>
-(subject_id, id) ON DELETE CASCADE`. The snapshot
+    (subject_id, id) ON DELETE CASCADE`. The snapshot
     records it and NM-3 `postgres-column-naming` (jonathanong/no-mistakes#1057) sees it.
   - One advisory-lock key per concrete vote table in `votes-upsert.mts`.
   - Index names come from a helper: the full `idx_<table>__<suffix>` when it fits in 63 bytes,
@@ -555,7 +555,7 @@ History details (decision 15):
     `fn_reject_membership_product_identity_mutation`). Append-only tables attach it
     `BEFORE UPDATE OR DELETE … FOR EACH ROW`. A table where only some columns are immutable
     attaches it `BEFORE UPDATE OF <cols> … FOR EACH ROW WHEN (ROW(OLD.<cols>) IS DISTINCT FROM
-ROW(NEW.<cols>))`: the `WHEN` clause does the comparison, so the function only raises. Its
+    ROW(NEW.<cols>))`: the `WHEN` clause does the comparison, so the function only raises. Its
     arguments are the actor columns that may be erased:
     - UPDATE passes only when every listed column in `NEW` is NULL or unchanged, and
       `to_jsonb(OLD) - <listed columns>` equals `to_jsonb(NEW) - <listed columns>`.
@@ -583,7 +583,7 @@ ROW(NEW.<cols>))`: the `WHEN` clause does the comparison, so the function only r
   least 11 checks in 7 `fn_guard_*` functions verify that a referenced row belongs to the same
   parent (a review's recommendation belongs to the same email intake; a lifecycle row's source
   belongs to the same notice). Each becomes `FOREIGN KEY (parent_id, ref_id) REFERENCES
-t (parent_id, id)`, with a `UNIQUE (parent_id, id)` on the referenced table. The default
+  t (parent_id, id)`, with a `UNIQUE (parent_id, id)` on the referenced table. The default
   `MATCH SIMPLE` skips the check when `ref_id` is NULL, which is today's
   `IS NOT NULL AND NOT EXISTS`.
   A multi-hop copyright source carries its owning `copyright_notice_id` so the reference can
@@ -631,7 +631,7 @@ t (parent_id, id)`, with a `UNIQUE (parent_id, id)` on the referenced table. The
   id or time bound.
 - **A child row is never older than its parent** (decision 20). A reader of a `RANGE (id)` child
   table by its parent's UUIDv7 id adds `id >= min_uuidv7(uuid_extract_timestamp(<parent id>) -
-interval '1 hour')` through the shared helper, so partitions from before the parent existed are
+  interval '1 hour')` through the shared helper, so partitions from before the parent existed are
   skipped. The hour covers clock skew between id generators.
 - **A rate limit reads the table keyed by the actor.** A check like "this sender did X in the last
   day" reads a table partitioned or indexed by sender (`follower_distributions`), never the fan-out

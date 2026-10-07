@@ -48,7 +48,7 @@ database trigger enforces the same fence for old application processes during ro
 
 - `receipts.mts` — CRUD on `bluesky_follow_records`: `getBlueskyFollowReceipt`,
   `saveBlueskyFollowReceipt`, `deleteBlueskyFollowReceipt`, keyed by `(follower_user_id,
-followee_user_id)`.
+  followee_user_id)`.
 - `agent.mts` — `createFollowOnBluesky` / `deleteFollowOnBluesky`, the only functions in this
   service that call Bluesky (`/* no-mistakes: integration=bluesky */`). Both wrap `@atproto/api`'s
   `Agent`, constructed from an `OAuthSession` returned by `@modules/bluesky-oauth`'s

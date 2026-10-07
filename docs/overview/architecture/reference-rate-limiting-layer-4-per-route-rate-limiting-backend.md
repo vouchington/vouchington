@@ -122,7 +122,7 @@ durable ledger.
   DynamicConfig fields.
 
 - **Enforcement**: a read-only check runs before the call. An exhausted quota returns `429 Usage
-quota exceeded` with `Retry-After` set to the full window (900 seconds), records an MCP audit
+  quota exceeded` with `Retry-After` set to the full window (900 seconds), records an MCP audit
   entry with outcome `rate_limited`, and is not charged. Because the charge happens after the
   response, concurrent in-flight requests can overshoot the limit by at most their own number. The
   check fails open on a Valkey error and reports it through `onError`. The `enabled` kill switch
