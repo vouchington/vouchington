@@ -40,7 +40,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `checks-backend-smoke.yml`             | `smoke`                         | job    | `ubuntu-latest`                       | 10            |
 | `checks-static.yml`                    | `static-backend`                | job    | `ubuntu-latest`                       | 14            |
 | `checks-static.yml`                    | `static-cloudflare`             | job    | `ubuntu-latest`                       | 10            |
-| `checks-static.yml`                    | `static-lambdas`                | job    | `ubuntu-latest`                       | 10            |
+| `checks-static.yml`                    | `static-lambdas`                | job    | `ubuntu-24.04-arm`                    | 15            |
 | `checks-static.yml`                    | `static-web`                    | job    | `ubuntu-24.04-arm`                    | 10            |
 | `ci-area-coverage.yml`                 | `coverage`                      | job    | `ubuntu-latest`                       | 10            |
 | `ci-detect-changes.yml`                | `detect-changes`                | job    | `ubuntu-slim`                         | 3             |

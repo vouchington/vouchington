@@ -134,8 +134,9 @@ jobs:
 
   static-lambdas:
     if: inputs.lambdas
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # The Lambda architecture, so the deployment package smoke test loads the sharp binary it ships.
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -147,6 +148,12 @@ jobs:
         timeout-minutes: 2
       - name: Smoke test image lambda
         run: ./lambdas/image-resize/scripts/tests/smoke-test-image-lambda.sh
+        timeout-minutes: 2
+      - name: Build the image-resize deployment package
+        run: pnpm --filter @lambdas/image-resize run build
+        timeout-minutes: 3
+      - name: Smoke test the image-resize deployment package
+        run: pnpm --filter @lambdas/image-resize run test:smoke:package
         timeout-minutes: 2
 
   static-cloudflare:

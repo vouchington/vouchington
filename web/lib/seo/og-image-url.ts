@@ -17,7 +17,7 @@ const MAX_TOP_CATEGORIES = 5
  * stale PNG. Bump this whenever the OG renderer output changes so old URLs
  * stop matching. The lambda ignores this field — it is purely a cache key.
  */
-export const OG_RENDERER_VERSION = 'v1'
+export const OG_RENDERER_VERSION = 'v2'
 
 interface GenericOgImageParams {
   eyebrow: string

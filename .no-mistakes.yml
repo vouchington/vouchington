@@ -2958,6 +2958,10 @@ rules:
         # across 67 GitHub-hosted successes in #2260.
         - job: '.github/workflows/checks-static.yml#static-backend'
           maxMinutes: 14
+        # Serial setup, dependency, image smoke, package build, and package smoke steps total 14m;
+        # the healthy ubuntu-24.04-arm run was 53s in #2313.
+        - job: '.github/workflows/checks-static.yml#static-lambdas'
+          maxMinutes: 15
         # A standalone Playwright run plans shards and produces one shared web build before shards
         # start: setup (5m), shard plan (1m), and the bounded 6m web build sum 12m plus 1m headroom.
         - job: '.github/workflows/tests-playwright.yml#shards'
