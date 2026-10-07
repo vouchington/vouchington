@@ -1,10 +1,20 @@
 import { APIError } from 'openai'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getOpenAIResponseRetryDelayMs } from './response-retry.mts'
 
 const MAX_RETRY_DELAY_MS = 8_000
+const DEFAULT_NOW = '2026-10-05T23:59:40.000Z'
 
 describe('getOpenAIResponseRetryDelayMs', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(process.env.VOUCH_PROOF_NOW ?? DEFAULT_NOW))
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('clamps provider retry-after-ms and Retry-After to the 8s bound', () => {
     const retryAfterMs = new APIError(
       429,
