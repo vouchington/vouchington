@@ -1,9 +1,8 @@
 import { readFile } from 'node:fs/promises'
-import { loadModule, parseSync } from '@libpg-query/parser'
+import { parsePostgresSql } from 'no-mistakes'
 
 /** Compare fresh CREATE ordering with the same ordinal metadata used by the strict live gate. */
 export async function readPublicationMigrationColumnOrders() {
-  await loadModule()
   const [migration, snapshotJson] = await Promise.all([
     readFile(
       new URL(
@@ -20,21 +19,22 @@ export async function readPublicationMigrationColumnOrders() {
   const snapshot = JSON.parse(snapshotJson) as {
     tables: Record<string, { columns: Record<string, { ordinalPosition: number }> }>
   }
-  return (parseSync(migration).stmts ?? []).flatMap(raw => {
-    const node = raw.stmt
-    if (!node || !('CreateStmt' in node)) return []
-    const table = node.CreateStmt.relation?.relname
+  const facts = await parsePostgresSql({ sql: migration, fileName: 'publication-identity.sql' })
+  if (facts.diagnostics.length > 0) {
+    throw new Error(
+      `Unable to analyze publication migration: ${facts.diagnostics.map(diagnostic => diagnostic.message).join('; ')}`,
+    )
+  }
+  return facts.statements.flatMap(statement => {
+    if (statement.kind !== 'createTable') return []
+    const table = statement.table.parts.at(-1)?.value
     if (!table) throw new Error('Publication CREATE statement must name a table')
     const metadata = snapshot.tables[table]
     if (!metadata) throw new Error(`Publication table absent from snapshot: ${table}`)
     return [
       {
         table,
-        declared: (node.CreateStmt.tableElts ?? []).flatMap(element =>
-          element && 'ColumnDef' in element && element.ColumnDef.colname
-            ? [element.ColumnDef.colname]
-            : [],
-        ),
+        declared: statement.columns.map(column => column.name.value),
         committed: Object.entries(metadata.columns)
           .toSorted(([, a], [, b]) => a.ordinalPosition - b.ordinalPosition)
           .map(([name]) => name),
