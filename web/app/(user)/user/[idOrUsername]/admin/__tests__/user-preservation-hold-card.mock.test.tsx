@@ -125,21 +125,16 @@ describe('UserPreservationHoldCard', () => {
     expect(screen.queryByRole('button', { name: /Place hold/ })).not.toBeInTheDocument()
   })
 
-  it('describes a hold on a deleted account as pausing only final purge', () => {
+  it('updates the description when the account was deleted after the page rendered', async () => {
     mockList.mockResolvedValue({
       account_deleted_at: '2026-09-01T00:00:00.000Z',
       holds: [],
     })
 
-    render(
-      <UserPreservationHoldCard
-        userId='user-1'
-        isAccountDeleted
-      />,
-    )
+    renderCard()
 
     expect(
-      screen.getByText(
+      await screen.findByText(
         'While a hold is open, this account’s final purge is paused. Immediate deletion steps are not paused.',
       ),
     ).toBeInTheDocument()

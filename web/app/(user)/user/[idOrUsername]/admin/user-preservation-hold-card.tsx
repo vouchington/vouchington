@@ -34,6 +34,10 @@ export function UserPreservationHoldCard({
   const t = useTranslations()
   const referenceId = useId()
   const [state, setState] = useState<HoldsState>({ status: 'loading' })
+  const [loadedAccount, setLoadedAccount] = useState<{
+    userId: string
+    deletedAt: string | null
+  } | null>(null)
   const [reference, setReference] = useState('')
   const [isBusy, setIsBusy] = useState(false)
 
@@ -41,7 +45,10 @@ export function UserPreservationHoldCard({
     let cancelled = false
     listUserPreservationHolds(userId)
       .then(data => {
-        if (!cancelled) setState({ status: 'loaded', holds: data.holds })
+        if (!cancelled) {
+          setLoadedAccount({ userId, deletedAt: data.account_deleted_at })
+          setState({ status: 'loaded', holds: data.holds })
+        }
       })
       .catch((err: unknown) => {
         if (cancelled) return
@@ -58,6 +65,8 @@ export function UserPreservationHoldCard({
   }, [userId, t])
 
   const holds = state.status === 'loaded' ? state.holds : []
+  const accountIsDeleted =
+    isAccountDeleted || (loadedAccount?.userId === userId && loadedAccount.deletedAt !== null)
   const openHold = holds.find(hold => hold.released_at === null)
   const history = holds.filter(hold => hold.released_at !== null)
 
@@ -108,7 +117,7 @@ export function UserPreservationHoldCard({
               {t('extracted.admin.userPreservationHoldCard.legalPreservationHold_407bcdf3')}
             </CardTitle>
             <CardDescription>
-              {isAccountDeleted
+              {accountIsDeleted
                 ? t('extracted.admin.userPreservationHoldCard.whileAHoldIsOpenFinalPurge_5bd30c73')
                 : t(
                     'extracted.admin.userPreservationHoldCard.whileAHoldIsOpenThisAccount_b2f34b3a',

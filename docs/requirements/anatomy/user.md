@@ -29,10 +29,11 @@ This is an internal provider-observation clock; see the
 
 ## States
 
-| State     | Condition      | Behavior                                                            |
-| --------- | -------------- | ------------------------------------------------------------------- |
-| Active    | Normal account | Full access per auth tier                                           |
-| Suspended | Admin action   | Account access restricted; admin-only action from `/user/:id/admin` |
+| State        | Condition                           | Behavior                                                                                                                                                                                    |
+| ------------ | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Active       | Normal account                      | Full access per auth tier                                                                                                                                                                   |
+| Suspended    | Admin action                        | Account access restricted; admin-only action from `/user/:id/admin`                                                                                                                         |
+| Soft-deleted | Account deletion has been requested | Public and ordinary staff lookup returns not found. Administrators who know the retained account id can use `/user/:id/admin`, which renders only the legal-process preservation-hold card. |
 
 ## Surfaces
 
@@ -126,19 +127,24 @@ count, and filter contract.
 
 ## Actions
 
-| Action              | Who can act                 |
-| ------------------- | --------------------------- |
-| Follow / Unfollow   | Signed-in, non-self viewers |
-| Subscribe           | Signed-in, non-self viewers |
-| Mute / Unmute       | Signed-in, non-self viewers |
-| Block / Unblock     | Signed-in, non-self viewers |
-| Trust choice        | Signed-in, non-self viewers |
-| User tags           | Signed-in, non-self viewers |
-| Report              | Signed-in, non-self viewers |
-| Edit profile        | Owner (self)                |
-| Suspend / Unsuspend | Admins only                 |
+| Action                                          | Who can act                 |
+| ----------------------------------------------- | --------------------------- |
+| Follow / Unfollow                               | Signed-in, non-self viewers |
+| Subscribe                                       | Signed-in, non-self viewers |
+| Mute / Unmute                                   | Signed-in, non-self viewers |
+| Block / Unblock                                 | Signed-in, non-self viewers |
+| Trust choice                                    | Signed-in, non-self viewers |
+| User tags                                       | Signed-in, non-self viewers |
+| Report                                          | Signed-in, non-self viewers |
+| Edit profile                                    | Owner (self)                |
+| Suspend / Unsuspend                             | Admins only                 |
+| Place / release legal-process preservation hold | Admins only                 |
 
 Blocking a user implicitly removes any active follow on that user.
+
+An open legal-process preservation hold can be placed before or after soft deletion. It pauses the
+90-day final purge, but it does not pause the immediate deletion steps. Releasing the hold is also
+allowed after soft deletion so the final purge can resume.
 
 ## Related
 
