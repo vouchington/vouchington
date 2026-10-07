@@ -25,6 +25,7 @@ boundaries, and an ineligible user releases it without deletion.
   reconciliation fences. Final purge also
   revokes retained administrator grants, terminalizes their source state, and closes open activation
   periods before removing the account while preserving the grant audit rows
+  and keeps repeat-infringer incidents and reviews through their retained account identity.
 - `cleanupRetainedRelationIdentities()` — one cursor-bounded, `SKIP LOCKED` page per elected
   relation family, after completed deletion impacts are purged. It removes tuples with no impact
   reference even while a live relation still exists; a later authoritative vote deletion can

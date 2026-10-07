@@ -1074,7 +1074,7 @@ CREATE TRIGGER trigger_copyright_correspondence_guard BEFORE UPDATE OR DELETE ON
 CREATE TRIGGER trigger_copyright_correspondence_updated_at BEFORE UPDATE ON copyright_notice_correspondence_messages FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 COMMENT ON TABLE copyright_notices IS 'Legal copyright allegation aggregate. Member views must use an allowlisted projection and never expose contact or evidence.';
-COMMENT ON COLUMN copyright_notices.jurisdiction IS 'Procedure selected for this allegation: US DMCA, EU DSA, UK, or other counsel-reviewed handling.';
+COMMENT ON COLUMN copyright_notices.jurisdiction IS 'Procedure selected for this allegation: US DMCA, EU DSA, UK, or other owner-approved handling after AI advisor review recorded on issue 1230; this is not a legal determination.';
 COMMENT ON COLUMN copyright_notices.legal_basis IS 'Legal basis for the case; this aggregate is restricted to copyright allegations.';
 COMMENT ON COLUMN copyright_notices.received_at IS 'Immutable timestamp when Voucha originally received the allegation.';
 COMMENT ON COLUMN copyright_notices.accepted_at IS 'When deterministic or staff validation accepted the allegation into the authenticated member record.';

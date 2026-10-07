@@ -186,29 +186,24 @@ describe('copyright repeat-infringer review outcomes', () => {
     ).rejects.toMatchObject({ status: 409 })
   })
 
-  it('refuses deletion for an is_operative incident and allows it once none remain', async () => {
+  it('allows deletion while repeat-infringer incidents remain operative', async () => {
     const [poster, moderator] = await Promise.all([
       createTestUser(),
       createTestUser({ extraRoles: ['moderator'] }),
     ])
     const firstNoticeId = await confirmTestRepeatInfringerNotice(poster.id, moderator)
     const secondNoticeId = await confirmTestRepeatInfringerNotice(poster.id, moderator)
-    await expect(deleteUser(poster, poster)).rejects.toMatchObject({ status: 409 })
-    await expect(getPrivateUserByAny(poster.id)).resolves.toEqual(
-      expect.objectContaining({ id: poster.id }),
-    )
-    for (const noticeId of [firstNoticeId, secondNoticeId]) {
-      const accounts = await listCopyrightRepeatInfringerAccountsForNotice(moderator, noticeId)
-      const incidentId = accounts[0]?.incident_id
-      if (!incidentId || !accounts[0]?.is_operative) continue
-      await recordCopyrightRepeatInfringerDisposition({
-        currentUser: moderator,
-        incidentId,
-        disposition: 'withdrawn',
-        rationale: 'The claimant withdrew this notice.',
-        recordedAt: new Date('2026-07-03T12:00:00.000Z'),
-      })
-    }
+    const accounts = await listCopyrightRepeatInfringerAccountsForNotice(moderator, firstNoticeId)
+    expect(accounts).toEqual([
+      expect.objectContaining({
+        account_user_id: poster.id,
+        is_operative: true,
+        open_review_id: expect.any(String),
+      }),
+    ])
+    await expect(
+      listCopyrightRepeatInfringerAccountsForNotice(moderator, secondNoticeId),
+    ).resolves.toEqual([expect.objectContaining({ is_operative: true })])
     await expect(deleteUser(poster, poster)).resolves.toEqual(
       expect.objectContaining({ requestId: expect.any(String) }),
     )

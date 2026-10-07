@@ -930,9 +930,8 @@ operative incidents at decision time. The outcome, a newly needed suspension, it
 and publication dirty work share one account-lifecycle-serialized transaction, so a failed outcome
 does not partially enforce and the still-open review can be retried.
 
-`deleteUser` returns 409 while the account has an operative incident, or an unresolved qualifying
-legal hold on a placement for which that account belongs to the retention set above. A qualifying
-hold is an assessment
+`deleteUser` returns 409 while the account has an unresolved qualifying legal hold on a placement
+for which that account belongs to the retention set above. A qualifying hold is an assessment
 with an original claimant, the same material, a proceeding kind, a commencement time, and a
 designated-agent receipt, and with no resolution row. An open review alone does not block deletion.
 An administrator-placed legal-process preservation hold on the account, such as for a §512(h)
@@ -940,6 +939,10 @@ subpoena, blocks deletion with the same 409. It is separate from these court and
 no restoration behavior, and has no duration or scope. See
 [account deletion](../users/ACCOUNT-DELETION-DATA-REQUEST.md#deletion-refusals) and the
 [§512(h) runbook](../../runbooks/copyright-notices.md#dmca-512h-subpoenas).
+
+An operative repeat-infringer incident does not block account deletion. The account's personal
+data follows the normal erasure path. Incidents and repeat-infringer review outcomes and dates stay
+linked to the retained account identity as the minimal 17 USC 512(i) record.
 
 ## Data export
 
