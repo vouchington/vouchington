@@ -185,7 +185,7 @@ describe('tests-playwright.yml', () => {
       projects: [{ name: 'chromium', use: CHROMIUM_USE }],
       reuseExistingServer: false,
       testDir: './playwright/tests',
-      timeout: 60_000,
+      timeout: 30_000,
     })
 
     expect(config.workers).toBe(3)

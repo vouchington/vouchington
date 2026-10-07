@@ -1,4 +1,3 @@
-import type { BrowserContext, FullConfig, TestInfo } from '@playwright/test'
 import { describe, expect, it } from 'vitest'
 import { createPlaywrightConfig } from '../playwright/config/shared-config.mts'
 import {
@@ -66,11 +65,11 @@ describe('Playwright test deadline cap', () => {
       let ran = false
       await expect(
         browserErrorsFixture(
-          { context: {} as BrowserContext },
+          { context: {} as Parameters<typeof browserErrorsFixture>[0]['context'] },
           async () => {
             ran = true
           },
-          { timeout } as TestInfo,
+          { timeout } as Parameters<typeof browserErrorsFixture>[2],
         ),
       ).rejects.toThrow(RangeError)
       expect(ran).toBe(false)
@@ -82,7 +81,7 @@ describe('Playwright test deadline cap', () => {
     timeout => {
       const config = {
         projects: [{ name: 'chromium', timeout }],
-      } as unknown as Pick<FullConfig, 'projects'>
+      } as unknown as Parameters<typeof assertResolvedPlaywrightTimeouts>[0]
       expect(() => assertResolvedPlaywrightTimeouts(config)).toThrow(RangeError)
     },
   )
@@ -90,7 +89,7 @@ describe('Playwright test deadline cap', () => {
   it('accepts a resolved project at the ceiling', () => {
     const config = {
       projects: [{ name: 'chromium', timeout: 30_000 }],
-    } as unknown as Pick<FullConfig, 'projects'>
+    } as unknown as Parameters<typeof assertResolvedPlaywrightTimeouts>[0]
     expect(() => assertResolvedPlaywrightTimeouts(config)).not.toThrow()
   })
 })
