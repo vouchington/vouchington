@@ -1,7 +1,6 @@
 import { writeNativeResourceFiles } from '../ts-shared/ui-messages/native-resource-writer.mts'
 import { generateNativeResourceFiles } from '../ts-shared/ui-messages/native-resources.mts'
 import { isAbsolute, resolve } from 'node:path'
-import { pathToFileURL } from 'node:url'
 import type { NativeConsumerManifestEntry } from '../ts-shared/ui-messages/native-consumer-manifest.mts'
 import type { NativeCatalogs } from '../ts-shared/ui-messages/native-resource-catalog.mts'
 
@@ -60,9 +59,6 @@ function usage(): string {
   )
 }
 
-if (
-  process.argv[1] !== undefined &&
-  import.meta.url === pathToFileURL(resolve(process.argv[1])).href
-) {
+if (import.meta.main) {
   await runNativeLocalization(process.argv.slice(2))
 }
