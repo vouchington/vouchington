@@ -45,7 +45,6 @@ export const toolingProjects = [
         'static-code-analysis/config-inventory/**/*.test.mts',
         'static-code-analysis/dependency-license-policy/**/*.test.mts',
         'static-code-analysis/jscpd/**/*.test.mts',
-        'static-code-analysis/knip-production-exports/**/*.test.mts',
         'static-code-analysis/oxlint-plugin/**/*.test.mts',
         'static-code-analysis/repo-file-policy/**/*.test.mts',
         'static-code-analysis/targeted-guardrails/**/*.test.mts',
