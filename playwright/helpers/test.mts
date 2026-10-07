@@ -11,7 +11,7 @@ import {
   BLOCKED_EXTERNAL_REQUEST_FAILURE_ALLOWLIST,
   installBlockedExternalNetwork,
 } from './blocked-external-network.mts'
-import { playwrightTestTimeout } from '../config/test-timeout.mts'
+import { guardPlaywrightTestTimeouts, playwrightTestTimeout } from '../config/test-timeout.mts'
 
 interface BrowserErrorFixtures {
   browserErrors: BrowserIssueMonitor
@@ -52,8 +52,13 @@ export async function browserErrorsFixture(
   }
 }
 
-export const test = base.extend<BrowserErrorFixtures>({
-  browserErrors: [browserErrorsFixture, { auto: true }],
+export const test = guardPlaywrightTestTimeouts(base).extend<BrowserErrorFixtures>({
+  browserErrors: [
+    async ({ context, vouchaTestTimeout: _timeoutGuard }, run, info) => {
+      await browserErrorsFixture({ context }, run, info)
+    },
+    { auto: true },
+  ],
 })
 
 export { expect }

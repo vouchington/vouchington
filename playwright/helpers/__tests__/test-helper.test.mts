@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { Browser, BrowserContext, Page, Request, Route, TestInfo } from '@playwright/test'
+import { playwrightTimeoutFixture } from '../../config/test-timeout.mts'
 import { browserErrorsFixture, withMonitoredPage } from '../test.mts'
 
 type Listener = (...args: unknown[]) => void
@@ -46,6 +47,7 @@ function createTestInfo(
     expectedStatus: overrides.expectedStatus ?? 'passed',
     status: overrides.status ?? 'passed',
     timeout: 30_000,
+    setTimeout: vi.fn<(timeout: number) => void>(),
   } as unknown as TestInfo
 }
 
@@ -246,6 +248,33 @@ describe('browserErrorsFixture', () => {
     expect(testInfo.attach).toHaveBeenCalledOnce()
     expect(context.listeners.get('console')?.size).toBe(0)
     expect(context.listeners.get('page')?.size).toBe(0)
+    expect(context.listeners.get('weberror')?.size).toBe(0)
+  })
+})
+
+describe('guarded browser monitor', () => {
+  it('keeps browser monitoring active after the independent timeout guard', async () => {
+    const context = new MockBrowserContext()
+    const info = createTestInfo()
+    await expect(
+      playwrightTimeoutFixture(
+        {},
+        async () => {
+          await browserErrorsFixture(
+            { context: context as unknown as BrowserContext },
+            async () => {
+              context.emit('weberror', {
+                error: () => new Error('guarded browser failure'),
+                page: () => null,
+              })
+            },
+            info,
+          )
+        },
+        info,
+      ),
+    ).rejects.toThrow(/Unhandled browser issue detected/)
+    expect(info.attach).toHaveBeenCalledOnce()
     expect(context.listeners.get('weberror')?.size).toBe(0)
   })
 })

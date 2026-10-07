@@ -15,10 +15,20 @@ Playwright tests have a 30-second maximum in the regular, credentialed, and loca
 configs. The shared config rejects disabled, non-finite, and over-limit test or project timeouts;
 AST-grep rejects in-test deadline changes such as `test.setTimeout`, `test.slow`, and
 `testInfo.setTimeout`. Global setup checks resolved project timeouts, including CLI overrides,
-before seed work; the shared auto fixture checks each test's effective timeout before monitoring and the test body.
+before seed work. A browser-free automatic fixture guards each test's public `TestInfo` before
+`beforeEach` hooks and the test body. `beforeAll` runs with a separate hook budget; this fixture
+does not claim to adapt that hook's `TestInfo`. The shared test factory validates public setters and suite configuration, rejects
+`slow()`, and preserves these guards on `extend()` descendants. Aliased, bound, and computed
+public calls follow the same cap. The browser monitor depends on this independent fixture;
+raw test-factory imports are rejected outside its exact bootstrap module. Public method guards
+cannot be replaced on the guarded instances; private Playwright internals are unsupported.
 Action, navigation, assertion, protocol, and web-server startup timeouts
 have separate purposes and retain their own budgets. Shorten slow scenarios or seed closer to the
 behavior under test instead of extending a test deadline.
+The [tiny installed-runner regressions](../../ci/playwright-test-timeout-runtime.test.mts) exercise
+late public calls and resolved CLI overrides in browser-free, one-case temporary projects. They
+assert immediate rejection, process results, and a missing continuation marker rather than
+waiting for a deadline. They need no application server, build, database, or credentials.
 The [pure config regression tests](../../ci/playwright-test-timeout-config.test.mts) run in the
 `ci-tools` Vitest project, so they need only monorepo initialization.
 

@@ -138,3 +138,11 @@ examples:
       test.setTimeout(60_000)
     isValid: true
     file: 'backend/services/example.test.mts'
+  - code: |
+      test.setTimeout(60_000)
+    isValid: false
+    file: 'playwright/helpers/test.mts'
+  - code: |
+      test.slow()
+    isValid: false
+    file: 'playwright/helpers/test.mts'
