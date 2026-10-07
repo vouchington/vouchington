@@ -6,7 +6,6 @@ import {
   rmSync,
   writeFileSync,
 } from 'node:fs'
-import { spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -93,28 +92,27 @@ describe('renderPsqlDocs', () => {
   })
 })
 
-describe('render-psql-docs CLI', () => {
-  it('runs end-to-end against the committed schema snapshot', () => {
+describe('render-psql-docs entrypoint', () => {
+  it('runs end-to-end through main with a small schema fixture', async () => {
     using root = mkdtempDisposableSync(join(tmpdir(), 'render-psql-docs-cli-'))
+    const schemaDir = join(root.path, 'docs/schema-snapshot')
+    const schemaJsonPath = join(root.path, 'runtime/schema.json')
     const outputDir = join(root.path, 'out')
-    const result = spawnSync(
-      process.execPath,
-      [join(process.cwd(), 'ci/render-psql-docs.mts'), outputDir],
-      { encoding: 'utf8' },
-    )
-    expect(result).toMatchObject({ status: 0, stderr: '' })
+    writeSampleSchema(schemaDir, schemaJsonPath)
+
+    await expect(main([outputDir], { schemaDir, schemaJsonPath })).resolves.toBe(0)
     expect(existsSync(join(outputDir, 'index.html'))).toBe(true)
     expect(existsSync(join(outputDir, 'tables'))).toBe(true)
-    expect(readFileSync(join(outputDir, 'schema.json'), 'utf8')).toBe(
-      readFileSync('backend/data-stores/psql/schema-snapshot/schema.json', 'utf8'),
-    )
+    expect(readFileSync(join(outputDir, 'schema.json'), 'utf8')).toBe(SAMPLE_SCHEMA_JSON)
     expect(readFileSync(join(outputDir, 'schema.md'), 'utf8')).toBe(
-      readFileSync('docs/development/postgresql/schema-snapshot/markdown/README.md', 'utf8')
-        .replace('[schema-snapshot/README.md](../README.md)', '`schema-snapshot/README.md`')
-        .replace(
-          '../../../../../backend/data-stores/psql/schema-snapshot/schema.json',
-          'schema.json',
-        ),
+      SAMPLE_INDEX.replace(
+        '[schema-snapshot/README.md](../README.md)',
+        '`schema-snapshot/README.md`',
+      ).replace(
+        '../../../../../backend/data-stores/psql/schema-snapshot/schema.json',
+        'schema.json',
+      ),
     )
+    expect(readFileSync(join(outputDir, 'tables/widgets.html'), 'utf8')).toContain('<table>')
   })
 })
