@@ -95,7 +95,8 @@ async function activateCommunityRestrictionTypes(
       FROM restriction_input
       WHERE ${input.expiresAt}::timestamptz IS NULL OR ${input.expiresAt}::timestamptz > statement_timestamp()
       ORDER BY ordinal
-      RETURNING *
+      RETURNING id, community_id, restriction_type, activated_by_id, activated_at, expires_at,
+        created_at, updated_at, lifted_at, lifted_by_id, reason
     )
     SELECT inserted.*
     FROM inserted

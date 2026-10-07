@@ -98,7 +98,12 @@ async function createCommunityPostReviewWithOptions(
     INSERT INTO community_post_reviews (community_id, post_id, submitted_by_id, reviewed_at, approved_at)
     VALUES (${communityId}, ${postId}, ${currentUserId}, ${reviewedAt}::timestamptz, ${approvedAt}::timestamptz)
     ON CONFLICT (post_id) DO NOTHING
-    RETURNING *
+    RETURNING community_id, post_id, submitted_by_id, created_at, reviewed_at, reviewed_by_id,
+      approved_at, rejected_at, rejection_reason, unpublished_at, unpublished_by_id,
+      platform_override_at, platform_override_by_id, platform_override_action,
+      platform_override_reason_code, platform_override_private_note, automod_action,
+      automod_flagged_at, automod_flagged_content_sha256, automod_dismissed_at,
+      automod_dismissed_by_id
     `,
     options,
   )

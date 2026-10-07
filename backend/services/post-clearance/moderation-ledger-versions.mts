@@ -33,12 +33,12 @@ export async function ensureCurrentPostModerationVersion(
         llm_moderation_content_sha256 ASC NULLS LAST,
         $2 ASC NULLS LAST
       ON CONFLICT (post_id, content_sha256, policy_revision) DO NOTHING
-      RETURNING *
+      RETURNING id, post_id, content_sha256, policy_revision, deadline_at
     ),
     selected_version AS (
       SELECT * FROM inserted_version
       UNION ALL
-      SELECT version.*
+      SELECT version.id, version.post_id, version.content_sha256, version.policy_revision, version.deadline_at
       FROM post_moderation_versions version
       JOIN current_post post
         ON post.id = version.post_id

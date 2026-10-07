@@ -34,7 +34,7 @@ export async function createRssFeedImport(
           ${should_follow_imported_feeds},
           ${urls.length}
         )
-        RETURNING *
+        RETURNING id, total_rows, completed_rows, failed_rows, completed_at, created_at
       `,
     { query },
   )
@@ -72,7 +72,7 @@ export async function getRssFeedImport(
 
   const { rows: batchRows } = await read(
     sql`/* getRssFeedImport */
-      SELECT *
+      SELECT id, total_rows, completed_rows, failed_rows, completed_at, created_at
       FROM user_rss_feed_import_batches
       WHERE id = ${importId}
         AND user_id = ${currentUserId}
@@ -84,7 +84,7 @@ export async function getRssFeedImport(
 
   const { rows } = await read(
     sql`/* getRssFeedImport */
-      SELECT *
+      SELECT id, input_url, outcome, error_message, rss_feed_id
       FROM user_rss_feed_import_rows
       WHERE batch_id = ${importId}
       ORDER BY row_index ASC
@@ -98,24 +98,26 @@ export async function getRssFeedImport(
 }
 
 export async function getRssFeedImportRowWithBatch(rowId: string): Promise<{
-  batch: UserRssFeedImportBatchRow
-  row: UserRssFeedImportRow
+  batch: Pick<
+    UserRssFeedImportBatchRow,
+    | 'id'
+    | 'user_id'
+    | 'created_via'
+    | 'created_via_oauth_client_id'
+    | 'should_follow_imported_feeds'
+  >
+  row: Pick<UserRssFeedImportRow, 'id' | 'input_url' | 'completed_at' | 'failed_at'>
 } | null> {
   if (!isUUID(rowId)) return null
 
   const { rows } = await read(
     sql`/* getRssFeedImportRowWithBatch */
       SELECT
-        r.*,
+        r.id, r.batch_id, r.input_url, r.completed_at, r.failed_at,
         b.user_id AS batch_user_id,
         b.created_via AS batch_created_via,
         b.created_via_oauth_client_id AS batch_created_via_oauth_client_id,
-        b.should_follow_imported_feeds AS batch_follow,
-        b.total_rows AS batch_total_rows,
-        b.completed_rows AS batch_completed_rows,
-        b.failed_rows AS batch_failed_rows,
-        b.completed_at AS batch_completed_at,
-        b.created_at AS batch_created_at
+        b.should_follow_imported_feeds AS batch_follow
       FROM user_rss_feed_import_rows r
       JOIN user_rss_feed_import_batches b ON b.id = r.batch_id
       WHERE r.id = ${rowId}
@@ -123,16 +125,14 @@ export async function getRssFeedImportRowWithBatch(rowId: string): Promise<{
     `,
   )
   const raw = rows[0] as
-    | (UserRssFeedImportRow & {
+    | (Pick<
+        UserRssFeedImportRow,
+        'id' | 'batch_id' | 'input_url' | 'completed_at' | 'failed_at'
+      > & {
         batch_user_id: string
         batch_created_via: UserRssFeedImportBatchRow['created_via']
         batch_created_via_oauth_client_id: string | null
         batch_follow: boolean
-        batch_total_rows: number
-        batch_completed_rows: number
-        batch_failed_rows: number
-        batch_completed_at: Date | null
-        batch_created_at: Date
       })
     | undefined
   if (!raw) return null
@@ -144,12 +144,12 @@ export async function getRssFeedImportRowWithBatch(rowId: string): Promise<{
       created_via: raw.batch_created_via,
       created_via_oauth_client_id: raw.batch_created_via_oauth_client_id,
       should_follow_imported_feeds: raw.batch_follow,
-      total_rows: raw.batch_total_rows,
-      completed_rows: raw.batch_completed_rows,
-      failed_rows: raw.batch_failed_rows,
-      completed_at: raw.batch_completed_at,
-      created_at: raw.batch_created_at,
     },
-    row: raw,
+    row: {
+      id: raw.id,
+      input_url: raw.input_url,
+      completed_at: raw.completed_at,
+      failed_at: raw.failed_at,
+    },
   }
 }

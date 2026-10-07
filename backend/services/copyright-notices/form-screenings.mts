@@ -60,7 +60,7 @@ export async function applyNonSpamSignedInCopyrightFormScreening(
       EXISTS (SELECT 1 FROM copyright_automatic_withholding_refusals refusal
         WHERE refusal.copyright_notice_submission_id = submission.id) AS refused
     FROM copyright_notice_form_intakes intake JOIN copyright_notice_submissions submission ON submission.id = intake.copyright_notice_submission_id
-    JOIN LATERAL (SELECT * FROM copyright_notice_form_screening_attempts attempt WHERE attempt.copyright_notice_form_intake_id = intake.id ORDER BY attempt.attempt_number DESC LIMIT 1) execution ON execution.state = 'completed'
+    JOIN LATERAL (SELECT attempt.state, attempt.copyright_notice_form_screening_id FROM copyright_notice_form_screening_attempts attempt WHERE attempt.copyright_notice_form_intake_id = intake.id ORDER BY attempt.attempt_number DESC LIMIT 1) execution ON execution.state = 'completed'
     JOIN copyright_notice_form_screenings screening
       ON screening.id = execution.copyright_notice_form_screening_id
     LEFT JOIN copyright_notice_form_intake_reviews review

@@ -69,7 +69,15 @@ export async function processUserDeletionExternalWork(
 
 async function processEntityRelationEffects(requestId: string, impactId: string): Promise<void> {
   const { rows } = await write<{ subject_id: string }>(sql`/* processEntityRelationEffects:impact */
-    SELECT * FROM user_deletion_relation_impacts
+    SELECT subject_id, relation__post__category__topic_alias_id, relation__post__category__topic_id,
+      relation__post__related__post_id, relation__post__related__url_id,
+      relation__rss_feed_item__category__topic_alias_id, relation__rss_feed_item__category__topic_id,
+      relation__topic__category__topic_id, relation__topic__faq__post_id, relation__topic__faq__url_id,
+      relation__topic__guide__url_id, relation__topic__landing_page__url_id,
+      relation__topic__publisher_type__topic_id, relation__topic__related__post_id,
+      relation__topic__related__topic_id, relation__topic__related__url_id,
+      relation__topic__terms_of_service__url_id, relation__user__category__topic_id
+    FROM user_deletion_relation_impacts
     WHERE request_id = ${requestId} AND id = ${impactId}`)
   const impact = rows[0]
   if (!impact) throw new Error('Missing user deletion relation impact for pending effects')

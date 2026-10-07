@@ -97,7 +97,8 @@ async function insertJoinedCommunityMember(
     sql`/* joinCommunity */
     INSERT INTO community_members (community_id, user_id, role)
     VALUES (${communityId}, ${currentUserId}, 'member')
-    RETURNING *
+    RETURNING id, community_id, user_id, role, approved_by_id, created_at, updated_at,
+      removed_at, removed_by_id
     `,
     options,
   )

@@ -37,7 +37,25 @@ export async function insertPost({
     images: updates.images ?? [],
     structured_data: updates.structured_data,
   }).content_sha256
-  const { rows } = await write<PostsTableRow>(
+  const { rows } = await write<
+    Pick<
+      PostsTableRow,
+      | 'id'
+      | 'title'
+      | 'markdown'
+      | 'ai_summary_markdown'
+      | 'broadcast'
+      | 'privacy'
+      | 'is_anonymous'
+      | 'structured_data'
+      | 'data_point_vertical'
+      | 'declared_language'
+      | 'deleted_at'
+      | 'archived_at'
+      | 'community_id'
+      | 'root_post_id'
+    >
+  >(
     sql`/* createPost */
       INSERT INTO posts (
         post_type, title, markdown, created_by_id, parent_post_id, root_post_id, community_id,
@@ -56,7 +74,8 @@ export async function insertPost({
         ${defaults.postType === 'link' ? (updates.url_id ?? null) : null}, ${sourceUrlId ?? null},
         ${provenance.createdVia}, ${provenance.oauthClientId}
       )
-      RETURNING *
+      RETURNING id, title, markdown, ai_summary_markdown, broadcast, privacy, is_anonymous, structured_data,
+        data_point_vertical, declared_language, deleted_at, archived_at, community_id, root_post_id
     `,
     options,
   )

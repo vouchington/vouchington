@@ -10,7 +10,11 @@ export async function getDistributionForUpdate(
 ): Promise<DistributionRow | null> {
   const { rows } = await query(sql`/* getDistributionForUpdate */
     SELECT
-      follower_distributions.*,
+      follower_distributions.id, follower_distributions.sender_user_id,
+      follower_distributions.action, follower_distributions.audience,
+      follower_distributions.post_id, follower_distributions.rss_feed_item_id,
+      follower_distributions.cursor_recipient_id, follower_distributions.completed_at,
+      follower_distributions.failed_at, follower_distributions.created_at,
       users.username AS sender_username
     FROM follower_distributions
     JOIN users ON users.id = follower_distributions.sender_user_id

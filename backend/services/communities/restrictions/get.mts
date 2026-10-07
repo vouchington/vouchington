@@ -9,7 +9,8 @@ export async function getActiveCommunityRestrictions(
 ): Promise<CommunityRestriction[]> {
   const { rows } = await read(
     sql`/* getActiveCommunityRestrictions */
-    SELECT *
+    SELECT id, community_id, restriction_type, activated_by_id, activated_at, expires_at,
+      created_at, updated_at, lifted_at, lifted_by_id, reason
     FROM community_restrictions
     WHERE community_id = ${communityId}
       AND lifted_at IS NULL

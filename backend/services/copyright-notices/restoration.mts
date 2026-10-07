@@ -133,7 +133,8 @@ export async function createEligibleCopyrightRestoreIntent(input: {
 
   const qualifyingHolds =
     await transaction<CopyrightLegalHoldAssessmentRecord>(sql`/* createEligibleCopyrightRestoreIntent:lockQualifyingHolds */
-      SELECT h.*
+      SELECT h.received_by_designated_agent_at, h.is_from_original_claimant,
+        h.commenced_at, h.is_same_material, h.proceeding_kind
       FROM copyright_notice_legal_hold_assessments h
       JOIN copyright_notice_submissions s ON s.id = h.copyright_notice_submission_id
       JOIN copyright_notice_legal_hold_assessment_targets hold_target

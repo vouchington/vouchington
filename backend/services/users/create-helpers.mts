@@ -53,7 +53,7 @@ export const createUser = async ({
         INSERT INTO user_email_addresses (user_id, email_address)
         VALUES (${id}, ${emailAddress})
         ON CONFLICT DO NOTHING
-        RETURNING *
+        RETURNING user_id
     `)
     if (!userEmailAddress) throw createCodedError(409, 'User creation race', USER_CREATION_RACE)
     await grantSignupConsents(id, query)
@@ -75,7 +75,7 @@ export const createUser = async ({
         INSERT INTO user_phone_numbers (user_id, phone_number)
         VALUES (${id}, ${phoneNumber})
         ON CONFLICT DO NOTHING
-        RETURNING *
+        RETURNING user_id
     `)
     if (!userPhoneNumber) throw createCodedError(409, 'User creation race', USER_CREATION_RACE)
     await grantSignupConsents(id, query)
@@ -112,7 +112,7 @@ async function createUserId(options: QueryOptions, referrerId?: string | null) {
     sql`/* createUserId */
     INSERT INTO users (referrer_user_id)
     VALUES (${referrerId ?? null})
-    RETURNING *
+    RETURNING id
   `,
     options,
   )

@@ -113,7 +113,8 @@ export async function acceptObservation(
   }
   const { rows: matching } = await query<{ id: string }>(sql`/* findMatchingGooglePlayObservation */
     SELECT id FROM (
-      SELECT * FROM membership_provider_observations
+      SELECT id, membership_provider_product_id, provider_revision, expires_at, terminal_at, cancelled_at, expired_at, paused_at, should_auto_renew
+      FROM membership_provider_observations
       WHERE membership_provider_lineage_id = ${lineageId} AND provider = 'google_play'
       ORDER BY provider_order DESC LIMIT 1
     ) latest

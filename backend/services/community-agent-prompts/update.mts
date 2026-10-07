@@ -53,7 +53,7 @@ export async function updateCommunityAgentPrompt(
           updated_by_id = ${currentUser.id}
       WHERE id = ${promptId}
         AND deleted_at IS NULL
-      RETURNING *
+      RETURNING id, agent_id, prompt, model_name, model_provider, created_at, updated_at
     )
     SELECT
       cap.id,

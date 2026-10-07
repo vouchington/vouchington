@@ -79,7 +79,8 @@ export async function createInviteWithEmailEnqueue(
     sql`/* createInvite */
     INSERT INTO community_invites (community_id, code, invited_user_id, invited_email, invited_by_id)
     VALUES (${communityId}, ${code}, ${invitedUserId}, ${invitedEmail}, ${currentUserId})
-    RETURNING *
+    RETURNING id, community_id, code, invited_user_id, invited_email, invited_by_id,
+      accepted_at, accepted_by_id, declined_at, revoked_at, created_at
     `,
   )
 

@@ -17,7 +17,8 @@ export async function redeemInviteCode(
 
   const { rows } = await read(
     sql`/* redeemInviteCode */
-    SELECT *
+    SELECT id, community_id, code, invited_user_id, invited_email, invited_by_id,
+      accepted_at, accepted_by_id, declined_at, revoked_at, created_at
     FROM community_invites
     WHERE code = ${code.toLowerCase()}
       AND accepted_at IS NULL

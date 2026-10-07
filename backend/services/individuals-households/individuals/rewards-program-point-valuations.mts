@@ -159,7 +159,7 @@ export const deleteIndividualRewardsProgramPointValuationById = async (
     DELETE FROM individual_rewards_program_point_valuations
     WHERE id = ${id}
       AND individual_id = ${individual.id}
-    RETURNING *
+    RETURNING id
   `)
   assert(rows[0], 404, 'Not found')
   return rows[0]

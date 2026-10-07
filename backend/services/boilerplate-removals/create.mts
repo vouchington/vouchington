@@ -27,13 +27,13 @@ export const createBoilerplateRemoval = async (
         SET
           results = ${JSON.stringify(results)}::jsonb
         WHERE id = (SELECT id FROM existing_removal)
-        RETURNING *
+        RETURNING id, hostname_id, parent_path, results, created_at, updated_at
       ),
       inserted_removal AS (
         INSERT INTO hostname_path_boilerplate_removals (hostname_id, parent_path, results)
         SELECT ${hostnameId}, ${parentPath}, ${JSON.stringify(results)}::jsonb
         WHERE NOT EXISTS (SELECT 1 FROM updated_removal)
-        RETURNING *
+        RETURNING id, hostname_id, parent_path, results, created_at, updated_at
       )
       SELECT *
       FROM updated_removal
@@ -62,13 +62,13 @@ export const createBoilerplateRemoval = async (
       SET
         results = ${JSON.stringify(results)}::jsonb
       WHERE id = (SELECT id FROM existing_removal)
-      RETURNING *
+      RETURNING id, hostname_id, parent_path, results, created_at, updated_at
     ),
     inserted_removal AS (
       INSERT INTO hostname_path_boilerplate_removals (hostname_id, parent_path, results)
       SELECT ${hostnameId}, ${parentPath}, ${JSON.stringify(results)}::jsonb
       WHERE NOT EXISTS (SELECT 1 FROM updated_removal)
-      RETURNING *
+      RETURNING id, hostname_id, parent_path, results, created_at, updated_at
     ),
     upserted_removal AS (
       SELECT * FROM updated_removal

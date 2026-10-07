@@ -148,7 +148,14 @@ async function getRelationImpactBatch(
     id: string
     subject_id: string
   }>(sql`/* recomputeUserDeletionRelationImpactsBatch:candidates */
-    SELECT *
+    SELECT id, subject_id, relation__post__category__topic_alias_id, relation__post__category__topic_id,
+      relation__post__related__post_id, relation__post__related__url_id,
+      relation__rss_feed_item__category__topic_alias_id, relation__rss_feed_item__category__topic_id,
+      relation__topic__category__topic_id, relation__topic__faq__post_id, relation__topic__faq__url_id,
+      relation__topic__guide__url_id, relation__topic__landing_page__url_id,
+      relation__topic__publisher_type__topic_id, relation__topic__related__post_id,
+      relation__topic__related__topic_id, relation__topic__related__url_id,
+      relation__topic__terms_of_service__url_id, relation__user__category__topic_id
     FROM user_deletion_relation_impacts
     WHERE request_id = ${requestId} AND recomputed_at IS NULL
     ORDER BY id LIMIT ${batchSize} FOR UPDATE

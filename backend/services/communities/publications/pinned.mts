@@ -17,7 +17,7 @@ export async function getPinnedPosts(
   currentUser?: BasicUser | null,
 ): Promise<CommunityPinnedPost[]> {
   const query = sql`/* getPinnedPosts */
-    SELECT cpp.*
+    SELECT cpp.community_id, cpp.post_id, cpp.order_index, cpp.pinned_by_id, cpp.created_at
     FROM community_pinned_posts cpp
     JOIN community_post_reviews pub
       ON pub.community_id = cpp.community_id
@@ -118,7 +118,7 @@ export async function setPinnedPosts(
       INSERT INTO community_pinned_posts (community_id, post_id, order_index, pinned_by_id)
       SELECT ${communityId}, post_id, order_index, ${currentUser.id}
       FROM UNNEST(${postIds}::uuid[], ${postIds.map((_, i) => i)}::smallint[]) AS t(post_id, order_index)
-      RETURNING *
+      RETURNING community_id, post_id, order_index, pinned_by_id, created_at
     `)
     pins = rows as CommunityPinnedPost[]
   }

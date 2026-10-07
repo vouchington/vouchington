@@ -21,7 +21,23 @@ export async function insertStoryPostRecord(
   },
   options: QueryOptions,
 ): Promise<Post> {
-  const { rows: postRows } = await write<PostsTableRow>(
+  const { rows: postRows } = await write<
+    Pick<
+      PostsTableRow,
+      | 'id'
+      | 'title'
+      | 'markdown'
+      | 'ai_summary_markdown'
+      | 'broadcast'
+      | 'privacy'
+      | 'is_anonymous'
+      | 'structured_data'
+      | 'data_point_vertical'
+      | 'declared_language'
+      | 'deleted_at'
+      | 'archived_at'
+    >
+  >(
     sql`/* insertStoryPostRecord */
     INSERT INTO posts (
       post_type,
@@ -51,7 +67,8 @@ export async function insertStoryPostRecord(
       ${SYSTEM_PROVENANCE.createdVia},
       ${SYSTEM_PROVENANCE.oauthClientId}
     )
-    RETURNING *
+    RETURNING id, title, markdown, ai_summary_markdown, broadcast, privacy, is_anonymous, structured_data,
+      data_point_vertical, declared_language, deleted_at, archived_at
   `,
     options,
   )

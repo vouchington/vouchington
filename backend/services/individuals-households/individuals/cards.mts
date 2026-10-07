@@ -177,7 +177,7 @@ export async function deleteIndividualCardById(
     DELETE FROM individual_cards
     WHERE id = ${individualCardId}
       AND individual_id = ${individual.id}
-    RETURNING *
+    RETURNING id
   `)
   assert(individualCard, 404, 'Not found')
   return individualCard

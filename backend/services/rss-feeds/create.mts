@@ -128,7 +128,7 @@ async function insertRssFeedAndInitialState(
         ${options.provenance.createdVia},
         ${options.provenance.oauthClientId}
       )
-      RETURNING *
+      RETURNING id, title, topic_id, rss_feed_url_id
     `,
     { query },
   )

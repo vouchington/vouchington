@@ -12,7 +12,7 @@ export const getLatestBoilerplateRemovalByHostnameAndPath = async (
   const recentCutoffId = getMaxUUIDv7ForDate(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
   const { rows } = await read<BoilerplateRemoval>(
     sql`/* getLatestBoilerplateRemovalByHostnameAndPath */
-    SELECT *
+    SELECT id, hostname_id, parent_path, results, created_at, updated_at
     FROM hostname_path_boilerplate_removals
     WHERE hostname_id = ${hostnameId}
       AND parent_path = ${parentPath}

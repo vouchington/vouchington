@@ -101,7 +101,7 @@ export async function replaceSpendingCategoryAttributes(
     SET
       is_foreign_transaction = ${attributes.is_foreign_transaction ?? false},
       default_spending_frequency = ${attributes.default_spending_frequency ?? 'monthly'}
-    RETURNING *
+    RETURNING is_foreign_transaction, default_spending_frequency
   `)
   return rows[0] ?? null
 }

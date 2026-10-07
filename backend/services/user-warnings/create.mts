@@ -25,7 +25,9 @@ export async function createUserWarning(
       if (options.returnExistingForReport && input.reportId) {
         const { rows: existingRows } = await read(
           sql`/* createUserWarning:existingForReport */
-            SELECT * FROM user_warnings
+            SELECT id, case_id, user_id, community_id, issued_by_id, reason, public_message, report_id,
+              revoked_at, revoked_by_id, created_at
+            FROM user_warnings
             WHERE report_id = ${input.reportId}::uuid
             AND user_id = ${input.userId}::uuid
             LIMIT 1
@@ -90,7 +92,8 @@ async function createWarningInTransaction(
             ${input.reportId ?? null}::uuid,
             ${caseId}
           FROM target_check
-          RETURNING *
+          RETURNING id, case_id, user_id, community_id, issued_by_id, reason, public_message, report_id,
+            revoked_at, revoked_by_id, created_at
         `,
     { query },
   )
