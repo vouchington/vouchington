@@ -65,7 +65,7 @@ describe('PostgreSQL schema static analysis', () => {
     ).toEqual([])
   })
 
-  it('uses UUIDv7-derived created_at values', async () => {
+  it('uses UUIDv7-derived created_at values and enabled updated_at triggers', async () => {
     const violations = await getTimestampConventionViolations()
 
     expect(

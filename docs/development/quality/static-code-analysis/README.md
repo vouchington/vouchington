@@ -612,7 +612,8 @@ The catalog-backed `postgres-column-requires-trigger` and `postgres-required-com
 updated-at trigger structure and schema comments. The strict update-clock entry rejects column-list
 triggers, except the documented `posts` content clock; a second catalog entry permits that list while
 still validating its function, timing, events, row mode, and orphan-trigger check. The retained live
-database tests cover created-at clocks and timestamp types. A separate
+database test covers created-at clocks, timestamp types, and the enabled state of update-clock
+triggers, which the catalog definitions do not retain. A separate
 `postgres-no-generated-column-writes` entry rejects writes to trigger-maintained `updated_at`; fixture
 helpers are excluded because some deliberately construct clock boundaries, while ordinary fixture
 updates let the trigger maintain the clock.

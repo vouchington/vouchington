@@ -39,6 +39,7 @@ export function isAllowedUuidConventionViolation(violation: UuidConventionViolat
 export function isAllowedTimestampConventionViolation(
   violation: TimestampConventionViolation,
 ): boolean {
+  if (violation.problem === 'disabled-updated-at-trigger') return false
   if (isGeneratedRelationTable(violation.table_name)) return true
   if (isGeneratedVoteTable(violation.table_name)) return true
   if (violation.problem === 'created-at-not-derived-from-uuidv7-id') {
