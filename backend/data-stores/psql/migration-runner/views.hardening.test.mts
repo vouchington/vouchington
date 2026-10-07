@@ -12,14 +12,14 @@ import {
 } from '../../../test-helpers/data-stores/psql/forced-views.mts'
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 
-import { loadSqlParserModule } from './sql-statements.mts'
+import { initSqlAst, loadSqlParserModule } from './sql-statements.mts'
 import { runViews } from './views.mts'
 
 describe('forced view rebuilding', () => {
   const testDirs: string[] = []
   const graphs = [] as ReturnType<typeof createForcedViewGraph>[]
 
-  beforeAll(() => loadSqlParserModule())
+  beforeAll(() => Promise.all([loadSqlParserModule(), initSqlAst()]))
   afterEach(async () => {
     await Promise.all(graphs.splice(0).map(dropForcedViewGraph))
     await Promise.all(testDirs.splice(0).map(dir => rm(dir, { force: true, recursive: true })))

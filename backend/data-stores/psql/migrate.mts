@@ -11,7 +11,7 @@ import {
 } from './migration-runner/migrations.mts'
 import { runViews as runViewsFromFolder, type RunViewsOptions } from './migration-runner/views.mts'
 import { refreshMaterializedView } from './migration-runner/refresh-materialized-view.mts'
-import { loadSqlParserModule } from './migration-runner/sql-statements.mts'
+import { initSqlAst, loadSqlParserModule } from './migration-runner/sql-statements.mts'
 import { verifyLiveSchemaMatchesSnapshot } from './schema-snapshot/verify-live-schema.mts'
 import { psql } from './setup.mts'
 
@@ -30,6 +30,7 @@ export async function runMigrations() {
 }
 
 export async function runViews(options: RunViewsOptions = {}) {
+  if (options.forced) await Promise.all([loadSqlParserModule(), initSqlAst()])
   await runViewsFromFolder(__dirname, { logger: console, ...options })
 }
 
@@ -54,7 +55,7 @@ async function applyMigrationsInSession(
   forced: boolean | undefined,
   logger: Pick<Console, 'error' | 'log'>,
 ): Promise<void> {
-  await loadSqlParserModule()
+  await Promise.all([loadSqlParserModule(), initSqlAst()])
   await psql.withMigrationSession(async client => {
     const writer: NonNullable<RunConfigDrivenOptions['writer']> = (input, values) =>
       psql.write(input, values, { client })
