@@ -51,15 +51,6 @@ export async function syncCopyrightRepeatInfringerIncidents(
       CROSS JOIN LATERAL `)
   statement.append(copyrightPlacementPartiesSql('strike'))
   statement.append(sql` party
-      UNION
-      SELECT target.id, party.user_id
-      FROM eligible_targets target
-      CROSS JOIN LATERAL `)
-  statement.append(copyrightPlacementPartiesSql('retain'))
-  statement.append(sql` party
-      JOIN copyright_repeat_infringer_incidents incident
-        ON incident.account_user_id = party.user_id
-        AND incident.copyright_notice_id = ${noticeId}
     ), owners AS (
       SELECT DISTINCT owner.account_user_id
       FROM current_target_owners owner

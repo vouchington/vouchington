@@ -28,12 +28,6 @@ export async function recordCopyrightRepeatInfringerTargetProvenance(
       CROSS JOIN LATERAL `
   statement.append(copyrightPlacementPartiesSql('strike'))
   statement.append(sql` party
-      UNION
-      SELECT target.id, party.user_id
-      FROM eligible_targets target
-      CROSS JOIN LATERAL `)
-  statement.append(copyrightPlacementPartiesSql('retain'))
-  statement.append(sql` party
     )
     INSERT INTO copyright_repeat_infringer_incident_targets (
       copyright_notice_id,
