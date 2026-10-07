@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { getCapturedQueries, read } from '@data-stores/psql'
+import { beginTransaction, getCapturedQueries, read } from '@data-stores/psql'
 import { getMinUUIDv7ForParentHistory } from '@modules/utils/ids'
 import { assertNoRecentDistribution } from '@services/follower-distributions/create-guards'
 import { hasPostCreationModerationBypass } from '@services/posts/create/moderation-bypass'
@@ -24,12 +24,13 @@ export async function runFollowerDistributionScenarios(): Promise<void> {
       ],
     })
     await runAndCapture(id, async () => {
+      await using query = await beginTransaction()
       await assert.rejects(
         assertNoRecentDistribution(
           seedUser.id,
           action,
           action.startsWith('post_') ? seedPostId : itemId,
-          read,
+          query,
         ),
         { statusCode: 429 },
       )
