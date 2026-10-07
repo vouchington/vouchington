@@ -89,7 +89,7 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<Reco
           input_tokens,
           cached_input_tokens,
           output_tokens,
-          latency_ms,
+          latency_milliseconds,
           pricing_status,
           cost_microunits,
           currency_code
@@ -135,7 +135,7 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<Reco
       input_tokens,
       cached_input_tokens,
       output_tokens,
-      latency_ms,
+      latency_milliseconds,
       pricing_status,
       cost_microunits,
       currency_code

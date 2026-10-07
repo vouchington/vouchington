@@ -276,7 +276,7 @@ $$;
 CREATE TRIGGER trigger_membership_verifications_processing_work AFTER INSERT ON membership_verifications
 FOR EACH ROW EXECUTE FUNCTION fn_create_membership_verification_processing_work();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE FUNCTION fn_complete_membership_verification_processing_work() RETURNS TRIGGER LANGUAGE plpgsql AS $$
+CREATE OR REPLACE FUNCTION fn_update_membership_verification_processing_work() RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF num_nonnulls(NEW.verified_at, NEW.conflicted_at, NEW.rejected_at) = 1 THEN
     UPDATE membership_verification_processing_work_items
@@ -289,7 +289,7 @@ END;
 $$;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_membership_verifications_complete_processing_work AFTER UPDATE OF verified_at, conflicted_at, rejected_at ON membership_verifications
-FOR EACH ROW EXECUTE FUNCTION fn_complete_membership_verification_processing_work();
+FOR EACH ROW EXECUTE FUNCTION fn_update_membership_verification_processing_work();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_membership_verifications_updated_at BEFORE UPDATE ON membership_verifications FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -353,7 +353,7 @@ CREATE TABLE IF NOT EXISTS membership_source_states (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trg_membership_source_states__updated_at
+CREATE OR REPLACE TRIGGER trigger_membership_source_states_updated_at
 BEFORE UPDATE ON membership_source_states
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -443,10 +443,6 @@ CREATE INDEX IF NOT EXISTS idx_memberships__source_id ON memberships (membership
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_memberships__product_id ON memberships (membership_product_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_memberships__expires_at ON memberships (expires_at, id) WHERE projection_ended_at IS NULL AND expires_at IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -509,15 +505,20 @@ CREATE TABLE membership_renewal_price_increase_notification_work_items (
     renewal_price_currency_code, renewal_effective_at
   ) ON DELETE RESTRICT
 );
-CREATE INDEX idx_membership_renewal_notification_work__observation
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__observation
 ON membership_renewal_price_increase_notification_work_items (membership_provider_observation_id);
-CREATE INDEX idx_membership_renewal_notification_work__provider_product
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__provider_product
 ON membership_renewal_price_increase_notification_work_items (membership_provider_product_id);
-CREATE INDEX idx_membership_renewal_notification_work__currency
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__currency
 ON membership_renewal_price_increase_notification_work_items (currency_code);
-CREATE UNIQUE INDEX idx_membership_renewal_notification_work__lease_token
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE UNIQUE INDEX idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__lease_token
 ON membership_renewal_price_increase_notification_work_items (lease_token) WHERE lease_token IS NOT NULL;
-CREATE INDEX idx_membership_renewal_notification_work__available
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__available
 ON membership_renewal_price_increase_notification_work_items (available_at, membership_id)
 WHERE completed_at IS NULL AND delivery_attempted_at IS NULL;
 COMMENT ON TABLE membership_renewal_price_increase_notification_work_items IS 'Generation-fenced renewal price notices; exact delivered or ambiguously attempted snapshots remain for duplicate suppression until membership retention removes them.';
@@ -633,11 +634,14 @@ CREATE TABLE membership_operation_execution_work_items (
   CHECK (num_nonnulls(lease_token, leased_at, lease_expires_at) IN (0, 3)),
   CHECK (lease_expires_at IS NULL OR lease_expires_at > leased_at)
 );
-CREATE UNIQUE INDEX idx_membership_operation_work_items__lease_token
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE UNIQUE INDEX idx_membership_operation_execution_work_items__lease_token
 ON membership_operation_execution_work_items (lease_token) WHERE lease_token IS NOT NULL;
-CREATE INDEX idx_membership_operation_work_items__available
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_membership_operation_execution_work_items__available
 ON membership_operation_execution_work_items (available_at, membership_operation_id) WHERE lease_token IS NULL;
-CREATE INDEX idx_membership_operation_work_items__expired
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_membership_operation_execution_work_items__expired
 ON membership_operation_execution_work_items (lease_expires_at, membership_operation_id) WHERE lease_token IS NOT NULL;
 COMMENT ON TABLE membership_operation_execution_work_items IS 'Pending execution of a durable membership operation; terminal completion deletes the work while refund evidence and attempts remain.';
 COMMENT ON COLUMN membership_operation_execution_work_items.membership_operation_id IS 'Durable operation whose row lock serializes execution and reconciliation.';
@@ -647,7 +651,8 @@ COMMENT ON COLUMN membership_operation_execution_work_items.lease_expires_at IS 
 COMMENT ON COLUMN membership_operation_execution_work_items.attempt_count IS 'Monotone number of acquired execution leases.';
 COMMENT ON COLUMN membership_operation_execution_work_items.available_at IS 'Earliest permitted execution or refund reconciliation time.';
 
-CREATE FUNCTION fn_initialize_membership_operation_work()
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE FUNCTION fn_create_membership_operation_work()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF NEW.completed_at IS NULL THEN
@@ -659,10 +664,11 @@ END;
 $$;
 CREATE TRIGGER trigger_membership_operations_initialize_work
 AFTER INSERT ON membership_operations
-FOR EACH ROW EXECUTE FUNCTION fn_initialize_membership_operation_work();
-COMMENT ON FUNCTION fn_initialize_membership_operation_work() IS 'Creates execution work with a new unfinished operation; replay of an existing completed operation cannot recreate work.';
+FOR EACH ROW EXECUTE FUNCTION fn_create_membership_operation_work();
+COMMENT ON FUNCTION fn_create_membership_operation_work() IS 'Creates execution work with a new unfinished operation; replay of an existing completed operation cannot recreate work.';
 
-CREATE FUNCTION fn_finalize_membership_operation_work()
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE FUNCTION fn_update_membership_operation_work()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE current_token UUID;
 BEGIN
@@ -681,10 +687,11 @@ END;
 $$;
 CREATE TRIGGER trigger_membership_operations_finalize_work
 AFTER UPDATE ON membership_operations
-FOR EACH ROW EXECUTE FUNCTION fn_finalize_membership_operation_work();
-COMMENT ON FUNCTION fn_finalize_membership_operation_work() IS 'Atomically removes completed work or releases the current lease after a token-fenced retryable failure.';
+FOR EACH ROW EXECUTE FUNCTION fn_update_membership_operation_work();
+COMMENT ON FUNCTION fn_update_membership_operation_work() IS 'Atomically removes completed work or releases the current lease after a token-fenced retryable failure.';
 
-CREATE FUNCTION fn_guard_membership_operation_work_lease()
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE FUNCTION fn_reject_invalid_membership_operation_work_lease()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF NEW.membership_operation_id IS DISTINCT FROM OLD.membership_operation_id
@@ -698,8 +705,8 @@ END;
 $$;
 CREATE TRIGGER trigger_membership_operation_work_items_guard
 BEFORE UPDATE ON membership_operation_execution_work_items
-FOR EACH ROW EXECUTE FUNCTION fn_guard_membership_operation_work_lease();
-COMMENT ON FUNCTION fn_guard_membership_operation_work_lease() IS 'Preserves operation ownership, monotone execution count, and an unexpired lease against token rotation.';
+FOR EACH ROW EXECUTE FUNCTION fn_reject_invalid_membership_operation_work_lease();
+COMMENT ON FUNCTION fn_reject_invalid_membership_operation_work_lease() IS 'Preserves operation ownership, monotone execution count, and an unexpired lease against token rotation.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_automatic_refund_receipts (

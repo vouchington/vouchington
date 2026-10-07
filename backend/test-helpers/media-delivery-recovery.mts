@@ -69,7 +69,7 @@ export async function setTestMediaRecoveryState(
       CASE WHEN ${input.state} = 'pending' THEN NULL ELSE ${input.at}::timestamptz END,
       CASE WHEN ${input.state} IN ('completed', 'failed') THEN ${input.at}::timestamptz ELSE NULL END,
       ${input.nextAttemptAt ?? null}::timestamptz, 'Owned recovery failure evidence'
-    FROM media_delivery_registry_current_records
+    FROM view_media_delivery_registry_current_records
     WHERE delivery_key = ANY(${deliveryKeys}::text[])
   `)
   if (input.state === 'claimed')
@@ -117,7 +117,7 @@ export async function withLockedTestMediaDeliveryRecord<T>(
 ): Promise<T> {
   await using transaction = await beginTransaction()
   await transaction(
-    sql`SELECT delivery_key FROM media_delivery_registry_current_records WHERE delivery_key = ${deliveryKey} FOR UPDATE`,
+    sql`SELECT delivery_key FROM view_media_delivery_registry_current_records WHERE delivery_key = ${deliveryKey} FOR UPDATE`,
   )
   return await run()
 }

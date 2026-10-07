@@ -1,4 +1,5 @@
-CREATE OR REPLACE VIEW oauth_authorization_current_records AS
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE VIEW view_oauth_authorization_current_records AS
 SELECT
   flow.id,
   flow.provider,
@@ -48,4 +49,4 @@ SELECT
   COALESCE((SELECT MAX(attempt.attempt_number) FROM oauth_authorization_exchange_attempts attempt
     WHERE attempt.oauth_authorization_id = flow.id), 0)::smallint AS exchange_attempts
 FROM oauth_authorizations flow;
-COMMENT ON VIEW oauth_authorization_current_records IS 'Current OAuth lifecycle and active exchange projected from timestamp facts and immutable exchange history; outer row restrictions reach the authorization directly.';
+COMMENT ON VIEW view_oauth_authorization_current_records IS 'Current OAuth lifecycle and active exchange projected from timestamp facts and immutable exchange history; outer row restrictions reach the authorization directly.';

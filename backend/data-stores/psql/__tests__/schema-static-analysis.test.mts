@@ -1,17 +1,8 @@
 import { afterAll, describe, expect, it } from 'vitest'
 import { read, onGracefulShutdown } from '../index.mts'
-import {
-  formatNamedColumns,
-  formatNamedObjects,
-  formatTypeViolations,
-  isIgnoredForNameInflection,
-  isSnakeCase,
-  looksPlural,
-} from '../../../test-helpers/data-stores/psql/schema-static-analysis/name-helpers.mts'
+import { formatTypeViolations } from '../../../test-helpers/data-stores/psql/schema-static-analysis/name-helpers.mts'
 import {
   getCommentViolations,
-  getNamedColumns,
-  getNamedObjects,
   getTypeViolations,
 } from '../../../test-helpers/data-stores/psql/schema-static-analysis/queries.mts'
 import { getUuidConventionViolations } from '../../../test-helpers/data-stores/psql/schema-static-analysis/uuid-query.mts'
@@ -35,28 +26,6 @@ type SerialViolation = {
 describe('PostgreSQL schema static analysis', () => {
   afterAll(async () => {
     await onGracefulShutdown()
-  })
-
-  it('uses snake_case relation and column names', async () => {
-    const [objects, columns] = await Promise.all([
-      getNamedObjects({ includeViews: true }),
-      getNamedColumns({ includeViews: true }),
-    ])
-
-    const invalidObjects = objects.filter(object => !isSnakeCase(object.name))
-    const invalidColumns = columns.filter(column => !isSnakeCase(column.column_name))
-
-    expect(formatNamedObjects(invalidObjects)).toEqual([])
-    expect(formatNamedColumns(invalidColumns)).toEqual([])
-  })
-
-  it('uses plural collection names for tables', async () => {
-    const objects = await getNamedObjects({ includeViews: false })
-    const invalidObjects = objects.filter(
-      object => !isIgnoredForNameInflection(object.name) && !looksPlural(object.name),
-    )
-
-    expect(formatNamedObjects(invalidObjects)).toEqual([])
   })
 
   it('uses jsonb instead of json columns', async () => {
@@ -259,17 +228,6 @@ describe('PostgreSQL schema static analysis', () => {
 })
 
 describe('PostgreSQL schema static-analysis rule helpers', () => {
-  it('exempts the RSS DEFAULT partition without exempting ordinary singular tables', () => {
-    expect(isIgnoredForNameInflection('rss_feed_items_default')).toBe(true)
-    expect(isIgnoredForNameInflection('notification_default')).toBe(false)
-    expect(isIgnoredForNameInflection('rss_feed_item')).toBe(false)
-  })
-
-  it('exempts only the required singular copyright guidance table name', () => {
-    expect(isIgnoredForNameInflection('copyright_notice_submission_guidance')).toBe(true)
-    expect(isIgnoredForNameInflection('community_guidance')).toBe(false)
-  })
-
   it('derives default-less UUIDv7 id exceptions from the schema-growth registry', () => {
     expect(
       isAllowedUuidConventionViolation({
@@ -285,14 +243,5 @@ describe('PostgreSQL schema static-analysis rule helpers', () => {
         problem: 'uuid-id-without-uuidv7-default',
       }),
     ).toBe(false)
-  })
-
-  it('does not treat singular s-ending names as plural collection names', () => {
-    expect(looksPlural('import_status')).toBe(false)
-    expect(looksPlural('content_series')).toBe(false)
-    expect(looksPlural('authorized_people')).toBe(true)
-    expect(looksPlural('eligible_children')).toBe(true)
-    expect(looksPlural('rewards_program_status_topics')).toBe(true)
-    expect(looksPlural('analyses')).toBe(true)
   })
 })

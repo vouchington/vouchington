@@ -80,10 +80,10 @@ FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_activitypub_inbox_work_items__recovery
+CREATE INDEX IF NOT EXISTS idx_activitypub_inbox_delivery_work_items__recovery
   ON activitypub_inbox_delivery_work_items (failed_at, available_at, leased_at, dispatched_at, received_at, id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_activitypub_inbox_work_items__remote_actor_id
+CREATE INDEX IF NOT EXISTS idx_activitypub_inbox_delivery_work_items__remote_actor_id
   ON activitypub_inbox_delivery_work_items (remote_actor_id) WHERE remote_actor_id IS NOT NULL;
 
 COMMENT ON TABLE activitypub_inbox_delivery_work_items IS 'Durable, unverified ActivityPub inbox envelopes awaiting worker verification and dispatch. Rows and raw request bytes are deleted after a final protocol outcome.';
@@ -116,17 +116,17 @@ COMMENT ON TABLE activitypub_inbox_activities IS 'Replay-dedup ledger for the Ac
 
 -- Current indexes for fresh schema bootstrap.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_activitypub_inbox_work_items__unverified_retention
+CREATE INDEX IF NOT EXISTS idx_activitypub_inbox_delivery_work_items__unverified_retention
   ON activitypub_inbox_delivery_work_items (retention_expires_at, id)
   WHERE verified_at IS NULL AND retention_expires_at IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_activitypub_inbox_work_items__verified_retention
+CREATE INDEX IF NOT EXISTS idx_activitypub_inbox_delivery_work_items__verified_retention
   ON activitypub_inbox_delivery_work_items (retention_expires_at, id)
   WHERE verified_at IS NOT NULL AND retention_expires_at IS NOT NULL;
 
 COMMENT ON COLUMN activitypub_inbox_delivery_work_items.lease_expires_at IS 'Deadline after which worker checkpoints and terminal outcomes are rejected.';
 COMMENT ON COLUMN activitypub_inbox_delivery_work_items.attempt_count IS 'Number of successfully acquired processing attempts.';
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_activitypub_inbox_work_items__claim
+CREATE INDEX IF NOT EXISTS idx_activitypub_inbox_delivery_work_items__claim
   ON activitypub_inbox_delivery_work_items (available_at, id) WHERE failed_at IS NULL;

@@ -11,7 +11,7 @@ export const ALLOWED_MEMBERSHIP_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, stri
   ['stripe_event_processing_work_items.lease_token', 'Opaque event-processing ownership token.'],
   ['membership_verification_processing_work_items.lease_token', 'Opaque adapter ownership token.'],
   [
-    'membership_google_play_acknowledgement_work_items.lease_token',
+    'membership_google_play_acknowledgment_work_items.lease_token',
     'Ephemeral fencing token for the current acknowledgement processor; it intentionally identifies no durable relation.',
   ],
   [

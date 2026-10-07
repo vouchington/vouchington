@@ -73,7 +73,7 @@ async function publishCommittedDeliveryRecord(
   const { rows } = await query<ImageDeliveryRecord>(sql`
     /* publishStagedMediaDeliveryRecord */
     SELECT delivery_key, desired_state, placement_id, placement_revision, image_id, generation, state
-    FROM media_delivery_registry_current_records
+    FROM view_media_delivery_registry_current_records
     WHERE delivery_key = ${deliveryKey}
   `)
   const record = rows[0]
@@ -136,7 +136,7 @@ async function readCurrentPlacementDeliveryRecord(
   const { rows } = await query<ImageDeliveryRecord>(sql`
     /* readCurrentPlacementDeliveryRecord */
     SELECT delivery_key, desired_state, placement_id, placement_revision, image_id, generation, state
-    FROM media_delivery_registry_current_records
+    FROM view_media_delivery_registry_current_records
     WHERE delivery_key = ${deliveryKey}
   `)
   return rows[0] ?? null

@@ -283,7 +283,7 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `individuals`, `membership_administrator_refund_operation_requests`,
   `membership_automatic_refund_receipts`, `membership_changes`,
   `membership_grant_activation_periods`, `membership_grants`,
-  `membership_google_play_acknowledgements`, `membership_google_play_purchase_tokens`,
+  `membership_google_play_acknowledgments`, `membership_google_play_purchase_tokens`,
   `membership_ineligible_purchase_reversal_case_operations`,
   `membership_ineligible_purchase_reversal_cases`, `membership_lineage_bindings`,
   `membership_microsoft_store_credentials`,

@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS post_admission_reservations (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trg_post_admission_reservations__updated_at
+CREATE OR REPLACE TRIGGER trigger_post_admission_reservations_updated_at
 BEFORE UPDATE ON post_admission_reservations
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 

@@ -42,6 +42,7 @@ BEGIN
     WHERE tgrelid = 'retained_relation_identity_cleanup_cursors'::regclass
       AND tgname = '${getElectionTriggerName('retained_relation_identity_cleanup_cursors', 'updated_at')}'
   ) THEN
+    -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
     CREATE TRIGGER ${getElectionTriggerName('retained_relation_identity_cleanup_cursors', 'updated_at')}
     BEFORE UPDATE ON retained_relation_identity_cleanup_cursors
     FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();

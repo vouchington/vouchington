@@ -25,7 +25,7 @@ authentication or account connection:
    claims terminate as `rejected` so bad codes cannot starve recovery. Authorization status is
    generated from lifecycle timestamps. Each claim appends an immutable numbered exchange attempt;
    releasing, superseding, rejecting, expiring, or completing it appends one immutable result.
-   `oauth_authorization_current_records` projects the active `exchanging` state and total attempt
+   `view_oauth_authorization_current_records` projects the active `exchanging` state and total attempt
    count without resetting parent lifecycle facts. Recovery measures the latest attempt's start
    time, and exact claim fencing protects its successor from stale completion or release.
 4. `completeOAuthAuthorization` validates the initiating device/session, completion token source,

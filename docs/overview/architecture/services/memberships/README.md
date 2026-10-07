@@ -20,7 +20,7 @@ Business logic for user memberships (plans, billing, admin grants).
 - `membership_operations` retains provider operation identity and outcomes, with execution leases
   and retry availability in `membership_operation_execution_work_items`. Completion deletes work
   atomically while immutable refund attempts and receipts remain
-- `membership_google_play_acknowledgements` retains the encrypted purchase obligation and terminal
+- `membership_google_play_acknowledgments` retains the encrypted purchase obligation and terminal
   result; its child work row owns the retry lease. Every retry refetches authoritative provider state
   before an acknowledgement side effect
 - Recipient and actor ids on `membership_sources`, `membership_changes`, grants, refunds, and

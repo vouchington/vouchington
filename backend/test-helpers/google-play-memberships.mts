@@ -12,7 +12,7 @@ export async function getTestGooglePlayAcknowledgementId(
   const { rows } = await write<{ id: string }>(sql`
     /* getTestGooglePlayAcknowledgementId */
     SELECT acknowledgement.id
-    FROM membership_google_play_acknowledgements acknowledgement
+    FROM membership_google_play_acknowledgments acknowledgement
     INNER JOIN membership_verifications verification
       ON verification.membership_provider_evidence_record_id = acknowledgement.membership_provider_evidence_record_id
     WHERE verification.id = ${verificationId}
@@ -35,9 +35,9 @@ export async function makeTestGooglePlayAcknowledgementDue(
 ): Promise<void> {
   await write(sql`
     /* makeTestGooglePlayAcknowledgementDue */
-    UPDATE membership_google_play_acknowledgement_work_items
+    UPDATE membership_google_play_acknowledgment_work_items
     SET available_at = CURRENT_TIMESTAMP
-    WHERE membership_google_play_acknowledgement_id = ${acknowledgementId}
+    WHERE membership_google_play_acknowledgment_id = ${acknowledgementId}
   `)
 }
 

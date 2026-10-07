@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS community_member_vacations (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trg_community_member_vacations__updated_at
+CREATE OR REPLACE TRIGGER trigger_community_member_vacations_updated_at
 BEFORE UPDATE ON community_member_vacations
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 

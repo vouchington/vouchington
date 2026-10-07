@@ -15,7 +15,7 @@ CREATE TABLE copyright_repeat_infringer_incidents (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trg_copyright_repeat_infringer_incidents__updated_at
+CREATE OR REPLACE TRIGGER trigger_copyright_repeat_infringer_incidents_updated_at
 BEFORE UPDATE ON copyright_repeat_infringer_incidents
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
@@ -58,7 +58,7 @@ CREATE TABLE copyright_repeat_infringer_reviews (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trg_copyright_repeat_infringer_reviews__updated_at
+CREATE OR REPLACE TRIGGER trigger_copyright_repeat_infringer_reviews_updated_at
 BEFORE UPDATE ON copyright_repeat_infringer_reviews
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 

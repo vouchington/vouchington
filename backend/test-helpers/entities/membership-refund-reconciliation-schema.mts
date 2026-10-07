@@ -80,11 +80,11 @@ export async function hasExpectedTestMembershipOperationReconciliationDueIndex()
     `/* getTestMembershipOperationReconciliationDueIndex */
       SELECT indexdef FROM pg_indexes
       WHERE schemaname = 'public' AND tablename = 'membership_operation_execution_work_items'
-        AND indexname = 'idx_membership_operation_work_items__available'`,
+        AND indexname = 'idx_membership_operation_execution_work_items__available'`,
   )
   return (
     rows[0]?.indexdef ===
-    'CREATE INDEX idx_membership_operation_work_items__available ON public.membership_operation_execution_work_items USING btree (available_at, membership_operation_id) WHERE (lease_token IS NULL)'
+    'CREATE INDEX idx_membership_operation_execution_work_items__available ON public.membership_operation_execution_work_items USING btree (available_at, membership_operation_id) WHERE (lease_token IS NULL)'
   )
 }
 

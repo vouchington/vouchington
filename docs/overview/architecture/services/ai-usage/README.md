@@ -34,7 +34,7 @@ an actual ledger failure still requires the record-or-latch settlement barrier.
 A classifier client also sets two optional columns. `classifier_run_id` names the
 [classifier run](../classifier-runs/README.md#usage-report) whose reserved provider attempt made the
 call, a foreign key that is `ON DELETE SET NULL` so deleting a run never deletes billing history.
-`latency_ms` is the time from the request leaving to the billed response being read. Both are null
+`latency_milliseconds` is the time from the request leaving to the billed response being read. Both are null
 for every other agent. A duplicate response keeps its first attribution, so a replay never moves a
 row to another run or counts a call twice.
 

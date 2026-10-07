@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS rss_feed_item_source_category_snapshots (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trg_rss_feed_item_source_category_snapshots__updated_at
+CREATE OR REPLACE TRIGGER trigger_rss_feed_item_source_category_snapshots_updated_at
 BEFORE UPDATE ON rss_feed_item_source_category_snapshots
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 

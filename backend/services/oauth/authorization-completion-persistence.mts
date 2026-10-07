@@ -20,7 +20,7 @@ export async function getAuthorizationForCompletion(
 ): Promise<CompletionRow> {
   const { rows } = await query(
     `/* getAuthorizationForCompletion */ SELECT *
-     FROM oauth_authorization_current_records
+     FROM view_oauth_authorization_current_records
      WHERE id = $1
      FOR UPDATE`,
     [flowId],

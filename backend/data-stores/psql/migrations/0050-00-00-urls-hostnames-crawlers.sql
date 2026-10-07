@@ -425,7 +425,7 @@ CREATE TABLE IF NOT EXISTS crawls (
 ) PARTITION BY RANGE (id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trg_crawls__updated_at
+CREATE OR REPLACE TRIGGER trigger_crawls_updated_at
 BEFORE UPDATE ON crawls
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
@@ -531,7 +531,7 @@ CREATE TABLE IF NOT EXISTS crawl_chunks (
 ) PARTITION BY RANGE (crawl_id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trg_crawl_chunks__updated_at
+CREATE OR REPLACE TRIGGER trigger_crawl_chunks_updated_at
 BEFORE UPDATE ON crawl_chunks
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 

@@ -36,11 +36,11 @@ async function findDueAcknowledgementsAfter(
   WORK_PAGE_SIZE: number,
 ) {
   const { rows } = await write<{ id: string }>(sql`/* findDueGooglePlayAcknowledgementIds */
-    SELECT membership_google_play_acknowledgement_id AS id FROM membership_google_play_acknowledgement_work_items
+    SELECT membership_google_play_acknowledgment_id AS id FROM membership_google_play_acknowledgment_work_items
     WHERE completed_at IS NULL AND available_at <= clock_timestamp()
       AND (lease_token IS NULL OR lease_expires_at <= clock_timestamp())
-      AND (${cursor}::UUID IS NULL OR membership_google_play_acknowledgement_id > ${cursor}::UUID)
-      AND (${upperBound}::UUID IS NULL OR membership_google_play_acknowledgement_id <= ${upperBound}::UUID)
+      AND (${cursor}::UUID IS NULL OR membership_google_play_acknowledgment_id > ${cursor}::UUID)
+      AND (${upperBound}::UUID IS NULL OR membership_google_play_acknowledgment_id <= ${upperBound}::UUID)
     ORDER BY id LIMIT ${WORK_PAGE_SIZE + 1}`)
   return rows
 }
@@ -49,7 +49,7 @@ async function findAcknowledgementSweepUpperBound(): Promise<string | null> {
   const { rows } = await write<{
     id: string | null
   }>(sql`/* findGooglePlayAcknowledgementSweepUpperBound */
-    SELECT membership_google_play_acknowledgement_id AS id FROM membership_google_play_acknowledgement_work_items
+    SELECT membership_google_play_acknowledgment_id AS id FROM membership_google_play_acknowledgment_work_items
     WHERE completed_at IS NULL AND available_at <= clock_timestamp()
       AND (lease_token IS NULL OR lease_expires_at <= clock_timestamp())
     ORDER BY id DESC LIMIT 1`)

@@ -1,7 +1,6 @@
 -- AI usage ledger: per-call cost tracking for every LLM agent, not only community moderation.
 -- edited-in-place: pre-launch, never deployed to production
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS openai_service_tiers (
   id TEXT PRIMARY KEY,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -28,7 +27,7 @@ CREATE TABLE IF NOT EXISTS ai_usage_records (
   input_tokens INTEGER NOT NULL CHECK (input_tokens >= 0),
   cached_input_tokens INTEGER NOT NULL DEFAULT 0 CHECK (cached_input_tokens >= 0),
   output_tokens INTEGER NOT NULL CHECK (output_tokens >= 0),
-  latency_ms INTEGER CHECK (latency_ms >= 0),
+  latency_milliseconds INTEGER CHECK (latency_milliseconds >= 0),
   pricing_status ai_usage_record_pricing_statuses NOT NULL CHECK (pricing_status IN ('priced', 'unpriced')),
   cost_microunits BIGINT,
   CHECK (cost_microunits BETWEEN 0 AND 9007199254740991),
@@ -94,7 +93,7 @@ COMMENT ON COLUMN ai_usage_records.service_tier IS 'The OpenAI service tier actu
 COMMENT ON COLUMN ai_usage_records.input_tokens IS 'Number of input tokens billed for this call, including any cached_input_tokens.';
 COMMENT ON COLUMN ai_usage_records.cached_input_tokens IS 'Of input_tokens, the number served from the prompt cache at the discounted cached-input rate.';
 COMMENT ON COLUMN ai_usage_records.output_tokens IS 'Number of output tokens billed for this call.';
-COMMENT ON COLUMN ai_usage_records.latency_ms IS 'Milliseconds from the request leaving to the provider response body being read; NULL when the caller did not measure it.';
+COMMENT ON COLUMN ai_usage_records.latency_milliseconds IS 'Milliseconds from the request leaving to the provider response body being read; NULL when the caller did not measure it.';
 COMMENT ON COLUMN ai_usage_records.pricing_status IS 'Whether pricing was known when this usage record was written.';
 COMMENT ON COLUMN ai_usage_records.cost_microunits IS 'Estimated cost in millionths of the major currency unit; NULL when unpriced.';
 COMMENT ON COLUMN ai_usage_records.currency_code IS 'Currency of the estimated cost; NULL when unpriced.';

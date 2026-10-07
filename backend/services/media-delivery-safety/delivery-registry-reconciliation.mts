@@ -20,7 +20,7 @@ export async function replayFailedMediaDeliveryRegistryRecords(input?: {
   await using transaction = await beginTransaction()
   await transaction(sql`/* replayFailedMediaDeliveryRegistryRecords:lock */
     SELECT record.delivery_key FROM media_delivery_registry_records record
-    JOIN media_delivery_registry_current_records current USING (delivery_key)
+    JOIN view_media_delivery_registry_current_records current USING (delivery_key)
     WHERE current.state = 'failed' AND (${deliveryKeys}::text[] IS NULL OR record.delivery_key = ANY(${deliveryKeys}::text[]))
     ORDER BY record.delivery_key FOR UPDATE OF record
   `)
@@ -29,7 +29,7 @@ export async function replayFailedMediaDeliveryRegistryRecords(input?: {
     WITH inserted AS (
       INSERT INTO media_delivery_registry_changes(delivery_key, generation, change_type, changed_by_id, failure_message)
       SELECT delivery_key, generation, 'pending', ${input?.actorUserId ?? null}, 'Reopened by media delivery reconciliation.'
-      FROM media_delivery_registry_current_records
+      FROM view_media_delivery_registry_current_records
       WHERE state = 'failed' AND (${deliveryKeys}::text[] IS NULL OR delivery_key = ANY(${deliveryKeys}::text[]))
       RETURNING delivery_key
     ) SELECT record.delivery_key, record.placement_id FROM inserted
@@ -72,7 +72,7 @@ export async function stageAllCurrentImagePlacementDeliveryRecords(
   const statement = sql`/* stageAllCurrentImagePlacementDeliveryRecords */
     WITH candidates AS (
       SELECT delivery_key, placement_id, placement_revision, image_id
-      FROM media_delivery_registry_current_records
+      FROM view_media_delivery_registry_current_records
       WHERE (${imageIdScope}::uuid[] IS NULL OR image_id = ANY(${imageIdScope}::uuid[]))
       UNION
       SELECT concat('image-placement:', placement.id, ':', placement.revision, ':', binding.image_id),
@@ -89,7 +89,7 @@ export async function stageAllCurrentImagePlacementDeliveryRecords(
   statement.append(sql` THEN 'allow'::media_delivery_desired_states ELSE 'withheld'::media_delivery_desired_states END AS desired_state
       FROM candidates authority
     ) SELECT intended.* FROM intended
-      LEFT JOIN media_delivery_registry_current_records existing USING (delivery_key)
+      LEFT JOIN view_media_delivery_registry_current_records existing USING (delivery_key)
       WHERE existing.delivery_key IS NULL OR existing.desired_state IS DISTINCT FROM intended.desired_state
       ORDER BY intended.delivery_key LIMIT ${WORK_PAGE_SIZE}
   `)

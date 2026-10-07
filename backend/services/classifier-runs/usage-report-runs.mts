@@ -42,8 +42,8 @@ type RunRow = {
   priced_calls: number
   unpriced_calls: number
   cost_microunits: string
-  latency_ms_total: number
-  latency_ms_max: number | null
+  latency_milliseconds_total: number
+  latency_milliseconds_max: number | null
   latency_samples: number
   local_detector: string | null
 }
@@ -111,8 +111,8 @@ export async function readClassifierRunUsage(
       usage.priced_calls,
       usage.unpriced_calls,
       usage.cost_microunits,
-      usage.latency_ms_total,
-      usage.latency_ms_max,
+      usage.latency_milliseconds_total,
+      usage.latency_milliseconds_max,
       usage.latency_samples,
       local_outcome.detector AS local_detector
     FROM classifier_runs run
@@ -128,9 +128,9 @@ export async function readClassifierRunUsage(
         count(*) FILTER (WHERE ledger.pricing_status = 'priced')::int AS priced_calls,
         count(*) FILTER (WHERE ledger.pricing_status = 'unpriced')::int AS unpriced_calls,
         COALESCE(sum(ledger.cost_microunits), 0)::text AS cost_microunits,
-        COALESCE(sum(ledger.latency_ms), 0)::float8 AS latency_ms_total,
-        max(ledger.latency_ms) AS latency_ms_max,
-        count(ledger.latency_ms)::int AS latency_samples
+        COALESCE(sum(ledger.latency_milliseconds), 0)::float8 AS latency_milliseconds_total,
+        max(ledger.latency_milliseconds) AS latency_milliseconds_max,
+        count(ledger.latency_milliseconds)::int AS latency_samples
       FROM ai_usage_records ledger
       WHERE ledger.classifier_run_id = run.id AND ledger.id >= ${ledgerLowerBound}
     ) usage
@@ -175,8 +175,8 @@ function toRunUsage(row: RunRow): ClassifierRunUsage {
     pricedCalls: row.priced_calls,
     unpricedCalls: row.unpriced_calls,
     costMicrounits: row.cost_microunits,
-    latencyMsTotal: row.latency_ms_total,
-    latencyMsMax: row.latency_ms_max,
+    latencyMsTotal: row.latency_milliseconds_total,
+    latencyMsMax: row.latency_milliseconds_max,
     latencySamples: row.latency_samples,
     localDetector: row.local_detector,
   }

@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS entity_listener_reconciliation_cursors (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trg_entity_listener_reconciliation_cursors__updated_at
+CREATE OR REPLACE TRIGGER trigger_entity_listener_reconciliation_cursors_updated_at
 BEFORE UPDATE ON entity_listener_reconciliation_cursors
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();

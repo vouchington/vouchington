@@ -437,7 +437,7 @@ RETURNS boolean LANGUAGE sql STABLE AS $$
       AND image.openai_omni_moderation_created_at IS NOT NULL
       AND EXISTS (
         SELECT 1
-        FROM media_delivery_registry_current_records registry
+        FROM view_media_delivery_registry_current_records registry
         WHERE registry.delivery_key = concat('image-placement:', p_placement_id, ':', p_revision, ':', p_image_id)
           AND registry.desired_state = 'allow'
           AND registry.state = 'completed'

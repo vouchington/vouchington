@@ -24,9 +24,9 @@ export const FINITE_COLUMN_CONTRACTS_4 = [
   ['media_delivery_registry_records', 'desired_state', 'media_delivery_desired_states', false],
   ['media_placements', 'retirement_reason', 'media_placement_retirement_reasons', false],
   [
-    'membership_google_play_acknowledgements',
+    'membership_google_play_acknowledgments',
     'skip_reason',
-    'membership_google_play_acknowledgement_skip_reasons',
+    'membership_google_play_acknowledgment_skip_reasons',
     false,
   ],
   [

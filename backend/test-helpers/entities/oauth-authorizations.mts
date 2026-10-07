@@ -132,7 +132,7 @@ export async function getTestOAuthAuthorization(
        id, status, callback_error, callback_code_ciphertext, completion_token_hash,
        completion_token_ciphertext, exchange_claim_id, facebook_user_id,
        github_user_id, x_user_id, result_kind, result_user_id, result_device_id, result_session_id
-     FROM oauth_authorization_current_records
+     FROM view_oauth_authorization_current_records
      WHERE id = $1`,
     [authorizationId],
   )

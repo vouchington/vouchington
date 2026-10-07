@@ -30,7 +30,7 @@ export function createTestCopyrightDeliveryDependencies(
         desired_state: 'allow' | 'withheld'
       }>(sql`
         SELECT placement_id, placement_revision, image_id, desired_state
-        FROM media_delivery_registry_current_records WHERE delivery_key = ${deliveryKey}
+        FROM view_media_delivery_registry_current_records WHERE delivery_key = ${deliveryKey}
       `)
       const record = rows[0]
       if (!record) throw new Error(`Missing copyright test outbox record ${deliveryKey}`)

@@ -100,7 +100,7 @@ COMMENT ON COLUMN copyright_notice_delivery_attempt_results.failed_at IS 'Databa
 COMMENT ON COLUMN copyright_notice_delivery_attempt_results.bounced_at IS 'Database time this execution ended as bounced.';
 COMMENT ON COLUMN copyright_notice_delivery_attempt_results.abandoned_at IS 'Database time this execution ended as abandoned.';
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE FUNCTION fn_prepare_copyright_delivery_work() RETURNS trigger LANGUAGE plpgsql AS $$
+CREATE FUNCTION fn_update_copyright_delivery_work() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   NEW.available_at := COALESCE(NEW.available_at, clock_timestamp());
   IF TG_OP = 'UPDATE' AND (OLD.failed_at IS NOT NULL AND NEW.failed_at IS NULL) THEN NEW.generation := OLD.generation + 1; END IF;
@@ -114,9 +114,9 @@ BEGIN
 END;
 $$;
 CREATE TRIGGER trigger_00_copyright_delivery_work_lease BEFORE INSERT OR UPDATE ON copyright_notice_delivery_work_items
-FOR EACH ROW EXECUTE FUNCTION fn_prepare_copyright_delivery_work();
+FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_delivery_work();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE FUNCTION fn_record_copyright_delivery_attempt() RETURNS trigger LANGUAGE plpgsql AS $$
+CREATE FUNCTION fn_create_copyright_delivery_attempt() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'UPDATE' AND OLD.lease_token IS NOT NULL
     AND OLD.lease_token IS DISTINCT FROM NEW.lease_token THEN
@@ -134,9 +134,11 @@ BEGIN
 END;
 $$;
 CREATE TRIGGER trigger_copyright_delivery_work_attempt AFTER INSERT OR UPDATE ON copyright_notice_delivery_work_items
-FOR EACH ROW EXECUTE FUNCTION fn_record_copyright_delivery_attempt();
-CREATE INDEX idx_copyright_delivery_work__available ON copyright_notice_delivery_work_items(available_at, id) WHERE lease_token IS NULL AND state = 'pending';
-CREATE INDEX idx_copyright_delivery_work__expired ON copyright_notice_delivery_work_items(lease_expires_at, id) WHERE lease_token IS NOT NULL;
+FOR EACH ROW EXECUTE FUNCTION fn_create_copyright_delivery_attempt();
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_copyright_notice_delivery_work_items__available ON copyright_notice_delivery_work_items(available_at, id) WHERE lease_token IS NULL AND state = 'pending';
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_copyright_notice_delivery_work_items__expired ON copyright_notice_delivery_work_items(lease_expires_at, id) WHERE lease_token IS NOT NULL;
 COMMENT ON COLUMN copyright_notice_delivery_work_items.generation IS 'Explicit replay cycle; clearing failed or blocked current-cycle outcomes increments it while execution history remains immutable.';
 COMMENT ON COLUMN copyright_notice_delivery_work_items.lease_expires_at IS 'Current worker ownership deadline; every owner mutation checks it.';
 

@@ -63,7 +63,7 @@ export function mapWebPushSubscriptionRow(row: Record<string, unknown>): WebPush
     endpoint: row.endpoint as string,
     p256dh: row.p256dh as string,
     auth: row.auth as string,
-    expiration_time_ms: (row.expiration_time_ms as string | null) ?? null,
+    expiration_time_ms: (row.expiration_time_milliseconds as string | null) ?? null,
     user_agent: row.user_agent as string,
     last_success_at: (row.last_success_at as Date | null) ?? null,
     last_failure_at: (row.last_failure_at as Date | null) ?? null,

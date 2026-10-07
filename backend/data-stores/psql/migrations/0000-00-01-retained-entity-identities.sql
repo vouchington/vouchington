@@ -96,7 +96,7 @@ CREATE TABLE IF NOT EXISTS retained_identity_cleanup_cursors (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trg_retained_identity_cleanup_cursors__updated_at
+CREATE OR REPLACE TRIGGER trigger_retained_identity_cleanup_cursors_updated_at
 BEFORE UPDATE ON retained_identity_cleanup_cursors
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 COMMENT ON TABLE retained_identity_cleanup_cursors IS 'One operational keyset cursor per concrete retained root family.';
@@ -111,7 +111,7 @@ CREATE TABLE IF NOT EXISTS retained_image_placement_binding_cleanup_cursors (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trg_retained_image_placemen_binding_cleanup_cursors__updated_at
+CREATE OR REPLACE TRIGGER trigger_retained_image_placement_cleanup_cursors_updated_at
 BEFORE UPDATE ON retained_image_placement_binding_cleanup_cursors
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 COMMENT ON TABLE retained_image_placement_binding_cleanup_cursors IS 'Independent bounded sweep of placement bindings; bindings are not root identity owners.';

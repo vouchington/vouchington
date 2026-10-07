@@ -40,8 +40,8 @@ export async function listPendingActivePushSubscriptions(
       USING web_push_subscriptions subscription, active_claim
       WHERE subscription.user_id = ${intent.user_id}
         AND subscription.deleted_at IS NULL
-        AND subscription.expiration_time_ms IS NOT NULL
-        AND subscription.expiration_time_ms <= ${now}
+        AND subscription.expiration_time_milliseconds IS NOT NULL
+        AND subscription.expiration_time_milliseconds <= ${now}
         AND owner.user_id = subscription.user_id
         AND owner.subscription_id = subscription.id
       RETURNING owner.user_id, owner.subscription_id, owner.endpoint
@@ -67,7 +67,7 @@ export async function listPendingActivePushSubscriptions(
       AND receipt.subscription_id = subscription.id
     WHERE subscription.user_id = ${intent.user_id}
       AND subscription.deleted_at IS NULL
-      AND (subscription.expiration_time_ms IS NULL OR subscription.expiration_time_ms > ${now})
+      AND (subscription.expiration_time_milliseconds IS NULL OR subscription.expiration_time_milliseconds > ${now})
       AND NOT EXISTS (SELECT 1 FROM expired WHERE expired.id = subscription.id)
       AND COALESCE(receipt.status, 'pending') = 'pending'
   `)
