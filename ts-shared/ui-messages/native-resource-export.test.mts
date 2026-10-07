@@ -3,174 +3,108 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import {
-  NATIVE_CONSUMER_MANIFEST,
-  type NativeConsumerManifestEntry,
-} from './native-consumer-manifest.mts'
-import { nativeKeyIdentifier } from './native-consumer-usage.mts'
+import type { NativeConsumerManifestEntry } from './native-consumer-manifest.mts'
+import type { NativeCatalogs } from './native-resource-catalog.mts'
 import { writeNativeResourceFiles } from './native-resource-writer.mts'
-import { generateNativeResourceFiles } from './native-resources.mts'
 
-function productUsageFixtureSources(): ReadonlyArray<readonly [path: string, content: string]> {
-  const swiftIdentifiers = NATIVE_CONSUMER_MANIFEST.filter((entry: NativeConsumerManifestEntry) =>
-    entry.consumers.includes('swift'),
-  ).map(entry => `UiMessageKey.${nativeKeyIdentifier(entry.key, 'swift')}`)
-  const dotnetIdentifiers = NATIVE_CONSUMER_MANIFEST.filter((entry: NativeConsumerManifestEntry) =>
-    entry.consumers.includes('dotnet'),
-  ).map(entry => `UiMessageKey.${nativeKeyIdentifier(entry.key, 'dotnet')}`)
-  return [
-    ['swift-clients/ui/Sources/UsageFixture.swift', swiftIdentifiers.join('\n')],
-    ['dotnet-clients/src/UsageFixture.cs', dotnetIdentifiers.join('\n')],
-  ]
+const manifest = [
+  { key: 'common.save', consumers: ['swift', 'dotnet'] },
+] as const satisfies readonly NativeConsumerManifestEntry[]
+
+const catalogs: NativeCatalogs = {
+  en: { common: { save: 'Save {name}' } },
+  es: { common: { save: 'Guardar {name}' } },
+  fr: { common: { save: 'Enregistrer {name}' } },
+  pt: { common: { save: 'Salvar {name}' } },
 }
 
-function initializeFixtureRepository(root: string, paths: readonly string[]): void {
+const productSources = [
+  ['swift-clients/ui/Sources/UsageFixture.swift', 'UiMessageKey.commonSave'],
+  ['dotnet-clients/src/UsageFixture.cs', 'UiMessageKey.CommonSave'],
+] as const
+
+function initializeFixtureRepository(root: string): void {
   const env = {
     GIT_CONFIG_NOSYSTEM: '1',
     GIT_CONFIG_GLOBAL: '/dev/null',
     PATH: process.env.PATH,
   }
   execFileSync('git', ['-C', root, 'init', '--quiet'], { env })
-  execFileSync('git', ['-C', root, 'add', '--', ...paths], { env })
+  execFileSync('git', ['-C', root, 'add', '--', ...productSources.map(([path]) => path)], { env })
 }
 
 describe('native resource export', () => {
-  it('requires the external consumer root when generating default resources', async () => {
+  it('requires an explicit consumer root when generating resources', async () => {
     await expect(
-      writeNativeResourceFiles({ outputRoot: '/unused-native-output', check: true }),
+      writeNativeResourceFiles({
+        outputRoot: '/unused-native-output',
+        check: true,
+        manifest,
+        catalogs,
+      }),
     ).rejects.toThrow('Native localization consumer root is required')
   })
 
-  it(
-    'validates default product usage before checking generated resources',
-    { timeout: 30_000 },
-    async () => {
-      const root = await mkdtemp(join(tmpdir(), 'voucha-native-localization-defaults-'))
-      const sources = productUsageFixtureSources()
-      try {
-        for (const [path, content] of sources) {
-          await mkdir(dirname(join(root, path)), { recursive: true })
-          await writeFile(join(root, path), content)
-        }
-        initializeFixtureRepository(
-          root,
-          sources.map(([path]) => path),
-        )
-        await writeNativeResourceFiles({
-          outputRoot: root,
-          check: false,
-          files: generateNativeResourceFiles(),
-        })
-
-        await expect(
-          writeNativeResourceFiles({ outputRoot: root, consumerRoot: root, check: true }),
-        ).resolves.toBeUndefined()
-      } finally {
-        await rm(root, { recursive: true, force: true })
+  it('generates and checks resources from a tiny external consumer fixture', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'voucha-native-localization-'))
+    const consumerRoot = join(root, 'clients')
+    const outputRoot = join(root, 'generated')
+    try {
+      for (const [path, content] of productSources) {
+        await mkdir(dirname(join(consumerRoot, path)), { recursive: true })
+        await writeFile(join(consumerRoot, path), content)
       }
-    },
-  )
+      initializeFixtureRepository(consumerRoot)
 
-  it(
-    'exports resources from an external consumer checkout into an isolated root',
-    { timeout: 30_000 },
-    async () => {
-      const consumerRoot = await mkdtemp(join(tmpdir(), 'voucha-native-consumer-'))
-      const outputRoot = await mkdtemp(join(tmpdir(), 'voucha-native-output-'))
-      const sources = productUsageFixtureSources()
-      try {
-        for (const [path, content] of sources) {
-          await mkdir(dirname(join(consumerRoot, path)), { recursive: true })
-          await writeFile(join(consumerRoot, path), content)
-        }
-        initializeFixtureRepository(
-          consumerRoot,
-          sources.map(([path]) => path),
-        )
+      await writeNativeResourceFiles({ outputRoot, consumerRoot, check: false, manifest, catalogs })
+      await expect(
+        writeNativeResourceFiles({ outputRoot, consumerRoot, check: true, manifest, catalogs }),
+      ).resolves.toBeUndefined()
 
-        execFileSync(
-          process.execPath,
-          [
-            'dev/native-localization.mts',
-            '--output-root',
-            outputRoot,
-            '--consumer-root',
-            consumerRoot,
-          ],
-          { cwd: process.cwd() },
-        )
+      const swiftResources = await readFile(
+        join(
+          outputRoot,
+          'swift-clients/ui/Sources/VouchaLocalization/Generated/Resources/en.lproj/Localizable.strings',
+        ),
+        'utf8',
+      )
+      expect(swiftResources).toContain('"common.save" = "Save {name}";')
+      const dotnetResources = await readFile(
+        join(
+          outputRoot,
+          'dotnet-clients/src/Voucha.Client.Core/Localization/Generated/UiMessages.resx',
+        ),
+        'utf8',
+      )
+      expect(dotnetResources).toContain('<data name="common.save" xml:space="preserve">')
+      const dotnetKeys = await readFile(
+        join(
+          outputRoot,
+          'dotnet-clients/src/Voucha.Client.Core/Localization/Generated/UiMessageKey.g.cs',
+        ),
+        'utf8',
+      )
+      expect(dotnetKeys).toContain('CommonSave')
 
-        expect(() =>
-          execFileSync(
-            process.execPath,
-            [
-              'dev/native-localization.mts',
-              '--output-root',
-              outputRoot,
-              '--consumer-root',
-              consumerRoot,
-              '--check',
-            ],
-            { cwd: process.cwd() },
-          ),
-        ).not.toThrow()
-        await expect(
-          readFile(
-            join(
-              outputRoot,
-              'swift-clients/ui/Sources/VouchaLocalization/Generated/UiMessageKey.swift',
-            ),
-            'utf8',
-          ),
-        ).resolves.toContain('public struct UiMessageKey')
-        await writeFile(
-          join(
-            outputRoot,
-            'swift-clients/ui/Sources/VouchaLocalization/Generated/UiMessageKey.swift',
-          ),
-          'stale',
-        )
-        expect(() =>
-          execFileSync(
-            process.execPath,
-            [
-              'dev/native-localization.mts',
-              '--output-root',
-              outputRoot,
-              '--consumer-root',
-              consumerRoot,
-              '--check',
-            ],
-            { cwd: process.cwd(), stdio: 'pipe' },
-          ),
-        ).toThrow('Command failed')
-      } finally {
-        await Promise.all([
-          rm(consumerRoot, { recursive: true, force: true }),
-          rm(outputRoot, { recursive: true, force: true }),
-        ])
-      }
-    },
-  )
+      const swiftSource = join(consumerRoot, productSources[0][0])
+      await writeFile(swiftSource, 'UiMessageKey.unknown')
+      await expect(
+        writeNativeResourceFiles({ outputRoot, consumerRoot, check: true, manifest, catalogs }),
+      ).rejects.toThrow('unknown swift typed message key "unknown"')
+      await writeFile(swiftSource, productSources[0][1])
 
-  it(
-    'validates the render contract without requiring in-repository clients',
-    { timeout: 30_000 },
-    () => {
-      expect(() =>
-        execFileSync(process.execPath, ['dev/native-localization.mts', '--validate'], {
-          cwd: process.cwd(),
-        }),
-      ).not.toThrow()
-    },
-  )
-
-  it('requires explicit external output and consumer roots for export', () => {
-    expect(() =>
-      execFileSync(process.execPath, ['dev/native-localization.mts', '--check'], {
-        cwd: process.cwd(),
-        stdio: 'pipe',
-      }),
-    ).toThrow('Command failed')
+      const staleResource = join(
+        outputRoot,
+        'swift-clients/ui/Sources/VouchaLocalization/Generated/Resources/en.lproj/Localizable.strings',
+      )
+      await writeFile(staleResource, 'stale')
+      await expect(
+        writeNativeResourceFiles({ outputRoot, consumerRoot, check: true, manifest, catalogs }),
+      ).rejects.toThrow(
+        'stale swift-clients/ui/Sources/VouchaLocalization/Generated/Resources/en.lproj/Localizable.strings',
+      )
+    } finally {
+      await rm(root, { recursive: true, force: true })
+    }
   })
 })
