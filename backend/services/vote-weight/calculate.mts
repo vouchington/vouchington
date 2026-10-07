@@ -13,9 +13,9 @@ export type VoteWeightFactors = {
   isIdentityVerified: boolean // government-ID verified via Stripe Identity
 }
 
-export function calculateVoteWeight(factors: VoteWeightFactors): number {
+export function calculateVoteWeight(factors: VoteWeightFactors, now = new Date()): number {
   const cfg = getVoteWeightConfig()
-  const ageMs = Date.now() - factors.accountCreatedAt.getTime()
+  const ageMs = now.getTime() - factors.accountCreatedAt.getTime()
 
   // Minimal weight for accounts < 7 days without paid membership or admin status.
   // Penalty still applies so active penalties reduce even this minimal weight.

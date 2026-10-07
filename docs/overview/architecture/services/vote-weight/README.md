@@ -16,7 +16,7 @@ A user's vote weight starts at `1.0` and is multiplied by factors based on the c
 
 ## Functions
 
-- `calculateVoteWeight(factors)` — pure function; computes weight from a `VoteWeightFactors` object
+- `calculateVoteWeight(factors, now?)` — computes weight from a `VoteWeightFactors` object at the supplied reference time; callers that omit it use the current time
 - `gatherVoteWeightFactors(userId)` — single CTE query fetching all factors plus current DB state
 - `recalculateUserVoteWeight(userId, opts?)` — gathers factors, computes weight, writes result; respects admin overrides unless `forceRecalculate: true`
 - `adminSetVoteWeight(userId, weight)` — sets weight and stamps `vote_weight_admin_set_at`
