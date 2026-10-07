@@ -92,3 +92,11 @@ Community feed search supports newest-first and hot-score sorting. The web canon
 - Community moderation pipeline: [`docs/overview/architecture/queues/ai-agents/README.md`](../../../queues/ai-agents/README.md)
 - Post lifecycle: [`docs/overview/architecture/post-lifecycle.md`](../../../post-lifecycle.md)
 - Community types: [`backend/services/communities/types.mts`](../../../../../../backend/services/communities/types.mts)
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `getPublicationReviewChanges`

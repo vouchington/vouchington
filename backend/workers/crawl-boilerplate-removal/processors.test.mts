@@ -5,7 +5,10 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import type { CrawlHtmlTempFile } from '@services/crawls/s3'
-import { filterValidUtf8HtmlFiles, selectHtmlFilesWithinByteBudget } from './processors.mts'
+import {
+  filterValidUtf8HtmlFiles,
+  selectHtmlFilesWithinByteBudget,
+} from './processors/html-file-selection.mts'
 
 const VALID_HTML_A = Buffer.from('<html><body><p>Hello world one</p></body></html>')
 const VALID_HTML_B = Buffer.from('<html><body><p>Hello world two</p></body></html>')

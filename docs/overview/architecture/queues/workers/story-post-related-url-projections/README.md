@@ -10,3 +10,14 @@ External URL safety is limited to five concurrent checks and is never performed 
 post-publication transaction is held. Accepted and rejected URL decisions, crawl dispatch, and
 story/post cache invalidation each have durable replay state before a source cursor or prune cursor
 advances.
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+The exported name is retained only as an external surface: its same-file production implementation and
+current default callers remain required.
+
+- `processReconcileStoryPostRelatedUrlProjections`

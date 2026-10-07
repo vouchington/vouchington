@@ -110,6 +110,10 @@ export const getPlatformStatsCached = createSearchCache(
   (_options: Record<string, never>) => getPlatformStats(),
 )
 
+/**
+ * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/entity-fetch/README.md`.
+ */
 export async function invalidateAnonymousSearchCaches(): Promise<void> {
   await Promise.all(ANONYMOUS_SEARCH_CACHE_PREFIXES.map(prefix => invalidateSearchCache(prefix)))
 }

@@ -5,6 +5,10 @@ import { lockPostPublication } from '@services/post-publication'
 import { recordPostClearancePublicationChange } from './publication-change.mts'
 import { runPostClearanceTransaction } from './status-transaction.mts'
 
+/**
+ * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/post-clearance/README.md`.
+ */
 export async function approvePendingPostClearance(
   postId: string,
   updatedById?: string | null,

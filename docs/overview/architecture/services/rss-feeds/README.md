@@ -93,3 +93,13 @@ runtime-tunable.
 - `softDeleteRssFeedById(id)` sets `deleted_at`; internal use only.
 - `hardDeleteRssFeedById(id)` removes the row and cascades dependent RSS feed rows.
 - `hardDeleteRssFeedByIdAsCurrentUser(currentUser, id)` is the admin-only wrapper.
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `getLatestDiscoverabilityChange`
+- `getLatestEnablementChange`
+- `updateRssFeedByIdAsCurrentUser`

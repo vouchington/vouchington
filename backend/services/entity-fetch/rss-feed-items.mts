@@ -7,6 +7,10 @@ import { getRssFeedItemElectionVotesByUser } from '@services/elections-votes/rss
 import { indexById } from '@modules/utils'
 import { electionVotesMapToRecord } from '@modules/utils/collections'
 
+/**
+ * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/entity-fetch/README.md`.
+ */
 export async function fetchRssFeedItemsWithMetadata(
   rssFeedItemIds: string[],
   currentUser?: PrivateUser | null,

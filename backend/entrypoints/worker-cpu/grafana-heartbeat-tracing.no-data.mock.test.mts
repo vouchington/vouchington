@@ -1,7 +1,7 @@
 /* eslint-disable no-mistakes/vitest-mock-test-file-naming -- Routed to backend-no-data-mocks for the project-level @sentry/node mock (vitest.setup.sentry-mock.mts); asserts sentrySuppressTracingMock. No in-file vi.mock, so the rule's unnecessaryMock branch fires; the .mock suffix is load-bearing for routing. */
 import { describe, expect, it } from 'vitest'
 import { sentrySuppressTracingMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
-import { sendGrafanaHeartbeat } from './grafana-heartbeat.mts'
+import { sendGrafanaHeartbeat } from './grafana-heartbeat-request.mts'
 
 const HEARTBEAT_URL =
   'https://oncall-prod-us-central-0.grafana.net/oncall/integrations/v1/formatted_webhook/token/heartbeat/'

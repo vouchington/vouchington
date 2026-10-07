@@ -171,6 +171,11 @@ const getActivePlansCachedFn = activePlansCache.cacheGetByAny(async key =>
   fetchSkusForActivePlans(key),
 )
 
+/**
+ * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
+ * export may be made private or removed after intended-use review.
+ * Evidence: `docs/overview/architecture/services/memberships/README.md`.
+ */
 export async function getActivePlansCached(
   context: StripeCatalogContext = DEFAULT_STRIPE_CATALOG_CONTEXT,
 ): Promise<Map<MembershipPlanSlug, MembershipSku[]>> {
@@ -182,6 +187,10 @@ const getSkuByStripePriceIdCachedFn = skuByStripePriceIdCache.cacheGetByAny(key 
   getSkuByStripePriceId(key.value, key),
 )
 
+/**
+ * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/memberships/README.md`.
+ */
 export function getSkuByStripePriceIdCached(
   stripePriceId: string,
   context: StripeCatalogContext = DEFAULT_STRIPE_CATALOG_CONTEXT,

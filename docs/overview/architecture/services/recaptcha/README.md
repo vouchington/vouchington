@@ -50,6 +50,11 @@ Secrets/keys come from env: `GOOGLE_RECAPTCHA_PROJECT_ID`, `GOOGLE_RECAPTCHA_API
 `GOOGLE_RECAPTCHA_SITE_KEY` (the public site key; the web app reads the same value via
 runtime-public `NEXT_PUBLIC_GOOGLE_RECAPTCHA_SITE_KEY`).
 
+Configuration access uses the shared [DynamicConfig namespace authorization](../../../../../backend/services/dynamic-config-admin/authorization.mts)
+at `/api/v1/dynamic-config/namespaces/recaptcha-config`: viewing follows the namespace role policy,
+and updates require an administrator. The admin paid-assessment exemption remains the separate
+`isHighTrustUser` predicate.
+
 ## Testing
 
 There is no usable score-based test key (Google's well-known keys are reCAPTCHA v2 and return no

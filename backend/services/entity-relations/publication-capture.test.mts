@@ -16,17 +16,13 @@ import {
 } from '@voucha/test-helpers'
 import { softDeleteEntityRelation } from './delete.mts'
 import { getEntityRelationMetadataOrThrow } from './metadata.mts'
-import {
-  recordTestPostTopicRelationPublicationChanges,
-  stubUrlGuardsForSuite,
-} from '@voucha/test-helpers/services/entity-relations/test-support'
+import { recordTestPostTopicRelationPublicationChanges } from '@voucha/test-helpers/services/entity-relations/test-support'
+import '@voucha/test-helpers/entity-url-guard-registrations'
 import { upsertEntityRelation } from './upsert.mts'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { getPublisherTypeTopicId } from '../topics/publisher-type-topics.mts'
 
 describe('post topic relation publication capture', () => {
-  stubUrlGuardsForSuite()
-
   it('captures create, deletion, and resurrection in the relation transaction', async () => {
     const user = await createTestUser({ administrator: true })
     const post = await createTestPost()

@@ -31,12 +31,10 @@ Each request generates composite Valkey keys. All dimensions are checked atomica
 
 **Anonymous users**: DynamicConfig `anon_{category}` thresholds × route `multiplier`.
 
-| Category         | Anon default | Use for                               |
-| ---------------- | ------------ | ------------------------------------- |
-| `read`           | 180/60s      | GET/HEAD endpoints                    |
-| `write`          | 15/60s       | POST/PUT/PATCH/DELETE                 |
-| `sensitive`      | 5/60s        | Auth, billing, account management     |
-| `oauth_callback` | 300/60s      | Shared provider callback ingress only |
+- `read` — `180/60s`; GET/HEAD endpoints.
+- `write` — `15/60s`; POST/PUT/PATCH/DELETE.
+- `sensitive` — `5/60s`; auth, billing, and account management.
+- `oauth_callback` — `300/60s`; shared provider callback ingress only.
 
 OAuth completion is a credential-bound, idempotent polling route and is explicitly classified as
 `read` despite using POST. Its 180/minute anonymous default supports the advertised one-second poll
@@ -98,10 +96,9 @@ and `multiplier: 0.5` so the lower vote threshold stays in sync with new votable
 
 ### Categories
 
-| Method                   | Default category | Override example             |
-| ------------------------ | ---------------- | ---------------------------- |
-| GET, HEAD                | `read`           | —                            |
-| POST, PUT, PATCH, DELETE | `write`          | `sensitive` for billing/auth |
+- GET and HEAD default to `read`; they have no override example.
+- POST, PUT, PATCH, and DELETE default to `write`; billing and auth routes may override to
+  `sensitive`.
 
 ## Admin API
 
@@ -177,3 +174,11 @@ Fails open on Valkey errors: if `addAndCheck` throws, returns `{ limited: false 
 - [User Rate Limits Service](../user-rate-limits/README.md)
 - [Rate Limiting Overview](../../rate-limiting.md)
 - [Dynamic Config API](../../../../requirements/api/v1/dynamic-config/README.md)
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `isActivityPubInboxAttemptRateLimited`

@@ -47,6 +47,10 @@ const PROVIDER_COLLISION_CONTROL = {
   microsoft_store: 'microsoft_store_automatic_collision_resolution_enabled',
 } as const
 
+/**
+ * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/memberships/README.md`.
+ */
 export function isMembershipAutomaticCollisionResolutionEnabled(
   provider: MembershipPurchaseProvider,
 ): boolean {

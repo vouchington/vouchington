@@ -23,3 +23,11 @@ Every read and `RETURNING` that feeds a response selects `userReferralLinkColumn
 - Parent: [../AGENTS.md](../../../../../backend/services/AGENTS.md)
 - Prioritized referral links: [../prioritized-referral-links/README.md](../prioritized-referral-links/README.md)
 - Referral links requirements: [../../../docs/requirements/users/REFERRAL-LINKS.md](../../../../requirements/users/REFERRAL-LINKS.md)
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `getActiveChildUrlIdsForParent`

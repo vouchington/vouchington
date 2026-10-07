@@ -2,7 +2,7 @@ import { it, expect, describe } from 'vitest'
 import { getEntityRelations } from './query.mts'
 import { upsertEntityRelation } from './upsert.mts'
 import { getEntityRelationMetadataOrThrow } from './metadata.mts'
-import { stubUrlGuardsForSuite } from '@voucha/test-helpers/services/entity-relations/test-support'
+import '@voucha/test-helpers/entity-url-guard-registrations'
 import {
   createTestPost,
   createTestTopic,
@@ -16,8 +16,6 @@ import { SYSTEM_ENTITY_RELATION_VIEWER } from './viewer.mts'
 const asSystem = { viewer: SYSTEM_ENTITY_RELATION_VIEWER }
 
 describe('query.generated', () => {
-  stubUrlGuardsForSuite()
-
   it('getEntityRelations returns relations with joined object data', async () => {
     const user = await createTestUser({ administrator: true })
     const subject = await createTestTopic()

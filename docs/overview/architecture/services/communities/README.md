@@ -88,3 +88,11 @@ await setCommunityArchiveState(currentUser, communityId, true, membership)
 - Moderation queue: [../community-agent-prompts/README.md](../community-agent-prompts/README.md)
 - [Communities requirements](../../../../requirements/community/COMMUNITIES.md)
 - [Memberships](../../../../requirements/users/memberships.md) — tier limits and billing
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `getMyInvites`

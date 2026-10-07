@@ -192,3 +192,12 @@ The admin API (`GET/POST/DELETE /api/v1/rss-feed-categories`) and page (`/rss-fe
   - [../../queues/bedrock-embeddings/README.md](../../queues/bedrock-embeddings/README.md) - Embedding queue
 - URLs: [../urls/README.md](../urls/README.md)
 - Parent: [../AGENTS.md](../../../../../backend/services/AGENTS.md)
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `clearCategorizerVotesForUnreferencedCategoryTopicRelations`
+- `getRssFeedItemCategories`

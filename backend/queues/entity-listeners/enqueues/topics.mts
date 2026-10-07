@@ -15,6 +15,10 @@ export const enqueueOnTopicCreated = (
 export const enqueueOnTopicUpdated = (id: string, updated_by_id?: string, priority?: number) => {
   return enqueueProcessTopicUpdated({ id, updated_by_id }, priority)
 }
+/**
+ * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/queues/entity-listeners/README.md`.
+ */
 export const enqueueOnTopicDeleted = (
   id: string,
   updates: CreateTopicUpdates,

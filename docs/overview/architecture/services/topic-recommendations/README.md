@@ -62,3 +62,11 @@ Conditional-required validation is enforced in `normalizeTopicRecommendationValu
 
 - API: [../../api/v1/topic-recommendations/README.md](../../../../requirements/api/v1/topic-recommendations/README.md)
 - Posts: [../posts/AGENTS.md](../../../../../backend/services/posts/AGENTS.md)
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `getPosts`

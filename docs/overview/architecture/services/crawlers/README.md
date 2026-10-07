@@ -27,3 +27,12 @@ For example, for a certain domain, we'd simplify the crawling by having a global
 - Crawl Chunks: [../crawl-chunks/README.md](../crawl-chunks/README.md)
 - URLs: [../urls/README.md](../urls/README.md)
 - Parent: [../AGENTS.md](../../../../../backend/services/AGENTS.md)
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `deleteCrawler`
+- `getCrawlerForUrl`

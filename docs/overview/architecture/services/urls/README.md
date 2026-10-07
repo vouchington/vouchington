@@ -50,3 +50,11 @@ Missing either form leaves the corresponding cache stale for up to the `urls_loo
 - URL Domain Blacklist: [../urls-domains-blacklist/README.md](../urls-domains-blacklist/README.md)
 - URL Domain Robots: [../urls-domains-robots/README.md](../urls-domains-robots/README.md)
 - Parent: [../AGENTS.md](../../../../../backend/services/AGENTS.md)
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `updateUrl`

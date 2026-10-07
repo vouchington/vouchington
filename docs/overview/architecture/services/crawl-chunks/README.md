@@ -14,3 +14,11 @@ Note: embeddings are always created via batch.
 
 - [Crawls Service](../crawls/README.md)
 - [Bedrock Embeddings Service](../bedrock-embeddings/README.md)
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `finalizeChunksIfComplete`

@@ -15,6 +15,11 @@ payloads, and invalid scoped cursors fail unrecoverably; transient storage or qu
 | Post trigger accepted    | Exact embedding input marker advances after queue acceptance   | Failed, skipped, or stale-input delivery remains pending for a later root                   |
 | Full page scanned        | One cursor continuation is awaited                             | A lost continuation is recovered by the next cursorless root or operator backfill           |
 
+The two reconciliation producers share
+[reconciliation-page.mts](../../../../../../backend/workers/bedrock-embeddings-batch/processors/reconciliation-page.mts)
+for reading one page and awaiting its optional continuation. Production producers and the page
+contract tests use this same component.
+
 ## Exports
 
 - `bedrock_embeddings_batch` - worker instance for the `bedrock-embeddings-batch` queue.

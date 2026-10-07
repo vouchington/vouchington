@@ -81,6 +81,10 @@ export async function revokeCopyrightGuestCapability(input: {
   await transaction.commit()
 }
 
+/**
+ * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/copyright-notices/README.md`.
+ */
 export async function authorizeCopyrightGuestCapability(input: {
   noticeId: string
   token: string

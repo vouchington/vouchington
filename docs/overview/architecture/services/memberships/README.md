@@ -252,3 +252,18 @@ creates a fresh append-only projection and reactivation outbox.
 - Database schema: [../../data-stores/psql/AGENTS.md](../../../../../backend/data-stores/psql/AGENTS.md)
 
 Grant expiry normalizes a configured number of bounded pages. Background expiry shares one page budget across all selected users, commits progress, and reports remaining due grants. Synchronous grant mutations return a retryable conflict when normalization still has work, so a capped pass cannot apply an operation against stale access. Renewal-email dispatch resumes from its last membership ID through a continuation.
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `cancelMembership`
+- `currentUserCanCancelMembership`
+- `currentUserCanViewMembership`
+- `getActivePlansCached`
+- `getSkuByStripePriceIdCached`
+- `isMembershipAutomaticCollisionResolutionEnabled`
+- `rejectMembershipProviderEvidence`
+- `reverseIneligibleStripePurchase`

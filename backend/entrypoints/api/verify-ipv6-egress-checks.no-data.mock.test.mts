@@ -31,7 +31,6 @@ const IPV6_ONLY_INTERFACES = {
 
 describe('verify-ipv6-egress-checks', () => {
   beforeEach(() => {
-    vi.resetModules()
     mockResolve4.mockReset()
     mockResolve6.mockReset()
     mockNetworkInterfaces.mockReset()
@@ -41,7 +40,7 @@ describe('verify-ipv6-egress-checks', () => {
   describe('reportRouteEvidence', () => {
     it('does not throw when the task has only a non-loopback IPv6 address', async () => {
       mockNetworkInterfaces.mockReturnValueOnce(IPV6_ONLY_INTERFACES)
-      const { reportRouteEvidence } = await import('./verify-ipv6-egress-checks.mts')
+      const { reportRouteEvidence } = await import('./verify-ipv6-egress-host-checks.mts')
 
       expect(() => reportRouteEvidence()).not.toThrow()
     })
@@ -53,7 +52,7 @@ describe('verify-ipv6-egress-checks', () => {
           { address: '2600:1f18::1', family: 'IPv6', internal: false },
         ],
       })
-      const { reportRouteEvidence } = await import('./verify-ipv6-egress-checks.mts')
+      const { reportRouteEvidence } = await import('./verify-ipv6-egress-host-checks.mts')
 
       expect(() => reportRouteEvidence()).toThrow(
         'Task has a non-loopback IPv4 address; this task is not IPv6-only.',
@@ -69,7 +68,7 @@ describe('verify-ipv6-egress-checks', () => {
           { address: '2001:db8::2', family: 'IPv6', internal: false },
         ],
       })
-      const { reportRouteEvidence } = await import('./verify-ipv6-egress-checks.mts')
+      const { reportRouteEvidence } = await import('./verify-ipv6-egress-host-checks.mts')
 
       expect(() => reportRouteEvidence()).not.toThrow()
     })
@@ -78,7 +77,7 @@ describe('verify-ipv6-egress-checks', () => {
       mockNetworkInterfaces.mockReturnValueOnce({
         lo: [{ address: '127.0.0.1', family: 'IPv4', internal: true }],
       })
-      const { reportRouteEvidence } = await import('./verify-ipv6-egress-checks.mts')
+      const { reportRouteEvidence } = await import('./verify-ipv6-egress-host-checks.mts')
 
       expect(() => reportRouteEvidence()).toThrow('Task has no non-loopback IPv6 address.')
     })
@@ -88,7 +87,7 @@ describe('verify-ipv6-egress-checks', () => {
     it('returns resolved A and AAAA records', async () => {
       mockResolve4.mockResolvedValueOnce(['1.2.3.4'])
       mockResolve6.mockResolvedValueOnce(['2600::1'])
-      const { resolveRecords } = await import('./verify-ipv6-egress-checks.mts')
+      const { resolveRecords } = await import('./verify-ipv6-egress-host-checks.mts')
 
       await expect(resolveRecords('example.com')).resolves.toEqual({
         a: ['1.2.3.4'],
@@ -99,7 +98,7 @@ describe('verify-ipv6-egress-checks', () => {
     it('falls back to an empty array when resolve4 rejects', async () => {
       mockResolve4.mockRejectedValueOnce(new Error('ENOTFOUND'))
       mockResolve6.mockResolvedValueOnce(['2600::1'])
-      const { resolveRecords } = await import('./verify-ipv6-egress-checks.mts')
+      const { resolveRecords } = await import('./verify-ipv6-egress-host-checks.mts')
 
       await expect(resolveRecords('example.com')).resolves.toEqual({
         a: [],
@@ -110,7 +109,7 @@ describe('verify-ipv6-egress-checks', () => {
     it('falls back to an empty array when resolve6 rejects', async () => {
       mockResolve4.mockResolvedValueOnce(['1.2.3.4'])
       mockResolve6.mockRejectedValueOnce(new Error('ENOTFOUND'))
-      const { resolveRecords } = await import('./verify-ipv6-egress-checks.mts')
+      const { resolveRecords } = await import('./verify-ipv6-egress-host-checks.mts')
 
       await expect(resolveRecords('example.com')).resolves.toEqual({
         a: ['1.2.3.4'],
@@ -119,7 +118,7 @@ describe('verify-ipv6-egress-checks', () => {
     })
 
     it('treats a bracketed IPv6 literal as direct AAAA evidence without DNS resolution', async () => {
-      const { resolveRecords } = await import('./verify-ipv6-egress-checks.mts')
+      const { resolveRecords } = await import('./verify-ipv6-egress-host-checks.mts')
 
       await expect(resolveRecords('[2001:db8::1]')).resolves.toEqual({
         a: [],
@@ -132,7 +131,7 @@ describe('verify-ipv6-egress-checks', () => {
     it('resolves the hostname without the authority port', async () => {
       mockResolve4.mockResolvedValueOnce(['1.2.3.4'])
       mockResolve6.mockResolvedValueOnce(['2600::1'])
-      const { resolveRecords } = await import('./verify-ipv6-egress-checks.mts')
+      const { resolveRecords } = await import('./verify-ipv6-egress-host-checks.mts')
 
       await expect(resolveRecords('example.com:8443')).resolves.toEqual({
         a: ['1.2.3.4'],
@@ -143,7 +142,7 @@ describe('verify-ipv6-egress-checks', () => {
     })
 
     it('treats a bracketed IPv6 literal with a port as direct AAAA evidence', async () => {
-      const { resolveRecords } = await import('./verify-ipv6-egress-checks.mts')
+      const { resolveRecords } = await import('./verify-ipv6-egress-host-checks.mts')
 
       await expect(resolveRecords('[2001:db8::1]:8443')).resolves.toEqual({
         a: [],
@@ -157,14 +156,14 @@ describe('verify-ipv6-egress-checks', () => {
   describe('checkTlsReachable', () => {
     it('returns tlsReachable true on any HTTP response', async () => {
       fetchSpy.mockResolvedValueOnce(new Response(null, { status: 403 }))
-      const { checkTlsReachable } = await import('./verify-ipv6-egress-checks.mts')
+      const { checkTlsReachable } = await import('./verify-ipv6-egress-host-checks.mts')
 
       await expect(checkTlsReachable('example.com')).resolves.toEqual({ tlsReachable: true })
     })
 
     it('probes a custom HTTPS authority port', async () => {
       fetchSpy.mockResolvedValueOnce(new Response(null, { status: 403 }))
-      const { checkTlsReachable } = await import('./verify-ipv6-egress-checks.mts')
+      const { checkTlsReachable } = await import('./verify-ipv6-egress-host-checks.mts')
 
       await expect(checkTlsReachable('example.com:8443')).resolves.toEqual({ tlsReachable: true })
       expect(fetchSpy).toHaveBeenCalledWith(
@@ -175,7 +174,7 @@ describe('verify-ipv6-egress-checks', () => {
 
     it('returns tlsReachable false with the error message when fetch throws an Error', async () => {
       fetchSpy.mockRejectedValueOnce(new Error('connect ECONNREFUSED'))
-      const { checkTlsReachable } = await import('./verify-ipv6-egress-checks.mts')
+      const { checkTlsReachable } = await import('./verify-ipv6-egress-host-checks.mts')
 
       await expect(checkTlsReachable('example.com')).resolves.toEqual({
         tlsReachable: false,
@@ -185,7 +184,7 @@ describe('verify-ipv6-egress-checks', () => {
 
     it('returns tlsReachable false with a stringified error when fetch throws a non-Error', async () => {
       fetchSpy.mockRejectedValueOnce('aborted')
-      const { checkTlsReachable } = await import('./verify-ipv6-egress-checks.mts')
+      const { checkTlsReachable } = await import('./verify-ipv6-egress-host-checks.mts')
 
       await expect(checkTlsReachable('example.com')).resolves.toEqual({
         tlsReachable: false,
@@ -196,7 +195,7 @@ describe('verify-ipv6-egress-checks', () => {
 
   describe('runIpv6EgressVerification', () => {
     it('includes a configured IPv6-literal Sentry DSN host for verification', async () => {
-      const { getIpv6VerificationHosts } = await import('./verify-ipv6-egress-checks.mts')
+      const { getIpv6VerificationHosts } = await import('./verify-ipv6-egress-host-checks.mts')
 
       expect(
         getIpv6VerificationHosts({
@@ -206,7 +205,7 @@ describe('verify-ipv6-egress-checks', () => {
     })
 
     it('includes a configured Sentry DSN authority port for TLS verification', async () => {
-      const { getIpv6VerificationHosts } = await import('./verify-ipv6-egress-checks.mts')
+      const { getIpv6VerificationHosts } = await import('./verify-ipv6-egress-host-checks.mts')
 
       expect(
         getIpv6VerificationHosts({
@@ -219,7 +218,7 @@ describe('verify-ipv6-egress-checks', () => {
       ['missing', undefined],
       ['malformed', 'not-a-dsn'],
     ])('rejects a %s Sentry DSN in a deployed environment', async (_kind, SENTRY_DSN) => {
-      const { getIpv6VerificationHosts } = await import('./verify-ipv6-egress-checks.mts')
+      const { getIpv6VerificationHosts } = await import('./verify-ipv6-egress-host-checks.mts')
 
       expect(() => getIpv6VerificationHosts({ ENVIRONMENT: 'staging', SENTRY_DSN })).toThrow(
         'SENTRY_DSN is required and must be valid for deployed IPv6 egress verification.',
@@ -227,7 +226,7 @@ describe('verify-ipv6-egress-checks', () => {
     })
 
     it('derives the S3 dual-stack host from the supplied environment', async () => {
-      const { getIpv6VerificationHosts } = await import('./verify-ipv6-egress-checks.mts')
+      const { getIpv6VerificationHosts } = await import('./verify-ipv6-egress-host-checks.mts')
 
       expect(getIpv6VerificationHosts({ AWS_REGION: 'eu-west-1' })).toContain(
         's3.dualstack.eu-west-1.amazonaws.com',
@@ -239,8 +238,8 @@ describe('verify-ipv6-egress-checks', () => {
       mockResolve4.mockResolvedValue(['1.2.3.4'])
       mockResolve6.mockResolvedValue(['2600::1'])
       fetchSpy.mockResolvedValue(new Response(null, { status: 200 }))
-      const { getIpv6VerificationHosts, runIpv6EgressVerification } =
-        await import('./verify-ipv6-egress-checks.mts')
+      const { getIpv6VerificationHosts } = await import('./verify-ipv6-egress-host-checks.mts')
+      const { runIpv6EgressVerification } = await import('./verify-ipv6-egress-checks.mts')
 
       const outcome = await runIpv6EgressVerification()
 
@@ -253,8 +252,8 @@ describe('verify-ipv6-egress-checks', () => {
       mockResolve4.mockResolvedValue(['1.2.3.4'])
       mockResolve6.mockResolvedValueOnce([]).mockResolvedValue(['2600::1'])
       fetchSpy.mockResolvedValue(new Response(null, { status: 200 }))
-      const { getIpv6VerificationHosts, runIpv6EgressVerification } =
-        await import('./verify-ipv6-egress-checks.mts')
+      const { getIpv6VerificationHosts } = await import('./verify-ipv6-egress-host-checks.mts')
+      const { runIpv6EgressVerification } = await import('./verify-ipv6-egress-checks.mts')
 
       const outcome = await runIpv6EgressVerification()
 
@@ -270,8 +269,8 @@ describe('verify-ipv6-egress-checks', () => {
       fetchSpy
         .mockRejectedValueOnce(new Error('connect ECONNREFUSED'))
         .mockResolvedValue(new Response(null, { status: 200 }))
-      const { getIpv6VerificationHosts, runIpv6EgressVerification } =
-        await import('./verify-ipv6-egress-checks.mts')
+      const { getIpv6VerificationHosts } = await import('./verify-ipv6-egress-host-checks.mts')
+      const { runIpv6EgressVerification } = await import('./verify-ipv6-egress-checks.mts')
 
       const outcome = await runIpv6EgressVerification()
 

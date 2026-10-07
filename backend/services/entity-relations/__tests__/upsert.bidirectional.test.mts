@@ -1,8 +1,9 @@
+import { randomUUID } from 'node:crypto'
 import { it, expect, describe } from 'vitest'
 import { upsertEntityRelation } from '../upsert.mts'
 import { softDeleteEntityRelation } from '../delete.mts'
 import { entityRelationMetadatum } from '../metadata.mts'
-import { stubUrlGuardsForSuite } from '@voucha/test-helpers/services/entity-relations/test-support'
+import '@voucha/test-helpers/entity-url-guard-registrations'
 import {
   createTestPost,
   createTestUser,
@@ -11,8 +12,6 @@ import {
 } from '@voucha/test-helpers'
 
 describe('upsert.bidirectional', () => {
-  stubUrlGuardsForSuite()
-
   it('upsertEntityRelation creates reverse relation for bidirectional predicates', async () => {
     const user = await createTestUser({ administrator: true })
     const postA = await createTestPost()
@@ -89,7 +88,7 @@ describe('upsert.bidirectional', () => {
     const post = await createTestPost()
     const url = await insertTestUrlDirect(
       user!.id,
-      'https://upsert-bidirectional-url-test.example.com/page',
+      `https://upsert-bidirectional-${randomUUID()}.example.com/page`,
     )
     expect(url).toBeTruthy()
 

@@ -112,6 +112,11 @@ export async function checkBloomFilters(hostnames: string[]): Promise<Array<bool
   })
 }
 
+/**
+ * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
+ * export may be made private or removed after intended-use review.
+ * Evidence: `docs/overview/architecture/services/urls-domains-blacklist/README.md`.
+ */
 export async function addDomainsToBloomFilter(domains: string[]): Promise<void> {
   const validDomains = domains.flatMap(d => {
     const n = normalizeDomain(d)
@@ -141,6 +146,10 @@ export async function warmUpUrlBlocklistBloomFilter(): Promise<void> {
   })
 }
 
+/**
+ * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/urls-domains-blacklist/README.md`.
+ */
 export async function deleteBloomFilter(): Promise<void> {
   await withBlocklistBloomFilterLock('url-blocklist', () =>
     getBloomFilter().deleteWithAdditionalKeys([BLOOM_READY_KEY]),

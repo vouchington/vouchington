@@ -55,3 +55,11 @@ ignore responses for another batch and responses whose progress counters regress
 - HTTP endpoints: [../../api/v1/my/reference-post-api-v1-my-import-rss-feeds.md](../../../../requirements/api/v1/my/reference-post-api-v1-my-import-rss-feeds.md)
 
 RSS import rows retain the submitted `input_url` and resolved `rss_feed_id`; they do not store a second write-only canonical URL. Validation still normalizes the URL for feed lookup and creation.
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `generateOpml`

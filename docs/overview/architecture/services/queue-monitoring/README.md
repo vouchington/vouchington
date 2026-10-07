@@ -64,3 +64,11 @@ const totals = await getAggregatedQueueStats(['email-queue', 'moderation-queue']
 - [Queue Monitoring API](../../../../requirements/api/v1/mq/README.md)
 - [Services AGENTS.md](../../../../../backend/services/AGENTS.md)
 - [Infrastructure Overview](../../../infrastructure/infrastructure.md)
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `removeQueueScheduler`

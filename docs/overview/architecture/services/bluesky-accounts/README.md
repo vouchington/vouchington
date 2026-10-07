@@ -157,3 +157,11 @@ insufficient to attach an account. The callback URI is fixed rather than caller-
 
 - `@modules/bluesky-oauth` — the SDK boundary this package injects its stores into.
 - [docs/overview/architecture/fediverse-federation.md](../../fediverse-federation.md) — Phase D section.
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `getBlueskyLinkAuthorization`

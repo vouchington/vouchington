@@ -8,30 +8,40 @@ export type ReferralLinkGuard = (
   options?: QueryOptions,
 ) => Promise<void>
 
-let registeredGuard: ReferralLinkGuard | null = null
+const referralLinkGuardRegistry = createReferralLinkGuardRegistry()
 
 // @services/referral-program-link-validations registers its guard here as a side effect of
 // module load (see
 // backend/services/referral-program-link-validations/register-referral-link-guard.mts) so
 // entity-relations never imports referral-program-link-validations directly.
 export function registerReferralLinkGuard(guard: ReferralLinkGuard): void {
-  registeredGuard = guard
-}
-
-export function unregisterReferralLinkGuardForTest(): void {
-  registeredGuard = null
+  referralLinkGuardRegistry.registerReferralLinkGuard(guard)
 }
 
 // Internal to entity-relations: only upsert.mts should call this. Throws instead of letting a
 // related-url relation write silently skip the referral-link check when the registration above
 // never ran (e.g. a missing side-effect import at process boot).
 export function getRegisteredReferralLinkGuard(): ReferralLinkGuard {
-  if (!registeredGuard) {
-    throw createCodedError(
-      500,
-      'No referral-link guard registered for entity relations; @services/referral-program-link-validations must be imported for side effects before related-url relation writes occur',
-      ENTITY_RELATION_REFERRAL_LINK_GUARD_UNREGISTERED,
-    )
+  return referralLinkGuardRegistry.getRegisteredReferralLinkGuard()
+}
+
+export function createReferralLinkGuardRegistry() {
+  let registeredGuard: ReferralLinkGuard | null = null
+
+  function registerReferralLinkGuard(guard: ReferralLinkGuard): void {
+    registeredGuard = guard
   }
-  return registeredGuard
+
+  function getRegisteredReferralLinkGuard(): ReferralLinkGuard {
+    if (!registeredGuard) {
+      throw createCodedError(
+        500,
+        'No referral-link guard registered for entity relations; @services/referral-program-link-validations must be imported for side effects before related-url relation writes occur',
+        ENTITY_RELATION_REFERRAL_LINK_GUARD_UNREGISTERED,
+      )
+    }
+    return registeredGuard
+  }
+
+  return { registerReferralLinkGuard, getRegisteredReferralLinkGuard }
 }

@@ -65,7 +65,7 @@ const defaultDependencies: RecheckDependencies = {
     releaseSpendCapDelayedJobs(day, lease, ai_agents, undefined, cursor, dayHasEnded),
 }
 
-export function getSpendCapRecheckAt(day: string, now = Date.now()): number {
+function getSpendCapRecheckAt(day: string, now = Date.now()): number {
   return Math.min(getDayBounds(day).endMs, now + RECHECK_INTERVAL_MS)
 }
 

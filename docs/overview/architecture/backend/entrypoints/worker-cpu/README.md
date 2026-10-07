@@ -52,6 +52,9 @@ never commit or log it. Local and CI workers leave the variable unset.
 - `index.mts` — process entrypoint and exported runtime controls
 - `runtime.mts` — binds CPU definitions, native-addon shutdown, and Grafana heartbeat hooks to the
   shared lifecycle
+- `grafana-heartbeat.mts` — owns the process-local heartbeat schedule and shutdown
+- `grafana-heartbeat-request.mts` — validates the endpoint and sends the credential-bearing request
+  with Sentry and OpenTelemetry tracing suppressed
 - `worker-definitions.mts` — all worker-cpu-capable definitions (CPU-only plus IO-capable)
 - `serve.mts` — prewarm HTTP server (port from `NODE_PREWARM_PORT`; no server starts if unset) and
   graceful-shutdown wiring
@@ -63,3 +66,14 @@ never commit or log it. Local and CI workers leave the variable unset.
 - Worker packages: [../../workers/AGENTS.md](../../../../../../backend/workers/AGENTS.md)
 - Queue packages: [../../queues/AGENTS.md](../../../../../../backend/queues/AGENTS.md)
 - Local entrypoint rules: [AGENTS.md](../../../../../../backend/entrypoints/worker-cpu/AGENTS.md)
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+The exported name is retained only as an external surface: its same-file production implementation and
+current default callers remain required.
+
+- `startWorkerRuntime`

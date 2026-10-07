@@ -8,6 +8,10 @@ export { markStripeEventCompleted, markStripeEventFailed } from './event-lifecyc
 export { getStripeEventById, markStripeEventProcessing } from './event-processing.mts'
 export { ingestStripeEvent } from './ingest.mts'
 
+/**
+ * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/stripe/README.md`.
+ */
 export async function getStripeEventByStripeEventId(
   stripeEventId: string,
 ): Promise<StripeEventRecord | null> {

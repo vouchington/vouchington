@@ -86,3 +86,11 @@ Topic deletion is intentionally unsupported. The `DELETE /api/v1/topics/:idOrSlu
 - [docs/requirements/content/TOPICS.md](../../../../requirements/content/TOPICS.md)
 
 The `topics.aliases` search cache is projected by `fn_project_topic_aliases` after alias inserts, updates and deletes, including ownership moves. The statement trigger locks affected parent rows in ID order with `NO KEY UPDATE`, then reads current linked aliases. Services retain publication capture and cache invalidation, and no longer write the search cache directly.
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `getPublisherTypeTopicId`

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { processReconciliationPage } from './reconciliation.mts'
+import { processReconciliationPage } from './reconciliation-page.mts'
 
 describe('reconciliation page continuation', () => {
   it.each(['copy:topics', 'copy:posts', 'copy:rss_feed_items', 'post-trigger'])(

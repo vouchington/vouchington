@@ -1,6 +1,5 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
 import {
-  composeQueryContracts,
   createPaginationParser,
   defineQueryContract,
   queryBoolean,
@@ -50,16 +49,23 @@ describe('query contracts', () => {
     }
     const callable = withQueryContract(double, defineQueryContract({ query: queryString() }))
 
+    expect(callable).toBe(double)
     expect(callable(4)).toBe(8)
     expect(callable.queryContract).toEqual({ query: { kind: 'string' } })
     const first = defineQueryContract({ after: queryString() })
     const second = defineQueryContract({ limit: queryInteger({ minimum: 1, maximum: 10 }) })
 
-    expect(composeQueryContracts(first, second).queryContract).toEqual({
+    const composed = withQueryContract(double, first, second)
+    expect(composed).toBe(double)
+    expect(composed(4)).toBe(8)
+    expectTypeOf(composed.queryContract.after.kind).toEqualTypeOf<'string'>()
+    expectTypeOf(composed.queryContract.limit.minimum).toEqualTypeOf<1>()
+    expectTypeOf(composed.queryContract.limit.maximum).toEqualTypeOf<10>()
+    expect(composed.queryContract).toEqual({
       after: { kind: 'string' },
       limit: { kind: 'integer', minimum: 1, maximum: 10 },
     })
-    expect(() => composeQueryContracts(first, first)).toThrow(
+    expect(() => withQueryContract(double, first, first)).toThrow(
       'Duplicate query parameter contract: after',
     )
   })
@@ -158,9 +164,6 @@ describe('query contracts', () => {
     // @ts-expect-error -- integer query descriptors require minimum and maximum bounds
     const malformedContract = defineQueryContract({ limit: { kind: 'integer' } })
     expect(malformedContract).toEqual(malformed)
-
-    // @ts-expect-error -- composition rejects malformed carrier contracts
-    expect(composeQueryContracts(malformed).queryContract).toEqual(malformed.queryContract)
 
     // @ts-expect-error -- callable composition rejects malformed carrier contracts
     expect(withQueryContract(() => undefined, malformed).queryContract).toEqual(

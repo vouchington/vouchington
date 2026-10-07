@@ -65,3 +65,12 @@ Tests that use the shared Sentry mock setup (`backend/test-helpers/vitest.setup.
 must live in `.mock.test.mts` files so Vitest routes them to the isolated `backend-mocks` project.
 Pure `backend-modules` tests run with `isolate: false`; importing that setup helper there can leak
 `globalThis.vouchaSentryMocks` into later files in the same worker.
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `MEMBERSHIP_REQUIRED`
+- `MFA_REQUIRED`

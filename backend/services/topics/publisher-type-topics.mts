@@ -14,6 +14,10 @@ export type PublisherTypeTopic = { id: string; slug: PublisherTypeSlug; label: s
 const idsBySlug = new Map<PublisherTypeSlug, string | null>()
 let cachedPublisherTypeTopics: PublisherTypeTopic[] | null = null
 
+/**
+ * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/topics/README.md`.
+ */
 export async function getPublisherTypeTopicId(slug: PublisherTypeSlug): Promise<string | null> {
   if (idsBySlug.has(slug)) return idsBySlug.get(slug)!
   const { rows } = await read(sql`/* getPublisherTypeTopicId */

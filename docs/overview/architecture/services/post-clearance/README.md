@@ -83,3 +83,11 @@ type ClearanceStatus = 'pending' | 'approved' | 'rejected' | 'in_review'
 - [../../queues/spam-detection/](../../queues/spam-detection/README.md) — spam detection system
 - [../../queues/openai-moderation/](../../queues/openai-moderation/README.md) — OpenAI moderation system
 - [../../api/v1/admin/](../../../../requirements/api/v1/admin/README.md) — admin review queue API
+
+## Provisional export status (#1360)
+
+These package exports are retained pending intended-use review. External production use is
+unconfirmed; the exports may be made private or removed after review. Their implementations and
+current owner behavior remain unchanged.
+
+- `approvePendingPostClearance`

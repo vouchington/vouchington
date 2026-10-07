@@ -1,26 +1,16 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import type { Job } from 'glide-mq'
 import { randomUUID } from 'node:crypto'
-import { insertTestUrl, insertTestUrlHostname, readAllQueueJobs } from '@voucha/test-helpers'
+import { insertTestUrl, insertTestUrlHostname } from '@voucha/test-helpers'
+import { createEntityRelationCrawlObserver } from '@voucha/test-helpers/entity-relation-crawl-observer'
 import { CrawlerNetworkError, CrawlerRateLimitError } from '@modules/on-error/errors'
 import { crawlUrls } from '@queues/crawler/queues'
 import { setDomainRateLimited } from '@services/crawls/domain-rate-limit'
-import {
-  buildCrawlerJobResult,
-  handleCrawlerProcessorError,
-  processCrawlerJob,
-} from './processors.mts'
+import { buildCrawlerJobResult, handleCrawlerProcessorError } from './processors/outcomes.mts'
+import { processCrawlerJob } from './processors.mts'
 import type { CrawlBasic } from '@services/crawls/types'
 
 describe('crawler processor', () => {
-  beforeEach(async () => {
-    await crawlUrls.obliterate({ force: true })
-  })
-
-  afterEach(async () => {
-    await crawlUrls.obliterate({ force: true })
-  })
-
   it('returns null when crawl_url skips a local hostname before fetching', async () => {
     const hostname = `crawler-${randomUUID()}.local`
     const hostnameId = await insertTestUrlHostname({ hostname })
@@ -50,6 +40,7 @@ describe('crawler processor', () => {
 
   it('routes rate-limit preflight errors through the processor error handler', async () => {
     const { hostnameId, urlId } = await createCrawlerUrlFixture('process-rate-limit')
+    await using observer = createEntityRelationCrawlObserver(new Set([urlId]))
     await setDomainRateLimited(hostnameId, 1_000)
 
     await expect(
@@ -58,7 +49,15 @@ describe('crawler processor', () => {
       replacement_job_id: expect.any(String),
     })
 
-    const waiting = await readAllQueueJobs(crawlUrls)
+    expect(observer.ownedPromises()).toHaveLength(1)
+    const ownedJobs = (await Promise.all(observer.ownedPromises()))
+      .flat()
+      .filter(job => job != null)
+    const waiting = (await Promise.all(ownedJobs.map(job => crawlUrls.getJob(job.id)))).filter(
+      job => job != null,
+    )
+    expect(ownedJobs).toHaveLength(1)
+    expect(waiting).toHaveLength(1)
     expect(
       waiting.some(
         job =>
@@ -109,12 +108,21 @@ describe('crawler processor', () => {
 
   it('re-enqueues rate-limited URLs until the processor circuit breaker trips', async () => {
     const { urlId, url } = await createCrawlerUrlFixture('rate-limit')
+    await using observer = createEntityRelationCrawlObserver(new Set([urlId]))
 
     await expect(
       handleCrawlerProcessorError(urlId, 0, new CrawlerRateLimitError(url, 429, 10, 0)),
     ).resolves.toEqual({ replacement_job_id: expect.any(String) })
 
-    const waiting = await readAllQueueJobs(crawlUrls)
+    expect(observer.ownedPromises()).toHaveLength(1)
+    const ownedJobs = (await Promise.all(observer.ownedPromises()))
+      .flat()
+      .filter(job => job != null)
+    const waiting = (await Promise.all(ownedJobs.map(job => crawlUrls.getJob(job.id)))).filter(
+      job => job != null,
+    )
+    expect(ownedJobs).toHaveLength(1)
+    expect(waiting).toHaveLength(1)
     expect(
       waiting.some(
         job =>
@@ -128,10 +136,12 @@ describe('crawler processor', () => {
     await expect(
       handleCrawlerProcessorError(urlId, 3, new CrawlerRateLimitError(url, 429, 10, 0)),
     ).rejects.toThrow(CrawlerRateLimitError)
+    expect(observer.ownedPromises()).toHaveLength(1)
   })
 
   it('preserves discovery crawl options on rate-limit replacement jobs', async () => {
     const { urlId, url } = await createCrawlerUrlFixture('rate-limit-options')
+    await using observer = createEntityRelationCrawlObserver(new Set([urlId]))
 
     await handleCrawlerProcessorError(urlId, 0, new CrawlerRateLimitError(url, 429, 10, 0), {
       crawlTimeoutMs: 10_000,
@@ -146,7 +156,15 @@ describe('crawler processor', () => {
       waitForResult: true,
     })
 
-    const waiting = await readAllQueueJobs(crawlUrls)
+    expect(observer.ownedPromises()).toHaveLength(1)
+    const ownedJobs = (await Promise.all(observer.ownedPromises()))
+      .flat()
+      .filter(job => job != null)
+    const waiting = (await Promise.all(ownedJobs.map(job => crawlUrls.getJob(job.id)))).filter(
+      job => job != null,
+    )
+    expect(ownedJobs).toHaveLength(1)
+    expect(waiting).toHaveLength(1)
     expect(
       waiting.some(
         job =>
@@ -185,6 +203,9 @@ describe('crawler processor', () => {
     const { hostnameId, urlId, url } = await createCrawlerUrlFixture('retry-candidates')
     const candidateA = await insertTestUrl({ hostnameId, url: `${url}/a` })
     const candidateB = await insertTestUrl({ hostnameId, url: `${url}/b` })
+    await using observer = createEntityRelationCrawlObserver(
+      new Set([urlId, candidateA, candidateB]),
+    )
 
     await expect(
       handleCrawlerProcessorError(
@@ -194,7 +215,15 @@ describe('crawler processor', () => {
       ),
     ).rejects.toThrow(CrawlerNetworkError)
 
-    const waiting = await readAllQueueJobs(crawlUrls)
+    expect(observer.ownedPromises()).toHaveLength(1)
+    const ownedJobs = (await Promise.all(observer.ownedPromises()))
+      .flat()
+      .filter(job => job != null)
+    const waiting = (await Promise.all(ownedJobs.map(job => crawlUrls.getJob(job.id)))).filter(
+      job => job != null,
+    )
+    expect(ownedJobs).toHaveLength(2)
+    expect(waiting).toHaveLength(2)
     const queuedIds = waiting.map(job => (job.data as { url_id?: string }).url_id)
     expect(queuedIds).toContain(candidateA)
     expect(queuedIds).toContain(candidateB)

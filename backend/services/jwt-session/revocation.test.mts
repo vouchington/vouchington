@@ -5,7 +5,7 @@ import {
   SESSION_EXPIRATION_SECONDS,
 } from '@ts-shared/session-jwt'
 import { getJwtRevokedKey } from './constants.mts'
-import { revokeSession, revokeSessions, isSessionRevoked } from './revocation.mts'
+import { revokeSession, isSessionRevoked } from './revocation.mts'
 import { revokeSessionKeys, revokeUserSessionsBefore } from './session-revocation-keys.mts'
 import { withAbortedPostgresTransactionForTest } from '@voucha/test-helpers/postgres-aborted-transaction'
 import { v7 } from 'uuid'
@@ -64,11 +64,11 @@ describe('revocation', () => {
     expect(await isSessionRevoked(sid2)).toBe(false)
   })
 
-  it('revokes multiple sessions through the batch helper', async () => {
+  it('revokes multiple sessions through the canonical operation', async () => {
     const sid1 = v7()
     const sid2 = v7()
 
-    await revokeSessions([sid1, sid2])
+    await Promise.all([revokeSession(sid1), revokeSession(sid2)])
 
     await expect(isSessionRevoked(sid1)).resolves.toBe(true)
     await expect(isSessionRevoked(sid2)).resolves.toBe(true)
