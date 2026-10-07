@@ -27,7 +27,7 @@
     "@backend/service-registrations": "workspace:^",
     "@data-stores/graceful-shutdown": "workspace:^",
     "@data-stores/psql": "workspace:^",
-    "@glidemq/dashboard": "^0.4.1",
+    "@glidemq/dashboard": "^0.4.2",
     "@jongleberry/vurst-runtime": "^0.4.3",
     "@modules/api-egress-proxy": "workspace:^",
     "@modules/bluesky-oauth": "workspace:^",
