@@ -4,11 +4,15 @@ import {
   insertTestCommunity,
   insertTestCommunityMember,
   insertTestCommunityInvite,
-  readAllQueueJobs,
+  readEnqueuedJob,
   updateTestUserUiLocale,
 } from '@voucha/test-helpers'
 import { emails } from '@queues/emails/queues'
-import { createInvite, getCommunityInviteRecipientUiLocale } from './create.mts'
+import {
+  createInvite,
+  createInviteWithEmailEnqueue,
+  getCommunityInviteRecipientUiLocale,
+} from './create.mts'
 import { redeemInviteCode } from './redeem.mts'
 import { revokeInvite } from './revoke.mts'
 import { getCommunityMember } from '../members/get.mts'
@@ -46,22 +50,17 @@ describe('index', () => {
     it('includes invited registered user locale in queued email jobs', async () => {
       const invitee = await createTestUser()
       await updateTestUserUiLocale(invitee.id, 'fr')
-      await createInvite(owner.id, community.id, { email: invitee.email_address! })
-      await expect
-        .poll(async () => {
-          const jobs = await readAllQueueJobs(emails)
-          return jobs.some(job => {
-            const data = job.data as {
-              input?: { emailAddress?: string; uiLocale?: string | null }
-            }
-            return (
-              job.name === 'processSendCommunityInviteEmail' &&
-              data.input?.emailAddress === invitee.email_address &&
-              data.input?.uiLocale === 'fr'
-            )
-          })
-        })
-        .toBe(true)
+      const { emailEnqueue } = await createInviteWithEmailEnqueue(owner.id, community.id, {
+        email: invitee.email_address!,
+      })
+      expect(emailEnqueue).not.toBeNull()
+      const job = await readEnqueuedJob(emails, await emailEnqueue)
+      const data = job.data as { input?: { emailAddress?: string; uiLocale?: string | null } }
+      expect(
+        job.name === 'processSendCommunityInviteEmail' &&
+          data.input?.emailAddress === invitee.email_address &&
+          data.input?.uiLocale === 'fr',
+      ).toBe(true)
     })
 
     it('falls back when recipient locale lookup fails', async () => {

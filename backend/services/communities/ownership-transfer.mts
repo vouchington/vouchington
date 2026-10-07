@@ -7,6 +7,7 @@ import { getCommunity } from './get.mts'
 import { getCommunityMember } from './members/get.mts'
 import { lockCommunityUsers } from './bans/lock.mts'
 import { getPrivateUserByAny } from '@services/users/get'
+import type { PrivateUser } from '@services/users/types'
 import { enqueueSendCommunityOwnershipTransferEmail } from '@queues/emails/enqueues'
 import { getSiteUrl } from '@modules/utils'
 import {
@@ -72,7 +73,7 @@ export async function initiateOwnershipTransfer(
   currentUserId: string,
   communityId: string,
   targetUserId: string,
-): Promise<void> {
+): Promise<OwnershipTransferEmailEnqueues> {
   assert(currentUserId !== targetUserId, 422, 'You cannot transfer ownership to yourself')
   const community = await getCommunity(communityId)
   assert(community, 404, 'Community not found')
@@ -131,7 +132,17 @@ export async function initiateOwnershipTransfer(
     await enqueueCommunityLifecycleNotificationPush(pushNotifications)
   }
 
-  await sendOwnershipTransferEmails(community.name, community.slug, targetUserId, currentUserId)
+  return await sendOwnershipTransferEmails(
+    community.name,
+    community.slug,
+    targetUserId,
+    currentUserId,
+  )
+}
+
+type OwnershipTransferEmailEnqueues = {
+  newOwnerEmailEnqueue: ReturnType<typeof enqueueSendCommunityOwnershipTransferEmail> | null
+  previousOwnerEmailEnqueue: ReturnType<typeof enqueueSendCommunityOwnershipTransferEmail> | null
 }
 
 async function sendOwnershipTransferEmails(
@@ -139,29 +150,31 @@ async function sendOwnershipTransferEmails(
   communitySlug: string,
   newOwnerId: string,
   previousOwnerId: string,
-): Promise<void> {
+): Promise<OwnershipTransferEmailEnqueues> {
   const communityUrl = getSiteUrl(`/communities/${communitySlug}`)
   const [newOwner, previousOwner] = await Promise.all([
     getPrivateUserByAny(newOwnerId),
     getPrivateUserByAny(previousOwnerId),
   ])
 
-  if (newOwner) {
-    void enqueueSendCommunityOwnershipTransferEmail(
-      {
-        userId: newOwner.id,
-        uiLocale: newOwner.ui_locale ?? null,
-      },
-      { communityName, communityUrl, recipientRole: 'new_owner' },
-    )
+  return {
+    newOwnerEmailEnqueue: newOwner
+      ? enqueueOwnershipTransferEmail(newOwner, communityName, communityUrl, 'new_owner')
+      : null,
+    previousOwnerEmailEnqueue: previousOwner
+      ? enqueueOwnershipTransferEmail(previousOwner, communityName, communityUrl, 'previous_owner')
+      : null,
   }
-  if (previousOwner) {
-    void enqueueSendCommunityOwnershipTransferEmail(
-      {
-        userId: previousOwner.id,
-        uiLocale: previousOwner.ui_locale ?? null,
-      },
-      { communityName, communityUrl, recipientRole: 'previous_owner' },
-    )
-  }
+}
+
+function enqueueOwnershipTransferEmail(
+  recipient: PrivateUser,
+  communityName: string,
+  communityUrl: string,
+  recipientRole: 'new_owner' | 'previous_owner',
+): ReturnType<typeof enqueueSendCommunityOwnershipTransferEmail> {
+  return enqueueSendCommunityOwnershipTransferEmail(
+    { userId: recipient.id, uiLocale: recipient.ui_locale ?? null },
+    { communityName, communityUrl, recipientRole },
+  )
 }

@@ -5,7 +5,7 @@ import {
   createTestUserDirect,
   insertTestCommunity,
   insertTestCommunityMember,
-  readAllQueueJobs,
+  readEnqueuedJob,
 } from '@voucha/test-helpers'
 
 import { joinCommunity } from '../join.mts'
@@ -154,33 +154,32 @@ describe('index', () => {
         userId: user.id,
         role: 'member',
       })
-      await updateMemberRole(owner.id, publicCommunity.id, user.id, 'moderator')
-
-      await expect
-        .poll(async () => {
-          const jobs = await readAllQueueJobs(emails)
-          return jobs.some(job => {
-            const data = job.data as {
-              input?: { emailAddress?: string; userId?: string }
-              variables?: {
-                communityName?: string
-                communityUrl?: string
-                newRole?: string
-                direction?: string
-              }
-            }
-            return (
-              job.name === 'processSendCommunityRoleChangeEmail' &&
-              data.input?.userId === user.id &&
-              data.input?.emailAddress === undefined &&
-              data.variables?.communityName === publicCommunity.name &&
-              data.variables?.communityUrl === getSiteUrl(`/communities/${publicCommunity.slug}`) &&
-              data.variables?.newRole === 'moderator' &&
-              data.variables?.direction === 'promoted'
-            )
-          })
-        })
-        .toBe(true)
+      const { roleChangeEmailEnqueue } = await updateMemberRole(
+        owner.id,
+        publicCommunity.id,
+        user.id,
+        'moderator',
+      )
+      expect(roleChangeEmailEnqueue).not.toBeNull()
+      const job = await readEnqueuedJob(emails, await roleChangeEmailEnqueue)
+      const data = job.data as {
+        input?: { emailAddress?: string; userId?: string }
+        variables?: {
+          communityName?: string
+          communityUrl?: string
+          newRole?: string
+          direction?: string
+        }
+      }
+      expect(
+        job.name === 'processSendCommunityRoleChangeEmail' &&
+          data.input?.userId === user.id &&
+          data.input?.emailAddress === undefined &&
+          data.variables?.communityName === publicCommunity.name &&
+          data.variables?.communityUrl === getSiteUrl(`/communities/${publicCommunity.slug}`) &&
+          data.variables?.newRole === 'moderator' &&
+          data.variables?.direction === 'promoted',
+      ).toBe(true)
     })
 
     it('queues a role-change email with direction "demoted" when demoting a moderator with an email address', async () => {
@@ -190,7 +189,12 @@ describe('index', () => {
         userId: user.id,
         role: 'moderator',
       })
-      await updateMemberRole(owner.id, publicCommunity.id, user.id, 'member')
+      const { roleChangeEmailEnqueue } = await updateMemberRole(
+        owner.id,
+        publicCommunity.id,
+        user.id,
+        'member',
+      )
 
       expect(Object.values((await listNotifications(user.id)).notifications)).toEqual(
         expect.arrayContaining([
@@ -201,24 +205,19 @@ describe('index', () => {
         ]),
       )
 
-      await expect
-        .poll(async () => {
-          const jobs = await readAllQueueJobs(emails)
-          return jobs.some(job => {
-            const data = job.data as {
-              input?: { emailAddress?: string; userId?: string }
-              variables?: { newRole?: string; direction?: string }
-            }
-            return (
-              job.name === 'processSendCommunityRoleChangeEmail' &&
-              data.input?.userId === user.id &&
-              data.input?.emailAddress === undefined &&
-              data.variables?.newRole === 'member' &&
-              data.variables?.direction === 'demoted'
-            )
-          })
-        })
-        .toBe(true)
+      expect(roleChangeEmailEnqueue).not.toBeNull()
+      const job = await readEnqueuedJob(emails, await roleChangeEmailEnqueue)
+      const data = job.data as {
+        input?: { emailAddress?: string; userId?: string }
+        variables?: { newRole?: string; direction?: string }
+      }
+      expect(
+        job.name === 'processSendCommunityRoleChangeEmail' &&
+          data.input?.userId === user.id &&
+          data.input?.emailAddress === undefined &&
+          data.variables?.newRole === 'member' &&
+          data.variables?.direction === 'demoted',
+      ).toBe(true)
     })
 
     it('queues a user-targeted role-change email when the target user has no email address', async () => {
@@ -228,21 +227,20 @@ describe('index', () => {
         userId: user.id,
         role: 'member',
       })
-      await updateMemberRole(owner.id, publicCommunity.id, user.id, 'moderator')
-
-      await expect
-        .poll(async () => {
-          const jobs = await readAllQueueJobs(emails)
-          return jobs.some(job => {
-            const data = job.data as { input?: { emailAddress?: string; userId?: string } }
-            return (
-              job.name === 'processSendCommunityRoleChangeEmail' &&
-              data.input?.userId === user.id &&
-              data.input?.emailAddress === undefined
-            )
-          })
-        })
-        .toBe(true)
+      const { roleChangeEmailEnqueue } = await updateMemberRole(
+        owner.id,
+        publicCommunity.id,
+        user.id,
+        'moderator',
+      )
+      expect(roleChangeEmailEnqueue).not.toBeNull()
+      const job = await readEnqueuedJob(emails, await roleChangeEmailEnqueue)
+      const data = job.data as { input?: { emailAddress?: string; userId?: string } }
+      expect(
+        job.name === 'processSendCommunityRoleChangeEmail' &&
+          data.input?.userId === user.id &&
+          data.input?.emailAddress === undefined,
+      ).toBe(true)
     })
   })
   // keep generated shard bindings live for typecheck

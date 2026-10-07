@@ -4,7 +4,7 @@ import {
   createTestUserDirect,
   insertTestCommunity,
   insertTestCommunityMember,
-  readAllQueueJobs,
+  readEnqueuedJob,
 } from '@voucha/test-helpers'
 import { archiveCommunity } from './archive.mts'
 import { getCommunityMember } from './members/get.mts'
@@ -168,29 +168,25 @@ describe('initiateOwnershipTransfer', () => {
       }),
     ])
 
-    await initiateOwnershipTransfer(owner.id, community.id, moderator.id)
-
-    await expect
-      .poll(async () => {
-        const jobs = await readAllQueueJobs(emails)
-        const isOwnershipTransferJobFor = (userId: string, recipientRole: string) =>
-          jobs.some(job => {
-            const data = job.data as {
-              input?: { userId?: string }
-              variables?: { recipientRole?: string }
-            }
-            return (
-              job.name === 'processSendCommunityOwnershipTransferEmail' &&
-              data.input?.userId === userId &&
-              data.variables?.recipientRole === recipientRole
-            )
-          })
-        return (
-          isOwnershipTransferJobFor(moderator.id, 'new_owner') &&
-          isOwnershipTransferJobFor(owner.id, 'previous_owner')
-        )
-      })
-      .toBe(true)
+    const { newOwnerEmailEnqueue, previousOwnerEmailEnqueue } = await initiateOwnershipTransfer(
+      owner.id,
+      community.id,
+      moderator.id,
+    )
+    expect(newOwnerEmailEnqueue).not.toBeNull()
+    expect(previousOwnerEmailEnqueue).not.toBeNull()
+    const [newOwnerJob, previousOwnerJob] = await Promise.all([
+      readEnqueuedJob(emails, await newOwnerEmailEnqueue),
+      readEnqueuedJob(emails, await previousOwnerEmailEnqueue),
+    ])
+    expect(newOwnerJob).toMatchObject({
+      name: 'processSendCommunityOwnershipTransferEmail',
+      data: { input: { userId: moderator.id }, variables: { recipientRole: 'new_owner' } },
+    })
+    expect(previousOwnerJob).toMatchObject({
+      name: 'processSendCommunityOwnershipTransferEmail',
+      data: { input: { userId: owner.id }, variables: { recipientRole: 'previous_owner' } },
+    })
   })
 
   it('queues a user-targeted new-owner email when the new owner has no email address', async () => {
@@ -211,24 +207,18 @@ describe('initiateOwnershipTransfer', () => {
       }),
     ])
 
-    await initiateOwnershipTransfer(owner.id, community.id, moderator.id)
-
-    await expect
-      .poll(async () => {
-        const jobs = await readAllQueueJobs(emails)
-        return jobs.some(job => {
-          const data = job.data as {
-            input?: { userId?: string }
-            variables?: { recipientRole?: string }
-          }
-          return (
-            job.name === 'processSendCommunityOwnershipTransferEmail' &&
-            data.input?.userId === moderator.id &&
-            data.variables?.recipientRole === 'new_owner'
-          )
-        })
-      })
-      .toBe(true)
+    const { newOwnerEmailEnqueue, previousOwnerEmailEnqueue } = await initiateOwnershipTransfer(
+      owner.id,
+      community.id,
+      moderator.id,
+    )
+    expect(newOwnerEmailEnqueue).not.toBeNull()
+    expect(previousOwnerEmailEnqueue).not.toBeNull()
+    const [newOwnerEnqueued] = await Promise.all([newOwnerEmailEnqueue, previousOwnerEmailEnqueue])
+    expect(await readEnqueuedJob(emails, newOwnerEnqueued)).toMatchObject({
+      name: 'processSendCommunityOwnershipTransferEmail',
+      data: { input: { userId: moderator.id }, variables: { recipientRole: 'new_owner' } },
+    })
   })
 
   it('queues a user-targeted previous-owner email when the previous owner has no email address', async () => {
@@ -249,23 +239,20 @@ describe('initiateOwnershipTransfer', () => {
       }),
     ])
 
-    await initiateOwnershipTransfer(owner.id, community.id, moderator.id)
-
-    await expect
-      .poll(async () => {
-        const jobs = await readAllQueueJobs(emails)
-        return jobs.some(job => {
-          const data = job.data as {
-            input?: { userId?: string }
-            variables?: { recipientRole?: string }
-          }
-          return (
-            job.name === 'processSendCommunityOwnershipTransferEmail' &&
-            data.input?.userId === owner.id &&
-            data.variables?.recipientRole === 'previous_owner'
-          )
-        })
-      })
-      .toBe(true)
+    const { newOwnerEmailEnqueue, previousOwnerEmailEnqueue } = await initiateOwnershipTransfer(
+      owner.id,
+      community.id,
+      moderator.id,
+    )
+    expect(newOwnerEmailEnqueue).not.toBeNull()
+    expect(previousOwnerEmailEnqueue).not.toBeNull()
+    const [, previousOwnerEnqueued] = await Promise.all([
+      newOwnerEmailEnqueue,
+      previousOwnerEmailEnqueue,
+    ])
+    expect(await readEnqueuedJob(emails, previousOwnerEnqueued)).toMatchObject({
+      name: 'processSendCommunityOwnershipTransferEmail',
+      data: { input: { userId: owner.id }, variables: { recipientRole: 'previous_owner' } },
+    })
   })
 })
