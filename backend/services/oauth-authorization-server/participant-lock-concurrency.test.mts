@@ -48,6 +48,7 @@ describe('OAuth participant lifecycle lock concurrency', () => {
       await waitForTestPostgresLockWaiter(
         firstCodeLock.holderProcessId,
         '/* lockAuthorizationCode */',
+        'advisoryLock',
       )
       secondExchange = exchangeOAuthAuthorizationCode({
         clientId: first.client.client_id,
@@ -59,6 +60,7 @@ describe('OAuth participant lifecycle lock concurrency', () => {
       await waitForTestPostgresLockWaiter(
         secondCodeLock.holderProcessId,
         '/* lockAuthorizationCode */',
+        'advisoryLock',
       )
       secondCodeLock.release()
       const secondTokens = await secondExchange

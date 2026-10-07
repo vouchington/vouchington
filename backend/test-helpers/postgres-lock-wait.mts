@@ -1,4 +1,4 @@
-import { write, type QueryExecutor } from '@data-stores/psql'
+import { advisoryLockPool, write, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { pollUntilNotNull } from './polling.mts'
 
@@ -50,14 +50,21 @@ export async function getTestPostgresAdvisoryLockHolderProcessId(input: {
   return processId
 }
 
-/** Waits until a query bearing `queryMarker` is blocked by this test's lock-holding backend. */
+/**
+ * Waits until a query bearing `queryMarker` is blocked by this test's lock-holding backend.
+ * Use the adapter-owned primary advisory pool when the held lock and blocked operations can
+ * occupy every write connection; the observer must run before the holder is released. The
+ * advisory pool has its own finite capacity, so this does not prevent contention with other
+ * advisory-pool users or an event-loop stall.
+ */
 export async function waitForTestPostgresLockWaiter(
   holderProcessId: number,
   queryMarker: string,
+  observerPool: 'write' | 'advisoryLock' = 'write',
 ): Promise<void> {
   await pollUntilNotNull(
     async () => {
-      const { rows } = await write<{ waiting: boolean }>(sql`
+      const observation = sql`
         /* waitForTestPostgresLockWaiter */
         SELECT EXISTS (
           SELECT 1
@@ -68,7 +75,11 @@ export async function waitForTestPostgresLockWaiter(
             AND activity.query LIKE ${`%${queryMarker}%`}
             AND ${holderProcessId} = ANY(pg_blocking_pids(activity.pid))
         ) AS waiting
-      `)
+      `
+      const { rows } =
+        observerPool === 'advisoryLock'
+          ? await advisoryLockPool.query<{ waiting: boolean }>(observation)
+          : await write<{ waiting: boolean }>(observation)
       return rows[0]?.waiting ? true : null
     },
     5_000,

@@ -122,7 +122,7 @@ async function updateTestOAuthClientWhileWaiting<T>(
     await update(transaction)
     const holderProcessId = await getTestPostgresBackendProcessId(transaction)
     operationOutcome = Promise.allSettled([input.start()] as const)
-    await waitForTestPostgresLockWaiter(holderProcessId, input.waiterQueryMarker)
+    await waitForTestPostgresLockWaiter(holderProcessId, input.waiterQueryMarker, 'advisoryLock')
     await transaction.commit()
   }
   const [outcome] = await operationOutcome
