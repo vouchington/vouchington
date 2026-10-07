@@ -1,7 +1,12 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-import { parseSync } from '@libpg-query/parser'
+import { parsePostgresSql } from 'no-mistakes'
+import {
+  createPostgresReplayContext,
+  type GeneratedColumnReferences,
+  type SchemaSnapshot,
+} from 'vouchington-tooling/pg-schema-snapshot'
 import { collectColumnRefs } from './on-conflict-column-refs.mts'
 import { generatedArbiterViolation } from './on-conflict-generated-arbiter.mts'
 import {
@@ -11,27 +16,58 @@ import {
   replayUnsafeTrigger,
 } from './on-conflict-triggers.mts'
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
-
 // Parsed once at module load — schema.json is large, and every config-driven guard test in this
-// process needs the same, immutable snapshot. Path is resolved relative to this file rather than
-// ctx.repoRoot, since this module has no SharedContext to read one from.
 const schemaPath = fileURLToPath(
   new URL('../../../../data-stores/psql/schema-snapshot/schema.json', import.meta.url),
 )
-const schema = JSON.parse(readFileSync(schemaPath, 'utf8')) as {
-  tables: Record<
-    string,
-    {
-      triggers: Record<string, string>
-      columns: Record<
-        string,
-        { generated: 'stored' | 'virtual' | null; generatedExpression: string | null }
-      >
+const schema = JSON.parse(readFileSync(schemaPath, 'utf8')) as SchemaSnapshot
+const generatedColumnDefinitions = Object.entries(schema.tables).flatMap(([table, snapshotTable]) =>
+  Object.entries(snapshotTable.columns).flatMap(([column, definition]) =>
+    definition.generated === 'stored' && definition.generatedExpression !== null
+      ? [{ table, column, expression: definition.generatedExpression }]
+      : [],
+  ),
+)
+const generatedExpressionFacts = generatedColumnDefinitions.length
+  ? await parsePostgresSql(
+      generatedColumnDefinitions.map(({ table, column, expression }) => ({
+        sql: `SELECT (${expression})`,
+        fileName: `schema-snapshot:${table}.${column}`,
+      })),
+    )
+  : []
+const generatedColumnReferences: GeneratedColumnReferences[] = generatedColumnDefinitions.map(
+  ({ table, column }, index) => {
+    const facts = generatedExpressionFacts[index]
+    const statement = facts?.statements[0]
+    if (
+      !facts ||
+      facts.diagnostics.length > 0 ||
+      facts.statements.length !== 1 ||
+      statement?.kind !== 'select' ||
+      !statement.query.complete ||
+      statement.query.unsupported.length > 0
+    ) {
+      throw new Error(`Unable to collect generated-column references for ${table}.${column}`)
     }
-  >
+    return {
+      table,
+      column,
+      sourceColumns: [
+        ...new Set(
+          statement.query.columns.flatMap(reference => {
+            const name = reference.name.parts.at(-1)?.value
+            return name === undefined ? [] : [name]
+          }),
+        ),
+      ],
+    }
+  },
+)
+const replayContext = createPostgresReplayContext({ schema, generatedColumnReferences })
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
 }
 
 /**
@@ -39,9 +75,7 @@ const schema = JSON.parse(readFileSync(schemaPath, 'utf8')) as {
  * caller should then treat the insert as trigger-unsafe rather than silently skip the check.
  */
 export function triggerTextsForTable(table: string): readonly string[] | undefined {
-  const snapshotTable = schema.tables[table]
-  if (!snapshotTable) return undefined
-  return Object.values(snapshotTable.triggers)
+  return replayContext.triggerTextsForTable(table)
 }
 
 export function hasReplayUnsafeTrigger(insert: unknown, onConflict: unknown): boolean {
@@ -60,30 +94,15 @@ export function hasReplayUnsafeTrigger(insert: unknown, onConflict: unknown): bo
   )
 }
 
-const generatedDependenciesCache = new Map<string, ReadonlyMap<string, ReadonlySet<string>>>()
-
 /**
  * Maps each STORED generated column in `table` to the source columns its expression reads —
- * mirrors the frontend's `generatedDependenciesForTable`, reading this module's schema.json
- * singleton instead of a `tables` parameter. Memoized per table: called once per judged INSERT,
- * and each miss re-parses every STORED generated column's expression.
+ * uses released parser facts projected through `createPostgresReplayContext`. The module's
+ * schema.json is read once; the context memoizes the table projection.
  */
 export function generatedDependenciesForTable(
   table: string,
 ): ReadonlyMap<string, ReadonlySet<string>> | undefined {
-  const cached = generatedDependenciesCache.get(table)
-  if (cached) return cached
-  const snapshotTable = schema.tables[table]
-  if (!snapshotTable) return undefined
-  const dependencies = new Map<string, Set<string>>()
-  for (const [column, definition] of Object.entries(snapshotTable.columns)) {
-    if (definition.generated !== 'stored' || definition.generatedExpression === null) continue
-    const sources = new Set<string>()
-    collectColumnRefs(parseSync(`SELECT (${definition.generatedExpression})`), sources)
-    if (sources.size > 0) dependencies.set(column, sources)
-  }
-  generatedDependenciesCache.set(table, dependencies)
-  return dependencies
+  return replayContext.generatedDependenciesForTable(table)
 }
 
 export function hasGeneratedArbiterViolation(insert: unknown, onConflict: unknown): boolean {
