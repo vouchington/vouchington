@@ -1,3 +1,4 @@
+import type { LocalizationConsumer } from '@vouchington/localization'
 import type { Catalog, CatalogLeaf } from './index.mts'
 import {
   isMessageDescriptor,
@@ -11,26 +12,30 @@ export const NATIVE_RESOURCE_LOCALES = ['en', 'es', 'fr', 'pt'] as const
 export type NativeResourceLocale = (typeof NATIVE_RESOURCE_LOCALES)[number]
 export type NativeCatalogs = Readonly<Record<NativeResourceLocale, Catalog>>
 
-const defaultCatalogs: Partial<Record<NativeResourceLocale, Catalog>> = {}
-
-function defaultCatalog(locale: NativeResourceLocale): Catalog {
-  return (defaultCatalogs[locale] ??= catalogTreeForLocale(locale, ['web', 'swift', 'dotnet']))
+export function createNativeCatalogs(
+  loadLocale: (locale: NativeResourceLocale, consumers: readonly LocalizationConsumer[]) => Catalog,
+): NativeCatalogs {
+  const cache: Partial<Record<NativeResourceLocale, Catalog>> = {}
+  function getCatalog(locale: NativeResourceLocale): Catalog {
+    return (cache[locale] ??= loadLocale(locale, ['web', 'swift', 'dotnet']))
+  }
+  return {
+    get en() {
+      return getCatalog('en')
+    },
+    get es() {
+      return getCatalog('es')
+    },
+    get fr() {
+      return getCatalog('fr')
+    },
+    get pt() {
+      return getCatalog('pt')
+    },
+  }
 }
 
-export const DEFAULT_NATIVE_CATALOGS: NativeCatalogs = {
-  get en() {
-    return defaultCatalog('en')
-  },
-  get es() {
-    return defaultCatalog('es')
-  },
-  get fr() {
-    return defaultCatalog('fr')
-  },
-  get pt() {
-    return defaultCatalog('pt')
-  },
-}
+export const DEFAULT_NATIVE_CATALOGS: NativeCatalogs = createNativeCatalogs(catalogTreeForLocale)
 
 export function getNativeCatalogLeaf(catalog: Catalog, key: string): CatalogLeaf {
   let node: CatalogLeaf | Catalog = catalog
