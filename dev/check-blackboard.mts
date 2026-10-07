@@ -107,11 +107,12 @@ async function main(): Promise<void> {
     const message = err instanceof Error ? err.message : String(err)
     if (err instanceof BlackboardModuleUnavailableError) {
       emitContext(
-        `STOP WORK: agent-blackboard is unavailable (${message}). This is a workspace-setup ` +
+        `agent-blackboard helpers are unavailable (${message}). This is a workspace-setup ` +
           'problem in this worktree, not a deployment outage — the hosted agent-blackboard ' +
           'deployment and AGENT_BLACKBOARD_URL/AGENT_BLACKBOARD_TOKEN are not the cause and do not ' +
-          'need checking. Run the command above from the Vouchington worktree root, then start a ' +
-          'fresh session.',
+          'need checking. Run the command above from the Vouchington worktree root, then continue ' +
+          'the task in this session. Blackboard MCP tools that failed to start stay unavailable ' +
+          'until the next session; journal through dev/blackboard-journal.mts meanwhile.',
       )
       return
     }
