@@ -1,10 +1,10 @@
-import { mkdtempDisposableSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempDisposableSync, readFileSync, writeFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-import { catalogMarkdown, main, renderMcpDocs } from './render-mcp-docs.mts'
+import { catalogMarkdown, main, renderMcpDocs, resolveMcpCatalogPath } from './render-mcp-docs.mts'
 
 const SAMPLE_CATALOG = {
   servers: [
@@ -41,6 +41,17 @@ const SAMPLE_CATALOG = {
     },
   ],
 }
+const SAMPLE_CATALOG_RAW = `${JSON.stringify(SAMPLE_CATALOG, null, 2)}\n`
+
+describe('resolveMcpCatalogPath', () => {
+  it('selects the committed catalog by default and preserves a supplied path', () => {
+    expect(resolveMcpCatalogPath()).toBe(
+      resolve(import.meta.dirname, '../api-fixtures/v1/mcp.json'),
+    )
+    const suppliedPath = join(tmpdir(), 'sample-mcp-catalog.json')
+    expect(resolveMcpCatalogPath(suppliedPath)).toBe(suppliedPath)
+  })
+})
 
 describe('catalogMarkdown', () => {
   it('describes each server and every tool gate, with fences longer than any backtick run', () => {
@@ -84,8 +95,7 @@ describe('renderMcpDocs', () => {
     using root = mkdtempDisposableSync(join(tmpdir(), 'render-mcp-docs-'))
     const catalogPath = join(root.path, 'mcp.json')
     const outputDir = join(root.path, 'out/mcp')
-    const raw = `${JSON.stringify(SAMPLE_CATALOG, null, 2)}\n`
-    writeFileSync(catalogPath, raw)
+    writeFileSync(catalogPath, SAMPLE_CATALOG_RAW)
 
     await renderMcpDocs({ outputDir, catalogPath })
 
@@ -93,7 +103,7 @@ describe('renderMcpDocs', () => {
     expect(html).toContain('<title>Voucha MCP Servers</title>')
     expect(html).toContain('<h3><code>get_topic</code></h3>')
     expect(html).toContain('href="mcp.json"')
-    expect(readFileSync(join(outputDir, 'mcp.json'), 'utf8')).toBe(raw)
+    expect(readFileSync(join(outputDir, 'mcp.json'), 'utf8')).toBe(SAMPLE_CATALOG_RAW)
   })
 
   it.each([
@@ -113,32 +123,48 @@ describe('renderMcpDocs', () => {
 
 // runRenderDocsCli's usage and failure exits are covered in render-docs-cli.test.mts.
 describe('main', () => {
-  it('returns exit code 0 after rendering the committed catalog', async () => {
+  it('returns exit code 0 after rendering a supplied catalog', async () => {
     using root = mkdtempDisposableSync(join(tmpdir(), 'render-mcp-docs-'))
+    const catalogPath = join(root.path, 'mcp.json')
+    writeFileSync(catalogPath, SAMPLE_CATALOG_RAW)
 
-    await expect(main([join(root.path, 'mcp')])).resolves.toBe(0)
-    expect(readFileSync(join(root.path, 'mcp/mcp.json'), 'utf8')).toBe(
-      readFileSync('api-fixtures/v1/mcp.json', 'utf8'),
-    )
+    await expect(main([join(root.path, 'mcp'), catalogPath])).resolves.toBe(0)
+    expect(readFileSync(join(root.path, 'mcp/mcp.json'), 'utf8')).toBe(SAMPLE_CATALOG_RAW)
   })
 })
 
 describe('render-mcp-docs CLI', () => {
-  it('renders the committed catalog end-to-end', () => {
+  it('renders a supplied catalog end-to-end', () => {
     using root = mkdtempDisposableSync(join(tmpdir(), 'render-mcp-docs-'))
+    const catalogPath = join(root.path, 'mcp.json')
     const outputDir = join(root.path, 'mcp')
+    writeFileSync(catalogPath, SAMPLE_CATALOG_RAW)
     const result = spawnSync(
       process.execPath,
-      [join(process.cwd(), 'ci/render-mcp-docs.mts'), outputDir],
+      [join(process.cwd(), 'ci/render-mcp-docs.mts'), outputDir, catalogPath],
       { encoding: 'utf8' },
     )
 
-    expect(result).toMatchObject({ status: 0, stderr: '' })
-    expect(readFileSync(join(outputDir, 'mcp.json'), 'utf8')).toBe(
-      readFileSync('api-fixtures/v1/mcp.json', 'utf8'),
-    )
+    expect(result).toMatchObject({ status: 0, stdout: '', stderr: '' })
+    expect(readFileSync(join(outputDir, 'mcp.json'), 'utf8')).toBe(SAMPLE_CATALOG_RAW)
     expect(readFileSync(join(outputDir, 'index.html'), 'utf8')).toContain(
       '<h2><code>voucha-admin-mcp</code></h2>',
     )
+  })
+
+  it('reports a missing supplied catalog without writing output', () => {
+    using root = mkdtempDisposableSync(join(tmpdir(), 'render-mcp-docs-'))
+    const outputDir = join(root.path, 'mcp')
+    const catalogPath = join(root.path, 'missing.json')
+    const result = spawnSync(
+      process.execPath,
+      [join(process.cwd(), 'ci/render-mcp-docs.mts'), outputDir, catalogPath],
+      { encoding: 'utf8' },
+    )
+
+    expect(result.status).toBe(1)
+    expect(result.stdout).toBe('')
+    expect(result.stderr).toContain(`Cannot read MCP catalog at ${catalogPath}`)
+    expect(existsSync(outputDir)).toBe(false)
   })
 })
