@@ -1,5 +1,10 @@
 import { retractEntityRelationVote } from '@services/elections-votes/entity-relation'
-import type { Tool } from '@services/openai-agents/tool-types'
+import {
+  chargeElectionVoteRateLimit,
+  ENTITY_RELATION_VOTE_RATE_LIMIT_PREFIX,
+} from '@services/elections-votes/shared'
+import { ToolRateLimitError } from '@services/openai-agents/tool-rate-limit-error'
+import type { Tool, ToolInvocationContext } from '@services/openai-agents/tool-types'
 import type { BasicUser } from '@services/users/types'
 import { successSchema } from './output-schema-shapes.mts'
 import { requireActiveToolUser } from './private-user.mts'
@@ -31,9 +36,18 @@ const tool: Tool<ToolArgs, { success: true }> = {
     api: [{ method: 'DELETE', path: '/api/v1/entity-relations/:id/vote' }],
     outputSchema: successSchema({}),
   },
-  function: (currentUser: BasicUser) => async (args: ToolArgs) => {
+  function: (currentUser: BasicUser) => async (args: ToolArgs, context?: ToolInvocationContext) => {
     const user = await requireActiveToolUser(currentUser)
-    await retractEntityRelationVote(user.id, args.id)
+    await retractEntityRelationVote(user.id, args.id, async () => {
+      if (!context?.mcpRateLimit) return
+      const { limited, retryAfterSeconds } = await chargeElectionVoteRateLimit(
+        ENTITY_RELATION_VOTE_RATE_LIMIT_PREFIX,
+        user.id,
+        context.mcpRateLimit.ip,
+        null,
+      )
+      if (limited) throw new ToolRateLimitError(retryAfterSeconds)
+    })
     return { success: true }
   },
 }

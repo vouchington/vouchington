@@ -16,11 +16,16 @@ import {
  * changes nothing. The same per-user, per-relation lock the route takes serializes it against a
  * vote cast or cleared from the web at the same moment.
  */
-export async function retractEntityRelationVote(userId: string, relationId: string): Promise<void> {
+export async function retractEntityRelationVote(
+  userId: string,
+  relationId: string,
+  beforeMutation?: () => Promise<void>,
+): Promise<void> {
   const id = relationId.toLowerCase()
   if (!(await resolveEntityRelationElectionTargetById(id))) {
     throw createError(404, 'Entity relation not found')
   }
+  await beforeMutation?.()
   const cleared = await withElectionVoteRequestLock('entity_relation', userId, id, async () => {
     if ((await getEntityRelationElectionVote(userId, id)) === null) {
       refreshVoteStatsAfterNoop(id)
