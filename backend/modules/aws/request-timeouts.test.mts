@@ -63,9 +63,8 @@ describe('AWS request timeouts', () => {
     })
 
     try {
-      const result = await captureRejection(client.send(new ListBucketsCommand({})))
-      expect(result.error).toBeInstanceOf(Error)
-      expect(result.elapsedMs).toBeLessThan(REJECTION_DEADLINE_MS)
+      const error = await captureRejectionBeforeDeadline(client.send(new ListBucketsCommand({})))
+      expect(error).toBeInstanceOf(Error)
     } finally {
       client.destroy()
     }
@@ -85,9 +84,8 @@ describe('AWS request timeouts', () => {
     })
 
     try {
-      const result = await captureRejection(client.send(new ListQueuesCommand({})))
-      expect(result.error).toBeInstanceOf(Error)
-      expect(result.elapsedMs).toBeLessThan(REJECTION_DEADLINE_MS)
+      const error = await captureRejectionBeforeDeadline(client.send(new ListQueuesCommand({})))
+      expect(error).toBeInstanceOf(Error)
     } finally {
       client.destroy()
     }
@@ -100,16 +98,25 @@ describe('AWS request timeouts', () => {
   }
 })
 
-async function captureRejection(
-  request: Promise<unknown>,
-): Promise<{ elapsedMs: number; error: unknown }> {
-  const startedAt = performance.now()
-  try {
-    await request
-  } catch (err) {
-    return { elapsedMs: performance.now() - startedAt, error: err }
-  }
-  return { elapsedMs: performance.now() - startedAt, error: undefined }
+async function captureRejectionBeforeDeadline(request: Promise<unknown>): Promise<unknown> {
+  const deadline = AbortSignal.timeout(REJECTION_DEADLINE_MS)
+  const deadlineExceeded = new Promise<never>((_resolve, reject) => {
+    deadline.addEventListener(
+      'abort',
+      () => reject(new Error(`AWS request did not reject within ${REJECTION_DEADLINE_MS}ms`)),
+      { once: true },
+    )
+  })
+
+  return Promise.race([
+    request.then(
+      async () => {
+        throw new Error('Expected the stalled AWS request to reject')
+      },
+      err => err,
+    ),
+    deadlineExceeded,
+  ])
 }
 
 function closeServer(server: Server): Promise<void> {
