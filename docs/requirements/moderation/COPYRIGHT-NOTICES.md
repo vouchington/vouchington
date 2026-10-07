@@ -944,7 +944,9 @@ no restoration behavior, and has no duration or scope. See
 
 An operative repeat-infringer incident does not block account deletion. The account's personal
 data follows the normal erasure path. Incidents and repeat-infringer review outcomes and dates stay
-linked to the retained account identity as the minimal 17 USC 512(i) record.
+linked to the retained account identity as the minimal 17 USC 512(i) record. Later notice
+resynchronization keeps a deleted account's existing incident operative until a real reversal or
+staff disposition ends it; deletion alone never changes the retained count.
 
 ## Data export
 
