@@ -1,11 +1,10 @@
 import { close as closePsql } from '@data-stores/psql'
-import { onGracefulShutdown, waitForDynamicConfigInitialization } from '@data-stores/valkey-core'
+import { onGracefulShutdown } from '@data-stores/valkey-core'
+import { ALL_TOOLS } from '@voucha/tools/registry/index'
 import { runCatalogGeneration } from './generate-catalog.mts'
-
-const { ALL_TOOLS } = await import('@voucha/tools/registry/index')
 
 await runCatalogGeneration(process.argv.slice(2), {
   tools: ALL_TOOLS,
-  ready: waitForDynamicConfigInitialization(),
+  ready: onGracefulShutdown.waitForInitialization(),
   closeResources: [onGracefulShutdown, closePsql],
 })

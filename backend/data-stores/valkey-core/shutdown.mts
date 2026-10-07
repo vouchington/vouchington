@@ -51,16 +51,17 @@ export function createGracefulShutdown(
   }
 }
 
-export const onGracefulShutdown = createGracefulShutdown()
-
-/** Let startup reads and default writes settle before a short-lived registry command closes clients. */
-export async function waitForDynamicConfigInitialization(): Promise<void> {
-  const results = await Promise.allSettled(
-    dynamicConfigs.map(config => Promise.resolve().then(() => config.waitForInitialization())),
-  )
-  const errors = collectErrors(results)
-  if (errors.length > 0) throw new AggregateError(errors, 'Dynamic config initialization failed')
-}
+export const onGracefulShutdown = Object.assign(createGracefulShutdown(), {
+  async waitForInitialization(
+    configs: Iterable<{ waitForInitialization(): Promise<void> }> = dynamicConfigs,
+  ): Promise<void> {
+    const results = await Promise.allSettled(
+      Array.from(configs, config => Promise.resolve().then(() => config.waitForInitialization())),
+    )
+    const errors = collectErrors(results)
+    if (errors.length > 0) throw new AggregateError(errors, 'Dynamic config initialization failed')
+  },
+})
 
 // Self-register so the final shutdown phase (after drain callbacks) closes these clients, without
 // @data-stores/graceful-shutdown importing @data-stores/valkey directly (that direct import

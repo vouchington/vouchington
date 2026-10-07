@@ -79,7 +79,7 @@ jobs:
           export S3_BUCKET_CRAWLS=test-crawls
           export S3_BUCKET_USER_EXPORTS=test-user-exports
           export S3_BUCKET_QUARANTINE=test-quarantine
-          node backend/services/mcp-tools/catalog/check-live-catalog.mts
+          node ci/check-live-mcp-catalog.mjs
           pnpm run mcp:catalog -- --check
         timeout-minutes: 10
       - name: Check canonical API snapshot git state

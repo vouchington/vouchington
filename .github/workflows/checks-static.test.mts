@@ -146,7 +146,7 @@ describe('checks-static workflow', () => {
       "export VALKEY_URL=redis://localhost:${{ job.services.valkey.ports['6379'] }}",
     )
     expect(compilation?.run?.trim().split('\n').slice(-2)).toEqual([
-      'node backend/services/mcp-tools/catalog/check-live-catalog.mts',
+      'node ci/check-live-mcp-catalog.mjs',
       'pnpm run mcp:catalog -- --check',
     ])
     expect(numberField(compilation?.['timeout-minutes'], 'contract check')).toBeGreaterThan(
@@ -181,7 +181,7 @@ fi\n`,
     ]) {
       expect(compilation?.run).toContain(`export ${name}=test-`)
     }
-    expect(steps.filter(step => step.run?.includes('check-live-catalog.mts'))).toHaveLength(1)
+    expect(steps.filter(step => step.run?.includes('check-live-mcp-catalog.mjs'))).toHaveLength(1)
     expect(
       steps.filter(step => step.run?.includes('pnpm run mcp:catalog -- --check')),
     ).toHaveLength(1)
