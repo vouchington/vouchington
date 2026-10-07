@@ -44,7 +44,7 @@ export const updateCrawler = async (
     updates.referral_program_id !== undefined
 
   if (!hasUpdates) {
-    const crawler = await getCrawlerById(crawlerId)
+    const crawler = await getCrawlerById(crawlerId, { query: options.query })
     if (!crawler) throw createError(404, `Crawler not found: ${crawlerId}`)
     return crawler
   }

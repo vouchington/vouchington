@@ -30,7 +30,7 @@ export async function deleteUserModNote(
 
     if (!isStaff) {
       if (note.community_id !== null) {
-        const moderatedIds = await getModeratedCommunityIds(currentUser)
+        const moderatedIds = await getModeratedCommunityIds(currentUser, { query })
         assert(moderatedIds.includes(note.community_id), 403, 'Forbidden')
       } else {
         assert(false, 403, 'Forbidden')
