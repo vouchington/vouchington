@@ -4,6 +4,7 @@ import { valkeyEvents } from 'valkyries'
 import { initializeValkeyAppIntegration } from './app-integration.mts'
 
 type EmittedAnalyticsEvent = [string, Record<string, unknown>]
+const metric = { cacheName: 'u', batch: false, hits: 0, misses: 1, bloomMisses: 0, durationMs: 1 }
 
 type IntegrationState = {
   analyticsPromise: Promise<typeof import('@data-stores/analytics') | null> | null
@@ -25,13 +26,14 @@ function useAnalyticsLoader(loader: IntegrationState['loadAnalytics']) {
   state.analyticsPromise = null
 }
 
-function createAnalyticsLoader(emitted: EmittedAnalyticsEvent[]) {
-  return async () =>
-    ({
-      emit(event: string, payload: Record<string, unknown>) {
-        emitted.push([event, payload])
-      },
-    }) as typeof import('@data-stores/analytics')
+function createAnalyticsLoader(
+  emitted: EmittedAnalyticsEvent[],
+  emit: (event: string, payload: Record<string, unknown>) => void | Promise<void> = (
+    event,
+    payload,
+  ) => void emitted.push([event, payload]),
+) {
+  return async () => ({ emit }) as unknown as typeof import('@data-stores/analytics')
 }
 
 describe('valkey app integration', () => {
@@ -277,5 +279,18 @@ describe('valkey app integration', () => {
 
     await waitForCacheMetricCompletions()
     expect(captureException).toHaveBeenCalledWith(error, expect.anything())
+  })
+
+  it('clears rejected metric completions after error reporting fails', async () => {
+    const emitError = new Error('analytics emit failed')
+    const reportingError = new Error('Sentry capture failed')
+    captureException.mockImplementation(() => {
+      throw reportingError
+    })
+    useAnalyticsLoader(createAnalyticsLoader([], () => Promise.reject(emitError)))
+    valkeyEvents.emit('cache:call', metric)
+    await expect(waitForCacheMetricCompletions()).rejects.toBe(reportingError)
+    expect(captureException).toHaveBeenCalledWith(emitError, expect.anything())
+    await expect(waitForCacheMetricCompletions()).resolves.toBeUndefined()
   })
 })
