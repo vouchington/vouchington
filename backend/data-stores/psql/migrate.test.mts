@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 
 import pg from 'pg'
 import { describe, expect, it, vi } from 'vitest'
@@ -221,6 +221,9 @@ describe('applyAllMigrations', () => {
           `CREATE OR REPLACE VIEW ${view} AS SELECT id FROM ${baseTable};`,
         ),
       ])
+      // The runner rejects a directory that omits an applied ledger file.
+      // Symlinks keep generator imports resolving from the real migrations tree.
+      await linkAppliedFixedMigrations(join(root, 'migrations'))
 
       const logger = { error: () => {}, log: () => {} }
       await expect(
@@ -253,4 +256,20 @@ function makeMigrationWriter(statements: string[]): QueryExecutor {
     statements.push(stringFromUnknown(input))
     return Promise.resolve({ command: '', fields: [], oid: 0, rowCount: 0, rows: [] })
   }
+}
+
+async function linkAppliedFixedMigrations(migrationsDir: string): Promise<void> {
+  const { rows } = await read<{ id: string }>(
+    '/* listAppliedFixedMigrations */ SELECT id FROM migrations ORDER BY id',
+  )
+  const sourceDir = join(import.meta.dirname, 'migrations')
+  await Promise.all(
+    rows.map(row => {
+      const fileName = row.id
+      if (fileName !== basename(fileName)) {
+        throw new Error(`Applied migration id is not a file name: ${fileName}`)
+      }
+      return symlink(join(sourceDir, fileName), join(migrationsDir, fileName))
+    }),
+  )
 }

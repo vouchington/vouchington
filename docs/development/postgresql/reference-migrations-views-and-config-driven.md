@@ -39,7 +39,8 @@ them. See [prelaunch relational storage](../postgres-schema-rules.md#prelaunch-r
 The fixed-schema runner acquires a database-scoped PostgreSQL advisory lock before reading the
 ledger and keeps the lock, ledger reads, and migration execution on one pinned writer client. A
 fixed migration is transactional by default: its SQL and ledger insert commit or roll back
-together. The runner applies `PG_MIGRATION_LOCK_TIMEOUT_MS` (default `5000`) and
+together. Before applying a new file, a rerun fails when an applied ledger id has no file in that
+migrations directory or the file checksum no longer matches the ledger. The runner applies `PG_MIGRATION_LOCK_TIMEOUT_MS` (default `5000`) and
 `PG_MIGRATION_STATEMENT_TIMEOUT_MS` (default `900000`) while it owns that client, then restores the
 client's original session settings before returning it to the pool.
 
