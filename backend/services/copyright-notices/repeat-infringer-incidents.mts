@@ -10,6 +10,7 @@ import {
   statutoryRestorationSourceSql,
 } from './restriction-reversal-sources-sql.mts'
 import { copyrightPlacementPartiesSql } from '@services/media-delivery-safety/copyright-placement-parties'
+import { recordCopyrightRepeatInfringerTargetProvenance } from './repeat-infringer-target-provenance.mts'
 
 export type CopyrightRepeatInfringerDisposition = 'withdrawn' | 'duplicate' | 'abusive'
 
@@ -43,15 +44,15 @@ export async function syncCopyrightRepeatInfringerIncidents(
             WHERE review.copyright_restriction_id = restriction.id AND review.action = 'confirm'
           )
         )
-    ), owners AS (
-      SELECT DISTINCT party.user_id AS account_user_id
+    ), current_target_owners AS (
+      SELECT DISTINCT target.id AS copyright_notice_target_id,
+        party.user_id AS account_user_id
       FROM eligible_targets target
       CROSS JOIN LATERAL `)
   statement.append(copyrightPlacementPartiesSql('strike'))
   statement.append(sql` party
-      WHERE target.is_operative_restriction
       UNION
-      SELECT party.user_id
+      SELECT target.id, party.user_id
       FROM eligible_targets target
       CROSS JOIN LATERAL `)
   statement.append(copyrightPlacementPartiesSql('retain'))
@@ -59,23 +60,21 @@ export async function syncCopyrightRepeatInfringerIncidents(
       JOIN copyright_repeat_infringer_incidents incident
         ON incident.account_user_id = party.user_id
         AND incident.copyright_notice_id = ${noticeId}
+    ), owners AS (
+      SELECT DISTINCT owner.account_user_id
+      FROM current_target_owners owner
+      JOIN eligible_targets target ON target.id = owner.copyright_notice_target_id
       WHERE target.is_operative_restriction
       UNION
       SELECT incident.account_user_id
-      FROM copyright_repeat_infringer_incidents incident
-      WHERE incident.copyright_notice_id = ${noticeId}
-        AND incident.is_operative
-        AND NOT EXISTS (SELECT 1 FROM users account
-          WHERE account.id = incident.account_user_id AND account.deleted_at IS NULL)
-        AND EXISTS (SELECT 1 FROM eligible_targets WHERE is_operative_restriction)
-        AND NOT EXISTS (
-          SELECT 1
-          FROM eligible_targets target
-          CROSS JOIN LATERAL `)
-  statement.append(copyrightPlacementPartiesSql('retain'))
-  statement.append(sql` party
-          WHERE party.user_id = incident.account_user_id
-        )
+      FROM copyright_repeat_infringer_incident_targets provenance
+      JOIN copyright_repeat_infringer_incidents incident
+        ON incident.id = provenance.copyright_repeat_infringer_incident_id
+        AND incident.copyright_notice_id = provenance.copyright_notice_id
+      JOIN eligible_targets target
+        ON target.id = provenance.copyright_notice_target_id
+        AND target.is_operative_restriction
+      WHERE provenance.copyright_notice_id = ${noticeId}
     ), desired AS (
       SELECT owners.account_user_id,
         NOT EXISTS (
@@ -110,6 +109,7 @@ export async function syncCopyrightRepeatInfringerIncidents(
     SELECT account_user_id, false FROM cleared
   `)
   await transaction(statement)
+  await recordCopyrightRepeatInfringerTargetProvenance(noticeId, transaction)
   if (accountIds.length === 0) return
   await transaction(sql`
     /* syncCopyrightRepeatInfringerIncidents:openReview */

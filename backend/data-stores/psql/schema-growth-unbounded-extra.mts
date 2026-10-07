@@ -94,6 +94,7 @@ export const EXTRA_UNBOUNDED_TABLES = [
   'copyright_notice_urgent_filings',
   'copyright_notices',
   'copyright_repeat_infringer_dispositions',
+  'copyright_repeat_infringer_incident_targets',
   'copyright_repeat_infringer_incidents',
   'copyright_repeat_infringer_reviews',
   'copyright_restrictions',

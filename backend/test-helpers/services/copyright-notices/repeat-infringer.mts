@@ -7,19 +7,11 @@ import {
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { PrivateUser } from '../../../services/users/types.mts'
-import {
-  completeCopyrightMandatoryHumanReview,
-  recordCopyrightRepeatInfringerReviewOutcome,
-} from '../../../services/copyright-notices/index.mts'
-import { getCopyrightRepeatInfringerAccount } from '../../../services/copyright-notices/repeat-infringer-incidents.mts'
+import { completeCopyrightMandatoryHumanReview } from '../../../services/copyright-notices/index.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from '../../../services/copyright-notices/restrictions.mts'
 import { appendCopyrightSubmissionAssessment } from '../../../services/copyright-notices/compliance.mts'
 import { createCopyrightNoticeAggregate } from './create-notice-aggregate.mts'
 import { getCopyrightNoticePrivateAggregate } from './private-aggregate.mts'
-
-export const getTestCopyrightRepeatInfringerAccount = getCopyrightRepeatInfringerAccount
-export const recordTestCopyrightRepeatInfringerReviewOutcome =
-  recordCopyrightRepeatInfringerReviewOutcome
 
 export async function getTestCopyrightRepeatInfringerReview(reviewId: string) {
   const { rows } = await read<{

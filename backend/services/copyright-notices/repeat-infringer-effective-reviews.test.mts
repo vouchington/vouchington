@@ -24,10 +24,8 @@ import {
   getCopyrightRepeatInfringerAccount,
   recordCopyrightRepeatInfringerDisposition,
 } from './repeat-infringer-incidents.mts'
-
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-
 async function createActors() {
   const [poster, otherPoster, moderatorRecord] = await Promise.all([
     createTestUserDirect(),
@@ -40,7 +38,6 @@ async function createActors() {
     moderator: { ...moderatorRecord, roles: ['administrator'] } as PrivateUser,
   }
 }
-
 describe('copyright effective incident authority', () => {
   it('serializes two distinct confirmations into two incidents and one open review', async () => {
     const { poster, moderator } = await createActors()
@@ -56,12 +53,25 @@ describe('copyright effective incident authority', () => {
     expect(account.incidents.filter(row => row.is_operative)).toHaveLength(2)
     expect(await readTestRepeatInfringerOpenReviewIds(poster.id)).toEqual([account.open_review_id])
   })
-  it('reverses only the appealed account in a multi-owner notice', async () => {
+  it('reverses only the deleted appealed account in a multi-owner notice', async () => {
     const { poster, otherPoster, moderator } = await createActors()
     const fixture = await createTestRepeatInfringerNotice([poster.id, otherPoster.id], moderator)
     await confirmTestRepeatInfringerRestriction(fixture, moderator, 0)
     await confirmTestRepeatInfringerRestriction(fixture, moderator, 1)
-    await reviewTestRepeatInfringerAppeal(fixture, poster, moderator, 'reverse')
+    const appealedRestriction = fixture.restrictions[0]!
+    const appeal = await createCopyrightAppeal(poster, fixture.noticeId, crypto.randomUUID(), {
+      reason: 'Please review the restriction.',
+      targetIds: [appealedRestriction.targetId],
+    })
+    await softDeleteUser(poster.id)
+    await reviewCopyrightAppeal({
+      submissionId: appeal.submission.id,
+      currentUser: moderator,
+      recommendationId: null,
+      manualFallbackReason: 'The retained record supports a manual review.',
+      rationale: 'The retained evidence was reviewed.',
+      decisions: [{ restrictionId: appealedRestriction.id, action: 'reverse' }],
+    })
     expect((await getCopyrightRepeatInfringerAccount(poster.id)).incidents).toEqual([
       expect.objectContaining({ copyright_notice_id: fixture.noticeId, is_operative: false }),
     ])
