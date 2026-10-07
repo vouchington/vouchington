@@ -1,12 +1,11 @@
 import type { Context } from '@jongleberry/api-server'
 import { isAdminUser } from '@services/users'
 import { assertNotSuspended } from '@services/users/suspension-guard'
-import { RateLimiter } from '@data-stores/valkey-rate-limiter'
 import { isUUID } from '@modules/utils'
 import { validateRequestContract } from './response-helpers.mts'
 import {
   getElectionVoteChoiceScore,
-  getElectionVoteRateLimitKeys,
+  chargeElectionVoteRateLimit,
   isElectionVoteChoice,
   withElectionVoteRequestLock,
   type ElectionVoteScore,
@@ -27,8 +26,6 @@ import {
 
 export type { CreateVoteHandlerOptions } from './election-vote-handler-options.mts'
 
-const VOTE_REQUESTS_PER_MINUTE = 30
-
 export function createVoteHandler<VoteResult extends ElectionVoteMutationResult>(
   options: CreateVoteHandlerOptions<VoteResult>,
 ): (ctx: Context) => Promise<void> {
@@ -45,8 +42,6 @@ function createVoteMutationHandler<VoteResult extends ElectionVoteMutationResult
   options: CreateVoteHandlerOptions<VoteResult>,
   isClear: boolean,
 ): (ctx: Context) => Promise<void> {
-  const rateLimiter = new RateLimiter({ prefix: options.rateLimitPrefix, ttlSeconds: 60 })
-
   return async function handleVote(ctx: Context): Promise<void> {
     const currentUser = await ctx.getCurrentUser()
     ctx.assert(currentUser, 401, 'Unauthorized')
@@ -111,8 +106,12 @@ function createVoteMutationHandler<VoteResult extends ElectionVoteMutationResult
     }
 
     const sessionData = await ctx.getSessionTokenData()
-    const rateLimitKeys = getElectionVoteRateLimitKeys(currentUser.id, ctx.ip, sessionData)
-    const { limited } = await rateLimiter.addAndCheck(rateLimitKeys, VOTE_REQUESTS_PER_MINUTE + 1)
+    const { limited } = await chargeElectionVoteRateLimit(
+      options.rateLimitPrefix,
+      currentUser.id,
+      ctx.ip,
+      sessionData,
+    )
     ctx.assert(!limited, 429, 'Too many requests. Please try again later.')
 
     const context: VoteEventContext = {

@@ -24,6 +24,8 @@ type ToolFunction<
 export type ToolInvocationContext = {
   credentialOwnerId: string
   grantedScopes: readonly ApiScope[]
+  // Present only when an MCP request runs this tool, after route-level admission.
+  mcpRateLimit?: { ip: string | undefined }
 }
 
 // The Responses API function_call_output item a tool's formatResult returns.

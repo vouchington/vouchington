@@ -63,6 +63,7 @@
   "dependencies": {
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
+    "@data-stores/valkey-rate-limiter": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/pagination": "workspace:^",
     "@modules/utils": "workspace:^",

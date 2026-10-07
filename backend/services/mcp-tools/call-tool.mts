@@ -18,6 +18,8 @@ import { resolveMcpToolCall, type McpToolCallResolution } from './resolve-tool-c
 import { validateToolArguments } from './validate-tool-arguments.mts'
 import { buildToolResult } from './build-tool-result.mts'
 import { McpToolResultTooLargeError } from './serialize-mcp-tool-result.mts'
+import { buildRateLimitedToolResult } from './rate-limited-result.mts'
+import { ToolRateLimitError } from '@services/openai-agents/tool-rate-limit-error'
 
 export const MCP_TOOL_RESULT_TOO_LARGE_TEXT =
   'The tool result is too large to return. Narrow the query or lower the limit, then try again.'
@@ -33,6 +35,7 @@ export async function callMcpTool(
   permissions: readonly ApiScope[],
   config: McpServerConfig,
   copyrightDecisionToolsEnabled = false,
+  rateLimitContext?: { ip: string | undefined; onRateLimited: () => Promise<void> },
 ): Promise<CallToolResult> {
   const resolution = resolveMcpToolCall(
     toolName,
@@ -53,10 +56,15 @@ export async function callMcpTool(
     const invocationContext: ToolInvocationContext = {
       credentialOwnerId: user.id,
       grantedScopes: permissions,
+      ...(rateLimitContext ? { mcpRateLimit: { ip: rateLimitContext.ip } } : {}),
     }
     const result = await tool.function(user)(args as never, invocationContext)
     return buildToolResult(toolName, result, tool.meta?.outputSchema)
   } catch (err) {
+    if (err instanceof ToolRateLimitError) {
+      await rateLimitContext?.onRateLimited()
+      return buildRateLimitedToolResult(err.retryAfterSeconds)
+    }
     // An oversized result is fixed by asking for less, so it goes back to the caller unreported.
     if (err instanceof McpToolResultTooLargeError) {
       return { isError: true, content: [{ type: 'text', text: MCP_TOOL_RESULT_TOO_LARGE_TEXT }] }

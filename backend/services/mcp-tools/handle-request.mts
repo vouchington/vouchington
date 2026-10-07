@@ -22,6 +22,8 @@ type McpRequestContext = {
   config: McpServerConfig
   // Awaited after an admitted tool call returns an error result, so the caller can record it.
   onToolError?: (toolName: string) => Promise<void>
+  onToolRateLimited?: (toolName: string, messageIndex: number) => Promise<void>
+  clientIp?: string
   // The retry delay of each `tools/call` whose REST route bucket was spent, by message index.
   // Those calls are refused in-band without running, and are already audited as rate limited.
   rateLimitedCalls: ReadonlyMap<number, number>
@@ -31,8 +33,8 @@ export async function handleMcpHttpRequest(ctx: McpRequestContext): Promise<McpH
   const invalidRequestResponse = validateRegisteredMcpRequest(ctx.parsedBody)
   if (invalidRequestResponse) return invalidRequestResponse
 
-  // The SDK dispatches batch messages in source order. Positions distinguish duplicate ids,
-  // whose tool calls can have different route-limit outcomes.
+  // The SDK dispatches batches in source order. Positions distinguish duplicate ids whose calls
+  // can have different route-limit or in-tool outcomes.
   const callIndexesById = new Map<string | number, number[]>()
   const messages = Array.isArray(ctx.parsedBody) ? ctx.parsedBody : [ctx.parsedBody]
   messages.forEach((message, index) => {
@@ -65,6 +67,7 @@ export async function handleMcpHttpRequest(ctx: McpRequestContext): Promise<McpH
       const messageIndex = callIndexesById.get(extra.requestId)?.shift()
       const retryAfterSeconds = ctx.rateLimitedCalls.get(messageIndex ?? -1)
       if (retryAfterSeconds !== undefined) return buildRateLimitedToolResult(retryAfterSeconds)
+      let rateLimited = false
       const result = await callMcpTool(
         request.params.name,
         request.params.arguments ?? {},
@@ -72,8 +75,17 @@ export async function handleMcpHttpRequest(ctx: McpRequestContext): Promise<McpH
         ctx.permissions,
         ctx.config,
         ctx.copyrightDecisionToolsEnabled,
+        {
+          ip: ctx.clientIp,
+          onRateLimited: async () => {
+            rateLimited = true
+            if (messageIndex !== undefined) {
+              await ctx.onToolRateLimited?.(request.params.name, messageIndex)
+            }
+          },
+        },
       )
-      if (result.isError) await ctx.onToolError?.(request.params.name)
+      if (result.isError && !rateLimited) await ctx.onToolError?.(request.params.name)
       return result
     })()
     pendingToolCalls.add(call)

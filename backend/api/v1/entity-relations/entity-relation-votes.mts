@@ -15,6 +15,7 @@ import {
   resolveEntityRelationElectionTargetById,
   upsertEntityRelationVotesById,
 } from '@services/elections-votes/entity-relation'
+import { ENTITY_RELATION_VOTE_RATE_LIMIT_PREFIX } from '@services/elections-votes/shared'
 import { getUserTagRelationById } from '@services/entity-relations/user-tags'
 import { assertNotSuspended, isAdminUser } from '@services/users'
 import { isUUID } from '@modules/utils'
@@ -42,7 +43,7 @@ async function getEntityRelationElectionForRoute(id: string) {
 }
 
 const entityRelationVoteOptions: CreateVoteHandlerOptions = {
-  rateLimitPrefix: 'entity-relation-election-vote',
+  rateLimitPrefix: ENTITY_RELATION_VOTE_RATE_LIMIT_PREFIX,
   routeKey: 'PUT:/api/v1/entity-relations/:id/vote',
   requestContractOperation: 'PUT:/api/v1/entity-relations/:id/vote',
   entityType: 'entity_relation',

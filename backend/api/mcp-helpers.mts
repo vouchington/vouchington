@@ -138,8 +138,13 @@ export async function dispatchMcpRequest(
         parsedBody,
         config,
         copyrightDecisionToolsEnabled,
+        clientIp: ctx.ip,
         rateLimitedCalls,
         ...(audit ? { onToolError: audit.recordToolError } : {}),
+        onToolRateLimited: async (toolName, messageIndex) => {
+          usage.markRateLimited(messageIndex)
+          await audit?.recordToolRateLimit(toolName)
+        },
       })
     },
   )

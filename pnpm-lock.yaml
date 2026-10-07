@@ -5608,6 +5608,9 @@ importers:
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../../data-stores/valkey
+      '@data-stores/valkey-rate-limiter':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-rate-limiter
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error

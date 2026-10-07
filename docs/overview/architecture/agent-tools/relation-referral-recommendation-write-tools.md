@@ -8,19 +8,22 @@ pair, and a read-only grant never satisfies the write scope. The per-call MCP au
 call. The generated [tool catalog](catalog.md) holds each description, hint and scope; the
 [agent tools overview](README.md) covers metadata and plan gating.
 
-| Tool                            | REST twin                                           | Notes                                                                      |
-| ------------------------------- | --------------------------------------------------- | -------------------------------------------------------------------------- |
-| `remove_entity_relation`        | `PATCH /api/v1/posts/:idOrSlug` (categories)        | `action: remove_tag`; scopes `entity-relations:read/write`                 |
-| `withdraw_entity_relation_vote` | `DELETE /api/v1/entity-relations/:id/vote`          | Own vote only; withdrawing a vote never cast succeeds; scopes as above     |
-| `create_referral_link`          | `POST /api/v1/referral-links`                       | Always for the caller; re-adding a link reactivates it and keeps its label |
-| `update_referral_link`          | `PATCH /api/v1/referral-links/:linkId`              | Changes the label; a null label clears it                                  |
-| `delete_referral_link`          | `DELETE /api/v1/referral-links/:linkId`             | Deleting a deleted link is not found; returns `{ success: true }`          |
-| `activate_referral_link`        | `POST /api/v1/referral-links/:linkId/activations`   | Child links follow their parent and are refused                            |
-| `deactivate_referral_link`      | `DELETE /api/v1/referral-links/:linkId/activations` | Idempotent                                                                 |
-| `request_referral_link_unfurl`  | `POST /api/v1/referral-links/:linkId/unfurls`       | Amex all-cards links of a paid owner only; the work runs in the background |
-| `create_topic_recommendation`   | `POST /api/v1/topic-recommendations`                | Required UUID idempotency key; shared delegated admission                  |
-| `update_topic_recommendation`   | `PATCH /api/v1/topic-recommendations/:id`           | Pending only; omitted fields are kept                                      |
-| `withdraw_topic_recommendation` | `DELETE /api/v1/topic-recommendations/:id`          | Pending only; withdrawing a withdrawn one is not found                     |
+- `remove_entity_relation` mirrors `PATCH /api/v1/posts/:idOrSlug` for categories with
+  `action: remove_tag` and the `entity-relations:read/write` scopes.
+- `withdraw_entity_relation_vote` mirrors `DELETE /api/v1/entity-relations/:id/vote`; it removes
+  only the caller's vote, and a never-cast vote still succeeds.
+- `create_referral_link`, `update_referral_link` and `delete_referral_link` mirror the collection
+  `POST` and item `PATCH`/`DELETE` referral-link routes. Re-adding reactivates a link and keeps its
+  label; a null update label clears it; deleting a deleted link is not found.
+- `activate_referral_link` and `deactivate_referral_link` mirror the activation `POST` and `DELETE`
+  routes. Child links follow their parent and cannot be activated separately; deactivation is
+  idempotent.
+- `request_referral_link_unfurl` mirrors `POST /api/v1/referral-links/:linkId/unfurls`. It accepts
+  a paid owner's Amex all-cards link and runs the work in the background.
+- `create_topic_recommendation`, `update_topic_recommendation` and
+  `withdraw_topic_recommendation` mirror the `POST`, `PATCH` and `DELETE` recommendation routes.
+  Creation requires a UUID idempotency key and shared delegated admission; updates and withdrawals
+  require a pending recommendation, and omitted update fields are kept.
 
 Referral link tools use `referral-links:read` and `referral-links:write`; recommendation tools use
 `topic-recommendations:read` and `topic-recommendations:write`. The read scope belongs to
@@ -60,8 +63,10 @@ user tag. It is the one half of the vote route with a request-free command,
 shares for its ballot and stats refresh. Withdrawing is allowed for any account that is not
 suspended, as on the web, so an official account can clear a ballot it cast before it was official.
 It takes the same per-user advisory lock as a web vote, so a withdrawal and a concurrent vote
-serialize. The tool does not apply the vote route's per-minute limiter (keyed by user, IP and
-session); the MCP call path rate-limits each credential itself. Casting a vote has no tool: it adds contribution
+serialize. After account checks and relation lookup, the tool charges the same per-minute election
+vote bucket as the REST set and clear routes. Both share the user key; MCP also uses the request IP
+when present and has no browser device or session key. A refusal returns the tool-level rate-limit
+error and records a rate-limited audit outcome. Casting a vote has no tool: it adds contribution
 gating, a quota and the user-tag permission checks, and no policy says what replaces them for a
 delegated credential.
 

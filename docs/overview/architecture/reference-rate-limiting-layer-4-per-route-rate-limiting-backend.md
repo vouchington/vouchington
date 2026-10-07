@@ -145,6 +145,13 @@ backend is unaffected.
 
 ### MCP tool calls and REST route limits
 
+`withdraw_entity_relation_vote` also shares the entity-relation election-vote minute bucket with
+the REST vote set and clear routes. The vote limiter runs after user authorization, relation lookup
+and input validation on both paths. The common user key shares the budget across protocols; MCP
+adds the trusted request IP when present and has no browser device or session key. A vote-limit
+refusal returns the MCP tool-level `RATE_LIMIT` result and charges no usage-quota unit when it is
+the request's only message.
+
 A `tools/call` is also charged to the per-route bucket of its REST twin, one charge per tool call,
 so a user has one budget per route across both protocols. The transport bucket and the usage quota
 above still apply. See
