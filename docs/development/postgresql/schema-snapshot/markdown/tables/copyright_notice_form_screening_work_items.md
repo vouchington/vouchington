@@ -34,8 +34,8 @@ _none_
 **Indexes:**
 
 - `copyright_notice_form_screening_work_items_pkey`: `CREATE UNIQUE INDEX copyright_notice_form_screening_work_items_pkey ON public.copyright_notice_form_screening_work_items USING btree (copyright_notice_form_intake_id)`
-- `idx_copyright_form_screening_work__available`: `CREATE INDEX idx_copyright_form_screening_work__available ON public.copyright_notice_form_screening_work_items USING btree (available_at, copyright_notice_form_intake_id) WHERE (lease_token IS NULL)`
-- `idx_copyright_form_screening_work__expired`: `CREATE INDEX idx_copyright_form_screening_work__expired ON public.copyright_notice_form_screening_work_items USING btree (lease_expires_at, copyright_notice_form_intake_id) WHERE (lease_token IS NOT NULL)`
+- `idx_copyright_notice_form_screening_work_items__available`: `CREATE INDEX idx_copyright_notice_form_screening_work_items__available ON public.copyright_notice_form_screening_work_items USING btree (available_at, copyright_notice_form_intake_id) WHERE (lease_token IS NULL)`
+- `idx_copyright_notice_form_screening_work_items__expired`: `CREATE INDEX idx_copyright_notice_form_screening_work_items__expired ON public.copyright_notice_form_screening_work_items USING btree (lease_expires_at, copyright_notice_form_intake_id) WHERE (lease_token IS NOT NULL)`
 
 **Triggers:**
 _none_

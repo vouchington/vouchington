@@ -35,4 +35,4 @@ _none_
 
 **Triggers:**
 
-- `trg_community_member_vacations__updated_at`: `CREATE TRIGGER trg_community_member_vacations__updated_at BEFORE UPDATE ON public.community_member_vacations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_community_member_vacations_updated_at`: `CREATE TRIGGER trigger_community_member_vacations_updated_at BEFORE UPDATE ON public.community_member_vacations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

@@ -820,7 +820,7 @@
 - `admin_revoke`
 - `refund`
 
-## `membership_google_play_acknowledgement_skip_reasons`
+## `membership_google_play_acknowledgment_skip_reasons`
 
 - `no_longer_eligible`
 

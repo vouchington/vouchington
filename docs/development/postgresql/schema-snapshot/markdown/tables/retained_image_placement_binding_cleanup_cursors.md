@@ -30,4 +30,4 @@ _none_
 
 **Triggers:**
 
-- `trg_retained_image_placemen_binding_cleanup_cursors__updated_at`: `CREATE TRIGGER trg_retained_image_placemen_binding_cleanup_cursors__updated_at BEFORE UPDATE ON public.retained_image_placement_binding_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_retained_image_placement_cleanup_cursors_updated_at`: `CREATE TRIGGER trigger_retained_image_placement_cleanup_cursors_updated_at BEFORE UPDATE ON public.retained_image_placement_binding_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

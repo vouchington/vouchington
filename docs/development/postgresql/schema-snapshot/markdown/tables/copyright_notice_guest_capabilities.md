@@ -44,4 +44,4 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trg_copyright_notice_guest_capabilities__updated_at`: `CREATE TRIGGER trg_copyright_notice_guest_capabilities__updated_at BEFORE UPDATE ON public.copyright_notice_guest_capabilities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_copyright_notice_guest_capabilities_updated_at`: `CREATE TRIGGER trigger_copyright_notice_guest_capabilities_updated_at BEFORE UPDATE ON public.copyright_notice_guest_capabilities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

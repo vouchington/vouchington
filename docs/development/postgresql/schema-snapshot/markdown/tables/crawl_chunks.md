@@ -44,4 +44,4 @@ _none_
 
 **Triggers:**
 
-- `trg_crawl_chunks__updated_at`: `CREATE TRIGGER trg_crawl_chunks__updated_at BEFORE UPDATE ON public.crawl_chunks FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_crawl_chunks_updated_at`: `CREATE TRIGGER trigger_crawl_chunks_updated_at BEFORE UPDATE ON public.crawl_chunks FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

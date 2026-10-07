@@ -75,4 +75,4 @@ _none_
 
 **Triggers:**
 
-- `trg_crawls__updated_at`: `CREATE TRIGGER trg_crawls__updated_at BEFORE UPDATE ON public.crawls FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_crawls_updated_at`: `CREATE TRIGGER trigger_crawls_updated_at BEFORE UPDATE ON public.crawls FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

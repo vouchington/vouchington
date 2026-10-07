@@ -30,4 +30,4 @@ _none_
 
 **Triggers:**
 
-- `trg_entity_listener_reconciliation_cursors__updated_at`: `CREATE TRIGGER trg_entity_listener_reconciliation_cursors__updated_at BEFORE UPDATE ON public.entity_listener_reconciliation_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_entity_listener_reconciliation_cursors_updated_at`: `CREATE TRIGGER trigger_entity_listener_reconciliation_cursors_updated_at BEFORE UPDATE ON public.entity_listener_reconciliation_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

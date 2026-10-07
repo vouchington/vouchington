@@ -88,5 +88,5 @@ _none_
 
 **Triggers:**
 
-- `trigger_oauth_authorizations_exchange_history`: `CREATE TRIGGER trigger_oauth_authorizations_exchange_history AFTER UPDATE OF exchange_claim_id ON public.oauth_authorizations FOR EACH ROW EXECUTE FUNCTION fn_record_oauth_authorization_exchange_transition()`
+- `trigger_oauth_authorizations_exchange_history`: `CREATE TRIGGER trigger_oauth_authorizations_exchange_history AFTER UPDATE OF exchange_claim_id ON public.oauth_authorizations FOR EACH ROW EXECUTE FUNCTION fn_create_oauth_authorization_exchange_transition()`
 - `trigger_oauth_authorizations_updated_at`: `CREATE TRIGGER trigger_oauth_authorizations_updated_at BEFORE UPDATE ON public.oauth_authorizations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

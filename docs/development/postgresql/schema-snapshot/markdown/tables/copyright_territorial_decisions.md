@@ -57,4 +57,4 @@ Not partitioned — growth: unbounded.
 **Triggers:**
 
 - `trigger_copyright_territorial_decisions_immutable`: `CREATE TRIGGER trigger_copyright_territorial_decisions_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_decisions FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
-- `trigger_copyright_territorial_decisions_scope`: `CREATE TRIGGER trigger_copyright_territorial_decisions_scope BEFORE INSERT ON public.copyright_territorial_decisions FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_territorial_decision()`
+- `trigger_copyright_territorial_decisions_scope`: `CREATE TRIGGER trigger_copyright_territorial_decisions_scope BEFORE INSERT ON public.copyright_territorial_decisions FOR EACH ROW EXECUTE FUNCTION fn_reject_invalid_copyright_territorial_decision()`

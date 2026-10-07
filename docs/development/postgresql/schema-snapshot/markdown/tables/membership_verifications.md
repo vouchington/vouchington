@@ -54,6 +54,6 @@ _none_
 
 **Triggers:**
 
-- `trigger_membership_verifications_complete_processing_work`: `CREATE TRIGGER trigger_membership_verifications_complete_processing_work AFTER UPDATE OF verified_at, conflicted_at, rejected_at ON public.membership_verifications FOR EACH ROW EXECUTE FUNCTION fn_complete_membership_verification_processing_work()`
+- `trigger_membership_verifications_complete_processing_work`: `CREATE TRIGGER trigger_membership_verifications_complete_processing_work AFTER UPDATE OF verified_at, conflicted_at, rejected_at ON public.membership_verifications FOR EACH ROW EXECUTE FUNCTION fn_update_membership_verification_processing_work()`
 - `trigger_membership_verifications_processing_work`: `CREATE TRIGGER trigger_membership_verifications_processing_work AFTER INSERT ON public.membership_verifications FOR EACH ROW EXECUTE FUNCTION fn_create_membership_verification_processing_work()`
 - `trigger_membership_verifications_updated_at`: `CREATE TRIGGER trigger_membership_verifications_updated_at BEFORE UPDATE ON public.membership_verifications FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
