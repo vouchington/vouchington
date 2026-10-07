@@ -6,6 +6,22 @@ import {
   waitForTestPostgresLockWaiter,
 } from './postgres-lock-wait.mts'
 
+export async function getTestCopyrightRepeatInfringerReview(reviewId: string) {
+  const { rows } = await read<{
+    id: string
+    opened_at: Date
+    outcome: string | null
+    outcome_at: Date | null
+    created_at: Date
+    updated_at: Date
+  }>(sql`/* getTestCopyrightRepeatInfringerReview */
+    SELECT id, opened_at, outcome, outcome_at, created_at, updated_at
+    FROM copyright_repeat_infringer_reviews
+    WHERE id = ${reviewId}
+  `)
+  return rows[0] ?? null
+}
+
 export async function readTestRepeatInfringerOpenReviewIds(accountId: string): Promise<string[]> {
   const { rows } = await read<{ id: string }>(sql`
     SELECT id FROM copyright_repeat_infringer_reviews

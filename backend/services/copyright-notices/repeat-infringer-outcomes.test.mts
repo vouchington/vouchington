@@ -4,10 +4,8 @@ import {
   getModeratorActionRowsForTest,
   getTestPostPublicationDirtyWorkForScope,
 } from '@voucha/test-helpers'
-import {
-  confirmTestRepeatInfringerNotice,
-  getTestCopyrightRepeatInfringerReview,
-} from '@voucha/test-helpers/services/copyright-notices/repeat-infringer'
+import { confirmTestRepeatInfringerNotice } from '@voucha/test-helpers/services/copyright-notices/repeat-infringer'
+import { getTestCopyrightRepeatInfringerReview } from '@voucha/test-helpers/copyright-repeat-infringer'
 import { deleteUser } from '@services/users/delete'
 import { getPrivateUserByAny } from '@services/users/get'
 import { suspendUser, unsuspendUser } from '@services/users/suspension'

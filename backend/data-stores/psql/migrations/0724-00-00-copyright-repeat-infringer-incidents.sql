@@ -37,11 +37,16 @@ CREATE TABLE copyright_repeat_infringer_incident_targets (
   PRIMARY KEY (copyright_repeat_infringer_incident_id, copyright_notice_target_id),
   CONSTRAINT fk_copyr_repeat_infringe_incident_targets__incident
     FOREIGN KEY (copyright_repeat_infringer_incident_id, copyright_notice_id)
-    REFERENCES copyright_repeat_infringer_incidents(id, copyright_notice_id) ON DELETE RESTRICT,
-  CONSTRAINT fk_copyr_repeat_infringe_incident_targets__target
-    FOREIGN KEY (copyright_notice_id, copyright_notice_target_id)
-    REFERENCES copyright_notice_targets(copyright_notice_id, id) ON DELETE RESTRICT
+    REFERENCES copyright_repeat_infringer_incidents(id, copyright_notice_id) ON DELETE RESTRICT
 );
+
+ALTER TABLE copyright_repeat_infringer_incident_targets
+  ADD CONSTRAINT fk_copyr_repeat_infringe_incident_targets__target
+  FOREIGN KEY (copyright_notice_id, copyright_notice_target_id)
+  REFERENCES copyright_notice_targets(copyright_notice_id, id) ON DELETE RESTRICT NOT VALID;
+
+ALTER TABLE copyright_repeat_infringer_incident_targets
+  VALIDATE CONSTRAINT fk_copyr_repeat_infringe_incident_targets__target;
 
 CREATE INDEX idx_copyright_repeat_infringer_incident_targets__target
   ON copyright_repeat_infringer_incident_targets (copyright_notice_target_id);

@@ -4,10 +4,8 @@ import {
   createTestCopyrightImageFixture,
   createTestCopyrightRestrictionForImage,
 } from '@voucha/test-helpers/copyright-surface-target-fixtures'
-import {
-  confirmTestRepeatInfringerNotice,
-  getTestCopyrightRepeatInfringerReview,
-} from '@voucha/test-helpers/services/copyright-notices/repeat-infringer'
+import { confirmTestRepeatInfringerNotice } from '@voucha/test-helpers/services/copyright-notices/repeat-infringer'
+import { getTestCopyrightRepeatInfringerReview } from '@voucha/test-helpers/copyright-repeat-infringer'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { hardDeleteTestUser, getTestPrivateUserById } from '@voucha/test-helpers/entities/users'
 import { hasTestRetainedIdentityRoot } from '@voucha/test-helpers/entities/retained-identities'
