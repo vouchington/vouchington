@@ -23,15 +23,11 @@ do not reload a canonical skill or adapter already read in this task.
 - Follow human direction, then the accepted plan, linked issues, and advisory AI reviews. Record
   material decisions with the saved plan or PR; do not duplicate them across mandatory ledgers.
 - Keep the prelaunch, relational-storage, and client-parity constraints in [AGENTS.md](../../../AGENTS.md).
-- Parallelize by default. Split work into independent units and run them at the same time, one
-  worker and worktree per unit, within any cap the human set; peer sessions in other repositories
-  count. Serialize only on a named dependency: an unreleased upstream API or fix, overlapping files
-  or contracts (stack them; see [stacked PRs](../stacked-prs/SKILL.md)), writes in one shared
-  worktree, or DB/Valkey-backed tests, which the coordinator runs one at a time.
-- For upstream `vouchington-tooling` or `no-mistakes` work, open every independent PR at once,
-  shepherd them together, and batch the merge request and release. Adopt here once a release
-  contains what the change needs; work that does not need it starts now. A ready, queued, or
-  shepherding PR does not pause other units.
+- Apply the canonical parallel-by-default rule; upstream means `vouchington-tooling` and
+  `no-mistakes`. Vouchington also serializes writes in one shared worktree, DB/Valkey-backed tests
+  (the coordinator runs them one at a time), and `pnpm exec` and `no-mistakes` calls, which share
+  pnpm's store index and the no-mistakes lock across worktrees. Other parallel tools run through
+  `node_modules/.bin/<tool>`; see [agent sandbox](../../../docs/development/agent-sandbox.md).
 - A permission-layer refusal is not a reason to delegate or disguise the same action. Report it.
   Follow an explicitly supplied safe alternative or documented sandbox retry for environment errors;
   see [agent sandbox](../../../docs/development/agent-sandbox.md).
