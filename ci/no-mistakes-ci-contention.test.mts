@@ -1,178 +1,172 @@
-import { execFileSync } from 'node:child_process'
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 
-import { symbols } from 'no-mistakes'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
-const repoRoot = fileURLToPath(new URL('..', import.meta.url))
-const repoFileCache = new Map<string, string>()
-let cachedPolicySubjectFiles: string[] | undefined
+import {
+  checkNoMistakesTestPolicy,
+  liveAnalysisImportNames,
+  relevantWorkflowCommands,
+  spawnsNoMistakesCli,
+} from './check-no-mistakes-test-policy.mts'
+import {
+  acceptedTestSources,
+  cliSpawnSources,
+  makeNoMistakesPolicyFixture,
+  malformedWorkflow,
+  nonNoMistakesCliSource,
+  rejectedTestSources,
+  sdkImportFixture,
+  staticAnalysisWorkflow,
+  unrelatedWorkflows,
+  workflowWithDuplicate,
+  workflowWithWrongOrder,
+} from './test-helpers/no-mistakes-test-policy-fixtures.mts'
 
-function readRepoFile(path: string): string {
-  const cached = repoFileCache.get(path)
-  if (cached !== undefined) return cached
-  const source = readFileSync(`${repoRoot}/${path}`, 'utf8')
-  repoFileCache.set(path, source)
-  return source
-}
+const fixtureRoots: string[] = []
 
-function trackedTestFiles(): string[] {
-  return execFileSync('git', ['-C', repoRoot, 'ls-files', '-z', '--cached'], {
-    encoding: 'utf8',
-    maxBuffer: 10 * 1024 * 1024,
-  })
-    .split('\0')
-    .filter(
-      path => /\.(?:mock\.)?test\.[cm]?[jt]sx?$/u.test(path) && existsSync(`${repoRoot}/${path}`),
-    )
-    .toSorted()
-}
-
-function policySubjectFiles(): string[] {
-  return (cachedPolicySubjectFiles ??= trackedTestFiles().filter(
-    path => path !== 'ci/no-mistakes-ci-contention.test.mts',
-  ))
-}
-
-const LIVE_ANALYSIS_IMPORTS = new Set([
-  'analyzeProject',
-  'check',
-  'ciTopology',
-  'ciTopologyImpact',
-  'resolveCheck',
-  'testsPlan',
-  'validateMermaidMarkdown',
-])
-
-async function liveAnalysisImportNames(
-  files: string[],
-  root = repoRoot,
-): Promise<Map<string, string[]>> {
-  if (files.length === 0) return new Map()
-  const result = await symbols({
-    root,
-    files,
-    include: 'imports',
-    timeout: 30,
-    lockTimeout: 10,
-    jobs: 1,
-  })
-  return new Map(
-    result.files.map(file => [
-      file.path,
-      (file.imports ?? [])
-        .filter(
-          binding =>
-            binding.source === 'no-mistakes' &&
-            !binding.typeOnly &&
-            LIVE_ANALYSIS_IMPORTS.has(binding.imported),
-        )
-        .map(binding => binding.imported),
-    ]),
-  )
-}
-
-function spawnsNoMistakesCli(source: string): boolean {
-  return (
-    /join\([^)]*['"]node_modules\/\.bin\/no-mistakes['"]/u.test(source) ||
-    /\b(?:spawnSync|execFileSync|execFile)\(\s*(?:noMistakes(?:Binary)?|NO_MISTAKES_BIN|['"]no-mistakes['"])/u.test(
-      source,
-    ) ||
-    /\b(?:spawnSync|execFileSync|execFile)\(\s*['"]pnpm(?:\.cmd)?['"][\s\S]{0,300}['"]no-mistakes['"]/u.test(
-      source,
-    )
-  )
+function fixture(options: Parameters<typeof makeNoMistakesPolicyFixture>[0] = {}) {
+  const input = makeNoMistakesPolicyFixture(options)
+  fixtureRoots.push(input.root)
+  return input
 }
 
 describe('no-mistakes CI contention policy', () => {
-  it('limits real invocations to static analysis', () => {
-    const workflowCommands = readdirSync(`${repoRoot}/.github/workflows`)
-      .filter(path => path.endsWith('.yml') || path.endsWith('.yaml'))
-      .flatMap(path =>
-        readRepoFile(`.github/workflows/${path}`)
-          .split('\n')
-          .map(line => line.trim())
-          .filter(line =>
-            /^(?:run:\s*)?(?:pnpm (?:run|exec) no-mistakes\b.*|node ci\/check-live-workflow-topology\.mts)$/.test(
-              line,
-            ),
-          )
-          .map(command => ({ path, command })),
-      )
-      .toSorted((a, b) => a.path.localeCompare(b.path))
+  afterEach(() => {
+    for (const root of fixtureRoots.splice(0)) rmSync(root, { recursive: true, force: true })
+  })
 
-    expect(workflowCommands).toEqual([
+  it('accepts the sole ordered static-analysis commands and small test inputs', async () => {
+    const input = fixture({ tests: acceptedTestSources, otherWorkflows: unrelatedWorkflows })
+    expect(await checkNoMistakesTestPolicy(input)).toEqual([])
+    expect(relevantWorkflowCommands(input.root, input.workflowPaths)).toEqual([
       {
-        path: 'static-code-analysis.yml',
+        path: '.github/workflows/static-code-analysis.yml',
+        job: 'no-mistakes',
         command:
-          'run: pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check --tsconfig tsconfig.json',
+          'pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check --tsconfig tsconfig.json',
       },
       {
-        path: 'static-code-analysis.yml',
-        command: 'run: node ci/check-live-workflow-topology.mts',
+        path: '.github/workflows/static-code-analysis.yml',
+        job: 'no-mistakes',
+        command: 'node ci/check-no-mistakes-test-policy.mts',
+      },
+      {
+        path: '.github/workflows/static-code-analysis.yml',
+        job: 'no-mistakes',
+        command: 'node ci/check-live-workflow-topology.mts',
       },
     ])
   })
 
-  it('keeps route-selector unit tests off the live graph', () => {
-    expect(
-      readRepoFile('static-code-analysis/i18n-extract/route-selector-map.test.mts'),
-    ).not.toMatch(/\bcomputeRouteAliasMap\b/)
+  it('rejects duplicate or reordered live workflow commands from parsed YAML', async () => {
+    const duplicate = fixture({ workflow: workflowWithDuplicate })
+    expect(await checkNoMistakesTestPolicy(duplicate)).toEqual([
+      expect.stringContaining('"job":"extra","command":"pnpm run no-mistakes"'),
+    ])
+
+    const reordered = fixture({ workflow: workflowWithWrongOrder })
+    expect(await checkNoMistakesTestPolicy(reordered)).toEqual([
+      expect.stringContaining('sole ordered static-analysis job contract'),
+    ])
   })
 
-  it('does not invoke live no-mistakes analysis from Vitest tests', async () => {
-    const imports = await liveAnalysisImportNames(
-      policySubjectFiles().filter(
-        path => !/\.mock\.test\./u.test(path) && readRepoFile(path).includes('no-mistakes'),
-      ),
-    )
-    expect(
-      policySubjectFiles().flatMap(path => {
-        const source = readRepoFile(path)
-        const hits = spawnsNoMistakesCli(source) ? ['cli'] : []
-        if (/\.mock\.test\./u.test(path)) {
-          return hits.length > 0 ? [`${path}:${hits.join(',')}`] : []
-        }
-        hits.push(...(imports.get(path) ?? []).map(name => `import:${name}`))
-        return hits.length > 0 ? [`${path}:${hits.join(',')}`] : []
-      }),
-    ).toEqual([])
+  it('rejects live route-selector, SDK, CLI, and topology use in Vitest tests', async () => {
+    const input = fixture({
+      tests: rejectedTestSources,
+      routeSelectorTest: 'await computeRouteAliasMap()',
+    })
+    expect(await checkNoMistakesTestPolicy(input)).toEqual([
+      'static-code-analysis/i18n-extract/route-selector-map.test.mts must not call the live route-selector graph',
+      'ci/live-cli.test.mts: no-mistakes CLI from Vitest',
+      'ci/live-import.test.mts: live no-mistakes import check',
+      'ci/live-topology.test.mts: live loadRepoTopology() from Vitest',
+    ])
   })
 
   it('selects runtime named imports from the SDK module at their original names', async () => {
-    const root = mkdtempSync(join(tmpdir(), 'live-analysis-imports-'))
-    try {
-      writeFileSync(
-        join(root, 'imports.mts'),
-        [
-          "import { check as runCheck, type CheckOptions } from 'no-mistakes'",
-          "import type { analyzeProject } from 'no-mistakes'",
-          "import { type ciTopology, symbols } from 'no-mistakes'",
-          "import { 'resolveCheck' as resolver, '\\u0063heck' as checker } from 'no-mistakes'",
-          "import defaultApi from 'no-mistakes'",
-          "import * as namespaceApi from 'no-mistakes'",
-          "import { check } from 'other-module'",
-          "const dynamic = import('no-mistakes')",
-          "const { testsPlan } = require('no-mistakes')",
-          "export { ciTopologyImpact } from 'no-mistakes'",
-          "import requiredApi = require('no-mistakes')",
-        ].join('\n'),
-      )
-      expect(await liveAnalysisImportNames([], root)).toEqual(new Map())
-      expect(await liveAnalysisImportNames(['imports.mts'], root)).toEqual(
-        new Map([['imports.mts', ['check', 'resolveCheck', 'check']]]),
-      )
-    } finally {
-      rmSync(root, { recursive: true, force: true })
-    }
+    const input = fixture({ tests: { 'imports.test.mts': sdkImportFixture } })
+    expect(await liveAnalysisImportNames(input.root, [])).toEqual(new Map())
+    expect(await liveAnalysisImportNames(input.root, ['imports.test.mts'])).toEqual(
+      new Map([['imports.test.mts', ['check', 'resolveCheck', 'check']]]),
+    )
   })
 
-  it('does not load live topology from Vitest tests', () => {
-    expect(
-      policySubjectFiles().filter(path => /await loadRepoTopology\(\)/u.test(readRepoFile(path))),
-    ).toEqual([])
+  it('rejects direct, resolved-bin, and pnpm no-mistakes CLI spawns', () => {
+    expect(cliSpawnSources.map(spawnsNoMistakesCli)).toEqual([true, true, true, true])
+    expect(spawnsNoMistakesCli(nonNoMistakesCliSource)).toBe(false)
+  })
+
+  it('fails when the live command moves to another workflow', async () => {
+    const input = fixture({
+      workflow: staticAnalysisWorkflow.replace(
+        '      - run: node ci/check-live-workflow-topology.mts\n',
+        '',
+      ),
+      otherWorkflows: {
+        '.github/workflows/extra.yml':
+          'jobs:\n  audit:\n    steps:\n      - run: node ci/check-live-workflow-topology.mts\n',
+      },
+    })
+    expect(await checkNoMistakesTestPolicy(input)).toEqual([
+      expect.stringContaining('"path":".github/workflows/extra.yml"'),
+    ])
+  })
+
+  it('ignores unrelated YAML keys and reports a changed no-mistakes command', async () => {
+    const input = fixture()
+    writeFileSync(
+      join(input.root, '.github/workflows/static-code-analysis.yml'),
+      `${staticAnalysisWorkflow}env:\n  MESSAGE: no-mistakes\n`,
+    )
+    expect(await checkNoMistakesTestPolicy(input)).toEqual([])
+
+    writeFileSync(
+      join(input.root, '.github/workflows/static-code-analysis.yml'),
+      staticAnalysisWorkflow.replace(
+        'check --tsconfig tsconfig.json',
+        'check --tsconfig other.json',
+      ),
+    )
+    expect(await checkNoMistakesTestPolicy(input)).toEqual([
+      expect.stringContaining('check --tsconfig other.json'),
+    ])
+  })
+
+  it('fails closed with a path and code for missing declared policy inputs', async () => {
+    const workflow = fixture()
+    rmSync(join(workflow.root, '.github/workflows/static-code-analysis.yml'))
+    await expect(checkNoMistakesTestPolicy(workflow)).rejects.toMatchObject({
+      name: 'PolicyInputError',
+      code: 'READ_FAILED',
+      path: '.github/workflows/static-code-analysis.yml',
+    })
+
+    const testSource = fixture()
+    rmSync(join(testSource.root, 'ci/sample.test.mts'))
+    await expect(checkNoMistakesTestPolicy(testSource)).rejects.toMatchObject({
+      name: 'PolicyInputError',
+      code: 'READ_FAILED',
+      path: 'ci/sample.test.mts',
+    })
+
+    const routeSelector = fixture()
+    rmSync(
+      join(routeSelector.root, 'static-code-analysis/i18n-extract/route-selector-map.test.mts'),
+    )
+    await expect(checkNoMistakesTestPolicy(routeSelector)).rejects.toMatchObject({
+      name: 'PolicyInputError',
+      code: 'READ_FAILED',
+      path: 'static-code-analysis/i18n-extract/route-selector-map.test.mts',
+    })
+  })
+
+  it('fails closed with the workflow path when YAML is malformed', async () => {
+    const input = fixture({ workflow: malformedWorkflow })
+    await expect(checkNoMistakesTestPolicy(input)).rejects.toMatchObject({
+      name: 'PolicyInputError',
+      code: 'INVALID_YAML',
+      path: '.github/workflows/static-code-analysis.yml',
+    })
   })
 })

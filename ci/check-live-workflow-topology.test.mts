@@ -1,9 +1,44 @@
 import { describe, expect, it } from 'vitest'
 
-import { liveTopologyAuditErrors } from './check-live-workflow-topology.mts'
-import { makeTopology, makeWorkflow } from './workflow-topology-test-fixtures.mts'
+import {
+  liveTopologyAuditErrors,
+  noMistakesPolicyInvocationErrors,
+} from './check-live-workflow-topology.mts'
+import { makeJob, makeTopology, makeWorkflow } from './workflow-topology-test-fixtures.mts'
 
 describe('live topology audit', () => {
+  it('requires the real static-analysis job to invoke the independent policy checker once', () => {
+    const job = makeJob({
+      id: '.github/workflows/static-code-analysis.yml#no-mistakes',
+      steps: [
+        { index: 0, kind: 'run', run: 'set -e\n  node\tci/check-no-mistakes-test-policy.mts  \n' },
+      ],
+    })
+    expect(noMistakesPolicyInvocationErrors(makeTopology({ jobs: [job] }))).toEqual([])
+    expect(noMistakesPolicyInvocationErrors(makeTopology())).toEqual([
+      expect.stringContaining('must invoke node ci/check-no-mistakes-test-policy.mts exactly once'),
+    ])
+    expect(liveTopologyAuditErrors(makeTopology())).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining(
+          'must invoke node ci/check-no-mistakes-test-policy.mts exactly once',
+        ),
+      ]),
+    )
+    expect(
+      noMistakesPolicyInvocationErrors(
+        makeTopology({
+          jobs: [{ ...job, steps: [{ index: 0, kind: 'run', run: 'node ci/other-check.mts' }] }],
+        }),
+      ),
+    ).toEqual([expect.stringContaining('(found 0)')])
+    expect(
+      noMistakesPolicyInvocationErrors(
+        makeTopology({ jobs: [{ ...job, steps: [job.steps[0]!, job.steps[0]!] }] }),
+      ),
+    ).toEqual([expect.stringContaining('(found 2)')])
+  })
+
   it('surfaces topology diagnostics before permission or inventory checks', () => {
     expect(
       liveTopologyAuditErrors(

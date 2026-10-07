@@ -22,7 +22,7 @@ export function githubWorkflowPaths(root = repoRoot): string[] {
 /**
  * Live `ciTopology()` load for CI scripts. Memoized per process and deadline-free so it
  * queues behind -- never fails against -- a concurrent `no-mistakes check`. Vitest tests must
- * not call this; ci/no-mistakes-ci-contention.test.mts pins that.
+ * not call this; ci/check-no-mistakes-test-policy.mts enforces that in static analysis.
  */
 export function loadRepoTopology(): Promise<WorkflowTopology> {
   cached ??= ciTopology({

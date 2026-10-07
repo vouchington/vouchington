@@ -133,6 +133,9 @@ jobs:
       - name: Run no-mistakes
         run: pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check --tsconfig tsconfig.json
         timeout-minutes: 10
+      - name: Check no-mistakes use in Vitest tests
+        run: node ci/check-no-mistakes-test-policy.mts
+        timeout-minutes: 1
       - name: Check live workflow topology
         run: node ci/check-live-workflow-topology.mts
         timeout-minutes: 5
