@@ -6,6 +6,7 @@ import {
   insertTestPasskey,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
+import { createReAuthToken } from '@services/mfa/re-auth'
 import { routeRateLimitConfig } from '@services/route-rate-limits/config'
 import { closeScopedDynamicConfigContext } from '@voucha/test-helpers/dynamic-config'
 import { v7 } from 'uuid'
@@ -141,6 +142,38 @@ describe('Passkey API Routes', () => {
       await req.authenticateAs(freshUser)
 
       await req.delete(`/api/v1/auth/passkeys/${v7()}`).expect(404)
+    }, 20_000)
+
+    it('rejects unknown JSON fields without deleting the passkey', async () => {
+      const freshUser = await createTestUser()
+      const suffix = `invalid-delete-${crypto.randomUUID()}`
+      const passkey = await insertTestPasskey(freshUser.id, suffix)
+      await insertTestPasskey(freshUser.id, `${suffix}-second`)
+
+      const req = createRequest()
+      await req.authenticateAs(freshUser)
+
+      await req
+        .delete(`/api/v1/auth/passkeys/${passkey.id}`)
+        .send({ re_auth_token: 'unused', extra: 'unexpected' })
+        .expect(422)
+
+      const listRes = await req.get('/api/v1/auth/passkeys').expect(200)
+      expect(listRes.body.results.some((item: { id: string }) => item.id === passkey.id)).toBe(true)
+    }, 20_000)
+
+    it('passes a JSON re-auth token through to the protected delete', async () => {
+      const freshUser = await createTestUser()
+      const passkey = await insertTestPasskey(freshUser.id, `reauth-delete-${crypto.randomUUID()}`)
+      const reAuthToken = await createReAuthToken(freshUser.id)
+
+      const req = createRequest()
+      await req.authenticateAs(freshUser)
+
+      await req
+        .delete(`/api/v1/auth/passkeys/${passkey.id}`)
+        .send({ re_auth_token: reAuthToken })
+        .expect(204)
     }, 20_000)
 
     it('deletes a passkey and returns 204', async () => {

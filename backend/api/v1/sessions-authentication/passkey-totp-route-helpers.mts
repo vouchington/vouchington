@@ -53,7 +53,7 @@ export async function renameMfaFactor(
 
 // Shared by the passkey and TOTP-authenticator delete routes: run the auth/id preamble, read the
 // optional re-auth-token body (skipped entirely for a non-JSON request; a missing or unparseable
-// body reaches here as `undefined`/`{}` so clients reliably receive MFA_REAUTH_REQUIRED rather than
+// body is validated as `{}` so clients reliably receive MFA_REAUTH_REQUIRED rather than
 // a 400 JSON parse error), validate it, and delete. The caller is responsible for its own
 // `apiRequestContract<Key, { re_auth_token?: string }>(key)` marker call and its own
 // `ctx.setStatus(204)`.
@@ -65,19 +65,9 @@ export async function deleteMfaFactor(
   const { currentUser, id } = await requireAuthAndItemId(ctx, operation)
   const body = ctx.request.is('json')
     ? ((await ctx.request.json('100kb').catch(() => ({}))) as { re_auth_token?: string })
-    : undefined
-  const reAuthToken = body === undefined ? undefined : validateReAuthToken(ctx, operation, body)
-  await deleteFactor(currentUser.id, id, reAuthToken)
-}
-
-// Validate an optional re-authentication body only when the request supplied JSON.
-function validateReAuthToken(
-  ctx: Context,
-  operation: string,
-  body: { re_auth_token?: string },
-): string | undefined {
+    : {}
   validateRequestContract(ctx, operation, { body })
-  return body.re_auth_token
+  await deleteFactor(currentUser.id, id, body.re_auth_token)
 }
 
 // Shared by the passkey and TOTP-authenticator list routes, which page through a user's own items
