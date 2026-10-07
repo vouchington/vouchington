@@ -234,12 +234,16 @@ describe('Valkey admin result and shutdown contract', () => {
       const cancellation = new AbortController()
       const operation = Promise.withResolvers<typeof DIAGNOSTIC_RESULT>()
       const shutdown = Promise.withResolvers<void>()
+      const diagnoseStarted = Promise.withResolvers<void>()
+      const shutdownStarted = Promise.withResolvers<void>()
       const runtime = makeRuntime()
       const diagnose = vi.spyOn(runtime, 'diagnose').mockImplementation(async signal => {
         expect(signal).toBe(cancellation.signal)
+        diagnoseStarted.resolve()
         return operation.promise
       })
       const runtimeShutdown = vi.spyOn(runtime, 'shutdown').mockImplementation(async () => {
+        shutdownStarted.resolve()
         await shutdown.promise
       })
       const output = makeIO()
@@ -252,7 +256,8 @@ describe('Valkey admin result and shutdown contract', () => {
         undefined,
         cancellation.signal,
       )
-      await vi.waitFor(() => expect(diagnose).toHaveBeenCalledOnce())
+      await diagnoseStarted.promise
+      expect(diagnose).toHaveBeenCalledOnce()
 
       cancellation.abort(new Error('cancelled during operation'))
       await Promise.resolve()
@@ -261,7 +266,8 @@ describe('Valkey admin result and shutdown contract', () => {
 
       if (settlement === 'resolves') operation.resolve(DIAGNOSTIC_RESULT)
       else operation.reject(new Error('operation stopped after cancellation'))
-      await vi.waitFor(() => expect(runtimeShutdown).toHaveBeenCalledOnce())
+      await shutdownStarted.promise
+      expect(runtimeShutdown).toHaveBeenCalledOnce()
 
       let settled = false
       void command.then(() => {

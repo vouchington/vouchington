@@ -22,12 +22,17 @@ describe('stripe invoice hydration concurrency', () => {
       has_more: false,
     })
     const linePageResolvers = new Map<string, (value: { data: []; has_more: false }) => void>()
-    const listLineItems = vi.fn<VitestLooseMock>().mockImplementation(
-      (invoiceId: string) =>
-        new Promise(resolve => {
-          linePageResolvers.set(invoiceId, resolve)
-        }),
-    )
+    const thirdLineRequest = Promise.withResolvers<void>()
+    const fourthLineRequest = Promise.withResolvers<void>()
+    let lineRequests = 0
+    const listLineItems = vi.fn<VitestLooseMock>().mockImplementation((invoiceId: string) => {
+      lineRequests += 1
+      if (lineRequests === 3) thirdLineRequest.resolve()
+      if (lineRequests === 4) fourthLineRequest.resolve()
+      return new Promise(resolve => {
+        linePageResolvers.set(invoiceId, resolve)
+      })
+    })
     vi.spyOn(stripeClientModule, 'getStripeClient').mockReturnValue({
       invoices: { list, listLineItems },
     } as never)
@@ -37,13 +42,15 @@ describe('stripe invoice hydration concurrency', () => {
       stripeInvoiceLookupLimitsForTest,
     )
 
-    await vi.waitFor(() => expect(listLineItems).toHaveBeenCalledTimes(3))
+    await thirdLineRequest.promise
+    expect(listLineItems).toHaveBeenCalledTimes(3)
     expect(listLineItems.mock.calls.map(([invoiceId]) => invoiceId)).toEqual(invoiceIds.slice(0, 3))
 
     for (const invoiceId of invoiceIds.slice(0, 3))
       linePageResolvers.get(invoiceId)?.({ data: [], has_more: false })
 
-    await vi.waitFor(() => expect(listLineItems).toHaveBeenCalledTimes(4))
+    await fourthLineRequest.promise
+    expect(listLineItems).toHaveBeenCalledTimes(4)
     linePageResolvers.get('in_fourth')?.({ data: [], has_more: false })
 
     await expect(hydratedInvoices).resolves.toMatchObject(invoiceIds.map(id => ({ id })))

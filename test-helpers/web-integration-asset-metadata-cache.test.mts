@@ -85,27 +85,34 @@ describe('web-integration asset metadata cache', () => {
       releaseLeases = resolve
     })
 
+    const saturated = Promise.withResolvers<void>()
     const requests = Promise.all(
       Array.from({ length: 18 }, () =>
         run(async () => {
           active++
           maximum = Math.max(maximum, active)
+          if (active === 6) saturated.resolve()
           await holdLeases
           active--
         }),
       ),
     )
 
-    let saturationError: unknown
     try {
-      await vi.waitFor(() => expect(maximum).toBe(6), { timeout: 5_000 })
-    } catch (err) {
-      saturationError = err
+      await Promise.race([
+        saturated.promise,
+        new Promise<void>((_resolve, reject) => {
+          AbortSignal.timeout(5_000).addEventListener(
+            'abort',
+            () => reject(new Error('Timed out waiting for six active requests')),
+            { once: true },
+          )
+        }),
+      ])
     } finally {
       releaseLeases()
+      await requests
     }
-    await requests
-    expect(saturationError).toBeUndefined()
     expect(maximum).toBe(6)
   })
 })

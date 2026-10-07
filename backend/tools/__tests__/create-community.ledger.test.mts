@@ -10,7 +10,6 @@ import {
 import { getContributionAdmissionAttemptsForTest } from '@voucha/test-helpers/contribution-admission-attempts'
 import { createTestPlusMcpCaller } from '@voucha/test-helpers/mcp-plus-caller'
 import { callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
-import { pollUntilNotNull } from '@voucha/test-helpers/polling'
 import { waitForTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-wait'
 import {
   countTestCommunitiesCreatedBy,
@@ -19,6 +18,7 @@ import {
 } from '@voucha/test-helpers/mcp-write-tool-rows'
 import { createCommunity } from '@services/communities'
 import { pruneExpiredContributionAdmissions } from '@services/contribution-gating/admission'
+import * as admissionLeaseRenewal from '@services/contribution-gating/admission-lease-renewal-write-pool'
 import { admitDelegatedCreate } from '@services/contribution-gating/admit-delegated-create'
 
 // The handle the ledger passes to a create; derived so this package takes no storage dependency.
@@ -74,33 +74,56 @@ describe('delegated create ledger — real store', () => {
 
   it('renews the claim lease while a slow create runs, so the key stays held', async () => {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
-    const { user, base, key, createIn } = await setup()
-    const started = Promise.withResolvers<void>()
-    const finish = Promise.withResolvers<void>()
-    const running = admitDelegatedCreate({
-      ...base,
-      execute: async query => {
-        started.resolve()
-        await finish.promise
-        return createIn(query)
-      },
-    })
-    await started.promise
-    const claimed = (await getContributionAdmissionClaimExpiryForTest(key))!
+    const realRenew = admissionLeaseRenewal.renewContributionAdmissionLeaseFromWritePool
+    const intervalRenewal = Promise.withResolvers<boolean>()
+    let captureIntervalRenewal = false
+    const renewLease = vi
+      .spyOn(admissionLeaseRenewal, 'renewContributionAdmissionLeaseFromWritePool')
+      .mockImplementation((reservationId, leaseToken) => {
+        const pending = realRenew(reservationId, leaseToken)
+        if (!captureIntervalRenewal) return pending
+        captureIntervalRenewal = false
+        return pending.then(
+          value => {
+            intervalRenewal.resolve(value)
+            return value
+          },
+          (err: unknown) => {
+            intervalRenewal.reject(err)
+            throw err
+          },
+        )
+      })
+    try {
+      const { user, base, key, createIn } = await setup()
+      const started = Promise.withResolvers<void>()
+      const finish = Promise.withResolvers<void>()
+      const running = admitDelegatedCreate({
+        ...base,
+        execute: async query => {
+          started.resolve()
+          await finish.promise
+          return createIn(query)
+        },
+      })
+      await started.promise
+      const claimed = (await getContributionAdmissionClaimExpiryForTest(key))!
 
-    await vi.advanceTimersByTimeAsync(10_000)
-    const renewed = await pollUntilNotNull(async () => {
-      const expiry = await getContributionAdmissionClaimExpiryForTest(key)
-      return expiry && expiry > claimed ? expiry : null
-    }, 5_000)
+      captureIntervalRenewal = true
+      await vi.advanceTimersByTimeAsync(10_000)
+      expect(await intervalRenewal.promise).toBe(true)
+      const renewed = (await getContributionAdmissionClaimExpiryForTest(key))!
 
-    expect(renewed.getTime()).toBeGreaterThan(claimed.getTime())
-    await expect(
-      admitDelegatedCreate({ ...base, execute: async () => ({ ok: false }) }),
-    ).rejects.toMatchObject({ code: 'CONTRIBUTION_ADMISSION_IN_PROGRESS' })
-    finish.resolve()
-    await running
-    expect(await countTestCommunitiesCreatedBy(user.id)).toBe(1)
+      expect(renewed.getTime()).toBeGreaterThan(claimed.getTime())
+      await expect(
+        admitDelegatedCreate({ ...base, execute: async () => ({ ok: false }) }),
+      ).rejects.toMatchObject({ code: 'CONTRIBUTION_ADMISSION_IN_PROGRESS' })
+      finish.resolve()
+      await running
+      expect(await countTestCommunitiesCreatedBy(user.id)).toBe(1)
+    } finally {
+      renewLease.mockRestore()
+    }
   })
 
   it('commits the create with its stored response, so an unstorable response creates nothing', async () => {
