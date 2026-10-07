@@ -51,15 +51,20 @@ describe('valkey app integration', () => {
     waitForCacheMetricCompletions = initializeValkeyAppIntegration().waitForCacheMetricCompletions
   })
 
-  afterEach(async () => {
+  async function restoreIntegrationState() {
     const state = getIntegrationState()
     if (state.analyticsPromise) ownedLoads.push(state.analyticsPromise)
-    await Promise.allSettled(ownedLoads)
-    await waitForCacheMetricCompletions()
-    Object.assign(state, originalState)
-    valkeyEvents.removeAllListeners('cache:call')
-    for (const listener of originalListeners) valkeyEvents.on('cache:call', listener)
-  })
+    try {
+      await Promise.allSettled(ownedLoads)
+      await waitForCacheMetricCompletions()
+    } finally {
+      Object.assign(state, originalState)
+      valkeyEvents.removeAllListeners('cache:call')
+      for (const listener of originalListeners) valkeyEvents.on('cache:call', listener)
+    }
+  }
+
+  afterEach(restoreIntegrationState)
 
   it('preserves its bridge identity while initializing cache metric forwarding', async () => {
     const emitted: EmittedAnalyticsEvent[] = []
@@ -264,5 +269,19 @@ describe('valkey app integration', () => {
     expect(await completionOutcome).toBe(reportingError)
     expect(captureException).toHaveBeenCalledWith(emitError, expect.anything())
     await expect(waitForCacheMetricCompletions()).resolves.toBeUndefined()
+  })
+
+  it('restores integration state when draining rejects', async () => {
+    const emitError = new Error('analytics emit failed')
+    const reportingError = new Error('Sentry capture failed')
+    captureException.mockImplementation(() => {
+      throw reportingError
+    })
+    useAnalyticsLoader(createAnalyticsLoader([], () => Promise.reject(emitError)))
+    emitCacheMetric('u')
+
+    await expect(restoreIntegrationState()).rejects.toBe(reportingError)
+    expect(getIntegrationState().loadAnalytics).toBe(originalState.loadAnalytics)
+    expect(valkeyEvents.listeners('cache:call')).toEqual(originalListeners)
   })
 })
