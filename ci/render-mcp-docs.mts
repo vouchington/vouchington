@@ -116,8 +116,12 @@ export async function renderMcpDocs({
 }
 
 export function main(argv: string[]): Promise<number> {
-  return runRenderDocsCli(argv, 'Usage: render-mcp-docs.mts <output-dir>', outputDir =>
-    renderMcpDocs({ outputDir }),
+  const catalogPath = argv[1]
+  return runRenderDocsCli(
+    argv,
+    'Usage: render-mcp-docs.mts <output-dir> [catalog-path]',
+    outputDir =>
+      renderMcpDocs({ outputDir, ...(catalogPath === undefined ? {} : { catalogPath }) }),
   )
 }
 
