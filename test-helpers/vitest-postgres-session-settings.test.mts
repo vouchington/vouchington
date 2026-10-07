@@ -49,6 +49,21 @@ describe('PostgreSQL test session configuration', () => {
     expect(env).toEqual(once)
   })
 
+  it('preserves encoded spaces in unrelated connection parameters', () => {
+    const env = {
+      DATABASE_URL:
+        'postgres://localhost/owned?sslcert=%2Ftmp%2Fcert%20dir%2Fcert.pem&options=-c%20jit=off',
+      READ_DATABASE_URL:
+        'postgres://localhost/owned_read?application_name=ci%20tests&options=-c%20jit=off',
+    }
+    configureTestPostgresSessions(env)
+    expect(env.DATABASE_URL).toContain('sslcert=%2Ftmp%2Fcert%20dir%2Fcert.pem')
+    expect(env.READ_DATABASE_URL).toContain('application_name=ci%20tests')
+    const once = { ...env }
+    configureTestPostgresSessions(env)
+    expect(env).toEqual(once)
+  })
+
   it('does not invent a connection when no database URL is present', () => {
     const env = {}
     configureTestPostgresSessions(env)
