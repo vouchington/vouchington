@@ -12,10 +12,15 @@ import { isAdmin, isPlatformAccount } from '@/lib/auth/account-type'
 
 interface UserRouteLayoutProps {
   idOrUsername: string
+  allowMissingProfile?: boolean
   children: React.ReactNode
 }
 
-export async function UserRouteLayout({ idOrUsername, children }: UserRouteLayoutProps) {
+export async function UserRouteLayout({
+  idOrUsername,
+  allowMissingProfile = false,
+  children,
+}: UserRouteLayoutProps) {
   const [profileData, currentUser, t] = await Promise.all([
     getUserProfile(idOrUsername, GET_USER_PROFILE_WITH_BIO),
     getCurrentUser(),
@@ -23,6 +28,7 @@ export async function UserRouteLayout({ idOrUsername, children }: UserRouteLayou
   ])
 
   if (!profileData) {
+    if (allowMissingProfile) return children
     notFound()
   }
 

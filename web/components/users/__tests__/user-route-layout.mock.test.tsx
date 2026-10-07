@@ -1,8 +1,9 @@
 import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { mockGetCurrentUser, mockUserDetailLayout } = vi.hoisted(() => ({
+const { mockGetCurrentUser, mockGetUserProfile, mockUserDetailLayout } = vi.hoisted(() => ({
   mockGetCurrentUser: vi.fn<VitestLooseMock>(),
+  mockGetUserProfile: vi.fn<VitestLooseMock>(),
   mockUserDetailLayout: vi.fn<VitestLooseMock>(),
 }))
 
@@ -10,14 +11,7 @@ vi.mock(
   import('@/lib/api/server'),
   () =>
     ({
-      getUserProfile: vi.fn<VitestLooseMock>(() =>
-        Promise.resolve({
-          user: { id: 'u1', username: 'alice', display_name: 'Alice' },
-          user_metrics: null,
-          profile_links: [],
-          user_bio_html: null,
-        }),
-      ),
+      getUserProfile: mockGetUserProfile,
       GET_USER_PROFILE_WITH_BIO: 'GET_USER_PROFILE_WITH_BIO',
     }) as unknown as typeof import('@/lib/api/server'),
 )
@@ -89,6 +83,12 @@ import { UserRouteLayout } from '../user-route-layout'
 describe('UserRouteLayout', () => {
   beforeEach(() => {
     mockGetCurrentUser.mockResolvedValue(null)
+    mockGetUserProfile.mockResolvedValue({
+      user: { id: 'u1', username: 'alice', display_name: 'Alice' },
+      user_metrics: null,
+      profile_links: [],
+      user_bio_html: null,
+    })
     mockUserDetailLayout.mockReset()
   })
 
@@ -99,6 +99,21 @@ describe('UserRouteLayout', () => {
     })
     render(result)
     expect(screen.getByTestId('user-detail-layout')).toHaveTextContent('content')
+  })
+
+  it('renders bare children when an explicitly exempt route has no active profile', async () => {
+    mockGetUserProfile.mockResolvedValue(null)
+
+    render(
+      await UserRouteLayout({
+        idOrUsername: '018f47a0-25cb-7a45-8b54-304f77ce64c0',
+        allowMissingProfile: true,
+        children: <div>deleted-account admin</div>,
+      }),
+    )
+
+    expect(screen.getByText('deleted-account admin')).toBeInTheDocument()
+    expect(screen.queryByTestId('user-detail-layout')).toBeNull()
   })
 
   it('allows a non-official viewer to manage user-tag relations', async () => {
