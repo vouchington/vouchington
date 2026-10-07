@@ -3,13 +3,16 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
+import pg from 'pg'
 import { describe, expect, it, vi } from 'vitest'
 
 import { read, readPool, write } from './index.mts'
+import type { QueryExecutor, QueryInput } from './types.mts'
 import {
   applyAllMigrations,
   runAllMigrations,
   runMigrations,
+  runViews,
   type VerifySchemaAfterMigration,
 } from './migrate.mts'
 
@@ -141,6 +144,33 @@ describe('applyAllMigrations', () => {
       '/* verifyRunMigrationsLedger */ SELECT count(*)::integer AS count FROM migrations',
     )
     expect(rows[0]?.count).toBeGreaterThan(0)
+  })
+
+  it('initializes SQL tooling for forced views through the public entry point', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'voucha-forced-views-'))
+    const folder = join(root, 'views')
+    const viewName = `forced_view_${randomUUID().replaceAll('-', '')}`
+    const statements: string[] = []
+    const writer: QueryExecutor = (input: QueryInput): Promise<pg.QueryResult> => {
+      statements.push(String(input))
+      return Promise.resolve({ command: '', fields: [], oid: 0, rowCount: 0, rows: [] })
+    }
+
+    try {
+      await mkdir(folder)
+      await writeFile(
+        join(folder, 'forced.sql'),
+        `CREATE OR REPLACE VIEW ${viewName} AS SELECT 1 AS id;`,
+      )
+
+      await runViews({ folder, forced: true, writer })
+
+      expect(statements).toHaveLength(2)
+      expect(statements[0]).toContain(`DROP VIEW IF EXISTS ${viewName}`)
+      expect(statements[1]).toContain(`CREATE OR REPLACE VIEW ${viewName}`)
+    } finally {
+      await rm(root, { force: true, recursive: true })
+    }
   })
 
   it('serializes fixed, generated, and view migrations under one runner lock', async () => {
