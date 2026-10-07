@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
 
 import { getIDsFromQuery, getTypesFromQuery, getSecondsToDate, getIdFromQuery } from '../search.mts'
 
@@ -97,11 +97,20 @@ describe('getTypesFromQuery', () => {
 })
 
 describe('getSecondsToDate', () => {
-  const now = Date.now()
+  const now = new Date(process.env.VOUCH_PROOF_NOW ?? '2026-10-05T23:59:40.000Z').getTime()
   const pastSeconds = Math.floor(now / 1000) - 3600 // 1 hour ago
 
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(now)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('should return Date object as-is', () => {
-    const date = new Date()
+    const date = new Date(now)
     expect(getSecondsToDate(date)).toBe(date)
   })
 
