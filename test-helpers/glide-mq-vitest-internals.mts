@@ -20,36 +20,19 @@ export function wrapTestWorkerProcessor<R>(
 
 export const deadLetterQueueNames = new Map<string, string>()
 
-/**
- * glide-mq's in-memory queue plus the two behaviours the shim layers on top of it:
- *
- * - A retryable failure parks the job in `delayed` for its backoff (glide-mq 0.16). Tests run in
- *   real time, so the `retrying` hook promotes it straight back instead of sleeping through the
- *   backoff. A RateLimitError also emits `retrying`; the worker still honours its own rate-limit
- *   pause before it dispatches the promoted job again.
- * - A terminal failure (`failed`) is forwarded to the configured dead-letter queue, which test mode
- *   does not implement. Production only forwards after attempts are exhausted, as `failed` does.
- *   It is also recorded for any flush that is watching, because `removeOnFail: true` deletes the job
- *   record before the event fires and a flush that only read records would miss the failure.
- *
- * `TestQueue.close()` removes every listener, so the hooks are re-installed afterwards: the shim
- * keeps handing out the same queue after a test closes it.
- */
+/** Eager retries and actual DLQ admission; reusable queues reinstall hooks after close. */
 export type FlushedJobFailure = { name: string; reason: string }
 
-/**
- * The in-memory record behind a job. An id is not enough to tell two jobs apart: `obliterate`
- * restarts the id counter, so a job still running from before it can fail under the id a newer job
- * now holds. The record is one object per job.
- */
+/** Record identity distinguishes old running jobs from new jobs reusing an obliterated id. */
 export function recordOf(job: TestJob): object {
   // oxlint-disable-next-line no-underscore-dangle -- glide-mq exposes no public identity for a test job
   return (job as unknown as { _record: object })._record
 }
 
 export class ShimTestQueue<D = any, R = any> extends TestQueue<D, R> {
-  /** Flush waiters, woken whenever any job on this queue completes or fails. */
+  /** Flush waiters, woken by actual job transitions and admission/promotion settlement. */
   readonly settleWaiters = new Set<() => void>()
+  readonly retryPromotions = new Map<object, Promise<void>>()
   /** Terminal failures by job record, filled for as long as a flush holds its map in this set. */
   readonly failureWatchers = new Set<Map<object, FlushedJobFailure>>()
   readonly #recordFailure = (job: TestJob, err: unknown) => {
@@ -63,9 +46,26 @@ export class ShimTestQueue<D = any, R = any> extends TestQueue<D, R> {
     for (const waiter of [...this.settleWaiters]) waiter()
   }
 
+  readonly #promoteRetriedJob = (job: TestJob) => {
+    const record = recordOf(job)
+    const promotion = job
+      .promote()
+      .catch(() => undefined)
+      .finally(() => {
+        if (this.retryPromotions.get(record) === promotion) this.retryPromotions.delete(record)
+        this.#notifySettleWaiters()
+      })
+    this.retryPromotions.set(record, promotion)
+  }
+
   constructor(name: string) {
     super(name)
     this.#installHooks()
+  }
+
+  override parkDelayed(...args: Parameters<TestQueue<D, R>['parkDelayed']>): void {
+    super.parkDelayed(...args)
+    this.#notifySettleWaiters()
   }
 
   override async close(): Promise<void> {
@@ -74,17 +74,17 @@ export class ShimTestQueue<D = any, R = any> extends TestQueue<D, R> {
   }
 
   #installHooks(): void {
-    this.on('retrying', promoteRetriedJob)
-    this.on('failed', (job: TestJob) => forwardToDeadLetterQueue(this.name, job))
+    this.on('retrying', this.#promoteRetriedJob)
+    this.on('failed', (job: TestJob) => {
+      void forwardToDeadLetterQueue(this.name, job).finally(this.#notifySettleWaiters)
+    })
     this.on('failed', this.#recordFailure)
     this.on('failed', this.#notifySettleWaiters)
     this.on('completed', this.#notifySettleWaiters)
+    for (const event of ['suspended', 'promoted', 'removed', 'revoked']) {
+      this.on(event, this.#notifySettleWaiters)
+    }
   }
-}
-
-/** A concurrent change (the job was removed or already promoted) leaves nothing to promote. */
-function promoteRetriedJob(job: TestJob): void {
-  job.promote().catch(() => undefined)
 }
 
 const queues = new Map<string, ShimTestQueue>()
@@ -137,10 +137,10 @@ export function clampTestWorkerConcurrency(concurrency?: number): number {
     : MAX_TEST_WORKER_CONCURRENCY
 }
 
-function forwardToDeadLetterQueue(queueName: string, job: TestJob): void {
+async function forwardToDeadLetterQueue(queueName: string, job: TestJob): Promise<void> {
   const dlqName = deadLetterQueueNames.get(queueName)
   if (!dlqName) return
-  getOrCreateQueue(dlqName)
+  await getOrCreateQueue(dlqName)
     .add(job.name, {
       originalQueue: queueName,
       originalJobId: job.id,

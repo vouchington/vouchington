@@ -24,9 +24,9 @@ describe('GlideMQ test drain', () => {
     await Promise.all(closing.map(worker => worker.close()))
   })
 
-  it('keeps the default drain deadline under backend-mocks testTimeout', () => {
-    expect(DEFAULT_FLUSH_TIMEOUT_MS).toBeLessThan(15_000)
-    expect(DEFAULT_FLUSH_TIMEOUT_MS).toBeGreaterThan(12_000)
+  it('keeps the default drain deadline below the intended five-second test budget', () => {
+    expect(DEFAULT_FLUSH_TIMEOUT_MS).toBeLessThan(5_000)
+    expect(DEFAULT_FLUSH_TIMEOUT_MS).toBe(4_000)
   })
 
   it('waits for a delayed processor via addAndFlush', async () => {
@@ -47,10 +47,11 @@ describe('GlideMQ test drain', () => {
       }),
     )
 
+    releaseHang = releaseProcessor
     const flushing = addAndFlush(queue, 'slow', { n: 1 })
     await started
-    const pending = Symbol('pending')
-    expect(await Promise.race([flushing, Promise.resolve(pending)])).toBe(pending)
+    const [running] = await queue.getJobs('active')
+    expect(await running!.getState()).toBe('active')
     releaseProcessor()
     const job = await flushing
     expect(job).not.toBeNull()
@@ -207,6 +208,7 @@ describe('GlideMQ test drain', () => {
     const timeoutError = error as TestQueueFlushTimeoutError
     expect(timeoutError.queueName).toBe(queue.name)
     expect(timeoutError.flushTimeoutMs).toBe(50)
+    expect(queue.settleWaiters.size).toBe(0)
     expect(timeoutError.jobIds).toHaveLength(1)
     expect(timeoutError.pendingJobIds).toEqual(timeoutError.jobIds)
     // A dispatched-but-slow job reads 'active' with a consumed worker slot — the mirror image of
@@ -286,5 +288,6 @@ describe('GlideMQ test drain', () => {
     )
     expect(error).toBeInstanceOf(Error)
     expect(error).not.toBeInstanceOf(TestQueueFlushTimeoutError)
+    expect(queue.settleWaiters.size).toBe(0)
   })
 })
