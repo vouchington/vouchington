@@ -195,6 +195,39 @@ describe('GlideMQ test flush across job states', () => {
     expect(queue.settleWaiters.size).toBe(0)
   })
 
+  it.each(['obliterate', 'drain', 'remove'] as const)(
+    'settles a pending flush after owned queue %s',
+    async operation => {
+      const queue = getOrCreateQueue(uniqueQueueName(operation))
+      await queue.pause()
+      workers.push(new TestWorker(queue, async () => 'unexpected processing'))
+      const inspected = Promise.withResolvers<{ id: string; state: string }>()
+      const getJob = queue.getJob
+      vi.spyOn(queue, 'getJob').mockImplementationOnce(async (...args) => {
+        const job = await getJob.call(queue, ...args)
+        const getState = job!.getState
+        vi.spyOn(job!, 'getState').mockImplementationOnce(async () => {
+          const state = await getState.call(job)
+          inspected.resolve({ id: job!.id, state })
+          return state
+        })
+        return job
+      })
+      const flush = addAndFlush(queue, 'removed', {})
+      // This is the real owned pending-state read, not a scheduled recheck or microtask flush.
+      const { id, state } = await inspected.promise
+      expect(state).toBe('waiting')
+      if (operation === 'obliterate') await queue.obliterate({ force: true })
+      else if (operation === 'drain') await queue.drain()
+      else await (await queue.getJob(id))!.remove()
+
+      await expect(flush).resolves.toMatchObject({ id, name: 'removed' })
+      expect(await queue.getJob(id)).toBeNull()
+      expect(queue.settleWaiters.size).toBe(0)
+      expect(queue.failureWatchers.size).toBe(0)
+    },
+  )
+
   it('keeps a deduplicated add at its own index in addBulkAndFlush', async () => {
     const queue = getOrCreateQueue(uniqueQueueName('bulk-dedup'))
     workers.push(new TestWorker(queue, async () => 'ok'))

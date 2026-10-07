@@ -1,6 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { type TestJob, TestQueue } from 'glide-mq/testing'
-
 const testWorkerProcessorContext = new AsyncLocalStorage<true>()
 
 /** Run a shim Worker processor so nested Queue.add can detect in-processor enqueue. */
@@ -22,7 +21,6 @@ export const deadLetterQueueNames = new Map<string, string>()
 
 /** Eager retries and actual DLQ admission; reusable queues reinstall hooks after close. */
 export type FlushedJobFailure = { name: string; reason: string }
-
 /** Record identity distinguishes old running jobs from new jobs reusing an obliterated id. */
 export function recordOf(job: TestJob): object {
   // oxlint-disable-next-line no-underscore-dangle -- glide-mq exposes no public identity for a test job
@@ -57,7 +55,6 @@ export class ShimTestQueue<D = any, R = any> extends TestQueue<D, R> {
       })
     this.retryPromotions.set(record, promotion)
   }
-
   constructor(name: string) {
     super(name)
     this.#installHooks()
@@ -68,11 +65,15 @@ export class ShimTestQueue<D = any, R = any> extends TestQueue<D, R> {
     this.#notifySettleWaiters()
   }
 
+  override async obliterate(...args: Parameters<TestQueue<D, R>['obliterate']>): Promise<void> {
+    await super.obliterate(...args)
+    this.#notifySettleWaiters()
+  }
+
   override async close(): Promise<void> {
     await super.close()
     this.#installHooks()
   }
-
   #installHooks(): void {
     this.on('retrying', this.#promoteRetriedJob)
     this.on('failed', (job: TestJob) => {
@@ -81,7 +82,7 @@ export class ShimTestQueue<D = any, R = any> extends TestQueue<D, R> {
     this.on('failed', this.#recordFailure)
     this.on('failed', this.#notifySettleWaiters)
     this.on('completed', this.#notifySettleWaiters)
-    for (const event of ['suspended', 'promoted', 'removed', 'revoked']) {
+    for (const event of ['suspended', 'promoted', 'removed', 'revoked', 'drained']) {
       this.on(event, this.#notifySettleWaiters)
     }
   }
