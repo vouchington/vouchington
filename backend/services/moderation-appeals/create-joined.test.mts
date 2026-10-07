@@ -48,8 +48,7 @@ describe('createModerationAppeal inside the caller transaction', () => {
     await using query = await beginTransaction()
 
     const first = await createModerationAppeal(appellant, WEB_PROVENANCE, input, { query })
-    // The target check cannot see the uncommitted first appeal, so this reaches the insert and
-    // loses to it; that must read as a duplicate and leave the transaction usable.
+    // Target resolution sees the uncommitted first appeal on the caller's transaction.
     const second = await createModerationAppeal(appellant, WEB_PROVENANCE, input, { query })
     await query.commit()
 

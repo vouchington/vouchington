@@ -22,11 +22,11 @@ export async function banUserFromCommunity(
   assert(currentUser.id !== targetUserId, 422, 'You cannot ban yourself')
   assert(await getPublicUserByAny(targetUserId), 404, 'User not found')
 
-  const caseId = await openOrGetOpenCase({ entityType: 'user', entityId: targetUserId })
   let targetRoleBeforeBan: CommunityMemberRole | null = null
 
   await using query = await beginTransaction()
   const options = { query }
+  const caseId = await openOrGetOpenCase({ entityType: 'user', entityId: targetUserId }, options)
 
   // Serialize against concurrent joins/posts/approvals, other bans, and role changes for the
   // actor or target before reading membership authority.

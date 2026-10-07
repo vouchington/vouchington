@@ -35,13 +35,18 @@ examples from returning.
 ```mermaid
 flowchart TD
   input[parseCreateModerationReportInput] --> validate[Configured report input parser validates entity type, reason, note, and self-report rules]
-  validate --> duplicate{Pending duplicate exists?}
-  duplicate -- Yes --> existing[Return existing report with isDuplicate true]
-  duplicate -- No --> insert[Insert moderation_reports row]
-  insert --> case[Attach or create moderation case]
-  insert --> integrity[Enqueue report_integrity check]
-  insert --> judgement[Enqueue report judgement when context changed]
+  validate --> transaction[Open or join transaction]
+  transaction --> case[Open or reuse moderation case]
+  case --> insert[Insert or update pending report]
+  insert --> commit[Owning transaction commits]
+  commit --> integrity[Enqueue report_integrity check]
+  commit --> judgement[Enqueue report judgement when context changed]
 ```
+
+The report and its case commit atomically. REST creation owns the transaction; delegated MCP
+creation joins admission's transaction, including the stored response and attempt result. A failure
+after opening the case rolls back both writes. Critical alerts, judgement refresh, and integrity
+checks run only after the owning commit.
 
 ## Usage
 

@@ -1,9 +1,16 @@
-import { read, registerPostCommitAction, write, type QueryOptions } from '@data-stores/psql'
+import {
+  read,
+  beginTransaction,
+  registerPostCommitAction,
+  withTransactionOptions,
+  type QueryOptions,
+  type TransactionQuery,
+} from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import onError from '@modules/on-error'
-import { type ModerationReport, reportEntityFkColumn } from './config.mts'
+import type { ModerationReport } from './config.mts'
 import { decorateModerationEnqueueError } from './enqueue-observability.mts'
 import { enqueueReportIntegrityCheck } from './integrity.mts'
 import type { CreateModerationReportInput } from './parse.mts'
@@ -13,7 +20,7 @@ import {
   currentUserCanReportVisiblePost,
   type ReportablePostAccessInput,
 } from './reportable-post-access.mts'
-import { openOrGetOpenCase } from '@services/moderation-cases'
+import { insertModerationReport } from './create-insert.mts'
 import { getPolicySeverity } from '@ts-shared/utils/moderation-policy'
 import { createCriticalModerationAlertNotification } from '@services/notifications/create-critical-moderation-alert-notification'
 
@@ -33,8 +40,8 @@ export interface CreateModerationReportResult {
 }
 
 /**
- * Files a report. With `queryOptions.query` the insert joins the caller's transaction, which then
- * owns the commit and the alerts and checks that follow it; otherwise the insert commits alone.
+ * Files a report and opens its case in one transaction. Joins `queryOptions.query` when supplied;
+ * otherwise owns the transaction. Alerts and checks follow the owning commit.
  */
 export async function createModerationReport(
   currentUserId: string,
@@ -44,36 +51,18 @@ export async function createModerationReport(
 ): Promise<CreateModerationReportResult> {
   await assertReportableEntity(currentUserId, input)
 
-  // The case is a shared get-or-open row, so it opens on its own connection even when the report
-  // joins the caller's transaction; a rolled-back report leaves it for the next one to reuse.
-  const caseId = await openOrGetOpenCase({ entityType: input.entityType, entityId: input.entityId })
-  const fkColumn = reportEntityFkColumn(input.entityType)
-  const query = sql`/* createModerationReport */ INSERT INTO moderation_reports (reporter_user_id, `
-  query.append(fkColumn)
-  query.append(
-    sql`, case_id, reason, original_reason, note, created_via, created_via_oauth_client_id) VALUES (${currentUserId}, ${input.entityId}::uuid, ${caseId}, ${input.reason}, ${input.reason}, ${input.note}, ${provenance.createdVia}, ${provenance.oauthClientId}) ON CONFLICT (reporter_user_id, `,
-  )
-  query.append(fkColumn)
-  query.append(sql`) WHERE reviewed_at IS NULL AND `)
-  query.append(fkColumn)
-  query.append(
-    sql` IS NOT NULL DO UPDATE SET reason = EXCLUDED.reason, note = EXCLUDED.note RETURNING (xmax = 0) AS inserted, id, case_id, created_at, reviewed_at, reporter_user_id, reason, note, 'pending'::text AS status, resolved_by_id`,
-  )
-
-  const { rows } = await write(query, queryOptions)
-
-  const dbRow = rows[0] as
-    | (Omit<ModerationReport, 'entity_type' | 'entity_id'> & { inserted: boolean })
-    | undefined
-  assert(dbRow, 500, 'Failed to fetch moderation report')
-  const { inserted, ...rest } = dbRow
-  const report: ModerationReport = {
-    ...rest,
-    entity_type: input.entityType,
-    entity_id: input.entityId,
+  const run = async (query: TransactionQuery) => {
+    const result = await insertModerationReport(currentUserId, provenance, input, query)
+    registerPostCommitAction(query, async () => notify(result.report))
+    return result
   }
+  if (queryOptions?.query) return withTransactionOptions(queryOptions, run)
+  await using query = await beginTransaction()
+  const result = await run(query)
+  await query.commit()
+  return result
 
-  const notify = () => {
+  function notify(report: ModerationReport): void {
     // N2: alert staff immediately for critical-severity reports (e.g. illegal_content)
     if (getPolicySeverity(input.reason) === 'critical') {
       void createCriticalModerationAlertNotification(report.id).catch(onError)
@@ -86,10 +75,6 @@ export async function createModerationReport(
     // Debounce deduplication collapses rapid reports into a single check job.
     enqueueReportIntegrityCheck(input.entityType, input.entityId)
   }
-  if (queryOptions?.query) registerPostCommitAction(queryOptions.query, async () => notify())
-  else notify()
-
-  return { report, isDuplicate: !inserted }
 }
 
 async function assertReportableEntity(

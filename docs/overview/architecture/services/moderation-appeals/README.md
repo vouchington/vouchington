@@ -11,6 +11,11 @@ A **moderation appeal** allows any signed-in member to formally contest a modera
 against their account or content. Appeals go through a human-in-the-loop review workflow with
 AI-assisted drafting, mirroring the review-disputes flow.
 
+Target resolution, case opening or reopening, duplicate reads, and appeal insertion run in one
+transaction. REST creation owns that transaction; delegated MCP creation joins admission's
+transaction. Failed creation leaves a previously resolved case resolved. The resolution enqueue
+runs only after the owning transaction commits.
+
 ## Workflow
 
 1. Appellant files an appeal via `createModerationAppeal` (target: warning, ban, or post removal)
