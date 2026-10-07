@@ -8,7 +8,11 @@ import {
   type DistributionPost,
 } from './shared.mts'
 import type { DistributionRow, ProcessTargetRowsResult } from './process-types.mts'
-import { getUnpushedNotificationsForDeliveries, markDistributionFailed } from './process-state.mts'
+import {
+  ensureDeliveryRows,
+  getUnpushedNotificationsForDeliveries,
+  markDistributionFailed,
+} from './process-state.mts'
 
 export async function insertPostFeedShares(
   distribution: DistributionRow,
@@ -31,6 +35,7 @@ export async function insertPostFeedShares(
     return false
   }
 
+  await ensureDeliveryRows(distribution.id, recipientIds, query)
   await query(sql`/* insertPostFeedShares */
     INSERT INTO post_feed_shares (
       recipient_user_id,
@@ -79,6 +84,7 @@ export async function insertPostManualSendNotifications(
   const title = getPostSendTitle(distribution.sender_username, post.post_type)
   const body = truncateText(post.title || post.markdown, 180)
 
+  await ensureDeliveryRows(distribution.id, recipientIds, query)
   await query(sql`/* insertPostManualSendNotifications */
     INSERT INTO notifications (
       user_id,

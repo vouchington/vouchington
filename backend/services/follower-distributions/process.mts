@@ -4,7 +4,6 @@ import sql from 'sql-template-strings'
 import type { FollowerDistributionProcessResult } from './types.mts'
 import type { ProcessOptions } from './process-types.mts'
 import {
-  ensureDeliveryRows,
   getDistributionForUpdate,
   getNextRecipientBatch,
   markDistributionCompleted,
@@ -34,7 +33,6 @@ export async function processFollowerDistributionChunk(
     await query.commit()
     return emptyResult(distribution.id, true)
   }
-  await ensureDeliveryRows(distribution.id, recipients, query)
   const targetRowsResult = await processTargetRows(distribution, recipients, query)
   if (targetRowsResult.failed) {
     await query.commit()

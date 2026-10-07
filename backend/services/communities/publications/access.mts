@@ -1,6 +1,7 @@
 import { read } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
+import { getMinUUIDv7ForParentHistory } from '@modules/utils/ids'
 import type { PrivateUser } from '@services/users/types'
 import { isModerationStaff } from '@services/users'
 import {
@@ -47,6 +48,7 @@ export async function getPublicationReviewChanges(
   communityId: string,
   postId: string,
 ): Promise<CommunityPublicationReviewChange[]> {
+  const minHistoryId = getMinUUIDv7ForParentHistory(postId)
   const { rows } = await read(
     sql`/* getPublicationReviewChanges */
       SELECT id, community_id, post_id, changed_by_id AS actor_user_id, change_type AS action,
@@ -54,6 +56,7 @@ export async function getPublicationReviewChanges(
       FROM community_post_review_changes
       WHERE community_id = ${communityId}
         AND post_id = ${postId}
+        AND id >= ${minHistoryId}::uuid
       ORDER BY id ASC`,
   )
   return rows as CommunityPublicationReviewChange[]

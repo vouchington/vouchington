@@ -3,7 +3,11 @@ import sql from 'sql-template-strings'
 import { firstVisibleRssTextField } from '@modules/utils'
 import type { DistributionRow, ProcessTargetRowsResult } from './process-types.mts'
 import { truncateText } from './shared.mts'
-import { getUnpushedNotificationsForDeliveries, markDistributionFailed } from './process-state.mts'
+import {
+  ensureDeliveryRows,
+  getUnpushedNotificationsForDeliveries,
+  markDistributionFailed,
+} from './process-state.mts'
 
 export async function insertRssFeedItemFeedShares(
   distribution: DistributionRow,
@@ -22,6 +26,7 @@ export async function insertRssFeedItemFeedShares(
     return false
   }
 
+  await ensureDeliveryRows(distribution.id, recipientIds, query)
   await query(sql`/* insertRssFeedItemFeedShares */
     INSERT INTO rss_feed_item_feed_shares (
       recipient_user_id,
@@ -81,6 +86,7 @@ export async function insertRssFeedItemManualSendNotifications(
     180,
   )
 
+  await ensureDeliveryRows(distribution.id, recipientIds, query)
   await query(sql`/* insertRssFeedItemManualSendNotifications */
     INSERT INTO notifications (
       user_id,

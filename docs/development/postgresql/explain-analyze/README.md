@@ -173,6 +173,13 @@ and at most 100 physical candidates without a sequential scan or sort. The first
 scenario requires the existing `(created_by_id, community_id, id)` partial index for UUIDv7 order,
 with no extra timestamp index. Both gates run for custom and generic prepared plans.
 
+Follower-distribution rate-limit scenarios exercise all four actions against failed distributions
+with recorded deliveries, amid a larger unrelated sender cohort. Their contracts bound sender
+intent and delivery work. The moderation-bypass scenario captures the production parent-history
+lower bound; history can span ranges after its parent, so its contract declares that intentional
+read and caps processed history rows. Vote-weight factors and recommended RSS feeds remain covered
+by their existing scenarios.
+
 ### Isolated topic-metrics benchmark
 
 Use the heavyweight benchmark only for before/after investigation, not as a CI timing gate:

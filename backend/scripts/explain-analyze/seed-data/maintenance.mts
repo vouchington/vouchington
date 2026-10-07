@@ -10,6 +10,8 @@ interface TableInfo {
 
 export const SEEDED_ROW_COUNT_TARGETS: readonly TableInfo[] = [
   { table: 'users', column: 'id' },
+  { table: 'follower_distributions', column: 'sender_user_id' },
+  { table: 'follower_distribution_deliveries', column: 'recipient_user_id' },
   { table: 'user_email_addresses', column: 'user_id' },
   { table: 'oauth_clients', column: 'id' },
   { table: 'topics', column: 'id' },
@@ -21,6 +23,7 @@ export const SEEDED_ROW_COUNT_TARGETS: readonly TableInfo[] = [
   { table: 'spending_category_topics', column: 'topic_id' },
   { table: 'individual_rewards_program_statuses', column: 'id' },
   { table: 'posts', column: 'id' },
+  { table: 'post_clearance_changes', column: 'post_id' },
   { table: 'post_feed_shares', column: 'recipient_user_id' },
   { table: 'post_admission_reservations', column: 'route', pattern: 'explain-admission' },
   { table: 'user_topic_import_attempts', column: 'intent_sha256', pattern: '000%' },

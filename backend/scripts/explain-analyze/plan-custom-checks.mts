@@ -4,6 +4,7 @@ import { assertClassifierHumanVoteComparisonPlanIfApplicable } from './plan-cust
 import { assertCopyrightStatementFactsIsTargetBounded } from './plan-custom/copyright-statement-facts.mts'
 import { assertEmbeddingReconciliationPlanIfApplicable } from './plan-custom/embedding-reconciliation.mts'
 import { assertPaginationPlanShape } from './plan-custom/pagination-gates.mts'
+import { assertParentHistoryLowerBound } from './plan-custom/parent-history.mts'
 import { assertPostShareEligibilityIsTargetBounded } from './plan-custom/post-share-targets.mts'
 import { assertRemoteFollowerPagePlanShapeIfApplicable } from './plan-custom/remote-followers.mts'
 import { assertReviewSuccessionCandidatePlanIfApplicable } from './plan-custom/review-succession.mts'
@@ -22,6 +23,7 @@ const customChecks: Readonly<Record<string, (result: ExplainResult) => void>> = 
   copyrightFacts: assertCopyrightStatementFactsIsTargetBounded,
   embeddingFirstPost: assertEmbeddingReconciliationPlanIfApplicable,
   paginationSpecial: assertPaginationPlanShape,
+  parentHistoryLowerBound: assertParentHistoryLowerBound,
   postShareTargets: assertPostShareEligibilityIsTargetBounded,
   remoteFollowers: assertRemoteFollowerPagePlanShapeIfApplicable,
   reviewSuccession: assertReviewSuccessionCandidatePlanIfApplicable,

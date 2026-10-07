@@ -1,9 +1,13 @@
+import { FOLLOWER_DISTRIBUTION_SEED_COUNT } from './seed-data/common.mts'
+
 /** Explicit seed.mts fixture counts plus conservative bounds for captured ancillary relations. */
 // Ancillary relations have no dedicated EXPLAIN seed count; refresh this bound if fixtures grow.
 const ANCILLARY_SEED_ROW_UPPER_BOUND = 1_000
 
 export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   users: 20_000,
+  follower_distributions: FOLLOWER_DISTRIBUTION_SEED_COUNT,
+  follower_distribution_deliveries: FOLLOWER_DISTRIBUTION_SEED_COUNT,
   user_email_addresses: 40_000,
   oauth_clients: 26_000,
   topics: 3_601,
@@ -101,7 +105,7 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   membership_refunds: ANCILLARY_SEED_ROW_UPPER_BOUND,
   microsoft_accounts: ANCILLARY_SEED_ROW_UPPER_BOUND,
   moderation_reports: ANCILLARY_SEED_ROW_UPPER_BOUND,
-  post_clearance_changes: 100_000,
+  post_clearance_changes: 100_001,
   post_data_point_topics: 1_000,
   post_explicit_topic_categories: 1_000,
   post_images: ANCILLARY_SEED_ROW_UPPER_BOUND,

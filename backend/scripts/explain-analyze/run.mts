@@ -1,3 +1,4 @@
+import { runFollowerDistributionScenarios } from './run-scenarios/follower-distributions.mts'
 import { gracefulShutdown } from '@data-stores/graceful-shutdown'
 import {
   assertScenarioManifest,
@@ -35,6 +36,7 @@ async function main() {
     await runStoryMemberPageScenarios()
     await runSearchAndFacetScenarios()
     await runOAuthClientVerificationScenarios()
+    await runFollowerDistributionScenarios()
     await runEntityAndCommunityScenarios()
     await runTopicImportAttemptScenarios()
     await runHotPathLoaderScenarios()

@@ -10,6 +10,9 @@ Persists and processes manual follower share/send distribution intents for posts
 - Enforce once-per-day share/send dedupe per sender and target.
 - Store small distribution records. Selected followers are distribution-owned recipient rows, not a UUID array.
 - Process recipient chunks idempotently through `follower_distribution_deliveries`.
+  Reserve delivery identities after target validation, in the same transaction as fan-out writes.
+  The sender-keyed daily guard counts pending intents and any recent intent with deliveries,
+  including failed intents; failed or completed intents without deliveries can be retried.
 - Create feed-share rows or manual-send notification rows using stable per-recipient delivery ids.
 - Stream incomplete distribution ids for queue backfill.
 

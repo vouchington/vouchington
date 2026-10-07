@@ -1,3 +1,5 @@
+import { seedParentHistory } from './seed-data/parent-history.mts'
+import { seedFollowerDistributions } from './seed-data/follower-distributions.mts'
 import {
   seedAnchorPostReviewTopicRating,
   seedComments,
@@ -90,6 +92,7 @@ async function main() {
   await seedRewardsProgramStatuses(REWARDS_PROGRAM_STATUS_SEED_COUNT)
   await seedTopicParentRelations(500)
   await seedPosts(100_000)
+  await seedParentHistory()
   await seedSemanticPosts()
   await seedPostFeedShares()
   await seedUserRemovedPlatformPosts()
@@ -101,6 +104,7 @@ async function main() {
   await seedFollowRelations(10_000)
   await seedMuteBlockRelations(5000)
   await seedRssFeeds(RSS_FEED_SEED_COUNT, RSS_FEED_ITEM_SEED_COUNT)
+  await seedFollowerDistributions()
   await seedSemanticRssFeedItems()
   await seedStoryPostRelatedUrlProjection()
   await seedDisabledRssFeed(2500)
