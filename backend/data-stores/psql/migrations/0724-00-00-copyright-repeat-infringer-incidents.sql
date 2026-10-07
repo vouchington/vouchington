@@ -46,6 +46,9 @@ CREATE TABLE copyright_repeat_infringer_incident_targets (
 CREATE INDEX idx_copyright_repeat_infringer_incident_targets__target
   ON copyright_repeat_infringer_incident_targets (copyright_notice_target_id);
 
+CREATE INDEX idx_copyright_repeat_infringer_incident_targets__notice
+  ON copyright_repeat_infringer_incident_targets (copyright_notice_id);
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_repeat_infringer_dispositions (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
