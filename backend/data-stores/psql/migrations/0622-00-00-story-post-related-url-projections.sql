@@ -5,8 +5,8 @@ CREATE TABLE IF NOT EXISTS story_post_related_url_projection_jobs (
   post_id UUID PRIMARY KEY,
   story_id UUID NOT NULL,
   generation BIGINT NOT NULL DEFAULT 1 CHECK (generation > 0),
-  cursor_source_high_water_id UUID,
-  cursor_relation_high_water_id UUID,
+  sweep_upper_bound_source_id UUID,
+  sweep_upper_bound_relation_id UUID,
   relation_snapshot_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
   cursor_source_id UUID,
   source_completed_at TIMESTAMPTZ,
@@ -132,8 +132,8 @@ COMMENT ON TABLE story_post_related_url_projection_jobs IS 'Durable, generation-
 COMMENT ON COLUMN story_post_related_url_projection_jobs.post_id IS 'Story post receiving the projected related URL relations.';
 COMMENT ON COLUMN story_post_related_url_projection_jobs.story_id IS 'Current story whose active RSS item URLs are projected.';
 COMMENT ON COLUMN story_post_related_url_projection_jobs.generation IS 'Monotonic source snapshot generation; stale workers cannot mutate a newer generation.';
-COMMENT ON COLUMN story_post_related_url_projection_jobs.cursor_source_high_water_id IS 'RSS item ID high-water mark that bounds this generation source snapshot.';
-COMMENT ON COLUMN story_post_related_url_projection_jobs.cursor_relation_high_water_id IS 'Relation ID high-water mark that excludes post-capture related links from this generation prune.';
+COMMENT ON COLUMN story_post_related_url_projection_jobs.sweep_upper_bound_source_id IS 'RSS item ID high-water mark that bounds this generation source snapshot.';
+COMMENT ON COLUMN story_post_related_url_projection_jobs.sweep_upper_bound_relation_id IS 'Relation ID high-water mark that excludes post-capture related links from this generation prune.';
 COMMENT ON COLUMN story_post_related_url_projection_jobs.relation_snapshot_at IS 'Wall-clock boundary that excludes relations reactivated after this generation was captured.';
 COMMENT ON COLUMN story_post_related_url_projection_jobs.cursor_source_id IS 'RSS item ID keyset cursor for the bounded source projection phase.';
 COMMENT ON COLUMN story_post_related_url_projection_jobs.source_completed_at IS 'Time the bounded source projection phase reached its high-water mark.';

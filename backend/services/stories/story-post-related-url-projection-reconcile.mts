@@ -110,7 +110,7 @@ async function prunePage(
       ORDER BY relation.id LIMIT $5`,
     [
       work.post_id,
-      work.cursor_relation_high_water_id,
+      work.sweep_upper_bound_relation_id,
       work.relation_snapshot_at,
       work.cursor_prune_id,
       STORY_POST_RELATED_URL_PROJECTION_PAGE_SIZE,

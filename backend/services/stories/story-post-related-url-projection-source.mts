@@ -38,11 +38,11 @@ export async function getStoryPostRelatedUrlProjectionSourcePageForWork(
   )
   // A NULL high-water is a real empty snapshot, not an unbounded scan that could
   // accidentally absorb items assigned after this generation began.
-  if (!work.cursor_source_high_water_id) return []
+  if (!work.sweep_upper_bound_source_id) return []
   return getStoryPostRelatedUrlProjectionSourcePage({
     storyId: work.story_id,
     sourceCursorId: work.cursor_source_id,
-    sourceHighWaterId: work.cursor_source_high_water_id,
+    sourceHighWaterId: work.sweep_upper_bound_source_id,
     limit: STORY_POST_RELATED_URL_PROJECTION_PAGE_SIZE,
   })
 }

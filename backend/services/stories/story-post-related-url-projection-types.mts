@@ -2,8 +2,8 @@ export type ProjectionWork = {
   post_id: string
   story_id: string
   generation: string
-  cursor_source_high_water_id: string | null
-  cursor_relation_high_water_id: string | null
+  sweep_upper_bound_source_id: string | null
+  sweep_upper_bound_relation_id: string | null
   relation_snapshot_at: Date
   cursor_source_id: string | null
   source_completed_at: Date | null

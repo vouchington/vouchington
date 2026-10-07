@@ -9,7 +9,7 @@ export const STORY_POST_RELATED_URL_PROJECTION_UUID_COLUMNS_WITHOUT_KEYS = new M
     'Keyset cursor over relation IDs; it records traversal position rather than a durable relation.',
   ],
   [
-    'story_post_related_url_projection_jobs.cursor_relation_high_water_id',
+    'story_post_related_url_projection_jobs.sweep_upper_bound_relation_id',
     'Immutable relation snapshot boundary; it intentionally remains usable when a captured relation is deleted.',
   ],
   [
@@ -17,7 +17,7 @@ export const STORY_POST_RELATED_URL_PROJECTION_UUID_COLUMNS_WITHOUT_KEYS = new M
     'Keyset cursor over RSS item IDs; it records traversal position rather than a durable relation.',
   ],
   [
-    'story_post_related_url_projection_jobs.cursor_source_high_water_id',
+    'story_post_related_url_projection_jobs.sweep_upper_bound_source_id',
     'Immutable RSS item snapshot boundary; it intentionally remains usable when the source item is deleted.',
   ],
 ])
