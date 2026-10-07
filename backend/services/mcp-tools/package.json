@@ -41,6 +41,6 @@
     "@services/stories": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^",
-    "oxfmt": "^0.71.0"
+    "oxfmt": "^0.72.0"
   }
 }
