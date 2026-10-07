@@ -152,10 +152,6 @@ describe('applyAllMigrations', () => {
     const folder = join(root, 'views')
     const viewName = `forced_view_${randomUUID().replaceAll('-', '')}`
     const statements: string[] = []
-    const writer: QueryExecutor = (input: QueryInput): Promise<pg.QueryResult> => {
-      statements.push(stringFromUnknown(input))
-      return Promise.resolve({ command: '', fields: [], oid: 0, rowCount: 0, rows: [] })
-    }
 
     try {
       await mkdir(folder)
@@ -164,11 +160,34 @@ describe('applyAllMigrations', () => {
         `CREATE OR REPLACE VIEW ${viewName} AS SELECT 1 AS id;`,
       )
 
-      await runViews({ folder, forced: true, writer })
+      await runViews({ folder, forced: true, writer: makeMigrationWriter(statements) })
 
       expect(statements).toHaveLength(2)
       expect(statements[0]).toContain(`DROP VIEW IF EXISTS ${viewName}`)
       expect(statements[1]).toContain(`CREATE OR REPLACE VIEW ${viewName}`)
+    } finally {
+      await rm(root, { force: true, recursive: true })
+    }
+  })
+
+  it('keeps ordinary view rebuilds on the non-forced path', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'voucha-views-'))
+    const folder = join(root, 'views')
+    const viewName = `view_${randomUUID().replaceAll('-', '')}`
+    const statements: string[] = []
+
+    try {
+      await mkdir(folder)
+      await writeFile(
+        join(folder, 'view.sql'),
+        `CREATE OR REPLACE VIEW ${viewName} AS SELECT 1 AS id;`,
+      )
+
+      await runViews({ folder, writer: makeMigrationWriter(statements) })
+
+      expect(statements).toEqual([
+        `/* runViews */ CREATE OR REPLACE VIEW ${viewName} AS SELECT 1 AS id`,
+      ])
     } finally {
       await rm(root, { force: true, recursive: true })
     }
@@ -228,3 +247,10 @@ describe('applyAllMigrations', () => {
     }
   })
 })
+
+function makeMigrationWriter(statements: string[]): QueryExecutor {
+  return (input: QueryInput): Promise<pg.QueryResult> => {
+    statements.push(stringFromUnknown(input))
+    return Promise.resolve({ command: '', fields: [], oid: 0, rowCount: 0, rows: [] })
+  }
+}
