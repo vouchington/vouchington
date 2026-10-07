@@ -49,7 +49,7 @@ describe('UserPreservationHoldCard', () => {
 
   it('places a hold with the trimmed reference and then shows it as open', async () => {
     mockList.mockResolvedValue({ account_deleted_at: null, holds: [] })
-    mockPlace.mockResolvedValue({ hold: makeHold() })
+    mockPlace.mockResolvedValue({ account_deleted_at: null, hold: makeHold() })
     renderCard()
 
     const place = await screen.findByRole('button', { name: /Place hold/ })
@@ -132,6 +132,26 @@ describe('UserPreservationHoldCard', () => {
     })
 
     renderCard()
+
+    expect(
+      await screen.findByText(
+        'While a hold is open, this account’s final purge is paused. Immediate deletion steps are not paused.',
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it('updates the description when deletion races with hold placement', async () => {
+    mockList.mockResolvedValue({ account_deleted_at: null, holds: [] })
+    mockPlace.mockResolvedValue({
+      account_deleted_at: '2026-09-01T00:00:00.000Z',
+      hold: makeHold(),
+    })
+    renderCard()
+
+    fireEvent.change(await screen.findByLabelText('Matter reference'), {
+      target: { value: 'Matter 2026-0042' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /Place hold/ }))
 
     expect(
       await screen.findByText(

@@ -16,6 +16,7 @@ Places a legal-process preservation hold on an account. Admin only. While the ho
 
 ```json
 {
+  "account_deleted_at": "2026-03-15T00:00:00.000Z",
   "hold": {
     "id": "...",
     "account_user_id": "...",
@@ -27,6 +28,9 @@ Places a legal-process preservation hold on an account. Admin only. While the ho
   }
 }
 ```
+
+`account_deleted_at` is the account state observed while the placement held the deletion advisory
+lock. It is `null` for a live account.
 
 Returns 401 if unauthenticated, 403 if not admin, 404 once no `users` row exists, 409 if the user
 already has an open hold, and 422 for a blank, over-long, or non-string `reference` or an

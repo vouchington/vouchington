@@ -48,7 +48,12 @@ app
       path: ctx.params,
     })
 
-    ctx.json({ hold: await placeUserPreservationHold(currentUser, userId, body.reference) })
+    const { accountDeletedAt, ...hold } = await placeUserPreservationHold(
+      currentUser,
+      userId,
+      body.reference,
+    )
+    ctx.json({ account_deleted_at: accountDeletedAt, hold })
   })
   .delete(async (ctx: Context) => {
     const currentUser = await requireAuthAndRateLimit(

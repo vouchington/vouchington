@@ -59,14 +59,19 @@ function assertAdmin(currentUser: PrivateUser | null): asserts currentUser is Pr
   if (!isAdminUser(currentUser)) throw createHttpError(403, 'Forbidden')
 }
 
-async function lockPreservationHoldUser(query: QueryExecutor, userId: string): Promise<boolean> {
+async function lockPreservationHoldUser(
+  query: QueryExecutor,
+  userId: string,
+): Promise<{ deleted_at: Date | null } | undefined> {
   await query(sql`/* lockPreservationHoldUser:advisoryLock */
     SELECT pg_advisory_xact_lock(hashtextextended(${userId}, 0))
   `)
-  const { rows } = await query<{ id: string }>(sql`/* lockPreservationHoldUser:userExists */
-    SELECT id FROM users WHERE id = ${userId}
+  const { rows } = await query<{
+    deleted_at: Date | null
+  }>(sql`/* lockPreservationHoldUser:userExists */
+    SELECT deleted_at FROM users WHERE id = ${userId}
   `)
-  return rows.length > 0
+  return rows[0]
 }
 
 /** The reference is a short matter identifier; the message never echoes the submitted text. */
@@ -90,7 +95,7 @@ export async function placeUserPreservationHold(
   currentUser: PrivateUser | null,
   userId: string,
   reference: unknown,
-): Promise<UserPreservationHold> {
+): Promise<UserPreservationHold & { accountDeletedAt: Date | null }> {
   assertAdmin(currentUser)
   const plaintext = parsePreservationHoldReference(reference)
   const holdId = uuidv7()
@@ -98,7 +103,8 @@ export async function placeUserPreservationHold(
 
   await using query = await beginTransaction()
   // ast-grep-ignore: no-three-sequential-awaits -- lock, insert, and audit must run in order on one transaction client.
-  if (!(await lockPreservationHoldUser(query, userId))) {
+  const account = await lockPreservationHoldUser(query, userId)
+  if (!account) {
     throw createHttpError(404, 'User not found')
   }
   const { rows } = await query<HoldRow>(sql`/* placeUserPreservationHold */
@@ -115,7 +121,7 @@ export async function placeUserPreservationHold(
     { query },
   )
   await query.commit()
-  return toHold(row)
+  return { ...toHold(row), accountDeletedAt: account.deleted_at }
 }
 
 /** Releases the open hold by stamping the release columns; the row and its history are kept. */

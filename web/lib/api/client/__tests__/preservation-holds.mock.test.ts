@@ -48,7 +48,7 @@ describe('preservation hold API client', () => {
   it('PUTs the reference to /api/v1/users/:userId/preservation-hold', async () => {
     await expectApiWrapperCall({
       mock: vi.mocked(clientApi.put),
-      response: { hold },
+      response: { account_deleted_at: null, hold },
       call: () => placeUserPreservationHold('user-abc', { reference: 'Matter 1' }),
       expectedArgs: ['/api/v1/users/user-abc/preservation-hold', { reference: 'Matter 1' }],
     })

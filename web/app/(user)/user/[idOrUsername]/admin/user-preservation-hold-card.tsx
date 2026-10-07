@@ -76,7 +76,10 @@ export function UserPreservationHoldCard({
     if (!trimmed) return
     setIsBusy(true)
     try {
-      const { hold } = await placeUserPreservationHold(userId, { reference: trimmed })
+      const { account_deleted_at: deletedAt, hold } = await placeUserPreservationHold(userId, {
+        reference: trimmed,
+      })
+      setLoadedAccount({ userId, deletedAt })
       setState({ status: 'loaded', holds: [hold, ...holds] })
       setReference('')
       toast.success(t('extracted.admin.userPreservationHoldCard.preservationHoldPlaced_e9e2c131'))

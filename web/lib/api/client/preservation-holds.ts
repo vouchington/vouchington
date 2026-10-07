@@ -4,6 +4,7 @@ import { clientApi } from './instance'
 import { assertPathIdentifier } from './path-identifiers'
 import type {
   UserPreservationHoldResponse,
+  UserPreservationHoldPlacementResponse,
   UserPreservationHoldsResponse,
 } from '@/types/api-responses'
 
@@ -18,8 +19,8 @@ export function listUserPreservationHolds(userId: string): Promise<UserPreservat
 export function placeUserPreservationHold(
   userId: string,
   body: { reference: string },
-): Promise<UserPreservationHoldResponse> {
-  return clientApi.put<UserPreservationHoldResponse>(holdPath(userId), body)
+): Promise<UserPreservationHoldPlacementResponse> {
+  return clientApi.put<UserPreservationHoldPlacementResponse>(holdPath(userId), body)
 }
 
 export function releaseUserPreservationHold(userId: string): Promise<UserPreservationHoldResponse> {

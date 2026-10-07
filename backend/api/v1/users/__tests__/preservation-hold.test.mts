@@ -72,6 +72,7 @@ describe('user preservation hold routes', () => {
         released_at: null,
         released_by_id: null,
       })
+      expect(placed.body.account_deleted_at).toBeNull()
 
       const blocked = await userRequest.delete(`/api/v1/users/${user.id}`).expect(409)
       expect(blocked.body.message ?? blocked.text).toContain('Account deletion is blocked')
@@ -187,7 +188,8 @@ describe('user preservation hold routes', () => {
       await request.authenticateAs(admin)
       const path = `/api/v1/users/${user.id}/preservation-hold`
 
-      await request.put(path).send({ reference: 'matter-deleted' }).expect(200)
+      const placed = await request.put(path).send({ reference: 'matter-deleted' }).expect(200)
+      expect(placed.body.account_deleted_at).toBe(deletedAt.toISOString())
       const listed = await request.get(path).expect(200)
       expect(listed.body.account_deleted_at).toBe(deletedAt.toISOString())
       await request.delete(path).expect(200)
