@@ -12,6 +12,7 @@ Not partitioned — growth: unbounded.
 | `source`           | `post_moderation_sources`  | no       |                     |          |           |           | Automated or staff moderation source with one current work item per version. |
 | `generation`       | `bigint`                   | no       | `1`                 |          |           |           | Monotonic work generation fencing retries and stale worker writes.           |
 | `available_at`     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | Earliest time a worker may claim this source work item.                      |
+| `attempt_count`    | `integer`                  | no       | `0`                 |          |           |           | Number of worker claims for this version and source.                         |
 | `leased_at`        | `timestamp with time zone` | yes      |                     |          |           |           | Clock time at which the current worker lease began.                          |
 | `lease_token`      | `uuid`                     | yes      |                     |          |           |           | Unique fencing token required to complete or fail the current worker lease.  |
 | `lease_expires_at` | `timestamp with time zone` | yes      |                     |          |           |           | Clock time after which another worker may reclaim the current lease.         |
@@ -25,6 +26,7 @@ Not partitioned — growth: unbounded.
 
 **Check constraints:**
 
+- `post_moderation_work_items_attempt_count_check`: `CHECK ((attempt_count >= 0))`
 - `post_moderation_work_items_check`: `CHECK (((lease_token IS NULL) = (leased_at IS NULL)))`
 - `post_moderation_work_items_check1`: `CHECK (((lease_token IS NULL) = (lease_expires_at IS NULL)))`
 - `post_moderation_work_items_check2`: `CHECK (((completed_at IS NULL) OR (lease_token IS NULL)))`

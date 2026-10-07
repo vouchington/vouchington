@@ -14,7 +14,7 @@ Not partitioned — growth: unbounded.
 | `copyright_notice_submission_id`            | `uuid`                                     | yes      |                              |          |           |           | Withdrawal submission. Set only for notice_withdrawn, and at most one event per submission.                                                                           |
 | `copyright_notice_submission_assessment_id` | `uuid`                                     | yes      |                              |          |           |           | Staff assessment that found the notice not substantially compliant. Set only for notice_rejected, and at most one event per assessment.                               |
 | `copyright_restriction_id`                  | `uuid`                                     | yes      |                              |          |           |           | Restriction a counter-notice restoration or appeal reversed. Set only for the two reversal outcomes, and at most one event per restriction.                           |
-| `recorded_at`                               | `timestamp with time zone`                 | no       |                              |          |           |           | Time the decision that created this evidence was made.                                                                                                                |
+| `occurred_at`                               | `timestamp with time zone`                 | no       |                              |          |           |           | Time the decision that created this evidence was made.                                                                                                                |
 | `created_at`                                | `timestamp with time zone`                 | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                                       |
 
 **Primary key:** `PRIMARY KEY (id)`
@@ -47,4 +47,4 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_copyright_claimant_misuse_events_immutable`: `CREATE TRIGGER trigger_copyright_claimant_misuse_events_immutable BEFORE DELETE OR UPDATE ON public.copyright_claimant_misuse_events FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()`
+- `trigger_copyright_claimant_misuse_events_immutable`: `CREATE TRIGGER trigger_copyright_claimant_misuse_events_immutable BEFORE DELETE OR UPDATE ON public.copyright_claimant_misuse_events FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`

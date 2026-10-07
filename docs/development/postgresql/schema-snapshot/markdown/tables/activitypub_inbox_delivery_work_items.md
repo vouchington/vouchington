@@ -30,7 +30,7 @@ Not partitioned — growth: unbounded.
 | `attempt_count`         | `integer`                  | no       | `0`                          |          |           |           | Number of successfully acquired processing attempts.                                                                                      |
 | `verified_at`           | `timestamp with time zone` | yes      |                              |          |           |           | When the worker first verified the exact request signature and actor match; always paired with remote_actor_id.                           |
 | `sender_allowed_at`     | `timestamp with time zone` | yes      |                              |          |           |           | Set after the sender-hostname delivery rate limit admits this envelope; retries do not charge the sender again.                           |
-| `available_at`          | `timestamp with time zone` | yes      |                              |          |           |           | Earliest retry time after a valid sender exceeds its hostname delivery allowance.                                                         |
+| `available_at`          | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | Earliest time this envelope may next be claimed; current-time availability is the active baseline.                                        |
 | `failed_at`             | `timestamp with time zone` | yes      |                              |          |           |           | Set only after the queue exhausts retryable operational attempts. Manual backfill clears it and rotates the fencing token.                |
 | `first_failed_at`       | `timestamp with time zone` | yes      |                              |          |           |           | Immutable timestamp of the first retry-exhausting operational failure; survives rearm to anchor sticky retention.                         |
 | `retention_expires_at`  | `timestamp with time zone` | yes      |                              |          |           |           | Maximum retention deadline for an unverified or previously failed durable delivery.                                                       |
@@ -48,9 +48,9 @@ _none_
 - `activitypub_inbox_delivery_work_items_attempt_count_check`: `CHECK ((attempt_count >= 0))`
 - `activitypub_inbox_delivery_work_items_check`: `CHECK (((leased_at IS NULL) = (lease_expires_at IS NULL)))`
 - `activitypub_inbox_delivery_work_items_check1`: `CHECK (((lease_expires_at IS NULL) OR (lease_expires_at > leased_at)))`
-- `activitypub_inbox_work_items__deferral_state_valid`: `CHECK (((available_at IS NULL) OR ((verified_at IS NOT NULL) AND (remote_actor_id IS NOT NULL) AND (leased_at IS NULL) AND (dispatched_at IS NULL) AND (sender_allowed_at IS NULL) AND (failed_at IS NULL) AND (last_error IS NOT NULL))))`
+- `activitypub_inbox_work_items__deferral_state_valid`: `CHECK (((NOT ((verified_at IS NOT NULL) AND (remote_actor_id IS NOT NULL) AND (leased_at IS NULL) AND (dispatched_at IS NULL) AND (sender_allowed_at IS NULL) AND (failed_at IS NULL))) OR (last_error IS NOT NULL)))`
 - `activitypub_inbox_work_items__failed_requires_first_failed`: `CHECK (((failed_at IS NULL) OR (first_failed_at IS NOT NULL)))`
-- `activitypub_inbox_work_items__failure_state_valid`: `CHECK (((failed_at IS NULL) OR ((leased_at IS NOT NULL) AND (available_at IS NULL) AND (last_error IS NOT NULL))))`
+- `activitypub_inbox_work_items__failure_state_valid`: `CHECK (((failed_at IS NULL) OR ((leased_at IS NOT NULL) AND (last_error IS NOT NULL))))`
 - `activitypub_inbox_work_items__first_failed_precedes_failure`: `CHECK (((failed_at IS NULL) OR (first_failed_at <= failed_at)))`
 - `activitypub_inbox_work_items__first_failed_requires_retention`: `CHECK (((first_failed_at IS NULL) OR (retention_expires_at IS NOT NULL)))`
 - `activitypub_inbox_work_items__last_error_bounded`: `CHECK (((last_error IS NULL) OR (length(last_error) <= 1000)))`
@@ -59,7 +59,7 @@ _none_
 - `activitypub_inbox_work_items__request_method_uppercase`: `CHECK (((request_method)::text = upper((request_method)::text)))`
 - `activitypub_inbox_work_items__sender_hostname_lowercase`: `CHECK ((sender_hostname = lower(sender_hostname)))`
 - `activitypub_inbox_work_items__sender_requires_verification`: `CHECK (((sender_allowed_at IS NULL) OR ((verified_at IS NOT NULL) AND (remote_actor_id IS NOT NULL))))`
-- `activitypub_inbox_work_items__terminal_diagnostics_present`: `CHECK ((((available_at IS NULL) AND (failed_at IS NULL)) OR (last_error IS NOT NULL)))`
+- `activitypub_inbox_work_items__terminal_diagnostics_present`: `CHECK (((failed_at IS NULL) OR (last_error IS NOT NULL)))`
 - `activitypub_inbox_work_items__unverified_requires_retention`: `CHECK (((verified_at IS NOT NULL) OR (retention_expires_at IS NOT NULL)))`
 - `activitypub_inbox_work_items__unverified_retention_bounded`: `CHECK (((verified_at IS NOT NULL) OR (retention_expires_at <= (received_at + '01:00:00'::interval))))`
 - `activitypub_inbox_work_items__verified_actor_paired`: `CHECK (((verified_at IS NULL) = (remote_actor_id IS NULL)))`

@@ -18,7 +18,7 @@ Not partitioned — growth: unbounded.
 | `grant_id`                 | `uuid`                                   | yes      |                              |          |           |           | Grant internal identifier at event time; intentionally not a foreign key so grant deletion preserves the audit record.   |
 | `resource`                 | `text`                                   | no       |                              |          |           |           | Protected resource audience affected by the event.                                                                       |
 | `scopes`                   | `api_scopes[]`                           | no       |                              |          |           |           | Canonical scope set affected by the event.                                                                               |
-| `occurred_at`              | `timestamp with time zone`               | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | UUIDv7-derived time at which the event was recorded.                                                                     |
+| `occurred_at`              | `timestamp with time zone`               | no       | `uuid_extract_timestamp(id)` |          | virtual   |           | UUIDv7-derived time at which the event was recorded.                                                                     |
 
 **Primary key:** `PRIMARY KEY (id)`
 
