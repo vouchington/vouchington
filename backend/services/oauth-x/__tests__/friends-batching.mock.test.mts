@@ -3,6 +3,7 @@ import {
   assertBoundedStaleFriendCleanup,
   assertFriendsPageCommitsBeforeDeletionFence,
 } from '@voucha/test-helpers/services/oauth/friends-batch-sync'
+import { oauthXWorkConfig } from '../work-limits.mts'
 import { syncXFriends } from '../friends.mts'
 
 const fetchSpy = vi.hoisted(() => vi.fn<VitestLooseMock>())
@@ -43,6 +44,7 @@ describe('syncXFriends batching', () => {
       staleFriendIdPrefix: 'x-stale',
       syncFriends: syncXFriends,
       fetchSpy,
+      workConfig: oauthXWorkConfig,
       emptyPage: { data: [], meta: {} },
     })
   })
