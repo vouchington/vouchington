@@ -28,6 +28,50 @@ describe('valkey shutdown facade', () => {
     mockCloseSharedCommandClient.mockResolvedValue(undefined)
   })
 
+  it('waits for every dynamic config startup before reporting failures', async () => {
+    const { onGracefulShutdown } = await import('./shutdown.mts')
+    let releaseSecond!: () => void
+    const second = new Promise<void>(resolve => {
+      releaseSecond = resolve
+    })
+    const firstError = new Error('first startup failed')
+    const thirdError = new Error('third startup failed')
+    const pending = onGracefulShutdown.waitForInitialization([
+      { waitForInitialization: () => Promise.reject(firstError) },
+      { waitForInitialization: () => second },
+      { waitForInitialization: () => Promise.reject(thirdError) },
+    ])
+    let finished = false
+    const result = pending.then(
+      () => {
+        finished = true
+        return undefined
+      },
+      (err: unknown) => {
+        finished = true
+        return err
+      },
+    )
+    await Promise.resolve()
+    expect(finished).toBe(false)
+
+    releaseSecond()
+    expect(await result).toMatchObject({
+      name: 'AggregateError',
+      errors: [firstError, thirdError],
+    })
+  })
+
+  it('accepts completed dynamic config startups', async () => {
+    const { onGracefulShutdown } = await import('./shutdown.mts')
+    await expect(
+      onGracefulShutdown.waitForInitialization([
+        { waitForInitialization: async () => {} },
+        { waitForInitialization: async () => {} },
+      ]),
+    ).resolves.toBeUndefined()
+  })
+
   it('closes dynamic configs before GlideMQ instances and valkyries clients once', async () => {
     const onGracefulShutdown = await createShutdown()
 

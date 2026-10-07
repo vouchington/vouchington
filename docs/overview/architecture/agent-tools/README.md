@@ -51,7 +51,7 @@ User tool write hints follow `PUT`/`DELETE`, or a required UUID `idempotency_key
 Each MCP server also sends `instructions` on `initialize`
 ([`instructions.mts`](../../../../backend/services/mcp-tools/instructions.mts)) so agents learn how the tools fit together before calling them. A result over the MCP response limit returns a tool error that asks the caller to narrow the query or lower the limit.
 
-A tool may set `meta.outputSchema` (JSON Schema, `object` root) so `tools/call` also returns validated `structuredContent`; see [Structured tool results](../services/mcp-tools/README.md#structured-tool-results). Every tool exposed on `mcp` or `admin_mcp` declares one, and [`build-mcp-catalog.test.mts`](../../../../backend/services/mcp-tools/catalog/build-mcp-catalog.test.mts) fails for any that does not.
+A tool may set `meta.outputSchema` (JSON Schema, `object` root) so `tools/call` also returns validated `structuredContent`; see [Structured tool results](../services/mcp-tools/README.md#structured-tool-results). Every tool exposed on `mcp` or `admin_mcp` declares one, and the [static-backend live catalog check](../../../../ci/check-live-mcp-catalog.mjs) fails for any that does not.
 
 ---
 
@@ -81,9 +81,7 @@ user-`mcp` read tool stays `'free'`. No production tool requires `'pro'` yet —
 
 ## Generated Artifacts
 
-[`build-mcp-catalog.test.mts`](../../../../backend/services/mcp-tools/catalog/build-mcp-catalog.test.mts) builds every registry-derived artifact and fails when a committed copy is stale. Run
-`pnpm run mcp:catalog` from the repository root after adding or modifying tools to regenerate
-them:
+The `static-backend` CI gate runs the [live registry contract check](../../../../ci/check-live-mcp-catalog.mjs) and `pnpm run mcp:catalog -- --check` once for all three committed artifacts. Run `pnpm run mcp:catalog` from the repository root after adding or modifying tools to regenerate them:
 
 | Artifact                                                                 | Contents                                                                                                                        |
 | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
@@ -91,9 +89,9 @@ them:
 | [`catalog.md`](catalog.md)                                               | The generated tool table between its `BEGIN GENERATED` and `END GENERATED` markers                                              |
 | [`backend/tools/manifest.json`](../../../../backend/tools/manifest.json) | `client`-surface tools for first-party native clients — see [iOS Client Implementation Notes](#ios-client-implementation-notes) |
 
-The same test asserts that each server's catalog equals what `tools/list` returns to a caller
-holding every role, the Pro plan, and every scope, that every listed tool has a title, and that hints agree with
-their REST equivalents (see [MCP Metadata](#mcp-metadata)). The `docs-publish` workflow renders
+The live check asserts that each server's catalog equals what `tools/list` returns to a caller
+holding every role, the Pro plan, and every scope, that every listed tool has a title and output schema,
+and that hints agree with their REST equivalents (see [MCP Metadata](#mcp-metadata)). The `docs-publish` workflow renders
 `mcp.json` with [`ci/render-mcp-docs.mts`](../../../../ci/render-mcp-docs.mts) onto the credentialed
 [private docs site](../../../operations/private-docs-site.md) at `/mcp/`, alongside the PostgreSQL reference.
 

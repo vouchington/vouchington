@@ -1,6 +1,7 @@
 backend:
   - '.github/ci-path-filters.yml'
   - 'ci/allocate-browser-safe-ports.py'
+  - 'ci/check-live-mcp-catalog.mjs'
   - 'ci/package.json'
   - 'api-fixtures/**'
   - 'vitest.config.mts'

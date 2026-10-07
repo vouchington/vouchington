@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 
 import { parse as load } from 'yaml'
+import picomatch from 'picomatch'
 import { describe, expect, it } from 'vitest'
 
 function jobSection(workflow: string, jobName: string): string {
@@ -33,6 +34,18 @@ describe('main-backend workflow', () => {
 
     const workflow = readFileSync('.github/workflows/main-backend.yml', 'utf8')
     expect(workflow).toContain("- 'ci/package.json'")
+  })
+
+  it('triggers the main backend workflow when the live MCP catalog checker changes', () => {
+    const checker = 'ci/check-live-mcp-catalog.mjs'
+    expect(ciBackendFilter()).toContain(checker)
+
+    const workflow = load(readFileSync('.github/workflows/main-backend.yml', 'utf8')) as {
+      on?: { push?: { paths?: string[] } }
+    }
+    const pushPaths = workflow.on?.push?.paths ?? []
+    expect(pushPaths).toContain(checker)
+    expect(pushPaths.some(glob => picomatch.isMatch(checker, glob, { dot: true }))).toBe(true)
   })
 
   it('contains only image publication selection, intent, and publication jobs', () => {
