@@ -179,10 +179,6 @@
         // (test-helpers/vitest-config/storybook-browser-project.mts), never a static import;
         // same pattern as the root workspace's `test-helpers/glide-mq-vitest-shim.mts` entry.
         "test-helpers/vitest.setup.fake-timer-guard.mts",
-        // Same pattern: redirect shim for web-storybook-browser's own project-level `setupFiles`
-        // literal (root: 'web' resolves it here); no-mistakes resolves the same literal relative
-        // to the repo root instead, landing on test-helpers/vitest.setup.storybook-browser-guard.mts.
-        "test-helpers/vitest.setup.storybook-browser-guard.mts",
       ],
       "ignoreExportsUsedInFile": true,
     },
