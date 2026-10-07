@@ -5,6 +5,7 @@ import { join } from 'node:path'
 
 import pg from 'pg'
 import { describe, expect, it, vi } from 'vitest'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 import { read, readPool, write } from './index.mts'
 import type { QueryExecutor, QueryInput } from './types.mts'
@@ -152,7 +153,7 @@ describe('applyAllMigrations', () => {
     const viewName = `forced_view_${randomUUID().replaceAll('-', '')}`
     const statements: string[] = []
     const writer: QueryExecutor = (input: QueryInput): Promise<pg.QueryResult> => {
-      statements.push(String(input))
+      statements.push(stringFromUnknown(input))
       return Promise.resolve({ command: '', fields: [], oid: 0, rowCount: 0, rows: [] })
     }
 
