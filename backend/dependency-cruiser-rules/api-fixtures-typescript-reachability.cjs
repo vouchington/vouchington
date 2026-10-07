@@ -32,12 +32,11 @@
 // ratchet as its own reviewed change (not a silent allowlist addition) if reuse genuinely isn't
 // possible.
 //
-// 'backend-program.probes.test' and 'program-paths' are the only runtime `typescript` consumers
-// besides backend-program.mts. They use compiler-option enums, type flags, and diagnostic
-// formatting. They do not construct a program. Type-only imports are not runtime edges
-// (`dependencyTypesNot` below). API contract discovery is retired; PostgreSQL compiler checks
-// and independent schema utilities retain their existing upstream compiler boundaries.
-const LEGITIMATE_TYPE_GUARD_CONSUMERS = ['program-paths', 'backend-program.probes.test']
+// backend-program.probes.test is the sole runtime type-guard consumer allowed beside the compiler
+// owner. Type-only imports are not runtime edges (`dependencyTypesNot` below). API contract
+// discovery is retired; PostgreSQL compiler checks and independent schema utilities retain their
+// existing upstream compiler boundaries.
+const LEGITIMATE_TYPE_GUARD_CONSUMERS = ['backend-program.probes.test']
 
 // Entries above are interpolated into a RegExp string below; escape regex metacharacters so a
 // future ratchet-list addition can never silently change the pattern's matching semantics (e.g. a
