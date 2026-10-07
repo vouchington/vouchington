@@ -32,6 +32,7 @@ on:
       - 'ci/prepare-trivy-db.sh'
       - 'ci/resolve-published-images.sh'
       - 'ci/allocate-browser-safe-ports.py'
+      - 'ci/check-live-mcp-catalog.mjs'
       - 'ci/package.json'
       - 'vitest.config.mts'
       - 'package.json'

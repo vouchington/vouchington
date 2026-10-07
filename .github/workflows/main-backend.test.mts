@@ -35,6 +35,16 @@ describe('main-backend workflow', () => {
     expect(workflow).toContain("- 'ci/package.json'")
   })
 
+  it('triggers the main backend workflow when the live MCP catalog checker changes', () => {
+    const checker = 'ci/check-live-mcp-catalog.mjs'
+    expect(ciBackendFilter()).toContain(checker)
+
+    const workflow = load(readFileSync('.github/workflows/main-backend.yml', 'utf8')) as {
+      on?: { push?: { paths?: string[] } }
+    }
+    expect(workflow.on?.push?.paths).toContain(checker)
+  })
+
   it('contains only image publication selection, intent, and publication jobs', () => {
     const workflow = readFileSync('.github/workflows/main-backend.yml', 'utf8')
     const parsed = load(workflow) as { jobs?: Record<string, unknown> }
