@@ -5,7 +5,10 @@ import type { ContentProvenance } from '@voucha/types/entities/content-provenanc
 import { openOrGetOpenCase } from '@services/moderation-cases'
 import { type ModerationReport, reportEntityFkColumn } from './config.mts'
 import type { CreateModerationReportInput } from './parse.mts'
-import type { CreateModerationReportResult } from './create.mts'
+export interface CreateModerationReportResult {
+  report: ModerationReport
+  isDuplicate: boolean
+}
 
 /** The case and report share the transaction whose commit owns subsequent notifications. */
 export async function insertModerationReport(

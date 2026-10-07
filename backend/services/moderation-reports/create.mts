@@ -20,7 +20,8 @@ import {
   currentUserCanReportVisiblePost,
   type ReportablePostAccessInput,
 } from './reportable-post-access.mts'
-import { insertModerationReport } from './create-insert.mts'
+import { insertModerationReport, type CreateModerationReportResult } from './create-insert.mts'
+export type { CreateModerationReportResult } from './create-insert.mts'
 import { getPolicySeverity } from '@ts-shared/utils/moderation-policy'
 import { createCriticalModerationAlertNotification } from '@services/notifications/create-critical-moderation-alert-notification'
 
@@ -32,11 +33,6 @@ const REPORT_BLOCKED_POST_TYPES = new Set(['topic_recommendation'])
 
 type ReportablePostTargetRow = ReportablePostAccessInput & {
   target_created_by_id: string | null
-}
-
-export interface CreateModerationReportResult {
-  report: ModerationReport
-  isDuplicate: boolean
 }
 
 /**
