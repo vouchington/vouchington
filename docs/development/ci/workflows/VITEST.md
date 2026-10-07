@@ -39,6 +39,13 @@ Reporter policy:
 - `tests-backend-unit.yml` uploads each shard's JUnit report as the one-day `backend-junit-shard-N`
   artifact, so per-file durations can be aggregated across shards when auditing shard size. Vitest
   writes the report when the run finishes, so a shard killed by its step timeout uploads nothing.
+- `tests-web.yml` retains each shard's existing one-day `web-test-report-shard-N` JUnit artifact
+  after successful or failed, non-cancelled runs. `tests-backend-modules.yml`, `tests-tooling.yml`,
+  and `tests-ts-shared.yml` likewise retain their existing JUnit output files as one-day
+  `backend-modules-junit`, `tooling-junit`, and `ts-shared-junit` artifacts. Uploads are diagnostic:
+  a missing report warns, and an upload failure does not replace the test result. These reports
+  supply per-test timings for the timeout audit; the cleanup sweep keeps them until their one-day
+  expiry. Cancelled runs may have no report.
 
 Backend tests that launch a registered isolated database case keep that database boundary when
 coverage is enabled. Each child writes LCOV to its own directory, and `tests-backend-unit.yml`

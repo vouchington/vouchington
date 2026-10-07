@@ -76,7 +76,8 @@ jobs:
         # distinct from the sub-ten-minute job KPI. This job owns a four-worker candidate on public
         # 4-vCPU runners; retain or retune it only after candidate-run KPI evidence.
         timeout-minutes: 20
-      - if: failure()
+      - name: Upload web-shard-${{ matrix.shard }} JUnit report
+        if: ${{ !cancelled() }}
         timeout-minutes: 1
         continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -85,6 +86,7 @@ jobs:
           name: web-test-report-shard-${{ matrix.shard }}
           path: web-shard-${{matrix.shard}}.junit.xml
           retention-days: 1
+          if-no-files-found: warn
       - name: Preserve full web-shard-${{ matrix.shard }} LCOV
         if: ${{ !cancelled() && inputs.publish_coverage }}
         shell: bash

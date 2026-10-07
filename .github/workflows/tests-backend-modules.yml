@@ -43,6 +43,17 @@ jobs:
         run: |
           pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/data-stores/analytics --project backend/services/analytics --project backend-modules --project backend-no-data-mocks --project backend-test-helpers --project backend-contract-artifacts --project backend-email-templates
         timeout-minutes: 10
+      - name: Upload backend-modules JUnit report
+        if: ${{ !cancelled() }}
+        timeout-minutes: 1
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          overwrite: true
+          name: backend-modules-junit
+          path: backend-modules-test-report.junit.xml
+          retention-days: 1
+          if-no-files-found: warn
       - name: Preserve full backend-modules LCOV
         if: ${{ !cancelled() && inputs.publish_coverage }}
         shell: bash
