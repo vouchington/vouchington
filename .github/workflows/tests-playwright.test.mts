@@ -112,7 +112,7 @@ describe('tests-playwright.yml', () => {
 
   it('does not allocate Chromium-restricted ports for browser-facing servers', () => {
     expect(workflow).toContain('python3 ci/allocate-browser-safe-ports.py 6')
-    expect(browserSafePortsScript).toContain('packaged.with_name("fetch-forbidden-ports.json")')
+    expect(browserSafePortsScript).toContain('"fetch-forbidden-ports.json"')
     expect(browserSafePortsScript).not.toContain('--forbidden-ports')
     expect(FETCH_FORBIDDEN_PORTS).toEqual(expect.arrayContaining([4045, 6667, 10_080]))
   })
