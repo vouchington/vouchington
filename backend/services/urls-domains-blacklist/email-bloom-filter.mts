@@ -2,15 +2,16 @@ import { getUrlsDomainsBlacklistWorkLimit } from './work-limits.mts'
 import { ValkeyBloomFilter, bloomValkeyClient } from '@data-stores/valkey'
 import { createAsyncGeneratorFromCursor, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { normalizeDomain } from './domains.mts'
 import { enqueueRebuildBloomFilter } from '@queues/bloom-filters/enqueues'
-import { enqueueRebuildBloomFilterBestEffort } from './rebuild-enqueue.mts'
-import { newBloomReadyMarkerValue, unlinkReadyMarkerIfValue } from './ready-marker.mts'
+import { newBloomReadyMarkerValue } from './ready-marker.mts'
 import {
-  checkBloomFilterRead,
-  isUnavailableLiveFilterKey,
-  repairBloomFilterUnavailableRead,
-} from './read-repair.mts'
+  addDomainsToBlocklistBloomFilter,
+  blocklistBloomAddTarget,
+  type BlocklistBloomAddTarget,
+  type BlocklistBloomFilterReadTarget,
+  repairStaleBlocklistReadyMarker,
+} from './blocklist-bloom-add.mts'
+import { checkBloomFilterRead, repairBloomFilterUnavailableRead } from './read-repair.mts'
 import onError from '@modules/on-error'
 import { warmUpBlocklistBloomFilter } from './warmup-orchestration.mts'
 import { withBlocklistBloomFilterLock } from './bloom-filter-lock.mts'
@@ -28,58 +29,17 @@ function getEmailBloomFilter() {
 // Marker key set after each successful rebuild — used by reads as a reliable
 // readiness check instead of a bloom membership probe (which can false-positive).
 const BLOOM_READY_KEY = 'bloom-filter:email-blocklist:ready'
-type ReadyMarkerValue = Exclude<Awaited<ReturnType<typeof bloomValkeyClient.get>>, null>
 
 export async function invalidateEmailBlocklistReadyMarker(): Promise<number> {
   return bloomValkeyClient.unlink([BLOOM_READY_KEY])
 }
 
-async function enqueueRebuildAndInvalidateReadyMarker(
-  waitForEnqueue = true,
-  observedReadyValue?: ReadyMarkerValue,
-): Promise<void> {
-  try {
-    const readyValue =
-      observedReadyValue ?? (await getReadyMarkerValueForEmailBlocklistInvalidation())
-    if (readyValue === null) return
-
-    if (!waitForEnqueue) {
-      void enqueueRebuildBloomFilterBestEffort('email-blocklist', () =>
-        unlinkReadyMarkerIfValue(BLOOM_READY_KEY, readyValue),
-      )
-      return
-    }
-    await enqueueRebuildBloomFilter({ filter: 'email-blocklist' })
-    await unlinkReadyMarkerIfValue(BLOOM_READY_KEY, readyValue)
-  } catch (err) {
-    onError(err instanceof Error ? err : new Error(String(err)))
-  }
-}
-
-async function getReadyMarkerValueForEmailBlocklistInvalidation(): Promise<ReadyMarkerValue | null> {
-  try {
-    return await bloomValkeyClient.get(BLOOM_READY_KEY)
-  } catch (err) {
-    onError(err instanceof Error ? err : new Error(String(err)))
-    await repairEmailBlocklistUnavailableRead()
-    return null
-  }
-}
-
 async function repairStaleReadyMarkerIfFilterUnavailable(): Promise<void> {
-  try {
-    const readyValue = await bloomValkeyClient.get(BLOOM_READY_KEY)
-    if (readyValue === null) {
-      return
-    }
-
-    if (await isUnavailableLiveFilterKey(getEmailBloomFilter().getConfig().liveKey)) {
-      await enqueueRebuildAndInvalidateReadyMarker(false, readyValue)
-      await unlinkReadyMarkerIfValue(BLOOM_READY_KEY, readyValue)
-    }
-  } catch (err) {
-    onError(err instanceof Error ? err : new Error(String(err)))
-  }
+  await repairStaleBlocklistReadyMarker({
+    filter: 'email-blocklist',
+    readyKey: BLOOM_READY_KEY,
+    liveKey: getEmailBloomFilter().getConfig().liveKey,
+  })
 }
 
 export async function enqueueEmailBlocklistRebuild(): Promise<void> {
@@ -95,13 +55,18 @@ export async function enqueueEmailBlocklistRebuild(): Promise<void> {
  * Returns `true` (maybe present), `false` (definitely not present),
  * or `null` (filter doesn't exist or connection error — caller should fall back to DB).
  */
-export async function checkEmailBloomFilter(domain: string): Promise<boolean | null> {
+export async function checkEmailBloomFilter(
+  domain: string,
+  target?: BlocklistBloomFilterReadTarget,
+): Promise<boolean | null> {
+  const bloomFilter = getEmailBloomFilter()
   return checkBloomFilterRead({
-    readyKey: BLOOM_READY_KEY,
+    readyKey: target?.readyKey ?? BLOOM_READY_KEY,
     value: domain,
-    liveKey: getEmailBloomFilter().getConfig().liveKey,
-    existsIfReady: (readyKey, value) => getEmailBloomFilter().existsIfReady(readyKey, value),
-    repairUnavailableRead: repairEmailBlocklistUnavailableRead,
+    liveKey: target?.liveKey ?? bloomFilter.getConfig().liveKey,
+    existsIfReady:
+      target?.existsIfReady ?? ((readyKey, value) => bloomFilter.existsIfReady(readyKey, value)),
+    repairUnavailableRead: target?.repairUnavailableRead ?? repairEmailBlocklistUnavailableRead,
   })
 }
 
@@ -112,18 +77,21 @@ export async function checkEmailBloomFilter(domain: string): Promise<boolean | n
  * until a completed rebuild sets the ready marker.
  * @public #1360: external production use is unconfirmed; may be removed after intended-use review.
  */
-export async function addDomainsToEmailBloomFilter(domains: string[]): Promise<void> {
-  const validDomains = domains.flatMap(d => {
-    const n = normalizeDomain(d)
-    return n !== null ? [n] : []
-  })
-
-  try {
-    await getEmailBloomFilter().addOrThrow(validDomains)
-  } catch (err) {
-    onError(err instanceof Error ? err : new Error(String(err)))
-    await enqueueRebuildAndInvalidateReadyMarker()
-  }
+export async function addDomainsToEmailBloomFilter(
+  domains: string[],
+  target?: BlocklistBloomAddTarget,
+): Promise<void> {
+  const bloomFilter = getEmailBloomFilter()
+  await addDomainsToBlocklistBloomFilter(
+    domains,
+    target ??
+      blocklistBloomAddTarget({
+        filter: 'email-blocklist',
+        readyKey: BLOOM_READY_KEY,
+        liveKey: bloomFilter.getConfig().liveKey,
+        addOrThrow: validDomains => bloomFilter.addOrThrow(validDomains),
+      }),
+  )
 }
 
 async function* emailBlocklistBatchesFromDb(): AsyncGenerator<string[]> {
