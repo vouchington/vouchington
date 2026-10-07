@@ -90,7 +90,6 @@ app.route('/api/v1/communities/:idOrSlug/modmail').post(async (ctx: Context) => 
   const isMod = currentUserCanViewModmailThread(currentUser, community, membership)
   const rawSubjectUserId =
     isMod && typeof body.subject_user_id === 'string' ? body.subject_user_id : currentUser.id
-  ctx.assert(isUUID(rawSubjectUserId), 422, 'subject_user_id must be a UUID')
 
   if (isMod && rawSubjectUserId !== currentUser.id) {
     const subjectUser = await getPrivateUserByAny(rawSubjectUserId)
@@ -162,11 +161,6 @@ app.route('/api/v1/communities/:idOrSlug/modmail/:conversationId').patch(async (
   })
 
   if (typeof body.assigned_moderator_user_id === 'string') {
-    ctx.assert(
-      isUUID(body.assigned_moderator_user_id),
-      422,
-      'assigned_moderator_user_id must be a UUID',
-    )
     const assigneeMembership = await getCommunityMember(
       community.id,
       body.assigned_moderator_user_id,

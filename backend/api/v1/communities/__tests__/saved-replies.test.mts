@@ -90,13 +90,13 @@ describe('saved-replies API', () => {
       expect(response.body.reply.body).toBe('Thank you for reaching out.')
     })
 
-    it('returns 400 when body is missing', async () => {
+    it('returns 422 when body is missing', async () => {
       const request = createRequest()
       await request.authenticateAs(mod)
       await request
         .post(`/api/v1/communities/${community.slug}/saved-replies`)
         .send({ title: 'No body' })
-        .expect(400)
+        .expect(422)
     })
   })
 

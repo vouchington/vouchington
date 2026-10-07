@@ -1,13 +1,11 @@
 'use client'
 import { clientApi } from './instance'
+import type { CreateCommunityInput, UpdateCommunityInput } from './community-inputs'
 import { searchMyCommunities } from './community-search'
 import type {
   Community,
   CommunityResponseBody,
   CommunityInvite,
-  CommunityVisibility,
-  CommunityMemberRosterVisibility,
-  CommunityListType,
   CommunityMemberRole,
   CommunityPinnedPostsResponseBody,
   CommunityPostTypeSettingsResponseBody,
@@ -30,23 +28,6 @@ export {
   removeCommunityListItem,
 } from './community-list-items'
 
-interface CreateCommunityInput {
-  name: string
-  slug?: string
-  markdown?: string
-  visibility?: CommunityVisibility
-  list_type?: CommunityListType | null
-  member_roster_visibility?: CommunityMemberRosterVisibility
-  post_approval_required_at?: boolean
-  should_allow_review_posts?: boolean
-  should_allow_data_point_posts?: boolean
-  member_invites_allowed_at?: boolean
-  cf_turnstile_response?: string
-}
-type UpdateCommunityInput = Partial<CreateCommunityInput> & {
-  profile_image_id?: string | null
-  banner_image_id?: string | null
-}
 export function createCommunity(input: CreateCommunityInput): Promise<CommunityResponseBody> {
   return clientApi.post<CommunityResponseBody>('/api/v1/communities', input)
 }

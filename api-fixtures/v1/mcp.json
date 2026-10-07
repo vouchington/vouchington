@@ -1892,7 +1892,7 @@
           "tool": {
             "name": "create_community",
             "title": "Create Community",
-            "description": "Create a community the current user owns. name is required, has at least 3 words and at most 100 characters, and has no leading or trailing whitespace. slug is optional and generated from the name when omitted; a taken slug is CONFLICT. visibility is public (default) or private. member_roster_visibility says who can list the members: public (default), users, members or moderators. member_invites_allowed lets members invite others, and post_approval_required sends every new post to moderators for approval; both default to false. should_allow_review_posts and should_allow_data_point_posts default to false. Profile and banner images are set on the web. Creating communities counts against the same daily and short-term quota as the web, and CONTRIBUTION_QUOTA_EXCEEDED means try later. A username is required (FORBIDDEN otherwise). Reuse the same UUID idempotency_key and arguments to safely retry; the first result is replayed. Returns the community id, slug, visibility and creation time.",
+            "description": "Create a community the current user owns. name is required, has at least 3 words and at most 100 characters, and has no leading or trailing whitespace. slug is optional and generated from the name when omitted; a taken slug is CONFLICT. visibility is public (default) or private. member_roster_visibility says who can list the members: public (default), users, members or moderators. member_invites_allowed_at lets members invite others, and post_approval_required_at sends every new post to moderators for approval; both default to false. should_allow_review_posts and should_allow_data_point_posts default to false. Profile and banner image ids and list_type match the REST community inputs. Creating communities counts against the same daily and short-term quota as the web, and CONTRIBUTION_QUOTA_EXCEEDED means try later. A username is required (FORBIDDEN otherwise). Reuse the same UUID idempotency_key and arguments to safely retry; the first result is replayed. Returns the community id, slug, visibility and creation time.",
             "inputSchema": {
               "type": "object",
               "properties": {
@@ -1918,8 +1918,20 @@
                   "enum": ["public", "private"]
                 },
                 "default_language": {
-                  "type": "string",
+                  "type": ["string", "null"],
                   "description": "Optional BCP 47 content language tag."
+                },
+                "list_type": {
+                  "type": ["string", "null"],
+                  "enum": ["follow", "mute", null]
+                },
+                "profile_image_id": {
+                  "type": ["string", "null"],
+                  "format": "uuid"
+                },
+                "banner_image_id": {
+                  "type": ["string", "null"],
+                  "format": "uuid"
                 },
                 "should_allow_review_posts": {
                   "type": "boolean"
@@ -1931,10 +1943,10 @@
                   "type": "string",
                   "enum": ["public", "users", "members", "moderators"]
                 },
-                "member_invites_allowed": {
+                "member_invites_allowed_at": {
                   "type": "boolean"
                 },
-                "post_approval_required": {
+                "post_approval_required_at": {
                   "type": "boolean"
                 }
               },

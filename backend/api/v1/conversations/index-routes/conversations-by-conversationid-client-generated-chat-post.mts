@@ -27,8 +27,6 @@ import {
 } from '../../../response-helpers.mts'
 import { checkApiMessageSafety } from '../../check-api-message-safety.mts'
 
-const MAX_MESSAGE_LENGTH = 32_768
-const MAX_ASSISTANT_CONTENT_LENGTH = 65_536
 const MAX_MODEL_NAME_LENGTH = 256
 
 app
@@ -60,11 +58,6 @@ app
     assertNotSuspended(currentUser)
 
     const conversationId = validateUUIDParam(ctx, 'conversationId')
-    validateRequestContract(
-      ctx,
-      'POST:/api/v1/conversations/:conversationId/client-generated-chat',
-      { path: ctx.params },
-    )
     const conversation = await getConversationByIdForMutation(conversationId)
     if (!conversation) ctx.throw(404, 'Conversation not found')
     if (!(await currentUserCanUpdateConversation(currentUser, conversation))) {
@@ -81,43 +74,17 @@ app
     validateRequestContract(
       ctx,
       'POST:/api/v1/conversations/:conversationId/client-generated-chat',
-      { body },
+      { path: ctx.params, body },
     )
-    const userMessageId = body.user_message_id
-    const assistantMessageId = body.assistant_message_id
-    const messageIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
-    ctx.assert(
-      typeof userMessageId === 'string' && messageIdPattern.test(userMessageId),
-      400,
-      'user_message_id must be a lowercase UUIDv7',
-    )
-    ctx.assert(
-      typeof assistantMessageId === 'string' && messageIdPattern.test(assistantMessageId),
-      400,
-      'assistant_message_id must be a lowercase UUIDv7',
-    )
+    const userMessageId = body.user_message_id as string
+    const assistantMessageId = body.assistant_message_id as string
     ctx.assert(
       userMessageId < assistantMessageId,
       400,
       'Message ids must follow user then assistant order',
     )
-    const message = body.message
-    const assistantContent = body.assistant_content
-    ctx.assert(typeof message === 'string', 400, 'Message must be a string')
-    ctx.assert(message.trim().length > 0, 400, 'Message cannot be empty')
-    ctx.assert(
-      message.length <= MAX_MESSAGE_LENGTH,
-      400,
-      `Message must be at most ${MAX_MESSAGE_LENGTH} characters`,
-    )
-    ctx.assert(typeof assistantContent === 'string', 400, 'assistant_content must be a string')
-    ctx.assert(assistantContent.trim().length > 0, 400, 'assistant_content cannot be empty')
-    ctx.assert(
-      assistantContent.length <= MAX_ASSISTANT_CONTENT_LENGTH,
-      400,
-      `assistant_content must be at most ${MAX_ASSISTANT_CONTENT_LENGTH} characters`,
-    )
-
+    const message = body.message as string
+    const assistantContent = body.assistant_content as string
     let modelProvider: ReturnType<typeof parseClientGeneratedChatModelProvider>
     try {
       modelProvider = parseClientGeneratedChatModelProvider(body.model_provider)

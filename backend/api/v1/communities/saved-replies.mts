@@ -64,9 +64,6 @@ app.route('/api/v1/communities/:idOrSlug/saved-replies').post(async (ctx: Contex
     path: ctx.params,
     body,
   })
-  ctx.assert(typeof body.body === 'string' && body.body.trim().length > 0, 400, 'body is required')
-  ctx.assert((body.body as string).length <= 5000, 400, 'body must be 5000 characters or fewer')
-
   const reply = await createSavedReply(currentUser.id, community.id, {
     title: typeof body.title === 'string' ? body.title : '',
     body: body.body as string,

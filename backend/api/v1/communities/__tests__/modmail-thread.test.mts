@@ -159,13 +159,13 @@ describe('modmail thread API', () => {
       expect(response.body.message).toHaveProperty('id')
     })
 
-    it('returns 400 when text is missing', async () => {
+    it('returns 422 when text is missing', async () => {
       const request = createRequest()
       await request.authenticateAs(mod)
       await request
         .post(`/api/v1/communities/${community.slug}/modmail/${threadId}/messages`)
         .send({})
-        .expect(400)
+        .expect(422)
     })
 
     it('returns 422 when body is null JSON', async () => {

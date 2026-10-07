@@ -130,7 +130,7 @@ describe('member transcript contract', () => {
     await request
       .post(path)
       .send({ ...turn(), user_message_id: 'not-a-uuid' })
-      .expect(400)
+      .expect(422)
     await expect(getConversationMessagesByConversationId(conversation.id)).resolves.toHaveLength(0)
   })
 
