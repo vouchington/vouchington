@@ -4,8 +4,8 @@ export type ClosureScanIssue = {
 }
 
 /** First segment of every web catalog alias. A quoted token under any other namespace is never
- * scanned, so its copy would reach no route or chrome selector. `route-source-scan.test.mts` fails
- * when the web catalog gains a namespace missing from this list. */
+ * scanned, so its copy would reach no route or chrome selector. The route-selector CLI validates
+ * every web catalog namespace before discovering routes. */
 const ALIAS_NAMESPACES = ['common', 'extracted', 'moderation', 'nav', 'settings', 'shared']
 const ALIAS_BODY = `(?:${ALIAS_NAMESPACES.join('|')})\\.(?:[A-Za-z0-9_]+\\.)*[A-Za-z0-9_]+`
 const QUOTED_ALIAS_RE = new RegExp(`['"\`](${ALIAS_BODY})['"\`]`, 'g')
@@ -23,6 +23,20 @@ export function quotedAliasesFromText(text: string): Set<string> {
     if (alias) aliases.add(alias)
   }
   return aliases
+}
+
+export function assertScannableWebAliases(aliases: Iterable<string>): void {
+  const namespaces = new Set([...aliases].map(alias => alias.split('.')[0] ?? ''))
+  if (namespaces.size === 0) throw new Error('No web catalog aliases found')
+  const unscanned = [...namespaces]
+    .filter(namespace => {
+      const representative = `${namespace}.page.title`
+      return !quotedAliasesFromText(`t('${representative}')`).has(representative)
+    })
+    .toSorted()
+  if (unscanned.length > 0) {
+    throw new Error(`Web catalog namespaces are not scanned: ${unscanned.join(', ')}`)
+  }
 }
 
 export function unboundedTranslationKeyHit(text: string): boolean {

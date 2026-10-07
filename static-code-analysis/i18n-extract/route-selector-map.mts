@@ -23,6 +23,7 @@ import {
 } from './route-graph-analysis.mts'
 import { renderSource } from './route-selector-output.mts'
 import {
+  assertScannableWebAliases,
   formatClosureScanFailure,
   uniqueClosureScanIssues,
   type ClosureScanIssue,
@@ -110,6 +111,7 @@ export async function renderRouteAliasArtifacts(
   const { catalog } = await loadCatalogDirectory(path.join(repoRoot, 'localization/catalog'))
   const aliases = new Set<string>()
   for (const row of catalog.aliases) if (row.consumer === 'web') aliases.add(row.alias)
+  assertScannableWebAliases(aliases)
   const result = await computeRouteAliasMap(aliases, repoRoot, appRoot, {}, diagnostics)
   const formatted = await format(
     generatedPath,
