@@ -1,4 +1,6 @@
 import { it, expect, describe } from 'vitest'
+import type { Job } from 'glide-mq'
+import { bloomFilters } from '../workers.mts'
 import { deleteUser } from '@services/users/delete'
 import {
   backfillUserBookmarkBloomFilter,
@@ -16,7 +18,10 @@ import {
 import { softDeleteUser } from '@voucha/test-helpers/entities/users-lifecycle'
 
 describe('deleteUser bookmark bloom filter cleanup', () => {
-  it('deleting a user enqueues processDeleteUserBookmarkBloomFilter, which deletes their bloom filter', async () => {
+  it('deleting a user enqueues processDeleteUserBookmarkBloomFilter, which deletes their bloom filter', async ({
+    signal,
+    onTestFinished,
+  }) => {
     await bloomFilterConfig.waitForInitialization()
     const restoreBloomFilterConfig = overrideDynamicConfigFieldsForTest(bloomFilterConfig, {
       bookmarkBloomFilterEnabled: true,
@@ -43,20 +48,42 @@ describe('deleteUser bookmark bloom filter cleanup', () => {
       ])
       expect(beforeDelete.ready).toBe(true)
 
-      await deleteUser(user, user)
-
-      // deleteUser enqueues `processDeleteUserBookmarkBloomFilter` fire-and-forget (bare `void`, not
-      // awaited — see backend/services/users/delete.mts) so the job is not guaranteed to have run,
-      // or even to have been picked up by the worker, the instant deleteUser resolves. We cannot spy
-      // on the enqueue call (non-web tests must not mock internal modules — see
-      // docs/development/tests.md § Vitest Mock Typing), so assert the real, observable end state
-      // instead: poll until the worker has actually processed the job and deleted the filter.
-      await expect
-        .poll(() => checkBookmarkBloomCandidates(user.id, topicRelation.table_name, [topicId]), {
-          timeout: 10_000,
-          interval: 100,
-        })
-        .toMatchObject({ ready: false })
+      const completion = Promise.withResolvers<void>()
+      const completionOutcome = Promise.allSettled([completion.promise] as const)
+      const isOwnedDeletion = (job: Job): boolean => {
+        return job.name === 'processDeleteUserBookmarkBloomFilter' && job.data.userId === user.id
+      }
+      const onCompleted = (job: Job): void => {
+        if (isOwnedDeletion(job)) completion.resolve()
+      }
+      const onFailed = (job: Job | undefined, error: Error): void => {
+        if (job && isOwnedDeletion(job)) completion.reject(error)
+      }
+      const onAbort = (): void => {
+        completion.reject(signal.reason)
+      }
+      const cleanup = (): void => {
+        bloomFilters.off('completed', onCompleted)
+        bloomFilters.off('failed', onFailed)
+        signal.removeEventListener('abort', onAbort)
+      }
+      bloomFilters.on('completed', onCompleted)
+      bloomFilters.on('failed', onFailed)
+      signal.addEventListener('abort', onAbort, { once: true })
+      if (signal.aborted) onAbort()
+      onTestFinished(cleanup)
+      try {
+        signal.throwIfAborted()
+        await deleteUser(user, user)
+        const [outcome] = await completionOutcome
+        if (outcome.status === 'rejected') throw outcome.reason
+        const afterDelete = await checkBookmarkBloomCandidates(user.id, topicRelation.table_name, [
+          topicId,
+        ])
+        expect(afterDelete).toMatchObject({ ready: false })
+      } finally {
+        cleanup()
+      }
     } finally {
       restoreBloomFilterConfig()
     }
