@@ -36675,6 +36675,138 @@
         }
       }
     },
+    "copyright_repeat_infringer_incident_targets": {
+      "checkConstraints": {},
+      "columns": {
+        "copyright_notice_id": {
+          "comment": "Parent notice scope shared by the incident and target foreign keys.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "copyright_notice_target_id": {
+          "comment": "Confirmed target whose placement belonged to the incident account when the incident was synchronized.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        },
+        "copyright_repeat_infringer_incident_id": {
+          "comment": "Account incident supported by the confirmed target.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        },
+        "created_at": {
+          "comment": null,
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4
+        }
+      },
+      "comment": "Immutable target provenance tying each account incident to the confirmed placements that can keep it operative after account erasure.",
+      "foreignKeys": {
+        "fk_copyr_repeat_infringe_incident_targets__incident": {
+          "columns": ["copyright_repeat_infringer_incident_id", "copyright_notice_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id", "copyright_notice_id"],
+          "referencedTable": "copyright_repeat_infringer_incidents",
+          "validated": true
+        },
+        "fk_copyr_repeat_infringe_incident_targets__target": {
+          "columns": ["copyright_notice_id", "copyright_notice_target_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["copyright_notice_id", "id"],
+          "referencedTable": "copyright_notice_targets",
+          "validated": true
+        }
+      },
+      "indexes": {
+        "copyright_repeat_infringer_incident_targets_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_repeat_infringer_incident_targets_pkey ON public.copyright_repeat_infringer_incident_targets USING btree (copyright_repeat_infringer_incident_id, copyright_notice_target_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "copyright_repeat_infringer_incident_id",
+              "descending": false,
+              "expression": "copyright_repeat_infringer_incident_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "copyright_notice_target_id",
+              "descending": false,
+              "expression": "copyright_notice_target_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_repeat_infringer_incident_targets__target": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_repeat_infringer_incident_targets__target ON public.copyright_repeat_infringer_incident_targets USING btree (copyright_notice_target_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "copyright_notice_target_id",
+              "descending": false,
+              "expression": "copyright_notice_target_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["copyright_repeat_infringer_incident_id", "copyright_notice_target_id"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_repeat_infringer_incident_targets_immutable": {
+          "definition": "CREATE TRIGGER trigger_copyright_repeat_infringer_incident_targets_immutable BEFORE DELETE OR UPDATE ON public.copyright_repeat_infringer_incident_targets FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()"
+        }
+      },
+      "uniqueConstraints": {}
+    },
     "copyright_repeat_infringer_incidents": {
       "checkConstraints": {},
       "columns": {
@@ -36859,6 +36991,38 @@
           "ready": true,
           "unique": true,
           "valid": true
+        },
+        "uq_copyright_repeat_infringer_incidents__id__notice": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_copyright_repeat_infringer_incidents__id__notice ON public.copyright_repeat_infringer_incidents USING btree (id, copyright_notice_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
         }
       },
       "physicalPartition": null,
@@ -36877,6 +37041,9 @@
       "uniqueConstraints": {
         "uq_copyrig_repeat_infringe_incident__account_user_id__notice_id": {
           "columns": ["account_user_id", "copyright_notice_id"]
+        },
+        "uq_copyright_repeat_infringer_incidents__id__notice": {
+          "columns": ["id", "copyright_notice_id"]
         }
       }
     },

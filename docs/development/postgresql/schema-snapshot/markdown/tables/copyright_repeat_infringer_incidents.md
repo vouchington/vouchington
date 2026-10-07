@@ -20,6 +20,7 @@ Not partitioned — growth: unbounded.
 **Unique constraints:**
 
 - `uq_copyrig_repeat_infringe_incident__account_user_id__notice_id`: `UNIQUE (account_user_id, copyright_notice_id)`
+- `uq_copyright_repeat_infringer_incidents__id__notice`: `UNIQUE (id, copyright_notice_id)`
 
 **Check constraints:**
 _none_
@@ -35,6 +36,7 @@ _none_
 - `idx_copyright_repeat_infringer_incidents__notice`: `CREATE INDEX idx_copyright_repeat_infringer_incidents__notice ON public.copyright_repeat_infringer_incidents USING btree (copyright_notice_id)`
 - `idx_copyright_repeat_infringer_incidents__operative_account`: `CREATE INDEX idx_copyright_repeat_infringer_incidents__operative_account ON public.copyright_repeat_infringer_incidents USING btree (account_user_id) WHERE is_operative`
 - `uq_copyrig_repeat_infringe_incident__account_user_id__notice_id`: `CREATE UNIQUE INDEX uq_copyrig_repeat_infringe_incident__account_user_id__notice_id ON public.copyright_repeat_infringer_incidents USING btree (account_user_id, copyright_notice_id)`
+- `uq_copyright_repeat_infringer_incidents__id__notice`: `CREATE UNIQUE INDEX uq_copyright_repeat_infringer_incidents__id__notice ON public.copyright_repeat_infringer_incidents USING btree (id, copyright_notice_id)`
 
 **Triggers:**
 

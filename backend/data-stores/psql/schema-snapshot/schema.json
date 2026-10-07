@@ -34952,6 +34952,137 @@
         }
       }
     },
+    "copyright_repeat_infringer_incident_targets": {
+      "checkConstraints": {},
+      "columns": {
+        "copyright_notice_id": {
+          "collation": null,
+          "comment": "Parent notice scope shared by the incident and target foreign keys.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "copyright_notice_target_id": {
+          "collation": null,
+          "comment": "Confirmed target whose placement belonged to the incident account when the incident was synchronized.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "copyright_repeat_infringer_incident_id": {
+          "collation": null,
+          "comment": "Account incident supported by the confirmed target.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Immutable target provenance tying each account incident to the confirmed placements that can keep it operative after account erasure.",
+      "foreignKeys": {
+        "fk_copyr_repeat_infringe_incident_targets__incident": {
+          "columns": ["copyright_repeat_infringer_incident_id", "copyright_notice_id"],
+          "definition": "FOREIGN KEY (copyright_repeat_infringer_incident_id, copyright_notice_id) REFERENCES copyright_repeat_infringer_incidents(id, copyright_notice_id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "copyright_notice_id"],
+          "referencedTable": "copyright_repeat_infringer_incidents",
+          "validated": true
+        },
+        "fk_copyr_repeat_infringe_incident_targets__target": {
+          "columns": ["copyright_notice_id", "copyright_notice_target_id"],
+          "definition": "FOREIGN KEY (copyright_notice_id, copyright_notice_target_id) REFERENCES copyright_notice_targets(copyright_notice_id, id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["copyright_notice_id", "id"],
+          "referencedTable": "copyright_notice_targets",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_repeat_infringer_incident_targets_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_repeat_infringer_incident_targets_pkey ON public.copyright_repeat_infringer_incident_targets USING btree (copyright_repeat_infringer_incident_id, copyright_notice_target_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_repeat_infringer_incident_id",
+              "descending": false,
+              "expression": "copyright_repeat_infringer_incident_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "copyright_notice_target_id",
+              "descending": false,
+              "expression": "copyright_notice_target_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_repeat_infringer_incident_targets__target": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_repeat_infringer_incident_targets__target ON public.copyright_repeat_infringer_incident_targets USING btree (copyright_notice_target_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_target_id",
+              "descending": false,
+              "expression": "copyright_notice_target_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["copyright_repeat_infringer_incident_id", "copyright_notice_target_id"],
+        "definition": "PRIMARY KEY (copyright_repeat_infringer_incident_id, copyright_notice_target_id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_repeat_infringer_incident_targets_immutable": "CREATE TRIGGER trigger_copyright_repeat_infringer_incident_targets_immutable BEFORE DELETE OR UPDATE ON public.copyright_repeat_infringer_incident_targets FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()"
+      },
+      "uniqueConstraints": {}
+    },
     "copyright_repeat_infringer_incidents": {
       "checkConstraints": {},
       "columns": {
@@ -35131,6 +35262,33 @@
           "ready": true,
           "unique": true,
           "valid": true
+        },
+        "uq_copyright_repeat_infringer_incidents__id__notice": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_copyright_repeat_infringer_incidents__id__notice ON public.copyright_repeat_infringer_incidents USING btree (id, copyright_notice_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
         }
       },
       "partition": null,
@@ -35148,6 +35306,10 @@
         "uq_copyrig_repeat_infringe_incident__account_user_id__notice_id": {
           "columns": ["account_user_id", "copyright_notice_id"],
           "definition": "UNIQUE (account_user_id, copyright_notice_id)"
+        },
+        "uq_copyright_repeat_infringer_incidents__id__notice": {
+          "columns": ["id", "copyright_notice_id"],
+          "definition": "UNIQUE (id, copyright_notice_id)"
         }
       }
     },
