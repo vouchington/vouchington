@@ -34,4 +34,4 @@ _none_
 
 **Triggers:**
 
-- `trg_activitypub_inbox_delivery_storage_counters__updated_at`: `CREATE TRIGGER trg_activitypub_inbox_delivery_storage_counters__updated_at BEFORE UPDATE ON public.activitypub_inbox_delivery_storage_counters FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_activitypub_inbox_delivery_storage_counters_updated_at`: `CREATE TRIGGER trigger_activitypub_inbox_delivery_storage_counters_updated_at BEFORE UPDATE ON public.activitypub_inbox_delivery_storage_counters FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

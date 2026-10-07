@@ -9,7 +9,7 @@ CREATE TABLE media_delivery_repair_markers (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trg_media_delivery_repair_markers__updated_at
+CREATE OR REPLACE TRIGGER trigger_media_delivery_repair_markers_updated_at
 BEFORE UPDATE ON media_delivery_repair_markers
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 

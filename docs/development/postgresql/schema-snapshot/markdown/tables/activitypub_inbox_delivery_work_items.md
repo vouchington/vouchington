@@ -73,11 +73,11 @@ _none_
 **Indexes:**
 
 - `activitypub_inbox_delivery_work_items_pkey`: `CREATE UNIQUE INDEX activitypub_inbox_delivery_work_items_pkey ON public.activitypub_inbox_delivery_work_items USING btree (id)`
-- `idx_activitypub_inbox_work_items__claim`: `CREATE INDEX idx_activitypub_inbox_work_items__claim ON public.activitypub_inbox_delivery_work_items USING btree (available_at, id) WHERE (failed_at IS NULL)`
-- `idx_activitypub_inbox_work_items__recovery`: `CREATE INDEX idx_activitypub_inbox_work_items__recovery ON public.activitypub_inbox_delivery_work_items USING btree (failed_at, available_at, leased_at, dispatched_at, received_at, id)`
-- `idx_activitypub_inbox_work_items__remote_actor_id`: `CREATE INDEX idx_activitypub_inbox_work_items__remote_actor_id ON public.activitypub_inbox_delivery_work_items USING btree (remote_actor_id) WHERE (remote_actor_id IS NOT NULL)`
-- `idx_activitypub_inbox_work_items__unverified_retention`: `CREATE INDEX idx_activitypub_inbox_work_items__unverified_retention ON public.activitypub_inbox_delivery_work_items USING btree (retention_expires_at, id) WHERE ((verified_at IS NULL) AND (retention_expires_at IS NOT NULL))`
-- `idx_activitypub_inbox_work_items__verified_retention`: `CREATE INDEX idx_activitypub_inbox_work_items__verified_retention ON public.activitypub_inbox_delivery_work_items USING btree (retention_expires_at, id) WHERE ((verified_at IS NOT NULL) AND (retention_expires_at IS NOT NULL))`
+- `idx_activitypub_inbox_delivery_work_items__claim`: `CREATE INDEX idx_activitypub_inbox_delivery_work_items__claim ON public.activitypub_inbox_delivery_work_items USING btree (available_at, id) WHERE (failed_at IS NULL)`
+- `idx_activitypub_inbox_delivery_work_items__recovery`: `CREATE INDEX idx_activitypub_inbox_delivery_work_items__recovery ON public.activitypub_inbox_delivery_work_items USING btree (failed_at, available_at, leased_at, dispatched_at, received_at, id)`
+- `idx_activitypub_inbox_delivery_work_items__remote_actor_id`: `CREATE INDEX idx_activitypub_inbox_delivery_work_items__remote_actor_id ON public.activitypub_inbox_delivery_work_items USING btree (remote_actor_id) WHERE (remote_actor_id IS NOT NULL)`
+- `idx_activitypub_inbox_delivery_work_items__unverified_retention`: `CREATE INDEX idx_activitypub_inbox_delivery_work_items__unverified_retention ON public.activitypub_inbox_delivery_work_items USING btree (retention_expires_at, id) WHERE ((verified_at IS NULL) AND (retention_expires_at IS NOT NULL))`
+- `idx_activitypub_inbox_delivery_work_items__verified_retention`: `CREATE INDEX idx_activitypub_inbox_delivery_work_items__verified_retention ON public.activitypub_inbox_delivery_work_items USING btree (retention_expires_at, id) WHERE ((verified_at IS NOT NULL) AND (retention_expires_at IS NOT NULL))`
 
 **Triggers:**
 

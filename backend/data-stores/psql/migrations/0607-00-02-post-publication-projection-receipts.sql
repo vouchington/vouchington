@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS post_publication_projection_receipts (
 ) PARTITION BY RANGE (post_identity_id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trg_post_publication_reconciliation_audit_cursors__updated_at
+CREATE OR REPLACE TRIGGER trigger_post_publication_reconciliation_audit_cursor_updated_at
 BEFORE UPDATE ON post_publication_reconciliation_audit_cursors
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 

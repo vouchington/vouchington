@@ -51,7 +51,7 @@ export async function insertTestAiUsageRecord(
       ON CONFLICT (id) DO NOTHING
     )
     INSERT INTO ai_usage_records (
-      id, community_id, post_id, classifier_run_id, latency_ms, agent_slug, model, service_tier,
+      id, community_id, post_id, classifier_run_id, latency_milliseconds, agent_slug, model, service_tier,
       input_tokens, cached_input_tokens, output_tokens, pricing_status, cost_microunits,
       currency_code
     )
@@ -167,7 +167,7 @@ export type TestClassifierRunUsageRow = {
   output_tokens: number
   pricing_status: string
   cost_microunits: string | null
-  latency_ms: number | null
+  latency_milliseconds: number | null
 }
 
 /** Every ledger row the classifier clients attributed to one run, oldest first. */
@@ -177,7 +177,7 @@ export async function listAiUsageRecordsForClassifierRun(
   const { rows } =
     await read<TestClassifierRunUsageRow>(sql`/* listAiUsageRecordsForClassifierRun */
     SELECT classifier_run_id, agent_slug, input_tokens, output_tokens, pricing_status,
-      cost_microunits, latency_ms
+      cost_microunits, latency_milliseconds
     FROM ai_usage_records
     WHERE classifier_run_id = ${runId}
     ORDER BY id
@@ -188,10 +188,12 @@ export async function listAiUsageRecordsForClassifierRun(
 /** One ledger row by its id (a partition-pruned read), or null when it does not exist. */
 export async function findAiUsageRecordById(
   id: string,
-): Promise<Pick<TestClassifierRunUsageRow, 'classifier_run_id' | 'latency_ms'> | null> {
-  const { rows } = await read<Pick<TestClassifierRunUsageRow, 'classifier_run_id' | 'latency_ms'>>(
+): Promise<Pick<TestClassifierRunUsageRow, 'classifier_run_id' | 'latency_milliseconds'> | null> {
+  const { rows } = await read<
+    Pick<TestClassifierRunUsageRow, 'classifier_run_id' | 'latency_milliseconds'>
+  >(
     sql`/* findAiUsageRecordById */
-      SELECT classifier_run_id, latency_ms FROM ai_usage_records WHERE id = ${id}
+      SELECT classifier_run_id, latency_milliseconds FROM ai_usage_records WHERE id = ${id}
     `,
   )
   return rows[0] ?? null

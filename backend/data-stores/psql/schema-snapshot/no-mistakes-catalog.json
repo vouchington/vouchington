@@ -580,7 +580,7 @@
         "refund"
       ]
     },
-    "membership_google_play_acknowledgement_skip_reasons": {
+    "membership_google_play_acknowledgment_skip_reasons": {
       "values": ["no_longer_eligible"]
     },
     "membership_google_play_recovery_sweeps": {
@@ -1220,26 +1220,35 @@
     "fn_classifier_audit_actor_was_deleted(actor_user_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_classifier_audit_actor_was_deleted(actor_user_id uuid)\n RETURNS boolean\n LANGUAGE sql\nAS $function$\n  SELECT actor_user_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM users WHERE id = actor_user_id)\n$function$\n"
     },
-    "fn_complete_membership_verification_processing_work()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_complete_membership_verification_processing_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF num_nonnulls(NEW.verified_at, NEW.conflicted_at, NEW.rejected_at) = 1 THEN\n    UPDATE membership_verification_processing_work_items\n    SET completed_at = COALESCE(completed_at, NEW.verified_at, NEW.conflicted_at, NEW.rejected_at),\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL\n    WHERE membership_verification_id = NEW.id;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
-    },
     "fn_copyright_retention_erasable_columns(table_name text)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_copyright_retention_erasable_columns(table_name text)\n RETURNS text[]\n LANGUAGE sql\n IMMUTABLE PARALLEL SAFE\nAS $function$\n  SELECT CASE table_name\n    WHEN 'copyright_notices' THEN ARRAY['claimant_user_id', 'claimant_display_name', 'claimant_contact_ciphertext', 'work_description']\n    WHEN 'copyright_notice_submissions' THEN ARRAY['submitted_by_id', 'body_ciphertext']\n    WHEN 'copyright_notice_submission_guidance' THEN ARRAY['guidance_ciphertext']\n    WHEN 'copyright_notice_submission_requests' THEN ARRAY['requester_user_id']\n    WHEN 'copyright_notice_form_intakes' THEN ARRAY['requester_user_id', 'requester_identity_sha256', 'electronic_signature_ciphertext']\n    WHEN 'copyright_notice_form_screenings' THEN ARRAY['rationale_ciphertext', 'guidance_ciphertext']\n    WHEN 'copyright_notice_form_intake_reviews' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_evidence_artifacts' THEN ARRAY['storage_key']\n    WHEN 'copyright_notice_email_intakes' THEN ARRAY['raw_storage_key']\n    WHEN 'copyright_notice_email_intake_parses' THEN ARRAY['sender_email_ciphertext', 'sender_name_ciphertext', 'subject_ciphertext', 'body_ciphertext', 'message_id_ciphertext', 'reply_references_ciphertext', 'error_ciphertext']\n    WHEN 'copyright_notice_email_intake_attachments' THEN ARRAY['filename_ciphertext', 'content_id_ciphertext']\n    WHEN 'copyright_notice_email_thread_references' THEN ARRAY['lookup_token']\n    WHEN 'copyright_notice_email_intake_notice_links' THEN ARRAY['matched_reference_lookup']\n    WHEN 'copyright_notice_email_intake_recommendations' THEN ARRAY['structured_output_ciphertext']\n    WHEN 'copyright_notice_email_intake_reviews' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_email_correspondence_reviews' THEN ARRAY['rationale_ciphertext', 'manual_fallback_reason_ciphertext']\n    WHEN 'copyright_notice_appeal_recommendations' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_appeal_reviews' THEN ARRAY['rationale_ciphertext', 'manual_fallback_reason_ciphertext']\n    WHEN 'copyright_restriction_administrator_lifts' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_counter_notice_reviews' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_legal_hold_assessments' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_legal_hold_resolutions' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_correspondence_messages' THEN ARRAY['body_ciphertext']\n    WHEN 'copyright_notice_delivery_work_items' THEN ARRAY['body_ciphertext', 'failure_ciphertext']\n    WHEN 'copyright_notice_delivery_recipients' THEN ARRAY['email_ciphertext']\n    WHEN 'copyright_notice_lifecycle_change_rationales' THEN ARRAY['review_rationale_ciphertext']\n  END\n$function$\n"
     },
     "fn_copyright_retention_erasure_permitted(table_name text, old_row jsonb, new_row jsonb)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_copyright_retention_erasure_permitted(table_name text, old_row jsonb, new_row jsonb)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT COALESCE(current_setting('app.copyright_retention_erasure', true) = 'on', false)\n    AND fn_copyright_retention_erasable_columns(table_name) IS NOT NULL\n    AND (old_row - fn_copyright_retention_erasable_columns(table_name))\n      = (new_row - fn_copyright_retention_erasable_columns(table_name))\n$function$\n"
     },
-    "fn_create_google_play_acknowledgement_work()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_create_google_play_acknowledgement_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO membership_google_play_acknowledgement_work_items (membership_google_play_acknowledgement_id, completed_at)\n  VALUES (NEW.id, COALESCE(NEW.acknowledged_at, NEW.skipped_at));\n  RETURN NEW;\nEND;\n$function$\n"
+    "fn_create_copyright_action_attempt()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_create_copyright_action_attempt()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND OLD.lease_token IS NOT NULL\n    AND OLD.lease_token IS DISTINCT FROM NEW.lease_token THEN\n    INSERT INTO copyright_notice_action_attempt_results(attempt_id, completed_at, stale_at, blocked_at, failed_at, abandoned_at)\n    SELECT id, CASE WHEN NEW.completed_at_reason = 'completed' THEN clock_timestamp() ELSE NULL END, CASE WHEN NEW.completed_at_reason = 'stale' THEN clock_timestamp() ELSE NULL END, CASE WHEN NEW.completed_at_reason = 'blocked' THEN clock_timestamp() ELSE NULL END, CASE WHEN NEW.completed_at_reason = 'failed' OR (NEW.lease_token IS NULL AND NEW.failure_message IS NOT NULL AND NOT (NEW.completed_at IS NOT NULL)) THEN clock_timestamp() ELSE NULL END, CASE WHEN (NEW.completed_at_reason = 'completed' OR NEW.completed_at_reason = 'stale' OR NEW.completed_at_reason = 'blocked' OR NEW.completed_at_reason = 'failed' OR NEW.lease_token IS NULL AND NEW.failure_message IS NOT NULL) IS NOT TRUE THEN clock_timestamp() ELSE NULL END\n    FROM copyright_notice_action_attempts WHERE work_item_id = OLD.id AND lease_token = OLD.lease_token\n    ON CONFLICT (attempt_id) DO NOTHING;\n  END IF;\n  IF NEW.lease_token IS NOT NULL AND (TG_OP = 'INSERT' OR NEW.lease_token IS DISTINCT FROM OLD.lease_token) THEN\n    INSERT INTO copyright_notice_action_attempts(work_item_id, generation, attempt_number, lease_token, started_at)\n      SELECT NEW.id, NEW.generation, COALESCE(MAX(attempt_number), 0) + 1, NEW.lease_token, NEW.leased_at\n      FROM copyright_notice_action_attempts WHERE work_item_id = NEW.id;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_create_copyright_delivery_attempt()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_create_copyright_delivery_attempt()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND OLD.lease_token IS NOT NULL\n    AND OLD.lease_token IS DISTINCT FROM NEW.lease_token THEN\n    INSERT INTO copyright_notice_delivery_attempt_results(attempt_id, sent_at, failed_at, bounced_at, abandoned_at)\n    SELECT id, CASE WHEN NEW.sent_at IS NOT NULL THEN clock_timestamp() ELSE NULL END, CASE WHEN NEW.failed_at IS NOT NULL OR (NEW.lease_token IS NULL AND NEW.failure_ciphertext IS NOT NULL AND NOT (NEW.sent_at IS NOT NULL OR NEW.failed_at IS NOT NULL OR NEW.bounced_at IS NOT NULL)) THEN clock_timestamp() ELSE NULL END, CASE WHEN NEW.bounced_at IS NOT NULL THEN clock_timestamp() ELSE NULL END, CASE WHEN (NEW.sent_at IS NOT NULL OR NEW.failed_at IS NOT NULL OR NEW.bounced_at IS NOT NULL OR NEW.lease_token IS NULL AND NEW.failure_ciphertext IS NOT NULL) IS NOT TRUE THEN clock_timestamp() ELSE NULL END\n    FROM copyright_notice_delivery_attempts WHERE work_item_id = OLD.id AND lease_token = OLD.lease_token\n    ON CONFLICT (attempt_id) DO NOTHING;\n  END IF;\n  IF NEW.lease_token IS NOT NULL AND (TG_OP = 'INSERT' OR NEW.lease_token IS DISTINCT FROM OLD.lease_token) THEN\n    INSERT INTO copyright_notice_delivery_attempts(work_item_id, generation, attempt_number, lease_token, started_at)\n      SELECT NEW.id, NEW.generation, COALESCE(MAX(attempt_number), 0) + 1, NEW.lease_token, NEW.leased_at\n      FROM copyright_notice_delivery_attempts WHERE work_item_id = NEW.id;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_create_google_play_acknowledgment_work()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_create_google_play_acknowledgment_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO membership_google_play_acknowledgment_work_items (membership_google_play_acknowledgment_id, completed_at)\n  VALUES (NEW.id, COALESCE(NEW.acknowledged_at, NEW.skipped_at));\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_create_media_delivery_generation_change()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_create_media_delivery_generation_change()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' OR NEW.generation IS DISTINCT FROM OLD.generation THEN\n    INSERT INTO media_delivery_registry_changes(delivery_key, generation, change_type)\n      VALUES (NEW.delivery_key, NEW.generation, 'pending');\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_create_membership_operation_work()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_create_membership_operation_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.completed_at IS NULL THEN\n    INSERT INTO membership_operation_execution_work_items (membership_operation_id)\n    VALUES (NEW.id);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_create_membership_verification_processing_work()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_create_membership_verification_processing_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO membership_verification_processing_work_items (membership_verification_id, completed_at)\n    VALUES (NEW.id, COALESCE(NEW.verified_at, NEW.conflicted_at, NEW.rejected_at));\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_create_metrics()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_create_metrics()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  EXECUTE format('INSERT INTO %I.%I (%I) VALUES ($1) ON CONFLICT (%I) DO NOTHING',\n    TG_TABLE_SCHEMA, TG_ARGV[0], TG_ARGV[1], TG_ARGV[1]) USING NEW.id;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_create_oauth_authorization_exchange_transition()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_create_oauth_authorization_exchange_transition()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.exchange_claim_id IS NOT DISTINCT FROM NEW.exchange_claim_id THEN\n    RETURN NEW;\n  END IF;\n  IF OLD.exchange_claim_id IS NOT NULL THEN\n    INSERT INTO oauth_authorization_exchange_attempt_results (\n      oauth_authorization_exchange_attempt_id, completed_at, failed_at,\n      abandoned_at, rejected_at, expired_at, callback_error\n    )\n    SELECT id,\n      CASE WHEN NEW.completion_ready_at IS NOT NULL AND NEW.rejected_at IS NULL\n        AND NEW.expired_at IS NULL THEN clock_timestamp() END,\n      CASE WHEN NEW.exchange_claim_id IS NULL AND NEW.completion_ready_at IS NULL\n        AND NEW.rejected_at IS NULL AND NEW.expired_at IS NULL THEN clock_timestamp() END,\n      CASE WHEN NEW.exchange_claim_id IS NOT NULL THEN clock_timestamp() END,\n      CASE WHEN NEW.rejected_at IS NOT NULL THEN NEW.rejected_at END,\n      CASE WHEN NEW.expired_at IS NOT NULL THEN NEW.expired_at END,\n      NEW.callback_error\n    FROM oauth_authorization_exchange_attempts\n    WHERE oauth_authorization_id = NEW.id AND exchange_claim_id = OLD.exchange_claim_id;\n  END IF;\n  IF NEW.exchange_claim_id IS NOT NULL THEN\n    INSERT INTO oauth_authorization_exchange_attempts (\n      oauth_authorization_id, attempt_number, exchange_claim_id\n    )\n    SELECT NEW.id, COALESCE(MAX(attempt_number), 0) + 1, NEW.exchange_claim_id\n    FROM oauth_authorization_exchange_attempts WHERE oauth_authorization_id = NEW.id;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_create_user_individual_household()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_create_user_individual_household()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  new_individual_id UUID;\n  new_household_id UUID;\nBEGIN\n  -- Create individual\n  INSERT INTO individuals DEFAULT VALUES\n  RETURNING id INTO new_individual_id;\n\n  -- Link individual to user\n  UPDATE users\n  SET individual_id = new_individual_id\n  WHERE id = NEW.id;\n\n  -- Create household owned by user\n  INSERT INTO households (owner_user_id)\n  VALUES (NEW.id)\n  RETURNING id INTO new_household_id;\n\n  -- Create membership linking individual to household\n  INSERT INTO household_members (household_id, individual_id)\n  VALUES (new_household_id, new_individual_id);\n\n  RETURN NEW;\nEND;\n$function$\n"
@@ -1256,26 +1265,11 @@
     "fn_field_changes(before_fields jsonb, after_fields jsonb)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_field_changes(before_fields jsonb, after_fields jsonb)\n RETURNS jsonb\n LANGUAGE sql\n IMMUTABLE\nAS $function$\n  SELECT COALESCE(jsonb_object_agg(field, jsonb_build_object(\n    'before', before_fields -> field, 'after', after_fields -> field)), '{}'::jsonb)\n  FROM (SELECT jsonb_object_keys(before_fields || after_fields) AS field) fields\n  WHERE before_fields -> field IS DISTINCT FROM after_fields -> field\n$function$\n"
     },
-    "fn_finalize_membership_operation_work()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_finalize_membership_operation_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE current_token UUID;\nBEGIN\n  SELECT lease_token INTO current_token FROM membership_operation_execution_work_items\n  WHERE membership_operation_id = NEW.id;\n  IF NEW.completed_at IS NOT NULL THEN\n    DELETE FROM membership_operation_execution_work_items\n    WHERE membership_operation_id = NEW.id AND lease_token IS NOT DISTINCT FROM current_token;\n  ELSIF NEW.failed_at IS NOT NULL AND NEW.failed_at IS DISTINCT FROM OLD.failed_at THEN\n    UPDATE membership_operation_execution_work_items\n    SET lease_token = NULL, leased_at = NULL, lease_expires_at = NULL\n    WHERE membership_operation_id = NEW.id AND lease_token = current_token;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
-    },
-    "fn_guard_copyright_eu_dispute_settlement_outcome()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_eu_dispute_settlement_outcome()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  referral_time timestamptz;\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'EU dispute settlement outcomes are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF TG_OP = 'INSERT' THEN\n    SELECT referred_at INTO referral_time FROM copyright_eu_dispute_settlement_referrals\n    WHERE id = NEW.copyright_eu_dispute_settlement_referral_id;\n    IF referral_time IS NULL OR NEW.decided_at < referral_time THEN\n      RAISE EXCEPTION 'EU dispute settlement outcome predates referral' USING ERRCODE = 'check_violation';\n    END IF;\n    RETURN NEW;\n  END IF;\n  -- Account erasure may clear an audit actor without rewriting the outcome.\n  IF OLD.recorded_by_id IS NOT NULL AND NEW.recorded_by_id IS NULL\n    AND (to_jsonb(NEW) - 'recorded_by_id') IS NOT DISTINCT FROM (to_jsonb(OLD) - 'recorded_by_id') THEN\n    RETURN NEW;\n  END IF;\n  IF OLD.implemented_at IS NOT NULL OR NEW.implemented_at IS NULL\n    OR NEW.implemented_at < OLD.decided_at\n    OR (to_jsonb(NEW) - 'implemented_at') IS DISTINCT FROM (to_jsonb(OLD) - 'implemented_at') THEN\n    RAISE EXCEPTION 'EU dispute settlement outcome history cannot be rewritten'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
-    },
-    "fn_guard_copyright_territorial_decision()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_territorial_decision()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.outcome = 'restrict' AND NOT EXISTS (\n    SELECT 1 FROM copyright_notice_submission_assessments assessment\n    JOIN copyright_notice_submissions submission\n      ON submission.id = assessment.copyright_notice_submission_id\n    WHERE assessment.id = NEW.copyright_notice_submission_assessment_id\n      AND submission.copyright_notice_id = NEW.copyright_notice_id\n      AND submission.kind = 'notice'\n      AND assessment.is_substantially_compliant\n      AND assessment.assessed_by_id IS NOT NULL\n      AND NOT EXISTS (\n        SELECT 1 FROM copyright_notice_submission_assessments newer\n        WHERE newer.supersedes_assessment_id = assessment.id\n      )\n  ) THEN\n    RAISE EXCEPTION 'territorial restriction requires a current compliant human notice assessment in the same case'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.supersedes_decision_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM copyright_territorial_decisions predecessor\n    JOIN copyright_territorial_redress_requests request\n      ON request.copyright_territorial_decision_id = predecessor.id\n    JOIN copyright_territorial_redress_decisions redress\n      ON redress.copyright_territorial_redress_request_id = request.id\n    WHERE predecessor.id = NEW.supersedes_decision_id\n      AND predecessor.copyright_notice_id = NEW.copyright_notice_id\n      AND predecessor.jurisdiction = NEW.jurisdiction\n      AND predecessor.outcome = 'no_action'\n      AND redress.staff_disposition = 'revoke'\n  ) THEN\n    RAISE EXCEPTION 'territorial successor requires a revoked no_action decision'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
-    },
-    "fn_guard_membership_operation_work_lease()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_membership_operation_work_lease()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.membership_operation_id IS DISTINCT FROM OLD.membership_operation_id\n    OR NEW.attempt_count < OLD.attempt_count\n    OR (OLD.lease_token IS NOT NULL AND OLD.lease_expires_at > clock_timestamp()\n      AND NEW.lease_token IS NOT NULL AND NEW.lease_token IS DISTINCT FROM OLD.lease_token) THEN\n    RAISE EXCEPTION 'membership operations only allow claimed provider execution lifecycle transitions';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
-    },
     "fn_image_placement_publicly_projected(p_placement_id uuid, p_revision integer, p_image_id uuid)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_image_placement_publicly_projected(p_placement_id uuid, p_revision integer, p_image_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT EXISTS (\n    SELECT 1\n    FROM images image\n    WHERE image.id = p_image_id\n      AND image.deleted_at IS NULL\n      AND image.upload_completed_at IS NOT NULL\n      AND image.quarantine_pending_at IS NULL\n      AND image.is_flagged_by_openai_omni_moderation = FALSE\n      AND image.openai_omni_moderation_results IS NOT NULL\n      AND image.openai_omni_moderation_created_at IS NOT NULL\n      AND EXISTS (\n        SELECT 1\n        FROM media_delivery_registry_current_records registry\n        WHERE registry.delivery_key = concat('image-placement:', p_placement_id, ':', p_revision, ':', p_image_id)\n          AND registry.desired_state = 'allow'\n          AND registry.state = 'completed'\n      )\n  );\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_image_placement_publicly_projected(p_placement_id uuid, p_revision integer, p_image_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT EXISTS (\n    SELECT 1\n    FROM images image\n    WHERE image.id = p_image_id\n      AND image.deleted_at IS NULL\n      AND image.upload_completed_at IS NOT NULL\n      AND image.quarantine_pending_at IS NULL\n      AND image.is_flagged_by_openai_omni_moderation = FALSE\n      AND image.openai_omni_moderation_results IS NOT NULL\n      AND image.openai_omni_moderation_created_at IS NOT NULL\n      AND EXISTS (\n        SELECT 1\n        FROM view_media_delivery_registry_current_records registry\n        WHERE registry.delivery_key = concat('image-placement:', p_placement_id, ':', p_revision, ':', p_image_id)\n          AND registry.desired_state = 'allow'\n          AND registry.state = 'completed'\n      )\n  );\n$function$\n"
     },
     "fn_immutable_array_to_string(p_array text[], p_delimiter text)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_immutable_array_to_string(p_array text[], p_delimiter text)\n RETURNS text\n LANGUAGE sql\n IMMUTABLE\nAS $function$\n  SELECT array_to_string(p_array, p_delimiter)\n$function$\n"
-    },
-    "fn_initialize_membership_operation_work()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_initialize_membership_operation_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.completed_at IS NULL THEN\n    INSERT INTO membership_operation_execution_work_items (membership_operation_id)\n    VALUES (NEW.id);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_lock_active_user_for_mutation(target_user_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_lock_active_user_for_mutation(target_user_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM pg_advisory_xact_lock(hashtextextended(target_user_id::TEXT, 0));\n  IF NOT EXISTS (SELECT 1 FROM users WHERE id = target_user_id) THEN\n    RAISE EXCEPTION 'user % does not exist', target_user_id\n      USING ERRCODE = 'no_data_found';\n  ELSIF NOT EXISTS (SELECT 1 FROM users WHERE id = target_user_id AND deleted_at IS NULL) THEN\n    RAISE EXCEPTION 'user % cannot own new data after deletion', target_user_id\n      USING ERRCODE = 'check_violation';\n  END IF;\nEND;\n$function$\n"
@@ -1301,12 +1295,6 @@
     "fn_notification_target_entity(notification_entity_type notification_entity_types, notification_community_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_notification_target_entity(notification_entity_type notification_entity_types, notification_community_id uuid)\n RETURNS jsonb\n LANGUAGE sql\n IMMUTABLE\nAS $function$\n  SELECT CASE\n    WHEN notification_entity_type IN (\n      'community_application_decision',\n      'community_role_change',\n      'community_ownership_transfer'\n    ) THEN jsonb_build_object('__entity_type', 'community', 'id', notification_community_id)\n    ELSE NULL\n  END\n$function$\n"
     },
-    "fn_prepare_copyright_action_work()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_prepare_copyright_action_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.available_at := COALESCE(NEW.available_at, clock_timestamp());\n  IF TG_OP = 'UPDATE' AND (OLD.completed_at_reason IN ('blocked', 'failed') AND NEW.completed_at IS NULL) THEN NEW.generation := OLD.generation + 1; END IF;\n  IF NEW.completed_at IS NOT NULL OR NEW.leased_at IS NULL THEN\n    NEW.lease_token := NULL; NEW.leased_at := NULL; NEW.lease_expires_at := NULL;\n  ELSE\n    NEW.lease_token := COALESCE(NEW.lease_token, uuidv7());\n    NEW.lease_expires_at := COALESCE(NEW.lease_expires_at, NEW.leased_at + interval '5 minutes');\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
-    },
-    "fn_prepare_copyright_delivery_work()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_prepare_copyright_delivery_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.available_at := COALESCE(NEW.available_at, clock_timestamp());\n  IF TG_OP = 'UPDATE' AND (OLD.failed_at IS NOT NULL AND NEW.failed_at IS NULL) THEN NEW.generation := OLD.generation + 1; END IF;\n  IF NEW.sent_at IS NOT NULL OR NEW.failed_at IS NOT NULL OR NEW.bounced_at IS NOT NULL OR NEW.leased_at IS NULL THEN\n    NEW.lease_token := NULL; NEW.leased_at := NULL; NEW.lease_expires_at := NULL;\n  ELSE\n    NEW.lease_token := COALESCE(NEW.lease_token, uuidv7());\n    NEW.lease_expires_at := COALESCE(NEW.lease_expires_at, NEW.leased_at + interval '15 minutes');\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
-    },
     "fn_project_activitypub_inbox_delivery_retention()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_activitypub_inbox_delivery_retention()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  unverified_deadline TIMESTAMPTZ := NEW.received_at + INTERVAL '1 hour';\n  failure_deadline TIMESTAMPTZ;\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    IF NEW.failed_at IS NOT NULL THEN\n      NEW.first_failed_at := NEW.failed_at;\n    ELSE\n      NEW.first_failed_at := NULL;\n    END IF;\n  ELSIF OLD.first_failed_at IS NOT NULL THEN\n    NEW.first_failed_at := OLD.first_failed_at;\n  ELSIF NEW.failed_at IS NOT NULL THEN\n    NEW.first_failed_at := NEW.failed_at;\n  ELSE\n    NEW.first_failed_at := NULL;\n  END IF;\n\n  IF NEW.first_failed_at IS NOT NULL THEN\n    failure_deadline := NEW.first_failed_at + INTERVAL '7 days';\n  END IF;\n\n  IF NEW.verified_at IS NULL THEN\n    NEW.retention_expires_at := LEAST(\n      COALESCE(NEW.retention_expires_at, unverified_deadline),\n      unverified_deadline,\n      COALESCE(failure_deadline, unverified_deadline)\n    );\n  ELSIF NEW.first_failed_at IS NULL THEN\n    NEW.retention_expires_at := NULL;\n  ELSE\n    NEW.retention_expires_at := LEAST(\n      COALESCE(OLD.retention_expires_at, NEW.retention_expires_at, failure_deadline),\n      COALESCE(NEW.retention_expires_at, failure_deadline),\n      failure_deadline\n    );\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -1328,6 +1316,9 @@
     "fn_project_community_image_placements()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_community_image_placements()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND NEW.deleted_at IS NOT NULL AND OLD.deleted_at IS NULL THEN\n    PERFORM fn_sync_image_surface_placement('community-profile-image', NULL, NULL, NULL, NEW.id, NULL);\n    PERFORM fn_sync_image_surface_placement('community-banner-image', NULL, NULL, NULL, NEW.id, NULL);\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'INSERT' OR NEW.profile_image_id IS DISTINCT FROM OLD.profile_image_id THEN\n    PERFORM fn_sync_image_surface_placement('community-profile-image', NEW.profile_image_id, NULL, NULL, NEW.id, NULL);\n  END IF;\n  IF TG_OP = 'INSERT' OR NEW.banner_image_id IS DISTINCT FROM OLD.banner_image_id THEN\n    PERFORM fn_sync_image_surface_placement('community-banner-image', NEW.banner_image_id, NULL, NULL, NEW.id, NULL);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
+    "fn_project_copyright_form_screening_work()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_copyright_form_screening_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' AND NEW.completed_at IS NULL AND NEW.failed_at IS NULL THEN\n    INSERT INTO copyright_notice_form_screening_work_items(copyright_notice_form_intake_id, attempt_id)\n      VALUES (NEW.copyright_notice_form_intake_id, NEW.id)\n    ON CONFLICT (copyright_notice_form_intake_id) DO UPDATE SET attempt_id = EXCLUDED.attempt_id,\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL, attempt_count = 0, available_at = clock_timestamp();\n  ELSIF NEW.completed_at IS NOT NULL OR NEW.failed_at IS NOT NULL THEN\n    DELETE FROM copyright_notice_form_screening_work_items WHERE attempt_id = NEW.id;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_project_handoff_deleted_user_image_surfaces()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_handoff_deleted_user_image_surfaces()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM fn_sync_image_surface_placement('user-profile-image', NULL, OLD.id, NULL, NULL, NULL);\n  UPDATE image_surface_placements\n  SET user_id = NULL\n  WHERE surface_kind = 'user-profile-image' AND user_id = OLD.id;\n  RETURN OLD;\nEND;\n$function$\n"
     },
@@ -1336,6 +1327,9 @@
     },
     "fn_project_mark_topic_alias_category_mapping_dirty()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_mark_topic_alias_category_mapping_dirty()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  dirty_alias_id UUID;\n  dirty_alias TEXT;\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    IF NEW.topic_id IS NULL THEN\n      RETURN NEW;\n    END IF;\n    dirty_alias_id := NEW.id;\n    dirty_alias := NEW.alias;\n  ELSIF TG_OP = 'UPDATE' THEN\n    IF NEW.topic_id IS NOT DISTINCT FROM OLD.topic_id THEN\n      RETURN NEW;\n    END IF;\n    dirty_alias_id := NEW.id;\n    dirty_alias := NEW.alias;\n  ELSIF TG_OP = 'DELETE' THEN\n    IF OLD.topic_id IS NULL THEN\n      RETURN OLD;\n    END IF;\n    dirty_alias_id := OLD.id;\n    dirty_alias := OLD.alias;\n  END IF;\n\n  INSERT INTO topic_alias_category_mapping_reconciliations (topic_alias_id, alias)\n  VALUES (dirty_alias_id, dirty_alias)\n  ON CONFLICT (topic_alias_id) DO UPDATE\n  SET alias = EXCLUDED.alias,\n      generation = topic_alias_category_mapping_reconciliations.generation + 1;\n\n  IF TG_OP = 'DELETE' THEN\n    RETURN OLD;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_project_media_delivery_projection()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_media_delivery_projection()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.change_type = 'pending' THEN\n    INSERT INTO media_delivery_registry_projection_work_items(delivery_key, generation, attempt_count, available_at)\n      VALUES (NEW.delivery_key, NEW.generation, NEW.delivery_attempt_count, COALESCE(NEW.next_attempt_at, clock_timestamp()))\n    ON CONFLICT (delivery_key) DO UPDATE SET generation = EXCLUDED.generation,\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL,\n      attempt_count = EXCLUDED.attempt_count, available_at = EXCLUDED.available_at\n    WHERE media_delivery_registry_projection_work_items.generation <> EXCLUDED.generation\n      OR media_delivery_registry_projection_work_items.lease_token IS NULL;\n  ELSIF NEW.change_type IN ('completed', 'failed') THEN\n    DELETE FROM media_delivery_registry_projection_work_items\n      WHERE delivery_key = NEW.delivery_key AND generation = NEW.generation;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_project_moderation_transparency_agent_delete_rollup()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_moderation_transparency_agent_delete_rollup()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE cohort record;\nBEGIN\n  FOR cohort IN\n    SELECT (uuid_extract_timestamp(id) AT TIME ZONE 'UTC')::date AS day,\n      moderation_transparency_community_id AS community_id,\n      'automated_moderation'::text AS metric,\n      moderation_transparency_category AS category, count(*)::integer AS count\n    FROM deleted_agent_moderations\n    WHERE moderation_transparency_category IS NOT NULL\n    GROUP BY 1, 2, 3, 4\n    ORDER BY 1, 2 NULLS FIRST, 3, 4\n  LOOP\n    PERFORM fn_apply_moderation_transparency_daily_rollup(\n      cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,\n      cohort.metric::moderation_transparency_metrics, cohort.category::text::moderation_transparency_categories, -cohort.count\n    );\n  END LOOP;\n  RETURN NULL;\nEND $function$\n"
@@ -1396,15 +1390,6 @@
     },
     "fn_project_user_profile_link_image_placement()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_user_profile_link_image_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' OR NEW.image_id IS DISTINCT FROM OLD.image_id THEN\n    PERFORM fn_sync_image_surface_placement('user-profile-link-image', NEW.image_id, NULL, NULL, NULL, NEW.id);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
-    },
-    "fn_record_copyright_action_attempt()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_record_copyright_action_attempt()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND OLD.lease_token IS NOT NULL\n    AND OLD.lease_token IS DISTINCT FROM NEW.lease_token THEN\n    INSERT INTO copyright_notice_action_attempt_results(attempt_id, completed_at, stale_at, blocked_at, failed_at, abandoned_at)\n    SELECT id, CASE WHEN NEW.completed_at_reason = 'completed' THEN clock_timestamp() ELSE NULL END, CASE WHEN NEW.completed_at_reason = 'stale' THEN clock_timestamp() ELSE NULL END, CASE WHEN NEW.completed_at_reason = 'blocked' THEN clock_timestamp() ELSE NULL END, CASE WHEN NEW.completed_at_reason = 'failed' OR (NEW.lease_token IS NULL AND NEW.failure_message IS NOT NULL AND NOT (NEW.completed_at IS NOT NULL)) THEN clock_timestamp() ELSE NULL END, CASE WHEN (NEW.completed_at_reason = 'completed' OR NEW.completed_at_reason = 'stale' OR NEW.completed_at_reason = 'blocked' OR NEW.completed_at_reason = 'failed' OR NEW.lease_token IS NULL AND NEW.failure_message IS NOT NULL) IS NOT TRUE THEN clock_timestamp() ELSE NULL END\n    FROM copyright_notice_action_attempts WHERE work_item_id = OLD.id AND lease_token = OLD.lease_token\n    ON CONFLICT (attempt_id) DO NOTHING;\n  END IF;\n  IF NEW.lease_token IS NOT NULL AND (TG_OP = 'INSERT' OR NEW.lease_token IS DISTINCT FROM OLD.lease_token) THEN\n    INSERT INTO copyright_notice_action_attempts(work_item_id, generation, attempt_number, lease_token, started_at)\n      SELECT NEW.id, NEW.generation, COALESCE(MAX(attempt_number), 0) + 1, NEW.lease_token, NEW.leased_at\n      FROM copyright_notice_action_attempts WHERE work_item_id = NEW.id;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
-    },
-    "fn_record_copyright_delivery_attempt()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_record_copyright_delivery_attempt()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND OLD.lease_token IS NOT NULL\n    AND OLD.lease_token IS DISTINCT FROM NEW.lease_token THEN\n    INSERT INTO copyright_notice_delivery_attempt_results(attempt_id, sent_at, failed_at, bounced_at, abandoned_at)\n    SELECT id, CASE WHEN NEW.sent_at IS NOT NULL THEN clock_timestamp() ELSE NULL END, CASE WHEN NEW.failed_at IS NOT NULL OR (NEW.lease_token IS NULL AND NEW.failure_ciphertext IS NOT NULL AND NOT (NEW.sent_at IS NOT NULL OR NEW.failed_at IS NOT NULL OR NEW.bounced_at IS NOT NULL)) THEN clock_timestamp() ELSE NULL END, CASE WHEN NEW.bounced_at IS NOT NULL THEN clock_timestamp() ELSE NULL END, CASE WHEN (NEW.sent_at IS NOT NULL OR NEW.failed_at IS NOT NULL OR NEW.bounced_at IS NOT NULL OR NEW.lease_token IS NULL AND NEW.failure_ciphertext IS NOT NULL) IS NOT TRUE THEN clock_timestamp() ELSE NULL END\n    FROM copyright_notice_delivery_attempts WHERE work_item_id = OLD.id AND lease_token = OLD.lease_token\n    ON CONFLICT (attempt_id) DO NOTHING;\n  END IF;\n  IF NEW.lease_token IS NOT NULL AND (TG_OP = 'INSERT' OR NEW.lease_token IS DISTINCT FROM OLD.lease_token) THEN\n    INSERT INTO copyright_notice_delivery_attempts(work_item_id, generation, attempt_number, lease_token, started_at)\n      SELECT NEW.id, NEW.generation, COALESCE(MAX(attempt_number), 0) + 1, NEW.lease_token, NEW.leased_at\n      FROM copyright_notice_delivery_attempts WHERE work_item_id = NEW.id;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
-    },
-    "fn_record_oauth_authorization_exchange_transition()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_record_oauth_authorization_exchange_transition()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.exchange_claim_id IS NOT DISTINCT FROM NEW.exchange_claim_id THEN\n    RETURN NEW;\n  END IF;\n  IF OLD.exchange_claim_id IS NOT NULL THEN\n    INSERT INTO oauth_authorization_exchange_attempt_results (\n      oauth_authorization_exchange_attempt_id, completed_at, failed_at,\n      abandoned_at, rejected_at, expired_at, callback_error\n    )\n    SELECT id,\n      CASE WHEN NEW.completion_ready_at IS NOT NULL AND NEW.rejected_at IS NULL\n        AND NEW.expired_at IS NULL THEN clock_timestamp() END,\n      CASE WHEN NEW.exchange_claim_id IS NULL AND NEW.completion_ready_at IS NULL\n        AND NEW.rejected_at IS NULL AND NEW.expired_at IS NULL THEN clock_timestamp() END,\n      CASE WHEN NEW.exchange_claim_id IS NOT NULL THEN clock_timestamp() END,\n      CASE WHEN NEW.rejected_at IS NOT NULL THEN NEW.rejected_at END,\n      CASE WHEN NEW.expired_at IS NOT NULL THEN NEW.expired_at END,\n      NEW.callback_error\n    FROM oauth_authorization_exchange_attempts\n    WHERE oauth_authorization_id = NEW.id AND exchange_claim_id = OLD.exchange_claim_id;\n  END IF;\n  IF NEW.exchange_claim_id IS NOT NULL THEN\n    INSERT INTO oauth_authorization_exchange_attempts (\n      oauth_authorization_id, attempt_number, exchange_claim_id\n    )\n    SELECT NEW.id, COALESCE(MAX(attempt_number), 0) + 1, NEW.exchange_claim_id\n    FROM oauth_authorization_exchange_attempts WHERE oauth_authorization_id = NEW.id;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_register_retained_identity()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_register_retained_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM fn_ensure_retained_identity(TG_ARGV[0]::retained_identity_families, NEW.id);\n  RETURN NEW;\nEND;\n$function$\n"
@@ -1523,6 +1508,15 @@
     "fn_reject_image_surface_placement()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_image_surface_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE'\n    AND OLD.surface_kind = 'user-profile-link-image'\n    AND OLD.user_profile_link_id IS NOT NULL\n    AND NEW.user_profile_link_id IS NULL\n    AND NEW.placement_id = OLD.placement_id\n    AND NEW.surface_kind = OLD.surface_kind\n    AND NEW.image_id = OLD.image_id\n    AND NEW.user_id IS NOT DISTINCT FROM OLD.user_id\n    AND NEW.topic_id IS NOT DISTINCT FROM OLD.topic_id\n    AND NEW.community_id IS NOT DISTINCT FROM OLD.community_id\n    AND EXISTS (SELECT 1 FROM media_placements placement WHERE placement.id = OLD.placement_id\n      AND placement.retired_at IS NOT NULL AND placement.retirement_reason = 'owner_removed' FOR UPDATE)\n  THEN\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'UPDATE'\n    AND OLD.surface_kind = 'user-profile-image'\n    AND OLD.user_id IS NOT NULL\n    AND NEW.user_id IS NULL\n    AND NEW.placement_id = OLD.placement_id\n    AND NEW.surface_kind = OLD.surface_kind\n    AND NEW.image_id = OLD.image_id\n    AND NEW.topic_id IS NOT DISTINCT FROM OLD.topic_id\n    AND NEW.community_id IS NOT DISTINCT FROM OLD.community_id\n    AND NEW.user_profile_link_id IS NOT DISTINCT FROM OLD.user_profile_link_id\n    AND EXISTS (SELECT 1 FROM media_placements placement WHERE placement.id = OLD.placement_id\n      AND placement.retired_at IS NOT NULL AND placement.retirement_reason = 'owner_removed' FOR UPDATE)\n  THEN\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'INSERT' AND num_nonnulls(NEW.user_id, NEW.topic_id, NEW.community_id, NEW.user_profile_link_id) <> 1 THEN\n    RAISE EXCEPTION 'new image surface requires one concrete live owner' USING ERRCODE = 'check_violation';\n  END IF;\n  IF TG_OP = 'INSERT' AND EXISTS (\n    SELECT 1\n    FROM image_surface_placements existing\n    JOIN media_placements placement ON placement.id = existing.placement_id\n    WHERE placement.retired_at IS NULL\n      AND existing.surface_kind = NEW.surface_kind\n    AND existing.user_id IS NOT DISTINCT FROM NEW.user_id\n      AND existing.topic_id IS NOT DISTINCT FROM NEW.topic_id\n      AND existing.community_id IS NOT DISTINCT FROM NEW.community_id\n      AND existing.user_profile_link_id IS NOT DISTINCT FROM NEW.user_profile_link_id\n  ) THEN\n    RAISE EXCEPTION 'a public image surface has at most one current binding' USING ERRCODE = 'unique_violation';\n  END IF;\n  IF TG_OP = 'INSERT' THEN RETURN NEW; END IF;\n  RAISE EXCEPTION 'image surface placement bindings are immutable' USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
     },
+    "fn_reject_invalid_copyright_eu_dispute_settlement_outcome()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_invalid_copyright_eu_dispute_settlement_outcome()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  referral_time timestamptz;\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'EU dispute settlement outcomes are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF TG_OP = 'INSERT' THEN\n    SELECT referred_at INTO referral_time FROM copyright_eu_dispute_settlement_referrals\n    WHERE id = NEW.copyright_eu_dispute_settlement_referral_id;\n    IF referral_time IS NULL OR NEW.decided_at < referral_time THEN\n      RAISE EXCEPTION 'EU dispute settlement outcome predates referral' USING ERRCODE = 'check_violation';\n    END IF;\n    RETURN NEW;\n  END IF;\n  -- Account erasure may clear an audit actor without rewriting the outcome.\n  IF OLD.recorded_by_id IS NOT NULL AND NEW.recorded_by_id IS NULL\n    AND (to_jsonb(NEW) - 'recorded_by_id') IS NOT DISTINCT FROM (to_jsonb(OLD) - 'recorded_by_id') THEN\n    RETURN NEW;\n  END IF;\n  IF OLD.implemented_at IS NOT NULL OR NEW.implemented_at IS NULL\n    OR NEW.implemented_at < OLD.decided_at\n    OR (to_jsonb(NEW) - 'implemented_at') IS DISTINCT FROM (to_jsonb(OLD) - 'implemented_at') THEN\n    RAISE EXCEPTION 'EU dispute settlement outcome history cannot be rewritten'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_reject_invalid_copyright_territorial_decision()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_invalid_copyright_territorial_decision()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.outcome = 'restrict' AND NOT EXISTS (\n    SELECT 1 FROM copyright_notice_submission_assessments assessment\n    JOIN copyright_notice_submissions submission\n      ON submission.id = assessment.copyright_notice_submission_id\n    WHERE assessment.id = NEW.copyright_notice_submission_assessment_id\n      AND submission.copyright_notice_id = NEW.copyright_notice_id\n      AND submission.kind = 'notice'\n      AND assessment.is_substantially_compliant\n      AND assessment.assessed_by_id IS NOT NULL\n      AND NOT EXISTS (\n        SELECT 1 FROM copyright_notice_submission_assessments newer\n        WHERE newer.supersedes_assessment_id = assessment.id\n      )\n  ) THEN\n    RAISE EXCEPTION 'territorial restriction requires a current compliant human notice assessment in the same case'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.supersedes_decision_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM copyright_territorial_decisions predecessor\n    JOIN copyright_territorial_redress_requests request\n      ON request.copyright_territorial_decision_id = predecessor.id\n    JOIN copyright_territorial_redress_decisions redress\n      ON redress.copyright_territorial_redress_request_id = request.id\n    WHERE predecessor.id = NEW.supersedes_decision_id\n      AND predecessor.copyright_notice_id = NEW.copyright_notice_id\n      AND predecessor.jurisdiction = NEW.jurisdiction\n      AND predecessor.outcome = 'no_action'\n      AND redress.staff_disposition = 'revoke'\n  ) THEN\n    RAISE EXCEPTION 'territorial successor requires a revoked no_action decision'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_reject_invalid_membership_operation_work_lease()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_invalid_membership_operation_work_lease()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.membership_operation_id IS DISTINCT FROM OLD.membership_operation_id\n    OR NEW.attempt_count < OLD.attempt_count\n    OR (OLD.lease_token IS NOT NULL AND OLD.lease_expires_at > clock_timestamp()\n      AND NEW.lease_token IS NOT NULL AND NEW.lease_token IS DISTINCT FROM OLD.lease_token) THEN\n    RAISE EXCEPTION 'membership operations only allow claimed provider execution lifecycle transitions';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_reject_media_placement()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_media_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'media placements are retained for legal revision fencing' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.revision <> OLD.revision + 1 THEN\n    RAISE EXCEPTION 'media placement revision must advance by exactly one' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.retired_at IS NOT DISTINCT FROM OLD.retired_at\n    AND NEW.retirement_reason IS NOT DISTINCT FROM OLD.retirement_reason\n    AND NEW.copyright_withheld_at IS NOT DISTINCT FROM OLD.copyright_withheld_at THEN\n    RAISE EXCEPTION 'media placement lifecycle update must change availability' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.retired_at IS NOT NULL AND NEW.retired_at IS NULL THEN\n    NEW.activation_revision := NEW.revision;\n  ELSIF NEW.activation_revision IS DISTINCT FROM OLD.activation_revision THEN\n    RAISE EXCEPTION 'media placement activation revision is system-managed' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -1619,12 +1613,6 @@
     "fn_reverse_hostname_labels(p_hostname text)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reverse_hostname_labels(p_hostname text)\n RETURNS text\n LANGUAGE sql\n IMMUTABLE STRICT\nAS $function$\n  SELECT array_to_string(array_reverse(string_to_array(p_hostname, '.')), '.')\n$function$\n"
     },
-    "fn_schedule_copyright_form_screening_work()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_schedule_copyright_form_screening_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' AND NEW.completed_at IS NULL AND NEW.failed_at IS NULL THEN\n    INSERT INTO copyright_notice_form_screening_work_items(copyright_notice_form_intake_id, attempt_id)\n      VALUES (NEW.copyright_notice_form_intake_id, NEW.id)\n    ON CONFLICT (copyright_notice_form_intake_id) DO UPDATE SET attempt_id = EXCLUDED.attempt_id,\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL, attempt_count = 0, available_at = clock_timestamp();\n  ELSIF NEW.completed_at IS NOT NULL OR NEW.failed_at IS NOT NULL THEN\n    DELETE FROM copyright_notice_form_screening_work_items WHERE attempt_id = NEW.id;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
-    },
-    "fn_schedule_media_delivery_projection()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_schedule_media_delivery_projection()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.change_type = 'pending' THEN\n    INSERT INTO media_delivery_registry_projection_work_items(delivery_key, generation, attempt_count, available_at)\n      VALUES (NEW.delivery_key, NEW.generation, NEW.delivery_attempt_count, COALESCE(NEW.next_attempt_at, clock_timestamp()))\n    ON CONFLICT (delivery_key) DO UPDATE SET generation = EXCLUDED.generation,\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL,\n      attempt_count = EXCLUDED.attempt_count, available_at = EXCLUDED.available_at\n    WHERE media_delivery_registry_projection_work_items.generation <> EXCLUDED.generation\n      OR media_delivery_registry_projection_work_items.lease_token IS NULL;\n  ELSIF NEW.change_type IN ('completed', 'failed') THEN\n    DELETE FROM media_delivery_registry_projection_work_items\n      WHERE delivery_key = NEW.delivery_key AND generation = NEW.generation;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
-    },
     "fn_sync_image_surface_placement(p_surface_kind image_surface_placement_surface_kinds, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_image_surface_placement(p_surface_kind image_surface_placement_surface_kinds, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_placement_id uuid;\n  v_revision integer;\nBEGIN\n  INSERT INTO media_delivery_registry_records (\n    delivery_key, placement_id, placement_revision, image_id, desired_state\n  )\n  SELECT concat('image-placement:', placement.id, ':', placement.revision, ':', surface.image_id),\n    placement.id, placement.revision, surface.image_id, 'withheld'::media_delivery_desired_states\n  FROM media_placements placement\n  JOIN image_surface_placements surface ON surface.placement_id = placement.id\n  WHERE placement.retired_at IS NULL\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id\n  ON CONFLICT (delivery_key) DO UPDATE\n  SET desired_state = 'withheld',\n    generation = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN media_delivery_registry_records.generation + 1 ELSE media_delivery_registry_records.generation END;\n\n  UPDATE media_placements placement\n  SET retired_at = COALESCE(placement.retired_at, CURRENT_TIMESTAMP),\n      retirement_reason = 'owner_removed',\n      revision = placement.revision + 1\n  FROM image_surface_placements surface\n  WHERE surface.placement_id = placement.id\n    AND placement.retirement_reason IS DISTINCT FROM 'owner_removed'\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id;\n\n  IF p_image_id IS NULL THEN RETURN; END IF;\n\n  SELECT placement.id, placement.revision INTO v_placement_id, v_revision\n  FROM image_surface_placements surface\n  JOIN media_placements placement ON placement.id = surface.placement_id\n  WHERE surface.surface_kind = p_surface_kind\n    AND surface.image_id = p_image_id\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n  ORDER BY placement.id DESC LIMIT 1\n  FOR UPDATE OF placement;\n\n  IF v_placement_id IS NULL THEN\n    RAISE EXCEPTION 'image surface requires an independently reserved placement before owner update'\n      USING ERRCODE = 'check_violation';\n  ELSE\n    UPDATE media_placements\n    SET retired_at = NULL, retirement_reason = NULL, revision = revision + 1\n    WHERE id = v_placement_id AND retired_at IS NOT NULL\n    RETURNING revision INTO v_revision;\n    IF v_revision IS NULL THEN\n      SELECT revision INTO v_revision FROM media_placements WHERE id = v_placement_id;\n    END IF;\n  END IF;\n\n  INSERT INTO media_delivery_registry_records (\n    delivery_key, placement_id, placement_revision, image_id, desired_state\n  )\n  SELECT concat('image-placement:', v_placement_id, ':', v_revision, ':', p_image_id),\n    v_placement_id, v_revision, p_image_id,\n    CASE WHEN image.deleted_at IS NULL\n        AND image.quarantine_pending_at IS NULL\n        AND image.is_flagged_by_openai_omni_moderation IS NOT TRUE\n      THEN 'allow'::media_delivery_desired_states ELSE 'withheld'::media_delivery_desired_states END\n  FROM images image WHERE image.id = p_image_id\n  ON CONFLICT (delivery_key) DO NOTHING;\n\nEND;\n$function$\n"
     },
@@ -1640,11 +1628,23 @@
     "fn_update_clearance_transparency_scope()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_clearance_transparency_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  SELECT community_id INTO NEW.moderation_transparency_community_id FROM posts WHERE id = NEW.post_id;\n  RETURN NEW;\nEND $function$\n"
     },
+    "fn_update_copyright_action_work()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_copyright_action_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.available_at := COALESCE(NEW.available_at, clock_timestamp());\n  IF TG_OP = 'UPDATE' AND (OLD.completed_at_reason IN ('blocked', 'failed') AND NEW.completed_at IS NULL) THEN NEW.generation := OLD.generation + 1; END IF;\n  IF NEW.completed_at IS NOT NULL OR NEW.leased_at IS NULL THEN\n    NEW.lease_token := NULL; NEW.leased_at := NULL; NEW.lease_expires_at := NULL;\n  ELSE\n    NEW.lease_token := COALESCE(NEW.lease_token, uuidv7());\n    NEW.lease_expires_at := COALESCE(NEW.lease_expires_at, NEW.leased_at + interval '5 minutes');\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_update_copyright_delivery_work()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_copyright_delivery_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.available_at := COALESCE(NEW.available_at, clock_timestamp());\n  IF TG_OP = 'UPDATE' AND (OLD.failed_at IS NOT NULL AND NEW.failed_at IS NULL) THEN NEW.generation := OLD.generation + 1; END IF;\n  IF NEW.sent_at IS NOT NULL OR NEW.failed_at IS NOT NULL OR NEW.bounced_at IS NOT NULL OR NEW.leased_at IS NULL THEN\n    NEW.lease_token := NULL; NEW.leased_at := NULL; NEW.lease_expires_at := NULL;\n  ELSE\n    NEW.lease_token := COALESCE(NEW.lease_token, uuidv7());\n    NEW.lease_expires_at := COALESCE(NEW.lease_expires_at, NEW.leased_at + interval '15 minutes');\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_update_media_delivery_change_authority()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_media_delivery_change_authority()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE current_generation bigint; current_desired_state media_delivery_desired_states;\nBEGIN\n  SELECT generation, desired_state INTO current_generation, current_desired_state FROM media_delivery_registry_records\n    WHERE delivery_key = NEW.delivery_key FOR NO KEY UPDATE;\n  IF current_generation IS DISTINCT FROM NEW.generation THEN RETURN NULL; END IF;\n  NEW.desired_state := current_desired_state;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_update_media_delivery_registry_generation()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_media_delivery_registry_generation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT'\n    OR NEW.desired_state IS DISTINCT FROM OLD.desired_state\n    OR NEW.generation IS DISTINCT FROM OLD.generation THEN\n    NEW.generation := nextval('media_delivery_registry_generation_sequence');\n  ELSE\n    NEW.generation := OLD.generation;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_update_membership_operation_work()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_membership_operation_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE current_token UUID;\nBEGIN\n  SELECT lease_token INTO current_token FROM membership_operation_execution_work_items\n  WHERE membership_operation_id = NEW.id;\n  IF NEW.completed_at IS NOT NULL THEN\n    DELETE FROM membership_operation_execution_work_items\n    WHERE membership_operation_id = NEW.id AND lease_token IS NOT DISTINCT FROM current_token;\n  ELSIF NEW.failed_at IS NOT NULL AND NEW.failed_at IS DISTINCT FROM OLD.failed_at THEN\n    UPDATE membership_operation_execution_work_items\n    SET lease_token = NULL, leased_at = NULL, lease_expires_at = NULL\n    WHERE membership_operation_id = NEW.id AND lease_token = current_token;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_update_membership_verification_processing_work()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_membership_verification_processing_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF num_nonnulls(NEW.verified_at, NEW.conflicted_at, NEW.rejected_at) = 1 THEN\n    UPDATE membership_verification_processing_work_items\n    SET completed_at = COALESCE(completed_at, NEW.verified_at, NEW.conflicted_at, NEW.rejected_at),\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL\n    WHERE membership_verification_id = NEW.id;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_update_moderation_report_transparency_scope()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_moderation_report_transparency_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.moderation_transparency_community_id IS NULL THEN\n    SELECT community_id INTO NEW.moderation_transparency_community_id FROM posts WHERE id = NEW.post_id;\n  END IF;\n  RETURN NEW;\nEND $function$\n"
@@ -2283,8 +2283,8 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trg_activitypub_inbox_delivery_storage_counters__updated_at": {
-          "definition": "CREATE TRIGGER trg_activitypub_inbox_delivery_storage_counters__updated_at BEFORE UPDATE ON public.activitypub_inbox_delivery_storage_counters FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_activitypub_inbox_delivery_storage_counters_updated_at": {
+          "definition": "CREATE TRIGGER trigger_activitypub_inbox_delivery_storage_counters_updated_at BEFORE UPDATE ON public.activitypub_inbox_delivery_storage_counters FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
       "uniqueConstraints": {}
@@ -2699,10 +2699,10 @@
           "unique": true,
           "valid": true
         },
-        "idx_activitypub_inbox_work_items__claim": {
+        "idx_activitypub_inbox_delivery_work_items__claim": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_activitypub_inbox_work_items__claim ON public.activitypub_inbox_delivery_work_items USING btree (available_at, id) WHERE (failed_at IS NULL)",
+          "definition": "CREATE INDEX idx_activitypub_inbox_delivery_work_items__claim ON public.activitypub_inbox_delivery_work_items USING btree (available_at, id) WHERE (failed_at IS NULL)",
           "immediate": true,
           "keys": [
             {
@@ -2731,10 +2731,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_activitypub_inbox_work_items__recovery": {
+        "idx_activitypub_inbox_delivery_work_items__recovery": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_activitypub_inbox_work_items__recovery ON public.activitypub_inbox_delivery_work_items USING btree (failed_at, available_at, leased_at, dispatched_at, received_at, id)",
+          "definition": "CREATE INDEX idx_activitypub_inbox_delivery_work_items__recovery ON public.activitypub_inbox_delivery_work_items USING btree (failed_at, available_at, leased_at, dispatched_at, received_at, id)",
           "immediate": true,
           "keys": [
             {
@@ -2799,10 +2799,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_activitypub_inbox_work_items__remote_actor_id": {
+        "idx_activitypub_inbox_delivery_work_items__remote_actor_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_activitypub_inbox_work_items__remote_actor_id ON public.activitypub_inbox_delivery_work_items USING btree (remote_actor_id) WHERE (remote_actor_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_activitypub_inbox_delivery_work_items__remote_actor_id ON public.activitypub_inbox_delivery_work_items USING btree (remote_actor_id) WHERE (remote_actor_id IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -2822,10 +2822,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_activitypub_inbox_work_items__unverified_retention": {
+        "idx_activitypub_inbox_delivery_work_items__unverified_retention": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_activitypub_inbox_work_items__unverified_retention ON public.activitypub_inbox_delivery_work_items USING btree (retention_expires_at, id) WHERE ((verified_at IS NULL) AND (retention_expires_at IS NOT NULL))",
+          "definition": "CREATE INDEX idx_activitypub_inbox_delivery_work_items__unverified_retention ON public.activitypub_inbox_delivery_work_items USING btree (retention_expires_at, id) WHERE ((verified_at IS NULL) AND (retention_expires_at IS NOT NULL))",
           "immediate": true,
           "keys": [
             {
@@ -2854,10 +2854,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_activitypub_inbox_work_items__verified_retention": {
+        "idx_activitypub_inbox_delivery_work_items__verified_retention": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_activitypub_inbox_work_items__verified_retention ON public.activitypub_inbox_delivery_work_items USING btree (retention_expires_at, id) WHERE ((verified_at IS NOT NULL) AND (retention_expires_at IS NOT NULL))",
+          "definition": "CREATE INDEX idx_activitypub_inbox_delivery_work_items__verified_retention ON public.activitypub_inbox_delivery_work_items USING btree (retention_expires_at, id) WHERE ((verified_at IS NOT NULL) AND (retention_expires_at IS NOT NULL))",
           "immediate": true,
           "keys": [
             {
@@ -4657,8 +4657,8 @@
       },
       "relationKind": "partitioned table",
       "triggers": {
-        "trg_agent_moderations__updated_at": {
-          "definition": "CREATE TRIGGER trg_agent_moderations__updated_at BEFORE UPDATE ON public.agent_moderations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_agent_moderations_updated_at": {
+          "definition": "CREATE TRIGGER trigger_agent_moderations_updated_at BEFORE UPDATE ON public.agent_moderations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         },
         "trigger_moderation_transparency_agent_delete_rollup": {
           "definition": "CREATE TRIGGER trigger_moderation_transparency_agent_delete_rollup AFTER DELETE ON public.agent_moderations REFERENCING OLD TABLE AS deleted_agent_moderations FOR EACH STATEMENT EXECUTE FUNCTION fn_project_moderation_transparency_agent_delete_rollup()"
@@ -5344,8 +5344,8 @@
           "definition": "CHECK ((input_tokens >= 0))",
           "validated": true
         },
-        "ai_usage_records_latency_ms_check": {
-          "definition": "CHECK ((latency_ms >= 0))",
+        "ai_usage_records_latency_milliseconds_check": {
+          "definition": "CHECK ((latency_milliseconds >= 0))",
           "validated": true
         },
         "ai_usage_records_output_tokens_check": {
@@ -5448,7 +5448,7 @@
           "nullable": false,
           "ordinalPosition": 8
         },
-        "latency_ms": {
+        "latency_milliseconds": {
           "comment": "Milliseconds from the request leaving to the provider response body being read; NULL when the caller did not measure it.",
           "dataType": "integer",
           "defaultExpression": null,
@@ -18079,8 +18079,8 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trg_community_member_vacations__updated_at": {
-          "definition": "CREATE TRIGGER trg_community_member_vacations__updated_at BEFORE UPDATE ON public.community_member_vacations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_community_member_vacations_updated_at": {
+          "definition": "CREATE TRIGGER trigger_community_member_vacations_updated_at BEFORE UPDATE ON public.community_member_vacations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
       "uniqueConstraints": {}
@@ -23317,7 +23317,7 @@
       "relationKind": "table",
       "triggers": {
         "trigger_copyright_eu_dispute_settlement_outcomes_guard": {
-          "definition": "CREATE TRIGGER trigger_copyright_eu_dispute_settlement_outcomes_guard BEFORE INSERT OR DELETE OR UPDATE ON public.copyright_eu_dispute_settlement_outcomes FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_eu_dispute_settlement_outcome()"
+          "definition": "CREATE TRIGGER trigger_copyright_eu_dispute_settlement_outcomes_guard BEFORE INSERT OR DELETE OR UPDATE ON public.copyright_eu_dispute_settlement_outcomes FOR EACH ROW EXECUTE FUNCTION fn_reject_invalid_copyright_eu_dispute_settlement_outcome()"
         },
         "trigger_copyright_eu_dispute_settlement_outcomes_updated_at": {
           "definition": "CREATE TRIGGER trigger_copyright_eu_dispute_settlement_outcomes_updated_at BEFORE UPDATE ON public.copyright_eu_dispute_settlement_outcomes FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
@@ -25265,10 +25265,10 @@
           "unique": true,
           "valid": true
         },
-        "idx_copyright_action_work__available": {
+        "idx_copyright_notice_action_work_items__available": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_action_work__available ON public.copyright_notice_action_work_items USING btree (available_at, id) WHERE ((lease_token IS NULL) AND (state = 'pending'::copyright_notice_action_intent_states))",
+          "definition": "CREATE INDEX idx_copyright_notice_action_work_items__available ON public.copyright_notice_action_work_items USING btree (available_at, id) WHERE ((lease_token IS NULL) AND (state = 'pending'::copyright_notice_action_intent_states))",
           "immediate": true,
           "keys": [
             {
@@ -25297,10 +25297,33 @@
           "unique": false,
           "valid": true
         },
-        "idx_copyright_action_work__expired": {
+        "idx_copyright_notice_action_work_items__deadline": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_action_work__expired ON public.copyright_notice_action_work_items USING btree (lease_expires_at, id) WHERE (lease_token IS NOT NULL)",
+          "definition": "CREATE INDEX idx_copyright_notice_action_work_items__deadline ON public.copyright_notice_action_work_items USING btree (copyright_notice_deadline_id) WHERE (copyright_notice_deadline_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "copyright_notice_deadline_id",
+              "descending": false,
+              "expression": "copyright_notice_deadline_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(copyright_notice_deadline_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_notice_action_work_items__expired": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_notice_action_work_items__expired ON public.copyright_notice_action_work_items USING btree (lease_expires_at, id) WHERE (lease_token IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -25324,29 +25347,6 @@
           ],
           "live": true,
           "predicate": "(lease_token IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_copyright_notice_action_work_items__deadline": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_notice_action_work_items__deadline ON public.copyright_notice_action_work_items USING btree (copyright_notice_deadline_id) WHERE (copyright_notice_deadline_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "copyright_notice_deadline_id",
-              "descending": false,
-              "expression": "copyright_notice_deadline_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(copyright_notice_deadline_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -25424,7 +25424,7 @@
       "relationKind": "table",
       "triggers": {
         "trigger_00_copyright_action_work_lease": {
-          "definition": "CREATE TRIGGER trigger_00_copyright_action_work_lease BEFORE INSERT OR UPDATE ON public.copyright_notice_action_work_items FOR EACH ROW EXECUTE FUNCTION fn_prepare_copyright_action_work()"
+          "definition": "CREATE TRIGGER trigger_00_copyright_action_work_lease BEFORE INSERT OR UPDATE ON public.copyright_notice_action_work_items FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_action_work()"
         },
         "trigger_copyright_action_intents_guard": {
           "definition": "CREATE TRIGGER trigger_copyright_action_intents_guard BEFORE DELETE OR UPDATE ON public.copyright_notice_action_work_items FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_action_intent()"
@@ -25433,7 +25433,7 @@
           "definition": "CREATE TRIGGER trigger_copyright_action_intents_updated_at BEFORE UPDATE ON public.copyright_notice_action_work_items FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         },
         "trigger_copyright_action_work_attempt": {
-          "definition": "CREATE TRIGGER trigger_copyright_action_work_attempt AFTER INSERT OR UPDATE ON public.copyright_notice_action_work_items FOR EACH ROW EXECUTE FUNCTION fn_record_copyright_action_attempt()"
+          "definition": "CREATE TRIGGER trigger_copyright_action_work_attempt AFTER INSERT OR UPDATE ON public.copyright_notice_action_work_items FOR EACH ROW EXECUTE FUNCTION fn_create_copyright_action_attempt()"
         },
         "trigger_update_copyright_action_intents_scope": {
           "definition": "CREATE TRIGGER trigger_update_copyright_action_intents_scope BEFORE INSERT ON public.copyright_notice_action_work_items FOR EACH ROW EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_restrictions', 'copyright_restriction_id')"
@@ -28113,10 +28113,33 @@
           "unique": true,
           "valid": true
         },
-        "idx_copyright_delivery_work__available": {
+        "idx_copyright_notice_delivery_work_items__amazon_ses_message": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_delivery_work__available ON public.copyright_notice_delivery_work_items USING btree (available_at, id) WHERE ((lease_token IS NULL) AND (state = 'pending'::copyright_notice_delivery_intent_states))",
+          "definition": "CREATE INDEX idx_copyright_notice_delivery_work_items__amazon_ses_message ON public.copyright_notice_delivery_work_items USING btree (amazon_ses_message_id) WHERE (amazon_ses_message_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": "amazon_ses_message_id",
+              "descending": false,
+              "expression": "amazon_ses_message_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(amazon_ses_message_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_notice_delivery_work_items__available": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_notice_delivery_work_items__available ON public.copyright_notice_delivery_work_items USING btree (available_at, id) WHERE ((lease_token IS NULL) AND (state = 'pending'::copyright_notice_delivery_intent_states))",
           "immediate": true,
           "keys": [
             {
@@ -28140,61 +28163,6 @@
           ],
           "live": true,
           "predicate": "((lease_token IS NULL) AND (state = 'pending'::copyright_notice_delivery_intent_states))",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_copyright_delivery_work__expired": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_delivery_work__expired ON public.copyright_notice_delivery_work_items USING btree (lease_expires_at, id) WHERE (lease_token IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "lease_expires_at",
-              "descending": false,
-              "expression": "lease_expires_at",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.timestamptz_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(lease_token IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_copyright_notice_delivery_work_items__amazon_ses_message": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_notice_delivery_work_items__amazon_ses_message ON public.copyright_notice_delivery_work_items USING btree (amazon_ses_message_id) WHERE (amazon_ses_message_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": "pg_catalog.\"default\"",
-              "column": "amazon_ses_message_id",
-              "descending": false,
-              "expression": "amazon_ses_message_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(amazon_ses_message_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -28227,6 +28195,38 @@
           ],
           "live": true,
           "predicate": "(copyright_notice_correspondence_message_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_notice_delivery_work_items__expired": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_notice_delivery_work_items__expired ON public.copyright_notice_delivery_work_items USING btree (lease_expires_at, id) WHERE (lease_token IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "lease_expires_at",
+              "descending": false,
+              "expression": "lease_expires_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(lease_token IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -28391,7 +28391,7 @@
       "relationKind": "table",
       "triggers": {
         "trigger_00_copyright_delivery_work_lease": {
-          "definition": "CREATE TRIGGER trigger_00_copyright_delivery_work_lease BEFORE INSERT OR UPDATE ON public.copyright_notice_delivery_work_items FOR EACH ROW EXECUTE FUNCTION fn_prepare_copyright_delivery_work()"
+          "definition": "CREATE TRIGGER trigger_00_copyright_delivery_work_lease BEFORE INSERT OR UPDATE ON public.copyright_notice_delivery_work_items FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_delivery_work()"
         },
         "trigger_copyright_delivery_intent_transition": {
           "definition": "CREATE TRIGGER trigger_copyright_delivery_intent_transition BEFORE DELETE OR UPDATE ON public.copyright_notice_delivery_work_items FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_delivery_intent_transition()"
@@ -28400,7 +28400,7 @@
           "definition": "CREATE TRIGGER trigger_copyright_delivery_intents_updated_at BEFORE UPDATE ON public.copyright_notice_delivery_work_items FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         },
         "trigger_copyright_delivery_work_attempt": {
-          "definition": "CREATE TRIGGER trigger_copyright_delivery_work_attempt AFTER INSERT OR UPDATE ON public.copyright_notice_delivery_work_items FOR EACH ROW EXECUTE FUNCTION fn_record_copyright_delivery_attempt()"
+          "definition": "CREATE TRIGGER trigger_copyright_delivery_work_attempt AFTER INSERT OR UPDATE ON public.copyright_notice_delivery_work_items FOR EACH ROW EXECUTE FUNCTION fn_create_copyright_delivery_attempt()"
         }
       },
       "uniqueConstraints": {
@@ -31725,7 +31725,7 @@
       "relationKind": "table",
       "triggers": {
         "trigger_copyright_form_screening_work": {
-          "definition": "CREATE TRIGGER trigger_copyright_form_screening_work AFTER INSERT OR UPDATE ON public.copyright_notice_form_screening_attempts FOR EACH ROW EXECUTE FUNCTION fn_schedule_copyright_form_screening_work()"
+          "definition": "CREATE TRIGGER trigger_copyright_form_screening_work AFTER INSERT OR UPDATE ON public.copyright_notice_form_screening_attempts FOR EACH ROW EXECUTE FUNCTION fn_project_copyright_form_screening_work()"
         },
         "trigger_copyright_screening_attempts_monotonic": {
           "definition": "CREATE TRIGGER trigger_copyright_screening_attempts_monotonic BEFORE DELETE OR UPDATE ON public.copyright_notice_form_screening_attempts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_screening_attempt_rewind()"
@@ -31866,10 +31866,10 @@
           "unique": true,
           "valid": true
         },
-        "idx_copyright_form_screening_work__available": {
+        "idx_copyright_notice_form_screening_work_items__available": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_form_screening_work__available ON public.copyright_notice_form_screening_work_items USING btree (available_at, copyright_notice_form_intake_id) WHERE (lease_token IS NULL)",
+          "definition": "CREATE INDEX idx_copyright_notice_form_screening_work_items__available ON public.copyright_notice_form_screening_work_items USING btree (available_at, copyright_notice_form_intake_id) WHERE (lease_token IS NULL)",
           "immediate": true,
           "keys": [
             {
@@ -31898,10 +31898,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_copyright_form_screening_work__expired": {
+        "idx_copyright_notice_form_screening_work_items__expired": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_form_screening_work__expired ON public.copyright_notice_form_screening_work_items USING btree (lease_expires_at, copyright_notice_form_intake_id) WHERE (lease_token IS NOT NULL)",
+          "definition": "CREATE INDEX idx_copyright_notice_form_screening_work_items__expired ON public.copyright_notice_form_screening_work_items USING btree (lease_expires_at, copyright_notice_form_intake_id) WHERE (lease_token IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -32395,8 +32395,8 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trg_copyright_notice_guest_capabilities__updated_at": {
-          "definition": "CREATE TRIGGER trg_copyright_notice_guest_capabilities__updated_at BEFORE UPDATE ON public.copyright_notice_guest_capabilities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_copyright_notice_guest_capabilities_updated_at": {
+          "definition": "CREATE TRIGGER trigger_copyright_notice_guest_capabilities_updated_at BEFORE UPDATE ON public.copyright_notice_guest_capabilities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
       "uniqueConstraints": {
@@ -36867,11 +36867,11 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trg_copyright_repeat_infringer_incidents__updated_at": {
-          "definition": "CREATE TRIGGER trg_copyright_repeat_infringer_incidents__updated_at BEFORE UPDATE ON public.copyright_repeat_infringer_incidents FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-        },
         "trigger_copyright_repeat_infringer_incidents_guard": {
           "definition": "CREATE TRIGGER trigger_copyright_repeat_infringer_incidents_guard BEFORE DELETE OR UPDATE ON public.copyright_repeat_infringer_incidents FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_repeat_infringer_incident()"
+        },
+        "trigger_copyright_repeat_infringer_incidents_updated_at": {
+          "definition": "CREATE TRIGGER trigger_copyright_repeat_infringer_incidents_updated_at BEFORE UPDATE ON public.copyright_repeat_infringer_incidents FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
       "uniqueConstraints": {
@@ -37110,11 +37110,11 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trg_copyright_repeat_infringer_reviews__updated_at": {
-          "definition": "CREATE TRIGGER trg_copyright_repeat_infringer_reviews__updated_at BEFORE UPDATE ON public.copyright_repeat_infringer_reviews FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-        },
         "trigger_copyright_repeat_infringer_reviews_guard": {
           "definition": "CREATE TRIGGER trigger_copyright_repeat_infringer_reviews_guard BEFORE DELETE OR UPDATE ON public.copyright_repeat_infringer_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_repeat_infringer_review()"
+        },
+        "trigger_copyright_repeat_infringer_reviews_updated_at": {
+          "definition": "CREATE TRIGGER trigger_copyright_repeat_infringer_reviews_updated_at BEFORE UPDATE ON public.copyright_repeat_infringer_reviews FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
       "uniqueConstraints": {}
@@ -38605,7 +38605,7 @@
           "definition": "CREATE TRIGGER trigger_copyright_territorial_decisions_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_decisions FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
         },
         "trigger_copyright_territorial_decisions_scope": {
-          "definition": "CREATE TRIGGER trigger_copyright_territorial_decisions_scope BEFORE INSERT ON public.copyright_territorial_decisions FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_territorial_decision()"
+          "definition": "CREATE TRIGGER trigger_copyright_territorial_decisions_scope BEFORE INSERT ON public.copyright_territorial_decisions FOR EACH ROW EXECUTE FUNCTION fn_reject_invalid_copyright_territorial_decision()"
         }
       },
       "uniqueConstraints": {
@@ -41047,8 +41047,8 @@
       },
       "relationKind": "partitioned table",
       "triggers": {
-        "trg_crawl_chunks__updated_at": {
-          "definition": "CREATE TRIGGER trg_crawl_chunks__updated_at BEFORE UPDATE ON public.crawl_chunks FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_crawl_chunks_updated_at": {
+          "definition": "CREATE TRIGGER trigger_crawl_chunks_updated_at BEFORE UPDATE ON public.crawl_chunks FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
       "uniqueConstraints": {}
@@ -41670,8 +41670,8 @@
       },
       "relationKind": "partitioned table",
       "triggers": {
-        "trg_crawls__updated_at": {
-          "definition": "CREATE TRIGGER trg_crawls__updated_at BEFORE UPDATE ON public.crawls FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_crawls_updated_at": {
+          "definition": "CREATE TRIGGER trigger_crawls_updated_at BEFORE UPDATE ON public.crawls FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
       "uniqueConstraints": {}
@@ -42698,8 +42698,8 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trg_entity_listener_reconciliation_cursors__updated_at": {
-          "definition": "CREATE TRIGGER trg_entity_listener_reconciliation_cursors__updated_at BEFORE UPDATE ON public.entity_listener_reconciliation_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_entity_listener_reconciliation_cursors_updated_at": {
+          "definition": "CREATE TRIGGER trigger_entity_listener_reconciliation_cursors_updated_at BEFORE UPDATE ON public.entity_listener_reconciliation_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
       "uniqueConstraints": {}
@@ -49814,7 +49814,7 @@
       "relationKind": "table",
       "triggers": {
         "trigger_media_delivery_projection_schedule": {
-          "definition": "CREATE TRIGGER trigger_media_delivery_projection_schedule AFTER INSERT ON public.media_delivery_registry_changes FOR EACH ROW EXECUTE FUNCTION fn_schedule_media_delivery_projection()"
+          "definition": "CREATE TRIGGER trigger_media_delivery_projection_schedule AFTER INSERT ON public.media_delivery_registry_changes FOR EACH ROW EXECUTE FUNCTION fn_project_media_delivery_projection()"
         },
         "trigger_media_delivery_registry_changes_actor": {
           "definition": "CREATE TRIGGER trigger_media_delivery_registry_changes_actor BEFORE INSERT ON public.media_delivery_registry_changes FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id')"
@@ -49927,10 +49927,10 @@
         }
       },
       "indexes": {
-        "idx_media_delivery_projection_work__available": {
+        "idx_media_delivery_registry_projection_work_items__available": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_media_delivery_projection_work__available ON public.media_delivery_registry_projection_work_items USING btree (available_at, delivery_key) WHERE (lease_token IS NULL)",
+          "definition": "CREATE INDEX idx_media_delivery_registry_projection_work_items__available ON public.media_delivery_registry_projection_work_items USING btree (available_at, delivery_key) WHERE (lease_token IS NULL)",
           "immediate": true,
           "keys": [
             {
@@ -49959,10 +49959,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_media_delivery_projection_work__expired": {
+        "idx_media_delivery_registry_projection_work_items__expired": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_media_delivery_projection_work__expired ON public.media_delivery_registry_projection_work_items USING btree (lease_expires_at, delivery_key) WHERE (lease_token IS NOT NULL)",
+          "definition": "CREATE INDEX idx_media_delivery_registry_projection_work_items__expired ON public.media_delivery_registry_projection_work_items USING btree (lease_expires_at, delivery_key) WHERE (lease_token IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -50354,8 +50354,8 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trg_media_delivery_repair_markers__updated_at": {
-          "definition": "CREATE TRIGGER trg_media_delivery_repair_markers__updated_at BEFORE UPDATE ON public.media_delivery_repair_markers FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_media_delivery_repair_markers_updated_at": {
+          "definition": "CREATE TRIGGER trigger_media_delivery_repair_markers_updated_at BEFORE UPDATE ON public.media_delivery_repair_markers FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
       "uniqueConstraints": {}
@@ -52101,25 +52101,25 @@
       },
       "uniqueConstraints": {}
     },
-    "membership_google_play_acknowledgement_work_items": {
+    "membership_google_play_acknowledgment_work_items": {
       "checkConstraints": {
-        "membership_google_play_acknowledgement_work_attempt_count_check": {
+        "membership_google_play_acknowledgment_work__attempt_count_check": {
           "definition": "CHECK ((attempt_count >= 0))",
           "validated": true
         },
-        "membership_google_play_acknowledgement_work_it_last_error_check": {
+        "membership_google_play_acknowledgment_work_ite_last_error_check": {
           "definition": "CHECK (((last_error IS NULL) OR (char_length(last_error) <= 1000)))",
           "validated": true
         },
-        "membership_google_play_acknowledgement_work_items_check": {
+        "membership_google_play_acknowledgment_work_items_check": {
           "definition": "CHECK ((num_nonnulls(lease_token, leased_at, lease_expires_at) = ANY (ARRAY[0, 3])))",
           "validated": true
         },
-        "membership_google_play_acknowledgement_work_items_check1": {
+        "membership_google_play_acknowledgment_work_items_check1": {
           "definition": "CHECK (((lease_expires_at IS NULL) OR (lease_expires_at > leased_at)))",
           "validated": true
         },
-        "membership_google_play_acknowledgement_work_items_check2": {
+        "membership_google_play_acknowledgment_work_items_check2": {
           "definition": "CHECK (((completed_at IS NULL) OR (lease_token IS NULL)))",
           "validated": true
         }
@@ -52195,7 +52195,7 @@
           "nullable": true,
           "ordinalPosition": 3
         },
-        "membership_google_play_acknowledgement_id": {
+        "membership_google_play_acknowledgment_id": {
           "comment": "Acknowledgement obligation owning this provider task.",
           "dataType": "uuid",
           "defaultExpression": null,
@@ -52209,19 +52209,19 @@
       "comment": "Provider acknowledgement work separate from encrypted evidence and acknowledgement receipt; retained with its parent for exact replay.",
       "foreignKeys": {
         "membership_google_play_acknow_membership_google_play_ackno_fkey": {
-          "columns": ["membership_google_play_acknowledgement_id"],
+          "columns": ["membership_google_play_acknowledgment_id"],
           "onDelete": "CASCADE",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
-          "referencedTable": "membership_google_play_acknowledgements",
+          "referencedTable": "membership_google_play_acknowledgments",
           "validated": true
         }
       },
       "indexes": {
-        "idx_google_play_acknowledgement_work_items__claim": {
+        "idx_membership_google_play_acknowledgment_work_items__claim": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_google_play_acknowledgement_work_items__claim ON public.membership_google_play_acknowledgement_work_items USING btree (available_at, membership_google_play_acknowledgement_id) WHERE (completed_at IS NULL)",
+          "definition": "CREATE INDEX idx_membership_google_play_acknowledgment_work_items__claim ON public.membership_google_play_acknowledgment_work_items USING btree (available_at, membership_google_play_acknowledgment_id) WHERE (completed_at IS NULL)",
           "immediate": true,
           "keys": [
             {
@@ -52235,9 +52235,9 @@
             },
             {
               "collation": null,
-              "column": "membership_google_play_acknowledgement_id",
+              "column": "membership_google_play_acknowledgment_id",
               "descending": false,
-              "expression": "membership_google_play_acknowledgement_id",
+              "expression": "membership_google_play_acknowledgment_id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
@@ -52250,17 +52250,17 @@
           "unique": false,
           "valid": true
         },
-        "membership_google_play_acknowledgement_work_items_pkey": {
+        "membership_google_play_acknowledgment_work_items_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX membership_google_play_acknowledgement_work_items_pkey ON public.membership_google_play_acknowledgement_work_items USING btree (membership_google_play_acknowledgement_id)",
+          "definition": "CREATE UNIQUE INDEX membership_google_play_acknowledgment_work_items_pkey ON public.membership_google_play_acknowledgment_work_items USING btree (membership_google_play_acknowledgment_id)",
           "immediate": true,
           "keys": [
             {
               "collation": null,
-              "column": "membership_google_play_acknowledgement_id",
+              "column": "membership_google_play_acknowledgment_id",
               "descending": false,
-              "expression": "membership_google_play_acknowledgement_id",
+              "expression": "membership_google_play_acknowledgment_id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
@@ -52276,13 +52276,13 @@
       },
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["membership_google_play_acknowledgement_id"]
+        "columns": ["membership_google_play_acknowledgment_id"]
       },
       "relationKind": "table",
       "triggers": {},
       "uniqueConstraints": {}
     },
-    "membership_google_play_acknowledgements": {
+    "membership_google_play_acknowledgments": {
       "checkConstraints": {
         "chk_membersh_google_play_acknowle__purchase_token_lookup_sha256": {
           "definition": "CHECK ((purchase_token_lookup_sha256 ~ '^[a-f0-9]{64}$'::text))",
@@ -52292,27 +52292,27 @@
           "definition": "CHECK (((octet_length(encrypted_purchase_token) >= 1) AND (octet_length(encrypted_purchase_token) <= 65536)))",
           "validated": true
         },
-        "membership_google_play_acknowledgements_application_id_check": {
+        "membership_google_play_acknowledgments_application_id_check": {
           "definition": "CHECK ((((char_length(application_id) >= 1) AND (char_length(application_id) <= 255)) AND (application_id = TRIM(BOTH FROM application_id))))",
           "validated": true
         },
-        "membership_google_play_acknowledgements_check": {
+        "membership_google_play_acknowledgments_check": {
           "definition": "CHECK ((num_nonnulls(acknowledged_at, skipped_at) <= 1))",
           "validated": true
         },
-        "membership_google_play_acknowledgements_check1": {
+        "membership_google_play_acknowledgments_check1": {
           "definition": "CHECK (((skipped_at IS NULL) = (skip_reason IS NULL)))",
           "validated": true
         },
-        "membership_google_play_acknowledgements_provider_check": {
+        "membership_google_play_acknowledgments_provider_check": {
           "definition": "CHECK ((provider = 'google_play'::membership_provider_kinds))",
           "validated": true
         },
-        "membership_google_play_acknowledgements_skip_reason_check": {
-          "definition": "CHECK (((skip_reason IS NULL) OR (skip_reason = 'no_longer_eligible'::membership_google_play_acknowledgement_skip_reasons)))",
+        "membership_google_play_acknowledgments_skip_reason_check": {
+          "definition": "CHECK (((skip_reason IS NULL) OR (skip_reason = 'no_longer_eligible'::membership_google_play_acknowledgment_skip_reasons)))",
           "validated": true
         },
-        "membership_google_play_acknowledgements_subscription_id_check": {
+        "membership_google_play_acknowledgments_subscription_id_check": {
           "definition": "CHECK ((((char_length(subscription_id) >= 1) AND (char_length(subscription_id) <= 255)) AND (subscription_id = TRIM(BOTH FROM subscription_id))))",
           "validated": true
         }
@@ -52420,7 +52420,7 @@
         },
         "skip_reason": {
           "comment": "Stable reason why this acknowledgement was terminally skipped.",
-          "dataType": "membership_google_play_acknowledgement_skip_reasons",
+          "dataType": "membership_google_play_acknowledgment_skip_reasons",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -52461,7 +52461,7 @@
       },
       "comment": "Durable Google Play acknowledgement ledger. A retry always refetches subscriptionsv2 before another acknowledgement attempt.",
       "foreignKeys": {
-        "fk_membership_google_play_acknowledgements__evidence_context": {
+        "fk_membership_google_play_acknowledgments__evidence_context": {
           "columns": [
             "membership_provider_evidence_record_id",
             "membership_provider_lineage_id",
@@ -52481,7 +52481,7 @@
           "referencedTable": "membership_provider_evidence_records",
           "validated": true
         },
-        "fk_membership_google_play_acknowledgements__lineage_context": {
+        "fk_membership_google_play_acknowledgments__lineage_context": {
           "columns": [
             "membership_provider_lineage_id",
             "provider",
@@ -52496,10 +52496,10 @@
         }
       },
       "indexes": {
-        "idx_membership_google_play_acknowledgements__lineage_context": {
+        "idx_membership_google_play_acknowledgments__lineage_context": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_membership_google_play_acknowledgements__lineage_context ON public.membership_google_play_acknowledgements USING btree (membership_provider_lineage_id, provider, environment, application_id)",
+          "definition": "CREATE INDEX idx_membership_google_play_acknowledgments__lineage_context ON public.membership_google_play_acknowledgments USING btree (membership_provider_lineage_id, provider, environment, application_id)",
           "immediate": true,
           "keys": [
             {
@@ -52546,10 +52546,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_membership_google_play_acknowledgements__pending_id": {
+        "idx_membership_google_play_acknowledgments__pending_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_membership_google_play_acknowledgements__pending_id ON public.membership_google_play_acknowledgements USING btree (id) WHERE ((acknowledged_at IS NULL) AND (skipped_at IS NULL))",
+          "definition": "CREATE INDEX idx_membership_google_play_acknowledgments__pending_id ON public.membership_google_play_acknowledgments USING btree (id) WHERE ((acknowledged_at IS NULL) AND (skipped_at IS NULL))",
           "immediate": true,
           "keys": [
             {
@@ -52569,10 +52569,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_membership_google_play_acknowledgements__purchase": {
+        "idx_membership_google_play_acknowledgments__purchase": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_membership_google_play_acknowledgements__purchase ON public.membership_google_play_acknowledgements USING btree (environment, application_id, purchase_token_lookup_sha256)",
+          "definition": "CREATE UNIQUE INDEX idx_membership_google_play_acknowledgments__purchase ON public.membership_google_play_acknowledgments USING btree (environment, application_id, purchase_token_lookup_sha256)",
           "immediate": true,
           "keys": [
             {
@@ -52610,10 +52610,10 @@
           "unique": true,
           "valid": true
         },
-        "membership_google_play_acknowledgements_pkey": {
+        "membership_google_play_acknowledgments_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX membership_google_play_acknowledgements_pkey ON public.membership_google_play_acknowledgements USING btree (id)",
+          "definition": "CREATE UNIQUE INDEX membership_google_play_acknowledgments_pkey ON public.membership_google_play_acknowledgments USING btree (id)",
           "immediate": true,
           "keys": [
             {
@@ -52633,10 +52633,10 @@
           "unique": true,
           "valid": true
         },
-        "uq_membership_google_play_acknowledgement__provider_evidence_id": {
+        "uq_membership_google_play_acknowledgment__provider_evidence_id": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX uq_membership_google_play_acknowledgement__provider_evidence_id ON public.membership_google_play_acknowledgements USING btree (membership_provider_evidence_record_id)",
+          "definition": "CREATE UNIQUE INDEX uq_membership_google_play_acknowledgment__provider_evidence_id ON public.membership_google_play_acknowledgments USING btree (membership_provider_evidence_record_id)",
           "immediate": true,
           "keys": [
             {
@@ -52663,15 +52663,15 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_google_play_acknowledgements_work": {
-          "definition": "CREATE TRIGGER trigger_google_play_acknowledgements_work AFTER INSERT ON public.membership_google_play_acknowledgements FOR EACH ROW EXECUTE FUNCTION fn_create_google_play_acknowledgement_work()"
+        "trigger_google_play_acknowledgments_work": {
+          "definition": "CREATE TRIGGER trigger_google_play_acknowledgments_work AFTER INSERT ON public.membership_google_play_acknowledgments FOR EACH ROW EXECUTE FUNCTION fn_create_google_play_acknowledgment_work()"
         },
-        "trigger_membership_google_play_acknowledgements_updated_at": {
-          "definition": "CREATE TRIGGER trigger_membership_google_play_acknowledgements_updated_at BEFORE UPDATE ON public.membership_google_play_acknowledgements FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_membership_google_play_acknowledgments_updated_at": {
+          "definition": "CREATE TRIGGER trigger_membership_google_play_acknowledgments_updated_at BEFORE UPDATE ON public.membership_google_play_acknowledgments FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
       "uniqueConstraints": {
-        "uq_membership_google_play_acknowledgement__provider_evidence_id": {
+        "uq_membership_google_play_acknowledgment__provider_evidence_id": {
           "columns": ["membership_provider_evidence_record_id"]
         }
       }
@@ -55646,10 +55646,10 @@
         }
       },
       "indexes": {
-        "idx_membership_operation_work_items__available": {
+        "idx_membership_operation_execution_work_items__available": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_membership_operation_work_items__available ON public.membership_operation_execution_work_items USING btree (available_at, membership_operation_id) WHERE (lease_token IS NULL)",
+          "definition": "CREATE INDEX idx_membership_operation_execution_work_items__available ON public.membership_operation_execution_work_items USING btree (available_at, membership_operation_id) WHERE (lease_token IS NULL)",
           "immediate": true,
           "keys": [
             {
@@ -55678,10 +55678,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_membership_operation_work_items__expired": {
+        "idx_membership_operation_execution_work_items__expired": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_membership_operation_work_items__expired ON public.membership_operation_execution_work_items USING btree (lease_expires_at, membership_operation_id) WHERE (lease_token IS NOT NULL)",
+          "definition": "CREATE INDEX idx_membership_operation_execution_work_items__expired ON public.membership_operation_execution_work_items USING btree (lease_expires_at, membership_operation_id) WHERE (lease_token IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -55710,10 +55710,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_membership_operation_work_items__lease_token": {
+        "idx_membership_operation_execution_work_items__lease_token": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_membership_operation_work_items__lease_token ON public.membership_operation_execution_work_items USING btree (lease_token) WHERE (lease_token IS NOT NULL)",
+          "definition": "CREATE UNIQUE INDEX idx_membership_operation_execution_work_items__lease_token ON public.membership_operation_execution_work_items USING btree (lease_token) WHERE (lease_token IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -55764,7 +55764,7 @@
       "relationKind": "table",
       "triggers": {
         "trigger_membership_operation_work_items_guard": {
-          "definition": "CREATE TRIGGER trigger_membership_operation_work_items_guard BEFORE UPDATE ON public.membership_operation_execution_work_items FOR EACH ROW EXECUTE FUNCTION fn_guard_membership_operation_work_lease()"
+          "definition": "CREATE TRIGGER trigger_membership_operation_work_items_guard BEFORE UPDATE ON public.membership_operation_execution_work_items FOR EACH ROW EXECUTE FUNCTION fn_reject_invalid_membership_operation_work_lease()"
         }
       },
       "uniqueConstraints": {}
@@ -56486,13 +56486,13 @@
       "relationKind": "table",
       "triggers": {
         "trigger_membership_operations_finalize_work": {
-          "definition": "CREATE TRIGGER trigger_membership_operations_finalize_work AFTER UPDATE ON public.membership_operations FOR EACH ROW EXECUTE FUNCTION fn_finalize_membership_operation_work()"
+          "definition": "CREATE TRIGGER trigger_membership_operations_finalize_work AFTER UPDATE ON public.membership_operations FOR EACH ROW EXECUTE FUNCTION fn_update_membership_operation_work()"
         },
         "trigger_membership_operations_guard": {
           "definition": "CREATE TRIGGER trigger_membership_operations_guard BEFORE DELETE OR UPDATE ON public.membership_operations FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_operation_mutation()"
         },
         "trigger_membership_operations_initialize_work": {
-          "definition": "CREATE TRIGGER trigger_membership_operations_initialize_work AFTER INSERT ON public.membership_operations FOR EACH ROW EXECUTE FUNCTION fn_initialize_membership_operation_work()"
+          "definition": "CREATE TRIGGER trigger_membership_operations_initialize_work AFTER INSERT ON public.membership_operations FOR EACH ROW EXECUTE FUNCTION fn_create_membership_operation_work()"
         }
       },
       "uniqueConstraints": {}
@@ -60237,10 +60237,10 @@
         }
       },
       "indexes": {
-        "idx_membership_renewal_notification_work__available": {
+        "idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__available": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_membership_renewal_notification_work__available ON public.membership_renewal_price_increase_notification_work_items USING btree (available_at, membership_id) WHERE ((completed_at IS NULL) AND (delivery_attempted_at IS NULL))",
+          "definition": "CREATE INDEX idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__available ON public.membership_renewal_price_increase_notification_work_items USING btree (available_at, membership_id) WHERE ((completed_at IS NULL) AND (delivery_attempted_at IS NULL))",
           "immediate": true,
           "keys": [
             {
@@ -60269,10 +60269,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_membership_renewal_notification_work__currency": {
+        "idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__currency": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_membership_renewal_notification_work__currency ON public.membership_renewal_price_increase_notification_work_items USING btree (currency_code)",
+          "definition": "CREATE INDEX idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__currency ON public.membership_renewal_price_increase_notification_work_items USING btree (currency_code)",
           "immediate": true,
           "keys": [
             {
@@ -60292,10 +60292,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_membership_renewal_notification_work__lease_token": {
+        "idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__lease_token": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_membership_renewal_notification_work__lease_token ON public.membership_renewal_price_increase_notification_work_items USING btree (lease_token) WHERE (lease_token IS NOT NULL)",
+          "definition": "CREATE UNIQUE INDEX idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__lease_token ON public.membership_renewal_price_increase_notification_work_items USING btree (lease_token) WHERE (lease_token IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -60315,10 +60315,10 @@
           "unique": true,
           "valid": true
         },
-        "idx_membership_renewal_notification_work__observation": {
+        "idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__observation": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_membership_renewal_notification_work__observation ON public.membership_renewal_price_increase_notification_work_items USING btree (membership_provider_observation_id)",
+          "definition": "CREATE INDEX idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__observation ON public.membership_renewal_price_increase_notification_work_items USING btree (membership_provider_observation_id)",
           "immediate": true,
           "keys": [
             {
@@ -60338,10 +60338,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_membership_renewal_notification_work__provider_product": {
+        "idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__provider_product": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_membership_renewal_notification_work__provider_product ON public.membership_renewal_price_increase_notification_work_items USING btree (membership_provider_product_id)",
+          "definition": "CREATE INDEX idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__provider_product ON public.membership_renewal_price_increase_notification_work_items USING btree (membership_provider_product_id)",
           "immediate": true,
           "keys": [
             {
@@ -60713,8 +60713,8 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trg_membership_source_states__updated_at": {
-          "definition": "CREATE TRIGGER trg_membership_source_states__updated_at BEFORE UPDATE ON public.membership_source_states FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_membership_source_states_updated_at": {
+          "definition": "CREATE TRIGGER trigger_membership_source_states_updated_at BEFORE UPDATE ON public.membership_source_states FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
       "uniqueConstraints": {}
@@ -61654,7 +61654,7 @@
       "relationKind": "table",
       "triggers": {
         "trigger_membership_verifications_complete_processing_work": {
-          "definition": "CREATE TRIGGER trigger_membership_verifications_complete_processing_work AFTER UPDATE OF verified_at, conflicted_at, rejected_at ON public.membership_verifications FOR EACH ROW EXECUTE FUNCTION fn_complete_membership_verification_processing_work()"
+          "definition": "CREATE TRIGGER trigger_membership_verifications_complete_processing_work AFTER UPDATE OF verified_at, conflicted_at, rejected_at ON public.membership_verifications FOR EACH ROW EXECUTE FUNCTION fn_update_membership_verification_processing_work()"
         },
         "trigger_membership_verifications_processing_work": {
           "definition": "CREATE TRIGGER trigger_membership_verifications_processing_work AFTER INSERT ON public.membership_verifications FOR EACH ROW EXECUTE FUNCTION fn_create_membership_verification_processing_work()"
@@ -72227,7 +72227,7 @@
       "relationKind": "table",
       "triggers": {
         "trigger_oauth_authorizations_exchange_history": {
-          "definition": "CREATE TRIGGER trigger_oauth_authorizations_exchange_history AFTER UPDATE OF exchange_claim_id ON public.oauth_authorizations FOR EACH ROW EXECUTE FUNCTION fn_record_oauth_authorization_exchange_transition()"
+          "definition": "CREATE TRIGGER trigger_oauth_authorizations_exchange_history AFTER UPDATE OF exchange_claim_id ON public.oauth_authorizations FOR EACH ROW EXECUTE FUNCTION fn_create_oauth_authorization_exchange_transition()"
         },
         "trigger_oauth_authorizations_updated_at": {
           "definition": "CREATE TRIGGER trigger_oauth_authorizations_updated_at BEFORE UPDATE ON public.oauth_authorizations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
@@ -75135,8 +75135,8 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trg_post_admission_claims__updated_at": {
-          "definition": "CREATE TRIGGER trg_post_admission_claims__updated_at BEFORE UPDATE ON public.post_admission_claims FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_post_admission_claims_updated_at": {
+          "definition": "CREATE TRIGGER trigger_post_admission_claims_updated_at BEFORE UPDATE ON public.post_admission_claims FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
       "uniqueConstraints": {}
@@ -75714,8 +75714,8 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trg_post_admission_reservations__updated_at": {
-          "definition": "CREATE TRIGGER trg_post_admission_reservations__updated_at BEFORE UPDATE ON public.post_admission_reservations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_post_admission_reservations_updated_at": {
+          "definition": "CREATE TRIGGER trigger_post_admission_reservations_updated_at BEFORE UPDATE ON public.post_admission_reservations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
       "uniqueConstraints": {
@@ -80062,8 +80062,8 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trg_post_publicatio_identity_bridge_cleanup_cursors__updated_at": {
-          "definition": "CREATE TRIGGER trg_post_publicatio_identity_bridge_cleanup_cursors__updated_at BEFORE UPDATE ON public.post_publication_identity_bridge_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_post_publication_identity_bridge_cleanup_updated_at": {
+          "definition": "CREATE TRIGGER trigger_post_publication_identity_bridge_cleanup_updated_at BEFORE UPDATE ON public.post_publication_identity_bridge_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
       "uniqueConstraints": {}
@@ -80140,8 +80140,8 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trg_post_publicat_identity_snapshot_cleanup_cursors__updated_at": {
-          "definition": "CREATE TRIGGER trg_post_publicat_identity_snapshot_cleanup_cursors__updated_at BEFORE UPDATE ON public.post_publication_identity_snapshot_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_post_publication_identity_snapshot_cleanup_updated_at": {
+          "definition": "CREATE TRIGGER trigger_post_publication_identity_snapshot_cleanup_updated_at BEFORE UPDATE ON public.post_publication_identity_snapshot_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
       "uniqueConstraints": {}
@@ -81113,8 +81113,8 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trg_post_publication_reconciliation_audit_cursors__updated_at": {
-          "definition": "CREATE TRIGGER trg_post_publication_reconciliation_audit_cursors__updated_at BEFORE UPDATE ON public.post_publication_reconciliation_audit_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_post_publication_reconciliation_audit_cursor_updated_at": {
+          "definition": "CREATE TRIGGER trigger_post_publication_reconciliation_audit_cursor_updated_at BEFORE UPDATE ON public.post_publication_reconciliation_audit_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
       "uniqueConstraints": {}
@@ -109572,8 +109572,8 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trg_retained_identity_cleanup_cursors__updated_at": {
-          "definition": "CREATE TRIGGER trg_retained_identity_cleanup_cursors__updated_at BEFORE UPDATE ON public.retained_identity_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_retained_identity_cleanup_cursors_updated_at": {
+          "definition": "CREATE TRIGGER trigger_retained_identity_cleanup_cursors_updated_at BEFORE UPDATE ON public.retained_identity_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
       "uniqueConstraints": {}
@@ -109783,8 +109783,8 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trg_retained_image_placemen_binding_cleanup_cursors__updated_at": {
-          "definition": "CREATE TRIGGER trg_retained_image_placemen_binding_cleanup_cursors__updated_at BEFORE UPDATE ON public.retained_image_placement_binding_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_retained_image_placement_cleanup_cursors_updated_at": {
+          "definition": "CREATE TRIGGER trigger_retained_image_placement_cleanup_cursors_updated_at BEFORE UPDATE ON public.retained_image_placement_binding_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
       "uniqueConstraints": {}
@@ -111472,8 +111472,8 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trg_retained_relation_identity_cleanup_cursors__updated_at": {
-          "definition": "CREATE TRIGGER trg_retained_relation_identity_cleanup_cursors__updated_at BEFORE UPDATE ON public.retained_relation_identity_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_retained_relation_identity_cleanup_cursors__updated_at": {
+          "definition": "CREATE TRIGGER trigger_retained_relation_identity_cleanup_cursors__updated_at BEFORE UPDATE ON public.retained_relation_identity_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
       "uniqueConstraints": {}
@@ -114326,8 +114326,8 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trg_rss_feed_item_category_snapshot_reconciliations__updated_at": {
-          "definition": "CREATE TRIGGER trg_rss_feed_item_category_snapshot_reconciliations__updated_at BEFORE UPDATE ON public.rss_feed_item_category_snapshot_reconciliations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_rss_feed_item_category_snapshot_reconcile_updated_at": {
+          "definition": "CREATE TRIGGER trigger_rss_feed_item_category_snapshot_reconcile_updated_at BEFORE UPDATE ON public.rss_feed_item_category_snapshot_reconciliations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
       "uniqueConstraints": {}
@@ -114957,8 +114957,8 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trg_rss_feed_item_source_category_snapshots__updated_at": {
-          "definition": "CREATE TRIGGER trg_rss_feed_item_source_category_snapshots__updated_at BEFORE UPDATE ON public.rss_feed_item_source_category_snapshots FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_rss_feed_item_source_category_snapshots_updated_at": {
+          "definition": "CREATE TRIGGER trigger_rss_feed_item_source_category_snapshots_updated_at BEFORE UPDATE ON public.rss_feed_item_source_category_snapshots FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
       "uniqueConstraints": {}
@@ -115245,8 +115245,8 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trg_rss_feed_item_unmapped_category_counts__updated_at": {
-          "definition": "CREATE TRIGGER trg_rss_feed_item_unmapped_category_counts__updated_at BEFORE UPDATE ON public.rss_feed_item_unmapped_category_counts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_rss_feed_item_unmapped_category_counts_updated_at": {
+          "definition": "CREATE TRIGGER trigger_rss_feed_item_unmapped_category_counts_updated_at BEFORE UPDATE ON public.rss_feed_item_unmapped_category_counts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
       "uniqueConstraints": {}
@@ -120321,8 +120321,8 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trg_topic_alias_category_mapping_reconciliations__updated_at": {
-          "definition": "CREATE TRIGGER trg_topic_alias_category_mapping_reconciliations__updated_at BEFORE UPDATE ON public.topic_alias_category_mapping_reconciliations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_topic_alias_category_mapping_reconciliations_updated_at": {
+          "definition": "CREATE TRIGGER trigger_topic_alias_category_mapping_reconciliations_updated_at BEFORE UPDATE ON public.topic_alias_category_mapping_reconciliations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
       "uniqueConstraints": {}
@@ -139398,7 +139398,7 @@
           "nullable": false,
           "ordinalPosition": 3
         },
-        "expiration_time_ms": {
+        "expiration_time_milliseconds": {
           "comment": "Subscription expiration time in milliseconds, if provided by the browser.",
           "dataType": "bigint",
           "defaultExpression": null,
@@ -139994,11 +139994,6 @@
     }
   },
   "views": {
-    "media_delivery_registry_current_records": {
-      "comment": "Current authority record joined to its latest immutable delivery transition; no workflow state is stored on the authority parent.",
-      "definition": " SELECT record.delivery_key,\n    record.placement_id,\n    record.placement_revision,\n    record.image_id,\n    change.desired_state,\n    record.generation,\n    record.created_at,\n    record.updated_at,\n    change.id AS latest_change_id,\n    change.change_type::text AS state,\n    change.delivery_attempt_count,\n    change.claimed_at,\n    change.projected_at,\n    change.invalidated_at,\n    change.completed_at,\n    change.failure_message,\n    change.next_attempt_at\n   FROM media_delivery_registry_records record\n     JOIN LATERAL ( SELECT history.id,\n            history.delivery_key,\n            history.generation,\n            history.change_type,\n            history.desired_state,\n            history.changed_by_id,\n            history.delivery_attempt_count,\n            history.claimed_at,\n            history.projected_at,\n            history.invalidated_at,\n            history.completed_at,\n            history.failure_message,\n            history.next_attempt_at,\n            history.created_at\n           FROM media_delivery_registry_changes history\n          WHERE history.delivery_key = record.delivery_key AND history.generation = record.generation\n          ORDER BY history.id DESC\n         LIMIT 1) change ON true;",
-      "materialized": false
-    },
     "mv_rss_feed_crawl_tiers": {
       "comment": "Precomputed crawl_score and crawl_tier per enabled RSS feed. Refreshed nightly by the psql refreshMaterializedView job (refresh-rss-feed-crawl-tiers). Tier percentile thresholds (0.1%/1%/5%/20%) and score formula (log1p(weighted followers) + votes_score_net) are baked into this SQL. Unique follower demand weights are free=1, Plus=2, Pro=3, based on current active or past-due memberships with expires_at null or future. Unique index enables CONCURRENTLY refresh.",
       "definition": " WITH canonical_follows AS (\n         SELECT COALESCE(rf.canonical_rss_feed_id, rf.id) AS rss_feed_id,\n            f.subject_id AS user_id\n           FROM relation__user__follow__rss_feed f\n             JOIN rss_feeds rf ON rf.id = f.object_id\n          WHERE f.deleted_at IS NULL\n          GROUP BY (COALESCE(rf.canonical_rss_feed_id, rf.id)), f.subject_id\n        ), active_paid_memberships AS (\n         SELECT view_current_paid_memberships.user_id,\n            view_current_paid_memberships.plan\n           FROM view_current_paid_memberships\n        ), follow_counts AS (\n         SELECT cf.rss_feed_id,\n            sum(\n                CASE apm.plan\n                    WHEN 'plus'::membership_plan_slugs THEN 2\n                    WHEN 'pro'::membership_plan_slugs THEN 3\n                    ELSE 1\n                END)::integer AS weighted_follower_count\n           FROM canonical_follows cf\n             LEFT JOIN active_paid_memberships apm ON apm.user_id = cf.user_id\n          GROUP BY cf.rss_feed_id\n        ), scored AS (\n         SELECT rf.id AS rss_feed_id,\n            ln(1::double precision + COALESCE(fc.weighted_follower_count, 0)::double precision) + COALESCE(t.votes_score_net, 0::double precision) AS crawl_score\n           FROM rss_feeds rf\n             JOIN topics t ON t.id = rf.topic_id\n             LEFT JOIN follow_counts fc ON fc.rss_feed_id = rf.id\n          WHERE rf.deleted_at IS NULL AND rf.is_enabled = true\n        ), ranked AS (\n         SELECT scored.rss_feed_id,\n            scored.crawl_score,\n            cume_dist() OVER (ORDER BY scored.crawl_score DESC) AS pct_rank\n           FROM scored\n        )\n SELECT rss_feed_id,\n    crawl_score,\n        CASE\n            WHEN pct_rank <= 0.001::double precision THEN 1\n            WHEN pct_rank <= 0.01::double precision THEN 2\n            WHEN pct_rank <= 0.05::double precision THEN 3\n            WHEN pct_rank <= 0.20::double precision THEN 4\n            ELSE 5\n        END::smallint AS crawl_tier\n   FROM ranked;",
@@ -140008,11 +140003,6 @@
       "comment": "Rolling 30-day top-hashtag recommendations from public posts and discoverable RSS items. Refreshes are debounce-enqueued from content, moderation, and topic lifecycle events and hourly as a safety net.",
       "definition": " WITH eligible_post_hashtags AS (\n         SELECT source.topic_alias_id,\n            source.authored_token,\n            source.post_id AS content_id,\n            'post'::text AS content_kind,\n            p.created_at AS content_published_at,\n            'user:'::text || source.contributor_user_id::text AS contributor_user_id\n           FROM post_topic_alias_sources source\n             JOIN posts p ON p.id = source.post_id\n             JOIN view_public_post_eligibility eligibility ON eligibility.post_id = p.id\n             JOIN relation__post__category__topic_alias relation ON relation.subject_id = source.post_id AND relation.object_id = source.topic_alias_id AND relation.deleted_at IS NULL AND relation.votes_score_net > 0::double precision\n          WHERE p.post_type <> 'topic_recommendation'::post_types AND (EXISTS ( SELECT 1\n                   FROM users contributor\n                  WHERE contributor.id = source.contributor_user_id AND contributor.platform_account_kind IS NULL AND contributor.deleted_at IS NULL)) AND (EXISTS ( SELECT 1\n                   FROM users post_creator\n                  WHERE post_creator.id = p.created_by_id AND post_creator.platform_account_kind IS NULL)) AND NOT (EXISTS ( SELECT 1\n                   FROM user_suspensions suspension\n                  WHERE suspension.user_id = source.contributor_user_id AND suspension.lifted_at IS NULL)) AND p.id >= uuidv7('-30 days'::interval)\n        ), eligible_rss_hashtags AS (\n         SELECT category.topic_alias_id,\n            category.category_text AS authored_token,\n            category.rss_feed_item_id AS content_id,\n            'rss_feed_item'::text AS content_kind,\n            item.published_at AS content_published_at,\n            'rss:'::text || identity.url_hostname_id::text AS contributor_user_id\n           FROM rss_feed_item_categories category\n             JOIN rss_feed_items item ON item.id = category.rss_feed_item_id\n             JOIN rss_feed_item_guids identity ON identity.id = item.id\n          WHERE category.topic_alias_id IS NOT NULL AND item.deleted_at IS NULL AND item.published_at >= (CURRENT_TIMESTAMP - '30 days'::interval) AND (EXISTS ( SELECT 1\n                   FROM rss_feed_item_sources source\n                     JOIN rss_feeds feed ON feed.id = source.rss_feed_id\n                     JOIN topics feed_topic ON feed_topic.id = feed.topic_id\n                  WHERE source.rss_feed_item_id = item.id AND feed.deleted_at IS NULL AND feed.is_enabled = true AND feed.is_discoverable = true AND feed_topic.deleted_at IS NULL AND feed_topic.merged_into_topic_id IS NULL)) AND (EXISTS ( SELECT 1\n                   FROM relation__rss_feed_item__category__topic_alias relation\n                  WHERE relation.subject_id = item.id AND relation.object_id = category.topic_alias_id AND relation.deleted_at IS NULL AND relation.votes_score_net > 0::double precision))\n        ), occurrences AS (\n         SELECT eligible_post_hashtags.topic_alias_id,\n            eligible_post_hashtags.authored_token,\n            eligible_post_hashtags.content_id,\n            eligible_post_hashtags.content_kind,\n            eligible_post_hashtags.content_published_at,\n            eligible_post_hashtags.contributor_user_id\n           FROM eligible_post_hashtags\n        UNION ALL\n         SELECT eligible_rss_hashtags.topic_alias_id,\n            eligible_rss_hashtags.authored_token,\n            eligible_rss_hashtags.content_id,\n            eligible_rss_hashtags.content_kind,\n            eligible_rss_hashtags.content_published_at,\n            eligible_rss_hashtags.contributor_user_id\n           FROM eligible_rss_hashtags\n        ), casing_frequency AS (\n         SELECT occurrences.topic_alias_id,\n            occurrences.authored_token,\n            count(DISTINCT (occurrences.content_kind || ':'::text) || occurrences.content_id::text) AS item_count,\n            max(occurrences.content_published_at) AS latest_content_at,\n            (array_agg(occurrences.content_id ORDER BY occurrences.content_published_at DESC, occurrences.content_id DESC))[1] AS latest_content_id\n           FROM occurrences\n          GROUP BY occurrences.topic_alias_id, occurrences.authored_token\n        ), casing AS (\n         SELECT DISTINCT ON (casing_frequency.topic_alias_id) casing_frequency.topic_alias_id,\n            casing_frequency.authored_token AS display_hashtag\n           FROM casing_frequency\n          ORDER BY casing_frequency.topic_alias_id, casing_frequency.item_count DESC, casing_frequency.latest_content_at DESC, casing_frequency.latest_content_id DESC, casing_frequency.authored_token\n        ), aggregate AS (\n         SELECT occurrences.topic_alias_id,\n            count(DISTINCT (occurrences.content_kind || ':'::text) || occurrences.content_id::text) AS item_count,\n            count(DISTINCT occurrences.contributor_user_id) AS contributor_count,\n            max(occurrences.content_published_at) AS latest_content_at,\n            (array_agg(occurrences.content_id ORDER BY occurrences.content_published_at DESC, occurrences.content_id DESC))[1] AS latest_content_id\n           FROM occurrences\n          GROUP BY occurrences.topic_alias_id\n        )\n SELECT aggregate.topic_alias_id,\n    casing.display_hashtag,\n    aggregate.item_count,\n    aggregate.contributor_count,\n    aggregate.latest_content_at,\n    aggregate.latest_content_id\n   FROM aggregate\n     JOIN casing USING (topic_alias_id)\n  WHERE aggregate.contributor_count >= 3;",
       "materialized": true
-    },
-    "oauth_authorization_current_records": {
-      "comment": "Current OAuth lifecycle and active exchange projected from timestamp facts and immutable exchange history; outer row restrictions reach the authorization directly.",
-      "definition": " SELECT id,\n    provider,\n    purpose,\n    callback_mode,\n        CASE\n            WHEN status = 'callback_received'::oauth_authorization_statuses AND exchange_claim_id IS NOT NULL AND (EXISTS ( SELECT 1\n               FROM oauth_authorization_exchange_attempts attempt\n              WHERE attempt.oauth_authorization_id = flow.id AND attempt.exchange_claim_id = flow.exchange_claim_id AND NOT (EXISTS ( SELECT 1\n                       FROM oauth_authorization_exchange_attempt_results result\n                      WHERE result.oauth_authorization_exchange_attempt_id = attempt.id)))) THEN 'exchanging'::oauth_authorization_statuses\n            ELSE status\n        END AS status,\n    initiating_user_id,\n    initiating_device_id,\n    initiating_session_id,\n    redirect_uri,\n    state_hash,\n    pkce_verifier_ciphertext,\n    completion_proof_challenge,\n    callback_code_ciphertext,\n    callback_error,\n    completion_token_hash,\n    completion_token_ciphertext,\n    facebook_user_id,\n    x_user_id,\n    github_user_id,\n    result_kind,\n    result_user_id,\n    result_device_id,\n    result_session_id,\n    login_attempt_id,\n    exchange_claim_id,\n    expires_at,\n    callback_received_at,\n    ( SELECT attempt.started_at\n           FROM oauth_authorization_exchange_attempts attempt\n          WHERE attempt.oauth_authorization_id = flow.id\n          ORDER BY attempt.attempt_number DESC\n         LIMIT 1) AS exchange_started_at,\n    completion_ready_at,\n    completed_at,\n    created_at,\n    updated_at,\n    rejected_at,\n    expired_at,\n    COALESCE((( SELECT max(attempt.attempt_number) AS max\n           FROM oauth_authorization_exchange_attempts attempt\n          WHERE attempt.oauth_authorization_id = flow.id))::integer, 0)::smallint AS exchange_attempts\n   FROM oauth_authorizations flow;",
-      "materialized": false
     },
     "view_community_list_items": {
       "comment": "Community list content projection; callers enforce list visibility and row access.",
@@ -140044,9 +140034,19 @@
       "definition": " SELECT 'relation__user__category__topic'::elected_entity_relations AS entity_relation,\n    relation__user__category__topic__votes.user_id,\n    relation__user__category__topic__votes.subject_id,\n    relation__user__category__topic__votes.entity_relation_id,\n    relation__user__category__topic__votes.id,\n    relation__user__category__topic__votes.score,\n    relation__user__category__topic__votes.score_is_neutral,\n    relation__user__category__topic__votes.score_is_semantic,\n    relation__user__category__topic__votes.ip_address,\n    relation__user__category__topic__votes.device_id,\n    relation__user__category__topic__votes.session_id,\n    relation__user__category__topic__votes.user_agent_string_id,\n    relation__user__category__topic__votes.created_at\n   FROM relation__user__category__topic__votes\nUNION ALL\n SELECT 'relation__post__category__topic'::elected_entity_relations AS entity_relation,\n    relation__post__category__topic__votes.user_id,\n    relation__post__category__topic__votes.subject_id,\n    relation__post__category__topic__votes.entity_relation_id,\n    relation__post__category__topic__votes.id,\n    relation__post__category__topic__votes.score,\n    relation__post__category__topic__votes.score_is_neutral,\n    relation__post__category__topic__votes.score_is_semantic,\n    relation__post__category__topic__votes.ip_address,\n    relation__post__category__topic__votes.device_id,\n    relation__post__category__topic__votes.session_id,\n    relation__post__category__topic__votes.user_agent_string_id,\n    relation__post__category__topic__votes.created_at\n   FROM relation__post__category__topic__votes\nUNION ALL\n SELECT 'relation__post__category__topic_alias'::elected_entity_relations AS entity_relation,\n    relation__post__category__topic_alias__votes.user_id,\n    relation__post__category__topic_alias__votes.subject_id,\n    relation__post__category__topic_alias__votes.entity_relation_id,\n    relation__post__category__topic_alias__votes.id,\n    relation__post__category__topic_alias__votes.score,\n    relation__post__category__topic_alias__votes.score_is_neutral,\n    relation__post__category__topic_alias__votes.score_is_semantic,\n    relation__post__category__topic_alias__votes.ip_address,\n    relation__post__category__topic_alias__votes.device_id,\n    relation__post__category__topic_alias__votes.session_id,\n    relation__post__category__topic_alias__votes.user_agent_string_id,\n    relation__post__category__topic_alias__votes.created_at\n   FROM relation__post__category__topic_alias__votes\nUNION ALL\n SELECT 'relation__post__related__post'::elected_entity_relations AS entity_relation,\n    relation__post__related__post__votes.user_id,\n    relation__post__related__post__votes.subject_id,\n    relation__post__related__post__votes.entity_relation_id,\n    relation__post__related__post__votes.id,\n    relation__post__related__post__votes.score,\n    relation__post__related__post__votes.score_is_neutral,\n    relation__post__related__post__votes.score_is_semantic,\n    relation__post__related__post__votes.ip_address,\n    relation__post__related__post__votes.device_id,\n    relation__post__related__post__votes.session_id,\n    relation__post__related__post__votes.user_agent_string_id,\n    relation__post__related__post__votes.created_at\n   FROM relation__post__related__post__votes\nUNION ALL\n SELECT 'relation__post__related__url'::elected_entity_relations AS entity_relation,\n    relation__post__related__url__votes.user_id,\n    relation__post__related__url__votes.subject_id,\n    relation__post__related__url__votes.entity_relation_id,\n    relation__post__related__url__votes.id,\n    relation__post__related__url__votes.score,\n    relation__post__related__url__votes.score_is_neutral,\n    relation__post__related__url__votes.score_is_semantic,\n    relation__post__related__url__votes.ip_address,\n    relation__post__related__url__votes.device_id,\n    relation__post__related__url__votes.session_id,\n    relation__post__related__url__votes.user_agent_string_id,\n    relation__post__related__url__votes.created_at\n   FROM relation__post__related__url__votes\nUNION ALL\n SELECT 'relation__topic__related__topic'::elected_entity_relations AS entity_relation,\n    relation__topic__related__topic__votes.user_id,\n    relation__topic__related__topic__votes.subject_id,\n    relation__topic__related__topic__votes.entity_relation_id,\n    relation__topic__related__topic__votes.id,\n    relation__topic__related__topic__votes.score,\n    relation__topic__related__topic__votes.score_is_neutral,\n    relation__topic__related__topic__votes.score_is_semantic,\n    relation__topic__related__topic__votes.ip_address,\n    relation__topic__related__topic__votes.device_id,\n    relation__topic__related__topic__votes.session_id,\n    relation__topic__related__topic__votes.user_agent_string_id,\n    relation__topic__related__topic__votes.created_at\n   FROM relation__topic__related__topic__votes\nUNION ALL\n SELECT 'relation__topic__category__topic'::elected_entity_relations AS entity_relation,\n    relation__topic__category__topic__votes.user_id,\n    relation__topic__category__topic__votes.subject_id,\n    relation__topic__category__topic__votes.entity_relation_id,\n    relation__topic__category__topic__votes.id,\n    relation__topic__category__topic__votes.score,\n    relation__topic__category__topic__votes.score_is_neutral,\n    relation__topic__category__topic__votes.score_is_semantic,\n    relation__topic__category__topic__votes.ip_address,\n    relation__topic__category__topic__votes.device_id,\n    relation__topic__category__topic__votes.session_id,\n    relation__topic__category__topic__votes.user_agent_string_id,\n    relation__topic__category__topic__votes.created_at\n   FROM relation__topic__category__topic__votes\nUNION ALL\n SELECT 'relation__topic__publisher_type__topic'::elected_entity_relations AS entity_relation,\n    relation__topic__publisher_type__topic__votes.user_id,\n    relation__topic__publisher_type__topic__votes.subject_id,\n    relation__topic__publisher_type__topic__votes.entity_relation_id,\n    relation__topic__publisher_type__topic__votes.id,\n    relation__topic__publisher_type__topic__votes.score,\n    relation__topic__publisher_type__topic__votes.score_is_neutral,\n    relation__topic__publisher_type__topic__votes.score_is_semantic,\n    relation__topic__publisher_type__topic__votes.ip_address,\n    relation__topic__publisher_type__topic__votes.device_id,\n    relation__topic__publisher_type__topic__votes.session_id,\n    relation__topic__publisher_type__topic__votes.user_agent_string_id,\n    relation__topic__publisher_type__topic__votes.created_at\n   FROM relation__topic__publisher_type__topic__votes\nUNION ALL\n SELECT 'relation__topic__faq__post'::elected_entity_relations AS entity_relation,\n    relation__topic__faq__post__votes.user_id,\n    relation__topic__faq__post__votes.subject_id,\n    relation__topic__faq__post__votes.entity_relation_id,\n    relation__topic__faq__post__votes.id,\n    relation__topic__faq__post__votes.score,\n    relation__topic__faq__post__votes.score_is_neutral,\n    relation__topic__faq__post__votes.score_is_semantic,\n    relation__topic__faq__post__votes.ip_address,\n    relation__topic__faq__post__votes.device_id,\n    relation__topic__faq__post__votes.session_id,\n    relation__topic__faq__post__votes.user_agent_string_id,\n    relation__topic__faq__post__votes.created_at\n   FROM relation__topic__faq__post__votes\nUNION ALL\n SELECT 'relation__topic__related__post'::elected_entity_relations AS entity_relation,\n    relation__topic__related__post__votes.user_id,\n    relation__topic__related__post__votes.subject_id,\n    relation__topic__related__post__votes.entity_relation_id,\n    relation__topic__related__post__votes.id,\n    relation__topic__related__post__votes.score,\n    relation__topic__related__post__votes.score_is_neutral,\n    relation__topic__related__post__votes.score_is_semantic,\n    relation__topic__related__post__votes.ip_address,\n    relation__topic__related__post__votes.device_id,\n    relation__topic__related__post__votes.session_id,\n    relation__topic__related__post__votes.user_agent_string_id,\n    relation__topic__related__post__votes.created_at\n   FROM relation__topic__related__post__votes\nUNION ALL\n SELECT 'relation__topic__related__url'::elected_entity_relations AS entity_relation,\n    relation__topic__related__url__votes.user_id,\n    relation__topic__related__url__votes.subject_id,\n    relation__topic__related__url__votes.entity_relation_id,\n    relation__topic__related__url__votes.id,\n    relation__topic__related__url__votes.score,\n    relation__topic__related__url__votes.score_is_neutral,\n    relation__topic__related__url__votes.score_is_semantic,\n    relation__topic__related__url__votes.ip_address,\n    relation__topic__related__url__votes.device_id,\n    relation__topic__related__url__votes.session_id,\n    relation__topic__related__url__votes.user_agent_string_id,\n    relation__topic__related__url__votes.created_at\n   FROM relation__topic__related__url__votes\nUNION ALL\n SELECT 'relation__topic__faq__url'::elected_entity_relations AS entity_relation,\n    relation__topic__faq__url__votes.user_id,\n    relation__topic__faq__url__votes.subject_id,\n    relation__topic__faq__url__votes.entity_relation_id,\n    relation__topic__faq__url__votes.id,\n    relation__topic__faq__url__votes.score,\n    relation__topic__faq__url__votes.score_is_neutral,\n    relation__topic__faq__url__votes.score_is_semantic,\n    relation__topic__faq__url__votes.ip_address,\n    relation__topic__faq__url__votes.device_id,\n    relation__topic__faq__url__votes.session_id,\n    relation__topic__faq__url__votes.user_agent_string_id,\n    relation__topic__faq__url__votes.created_at\n   FROM relation__topic__faq__url__votes\nUNION ALL\n SELECT 'relation__topic__guide__url'::elected_entity_relations AS entity_relation,\n    relation__topic__guide__url__votes.user_id,\n    relation__topic__guide__url__votes.subject_id,\n    relation__topic__guide__url__votes.entity_relation_id,\n    relation__topic__guide__url__votes.id,\n    relation__topic__guide__url__votes.score,\n    relation__topic__guide__url__votes.score_is_neutral,\n    relation__topic__guide__url__votes.score_is_semantic,\n    relation__topic__guide__url__votes.ip_address,\n    relation__topic__guide__url__votes.device_id,\n    relation__topic__guide__url__votes.session_id,\n    relation__topic__guide__url__votes.user_agent_string_id,\n    relation__topic__guide__url__votes.created_at\n   FROM relation__topic__guide__url__votes\nUNION ALL\n SELECT 'relation__topic__landing_page__url'::elected_entity_relations AS entity_relation,\n    relation__topic__landing_page__url__votes.user_id,\n    relation__topic__landing_page__url__votes.subject_id,\n    relation__topic__landing_page__url__votes.entity_relation_id,\n    relation__topic__landing_page__url__votes.id,\n    relation__topic__landing_page__url__votes.score,\n    relation__topic__landing_page__url__votes.score_is_neutral,\n    relation__topic__landing_page__url__votes.score_is_semantic,\n    relation__topic__landing_page__url__votes.ip_address,\n    relation__topic__landing_page__url__votes.device_id,\n    relation__topic__landing_page__url__votes.session_id,\n    relation__topic__landing_page__url__votes.user_agent_string_id,\n    relation__topic__landing_page__url__votes.created_at\n   FROM relation__topic__landing_page__url__votes\nUNION ALL\n SELECT 'relation__topic__terms_of_service__url'::elected_entity_relations AS entity_relation,\n    relation__topic__terms_of_service__url__votes.user_id,\n    relation__topic__terms_of_service__url__votes.subject_id,\n    relation__topic__terms_of_service__url__votes.entity_relation_id,\n    relation__topic__terms_of_service__url__votes.id,\n    relation__topic__terms_of_service__url__votes.score,\n    relation__topic__terms_of_service__url__votes.score_is_neutral,\n    relation__topic__terms_of_service__url__votes.score_is_semantic,\n    relation__topic__terms_of_service__url__votes.ip_address,\n    relation__topic__terms_of_service__url__votes.device_id,\n    relation__topic__terms_of_service__url__votes.session_id,\n    relation__topic__terms_of_service__url__votes.user_agent_string_id,\n    relation__topic__terms_of_service__url__votes.created_at\n   FROM relation__topic__terms_of_service__url__votes\nUNION ALL\n SELECT 'relation__rss_feed_item__category__topic'::elected_entity_relations AS entity_relation,\n    relation__rss_feed_item__category__topic__votes.user_id,\n    relation__rss_feed_item__category__topic__votes.subject_id,\n    relation__rss_feed_item__category__topic__votes.entity_relation_id,\n    relation__rss_feed_item__category__topic__votes.id,\n    relation__rss_feed_item__category__topic__votes.score,\n    relation__rss_feed_item__category__topic__votes.score_is_neutral,\n    relation__rss_feed_item__category__topic__votes.score_is_semantic,\n    relation__rss_feed_item__category__topic__votes.ip_address,\n    relation__rss_feed_item__category__topic__votes.device_id,\n    relation__rss_feed_item__category__topic__votes.session_id,\n    relation__rss_feed_item__category__topic__votes.user_agent_string_id,\n    relation__rss_feed_item__category__topic__votes.created_at\n   FROM relation__rss_feed_item__category__topic__votes\nUNION ALL\n SELECT 'relation__rss_feed_item__category__topic_alias'::elected_entity_relations AS entity_relation,\n    relation__rss_feed_item__category__topic_alias__votes.user_id,\n    relation__rss_feed_item__category__topic_alias__votes.subject_id,\n    relation__rss_feed_item__category__topic_alias__votes.entity_relation_id,\n    relation__rss_feed_item__category__topic_alias__votes.id,\n    relation__rss_feed_item__category__topic_alias__votes.score,\n    relation__rss_feed_item__category__topic_alias__votes.score_is_neutral,\n    relation__rss_feed_item__category__topic_alias__votes.score_is_semantic,\n    relation__rss_feed_item__category__topic_alias__votes.ip_address,\n    relation__rss_feed_item__category__topic_alias__votes.device_id,\n    relation__rss_feed_item__category__topic_alias__votes.session_id,\n    relation__rss_feed_item__category__topic_alias__votes.user_agent_string_id,\n    relation__rss_feed_item__category__topic_alias__votes.created_at\n   FROM relation__rss_feed_item__category__topic_alias__votes;",
       "materialized": false
     },
+    "view_media_delivery_registry_current_records": {
+      "comment": "Current authority record joined to its latest immutable delivery transition; no workflow state is stored on the authority parent.",
+      "definition": " SELECT record.delivery_key,\n    record.placement_id,\n    record.placement_revision,\n    record.image_id,\n    change.desired_state,\n    record.generation,\n    record.created_at,\n    record.updated_at,\n    change.id AS latest_change_id,\n    change.change_type::text AS state,\n    change.delivery_attempt_count,\n    change.claimed_at,\n    change.projected_at,\n    change.invalidated_at,\n    change.completed_at,\n    change.failure_message,\n    change.next_attempt_at\n   FROM media_delivery_registry_records record\n     JOIN LATERAL ( SELECT history.id,\n            history.delivery_key,\n            history.generation,\n            history.change_type,\n            history.desired_state,\n            history.changed_by_id,\n            history.delivery_attempt_count,\n            history.claimed_at,\n            history.projected_at,\n            history.invalidated_at,\n            history.completed_at,\n            history.failure_message,\n            history.next_attempt_at,\n            history.created_at\n           FROM media_delivery_registry_changes history\n          WHERE history.delivery_key = record.delivery_key AND history.generation = record.generation\n          ORDER BY history.id DESC\n         LIMIT 1) change ON true;",
+      "materialized": false
+    },
     "view_memberships": {
       "comment": "Membership projection for authorized owner and staff account reads.",
       "definition": " SELECT 'membership'::text AS __entity_type,\n    m.id,\n    m.user_id,\n    p.plan,\n        CASE\n            WHEN m.cancelled_at IS NOT NULL THEN 'cancelled'::text\n            WHEN m.expired_at IS NOT NULL THEN 'expired'::text\n            WHEN source.source_kind = 'family'::membership_source_kinds AND (source_state.cancelled_at IS NOT NULL OR source_state.expired_at IS NOT NULL OR source_state.past_due_at IS NOT NULL OR source_state.paused_at IS NOT NULL OR source_state.effective_at > now() OR source_state.expires_at <= now() OR evidence.verified_at IS NULL OR evidence.rejected_at IS NOT NULL) THEN 'expired'::text\n            WHEN (source.source_kind = ANY (ARRAY['family'::membership_source_kinds, 'admin_grant'::membership_source_kinds])) AND m.expires_at IS NOT NULL AND m.expires_at <= now() THEN 'expired'::text\n            WHEN m.past_due_at IS NOT NULL THEN 'past_due'::text\n            WHEN m.paused_at IS NOT NULL THEN 'paused'::text\n            ELSE 'active'::text\n        END AS status,\n    m.effective_at AS started_at,\n    m.expires_at,\n        CASE\n            WHEN lineage.provider = 'stripe'::membership_provider_kinds AND source.source_kind = 'direct'::membership_source_kinds THEN lineage.provider_lineage_id\n            ELSE NULL::text\n        END AS stripe_subscription_id,\n        CASE\n            WHEN lineage.provider = 'stripe'::membership_provider_kinds AND source.source_kind = 'direct'::membership_source_kinds THEN lineage.provider_account_id\n            ELSE NULL::text\n        END AS stripe_customer_id,\n    membership_grant.granted_by_id,\n    m.cancelled_at,\n    m.expired_at,\n    m.past_due_at,\n    m.paused_at,\n    m.should_cancel_at_period_end,\n    m.latest_change_id,\n    m.created_at,\n    m.updated_at,\n    json_build_object('id', p.id, 'plan', p.plan, 'price',\n        CASE\n            WHEN stripe_mapping.provider_product_id IS NULL THEN NULL::json\n            ELSE json_build_object('amount', stripe_mapping.price_minor_units, 'currency', stripe_mapping.currency_code)\n        END, 'interval', p.billing_interval, 'stripe_price_id', stripe_mapping.provider_product_id, 'retired_at', p.retired_at) AS sku\n   FROM memberships m\n     JOIN membership_products p ON p.id = m.membership_product_id\n     JOIN membership_sources source ON source.id = m.membership_source_id\n     LEFT JOIN membership_source_states source_state ON source_state.membership_source_id = source.id\n     LEFT JOIN membership_provider_observations observation ON observation.id = source_state.membership_provider_observation_id\n     LEFT JOIN membership_provider_evidence_records evidence ON evidence.id = observation.membership_provider_evidence_record_id\n     LEFT JOIN membership_grants membership_grant ON membership_grant.membership_source_id = source.id\n     LEFT JOIN membership_provider_lineages lineage ON lineage.id = source.membership_provider_lineage_id\n     LEFT JOIN LATERAL ( SELECT membership_provider_products.provider_product_id,\n            membership_provider_products.price_minor_units,\n            membership_provider_products.currency_code\n           FROM membership_provider_products\n          WHERE membership_provider_products.membership_product_id = p.id AND membership_provider_products.provider = 'stripe'::membership_provider_kinds AND source.source_kind <> 'admin_grant'::membership_source_kinds AND (source.source_kind = 'direct'::membership_source_kinds AND lineage.provider = 'stripe'::membership_provider_kinds AND membership_provider_products.environment = lineage.environment OR source.source_kind <> 'direct'::membership_source_kinds) AND membership_provider_products.application_id =\n                CASE\n                    WHEN source.source_kind = 'direct'::membership_source_kinds AND lineage.provider = 'stripe'::membership_provider_kinds THEN lineage.application_id\n                    ELSE 'voucha-web'::text\n                END\n          ORDER BY membership_provider_products.id DESC\n         LIMIT 1) stripe_mapping ON true\n  WHERE m.projection_ended_at IS NULL;",
+      "materialized": false
+    },
+    "view_oauth_authorization_current_records": {
+      "comment": "Current OAuth lifecycle and active exchange projected from timestamp facts and immutable exchange history; outer row restrictions reach the authorization directly.",
+      "definition": " SELECT id,\n    provider,\n    purpose,\n    callback_mode,\n        CASE\n            WHEN status = 'callback_received'::oauth_authorization_statuses AND exchange_claim_id IS NOT NULL AND (EXISTS ( SELECT 1\n               FROM oauth_authorization_exchange_attempts attempt\n              WHERE attempt.oauth_authorization_id = flow.id AND attempt.exchange_claim_id = flow.exchange_claim_id AND NOT (EXISTS ( SELECT 1\n                       FROM oauth_authorization_exchange_attempt_results result\n                      WHERE result.oauth_authorization_exchange_attempt_id = attempt.id)))) THEN 'exchanging'::oauth_authorization_statuses\n            ELSE status\n        END AS status,\n    initiating_user_id,\n    initiating_device_id,\n    initiating_session_id,\n    redirect_uri,\n    state_hash,\n    pkce_verifier_ciphertext,\n    completion_proof_challenge,\n    callback_code_ciphertext,\n    callback_error,\n    completion_token_hash,\n    completion_token_ciphertext,\n    facebook_user_id,\n    x_user_id,\n    github_user_id,\n    result_kind,\n    result_user_id,\n    result_device_id,\n    result_session_id,\n    login_attempt_id,\n    exchange_claim_id,\n    expires_at,\n    callback_received_at,\n    ( SELECT attempt.started_at\n           FROM oauth_authorization_exchange_attempts attempt\n          WHERE attempt.oauth_authorization_id = flow.id\n          ORDER BY attempt.attempt_number DESC\n         LIMIT 1) AS exchange_started_at,\n    completion_ready_at,\n    completed_at,\n    created_at,\n    updated_at,\n    rejected_at,\n    expired_at,\n    COALESCE((( SELECT max(attempt.attempt_number) AS max\n           FROM oauth_authorization_exchange_attempts attempt\n          WHERE attempt.oauth_authorization_id = flow.id))::integer, 0)::smallint AS exchange_attempts\n   FROM oauth_authorizations flow;",
       "materialized": false
     },
     "view_post_clearance_status": {

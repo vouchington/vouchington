@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS activitypub_inbox_delivery_storage_counters (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trg_activitypub_inbox_delivery_storage_counters__updated_at
+CREATE OR REPLACE TRIGGER trigger_activitypub_inbox_delivery_storage_counters_updated_at
 BEFORE UPDATE ON activitypub_inbox_delivery_storage_counters
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 

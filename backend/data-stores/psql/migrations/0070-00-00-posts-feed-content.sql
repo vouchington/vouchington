@@ -784,7 +784,7 @@ CREATE TABLE IF NOT EXISTS agent_moderations (
 ) PARTITION BY RANGE (post_id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trg_agent_moderations__updated_at
+CREATE OR REPLACE TRIGGER trigger_agent_moderations_updated_at
 BEFORE UPDATE ON agent_moderations
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 

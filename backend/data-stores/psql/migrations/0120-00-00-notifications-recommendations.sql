@@ -503,7 +503,7 @@ CREATE TABLE IF NOT EXISTS web_push_subscriptions (
   endpoint TEXT NOT NULL CHECK (endpoint LIKE 'https://%'),
   p256dh TEXT NOT NULL CHECK (length(p256dh) BETWEEN 16 AND 512),
   auth TEXT NOT NULL CHECK (length(auth) BETWEEN 8 AND 512),
-  expiration_time_ms BIGINT,
+  expiration_time_milliseconds BIGINT,
   user_agent TEXT NOT NULL DEFAULT '',
 
   last_success_at TIMESTAMPTZ,
@@ -535,7 +535,7 @@ COMMENT ON COLUMN web_push_subscriptions.user_id IS 'The user who registered thi
 COMMENT ON COLUMN web_push_subscriptions.endpoint IS 'The push service endpoint URL (must be HTTPS).';
 COMMENT ON COLUMN web_push_subscriptions.p256dh IS 'Client public key for push message encryption (P-256 ECDH).';
 COMMENT ON COLUMN web_push_subscriptions.auth IS 'Authentication secret for push message encryption.';
-COMMENT ON COLUMN web_push_subscriptions.expiration_time_ms IS 'Subscription expiration time in milliseconds, if provided by the browser.';
+COMMENT ON COLUMN web_push_subscriptions.expiration_time_milliseconds IS 'Subscription expiration time in milliseconds, if provided by the browser.';
 COMMENT ON COLUMN web_push_subscriptions.user_agent IS 'Browser user-agent string at the time of subscription.';
 COMMENT ON COLUMN web_push_subscriptions.last_success_at IS 'When a push was last successfully delivered to this subscription.';
 COMMENT ON COLUMN web_push_subscriptions.last_failure_at IS 'When a push last failed to deliver to this subscription.';

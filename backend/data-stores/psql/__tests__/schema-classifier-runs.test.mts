@@ -251,13 +251,13 @@ describe('classifier run schema', () => {
 
     await expect(findAiUsageRecordById(ledgerId)).resolves.toEqual({
       classifier_run_id: fixture.id,
-      latency_ms: 40,
+      latency_milliseconds: 40,
     })
     await deleteClassifierRunForSchemaTest(fixture.id)
 
     await expect(findAiUsageRecordById(ledgerId)).resolves.toEqual({
       classifier_run_id: null,
-      latency_ms: 40,
+      latency_milliseconds: 40,
     })
   })
 

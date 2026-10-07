@@ -99,7 +99,7 @@ export async function completeLocalTestImagePlacementDeliveryRecord(input: {
   await write(sql`
     /* completeLocalTestImagePlacementDeliveryRecord */
     INSERT INTO media_delivery_registry_changes(delivery_key, generation, change_type, completed_at)
-    SELECT delivery_key, generation, 'completed', CURRENT_TIMESTAMP FROM media_delivery_registry_current_records
+    SELECT delivery_key, generation, 'completed', CURRENT_TIMESTAMP FROM view_media_delivery_registry_current_records
     WHERE delivery_key = ${deliveryKey}
       AND desired_state = 'allow'
   `)

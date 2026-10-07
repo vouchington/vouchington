@@ -55,4 +55,4 @@ _none_
 
 **Triggers:**
 
-- `trg_membership_source_states__updated_at`: `CREATE TRIGGER trg_membership_source_states__updated_at BEFORE UPDATE ON public.membership_source_states FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_membership_source_states_updated_at`: `CREATE TRIGGER trigger_membership_source_states_updated_at BEFORE UPDATE ON public.membership_source_states FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

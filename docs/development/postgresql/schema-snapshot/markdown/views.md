@@ -2,49 +2,6 @@
 
 [Schema index](README.md).
 
-## `media_delivery_registry_current_records`
-
-Current authority record joined to its latest immutable delivery transition; no workflow state is stored on the authority parent.
-
-```sql
- SELECT record.delivery_key,
-    record.placement_id,
-    record.placement_revision,
-    record.image_id,
-    change.desired_state,
-    record.generation,
-    record.created_at,
-    record.updated_at,
-    change.id AS latest_change_id,
-    (change.change_type)::text AS state,
-    change.delivery_attempt_count,
-    change.claimed_at,
-    change.projected_at,
-    change.invalidated_at,
-    change.completed_at,
-    change.failure_message,
-    change.next_attempt_at
-   FROM (media_delivery_registry_records record
-     JOIN LATERAL ( SELECT history.id,
-            history.delivery_key,
-            history.generation,
-            history.change_type,
-            history.desired_state,
-            history.changed_by_id,
-            history.delivery_attempt_count,
-            history.claimed_at,
-            history.projected_at,
-            history.invalidated_at,
-            history.completed_at,
-            history.failure_message,
-            history.next_attempt_at,
-            history.created_at
-           FROM media_delivery_registry_changes history
-          WHERE ((history.delivery_key = record.delivery_key) AND (history.generation = record.generation))
-          ORDER BY history.id DESC
-         LIMIT 1) change ON (true));
-```
-
 ## `mv_rss_feed_crawl_tiers` (materialized)
 
 Precomputed crawl_score and crawl_tier per enabled RSS feed. Refreshed nightly by the psql refreshMaterializedView job (refresh-rss-feed-crawl-tiers). Tier percentile thresholds (0.1%/1%/5%/20%) and score formula (log1p(weighted followers) + votes_score_net) are baked into this SQL. Unique follower demand weights are free=1, Plus=2, Pro=3, based on current active or past-due memberships with expires_at null or future. Unique index enables CONCURRENTLY refresh.
@@ -185,62 +142,6 @@ Rolling 30-day top-hashtag recommendations from public posts and discoverable RS
    FROM (aggregate
      JOIN casing USING (topic_alias_id))
   WHERE (aggregate.contributor_count >= 3);
-```
-
-## `oauth_authorization_current_records`
-
-Current OAuth lifecycle and active exchange projected from timestamp facts and immutable exchange history; outer row restrictions reach the authorization directly.
-
-```sql
- SELECT id,
-    provider,
-    purpose,
-    callback_mode,
-        CASE
-            WHEN ((status = 'callback_received'::oauth_authorization_statuses) AND (exchange_claim_id IS NOT NULL) AND (EXISTS ( SELECT 1
-               FROM oauth_authorization_exchange_attempts attempt
-              WHERE ((attempt.oauth_authorization_id = flow.id) AND (attempt.exchange_claim_id = flow.exchange_claim_id) AND (NOT (EXISTS ( SELECT 1
-                       FROM oauth_authorization_exchange_attempt_results result
-                      WHERE (result.oauth_authorization_exchange_attempt_id = attempt.id)))))))) THEN 'exchanging'::oauth_authorization_statuses
-            ELSE status
-        END AS status,
-    initiating_user_id,
-    initiating_device_id,
-    initiating_session_id,
-    redirect_uri,
-    state_hash,
-    pkce_verifier_ciphertext,
-    completion_proof_challenge,
-    callback_code_ciphertext,
-    callback_error,
-    completion_token_hash,
-    completion_token_ciphertext,
-    facebook_user_id,
-    x_user_id,
-    github_user_id,
-    result_kind,
-    result_user_id,
-    result_device_id,
-    result_session_id,
-    login_attempt_id,
-    exchange_claim_id,
-    expires_at,
-    callback_received_at,
-    ( SELECT attempt.started_at
-           FROM oauth_authorization_exchange_attempts attempt
-          WHERE (attempt.oauth_authorization_id = flow.id)
-          ORDER BY attempt.attempt_number DESC
-         LIMIT 1) AS exchange_started_at,
-    completion_ready_at,
-    completed_at,
-    created_at,
-    updated_at,
-    rejected_at,
-    expired_at,
-    (COALESCE((( SELECT max(attempt.attempt_number) AS max
-           FROM oauth_authorization_exchange_attempts attempt
-          WHERE (attempt.oauth_authorization_id = flow.id)))::integer, 0))::smallint AS exchange_attempts
-   FROM oauth_authorizations flow;
 ```
 
 ## `view_community_list_items`
@@ -713,6 +614,49 @@ UNION ALL
    FROM relation__rss_feed_item__category__topic_alias__votes;
 ```
 
+## `view_media_delivery_registry_current_records`
+
+Current authority record joined to its latest immutable delivery transition; no workflow state is stored on the authority parent.
+
+```sql
+ SELECT record.delivery_key,
+    record.placement_id,
+    record.placement_revision,
+    record.image_id,
+    change.desired_state,
+    record.generation,
+    record.created_at,
+    record.updated_at,
+    change.id AS latest_change_id,
+    (change.change_type)::text AS state,
+    change.delivery_attempt_count,
+    change.claimed_at,
+    change.projected_at,
+    change.invalidated_at,
+    change.completed_at,
+    change.failure_message,
+    change.next_attempt_at
+   FROM (media_delivery_registry_records record
+     JOIN LATERAL ( SELECT history.id,
+            history.delivery_key,
+            history.generation,
+            history.change_type,
+            history.desired_state,
+            history.changed_by_id,
+            history.delivery_attempt_count,
+            history.claimed_at,
+            history.projected_at,
+            history.invalidated_at,
+            history.completed_at,
+            history.failure_message,
+            history.next_attempt_at,
+            history.created_at
+           FROM media_delivery_registry_changes history
+          WHERE ((history.delivery_key = record.delivery_key) AND (history.generation = record.generation))
+          ORDER BY history.id DESC
+         LIMIT 1) change ON (true));
+```
+
 ## `view_memberships`
 
 Membership projection for authorized owner and staff account reads.
@@ -775,6 +719,62 @@ Membership projection for authorized owner and staff account reads.
           ORDER BY membership_provider_products.id DESC
          LIMIT 1) stripe_mapping ON (true))
   WHERE (m.projection_ended_at IS NULL);
+```
+
+## `view_oauth_authorization_current_records`
+
+Current OAuth lifecycle and active exchange projected from timestamp facts and immutable exchange history; outer row restrictions reach the authorization directly.
+
+```sql
+ SELECT id,
+    provider,
+    purpose,
+    callback_mode,
+        CASE
+            WHEN ((status = 'callback_received'::oauth_authorization_statuses) AND (exchange_claim_id IS NOT NULL) AND (EXISTS ( SELECT 1
+               FROM oauth_authorization_exchange_attempts attempt
+              WHERE ((attempt.oauth_authorization_id = flow.id) AND (attempt.exchange_claim_id = flow.exchange_claim_id) AND (NOT (EXISTS ( SELECT 1
+                       FROM oauth_authorization_exchange_attempt_results result
+                      WHERE (result.oauth_authorization_exchange_attempt_id = attempt.id)))))))) THEN 'exchanging'::oauth_authorization_statuses
+            ELSE status
+        END AS status,
+    initiating_user_id,
+    initiating_device_id,
+    initiating_session_id,
+    redirect_uri,
+    state_hash,
+    pkce_verifier_ciphertext,
+    completion_proof_challenge,
+    callback_code_ciphertext,
+    callback_error,
+    completion_token_hash,
+    completion_token_ciphertext,
+    facebook_user_id,
+    x_user_id,
+    github_user_id,
+    result_kind,
+    result_user_id,
+    result_device_id,
+    result_session_id,
+    login_attempt_id,
+    exchange_claim_id,
+    expires_at,
+    callback_received_at,
+    ( SELECT attempt.started_at
+           FROM oauth_authorization_exchange_attempts attempt
+          WHERE (attempt.oauth_authorization_id = flow.id)
+          ORDER BY attempt.attempt_number DESC
+         LIMIT 1) AS exchange_started_at,
+    completion_ready_at,
+    completed_at,
+    created_at,
+    updated_at,
+    rejected_at,
+    expired_at,
+    (COALESCE((( SELECT max(attempt.attempt_number) AS max
+           FROM oauth_authorization_exchange_attempts attempt
+          WHERE (attempt.oauth_authorization_id = flow.id)))::integer, 0))::smallint AS exchange_attempts
+   FROM oauth_authorizations flow;
 ```
 
 ## `view_post_clearance_status`

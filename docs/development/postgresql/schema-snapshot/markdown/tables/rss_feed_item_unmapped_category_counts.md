@@ -30,4 +30,4 @@ _none_
 
 **Triggers:**
 
-- `trg_rss_feed_item_unmapped_category_counts__updated_at`: `CREATE TRIGGER trg_rss_feed_item_unmapped_category_counts__updated_at BEFORE UPDATE ON public.rss_feed_item_unmapped_category_counts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_rss_feed_item_unmapped_category_counts_updated_at`: `CREATE TRIGGER trigger_rss_feed_item_unmapped_category_counts_updated_at BEFORE UPDATE ON public.rss_feed_item_unmapped_category_counts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

@@ -58,7 +58,7 @@ export async function receiveOAuthAuthorizationCallback(options: {
   async function receiveCallbackInTransaction(): Promise<ReceiveOAuthAuthorizationCallbackTransactionResult> {
     const { rows } = await query(
       `/* receiveOAuthAuthorizationCallback */ SELECT *
-       FROM oauth_authorization_current_records
+       FROM view_oauth_authorization_current_records
        WHERE state_hash = $1 AND provider = $2
        FOR UPDATE`,
       [hashOAuthAuthorizationState(options.state), options.provider],

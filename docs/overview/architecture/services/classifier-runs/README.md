@@ -244,7 +244,7 @@ the error message, which a client factory may build from its configuration.
 
 `readClassifierUsageReport(window)` is the one cost, latency and fan-out read for every fixed
 classifier. It adds no metrics path: provider figures come from the
-[ai-usage ledger](../ai-usage/README.md), whose rows carry `classifier_run_id` and `latency_ms`
+[ai-usage ledger](../ai-usage/README.md), whose rows carry `classifier_run_id` and `latency_milliseconds`
 (set by the structured-decision billing hooks, so a billed response that failed strict decoding is
 counted). For each run reserved in a half-open window it returns the classifier, primitive,
 provider, model, prompt version, scope, batch id, shard count, retained candidate count, outcome,

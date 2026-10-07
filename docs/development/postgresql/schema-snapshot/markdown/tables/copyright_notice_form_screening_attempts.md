@@ -51,5 +51,5 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_copyright_form_screening_work`: `CREATE TRIGGER trigger_copyright_form_screening_work AFTER INSERT OR UPDATE ON public.copyright_notice_form_screening_attempts FOR EACH ROW EXECUTE FUNCTION fn_schedule_copyright_form_screening_work()`
+- `trigger_copyright_form_screening_work`: `CREATE TRIGGER trigger_copyright_form_screening_work AFTER INSERT OR UPDATE ON public.copyright_notice_form_screening_attempts FOR EACH ROW EXECUTE FUNCTION fn_project_copyright_form_screening_work()`
 - `trigger_copyright_screening_attempts_monotonic`: `CREATE TRIGGER trigger_copyright_screening_attempts_monotonic BEFORE DELETE OR UPDATE ON public.copyright_notice_form_screening_attempts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_screening_attempt_rewind()`

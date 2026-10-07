@@ -2575,6 +2575,109 @@ rules:
         - { table: user_vouch_votes, column: created_at, sourceColumn: id }
       unanalyzableSql: ignore
 
+  - name: PostgreSQL object names follow the relational naming contract
+    rule: postgres-object-naming
+    scope: repository
+    options:
+      schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
+      patterns:
+        index: '^idx_{table}__[a-z0-9_]+$'
+        uniqueIndex: '^(idx|uq)_{table}__[a-z0-9_]+$'
+        trigger: '^trigger_[a-z0-9_]+$'
+        function: '^fn_[a-z0-9_]+$'
+        triggerFunction: '^fn_(reject|update|project|create|lock|register|ensure)_[a-z0-9_]+$'
+        view: '^view_[a-z0-9_]+$'
+        materializedView: '^mv_[a-z0-9_]+$'
+        table: '^[a-z][a-z0-9_]*$'
+        column: '^[a-z][a-z0-9_]*$'
+        enum: '^[a-z][a-z0-9_]*$'
+      checkConstraintBackedIndexes: false
+      tableMinWords: 2
+      abbreviations: { enabled: true, minLetters: 3 }
+      plural:
+        enabled: true
+        objects: [table, enum]
+        uncountable: [data, metadata, feedback, media, evidence, information]
+        # Preserve provider acronyms; ses denial awaits jonathanong/no-mistakes#1575.
+        nonPluralTokens:
+          [rewards, status, analysis, sms, news, series, bonus, alias, census, ses, itunes]
+        ignorePatterns: ['^(retained_)?relation__']
+      deniedTokens:
+        - { token: ap, replacement: activitypub }
+        - { token: og, replacement: open_graph }
+        - { token: mod, replacement: moderator }
+        - { token: mipr, replacement: membership_ineligible_purchase_reversal }
+        - { token: op, replacement: operation }
+        - { token: ack, replacement: acknowledgment }
+        - { token: pct, replacement: percent }
+        - { token: ms, replacement: milliseconds }
+        - { token: hn, replacement: hacker_news }
+        - { token: lang, replacement: language }
+        - { token: config, replacement: configuration }
+        - { token: cfg, replacement: configuration }
+        - { token: rel, replacement: relation }
+        - { token: uid, replacement: user_id }
+        - { token: pos, replacement: positive }
+        - { token: pub, replacement: published }
+        - { token: conv, replacement: conversation }
+        - { token: msg, replacement: message }
+        - { token: uniq, replacement: unique }
+        - { token: fk, replacement: foreign_key }
+      spelling: { acknowledgement: acknowledgment, blacklist: blocklist, whitelist: allowlist }
+      doubleUnderscore:
+        allowPattern: '^(retained_relation__[a-z0-9]+(_[a-z0-9]+)*__[a-z0-9]+(_[a-z0-9]+)*__[a-z0-9]+(_[a-z0-9]+)*|relation__[a-z0-9]+(_[a-z0-9]+)*__[a-z0-9]+(_[a-z0-9]+)*__[a-z0-9]+(_[a-z0-9]+)*(__votes)?)$'
+      allow:
+        - {
+            object: table:post_publication_dirty_work,
+            reason: 'Collective dirty work for publication projections; the row is the work, per decision 16.',
+          }
+        - { object: table:agents, reason: 'Core one-word entity.' }
+        - { object: table:classifiers, reason: 'Core one-word entity.' }
+        - { object: table:communities, reason: 'Core one-word entity.' }
+        - { object: table:conversations, reason: 'Core one-word entity.' }
+        - { object: table:countries, reason: 'Core one-word entity.' }
+        - { object: table:crawls, reason: 'Core one-word entity.' }
+        - { object: table:currencies, reason: 'Core one-word entity.' }
+        - { object: table:households, reason: 'Core one-word entity.' }
+        - { object: table:images, reason: 'Core one-word entity.' }
+        - { object: table:individuals, reason: 'Core one-word entity.' }
+        - { object: table:memberships, reason: 'Core one-word entity.' }
+        - { object: table:notifications, reason: 'Core one-word entity.' }
+        - { object: table:posts, reason: 'Core one-word entity.' }
+        - { object: table:stories, reason: 'Core one-word entity.' }
+        - { object: table:topics, reason: 'Core one-word entity.' }
+        - { object: table:urls, reason: 'Core one-word entity.' }
+        - { object: table:users, reason: 'Core one-word entity.' }
+        - { object: table:migrations, reason: 'Migration ledger.' }
+        - {
+            object: table:copyright_notice_submission_guidance,
+            reason: 'Singular guidance is one submission document.',
+          }
+        - {
+            object: column:url_hostnames.should_follow_link_rel,
+            reason: 'rel is the HTML attribute name.',
+          }
+
+  - name: PostgreSQL identifiers fit PostgreSQL limits
+    rule: postgres-identifier-length
+    scope: repository
+    options:
+      sqlInclude:
+        - backend/data-stores/psql/migrations/**/*.sql
+        - backend/data-stores/psql/views/**/*.sql
+        - backend/data-stores/psql/config-driven/**/*.sql
+      maxBytes: 63
+
+  - name: PostgreSQL functions do not duplicate bodies
+    rule: postgres-duplicate-function-body
+    scope: repository
+    options:
+      schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
+      minClusterSize: 2
+      minTokens: 1
+      normalizeIdentifiers: true
+      normalizeRaise: true
+
   - name: topics queries keep the active-topic filter
     rule: postgres-required-predicates
     scope: repository

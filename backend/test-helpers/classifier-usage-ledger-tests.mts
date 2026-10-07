@@ -40,7 +40,7 @@ export function describeClassifierUsageLedger(driver: ClassifierFailureDriver): 
         expect(await listAiUsageRecordsForClassifierRun(run.runId)).toEqual([
           expect.objectContaining({
             classifier_run_id: run.runId,
-            latency_ms: LATENCY_MS,
+            latency_milliseconds: LATENCY_MS,
             ...BILLED_ROW,
           }),
         ])
@@ -57,7 +57,7 @@ export function describeClassifierUsageLedger(driver: ClassifierFailureDriver): 
 
         expect(await run.facts()).toMatchObject({ provider_attempts_started: 1 })
         expect(await listAiUsageRecordsForClassifierRun(run.runId)).toEqual([
-          expect.objectContaining({ latency_ms: LATENCY_MS, ...BILLED_ROW }),
+          expect.objectContaining({ latency_milliseconds: LATENCY_MS, ...BILLED_ROW }),
         ])
       })
     })
@@ -89,7 +89,7 @@ export function describeClassifierUsageLedger(driver: ClassifierFailureDriver): 
 
         expect(await run.facts()).toMatchObject({ provider_attempts_started: 2 })
         expect(await listAiUsageRecordsForClassifierRun(run.runId)).toEqual([
-          expect.objectContaining({ latency_ms: LATENCY_MS, ...BILLED_ROW }),
+          expect.objectContaining({ latency_milliseconds: LATENCY_MS, ...BILLED_ROW }),
         ])
       })
     })

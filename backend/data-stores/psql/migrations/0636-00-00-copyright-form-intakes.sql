@@ -99,9 +99,11 @@ CREATE TABLE copyright_notice_form_screening_work_items (
   CHECK ((lease_token IS NULL AND leased_at IS NULL AND lease_expires_at IS NULL)
     OR (lease_token IS NOT NULL AND leased_at IS NOT NULL AND lease_expires_at > leased_at))
 );
-CREATE INDEX idx_copyright_form_screening_work__available
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_copyright_notice_form_screening_work_items__available
   ON copyright_notice_form_screening_work_items(available_at, copyright_notice_form_intake_id) WHERE lease_token IS NULL;
-CREATE INDEX idx_copyright_form_screening_work__expired
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_copyright_notice_form_screening_work_items__expired
   ON copyright_notice_form_screening_work_items(lease_expires_at, copyright_notice_form_intake_id) WHERE lease_token IS NOT NULL;
 COMMENT ON TABLE copyright_notice_form_screening_work_items IS 'One current screening task; terminal attempts delete work while numbered screening history remains.';
 COMMENT ON COLUMN copyright_notice_form_screening_work_items.copyright_notice_form_intake_id IS 'Concrete intake whose current screening is executed.';
@@ -111,7 +113,8 @@ COMMENT ON COLUMN copyright_notice_form_screening_work_items.leased_at IS 'Datab
 COMMENT ON COLUMN copyright_notice_form_screening_work_items.lease_expires_at IS 'Deadline after which current output cannot finalize.';
 COMMENT ON COLUMN copyright_notice_form_screening_work_items.attempt_count IS 'Claims of this exact numbered attempt; retries create a new immutable attempt.';
 COMMENT ON COLUMN copyright_notice_form_screening_work_items.available_at IS 'Earliest idle screening claim time.';
-CREATE FUNCTION fn_schedule_copyright_form_screening_work() RETURNS trigger LANGUAGE plpgsql AS $$
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE FUNCTION fn_project_copyright_form_screening_work() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'INSERT' AND NEW.completed_at IS NULL AND NEW.failed_at IS NULL THEN
     INSERT INTO copyright_notice_form_screening_work_items(copyright_notice_form_intake_id, attempt_id)
@@ -125,7 +128,7 @@ BEGIN
 END;
 $$;
 CREATE TRIGGER trigger_copyright_form_screening_work AFTER INSERT OR UPDATE ON copyright_notice_form_screening_attempts
-FOR EACH ROW EXECUTE FUNCTION fn_schedule_copyright_form_screening_work();
+FOR EACH ROW EXECUTE FUNCTION fn_project_copyright_form_screening_work();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_form_intake_reviews (

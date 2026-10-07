@@ -32,11 +32,11 @@ _none_
 
 **Indexes:**
 
-- `idx_membership_operation_work_items__available`: `CREATE INDEX idx_membership_operation_work_items__available ON public.membership_operation_execution_work_items USING btree (available_at, membership_operation_id) WHERE (lease_token IS NULL)`
-- `idx_membership_operation_work_items__expired`: `CREATE INDEX idx_membership_operation_work_items__expired ON public.membership_operation_execution_work_items USING btree (lease_expires_at, membership_operation_id) WHERE (lease_token IS NOT NULL)`
-- `idx_membership_operation_work_items__lease_token`: `CREATE UNIQUE INDEX idx_membership_operation_work_items__lease_token ON public.membership_operation_execution_work_items USING btree (lease_token) WHERE (lease_token IS NOT NULL)`
+- `idx_membership_operation_execution_work_items__available`: `CREATE INDEX idx_membership_operation_execution_work_items__available ON public.membership_operation_execution_work_items USING btree (available_at, membership_operation_id) WHERE (lease_token IS NULL)`
+- `idx_membership_operation_execution_work_items__expired`: `CREATE INDEX idx_membership_operation_execution_work_items__expired ON public.membership_operation_execution_work_items USING btree (lease_expires_at, membership_operation_id) WHERE (lease_token IS NOT NULL)`
+- `idx_membership_operation_execution_work_items__lease_token`: `CREATE UNIQUE INDEX idx_membership_operation_execution_work_items__lease_token ON public.membership_operation_execution_work_items USING btree (lease_token) WHERE (lease_token IS NOT NULL)`
 - `membership_operation_execution_work_items_pkey`: `CREATE UNIQUE INDEX membership_operation_execution_work_items_pkey ON public.membership_operation_execution_work_items USING btree (membership_operation_id)`
 
 **Triggers:**
 
-- `trigger_membership_operation_work_items_guard`: `CREATE TRIGGER trigger_membership_operation_work_items_guard BEFORE UPDATE ON public.membership_operation_execution_work_items FOR EACH ROW EXECUTE FUNCTION fn_guard_membership_operation_work_lease()`
+- `trigger_membership_operation_work_items_guard`: `CREATE TRIGGER trigger_membership_operation_work_items_guard BEFORE UPDATE ON public.membership_operation_execution_work_items FOR EACH ROW EXECUTE FUNCTION fn_reject_invalid_membership_operation_work_lease()`

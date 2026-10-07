@@ -33,8 +33,8 @@ _none_
 
 **Indexes:**
 
-- `idx_media_delivery_projection_work__available`: `CREATE INDEX idx_media_delivery_projection_work__available ON public.media_delivery_registry_projection_work_items USING btree (available_at, delivery_key) WHERE (lease_token IS NULL)`
-- `idx_media_delivery_projection_work__expired`: `CREATE INDEX idx_media_delivery_projection_work__expired ON public.media_delivery_registry_projection_work_items USING btree (lease_expires_at, delivery_key) WHERE (lease_token IS NOT NULL)`
+- `idx_media_delivery_registry_projection_work_items__available`: `CREATE INDEX idx_media_delivery_registry_projection_work_items__available ON public.media_delivery_registry_projection_work_items USING btree (available_at, delivery_key) WHERE (lease_token IS NULL)`
+- `idx_media_delivery_registry_projection_work_items__expired`: `CREATE INDEX idx_media_delivery_registry_projection_work_items__expired ON public.media_delivery_registry_projection_work_items USING btree (lease_expires_at, delivery_key) WHERE (lease_token IS NOT NULL)`
 - `media_delivery_registry_projection_work_items_pkey`: `CREATE UNIQUE INDEX media_delivery_registry_projection_work_items_pkey ON public.media_delivery_registry_projection_work_items USING btree (delivery_key)`
 
 **Triggers:**

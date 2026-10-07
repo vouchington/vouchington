@@ -133,7 +133,7 @@ export const EXTRA_UNBOUNDED_TABLES = [
   'membership_automatic_refund_receipts',
   'membership_grant_activation_periods',
   'membership_grants',
-  'membership_google_play_acknowledgements',
+  'membership_google_play_acknowledgments',
   'membership_google_play_purchase_tokens',
   'membership_microsoft_store_credentials',
   'membership_ineligible_purchase_reversal_case_operations',

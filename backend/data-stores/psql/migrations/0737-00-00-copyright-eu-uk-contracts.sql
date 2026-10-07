@@ -722,7 +722,7 @@ END;
 $$;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE FUNCTION fn_guard_copyright_territorial_decision()
+CREATE OR REPLACE FUNCTION fn_reject_invalid_copyright_territorial_decision()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF NEW.outcome = 'restrict' AND NOT EXISTS (
@@ -761,7 +761,8 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION fn_guard_copyright_eu_dispute_settlement_outcome()
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE FUNCTION fn_reject_invalid_copyright_eu_dispute_settlement_outcome()
 RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
   referral_time timestamptz;
@@ -812,7 +813,7 @@ CREATE TRIGGER trigger_copyright_territorial_decisions_immutable
   FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 CREATE TRIGGER trigger_copyright_territorial_decisions_scope
   BEFORE INSERT ON copyright_territorial_decisions
-  FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_territorial_decision();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_invalid_copyright_territorial_decision();
 CREATE TRIGGER trigger_copyright_territorial_redress_requests_immutable
   BEFORE UPDATE OR DELETE ON copyright_territorial_redress_requests
   FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
@@ -828,7 +829,7 @@ CREATE TRIGGER trigger_copyright_eu_dispute_settlement_referrals_immutable
   FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation('referred_by_id', 'recorded_by_id');
 CREATE TRIGGER trigger_copyright_eu_dispute_settlement_outcomes_guard
   BEFORE INSERT OR UPDATE OR DELETE ON copyright_eu_dispute_settlement_outcomes
-  FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_eu_dispute_settlement_outcome();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_invalid_copyright_eu_dispute_settlement_outcome();
 CREATE TRIGGER trigger_copyright_territorial_escalations_source
   BEFORE INSERT ON copyright_territorial_escalations
   FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_escalation();

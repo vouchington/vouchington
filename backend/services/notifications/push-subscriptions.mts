@@ -26,7 +26,7 @@ export async function listWebPushSubscriptionsPage(
     : null
   const query = sql`/* listWebPushSubscriptions */
     SELECT subscription.id, subscription.user_id, subscription.endpoint, subscription.p256dh,
-      subscription.auth, subscription.expiration_time_ms::text AS expiration_time_ms,
+      subscription.auth, subscription.expiration_time_milliseconds::text AS expiration_time_milliseconds,
       subscription.user_agent, subscription.last_success_at, subscription.last_failure_at,
       subscription.created_at, subscription.updated_at
     FROM web_push_subscriptions subscription
@@ -80,12 +80,12 @@ export async function upsertWebPushSubscription(
       AND subscription.deleted_at IS NULL`)
   const { rows } = await transaction(sql`/* createWebPushSubscriptionGeneration */
     INSERT INTO web_push_subscriptions (
-      user_id, endpoint, p256dh, auth, expiration_time_ms, user_agent
+      user_id, endpoint, p256dh, auth, expiration_time_milliseconds, user_agent
     ) VALUES (
       ${input.userId}, ${input.endpoint}, ${input.p256dh}, ${input.auth},
       ${input.expirationTimeMs ?? null}, ${input.userAgent ?? ''}
     ) RETURNING id, user_id, endpoint, p256dh, auth,
-      expiration_time_ms::text AS expiration_time_ms, user_agent, last_success_at,
+      expiration_time_milliseconds::text AS expiration_time_milliseconds, user_agent, last_success_at,
       last_failure_at, created_at, updated_at`)
   const subscription = rows[0] as Record<string, unknown>
   await transaction(sql`/* claimWebPushEndpointOwner */

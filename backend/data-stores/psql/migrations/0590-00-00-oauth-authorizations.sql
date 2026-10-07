@@ -235,7 +235,8 @@ COMMENT ON COLUMN oauth_authorization_exchange_attempt_results.rejected_at IS 'W
 COMMENT ON COLUMN oauth_authorization_exchange_attempt_results.expired_at IS 'When expiry ended this exchange.';
 COMMENT ON COLUMN oauth_authorization_exchange_attempt_results.callback_error IS 'Credential-free callback or exchange error at finalization.';
 
-CREATE FUNCTION fn_record_oauth_authorization_exchange_transition()
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE FUNCTION fn_create_oauth_authorization_exchange_transition()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF OLD.exchange_claim_id IS NOT DISTINCT FROM NEW.exchange_claim_id THEN
@@ -270,5 +271,5 @@ END;
 $$;
 CREATE TRIGGER trigger_oauth_authorizations_exchange_history
 AFTER UPDATE OF exchange_claim_id ON oauth_authorizations
-FOR EACH ROW EXECUTE FUNCTION fn_record_oauth_authorization_exchange_transition();
-COMMENT ON FUNCTION fn_record_oauth_authorization_exchange_transition() IS 'Atomically finalizes a released or superseded exchange and appends its successor while the authorization row remains locked.';
+FOR EACH ROW EXECUTE FUNCTION fn_create_oauth_authorization_exchange_transition();
+COMMENT ON FUNCTION fn_create_oauth_authorization_exchange_transition() IS 'Atomically finalizes a released or superseded exchange and appends its successor while the authorization row remains locked.';

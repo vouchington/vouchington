@@ -6,20 +6,20 @@ Web Push API subscriptions for delivering browser push notifications, range-part
 
 RANGE partitioned on `user_id` (children: default, no retention owner, access class: target-scoped, growth: unbounded).
 
-| Column               | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                   |
-| -------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------- |
-| `user_id`            | `uuid`                     | no       |                              |          |           |           | The user who registered this push subscription; also the partition key.   |
-| `id`                 | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                           |
-| `endpoint`           | `text`                     | no       |                              |          |           |           | The push service endpoint URL (must be HTTPS).                            |
-| `p256dh`             | `text`                     | no       |                              |          |           |           | Client public key for push message encryption (P-256 ECDH).               |
-| `auth`               | `text`                     | no       |                              |          |           |           | Authentication secret for push message encryption.                        |
-| `expiration_time_ms` | `bigint`                   | yes      |                              |          |           |           | Subscription expiration time in milliseconds, if provided by the browser. |
-| `user_agent`         | `text`                     | no       | `''::text`                   |          |           |           | Browser user-agent string at the time of subscription.                    |
-| `last_success_at`    | `timestamp with time zone` | yes      |                              |          |           |           | When a push was last successfully delivered to this subscription.         |
-| `last_failure_at`    | `timestamp with time zone` | yes      |                              |          |           |           | When a push last failed to deliver to this subscription.                  |
-| `deleted_at`         | `timestamp with time zone` | yes      |                              |          |           |           |                                                                           |
-| `created_at`         | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                           |
-| `updated_at`         | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                           |
+| Column                         | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                   |
+| ------------------------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------- |
+| `user_id`                      | `uuid`                     | no       |                              |          |           |           | The user who registered this push subscription; also the partition key.   |
+| `id`                           | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                           |
+| `endpoint`                     | `text`                     | no       |                              |          |           |           | The push service endpoint URL (must be HTTPS).                            |
+| `p256dh`                       | `text`                     | no       |                              |          |           |           | Client public key for push message encryption (P-256 ECDH).               |
+| `auth`                         | `text`                     | no       |                              |          |           |           | Authentication secret for push message encryption.                        |
+| `expiration_time_milliseconds` | `bigint`                   | yes      |                              |          |           |           | Subscription expiration time in milliseconds, if provided by the browser. |
+| `user_agent`                   | `text`                     | no       | `''::text`                   |          |           |           | Browser user-agent string at the time of subscription.                    |
+| `last_success_at`              | `timestamp with time zone` | yes      |                              |          |           |           | When a push was last successfully delivered to this subscription.         |
+| `last_failure_at`              | `timestamp with time zone` | yes      |                              |          |           |           | When a push last failed to deliver to this subscription.                  |
+| `deleted_at`                   | `timestamp with time zone` | yes      |                              |          |           |           |                                                                           |
+| `created_at`                   | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                           |
+| `updated_at`                   | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                           |
 
 **Primary key:** `PRIMARY KEY (user_id, id)`
 

@@ -30,4 +30,4 @@ _none_
 
 **Triggers:**
 
-- `trg_post_publicat_identity_snapshot_cleanup_cursors__updated_at`: `CREATE TRIGGER trg_post_publicat_identity_snapshot_cleanup_cursors__updated_at BEFORE UPDATE ON public.post_publication_identity_snapshot_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_post_publication_identity_snapshot_cleanup_updated_at`: `CREATE TRIGGER trigger_post_publication_identity_snapshot_cleanup_updated_at BEFORE UPDATE ON public.post_publication_identity_snapshot_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

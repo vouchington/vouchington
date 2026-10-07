@@ -500,7 +500,7 @@ CREATE TABLE IF NOT EXISTS rss_feed_item_unmapped_category_counts (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trg_rss_feed_item_unmapped_category_counts__updated_at
+CREATE OR REPLACE TRIGGER trigger_rss_feed_item_unmapped_category_counts_updated_at
 BEFORE UPDATE ON rss_feed_item_unmapped_category_counts
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
@@ -566,7 +566,7 @@ CREATE TABLE IF NOT EXISTS rss_feed_item_category_snapshot_reconciliations (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trg_rss_feed_item_category_snapshot_reconciliations__updated_at
+CREATE OR REPLACE TRIGGER trigger_rss_feed_item_category_snapshot_reconcile_updated_at
 BEFORE UPDATE ON rss_feed_item_category_snapshot_reconciliations
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 

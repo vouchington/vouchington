@@ -46,11 +46,11 @@ _none_
 
 **Indexes:**
 
-- `idx_membership_renewal_notification_work__available`: `CREATE INDEX idx_membership_renewal_notification_work__available ON public.membership_renewal_price_increase_notification_work_items USING btree (available_at, membership_id) WHERE ((completed_at IS NULL) AND (delivery_attempted_at IS NULL))`
-- `idx_membership_renewal_notification_work__currency`: `CREATE INDEX idx_membership_renewal_notification_work__currency ON public.membership_renewal_price_increase_notification_work_items USING btree (currency_code)`
-- `idx_membership_renewal_notification_work__lease_token`: `CREATE UNIQUE INDEX idx_membership_renewal_notification_work__lease_token ON public.membership_renewal_price_increase_notification_work_items USING btree (lease_token) WHERE (lease_token IS NOT NULL)`
-- `idx_membership_renewal_notification_work__observation`: `CREATE INDEX idx_membership_renewal_notification_work__observation ON public.membership_renewal_price_increase_notification_work_items USING btree (membership_provider_observation_id)`
-- `idx_membership_renewal_notification_work__provider_product`: `CREATE INDEX idx_membership_renewal_notification_work__provider_product ON public.membership_renewal_price_increase_notification_work_items USING btree (membership_provider_product_id)`
+- `idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__available`: `CREATE INDEX idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__available ON public.membership_renewal_price_increase_notification_work_items USING btree (available_at, membership_id) WHERE ((completed_at IS NULL) AND (delivery_attempted_at IS NULL))`
+- `idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__currency`: `CREATE INDEX idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__currency ON public.membership_renewal_price_increase_notification_work_items USING btree (currency_code)`
+- `idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__lease_token`: `CREATE UNIQUE INDEX idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__lease_token ON public.membership_renewal_price_increase_notification_work_items USING btree (lease_token) WHERE (lease_token IS NOT NULL)`
+- `idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__observation`: `CREATE INDEX idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__observation ON public.membership_renewal_price_increase_notification_work_items USING btree (membership_provider_observation_id)`
+- `idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__provider_product`: `CREATE INDEX idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__provider_product ON public.membership_renewal_price_increase_notification_work_items USING btree (membership_provider_product_id)`
 - `membership_renewal_price_increase_notification_work_items_pkey`: `CREATE UNIQUE INDEX membership_renewal_price_increase_notification_work_items_pkey ON public.membership_renewal_price_increase_notification_work_items USING btree (membership_id)`
 
 **Triggers:**

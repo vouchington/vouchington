@@ -32,4 +32,4 @@ _none_
 
 **Triggers:**
 
-- `trg_media_delivery_repair_markers__updated_at`: `CREATE TRIGGER trg_media_delivery_repair_markers__updated_at BEFORE UPDATE ON public.media_delivery_repair_markers FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_media_delivery_repair_markers_updated_at`: `CREATE TRIGGER trigger_media_delivery_repair_markers_updated_at BEFORE UPDATE ON public.media_delivery_repair_markers FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

@@ -82,8 +82,8 @@ describe('ActivityPub inbox capacity system boundary', () => {
   })
 
   it.each([
-    ['unverified', 'idx_activitypub_inbox_work_items__unverified_retention'],
-    ['verified-operational', 'idx_activitypub_inbox_work_items__verified_retention'],
+    ['unverified', 'idx_activitypub_inbox_delivery_work_items__unverified_retention'],
+    ['verified-operational', 'idx_activitypub_inbox_delivery_work_items__verified_retention'],
   ] as const)('uses the matching partial index for %s cleanup', async (category, indexName) => {
     const query = buildExpireActivityPubInboxDeliveriesQuery(category, 1)
     expect(await explainActivityPubInboxCleanupForTest(query)).toContain(indexName)

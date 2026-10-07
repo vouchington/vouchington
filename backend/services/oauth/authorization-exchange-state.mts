@@ -22,7 +22,7 @@ export async function claimOAuthAuthorizationExchange(
   const { rows } = await write(
     `/* claimOAuthAuthorizationExchange */ WITH candidate AS (
        SELECT id, exchange_claim_id, updated_at
-       FROM oauth_authorization_current_records
+       FROM view_oauth_authorization_current_records
        WHERE id = $1 AND expires_at > clock_timestamp() AND exchange_attempts < $4
          AND (provider <> 'x' OR callback_received_at > clock_timestamp() - make_interval(secs => $5))
          AND (status = 'callback_received' OR

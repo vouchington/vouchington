@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS post_publication_identity_snapshot_cleanup_cursors (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trg_post_publicat_identity_snapshot_cleanup_cursors__updated_at
+CREATE OR REPLACE TRIGGER trigger_post_publication_identity_snapshot_cleanup_updated_at
 BEFORE UPDATE ON post_publication_identity_snapshot_cleanup_cursors
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 COMMENT ON TABLE post_publication_identity_snapshot_cleanup_cursors IS 'Bounded cyclic snapshot-header sweep, independent from publication writers.';

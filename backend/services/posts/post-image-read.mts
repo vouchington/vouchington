@@ -26,7 +26,7 @@ export async function getPostImages(postId: string): Promise<PostImagePlacement[
         ${isMediaDeliveryEdgeEnforcementEnabled()} = false
         OR EXISTS (
           SELECT 1
-          FROM media_delivery_registry_current_records delivery
+          FROM view_media_delivery_registry_current_records delivery
           WHERE delivery.delivery_key = concat(
             'image-placement:', placement.id, ':', placement.revision, ':', pi.image_id
           )

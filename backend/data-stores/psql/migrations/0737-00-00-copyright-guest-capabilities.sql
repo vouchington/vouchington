@@ -18,7 +18,7 @@ CREATE TABLE copyright_notice_guest_capabilities (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trg_copyright_notice_guest_capabilities__updated_at
+CREATE OR REPLACE TRIGGER trigger_copyright_notice_guest_capabilities_updated_at
 BEFORE UPDATE ON copyright_notice_guest_capabilities
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 

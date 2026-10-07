@@ -49,7 +49,7 @@ _none_
 
 **Triggers:**
 
-- `trigger_media_delivery_projection_schedule`: `CREATE TRIGGER trigger_media_delivery_projection_schedule AFTER INSERT ON public.media_delivery_registry_changes FOR EACH ROW EXECUTE FUNCTION fn_schedule_media_delivery_projection()`
+- `trigger_media_delivery_projection_schedule`: `CREATE TRIGGER trigger_media_delivery_projection_schedule AFTER INSERT ON public.media_delivery_registry_changes FOR EACH ROW EXECUTE FUNCTION fn_project_media_delivery_projection()`
 - `trigger_media_delivery_registry_changes_actor`: `CREATE TRIGGER trigger_media_delivery_registry_changes_actor BEFORE INSERT ON public.media_delivery_registry_changes FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id')`
 - `trigger_media_delivery_registry_changes_generation`: `CREATE TRIGGER trigger_media_delivery_registry_changes_generation BEFORE INSERT ON public.media_delivery_registry_changes FOR EACH ROW EXECUTE FUNCTION fn_update_media_delivery_change_authority()`
 - `trigger_media_delivery_registry_changes_immutable`: `CREATE TRIGGER trigger_media_delivery_registry_changes_immutable BEFORE DELETE OR UPDATE ON public.media_delivery_registry_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`

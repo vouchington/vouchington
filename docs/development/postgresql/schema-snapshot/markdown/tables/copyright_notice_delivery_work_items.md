@@ -86,10 +86,10 @@ Not partitioned — growth: unbounded.
 
 - `copyright_notice_delivery_work_items_idempotency_key_key`: `CREATE UNIQUE INDEX copyright_notice_delivery_work_items_idempotency_key_key ON public.copyright_notice_delivery_work_items USING btree (idempotency_key)`
 - `copyright_notice_delivery_work_items_pkey`: `CREATE UNIQUE INDEX copyright_notice_delivery_work_items_pkey ON public.copyright_notice_delivery_work_items USING btree (id)`
-- `idx_copyright_delivery_work__available`: `CREATE INDEX idx_copyright_delivery_work__available ON public.copyright_notice_delivery_work_items USING btree (available_at, id) WHERE ((lease_token IS NULL) AND (state = 'pending'::copyright_notice_delivery_intent_states))`
-- `idx_copyright_delivery_work__expired`: `CREATE INDEX idx_copyright_delivery_work__expired ON public.copyright_notice_delivery_work_items USING btree (lease_expires_at, id) WHERE (lease_token IS NOT NULL)`
 - `idx_copyright_notice_delivery_work_items__amazon_ses_message`: `CREATE INDEX idx_copyright_notice_delivery_work_items__amazon_ses_message ON public.copyright_notice_delivery_work_items USING btree (amazon_ses_message_id) WHERE (amazon_ses_message_id IS NOT NULL)`
+- `idx_copyright_notice_delivery_work_items__available`: `CREATE INDEX idx_copyright_notice_delivery_work_items__available ON public.copyright_notice_delivery_work_items USING btree (available_at, id) WHERE ((lease_token IS NULL) AND (state = 'pending'::copyright_notice_delivery_intent_states))`
 - `idx_copyright_notice_delivery_work_items__correspondence`: `CREATE INDEX idx_copyright_notice_delivery_work_items__correspondence ON public.copyright_notice_delivery_work_items USING btree (copyright_notice_correspondence_message_id, copyright_notice_id) WHERE (copyright_notice_correspondence_message_id IS NOT NULL)`
+- `idx_copyright_notice_delivery_work_items__expired`: `CREATE INDEX idx_copyright_notice_delivery_work_items__expired ON public.copyright_notice_delivery_work_items USING btree (lease_expires_at, id) WHERE (lease_token IS NOT NULL)`
 - `idx_copyright_notice_delivery_work_items__notice`: `CREATE INDEX idx_copyright_notice_delivery_work_items__notice ON public.copyright_notice_delivery_work_items USING btree (copyright_notice_id, id)`
 - `idx_copyright_notice_delivery_work_items__recipient_user`: `CREATE INDEX idx_copyright_notice_delivery_work_items__recipient_user ON public.copyright_notice_delivery_work_items USING btree (recipient_user_id) WHERE (recipient_user_id IS NOT NULL)`
 - `idx_copyright_notice_delivery_work_items__recoverable`: `CREATE INDEX idx_copyright_notice_delivery_work_items__recoverable ON public.copyright_notice_delivery_work_items USING btree (channel, id) WHERE (state = ANY (ARRAY['pending'::copyright_notice_delivery_intent_states, 'claimed'::copyright_notice_delivery_intent_states]))`
@@ -98,7 +98,7 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_00_copyright_delivery_work_lease`: `CREATE TRIGGER trigger_00_copyright_delivery_work_lease BEFORE INSERT OR UPDATE ON public.copyright_notice_delivery_work_items FOR EACH ROW EXECUTE FUNCTION fn_prepare_copyright_delivery_work()`
+- `trigger_00_copyright_delivery_work_lease`: `CREATE TRIGGER trigger_00_copyright_delivery_work_lease BEFORE INSERT OR UPDATE ON public.copyright_notice_delivery_work_items FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_delivery_work()`
 - `trigger_copyright_delivery_intent_transition`: `CREATE TRIGGER trigger_copyright_delivery_intent_transition BEFORE DELETE OR UPDATE ON public.copyright_notice_delivery_work_items FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_delivery_intent_transition()`
 - `trigger_copyright_delivery_intents_updated_at`: `CREATE TRIGGER trigger_copyright_delivery_intents_updated_at BEFORE UPDATE ON public.copyright_notice_delivery_work_items FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
-- `trigger_copyright_delivery_work_attempt`: `CREATE TRIGGER trigger_copyright_delivery_work_attempt AFTER INSERT OR UPDATE ON public.copyright_notice_delivery_work_items FOR EACH ROW EXECUTE FUNCTION fn_record_copyright_delivery_attempt()`
+- `trigger_copyright_delivery_work_attempt`: `CREATE TRIGGER trigger_copyright_delivery_work_attempt AFTER INSERT OR UPDATE ON public.copyright_notice_delivery_work_items FOR EACH ROW EXECUTE FUNCTION fn_create_copyright_delivery_attempt()`

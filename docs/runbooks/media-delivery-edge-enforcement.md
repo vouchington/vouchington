@@ -115,7 +115,7 @@ SELECT delivery_key,
   COALESCE(record.state, 'missing') AS state,
   record.failure_message
 FROM expected
-FULL JOIN media_delivery_registry_current_records record USING (delivery_key)
+FULL JOIN view_media_delivery_registry_current_records record USING (delivery_key)
 WHERE record.state IS DISTINCT FROM 'completed'
 ORDER BY delivery_key
 ```

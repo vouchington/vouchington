@@ -127,7 +127,7 @@ export const DOMAIN_FINITE_VALUES = {
     'TRACE',
     'PATCH',
   ],
-  membership_google_play_acknowledgement_skip_reasons: ['no_longer_eligible'],
+  membership_google_play_acknowledgment_skip_reasons: ['no_longer_eligible'],
   notification_target_intents: ['notifications_inbox'],
   oauth_authorization_result_kinds: ['authenticated', 'mfa_required', 'connected'],
   post_publication_reasons: [

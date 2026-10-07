@@ -35,4 +35,4 @@ _none_
 
 **Triggers:**
 
-- `trg_post_admission_claims__updated_at`: `CREATE TRIGGER trg_post_admission_claims__updated_at BEFORE UPDATE ON public.post_admission_claims FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_post_admission_claims_updated_at`: `CREATE TRIGGER trigger_post_admission_claims_updated_at BEFORE UPDATE ON public.post_admission_claims FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

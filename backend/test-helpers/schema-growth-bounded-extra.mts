@@ -32,7 +32,7 @@ export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
     'One immutable result per execution; cascades with bounded reservation retention.',
   ],
   [
-    'membership_google_play_acknowledgement_work_items',
+    'membership_google_play_acknowledgment_work_items',
     'One provider acknowledgement task per retained purchase obligation; deletion cascades from its parent.',
   ],
   [

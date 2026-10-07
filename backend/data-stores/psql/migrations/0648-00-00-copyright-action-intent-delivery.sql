@@ -76,9 +76,11 @@ CREATE TABLE media_delivery_registry_projection_work_items (
   CHECK ((lease_token IS NULL AND leased_at IS NULL AND lease_expires_at IS NULL)
     OR (lease_token IS NOT NULL AND leased_at IS NOT NULL AND lease_expires_at > leased_at))
 );
-CREATE INDEX idx_media_delivery_projection_work__available
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_media_delivery_registry_projection_work_items__available
   ON media_delivery_registry_projection_work_items(available_at, delivery_key) WHERE lease_token IS NULL;
-CREATE INDEX idx_media_delivery_projection_work__expired
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_media_delivery_registry_projection_work_items__expired
   ON media_delivery_registry_projection_work_items(lease_expires_at, delivery_key) WHERE lease_token IS NOT NULL;
 COMMENT ON TABLE media_delivery_registry_projection_work_items IS 'Current edge projection ownership; deleted on terminal publication while immutable transitions survive.';
 COMMENT ON COLUMN media_delivery_registry_projection_work_items.delivery_key IS 'Exact delivery authority being projected.';
@@ -131,7 +133,7 @@ CREATE TRIGGER trigger_media_delivery_registry_changes_generation BEFORE INSERT 
 FOR EACH ROW EXECUTE FUNCTION fn_update_media_delivery_change_authority();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE FUNCTION fn_schedule_media_delivery_projection() RETURNS trigger LANGUAGE plpgsql AS $$
+CREATE FUNCTION fn_project_media_delivery_projection() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF NEW.change_type = 'pending' THEN
     INSERT INTO media_delivery_registry_projection_work_items(delivery_key, generation, attempt_count, available_at)
@@ -149,9 +151,10 @@ BEGIN
 END;
 $$;
 CREATE TRIGGER trigger_media_delivery_projection_schedule AFTER INSERT ON media_delivery_registry_changes
-FOR EACH ROW EXECUTE FUNCTION fn_schedule_media_delivery_projection();
+FOR EACH ROW EXECUTE FUNCTION fn_project_media_delivery_projection();
 
-CREATE VIEW media_delivery_registry_current_records AS
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE VIEW view_media_delivery_registry_current_records AS
 SELECT record.delivery_key, record.placement_id, record.placement_revision, record.image_id,
   change.desired_state, record.generation, record.created_at, record.updated_at,
   change.id AS latest_change_id, change.change_type::text AS state,
@@ -162,7 +165,7 @@ JOIN LATERAL (SELECT * FROM media_delivery_registry_changes history
   WHERE history.delivery_key = record.delivery_key AND history.generation = record.generation
   ORDER BY history.id DESC LIMIT 1) change ON true;
 COMMENT ON TABLE media_delivery_registry_changes IS 'Append-only edge delivery transitions. Current workflow state is the latest transition in the current authority generation.';
-COMMENT ON VIEW media_delivery_registry_current_records IS 'Current authority record joined to its latest immutable delivery transition; no workflow state is stored on the authority parent.';
+COMMENT ON VIEW view_media_delivery_registry_current_records IS 'Current authority record joined to its latest immutable delivery transition; no workflow state is stored on the authority parent.';
 COMMENT ON COLUMN media_delivery_registry_changes.delivery_key IS 'Concrete exact edge-delivery authority whose transition this records.';
 COMMENT ON COLUMN media_delivery_registry_changes.generation IS 'Nontransactional authority generation fencing stale acknowledgements.';
 COMMENT ON COLUMN media_delivery_registry_changes.desired_state IS 'Exact edge state selected by this authority generation, retained after later changes and republishing.';

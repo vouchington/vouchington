@@ -186,7 +186,11 @@ describe('recordAiUsage', () => {
     ).resolves.toBe('already-recorded')
 
     expect(await listAiUsageRecordsForClassifierRun(firstRunId)).toEqual([
-      expect.objectContaining({ latency_ms: 120, input_tokens: 11, cost_microunits: '2000' }),
+      expect.objectContaining({
+        latency_milliseconds: 120,
+        input_tokens: 11,
+        cost_microunits: '2000',
+      }),
     ])
     expect(await listAiUsageRecordsForClassifierRun(secondRunId)).toEqual([])
   })
@@ -204,7 +208,7 @@ describe('recordAiUsage', () => {
     })
 
     expect(await listAiUsageRecordsForClassifierRun(runId)).toEqual([
-      expect.objectContaining({ latency_ms: 30, input_tokens: 5, output_tokens: 2 }),
+      expect.objectContaining({ latency_milliseconds: 30, input_tokens: 5, output_tokens: 2 }),
     ])
   })
 

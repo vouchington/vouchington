@@ -28,7 +28,7 @@ export async function getRecoverableOAuthAuthorizationIds(
              THEN 'provider_code_expired'
            ELSE 'provider_exchange_failed'
          END AS callback_error
-       FROM oauth_authorization_current_records
+       FROM view_oauth_authorization_current_records
        WHERE expires_at > CURRENT_TIMESTAMP
          AND ($5::uuid[] IS NULL OR id = ANY($5::uuid[]))
          AND (
@@ -73,7 +73,7 @@ export async function getRecoverableOAuthAuthorizationIds(
        RETURNING oauth_authorizations.id
      )
      SELECT id
-     FROM oauth_authorization_current_records
+     FROM view_oauth_authorization_current_records
      WHERE expires_at > CURRENT_TIMESTAMP
        AND ($5::uuid[] IS NULL OR id = ANY($5::uuid[]))
        AND exchange_attempts < $3

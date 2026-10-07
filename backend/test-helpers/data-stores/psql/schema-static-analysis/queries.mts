@@ -1,61 +1,7 @@
 /* v8 ignore start -- catalog query helpers are validated through schema-static-analysis.test.mts */
 import { read } from '../../../../data-stores/psql/index.mts'
-import type { NamedCatalogColumn, NamedCatalogObject, TypeViolation } from './name-helpers.mts'
+import type { TypeViolation } from './name-helpers.mts'
 import { COMMENT_EXEMPT_COLUMN_NAMES, type CommentViolation } from './conventions.mts'
-
-export async function getNamedObjects({
-  includeViews,
-}: {
-  includeViews: boolean
-}): Promise<NamedCatalogObject[]> {
-  const { rows } = await read<NamedCatalogObject>(
-    `/* getNamedSchemaObjects */
-      SELECT
-        CASE relkind
-          WHEN 'r' THEN 'table'
-          WHEN 'p' THEN 'table'
-          WHEN 'v' THEN 'view'
-          WHEN 'm' THEN 'view'
-        END AS kind,
-        relname AS name
-      FROM pg_class
-      JOIN pg_namespace ON pg_namespace.oid = pg_class.relnamespace
-      WHERE pg_namespace.nspname = 'public'
-        AND relkind = ANY($1)
-      ORDER BY kind, name`,
-    [includeViews ? ['r', 'p', 'v', 'm'] : ['r', 'p']],
-  )
-  return rows
-}
-
-export async function getNamedColumns({
-  includeViews,
-}: {
-  includeViews: boolean
-}): Promise<NamedCatalogColumn[]> {
-  const { rows } = await read<NamedCatalogColumn>(
-    `/* getNamedSchemaColumns */
-      SELECT
-        CASE pg_class.relkind
-          WHEN 'r' THEN 'table'
-          WHEN 'p' THEN 'table'
-          WHEN 'v' THEN 'view'
-          WHEN 'm' THEN 'view'
-        END AS kind,
-        pg_class.relname AS relation_name,
-        pg_attribute.attname AS column_name
-      FROM pg_attribute
-      JOIN pg_class ON pg_class.oid = pg_attribute.attrelid
-      JOIN pg_namespace ON pg_namespace.oid = pg_class.relnamespace
-      WHERE pg_namespace.nspname = 'public'
-        AND pg_class.relkind = ANY($1)
-        AND pg_attribute.attnum > 0
-        AND NOT pg_attribute.attisdropped
-      ORDER BY kind, relation_name, column_name`,
-    [includeViews ? ['r', 'p', 'v', 'm'] : ['r', 'p']],
-  )
-  return rows
-}
 
 export async function getTypeViolations(udtName: 'json' | 'varchar'): Promise<TypeViolation[]> {
   const { rows } = await read<TypeViolation>(

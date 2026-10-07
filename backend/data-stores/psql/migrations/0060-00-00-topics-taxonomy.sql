@@ -653,7 +653,7 @@ CREATE TABLE IF NOT EXISTS topic_alias_category_mapping_reconciliations (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trg_topic_alias_category_mapping_reconciliations__updated_at
+CREATE OR REPLACE TRIGGER trigger_topic_alias_category_mapping_reconciliations_updated_at
 BEFORE UPDATE ON topic_alias_category_mapping_reconciliations
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
