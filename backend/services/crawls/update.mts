@@ -100,9 +100,10 @@ export const updateCrawl = async (
 
   // Enqueue language detection whenever detector inputs are saved, including
   // clears. The detector writes a "none" result for empty input and deduplicates
-  // via its input key, so re-enqueuing is safe.
+  // via its input key, so re-enqueuing is safe. Wait for queue admission before
+  // returning; detector execution remains asynchronous.
   if (hasLanguageDetectionInput(options)) {
-    void enqueueLanguageDetection('crawl', crawlId).catch(onError)
+    await enqueueLanguageDetection('crawl', crawlId).catch(onError)
   }
 
   return {

@@ -38,15 +38,13 @@ describe('enqueueReconcileNotificationsForPostCategoryVotes', () => {
       },
     ])
 
-    await expect
-      .poll(async () => {
-        const jobs = await readAllQueueJobs(notifications)
-        return jobs.filter(
-          job =>
-            job.name === 'processReconcilePostNotifications' &&
-            (job.data as { postId?: string }).postId === post.id,
-        )
-      })
-      .toHaveLength(1)
-  }, 60_000)
+    const jobs = await readAllQueueJobs(notifications)
+    expect(
+      jobs.filter(
+        job =>
+          job.name === 'processReconcilePostNotifications' &&
+          (job.data as { postId?: string }).postId === post.id,
+      ),
+    ).toHaveLength(1)
+  })
 })
