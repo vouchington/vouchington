@@ -159,7 +159,7 @@
     "picomatch": "^4.0.4",
     "playwright": "^1.63.0",
     "playwright-core": "^1.63.0",
-    "pr-shepherd": "^0.56.4",
+    "pr-shepherd": "^0.56.5",
     "squawk-cli": "^2.67.0",
     "syncpack": "^15.3.3",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
