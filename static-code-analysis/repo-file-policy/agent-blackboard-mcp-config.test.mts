@@ -16,7 +16,9 @@ const JSON_CONFIGS = [
   '.cursor/permissions.json',
   'opencode.json',
 ]
-const TOML_CONFIGS = ['.codex/config.toml']
+// A project Grok config may exist for stricter project rules, so only its registration keys and
+// approvals are forbidden, not the file.
+const TOML_CONFIGS = ['.codex/config.toml', '.grok/config.toml']
 const APPROVAL_FILES = [...JSON_CONFIGS, ...TOML_CONFIGS, '.codex/rules/default.rules']
 const REGISTRATION_KEYS = ['enabledMcpjsonServers', 'mcp', 'mcpServers', 'mcp_servers']
 // Registrations and approvals written for the retired `agent-blackboard` MCP tools, in every
@@ -31,6 +33,10 @@ function tracked(...paths: string[]): string[] {
     .filter(Boolean)
 }
 
+function present(paths: string[]): string[] {
+  return paths.filter(path => tracked(path).length > 0)
+}
+
 function readTracked(path: string): string {
   expect(tracked(path)).toEqual([path])
   return readFileSync(resolve(ROOT, path), 'utf8')
@@ -43,21 +49,21 @@ function registrationKeys(config: unknown): string[] {
 
 describe('no repository registers an MCP server', () => {
   it('tracks no MCP server file', () => {
-    expect(tracked('.mcp.json', '.cursor/mcp.json', '.grok/config.toml')).toEqual([])
+    expect(tracked('.mcp.json', '.cursor/mcp.json')).toEqual([])
   })
 
   it('names no registration key in a harness config', () => {
     const named = [
-      ...JSON_CONFIGS.map(path => [path, JSON.parse(readTracked(path))] as const),
-      ...TOML_CONFIGS.map(path => [path, parse(readTracked(path))] as const),
+      ...present(JSON_CONFIGS).map(path => [path, JSON.parse(readTracked(path))] as const),
+      ...present(TOML_CONFIGS).map(path => [path, parse(readTracked(path))] as const),
     ].flatMap(([path, config]) => registrationKeys(config).map(key => `${path}: ${key}`))
     expect(named).toEqual([])
   })
 
   it('keeps no approval for a retired agent-blackboard MCP tool', () => {
-    expect(APPROVAL_FILES.filter(path => RETIRED_TOOL_APPROVALS.test(readTracked(path)))).toEqual(
-      [],
-    )
+    expect(
+      present(APPROVAL_FILES).filter(path => RETIRED_TOOL_APPROVALS.test(readTracked(path))),
+    ).toEqual([])
   })
 
   it('deletes the replaced journal CLI and MCP wrapper with their permission entries', () => {

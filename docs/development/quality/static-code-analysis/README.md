@@ -480,9 +480,9 @@ Policy Contract](../../testing/backend/api-fixtures.md#local-llm-endpoint-policy
 
 The parser-backed
 [`agent-blackboard-mcp-config.test.mts`](../../../../static-code-analysis/repo-file-policy/agent-blackboard-mcp-config.test.mts)
-check keeps every repository file from registering an MCP server: it fails on a `.mcp.json`,
-`.cursor/mcp.json`, or `.grok/config.toml`, on a registration key (`enabledMcpjsonServers`, `mcp`,
-`mcpServers`, `mcp_servers`) in a harness config, and on an approval for a retired
+check keeps every tracked repository file from registering an MCP server: it fails on a `.mcp.json`
+or `.cursor/mcp.json`, on a registration key (`enabledMcpjsonServers`, `mcp`, `mcpServers`,
+`mcp_servers`) in a harness config including `.grok/config.toml`, and on an approval for a retired
 `agent-blackboard` tool. vouchington-machines registers the server per machine.
 [`agent-blackboard-mcp-hooks.test.mts`](../../../../static-code-analysis/repo-file-policy/agent-blackboard-mcp-hooks.test.mts)
 pins that no Claude or Codex `PreToolUse` matcher matches an `mcp__` tool name.
