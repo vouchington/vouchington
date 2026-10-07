@@ -831,6 +831,13 @@ This section records the outcomes of the evaluation in #5044 so the tracking iss
   migration deleted both outright, so there is nothing left to forbid. Reproduce with
   `pnpm run no-mistakes`.
 - **`repo-file-policy/` test email, integration-test no-mock, and markdown link display-text guards → `no-mistakes`**: these checks are configured in [`.no-mistakes.yml`](../../../../.no-mistakes.yml) instead of the repo-local custom policy code.
+- **Redirect destinations → `no-mistakes` `nextjs-redirect-destinations`**: the rule in
+  [`.no-mistakes.yml`](../../../../.no-mistakes.yml) checks redirect destinations against tracked
+  App Router pages, including tuple/map construction and route groups. On-disk untracked pages
+  cannot satisfy the route inventory; rewrites are excluded. The local redirect AST extractor
+  and guard are deleted. Run the configured-rule regression with `pnpm exec vitest run --project
+  static-analysis-tools static-code-analysis/repo-file-policy/redirect-destinations-no-mistakes.test.mts`
+  and enforce the rule with `pnpm run no-mistakes`.
 - **`repo-file-policy/skill-discovery-guard.mts` → `no-mistakes` `finite-set-consistency`**: the flat 1:1 Claude skill-discovery mapping (`.agents/skills/<name>/SKILL.md` ↔ `.claude/skills/<name>`) is the `Claude skill discovery set consistency` `path-regex-capture` equal-set rule in [`.no-mistakes.yml`](../../../../.no-mistakes.yml). Unblocked by no-mistakes 0.44.0 / [no-mistakes#663](https://github.com/jonathanong/no-mistakes/pull/663), which includes directory-target and broken tracked symlinks in `path-regex-capture`. Reproduce with `pnpm run no-mistakes`.
 - **Markdown parsing for repository guards → `vouchington-tooling/markdown`**: the shared package
   owns GFM parsing, traversal, table extraction, and heading-bounded sections. The moderation
@@ -850,7 +857,9 @@ This section records the outcomes of the evaluation in #5044 so the tracking iss
   `postgres-required-predicates` requires `deleted_at IS NULL` and `merged_into_topic_id IS NULL` on
   `topics` queries. The local `config-driven-sql-guard` / `on-conflict-*` /
   `topics-active-filter-guard` copies are deleted. TypeScript-generated config-driven SQL is still
-  judged at test time by `generated-ddl-insert-invariants.mts`.
+  judged at test time by `generated-ddl-insert-invariants.mts`. STORED generated-column
+  dependencies come from released no-mistakes SQL facts and the tooling replay context;
+  incomplete expression facts fail closed.
   Reproduce with `pnpm run no-mistakes`.
 
 ### PostgreSQL Conflict Ordering

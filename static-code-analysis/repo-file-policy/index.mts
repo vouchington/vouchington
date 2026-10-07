@@ -22,7 +22,6 @@ import { checkRouteAdminSurfaceGuard } from './route-admin-surface-guard.mts'
 import { checkFiniteEnumRippleGuard } from './finite-enum-ripple-guard.mts'
 import { checkSchemaDocDriftGuard } from './schema-doc-drift-guard.mts'
 import { checkClientParityMatrixGuard } from './client-parity-matrix-guard.mts'
-import { checkRedirectDestinations } from './redirect-destination-guard.mts'
 import { checkGhApiShellQuoting } from './gh-api-shell-quoting-guard.mts'
 import { checkLivingDocsPinGuard } from './living-docs-pin-guard.mts'
 import { checkTransientRetryPromptGuard } from './transient-retry-prompt-guard.mts'
@@ -104,7 +103,6 @@ export async function checkRepoFilePolicy(
   checkLocalLlmEndpointPolicyContract(ctx.repoRoot, trackedFiles, errors)
   checkPostPublicationReaderInventory(ctx, errors)
   checkPostPublicationWriterInventory(ctx, errors)
-  checkRedirectDestinations(ctx.repoRoot, trackedFiles, errors)
   checkGhApiShellQuoting(ctx.repoRoot, trackedFiles, errors)
   const ghaWorkspacePolicy = await checkGhaWorkspacePolicy(ctx, {
     workflowDirectories: ['.github/workflows', 'ci/no-mistakes-workflows'],

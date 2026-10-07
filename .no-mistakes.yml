@@ -2085,6 +2085,7 @@ rules:
       configPath: web/next.config.ts
       appRoot: web/app
       includeRewrites: false
+      trackedRoutesOnly: true
 
   - name: multi-row FOR UPDATE locks have a deterministic order
     rule: postgres-lock-ordering
