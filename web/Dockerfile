@@ -69,17 +69,41 @@ RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
 # Delete build-time source maps from the standalone runtime output. Saves ~0.65 MiB.
 RUN find /app/web/.next/standalone /app/web/.next/static -type f -name '*.map' -delete 2>/dev/null || true
 
-# Base Alpine image with security patches applied once, shared by prewarm and runner.
-# apk upgrade here rather than only in runner means web-prewarm also runs on a
-# patched image, and the upgrade IO runs once instead of once per runtime stage.
+# Base Alpine image with security patches applied once.
+# web-prewarm needs npm/npx from this image. The pulled runtime image does not
+# inherit these layers; runtime-base snapshots the cleaned filesystem below.
+# apk upgrade here rather than in every consumer means the upgrade runs once.
 FROM node:26-alpine AS base-alpine
 # Bump this after a security advisory so the cached package layer is rebuilt.
 ARG ALPINE_SECURITY_REFRESH=2026-08-26
 RUN echo "Refreshing Alpine security packages: ${ALPINE_SECURITY_REFRESH}" && \
     apk update && apk upgrade --no-cache && rm -rf /var/cache/apk/*
 
+# A rm in a child of node:26-alpine only whiteouts files. The upstream layer
+# would still be pulled. Assemble the cleaned root at /out and copy that tree
+# onto scratch so package-manager CLIs, native-build headers, and local docs
+# are absent from the runtime image. Copying `/` is rejected by Hadolint
+# DL3067; `/out` keeps the same merged filesystem without proc, sys, or dev.
+# scratch drops image config, so restore the node:26-alpine PATH and entrypoint
+# that `env` / `docker-entrypoint.sh` resolution depends on.
+FROM base-alpine AS runtime-root
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx \
+           /usr/local/bin/pnpm /usr/local/bin/pnpx \
+           /opt/yarn-* /usr/local/bin/yarn /usr/local/bin/yarnpkg \
+           /usr/local/include/node /usr/local/share/doc /usr/local/share/man \
+           /usr/share/doc /usr/share/man /usr/share/info && \
+    mkdir /out && \
+    cp -a /bin /etc /home /lib /media /mnt /opt /root /run /sbin /srv /tmp /usr /var /out/
+
+FROM scratch AS runtime-base
+COPY --from=runtime-root /out /
+ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ENTRYPOINT ["docker-entrypoint.sh"]
+
 # Stage 2a: Prewarm V8 compile cache
-# Runs on the same base as runner so the cache keys (Node binary + file paths) match exactly.
+# Stays on base-alpine because node-prewarm is installed with npx. runtime-base
+# copies that same Node binary, and the server path stays /app/web, so the
+# compile cache still matches the runner.
 FROM base-alpine AS web-prewarm
 
 WORKDIR /app
@@ -108,20 +132,12 @@ RUN --mount=type=cache,id=npm-prewarm-web,target=/root/.npm \
 USER 1001
 
 # Stage 2b: Production runtime
-FROM base-alpine AS runner
+FROM runtime-base AS runner
 
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-
-# Remove package-manager CLIs, native-build headers, and local docs not needed at runtime.
-# apk upgrade and its cache cleanup ran in base-alpine.
-RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx \
-           /usr/local/bin/pnpm /usr/local/bin/pnpx \
-           /opt/yarn-* /usr/local/bin/yarn /usr/local/bin/yarnpkg \
-           /usr/local/include/node /usr/local/share/doc /usr/local/share/man \
-           /usr/share/doc /usr/share/man /usr/share/info
 
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
 
