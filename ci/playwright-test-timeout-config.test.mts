@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createPlaywrightConfig } from '../playwright/config/shared-config.mts'
 import {
   assertResolvedPlaywrightTimeouts,
+  playwrightTimeoutFixture,
   validatePlaywrightConfigTimeouts,
 } from '../playwright/config/test-timeout.mts'
 import { browserErrorsFixture } from '../playwright/helpers/test.mts'
@@ -111,4 +112,19 @@ describe('Playwright test deadline cap', () => {
     } as unknown as Parameters<typeof assertResolvedPlaywrightTimeouts>[0]
     expect(() => assertResolvedPlaywrightTimeouts(config)).not.toThrow()
   })
+})
+
+describe('browser-free timeout guard', () => {
+  it.each([0, 30_001, Number.POSITIVE_INFINITY, Number.NaN])(
+    'rejects effective timeout %s in the browser-free guard before hooks',
+    async timeout => {
+      const use = vi.fn<() => Promise<void>>()
+      await expect(
+        playwrightTimeoutFixture({}, use, { timeout } as Parameters<
+          typeof playwrightTimeoutFixture
+        >[2]),
+      ).rejects.toThrow(RangeError)
+      expect(use).not.toHaveBeenCalled()
+    },
+  )
 })

@@ -1,0 +1,129 @@
+id: playwright-raw-test-factory
+language: Tsx
+severity: error
+message:
+  Import runtime Playwright test factories through playwright/helpers/test.mts; raw imports and re-exports
+  bypass the public timeout guard. Type, config, and expect imports remain allowed.
+files:
+  - playwright/**/*.ts
+  - playwright/**/*.tsx
+  - playwright/**/*.mts
+  - tests/routes/**/*.spec.ts
+  - tests/routes/**/*.spec.mts
+ignores:
+  - playwright/helpers/test.mts
+rule:
+  any:
+    - all:
+        - kind: import_statement
+        - has:
+            field: source
+            regex: ^['"](?:@playwright/test|playwright/test)['"]$
+        - not:
+            regex: ^import\s+type\b
+        - has:
+            stopBy: end
+            any:
+              - kind: namespace_import
+              - all:
+                  - kind: import_specifier
+                  - regex: ^(test|mergeTests|default)\b
+              - all:
+                  - kind: identifier
+                  - inside:
+                      kind: import_clause
+    - pattern: import($RAW_MODULE)
+    - pattern: require($RAW_MODULE)
+    - all:
+        - kind: export_statement
+        - has:
+            field: source
+            regex: ^['"](?:@playwright/test|playwright/test)['"]$
+        - not:
+            regex: ^export\s+type\b
+        - any:
+            - not:
+                has:
+                  kind: export_clause
+                  stopBy: end
+            - has:
+                stopBy: end
+                all:
+                  - kind: export_specifier
+                  - regex: ^(test|mergeTests|default)\b
+constraints:
+  RAW_MODULE:
+    regex: ^['"](?:@playwright/test|playwright/test)['"]$
+examples:
+  - code: import { test } from '@playwright/test'
+    isValid: false
+    file: playwright/tests/raw-test.spec.mts
+  - code: import { expect, test as other } from '@playwright/test'
+    isValid: false
+    file: playwright/tests/raw-test.spec.mts
+  - code: import { mergeTests as combine } from '@playwright/test'
+    isValid: false
+    file: playwright/tests/raw-test.spec.mts
+  - code: import * as pw from '@playwright/test'
+    isValid: false
+    file: playwright/tests/raw-test.spec.mts
+  - code: const { test } = await import('@playwright/test')
+    isValid: false
+    file: playwright/tests/raw-test.spec.mts
+  - code: const pw = require('@playwright/test')
+    isValid: false
+    file: playwright/tests/raw-test.spec.mts
+  - code: import factory from 'playwright/test'
+    isValid: false
+    file: playwright/tests/raw-test.spec.mts
+  - code: import type { TestInfo } from '@playwright/test'
+    isValid: true
+    file: playwright/helpers/types.mts
+  - code: import { type TestInfo, expect } from '@playwright/test'
+    isValid: true
+    file: playwright/helpers/types.mts
+  - code: import { defineConfig } from '@playwright/test'
+    isValid: true
+    file: playwright/config/shared-config.mts
+  - code: import { test as base } from '@playwright/test'
+    isValid: true
+    file: playwright/helpers/test.mts
+  - code: import { test } from '../helpers/test.mts'
+    isValid: true
+    file: playwright/tests/guarded.spec.mts
+  - code: export * from '@playwright/test'
+    isValid: false
+    file: playwright/tests/raw-export.spec.mts
+  - code: export * as PW from '@playwright/test'
+    isValid: false
+    file: playwright/tests/raw-export.spec.mts
+  - code: export { test as rawTest } from '@playwright/test'
+    isValid: false
+    file: playwright/tests/raw-export.spec.mts
+  - code: export { expect, mergeTests as join } from 'playwright/test'
+    isValid: false
+    file: playwright/tests/raw-export.spec.mts
+  - code: export { default as raw } from '@playwright/test'
+    isValid: false
+    file: playwright/tests/raw-export.spec.mts
+  - code: import { default as PW } from '@playwright/test'
+    isValid: false
+    file: playwright/tests/raw-export.spec.mts
+  - code: export type * from '@playwright/test'
+    isValid: true
+    file: playwright/helpers/public-types.mts
+  - code: export type { TestInfo, test as RawTest } from '@playwright/test'
+    isValid: true
+    file: playwright/helpers/public-types.mts
+  - code: export { type TestInfo, expect, defineConfig } from '@playwright/test'
+    isValid: true
+    file: playwright/helpers/public-types.mts
+  - code: export { expect as test } from '@playwright/test'
+    isValid: true
+    file: playwright/helpers/public-types.mts
+  - code: import { type test, defineConfig, expect } from '@playwright/test'
+    isValid: true
+    file: playwright/helpers/public-types.mts
+  - code: export { test } from '../helpers/test.mts'
+    isValid: true
+    file: playwright/helpers/public-types.mts
