@@ -23,7 +23,7 @@ export async function claimModerationQueueItem(
     throw createError(422, 'Exactly one of reportId or postId must be set')
   }
 
-  await assertItemInCommunity(communityId, { reportId, postId })
+  await assertItemInCommunity(communityId, { reportId, postId, query: options.query })
 
   if (hasReport) return claimByReport(currentUserId, communityId, reportId!, options.query)
   return claimByPost(currentUserId, communityId, postId!, options.query)

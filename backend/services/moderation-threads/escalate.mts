@@ -17,7 +17,9 @@ export async function escalateModerationQueueItem(
   const { communityId, reportId, postId } = options
 
   if (reportId) {
-    const context = await getReportResolutionContext(reportId, communityId)
+    const context = await getReportResolutionContext(reportId, communityId, {
+      query: options.query,
+    })
     if (!context) throw createError(404, 'Report not found')
     if (!context.is_in_community_scope) throw createError(403, 'Forbidden')
   }
@@ -93,7 +95,9 @@ export async function deEscalateModerationQueueItem(
 
   if (reportId) {
     if (communityId) {
-      const context = await getReportResolutionContext(reportId, communityId)
+      const context = await getReportResolutionContext(reportId, communityId, {
+        query: options.query,
+      })
       if (!context) throw createError(404, 'Report not found')
       if (!context.is_in_community_scope) throw createError(403, 'Forbidden')
     }

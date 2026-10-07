@@ -18,9 +18,9 @@ export async function dismissReviewDispute(
   trainingEvidence: ModerationTrainingEvidence,
   options: { query?: TransactionQuery } = {},
 ): Promise<ReviewDisputeResponse> {
-  await assertReviewDisputeDelivered(disputeId)
   const now = new Date()
   return runWithTransaction(options.query, async query => {
+    await assertReviewDisputeDelivered(disputeId, { query })
     const { rows } = await query(
       sql`/* dismissReviewDispute */
       UPDATE review_disputes

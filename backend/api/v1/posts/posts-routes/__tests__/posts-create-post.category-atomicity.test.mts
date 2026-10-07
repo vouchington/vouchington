@@ -18,7 +18,7 @@ import {
 import { getPostByAny } from '@services/posts/get'
 import { updatePost } from '@services/posts/update'
 import { getAuthorizedPostContributionMembershipPlan } from '@services/posts/authorization'
-import { executeCreatePostContribution } from '../posts-create-post.mts'
+import { executeCreatePostContribution } from '@services/posts/execute-contribution'
 
 describe('POST /api/v1/posts category atomicity', () => {
   it('retries the same HTTP key after an admitted category vote rolls back', async () => {

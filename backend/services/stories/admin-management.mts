@@ -18,11 +18,16 @@ async function assertStoryItem(
   storyId: string,
   itemId: string,
   membership: boolean,
+  options: { query?: TransactionQuery },
 ): Promise<void> {
   assert(isUUID(itemId), 400, 'Invalid item ID')
-  assert(await getStoryById(storyId), 404, 'Story not found')
+  assert(await getStoryById(storyId, options), 404, 'Story not found')
   if (membership)
-    assert((await getStoryItemIds(storyId)).includes(itemId), 400, 'Item is not in this story')
+    assert(
+      (await getStoryItemIds(storyId, options)).includes(itemId),
+      400,
+      'Item is not in this story',
+    )
 }
 
 export async function addEditorialStoryItem(
@@ -32,7 +37,7 @@ export async function addEditorialStoryItem(
   options: { query?: TransactionQuery } = {},
 ): Promise<void> {
   assertStaffWrite(user, storyId)
-  await assertStoryItem(storyId, itemId, false)
+  await assertStoryItem(storyId, itemId, false, options)
   assert(await adminAssignItemToStory(user.id, storyId, itemId, options), 404, 'Item not found')
 }
 
@@ -43,7 +48,7 @@ export async function removeEditorialStoryItem(
   options: { query?: TransactionQuery } = {},
 ): Promise<void> {
   assertStaffWrite(user, storyId)
-  await assertStoryItem(storyId, itemId, true)
+  await assertStoryItem(storyId, itemId, true, options)
   assert(
     await adminRemoveItemFromStory(user.id, itemId, { ...options, expectedStoryId: storyId }),
     404,
@@ -58,7 +63,7 @@ export async function setEditorialStoryOfficialItem(
   options: { query?: TransactionQuery } = {},
 ) {
   assertStaffWrite(user, storyId)
-  await assertStoryItem(storyId, itemId, true)
+  await assertStoryItem(storyId, itemId, true, options)
   const story = await adminSetStoryOfficialItem(user.id, storyId, itemId, options)
   assert(story, 404, 'Story not found')
   return { story }

@@ -40,11 +40,13 @@ export async function resolveModerationAppealAccept(
   trainingEvidence: ModerationTrainingEvidence,
   options: { query?: TransactionQuery } = {},
 ): Promise<ModerationAppealResponse> {
-  await assertModerationAppealDelivered(appealId)
   const now = new Date()
   let afterCommit: (() => Promise<void>) | undefined
   const response = await runWithTransaction(options.query, async query => {
-    await lockSuspensionAppealAuthorLifecycle(query, appealId)
+    await Promise.all([
+      assertModerationAppealDelivered(appealId, { query }),
+      lockSuspensionAppealAuthorLifecycle(query, appealId),
+    ])
     const { rows } = await query(
       sql`/* resolveModerationAppealAccept */
       UPDATE moderation_appeals

@@ -22,7 +22,7 @@ export async function releaseModerationQueueItem(
   }
 
   if (hasReport) {
-    if (communityId) await assertItemInCommunity(communityId, { reportId })
+    if (communityId) await assertItemInCommunity(communityId, { reportId, query: options.query })
     const query = sql`/* releaseModerationQueueItem */
       UPDATE moderation_queue_claims
       SET released_at = now()
@@ -48,7 +48,7 @@ export async function releaseModerationQueueItem(
     return
   }
 
-  if (communityId) await assertItemInCommunity(communityId, { postId })
+  if (communityId) await assertItemInCommunity(communityId, { postId, query: options.query })
   const query = sql`/* releaseModerationQueueItem */
     UPDATE moderation_queue_claims
     SET released_at = now()

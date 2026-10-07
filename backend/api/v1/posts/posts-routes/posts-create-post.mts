@@ -1,7 +1,4 @@
 import type { Context } from '@jongleberry/api-server'
-import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
-import type { PrivateUser } from '@services/users/types'
-import type { ContributionLimitMembershipPlan } from '@services/contribution-gating/limit-types'
 import {
   CONTRIBUTION_ADMISSION_IN_PROGRESS,
   IDENTITY_REQUIRED,
@@ -12,10 +9,10 @@ import { assessRecaptchaToken } from '@services/recaptcha'
 import {
   admitRouteContribution,
   contributionPolicySourceForPostType,
-  executePreparedContribution,
 } from '@services/contribution-gating'
 import { isHoneypotTriggered } from '@services/honeypot'
-import { preparePostWithCommunityReviews, type CreatePostInput } from '@services/posts'
+import type { CreatePostInput } from '@services/posts'
+import { executeCreatePostContribution } from '@services/posts/execute-contribution'
 import { isSupportedPostType, validateCreatePostInput } from '@services/posts/create/validation'
 import { assertCanCreateAdminOnlyPostType } from '@services/posts/create/admin-only-post-type'
 import {
@@ -35,7 +32,6 @@ type CreatePostRequestBody = CreatePostInput & {
   cf_turnstile_response?: string
   recaptcha_token?: string
 }
-type AdmissionQuery = Parameters<Parameters<typeof admitRouteContribution>[0]['execute']>[0]
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 
 app.route('/api/v1/posts').post(async (ctx: Context) => {
@@ -174,27 +170,3 @@ app.route('/api/v1/posts').post(async (ctx: Context) => {
   ctx.setStatus(201)
   ctx.json({ post: await attachWrittenPostProvenance(admission.response, currentUser) })
 })
-
-export function executeCreatePostContribution(
-  query: AdmissionQuery,
-  currentUser: PrivateUser,
-  provenance: ContentProvenance,
-  body: CreatePostInput,
-  membershipPlan: ContributionLimitMembershipPlan,
-) {
-  return executePreparedContribution(query, async () => {
-    const prepared = await preparePostWithCommunityReviews(
-      currentUser,
-      provenance,
-      body,
-      membershipPlan,
-      {
-        query,
-      },
-    )
-    return {
-      response: prepared.response.post,
-      finalize: async () => (await prepared.finalize()).post,
-    }
-  })
-}
