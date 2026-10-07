@@ -2,12 +2,12 @@
 
 [Back to Caching Strategy reference](reference-caching-strategy-cache-tiers.md#bot-tiers)
 
-Bots detected by `isbot()` are classified into two tiers with different rate-limiting behavior:
+Bots detected by `isbot()` are classified into two tiers with different rate-limiting behavior. A listed User-Agent is `known` only when Cloudflare Bot Management reports `verifiedBot`; otherwise that request is `unknown`. The [Worker bot-tier page](../infrastructure/cloudflare-worker/reference-bot-tiers.md) owns the substring list and the pre-cache versus post-cache split.
 
-| Tier      | Examples                                                                                                 | Rate limit                                                      |
-| --------- | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| `known`   | Googlebot, Bingbot, ChatGPT-User, PerplexityBot, ClaudeBot, facebookexternalhit, Twitterbot, UptimeRobot | Pre-cache (same as humans)                                      |
-| `unknown` | Any other bot detected by `isbot()`                                                                      | Post-cache via `RATE_LIMITER_BOT_*` (cached responses are free) |
+| Tier      | Examples                                                                                                                     | Rate limit                                                                                                            |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `known`   | Googlebot, Bingbot, ChatGPT-User, PerplexityBot, ClaudeBot, facebookexternalhit, Twitterbot, UptimeRobot, with `verifiedBot` | Pre-cache (same as humans)                                                                                            |
+| `unknown` | Any other `isbot()` match, including those User-Agents when unverified                                                       | GET/HEAD misses use post-cache `RATE_LIMITER_BOT_*` (hits are free); mutating requests also use the pre-cache limiter |
 
 Cache behavior (TTL, cookie stripping) is identical for all bots regardless of tier. The tier only affects rate limiting. The `x-voucha-bot-tier` response header indicates the detected tier.
 
