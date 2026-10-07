@@ -1,9 +1,13 @@
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 
-import { NATIVE_CONSUMER_MANIFEST } from './native-consumer-manifest.mts'
+import {
+  NATIVE_CONSUMER_MANIFEST,
+  type NativeConsumerManifestEntry,
+} from './native-consumer-manifest.mts'
 import { readNativeProductSources } from './native-consumer-source-discovery.mts'
 import { validateNativeConsumerUsage } from './native-consumer-usage.mts'
+import type { NativeCatalogs } from './native-resource-catalog.mts'
 import { generateNativeResourceFiles, type GeneratedNativeResource } from './native-resources.mts'
 
 const GENERATED_ROOTS = [
@@ -16,17 +20,22 @@ export async function writeNativeResourceFiles(options: {
   consumerRoot?: string
   check: boolean
   files?: readonly GeneratedNativeResource[]
+  manifest?: readonly NativeConsumerManifestEntry[]
+  catalogs?: NativeCatalogs
 }): Promise<void> {
+  const manifest = options.manifest ?? NATIVE_CONSUMER_MANIFEST
   if (options.files === undefined) {
     if (options.consumerRoot === undefined) {
       throw new Error('Native localization consumer root is required')
     }
-    validateNativeConsumerUsage(
-      NATIVE_CONSUMER_MANIFEST,
-      await readNativeProductSources(options.consumerRoot),
-    )
+    validateNativeConsumerUsage(manifest, await readNativeProductSources(options.consumerRoot))
   }
-  const files = options.files ?? generateNativeResourceFiles()
+  const files =
+    options.files ??
+    generateNativeResourceFiles({
+      manifest,
+      ...(options.catalogs === undefined ? {} : { catalogs: options.catalogs }),
+    })
   const expected = new Map(files.map(file => [file.path, file.content]))
   if (options.check) return checkFiles(options.outputRoot, expected)
   await Promise.all(
