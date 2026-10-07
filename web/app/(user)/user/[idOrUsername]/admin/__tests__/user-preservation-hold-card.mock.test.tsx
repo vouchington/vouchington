@@ -144,6 +144,26 @@ describe('UserPreservationHoldCard', () => {
         'While a hold is open, this account’s final purge is paused. Immediate deletion steps are not paused.',
       ),
     ).toBeInTheDocument()
+    expect(mockNav.refresh).toHaveBeenCalledOnce()
+  })
+
+  it('does not refresh again when the server already rendered the deleted-account surface', async () => {
+    mockList.mockResolvedValue({
+      account_deleted_at: '2026-09-01T00:00:00.000Z',
+      holds: [],
+    })
+
+    render(
+      <UserPreservationHoldCard
+        userId='user-1'
+        isAccountDeleted
+      />,
+    )
+
+    await screen.findByText(
+      'While a hold is open, this account’s final purge is paused. Immediate deletion steps are not paused.',
+    )
+    expect(mockNav.refresh).not.toHaveBeenCalled()
   })
 
   it('updates the description when deletion races with hold placement', async () => {

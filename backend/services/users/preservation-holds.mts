@@ -1,4 +1,4 @@
-import { beginTransaction, query as primaryQuery, type QueryExecutor } from '@data-stores/psql'
+import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
@@ -151,15 +151,6 @@ export async function releaseUserPreservationHold(
   )
   await query.commit()
   return toHold(row)
-}
-
-/** Newest first, capped at {@link HISTORY_LIMIT}: one hold is open at a time, so history stays small. */
-export async function listUserPreservationHolds(
-  currentUser: PrivateUser | null,
-  userId: string,
-): Promise<UserPreservationHold[]> {
-  assertAdmin(currentUser)
-  return queryUserPreservationHolds(primaryQuery, userId)
 }
 
 async function queryUserPreservationHolds(

@@ -11,10 +11,14 @@ import { CONFLICT } from '@modules/on-error/error-codes'
 import { deleteUser } from './delete.mts'
 import { getPrivateUserByAny } from './get.mts'
 import {
-  listUserPreservationHolds,
+  getUserPreservationHoldState,
   placeUserPreservationHold,
   releaseUserPreservationHold,
 } from './preservation-holds.mts'
+
+async function listUserPreservationHolds(...args: Parameters<typeof getUserPreservationHoldState>) {
+  return (await getUserPreservationHoldState(...args)).holds
+}
 
 const BLOCKED_MESSAGE =
   'Account deletion is blocked while a copyright incident or legal hold is unresolved'

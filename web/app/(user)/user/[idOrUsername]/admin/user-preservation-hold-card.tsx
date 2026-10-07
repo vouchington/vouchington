@@ -22,7 +22,6 @@ type HoldsState =
   | { status: 'loading' | 'error' }
   | { status: 'loaded'; holds: UserPreservationHold[] }
 
-// Administrator-only: the sensitive reference is rendered here and never sent to error reporting.
 export function UserPreservationHoldCard({
   userId,
   isAccountDeleted = false,
@@ -49,6 +48,7 @@ export function UserPreservationHoldCard({
         if (!cancelled) {
           setLoadedAccount({ userId, deletedAt: data.account_deleted_at })
           setState({ status: 'loaded', holds: data.holds })
+          if (data.account_deleted_at && !isAccountDeleted) startRefresh(() => router.refresh())
         }
       })
       .catch((err: unknown) => {
@@ -63,7 +63,7 @@ export function UserPreservationHoldCard({
     return () => {
       cancelled = true
     }
-  }, [userId, t])
+  }, [userId, t, isAccountDeleted, router])
 
   const holds = state.status === 'loaded' ? state.holds : []
   const accountIsDeleted =
