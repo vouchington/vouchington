@@ -8,26 +8,14 @@ export async function recordCopyrightRepeatInfringerTargetProvenance(
 ): Promise<void> {
   const statement = sql`
     /* recordCopyrightRepeatInfringerTargetProvenance */
-    WITH eligible_targets AS (
-      SELECT target.*
-      FROM copyright_notice_targets target
-      JOIN copyright_restrictions restriction
-        ON restriction.copyright_notice_target_id = target.id
-      WHERE target.copyright_notice_id = ${noticeId}
-        AND (
-          restriction.human_review_action = 'confirm'
-          OR EXISTS (
-            SELECT 1 FROM copyright_notice_appeal_reviews review
-            WHERE review.copyright_restriction_id = restriction.id AND review.action = 'confirm'
-          )
-        )
-    ), current_target_owners AS (
+    WITH current_target_owners AS (
       SELECT DISTINCT target.id AS copyright_notice_target_id,
         party.user_id AS account_user_id
-      FROM eligible_targets target
+      FROM copyright_notice_targets target
       CROSS JOIN LATERAL `
   statement.append(copyrightPlacementPartiesSql('strike'))
   statement.append(sql` party
+      WHERE target.copyright_notice_id = ${noticeId}
     )
     INSERT INTO copyright_repeat_infringer_incident_targets (
       copyright_notice_id,
