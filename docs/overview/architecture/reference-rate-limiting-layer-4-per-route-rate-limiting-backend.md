@@ -95,12 +95,12 @@ protection covers all traffic. The usage quota counts only requests the API serv
 never charged for a failure that was ours. Valkey is the only store: there is no usage table and no
 durable ledger.
 
-| Response status    | Units charged | Why                                 |
-| ------------------ | ------------- | ----------------------------------- |
-| 2xx                | 1             | Served                              |
-| 4xx other than 429 | 1             | Served; the caller caused the error |
-| 429                | 0             | Refused before it ran               |
-| 5xx                | 0             | The API's failure                   |
+| Response status    | Units charged | Why                                                                 |
+| ------------------ | ------------- | ------------------------------------------------------------------- |
+| 2xx                | 1, or 0       | MCP charges 0 when every message was rate limited; otherwise served |
+| 4xx other than 429 | 1             | Served; the caller caused the error                                 |
+| 429                | 0             | Refused before it ran                                               |
+| 5xx                | 0             | The API's failure                                                   |
 
 - **Unit**: one HTTP request. A JSON-RPC batch is one unit.
 - **Settlement**: the quota is charged, and the usage event emitted, when the response closes,

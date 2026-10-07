@@ -79,7 +79,7 @@ export async function settleUsage(
   settlement: UsageSettlement,
   { limiter, reportError }: UsageQuotaDependencies = defaultDependencies,
 ): Promise<void> {
-  const units = usageUnitsForStatus(settlement.statusCode)
+  const units = settlement.units ?? usageUnitsForStatus(settlement.statusCode)
   if (units > 0 && isRouteRateLimitEnabled()) {
     try {
       await limiter.add([usageBucketId(settlement.surface, settlement.identity)])
