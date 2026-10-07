@@ -1,6 +1,5 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
-import { pollUntilNotNull } from '@voucha/test-helpers/polling'
 import { cachePurge } from '../../queues/cache-purge/queues.mts'
 import { caches } from '@services/entity-cache/caches'
 import { getPostByAny } from '@services/posts/get'
@@ -55,6 +54,60 @@ async function warmOwnerCache(fixture: SurfaceFixture): Promise<void> {
       break
     case 'community':
       break
+  }
+}
+
+async function waitForOwnerCacheWarm(fixture: SurfaceFixture): Promise<void> {
+  const cache = ownerCache(fixture)
+  if (!cache) return
+  if ((await cache.get(fixture.ownerId)) !== null) {
+    await warmOwnerCache(fixture)
+    return
+  }
+
+  const client = cache.getClient()
+  const invokeScript = client.invokeScript
+  const physicalKey = cache.getKey(fixture.ownerId)
+  const invalidationKey = physicalKey.replace(':{', ':invalidation:{')
+  const write = Promise.withResolvers<PromiseSettledResult<void>>()
+  const startedWrites: Promise<unknown>[] = []
+  const spy = vi.spyOn(client, 'invokeScript').mockImplementation((script, options) => {
+    const pending = invokeScript.call(client, script, options)
+    // Valkyries reads use one key; invalidation uses two keys but only two args.
+    if (
+      options?.keys?.length === 2 &&
+      String(options.keys[0]) === physicalKey &&
+      String(options.keys[1]) === invalidationKey &&
+      options.args?.length === 3 &&
+      String(options.args[0]) === '1'
+    ) {
+      startedWrites.push(pending)
+      void pending.then(
+        () => write.resolve({ status: 'fulfilled', value: undefined }),
+        err => write.resolve({ status: 'rejected', reason: err }),
+      )
+    }
+    return pending
+  })
+  let warmCompletion: Promise<void> | undefined
+  let cleanupPromise: Promise<void> | undefined
+  const cleanup = (): Promise<void> => {
+    cleanupPromise ??= (async () => {
+      if (warmCompletion) await Promise.allSettled([warmCompletion])
+      spy.mockRestore()
+      write.resolve({ status: 'rejected', reason: new Error('Owner cache write was not observed') })
+      await Promise.allSettled(startedWrites)
+    })()
+    return cleanupPromise
+  }
+  onTestFinished(cleanup)
+  try {
+    warmCompletion = warmOwnerCache(fixture)
+    await warmCompletion
+    const result = await write.promise
+    if (result.status === 'rejected') throw result.reason
+  } finally {
+    await cleanup()
   }
 }
 
@@ -148,30 +201,30 @@ describe('copyright surface target lifecycle', () => {
       expect(await publicImageIsProjected(fixture)).toBe(true)
       const caseRecord = await createTestCopyrightRestrictionForImage(fixture)
       const cache = ownerCache(fixture)
-      await warmOwnerCache(fixture)
-      if (cache) {
-        await pollUntilNotNull(() => cache.get(fixture.ownerId), 2000, 25, 'the warmed owner entry')
-      }
+      await waitForOwnerCacheWarm(fixture)
+      const warmedEntry = cache ? await cache.get(fixture.ownerId) : true
+      expect(warmedEntry).not.toBeNull()
       expect(await getImagePlacementCopyrightOwner(fixture.placementId)).toEqual({
         kind: fixture.ownerKind,
         id: fixture.ownerId,
       })
 
+      const purgeAdd = cache ? null : vi.spyOn(cachePurge, 'addBulk')
+      const matchingPurgeCalls = () =>
+        purgeAdd?.mock.calls.filter(([jobs]) =>
+          jobs.some(job =>
+            (job.data as { tags?: string[] }).tags?.includes(`community:${fixture.ownerId}`),
+          ),
+        ).length ?? 0
       await expect(processCopyrightActionIntent(caseRecord.withholdIntentId)).resolves.toBe(
         'applied',
       )
       expect(cache ? (await cache.get(fixture.ownerId)) === null : true).toBe(true)
       if (cache) await seedOwnerCache(fixture)
       expect(cache ? (await cache.get(fixture.ownerId)) !== null : true).toBe(true)
-      const purgeQueued = cache
-        ? true
-        : await pollUntilNotNull(
-            async () => ((await communityPurgeWasQueued(fixture.ownerId)) ? true : null),
-            2000,
-            25,
-            'the community cache purge to be queued',
-          )
+      const purgeQueued = cache ? true : await communityPurgeWasQueued(fixture.ownerId)
       expect(purgeQueued).toBe(true)
+      expect(matchingPurgeCalls()).toBe(cache ? 0 : 1)
       expect(await publicImageIsProjected(fixture)).toBe(false)
       const withheld = await getImagePlacementForCopyright(fixture.placementId)
       expect(withheld).toMatchObject({ withheld: true, imageId: fixture.imageId })
@@ -194,6 +247,7 @@ describe('copyright surface target lifecycle', () => {
       const restoreIntent = aggregate?.actionIntents.find(intent => intent.action === 'restore')
       if (!restoreIntent) throw new Error('Copyright restore intent missing')
       await expect(processCopyrightActionIntent(restoreIntent.id)).resolves.toBe('applied')
+      expect(matchingPurgeCalls()).toBe(cache ? 0 : 2)
       expect(cache ? (await cache.get(fixture.ownerId)) === null : true).toBe(true)
       expect(await publicImageIsProjected(fixture)).toBe(true)
       const restored = await getImagePlacementForCopyright(fixture.placementId)
