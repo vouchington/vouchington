@@ -5,6 +5,8 @@ export const BEDROCK_AWS_REGION = process.env.BEDROCK_AWS_REGION ?? 'us-east-1'
 
 export const AWS_CONNECTION_TIMEOUT_MS = 3_000
 export const AWS_REQUEST_TIMEOUT_MS = 10_000
+// SQS receives wait up to 20 seconds by protocol; keep the transport idle deadline above that.
+export const AWS_SQS_REQUEST_TIMEOUT_MS = 25_000
 
 export function createAwsRequestHandler(
   overrides: Omit<NodeHttpHandlerOptions, 'throwOnRequestTimeout'> = {},

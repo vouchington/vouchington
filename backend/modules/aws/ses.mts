@@ -113,6 +113,9 @@ function getSESClient(): CreateSESClient {
   if (!client) {
     client = new CreateSESClient({
       credentials: getSesClientCredentials(),
+      // SES sends have no idempotency token. Retrying after an ambiguous response timeout can
+      // deliver the same email twice, so callers own any deliberate retry as a new attempt.
+      maxAttempts: 1,
       region: AWS_REGION,
       requestHandler: createAwsRequestHandler(),
       ...AWS_DUALSTACK_CLIENT_CONFIG,
