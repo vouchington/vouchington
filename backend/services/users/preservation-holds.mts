@@ -64,7 +64,7 @@ async function lockPreservationHoldUser(
   userId: string,
 ): Promise<{ deleted_at: Date | null } | undefined> {
   await query(sql`/* lockPreservationHoldUser:advisoryLock */
-    SELECT pg_advisory_xact_lock(hashtextextended(${userId}, 0))
+    SELECT pg_advisory_xact_lock(hashtextextended(${userId.toLowerCase()}, 0))
   `)
   const { rows } = await query<{
     deleted_at: Date | null

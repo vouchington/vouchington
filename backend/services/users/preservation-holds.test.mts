@@ -163,6 +163,15 @@ describe('user preservation holds', () => {
       ).rejects.toMatchObject({ status: 404 })
     })
 
+    it('canonicalizes an uppercase UUID before placing a hold', async () => {
+      const admin = await createTestUser({ administrator: true })
+      const user = await createTestUser()
+
+      await expect(
+        placeUserPreservationHold(admin, user.id.toUpperCase(), 'matter-uppercase'),
+      ).resolves.toMatchObject({ account_user_id: user.id })
+    })
+
     it('returns 404 after the users row has been hard-deleted', async () => {
       const admin = await createTestUser({ administrator: true })
       const user = await createTestUser()
