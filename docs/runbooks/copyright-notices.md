@@ -856,9 +856,10 @@ sufficient to identify an alleged infringer, to the extent Voucha has it.
      the owner decides when it ends, on the lawyer's advice, and an administrator releases it from
      the same card. Only one hold is open per account at a time.
    - **Effect.** While a hold is open, deletion of the account by the user or by an administrator
-     returns the same `409` as for an operative incident or a court or CCB hold. The message does
-     not say which, so it does not reveal that legal process exists. A hold does not copy or freeze
-     any other record. It only stops the account being deleted.
+     returns `409`. An operative incident does not block deletion; see the canonical
+     [repeat-infringer deletion rule](#repeat-infringer-review) above for the distinct qualifying
+     legal-hold rule. The message does not reveal that legal process exists. A preservation hold
+     does not copy or freeze any other record. It only stops the account being deleted.
    - **Audit.** Placing and releasing each write a moderator action (`preservation_hold_place`,
      `preservation_hold_release`), visible to administrators in the admin modlog and to no
      community. The hold row records who placed it and when, and who released it and when. Rows are
