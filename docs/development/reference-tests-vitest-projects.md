@@ -51,6 +51,10 @@ Reusable root scripts call [`ci/run-vitest-project-group.mts`](../../ci/run-vite
 PostgreSQL/Valkey-backed analytics integration, data-store, and remaining mock projects. The
 aggregate backend groups compose both sets.
 
+`backend-no-data-mocks` also owns explicitly listed unit tests whose server, request, timer, and
+shutdown dependencies are injected. They keep ordinary `.test.mts` filenames when they do not
+mock modules; these files are excluded from the database-backed project.
+
 Pure test-helper validation belongs to `backend-test-helpers` and must not initialize PostgreSQL
 merely by importing a helper. A helper test that intentionally inspects the live PostgreSQL pools,
 such as `bluesky-link-authorizations.test.mts`, belongs to `backend-data-stores` instead.

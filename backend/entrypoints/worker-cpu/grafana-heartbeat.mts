@@ -11,10 +11,9 @@ type ExternalFetch = ReturnType<typeof getExternalFetch>
 type GrafanaHeartbeatDependencies = {
   fetch: ExternalFetch
   onError: typeof onError
-  // Narrowed to the one overload startGrafanaHeartbeat actually calls (line 88): a callback
-  // taking no arguments. typeof globalThis.setTimeout is the full overloaded signature, which a
-  // vi.fn<>() mock can't satisfy without a cast — see grafana-heartbeat.test.mts.
-  setTimeout: (callback: () => void, ms: number) => Timer
+  // The timer runs the async heartbeat, whose promise settles after reporting or suppressing
+  // request errors and scheduling the next run. Keep that completion contract on the callback.
+  setTimeout: (callback: () => Promise<void>, ms: number) => Timer
   clearTimeout: typeof globalThis.clearTimeout
   addGracefulShutdownCallback: typeof addGracefulShutdownCallback
 }

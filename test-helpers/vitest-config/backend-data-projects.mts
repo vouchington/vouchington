@@ -1,4 +1,5 @@
 import type { TestProjectConfiguration } from 'vitest/config'
+import { backendNoDataUnitTestFiles } from './backend-core-projects.mts'
 
 const backendDataStoreTestDefaults = {
   pool: 'forks' as const,
@@ -46,6 +47,7 @@ export const backendDataProjects: TestProjectConfiguration[] = [
         '**/node_modules/**',
         '**/.git/**',
         '**/*.mock.test.mts',
+        ...backendNoDataUnitTestFiles,
         '**/*.openai*.test.mts',
         '**/*.openrouter.test.mts',
         '**/*.bedrock.test.mts',

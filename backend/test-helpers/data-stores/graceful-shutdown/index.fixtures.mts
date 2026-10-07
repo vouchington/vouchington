@@ -29,7 +29,7 @@ export async function loadSubject() {
 
 export const SIGNAL_LISTENERS_REGISTERED = Symbol.for('voucha.graceful-shutdown.signal-listeners')
 
-// The two NODE_ENV='production' tests in index.test.mts must set that env var before loadSubject()
+// The two production-mode tests must set NODE_ENV before loadSubject()
 // to exercise the force-exit timer, but index.mts gates its real SIGTERM/SIGINT registration on
 // that same env var — so loading it there also attaches real process-level listeners for the rest
 // of this fork's life (vi.resetModules() re-runs the module's top level, but does not undo prior
