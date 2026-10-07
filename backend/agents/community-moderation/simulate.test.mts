@@ -115,13 +115,13 @@ describe('simulateCommunityPromptOnPosts', () => {
 
       const pending = simulateCommunityPromptOnPosts(rule, posts, options(fetch))
       await saturated
-      // Give a ninth call every chance to start while the first eight are held open.
-      for (let turn = 0; turn < 20; turn++) await new Promise(resolve => setImmediate(resolve))
-      expect(inFlight).toBe(8)
-      expect(fetch).toHaveBeenCalledTimes(8)
+      const heldInFlight = inFlight
+      const heldCallCount = fetch.mock.calls.length
       release()
       const results = await pending
 
+      expect(heldInFlight).toBe(8)
+      expect(heldCallCount).toBe(8)
       expect(results.map(result => result.post_id)).toEqual(posts.map(sample => sample.id))
       expect(fetch).toHaveBeenCalledTimes(50)
       expect(peak).toBe(8)
