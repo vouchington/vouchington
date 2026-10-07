@@ -41,8 +41,8 @@ deferred theme.
 Do not archive while inspectors are still running. Immediately before each `session_archive`,
 read that session with `journal_entries` (every entry of every type, oldest first) and archive it
 only if its entries match the verified snapshot's entries for the same session by source identity
-(`sourceEventId`, or `createdAt` for a legacy entry that has none), with nothing added and nothing
-missing (two empty entry sets match); a session resumed or given a retrospective since the export,
+(`sourceEventId`, or `createdAt` for a legacy entry that has none) and by content, ignoring only the
+server-assigned `timestamp`, with nothing added, missing or changed (two empty entry sets match); a session resumed or given a retrospective since the export,
 or a result that is not `{ sessionId, entries }`, is left for the next pass. Always remove both the
 generated partition directory and the exported snapshot after the last `session_archive` (the check
 above reads the snapshot), or after the root merges summaries when nothing is archived, including on

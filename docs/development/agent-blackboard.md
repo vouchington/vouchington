@@ -189,8 +189,8 @@ hide exactly the aborted sessions this age rule exists to sweep up. The `--retro
 client-side from normalized entry `createdAt` values, falling back to session `createdAt` when
 empty. Immediately before each `session_archive`, which has no guard of its own, the root reads that
 session with `journal_entries` and archives it only if its entries match the verified snapshot's by
-source identity (`sourceEventId`, or `createdAt` for a legacy entry without one; two empty entry
-sets match); otherwise it leaves the session for the next pass. The root agent first verifies the
+source identity (`sourceEventId`, or `createdAt` for a legacy entry without one) and content,
+ignoring only the server-assigned `timestamp` (two empty entry sets match); otherwise it leaves the session for the next pass. The root agent first verifies the
 snapshot against the returned checksum, compact counts, and terminal manifest, and stops on any
 mismatch, then checks the generated-export cleanup token,
 then partitions the returned local JSONL snapshot with `pnpm exec agent-blackboard snapshot partition

@@ -116,9 +116,11 @@ session gets no issue-filing pass this run.
 
 Immediately before each `session_archive`, read that session with `journal_entries` (its
 `sessionId`) and archive it only if its entries match the verified snapshot's entries for the same
-session by source identity (`sourceEventId`, or `createdAt` for a legacy entry that has none): the
-same set, with nothing added and nothing missing; two empty entry sets match, so a zero-entry
-session is archivable. Otherwise the session changed since the snapshot (it was resumed, or a
+session by source identity (`sourceEventId`, or `createdAt` for a legacy entry that has none) and
+by content, ignoring only the server-assigned `timestamp`: the same set, with nothing added,
+nothing missing, and nothing changed (a manual `agent-blackboard append` can add different content
+under an existing id, which `journal_append` would reject); two empty entry sets match, so a
+zero-entry session is archivable. Otherwise the session changed since the snapshot (it was resumed, or a
 retrospective was saved after the export), so leave it unarchived for the next pass; so is a
 result that is not `{ sessionId, entries }`. Invoking this skill is the local archival
 authorization for eligible sessions: archive each one with a separate `session_archive` call whose
