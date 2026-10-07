@@ -1,5 +1,5 @@
 import { Response } from 'undici'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { classifyProviderFailure, classifyProviderResponse } from './retry-classification.mts'
 import type { ProviderErrorDetail, StructuredDecisionRetryClass } from './types.mts'
 
@@ -9,6 +9,7 @@ const guardrail = { ...none, guardrail: true }
 const outage: ProviderErrorDetail = { ...none, providerMessage: 'Provider returned error' }
 const inFlightBudget: ProviderErrorDetail = { ...none, limitSource: 'openrouter_in_flight_budget' }
 const otherLimit: ProviderErrorDetail = { ...none, limitSource: 'key_limit' }
+const DEFAULT_NOW = '2026-10-05T23:59:40.000Z'
 
 describe('classifyProviderFailure on OpenRouter', () => {
   it.each<[string, number, ProviderErrorDetail | undefined, StructuredDecisionRetryClass]>([
@@ -58,6 +59,15 @@ describe('classifyProviderFailure on TypeSafe', () => {
 })
 
 describe('classifyProviderResponse', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(process.env.VOUCH_PROOF_NOW ?? DEFAULT_NOW))
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   function respond(status: number, retryAfter?: string): Response {
     return new Response(null, {
       status,

@@ -7,6 +7,8 @@ import {
   hasUnexpiredPlusTier,
 } from './tier-helpers.mts'
 
+const fixedNow = new Date('2026-10-05T23:59:40.000Z')
+
 function makeMembership(overrides: Partial<Membership> = {}): Membership {
   return {
     __entity_type: 'membership',
@@ -14,7 +16,7 @@ function makeMembership(overrides: Partial<Membership> = {}): Membership {
     user_id: 'user-id',
     plan: 'plus',
     status: 'active',
-    started_at: new Date(),
+    started_at: fixedNow,
     expires_at: null,
     stripe_subscription_id: null,
     stripe_customer_id: null,
@@ -25,8 +27,8 @@ function makeMembership(overrides: Partial<Membership> = {}): Membership {
     paused_at: null,
     should_cancel_at_period_end: false,
     latest_change_id: null,
-    created_at: new Date(),
-    updated_at: new Date(),
+    created_at: fixedNow,
+    updated_at: fixedNow,
     sku: {
       id: 'sku-id',
       plan: 'plus',
@@ -57,7 +59,7 @@ describe('isActiveMembership', () => {
       isActiveMembership(
         makeMembership({
           stripe_subscription_id: 'sub_lapsed',
-          expires_at: new Date(Date.now() - 1_000),
+          expires_at: new Date(fixedNow.getTime() - 1_000),
         }),
       ),
     ).toBe(true)
@@ -78,32 +80,33 @@ describe('isActiveMembership', () => {
 
 describe('hasPlusTier', () => {
   it('returns true for active plus', () => {
-    expect(hasPlusTier(makeMembership({ plan: 'plus' }))).toBe(true)
+    expect(hasPlusTier(makeMembership({ plan: 'plus' }), fixedNow)).toBe(true)
   })
 
   it('returns false for an elapsed grant and true for an elapsed Stripe period', () => {
-    const elapsed = new Date(Date.now() - 1_000)
-    expect(hasPlusTier(makeMembership({ expires_at: elapsed }))).toBe(false)
+    const elapsed = new Date(fixedNow.getTime() - 1_000)
+    expect(hasPlusTier(makeMembership({ expires_at: elapsed }), fixedNow)).toBe(false)
     expect(
       hasPlusTier(
         makeMembership({
           stripe_subscription_id: 'sub_lapsed',
           expires_at: elapsed,
         }),
+        fixedNow,
       ),
     ).toBe(true)
   })
 
   it('returns true for active pro', () => {
-    expect(hasPlusTier(makeMembership({ plan: 'pro' }))).toBe(true)
+    expect(hasPlusTier(makeMembership({ plan: 'pro' }), fixedNow)).toBe(true)
   })
 
   it('returns false for null', () => {
-    expect(hasPlusTier(null)).toBe(false)
+    expect(hasPlusTier(null, fixedNow)).toBe(false)
   })
 
   it('returns false for cancelled', () => {
-    expect(hasPlusTier(makeMembership({ status: 'cancelled' }))).toBe(false)
+    expect(hasPlusTier(makeMembership({ status: 'cancelled' }), fixedNow)).toBe(false)
   })
 })
 
@@ -118,7 +121,7 @@ describe('hasProTier', () => {
 })
 
 describe('hasUnexpiredPlusTier', () => {
-  const now = new Date('2026-08-16T12:00:00.000Z')
+  const now = fixedNow
 
   it('accepts no expiration or a future expiration', () => {
     expect(hasUnexpiredPlusTier(makeMembership({ expires_at: null }), now)).toBe(true)
