@@ -11,12 +11,13 @@ type CacheCallMetric = {
   hits: number
   misses: number
 }
-type CacheCallMetricBridge = (metric: CacheCallMetric) => void
+type CacheCallMetricBridge = (metric: CacheCallMetric) => Promise<void>
 
 interface ValkeyAppIntegrationState {
   analyticsPromise: Promise<AnalyticsModule | null> | null
   bridge?: CacheCallMetricBridge
   loadAnalytics: ValkeyAnalyticsLoader
+  pendingMetricCompletions?: Set<Promise<void>>
 }
 
 const valkeyAppIntegrationStateKey = Symbol.for('voucha.valkey.app-integration')
@@ -35,7 +36,9 @@ function getValkeyAppIntegrationState(): ValkeyAppIntegrationState {
   return globalState[valkeyAppIntegrationStateKey]
 }
 
-export function initializeValkeyAppIntegration(): void {
+export function initializeValkeyAppIntegration(): {
+  waitForCacheMetricCompletions: () => Promise<void>
+} {
   const state = getValkeyAppIntegrationState()
 
   setValkeyErrorHandler(onError)
@@ -46,6 +49,16 @@ export function initializeValkeyAppIntegration(): void {
     if (isValkeyCacheMetricBridge(listener)) valkeyEvents.off('cache:call', listener)
   }
   valkeyEvents.on('cache:call', state.bridge)
+  return { waitForCacheMetricCompletions: waitForValkeyCacheMetricCompletions }
+}
+
+/** Waits until all cache-call analytics events emitted so far finish loading and dispatching. */
+async function waitForValkeyCacheMetricCompletions(): Promise<void> {
+  const pending = getValkeyAppIntegrationState().pendingMetricCompletions
+  if (!pending) return
+  const completions = await Promise.allSettled([...pending])
+  const failedCompletion = completions.find(completion => completion.status === 'rejected')
+  if (failedCompletion?.status === 'rejected') throw failedCompletion.reason
 }
 
 function markValkeyCacheMetricBridge(bridge: CacheCallMetricBridge): CacheCallMetricBridge {
@@ -62,17 +75,19 @@ function isValkeyCacheMetricBridge(
   )
 }
 
-function emitValkeyCacheCallMetric(metric: CacheCallMetric): void {
+function emitValkeyCacheCallMetric(metric: CacheCallMetric): Promise<void> {
   const state = getValkeyAppIntegrationState()
+  if (!state.pendingMetricCompletions) state.pendingMetricCompletions = new Set()
+  const pending = state.pendingMetricCompletions
   const now = new Date()
   state.analyticsPromise ??= state.loadAnalytics().catch(err => {
     onError(err)
     return null
   })
-  state.analyticsPromise
+  const completion = state.analyticsPromise
     .then(analytics => {
-      if (!analytics) return
-      analytics.emit('valkey_cache_calls', {
+      if (!analytics) return undefined
+      return analytics.emit('valkey_cache_calls', {
         event_id: crypto.randomUUID(),
         event_time: now,
         event_date: now.toISOString().slice(0, 10),
@@ -86,6 +101,12 @@ function emitValkeyCacheCallMetric(metric: CacheCallMetric): void {
       })
     })
     .catch(onError)
+  pending.add(completion)
+  void completion.then(
+    () => pending.delete(completion),
+    () => pending.delete(completion),
+  )
+  return completion
 }
 
 initializeValkeyAppIntegration()
