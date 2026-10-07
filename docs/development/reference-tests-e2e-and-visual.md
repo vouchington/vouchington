@@ -11,6 +11,17 @@ Playwright path filter matches or a pull request changes workflows or local acti
 changes skip all test jobs. See [area test suites](ci.md#area-test-suites). Reproduce the CI run
 locally with `pnpm run test:playwright`.
 
+Playwright tests have a 30-second maximum in the regular, credentialed, and localization smoke
+configs. The shared config rejects disabled, non-finite, and over-limit test or project timeouts;
+AST-grep rejects in-test deadline changes such as `test.setTimeout`, `test.slow`, and
+`testInfo.setTimeout`. Global setup checks resolved project timeouts, including CLI overrides,
+before seed work; the shared auto fixture checks each test's effective timeout before monitoring and the test body.
+Action, navigation, assertion, protocol, and web-server startup timeouts
+have separate purposes and retain their own budgets. Shorten slow scenarios or seed closer to the
+behavior under test instead of extending a test deadline.
+The [pure config regression tests](../../ci/playwright-test-timeout-config.test.mts) run in the
+`ci-tools` Vitest project, so they need only monorepo initialization.
+
 ### Credentialed E2E Suite
 
 A separate credentialed suite lives under `playwright/credentialed/` and uses

@@ -17,6 +17,7 @@ import {
   shellQuote,
   withOtelNodeOptions,
 } from './web-server-command.mts'
+import { playwrightTestTimeout } from './test-timeout.mts'
 const __dirname = fileURLToPath(new URL('../..', import.meta.url))
 
 const WEB_PORT = process.env.NEXT_PORT || process.env.WEB_PORT || '3000'
@@ -72,6 +73,15 @@ export function createPlaywrightConfig({
   reuseExistingServer,
   globalSetup = './playwright/global-setup.mts',
 }: CreatePlaywrightConfigOptions): PlaywrightTestConfig {
+  playwrightTestTimeout(timeout, 'Playwright test timeout')
+  for (const project of projects ?? []) {
+    if (project.timeout !== undefined) {
+      playwrightTestTimeout(
+        project.timeout,
+        `Playwright project ${project.name ?? '<unnamed>'} timeout`,
+      )
+    }
+  }
   const workerLogDir = CI ? join(TEMP_ROOT, 'wrangler-logs', randomUUID()) : undefined
   return {
     testDir,

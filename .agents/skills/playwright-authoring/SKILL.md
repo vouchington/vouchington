@@ -47,8 +47,9 @@ page.goto(url)` when the response object is needed.
   and `toHaveAttribute`/`toHaveCount` when they cleanly prove the outcome. Use `toContainText`
   (Playwright auto-retrying), not `toContain` (Vitest raw-string matcher). Copy changes must not
   break specs.
-- Timeouts: test=60s, action=10s, navigation=15s, assertion=10s. Do not increase these; fix root
-  causes instead of widening a budget.
+- Timeouts: test=30s maximum, action=10s, navigation=15s, assertion=10s. Do not increase these; fix root
+  causes instead of widening a budget. Do not call `test.setTimeout`, `testInfo.setTimeout`, or
+  `test.slow`, or set a suite timeout through `test.describe.configure`.
 
 ## Data and state
 
