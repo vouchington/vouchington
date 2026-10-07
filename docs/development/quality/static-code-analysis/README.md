@@ -857,7 +857,9 @@ This section records the outcomes of the evaluation in #5044 so the tracking iss
   `postgres-required-predicates` requires `deleted_at IS NULL` and `merged_into_topic_id IS NULL` on
   `topics` queries. The local `config-driven-sql-guard` / `on-conflict-*` /
   `topics-active-filter-guard` copies are deleted. TypeScript-generated config-driven SQL is still
-  judged at test time by `generated-ddl-insert-invariants.mts`.
+  judged at test time by `generated-ddl-insert-invariants.mts`. STORED generated-column
+  dependencies come from released no-mistakes SQL facts and the tooling replay context;
+  incomplete expression facts fail closed.
   Reproduce with `pnpm run no-mistakes`.
 
 ### PostgreSQL Conflict Ordering

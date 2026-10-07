@@ -59,6 +59,7 @@
     "@vouchington/localization-compiler": "^0.2.2",
     "glide-mq": "^0.17.0",
     "jose": "^6.2.12",
+    "no-mistakes": "^0.78.0",
     "openai": "^7.28.0",
     "otpauth": "^9.5.2",
     "pgvector": "^0.3.0",
@@ -68,7 +69,7 @@
     "undici": "^8.11.2",
     "uuid": "^14.0.2",
     "valkyries": "^0.8.1",
-    "vouchington-tooling": "^0.37.0"
+    "vouchington-tooling": "^0.37.2"
   },
   "devDependencies": {
     "@ts-shared/utils": "workspace:^",

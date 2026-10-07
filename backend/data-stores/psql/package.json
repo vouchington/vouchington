@@ -33,7 +33,7 @@
     "@vouchington/postgres": "^0.0.13",
     "pg": "^8.23.1",
     "sql-template-strings": "^2.2.2",
-    "vouchington-tooling": "^0.37.0"
+    "vouchington-tooling": "^0.37.2"
   },
   "devDependencies": {
     "no-mistakes": "^0.78.0",

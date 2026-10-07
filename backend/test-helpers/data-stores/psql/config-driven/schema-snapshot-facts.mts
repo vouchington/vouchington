@@ -16,7 +16,7 @@ import {
   replayUnsafeTrigger,
 } from './on-conflict-triggers.mts'
 
-// Parsed once at module load — schema.json is large, and every config-driven guard test in this
+// Read the snapshot and its generated-expression facts once per process for all guard tests.
 const schemaPath = fileURLToPath(
   new URL('../../../../data-stores/psql/schema-snapshot/schema.json', import.meta.url),
 )
