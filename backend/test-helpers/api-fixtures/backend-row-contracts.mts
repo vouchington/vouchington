@@ -57,28 +57,38 @@ export function assertBackendRowContracts(program: Program): void {
 
   const consumed = {
     id: 'string',
-    root_post_id: 'string | null',
-    community_id: 'string | null',
     title: 'string',
     markdown: 'string',
     ai_summary_markdown: 'string',
     broadcast: 'PostBroadcast',
     privacy: 'PostPrivacy',
     is_anonymous: 'boolean',
-    created_by_id: 'string | null',
     structured_data: 'unknown',
     data_point_vertical: 'string | null',
     declared_language: 'string | null',
     deleted_at: 'Date | null',
     archived_at: 'Date | null',
-    created_via: '"web" | "swift" | "dotnet" | "api" | "mcp" | "system"',
-    llm_moderation_content_sha256: 'Buffer<ArrayBufferLike>',
-    search_vector: 'string | null',
   }
-  const absent = ['clearance_status', 'clearance_reason', 'clearance_updated_at']
-  for (const path of [
-    'backend/services/posts/create/insert-post.mts',
-    'backend/services/posts/create-story-post.mts',
+  const absent = [
+    'clearance_status',
+    'clearance_reason',
+    'clearance_updated_at',
+    'created_by_id',
+    'created_via',
+    'llm_moderation_content_sha256',
+    'search_vector',
+  ]
+  for (const { path, expected, omitted } of [
+    {
+      path: 'backend/services/posts/create/insert-post.mts',
+      expected: { ...consumed, root_post_id: 'string | null', community_id: 'string | null' },
+      omitted: absent,
+    },
+    {
+      path: 'backend/services/posts/create-story-post.mts',
+      expected: consumed,
+      omitted: [...absent, 'root_post_id', 'community_id'],
+    },
   ]) {
     const writes = getCallRowTypeFacts({
       program,
@@ -86,16 +96,16 @@ export function assertBackendRowContracts(program: Program): void {
       fileName: fileName(path),
       calleeText: 'write',
       rowSource: 'typeArgument',
-      propertyNames: [...Object.keys(consumed), ...absent],
+      propertyNames: [...Object.keys(expected), ...omitted],
       assignableTo: { Post: postSelector },
     })
     assert.equal(writes.length, 1, `Expected one write type argument in ${path}`)
     const row = writes[0]!
     assert.equal(row.isAny, false)
     assert.equal(row.assignableTo.Post, false)
-    for (const name of absent) assert.equal(row.properties[name], undefined)
-    for (const [name, expected] of Object.entries(consumed)) {
-      assert.deepEqual({ name, type: row.properties[name] }, { name, type: expected })
+    for (const name of omitted) assert.equal(row.properties[name], undefined)
+    for (const [name, type] of Object.entries(expected)) {
+      assert.deepEqual({ name, type: row.properties[name] }, { name, type })
     }
   }
 }
