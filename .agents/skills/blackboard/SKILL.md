@@ -35,8 +35,11 @@ Journal only friction. Append a journal entry immediately, not at session end, w
 
 A repeated fix push and leaving the plan are not triggers on their own. The retrospective's
 `## CI Failures` is built only from the `GitHub Actions` blocks below, and its Plan vs Actual covers
-plan changes. This list replaces the canonical skill's broader list of observations to capture. Use
-this one-line grammar, then optional brief prose:
+plan changes. The one non-friction entry is the merge note that the
+[Close-out rule](../agent-workflow/git-and-prs.md#close-out) asks for when the merge of a PR you
+handed off changes the outcome: at most one per PR, appended through the script procedure below.
+This list replaces the canonical skill's broader list of observations to capture. Use this
+one-line grammar, then optional brief prose:
 
 ```
 - `recurring|one-off` — <finding> — <file path(s)> — <evidence: PR / commit / exact command> — <issue #N|none>
