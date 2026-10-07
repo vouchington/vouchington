@@ -29,6 +29,7 @@ _none_
 **Indexes:**
 
 - `copyright_repeat_infringer_incident_targets_pkey`: `CREATE UNIQUE INDEX copyright_repeat_infringer_incident_targets_pkey ON public.copyright_repeat_infringer_incident_targets USING btree (copyright_repeat_infringer_incident_id, copyright_notice_target_id)`
+- `idx_copyright_repeat_infringer_incident_targets__notice`: `CREATE INDEX idx_copyright_repeat_infringer_incident_targets__notice ON public.copyright_repeat_infringer_incident_targets USING btree (copyright_notice_id)`
 - `idx_copyright_repeat_infringer_incident_targets__target`: `CREATE INDEX idx_copyright_repeat_infringer_incident_targets__target ON public.copyright_repeat_infringer_incident_targets USING btree (copyright_notice_target_id)`
 
 **Triggers:**

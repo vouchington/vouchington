@@ -35050,6 +35050,26 @@
           "unique": true,
           "valid": true
         },
+        "idx_copyright_repeat_infringer_incident_targets__notice": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_repeat_infringer_incident_targets__notice ON public.copyright_repeat_infringer_incident_targets USING btree (copyright_notice_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_copyright_repeat_infringer_incident_targets__target": {
           "accessMethod": "btree",
           "constraintBacked": false,
