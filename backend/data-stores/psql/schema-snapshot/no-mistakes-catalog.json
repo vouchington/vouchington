@@ -129868,7 +129868,7 @@
           "ordinalPosition": 6
         }
       },
-      "comment": "Staff-placed legal-process preservation holds on a user account (for example a DMCA 512(h) subpoena). A hold with released_at NULL is open and blocks account deletion; at most one hold per account is open at a time. Rows are append-only apart from a single release, and survive the account: every user reference targets retained_user_identities, so a released hold never blocks the 90-day hard delete and an open hold cannot coexist with a deleted account (placement refuses one). The owner decides scope and duration on a lawyer's advice, so neither is stored.",
+      "comment": "Staff-placed legal-process preservation holds on a user account (for example a DMCA 512(h) subpoena). A hold with released_at NULL pauses the 90-day final account purge but not immediate account-deletion phases; at most one hold per account is open at a time. Rows are append-only apart from a single release and survive the account through retained identity references. Holds may be placed or released while the users row is soft-deleted. The owner decides scope and duration on a lawyer's advice, so neither is stored.",
       "foreignKeys": {
         "user_legal_preservation_holds_account_user_id_fkey": {
           "columns": ["account_user_id"],
