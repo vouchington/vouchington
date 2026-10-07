@@ -159,7 +159,7 @@ importers:
         version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       vouchington-tooling:
         specifier: ^0.37.2
-        version: 0.37.2(@modelcontextprotocol/sdk@1.32.0(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.78.1)(supports-color@10.2.2)(vitest@5.0.3)
+        version: 0.37.2(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.78.1)(supports-color@10.2.2)(vitest@5.0.3)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -1411,7 +1411,7 @@ importers:
         version: 2.2.2
       vouchington-tooling:
         specifier: ^0.37.2
-        version: 0.37.2(@modelcontextprotocol/sdk@1.32.0(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.78.1)(supports-color@10.2.2)(vitest@5.0.3)
+        version: 0.37.2(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.78.1)(supports-color@10.2.2)(vitest@5.0.3)
     devDependencies:
       no-mistakes:
         specifier: ^0.78.1
@@ -7051,8 +7051,8 @@ importers:
         specifier: workspace:^
         version: link:../../data-stores/psql
       '@modelcontextprotocol/sdk':
-        specifier: ^1.32.0
-        version: 1.32.0(supports-color@10.2.2)(zod@4.6.5)
+        specifier: ^1.32.1
+        version: 1.32.1(supports-color@10.2.2)(zod@4.6.5)
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -11392,7 +11392,7 @@ importers:
         version: 0.8.1
       vouchington-tooling:
         specifier: ^0.37.2
-        version: 0.37.2(@modelcontextprotocol/sdk@1.32.0(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.78.1)(supports-color@10.2.2)(vitest@5.0.3)
+        version: 0.37.2(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.78.1)(supports-color@10.2.2)(vitest@5.0.3)
     devDependencies:
       '@ts-shared/utils':
         specifier: workspace:^
@@ -13400,7 +13400,7 @@ importers:
         version: 11.0.5
       vouchington-tooling:
         specifier: ^0.37.2
-        version: 0.37.2(@modelcontextprotocol/sdk@1.32.0(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.78.1)(supports-color@10.2.2)(vitest@5.0.3)
+        version: 0.37.2(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.78.1)(supports-color@10.2.2)(vitest@5.0.3)
     devDependencies:
       '@types/picomatch':
         specifier: ^4.0.3
@@ -13642,7 +13642,7 @@ importers:
         version: 1.9.0
       vouchington-tooling:
         specifier: ^0.37.2
-        version: 0.37.2(@modelcontextprotocol/sdk@1.32.0(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.78.1)(supports-color@10.2.2)(vitest@5.0.3)
+        version: 0.37.2(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.78.1)(supports-color@10.2.2)(vitest@5.0.3)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -14002,7 +14002,7 @@ importers:
         version: 8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
       vouchington-tooling:
         specifier: ^0.37.2
-        version: 0.37.2(@modelcontextprotocol/sdk@1.32.0(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.78.1)(supports-color@10.2.2)(vitest@5.0.3)
+        version: 0.37.2(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.78.1)(supports-color@10.2.2)(vitest@5.0.3)
 
 packages:
 
@@ -15585,8 +15585,8 @@ packages:
   '@libpg-query/parser@18.0.0':
     resolution: {integrity: sha512-SlCUpkRMBBwT6vSE8RTgsi9RAiZRiBV9xTnxHQFDTM5DHjPlOzKkVtAF5xzdXUnch7d9MBmGKQf0Gxz/FJiGAg==}
 
-  '@modelcontextprotocol/sdk@1.32.0':
-    resolution: {integrity: sha512-8BviX/hK4Gd2eL1KdTwm0gfl4d3wdoErW0Jd00h6nomUAtk6IJk5vwQJc6kfWtJTzN5OEV/lgIiJKI8fiDGAlA==}
+  '@modelcontextprotocol/sdk@1.32.1':
+    resolution: {integrity: sha512-2DdE+SJDtzLEEWzY1ZjY7Q+VcPhcV1KisD3zI4u0XZyktsjHum1mwbMI+JaulUBi2OZk+KJAi2uPXzxichPkdw==}
     engines: {node: '>=18'}
     peerDependencies:
       '@cfworker/json-schema': ^4.1.1
@@ -24827,7 +24827,7 @@ snapshots:
     dependencies:
       '@pgsql/types': 18.0.0
 
-  '@modelcontextprotocol/sdk@1.32.0(supports-color@10.2.2)(zod@4.6.5)':
+  '@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5)':
     dependencies:
       '@hono/node-server': 2.1.1(hono@4.13.9)
       ajv: 8.20.0
@@ -28337,7 +28337,7 @@ snapshots:
 
   agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5):
     dependencies:
-      '@modelcontextprotocol/sdk': 1.32.0(supports-color@10.2.2)(zod@4.6.5)
+      '@modelcontextprotocol/sdk': 1.32.1(supports-color@10.2.2)(zod@4.6.5)
     transitivePeerDependencies:
       - '@cfworker/json-schema'
       - supports-color
@@ -31107,7 +31107,7 @@ snapshots:
 
   pr-shepherd@0.56.5(supports-color@10.2.2):
     dependencies:
-      '@modelcontextprotocol/sdk': 1.32.0(supports-color@10.2.2)(zod@4.6.5)
+      '@modelcontextprotocol/sdk': 1.32.1(supports-color@10.2.2)(zod@4.6.5)
       picomatch: 4.0.7
       yaml: 2.9.1
       zod: 4.6.5
@@ -32329,7 +32329,7 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vouchington-tooling@0.37.2(@modelcontextprotocol/sdk@1.32.0(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.78.1)(supports-color@10.2.2)(vitest@5.0.3):
+  vouchington-tooling@0.37.2(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.78.1)(supports-color@10.2.2)(vitest@5.0.3):
     dependencies:
       '@types/mdast': 4.0.4
       '@types/unist': 3.0.3
@@ -32344,7 +32344,7 @@ snapshots:
       yaml: 2.9.1
     optionalDependencies:
       '@libpg-query/parser': 18.0.0
-      '@modelcontextprotocol/sdk': 1.32.0(supports-color@10.2.2)(zod@4.6.5)
+      '@modelcontextprotocol/sdk': 1.32.1(supports-color@10.2.2)(zod@4.6.5)
       '@typescript/typescript6': 6.0.2
       agent-blackboard: 0.6.1(supports-color@10.2.2)(zod@4.6.5)
       no-mistakes: 0.78.1
