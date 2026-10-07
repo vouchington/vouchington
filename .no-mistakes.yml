@@ -2598,7 +2598,7 @@ rules:
         enabled: true
         objects: [table, enum]
         uncountable: [data, metadata, feedback, media, evidence, information]
-        # Preserve provider acronyms; ses denial awaits jonathanong/no-mistakes#1575.
+        # Preserve provider acronyms.
         nonPluralTokens:
           [rewards, status, analysis, sms, news, series, bonus, alias, census, ses, itunes]
         ignorePatterns: ['^(retained_)?relation__']
@@ -2623,6 +2623,7 @@ rules:
         - { token: msg, replacement: message }
         - { token: uniq, replacement: unique }
         - { token: fk, replacement: foreign_key }
+        - { token: ses, replacement: amazon_ses }
       spelling: { acknowledgement: acknowledgment, blacklist: blocklist, whitelist: allowlist }
       doubleUnderscore:
         allowPattern: '^(retained_relation__[a-z0-9]+(_[a-z0-9]+)*__[a-z0-9]+(_[a-z0-9]+)*__[a-z0-9]+(_[a-z0-9]+)*|relation__[a-z0-9]+(_[a-z0-9]+)*__[a-z0-9]+(_[a-z0-9]+)*__[a-z0-9]+(_[a-z0-9]+)*(__votes)?)$'
@@ -3511,7 +3512,8 @@ rules:
           },
         ]
       foreignKeys:
-        targetSuffixes: [{ tables: [users, retained_user_identities], suffixes: [user_id, _by_id] }]
+        targetSuffixes:
+          [{ tables: [users, retained_user_identities], suffixes: [_user_id, _by_id] }]
         targetNames: [{ tablePattern: '^retained_(.+)_identities$', name: '$1' }]
         reservedSuffixes:
           - { suffix: _user_id, types: [uuid], tables: [users, retained_user_identities] }
@@ -3541,6 +3543,7 @@ rules:
               hint: 'store the URL in urls and reference it',
             }
         targetMatch: last-word
+        allowReferencedColumnName: true
         followCompositeForeignKeys: true
         singular: { people: person, aliases: alias, statuses: status, media: media, data: data }
         requireForeignKey:
@@ -3570,34 +3573,6 @@ rules:
           reason: 'Decision 13 capability-bearing Web Push endpoint ownership key.'
         - object: column:web_push_subscriptions.endpoint
           reason: 'Decision 13 capability-bearing Web Push endpoint from the browser protocol.'
-        - object: 'column:community_post_review_changes.post_id'
-          reason: 'named after the referenced natural key; see https://github.com/jonathanong/no-mistakes/issues/1575 and batch A3-NM3-1575 in the layer-A3 PR description'
-        - object: 'column:copyright_notice_targets.placement_id'
-          reason: 'named after the referenced natural key; see https://github.com/jonathanong/no-mistakes/issues/1575 and batch A3-NM3-1575 in the layer-A3 PR description'
-        - object: 'column:github_friends.github_user_id'
-          reason: 'named after the referenced natural key; see https://github.com/jonathanong/no-mistakes/issues/1575 and batch A3-NM3-1575 in the layer-A3 PR description'
-        - object: 'column:media_delivery_registry_changes.delivery_key'
-          reason: 'named after the referenced natural key; see https://github.com/jonathanong/no-mistakes/issues/1575 and batch A3-NM3-1575 in the layer-A3 PR description'
-        - object: 'column:media_delivery_registry_projection_work_items.delivery_key'
-          reason: 'named after the referenced natural key; see https://github.com/jonathanong/no-mistakes/issues/1575 and batch A3-NM3-1575 in the layer-A3 PR description'
-        - object: 'column:media_delivery_repair_markers.delivery_key'
-          reason: 'named after the referenced natural key; see https://github.com/jonathanong/no-mistakes/issues/1575 and batch A3-NM3-1575 in the layer-A3 PR description'
-        - object: 'column:oauth_authorizations.facebook_user_id'
-          reason: 'named after the referenced natural key; see https://github.com/jonathanong/no-mistakes/issues/1575 and batch A3-NM3-1575 in the layer-A3 PR description'
-        - object: 'column:oauth_authorizations.github_user_id'
-          reason: 'named after the referenced natural key; see https://github.com/jonathanong/no-mistakes/issues/1575 and batch A3-NM3-1575 in the layer-A3 PR description'
-        - object: 'column:oauth_authorizations.x_user_id'
-          reason: 'named after the referenced natural key; see https://github.com/jonathanong/no-mistakes/issues/1575 and batch A3-NM3-1575 in the layer-A3 PR description'
-        - object: 'column:post_topic_recommendation_hostnames.post_id'
-          reason: 'named after the referenced natural key; see https://github.com/jonathanong/no-mistakes/issues/1575 and batch A3-NM3-1575 in the layer-A3 PR description'
-        - object: 'column:post_topic_recommendation_landing_page_urls.post_id'
-          reason: 'named after the referenced natural key; see https://github.com/jonathanong/no-mistakes/issues/1575 and batch A3-NM3-1575 in the layer-A3 PR description'
-        - object: 'column:story_post_related_url_projection_receipts.post_id'
-          reason: 'named after the referenced natural key; see https://github.com/jonathanong/no-mistakes/issues/1575 and batch A3-NM3-1575 in the layer-A3 PR description'
-        - object: 'column:story_post_related_url_projection_relation_mutations.post_id'
-          reason: 'named after the referenced natural key; see https://github.com/jonathanong/no-mistakes/issues/1575 and batch A3-NM3-1575 in the layer-A3 PR description'
-        - object: 'column:x_friends.x_user_id'
-          reason: 'named after the referenced natural key; see https://github.com/jonathanong/no-mistakes/issues/1575 and batch A3-NM3-1575 in the layer-A3 PR description'
         - object: 'column:activitypub_inbox_activities.actor_uri'
           reason: "Decision 13 allowed URL group: The activity's `actor` field (the sending remote actor's ActivityPub id), recorded for operational visibility."
         - object: 'column:activitypub_inbox_delivery_work_items.claimed_actor_uri'
