@@ -90,9 +90,9 @@ stdin and disables Next and Storybook telemetry, both of which can wait on an op
 network call.
 
 The build deadline is about three times the slowest healthy build on GitHub-hosted ARM runners.
-Over the 12 hours ending 2026-10-07 05:43 UTC, 157 successful `static-web` builds took a median of
-80 seconds and at most 90. The Next build cache is disabled, so each one is cold: about 56 seconds
-of Next and 25 of Storybook. Consumer fallback rebuilds match that profile. Every caller's composite
+From 2026-10-05 07:34 to 2026-10-07 05:43 UTC, 624 successful `static-web` builds took at most 91
+seconds. Their median rose from about 56 to 80 seconds on 2026-10-06. The Next build cache is
+disabled, so each one is cold: about 56 seconds of Next and 25 of Storybook. Consumer fallback rebuilds match that profile. Every caller's composite
 step ceiling is that deadline plus one minute for the timing summary and upload, rounded up, and
 `build-web-targets-timeouts.test.mts` holds them together. This replaced a 13-minute ceiling carried
 over from a self-hosted host's lock-acquisition budget. The fallback producer jobs keep additive
