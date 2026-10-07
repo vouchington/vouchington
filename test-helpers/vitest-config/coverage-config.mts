@@ -44,7 +44,7 @@ export const coverageConfigForScope = (scope: string | undefined): CoverageConfi
       'web/next.config.ts',
       'web/*.config.ts',
       '**/esbuild.config.mts',
-      'lambdas/image-resize/scripts/copy-og-fonts.mts',
+      'lambdas/image-resize/scripts/**',
       '**/.wrangler/**',
       '**/.next/**',
       ...(storybook || portability ? [] : ['**/test-helpers/**']),

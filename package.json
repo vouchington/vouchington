@@ -55,6 +55,7 @@
     "test:smoke:web": "pnpm --dir web test:smoke",
     "test:smoke:cloudflare-worker": "pnpm --dir cloudflare-worker test:smoke",
     "test:smoke:image-lambda": "pnpm --dir lambdas/image-resize test:smoke",
+    "test:smoke:image-lambda-package": "pnpm --dir lambdas/image-resize test:smoke:package",
     "test:localization:tmux-smoke": "bash -c '[ -f .env ] || { echo \"Error: .env file not found. Run ./dev/initialize web to set up this worktree.\" >&2; exit 1; }; source .env; node dev/localization/local-smoke.mts'",
     "test:playwright": "bash -c '[ -n \"$CI\" ] || [ -f .env ] || { echo \"Error: .env file not found. Run ./dev/initialize web to set up this worktree.\" >&2; exit 1; }; [ -f .env ] && source .env; [ \"$1\" = \"--\" ] && shift; ./ci/with-node-test-options node dev/playwright-server-check && ./ci/with-node-test-options playwright test \"$@\"' _",
     "db:clean": "./dev/db-clean",

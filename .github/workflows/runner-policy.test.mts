@@ -142,7 +142,7 @@ describe('workflow runner policy (real workflows)', () => {
     }
   })
 
-  it('restricts the ARM runner to the image builds, web Vitest shards, and shared web build jobs', () => {
+  it('restricts the ARM runner to the image builds, web Vitest shards, shared web build jobs, and Lambda package smoke', () => {
     const armLabels: readonly string[] = ALLOWED_LABELS.filter(label => label.endsWith('-arm'))
     expect(armLabels).toHaveLength(1)
     const armJobs = allJobEntries()
@@ -151,6 +151,7 @@ describe('workflow runner policy (real workflows)', () => {
       .toSorted()
 
     expect(armJobs).toEqual([
+      'checks-static.yml#static-lambdas',
       'checks-static.yml#static-web',
       'publish-backend-images.yml#build',
       'publish-web-images.yml#build',

@@ -13,6 +13,11 @@ Client → CloudFront → Lambda Function URL → Lambda → (cache|origin) S3 �
 
 - `pnpm run typecheck:lambdas` — typecheck Lambda workspaces
 - `pnpm run test:lambdas` — run Lambda tests; append test paths to narrow the run
+- `pnpm --filter @lambdas/image-resize run build` then `pnpm run test:smoke:image-lambda-package` — unzip
+  the deployment package outside the repository and render an OG card through its bundled handler.
+  Source tests resolve every runtime file from `node_modules`; only this check catches a file the zip
+  omits. CI runs it on `linux-arm64`, where the packaged `sharp` binary loads; elsewhere it links the
+  host's `sharp` binary.
 
 The [placement smoke monitor](../../../../../monitors/lambdas/image-resize.mts) probes a random canonical
 missing tuple and a removed generic image route through CloudFront; both must return exactly 404.
@@ -93,6 +98,7 @@ Private IPv4 ranges, loopback, link-local (including AWS metadata at `169.254.16
   - both branches also carry a `rendererVersion` field (web's `OG_RENDERER_VERSION`) — a pure cache-buster the Lambda ignores; it only exists so a renderer change mints a fresh `/og/` URL instead of matching a stale immutable-cached PNG
 - `sig` — HMAC signature over the **path only** (not the query string), via the same `@ts-shared/url-signing` helpers and signing keys as sideload; missing or invalid returns 403 under the same signing-required gate as sideload (`NODE_ENV=production` or `ENVIRONMENT` is `staging`/`production`)
 - Renders a 1200×630 PNG with `satori` (flexbox layout → SVG) and `sharp` (SVG → PNG), using bundled `@fontsource/inter` `.woff` files
+- `satori` shapes text with `harfbuzzjs`, which reads `hb.wasm` from the bundle's directory when it loads. `scripts/copy-og-assets.mts` copies it and the fonts into the zip; without `hb.wasm` every OG render fails
 - Landing cards fetch an allowed dependency's image directly from the source bucket via `fetchImageFromS3` (no HTTP fetch — required for the IPv6-only egress flip) and normalize it to a 192×192 circle; a missing, oversize (50 MB / 24 MP), unauthorized, or unfetchable avatar falls back to an initial-letter avatar and never fails the request
 - Bypasses the cache contract below entirely: OG responses are never written to the cache bucket and are re-rendered on every invocation. The `/og/<base64url>` path is already content-addressed, so CloudFront's own edge cache (not this Lambda's S3 render cache) is what makes repeat requests cheap. `CACHE_VERSION` does not apply to this route — instead, bump `OG_RENDERER_VERSION` in `web/lib/seo/og-image-url.ts` whenever the renderer output changes (see issue #8046), which mints new `/og/` paths and lets old immutable-cached PNGs age out untouched.
 

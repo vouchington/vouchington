@@ -80,10 +80,11 @@ describe('checks-static workflow', () => {
     expect(parsed.jobs?.['static-cloudflare']?.if).toBe('inputs.cloudflare-worker')
   })
 
-  it('runs the shared-build producer on native ARM64 and the other static-* jobs on ubuntu-latest', () => {
+  it('runs the shared-build producer and the Lambda package smoke on native ARM64 and the other static-* jobs on ubuntu-latest', () => {
     expect(armLabel).toBeDefined()
     expect(parsed.jobs?.['static-web']?.['runs-on']).toEqual(armLabel)
-    for (const job of ['static-backend', 'static-lambdas', 'static-cloudflare']) {
+    expect(parsed.jobs?.['static-lambdas']?.['runs-on']).toEqual(armLabel)
+    for (const job of ['static-backend', 'static-cloudflare']) {
       expect(parsed.jobs?.[job]?.['runs-on']).toEqual('ubuntu-latest')
     }
   })
@@ -91,7 +92,7 @@ describe('checks-static workflow', () => {
   it('budgets each additive job above its serial critical step timeouts', () => {
     const expectedBudgets = new Map([
       ['static-backend', 14],
-      ['static-lambdas', 10],
+      ['static-lambdas', 15],
       ['static-cloudflare', 10],
     ])
 
@@ -228,6 +229,11 @@ fi\n`,
       'pnpm exec depcruise --config lambdas/.dependency-cruiser.cjs --output-type err --cache --cache-strategy content lambdas',
     )
     expect(job).not.toContain('Typecheck lambdas')
+    const build = job.indexOf('run: pnpm --filter @lambdas/image-resize run build')
+    expect(build).toBeGreaterThan(0)
+    expect(
+      job.indexOf('run: pnpm --filter @lambdas/image-resize run test:smoke:package'),
+    ).toBeGreaterThan(build)
   })
 
   it('does not duplicate compiler gates owned by unconditional static analysis', () => {

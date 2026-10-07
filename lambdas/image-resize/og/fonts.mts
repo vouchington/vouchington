@@ -22,7 +22,7 @@ export interface OgFont {
   style: 'normal'
 }
 
-// Exported so scripts/copy-og-fonts.mts can copy exactly the weight files
+// Exported so scripts/copy-og-assets.mts can copy exactly the weight files
 // this module resolves at runtime — one list, not two kept in sync by hand.
 export const FONT_WEIGHTS = [400, 600, 700, 800] as const
 
