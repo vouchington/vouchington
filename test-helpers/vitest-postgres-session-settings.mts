@@ -9,6 +9,7 @@ export function configureTestPostgresSessions(env: NodeJS.ProcessEnv = process.e
     const previous = url.searchParams.get('options') ?? '-c jit=off'
     const settings = `-c statement_timeout=${TEST_STATEMENT_TIMEOUT_MS} -c hnsw.ef_search=${TEST_HNSW_EF_SEARCH}`
     if (!previous.endsWith(settings)) url.searchParams.set('options', `${previous} ${settings}`)
-    env[key] = url.toString()
+    // libpq treats '+' in URI options literally; URLSearchParams uses it for spaces.
+    env[key] = url.toString().replace(/[?&]options=[^&]*/u, option => option.replaceAll('+', '%20'))
   }
 }

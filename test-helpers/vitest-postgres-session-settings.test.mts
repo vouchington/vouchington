@@ -16,9 +16,12 @@ describe('PostgreSQL test session configuration', () => {
     expect(primary.pathname).toBe('/owned')
     expect(primary.searchParams.get('options')).toContain('-c application_name=fixture')
     expect(primary.searchParams.get('options')).toContain('-c statement_timeout=')
+    expect(env.DATABASE_URL).toContain('options=-c%20application_name%3Dfixture')
+    expect(env.DATABASE_URL).not.toMatch(/[?&]options=[^&]*\+/u)
     expect(read.pathname).toBe('/owned_read')
     expect(read.searchParams.get('sslmode')).toBe('disable')
     expect(read.searchParams.get('options')).toContain('-c hnsw.ef_search=')
+    expect(env.READ_DATABASE_URL).not.toMatch(/[?&]options=[^&]*\+/u)
   })
 
   it('does not grow startup options when setup is repeated', () => {
