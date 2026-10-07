@@ -31,7 +31,12 @@ export default async function UserAdminPage({ params }: PageProps) {
     if (!isUUID(idOrUsername)) notFound()
     const holdState = await getUserPreservationHoldState(idOrUsername)
     if (!holdState?.account_deleted_at) notFound()
-    return <DeletedUserPreservationHoldPanel userId={idOrUsername} />
+    return (
+      <DeletedUserPreservationHoldPanel
+        key={idOrUsername}
+        userId={idOrUsername}
+      />
+    )
   }
 
   let landingPagesData: Awaited<ReturnType<typeof getAdminLandingPagesForUser>> = null

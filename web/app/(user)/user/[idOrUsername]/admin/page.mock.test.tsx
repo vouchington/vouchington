@@ -146,6 +146,7 @@ describe('UserAdminPage', () => {
     const result = await UserAdminPage({ params: Promise.resolve({ idOrUsername: userId }) })
     render(result)
 
+    expect(result.key).toBe(userId)
     expect(screen.getByTestId('deleted-account-hold-panel')).toHaveTextContent(userId)
     expect(screen.queryByText('User admin panel')).toBeNull()
     expect(screen.queryByText('Membership refund panel')).toBeNull()
