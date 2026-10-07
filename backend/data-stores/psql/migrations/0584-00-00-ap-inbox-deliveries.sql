@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS activitypub_inbox_delivery_work_items (
   attempt_count INTEGER NOT NULL DEFAULT 0 CHECK (attempt_count >= 0),
   verified_at TIMESTAMPTZ,
   sender_allowed_at TIMESTAMPTZ,
-  available_at TIMESTAMPTZ,
+  available_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   failed_at TIMESTAMPTZ,
   first_failed_at TIMESTAMPTZ,
   retention_expires_at TIMESTAMPTZ,
@@ -41,25 +41,23 @@ CREATE TABLE IF NOT EXISTS activitypub_inbox_delivery_work_items (
     sender_allowed_at IS NULL OR (verified_at IS NOT NULL AND remote_actor_id IS NOT NULL)
   ),
   CONSTRAINT activitypub_inbox_work_items__deferral_state_valid CHECK (
-    available_at IS NULL OR (
+    NOT (
       verified_at IS NOT NULL
       AND remote_actor_id IS NOT NULL
       AND leased_at IS NULL
       AND dispatched_at IS NULL
       AND sender_allowed_at IS NULL
       AND failed_at IS NULL
-      AND last_error IS NOT NULL
-    )
+    ) OR last_error IS NOT NULL
   ),
   CONSTRAINT activitypub_inbox_work_items__failure_state_valid CHECK (
     failed_at IS NULL OR (
       leased_at IS NOT NULL
-      AND available_at IS NULL
       AND last_error IS NOT NULL
     )
   ),
   CONSTRAINT activitypub_inbox_work_items__terminal_diagnostics_present CHECK (
-    (available_at IS NULL AND failed_at IS NULL) OR last_error IS NOT NULL
+    failed_at IS NULL OR last_error IS NOT NULL
   ),
   CONSTRAINT activitypub_inbox_work_items__last_error_bounded CHECK (last_error IS NULL OR LENGTH(last_error) <= 1000),
   CONSTRAINT activitypub_inbox_work_items__failed_requires_first_failed CHECK (failed_at IS NULL OR first_failed_at IS NOT NULL),
@@ -106,7 +104,7 @@ COMMENT ON COLUMN activitypub_inbox_delivery_work_items.dispatched_at IS 'Latest
 COMMENT ON COLUMN activitypub_inbox_delivery_work_items.leased_at IS 'Active worker lease timestamp; non-final retryable failures release it and stale crashes recover after thirty minutes.';
 COMMENT ON COLUMN activitypub_inbox_delivery_work_items.verified_at IS 'When the worker first verified the exact request signature and actor match; always paired with remote_actor_id.';
 COMMENT ON COLUMN activitypub_inbox_delivery_work_items.sender_allowed_at IS 'Set after the sender-hostname delivery rate limit admits this envelope; retries do not charge the sender again.';
-COMMENT ON COLUMN activitypub_inbox_delivery_work_items.available_at IS 'Earliest retry time after a valid sender exceeds its hostname delivery allowance.';
+COMMENT ON COLUMN activitypub_inbox_delivery_work_items.available_at IS 'Earliest time this envelope may next be claimed; current-time availability is the active baseline.';
 COMMENT ON COLUMN activitypub_inbox_delivery_work_items.failed_at IS 'Set only after the queue exhausts retryable operational attempts. Manual backfill clears it and rotates the fencing token.';
 COMMENT ON COLUMN activitypub_inbox_delivery_work_items.first_failed_at IS 'Immutable timestamp of the first retry-exhausting operational failure; survives rearm to anchor sticky retention.';
 COMMENT ON COLUMN activitypub_inbox_delivery_work_items.retention_expires_at IS 'Maximum retention deadline for an unverified or previously failed durable delivery.';

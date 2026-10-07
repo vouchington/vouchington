@@ -26,7 +26,7 @@ export async function recordClaimantMisuseEvent(
   await transaction(sql`/* recordClaimantMisuseEvent */
     INSERT INTO copyright_claimant_misuse_events (
       copyright_notice_id, outcome, copyright_notice_submission_id,
-      copyright_notice_submission_assessment_id, copyright_restriction_id, recorded_at
+      copyright_notice_submission_assessment_id, copyright_restriction_id, occurred_at
     ) VALUES (
       ${input.noticeId}, ${event.outcome},
       ${event.outcome === 'notice_withdrawn' ? event.submissionId : null},

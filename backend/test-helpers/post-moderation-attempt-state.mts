@@ -1,6 +1,21 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
+export async function getTestPostModerationWorkAttemptCount(
+  postId: string,
+  source: 'openai_omni' | 'spam_detection',
+): Promise<number | null> {
+  const { rows } = await read<{
+    attempt_count: number
+  }>(sql`/* getTestPostModerationWorkAttemptCount */
+    SELECT work.attempt_count
+    FROM post_moderation_work_items work
+    JOIN post_moderation_versions version ON version.id = work.version_id
+    WHERE version.post_id = ${postId} AND work.source = ${source}::post_moderation_sources
+  `)
+  return rows[0]?.attempt_count ?? null
+}
+
 export async function getTestPostModerationAttemptStateForPost(
   postId: string,
   source: 'openai_omni' | 'spam_detection',

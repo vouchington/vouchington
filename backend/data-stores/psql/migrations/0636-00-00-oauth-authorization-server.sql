@@ -167,7 +167,7 @@ CREATE TABLE IF NOT EXISTS oauth_authorization_server_events (
   grant_id UUID,
   resource TEXT NOT NULL CHECK (char_length(resource) BETWEEN 1 AND 2048),
   scopes api_scopes[] NOT NULL CHECK (cardinality(scopes) > 0),
-  occurred_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  occurred_at TIMESTAMPTZ NOT NULL GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CHECK (num_nonnulls(authorization_request_id, access_token_id, refresh_token_family_id) = 1),
   CHECK (
     (event_type IN ('consent_approved', 'consent_denied') AND authorization_request_id IS NOT NULL)

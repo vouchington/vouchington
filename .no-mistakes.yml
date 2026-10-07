@@ -3762,3 +3762,173 @@ rules:
           reason: 'Decision 12 allowed protocol, search, or numeric array: Supported transport methods (usb, ble, nfc, internal, etc.).'
         - object: 'column:users.moderation_email_days_of_week'
           reason: 'Decision 12 allowed protocol, search, or numeric array: Days of week for selected-day moderation email cadence, 1=Monday and 7=Sunday.'
+
+  - name: NM-10 table shapes
+    rule: postgres-table-shape
+    scope: repository
+    options:
+      schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
+      shapes:
+        - name: revision-history
+          tablePattern: _revisions$
+          requiredColumns:
+            - name: id
+              type: uuid
+              nullable: false
+            - name: revised_by_id
+              type: uuid
+              references:
+                - users
+              onDelete: set null
+            - name: revision_type
+              nullable: false
+            - name: changes
+              type: jsonb
+              nullable: false
+          forbiddenColumns:
+            - updated_at
+          requiredTriggers:
+            - function: fn_reject_mutation
+              timing: before
+              events:
+                - update
+                - delete
+        - name: change-ledger
+          tablePattern: _changes$
+          requiredColumns:
+            - name: id
+              type: uuid
+              nullable: false
+            - name: change_type
+              nullable: false
+            - name: changed_by_id
+              type: uuid
+              references:
+                - retained_user_identities
+              onDelete: restrict
+          forbiddenColumns:
+            - updated_at
+          requiredTriggers:
+            - function: fn_reject_mutation
+              timing: before
+              events:
+                - update
+                - delete
+        - name: work-queue
+          tablePattern: _work_items$
+          requiredColumns:
+            - name: lease_token
+              type: uuid
+            - name: lease_expires_at
+              type: timestamp with time zone
+            - name: available_at
+              type: timestamp with time zone
+              nullable: false
+            - name: attempt_count
+              type: integer
+              nullable: false
+          forbiddenColumns:
+            - claim_token
+            - claimed_at
+            - locked_by
+            - leased_until_at
+            - processing_attempt_id
+        - name: append-only-events
+          tablePattern: _events$
+          requiredColumns:
+            - name: occurred_at
+              type: timestamp with time zone
+              nullable: false
+          forbiddenColumns:
+            - updated_at
+          requiredTriggers:
+            - function: fn_reject_mutation
+              timing: before
+              events:
+                - update
+                - delete
+        - name: job-cursor
+          tablePattern: _cursors$
+          primaryKeyTypes:
+            - boolean
+            - enum
+          requiredColumns:
+            - namePattern: ^cursor_|_through_at$
+            - name: updated_at
+              type: timestamp with time zone
+              nullable: false
+          forbiddenColumns:
+            - singleton
+        - name: per-target-votes
+          tablePattern: _votes$
+          requiredColumns:
+            - name: id
+              type: uuid
+              nullable: false
+            - name: user_id
+              type: uuid
+              nullable: false
+              references:
+                - users
+              onDelete: cascade
+            - name: score
+              type: smallint
+            - name: score_is_neutral
+            - name: score_is_semantic
+            - name: device_id
+            - name: ip_address
+            - name: session_id
+            - name: user_agent_string_id
+          forbiddenColumns:
+            - relation_table
+        - name: relation-votes
+          tablePattern: ^relation__.*__votes$
+          requiredColumns:
+            - name: subject_id
+              nullable: false
+            - name: entity_relation_id
+              nullable: false
+      bannedTablePatterns:
+        - pattern: _(history|change_logs|audit_logs)$
+          message: 'use the R4 shapes: _revisions, _changes, _work_items or _cursors'
+      allow:
+        - object: table:agent_moderation_votes
+          reason: Binary moderation ballots intentionally do not model neutral or semantic
+            score provenance;
+  - name: NM-11 status beside lifecycle timestamps
+    rule: postgres-status-with-lifecycle-timestamps
+    scope: repository
+    options:
+      schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
+      statusColumns:
+        - status
+        - state
+      lifecycleVerbs:
+        - approved
+        - rejected
+        - claimed
+        - leased
+        - paid
+        - bounced
+        - completed
+        - cancelled
+        - canceled
+        - failed
+        - started
+        - finished
+        - sent
+        - delivered
+        - published
+        - archived
+        - revoked
+        - expired
+        - resolved
+        - dismissed
+        - processed
+        - dispatched
+        - ignored
+        - blocked
+        - stale
+        - exchanged
+        - acknowledged
+      minLifecycleColumns: 2

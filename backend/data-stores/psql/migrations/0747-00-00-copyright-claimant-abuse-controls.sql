@@ -16,7 +16,7 @@ CREATE TABLE copyright_claimant_misuse_events (
   copyright_notice_submission_id uuid CONSTRAINT uq_copyright_claimant_misuse_events__notice_submission_id UNIQUE CONSTRAINT fk_copyright_claimant_misuse_events__notice_submission REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
   copyright_notice_submission_assessment_id uuid CONSTRAINT uq_copyri_claima_misuse_events__notice_submission_assessment_id UNIQUE CONSTRAINT fk_copyrig_claimant_misuse_events__notice_submission_assessment REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT,
   copyright_restriction_id uuid UNIQUE REFERENCES copyright_restrictions(id) ON DELETE RESTRICT,
-  recorded_at timestamptz NOT NULL,
+  occurred_at timestamptz NOT NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
 
   CONSTRAINT copyright_claimant_misuse_event_shape CHECK (
@@ -66,7 +66,7 @@ CREATE TABLE copyright_claimant_suspension_reversals (
 
 CREATE TRIGGER trigger_copyright_claimant_misuse_events_immutable
   BEFORE UPDATE OR DELETE ON copyright_claimant_misuse_events
-  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 
 CREATE TRIGGER trigger_copyright_automatic_withholding_refusals_immutable
   BEFORE UPDATE OR DELETE ON copyright_automatic_withholding_refusals
@@ -82,7 +82,7 @@ COMMENT ON COLUMN copyright_claimant_misuse_events.outcome IS 'What happened to 
 COMMENT ON COLUMN copyright_claimant_misuse_events.copyright_notice_submission_id IS 'Withdrawal submission. Set only for notice_withdrawn, and at most one event per submission.';
 COMMENT ON COLUMN copyright_claimant_misuse_events.copyright_notice_submission_assessment_id IS 'Staff assessment that found the notice not substantially compliant. Set only for notice_rejected, and at most one event per assessment.';
 COMMENT ON COLUMN copyright_claimant_misuse_events.copyright_restriction_id IS 'Restriction a counter-notice restoration or appeal reversed. Set only for the two reversal outcomes, and at most one event per restriction.';
-COMMENT ON COLUMN copyright_claimant_misuse_events.recorded_at IS 'Time the decision that created this evidence was made.';
+COMMENT ON COLUMN copyright_claimant_misuse_events.occurred_at IS 'Time the decision that created this evidence was made.';
 COMMENT ON TABLE copyright_automatic_withholding_refusals IS 'Sticky record that a signed-in notice failed an automatic-withholding gate, so only a moderator may withhold it. Written once per submission, never retried when a cap later clears, and never dropped: the notice stays in the staff queue.';
 COMMENT ON COLUMN copyright_automatic_withholding_refusals.copyright_notice_submission_id IS 'Notice submission whose automated assessment was refused. One refusal per submission.';
 COMMENT ON COLUMN copyright_automatic_withholding_refusals.reason IS 'First gate the submission failed: a non-post target, unset thresholds, an unrecorded or later switch-on, an erased or suspended claimant, trust or account age below the minimum, or a claimant or poster daily cap.';

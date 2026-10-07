@@ -50,6 +50,10 @@ checkpointed actor is inactive, the delivery is terminally rejected without netw
 `available | processing | deferred | failed` and checkpoints
 `unverified | verified | sender-allowed`; timestamps remain the database representation rather
 than adding a second status column.
+`available_at` is always the earliest claim time, with the receipt-time default making new work
+immediately available. Deferral retains a future due time; checkpoint, lease, dispatch, sender
+admission, and failure fields describe its state. Recovery waits until five minutes after the
+latest dispatch or due time before rotating an unstarted envelope.
 
 ```mermaid
 stateDiagram-v2
@@ -70,7 +74,7 @@ stateDiagram-v2
 
 Verification advances `unverified → verified`, sender admission advances
 `verified → sender-allowed`, and completion requires the final checkpoint. Every single-row
-mutation is fenced by `processing_attempt_id`. Recovery uses five-minute unstarted/due leases and a
+mutation is fenced by `lease_token`. Recovery uses five-minute unstarted/due leases and a
 thirty-minute processing lease; recovery and manual rearm claim at most 500 rows with
 `FOR UPDATE SKIP LOCKED`. The migration constraints enforce paired verification, verified-only
 deferral, active-processing failure, and diagnostics on deferred or failed rows.

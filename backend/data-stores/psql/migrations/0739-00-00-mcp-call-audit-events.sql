@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS mcp_call_audit_events (
     'rate_limited'
   )),
   copyright_rationale_ciphertext TEXT,
-  occurred_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  occurred_at TIMESTAMPTZ NOT NULL GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CHECK (tool_name IS NULL OR jsonrpc_method = 'tools/call'),
   CHECK (copyright_rationale_ciphertext IS NULL OR (
     surface = 'admin_mcp' AND jsonrpc_method = 'tools/call' AND outcome = 'accepted'

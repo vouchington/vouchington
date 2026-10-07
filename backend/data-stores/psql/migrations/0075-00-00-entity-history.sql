@@ -34,10 +34,10 @@ CREATE TABLE IF NOT EXISTS topic_revisions (
   topic_id UUID NOT NULL,
   revision_type revision_types NOT NULL,
   revised_by_id UUID,
-  revision_document JSONB NOT NULL DEFAULT '{"changes": {}, "revised_by_roles": []}',
-  CHECK (revision_document ?& ARRAY['changes', 'revised_by_roles']
-    AND jsonb_typeof(revision_document->'changes') = 'object'
-    AND jsonb_typeof(revision_document->'revised_by_roles') = 'array'),
+  changes JSONB NOT NULL DEFAULT '{"changes": {}, "revised_by_roles": []}',
+  CHECK (changes ?& ARRAY['changes', 'revised_by_roles']
+    AND jsonb_typeof(changes->'changes') = 'object'
+    AND jsonb_typeof(changes->'revised_by_roles') = 'array'),
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CONSTRAINT topic_revisions_topic_id_fkey
     FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE CASCADE
@@ -51,7 +51,7 @@ COMMENT ON TABLE topic_revisions IS 'Append-only revision log for topics. Stores
 COMMENT ON COLUMN topic_revisions.topic_id IS 'The topic this revision is for.';
 COMMENT ON COLUMN topic_revisions.revision_type IS 'Type of change: create, update, or delete.';
 COMMENT ON COLUMN topic_revisions.revised_by_id IS 'The user who performed this change.';
-COMMENT ON COLUMN topic_revisions.revision_document IS 'Revision document containing per-field before/after changes and the revising user role snapshot.';
+COMMENT ON COLUMN topic_revisions.changes IS 'Revision document containing per-field before/after changes and the revising user role snapshot.';
 
 CREATE INDEX IF NOT EXISTS idx_post_revisions__post_id ON post_revisions (post_id);
 CREATE INDEX IF NOT EXISTS idx_topic_revisions__topic_id ON topic_revisions (topic_id);
@@ -59,8 +59,8 @@ CREATE INDEX IF NOT EXISTS idx_topic_revisions__topic_id ON topic_revisions (top
 CREATE INDEX IF NOT EXISTS idx_topic_revisions__admin_content_update
   ON topic_revisions (topic_id, id DESC)
   WHERE revision_type IN ('create', 'update')
-    AND (revision_document->'changes') ?| ARRAY['name', 'markdown']
-    AND (revision_document->'revised_by_roles') @> '["administrator"]'::JSONB;
+    AND (changes->'changes') ?| ARRAY['name', 'markdown']
+    AND (changes->'revised_by_roles') @> '["administrator"]'::JSONB;
 
 CREATE TRIGGER trigger_post_revisions_append_only BEFORE UPDATE OR DELETE ON post_revisions FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation('revised_by_id');
 CREATE TRIGGER trigger_topic_revisions_append_only BEFORE UPDATE OR DELETE ON topic_revisions FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation('revised_by_id');

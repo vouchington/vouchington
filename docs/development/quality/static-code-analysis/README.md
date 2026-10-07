@@ -618,6 +618,11 @@ triggers, which the catalog definitions do not retain. A separate
 helpers are excluded because some deliberately construct clock boundaries, while ordinary fixture
 updates let the trigger maintain the clock.
 
+`postgres-table-shape` owns revision/change ledgers, work queues, append-only events, job cursors,
+and per-target/relation vote shapes. Its reviewed moderation-ballot allowance reflects their binary
+score semantics. `postgres-status-with-lifecycle-timestamps` rejects stored status/state beside
+multiple lifecycle timestamps, while generated status remains valid.
+
 Optional `.no-mistakes.yml` ignore and exclude entries have derived freshness checks: [`no-mistakes-config.test.mts`](../../../../ci/no-mistakes-config.test.mts) derives ignored Playwright routes from the analyzer report, while [`no-mistakes-config-freshness.test.mts`](../../../../ci/no-mistakes-config-freshness.test.mts) verifies provider/environment globs and filesystem exceptions against current repository state. Do not add a baseline or parallel exception registry. Provider annotation placement is documented in [Tests and Checks](../../tests.md#vitest-mock-typing).
 
 Tests for static-analysis tooling should be covered by semantic Vitest projects in `vitest.config.mts`, not by a catch-all repo bucket.
