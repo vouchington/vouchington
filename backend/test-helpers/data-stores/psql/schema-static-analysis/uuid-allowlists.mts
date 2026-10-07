@@ -5,8 +5,6 @@ import { ALLOWED_MEMBERSHIP_UUID_COLUMNS_WITHOUT_KEYS } from './membership-uuid-
 import { OAUTH_AUTHORIZATION_UUID_COLUMNS_WITHOUT_KEYS } from './oauth-authorization-allowlists.mts'
 import { STORY_POST_RELATED_URL_PROJECTION_UUID_COLUMNS_WITHOUT_KEYS } from './story-post-related-url-projection-uuid-allowlists.mts'
 import { USER_DELETION_UUID_COLUMNS_WITHOUT_KEYS } from './user-deletion-uuid-allowlists.mts'
-export const ALLOWED_UNCOMMENTED_RELATIONS = new Map<string, string>([])
-export const ALLOWED_UNCOMMENTED_COLUMNS = new Map<string, string>([])
 export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
   ...DSA_SUBMISSION_UUID_COLUMNS_WITHOUT_KEYS,
   [
@@ -176,20 +174,4 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'Lifecycle ownership FK; survives moderator deletion as audit record.',
   ],
 ])
-export const COMMENT_EXEMPT_COLUMN_NAMES = [
-  'id',
-  'created_at',
-  'updated_at',
-  'created_by_id',
-  'updated_by_id',
-  'deleted_at',
-  'deleted_by_id',
-]
-export const COMMENT_EXEMPT_COLUMN_PATTERNS = [
-  /^bedrock_nova_multimodal_v1_/,
-  /^lingua_rs_/,
-  /^llm_moderation_/,
-  /^openai_omni_moderation_/,
-  /^(?:search_vector$|votes_(?:count|score)_)/,
-]
 /* v8 ignore stop */

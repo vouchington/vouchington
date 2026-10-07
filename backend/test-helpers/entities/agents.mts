@@ -40,8 +40,7 @@ async function activateTestAgentPrompt(promptId: string): Promise<TestAgentPromp
   const { rows } = await write<TestAgentPrompt>(sql`/* activateTestAgentPrompt */
     UPDATE agent_prompts
     SET activated_at = CURRENT_TIMESTAMP,
-        deactivated_at = NULL,
-        updated_at = CURRENT_TIMESTAMP
+        deactivated_at = NULL
     WHERE id = ${promptId}
     RETURNING
       id, prompt, agent_id, model_name, model_provider,

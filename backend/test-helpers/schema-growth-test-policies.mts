@@ -52,20 +52,6 @@ const RETAINED_ID_POLICIES = [
 
 const SHARED_PARENT_ID_POLICIES = [...RETAINED_ID_POLICIES, ...COMPANION_ID_POLICIES] as const
 
-export const RETAINED_MISSING_UPDATED_AT = [
-  ...RETAINED_ID_POLICIES.map(
-    ([table]) =>
-      [
-        table,
-        'Immutable concrete identity owner: rows are inserted once and then deleted by bounded cleanup.',
-      ] as const,
-  ),
-  [
-    'retained_image_placement_bindings',
-    'Immutable image placement binding: rows are inserted once and then deleted by bounded cleanup.',
-  ] as const,
-]
-
 type NonDefaultIdException = { policy: 'uuidv7' | 'natural-or-provider'; rationale: string }
 const naturalOrProviderId = (rationale: string): NonDefaultIdException => ({
   policy: 'natural-or-provider',

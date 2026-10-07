@@ -66,25 +66,6 @@ export async function getTimestampConventionViolations(): Promise<TimestampConve
 
       UNION ALL
 
-      SELECT public_tables.relname AS table_name, 'updated-at-trigger-mismatch' AS problem, NULL::text
-      FROM public_tables
-      WHERE EXISTS (
-        SELECT 1
-        FROM columns
-        WHERE columns.table_oid = public_tables.oid
-          AND columns.column_name = 'updated_at'
-      )
-      IS DISTINCT FROM EXISTS (
-        SELECT 1 FROM pg_trigger
-        JOIN pg_proc ON pg_proc.oid = pg_trigger.tgfoid
-        WHERE pg_trigger.tgrelid = public_tables.oid
-          AND NOT pg_trigger.tgisinternal
-          AND pg_trigger.tgenabled <> 'D'
-          AND pg_proc.proname = 'fn_update_updated_at'
-      )
-
-      UNION ALL
-
       SELECT columns.table_name, 'timestamp-without-time-zone' AS problem, columns.column_name
       FROM columns
       WHERE columns.data_type = 'timestamp without time zone'

@@ -24,7 +24,6 @@ export {
 export {
   ageTestMembershipRenewalPriceIncreaseClaim,
   rejectTestMembershipProviderEvidence,
-  setTestMembershipSourceStateUpdatedAt,
   updateTestMembershipCancelAtPeriodEnd,
   updateTestMembershipExpiresAt,
 } from './memberships/updates.mts'

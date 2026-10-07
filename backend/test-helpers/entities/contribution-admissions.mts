@@ -105,8 +105,7 @@ export async function completeContributionAdmissionResponseForTest(input: {
   await write(sql`/* completeContributionAdmissionResponseForTest */
     UPDATE post_admission_reservations
     SET response = ${JSON.stringify(input.response)}::jsonb,
-      replay_metadata = replay_metadata || '{"finalization":"complete"}'::jsonb,
-      updated_at = NOW()
+      replay_metadata = replay_metadata || '{"finalization":"complete"}'::jsonb
     WHERE actor_user_id = ${input.actorId}
       AND idempotency_key = ${input.idempotencyKey}
       AND state = 'committed'`)
@@ -119,8 +118,7 @@ export async function setContributionAdmissionReplayMetadataForTest(input: {
 }): Promise<void> {
   await write(sql`/* setContributionAdmissionReplayMetadataForTest */
     UPDATE post_admission_reservations
-    SET replay_metadata = ${JSON.stringify(input.replayMetadata)}::jsonb,
-      updated_at = NOW()
+    SET replay_metadata = ${JSON.stringify(input.replayMetadata)}::jsonb
     WHERE actor_user_id = ${input.actorId}
       AND idempotency_key = ${input.idempotencyKey}
       AND state = 'committed'`)
