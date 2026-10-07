@@ -114,6 +114,8 @@
         "../playwright.credentialed.config.mts",
         // Passed as a CLI path by dev/localization/local-smoke.mts, not imported.
         "localization-tmux.config.mts",
+        // Loaded by the localization config through Playwright's string-valued globalSetup.
+        "localization-timeout-setup.mts",
       ],
       "project": ["**/*.mts"],
       "ignoreExportsUsedInFile": true,
