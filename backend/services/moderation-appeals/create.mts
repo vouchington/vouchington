@@ -22,17 +22,17 @@ export async function createModerationAppeal(
   input: CreateModerationAppealInput,
   queryOptions?: QueryOptions,
 ): Promise<{ appeal: ModerationAppealResponse; isDuplicate: boolean }> {
-  const target = await resolveAppealTarget(currentUser, input)
-
-  if (target.duplicate) {
-    return {
-      appeal: await getModerationAppealAfterMutation(target.duplicate.id, queryOptions),
-      isDuplicate: true,
+  const run = async (query: TransactionQuery) => {
+    const options = { query }
+    const target = await resolveAppealTarget(currentUser, input, options)
+    if (target.duplicate) {
+      return {
+        appeal: await getModerationAppealAfterMutation(target.duplicate.id, options),
+        isDuplicate: true,
+      }
     }
+    return insertModerationAppeal(query, currentUser, provenance, input.appealReason, target)
   }
-
-  const run = (query: TransactionQuery) =>
-    insertModerationAppeal(query, currentUser, provenance, input.appealReason, target)
   if (queryOptions?.query) return withTransactionOptions(queryOptions, run)
   await using query = await beginTransaction()
   const result = await run(query)

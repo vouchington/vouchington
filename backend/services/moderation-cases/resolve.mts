@@ -65,10 +65,13 @@ export async function maybeResolveCases(
  * Re-opens a previously resolved case so new child activity (e.g. an appeal filed after
  * case resolution) is grouped back into it.
  */
-export async function reopenCase(caseId: string): Promise<void> {
-  await write(sql`/* reopenCase */
+export async function reopenCase(caseId: string, queryOptions?: QueryOptions): Promise<void> {
+  await write(
+    sql`/* reopenCase */
     UPDATE moderation_cases
     SET resolved_at = NULL, resolved_by_id = NULL
     WHERE id = ${caseId}
-  `)
+  `,
+    queryOptions,
+  )
 }

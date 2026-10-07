@@ -13,24 +13,9 @@ export async function createUserWarning(
   input: CreateUserWarningInput,
   options: { returnExistingForReport?: boolean } = {},
 ): Promise<UserWarning> {
-  let caseId: string
-  if (input.reportId) {
-    const { rows: caseRows } = await read<{ case_id: string }>(
-      sql`/* createUserWarning:caseId */ SELECT case_id FROM moderation_reports WHERE id = ${input.reportId}::uuid LIMIT 1`,
-    )
-    caseId =
-      caseRows[0]?.case_id ??
-      (await openOrGetOpenCase({ entityType: 'user', entityId: input.userId }))
-  } else {
-    const { rows: userCheck } = await read<{ id: string }>(
-      sql`/* createUserWarning:checkUser */ SELECT id FROM users WHERE id = ${input.userId}::uuid AND deleted_at IS NULL LIMIT 1`,
-    )
-    assert(userCheck[0], 404, 'User not found')
-    caseId = await openOrGetOpenCase({ entityType: 'user', entityId: input.userId })
-  }
   let warning: UserWarning
   try {
-    warning = await createWarningInTransaction(currentUserId, input, caseId)
+    warning = await createWarningInTransaction(currentUserId, input)
   } catch (err) {
     const code = (err as { code?: string }).code
     if (code === '23503') {
@@ -60,9 +45,25 @@ export async function createUserWarning(
 async function createWarningInTransaction(
   currentUserId: string,
   input: CreateUserWarningInput,
-  caseId: string,
 ): Promise<UserWarning> {
   await using query = await beginTransaction()
+  let caseId: string
+  if (input.reportId) {
+    const { rows: caseRows } = await read<{ case_id: string }>(
+      sql`/* createUserWarning:caseId */ SELECT case_id FROM moderation_reports WHERE id = ${input.reportId}::uuid LIMIT 1`,
+      { query },
+    )
+    caseId =
+      caseRows[0]?.case_id ??
+      (await openOrGetOpenCase({ entityType: 'user', entityId: input.userId }, { query }))
+  } else {
+    const { rows: userCheck } = await read<{ id: string }>(
+      sql`/* createUserWarning:checkUser */ SELECT id FROM users WHERE id = ${input.userId}::uuid AND deleted_at IS NULL LIMIT 1`,
+      { query },
+    )
+    assert(userCheck[0], 404, 'User not found')
+    caseId = await openOrGetOpenCase({ entityType: 'user', entityId: input.userId }, { query })
+  }
   const { rows } = await write(
     sql`/* createUserWarning */
           WITH target_check AS (

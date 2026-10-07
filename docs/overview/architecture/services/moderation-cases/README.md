@@ -23,6 +23,11 @@ Five tables carry a `case_id FK → moderation_cases(id)`:
 | `community_bans`               | Enforcement      |
 | `moderation_appeals`           | Appellant review |
 
+Case helpers accept optional `QueryOptions`. Report and appeal creation, community bans, warnings,
+and ban-evasion detection pass their transaction so case writes roll back with the child action.
+Concurrent first signals use `ON CONFLICT DO NOTHING` against the entity's partial unique index,
+then read the winning open case on the same transaction or primary connection.
+
 ## Usage
 
 ```typescript

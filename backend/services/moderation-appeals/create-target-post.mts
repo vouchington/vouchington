@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { read, type QueryOptions } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@voucha/types/entities/user'
@@ -8,13 +8,14 @@ import {
   reopenCase,
 } from '@services/moderation-cases'
 import type { AppealTargetContext } from './create-target-types.mts'
-import { getModerationAppealById } from './get.mts'
+import { getModerationAppealByIdFromPrimary } from './get.mts'
 import type { CreateModerationAppealInput } from './parse.mts'
 import { selectPostRemovalKind } from './post-removal-kind.mts'
 
 export async function resolveAppealTargetPost(
   currentUser: PrivateUser,
   input: CreateModerationAppealInput,
+  queryOptions?: QueryOptions,
 ): Promise<AppealTargetContext> {
   const targetId = input.targetId!
   const { rows } = await read<{
@@ -54,6 +55,7 @@ export async function resolveAppealTargetPost(
     WHERE p.id = ${targetId} AND p.deleted_at IS NULL
     LIMIT 1
   `,
+    queryOptions,
   )
   const row = rows[0]
   assert(row, 404, 'Post not found')
@@ -66,18 +68,21 @@ export async function resolveAppealTargetPost(
   const postRemovalKind = selectPostRemovalKind(input.postRemovalKind, row)
   // Reuse the most recent case for this post (possibly resolved) so the appeal traces back to
   // the original incident. openOrGetOpenCase would create a new case if the old one resolved.
-  const mostRecentPostCase = await findMostRecentCaseForEntity({
-    entityType: 'post',
-    entityId: targetId,
-  })
+  const mostRecentPostCase = await findMostRecentCaseForEntity(
+    {
+      entityType: 'post',
+      entityId: targetId,
+    },
+    queryOptions,
+  )
   let caseId: string
   if (mostRecentPostCase) {
     if (mostRecentPostCase.resolved_at) {
-      await reopenCase(mostRecentPostCase.id)
+      await reopenCase(mostRecentPostCase.id, queryOptions)
     }
     caseId = mostRecentPostCase.id
   } else {
-    caseId = await openOrGetOpenCase({ entityType: 'post', entityId: targetId })
+    caseId = await openOrGetOpenCase({ entityType: 'post', entityId: targetId }, queryOptions)
   }
   const { rows: postDupRows } = await read<{ id: string }>(
     sql`/* resolveAppealTarget:checkPostDuplicate */
@@ -88,8 +93,11 @@ export async function resolveAppealTargetPost(
       AND resolved_at IS NULL
     LIMIT 1
     `,
+    queryOptions,
   )
-  const duplicate = postDupRows[0] ? await getModerationAppealById(postDupRows[0].id) : undefined
+  const duplicate = postDupRows[0]
+    ? await getModerationAppealByIdFromPrimary(postDupRows[0].id, queryOptions)
+    : undefined
   const originalDecision =
     postRemovalKind === 'community'
       ? {

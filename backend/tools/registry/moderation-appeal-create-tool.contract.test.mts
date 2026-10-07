@@ -11,6 +11,11 @@ import {
 } from '@voucha/test-helpers'
 import { createTestPlusMcpCaller } from '@voucha/test-helpers/mcp-plus-caller'
 import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
+import { withPostgresQueryFailureForTest } from '@voucha/test-helpers/postgres-query-failure'
+import {
+  listTestModerationCasesForEntity,
+  resolveTestModerationCase,
+} from '@voucha/test-helpers/entities/moderation-case-reads'
 import {
   countTestModerationAppealsByAppellant,
   listTestDelegatedCreateReservations,
@@ -85,6 +90,26 @@ describe('create_moderation_appeal — real store', () => {
       oauthClientId: null,
     })
     expect(await countTestModerationAppealsByAppellant(caller.id)).toBe(1)
+  })
+
+  it('leaves the warning case resolved when admission cannot store the appeal response', async () => {
+    const caller = await createTestPlusMcpCaller()
+    const staff = await createTestUser()
+    const warning = await insertTestUserWarning({ userId: caller.id, issuedById: staff.id })
+    await resolveTestModerationCase(warning.case_id, staff.id)
+    const entity = { entityType: 'user', entityId: caller.id } as const
+    const before = await listTestModerationCasesForEntity(entity)
+    expect(before).toMatchObject([{ id: warning.case_id, resolved_by_id: staff.id }])
+    expect(before[0]?.resolved_at).not.toBeNull()
+
+    const { error } = await withPostgresQueryFailureForTest(
+      '/* runContributionAdmission.commit */',
+      () => callRejectedMcpTool(caller, TOOL, args(warning.id), SCOPES),
+    )
+
+    expect(error).toMatchObject({ code: '25P02' })
+    expect(await listTestModerationCasesForEntity(entity)).toEqual(before)
+    expect(await countTestModerationAppealsByAppellant(caller.id)).toBe(0)
   })
 
   it('appeals a community ban and the removal of an own post', async () => {

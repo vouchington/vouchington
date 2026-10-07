@@ -8,6 +8,8 @@ import {
 } from '@voucha/test-helpers'
 import { createTestPlusMcpCaller } from '@voucha/test-helpers/mcp-plus-caller'
 import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
+import { withPostgresQueryFailureForTest } from '@voucha/test-helpers/postgres-query-failure'
+import { listTestModerationCasesForEntity } from '@voucha/test-helpers/entities/moderation-case-reads'
 import {
   countTestModerationReportsByReporter,
   listTestDelegatedCreateReservations,
@@ -62,6 +64,22 @@ describe('create_content_report — real store', () => {
       oauthClientId: null,
     })
     expect(await countTestModerationReportsByReporter(caller.id)).toBe(1)
+  })
+
+  it('rolls back the report and new case when admission cannot store its response', async () => {
+    const caller = await createTestPlusMcpCaller()
+    const entityId = await reportablePostId()
+    const entity = { entityType: 'post', entityId } as const
+    expect(await listTestModerationCasesForEntity(entity)).toEqual([])
+
+    const { error } = await withPostgresQueryFailureForTest(
+      '/* runContributionAdmission.commit */',
+      () => callRejectedMcpTool(caller, TOOL, args(entityId), SCOPES),
+    )
+
+    expect(error).toMatchObject({ code: '25P02' })
+    expect(await listTestModerationCasesForEntity(entity)).toEqual([])
+    expect(await countTestModerationReportsByReporter(caller.id)).toBe(0)
   })
 
   it('updates the open report instead of adding another for a new key', async () => {

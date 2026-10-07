@@ -110,11 +110,10 @@ export async function detectBanEvasionForMember(
       throw new Error(`System user '${BAN_EVASION_SYSTEM_USERNAME}' not found — run db:migrate`)
     }
 
-    const caseId = await openOrGetOpenCase({ entityType: 'user', entityId: userId })
-
     await using query = await beginTransaction()
 
     const options = { query }
+    const caseId = await openOrGetOpenCase({ entityType: 'user', entityId: userId }, options)
 
     const { rowCount } = await write(
       sql`/* detectBanEvasionForMember:flag-member */
