@@ -26,15 +26,19 @@ class AwsNodeHttpHandler extends NodeHttpHandler {
   }
 }
 
+class AwsResponseBodyTimeoutError extends Error {
+  override readonly name = 'TimeoutError'
+  readonly code = 'ETIMEDOUT'
+}
+
 function isIncomingMessage(body: unknown): body is IncomingMessage {
   return typeof body === 'object' && body !== null && 'setTimeout' in body && 'socket' in body
 }
 
 function armResponseBodyTimeout(body: IncomingMessage, timeoutMs: number): void {
   const socket = body.socket
-  const timeoutError = Object.assign(
-    new Error(`AWS response body was inactive for ${timeoutMs} ms`),
-    { name: 'TimeoutError', code: 'ETIMEDOUT' },
+  const timeoutError = new AwsResponseBodyTimeoutError(
+    `AWS response body was inactive for ${timeoutMs} ms`,
   )
   const onTimeout = () => body.destroy(timeoutError)
   let cleared = false

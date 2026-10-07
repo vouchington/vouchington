@@ -61,7 +61,10 @@ second options argument containing `timeoutMs` or `signal`. The companion
 `ast-grep-rules/backend-validate-url-bounded-dns.yml` covers only the `deps` and `dependencies`
 dependency-injection receivers that provenance analysis cannot resolve.
 
-The AWS connection and socket-inactivity bounds apply to every backend AWS SDK client. The SQS
-exception must remain above its 20-second protocol long poll. `createAwsRequestHandler` also
-re-arms the inactivity timeout on the response body because Smithy's deferred timeout registration
-can otherwise be cleared when response headers arrive before the listener is attached.
+The AWS connection and socket-inactivity bounds apply here to S3 image storage, SQS, SES,
+CloudWatch, S3 Bedrock batch, and Bedrock control. The next stack layer (#2141) applies the same
+handler to Bedrock runtime, Firehose, and the media-delivery registry's DynamoDB and CloudFront
+clients. The SQS exception must remain above its 20-second protocol long poll.
+`createAwsRequestHandler` also re-arms the inactivity timeout on the response body because Smithy's
+deferred timeout registration can otherwise be cleared when response headers arrive before the
+listener is attached.
