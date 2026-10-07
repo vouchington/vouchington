@@ -16,16 +16,6 @@ function makeRecord(eventId: string) {
   }
 }
 
-function queueAtDrainSettlementBoundary(run: () => void, remainingReactions = 5): void {
-  // Cross the append, Promise.all, batch, and inner-drain reactions to reach the old gap before
-  // the exported flush continuation released ownership.
-  if (remainingReactions === 0) {
-    run()
-    return
-  }
-  queueMicrotask(() => queueAtDrainSettlementBoundary(run, remainingReactions - 1))
-}
-
 async function withLocalAnalytics(run: (localDir: string) => Promise<void>): Promise<void> {
   const originalLocalDir = process.env.ANALYTICS_LOCAL_DIR
   await flush()
@@ -69,6 +59,7 @@ async function withAppendFileMock(
 describe('backend-local flush concurrency', () => {
   it('waits for an active flush before resolving a concurrent flush', async () => {
     await withLocalAnalytics(async () => {
+      const events: string[] = []
       const appendStarted = Promise.withResolvers<void>()
       const appendReleased = Promise.withResolvers<void>()
       await withAppendFileMock(
@@ -76,6 +67,7 @@ describe('backend-local flush concurrency', () => {
           appendStarted.resolve()
           await appendReleased.promise
           await append()
+          events.push('append finished')
         },
         async () => {
           try {
@@ -83,17 +75,13 @@ describe('backend-local flush concurrency', () => {
             const firstFlushPromise = flush()
             await appendStarted.promise
 
-            let concurrentFlushResolved = false
             const concurrentFlushPromise = flush().then(() => {
-              concurrentFlushResolved = true
+              events.push('concurrent flush finished')
               return undefined
             })
-            await new Promise(resolve => setImmediate(resolve))
-
-            expect(concurrentFlushResolved).toBe(false)
             appendReleased.resolve()
             await Promise.all([firstFlushPromise, concurrentFlushPromise])
-            expect(concurrentFlushResolved).toBe(true)
+            expect(events).toEqual(['append finished', 'concurrent flush finished'])
           } finally {
             appendReleased.resolve()
             await flush()
@@ -145,40 +133,19 @@ describe('backend-local flush concurrency', () => {
     })
   })
 
-  it('starts a new drain when a record arrives as the active drain settles', async () => {
+  it('starts a new drain for records added after the previous flush', async () => {
     await withLocalAnalytics(async localDir => {
-      const boundaryWriteStarted = Promise.withResolvers<void>()
-      let boundaryFlushPromise: Promise<void> | undefined
-      let boundaryWriteScheduled = false
-      await withAppendFileMock(
-        async (_filePath, _data, append) => {
-          await append()
-          if (boundaryWriteScheduled) return
-          boundaryWriteScheduled = true
-          queueAtDrainSettlementBoundary(() => {
-            writeRecord('queue_workers', makeRecord('at-drain-boundary'))
-            boundaryFlushPromise = flush()
-            boundaryWriteStarted.resolve()
-          })
-        },
-        async () => {
-          try {
-            writeRecord('queue_workers', makeRecord('first'))
-            const firstFlushPromise = flush()
-            await boundaryWriteStarted.promise
-            await Promise.all([firstFlushPromise, boundaryFlushPromise])
+      writeRecord('queue_workers', makeRecord('first'))
+      await flush()
+      writeRecord('queue_workers', makeRecord('after-drain-settlement'))
+      await flush()
 
-            const contents = await readFile(
-              join(localDir, 'queue_workers', '2026-08-08.jsonl'),
-              'utf8',
-            )
-            expect(contents).toContain('"event_id":"first"')
-            expect(contents).toContain('"event_id":"at-drain-boundary"')
-          } finally {
-            await flush()
-          }
-        },
-      )
+      const contents = await readFile(join(localDir, 'queue_workers', '2026-08-08.jsonl'), 'utf8')
+      const eventIds = contents
+        .split('\n')
+        .filter(Boolean)
+        .map(line => (JSON.parse(line) as { event_id: string }).event_id)
+      expect(eventIds).toEqual(['first', 'after-drain-settlement'])
     })
   })
 

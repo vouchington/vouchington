@@ -90,33 +90,29 @@ describe('backend-firehose', () => {
   }
 
   it('waits for an active flush before resolving a concurrent flush', async () => {
-    let releaseFirstSend: ((output: PutRecordBatchCommandOutput) => void) | undefined
-    const firstSendStarted = new Promise<void>(resolve => {
-      firehoseSender.mockImplementation(input => {
-        calls.push(input)
-        resolve()
-        return new Promise<PutRecordBatchCommandOutput>(release => {
-          releaseFirstSend = release
-        })
+    const events: string[] = []
+    const firstSendStarted = Promise.withResolvers<void>()
+    const firstSendReleased = Promise.withResolvers<PutRecordBatchCommandOutput>()
+    firehoseSender.mockImplementation(input => {
+      calls.push(input)
+      firstSendStarted.resolve()
+      return firstSendReleased.promise.then(output => {
+        events.push('send finished')
+        return output
       })
     })
 
     writeRecord('queue_workers', makeQueueWorkerRecord({ event_id: 'first' }))
     const firstFlushPromise = flush()
-    await firstSendStarted
-
-    let concurrentFlushResolved = false
+    await firstSendStarted.promise
     const concurrentFlushPromise = flush().then(() => {
-      concurrentFlushResolved = true
+      events.push('concurrent flush finished')
       return undefined
     })
-    await new Promise(resolve => setImmediate(resolve))
-
-    expect(concurrentFlushResolved).toBe(false)
-    releaseFirstSend?.(makeFirehoseOutput())
+    firstSendReleased.resolve(makeFirehoseOutput())
     await Promise.all([firstFlushPromise, concurrentFlushPromise])
 
-    expect(concurrentFlushResolved).toBe(true)
+    expect(events).toEqual(['send finished', 'concurrent flush finished'])
     expect(calls).toHaveLength(1)
   })
 

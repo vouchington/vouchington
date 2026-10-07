@@ -1,3 +1,4 @@
+import * as analytics from '@data-stores/analytics'
 import { describe, it, expect, beforeAll, beforeEach, afterEach, afterAll, vi } from 'vitest'
 import path from 'node:path'
 import os from 'node:os'
@@ -14,22 +15,26 @@ function fakePool(total: number, idle: number, waiting: number): SampledPools['w
   }
 }
 
-async function waitForPoolRows(
-  sentinel: number,
-  expected: number,
-): Promise<Record<string, unknown>[]> {
-  return vi.waitFor(
-    async () => {
-      await flush()
-      // No ORDER BY: the DuckDB-less JSONL fallback (used in CI, where the duckdb binary is
-      // absent) bails on ORDER BY/aggregate shapes. Callers sort the two rows in JS instead.
-      // `sentinel` is a generated integer; quotes keep JSONL fallback text comparison aligned.
-      const rows = await query(`SELECT * FROM pg_pool_stats WHERE waiting = '${sentinel}'`)
-      if (rows.length < expected) throw new Error('pending')
-      return rows
-    },
-    { timeout: 20_000, interval: 50 },
-  )
+function whenPoolRowsEmitted(sentinel: number): Promise<void> {
+  const emitted = Promise.withResolvers<void>()
+  const originalEmit = analytics.emit
+  let count = 0
+  const spy = vi.spyOn(analytics, 'emit').mockImplementation((table, record) => {
+    originalEmit(table, record)
+    if (table !== 'pg_pool_stats' || !('waiting' in record) || record.waiting !== sentinel) return
+    count += 1
+    if (count === 3) {
+      spy.mockRestore()
+      emitted.resolve()
+    }
+  })
+  return emitted.promise
+}
+
+async function readPoolRows(sentinel: number): Promise<Record<string, unknown>[]> {
+  await flush()
+  // The JSONL fallback supports this owned-row predicate without ordering or aggregates.
+  return query(`SELECT * FROM pg_pool_stats WHERE waiting = '${sentinel}'`)
 }
 
 describe('pool-stats-sampler', () => {
@@ -48,9 +53,6 @@ describe('pool-stats-sampler', () => {
     process.env.ANALYTICS_LOCAL_DIR = testDir
     process.env.ANALYTICS_BACKEND = 'local'
     delete process.env.PG_POOL_STATS_INTERVAL_MS
-    // Warm the lazily-imported analytics barrel so the first emit's import() resolves promptly
-    // instead of racing the poll under CI load.
-    await import('@data-stores/analytics')
   })
 
   beforeEach(() => {
@@ -82,9 +84,10 @@ describe('pool-stats-sampler', () => {
       writeMax: 20,
       advisoryLockMax: 4,
     }
+    const emitted = whenPoolRowsEmitted(sentinel)
     emitPoolStats(pools)
-
-    const rows = await waitForPoolRows(sentinel, 3)
+    await emitted
+    const rows = await readPoolRows(sentinel)
     expect(rows).toHaveLength(3)
     const readRow = rows.find(r => r.pool === 'read')!
     const writeRow = rows.find(r => r.pool === 'write')!
@@ -116,12 +119,14 @@ describe('pool-stats-sampler', () => {
     expect(clock.schedule).toHaveBeenCalledOnce()
     expect(clock.schedule).toHaveBeenCalledWith(expect.any(Function), 100)
     expect(clock.unref).toHaveBeenCalledOnce()
+    const emitted = whenPoolRowsEmitted(sentinel)
     clock.fire()
+    await emitted
     await sampler[Symbol.asyncDispose]()
     await sampler[Symbol.asyncDispose]()
     expect(clock.dispose).toHaveBeenCalledOnce()
     clock.fire()
-    expect(await waitForPoolRows(sentinel, 3)).toHaveLength(3)
+    expect(await readPoolRows(sentinel)).toHaveLength(3)
   })
 
   it('unrefs and disposes its real Node interval', async () => {
