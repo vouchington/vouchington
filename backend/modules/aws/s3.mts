@@ -1,6 +1,6 @@
 import { S3Client } from '@aws-sdk/client-s3'
 import createHttpError from 'http-errors'
-import { AWS_DUALSTACK_CLIENT_CONFIG, AWS_REGION } from './config.mts'
+import { AWS_DUALSTACK_CLIENT_CONFIG, AWS_REGION, createAwsRequestHandler } from './config.mts'
 import { getS3Credentials, hasS3Credentials } from './credentials.mts'
 
 let imageUploadsClient: S3Client | undefined
@@ -70,6 +70,7 @@ function getS3ImagesClient(): S3Client {
     imagesClient = new S3Client({
       credentials: getS3ClientCredentials(),
       region: AWS_REGION,
+      requestHandler: createAwsRequestHandler(),
       ...AWS_DUALSTACK_CLIENT_CONFIG,
     })
   }
@@ -93,6 +94,7 @@ function getS3ImageUploadsClient(): S3Client {
       credentials: getS3ClientCredentials(),
       region: AWS_REGION,
       requestChecksumCalculation: 'WHEN_REQUIRED',
+      requestHandler: createAwsRequestHandler(),
       ...AWS_DUALSTACK_CLIENT_CONFIG,
     })
   }

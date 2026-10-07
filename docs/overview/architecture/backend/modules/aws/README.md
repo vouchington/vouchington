@@ -57,6 +57,11 @@ credentials are absent.
 
 - `AWS_REGION` — defaults to `'us-west-2'`
 - `BEDROCK_AWS_REGION` — `'us-east-1'`
+- `createAwsRequestHandler()` — shared Smithy HTTP handler with a 3-second connection timeout and
+  a 10-second socket-idle timeout. The handler throws on timeout, and clients retain the SDK's
+  default three attempts. A fully stalled call therefore fails after roughly 40 seconds. An upload
+  that keeps transferring data does not hit the idle timeout. The S3 images and uploads, SQS, SES,
+  CloudWatch, S3 Bedrock batch, and Bedrock control clients use this handler.
 - `MEDIA_DELIVERY_REGISTRY_REGION` — required whenever media delivery registry publication is
   enabled, and therefore for edge enforcement; the DynamoDB registry region (`us-east-1` for the
   Lambda@Edge viewer authorization), independent of the application `AWS_REGION`. All five

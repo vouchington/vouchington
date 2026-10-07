@@ -1,5 +1,5 @@
 import { BedrockClient } from '@aws-sdk/client-bedrock'
-import { BEDROCK_AWS_REGION } from './config.mts'
+import { BEDROCK_AWS_REGION, createAwsRequestHandler } from './config.mts'
 import { getBedrockCredentials, hasBedrockCredentials } from './credentials.mts'
 
 let bedrockClient: BedrockClient | undefined
@@ -27,6 +27,7 @@ function getBedrockClient(): BedrockClient {
     bedrockClient = new BedrockClient({
       ...(credentials ? { credentials } : {}),
       region: BEDROCK_AWS_REGION,
+      requestHandler: createAwsRequestHandler(),
     })
   }
 

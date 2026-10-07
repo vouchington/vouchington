@@ -1,5 +1,21 @@
+import { NodeHttpHandler, type NodeHttpHandlerOptions } from '@smithy/node-http-handler'
+
 export const AWS_REGION = process.env.AWS_REGION ?? 'us-west-2'
 export const BEDROCK_AWS_REGION = process.env.BEDROCK_AWS_REGION ?? 'us-east-1'
+
+export const AWS_CONNECTION_TIMEOUT_MS = 3_000
+export const AWS_REQUEST_TIMEOUT_MS = 10_000
+
+export function createAwsRequestHandler(
+  overrides: Omit<NodeHttpHandlerOptions, 'throwOnRequestTimeout'> = {},
+): NodeHttpHandler {
+  return new NodeHttpHandler({
+    connectionTimeout: AWS_CONNECTION_TIMEOUT_MS,
+    requestTimeout: AWS_REQUEST_TIMEOUT_MS,
+    ...overrides,
+    throwOnRequestTimeout: true,
+  })
+}
 
 // Bedrock's generated api.aws endpoint names are not live. Opt supported clients in explicitly
 // instead of using AWS_USE_DUALSTACK_ENDPOINT globally.

@@ -1,5 +1,5 @@
 import createHttpError from 'http-errors'
-import { AWS_DUALSTACK_CLIENT_CONFIG, AWS_REGION } from './config.mts'
+import { AWS_DUALSTACK_CLIENT_CONFIG, AWS_REGION, createAwsRequestHandler } from './config.mts'
 import { getSESCredentials, hasSESCredentials } from './credentials.mts'
 import { buildRawEmailMessage } from './ses-mime.mts'
 import onError from '@modules/on-error'
@@ -114,6 +114,7 @@ function getSESClient(): CreateSESClient {
     client = new CreateSESClient({
       credentials: getSesClientCredentials(),
       region: AWS_REGION,
+      requestHandler: createAwsRequestHandler(),
       ...AWS_DUALSTACK_CLIENT_CONFIG,
     })
   }
