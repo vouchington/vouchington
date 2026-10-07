@@ -83,8 +83,8 @@ importers:
         specifier: ^18.5.0
         version: 18.5.0
       eslint-plugin-no-mistakes:
-        specifier: ^0.77.0
-        version: 0.77.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
+        specifier: ^0.77.1
+        version: 0.77.1(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
       eslint-plugin-playwright:
         specifier: ^2.12.0
         version: 2.12.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
@@ -116,8 +116,8 @@ importers:
         specifier: ^6
         version: 6.40.0
       no-mistakes:
-        specifier: ^0.77.0
-        version: 0.77.0
+        specifier: ^0.77.1
+        version: 0.77.1
       oxfmt:
         specifier: ^0.72.0
         version: 0.72.0
@@ -1401,8 +1401,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/postgres':
-        specifier: ^0.0.12
-        version: 0.0.12
+        specifier: ^0.0.13
+        version: 0.0.13
       pg:
         specifier: ^8.23.1
         version: 8.23.1
@@ -1414,8 +1414,8 @@ importers:
         version: 0.37.0(@modelcontextprotocol/sdk@1.32.0(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(vitest@5.0.3)
     devDependencies:
       no-mistakes:
-        specifier: ^0.77.0
-        version: 0.77.0
+        specifier: ^0.77.1
+        version: 0.77.1
       oxfmt:
         specifier: ^0.72.0
         version: 0.72.0
@@ -2210,8 +2210,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/pagination':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.0.2
+        version: 0.0.2
 
   backend/modules/queue-config: {}
 
@@ -13369,8 +13369,8 @@ importers:
         specifier: ^3.3.1
         version: 3.3.1
       no-mistakes:
-        specifier: ^0.77.0
-        version: 0.77.0
+        specifier: ^0.77.1
+        version: 0.77.1
       picomatch:
         specifier: ^4.0.4
         version: 4.0.7
@@ -13620,14 +13620,14 @@ importers:
         specifier: ^0.2.2
         version: 0.2.2
       '@vouchington/postgres':
-        specifier: ^0.0.12
-        version: 0.0.12
+        specifier: ^0.0.13
+        version: 0.0.13
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
       no-mistakes:
-        specifier: ^0.77.0
-        version: 0.77.0
+        specifier: ^0.77.1
+        version: 0.77.1
       oxfmt:
         specifier: ^0.72.0
         version: 0.72.0
@@ -19157,16 +19157,16 @@ packages:
     resolution: {integrity: sha512-I46h8Se7jv81xCD5/4CvRb1BtCcQYjHscEy8BjxmSga1LGi4KiHmeNC0KVqxLSmypi4aUQmrsldij5BhStTkog==}
     engines: {node: '>=24.0.0'}
 
-  '@vouchington/pagination@0.0.1':
-    resolution: {integrity: sha512-RofnzQB1ioA0fxRKI0gIqyIwlQNEolfj4JKYpzew7iLWWNI/ki/UQX5Xu1KQ0El0jkO1FJjB0sKvkk5CWYFvlg==}
+  '@vouchington/pagination@0.0.2':
+    resolution: {integrity: sha512-FNIVo5NlBuoQgSzwFcUPfK3QWIL0TG3XVAEdGAbMAA2Sn3LSrmInI5fyZUojJ+w85Eqgac73N4x9/WZMg1ZyjA==}
     engines: {node: '>=24.0.0'}
 
   '@vouchington/phone-validation@0.0.0':
     resolution: {integrity: sha512-0RvW2h4T+tl+u0xeAzCm11/WtaLkf/1r9PnitsnKtSuH/z6zyAcGjTZYQQTvoxgjvqRPSoDEyeU/6ESjNi575Q==}
     engines: {node: '>=24.0.0'}
 
-  '@vouchington/postgres@0.0.12':
-    resolution: {integrity: sha512-o2m4ZwCWC7/gmaFX3wScDXzQ5jUTNgW9MBB3U2i4w91fhau9g6sXxEs/YczIeRyXKtsxazYXcYdJTdA0rwxIGg==}
+  '@vouchington/postgres@0.0.13':
+    resolution: {integrity: sha512-/bkQ5ury6ISf8v7mwpEIrcQAQvrklpoD6cYVvTNav5k7qJqs9tzu4925tfHofSBdBK1I1Pxd+cuIET6FH74MQg==}
     engines: {node: '>=24.0.0'}
 
   '@vouchington/queue-errors@0.1.2':
@@ -20107,8 +20107,8 @@ packages:
     resolution: {integrity: sha512-/veY75JbMK4j1yjvuUxuVsiS/hr/4iHs9FTT6cgTexxdE0Ly/glccBAkloH/DofkjRbZU3bnoj38mOmhkZ0lHw==}
     engines: {node: '>=12'}
 
-  eslint-plugin-no-mistakes@0.77.0:
-    resolution: {integrity: sha512-dkQH0ALMaU/pnqNBJl/SDkn/72DXw5Xwen4flLjWDC7L7JZqjQljtKmzoSTs3D7hl2rRSv2k4aGweuU9IFfnsw==}
+  eslint-plugin-no-mistakes@0.77.1:
+    resolution: {integrity: sha512-70kByvg2zlylwgGpp1Lpw+Hq3+plGg1lSdp0oV9J/z8j6pCXn01zJnPRZuQRmmtqzxIBzyL0MoPyq89PqWV8Cw==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
     peerDependencies:
       eslint: '>=9'
@@ -21453,30 +21453,30 @@ packages:
       sass:
         optional: true
 
-  no-mistakes-darwin-arm64@0.77.0:
-    resolution: {integrity: sha512-laIsUx2rJl6pqBDnKaF7LTIDaaKGGN0MCfJI+/4VLgl9lDY54J3b51YkPvqjvvDw7wwC4fYi+/AsWe3WZHfhQw==}
+  no-mistakes-darwin-arm64@0.77.1:
+    resolution: {integrity: sha512-4KL3Z9pQpJJwbdXRt63HBjjvGElyF2wgqDf7ESLM12iryDA47xjRUZVWxOl/2u3L9aXR3vOpLU86eFhjGHJX5Q==}
     cpu: [arm64]
     os: [darwin]
 
-  no-mistakes-linux-arm64-gnu@0.77.0:
-    resolution: {integrity: sha512-NJss08TMV0vTSJR4U5DjErJFLE7HUJeVV1FTbg+RchZiUKzmJHUV7pi7pTpCAW4kXlIfN63UVXfqrOlbytzcLA==}
+  no-mistakes-linux-arm64-gnu@0.77.1:
+    resolution: {integrity: sha512-OKZLIe4FLcxkb6U+nYdzV7MnxYhdMD5qBTVTURjahAYEH/eQGHVnkXCXFjOM/Uq/JA/r/N5st2GlWol+X9B7MQ==}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  no-mistakes-linux-x64-gnu@0.77.0:
-    resolution: {integrity: sha512-2bZpFJ+04oNOTcj1wdvbsn4pZjxEFWFhloijMVwNd+Iaxxnd7w0etq6jfsEgfCL+YCd90Grsfi4nit/f0zekhg==}
+  no-mistakes-linux-x64-gnu@0.77.1:
+    resolution: {integrity: sha512-7F1Tt19QciXOIbYIi5xTnZS50Yi7aKrHVAv61MK4pwkaOqYBzc0IKYeafCi2lM2LippLraS1A4LjlOtX0xqZcw==}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  no-mistakes-win32-x64-msvc@0.77.0:
-    resolution: {integrity: sha512-WHA0zV0JLVODT3GGG0zjCA2vssnZdgR3A6Ns+pR356BXaPIO41f/RdaGupv8DIIUNOXCJDHdh2s9sT8Dlftj5g==}
+  no-mistakes-win32-x64-msvc@0.77.1:
+    resolution: {integrity: sha512-zbF/TtoV4hu0hbfA0IWnTdF3Slu1L3YBexx2LNiuQt4LaQIfEtse9705C3Oh6c7nMDLl9Ki8uSRs6nTfwv84BQ==}
     cpu: [x64]
     os: [win32]
 
-  no-mistakes@0.77.0:
-    resolution: {integrity: sha512-PXDKpoHg2XcKVTJwHgx2kUFsszaw/k4zj2kl+QN6yRPfyIyBa8V4K6odyOLa7u/WGfyU3M1p0rhJXffWHbOiFg==}
+  no-mistakes@0.77.1:
+    resolution: {integrity: sha512-ABVXZhTOINqL7ITWLXGFAH9VKficWwt19wNKgyJIdiE3fWdXPpeVVb1qYnzVD02C5zGRrvKDgLUBSc3vOP4+dg==}
     hasBin: true
 
   node-app-attest@1.0.1:
@@ -21755,8 +21755,8 @@ packages:
   pg-copy-streams@7.0.0:
     resolution: {integrity: sha512-zBvnY6wtaBRE2ae2xXWOOGMaNVPkXh1vhypAkNSKgMdciJeTyIQAHZaEeRAxUjs/p1El5jgzYmwG5u871Zj3dQ==}
 
-  pg-cursor@2.22.0:
-    resolution: {integrity: sha512-knzXLKqarTjOvb3qDSW0JiGsazmxwEKXrqHfWRte7XUsOYccQRafn3BLnQobWwInkzFJSyOej8y8cQRh2z3kGw==}
+  pg-cursor@2.22.1:
+    resolution: {integrity: sha512-X10ldv3wwBONQkOSwgWEbaEITMGLd92V2Zd+xsFPhDt3nhhU3hpAT08SERBChnIFmomczLax6lKXLJrHPPXfxA==}
     peerDependencies:
       pg: ^8
 
@@ -28112,7 +28112,7 @@ snapshots:
 
   '@vouchington/memberships@0.2.0': {}
 
-  '@vouchington/pagination@0.0.1':
+  '@vouchington/pagination@0.0.2':
     dependencies:
       http-errors: 2.0.1
 
@@ -28120,11 +28120,11 @@ snapshots:
     dependencies:
       phone: 3.1.71
 
-  '@vouchington/postgres@0.0.12':
+  '@vouchington/postgres@0.0.13':
     dependencies:
       '@libpg-query/parser': 18.0.0
       pg: 8.23.1
-      pg-cursor: 2.22.0(pg@8.23.1)
+      pg-cursor: 2.22.1(pg@8.23.1)
       pgvector: 0.3.0
       sql-template-strings: 2.2.2
     transitivePeerDependencies:
@@ -29076,7 +29076,7 @@ snapshots:
 
   escape-string-regexp@5.0.0: {}
 
-  eslint-plugin-no-mistakes@0.77.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
+  eslint-plugin-no-mistakes@0.77.1(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
     dependencies:
       eslint: 10.5.0(jiti@2.7.0)(supports-color@10.2.2)
 
@@ -30581,24 +30581,24 @@ snapshots:
       - '@babel/core'
       - babel-plugin-macros
 
-  no-mistakes-darwin-arm64@0.77.0:
+  no-mistakes-darwin-arm64@0.77.1:
     optional: true
 
-  no-mistakes-linux-arm64-gnu@0.77.0:
+  no-mistakes-linux-arm64-gnu@0.77.1:
     optional: true
 
-  no-mistakes-linux-x64-gnu@0.77.0:
+  no-mistakes-linux-x64-gnu@0.77.1:
     optional: true
 
-  no-mistakes-win32-x64-msvc@0.77.0:
+  no-mistakes-win32-x64-msvc@0.77.1:
     optional: true
 
-  no-mistakes@0.77.0:
+  no-mistakes@0.77.1:
     optionalDependencies:
-      no-mistakes-darwin-arm64: 0.77.0
-      no-mistakes-linux-arm64-gnu: 0.77.0
-      no-mistakes-linux-x64-gnu: 0.77.0
-      no-mistakes-win32-x64-msvc: 0.77.0
+      no-mistakes-darwin-arm64: 0.77.1
+      no-mistakes-linux-arm64-gnu: 0.77.1
+      no-mistakes-linux-x64-gnu: 0.77.1
+      no-mistakes-win32-x64-msvc: 0.77.1
 
   node-app-attest@1.0.1:
     dependencies:
@@ -30990,7 +30990,7 @@ snapshots:
 
   pg-copy-streams@7.0.0: {}
 
-  pg-cursor@2.22.0(pg@8.23.1):
+  pg-cursor@2.22.1(pg@8.23.1):
     dependencies:
       pg: 8.23.1
 
