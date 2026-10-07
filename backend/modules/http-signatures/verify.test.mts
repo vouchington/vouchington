@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computeDigest } from '@vouchington/utils/http-signatures'
 import { generateRsaSha256KeyPair } from './keys.mts'
 import { verifySignature } from './verify.mts'
@@ -11,7 +11,14 @@ import {
   PATH,
 } from '@voucha/test-helpers/modules/http-signatures/verify-fixtures'
 
+const referenceTime = new Date('2026-01-01T00:00:00.000Z')
+
 describe('verifySignature', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(process.env.VOUCH_PROOF_NOW ?? '2026-10-05T23:59:40.000Z'))
+  })
+  afterEach(() => vi.useRealTimers())
   describe('date handling', () => {
     it('rejects an invalid date header', () => {
       const { publicKeyPem } = generateRsaSha256KeyPair()
@@ -24,6 +31,7 @@ describe('verifySignature', () => {
         computeDigest(BODY),
         'not-a-real-date',
         publicKeyPem,
+        { referenceTime },
       )
 
       expect(result.valid).toBe(false)
@@ -32,7 +40,7 @@ describe('verifySignature', () => {
 
     it('rejects a signature older than maxAge (replay protection)', () => {
       const { privateKeyPem, publicKeyPem } = generateRsaSha256KeyPair()
-      const staleDate = new Date(Date.now() - 2 * 60 * 60 * 1000).toUTCString()
+      const staleDate = new Date(referenceTime.getTime() - 2 * 60 * 60 * 1000).toUTCString()
       const digestHeader = computeDigest(BODY)
       const signatureHeader = buildManualSignature({
         privateKeyPem,
@@ -50,6 +58,7 @@ describe('verifySignature', () => {
         digestHeader,
         staleDate,
         publicKeyPem,
+        { referenceTime },
       )
 
       expect(result.valid).toBe(false)
@@ -58,7 +67,7 @@ describe('verifySignature', () => {
 
     it('rejects a signature dated in the future beyond maxAge', () => {
       const { privateKeyPem, publicKeyPem } = generateRsaSha256KeyPair()
-      const futureDate = new Date(Date.now() + 2 * 60 * 60 * 1000).toUTCString()
+      const futureDate = new Date(referenceTime.getTime() + 2 * 60 * 60 * 1000).toUTCString()
       const digestHeader = computeDigest(BODY)
       const signatureHeader = buildManualSignature({
         privateKeyPem,
@@ -76,6 +85,7 @@ describe('verifySignature', () => {
         digestHeader,
         futureDate,
         publicKeyPem,
+        { referenceTime },
       )
 
       expect(result.valid).toBe(false)
@@ -84,7 +94,7 @@ describe('verifySignature', () => {
 
     it('accepts a stale date when maxAge is widened via options', () => {
       const { privateKeyPem, publicKeyPem } = generateRsaSha256KeyPair()
-      const staleDate = new Date(Date.now() - 2 * 60 * 60 * 1000).toUTCString()
+      const staleDate = new Date(referenceTime.getTime() - 2 * 60 * 60 * 1000).toUTCString()
       const digestHeader = computeDigest(BODY)
       const signatureHeader = buildManualSignature({
         privateKeyPem,
@@ -102,7 +112,7 @@ describe('verifySignature', () => {
         digestHeader,
         staleDate,
         publicKeyPem,
-        { maxAge: 24 * 60 * 60 },
+        { maxAge: 24 * 60 * 60, referenceTime },
       )
 
       expect(result.valid).toBe(true)
@@ -112,7 +122,7 @@ describe('verifySignature', () => {
   describe('required signed headers', () => {
     it('rejects a signature missing the host header (closes the replay/host-confusion gap)', () => {
       const { privateKeyPem, publicKeyPem } = generateRsaSha256KeyPair()
-      const dateHeader = new Date().toUTCString()
+      const dateHeader = referenceTime.toUTCString()
       const digestHeader = computeDigest(BODY)
       const signatureHeader = buildManualSignature({
         privateKeyPem,
@@ -130,6 +140,7 @@ describe('verifySignature', () => {
         digestHeader,
         dateHeader,
         publicKeyPem,
+        { referenceTime },
       )
 
       expect(result.valid).toBe(false)
@@ -140,7 +151,7 @@ describe('verifySignature', () => {
 
     it('rejects a signature missing the date header', () => {
       const { privateKeyPem, publicKeyPem } = generateRsaSha256KeyPair()
-      const dateHeader = new Date().toUTCString()
+      const dateHeader = referenceTime.toUTCString()
       const digestHeader = computeDigest(BODY)
       const signatureHeader = buildManualSignature({
         privateKeyPem,
@@ -158,6 +169,7 @@ describe('verifySignature', () => {
         digestHeader,
         dateHeader,
         publicKeyPem,
+        { referenceTime },
       )
 
       expect(result.valid).toBe(false)
@@ -172,7 +184,7 @@ describe('verifySignature', () => {
       // against a different host or well past its intended validity window. Both host and date
       // are now required.
       const { privateKeyPem, publicKeyPem } = generateRsaSha256KeyPair()
-      const dateHeader = new Date().toUTCString()
+      const dateHeader = referenceTime.toUTCString()
       const digestHeader = computeDigest(BODY)
       const signatureHeader = buildManualSignature({
         privateKeyPem,
@@ -190,6 +202,7 @@ describe('verifySignature', () => {
         digestHeader,
         dateHeader,
         publicKeyPem,
+        { referenceTime },
       )
 
       expect(result.valid).toBe(false)
@@ -202,7 +215,7 @@ describe('verifySignature', () => {
   describe('algorithm handling', () => {
     it('rejects an unsupported algorithm', () => {
       const { privateKeyPem, publicKeyPem } = generateRsaSha256KeyPair()
-      const dateHeader = new Date().toUTCString()
+      const dateHeader = referenceTime.toUTCString()
       const digestHeader = computeDigest(BODY)
       const signatureHeader = buildManualSignature({
         privateKeyPem,
@@ -221,6 +234,7 @@ describe('verifySignature', () => {
         digestHeader,
         dateHeader,
         publicKeyPem,
+        { referenceTime },
       )
 
       expect(result.valid).toBe(false)
@@ -229,7 +243,7 @@ describe('verifySignature', () => {
 
     it('accepts hs2019', () => {
       const { privateKeyPem, publicKeyPem } = generateRsaSha256KeyPair()
-      const dateHeader = new Date().toUTCString()
+      const dateHeader = referenceTime.toUTCString()
       const digestHeader = computeDigest(BODY)
       const signatureHeader = buildManualSignature({
         privateKeyPem,
@@ -248,6 +262,7 @@ describe('verifySignature', () => {
         digestHeader,
         dateHeader,
         publicKeyPem,
+        { referenceTime },
       )
 
       expect(result.valid).toBe(true)
@@ -255,7 +270,7 @@ describe('verifySignature', () => {
 
     it('accepts a signature with the algorithm parameter omitted', () => {
       const { privateKeyPem, publicKeyPem } = generateRsaSha256KeyPair()
-      const dateHeader = new Date().toUTCString()
+      const dateHeader = referenceTime.toUTCString()
       const digestHeader = computeDigest(BODY)
       const signatureHeader = buildManualSignature({
         privateKeyPem,
@@ -274,6 +289,7 @@ describe('verifySignature', () => {
         digestHeader,
         dateHeader,
         publicKeyPem,
+        { referenceTime },
       )
 
       expect(result.valid).toBe(true)
