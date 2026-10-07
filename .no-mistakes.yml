@@ -1424,6 +1424,11 @@ rules:
       workspaceYaml: pnpm-workspace.yaml
       dependabotPath: .github/dependabot.yml
       lockfilePath: pnpm-lock.yaml
+      temporaryGroups:
+        - selectors:
+            - knip@6.40.0
+          reason: Knip 6.40.0 includes upstream fix #2083 for manifest export negations needed by #1360 production-export enforcement.
+          eligibleForRemovalAt: '2026-10-08T16:07:14Z'
 
   - name: tracked package.json files are workspace members
     rule: package-json-workspace-coverage

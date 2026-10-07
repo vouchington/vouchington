@@ -338,14 +338,13 @@ not scanned.
 
 ## Knip Production Exports
 
-`pnpm run knip:production-exports` finds backend exports that only tests keep alive. Almost every
-backend package declares a wildcard manifest export (`"./*"`), which Knip expands into `**/*.mts`
-production entries. Knip applies its test-file negations to configured entries but not to entries
-derived from manifest exports, so `*.test.mts` files would be entries and their imports would keep
-test-only exports reachable. A `null` export target does become a negated pattern, so each of those
-manifests also declares `"./*.test.mts": null` and `"./*/__tests__/*": null`. Node and TypeScript
-honor the single-star key and ignore the multi-star one, and nothing imports a test file by package
-specifier. Add both keys to any new backend package that declares `"./*"`.
+`pnpm run knip:production-exports` finds backend exports that only tests keep alive. Backend
+packages that declare a wildcard manifest export (`"./*"`) also declare
+`"./*.test.mts": null` and `"./*/__tests__/*": null` as explicit package policy. Knip 6.40.0
+also applies test-file negations to manifest-derived entries, fixing
+[upstream #2083](https://github.com/webpro-nl/knip/pull/2083). Node and TypeScript honor the
+single-star key and ignore the multi-star one, and nothing imports a test file by package specifier.
+Add both keys to any new backend package that declares `"./*"`.
 
 The error-level JSON AST-grep rule `backend-knip-test-export-exclusions` requires both literal
 `null` keys as direct siblings of the wildcard in the top-level `exports` object. Nested lookalikes
