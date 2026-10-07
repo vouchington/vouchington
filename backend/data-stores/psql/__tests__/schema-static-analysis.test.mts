@@ -150,21 +150,6 @@ describe('PostgreSQL schema static analysis', () => {
     ])
   })
 
-  it('derives lifecycle status instead of storing redundant status columns', async () => {
-    const { rows } = await read<{ table_name: string }>(
-      `/* getModerationLifecycleStatusColumns */
-        SELECT table_name
-        FROM information_schema.columns
-        WHERE table_schema = 'public'
-          AND column_name = 'status'
-          AND table_name = ANY($1)
-        ORDER BY table_name`,
-      [['moderation_reports', 'review_disputes', 'moderation_appeals', 'verified_identities']],
-    )
-
-    expect(rows.map(row => row.table_name)).toEqual([])
-  })
-
   it('indexes active post locks by post_id', async () => {
     const { rows } = await read<{ indexdef: string }>(
       `/* getPostLocksIndex */

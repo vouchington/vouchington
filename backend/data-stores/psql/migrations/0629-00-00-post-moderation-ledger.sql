@@ -21,11 +21,13 @@ CREATE TABLE IF NOT EXISTS post_moderation_versions (
 CREATE INDEX IF NOT EXISTS idx_post_moderation_versions__post_id__id
 ON post_moderation_versions (post_id, id DESC);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_moderation_work_items (
   version_id UUID NOT NULL REFERENCES post_moderation_versions ON DELETE CASCADE,
   source post_moderation_sources NOT NULL,
   generation BIGINT NOT NULL DEFAULT 1 CHECK (generation > 0),
   available_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  attempt_count INTEGER NOT NULL DEFAULT 0 CHECK (attempt_count >= 0),
   leased_at TIMESTAMPTZ,
   lease_token UUID UNIQUE,
   lease_expires_at TIMESTAMPTZ,
@@ -100,6 +102,7 @@ COMMENT ON COLUMN post_moderation_work_items.version_id IS 'Moderation version w
 COMMENT ON COLUMN post_moderation_work_items.source IS 'Automated or staff moderation source with one current work item per version.';
 COMMENT ON COLUMN post_moderation_work_items.generation IS 'Monotonic work generation fencing retries and stale worker writes.';
 COMMENT ON COLUMN post_moderation_work_items.available_at IS 'Earliest time a worker may claim this source work item.';
+COMMENT ON COLUMN post_moderation_work_items.attempt_count IS 'Number of worker claims for this version and source.';
 COMMENT ON COLUMN post_moderation_work_items.leased_at IS 'Clock time at which the current worker lease began.';
 COMMENT ON COLUMN post_moderation_work_items.lease_token IS 'Unique fencing token required to complete or fail the current worker lease.';
 COMMENT ON COLUMN post_moderation_work_items.lease_expires_at IS 'Clock time after which another worker may reclaim the current lease.';

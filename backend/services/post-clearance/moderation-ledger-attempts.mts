@@ -35,7 +35,8 @@ export async function beginPostModerationAttempt(
         SET leased_at = CURRENT_TIMESTAMP,
           lease_token = uuidv7(),
           lease_expires_at = LEAST($3, CURRENT_TIMESTAMP + $4::integer * INTERVAL '1 minute'),
-          generation = generation + 1
+          generation = generation + 1,
+          attempt_count = attempt_count + 1
         WHERE work.version_id = $1
           AND work.source = $2::post_moderation_sources
           AND work.completed_at IS NULL

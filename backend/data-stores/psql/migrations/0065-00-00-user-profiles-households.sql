@@ -590,7 +590,7 @@ CREATE TABLE IF NOT EXISTS amazon_ses_bounce_events (
   CHECK (amazon_ses_message_id IS NULL OR (char_length(amazon_ses_message_id) <= 1024 AND TRIM(amazon_ses_message_id) = amazon_ses_message_id)),
   amazon_ses_feedback_id TEXT,
   CHECK (amazon_ses_feedback_id IS NULL OR (char_length(amazon_ses_feedback_id) <= 1024 AND TRIM(amazon_ses_feedback_id) = amazon_ses_feedback_id)),
-  occurred_at TIMESTAMPTZ,
+  occurred_at TIMESTAMPTZ NOT NULL,
   raw_message JSONB NOT NULL,
   diagnostic_code TEXT,
   CHECK (diagnostic_code IS NULL OR (char_length(diagnostic_code) <= 1024 AND TRIM(diagnostic_code) = diagnostic_code)),
@@ -617,11 +617,16 @@ CREATE INDEX IF NOT EXISTS idx_amazon_ses_bounce_events__notification_type
 ON amazon_ses_bounce_events (notification_type, id DESC);
 
 -- Enforces at-least-once redelivery (SQS, or a retried Lambda invocation) does not create a
--- duplicate row. NULL (missing amazon_ses_message_id or occurred_at) is never deduplicated.
+-- duplicate row. NULL (missing amazon_ses_message_id or the provider occurred_at) is never deduplicated.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_amazon_ses_bounce_events__dedup_key
 ON amazon_ses_bounce_events (dedup_key)
 WHERE dedup_key IS NOT NULL;
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_amazon_ses_bounce_events_append_only
+BEFORE UPDATE OR DELETE ON amazon_ses_bounce_events
+FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 
 COMMENT ON TABLE amazon_ses_bounce_events IS 'Records email bounce, complaint, and delivery notifications received from AWS SES.';
 COMMENT ON COLUMN amazon_ses_bounce_events.notification_type IS 'SES notification type: bounce, complaint, or delivery.';
@@ -630,11 +635,11 @@ COMMENT ON COLUMN amazon_ses_bounce_events.amazon_ses_bounce_subtype_id IS 'Deta
 COMMENT ON COLUMN amazon_ses_bounce_events.recipients IS 'JSONB array of recipient email addresses affected by this event.';
 COMMENT ON COLUMN amazon_ses_bounce_events.amazon_ses_message_id IS 'SES message ID for correlating with sent emails.';
 COMMENT ON COLUMN amazon_ses_bounce_events.amazon_ses_feedback_id IS 'SES feedback ID for the notification.';
-COMMENT ON COLUMN amazon_ses_bounce_events.occurred_at IS 'Timestamp from the SES notification payload.';
+COMMENT ON COLUMN amazon_ses_bounce_events.occurred_at IS 'Provider occurrence time, or receipt time when SES omitted it; raw_message retains the exact provider payload.';
 COMMENT ON COLUMN amazon_ses_bounce_events.raw_message IS 'Full raw SES notification payload for debugging.';
 COMMENT ON COLUMN amazon_ses_bounce_events.diagnostic_code IS 'SMTP diagnostic code from the bounce (e.g. 550 5.1.1).';
 COMMENT ON COLUMN amazon_ses_bounce_events.reporting_mta IS 'The MTA that reported the bounce.';
-COMMENT ON COLUMN amazon_ses_bounce_events.dedup_key IS 'SHA-256 hex digest of amazon_ses_message_id, notification_type, occurred_at, and the sorted normalized recipients; NULL when amazon_ses_message_id or occurred_at is missing. Absorbs at-least-once redelivery duplicates without collapsing distinct per-recipient notifications that share a mail.messageId and timestamp.';
+COMMENT ON COLUMN amazon_ses_bounce_events.dedup_key IS 'SHA-256 hex digest of amazon_ses_message_id, notification_type, occurred_at, and the sorted normalized recipients; NULL when amazon_ses_message_id or the provider occurred_at is missing. Absorbs at-least-once redelivery duplicates without collapsing distinct per-recipient notifications that share a mail.messageId and timestamp.';
 
 -- ==========================================================================
 -- 0009-00-00-user-metrics.sql

@@ -116,6 +116,7 @@ describe('createSesBounceEvent', () => {
       raw_message: { notificationType: 'Delivery' },
     })
     expect(event?.dedup_key).toBeNull()
+    expect(event?.occurred_at).toBeInstanceOf(Date)
   })
 
   it('redelivering the same message is a no-op, not a duplicate row', async () => {

@@ -15,7 +15,7 @@ export async function releaseActivityPubInboxDelivery(
       AND lease_token = ${leaseToken}
       AND leased_at IS NOT NULL
       AND lease_expires_at > clock_timestamp()
-      AND available_at IS NULL
+      AND available_at <= CURRENT_TIMESTAMP
       AND failed_at IS NULL
   `)
   return mutationResult(result.rowCount)
@@ -42,7 +42,7 @@ export async function exhaustActivityPubInboxDelivery(
       AND lease_token = ${leaseToken}
       AND leased_at IS NOT NULL
       AND lease_expires_at > clock_timestamp()
-      AND available_at IS NULL
+      AND available_at <= CURRENT_TIMESTAMP
       AND failed_at IS NULL
   `)
   return mutationResult(result.rowCount)
@@ -58,7 +58,7 @@ export async function rejectActivityPubInboxDelivery(
       AND lease_token = ${leaseToken}
       AND leased_at IS NOT NULL
       AND lease_expires_at > clock_timestamp()
-      AND available_at IS NULL
+      AND available_at <= CURRENT_TIMESTAMP
       AND failed_at IS NULL
   `)
   return mutationResult(result.rowCount)
@@ -79,7 +79,7 @@ export async function completeActivityPubInboxDelivery(
         AND verified_at IS NOT NULL
         AND remote_actor_id IS NOT NULL
         AND sender_allowed_at IS NOT NULL
-        AND available_at IS NULL
+        AND available_at <= CURRENT_TIMESTAMP
         AND failed_at IS NULL
     `,
     options,

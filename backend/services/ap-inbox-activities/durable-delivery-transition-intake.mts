@@ -62,7 +62,7 @@ export async function acknowledgeActivityPubInboxDeliveryEnqueue(
     WHERE id = ${deliveryId}
       AND lease_token = ${leaseToken}
       AND failed_at IS NULL
-      AND available_at IS NULL
+      AND available_at <= CURRENT_TIMESTAMP
   `)
   return mutationResult(result.rowCount)
 }
@@ -77,14 +77,13 @@ export async function claimActivityPubInboxDelivery(
     SET leased_at = clock_timestamp(),
         lease_expires_at = clock_timestamp() + ${duration}::integer * INTERVAL '1 minute',
         attempt_count = attempt_count + 1,
-        available_at = NULL,
         last_error = NULL
     WHERE id = ${deliveryId}
       AND lease_token = ${leaseToken}
       AND leased_at IS NULL
       AND failed_at IS NULL
       AND (retention_expires_at IS NULL OR retention_expires_at > CURRENT_TIMESTAMP)
-      AND (available_at IS NULL OR available_at <= CURRENT_TIMESTAMP)
+      AND available_at <= CURRENT_TIMESTAMP
     RETURNING id, request_method, request_target, expected_host, signature_header, digest_header,
               date_header, content_type_header, raw_body, claimed_activity_id,
               claimed_activity_type, claimed_actor_uri, sender_hostname, lease_token,

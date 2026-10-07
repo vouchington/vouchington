@@ -68,7 +68,7 @@ describe('durable ActivityPub inbox deliveries', () => {
         constraint =>
           constraint.constraintName === 'activitypub_inbox_work_items__deferral_state_valid',
       )?.definition,
-    ).toContain('leased_at IS NULL')
+    ).toContain('dispatched_at IS NULL')
     expect(
       constraints.find(
         constraint =>

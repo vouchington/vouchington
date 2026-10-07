@@ -2302,9 +2302,9 @@
         "activitypub_inbox_delivery_work_items_attempt_count_check": "CHECK ((attempt_count >= 0))",
         "activitypub_inbox_delivery_work_items_check": "CHECK (((leased_at IS NULL) = (lease_expires_at IS NULL)))",
         "activitypub_inbox_delivery_work_items_check1": "CHECK (((lease_expires_at IS NULL) OR (lease_expires_at > leased_at)))",
-        "activitypub_inbox_work_items__deferral_state_valid": "CHECK (((available_at IS NULL) OR ((verified_at IS NOT NULL) AND (remote_actor_id IS NOT NULL) AND (leased_at IS NULL) AND (dispatched_at IS NULL) AND (sender_allowed_at IS NULL) AND (failed_at IS NULL) AND (last_error IS NOT NULL))))",
+        "activitypub_inbox_work_items__deferral_state_valid": "CHECK (((NOT ((verified_at IS NOT NULL) AND (remote_actor_id IS NOT NULL) AND (leased_at IS NULL) AND (dispatched_at IS NULL) AND (sender_allowed_at IS NULL) AND (failed_at IS NULL))) OR (last_error IS NOT NULL)))",
         "activitypub_inbox_work_items__failed_requires_first_failed": "CHECK (((failed_at IS NULL) OR (first_failed_at IS NOT NULL)))",
-        "activitypub_inbox_work_items__failure_state_valid": "CHECK (((failed_at IS NULL) OR ((leased_at IS NOT NULL) AND (available_at IS NULL) AND (last_error IS NOT NULL))))",
+        "activitypub_inbox_work_items__failure_state_valid": "CHECK (((failed_at IS NULL) OR ((leased_at IS NOT NULL) AND (last_error IS NOT NULL))))",
         "activitypub_inbox_work_items__first_failed_precedes_failure": "CHECK (((failed_at IS NULL) OR (first_failed_at <= failed_at)))",
         "activitypub_inbox_work_items__first_failed_requires_retention": "CHECK (((first_failed_at IS NULL) OR (retention_expires_at IS NOT NULL)))",
         "activitypub_inbox_work_items__last_error_bounded": "CHECK (((last_error IS NULL) OR (length(last_error) <= 1000)))",
@@ -2313,7 +2313,7 @@
         "activitypub_inbox_work_items__request_method_uppercase": "CHECK (((request_method)::text = upper((request_method)::text)))",
         "activitypub_inbox_work_items__sender_hostname_lowercase": "CHECK ((sender_hostname = lower(sender_hostname)))",
         "activitypub_inbox_work_items__sender_requires_verification": "CHECK (((sender_allowed_at IS NULL) OR ((verified_at IS NOT NULL) AND (remote_actor_id IS NOT NULL))))",
-        "activitypub_inbox_work_items__terminal_diagnostics_present": "CHECK ((((available_at IS NULL) AND (failed_at IS NULL)) OR (last_error IS NOT NULL)))",
+        "activitypub_inbox_work_items__terminal_diagnostics_present": "CHECK (((failed_at IS NULL) OR (last_error IS NOT NULL)))",
         "activitypub_inbox_work_items__unverified_requires_retention": "CHECK (((verified_at IS NOT NULL) OR (retention_expires_at IS NOT NULL)))",
         "activitypub_inbox_work_items__unverified_retention_bounded": "CHECK (((verified_at IS NOT NULL) OR (retention_expires_at <= (received_at + '01:00:00'::interval))))",
         "activitypub_inbox_work_items__verified_actor_paired": "CHECK (((verified_at IS NULL) = (remote_actor_id IS NULL)))",
@@ -2334,12 +2334,12 @@
         },
         "available_at": {
           "collation": null,
-          "comment": "Earliest retry time after a valid sender exceeds its hostname delivery allowance.",
-          "defaultExpression": null,
+          "comment": "Earliest time this envelope may next be claimed; current-time availability is the active baseline.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": true,
+          "nullable": false,
           "ordinalPosition": 23,
           "type": "timestamp with time zone"
         },
@@ -5589,7 +5589,7 @@
         },
         "dedup_key": {
           "collation": null,
-          "comment": "SHA-256 hex digest of amazon_ses_message_id, notification_type, occurred_at, and the sorted normalized recipients; NULL when amazon_ses_message_id or occurred_at is missing. Absorbs at-least-once redelivery duplicates without collapsing distinct per-recipient notifications that share a mail.messageId and timestamp.",
+          "comment": "SHA-256 hex digest of amazon_ses_message_id, notification_type, occurred_at, and the sorted normalized recipients; NULL when amazon_ses_message_id or the provider occurred_at is missing. Absorbs at-least-once redelivery duplicates without collapsing distinct per-recipient notifications that share a mail.messageId and timestamp.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -5633,12 +5633,12 @@
         },
         "occurred_at": {
           "collation": null,
-          "comment": "Timestamp from the SES notification payload.",
+          "comment": "Provider occurrence time, or receipt time when SES omitted it; raw_message retains the exact provider payload.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": true,
+          "nullable": false,
           "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
@@ -5825,7 +5825,9 @@
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_amazon_ses_bounce_events_append_only": "CREATE TRIGGER trigger_amazon_ses_bounce_events_append_only BEFORE DELETE OR UPDATE ON public.amazon_ses_bounce_events FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
+      },
       "uniqueConstraints": {}
     },
     "amazon_ses_bounce_subtypes": {
@@ -21346,6 +21348,17 @@
           "ordinalPosition": 1,
           "type": "uuid"
         },
+        "occurred_at": {
+          "collation": null,
+          "comment": "Time the decision that created this evidence was made.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
         "outcome": {
           "collation": null,
           "comment": "What happened to the notice or its restriction. Suspension lifts and moderator reversals of a suspended claimant's withholding are not misuse and are never recorded.",
@@ -21356,17 +21369,6 @@
           "nullable": false,
           "ordinalPosition": 3,
           "type": "copyright_claimant_misuse_event_outcomes"
-        },
-        "recorded_at": {
-          "collation": null,
-          "comment": "Time the decision that created this evidence was made.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 7,
-          "type": "timestamp with time zone"
         }
       },
       "comment": "Append-only ledger of claimant misuse evidence: a notice withdrawn, a notice rejected on staff review, or a restriction reversed by counter-notice restoration or appeal. Recorded whatever the automatic-withholding switch says. The claimant is the notice's claimant_user_id, so erasing that account erases the link and nothing here suspends anyone.",
@@ -21526,7 +21528,7 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_copyright_claimant_misuse_events_immutable": "CREATE TRIGGER trigger_copyright_claimant_misuse_events_immutable BEFORE DELETE OR UPDATE ON public.copyright_claimant_misuse_events FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()"
+        "trigger_copyright_claimant_misuse_events_immutable": "CREATE TRIGGER trigger_copyright_claimant_misuse_events_immutable BEFORE DELETE OR UPDATE ON public.copyright_claimant_misuse_events FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
       },
       "uniqueConstraints": {
         "copyright_claimant_misuse_events_copyright_restriction_id_key": {
@@ -47089,7 +47091,7 @@
           "generated": "virtual",
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
-          "nullable": true,
+          "nullable": false,
           "ordinalPosition": 12,
           "type": "timestamp with time zone"
         },
@@ -67665,7 +67667,7 @@
           "generated": "virtual",
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
-          "nullable": true,
+          "nullable": false,
           "ordinalPosition": 11,
           "type": "timestamp with time zone"
         },
@@ -74666,12 +74668,24 @@
     },
     "post_moderation_work_items": {
       "checkConstraints": {
+        "post_moderation_work_items_attempt_count_check": "CHECK ((attempt_count >= 0))",
         "post_moderation_work_items_check": "CHECK (((lease_token IS NULL) = (leased_at IS NULL)))",
         "post_moderation_work_items_check1": "CHECK (((lease_token IS NULL) = (lease_expires_at IS NULL)))",
         "post_moderation_work_items_check2": "CHECK (((completed_at IS NULL) OR (lease_token IS NULL)))",
         "post_moderation_work_items_generation_check": "CHECK ((generation > 0))"
       },
       "columns": {
+        "attempt_count": {
+          "collation": null,
+          "comment": "Number of worker claims for this version and source.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "integer"
+        },
         "available_at": {
           "collation": null,
           "comment": "Earliest time a worker may claim this source work item.",
@@ -74691,7 +74705,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "generation": {
@@ -74713,7 +74727,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "lease_token": {
@@ -74724,7 +74738,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "uuid"
         },
         "leased_at": {
@@ -74735,7 +74749,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "source": {
@@ -116348,9 +116362,20 @@
     },
     "topic_revisions": {
       "checkConstraints": {
-        "topic_revisions_revision_document_check": "CHECK (((revision_document ?& ARRAY['changes'::text, 'revised_by_roles'::text]) AND (jsonb_typeof((revision_document -> 'changes'::text)) = 'object'::text) AND (jsonb_typeof((revision_document -> 'revised_by_roles'::text)) = 'array'::text)))"
+        "topic_revisions_changes_check": "CHECK (((changes ?& ARRAY['changes'::text, 'revised_by_roles'::text]) AND (jsonb_typeof((changes -> 'changes'::text)) = 'object'::text) AND (jsonb_typeof((changes -> 'revised_by_roles'::text)) = 'array'::text)))"
       },
       "columns": {
+        "changes": {
+          "collation": null,
+          "comment": "Revision document containing per-field before/after changes and the revising user role snapshot.",
+          "defaultExpression": "'{\"changes\": {}, \"revised_by_roles\": []}'::jsonb",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "jsonb"
+        },
         "created_at": {
           "collation": null,
           "comment": null,
@@ -116383,17 +116408,6 @@
           "nullable": true,
           "ordinalPosition": 4,
           "type": "uuid"
-        },
-        "revision_document": {
-          "collation": null,
-          "comment": "Revision document containing per-field before/after changes and the revising user role snapshot.",
-          "defaultExpression": "'{\"changes\": {}, \"revised_by_roles\": []}'::jsonb",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 5,
-          "type": "jsonb"
         },
         "revision_type": {
           "collation": null,
@@ -116444,7 +116458,7 @@
         "idx_topic_revisions__admin_content_update": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_topic_revisions__admin_content_update ON public.topic_revisions USING btree (topic_id, id DESC) WHERE ((revision_type = ANY (ARRAY['create'::revision_types, 'update'::revision_types])) AND ((revision_document -> 'changes'::text) ?| ARRAY['name'::text, 'markdown'::text]) AND ((revision_document -> 'revised_by_roles'::text) @> '[\"administrator\"]'::jsonb))",
+          "definition": "CREATE INDEX idx_topic_revisions__admin_content_update ON public.topic_revisions USING btree (topic_id, id DESC) WHERE ((revision_type = ANY (ARRAY['create'::revision_types, 'update'::revision_types])) AND ((changes -> 'changes'::text) ?| ARRAY['name'::text, 'markdown'::text]) AND ((changes -> 'revised_by_roles'::text) @> '[\"administrator\"]'::jsonb))",
           "includedColumns": [],
           "keys": [
             {
@@ -116462,7 +116476,7 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": "((revision_type = ANY (ARRAY['create'::revision_types, 'update'::revision_types])) AND ((revision_document -> 'changes'::text) ?| ARRAY['name'::text, 'markdown'::text]) AND ((revision_document -> 'revised_by_roles'::text) @> '[\"administrator\"]'::jsonb))",
+          "predicate": "((revision_type = ANY (ARRAY['create'::revision_types, 'update'::revision_types])) AND ((changes -> 'changes'::text) ?| ARRAY['name'::text, 'markdown'::text]) AND ((changes -> 'revised_by_roles'::text) @> '[\"administrator\"]'::jsonb))",
           "primary": false,
           "ready": true,
           "unique": false,

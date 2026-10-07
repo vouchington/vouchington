@@ -77,7 +77,7 @@ export async function createSesBounceEvent(
       ${JSON.stringify(normalizedRecipients)}::jsonb,
       ${input.amazon_ses_message_id ?? null},
       ${input.amazon_ses_feedback_id ?? null},
-      ${input.occurred_at ?? null},
+      ${input.occurred_at ?? new Date()},
       ${JSON.stringify(input.raw_message)}::jsonb,
       ${input.diagnostic_code ?? null},
       ${input.reporting_mta ?? null},

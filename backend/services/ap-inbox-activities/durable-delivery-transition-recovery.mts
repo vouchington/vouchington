@@ -21,11 +21,11 @@ export async function recoverActivityPubInboxDeliveries(
       WHERE delivery.failed_at IS NULL
         AND (${idScope}::uuid[] IS NULL OR delivery.id = ANY(${idScope}::uuid[]))
         AND (delivery.retention_expires_at IS NULL OR delivery.retention_expires_at > CURRENT_TIMESTAMP)
-        AND (delivery.available_at IS NULL OR delivery.available_at <= CURRENT_TIMESTAMP)
+        AND delivery.available_at <= CURRENT_TIMESTAMP
         AND (
           (
             delivery.leased_at IS NULL
-            AND COALESCE(delivery.dispatched_at, delivery.available_at, delivery.received_at)
+            AND COALESCE(delivery.dispatched_at, delivery.available_at)
               < NOW() - ${AP_INBOX_ACTIVITIES_DISPATCH_TIMEOUT_MINUTES}::integer * INTERVAL '1 minute'
           )
           OR delivery.lease_expires_at <= clock_timestamp()
@@ -38,7 +38,7 @@ export async function recoverActivityPubInboxDeliveries(
     SET lease_token = uuidv7(),
         leased_at = NULL, lease_expires_at = NULL,
         dispatched_at = CURRENT_TIMESTAMP,
-        available_at = NULL,
+        available_at = CURRENT_TIMESTAMP,
         last_error = NULL
     FROM candidates
     WHERE delivery.id = candidates.id
@@ -70,7 +70,7 @@ export async function rearmFailedActivityPubInboxDeliveries(
         leased_at = NULL, lease_expires_at = NULL,
         dispatched_at = CURRENT_TIMESTAMP,
         failed_at = NULL,
-        available_at = NULL,
+        available_at = CURRENT_TIMESTAMP,
         last_error = NULL
     FROM candidates
     WHERE delivery.id = candidates.id

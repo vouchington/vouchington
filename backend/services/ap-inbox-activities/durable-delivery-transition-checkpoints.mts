@@ -24,7 +24,7 @@ export async function verifyActivityPubInboxDelivery(
       AND lease_expires_at > clock_timestamp()
       AND verified_at IS NULL
       AND remote_actor_id IS NULL
-      AND available_at IS NULL
+      AND available_at <= CURRENT_TIMESTAMP
       AND failed_at IS NULL
   `)
   return mutationResult(result.rowCount)
@@ -44,7 +44,7 @@ export async function admitActivityPubInboxDeliverySender(
       AND verified_at IS NOT NULL
       AND remote_actor_id IS NOT NULL
       AND sender_allowed_at IS NULL
-      AND available_at IS NULL
+      AND available_at <= CURRENT_TIMESTAMP
       AND failed_at IS NULL
   `)
   return mutationResult(result.rowCount)
@@ -69,7 +69,7 @@ export async function deferActivityPubInboxDelivery(
       AND verified_at IS NOT NULL
       AND remote_actor_id IS NOT NULL
       AND sender_allowed_at IS NULL
-      AND available_at IS NULL
+      AND available_at <= CURRENT_TIMESTAMP
       AND failed_at IS NULL
     RETURNING id, lease_token
   `)

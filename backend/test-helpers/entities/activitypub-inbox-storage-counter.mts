@@ -54,7 +54,9 @@ export async function measureActivityPubInboxOwnedStorageCounterForTest(
     await transaction(sql`/* measureActivityPubInboxOwnedStorageCounterForTest */
       UPDATE activitypub_inbox_delivery_work_items
       SET verified_at = CURRENT_TIMESTAMP,
-          remote_actor_id = ${verificationActorId}
+          remote_actor_id = ${verificationActorId},
+          leased_at = CURRENT_TIMESTAMP,
+          lease_expires_at = CURRENT_TIMESTAMP + INTERVAL '1 minute'
       WHERE id = ${deliveryId}
     `)
   } else if (scenario === 'insert-delete') {

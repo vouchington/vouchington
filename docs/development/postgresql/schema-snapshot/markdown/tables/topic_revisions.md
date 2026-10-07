@@ -6,14 +6,14 @@ Append-only revision log for topics. Stores per-field before/after diffs.
 
 Not partitioned — growth: unbounded.
 
-| Column              | Type                       | Nullable | Default                                            | Identity | Generated | Collation | Comment                                                                                          |
-| ------------------- | -------------------------- | -------- | -------------------------------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------ |
-| `id`                | `uuid`                     | no       | `uuidv7()`                                         |          |           |           |                                                                                                  |
-| `topic_id`          | `uuid`                     | no       |                                                    |          |           |           | The topic this revision is for.                                                                  |
-| `revision_type`     | `revision_types`           | no       |                                                    |          |           |           | Type of change: create, update, or delete.                                                       |
-| `revised_by_id`     | `uuid`                     | yes      |                                                    |          |           |           | The user who performed this change.                                                              |
-| `revision_document` | `jsonb`                    | no       | `'{"changes": {}, "revised_by_roles": []}'::jsonb` |          |           |           | Revision document containing per-field before/after changes and the revising user role snapshot. |
-| `created_at`        | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)`                       |          | virtual   |           |                                                                                                  |
+| Column          | Type                       | Nullable | Default                                            | Identity | Generated | Collation | Comment                                                                                          |
+| --------------- | -------------------------- | -------- | -------------------------------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------ |
+| `id`            | `uuid`                     | no       | `uuidv7()`                                         |          |           |           |                                                                                                  |
+| `topic_id`      | `uuid`                     | no       |                                                    |          |           |           | The topic this revision is for.                                                                  |
+| `revision_type` | `revision_types`           | no       |                                                    |          |           |           | Type of change: create, update, or delete.                                                       |
+| `revised_by_id` | `uuid`                     | yes      |                                                    |          |           |           | The user who performed this change.                                                              |
+| `changes`       | `jsonb`                    | no       | `'{"changes": {}, "revised_by_roles": []}'::jsonb` |          |           |           | Revision document containing per-field before/after changes and the revising user role snapshot. |
+| `created_at`    | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)`                       |          | virtual   |           |                                                                                                  |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -22,7 +22,7 @@ _none_
 
 **Check constraints:**
 
-- `topic_revisions_revision_document_check`: `CHECK (((revision_document ?& ARRAY['changes'::text, 'revised_by_roles'::text]) AND (jsonb_typeof((revision_document -> 'changes'::text)) = 'object'::text) AND (jsonb_typeof((revision_document -> 'revised_by_roles'::text)) = 'array'::text)))`
+- `topic_revisions_changes_check`: `CHECK (((changes ?& ARRAY['changes'::text, 'revised_by_roles'::text]) AND (jsonb_typeof((changes -> 'changes'::text)) = 'object'::text) AND (jsonb_typeof((changes -> 'revised_by_roles'::text)) = 'array'::text)))`
 
 **Foreign keys:**
 
@@ -31,7 +31,7 @@ _none_
 
 **Indexes:**
 
-- `idx_topic_revisions__admin_content_update`: `CREATE INDEX idx_topic_revisions__admin_content_update ON public.topic_revisions USING btree (topic_id, id DESC) WHERE ((revision_type = ANY (ARRAY['create'::revision_types, 'update'::revision_types])) AND ((revision_document -> 'changes'::text) ?| ARRAY['name'::text, 'markdown'::text]) AND ((revision_document -> 'revised_by_roles'::text) @> '["administrator"]'::jsonb))`
+- `idx_topic_revisions__admin_content_update`: `CREATE INDEX idx_topic_revisions__admin_content_update ON public.topic_revisions USING btree (topic_id, id DESC) WHERE ((revision_type = ANY (ARRAY['create'::revision_types, 'update'::revision_types])) AND ((changes -> 'changes'::text) ?| ARRAY['name'::text, 'markdown'::text]) AND ((changes -> 'revised_by_roles'::text) @> '["administrator"]'::jsonb))`
 - `idx_topic_revisions__topic_id`: `CREATE INDEX idx_topic_revisions__topic_id ON public.topic_revisions USING btree (topic_id)`
 - `topic_revisions_pkey`: `CREATE UNIQUE INDEX topic_revisions_pkey ON public.topic_revisions USING btree (id)`
 

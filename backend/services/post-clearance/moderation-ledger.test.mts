@@ -10,6 +10,7 @@ import {
   safeUsername,
   setPostLLMModerationContentSha256,
 } from '@voucha/test-helpers'
+import { getTestPostModerationWorkAttemptCount } from '@voucha/test-helpers/post-moderation-attempt-state'
 import {
   beginPostModerationAttempt,
   completePostModerationAttempt,
@@ -182,6 +183,9 @@ describe('post moderation ledger', () => {
 
     const first = await beginPostModerationAttempt(postId, 'openai_omni')
     expect(first?.attempt_number).toBe(1)
+    expect(await getTestPostModerationWorkAttemptCount(postId, 'openai_omni')).toBe(1)
+    await expect(beginPostModerationAttempt(postId, 'openai_omni')).resolves.toBeNull()
+    expect(await getTestPostModerationWorkAttemptCount(postId, 'openai_omni')).toBe(1)
     await expect(failPostModerationAttempt(first!, 'provider_error')).resolves.toEqual({
       recorded: true,
       exhausted: false,
@@ -198,12 +202,14 @@ describe('post moderation ledger', () => {
     await makeTestPostModerationWorkAvailable(first!.version_id, 'openai_omni')
     const second = await beginPostModerationAttempt(postId, 'openai_omni')
     expect(second?.attempt_number).toBe(2)
+    expect(await getTestPostModerationWorkAttemptCount(postId, 'openai_omni')).toBe(2)
     await failPostModerationAttempt(second!, 'provider_error')
     expect(await getTestPostModerationRetryDelayMinutes(postId, 'openai_omni')).toBe(20)
 
     await makeTestPostModerationWorkAvailable(first!.version_id, 'openai_omni')
     const third = await beginPostModerationAttempt(postId, 'openai_omni')
     expect(third?.attempt_number).toBe(3)
+    expect(await getTestPostModerationWorkAttemptCount(postId, 'openai_omni')).toBe(3)
     await expect(failPostModerationAttempt(third!, 'provider_error')).resolves.toEqual({
       recorded: true,
       exhausted: true,
