@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  ISOLATED_DATABASE_PARENT_TIMEOUT_MS,
-  runIsolatedDatabaseCase,
-} from './vitest-isolated-database-case.mts'
-import { assertIsolatedDatabaseCaseRan } from './vitest-isolated-database-case-result.mts'
+import { runIsolatedDatabaseCase } from './vitest-isolated-database-case.mts'
 import {
   getIsolatedDatabaseCase,
   getIsolatedDatabaseChildCase,
@@ -28,14 +24,9 @@ describe('isolated database case registry', () => {
     )
   })
 
-  it('rejects results for removed cases', () => {
-    expect(() => assertIsolatedDatabaseCaseRan('semantic-post-window-selective', '')).toThrow(
-      'Unknown isolated database case: semantic-post-window-selective',
+  it('rejects a removed case before creating an isolated database', async () => {
+    await expect(runIsolatedDatabaseCase('semantic-post-window-cap')).rejects.toThrow(
+      'Unknown isolated database case: semantic-post-window-cap',
     )
-  })
-
-  it('retains a bounded launcher API until the harness is removed', () => {
-    expect(runIsolatedDatabaseCase).toBeTypeOf('function')
-    expect(ISOLATED_DATABASE_PARENT_TIMEOUT_MS).toBeLessThanOrEqual(300_000)
   })
 })

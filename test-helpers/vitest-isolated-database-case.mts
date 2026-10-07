@@ -27,10 +27,6 @@ const commandTimeoutMs = 10_000
 const bootstrapTimeoutMs = 60_000
 const childTimeoutMs = 120_000
 const cleanupTimeoutMs = 60_000
-// A parent orchestrates two admin commands, bootstrap, child execution/reporting and cleanup.
-export const ISOLATED_DATABASE_PARENT_TIMEOUT_MS =
-  2 * commandTimeoutMs + bootstrapTimeoutMs + childTimeoutMs + cleanupTimeoutMs + 10_000
-
 /** Runs a registered global test against a fresh local database, then drops only that database. */
 export async function runIsolatedDatabaseCase(caseId: IsolatedDatabaseCaseId): Promise<void> {
   getIsolatedDatabaseCase(caseId)
