@@ -1,3 +1,4 @@
+import { backendImageAttestationEmptyPersistErrorRule } from './attestation-rules.mts'
 import { backendCredentialedProviderSmokeTestTransientRule } from './backend-credentialed-rules.mts'
 import { mainBackendImageRegistryLayerBlobNotFoundRule } from './backend-image-rules.mts'
 import {
@@ -37,6 +38,7 @@ export const RULES: TransientRetryRule[] = [
   gitleaksInstallReleasesDownloadFlakeRule,
   planCompletionSetupNodeToolCacheTimeoutRule,
   mainBackendImageRegistryLayerBlobNotFoundRule,
+  backendImageAttestationEmptyPersistErrorRule,
   backendCredentialedProviderSmokeTestTransientRule,
   mainWebPlaywrightSetupAptLockRule,
   webIntegrationWranglerSocketClosedRule,
