@@ -27,6 +27,7 @@ type NoMistakesRule = {
   rule?: unknown
   options?: {
     extraGeneratedColumns?: ExtraGeneratedColumn[]
+    requireArgumentIsPrimaryKey?: unknown
     sqlInclude?: unknown
   }
 }
@@ -50,6 +51,7 @@ describe('extraGeneratedColumns freshness', () => {
       expect(rule.options?.extraGeneratedColumns?.every(entry => entry.sourceColumn === 'id')).toBe(
         true,
       )
+      expect(rule.options?.requireArgumentIsPrimaryKey).toBe(false)
     }
   })
 })

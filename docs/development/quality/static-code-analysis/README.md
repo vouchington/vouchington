@@ -540,12 +540,13 @@ resolution rules are copied into `forbidden`: dependency-cruiser merges `extends
 `not-to-unresolvable`, and `no-non-package-json`. Web inlines `no-circular` and
 `not-to-unresolvable`.
 
-`no-mistakes` enforces `postgres-no-offset` and `postgres-require-query-annotation`
-for backend TypeScript runtime code, excluding tests, test helpers, and scripts. The
+`no-mistakes` enforces `postgres-require-query-annotation` for backend TypeScript runtime
+code, excluding tests, test helpers, and scripts. `postgres-no-offset` applies to that same
+runtime scope and to tracked migrations, views, and config-driven SQL. The
 `postgres-generated-column-predicates` runtime entry excludes tests plus only seed scripts and
 the migration runner; it scans other backend scripts, and a second entry explicitly scans the five
-development-runtime helpers. Both entries list the config-driven generated `created_at` columns
-because election DDL is TypeScript rather than migration SQL.
+development-runtime helpers and the same schema SQL sources. Both entries list the config-driven
+generated `created_at` columns because election DDL is TypeScript rather than migration SQL.
 The repository annotation guard remains because parity in #1586 found that the released
 analyzer misses SQL assigned to a function-scoped `var` inside a conditional block and
 executed afterward. The existing runtime-guard fixture protects this case; remove the

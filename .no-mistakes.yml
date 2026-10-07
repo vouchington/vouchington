@@ -2459,7 +2459,7 @@ rules:
         - backend/scripts/seeds/**
         - backend/data-stores/psql/migration-runner/**
       functions: [uuid_extract_timestamp]
-      requireArgumentIsPrimaryKey: true
+      requireArgumentIsPrimaryKey: false
       clauses: [where, join, order-by]
       extraGeneratedColumns:
         - { table: agent_moderation_votes, column: created_at, sourceColumn: id }
@@ -2515,6 +2515,10 @@ rules:
       importSpecifier: '@data-stores/psql'
       executorFactoryNames: [beginTransaction, beginBoundedTransaction]
       executorTypeNames: [TransactionQuery, QueryExecutor]
+      sqlInclude:
+        - backend/data-stores/psql/migrations/**/*.sql
+        - backend/data-stores/psql/views/**/*.sql
+        - backend/data-stores/psql/config-driven/**/*.sql
       include:
         - backend/test-helpers/entities/create-test-entities.mts
         - backend/test-helpers/entities/rss-feeds.mts
@@ -2522,7 +2526,7 @@ rules:
         - backend/test-helpers/entities/urls.mts
         - backend/test-helpers/entities/users-direct.mts
       functions: [uuid_extract_timestamp]
-      requireArgumentIsPrimaryKey: true
+      requireArgumentIsPrimaryKey: false
       clauses: [where, join, order-by]
       extraGeneratedColumns:
         - { table: agent_moderation_votes, column: created_at, sourceColumn: id }
