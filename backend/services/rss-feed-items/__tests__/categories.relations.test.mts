@@ -137,12 +137,8 @@ describe('categories relations', () => {
     await upsertRssFeedItemCategories([
       { rss_feed_item_id: testRssFeedItemId, categories: [testAlias] },
     ])
-    await expect
-      .poll(async () => {
-        const item = await getRssFeedItemById(testRssFeedItemId)
-        return item?.categories?.some(category => category.topic?.id === testTopicId)
-      })
-      .toBe(true)
+    const projected = await getRssFeedItemById(testRssFeedItemId)
+    expect(projected?.categories?.some(category => category.topic?.id === testTopicId)).toBe(true)
     const [topicRelation] = (await getEntityRelation(
       'relation__rss_feed_item__category__topic',
       testRssFeedItemId,
@@ -185,12 +181,8 @@ describe('categories relations', () => {
     const aliasId = await getTopicAliasIdForTest(canonical)
     expect(aliasId).not.toBeNull()
 
-    await expect
-      .poll(async () => {
-        const result = await searchRssFeedItems({ hashtag_alias_ids: [aliasId!] })
-        return result.results.some(item => item.id === testRssFeedItemId)
-      })
-      .toBe(true)
+    const result = await searchRssFeedItems({ hashtag_alias_ids: [aliasId!] })
+    expect(result.results.some(item => item.id === testRssFeedItemId)).toBe(true)
   })
 
   it('backfillCategoriesForTopicAliases creates relation for backfilled items', async () => {
