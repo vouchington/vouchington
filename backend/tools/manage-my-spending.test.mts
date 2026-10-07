@@ -31,7 +31,7 @@ describe('manage_my_spending tool — real DB', () => {
     const added = (
       await execute({
         action: 'add',
-        spending_category_id: categoryId,
+        spending_category_topic_id: categoryId,
         amount: { amount: 100, currency: 'usd' },
       })
     ).result as { id: string }
@@ -42,7 +42,7 @@ describe('manage_my_spending tool — real DB', () => {
     expect(page.results).toContainEqual(
       expect.objectContaining({
         id: added.id,
-        spending_category_id: categoryId,
+        spending_category_topic_id: categoryId,
         amount: { amount: 100, currency: 'usd' },
         can_manage: true,
       }),
@@ -53,7 +53,7 @@ describe('manage_my_spending tool — real DB', () => {
     const execute = manageMySpendingTool.function(user)
     const result = await execute({
       action: 'add',
-      spending_category_id: spendingCategoryId,
+      spending_category_topic_id: spendingCategoryId,
       amount: { amount: 1_000_000, currency: 'usd' },
       spending_frequency: 'monthly',
       note: 'groceries',
@@ -64,9 +64,9 @@ describe('manage_my_spending tool — real DB', () => {
       amount: 1_000_000,
       currency: 'usd',
     })
-    expect((result.result as { spending_category_id: string }).spending_category_id).toBe(
-      spendingCategoryId,
-    )
+    expect(
+      (result.result as { spending_category_topic_id: string }).spending_category_topic_id,
+    ).toBe(spendingCategoryId)
   })
 
   it('list after add returns the spending category', async () => {
@@ -74,7 +74,7 @@ describe('manage_my_spending tool — real DB', () => {
     expect(result.success).toBe(true)
     const page = result.result as HouseholdSpendingCategoryPage
     expect(
-      page.results.some(category => category.spending_category_id === spendingCategoryId),
+      page.results.some(category => category.spending_category_topic_id === spendingCategoryId),
     ).toBe(true)
   })
 
@@ -85,7 +85,7 @@ describe('manage_my_spending tool — real DB', () => {
     const added = (
       await addExecute({
         action: 'add',
-        spending_category_id: catId,
+        spending_category_topic_id: catId,
         amount: { amount: 500_000, currency: 'usd' },
       })
     ).result as { id: string }
@@ -114,7 +114,7 @@ describe('manage_my_spending tool — real DB', () => {
     const added = (
       await addExecute({
         action: 'add',
-        spending_category_id: catId,
+        spending_category_topic_id: catId,
         amount: { amount: 200_000, currency: 'usd' },
       })
     ).result as { id: string }

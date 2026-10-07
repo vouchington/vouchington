@@ -6,14 +6,14 @@ import {
 import { createManageEntityTool } from './create-manage-entity-tool.mts'
 
 export default createManageEntityTool<
-  { rewards_program_status_id: string },
+  { rewards_program_status_topic_id: string },
   { started_on?: string; expires_on?: string }
 >({
   toolName: 'manage_my_rewards_statuses',
   description:
     "Manage the current user's loyalty tier / rewards program statuses (e.g. Gold, Platinum).",
   addProperties: {
-    rewards_program_status_id: {
+    rewards_program_status_topic_id: {
       type: 'string',
       description: 'The topic UUID of the rewards program status to add (required for action=add)',
     },
@@ -29,7 +29,11 @@ export default createManageEntityTool<
     },
   },
   addFn: (user, args) =>
-    createIndividualRewardsProgramStatus(user, user, args.rewards_program_status_id as string),
+    createIndividualRewardsProgramStatus(
+      user,
+      user,
+      args.rewards_program_status_topic_id as string,
+    ),
   updateFn: (user, args) =>
     updateIndividualRewardsProgramStatusById(user, user, args.id, {
       started_on: args.started_on as string | undefined,

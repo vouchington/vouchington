@@ -12,7 +12,7 @@ type Story = StoryObj<typeof meta>
 
 const groceries: SpendingCategory = {
   id: 'spend-groceries',
-  spending_category_id: 'topic-groceries',
+  spending_category_topic_id: 'topic-groceries',
   amount: { amount: 60_000, currency: 'usd' },
   spending_frequency: 'monthly',
   note: 'Weekly supermarket runs.',

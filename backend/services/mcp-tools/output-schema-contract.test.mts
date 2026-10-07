@@ -48,7 +48,9 @@ describe('MCP output schema contract — real DB', () => {
     const status = (
       await manageMyRewardsStatusesTool.function(user)({
         action: 'add',
-        rewards_program_status_id: await insertTestRewardsProgramStatus({ createdById: user.id }),
+        rewards_program_status_topic_id: await insertTestRewardsProgramStatus({
+          createdById: user.id,
+        }),
       })
     ).result as { id: string }
     await manageMyRewardsStatusesTool.function(user)({
@@ -59,7 +61,7 @@ describe('MCP output schema contract — real DB', () => {
     })
     await manageMySpendingTool.function(user)({
       action: 'add',
-      spending_category_id: await insertTestSpendingCategory({ createdById: user.id }),
+      spending_category_topic_id: await insertTestSpendingCategory({ createdById: user.id }),
       amount: { amount: 1_000_000, currency: 'usd' },
       spending_frequency: 'monthly',
       note: 'groceries',

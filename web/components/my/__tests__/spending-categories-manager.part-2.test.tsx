@@ -22,7 +22,7 @@ describe('SpendingCategoriesManager Integration Flow', () => {
     mockCreate.mockResolvedValue({
       spending_category: {
         id: 'sc-2',
-        spending_category_id: 'cat-2',
+        spending_category_topic_id: 'cat-2',
         amount: { amount: 20_000, currency: 'usd' },
         spending_frequency: 'monthly',
         note: 'Grocery note',
@@ -36,7 +36,7 @@ describe('SpendingCategoriesManager Integration Flow', () => {
     mockUpdate.mockResolvedValue({
       spending_category: {
         id: 'sc-1',
-        spending_category_id: 'cat-1',
+        spending_category_topic_id: 'cat-1',
         amount: { amount: 18_000, currency: 'usd' },
         spending_frequency: 'annually',
         note: 'Updated Coffee Note',
@@ -76,7 +76,7 @@ describe('SpendingCategoriesManager Integration Flow', () => {
 
     await waitFor(() => {
       expect(mockCreate).toHaveBeenCalledWith({
-        spending_category_id: 'cat-2',
+        spending_category_topic_id: 'cat-2',
         amount: { amount: 20_000, currency: 'usd' },
         spending_frequency: 'monthly',
         note: 'Grocery note',

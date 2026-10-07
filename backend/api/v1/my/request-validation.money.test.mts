@@ -79,7 +79,7 @@ const malformed: readonly Case[] = [
     'post',
     '/api/v1/my/spending-categories',
     {
-      spending_category_id: UUID,
+      spending_category_topic_id: UUID,
     },
   ],
   [
@@ -87,7 +87,7 @@ const malformed: readonly Case[] = [
     'post',
     '/api/v1/my/spending-categories',
     {
-      spending_category_id: UUID,
+      spending_category_topic_id: UUID,
       amount: usd(1.5),
     },
   ],
@@ -96,7 +96,7 @@ const malformed: readonly Case[] = [
     'post',
     '/api/v1/my/spending-categories',
     {
-      spending_category_id: UUID,
+      spending_category_topic_id: UUID,
       amount: usd(100),
       spending_frequency: 'weekly',
     },
@@ -146,7 +146,7 @@ describe('money and rewards request contract validation', () => {
     await request.authenticateAs(user)
     await request
       .post('/api/v1/my/spending-categories')
-      .send({ spending_category_id: UUID, amount: usd(1.5) })
+      .send({ spending_category_topic_id: UUID, amount: usd(1.5) })
       .expect(422)
     const response = await request.get('/api/v1/my/spending-categories').expect(200)
     expect(response.body.results).toEqual([])

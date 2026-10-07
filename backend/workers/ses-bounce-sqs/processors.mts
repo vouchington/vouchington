@@ -89,7 +89,7 @@ function buildCreateSesBounceEventInput(notification: SesNotification): CreateSe
     occurred_at: null,
     raw_message: notification,
     bounce_type: null,
-    bounce_sub_type: null,
+    amazon_ses_bounce_subtype_id: null,
     diagnostic_code: null,
     reporting_mta: null,
   }
@@ -103,7 +103,7 @@ function buildCreateSesBounceEventInput(notification: SesNotification): CreateSe
     input.bounce_type =
       (notification.bounce.bounceType?.toLowerCase() as CreateSesBounceEventInput['bounce_type']) ??
       null
-    input.bounce_sub_type = notification.bounce.bounceSubType ?? null
+    input.amazon_ses_bounce_subtype_id = notification.bounce.bounceSubType ?? null
     input.recipients = bouncedRecipients.flatMap(r =>
       typeof r?.emailAddress === 'string' ? [r.emailAddress] : [],
     )

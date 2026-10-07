@@ -129,7 +129,7 @@ describe('rewards-program-statuses.generated', () => {
     ).rejects.toThrow(Error)
   })
 
-  it('createIndividualRewardsProgramStatus - throws 422 for invalid rewards_program_status_id', async () => {
+  it('createIndividualRewardsProgramStatus - throws 422 for invalid rewards_program_status_topic_id', async () => {
     await expect(
       createIndividualRewardsProgramStatus(user, user, '00000000-0000-7000-8000-000000000001'),
     ).rejects.toThrow(Error)

@@ -38,7 +38,7 @@ export async function insertTestSpendingEntry(data: {
   const amount = data.amount ?? DEFAULT_SPENDING_AMOUNT
   await write(sql`
     INSERT INTO spending_entries (
-      individual_id, spending_category_id, amount_minor_units, currency_code
+      individual_id, spending_category_topic_id, amount_minor_units, currency_code
     )
     VALUES (
       ${data.individualId}, ${data.spendingCategoryId}, ${amount.amount}, ${amount.currency}
@@ -54,7 +54,7 @@ export async function insertTestHouseholdSpendingEntry(data: {
   const amount = data.amount ?? DEFAULT_SPENDING_AMOUNT
   await write(sql`
     INSERT INTO spending_entries (
-      household_id, spending_category_id, amount_minor_units, currency_code
+      household_id, spending_category_topic_id, amount_minor_units, currency_code
     )
     VALUES (
       ${data.householdId}, ${data.spendingCategoryId}, ${amount.amount}, ${amount.currency}

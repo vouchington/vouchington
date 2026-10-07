@@ -42,7 +42,7 @@ const mockUpdate = vi.mocked(updateMyRewardsProgramStatus)
 const initialStatuses: RewardsProgramStatus[] = [
   {
     id: 'status-user-1',
-    rewards_program_status_id: 'stat-1',
+    rewards_program_status_topic_id: 'stat-1',
     started_on: '2023-01-01',
     expires_on: null,
     rewards_program_status: { id: 'stat-1', name: 'Delta Medallion Gold', slug: 'delta-gold' },
@@ -60,7 +60,7 @@ describe('RewardsProgramStatusesManager keyboard submit', () => {
     mockCreate.mockResolvedValue({
       rewards_program_status: {
         id: 'status-user-2',
-        rewards_program_status_id: 'stat-2',
+        rewards_program_status_topic_id: 'stat-2',
         started_on: null,
         expires_on: null,
         rewards_program_status: {
@@ -85,7 +85,7 @@ describe('RewardsProgramStatusesManager keyboard submit', () => {
 
     await waitFor(() => {
       expect(mockCreate).toHaveBeenCalledWith({
-        rewards_program_status_id: 'stat-2',
+        rewards_program_status_topic_id: 'stat-2',
       })
     })
   })

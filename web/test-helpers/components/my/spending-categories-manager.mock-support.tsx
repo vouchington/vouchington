@@ -120,7 +120,7 @@ export const mockOnSuccess = vi.mocked(onSuccess)
 export const initialCategories: SpendingCategory[] = [
   {
     id: 'sc-1',
-    spending_category_id: 'cat-1',
+    spending_category_topic_id: 'cat-1',
     amount: { amount: 15_000, currency: 'usd' },
     spending_frequency: 'monthly',
     note: 'Initial coffee expense',

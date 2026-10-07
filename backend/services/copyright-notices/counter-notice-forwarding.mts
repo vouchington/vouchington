@@ -20,7 +20,7 @@ export async function createCounterNoticeForwardingInTransaction(
     email_ciphertext: string
   }>(sql`/* createCounterNoticeForwardingInTransaction:counterAndClaimant */
     SELECT submission.copyright_notice_id AS notice_id, submission.id AS submission_id,
-      submission.body_ciphertext, recipient.copyright_notice_delivery_intent_id AS delivery_intent_id,
+      submission.body_ciphertext, recipient.copyright_notice_delivery_work_item_id AS delivery_intent_id,
       recipient.email_ciphertext
     FROM copyright_notice_submission_assessments assessment
     JOIN copyright_notice_submissions submission ON submission.id = assessment.copyright_notice_submission_id
@@ -31,7 +31,7 @@ export async function createCounterNoticeForwardingInTransaction(
       AND receipt.recipient_role = 'claimant' AND receipt.channel = 'email'
       AND receipt.delivery_kind = 'claimant_receipt'
     JOIN copyright_notice_delivery_recipients recipient
-      ON recipient.copyright_notice_delivery_intent_id = receipt.id
+      ON recipient.copyright_notice_delivery_work_item_id = receipt.id
     WHERE assessment.id = ${input.assessmentId}
       AND assessment.assessed_by_id IS NOT NULL
       AND assessment.is_substantially_compliant

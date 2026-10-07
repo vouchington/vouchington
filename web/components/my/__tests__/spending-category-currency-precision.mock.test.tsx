@@ -73,7 +73,7 @@ function EditFormHarness() {
       categories={[
         {
           id: 'spending-1',
-          spending_category_id: 'category-1',
+          spending_category_topic_id: 'category-1',
           amount: { amount: 1234, currency: 'usd' },
           spending_frequency: 'monthly',
           note: null,

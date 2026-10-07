@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS verified_identities (
   provider_session_id TEXT NOT NULL,
   identity_fingerprint TEXT NOT NULL CHECK (char_length(identity_fingerprint) = 64),
   issuing_country TEXT NOT NULL,
-  document_type TEXT NOT NULL REFERENCES identity_document_types(id) ON DELETE RESTRICT,
+  identity_document_type_id TEXT NOT NULL REFERENCES identity_document_types(id) ON DELETE RESTRICT,
   verified_at TIMESTAMPTZ NOT NULL,
   checkout_session_id TEXT NOT NULL,
   revoked_at TIMESTAMPTZ,
@@ -48,7 +48,7 @@ COMMENT ON COLUMN verified_identities.provider IS 'Provider that performed the v
 COMMENT ON COLUMN verified_identities.provider_session_id IS 'Provider-specific session or report ID.';
 COMMENT ON COLUMN verified_identities.identity_fingerprint IS '64-char hex HMAC-SHA256 fingerprint of (country:type:document_number). Never store the raw document number.';
 COMMENT ON COLUMN verified_identities.issuing_country IS 'ISO country code of the issuing authority.';
-COMMENT ON COLUMN verified_identities.document_type IS 'Document type (passport, id_card, driving_license, etc.).';
+COMMENT ON COLUMN verified_identities.identity_document_type_id IS 'Document type (passport, id_card, driving_license, etc.).';
 COMMENT ON COLUMN verified_identities.verified_at IS 'When the provider confirmed the identity.';
 COMMENT ON COLUMN verified_identities.checkout_session_id IS 'Stripe Checkout Session that collected payment for this verification.';
 COMMENT ON COLUMN verified_identities.revoked_at IS 'Set when the record is revoked by an admin.';
@@ -160,5 +160,5 @@ CREATE INDEX IF NOT EXISTS idx_verified_identities__user_id
   WHERE user_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_verified_identities__document_type
-  ON verified_identities (document_type);
+CREATE INDEX IF NOT EXISTS idx_verified_identities__identity_document_type_id
+  ON verified_identities (identity_document_type_id);

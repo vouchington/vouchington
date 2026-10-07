@@ -60,7 +60,7 @@ describe('mergeSpendingCategoryPages', () => {
 function makeCategory(id: string, name: string): SpendingCategory {
   return {
     id,
-    spending_category_id: `topic-${id}`,
+    spending_category_topic_id: `topic-${id}`,
     amount: { amount: 10_000, currency: 'usd' },
     spending_frequency: 'monthly',
     note: null,

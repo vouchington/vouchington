@@ -925,7 +925,7 @@ COMMENT ON COLUMN stripe_event_types.created_at IS 'When this provider value was
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS stripe_events (
-  id UUID PRIMARY KEY DEFAULT uuidv7(), stripe_event_id TEXT NOT NULL, event_type TEXT NOT NULL REFERENCES stripe_event_types(id) ON DELETE RESTRICT, is_live_mode BOOLEAN NOT NULL DEFAULT false, api_version TEXT,
+  id UUID PRIMARY KEY DEFAULT uuidv7(), stripe_event_id TEXT NOT NULL, stripe_event_type_id TEXT NOT NULL REFERENCES stripe_event_types(id) ON DELETE RESTRICT, is_live_mode BOOLEAN NOT NULL DEFAULT false, api_version TEXT,
   occurred_at TIMESTAMPTZ NOT NULL, customer_id TEXT, subscription_id TEXT, invoice_id TEXT, checkout_session_id TEXT,
   received_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, payload JSONB NOT NULL,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
@@ -952,7 +952,7 @@ COMMENT ON COLUMN stripe_event_processing_work_items.lease_expires_at IS 'Deadli
 COMMENT ON COLUMN stripe_event_processing_work_items.attempt_count IS 'Number of acquired processing attempts.';
 COMMENT ON COLUMN stripe_event_processing_work_items.available_at IS 'Earliest time this event may be processed.';
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_stripe_events__event_type ON stripe_events (event_type, id DESC);
+CREATE INDEX IF NOT EXISTS idx_stripe_events__stripe_event_type_id ON stripe_events (stripe_event_type_id, id DESC);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS uq_stripe_events__stripe_event_id ON stripe_events (stripe_event_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -1230,7 +1230,7 @@ COMMENT ON COLUMN membership_refund_operation_attempt_metadata_scans.completed_a
 
 COMMENT ON TABLE stripe_events IS 'Ingested Stripe events with explicit processing lifecycle timestamps.';
 COMMENT ON COLUMN stripe_events.stripe_event_id IS 'Unique Stripe event identity used for deduplication.';
-COMMENT ON COLUMN stripe_events.event_type IS 'Stripe event type.';
+COMMENT ON COLUMN stripe_events.stripe_event_type_id IS 'Stripe event type.';
 COMMENT ON COLUMN stripe_events.is_live_mode IS 'Whether Stripe issued the event in live mode.';
 COMMENT ON COLUMN stripe_events.api_version IS 'Stripe API version that generated the event.';
 COMMENT ON COLUMN stripe_events.occurred_at IS 'When Stripe created the event.';

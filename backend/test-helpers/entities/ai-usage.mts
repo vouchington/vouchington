@@ -51,7 +51,7 @@ export async function insertTestAiUsageRecord(
       ON CONFLICT (id) DO NOTHING
     )
     INSERT INTO ai_usage_records (
-      id, community_id, post_id, classifier_run_id, latency_milliseconds, agent_slug, model, service_tier,
+      id, community_id, post_id, classifier_run_id, latency_milliseconds, agent_slug, model, openai_service_tier_id,
       input_tokens, cached_input_tokens, output_tokens, pricing_status, cost_microunits,
       currency_code
     )
@@ -67,7 +67,7 @@ export async function insertTestAiUsageRecord(
 
 export type TestAiUsageRecordRow = {
   model: string
-  service_tier: string
+  openai_service_tier_id: string
   input_tokens: number
   cached_input_tokens: number
   output_tokens: number
@@ -88,7 +88,7 @@ export async function findAiUsageRecordForPost(
 ): Promise<TestAiUsageRecordRow | null> {
   const { rows } = await read<TestAiUsageRecordRow>(sql`/* findAiUsageRecordForPost */
     SELECT
-      model, service_tier, input_tokens, cached_input_tokens, output_tokens, pricing_status,
+      model, openai_service_tier_id, input_tokens, cached_input_tokens, output_tokens, pricing_status,
       cost_microunits, community_id
     FROM ai_usage_records
     WHERE post_id = ${postId} AND agent_slug = ${agentSlug}
@@ -110,7 +110,7 @@ export async function findAiUsageRecordForAgent(
 ): Promise<TestAiUsageRecordRow | null> {
   const { rows } = await read<TestAiUsageRecordRow>(sql`/* findAiUsageRecordForAgent */
     SELECT
-      model, service_tier, input_tokens, cached_input_tokens, output_tokens, pricing_status,
+      model, openai_service_tier_id, input_tokens, cached_input_tokens, output_tokens, pricing_status,
       cost_microunits, community_id
     FROM ai_usage_records
     WHERE agent_slug = ${agentSlug}

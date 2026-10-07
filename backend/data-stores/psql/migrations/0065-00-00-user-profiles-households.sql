@@ -151,7 +151,7 @@ CREATE TABLE IF NOT EXISTS individual_rewards_program_statuses (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
 
   individual_id UUID NOT NULL REFERENCES individuals ON DELETE CASCADE,
-  rewards_program_status_id UUID NOT NULL CONSTRAINT fk_individual_rewards_program_statuses__rewards_program_status REFERENCES rewards_program_status_topics ON DELETE CASCADE, -- e.g. Marriott Bonvoy Platinum Elite Status
+  rewards_program_status_topic_id UUID NOT NULL CONSTRAINT fk_individual_rewards_program_statuses__rewards_program_status REFERENCES rewards_program_status_topics ON DELETE CASCADE, -- e.g. Marriott Bonvoy Platinum Elite Status
 
   started_on DATE,
   expires_on DATE,
@@ -169,12 +169,12 @@ CREATE OR REPLACE TRIGGER trigger_individual_rewards_program_statuses_updated_at
 
 -- find a rewards program status's users
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_individ_rewards_program_statuses__rewards_program_status_id
-ON individual_rewards_program_statuses (rewards_program_status_id);
+CREATE INDEX IF NOT EXISTS idx_individual_rewards_program_statuses__status_topic_id
+ON individual_rewards_program_statuses (rewards_program_status_topic_id);
 
 COMMENT ON TABLE individual_rewards_program_statuses IS 'Rewards program tier statuses held by individuals (e.g. Marriott Platinum Elite).';
 COMMENT ON COLUMN individual_rewards_program_statuses.individual_id IS 'The individual who holds this status.';
-COMMENT ON COLUMN individual_rewards_program_statuses.rewards_program_status_id IS 'The specific tier status (references rewards_program_status_topics).';
+COMMENT ON COLUMN individual_rewards_program_statuses.rewards_program_status_topic_id IS 'The specific tier status (references rewards_program_status_topics).';
 COMMENT ON COLUMN individual_rewards_program_statuses.started_on IS 'Date the status was earned or started.';
 COMMENT ON COLUMN individual_rewards_program_statuses.expires_on IS 'Date the status expires. NULL if ongoing.';
 
@@ -189,7 +189,7 @@ CREATE TABLE IF NOT EXISTS spending_entries (
   individual_id UUID REFERENCES individuals ON DELETE CASCADE,
   CHECK (NOT (household_id IS NOT NULL AND individual_id IS NOT NULL)), -- only one can be set
   CHECK (NOT (household_id IS NULL AND individual_id IS NULL)), -- at least one must be set
-  spending_category_id UUID NOT NULL REFERENCES spending_category_topics ON DELETE CASCADE,
+  spending_category_topic_id UUID NOT NULL REFERENCES spending_category_topics ON DELETE CASCADE,
 
   spending_frequency spending_frequencies NOT NULL DEFAULT 'monthly',
   amount_minor_units BIGINT NOT NULL,
@@ -204,8 +204,8 @@ CREATE TABLE IF NOT EXISTS spending_entries (
 
 -- calculate metrics for a spending category
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_spending_entries__spending_category_id
-ON spending_entries (spending_category_id);
+CREATE INDEX IF NOT EXISTS idx_spending_entries__spending_category_topic_id
+ON spending_entries (spending_category_topic_id);
 
 -- Index for foreign key on currency
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -221,7 +221,7 @@ CREATE OR REPLACE TRIGGER trigger_spending_entries_fn_update_updated_at
 COMMENT ON TABLE spending_entries IS 'Spending amounts per category, associated with either a household or individual.';
 COMMENT ON COLUMN spending_entries.household_id IS 'The household this spending is for. Mutually exclusive with individual_id.';
 COMMENT ON COLUMN spending_entries.individual_id IS 'The individual this spending is for. Mutually exclusive with household_id.';
-COMMENT ON COLUMN spending_entries.spending_category_id IS 'The spending category (references spending_category_topics).';
+COMMENT ON COLUMN spending_entries.spending_category_topic_id IS 'The spending category (references spending_category_topics).';
 COMMENT ON COLUMN spending_entries.spending_frequency IS 'How often this spending occurs (monthly or annually).';
 COMMENT ON COLUMN spending_entries.amount_minor_units IS 'Spending amount per frequency period in the currency minor unit.';
 COMMENT ON COLUMN spending_entries.currency_code IS 'Currency of the spending amount.';
@@ -583,8 +583,8 @@ CREATE TABLE IF NOT EXISTS amazon_ses_bounce_events (
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   notification_type amazon_ses_notification_types NOT NULL,
   bounce_type amazon_ses_bounce_types,
-  bounce_sub_type TEXT REFERENCES amazon_ses_bounce_subtypes(id) ON DELETE RESTRICT,
-  CHECK (bounce_sub_type IS NULL OR (char_length(bounce_sub_type) <= 255 AND TRIM(bounce_sub_type) = bounce_sub_type)),
+  amazon_ses_bounce_subtype_id TEXT REFERENCES amazon_ses_bounce_subtypes(id) ON DELETE RESTRICT,
+  CHECK (amazon_ses_bounce_subtype_id IS NULL OR (char_length(amazon_ses_bounce_subtype_id) <= 255 AND TRIM(amazon_ses_bounce_subtype_id) = amazon_ses_bounce_subtype_id)),
   recipients JSONB NOT NULL DEFAULT '[]'::jsonb,
   amazon_ses_message_id TEXT,
   CHECK (amazon_ses_message_id IS NULL OR (char_length(amazon_ses_message_id) <= 1024 AND TRIM(amazon_ses_message_id) = amazon_ses_message_id)),
@@ -626,7 +626,7 @@ WHERE dedup_key IS NOT NULL;
 COMMENT ON TABLE amazon_ses_bounce_events IS 'Records email bounce, complaint, and delivery notifications received from AWS SES.';
 COMMENT ON COLUMN amazon_ses_bounce_events.notification_type IS 'SES notification type: bounce, complaint, or delivery.';
 COMMENT ON COLUMN amazon_ses_bounce_events.bounce_type IS 'Bounce classification: permanent, transient, or undetermined.';
-COMMENT ON COLUMN amazon_ses_bounce_events.bounce_sub_type IS 'Detailed bounce sub-type from SES (e.g. General, NoEmail).';
+COMMENT ON COLUMN amazon_ses_bounce_events.amazon_ses_bounce_subtype_id IS 'Detailed bounce sub-type from SES (e.g. General, NoEmail).';
 COMMENT ON COLUMN amazon_ses_bounce_events.recipients IS 'JSONB array of recipient email addresses affected by this event.';
 COMMENT ON COLUMN amazon_ses_bounce_events.amazon_ses_message_id IS 'SES message ID for correlating with sent emails.';
 COMMENT ON COLUMN amazon_ses_bounce_events.amazon_ses_feedback_id IS 'SES feedback ID for the notification.';
@@ -721,8 +721,8 @@ CREATE INDEX IF NOT EXISTS idx_spending_entries__household_id_id
   WHERE household_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_amazon_ses_bounce_events__bounce_sub_type
-  ON amazon_ses_bounce_events (bounce_sub_type);
+CREATE INDEX IF NOT EXISTS idx_amazon_ses_bounce_events__amazon_ses_bounce_subtype_id
+  ON amazon_ses_bounce_events (amazon_ses_bounce_subtype_id);
 
 COMMENT ON COLUMN github_friends.last_observed_at IS 'Database timestamp of the latest provider friend-sync observation; stale observations are removed against the exact sync-start clock.';
 COMMENT ON COLUMN x_friends.last_observed_at IS 'Database timestamp of the latest provider friend-sync observation; stale observations are removed against the exact sync-start clock.';

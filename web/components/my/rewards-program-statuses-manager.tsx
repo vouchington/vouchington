@@ -51,7 +51,7 @@ export function RewardsProgramStatusesManager({ initialPage }: Props) {
     try {
       await runWithLoadingId('add', async () => {
         const { rewards_program_status: status } = await createMyRewardsProgramStatus({
-          rewards_program_status_id: statusId,
+          rewards_program_status_topic_id: statusId,
         })
         setUpserts(previous => new Map(previous).set(status.id, status))
         setDeletedIds(previous => {

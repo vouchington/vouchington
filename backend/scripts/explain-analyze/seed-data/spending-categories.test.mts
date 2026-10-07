@@ -34,7 +34,7 @@ describe('spending-category EXPLAIN seed shape', () => {
       const sql = spendingEntryUpsertSql(ownerColumn, [row])
 
       expect(sql).toContain(
-        `(id, ${ownerColumn}, spending_category_id, amount_minor_units, currency_code)`,
+        `(id, ${ownerColumn}, spending_category_topic_id, amount_minor_units, currency_code)`,
       )
       expect(sql).toContain(`VALUES ($1, $2, $3, ${expectedMinorUnits}, 'usd')`)
       expect(sql).toContain('amount_minor_units = EXCLUDED.amount_minor_units')

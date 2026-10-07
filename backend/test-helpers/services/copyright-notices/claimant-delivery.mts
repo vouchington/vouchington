@@ -54,7 +54,7 @@ export async function readTestInformationRequestIntents(
       intent.copyright_notice_correspondence_message_id
     FROM copyright_notice_delivery_work_items intent
     JOIN copyright_notice_delivery_recipients recipient
-      ON recipient.copyright_notice_delivery_intent_id = intent.id
+      ON recipient.copyright_notice_delivery_work_item_id = intent.id
     WHERE intent.copyright_notice_id = ${noticeId}
       AND intent.delivery_kind = 'staff_information_request'
     ORDER BY intent.id

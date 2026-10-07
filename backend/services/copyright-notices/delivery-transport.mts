@@ -137,7 +137,7 @@ export async function resolveCopyrightEmailRecipient(
   if (retainedRecipient)
     return decryptSecret(
       retainedRecipient.email_ciphertext,
-      `copyright-delivery-recipient:${retainedRecipient.copyright_notice_delivery_intent_id}`,
+      `copyright-delivery-recipient:${retainedRecipient.copyright_notice_delivery_work_item_id}`,
     )
   if (recipientRole === 'poster' || recipientRole === 'informed_owner') {
     assert(recipientUserId, 422, 'Copyright poster delivery requires a member recipient')

@@ -2,12 +2,12 @@ export type ProjectionWork = {
   post_id: string
   story_id: string
   generation: string
-  source_high_water_id: string | null
-  relation_high_water_id: string | null
+  cursor_source_high_water_id: string | null
+  cursor_relation_high_water_id: string | null
   relation_snapshot_at: Date
-  source_cursor_id: string | null
+  cursor_source_id: string | null
   source_completed_at: Date | null
-  prune_cursor_id: string | null
+  cursor_prune_id: string | null
   lease_token: string | null
 }
 

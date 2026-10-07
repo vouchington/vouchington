@@ -10,7 +10,7 @@ export type StripeEventProcessingStatus =
 export type StripeEventRecord = {
   id: string
   stripe_event_id: string
-  event_type: string
+  stripe_event_type_id: string
   is_live_mode: boolean
   api_version: string | null
   occurred_at: Date

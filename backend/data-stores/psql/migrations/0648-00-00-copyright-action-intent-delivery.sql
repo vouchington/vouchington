@@ -181,7 +181,7 @@ COMMENT ON COLUMN media_delivery_registry_changes.next_attempt_at IS 'Earliest r
 
 ALTER TABLE copyright_notice_lifecycle_changes
   ADD CONSTRAINT copyright_lifecycle_event_media_registry_fk
-  FOREIGN KEY (media_delivery_registry_key)
+  FOREIGN KEY (media_delivery_registry_record_delivery_key)
   REFERENCES media_delivery_registry_records(delivery_key) ON DELETE RESTRICT NOT VALID;
 ALTER TABLE copyright_notice_lifecycle_changes
   VALIDATE CONSTRAINT copyright_lifecycle_event_media_registry_fk;

@@ -29,9 +29,9 @@ export async function getIndividualRewardsProgramStatusById(
   const { rows } = await read<RewardsProgramStatusRow>(
     sql`/* getIndividualRewardsProgramStatusById */
     SELECT individual_rewards_program_statuses.id, individual_rewards_program_statuses.started_on::TEXT AS started_on,
-      individual_rewards_program_statuses.expires_on::TEXT AS expires_on, individual_rewards_program_statuses.rewards_program_status_id,
+      individual_rewards_program_statuses.expires_on::TEXT AS expires_on, individual_rewards_program_statuses.rewards_program_status_topic_id,
       view_topics.name AS rewards_program_status_name, view_topics.slug AS rewards_program_status_slug
-    FROM individual_rewards_program_statuses JOIN view_topics ON view_topics.id = individual_rewards_program_statuses.rewards_program_status_id
+    FROM individual_rewards_program_statuses JOIN view_topics ON view_topics.id = individual_rewards_program_statuses.rewards_program_status_topic_id
     WHERE individual_rewards_program_statuses.id = ${id} AND individual_id = ${individual.id} LIMIT 1`,
     options,
   )
@@ -50,11 +50,11 @@ export async function createIndividualRewardsProgramStatus(
   let rows: { id: string }[]
   try {
     ;({ rows } = await write(
-      sql`/* createIndividualRewardsProgramStatus */ INSERT INTO individual_rewards_program_statuses (individual_id, rewards_program_status_id) VALUES (${individual.id}, ${rewardsProgramStatusId}) RETURNING id`,
+      sql`/* createIndividualRewardsProgramStatus */ INSERT INTO individual_rewards_program_statuses (individual_id, rewards_program_status_topic_id) VALUES (${individual.id}, ${rewardsProgramStatusId}) RETURNING id`,
     ))
   } catch (err) {
     if ((err as { code?: string }).code === '23503')
-      assert(false, 422, 'Invalid rewards_program_status_id')
+      assert(false, 422, 'Invalid rewards_program_status_topic_id')
     throw err
   }
   const status = await getIndividualRewardsProgramStatusById(currentUser, user, rows[0].id, {

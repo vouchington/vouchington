@@ -6,7 +6,7 @@ const path = '/api/v1/my/rewards-program-statuses'
 const scope = 'my-rewards-program-statuses:00000000-0000-7000-8000-000000000740:id-asc'
 const one = {
   id: '00000000-0000-7000-8000-000000000741',
-  rewards_program_status_id: '00000000-0000-7000-8000-000000000751',
+  rewards_program_status_topic_id: '00000000-0000-7000-8000-000000000751',
   started_on: '2025-01-01',
   expires_on: null,
   rewards_program_status: {
@@ -17,7 +17,7 @@ const one = {
 }
 const two = {
   id: '00000000-0000-7000-8000-000000000742',
-  rewards_program_status_id: '00000000-0000-7000-8000-000000000752',
+  rewards_program_status_topic_id: '00000000-0000-7000-8000-000000000752',
   started_on: null,
   expires_on: '2026-12-31',
   rewards_program_status: {
@@ -28,7 +28,7 @@ const two = {
 }
 const three = {
   id: '00000000-0000-7000-8000-000000000743',
-  rewards_program_status_id: '00000000-0000-7000-8000-000000000753',
+  rewards_program_status_topic_id: '00000000-0000-7000-8000-000000000753',
   started_on: null,
   expires_on: null,
   rewards_program_status: {
@@ -154,7 +154,7 @@ export const nativeRewardsStatusApiFixtureCases: ApiFixtureCase[] = [
     method: 'POST',
     path,
     route: { routeTemplate: path },
-    requestBody: { rewards_program_status_id: one.rewards_program_status.id },
+    requestBody: { rewards_program_status_topic_id: one.rewards_program_status.id },
     status: 201,
     body: { rewards_program_status: topicOnlyStatus },
     ...shared,

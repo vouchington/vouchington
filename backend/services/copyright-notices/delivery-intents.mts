@@ -148,17 +148,17 @@ export async function markCopyrightDeliveryIntentBouncedBySesMessageId(input: {
 }): Promise<number> {
   const { rows } = await write<CopyrightDeliveryRecipientRecord & { intent_id: string }>(
     sql`/* markCopyrightDeliveryIntentBouncedBySesMessageId:recipients */
-      SELECT intent.id AS intent_id, recipient.copyright_notice_delivery_intent_id, recipient.email_ciphertext
+      SELECT intent.id AS intent_id, recipient.copyright_notice_delivery_work_item_id, recipient.email_ciphertext
       FROM copyright_notice_delivery_work_items intent
       JOIN copyright_notice_delivery_recipients recipient
-        ON recipient.copyright_notice_delivery_intent_id = intent.id
+        ON recipient.copyright_notice_delivery_work_item_id = intent.id
       WHERE intent.amazon_ses_message_id = ${input.sesMessageId} AND intent.state = 'sent'`,
   )
   const bouncedRecipients = new Set(input.recipientEmails.map(normalizeEmailAddress))
   const intentIds = rows.flatMap(row => {
     const recipient = decryptSecret(
       row.email_ciphertext,
-      `copyright-delivery-recipient:${row.copyright_notice_delivery_intent_id}`,
+      `copyright-delivery-recipient:${row.copyright_notice_delivery_work_item_id}`,
     )
     return bouncedRecipients.has(normalizeEmailAddress(recipient)) ? [row.intent_id] : []
   })
@@ -250,10 +250,10 @@ export async function insertCopyrightDeliveryRecipient(
   assert(recipientEmail.trim().length > 0, 422, 'Copyright email recipient is required')
   await transaction(sql`/* insertCopyrightDeliveryRecipient */
     INSERT INTO copyright_notice_delivery_recipients (
-      copyright_notice_delivery_intent_id, email_ciphertext
+      copyright_notice_delivery_work_item_id, email_ciphertext
     ) VALUES (
       ${intentId}, ${encryptSecret(recipientEmail.trim(), `copyright-delivery-recipient:${intentId}`)}
-    ) ON CONFLICT (copyright_notice_delivery_intent_id) DO NOTHING
+    ) ON CONFLICT (copyright_notice_delivery_work_item_id) DO NOTHING
   `)
 }
 
@@ -262,9 +262,9 @@ export async function getCopyrightDeliveryRecipient(
 ): Promise<CopyrightDeliveryRecipientRecord | null> {
   const { rows } =
     await write<CopyrightDeliveryRecipientRecord>(sql`/* getCopyrightDeliveryRecipient */
-    SELECT copyright_notice_delivery_intent_id, email_ciphertext
+    SELECT copyright_notice_delivery_work_item_id, email_ciphertext
     FROM copyright_notice_delivery_recipients
-    WHERE copyright_notice_delivery_intent_id = ${intentId}
+    WHERE copyright_notice_delivery_work_item_id = ${intentId}
   `)
   return rows[0] ?? null
 }
@@ -350,7 +350,7 @@ async function resetFailedCopyrightDeliveryIntent(
   if (!intent) return null
   await transaction(sql`/* replayFailedCopyrightDeliveryIntent:event */
     INSERT INTO copyright_notice_lifecycle_changes (
-      copyright_notice_id, change_type, changed_by_id, copyright_notice_delivery_intent_id
+      copyright_notice_id, change_type, changed_by_id, copyright_notice_delivery_work_item_id
     ) VALUES (
       ${intent.copyright_notice_id}, 'delivery_intent_replayed', ${actorUserId}, ${intent.id}
     )

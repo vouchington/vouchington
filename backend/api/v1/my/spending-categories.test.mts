@@ -33,11 +33,11 @@ describe('GET /api/v1/my/spending-categories', () => {
     const categoryId = await insertTestSpendingCategory({ createdById: user.id })
     await request
       .post('/api/v1/my/spending-categories')
-      .send({ spending_category_id: categoryId, amount: { amount: 100, currency: 'usd' } })
+      .send({ spending_category_topic_id: categoryId, amount: { amount: 100, currency: 'usd' } })
       .expect(201)
     await request
       .post('/api/v1/my/spending-categories')
-      .send({ spending_category_id: categoryId, amount: { amount: 200, currency: 'usd' } })
+      .send({ spending_category_topic_id: categoryId, amount: { amount: 200, currency: 'usd' } })
       .expect(201)
     const first = await request.get('/api/v1/my/spending-categories?limit=1').expect(200)
     expect(first.body.page_info.has_next_page).toBe(true)
@@ -80,7 +80,7 @@ describe('GET /api/v1/my/spending-categories', () => {
     const shared = await ownerRequest
       .post('/api/v1/my/spending-categories')
       .send({
-        spending_category_id: categoryId,
+        spending_category_topic_id: categoryId,
         amount: { amount: 10_000, currency: 'usd' },
         household_id: household.id,
       })
@@ -133,20 +133,20 @@ describe('POST /api/v1/my/spending-categories', () => {
       .expect(415)
   })
 
-  it('returns 422 when spending_category_id is missing', async () => {
+  it('returns 422 when spending_category_topic_id is missing', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
 
     await request.post('/api/v1/my/spending-categories').send({ amount: 100 }).expect(422)
   })
 
-  it('returns 422 when spending_category_id is not a UUID', async () => {
+  it('returns 422 when spending_category_topic_id is not a UUID', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
 
     await request
       .post('/api/v1/my/spending-categories')
-      .send({ spending_category_id: 'not-a-uuid', amount: 100 })
+      .send({ spending_category_topic_id: 'not-a-uuid', amount: 100 })
       .expect(422)
   })
 
@@ -158,7 +158,7 @@ describe('POST /api/v1/my/spending-categories', () => {
     await request
       .post('/api/v1/my/spending-categories')
       .send({
-        spending_category_id: categoryId,
+        spending_category_topic_id: categoryId,
         amount: { amount: 10_000, currency: 'usd' },
         spending_frequency: 123,
       })
@@ -173,7 +173,7 @@ describe('POST /api/v1/my/spending-categories', () => {
     await request
       .post('/api/v1/my/spending-categories')
       .send({
-        spending_category_id: categoryId,
+        spending_category_topic_id: categoryId,
         amount: { amount: 10_000, currency: 'usd', scale: 6 },
       })
       .expect(422)
@@ -181,7 +181,8 @@ describe('POST /api/v1/my/spending-categories', () => {
     const page = await request.get('/api/v1/my/spending-categories').expect(200)
     expect(
       page.body.results.some(
-        (entry: { spending_category_id: string }) => entry.spending_category_id === categoryId,
+        (entry: { spending_category_topic_id: string }) =>
+          entry.spending_category_topic_id === categoryId,
       ),
     ).toBe(false)
   })
@@ -194,12 +195,12 @@ describe('POST /api/v1/my/spending-categories', () => {
     const response = await request
       .post('/api/v1/my/spending-categories')
       .send({
-        spending_category_id: categoryId,
+        spending_category_topic_id: categoryId,
         amount: { amount: 5_000, currency: 'usd' },
         spending_frequency: 'monthly',
       })
       .expect(201)
-    expect(response.body.spending_category.spending_category_id).toBe(categoryId)
+    expect(response.body.spending_category.spending_category_topic_id).toBe(categoryId)
   })
 })
 
@@ -232,7 +233,7 @@ describe('PATCH /api/v1/my/spending-categories/:id', () => {
 
     const created = await request
       .post('/api/v1/my/spending-categories')
-      .send({ spending_category_id: categoryId, amount: { amount: 5_000, currency: 'usd' } })
+      .send({ spending_category_topic_id: categoryId, amount: { amount: 5_000, currency: 'usd' } })
       .expect(201)
     await request
       .patch(`/api/v1/my/spending-categories/${created.body.spending_category.id}`)
@@ -247,7 +248,7 @@ describe('PATCH /api/v1/my/spending-categories/:id', () => {
 
     const created = await request
       .post('/api/v1/my/spending-categories')
-      .send({ spending_category_id: categoryId, amount: { amount: 5_000, currency: 'usd' } })
+      .send({ spending_category_topic_id: categoryId, amount: { amount: 5_000, currency: 'usd' } })
       .expect(201)
     const response = await request
       .patch(`/api/v1/my/spending-categories/${created.body.spending_category.id}`)

@@ -13,7 +13,7 @@
         "name": "Diamond",
         "slug": "diamond"
       },
-      "rewards_program_status_id": "00000000-0000-7000-8000-000000000753",
+      "rewards_program_status_topic_id": "00000000-0000-7000-8000-000000000753",
       "started_on": null
     }
   ]

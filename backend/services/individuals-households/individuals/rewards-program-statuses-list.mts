@@ -40,14 +40,14 @@ export async function getIndividualRewardsProgramStatuses(
     SELECT individual_rewards_program_statuses.id,
       individual_rewards_program_statuses.started_on::TEXT AS started_on,
       individual_rewards_program_statuses.expires_on::TEXT AS expires_on,
-      individual_rewards_program_statuses.rewards_program_status_id,
+      individual_rewards_program_statuses.rewards_program_status_topic_id,
       rewards_program_status.name AS rewards_program_status_name,
       rewards_program_status.slug AS rewards_program_status_slug
     FROM individual_rewards_program_statuses
     JOIN LATERAL (
       SELECT view_topics.name, view_topics.slug
       FROM view_topics
-      WHERE view_topics.id = individual_rewards_program_statuses.rewards_program_status_id
+      WHERE view_topics.id = individual_rewards_program_statuses.rewards_program_status_topic_id
       LIMIT 1
     ) rewards_program_status ON TRUE
     WHERE individual_id = ${individual.id}`

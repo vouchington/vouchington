@@ -23,7 +23,7 @@ export async function readTestCopyrightStatementIntents(noticeId: string) {
       message.body_ciphertext, message.id AS correspondence_id, recipient.email_ciphertext
     FROM copyright_notice_delivery_work_items intent
     LEFT JOIN copyright_notice_correspondence_messages message ON message.id = intent.copyright_notice_correspondence_message_id
-    LEFT JOIN copyright_notice_delivery_recipients recipient ON recipient.copyright_notice_delivery_intent_id = intent.id
+    LEFT JOIN copyright_notice_delivery_recipients recipient ON recipient.copyright_notice_delivery_work_item_id = intent.id
     WHERE intent.copyright_notice_id = ${noticeId}
       AND intent.delivery_kind IN ('poster_restriction_notice', 'poster_review_notice', 'poster_restoration_notice', 'claimant_decision_notice')
     ORDER BY intent.id

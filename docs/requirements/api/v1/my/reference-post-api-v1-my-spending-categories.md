@@ -6,7 +6,7 @@
 
 ```json
 {
-  "spending_category_id": "<uuid>",
+  "spending_category_topic_id": "<uuid>",
   "amount": { "amount": 50000, "currency": "usd" },
   "spending_frequency": "monthly",
   "note": "optional"

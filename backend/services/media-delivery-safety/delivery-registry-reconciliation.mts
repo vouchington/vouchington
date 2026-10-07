@@ -40,7 +40,7 @@ export async function replayFailedMediaDeliveryRegistryRecords(input?: {
       // oxlint-disable-next-line no-await-in-loop -- each case receives immutable operator evidence.
       await transaction(sql`/* replayFailedMediaDeliveryRegistryRecords:event */
         INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
-          media_delivery_registry_key, replay_reason)
+          media_delivery_registry_record_delivery_key, replay_reason)
         SELECT target.copyright_notice_id, 'media_delivery_registry_replayed', ${input.actorUserId},
           ${record.delivery_key}, 'operator_replay'
         FROM copyright_notice_targets target

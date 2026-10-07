@@ -53,11 +53,11 @@ export async function seedRewardsProgramStatuses(
       }
       await query(
         `/* seedExplainData */ INSERT INTO individual_rewards_program_statuses
-           (id, individual_id, rewards_program_status_id)
+           (id, individual_id, rewards_program_status_topic_id)
          VALUES ${rows.join(', ')}
          ON CONFLICT (id) DO UPDATE
          SET individual_id = EXCLUDED.individual_id,
-             rewards_program_status_id = EXCLUDED.rewards_program_status_id`,
+             rewards_program_status_topic_id = EXCLUDED.rewards_program_status_topic_id`,
         values,
       )
     }

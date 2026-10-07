@@ -150,7 +150,7 @@ describe('events', () => {
         insertStripeEvent(event),
       ])
 
-      expect(first.event_type).toBe(event.type)
+      expect(first.stripe_event_type_id).toBe(event.type)
       expect(first.id).toBe(second.id)
       expect([first.is_new, second.is_new].toSorted()).toEqual([false, true])
     })

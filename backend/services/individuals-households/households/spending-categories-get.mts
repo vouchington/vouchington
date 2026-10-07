@@ -15,14 +15,14 @@ import type { PageInfo } from '@voucha/types/pagination'
 
 type GetHouseholdSpendingCategoriesOptions = QueryOptions & {
   entry_id?: string
-  spending_category_id?: string
+  spending_category_topic_id?: string
   after?: string
   limit?: number
 }
 
 type SpendingEntryRow = {
   id: string
-  spending_category_id: string
+  spending_category_topic_id: string
   amount_minor_units: string
   currency_code: CurrencyCode
   spending_frequency: 'monthly' | 'annually'
@@ -34,7 +34,7 @@ type SpendingEntryRow = {
 
 export type HouseholdSpendingCategory = {
   id: string
-  spending_category_id: string
+  spending_category_topic_id: string
   amount: Money
   spending_frequency: 'monthly' | 'annually'
   note: string | null
@@ -98,11 +98,13 @@ export async function getHouseholdSpendingCategoriesByUserId(
     SELECT se.*
     FROM spending_entries se
     JOIN view_topics visible_category
-      ON visible_category.id = se.spending_category_id
+      ON visible_category.id = se.spending_category_topic_id
     WHERE se.individual_id = ${individual.id}
   `
-  if (options.spending_category_id) {
-    personalEntries.append(sql` AND se.spending_category_id = ${options.spending_category_id}`)
+  if (options.spending_category_topic_id) {
+    personalEntries.append(
+      sql` AND se.spending_category_topic_id = ${options.spending_category_topic_id}`,
+    )
   }
   if (options.entry_id) personalEntries.append(sql` AND se.id = ${options.entry_id}`)
   if (cursorId) personalEntries.append(sql` AND se.id > ${cursorId}`)
@@ -117,11 +119,13 @@ export async function getHouseholdSpendingCategoriesByUserId(
         SELECT se.*
         FROM spending_entries se
         JOIN view_topics visible_category
-          ON visible_category.id = se.spending_category_id
+          ON visible_category.id = se.spending_category_topic_id
         WHERE se.household_id = ${householdId}
       `
-      if (options.spending_category_id) {
-        householdEntries.append(sql` AND se.spending_category_id = ${options.spending_category_id}`)
+      if (options.spending_category_topic_id) {
+        householdEntries.append(
+          sql` AND se.spending_category_topic_id = ${options.spending_category_topic_id}`,
+        )
       }
       if (options.entry_id) householdEntries.append(sql` AND se.id = ${options.entry_id}`)
       if (cursorId) householdEntries.append(sql` AND se.id > ${cursorId}`)
@@ -135,7 +139,7 @@ export async function getHouseholdSpendingCategoriesByUserId(
   spendingEntriesQuery.append(sql`
     SELECT
       se.id,
-      se.spending_category_id,
+      se.spending_category_topic_id,
       se.amount_minor_units::TEXT AS amount_minor_units,
       se.currency_code,
       se.spending_frequency,
@@ -154,7 +158,7 @@ export async function getHouseholdSpendingCategoriesByUserId(
   spendingEntriesQuery.append(sql`FROM visible_entries se`)
   spendingEntriesQuery.append(sql`
     JOIN view_topics sc
-      ON sc.id = se.spending_category_id
+      ON sc.id = se.spending_category_topic_id
   `)
   spendingEntriesQuery.append(sql` ORDER BY se.id ASC LIMIT ${limit + 1}`)
 

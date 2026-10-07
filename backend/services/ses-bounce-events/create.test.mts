@@ -5,7 +5,7 @@ describe('createSesBounceEvent', () => {
     const event = await createSesBounceEvent({
       notification_type: 'bounce',
       bounce_type: 'permanent',
-      bounce_sub_type: 'General',
+      amazon_ses_bounce_subtype_id: 'General',
       recipients: ['tests+bounce@voucha.ai'],
       amazon_ses_message_id: `msg-${Math.random().toString(36).slice(2)}`,
       amazon_ses_feedback_id: `fb-${Math.random().toString(36).slice(2)}`,
@@ -18,7 +18,7 @@ describe('createSesBounceEvent', () => {
     expect(event?.id).toBeDefined()
     expect(event?.notification_type).toBe('bounce')
     expect(event?.bounce_type).toBe('permanent')
-    expect(event?.bounce_sub_type).toBe('General')
+    expect(event?.amazon_ses_bounce_subtype_id).toBe('General')
     expect(event?.recipients).toEqual(['tests+bounce@voucha.ai'])
     expect(event?.diagnostic_code).toBe('550 5.1.1 User unknown')
     expect(event?.reporting_mta).toBe('smtp.example.com')
@@ -124,7 +124,7 @@ describe('createSesBounceEvent', () => {
     const input = {
       notification_type: 'bounce' as const,
       bounce_type: 'permanent' as const,
-      bounce_sub_type: subtype,
+      amazon_ses_bounce_subtype_id: subtype,
       recipients: [email],
       amazon_ses_message_id: `msg-${Math.random().toString(36).slice(2)}`,
       occurred_at: new Date('2024-01-01T00:00:00.000Z'),
@@ -135,7 +135,7 @@ describe('createSesBounceEvent', () => {
     const redelivered = await createSesBounceEvent(input)
 
     expect(first?.id).toBeDefined()
-    expect(first?.bounce_sub_type).toBe(subtype)
+    expect(first?.amazon_ses_bounce_subtype_id).toBe(subtype)
     expect(redelivered).toBeNull()
   })
 

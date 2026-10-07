@@ -47,7 +47,7 @@ export async function getCopyrightFormIntakeForScreening(
         SELECT 1
         FROM copyright_notice_delivery_work_items receipt
         JOIN copyright_notice_delivery_recipients recipient
-          ON recipient.copyright_notice_delivery_intent_id = receipt.id
+          ON recipient.copyright_notice_delivery_work_item_id = receipt.id
         WHERE receipt.copyright_notice_id = notice.id
           AND receipt.recipient_role = 'claimant' AND receipt.channel = 'email'
           AND receipt.delivery_kind = 'claimant_receipt'

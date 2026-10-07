@@ -54,7 +54,7 @@ export async function createTestUnreadableCopyrightResponse(): Promise<string> {
   `)
   await write(sql`/* createTestUnreadableCopyrightResponse:recipient */
     INSERT INTO copyright_notice_delivery_recipients (
-      copyright_notice_delivery_intent_id, email_ciphertext
+      copyright_notice_delivery_work_item_id, email_ciphertext
     ) VALUES (
       ${id}, ${encryptSecret('claimant@example.test', `copyright-delivery-recipient:${id}`)}
     )

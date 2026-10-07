@@ -35,7 +35,7 @@ export async function markStoryPostRelatedUrlProjectionsForStories(
               AND rss_feed_items.deleted_at IS NULL
             ORDER BY rss_feed_items.id DESC
             LIMIT 1
-          ) AS source_high_water_id,
+          ) AS cursor_source_high_water_id,
           (
             SELECT relation.id
             FROM relation__post__related__url relation
@@ -43,24 +43,24 @@ export async function markStoryPostRelatedUrlProjectionsForStories(
               AND relation.deleted_at IS NULL
             ORDER BY relation.id DESC
             LIMIT 1
-          ) AS relation_high_water_id,
+          ) AS cursor_relation_high_water_id,
           clock_timestamp() AS relation_snapshot_at
         FROM post_stories
       ), marked AS (
         INSERT INTO story_post_related_url_projection_jobs
-          (post_id, story_id, source_high_water_id, relation_high_water_id, relation_snapshot_at)
-        SELECT post_id, story_id, source_high_water_id, relation_high_water_id, relation_snapshot_at
+          (post_id, story_id, cursor_source_high_water_id, cursor_relation_high_water_id, relation_snapshot_at)
+        SELECT post_id, story_id, cursor_source_high_water_id, cursor_relation_high_water_id, relation_snapshot_at
         FROM high_waters
         ORDER BY post_id
         ON CONFLICT (post_id) DO UPDATE
         SET story_id = EXCLUDED.story_id,
             generation = story_post_related_url_projection_jobs.generation + 1,
-            source_high_water_id = EXCLUDED.source_high_water_id,
-            relation_high_water_id = EXCLUDED.relation_high_water_id,
+            cursor_source_high_water_id = EXCLUDED.cursor_source_high_water_id,
+            cursor_relation_high_water_id = EXCLUDED.cursor_relation_high_water_id,
             relation_snapshot_at = EXCLUDED.relation_snapshot_at,
-            source_cursor_id = NULL,
+            cursor_source_id = NULL,
             source_completed_at = NULL,
-            prune_cursor_id = NULL,
+            cursor_prune_id = NULL,
             lease_token = NULL, leased_at = NULL, lease_expires_at = NULL
         RETURNING post_id
       )

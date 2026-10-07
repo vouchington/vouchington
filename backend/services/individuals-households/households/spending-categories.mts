@@ -43,7 +43,7 @@ export async function createHouseholdSpendingCategory(
     ownerField = 'individual_id'
     ownerValue = individual.id
   }
-  const fields = [ownerField, 'spending_category_id', 'amount_minor_units', 'currency_code']
+  const fields = [ownerField, 'spending_category_topic_id', 'amount_minor_units', 'currency_code']
   const values: unknown[] = [
     ownerValue,
     spendingCategoryId,
@@ -83,7 +83,7 @@ export async function createHouseholdSpendingCategory(
       if (pgError.constraint?.includes('household_id')) {
         assert(false, 422, 'Invalid household_id')
       }
-      assert(false, 422, 'Invalid spending_category_id')
+      assert(false, 422, 'Invalid spending_category_topic_id')
     }
     throw err
   }

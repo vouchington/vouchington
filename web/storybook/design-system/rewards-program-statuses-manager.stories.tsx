@@ -13,7 +13,7 @@ type Story = StoryObj<typeof meta>
 const fixtureStatuses: RewardsProgramStatus[] = [
   {
     id: 'status-user-1',
-    rewards_program_status_id: 'stat-1',
+    rewards_program_status_topic_id: 'stat-1',
     started_on: '2022-01-15',
     expires_on: null,
     rewards_program_status: {
@@ -24,7 +24,7 @@ const fixtureStatuses: RewardsProgramStatus[] = [
   },
   {
     id: 'status-user-2',
-    rewards_program_status_id: 'stat-2',
+    rewards_program_status_topic_id: 'stat-2',
     started_on: '2023-03-01',
     expires_on: '2024-02-28',
     rewards_program_status: {
@@ -35,7 +35,7 @@ const fixtureStatuses: RewardsProgramStatus[] = [
   },
   {
     id: 'status-user-3',
-    rewards_program_status_id: 'stat-3',
+    rewards_program_status_topic_id: 'stat-3',
     started_on: null,
     expires_on: null,
     rewards_program_status: {

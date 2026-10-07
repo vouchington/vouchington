@@ -32,6 +32,6 @@ export type CopyrightDeliveryIntentRecord = {
 }
 
 export type CopyrightDeliveryRecipientRecord = {
-  copyright_notice_delivery_intent_id: string
+  copyright_notice_delivery_work_item_id: string
   email_ciphertext: string
 }
