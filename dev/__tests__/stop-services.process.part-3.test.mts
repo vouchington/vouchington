@@ -14,8 +14,8 @@ describe('dev/stop-services (process termination)', () => {
     const binDir = await makeFakeBin()
     const child = spawn(
       process.execPath,
-      ['-e', 'process.on("SIGTERM", () => process.exit(0)); setInterval(() => {}, 1000)'],
-      { stdio: 'ignore' },
+      ['-e', 'process.on("SIGTERM", () => process.exit(0)); process.stdin.resume()'],
+      { stdio: ['pipe', 'ignore', 'ignore'] },
     )
     const exitPromise = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>(
       resolve => child.once('exit', (code, signal) => resolve({ code, signal })),
