@@ -1,7 +1,5 @@
-import { expect, vi } from 'vitest'
 import { createTestUserDirect } from './entities/users-direct.mts'
 import { getTestNotificationPushIntentLeaseExpiry } from './entities/notification-push-intents.mts'
-import { getTestNotificationPushReceipt } from './notifications.mts'
 import { createFollowNotification } from '../services/notifications/create-follow-notification.mts'
 import { upsertWebPushSubscription } from '../services/notifications/push-subscriptions.mts'
 import { claimNotificationPushIntent } from '../services/notifications-push/push-intents.mts'
@@ -45,17 +43,6 @@ export async function getLeaseExpiry(intent: {
   notification_id: string
 }): Promise<number> {
   return getTestNotificationPushIntentLeaseExpiry(intent.user_id, intent.notification_id)
-}
-
-export async function waitForDeliveredEndpoint(
-  intent: Awaited<ReturnType<typeof claimNotificationPushIntent>> & {},
-  subscriptionId: string,
-) {
-  await vi.waitFor(async () => {
-    await expect(
-      getTestNotificationPushReceipt(intent.user_id, intent.notification_id, subscriptionId),
-    ).resolves.toMatchObject({ status: 'delivered' })
-  })
 }
 
 export function successfulSendResult() {
