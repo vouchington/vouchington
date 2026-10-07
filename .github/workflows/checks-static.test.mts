@@ -13,6 +13,7 @@ type Job = {
   'runs-on'?: string | string[]
   'timeout-minutes'?: number
   permissions?: Record<string, string>
+  services?: Record<string, { image?: string; ports?: number[]; options?: string }>
   steps?: Array<{
     name?: string
     run?: string
@@ -127,18 +128,27 @@ describe('checks-static workflow', () => {
     expect(job).not.toContain('Typecheck backend and email templates')
   })
 
-  it('checks PostgreSQL contracts and explicit fixtures and rejects canonical drift', () => {
+  it('checks PostgreSQL contracts, explicit fixtures, and the live MCP catalog', () => {
     const job = jobSection('static-backend')
     const steps = parsed.jobs?.['static-backend']?.steps ?? []
     const compilation = steps.find(
-      step => step.name === 'Check PostgreSQL contracts and API fixtures',
+      step => step.name === 'Check PostgreSQL contracts, API fixtures, and MCP catalog',
     )
     const apiFixtureSnapshots = steps.find(
       step => step.name === 'Check canonical API snapshot git state',
     )
-    expect(compilation).toMatchObject({
-      run: 'pnpm run backend-row-contracts:check\npnpm run api-fixtures:check\n',
-    })
+    expect(
+      compilation?.run?.startsWith(
+        'pnpm run backend-row-contracts:check\npnpm run api-fixtures:check\nexport NODE_ENV=test\n',
+      ),
+    ).toBe(true)
+    expect(compilation?.run).toContain(
+      "export VALKEY_URL=redis://localhost:${{ job.services.valkey.ports['6379'] }}",
+    )
+    expect(compilation?.run?.trim().split('\n').slice(-2)).toEqual([
+      'node backend/services/mcp-tools/catalog/check-live-catalog.mts',
+      'pnpm run mcp:catalog -- --check',
+    ])
     expect(numberField(compilation?.['timeout-minutes'], 'contract check')).toBeGreaterThan(
       numberField(apiFixtureSnapshots?.['timeout-minutes'], 'snapshot Git guard'),
     )
@@ -154,13 +164,34 @@ if [ -n "$untracked_generated_files" ]; then
   exit 1
 fi\n`,
     })
+    const valkey = parsed.jobs?.['static-backend']?.services?.valkey
+    expect(valkey?.image).toMatch(/^valkey\/valkey-bundle:[^@]+@sha256:[a-f0-9]{64}$/)
+    expect(valkey?.ports).toEqual([6379])
+    expect(valkey?.options).toContain('--health-cmd "valkey-cli ping"')
+    expect(parsed.jobs?.['static-backend']?.services?.postgres).toBeUndefined()
+    for (const name of [
+      'S3_BUCKET_IMAGES',
+      'S3_BUCKET_IMAGE_UPLOADS',
+      'S3_BUCKET_SITEMAPS',
+      'S3_BUCKET_RENDERS',
+      'S3_BUCKET_ASSETS',
+      'S3_BUCKET_CRAWLS',
+      'S3_BUCKET_USER_EXPORTS',
+      'S3_BUCKET_QUARANTINE',
+    ]) {
+      expect(compilation?.run).toContain(`export ${name}=test-`)
+    }
+    expect(steps.filter(step => step.run?.includes('check-live-catalog.mts'))).toHaveLength(1)
+    expect(
+      steps.filter(step => step.run?.includes('pnpm run mcp:catalog -- --check')),
+    ).toHaveLength(1)
     expect(apiFixtureSnapshots?.run).not.toContain('pnpm')
     expect(apiFixtureSnapshots?.run).not.toContain('vitest')
     expect(apiFixtureSnapshots?.run).not.toContain('api-fixtures:generate')
     expect(apiFixtureSnapshots?.run).not.toContain('openapi:generate')
-    expect(job.indexOf('- name: Check PostgreSQL contracts and API fixtures')).toBeGreaterThan(
-      job.indexOf('- name: Check backend dependencies'),
-    )
+    expect(
+      job.indexOf('- name: Check PostgreSQL contracts, API fixtures, and MCP catalog'),
+    ).toBeGreaterThan(job.indexOf('- name: Check backend dependencies'))
     expect(steps.indexOf(apiFixtureSnapshots!)).toBeGreaterThan(steps.indexOf(compilation!))
   })
 

@@ -1,7 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
-import { ALL_TOOLS } from '@voucha/tools/registry/index'
+import type { Tool } from '@services/openai-agents/tool-types'
 import { format } from 'oxfmt'
 import {
   buildClientManifest,
@@ -13,7 +13,11 @@ import { buildMcpCatalog } from './build-mcp-catalog.mts'
 const repoRoot = fileURLToPath(new URL('../../../../', import.meta.url))
 const toJson = (value: unknown): string => `${JSON.stringify(value, null, 2)}\n`
 
-async function generate(rawArgs: readonly string[], root: string): Promise<void> {
+async function generate(
+  rawArgs: readonly string[],
+  root: string,
+  tools: readonly Tool[],
+): Promise<void> {
   const args = rawArgs[0] === '--' ? rawArgs.slice(1) : rawArgs
   const repoPath = (path: string): string => join(root, path)
   if (args.some(arg => arg !== '--check') || args.length > 1)
@@ -21,12 +25,12 @@ async function generate(rawArgs: readonly string[], root: string): Promise<void>
   const check = args.includes('--check')
   const markdownPath = repoPath('docs/overview/architecture/agent-tools/catalog.md')
   const artifacts = [
-    { path: repoPath('api-fixtures/v1/mcp.json'), raw: toJson(buildMcpCatalog(ALL_TOOLS)) },
+    { path: repoPath('api-fixtures/v1/mcp.json'), raw: toJson(buildMcpCatalog(tools)) },
     {
       path: markdownPath,
-      raw: spliceCatalogTable(await readFile(markdownPath, 'utf8'), renderCatalogTable(ALL_TOOLS)),
+      raw: spliceCatalogTable(await readFile(markdownPath, 'utf8'), renderCatalogTable(tools)),
     },
-    { path: repoPath('backend/tools/manifest.json'), raw: toJson(buildClientManifest(ALL_TOOLS)) },
+    { path: repoPath('backend/tools/manifest.json'), raw: toJson(buildClientManifest(tools)) },
   ]
   // Format every artifact before writing any, so formatter errors do not partially publish.
   const formatted = await Promise.all(
@@ -56,14 +60,19 @@ export async function runCatalogGeneration(
   {
     root = repoRoot,
     closeResources,
+    ready,
+    tools,
   }: {
     root?: string
+    tools: readonly Tool[]
+    ready: Promise<void>
     closeResources: readonly (() => Promise<void>)[]
   },
 ): Promise<void> {
   const failures: unknown[] = []
   try {
-    await generate(args, root)
+    await ready
+    await generate(args, root, tools)
   } catch (err) {
     failures.push(err)
   } finally {
