@@ -1,13 +1,21 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { addTestUserRole, getTestPrivateUserById } from '@voucha/test-helpers/entities/users'
 import { createTestCopyrightMcpQueueCase } from '@voucha/test-helpers/copyright-mcp-read-fixtures'
 import { readCopyrightStaffQueueCursorRows } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
-import { encodeScopedTierPreciseUuidCursor } from '@modules/pagination'
+import {
+  encodeScopedTierPreciseUuidCursor,
+  encodeScopedPreciseTimestampCursor,
+} from '@modules/pagination'
 import { openTestGuestCopyrightNotice } from '@voucha/test-helpers/services/copyright-notices/guest-capability'
 import { createAcceptedCopyrightNotice } from '@voucha/test-helpers/services/copyright-notices/accepted-notice'
 import { createCopyrightFormFixture } from '@voucha/test-helpers/copyright-route-fixtures'
-import { listCopyrightStaffEmailIntakePage } from '@services/copyright-notices/copyright-email-intake-page'
+import { copyrightStaffEmailIntakeQueueCursorScope } from '@services/copyright-notices/read-models-staff-email-intakes'
+import { ownedKeysetReadPolicy } from '../../../test-helpers/vitest-owned-keyset-read-policy.mts'
+import {
+  recordSharedDbScopeViolation,
+  sharedDbScopeTestIdentity,
+} from '../../../test-helpers/vitest-shared-db-scope-violations.mts'
 import { copyrightStaffQueueCursorScope } from '@services/copyright-notices/read-models-staff'
 import { createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
 import { appendCopyrightEmailIntakeRecommendation } from '@services/copyright-notices/email-recommendations'
@@ -25,8 +33,14 @@ function readTool<TArgs>(name: string): Tool<TArgs> {
 describe('copyright admin MCP reads against live services', () => {
   it('omits raw email fields, lists bounded pages, and reads a staff case without guest tokens', async () => {
     const administrator = await createTestUser({ extraRoles: ['administrator'] })
-    const intake = await createParsedCopyrightEmailIntake()
-    const foreign = await createParsedCopyrightEmailIntake()
+    // The timestamp identifies this keyset; no business result depends on today's date.
+    const receivedAt = new Date()
+    const intakes = [
+      await createParsedCopyrightEmailIntake(receivedAt),
+      await createParsedCopyrightEmailIntake(receivedAt),
+    ].toSorted((a, b) => (a.id < b.id ? -1 : 1))
+    const intake = intakes[0]!
+    const foreign = intakes[1]!
     const noticeId = await openTestGuestCopyrightNotice()
 
     const detail = (await readTool<{ id: string }>('get_copyright_email_intake').function(
@@ -39,18 +53,48 @@ describe('copyright admin MCP reads against live services', () => {
     expect(projected).not.toHaveProperty('parsed_email')
     expect(projected).not.toHaveProperty('parser_error')
 
-    // The MCP list stays unscoped. Shared tests pass owned ids to the page the tool calls.
-    const queue = await listCopyrightStaffEmailIntakePage(administrator, {
-      limit: 1,
-      intakeIds: [intake.id],
-    })
-    expect(queue.copyright_email_intakes.map(item => item.id)).toEqual([intake.id])
-    expect(queue.copyright_email_intakes.map(item => item.id)).not.toContain(foreign.id)
-    expect(queue.page_info).toEqual({
-      has_next_page: false,
-      start_cursor: expect.any(String),
-      end_cursor: null,
-    })
+    // Use the public cursor contract; the real committed first row must prove ownership.
+    const timestamp = intake.received_at.toISOString().replace(/Z$/, '000Z')
+    const afterId = previousUuid(intake.id)
+    const after = encodeScopedPreciseTimestampCursor(
+      timestamp,
+      afterId,
+      copyrightStaffEmailIntakeQueueCursorScope,
+    )
+    const close = ownedKeysetReadPolicy.register(
+      sharedDbScopeTestIdentity(),
+      { actorId: administrator.id, id: intake.id, timestamp, afterId },
+      recordSharedDbScopeViolation,
+    )
+    type QueuePage = {
+      copyright_email_intakes: Array<{ id: string }>
+      page_info: Record<string, unknown>
+    }
+    let started: Promise<QueuePage> | undefined
+    let closed = false
+    const cleanup = async () => {
+      if (started) await Promise.allSettled([started])
+      if (closed) return
+      closed = true
+      close()
+    }
+    onTestFinished(cleanup)
+    try {
+      started = readTool<{ after: string; limit: number }>('list_copyright_email_intakes').function(
+        administrator,
+      )({ after, limit: 1 }) as Promise<QueuePage>
+      void started.catch(() => {})
+      const queue = await started
+      expect(queue.copyright_email_intakes).toHaveLength(1)
+      expect(queue.page_info).toHaveProperty('has_next_page')
+      expect(queue.copyright_email_intakes.map(item => item.id)).toEqual([intake.id])
+      expect(queue.copyright_email_intakes.map(item => item.id)).not.toContain(foreign.id)
+    } catch (err) {
+      // Keep the original tool failure; close reports any incomplete read.
+      await Promise.allSettled([cleanup()])
+      throw err
+    }
+    await cleanup()
 
     const capabilities = (await readTool<{ id: string; limit?: number }>(
       'list_copyright_guest_capabilities',
