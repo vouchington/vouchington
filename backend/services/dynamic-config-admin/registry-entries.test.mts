@@ -62,4 +62,9 @@ describe('dynamic config registry entry ordering', () => {
       max_rows_per_provider_per_run: { integer: true, min_value: 1 },
     })
   })
+  it('registers the bounded SES reconciliation page budget', () => {
+    expect(getDynamicConfigRegistryEntry('ses-inbound-work-config')?.fields).toMatchObject({
+      reconcile_max_pages_per_run: { integer: true, min_value: 1, max_value: 100 },
+    })
+  })
 })

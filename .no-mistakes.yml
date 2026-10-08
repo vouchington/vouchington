@@ -1798,6 +1798,7 @@ rules:
             - types.mts
             - workers.mts
             - processors.mts
+            - work-limits.mts
             - test-support.mts
           allowedSubdirs:
             - workers

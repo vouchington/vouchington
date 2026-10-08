@@ -5,19 +5,20 @@ import {
   SES_INBOUND_QUEUE_NAME,
   SES_INBOUND_RECONCILE_JOB_NAME,
   type SesInboundProcessJobData,
+  type SesInboundReconcileJobData,
 } from '@ts-shared/ses-inbound-contract'
 import type { Job } from 'glide-mq'
 import { processSesInboundEmail, reconcileSesInboundEmails } from './processors.mts'
 
 export const sesInboundWorker = createWorker(
   SES_INBOUND_QUEUE_NAME,
-  async (job: Job<SesInboundProcessJobData | Record<string, never>>) => {
+  async (job: Job<SesInboundProcessJobData | SesInboundReconcileJobData>) => {
     if (job.name === SES_INBOUND_PROCESS_JOB_NAME) {
       await processSesInboundEmail(job.data as SesInboundProcessJobData)
       return
     }
     if (job.name === SES_INBOUND_RECONCILE_JOB_NAME) {
-      await reconcileSesInboundEmails()
+      await reconcileSesInboundEmails(job.data as SesInboundReconcileJobData)
       return
     }
     throw new Error(`Unknown SES inbound job: ${job.name}`)
