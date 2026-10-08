@@ -1,7 +1,5 @@
-import {
-  expectUnpublishHoldsPublicationLockWhileWaitingOnReview,
-  insertTestCommunityMember,
-} from '@voucha/test-helpers'
+import { insertTestCommunityMember } from '@voucha/test-helpers'
+import { expectUnpublishHoldsPublicationLockWhileWaitingOnReview } from '@voucha/test-helpers/entities/community-post-review-publication-lock'
 import { describe, expect, it } from 'vitest'
 import { unpublishPostAsAgent } from './agent-moderate.mts'
 import { unpublishPost } from './moderate.mts'

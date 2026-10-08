@@ -1,6 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
+import { runWithCapturedQueries } from '@data-stores/psql/query-capture'
 import type { PrivateUser } from '@voucha/types/entities/user'
-import { expect, vi } from 'vitest'
+import { expect, onTestFinished } from 'vitest'
 import { lockPostPublication } from '../../services/post-publication/lock.mts'
 import { insertTestCommunity } from './communities.mts'
 import { insertTestCommunityPostReview } from './community-post-reviews.mts'
@@ -49,26 +50,68 @@ export async function expectUnpublishHoldsPublicationLockWhileWaitingOnReview(
 
   const reviewLocked = Promise.withResolvers<void>()
   const releaseReview = Promise.withResolvers<void>()
-  const holder = holdCommunityPostReviewLock({
-    comment: input.reviewLockComment,
-    communityId: community.id,
-    postId,
-    onLocked: () => reviewLocked.resolve(),
-    release: releaseReview.promise,
-  })
-  void holder.catch(reviewLocked.reject)
-  await reviewLocked.promise
-
-  const unpublishing = input.unpublish({ owner, communityId: community.id, postId })
-  try {
-    await vi.waitFor(async () => {
-      await expect(lockPostPublicationWithTimeout(postId)).rejects.toMatchObject({ code: '55P03' })
-    })
-  } finally {
-    releaseReview.resolve()
+  const publicationLocked = Promise.withResolvers<void>()
+  // Observe early rejection even if the holder or unpublish fails before its matching lock call.
+  void Promise.allSettled([reviewLocked.promise, publicationLocked.promise])
+  let holder: Promise<void> | undefined
+  let unpublishing: Promise<unknown> | undefined
+  let cleanupPromise: Promise<void> | undefined
+  const cleanup = () => {
+    if (!cleanupPromise) {
+      releaseReview.resolve()
+      const stopped = new Error('Owned publication lock observer closed')
+      reviewLocked.reject(stopped)
+      publicationLocked.reject(stopped)
+      cleanupPromise = Promise.allSettled([
+        ...(holder ? [holder] : []),
+        ...(unpublishing ? [unpublishing] : []),
+      ]).then(() => undefined)
+    }
+    return cleanupPromise
   }
-  await holder
-  await input.assertUnpublished(unpublishing)
+  onTestFinished(cleanup)
+
+  const diagnostics = await runWithCapturedQueries(async context => {
+    const unsubscribe = context.subscribe(event => {
+      if (
+        event.text ===
+          '/* lockPostPublicationScope */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))' &&
+        event.values.length === 1 &&
+        event.values[0] === `post:${postId.toLowerCase()}`
+      ) {
+        if (event.status === 'fulfilled') publicationLocked.resolve()
+        else publicationLocked.reject(event.reason)
+      }
+      return undefined
+    })
+    try {
+      holder = holdCommunityPostReviewLock({
+        comment: input.reviewLockComment,
+        communityId: community.id,
+        postId,
+        onLocked: () => reviewLocked.resolve(),
+        release: releaseReview.promise,
+      })
+      void holder.catch(reviewLocked.reject)
+      await reviewLocked.promise
+      unpublishing = input.unpublish({ owner, communityId: community.id, postId })
+      void unpublishing.catch(publicationLocked.reject)
+      await Promise.race([
+        publicationLocked.promise,
+        unpublishing.then(() => {
+          throw new Error('Unpublish completed before acquiring its owned publication lock')
+        }),
+      ])
+      await expect(lockPostPublicationWithTimeout(postId)).rejects.toMatchObject({ code: '55P03' })
+      releaseReview.resolve()
+      await holder
+      await input.assertUnpublished(unpublishing)
+    } finally {
+      unsubscribe()
+      await cleanup()
+    }
+  })
+  await diagnostics.completionDrain
 }
 
 function reviewRowLockSql(comment: ReviewLockComment): string {
