@@ -32,6 +32,7 @@ export async function invalidatePostsForTopicAliasesPage(
           AND ($2::uuid IS NULL OR post_id > $2::uuid)
         UNION ALL
         SELECT relation.subject_id AS post_id
+        -- no-mistakes-disable-next-line postgres-required-predicates: reverse alias-object lookup spans subject_id partitions
         FROM relation__post__category__topic_alias relation
         WHERE relation.object_id = ANY($1::uuid[])
           AND relation.deleted_at IS NULL

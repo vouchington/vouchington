@@ -1,6 +1,7 @@
 import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import { isUUID } from '@modules/utils'
+import { getMinUUIDv7ForParentHistory } from '@modules/utils/ids'
 import createError from 'http-errors'
 import type { PaidSafeUrlCrawlHistory } from './types.mts'
 
@@ -42,11 +43,12 @@ export const getLatestSuccessfulPublicUrlCrawlSummary = async (
     SELECT id, created_at, response_status_code, completed_at, title, language
     FROM crawls
     WHERE url_id = $1
+      AND id >= $2::uuid
       AND embeddings_generated_at IS NOT NULL
     ORDER BY embeddings_generated_at DESC
     LIMIT 1
   `,
-    [urlId],
+    [urlId, getMinUUIDv7ForParentHistory(urlId)],
     options,
   )
 

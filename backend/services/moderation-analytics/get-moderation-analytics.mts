@@ -243,6 +243,7 @@ async function getAutomodPerformance(
           ELSE NULL
         END AS confidence,
         COALESCE(cap.community_id, p.community_id) AS scope_community_id
+      -- no-mistakes-disable-next-line postgres-required-predicates: time-window moderation reporting spans target post_id partitions
       FROM agent_moderations am
       LEFT JOIN community_agent_prompts cap ON cap.id = am.prompt_id
       LEFT JOIN posts p ON p.id = am.post_id

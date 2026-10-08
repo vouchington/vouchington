@@ -2,6 +2,7 @@ import { read, beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { isUUID, isUsername } from '@modules/utils'
+import { getMinUUIDv7ForParentHistory } from '@modules/utils/ids'
 import { enqueueReferralClickNotification } from '@queues/notifications/enqueues'
 
 export async function createSessionReferralAttribution({
@@ -46,6 +47,7 @@ export async function createSessionReferralAttribution({
       SELECT user_id FROM session_referral_attributions
       WHERE session_id = ${sessionId}
         AND referrer_user_id = ${referrerId}
+        AND id >= ${getMinUUIDv7ForParentHistory(referrerId)}::uuid
         AND signed_up_at IS NULL
     `,
   )
@@ -82,6 +84,7 @@ export async function createSessionReferralAttribution({
     DELETE FROM session_referral_attributions
     WHERE session_id = ${sessionId}
       AND referrer_user_id = ${referrerId}
+      AND id >= ${getMinUUIDv7ForParentHistory(referrerId)}::uuid
       AND signed_up_at IS NULL
     RETURNING user_id
   `)
@@ -93,6 +96,7 @@ export async function createSessionReferralAttribution({
       SELECT 1 FROM session_referral_attributions
       WHERE session_id = ${sessionId}
         AND referrer_user_id = ${referrerId}
+        AND id >= ${getMinUUIDv7ForParentHistory(referrerId)}::uuid
         AND signed_up_at IS NOT NULL
       LIMIT 1
     `)

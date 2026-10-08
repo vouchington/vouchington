@@ -17,6 +17,7 @@ export async function isFirstCommunityPost(
   const { rows } = await read<{ is_first: boolean }>(sql`/* isFirstCommunityPost */
     SELECT (
       SELECT id
+      -- no-mistakes-disable-next-line postgres-required-predicates: the earliest community post can be in any post-ID partition, including before the current post
       FROM posts
       WHERE created_by_id = ${userId}
         AND community_id = ${communityId}
@@ -115,6 +116,7 @@ async function enqueueBanEvasionDetectionForEmbeddedFirstCommunityPostChunk(
       )
       AND p.id = (
         SELECT first_post.id
+        -- no-mistakes-disable-next-line postgres-required-predicates: the earliest community post can be in any post-ID partition, including before the current post
         FROM posts first_post
         WHERE first_post.created_by_id = p.created_by_id
           AND first_post.community_id = p.community_id

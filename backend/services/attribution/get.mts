@@ -23,6 +23,7 @@ export async function getReferrerIdForSession(sessionId: string): Promise<string
   }
   const { rows } = await read(sql`/* getReferrerIdForSession */
     SELECT referrer_user_id
+    -- no-mistakes-disable-next-line postgres-required-predicates: anonymous session IDs are outside PostgreSQL and referral clicks may be minted later, so session_id gives no safe row-ID bound
     FROM session_referral_attributions
     WHERE session_id = ${sessionId}
     ORDER BY id ASC

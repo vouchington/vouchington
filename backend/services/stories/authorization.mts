@@ -28,6 +28,7 @@ export async function assertStoryIsDiscoverable(storyId: string): Promise<void> 
         s.id AS story_id,
         (
           SELECT rfi.id
+          -- no-mistakes-disable-next-line postgres-required-predicates: story membership can attach already-created items, so item IDs may predate story_id
           FROM rss_feed_items rfi
           WHERE rfi.story_id = s.id
             AND rfi.deleted_at IS NULL

@@ -70,6 +70,7 @@ export async function checkContentHashDuplicate(
 ): Promise<SpamSignalResult> {
   const { rows } = await read(sql`/* checkContentHashDuplicate */
     SELECT 1
+    -- no-mistakes-disable-next-line postgres-required-predicates: duplicate/similarity signals search other posts across post-ID partitions
     FROM posts
     WHERE llm_moderation_content_sha256 = ${contentSha256}
       AND created_by_id != ${userId}
@@ -132,6 +133,7 @@ export async function checkEmbeddingsSimilarity(
   try {
     const { rows } = await read(sql`/* checkEmbeddingsSimilarity */
       SELECT 1
+      -- no-mistakes-disable-next-line postgres-required-predicates: duplicate/similarity signals search other posts across post-ID partitions
       FROM posts p
       WHERE p.bedrock_nova_multimodal_v1_embedding IS NOT NULL
         AND p.id != ${postId}

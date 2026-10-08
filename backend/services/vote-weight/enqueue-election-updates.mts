@@ -23,24 +23,28 @@ type EntityRow = {
 export async function enqueueElectionUpdatesForUser(userId: string): Promise<string[]> {
   const { rows } = await read<EntityRow>(sql`/* enqueueElectionUpdatesForUser */
     SELECT 'post' AS entity_type, post_id AS entity_id, NULL::text AS entity_relation
+    -- no-mistakes-disable-next-line postgres-required-predicates: a user-wide vote lookup spans target-ID partitions for every vote table
     FROM post_votes
     WHERE user_id = ${userId}
 
     UNION ALL
 
     SELECT 'topic', topic_id, NULL
+    -- no-mistakes-disable-next-line postgres-required-predicates: a user-wide vote lookup spans target-ID partitions for every vote table
     FROM topic_votes
     WHERE user_id = ${userId}
 
     UNION ALL
 
     SELECT 'hostname', hostname_id, NULL
+    -- no-mistakes-disable-next-line postgres-required-predicates: a user-wide vote lookup spans target-ID partitions for every vote table
     FROM hostname_votes
     WHERE user_id = ${userId}
 
     UNION ALL
 
     SELECT 'rss_feed_item', rss_feed_item_id, NULL
+    -- no-mistakes-disable-next-line postgres-required-predicates: a user-wide vote lookup spans target-ID partitions for every vote table
     FROM rss_feed_item_votes
     WHERE user_id = ${userId}
 
@@ -53,12 +57,14 @@ export async function enqueueElectionUpdatesForUser(userId: string): Promise<str
     UNION ALL
 
     SELECT 'agent_moderation', agent_moderation_id, NULL
+    -- no-mistakes-disable-next-line postgres-required-predicates: a user-wide vote lookup spans target-ID partitions for every vote table
     FROM agent_moderation_votes
     WHERE user_id = ${userId}
 
     UNION ALL
 
     SELECT 'user_vouch', target_user_id, NULL
+    -- no-mistakes-disable-next-line postgres-required-predicates: a user-wide vote lookup spans target-ID partitions for every vote table
     FROM user_vouch_votes
     WHERE user_id = ${userId}
   `)

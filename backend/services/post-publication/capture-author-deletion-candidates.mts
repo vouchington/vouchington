@@ -27,6 +27,7 @@ export async function getAuthoredPostIds(
   return (
     await query<{ id: string }>(
       `/* processAuthorDeletionPublicationBatch:getPosts */
+      -- no-mistakes-disable-next-line postgres-required-predicates: author deletion must enumerate all posts; created_by_id can be reassigned during deletion
       SELECT id FROM posts WHERE created_by_id = $1::uuid ORDER BY id LIMIT $2`,
       [userId, batchSize],
     )

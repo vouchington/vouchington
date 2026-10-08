@@ -102,6 +102,7 @@ export async function createStoryPostInTransaction(
           MAX(CASE WHEN rfi.data->>'title' IS NOT NULL AND rfi.data->>'title' <> '' THEN rfi.data->>'title' END) AS single_item_title,
           s.title AS story_title
         FROM stories s
+        -- no-mistakes-disable-next-line postgres-required-predicates: story membership can attach already-created items, so item IDs may predate story_id
         LEFT JOIN rss_feed_items rfi ON rfi.story_id = s.id AND rfi.deleted_at IS NULL
         LEFT JOIN rss_feed_item_categories c ON c.rss_feed_item_id = rfi.id AND c.topic_id IS NOT NULL
         WHERE s.id = ${storyId}

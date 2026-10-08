@@ -2823,6 +2823,24 @@ rules:
             - deleted_at IS NULL
             - merged_into_topic_id IS NULL
 
+  - name: partitioned reads constrain the partition key
+    rule: postgres-required-predicates
+    scope: repository
+    options:
+      importSpecifier: '@data-stores/psql'
+      executorFactoryNames: [beginTransaction, beginBoundedTransaction]
+      executorTypeNames: [TransactionQuery, QueryExecutor]
+      include:
+        - backend/**/*.{ts,mts,js}
+      exclude:
+        - '**/*.test.*'
+        - '**/__tests__/**'
+        - '**/test-helpers/**'
+        - backend/scripts/**
+      unanalyzableSql: ignore
+      schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
+      partitionKeys: require
+
   - name: split-requirement parents link canonical children
     rule: markdown-child-links
     scope: repository

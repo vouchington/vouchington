@@ -31,6 +31,7 @@ export async function cleanupPostPublicationIdentitySnapshots(
     WITH page AS MATERIALIZED (SELECT snapshot.* FROM unnest(${candidates.map(row => row.id)}::uuid[]) candidate(id)
       CROSS JOIN LATERAL (SELECT id, dirty_work_id, generation, abandoned_at
         FROM post_publication_identity_snapshots WHERE id = candidate.id LIMIT 1 FOR UPDATE SKIP LOCKED) snapshot)
+    -- no-mistakes-disable-next-line postgres-required-predicates: snapshot cleanup looks up applied_snapshot_id across post_identity_id partitions
     SELECT page.id, (SELECT applied_snapshot_id FROM post_publication_projection_receipts WHERE applied_snapshot_id = page.id LIMIT 1) IS NULL
       AND (page.abandoned_at IS NOT NULL OR (SELECT generation FROM post_publication_dirty_work WHERE id = page.dirty_work_id) IS DISTINCT FROM page.generation) AS eligible
     FROM page ORDER BY page.id`)
@@ -45,6 +46,7 @@ export async function cleanupPostPublicationIdentitySnapshots(
   const { rowCount: snapshots } = await query(sql`/* deleteEmptyStalePublicationSnapshots */
     DELETE FROM post_publication_identity_snapshots snapshot WHERE id = ANY(${ids}::uuid[])
       AND NOT EXISTS (SELECT 1 FROM post_publication_identity_snapshot_keys WHERE snapshot_id = snapshot.id)
+      -- no-mistakes-disable-next-line postgres-required-predicates: snapshot cleanup looks up applied_snapshot_id across post_identity_id partitions
       AND NOT EXISTS (SELECT 1 FROM post_publication_projection_receipts WHERE applied_snapshot_id = snapshot.id)`)
   const { rows: remaining } = await query<{
     id: string

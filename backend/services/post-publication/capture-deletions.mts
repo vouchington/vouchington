@@ -86,6 +86,7 @@ async function lockRssFeedHardDeletePosts(
     const result = await query<{ id: string }>(
       `/* lockRssFeedHardDeletePosts */
       SELECT post.id
+      -- no-mistakes-disable-next-line postgres-required-predicates: RSS-feed deletion walks all affected posts; the first cursor page has no post-ID bound
       FROM posts post
       WHERE EXISTS (
         SELECT 1
@@ -232,6 +233,7 @@ async function retainRssFeedHardDeletePostImpacts(
     const result = await query<{ post_id: string }>(
       `/* getRssFeedHardDeletePostImpacts */
       SELECT post.id AS post_id
+      -- no-mistakes-disable-next-line postgres-required-predicates: RSS-feed deletion walks all affected posts; the first cursor page has no post-ID bound
       FROM posts post
       WHERE EXISTS (
         SELECT 1

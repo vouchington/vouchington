@@ -36,6 +36,7 @@ export async function getUserModerationContext(
   const { rows } = await read(sql`/* getUserModerationContextCounts */
     SELECT
       (
+        -- no-mistakes-disable-next-line postgres-required-predicates: moderation context counts all posts removed from the target user across post-ID partitions
         SELECT count(*)::int FROM posts
         WHERE created_by_id = ${targetUser.id}
           AND deleted_by_id IS NOT NULL

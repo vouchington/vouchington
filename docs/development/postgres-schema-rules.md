@@ -626,7 +626,8 @@ History details (decision 15):
 ## R6 — Query shape
 
 - A query on a partitioned table constrains its partition key, or it is declared cross-partition
-  with a reason.
+  with a reason. Enforced by `postgres-required-predicates` (`partitionKeys: require`). Declare a
+  cross-partition read with `no-mistakes-disable-next-line postgres-required-predicates: <reason>`.
 - Partition by the dominant access key. `RANGE(id)` is allowed only when every hot reader carries an
   id or time bound.
 - **A child row is never older than its parent** (decision 20). A reader of a `RANGE (id)` child

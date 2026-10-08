@@ -45,6 +45,7 @@ export const searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId = async (
         FROM urls u
         JOIN url_hostnames h
           ON h.id = u.hostname_id
+        -- no-mistakes-disable-next-line postgres-required-predicates: hostname/path candidate search joins URLs to crawls and has no bound crawl URL ID
         JOIN crawls c
           ON c.url_id = u.id
         WHERE u.hostname_id = ${hostnameId}

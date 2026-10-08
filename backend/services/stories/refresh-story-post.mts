@@ -80,6 +80,7 @@ async function refreshStoryPostForStoryInTransaction(
     sql`/* refreshStoryPostForStory */
     SELECT
       ARRAY_AGG(DISTINCT c.topic_id) FILTER (WHERE c.topic_id IS NOT NULL) AS topic_ids
+    -- no-mistakes-disable-next-line postgres-required-predicates: story membership can attach already-created items, so item IDs may predate story_id
     FROM rss_feed_items rfi
     LEFT JOIN rss_feed_item_categories c
       ON c.rss_feed_item_id = rfi.id
