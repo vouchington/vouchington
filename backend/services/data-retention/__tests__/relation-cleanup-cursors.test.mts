@@ -1,78 +1,135 @@
 import { describe, expect, it } from 'vitest'
 import { v7 } from 'uuid'
 import { electedRelationMetadata } from '@services/users/relation-impact-targets'
-import { acquireTestPostgresAdvisoryLock } from '@voucha/test-helpers/postgres-advisory-lock'
-import {
-  getRetainedRelationCleanupCursors,
-  readTestRetainedRelationCleanupCursor,
-  restoreTestRetainedRelationCleanupCursor,
-} from '../../../test-helpers/entities/retained-relation-cursors.mts'
-import {
-  hasTestRetainedRelationIdentity,
-  insertTestRetainedIdentityRoot,
-  insertTestRetainedRelationIdentity,
-} from '@voucha/test-helpers'
-import { cleanupRetainedRelationIdentities } from '../cleanup-retained-relation-identities.mts'
+import { withTestRetainedRelationCleanupReservation } from '../../../test-helpers/entities/retained-relation-cursors.mts'
 
-function retainedRootFamily(subjectType: string): 'user' | 'post' | 'topic' {
-  if (subjectType === 'user' || subjectType === 'post' || subjectType === 'topic')
+function retainedRootFamily(subjectType: string): 'user' | 'post' | 'topic' | 'rss_feed_item' {
+  if (
+    subjectType === 'user' ||
+    subjectType === 'post' ||
+    subjectType === 'topic' ||
+    subjectType === 'rss_feed_item'
+  )
     return subjectType
   throw new Error(`Relation cursor test cannot seed ${subjectType} roots`)
 }
 
 describe('retained relation cleanup cursors', () => {
-  it('creates a missing cursor and reuses it while leaving foreign tuples', async () => {
-    const lock = await acquireTestPostgresAdvisoryLock({
-      namespace: 2_135_045,
-      key: 1,
-      timeout: '20s',
-    })
-    const metadata = electedRelationMetadata[0]!
-    const table = metadata.table_name
-    const family = retainedRootFamily(metadata.subject_type)
-    const previous = await readTestRetainedRelationCleanupCursor(table)
-    const ownedSubjectId = v7()
-    const ownedRelationId = v7()
-    const foreignSubjectId = v7()
-    const foreignRelationId = v7()
-    try {
-      await restoreTestRetainedRelationCleanupCursor(table, null)
-      await insertTestRetainedIdentityRoot(family, ownedSubjectId)
-      await insertTestRetainedIdentityRoot(family, foreignSubjectId)
-      await insertTestRetainedRelationIdentity(table, ownedSubjectId, ownedRelationId)
-      await insertTestRetainedRelationIdentity(table, foreignSubjectId, foreignRelationId)
-      const keys = [{ subjectId: ownedSubjectId, relationId: ownedRelationId }]
-      const [created] = await cleanupRetainedRelationIdentities(
-        1_000,
-        { [table]: keys },
-        { ensureCursors: true },
-      )
-      expect(created).toMatchObject({
-        relationTable: table,
-        scanned: 1,
-        deleted: 1,
-        hasMore: false,
-      })
-      expect(await getRetainedRelationCleanupCursors()).toContain(table)
-      expect(
-        (await getRetainedRelationCleanupCursors()).filter(name => name === table),
-      ).toHaveLength(1)
-      expect(await hasTestRetainedRelationIdentity(table, ownedSubjectId, ownedRelationId)).toBe(
-        false,
-      )
-      expect(
-        await hasTestRetainedRelationIdentity(table, foreignSubjectId, foreignRelationId),
-      ).toBe(true)
-      await cleanupRetainedRelationIdentities(1_000, { [table]: keys }, { ensureCursors: true })
-      expect(
-        (await getRetainedRelationCleanupCursors()).filter(name => name === table),
-      ).toHaveLength(1)
-      expect(
-        await hasTestRetainedRelationIdentity(table, foreignSubjectId, foreignRelationId),
-      ).toBe(true)
-    } finally {
-      await restoreTestRetainedRelationCleanupCursor(table, previous)
-      await lock.release()
-    }
+  it('ensures all family cursors and reuses them on replay while leaving foreign tuples', async () => {
+    await withTestRetainedRelationCleanupReservation(
+      async ({
+        insertRoot: insertTestRetainedIdentityRoot,
+        insertRelation: insertTestRetainedRelationIdentity,
+        hasRelation: hasTestRetainedRelationIdentity,
+        cleanup: cleanupRetainedRelationIdentities,
+        cursorNames: getRetainedRelationCleanupCursors,
+      }) => {
+        const fixtures: {
+          table: string
+          ownedSubjectId: string
+          ownedRelationId: string
+          foreignSubjectId: string
+          foreignRelationId: string
+        }[] = []
+        const roots = new Map<string, { ownedId: string; foreignId: string }>()
+        for (const metadata of electedRelationMetadata) {
+          const family = retainedRootFamily(metadata.subject_type)
+          let root = roots.get(family)
+          if (!root) {
+            root = { ownedId: v7(), foreignId: v7() }
+            roots.set(family, root)
+            await insertTestRetainedIdentityRoot(family, root.ownedId)
+            await insertTestRetainedIdentityRoot(family, root.foreignId)
+          }
+          const fixture = {
+            table: metadata.table_name,
+            ownedSubjectId: root.ownedId,
+            ownedRelationId: v7(),
+            foreignSubjectId: root.foreignId,
+            foreignRelationId: v7(),
+          }
+          fixtures.push(fixture)
+          await insertTestRetainedRelationIdentity(
+            fixture.table,
+            fixture.ownedSubjectId,
+            fixture.ownedRelationId,
+          )
+          await insertTestRetainedRelationIdentity(
+            fixture.table,
+            fixture.foreignSubjectId,
+            fixture.foreignRelationId,
+          )
+        }
+        const keysByTable = Object.fromEntries(
+          fixtures.map(fixture => [
+            fixture.table,
+            [{ subjectId: fixture.ownedSubjectId, relationId: fixture.ownedRelationId }],
+          ]),
+        )
+        const expectedNames = electedRelationMetadata.map(metadata => metadata.table_name)
+        const created = await cleanupRetainedRelationIdentities(1, keysByTable, {
+          ensureCursors: true,
+        })
+        expect(created).toEqual(
+          expectedNames.map(relationTable => ({
+            relationTable,
+            scanned: 1,
+            deleted: 1,
+            hasMore: false,
+          })),
+        )
+        const cursorNames = await getRetainedRelationCleanupCursors()
+        expect(cursorNames.filter(name => expectedNames.includes(name)).toSorted()).toEqual(
+          expectedNames.toSorted(),
+        )
+        for (const fixture of fixtures) {
+          expect(
+            await hasTestRetainedRelationIdentity(
+              fixture.table,
+              fixture.ownedSubjectId,
+              fixture.ownedRelationId,
+            ),
+          ).toBe(false)
+          expect(
+            await hasTestRetainedRelationIdentity(
+              fixture.table,
+              fixture.foreignSubjectId,
+              fixture.foreignRelationId,
+            ),
+          ).toBe(true)
+        }
+        const replayed = await cleanupRetainedRelationIdentities(1, keysByTable, {
+          ensureCursors: true,
+        })
+        expect(replayed).toEqual(
+          expectedNames.map(relationTable => ({
+            relationTable,
+            scanned: 0,
+            deleted: 0,
+            hasMore: false,
+          })),
+        )
+        const replayNames = await getRetainedRelationCleanupCursors()
+        expect(replayNames.filter(name => expectedNames.includes(name)).toSorted()).toEqual(
+          expectedNames.toSorted(),
+        )
+        for (const fixture of fixtures) {
+          expect(
+            await hasTestRetainedRelationIdentity(
+              fixture.table,
+              fixture.ownedSubjectId,
+              fixture.ownedRelationId,
+            ),
+          ).toBe(false)
+          expect(
+            await hasTestRetainedRelationIdentity(
+              fixture.table,
+              fixture.foreignSubjectId,
+              fixture.foreignRelationId,
+            ),
+          ).toBe(true)
+        }
+      },
+    )
   })
 })
