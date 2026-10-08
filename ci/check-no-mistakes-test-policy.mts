@@ -2,22 +2,15 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-import { symbols } from 'no-mistakes'
 import { parse as parseYaml } from 'yaml'
+
+import { liveAnalysisImportNames } from './live-no-mistakes-imports.mts'
+
+export { liveAnalysisImportNames }
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
 const workflowPath = '.github/workflows/static-code-analysis.yml'
 const routeSelectorTestPath = 'static-code-analysis/i18n-extract/route-selector-map.test.mts'
-
-const liveAnalysisImports = new Set([
-  'analyzeProject',
-  'check',
-  'ciTopology',
-  'ciTopologyImpact',
-  'resolveCheck',
-  'testsPlan',
-  'validateMermaidMarkdown',
-])
 
 const expectedWorkflowCommands = [
   {
@@ -91,33 +84,6 @@ export function relevantWorkflowCommands(root: string, paths: string[]): Workflo
       ),
     )
   })
-}
-
-export async function liveAnalysisImportNames(
-  root: string,
-  files: string[],
-): Promise<Map<string, string[]>> {
-  if (files.length === 0) return new Map()
-  const result = await symbols({
-    root,
-    files,
-    include: 'imports',
-    timeout: 30,
-    lockTimeout: 10,
-    jobs: 1,
-  })
-  return new Map(
-    result.files.map(file => [
-      file.path,
-      (file.imports ?? []).flatMap(binding =>
-        binding.source === 'no-mistakes' &&
-        !binding.typeOnly &&
-        liveAnalysisImports.has(binding.imported)
-          ? [binding.imported]
-          : [],
-      ),
-    ]),
-  )
 }
 
 export function spawnsNoMistakesCli(source: string): boolean {
