@@ -14,10 +14,12 @@ import {
 } from '@voucha/test-helpers/post-delegated-fk-concurrency'
 
 import { callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 
 describe('delegated thread fences and ordinary foreign-key inserts', () => {
   afterEach(() => {
     vi.unstubAllEnvs()
+    vi.restoreAllMocks()
   })
   it('does not hold thread publication while waiting on shared media delivery', async () => {
     const user = { ...(await createTestUser()), membership_plan: 'plus' as const }
@@ -30,8 +32,8 @@ describe('delegated thread fences and ordinary foreign-key inserts', () => {
     })
     const imageId = await insertTestImage(user.id)
     await insertTestPostImage({ postId: root, imageId })
-    vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE', 'enforce')
-    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED', 'false')
+    installTestMediaDeliveryEdge()
+    vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE', 'report')
     const result = await withConcurrentMediaThenPublicationFenceForTest(root, imageId, () =>
       callStructuredMcpTool(
         user,
