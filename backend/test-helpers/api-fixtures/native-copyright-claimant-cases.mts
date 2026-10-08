@@ -63,7 +63,7 @@ export const nativeCopyrightClaimantApiFixtureCases: ApiFixtureCase[] = [
         end_cursor: 'copyright-notices-next',
       },
     },
-    consumers: ['web'],
+    consumers: ['web', 'swift-core', 'dotnet-core'],
     migratedFrom: [
       'backend/api/v1/copyright-notices/index.mts',
       'web/lib/api/client/copyright-notices.ts',
@@ -91,7 +91,7 @@ export const nativeCopyrightClaimantApiFixtureCases: ApiFixtureCase[] = [
       ],
       page_info: { has_next_page: false, start_cursor: 'copyright-notices-null', end_cursor: null },
     },
-    consumers: ['web'],
+    consumers: ['web', 'swift-core', 'dotnet-core'],
     migratedFrom: [
       'backend/api/v1/copyright-notices/index.mts',
       'web/lib/api/client/copyright-notices.ts',
@@ -106,7 +106,7 @@ export const nativeCopyrightClaimantApiFixtureCases: ApiFixtureCase[] = [
     auth: 'fixture-user',
     status: 200,
     body: { copyright_notice: noticeDetail(claimant) },
-    consumers: ['web'],
+    consumers: ['web', 'swift-core', 'dotnet-core'],
     migratedFrom: [
       'backend/api/v1/copyright-notices/index.mts',
       'web/lib/api/client/copyright-notices.ts',
@@ -121,7 +121,7 @@ export const nativeCopyrightClaimantApiFixtureCases: ApiFixtureCase[] = [
     auth: 'fixture-user',
     status: 200,
     body: { copyright_notice: noticeDetail(null) },
-    consumers: ['web'],
+    consumers: ['web', 'swift-core', 'dotnet-core'],
     migratedFrom: [
       'backend/api/v1/copyright-notices/index.mts',
       'web/lib/api/client/copyright-notices.ts',
@@ -155,7 +155,7 @@ export const nativeCopyrightClaimantApiFixtureCases: ApiFixtureCase[] = [
         ],
       },
     },
-    consumers: ['web'],
+    consumers: ['web', 'swift-core', 'dotnet-core'],
     migratedFrom: [
       'backend/api/v1/copyright-notices/index.mts',
       'web/lib/api/client/copyright-notices.ts',
@@ -181,7 +181,7 @@ export const nativeCopyrightClaimantApiFixtureCases: ApiFixtureCase[] = [
         statements: [],
       },
     },
-    consumers: ['web'],
+    consumers: ['web', 'swift-core', 'dotnet-core'],
     migratedFrom: [
       'backend/api/v1/copyright-notices/index.mts',
       'web/lib/api/client/copyright-notices.ts',

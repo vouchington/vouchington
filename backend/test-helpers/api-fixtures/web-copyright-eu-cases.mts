@@ -118,7 +118,7 @@ export const webCopyrightEuApiFixtureCases: ApiFixtureCase[] = [
         },
       },
     },
-    consumers: ['web'],
+    consumers: ['web', 'swift-core', 'dotnet-core'],
     migratedFrom: [
       'backend/api/v1/copyright-notices/index.mts',
       'backend/services/copyright-notices/read-models-territorial.mts',
@@ -151,7 +151,7 @@ export const webCopyrightEuApiFixtureCases: ApiFixtureCase[] = [
     auth: 'fixture-user',
     status: 200,
     body: { copyright_eu_dispute_settlements: [], page_info: pageInfo },
-    consumers: ['web'],
+    consumers: ['web', 'swift-core', 'dotnet-core'],
     migratedFrom: [
       'backend/api/v1/copyright-notices/case-collection-routes.mts',
       'web/lib/api/client/copyright-eu-dispute-settlements.ts',

@@ -33,6 +33,7 @@ import { NATIVE_CONSUMER_MANIFEST_CLAIMS_28_CLIENTS_INTEGRATION } from './native
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_29_PROVENANCE } from './native-consumer-manifest/claims-29-provenance.mts'
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_30_API_KEY_LIFECYCLE } from './native-consumer-manifest/claims-30-api-key-lifecycle.mts'
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_30_COMMUNITY_AUTOMOD } from './native-consumer-manifest/claims-30-community-automod.mts'
+import { NATIVE_CONSUMER_MANIFEST_CLAIMS_31_COPYRIGHT_NOTICES } from './native-consumer-manifest/claims-31-copyright-notices.mts'
 import type { NativeConsumerManifestEntry } from './native-consumer-manifest/types.mts'
 
 export type {
@@ -77,6 +78,7 @@ const NATIVE_CONSUMER_MANIFEST_CLAIM_SLICES: readonly (readonly NativeConsumerMa
   NATIVE_CONSUMER_MANIFEST_CLAIMS_29_PROVENANCE,
   NATIVE_CONSUMER_MANIFEST_CLAIMS_30_API_KEY_LIFECYCLE,
   NATIVE_CONSUMER_MANIFEST_CLAIMS_30_COMMUNITY_AUTOMOD,
+  NATIVE_CONSUMER_MANIFEST_CLAIMS_31_COPYRIGHT_NOTICES,
 ]
 
 export const NATIVE_CONSUMER_MANIFEST =

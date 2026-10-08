@@ -87546,7 +87546,7 @@
       "auth": "fixture-user",
       "backendResponseContractKey": "GET:/api/v1/copyright-notices/:id/participant",
       "bodyFile": "responses/web.copyright.eu.participant.no-action-complaint.json",
-      "consumers": ["web"],
+      "consumers": ["web", "swift-core", "dotnet-core"],
       "id": "web.copyright.eu.participant.no-action-complaint",
       "method": "GET",
       "migratedFrom": [
@@ -87599,7 +87599,7 @@
       "auth": "fixture-user",
       "backendResponseContractKey": "GET:/api/v1/copyright-notices/:id/eu-dispute-settlements",
       "bodyFile": "responses/web.copyright.eu.dispute-settlements.participant.json",
-      "consumers": ["web"],
+      "consumers": ["web", "swift-core", "dotnet-core"],
       "id": "web.copyright.eu.dispute-settlements.participant",
       "method": "GET",
       "migratedFrom": [
@@ -97715,7 +97715,7 @@
       "auth": "fixture-user",
       "backendResponseContractKey": "GET:/api/v1/copyright-notices",
       "bodyFile": "responses/web.copyright.notices.default.json",
-      "consumers": ["web"],
+      "consumers": ["web", "swift-core", "dotnet-core"],
       "id": "web.copyright.notices.default",
       "method": "GET",
       "migratedFrom": [
@@ -97740,7 +97740,7 @@
       "auth": "fixture-user",
       "backendResponseContractKey": "GET:/api/v1/copyright-notices",
       "bodyFile": "responses/web.copyright.notices.null-claimant.json",
-      "consumers": ["web"],
+      "consumers": ["web", "swift-core", "dotnet-core"],
       "id": "web.copyright.notices.null-claimant",
       "method": "GET",
       "migratedFrom": [
@@ -97765,7 +97765,7 @@
       "auth": "fixture-user",
       "backendResponseContractKey": "GET:/api/v1/copyright-notices/:id",
       "bodyFile": "responses/web.copyright.notice.detail.populated.json",
-      "consumers": ["web"],
+      "consumers": ["web", "swift-core", "dotnet-core"],
       "id": "web.copyright.notice.detail.populated",
       "method": "GET",
       "migratedFrom": [
@@ -97793,7 +97793,7 @@
       "auth": "fixture-user",
       "backendResponseContractKey": "GET:/api/v1/copyright-notices/:id",
       "bodyFile": "responses/web.copyright.notice.detail.null-claimant.json",
-      "consumers": ["web"],
+      "consumers": ["web", "swift-core", "dotnet-core"],
       "id": "web.copyright.notice.detail.null-claimant",
       "method": "GET",
       "migratedFrom": [
@@ -97821,7 +97821,7 @@
       "auth": "fixture-user",
       "backendResponseContractKey": "GET:/api/v1/copyright-notices/:id/participant",
       "bodyFile": "responses/web.copyright.notice.participant.populated.json",
-      "consumers": ["web"],
+      "consumers": ["web", "swift-core", "dotnet-core"],
       "id": "web.copyright.notice.participant.populated",
       "method": "GET",
       "migratedFrom": [
@@ -97849,7 +97849,7 @@
       "auth": "fixture-user",
       "backendResponseContractKey": "GET:/api/v1/copyright-notices/:id/participant",
       "bodyFile": "responses/web.copyright.notice.participant.null-claimant.json",
-      "consumers": ["web"],
+      "consumers": ["web", "swift-core", "dotnet-core"],
       "id": "web.copyright.notice.participant.null-claimant",
       "method": "GET",
       "migratedFrom": [
