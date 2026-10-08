@@ -129,8 +129,8 @@ Unmatched commits on origin/<branch> are new commits someone pushed.
 - **Merge note.** If you are still running when the merge happens and it changes the outcome, such
   as a merge-queue ejection and its fix, a follow-up push, or review comments addressed after
   hand-off, append one short journal note to the same session with the
-  [blackboard skill](../blackboard/SKILL.md#script-procedure). Name the PR and the retrospective's
-  source event in the note, and give it its own `--source-event-id` (for example `merge-pr<number>`):
+  [blackboard skill](../blackboard/SKILL.md). Name the PR and the retrospective's
+  source event in the note, and give it its own `sourceEventId` (for example `merge-pr<number>`):
   the writer rejects the retrospective's ID reused for different content. Never write a second
   retrospective.
 - Hook mechanics and limitations belong in [agent sandbox](../../../docs/development/agent-sandbox.md)

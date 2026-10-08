@@ -162,10 +162,13 @@ Claude's OS sandbox unsets every name in [`.claude/settings.json`](../../.claude
 A command in `sandbox.excludedCommands` runs outside that sandbox and still receives the
 variables. `dev/check-blackboard.mts` stays excluded for that reason: a sandboxed probe cannot
 tell a withheld `AGENT_BLACKBOARD_TOKEN` from an outage
-([Advisory availability probe](agent-blackboard.md#advisory-availability-probe)).
+([SessionStart availability check](agent-blackboard.md#sessionstart-availability-check)).
 
-Codex `[mcp_servers.agent-blackboard].env_vars` forwards `AGENT_BLACKBOARD_URL` and
-`AGENT_BLACKBOARD_TOKEN` into the MCP server. That pass-through is a separate control. Grok
+The machine-registered `vouchington-tooling` server receives `AGENT_BLACKBOARD_URL` and
+`AGENT_BLACKBOARD_TOKEN` through its own registration (Codex `env_vars`), a separate control from
+this deny list, so the token stays hidden from shell commands while the server can still use it.
+The CLI fallback therefore needs a one-command unsandboxed run
+([CLI fallback](agent-blackboard.md#cli-fallback)). Grok
 [`.grok/sandbox.toml`](../../.grok/sandbox.toml) and Cursor
 [`.cursor/sandbox.json`](../../.cursor/sandbox.json) configure writable roots and have no
 credential unset list. This deny list stays on Claude.

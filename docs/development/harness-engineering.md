@@ -92,9 +92,10 @@ Sentry stays disabled because CI is outside the deployed-environment allowlist.
 
 ## MCP
 
-Interactive sessions already enable the Claude Sentry plugin in
-`.claude/settings.json`. Headless/CI agents use `.mcp.json`, which declares the
-stdio `@sentry/mcp-server`.
+No repository file registers a Sentry or other MCP server. vouchington-machines registers Sentry
+per machine in every harness: the `sentry@claude-plugins-official` plugin's hosted server for
+Claude and Grok, and the pinned local stdio `@sentry/mcp-server` for Codex, Cursor, and OpenCode.
+A headless or automated session has it only when its host's user configuration does.
 
 Required secret:
 

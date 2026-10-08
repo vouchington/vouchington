@@ -115,7 +115,7 @@ describe('Vouchington workflow skill adapters', () => {
     expect(skill).toContain('`CODEX_THREAD_ID`')
     expect(skill).toContain('`CLAUDE_CODE_SESSION_ID`')
     expect(skill).toContain('`session_ensure`')
-    expect(skill).toContain('--parent-session-id')
+    expect(skill).toContain('`parentSessionId`')
     expect(skill).toContain('isValidSessionId')
   })
 

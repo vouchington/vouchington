@@ -58,9 +58,9 @@ load the matching domain skill. Keep Vouchington-specific rules in the local ada
 documentation; do not fork portable guidance. An adapter must stop rather than applying its overlay
 alone if the canonical skill is unavailable.
 
-`settings.json` enables the shared `.mcp.json` Agent Blackboard server and preauthorizes its
-eight current provider tools. The local wrapper and tool inventory are documented in
-[Agent Blackboard](../docs/development/agent-blackboard.md).
+No repository file registers an MCP server: vouchington-machines registers `vouchington-tooling`
+once per machine and pre-approves its tools. The server, its tools, and the CLI fallback are
+documented in [Agent Blackboard](../docs/development/agent-blackboard.md).
 
 ## See Also
 

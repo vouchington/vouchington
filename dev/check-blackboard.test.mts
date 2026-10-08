@@ -46,20 +46,33 @@ function runScript(
     args = [],
   }: { input?: string; env?: NodeJS.ProcessEnv; path?: string; args?: string[] } = {},
 ) {
+  // A test run inside the Claude sandbox inherits SANDBOX_RUNTIME, which would turn every probe
+  // case into the sandbox skip; only a case that sets it asks for that behavior.
+  const childEnv = { ...process.env, ...env }
+  if (!('SANDBOX_RUNTIME' in env)) delete childEnv.SANDBOX_RUNTIME
   return spawnSync(process.execPath, [path, ...args], {
     cwd,
     encoding: 'utf8',
-    env: { ...process.env, ...env },
+    env: childEnv,
     input,
     timeout: 10_000,
   })
 }
 
+// The copy keeps only the script's own relative imports, so a missing workspace install is still
+// the only thing absent.
 async function copyProbeScript(cwd: string): Promise<string> {
-  const { copyFile } = await import('node:fs/promises')
-  const copiedScriptPath = join(cwd, 'check-blackboard.mts')
-  await copyFile(scriptPath, copiedScriptPath)
-  return realpath(copiedScriptPath)
+  const { copyFile, mkdir } = await import('node:fs/promises')
+  await mkdir(join(cwd, 'agent-session-id'))
+  const files = [
+    'check-blackboard.mts',
+    'agent-session-id/persist.mts',
+    'agent-session-id/valid-id.mts',
+  ]
+  for (const file of files) {
+    await copyFile(fileURLToPath(new URL(`./${file}`, import.meta.url)), join(cwd, file))
+  }
+  return realpath(join(cwd, 'check-blackboard.mts'))
 }
 
 // Simulates a hoisted/stale vouchington-tooling install that predates the ./agent-blackboard
@@ -109,21 +122,11 @@ describe('dev/check-blackboard (hook subprocess)', () => {
     expect(context).toContain('AGENT_BLACKBOARD_TOKEN')
   })
 
-  it('stays silent for a compact session restart even when unreachable', async () => {
-    const result = runScript(await makeRepo(), {
-      input: JSON.stringify({ source: 'compact' }),
-      env: UNREACHABLE_ENV,
-    })
-
-    expect(result.status).toBe(0)
-    expect(result.stderr).toBe('')
-    expect(result.stdout).toBe('')
-  })
-
-  it('stays silent when CHECK_BLACKBOARD_SKIP=1 even when unreachable', async () => {
-    const result = runScript(await makeRepo(), {
-      env: { ...UNREACHABLE_ENV, CHECK_BLACKBOARD_SKIP: '1' },
-    })
+  it.each([
+    ['a compact session restart', { input: '{"source":"compact"}', env: UNREACHABLE_ENV }],
+    ['CHECK_BLACKBOARD_SKIP=1', { env: { ...UNREACHABLE_ENV, CHECK_BLACKBOARD_SKIP: '1' } }],
+  ])('stays silent for %s even when unreachable', async (_name, options) => {
+    const result = runScript(await makeRepo(), options)
 
     expect(result.status).toBe(0)
     expect(result.stderr).toBe('')
@@ -225,6 +228,59 @@ describe('dev/check-blackboard (hook subprocess)', () => {
     const context = additionalContext(result.stdout)
     expect(context).not.toContain('STOP WORK')
     expect(context).toContain('sandbox')
+  })
+
+  it('prints the hook payload session id ahead of the unreachable advisory', async () => {
+    const result = runScript(await makeRepo(), {
+      input: JSON.stringify({ session_id: 'claude-session-1' }),
+      env: UNREACHABLE_ENV,
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stderr).toBe('')
+    const lines = additionalContext(result.stdout).split('\n')
+    expect(lines[0]).toContain('Blackboard sessionId: claude-session-1')
+    expect(lines[1]).toContain('availability assessment failed')
+    expect(lines[1]).toContain('CLI fallback')
+  })
+
+  it.each([
+    ['a compact restart', { source: 'compact', session_id: 'sess-compact' }, UNREACHABLE_ENV],
+    [
+      'CHECK_BLACKBOARD_SKIP',
+      { session_id: 'sess-skip' },
+      { ...UNREACHABLE_ENV, CHECK_BLACKBOARD_SKIP: '1' },
+    ],
+  ] as const)('re-prints only the session id for %s', async (_name, payload, env) => {
+    const result = runScript(await makeRepo(), { input: JSON.stringify(payload), env })
+
+    expect(result.status).toBe(0)
+    expect(result.stderr).toBe('')
+    const context = additionalContext(result.stdout)
+    expect(context).toBe(
+      `Blackboard sessionId: ${payload.session_id} (pass it as \`sessionId\` to every journal tool)`,
+    )
+  })
+
+  it('reads the Cursor conversation id when the payload has no session id', async () => {
+    const result = runScript(await makeRepo(), {
+      input: JSON.stringify({ conversation_id: 'cursor-conversation-1', source: 'compact' }),
+      env: UNREACHABLE_ENV,
+    })
+
+    expect(additionalContext(result.stdout)).toContain(
+      'Blackboard sessionId: cursor-conversation-1',
+    )
+  })
+
+  it('never prints a payload id that is not a plain token', async () => {
+    const result = runScript(await makeRepo(), {
+      input: JSON.stringify({ session_id: '../escape', source: 'compact' }),
+      env: UNREACHABLE_ENV,
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toBe('')
   })
 
   it('stays silent outside a git repo', async () => {

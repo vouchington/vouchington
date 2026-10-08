@@ -15,7 +15,8 @@ Claude Code and Codex load `vouchington-workflow:retrospective`; Grok, Cursor, a
 re-mine transcripts. Do not dispatch a subagent or read raw session JSONL, and do not use
 `grep`, `rg`, `jq`, or `awk` over transcripts. Permitted evidence sources are
 `pnpm exec vouchington retrospective-facts`, `pnpm exec vouchington retrospective-transcript`, and
-`node dev/blackboard-journal.mts entries [--root-codex]`.
+the `journal_entries` tool of the `vouchington-tooling` MCP server (or its CLI fallback; see the
+[blackboard skill](../blackboard/SKILL.md)), called with the `sessionId` the SessionStart hook printed.
 Unanswerable evidence is `unknown — no journal`, never a guess.
 
 **When to write.** Write one retrospective per PR when you hand it to the human as ready, or one
@@ -28,10 +29,10 @@ session is not treated as already reported. If the merge changes the outcome whi
 running, add the short journal note that rule describes instead of a second retrospective.
 
 Start with `node dev/retrospective-save.mts check [--session-id <id>]`. An interactive root Codex always
-adds `--root-codex` to this check, `node dev/blackboard-journal.mts entries`, and the eventual
-`retrospective-save.mts save`; a child never adds that flag and remains fail-closed when it lacks
-its own identity. At the beginning of an absent-thread root session, add
-`--new-root-codex-session` to exactly one of those script calls, then omit it.
+adds `--root-codex` to this check and the eventual `retrospective-save.mts save`; a child never adds
+that flag and remains fail-closed when it lacks its own identity. At the beginning of an
+absent-thread root session, add `--new-root-codex-session` to exactly one of those script calls,
+then omit it.
 Use `check --source-event-id <task-event-id>` when reporting another task in the same session.
 An existing retrospective covers only its source event; preserve later task deltas with a new
 explicit source event ID. For the same already-reported event, collect only the delta since its

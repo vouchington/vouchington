@@ -1,14 +1,4 @@
 {
-  "mcpAllowlist": [
-    "agent-blackboard:entry_append",
-    "agent-blackboard:entry_get",
-    "agent-blackboard:session_archive",
-    "agent-blackboard:session_create",
-    "agent-blackboard:session_ensure",
-    "agent-blackboard:session_patch",
-    "agent-blackboard:session_search",
-    "agent-blackboard:snapshot_export"
-  ],
   "autoRun": {
     "allow_instructions": [
       "Allow pnpm, git, gh, node, cargo, docker, npx of known local tools, and ./dev/* scripts used in the Voucha local loop.",

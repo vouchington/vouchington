@@ -70,6 +70,40 @@ describe('classifySession', () => {
     })
   })
 
+  it('treats copies that differ only in the server-assigned timestamp as one event', () => {
+    const session = sessionFixture({ id: 's1', agent: 'codex', version: '1', lastEntryAt: FRESH })
+    const data = createFeedbackEnvelope({
+      schemaVersion: 1,
+      type: 'journal',
+      sourceEventId: 'retried-note',
+      timestamp: STALE,
+      markdown: 'one observation stored by a retry and a late write',
+      repositories: ['vouchington/vouchington'],
+      workOutcome: 'in-progress',
+      feedbackCoverage: { status: 'partial', sources: ['journal'], droppedCount: 0 },
+    })
+    const original = entryFixture({ sessionId: 's1', createdAt: STALE, data })
+    const retried = entryFixture({
+      sessionId: 's1',
+      createdAt: FRESH,
+      data: { ...data, timestamp: FRESH },
+    })
+    expect(classifySession(session, [retried, original], CUTOFFS)).toMatchObject({
+      shape: 'journal-only',
+      eligible: true,
+      duplicateEntryCount: 1,
+    })
+    const changed = entryFixture({
+      sessionId: 's1',
+      createdAt: FRESH,
+      data: { ...data, timestamp: FRESH, markdown: 'different content under the same id' },
+    })
+    expect(classifySession(session, [original, changed], CUTOFFS)).toMatchObject({
+      shape: 'entry-type-unresolved',
+      quarantine: { entryCount: 1, reasons: ['conflicting-source-event'] },
+    })
+  })
+
   it('ignores a replay timestamp for age but counts a new source event as activity', () => {
     const session = sessionFixture({ id: 's1', agent: 'codex', version: '1', lastEntryAt: FRESH })
     const data = createFeedbackEnvelope({

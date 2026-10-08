@@ -2,9 +2,15 @@
 import { execFile as execFileCb } from 'node:child_process'
 import { promisify } from 'node:util'
 
+import { cursorPayloadSessionId } from './agent-session-id/persist.mts'
+
 const execFileAsync = promisify(execFileCb)
 
-// SessionStart probes provide advisory context. CHECK_BLACKBOARD_SKIP skips that probe only.
+// SessionStart hook: prints the hook's own session id, which every vouchington-tooling journal tool
+// takes as an explicit `sessionId`, and an advisory probe of the hosted deployment. Compact
+// restarts and CHECK_BLACKBOARD_SKIP skip the probe only; the session id is always re-printed.
+// The vouchington-tooling MCP server is registered per machine, not by this repository, so the
+// hook can only say that the deployment is unreachable, never that a harness failed to connect.
 
 export async function runCheckBlackboard(options: { env?: NodeJS.ProcessEnv } = {}): Promise<void> {
   const { probeBlackboard } = await loadBlackboardModules()
@@ -81,11 +87,11 @@ function emitContext(message: string): void {
   )
 }
 
-async function main(): Promise<void> {
-  const payload = await readStdinPayload()
-  if (payload.source === 'compact') return
-  if (process.env.CHECK_BLACKBOARD_SKIP === '1') return
-  if (!(await isGitRepo())) return
+// Returns the advisory line for the deployment probe, or undefined when the probe is skipped or
+// healthy.
+async function probeAdvisory(payload: Record<string, unknown>): Promise<string | undefined> {
+  if (payload.source === 'compact') return undefined
+  if (process.env.CHECK_BLACKBOARD_SKIP === '1') return undefined
 
   // The Claude Code sandbox unsets AGENT_BLACKBOARD_TOKEN (sandbox.credentials.envVars
   // deny; docs/development/agent-sandbox.md#sandbox-credential-deny-list) and blocks egress
@@ -93,12 +99,11 @@ async function main(): Promise<void> {
   // "I was never given the credential to check". Reporting that as an outage is a false
   // stop-work directive — see docs/development/agent-blackboard.md.
   if (process.env.SANDBOX_RUNTIME) {
-    emitContext(
+    return (
       'agent-blackboard probe skipped: it ran inside the Claude Code sandbox, which unsets ' +
-        'AGENT_BLACKBOARD_TOKEN and blocks egress to the deployment. This is NOT an outage and ' +
-        'NOT a reason to stop work. Re-run unsandboxed to actually verify the deployment.',
+      'AGENT_BLACKBOARD_TOKEN and blocks egress to the deployment. This is NOT an outage and ' +
+      'NOT a reason to stop work. Re-run unsandboxed to actually verify the deployment.'
     )
-    return
   }
 
   try {
@@ -106,25 +111,43 @@ async function main(): Promise<void> {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     if (err instanceof BlackboardModuleUnavailableError) {
-      emitContext(
+      return (
         `agent-blackboard helpers are unavailable (${message}). This is a workspace-setup ` +
-          'problem in this worktree, not a deployment outage — the hosted agent-blackboard ' +
-          'deployment and AGENT_BLACKBOARD_URL/AGENT_BLACKBOARD_TOKEN are not the cause and do not ' +
-          'need checking. Run the command above from the Vouchington worktree root, then continue ' +
-          'the task in this session. Blackboard MCP tools that failed to start stay unavailable ' +
-          'until the next session; journal through dev/blackboard-journal.mts meanwhile.',
+        'problem in this worktree, not a deployment outage — the hosted agent-blackboard ' +
+        'deployment and AGENT_BLACKBOARD_URL/AGENT_BLACKBOARD_TOKEN are not the cause and do not ' +
+        'need checking. Run the command above from the Vouchington worktree root, then continue ' +
+        'the task in this session. Journaling does not need this worktree install: search for ' +
+        '`journal_append`, and when the server is not connected use the CLI fallback in the ' +
+        'blackboard skill and tell the user you are falling back.'
       )
-      return
     }
-    emitContext(
+    return (
       `agent-blackboard availability assessment failed (${message}). Interactive feedback can ` +
-        'continue through the supported durable outbox; delivery remains visibly pending. ' +
-        'Verify the hosted agent-blackboard ' +
-        'deployment is reachable and AGENT_BLACKBOARD_URL and ' +
-        'AGENT_BLACKBOARD_TOKEN are exported and valid (see docs/development/agent-blackboard.md), ' +
-        'then start a fresh session.',
+      'continue through the supported durable outbox; delivery remains visibly pending. ' +
+      'Verify the hosted agent-blackboard ' +
+      'deployment is reachable and AGENT_BLACKBOARD_URL and ' +
+      'AGENT_BLACKBOARD_TOKEN are exported and valid (see docs/development/agent-blackboard.md), ' +
+      'then start a fresh session. If the vouchington-tooling server is not connected, use the ' +
+      'CLI fallback in the blackboard skill and tell the user you are falling back.'
     )
   }
+  return undefined
+}
+
+async function main(): Promise<void> {
+  const payload = await readStdinPayload()
+  if (!(await isGitRepo())) return
+
+  const lines: string[] = []
+  const sessionId = cursorPayloadSessionId(payload)
+  if (sessionId) {
+    lines.push(
+      `Blackboard sessionId: ${sessionId} (pass it as \`sessionId\` to every journal tool)`,
+    )
+  }
+  const probe = await probeAdvisory(payload)
+  if (probe !== undefined) lines.push(probe)
+  if (lines.length > 0) emitContext(lines.join('\n'))
 }
 
 if (import.meta.main) {

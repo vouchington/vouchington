@@ -88,8 +88,8 @@ conditional sections — include each only when it fires. `## Tool Findings` and
 or reason; findings require observations, evidence, and dispositions. The CLI composer always
 builds `## CI Failures` and `## Sandbox & Permission Audit` from the session's hosted journal; an
 unavailable source is assessed as unavailable, not empty. For a manually staged retrospective,
-derive observed evidence from `node dev/blackboard-journal.mts entries [--root-codex]` under the
-canonical evidence boundary. Empty capture is not proof of absence.
+derive observed evidence from the `journal_entries` tool of the `vouchington-tooling` MCP server
+under the canonical evidence boundary. Empty capture is not proof of absence.
 
 If you proactively made a GitHub issue already as a follow-up task, link it in the relevant section.
 
@@ -136,7 +136,9 @@ The command:
 
 Interactive save uses `--mode interactive`; a hosted delivery outage returns visible pending state
 only after the bounded private outbox durably preserves sanitized feedback. Inspect and flush through
-`node dev/blackboard-journal.mts outbox-status|outbox-flush`. `--mode autonomous` requires verified
+the `outbox_status` and `outbox_flush` tools of the `vouchington-tooling` MCP server (or the
+[blackboard skill](../blackboard/SKILL.md)'s CLI fallback), which cover the same worktree outbox.
+`--mode autonomous` requires verified
 read-back and does not fall back to that outbox. A successful work outcome with blocked delivery is not fully reported.
 Invalid content, identity conflicts, saturation, and persistence failure exit nonzero with `Error:`
 and a pinned replay command. Do not discard pending records or claim acknowledged delivery.
@@ -173,8 +175,7 @@ Both no-retrospective states exit 0 and share the `No retrospective saved yet` p
 branches on two prefixes, not three. Unlike `save`, `check` never creates the agent-blackboard session
 — it is server-read-only, so running it costs nothing even for a session that will never get a
 retrospective. `check --root-codex` may create or refresh the ignored local Codex persistence file.
-Interactive root Codex always passes `--root-codex` here and to
-`node dev/blackboard-journal.mts entries --root-codex`. Each root-aware read refreshes and reads
+Interactive root Codex always passes `--root-codex` here. Each root-aware read refreshes and reads
 back the worktree-local Codex identity before its server request. An absent-thread new root adds
 `--new-root-codex-session` to exactly the first root script call; children do none of them.
 

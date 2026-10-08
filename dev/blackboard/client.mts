@@ -1,4 +1,4 @@
-import { AgentBlackboardError, Entries, Sessions, type ClientConfig } from 'agent-blackboard'
+import { AgentBlackboardError, Entries, type ClientConfig, type Sessions } from 'agent-blackboard'
 import { resolveBlackboardConnection as resolvePortableBlackboardConnection } from 'vouchington-tooling/agent-blackboard'
 
 export type BlackboardConnection = ClientConfig
@@ -6,10 +6,6 @@ export type BlackboardConnection = ClientConfig
 export type BlackboardSessionsClient = Pick<Sessions, 'ensure' | 'get' | 'list' | 'patch'>
 
 export type BlackboardEntriesClient = Pick<Entries, 'append' | 'get'>
-
-export function createSessionsClient(connection: BlackboardConnection): BlackboardSessionsClient {
-  return new Sessions(connection)
-}
 
 export function createEntriesClient(connection: BlackboardConnection): BlackboardEntriesClient {
   return new Entries(connection)

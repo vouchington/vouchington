@@ -35,8 +35,8 @@ failed or was rejected.
 
 Every retrospective must contain a `## CI Failures` section immediately after
 `## Transcript Facts`. This is an **observed-failures log**, not a historical GitHub audit: build it
-from the session journal alone (via `node dev/blackboard-journal.mts entries [--root-codex]` for
-interactive root Codex), as the composer does. Transcript output cannot establish CI status. Do not
+from the session journal alone (via the `journal_entries` tool of the `vouchington-tooling` MCP
+server, with the `sessionId` the SessionStart hook printed), as the composer does. Transcript output cannot establish CI status. Do not
 re-mine raw or recursive transcripts: the normalized collectors own that boundary. A journal that
 cannot be read must remain unavailable. Do not crawl workflow history for failures the session never
 observed, and do not infer that no failure occurred merely because the final run passed.
