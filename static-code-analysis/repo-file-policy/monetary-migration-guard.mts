@@ -29,12 +29,16 @@ type SqlTable = {
   name: string
 }
 
-export function checkMonetaryMigration(file: string, content: string, errors: string[]): void {
+export async function checkMonetaryMigration(
+  file: string,
+  content: string,
+  errors: string[],
+): Promise<void> {
   if (!file.startsWith(MONETARY_MIGRATION_PREFIX) || !file.endsWith('.sql')) return
 
   let tables: SqlTable[]
   try {
-    tables = extractSqlTables(content)
+    tables = await extractSqlTables(content)
   } catch (err) {
     errors.push(
       `::error file=${file}::${file}: could not parse monetary migration: ${

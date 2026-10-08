@@ -74,12 +74,12 @@ export function checkMonetaryContractFile(file: string, content: string, errors:
   }
 }
 
-export function checkMonetaryContracts(
+export async function checkMonetaryContracts(
   repoRoot: string,
   trackedFiles: string[],
   errors: string[],
   readTrackedFile?: (file: string) => string | null,
-): void {
+): Promise<void> {
   for (const file of trackedFiles) {
     const needsMigrationCheck = file.startsWith(MONETARY_MIGRATION_PREFIX) && file.endsWith('.sql')
     const needsContractCheck = isPublicContractFile(file)
@@ -88,7 +88,7 @@ export function checkMonetaryContracts(
     if (!statSync(path).isFile()) continue
     const content = readTrackedFile?.(file) ?? readFileSync(path, 'utf8')
     if (content === null) continue
-    if (needsMigrationCheck) checkMonetaryMigration(file, content, errors)
+    if (needsMigrationCheck) await checkMonetaryMigration(file, content, errors)
     if (needsContractCheck) checkMonetaryContractFile(file, content, errors)
   }
 }
