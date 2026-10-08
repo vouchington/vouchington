@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { extractCreateTableMetadata, lineOfUtf8ByteOffset } from './sql-ast.mts'
+import { parsePostgresSql } from 'no-mistakes'
 
 // Moderation-action verbs whose presence on a parent-table column signals the
 // insert-then-cancel anti-pattern. A column starting with one of these verbs —
@@ -31,7 +31,7 @@ const MODERATION_VERBS = [
   'frozen',
 ]
 
-// Matches a bare column name (ColumnDef.colname from the PostgreSQL 18 parser)
+// Matches a column name from released PostgreSQL source facts
 // that starts with a moderation verb, followed by an underscore or end-of-string.
 // Handles single-word bare verbs (e.g. `blocked`) and prefixed columns
 // (e.g. `suspended_at`, `locked_by_id`).
@@ -56,43 +56,43 @@ function parseAllowDirectiveLines(rawContent: string): Set<number> {
   return allowLines
 }
 
-export function checkModerationHistoryGuard(
+export async function checkModerationHistoryGuard(
   repoRoot: string,
   trackedFiles: string[],
   errors: string[],
-): void {
+): Promise<void> {
   for (const file of trackedFiles) {
     if (!file.startsWith('backend/data-stores/psql/migrations/')) continue
     if (!file.endsWith('.sql')) continue
 
     const filePath = join(repoRoot, file)
     const content = readFileSync(filePath, 'utf8')
-    const contentBuffer = Buffer.from(content, 'utf8')
 
-    let tables: ReturnType<typeof extractCreateTableMetadata>
-    try {
-      tables = extractCreateTableMetadata(content)
-    } catch (err) {
-      errors.push(`::error file=${file}::${file}: failed to parse SQL: ${String(err)}`)
+    const facts = await parsePostgresSql({ sql: content })
+    if (facts.diagnostics.length > 0) {
+      errors.push(
+        `::error file=${file}::${file}: failed to parse SQL: ${facts.diagnostics.map(diagnostic => diagnostic.message).join('; ')}`,
+      )
       continue
     }
 
     const allowDirectiveLines = parseAllowDirectiveLines(content)
 
-    for (const table of tables) {
-      const tableName = table.tableName
+    for (const table of facts.statements) {
+      if (table.kind !== 'createTable') continue
+      const tableName = table.table.parts.at(-1)?.value
       const tableElts = table.columns
 
       // Tables that already carry a lifted_at column are proper history tables
-      const hasLiftedAt = tableElts.some(col => col.name.toLowerCase() === 'lifted_at')
+      const hasLiftedAt = tableElts.some(col => col.name.value.toLowerCase() === 'lifted_at')
       if (hasLiftedAt) continue
 
       // `removed` verb family: if the table has removed_at, that column family is
       // the soft-delete append-only pattern, not a moderation toggle.
-      const hasRemovedAt = tableElts.some(col => col.name.toLowerCase() === 'removed_at')
+      const hasRemovedAt = tableElts.some(col => col.name.value.toLowerCase() === 'removed_at')
 
       for (const col of tableElts) {
-        const colName = col.name
+        const colName = col.name.value
         const m = VERB_COL_RE.exec(colName)
         if (!m) continue
         const verbMatch = m[1].toLowerCase()
@@ -102,8 +102,8 @@ export function checkModerationHistoryGuard(
         if (verbMatch === 'removed' && hasRemovedAt) continue
 
         // Per-column allow-directive: if the raw column line carries the directive,
-        // skip this column. col.location is the byte offset of the column name token.
-        const lineNum = lineOfUtf8ByteOffset(contentBuffer, col.location ?? 0)
+        // skip this column. The source span retains the column definition line.
+        const lineNum = col.span?.start.line ?? 1
         if (allowDirectiveLines.has(lineNum)) continue
 
         errors.push(

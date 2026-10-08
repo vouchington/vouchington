@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { isMigrationSqlFile } from './policy-matchers.mts'
-import { extractCreateTableMetadata, lineOfUtf8ByteOffset } from './sql-ast.mts'
+import { parsePostgresSql, type PostgresSqlExpressionRoot } from 'no-mistakes'
 
 /**
  * Flags CREATE TABLE statements whose `id` column is a UUIDv7 primary key
@@ -15,47 +15,76 @@ import { extractCreateTableMetadata, lineOfUtf8ByteOffset } from './sql-ast.mts'
  * which would make the check circular and unable to catch the violation it
  * exists to catch.
  */
-export function checkUuidv7CreatedAtDdl(
+export async function checkUuidv7CreatedAtDdl(
   repoRoot: string,
   trackedFiles: string[],
   errors: string[],
-): void {
+): Promise<void> {
   for (const file of trackedFiles) {
     if (!isMigrationSqlFile(file)) continue
 
     const content = readFileSync(join(repoRoot, file), 'utf8')
 
-    let tables: ReturnType<typeof extractCreateTableMetadata>
-    try {
-      tables = extractCreateTableMetadata(content)
-    } catch {
-      continue
-    }
+    const facts = await parsePostgresSql({ sql: content })
+    if (facts.diagnostics.length > 0) continue
 
-    for (const table of tables) {
-      const idColumn = table.columns.find(column => column.name.toLowerCase() === 'id')
-      if (!idColumn?.isPrimaryKey || idColumn.defaultFunction !== 'uuidv7') continue
+    for (const table of facts.statements) {
+      if (table.kind !== 'createTable') continue
+      const tableName = table.table.parts.at(-1)?.value
+      const idColumn = table.columns.find(column => column.name.value.toLowerCase() === 'id')
+      if (!idColumn) continue
+      const isPrimaryKey = [...table.constraints, ...idColumn.constraints].some(
+        constraint =>
+          constraint.kind === 'primaryKey' &&
+          (constraint.columns.length === 0 ||
+            constraint.columns.some(column => column.value === idColumn.name.value)),
+      )
+      if (
+        !isPrimaryKey ||
+        ddlFunction(idColumn.default?.root)?.name.parts.at(-1)?.value.toLowerCase() !== 'uuidv7'
+      )
+        continue
 
       const createdAtColumn = table.columns.find(
-        column => column.name.toLowerCase() === 'created_at',
+        column => column.name.value.toLowerCase() === 'created_at',
       )
       if (!createdAtColumn) continue
+      const generated = ddlFunction(createdAtColumn.generated?.expression.root)
+      const generatedFunction = generated?.name.parts.at(-1)?.value.toLowerCase()
+      const defaultFunction = ddlFunction(createdAtColumn.default?.root)
+        ?.name.parts.at(-1)
+        ?.value.toLowerCase()
       const isGeneratedFromId =
-        createdAtColumn.generatedFunction === 'uuid_extract_timestamp' &&
-        createdAtColumn.generatedFunctionArgColumns.includes(idColumn.name.toLowerCase())
+        generatedFunction === 'uuid_extract_timestamp' &&
+        generated?.argumentsComplete &&
+        generated.arguments.some(
+          argument =>
+            argument.root.kind === 'columnReference' &&
+            argument.root.name.parts.at(-1)?.value.toLowerCase() ===
+              idColumn.name.value.toLowerCase(),
+        )
       if (isGeneratedFromId) continue
 
-      const lineNum = lineOfUtf8ByteOffset(content, createdAtColumn.location ?? 0)
-      const offendingDefault = createdAtColumn.generatedFunction
-        ? `GENERATED ... AS (${createdAtColumn.generatedFunction}(...))`
-        : createdAtColumn.defaultFunction
-          ? `DEFAULT ${createdAtColumn.defaultFunction}()`
+      const lineNum = createdAtColumn.span?.start.line ?? 1
+      const offendingDefault = generatedFunction
+        ? `GENERATED ... AS (${generatedFunction}(...))`
+        : defaultFunction
+          ? `DEFAULT ${defaultFunction}()`
           : 'a non-generated default'
       errors.push(
-        `::error file=${file},line=${lineNum}::${table.tableName}.created_at must be ` +
-          `GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL because ${table.tableName}.id ` +
+        `::error file=${file},line=${lineNum}::${tableName}.created_at must be ` +
+          `GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL because ${tableName}.id ` +
           `is a UUIDv7 primary key (found ${offendingDefault})`,
       )
     }
   }
+}
+
+/** Only casts/grouping may wrap the UUID policy's required root function call. */
+function ddlFunction(
+  root: PostgresSqlExpressionRoot | undefined,
+): Extract<PostgresSqlExpressionRoot, { kind: 'functionCall' }> | null {
+  if (!root) return null
+  if (root.kind === 'cast' || root.kind === 'parenthesized') return ddlFunction(root.expression)
+  return root.kind === 'functionCall' ? root : null
 }
