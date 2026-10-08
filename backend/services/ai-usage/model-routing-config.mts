@@ -40,8 +40,6 @@ export const modelRoutingConfig = new DynamicConfig({
 /**
  * The stored pair. Saving validates it (see the registry validator): the provider must own the
  * model and the model must have a price row, so a read never needs to repair a selection.
- *
- * @public The agents' callers read it from the next layer of #2370; nothing in this layer does yet.
  */
 export function getServiceModelSelection(slug: ModelServiceSlug): ModelSelection {
   const fields = modelRoutingConfig.getFields()
@@ -51,7 +49,6 @@ export function getServiceModelSelection(slug: ModelServiceSlug): ModelSelection
   }
 }
 
-/** @public Read by the agent layer from the next layer of #2370. */
 export function getOpenAITransport(): OpenAITransport {
   return modelRoutingConfig.getFields()[OPENAI_TRANSPORT_FIELD] as OpenAITransport
 }

@@ -46,8 +46,6 @@ export function assertSupportedRequest(
  * A single model call returning JSON validated against the request's schema, on whichever provider
  * the caller selected. Every result carries the served model, response id and provider-neutral
  * usage; every billed-but-unusable answer is a `ModelProviderError` carrying its billed response.
- *
- * @public The agents call it from the next layer of #2370; nothing in this layer does yet.
  */
 /* no-mistakes: integration=anthropic */
 /* no-mistakes: integration=openai */
