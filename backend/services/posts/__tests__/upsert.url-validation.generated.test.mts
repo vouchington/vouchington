@@ -39,7 +39,7 @@ describe('upsert.generated (url validation)', () => {
     )
     expect(error.status).toBe(422)
     expect(error.message).toMatch(/blocked/)
-  }, 60_000)
+  })
 
   it('upsertEntityRelation throws 422 when linking post to URL matching a referral program rule', async () => {
     const user = await createTestUser({ administrator: true })
@@ -75,7 +75,7 @@ describe('upsert.generated (url validation)', () => {
       deleted_at: Date | null
     }>
     expect(rows.length).toBe(0)
-  }, 60_000)
+  })
 
   it('upsertEntityRelation throws 422 when only one of multiple URL objects is a referral link', async () => {
     const user = await createTestUser({ administrator: true })
@@ -120,7 +120,7 @@ describe('upsert.generated (url validation)', () => {
       okUrlId,
     )) as Array<{ deleted_at: Date | null }>
     expect(okRows.length).toBe(0)
-  }, 60_000)
+  })
 
   it('upsertEntityRelation succeeds when URL hostname is unrelated to any referral program', async () => {
     const user = await createTestUser({ administrator: true })
@@ -141,7 +141,7 @@ describe('upsert.generated (url validation)', () => {
     const relations = await upsertEntityRelation(user!, metadata, post, [{ id: urlId }])
     expect(relations.length).toBe(1)
     expect(relations[0].object_id).toBe(urlId)
-  }, 60_000)
+  })
 
   it('upsertEntityRelation allows referral-program URL for non-related predicates (e.g. user->save->url)', async () => {
     const user = await createTestUser({ administrator: true })
@@ -165,5 +165,5 @@ describe('upsert.generated (url validation)', () => {
     const relations = await upsertEntityRelation(user!, metadata, user!, [{ id: urlId }])
     expect(relations.length).toBe(1)
     expect(relations[0].object_id).toBe(urlId)
-  }, 60_000)
+  })
 })

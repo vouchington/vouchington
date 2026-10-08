@@ -81,7 +81,7 @@ describe('createCommunityPostFixture community authorization', () => {
     await expect(createCommunityPostFixture(member, archivedComm.id)).rejects.toMatchObject({
       status: 403,
     })
-  }, 60_000)
+  })
 
   it('non-member cannot post in a community', async () => {
     const stranger = await createTestUser()
