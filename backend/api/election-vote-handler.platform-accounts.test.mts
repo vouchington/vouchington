@@ -17,7 +17,7 @@ describe('election-vote-handler platform accounts (via PUT /api/v1/topics/:id/vo
     const creator = await createTestUser({ administrator: true })
     const slug = `platform-vote-${crypto.randomUUID().slice(0, 8)}`
     topicId = await insertTestTopic({ name: slug, slug, createdById: creator.id })
-  }, 60_000)
+  }, 5_000)
 
   it.each(['official', 'system', 'ai_agent'] as const)(
     'returns 403 with OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN for a %s account',
@@ -38,6 +38,6 @@ describe('election-vote-handler platform accounts (via PUT /api/v1/topics/:id/vo
         'Official and automated accounts cannot create community trust signals.',
       )
     },
-    60_000,
+    30_000,
   )
 })

@@ -35,7 +35,7 @@ describe('election-vote-handler retract contract', () => {
       .send({ choice: 'neutral' })
       .expect(422)
     expect(response.body.code).toBe(NEUTRAL_REQUIRES_EXISTING_BALLOT)
-  }, 60_000)
+  }, 30_000)
 
   it('keeps public DELETE Clear available', async () => {
     const topicId = await createTopic()
@@ -49,7 +49,7 @@ describe('election-vote-handler retract contract', () => {
     expect(votes.body.results).not.toContainEqual(
       expect.objectContaining({ user_id: retractUser.id }),
     )
-  }, 60_000)
+  }, 30_000)
 
   it('allows an official account to Clear a historical ballot', async () => {
     const topicId = await createTopic()
@@ -65,5 +65,5 @@ describe('election-vote-handler retract contract', () => {
     expect(response.body.results).not.toContainEqual(
       expect.objectContaining({ user_id: officialUser.id }),
     )
-  }, 60_000)
+  }, 30_000)
 })
