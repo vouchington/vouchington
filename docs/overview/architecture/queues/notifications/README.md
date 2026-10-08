@@ -172,3 +172,9 @@ rechecks the global owner registry under the intent lease before recording a rec
 404/410 cleanup; a stale provider result is ignored.
 
 Copyright reconciliation caps pages per stage through `copyright-notices-work-config`. Continuations carry only unfinished stage cursors and the action sweep evaluation time. They advance the tail even when an individual item fails; retrying the original job and the periodic root sweep retain failed work.
+
+The digest dispatch enqueue accepts an internal queue resource option. It defaults to the normal
+notifications queue and preserves the dispatch payload, retry, priority, and deduplication policy.
+Admission-failure tests close only a uniquely owned real queue and invoke this same producer; the
+scheduler must release its claimed lease without changing unrelated windows. This checks the SDK's
+closed-resource admission boundary, not a server-side write failure.

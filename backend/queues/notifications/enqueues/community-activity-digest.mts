@@ -55,8 +55,19 @@ export function getCommunityActivityDigestDispatchData(
 
 export function enqueueCommunityActivityDigestDispatch(
   data: CommunityActivityDigestDispatchData,
+  options: { queue?: typeof notifications } = {},
 ): EnqueueReturnType {
-  return enqueueDispatchJob(data, {
+  const enqueue = options.queue
+    ? createEnqueueFunction<
+        CommunityActivityDigestDispatchData,
+        'processCommunityActivityDigestDispatch'
+      >({
+        queue: options.queue,
+        queueName: QUEUE_NAME,
+        jobName: 'processCommunityActivityDigestDispatch',
+      })
+    : enqueueDispatchJob
+  return enqueue(data, {
     attempts: 3,
     backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
     removeOnComplete: 100,
