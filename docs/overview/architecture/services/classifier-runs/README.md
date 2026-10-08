@@ -85,9 +85,9 @@ producer asked for.
 
 Lifecycle writes acquire the actor's active-user advisory lock before the subject (through
 `adapter.lockCurrent`) and then the run row; the adapter's configuration is re-resolved under
-those locks. The actor id is read from the immutable receipt without a row lock, then checked
-again under the run lock. Paths that do not need an actor lock take the subject and run in the
-same relative order.
+those locks. The actor id is read from the immutable receipt without a row lock; the durable
+target and resolved actor/configuration are checked under the run lock. Paths that do not need
+an actor lock take the subject and run in the same relative order.
 
 C9's `lockCurrent` also takes its fixed system actor before the RSS item. This applies the same
 order to reservation, preparation reads, supersession and request retirement. It prevents two

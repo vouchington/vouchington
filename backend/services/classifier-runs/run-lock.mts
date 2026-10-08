@@ -78,9 +78,6 @@ export async function lockClassifierRun<C, L, E>(
   const row = rows[0]
   if (!row) return null
   assertRunMatchesTarget(adapter.slug, row, target)
-  if (row.shared_actor_user_id !== actor.shared_actor_user_id) {
-    throw new Error('classifier run actor identity changed')
-  }
   const resolved = await adapter.resolve(target.subject, current, query)
   if (
     !resolved ||
