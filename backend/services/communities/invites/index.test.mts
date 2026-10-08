@@ -41,10 +41,16 @@ describe('index', () => {
     })
 
     it('owner can invite by email', async () => {
-      const invite = await createInvite(owner.id, community.id, {
-        email: 'tests+test-invite@voucha.ai',
+      const email = `tests+invite-${crypto.randomUUID().replaceAll('-', '')}@voucha.ai`
+      const { invite, emailEnqueue } = await createInviteWithEmailEnqueue(owner.id, community.id, {
+        email,
       })
-      expect(invite.invited_email).toBe('tests+test-invite@voucha.ai')
+      expect(invite.invited_email).toBe(email)
+      expect(emailEnqueue).not.toBeNull()
+      const job = await readEnqueuedJob(emails, await emailEnqueue)
+      const data = job.data as { input?: { emailAddress?: string } }
+      expect(job.name).toBe('processSendCommunityInviteEmail')
+      expect(data.input?.emailAddress).toBe(email)
     })
 
     it('includes invited registered user locale in queued email jobs', async () => {
@@ -85,7 +91,9 @@ describe('index', () => {
 
     it('rejects invite for non-existent user', async () => {
       await expect(
-        createInvite(owner.id, community.id, { username: 'nonexistent-user-xyz' }),
+        createInvite(owner.id, community.id, {
+          username: `missing-${crypto.randomUUID().replaceAll('-', '')}`,
+        }),
       ).rejects.toMatchObject({ status: 404 })
     })
 
@@ -140,7 +148,7 @@ describe('index', () => {
       await expect(
         createInvite(owner.id, archivedCommunity.id, { username: invitee.username! }),
       ).rejects.toMatchObject({ status: 403 })
-    }, 60_000)
+    })
   })
 
   describe('redeemInviteCode', () => {
@@ -216,7 +224,7 @@ describe('index', () => {
       })
       await archiveCommunity(archivedComm.id, null)
       await expect(redeemInviteCode(invitee.id, invite.code)).rejects.toMatchObject({ status: 403 })
-    }, 60_000)
+    })
 
     it('rejects redeem if already a member', async () => {
       const existingMember = await createTestUser()
@@ -274,6 +282,6 @@ describe('index', () => {
       await archiveCommunity(archivedCommunity.id, null)
 
       await expect(revokeInvite(owner.id, invite.id)).rejects.toMatchObject({ status: 403 })
-    }, 60_000)
+    })
   })
 })

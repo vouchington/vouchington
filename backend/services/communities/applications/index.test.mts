@@ -89,7 +89,7 @@ describe('index', () => {
           { question: 'Why do you want to join?', field_type: 'long_text', is_required: true },
         ]),
       ).rejects.toMatchObject({ status: 403 })
-    }, 60_000)
+    })
   })
 
   describe('createApplication', () => {
@@ -149,11 +149,17 @@ describe('index', () => {
         visibility: 'private',
       })
       const applicant = await createTestUser()
-      await createApplication(applicant.id, WEB_PROVENANCE, community.id, {})
+      const application = await createApplication(applicant.id, WEB_PROVENANCE, community.id, {})
 
       const result = await searchApplications(community.id)
       expect(result.results.length).toBeGreaterThan(0)
       expect(Object.keys(result.results[0]!).toSorted()).toEqual(applicationKeys)
+      expect(result.results).toHaveLength(1)
+      expect(result.results[0]).toMatchObject({
+        id: application.id,
+        user_id: applicant.id,
+        community_id: community.id,
+      })
     })
   })
 })
