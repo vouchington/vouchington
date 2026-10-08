@@ -1,5 +1,5 @@
 import { mintUUIDv7 } from '@modules/utils/ids'
-import { beginTransaction, read, write } from '@data-stores/psql'
+import { beginTransaction, read, write, type QueryOptions } from '@data-stores/psql'
 import {
   entityRelationMetadatum,
   getEntityRelationIntegrityTargetColumn,
@@ -62,10 +62,12 @@ export async function insertTestRetainedRelationIdentity(
   relationTable: string,
   subjectId: string,
   relationId: string,
+  options: QueryOptions = {},
 ): Promise<void> {
   await write(
     `/* insertTestRetainedRelationIdentity */ INSERT INTO ${retainedRelationTable(relationTable)} (subject_id, id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
     [subjectId, relationId],
+    options,
   )
 }
 
@@ -73,10 +75,12 @@ export async function hasTestRetainedRelationIdentity(
   relationTable: string,
   subjectId: string,
   relationId: string,
+  options: QueryOptions = {},
 ): Promise<boolean> {
   const { rowCount } = await read(
     `/* hasTestRetainedRelationIdentity */ SELECT 1 FROM ${retainedRelationTable(relationTable)} WHERE subject_id = $1 AND id = $2`,
     [subjectId, relationId],
+    options,
   )
   return (rowCount ?? 0) > 0
 }
@@ -115,10 +119,12 @@ export async function readTestRetainedIdentityTraversalBound(
 export async function insertTestRetainedIdentityRoot(
   family: Exclude<RetainedIdentityFamily, 'image'>,
   id: string,
+  options: QueryOptions = {},
 ): Promise<void> {
   await write(
     `/* insertTestRetainedIdentityRoot */ INSERT INTO ${ROOT_TABLES[family]} (id) VALUES ($1)`,
     [id],
+    options,
   )
 }
 
