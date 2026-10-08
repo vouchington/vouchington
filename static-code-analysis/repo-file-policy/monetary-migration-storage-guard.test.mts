@@ -1,15 +1,12 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { checkMonetaryMigration } from './monetary-migration-guard.mts'
-import { initSqlAst } from './sql-ast.mts'
 
 describe('monetary migration storage guard', () => {
-  beforeAll(() => initSqlAst())
-
-  it('requires integer-unit money columns to use BIGINT storage', () => {
+  it('requires integer-unit money columns to use BIGINT storage', async () => {
     const errors: string[] = []
 
-    checkMonetaryMigration(
+    await checkMonetaryMigration(
       'backend/data-stores/psql/migrations/9999-money.sql',
       [
         'CREATE TABLE invoices (',
@@ -29,10 +26,10 @@ describe('monetary migration storage guard', () => {
     ])
   })
 
-  it('rejects BIGINT arrays for integer-unit money columns', () => {
+  it('rejects BIGINT arrays for integer-unit money columns', async () => {
     const errors: string[] = []
 
-    checkMonetaryMigration(
+    await checkMonetaryMigration(
       'backend/data-stores/psql/migrations/9999-money.sql',
       [
         'CREATE TABLE invoices (',
@@ -59,10 +56,10 @@ describe('monetary migration storage guard', () => {
     ])
   })
 
-  it('rejects quoted and schema-qualified custom bigint types', () => {
+  it('rejects quoted and schema-qualified custom bigint types', async () => {
     const errors: string[] = []
 
-    checkMonetaryMigration(
+    await checkMonetaryMigration(
       'backend/data-stores/psql/migrations/9999-money.sql',
       [
         'CREATE TABLE invoices (',
@@ -85,10 +82,10 @@ describe('monetary migration storage guard', () => {
     ])
   })
 
-  it('allows scalar built-in BIGINT and unquoted int8 columns', () => {
+  it('allows scalar built-in BIGINT and unquoted int8 columns', async () => {
     const errors: string[] = []
 
-    checkMonetaryMigration(
+    await checkMonetaryMigration(
       'backend/data-stores/psql/migrations/9999-money.sql',
       [
         'CREATE TABLE invoices (',

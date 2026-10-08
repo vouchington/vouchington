@@ -71,7 +71,7 @@ export async function checkRepoFilePolicy(
   )
 
   checkMigrationSqlGuard(ctx.repoRoot, trackedFiles, errors)
-  checkMonetaryContracts(ctx.repoRoot, trackedFiles, errors, ctx.readTrackedFile)
+  await checkMonetaryContracts(ctx.repoRoot, trackedFiles, errors, ctx.readTrackedFile)
   checkMonetarySnapshot(schema, errors)
   const injectedSnapshot = options.schemaSnapshot !== undefined
   errors.push(...checkRelationalStorage(schema, { enforceCatalogFreshness: !injectedSnapshot }))
