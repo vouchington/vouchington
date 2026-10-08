@@ -171,10 +171,14 @@ describe('get_my_referral_links — real DB', () => {
     })
   })
 
-  it('ignores a user_id argument and keeps to the caller own links', async () => {
-    const page = await mine({ user_id: other.id })
-
-    expect(ids(page)).toEqual([...links].toReversed())
+  it('rejects user_id before dispatch and scopes each caller to their own links', async () => {
+    expect(
+      await callRejectedMcpTool(owner, 'get_my_referral_links', { user_id: other.id }, [
+        'referral-links:read',
+      ]),
+    ).toContain('Invalid tool arguments')
+    expect(ids(await mine())).toEqual([...links].toReversed())
+    expect(ids(await mine({}, other))).toEqual([othersLink])
   })
 
   it('keeps only the links under one program and sanitizes the labels', async () => {

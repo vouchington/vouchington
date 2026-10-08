@@ -58,6 +58,7 @@ const NON_TOOL_FILES = new Set([
   'topic-recommendation-read-output.mts',
   'topic-recommendation-tool-support.mts',
   'tool-schema-contract.mts',
+  'tool-schema-traversal.mts',
 ])
 
 describe('tool registry', () => {
