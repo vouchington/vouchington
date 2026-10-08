@@ -7,6 +7,17 @@ Testing utility library for the Voucha backend.
 
 Tests share one dirty database ([suite rule R1](../../tests.md#test-suite-rules)). Assert owned ids, page with an owned-row cursor such as `encodeUuidCursorBefore(id)`, and take an advisory-lock reservation window such as `acquireTestAiUsageDateReservation` when the assertion is an exact global aggregate. Inject a write failure through a throwing `QueryExecutor` ([R2](../../tests.md#test-suite-rules)). Wait on the promise, queue event, or notification the code returns ([R3](../../tests.md#test-suite-rules)). Lower a DynamicConfig work limit with `overrideDynamicConfigFieldsForTest` instead of building a large fixture ([R4](../../tests.md#test-suite-rules)).
 
+Delegated-write fence tests use
+[`post-delegated-write-race.mts`](../../../../backend/test-helpers/post-delegated-write-race.mts).
+It reserves an owned observer connection from the primary advisory pool before acquiring the
+holder transaction or starting the mutation. Before each observation, it discards its own
+transaction-local statistics snapshot with `pg_stat_clear_snapshot()`. The observer reads the actual PostgreSQL lock wait,
+matching the query marker and holder PID through `pg_blocking_pids`; connection admission alone
+is not evidence of a blocked mutation. Cleanup settles and disposes the holder and observer, then
+drains the mutation, preserving the original failure and distinct cleanup failures. The existing
+lock-wait poll remains; reserving the observer does not eliminate pool acquisition or event-loop
+stalls.
+
 [`createTestDsaPayloadBuildFailure`](../../../../backend/test-helpers/dsa-statement-build-failure-fixtures.mts)
 scopes a DSA build failure to one restriction through the existing builder dependency. Its 404
 case calls the real builder with a missing restriction UUID; its 422 case builds a real payload
