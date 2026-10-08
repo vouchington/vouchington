@@ -1,4 +1,5 @@
 import { getPaginationLimits } from '@services/pagination'
+import { VALID_TOPIC_TYPES } from '@modules/pagination/filters'
 import type { BasicUser } from '@services/users/types'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { getTopicIds } from '@services/topics/search/get-ids'
@@ -16,7 +17,13 @@ import {
 import { objectSchema, outcomeSchema } from './output-schema-shapes.mts'
 import { componentSchema } from './route-response-schema.mts'
 
-type ToolArgs = PagedSearchArgs
+type ToolArgs = PagedSearchArgs & {
+  rss_feed?: boolean
+  slugs?: string[]
+  sort?: 'new' | 'best' | 'relevance'
+  spending_category?: boolean
+  topic_types?: Array<(typeof VALID_TOPIC_TYPES)[number]>
+}
 
 type ToolResult =
   | {
@@ -50,12 +57,19 @@ const tool: Tool<ToolArgs, ToolResult> = {
     name: 'search_topics',
     type: 'function',
     description:
-      'Search topics by name or slug (text_search_query or q), by meaning (semantic_search_query), and by similar-item signals. Use search for hybrid text+semantic search. Returns page_info.end_cursor; pass it as after to get the next page. A malformed or foreign cursor returns { success: false, error: "Invalid cursor" }.',
+      'Search topics by name or slug (text_search_query or q), by meaning (semantic_search_query), and by similar-item signals. Use search for hybrid text+semantic search.',
     parameters: {
       type: 'object',
-      properties: pagedSearchSchemaProperties(
-        'Keyword search. Same as GET /api/v1/topics q: matches topic names and slugs, and #hashtags.',
-      ),
+      properties: {
+        ...pagedSearchSchemaProperties(
+          'Keyword search. Same as GET /api/v1/topics q: matches topic names and slugs, and #hashtags.',
+        ),
+        rss_feed: { type: 'boolean' },
+        slugs: { type: 'array', items: { type: 'string' } },
+        sort: { type: 'string', enum: ['new', 'best', 'relevance'] },
+        spending_category: { type: 'boolean' },
+        topic_types: { type: 'array', items: { type: 'string', enum: [...VALID_TOPIC_TYPES] } },
+      },
       required: [],
     },
     strict: null,
@@ -72,7 +86,17 @@ const tool: Tool<ToolArgs, ToolResult> = {
     (_currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
       const page = await findPageOrNull(args.after, async () => {
-        const prepared = prepareTopicsSearchParams(pagedSearchQuery(args), getPaginationLimits(25))
+        const prepared = prepareTopicsSearchParams(
+          {
+            ...pagedSearchQuery(args),
+            rss_feed: args.rss_feed,
+            slugs: args.slugs,
+            sort: args.sort,
+            spending_category: args.spending_category,
+            topic_types: args.topic_types,
+          },
+          getPaginationLimits(25),
+        )
         const { shouldReturnEmpty, searchOptions } = await resolveTopicsSearchParams(prepared)
         if (shouldReturnEmpty) return { results: [], page_info: EMPTY_PAGE_INFO }
 

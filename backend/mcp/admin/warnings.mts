@@ -37,7 +37,7 @@ export const adminWarningTools = [
   createAdminTool<WarningArgs>({
     name: 'issue_user_warning',
     description:
-      'Issue a warning after checking any linked report belongs to the target user and community. Agent actions do not create training feedback.',
+      'Issue a warning after checking any linked report belongs to the target user and community.',
     scope: 'moderation:write',
     api: { method: 'POST', path: '/api/v1/admin/warnings' },
     parameters: adminInput(

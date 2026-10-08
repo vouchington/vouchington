@@ -19,6 +19,14 @@ type ListArgs = {
   enabled?: boolean | null
   discoverable?: boolean | null
   apply_mutes?: boolean
+  category?: string
+  include_descendants?: boolean
+  publisher_type?: string
+  publisher_type_match?: 'any' | 'all'
+  publisher_types?: string[]
+  topic?: string
+  topic_match?: 'any' | 'all'
+  topics?: string[]
   limit?: number
   after?: string
 }
@@ -41,6 +49,14 @@ export const searchRssFeedsTool: Tool<ListArgs, ListResult> = {
         enabled: { type: ['boolean', 'null'] },
         discoverable: { type: ['boolean', 'null'] },
         apply_mutes: { type: 'boolean', description: 'Exclude your muted feeds, as on REST.' },
+        category: { type: 'string' },
+        include_descendants: { type: 'boolean' },
+        publisher_type: { type: 'string' },
+        publisher_type_match: { type: 'string', enum: ['any', 'all'] },
+        publisher_types: { type: 'array', items: { type: 'string' } },
+        topic: { type: 'string' },
+        topic_match: { type: 'string', enum: ['any', 'all'] },
+        topics: { type: 'array', items: { type: 'string' } },
         limit: { type: 'integer', minimum: 1, description: 'Defaults to 25; clamped to 25.' },
         after: { type: 'string' },
       },
@@ -70,6 +86,14 @@ export const searchRssFeedsTool: Tool<ListArgs, ListResult> = {
           feed_type: args.feed_type,
           enabled: args.enabled === undefined ? undefined : String(args.enabled),
           discoverable: args.discoverable === undefined ? undefined : String(args.discoverable),
+          category: args.category,
+          include_descendants: args.include_descendants,
+          publisher_type: args.publisher_type,
+          publisher_type_match: args.publisher_type_match,
+          publisher_types: args.publisher_types,
+          topic: args.topic,
+          topic_match: args.topic_match,
+          topics: args.topics,
         })
         const { shouldReturnEmpty, searchOptions } = await resolveRssFeedsSearchParams(prepared)
         if (shouldReturnEmpty) return { results: [], page_info: EMPTY_PAGE_INFO }

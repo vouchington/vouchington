@@ -160,8 +160,10 @@ checks tool-local schema references and records client/model-context findings be
 tool names or input envelopes change. [vouchington-clients#218](https://github.com/vouchington/vouchington-clients/issues/218)
 tracks native adoption as a dependent of the producer: the approved mapping uses a closed
 `{option, arguments}` envelope for merged tools and validates each option's structured result.
-Existing production tools retain their
-current contracts until those producer slices land.
+#2493 first factors repeated schemas into tool-local `$defs`, moves shared guidance to server
+instructions, and rejects unknown fields in declared input objects. Tool names stay unchanged;
+public-read and scoped-operation boundaries remain intact, with REST audit exceptions recorded
+in the producer PR. Native adoption continues through the same dependent client issue.
 
 Native agents receive MCP tool schemas and results, including the same authorization, plan, scope,
 rate-limit, quota, audit, and untrusted-content handling as other user-MCP clients. This includes

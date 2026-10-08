@@ -27,6 +27,7 @@ export type ItemArgs = CommonArgs & {
   min_score_follow_rss_feeds?: number
   has_related_posts?: boolean
   media_types?: Array<'article' | 'audio' | 'video'>
+  media_type?: Array<'article' | 'audio' | 'video'>
 }
 export type ReferralArgs = { feed_type: ReferralLinksFeedType; limit?: number; after?: string }
 export type PageInfo = {

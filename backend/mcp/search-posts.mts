@@ -1,12 +1,11 @@
 import { getPaginationLimits } from '@services/pagination'
 import type { BasicUser } from '@services/users/types'
-import type { PostSearchSort } from '@services/posts/search/types'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { getPostIds } from '@services/posts/search/get-ids'
 import { getPostByAnyCachedBatch } from '@services/entity-fetch'
 import { preparePostsSearchParams, resolvePostsSearchParams } from '@services/search-params'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
-import { VALID_FILTERABLE_POST_TYPES, type FilterablePostType } from '@ts-shared/feed-capabilities'
+import type { FilterablePostType } from '@ts-shared/feed-capabilities'
 import {
   EMPTY_PAGE_INFO,
   findPageOrNull,
@@ -20,19 +19,23 @@ import {
 import { resolveReadableThread } from './mcp-post-access.mts'
 import { objectSchema, outcomeSchema } from './output-schema-shapes.mts'
 import { componentSchema } from './route-response-schema.mts'
-
-// The sorts GET /api/v1/posts accepts.
-const POST_SORTS = [
-  'new',
-  'best',
-  'hot',
-  'relevance',
-  'following_new',
-] as const satisfies readonly PostSearchSort[]
+import { POST_SORTS, postSearchFilterSchemaProperties } from './search-post-input.mts'
 
 type ToolArgs = PagedSearchArgs & {
   sort?: (typeof POST_SORTS)[number]
   post_type?: FilterablePostType
+  post_types?: FilterablePostType[]
+  categories?: string[]
+  category?: string
+  creator?: string
+  data_point_topic?: string
+  data_point_vertical?: string
+  review_topic?: string
+  story_id?: string
+  time_range?: '1d' | '1w' | '1m' | '1y' | 'all'
+  topic?: string
+  topics?: string[]
+  url?: string
 }
 
 type ToolResult =
@@ -69,24 +72,14 @@ const tool: Tool<ToolArgs, ToolResult> = {
     name: 'search_posts',
     type: 'function',
     description:
-      'Search for posts using keyword (text_search_query or q), semantic (semantic_search_query), and similar-item signals. Use search for hybrid text+semantic search. Returns page_info.end_cursor; pass it as after to get the next page. A malformed or foreign cursor returns { success: false, error: "Invalid cursor" }.',
+      'Search for posts using keyword (text_search_query or q), semantic (semantic_search_query), and similar-item signals. Use search for hybrid text+semantic search.',
     parameters: {
       type: 'object',
       properties: {
         ...pagedSearchSchemaProperties(
           'Keyword search. Same as GET /api/v1/posts q: matches post text and #hashtags.',
         ),
-        sort: {
-          type: 'string',
-          enum: [...POST_SORTS],
-          description:
-            'Sort order: new (most recent), best (highest voted), hot, relevance (search relevance; the default when searching), following_new',
-        },
-        post_type: {
-          type: 'string',
-          enum: [...VALID_FILTERABLE_POST_TYPES],
-          description: 'Filter by post type',
-        },
+        ...postSearchFilterSchemaProperties(),
       },
       required: [],
     },
@@ -108,7 +101,19 @@ const tool: Tool<ToolArgs, ToolResult> = {
           {
             ...pagedSearchQuery(args),
             ...(args.sort && { sort: args.sort }),
-            ...(args.post_type && { post_types: args.post_type }),
+            ...(args.post_types && { post_types: args.post_types }),
+            ...(!args.post_types && args.post_type && { post_types: args.post_type }),
+            ...(args.categories && { categories: args.categories }),
+            ...(args.category && { category: args.category }),
+            ...(args.creator && { creator: args.creator }),
+            ...(args.data_point_topic && { data_point_topic: args.data_point_topic }),
+            ...(args.data_point_vertical && { data_point_vertical: args.data_point_vertical }),
+            ...(args.review_topic && { review_topic: args.review_topic }),
+            ...(args.story_id && { story_id: args.story_id }),
+            ...(args.time_range && { time_range: args.time_range }),
+            ...(args.topic && { topic: args.topic }),
+            ...(args.topics && { topics: args.topics }),
+            ...(args.url && { url: args.url }),
           },
           getPaginationLimits(25),
         )

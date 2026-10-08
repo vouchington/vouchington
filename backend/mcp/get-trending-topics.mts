@@ -12,6 +12,7 @@ type ToolArgs = {
   time_range?: (typeof TIME_RANGES)[number]
   after?: string
   limit?: number
+  min_score?: number
 }
 
 type ToolResult = { success: true; time_range: string } & TrendingTopicsResult
@@ -39,7 +40,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     name: 'get_trending_topics',
     type: 'function',
     description:
-      'Get topics (cards, bank accounts, rewards programs, etc.) that are trending based on recent post and news activity. Useful for answering "what credit cards are popular right now?" or "what topics are being discussed?". Returns topic IDs with trending scores — use get_topic_details to get full card information. Returns page_info.end_cursor; pass it as after to get the next page.',
+      'Get topics (cards, bank accounts, rewards programs, etc.) that are trending based on recent post and news activity. Useful for answering "what credit cards are popular right now?" or "what topics are being discussed?". Returns topic IDs with trending scores — use get_topic_details to get full card information.',
     parameters: {
       type: 'object',
       properties: {
@@ -58,6 +59,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
           description:
             'Maximum number of results to return. Defaults to 20; values over 100 are clamped to 100.',
         },
+        min_score: { type: 'number', minimum: 0 },
       },
       required: [],
     },
@@ -83,7 +85,11 @@ const tool: Tool<ToolArgs, ToolResult> = {
         getPaginationLimitsForContract(trendingTopicsPaginationParser.queryContract),
       )
 
-      const { results, page_info } = await getTrendingTopics({ ...pagination, timeRange })
+      const { results, page_info } = await getTrendingTopics({
+        ...pagination,
+        timeRange,
+        minScore: args.min_score,
+      })
 
       return { success: true, time_range: timeRange, results, page_info }
     },

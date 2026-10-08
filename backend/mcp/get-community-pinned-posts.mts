@@ -16,7 +16,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     name: 'get_community_pinned_posts',
     type: 'function',
     description:
-      'Get the posts a public community has pinned, in pin order, by its UUID or slug, as a signed-out reader sees them: an anonymous post never names its author, whoever asks. A pinned post the public cannot see is left out. A private, deleted or unknown community returns { success: false, error: "Community not found" }.',
+      'Get the posts a public community has pinned, in pin order, by its UUID or slug, as a signed-out reader sees them: an anonymous post never names its author, whoever asks. A pinned post the public cannot see is left out.',
     parameters: {
       type: 'object',
       properties: {

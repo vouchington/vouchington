@@ -32,7 +32,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
   schema: {
     name: 'list_currencies',
     type: 'function',
-    description: `List the currencies Voucha supports, by code: each one's lowercase ISO 4217 code and its minor unit exponent (the number of decimal places, so 2 for usd and 0 for jpy). Returns at most ${max} currencies per page and page_info.end_cursor; pass it as after to get the next page. A malformed cursor returns { success: false, error: "Invalid cursor" }.`,
+    description: `List the currencies Voucha supports, by code: each one's lowercase ISO 4217 code and its minor unit exponent (the number of decimal places, so 2 for usd and 0 for jpy). Returns at most ${max} currencies per page and page_info.end_cursor; pass it as after to get the next page.`,
     parameters: {
       type: 'object',
       properties: pageInputProperties('Currencies', CURRENCY_PAGE_LIMIT),

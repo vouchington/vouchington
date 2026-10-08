@@ -19,6 +19,7 @@ type ToolArgs = {
   topic_id?: string
   after?: string
   limit?: number
+  min_score?: number
 }
 
 type ToolResult =
@@ -41,7 +42,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     name: 'get_trending_posts',
     type: 'function',
     description:
-      'Get posts that are trending based on time-decay voting. Useful for "what discussions are hot this week?" or "what are the most popular reviews for this card?". Optionally filter by post type or topic. Returns page_info.end_cursor; pass it as after to get the next page.',
+      'Get posts that are trending based on time-decay voting. Useful for "what discussions are hot this week?" or "what are the most popular reviews for this card?". Optionally filter by post type or topic.',
     parameters: {
       type: 'object',
       properties: {
@@ -69,6 +70,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
           description:
             'Maximum number of results to return. Defaults to 20; values over 100 are clamped to 100.',
         },
+        min_score: { type: 'number', minimum: 0 },
       },
       required: [],
     },
@@ -104,6 +106,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
         timeRange,
         postType: args.post_type,
         topicId: topic?.id,
+        minScore: args.min_score,
       })
 
       return { success: true, time_range: timeRange, results, page_info }

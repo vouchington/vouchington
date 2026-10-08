@@ -16,7 +16,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     name: 'get_community_list_item_counts',
     type: 'function',
     description:
-      'Count the entries on a public community\'s curated list, by its UUID or slug, for each item_type: topic, rss_feed, post, url_hostname and url. The counts are what a signed-out reader sees, so post leaves out a post the public cannot see, and they match what get_community_list_items pages through. A private, deleted or unknown community returns { success: false, error: "Community not found" }.',
+      "Count the entries on a public community's curated list, by its UUID or slug, for each item_type: topic, rss_feed, post, url_hostname and url. The counts are what a signed-out reader sees, so post leaves out a post the public cannot see, and they match what get_community_list_items pages through.",
     parameters: {
       type: 'object',
       properties: { community_id: { type: 'string', description: 'Community UUID or slug' } },

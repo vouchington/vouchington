@@ -45,7 +45,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
   schema: {
     name: 'get_community_posts',
     type: 'function',
-    description: `List the approved posts of a public community by its UUID or slug, newest first or by hot, as a signed-out reader sees them: an anonymous post never names its author, whoever asks. q matches post text and may carry #hashtags. Pinned posts are left out of every unfiltered page; their ids come back in pinned_post_ids on the first unfiltered page only (read them with get_community_pinned_posts). Returns at most ${max} posts per page and page_info.end_cursor; pass it as after, with the same sort, to get the next page. A private, deleted or unknown community returns { success: false, error: "Community not found" }. A malformed cursor, or one from a different sort, returns { success: false, error: "Invalid cursor" }.`,
+    description: `List the approved posts of a public community by its UUID or slug, newest first or by hot, as a signed-out reader sees them: an anonymous post never names its author, whoever asks. q matches post text and may carry #hashtags. Pinned posts are left out of every unfiltered page; their ids come back in pinned_post_ids on the first unfiltered page only (read them with get_community_pinned_posts). Returns at most ${max} posts per page and page_info.end_cursor; pass it as after, with the same sort, to get the next page.`,
     parameters: {
       type: 'object',
       properties: {

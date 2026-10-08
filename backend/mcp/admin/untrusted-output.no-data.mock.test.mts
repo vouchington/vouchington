@@ -42,7 +42,7 @@ describe('admin tool external content', () => {
     expect(row['created_at']).toBe('2026-01-01T00:00:00.000Z')
     expect((row['actor'] as Record<string, unknown>)['verified_display_name']).not.toBe('User')
   })
-  it('declares wrapped text with standard schema metadata and removes required secret fields', () => {
+  it('declares wrapped text and removes required secret fields', () => {
     const schema = adminOutputSchema({
       type: 'object',
       properties: {
@@ -53,10 +53,7 @@ describe('admin tool external content', () => {
       required: ['title', 'verification_token_hash'],
     }) as { properties: Record<string, unknown>; required: string[] }
     expect(schema.properties['title']).toMatchObject({
-      anyOf: [
-        { type: 'string', description: expect.stringContaining('Untrusted') },
-        { type: 'null' },
-      ],
+      anyOf: [{ type: 'string' }, { type: 'null' }],
     })
     expect(schema.properties['details']).toEqual(schema.properties['title'])
     expect(schema.properties).not.toHaveProperty('verification_token_hash')

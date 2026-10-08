@@ -25,6 +25,7 @@ const OUTPUT_SCHEMA = outcomeSchema('success', {
 
 type ToolArgs = {
   topic_id: string
+  all?: boolean
 }
 
 type ReferralLinkEntry = {
@@ -61,6 +62,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
           description:
             'The topic identifier (UUID or slug) to look up referral links for. Can be a referral program topic or any topic with a linked referral program.',
         },
+        all: { type: 'boolean' },
       },
       required: ['topic_id'],
     },
@@ -95,6 +97,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
       const { links: allLinks, users } = await getPrioritizedReferralLinks(
         currentUser.id,
         referralProgramId,
+        { all: args.all },
       )
 
       const links: ReferralLinkEntry[] = await Promise.all(

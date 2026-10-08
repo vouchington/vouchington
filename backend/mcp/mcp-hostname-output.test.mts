@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { assertMcpLocalSchemaRefs } from '../test-helpers/mcp-local-schema-refs.mts'
 import { describe, expect, it } from 'vitest'
 import getTopHostnamesTool from './get-top-hostnames.mts'
 import { HOSTNAME_PAGE_LIMIT, mcpHostnameSchema } from './mcp-hostname-output.mts'
@@ -66,7 +67,10 @@ describe('hostname read tool output schemas', () => {
     expect(tool.schema.name).toBe(name)
     expect(found!['additionalProperties']).toBe(false)
     expect(found!['required']).toEqual(Object.keys(page))
-    expect(page['results']).toEqual({ type: 'array', items: mcpHostnameSchema() })
+    expect(page['results']).toEqual({
+      type: 'array',
+      items: mcpHostnameSchema(),
+    })
     expect(Object.keys(propertiesOf(page['page_info']!))).toEqual([
       'has_next_page',
       'start_cursor',
@@ -76,7 +80,7 @@ describe('hostname read tool output schemas', () => {
       success: { const: false },
       error: { type: 'string' },
     })
-    expect(JSON.stringify(tool.meta?.outputSchema)).not.toContain('$ref')
+    assertMcpLocalSchemaRefs(tool.meta?.outputSchema)
   })
 
   it.each(TOOLS)('names the documented REST twin of %s', (_name, tool, path) => {
@@ -97,7 +101,11 @@ describe('hostname read tool output schemas', () => {
     const properties = tool.schema.parameters?.['properties'] as Record<string, unknown>
 
     expect(HOSTNAME_PAGE_LIMIT).toEqual({ min: 1, max: 25, default: 25 })
-    expect(properties['limit']).toMatchObject({ type: 'integer', minimum: 1, maximum: 25 })
+    expect(properties['limit']).toMatchObject({
+      type: 'integer',
+      minimum: 1,
+      maximum: 25,
+    })
     expect(tool.schema.description).toContain('at most 25')
   })
 

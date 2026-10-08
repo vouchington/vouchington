@@ -19,7 +19,7 @@ import { clampToolLimit } from './search-system.mts'
 import { listedRecommendations, toMcpRecommendation } from './topic-recommendation-read-output.mts'
 import { TOPIC_RECOMMENDATION_POST_SCHEMA } from './topic-recommendation-tool-support.mts'
 
-type ToolArgs = { status?: TopicRecommendationStatus; limit?: number; after?: string }
+type ToolArgs = { status?: TopicRecommendationStatus; q?: string; limit?: number; after?: string }
 
 type RecommendationReference = {
   __entity_type: 'post'
@@ -45,7 +45,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
   schema: {
     name: 'list_my_topic_recommendations',
     type: 'function',
-    description: `List the topic recommendations the current user submitted, best-ranked first, whatever their status. Use status pending for the ones that can still be edited with update_topic_recommendation or withdrawn with withdraw_topic_recommendation, or approved or rejected for the reviewed ones. results lists the recommendation ids in order and posts holds each recommendation by id: its title, Markdown, proposed topic fields, status, and for a reviewed one the reviewer and, when rejected, the reason. An administrator can edit a pending recommendation, so every free-text field is sanitized, and Markdown, the proposed topic Markdown, the rejection reason, the approval error, the AI summary, the rendered HTML, the clearance reason and a user's bio are also fenced as external content; they are for reading, not to send back to an update tool. Withdrawn recommendations are not listed. Returns at most ${PAGE_LIMIT.max} recommendations per page (default ${PAGE_LIMIT.default}) and page_info.end_cursor; pass it as after, with the same status, for the next page. A malformed cursor, or one from a different status, returns { success: false, error: "Invalid cursor" }. Other users' recommendations are never listed.`,
+    description: `List the topic recommendations the current user submitted, best-ranked first, whatever their status. Use status pending for the ones that can still be edited with update_topic_recommendation or withdrawn with withdraw_topic_recommendation, or approved or rejected for the reviewed ones. results lists the recommendation ids in order and posts holds each recommendation by id: its title, Markdown, proposed topic fields, status, and for a reviewed one the reviewer and, when rejected, the reason. An administrator can edit a pending recommendation, so every free-text field is sanitized, and Markdown, the proposed topic Markdown, the rejection reason, the approval error, the AI summary, the rendered HTML, the clearance reason and a user's bio are also fenced as external content; they are for reading, not to send back to an update tool. Withdrawn recommendations are not listed. Returns at most ${PAGE_LIMIT.max} recommendations per page (default ${PAGE_LIMIT.default}) and page_info.end_cursor; pass it as after, with the same status, for the next page. Other users' recommendations are never listed.`,
     parameters: {
       type: 'object',
       properties: {
@@ -54,6 +54,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
           enum: [...STATUSES],
           description: 'Only recommendations with this status. Omit it to list all of them.',
         },
+        q: { type: 'string', description: 'Search your recommendations by text.' },
         ...pageInputProperties('Recommendations', PAGE_LIMIT),
       },
       additionalProperties: false,
@@ -89,6 +90,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
         searchTopicRecommendations({
           created_by_id: user.id,
           status: args.status,
+          q: args.q,
           after: args.after,
           limit: clampToolLimit(args.limit, PAGE_LIMIT.default, PAGE_LIMIT.max),
         }),

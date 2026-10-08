@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { assertMcpLocalSchemaRefs } from '../../test-helpers/mcp-local-schema-refs.mts'
 import { describe, expect, it } from 'vitest'
 import getPostAncestorsTool from '../get-post-ancestors.mts'
 import getPostDescendantsTool from '../get-post-descendants.mts'
@@ -109,7 +110,7 @@ describe('post and story read tool output schemas', () => {
       success: { const: false },
       error: { type: 'string' },
     })
-    expect(JSON.stringify(schema)).not.toContain('$ref')
+    assertMcpLocalSchemaRefs(schema)
   })
 
   it.each([

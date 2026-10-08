@@ -61,6 +61,30 @@ Do not widen a schema or remove validation merely to make a mismatch pass. Runti
 structured-result validation remain enforced; broader automated drift detection awaits redesign.
 See the [fixture update flow](../../../../development/testing/backend/api-fixtures.md#update-flow).
 
+**Tool-local schema factoring.** The generated MCP catalog factors exactly repeated subschemas
+within each tool's input or output schema into that schema's root `$defs`, referenced only by
+`#/$defs/<Name>`. Definitions never cross tool or input/output boundaries. Keep the factual shape
+authored once in the domain source and reuse it across related tools; the catalog pass handles
+wire-level factoring. Every output schema remains advertised.
+
+**Strict inputs.** Every declared input object closes unknown fields with
+`additionalProperties: false`, including each branch of a root `oneOf`. Do not close roots without
+declared properties or intentional arbitrary JSON/data maps. Declare and forward the effective
+REST fields within each tool’s public-read or action scope. Preserve its existing privilege and
+fixed-selector boundaries; record fields outside that operation as explicit REST audit exceptions.
+Keep the route-to-input audit and per-family rejection coverage with the MCP contract tests.
+
+**Server instructions and budgets.** Put guidance repeated by at least three tools on the same
+server into `backend/services/mcp-tools/instructions.mts`, phrased to say when it applies. Preserve
+tool-specific predicates, cursor bindings, units, identifiers, and examples beside each tool.
+Instructions do not name tools and may grow by at most 4,000 characters per server over the slice's
+base commit. CI measures generated `tools/list` counts, serialized sizes, core and output-aware
+projections, and instruction length after scope, role, plan, and copyright-switch filtering. The
+approved per-server/grant caps are maintained by the
+[catalog budget test](../../../../../backend/services/mcp-tools/catalog/catalog-budgets.test.mts).
+Personalized topic recommendations also expose the REST filters and `page_info` continuation;
+malformed cursors return the advertised invalid-cursor outcome.
+
 **Normal failure results.** A lookup tool that returns a miss (`{ success: false, error }` or
 `{ found: false, error }`) rather than throwing must admit that shape, or the miss fails
 validation; `outcomeSchema` builds both. `manage_*` tools return only `{ id }` for `remove`,
