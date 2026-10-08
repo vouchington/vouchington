@@ -10,6 +10,16 @@ const PLACEMENT_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]
 
 export type DependencyAuthorization = 'allow' | 'withheld' | 'unknown'
 
+export type MediaDeliveryEdgeEnforcementMode = 'off' | 'report' | 'enforce'
+
+export function parseMediaDeliveryEdgeEnforcementMode(
+  env: NodeJS.ProcessEnv,
+): MediaDeliveryEdgeEnforcementMode {
+  const mode = env.MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE ?? 'off'
+  if (mode === 'off' || mode === 'report' || mode === 'enforce') return mode
+  throw new Error(`Invalid MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE: ${mode}`)
+}
+
 export type PlacementSourcePolicy = {
   placementId: string
   revision: number

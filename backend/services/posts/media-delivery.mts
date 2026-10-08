@@ -1,5 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { isMediaDeliveryEdgeEnforcementEnabled } from '@modules/aws/media-delivery-registry'
+import { getMediaDeliveryEdgeEnforcementMode } from '@modules/aws/media-delivery-registry'
 import {
   lockImageDeliveryMutation,
   prepublishImagePlacementDenials,
@@ -10,7 +10,7 @@ export async function preparePostImageDeliveryMutation(
   query: TransactionQuery,
   input: { postId?: string; imageIds: string[]; retainImageIds?: string[] },
 ): Promise<void> {
-  if (!isMediaDeliveryEdgeEnforcementEnabled()) return
+  if (getMediaDeliveryEdgeEnforcementMode() === 'off') return
   await lockImageDeliveryMutation(query, {
     postIds: input.postId ? [input.postId] : [],
     imageIds: input.imageIds,

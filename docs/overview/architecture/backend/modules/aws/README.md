@@ -67,9 +67,8 @@ credentials are absent.
   one attempt because its send operations have no idempotency token and retrying an ambiguous
   response timeout could deliver duplicate mail.
 - `MEDIA_DELIVERY_REGISTRY_REGION` — required whenever media delivery registry publication is
-  enabled, and therefore for edge enforcement; the DynamoDB registry region (`us-east-1` for the
-  Lambda@Edge viewer authorization), independent of the application `AWS_REGION`. All five
-  `MEDIA_DELIVERY_*` variables are listed in the
+  enabled, and therefore for report or enforce mode; the DynamoDB registry region (`us-east-1` for the
+  Lambda@Edge viewer authorization), independent of the application `AWS_REGION`. The media delivery variables are listed in the
   [environment variable reference](../../../../infrastructure/reference-environment-variables-aws-s3-storage.md#media-delivery).
 
 ## Related

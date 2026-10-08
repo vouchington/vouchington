@@ -26,7 +26,7 @@ describe('copyright case timeline audiences', () => {
     vi.spyOn(CloudFrontClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
     vi.spyOn(DynamoDBClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
     vi.stubEnv('MEDIA_DELIVERY_CLOUDFRONT_DISTRIBUTION_ID', 'test-distribution')
-    vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_ENABLED', 'true')
+    vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE', 'enforce')
     vi.stubEnv('MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED', 'true')
     vi.stubEnv('MEDIA_DELIVERY_REGISTRY_REGION', 'us-east-1')
     vi.stubEnv('MEDIA_DELIVERY_REGISTRY_TABLE', 'test-media-delivery-registry')

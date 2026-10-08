@@ -39,6 +39,7 @@
     "@modules/utils": "workspace:^",
     "@smithy/node-http-handler": "^4.12.1",
     "@ts-shared/deploy-environment": "workspace:^",
+    "@ts-shared/url-signing": "workspace:^",
     "http-errors": "^2.0.1",
     "https-proxy-agent": "^9.1.0"
   },

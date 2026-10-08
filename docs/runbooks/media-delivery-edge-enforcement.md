@@ -1,91 +1,65 @@
 # Media Delivery Edge Enforcement
 
-Operator procedure for turning media-delivery edge enforcement on in an environment. It is
-staff-only guidance. The private infrastructure repository (`vouchington-infra`) owns the
-provider-side changes, the deployed values, and access; this page defines the order, the checks,
-and the evidence. It names no resource identifiers, and the values come from that repository.
-Design background is in the [service guide](../overview/architecture/services/media-delivery-safety/README.md);
-variable semantics are in the [environment variable reference](../overview/infrastructure/reference-environment-variables-aws-s3-storage.md#media-delivery).
+Operator procedure for moving media delivery through `off`, `report`, and `enforce` in an
+environment. The private infrastructure repository owns deployed values, edge behavior, metrics,
+and access. This page defines order and evidence. Design background is in the
+[service guide](../overview/architecture/services/media-delivery-safety/README.md); variable
+semantics are in the [environment variable reference](../overview/infrastructure/reference-environment-variables-aws-s3-storage.md#media-delivery).
 
 ## Why the order matters
 
-Enforcement makes the edge deny every placement route (`/images/placements/*`) that has no allowed
-record in the edge registry. Records reach the registry only through publication, so turning
-enforcement on before the registry is complete makes every placement route return 404.
+The edge denies placement routes and OG cards without an allowed registry record only in `enforce`.
+In `report`, it reads the registry, logs and counts would-be blocks, and serves the request. Both
+modes require registry publication. `off` is the default and performs no edge check. Post image
+reads filter to completed allows only in `enforce`; post mutations maintain the registry in both
+`report` and `enforce`. Copyright intake and legal media actions remain unavailable until `enforce`.
 
-Two more facts set the order:
-
-- A hosted image is projected publicly only after its registry record has published an allow. With
-  publication off, an environment shows no hosted images at all.
-- The infrastructure plan refuses enforcement while publication is off, and copyright intake and
-  legal media actions refuse to run unless both flags are on.
-
-Publication and enforcement are therefore two separate infrastructure changes. Each has its own plan
-and its own apply, and the owner approves each one. Never combine them into one apply.
+Publication, report mode, and enforcement are separate infrastructure changes. Each apply needs
+its own owner-approved plan. Never combine them into one apply.
 
 ## Preconditions
 
-- The owner has approved the plan for each apply before it runs.
-- The private infrastructure configuration supplies the registry table, registry region, and
-  distribution identifier to both the API and the worker tasks. Publication throws on first use
-  when any of the three is missing.
-- Read each environment's current flag values from the private infrastructure repository before
-  you start. If publication is already on, begin at step 3.
+- Read the environment's current values from private infrastructure. If publication is already on,
+  begin with coverage and the report transition.
+- The registry table, region, and distribution identifier reach backend and worker tasks.
+  Publication throws on first use when any is absent.
+- The image-resize Lambda receives the same mode, registry table, and region from infrastructure.
+  The `/og/*` viewer-request check is attached only in `enforce`.
 
-## Enable media-delivery edge enforcement
+## Move through the modes
 
-1. **Turn publication on (first apply).** An infrastructure change sets
-   `MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED` to `true` for the API and the worker and leaves
-   enforcement off. After the owner applies it, redeploy the backend and the worker so the tasks
-   read the new value. Copyright intake and legal media actions stay unavailable until step 6,
-   because they need both flags.
-2. **Let the reconciler drain.** The scheduled registry reconciliation job
-   ([schedule](../../backend/queues/notifications/enqueues/schedules.mts), every five minutes)
-   stages a bounded page of missing or changed records on each sweep and dispatches the unfinished
-   ones for publication, so a large backlog takes several sweeps. Draining means repeating step 3
-   until it returns no rows, not waiting for a single sweep.
-3. **Check coverage.** Run the [coverage query](#coverage-query) against the primary database. It
-   must return zero rows: every current placement has a `completed` registry record, and no
-   `pending`, `claimed`, or `failed` record is left. Each returned row names the gap:
+1. **Turn publication on.** Set `MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED` to `true` for the
+   backend and worker, with `MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE=off`. Redeploy both tasks.
+2. **Let reconciliation drain.** The [scheduled job](../../backend/queues/notifications/enqueues/schedules.mts)
+   stages bounded pages of missing or changed records on each sweep. Repeat the coverage query
+   until it returns zero rows.
+3. **Check coverage.** Run the [coverage query](#coverage-query) against the primary database.
+   Every current placement needs a completed record; pending, claimed, failed, and missing records
+   identify gaps to resolve. A stale-generation rejection requires the
+   [reset and restore runbook](media-delivery-reset-restore.md#supported-workflows). For a transient
+   failure, fix the cause, then replay all failed records through
+   `POST /api/v1/copyright-media-delivery/replays` and return to step 2.
+4. **Compare edge inventory.** Use [workflow B](media-delivery-reset-restore.md#b-edge-registry-rebuild-with-postgresql-intact)
+   to classify each edge key against PostgreSQL and resolve every difference.
+5. **Turn report on.** Apply `MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE=report`, then redeploy backend
+   and worker. The edge records each would-be block with path, placement, and reason, and serves
+   the request. Follow the private infrastructure metric and alarm. Confirm the registry remains
+   current while post mutations run.
+6. **Observe a quiet window.** Report mode must show zero would-be blocks for 24 hours in staging
+   and 7 days in production. The owner may change these window defaults. Investigate every block
+   before continuing. Keep checking coverage as new placements appear.
+7. **Turn enforcement on.** Immediately before the apply, verify both gates: report mode has zero
+   would-be blocks for the quiet window and the coverage query returns zero rows now. Recheck the
+   edge inventory from step 4. With the owner's separate approval, apply
+   `MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE=enforce` and redeploy backend and worker.
+8. **Verify after propagation.** After CloudFront propagation, run
+   `node monitors/lambdas/image-resize.mts <staging|production>`. Set
+   `TEST_IMAGE_PLACEMENT_PATH` to a current allowed route so the monitor proves an allowed image
+   still serves, and set `LAMBDA_FUNCTION_URL` for the direct-access check. Follow the
+   [image-resize guide](../overview/infrastructure/lambdas/image-resize/README.md#development)
+   and the staging `/og/*` warm-cache probe in the infrastructure tracker.
 
-   | `state`              | Meaning                                                           | Action                                    |
-   | -------------------- | ----------------------------------------------------------------- | ----------------------------------------- |
-   | `missing`            | A current placement has no registry record yet.                   | Wait for the next sweep, then recheck.    |
-   | `pending`, `claimed` | The record is still converging.                                   | Wait for the next sweep, then recheck.    |
-   | `failed`             | Delivery gave up on the record. `failure_message` has the reason. | Investigate it in step 4 before any wait. |
-
-4. **Investigate failed rows.** Read each `failure_message`.
-   - A rejection as a stale edge generation means the edge outlived a database restore or reset.
-     Do not replay it: replay reopens the record at the same generation and the edge rejects it
-     again. Follow workflow A or B in the
-     [reset and restore runbook](media-delivery-reset-restore.md#supported-workflows) instead.
-   - For a transient provider or configuration failure, fix the cause first. Then replay through
-     `POST /api/v1/copyright-media-delivery/replays`, which needs a staff account allowed to review
-     copyright notices. The endpoint reopens every failed record at once and takes no filter, so
-     investigate all of them first. Return to step 2 afterward.
-5. **Compare the edge inventory with PostgreSQL.** Use workflow B of the
-   [reset and restore runbook](media-delivery-reset-restore.md#b-edge-registry-rebuild-with-postgresql-intact):
-   export the edge inventory and classify every key against PostgreSQL. This repository ships no
-   code that reads the edge, so the operator does it through the private infrastructure procedure.
-   Resolve every differing key as that workflow directs before continuing.
-6. **Turn enforcement on (second apply).** Rerun step 3 immediately before the apply, because new
-   placements appear continuously and an earlier clean result expires. Only when it returns zero
-   rows and step 5 is clean, a separate infrastructure change sets
-   `MEDIA_DELIVERY_EDGE_ENFORCEMENT_ENABLED` to `true`. It gets its own plan and apply, approved by
-   the owner. Redeploy the backend and the worker afterward.
-7. **Verify after propagation.** Wait for the CloudFront change to finish propagating, then run the
-   [image-resize placement monitor](../../monitors/lambdas/image-resize.mts) against the
-   environment: `node monitors/lambdas/image-resize.mts <staging|production>`. Without input it
-   proves only that a missing tuple and the removed generic route return 404. Set
-   `TEST_IMAGE_PLACEMENT_PATH` to a current allowed placement route
-   (`/images/placements/<placement id>/<placement revision>/<image id>`, built from a `completed`
-   record whose desired state is `allow` and whose source image exists) so the monitor also proves
-   that allowed images still serve. Set `LAMBDA_FUNCTION_URL` to add the direct-access check. See the
-   [image-resize guide](../overview/infrastructure/lambdas/image-resize/README.md#development) for
-   the exact checks.
-
-This page defines no procedure for turning enforcement back off. If step 7 fails, stop and take it
-to the infrastructure owner.
+If step 8 fails, stop and take it to the infrastructure owner.
 
 ## Coverage query
 
@@ -124,8 +98,9 @@ ORDER BY delivery_key
 
 Attach these to the change record for each environment.
 
-- The owner's approval of each of the two plans, and the time of each apply.
-- The zero-row coverage result from immediately before the second apply, with its timestamp.
+- The owner's approval of each publication, report, and enforcement plan, and the time of each apply.
+- The report-mode would-be-block measurements and quiet-window timestamps.
+- The zero-row coverage result from immediately before enforcement, with its timestamp.
 - The edge-inventory comparison from step 5 and the resolution of every differing key.
 - The monitor output from step 7, including whether `TEST_IMAGE_PLACEMENT_PATH` was set.
 

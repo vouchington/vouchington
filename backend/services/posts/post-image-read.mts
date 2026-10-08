@@ -1,5 +1,5 @@
 import { read } from '@data-stores/psql'
-import { isMediaDeliveryEdgeEnforcementEnabled } from '@modules/aws/media-delivery-registry'
+import { getMediaDeliveryEdgeEnforcementMode } from '@modules/aws/media-delivery-registry'
 import sql from 'sql-template-strings'
 import type { PostImagePlacement } from './image-placements.mts'
 
@@ -23,7 +23,7 @@ export async function getPostImages(postId: string): Promise<PostImagePlacement[
       AND images.openai_omni_moderation_created_at IS NOT NULL
     WHERE pi.post_id = ${postId}
       AND (
-        ${isMediaDeliveryEdgeEnforcementEnabled()} = false
+        ${getMediaDeliveryEdgeEnforcementMode() === 'enforce'} = false
         OR EXISTS (
           SELECT 1
           FROM view_media_delivery_registry_current_records delivery
