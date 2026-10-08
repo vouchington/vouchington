@@ -10,8 +10,12 @@ import type { InboundActivity } from './parse-activity.mts'
 import { activityPubInboxDeliveryTransitions } from './durable-delivery-transitions.mts'
 
 export type InboxActivityResult =
-  | { outcome: 'applied'; duplicate: boolean }
-  | { outcome: 'stale'; duplicate: false }
+  | {
+      outcome: 'applied'
+      duplicate: boolean
+      postCommitEnqueue?: ReturnType<typeof dispatchInboundPostCommitAction>
+    }
+  | { outcome: 'stale'; duplicate: false; postCommitEnqueue?: undefined }
 
 export type DurableInboxCompletion = {
   deliveryId: string
@@ -53,13 +57,13 @@ export async function recordAndDispatchInboundActivity(
     }
     throw err
   }
-  if (result.duplicate) {
-    if (result.postCommitAction) dispatchInboundPostCommitAction(result.postCommitAction)
-    return { outcome: 'applied', duplicate: true }
+  return {
+    outcome: 'applied',
+    duplicate: result.duplicate,
+    ...(result.postCommitAction
+      ? { postCommitEnqueue: dispatchInboundPostCommitAction(result.postCommitAction) }
+      : {}),
   }
-
-  if (result.postCommitAction) dispatchInboundPostCommitAction(result.postCommitAction)
-  return { outcome: 'applied', duplicate: false }
 }
 
 async function completeDurableDeliveryOrThrow(

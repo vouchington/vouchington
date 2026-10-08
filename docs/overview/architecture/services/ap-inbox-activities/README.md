@@ -32,11 +32,12 @@ deadline.
   `recordInboxActivity` before dispatch runs, so an unrecognized type must not fail the request.
 - `recordAndDispatchInboundActivity(remoteActor, activity)` — the route-facing entry point that
   commits `recordInboxActivity` and the core database effect in one PostgreSQL transaction. A
-  failure rolls both back; a successful Follow yields an Accept intent that is enqueued only after
-  commit. Duplicate Follow recovery re-resolves and restores the guarded relation in that same
-  transaction before returning an Accept intent. Fenced durable completion also shares the
-  transaction, so losing the delivery lease rolls back the dedup marker or recovered relation
-  rather than committing work that can no longer be retried.
+  failure rolls both back. A successful Follow, or duplicate Follow recovery while its relation is
+  active, starts the Accept enqueue only after commit and returns its promise in
+  `postCommitEnqueue`. The field is absent when no Accept is scheduled, including a replay of a
+  Follow that has already been undone. Fenced durable completion also shares the transaction, so
+  losing the delivery lease rolls back the dedup marker or recovered relation rather than
+  committing work that can no longer be retried; that stale result does not enqueue an Accept.
 
 Durable deliveries checkpoint `verified_at` and `remote_actor_id` as a pair. A retry still parses
 the body and checks instance approval, but loads that active actor by database ID from the

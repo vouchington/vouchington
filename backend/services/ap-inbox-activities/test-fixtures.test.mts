@@ -1,12 +1,22 @@
 import { describe, it, expect } from 'vitest'
-import { waitForDeliverActivityJobs } from '@voucha/test-helpers/ap-inbox-activity-fixtures'
+import { randomUUID } from 'node:crypto'
+import { readEnqueuedJob } from '@voucha/test-helpers'
+import { acceptJobsFor } from '@voucha/test-helpers/ap-inbox-activity-fixtures'
+import { activitypubDelivery } from '@queues/activitypub-delivery/queues'
+import { enqueueDeliverAcceptActivity } from '@queues/activitypub-delivery/enqueues'
 
-// Keep this queue-backed wait test in the service project, whose global setup owns the real
-// ActivityPub delivery queue. The pure backend-test-helpers project does not initialize it.
-describe('waitForDeliverActivityJobs', () => {
-  it('retries until the timeout elapses when the predicate never matches', async () => {
-    const jobs = await waitForDeliverActivityJobs(() => false, 50)
+describe('acceptJobsFor', () => {
+  it('selects an Accept job returned by the real enqueue function', async () => {
+    const actorId = randomUUID()
+    const followActivityId = `https://remote.example/activities/${randomUUID()}`
+    const enqueued = await enqueueDeliverAcceptActivity({
+      sourceUserId: randomUUID(),
+      inboxUrl: 'https://remote.example/inbox',
+      followActivityId,
+      followActorUri: `https://remote.example/users/${actorId}`,
+    })
+    const acceptJob = await readEnqueuedJob(activitypubDelivery, enqueued)
 
-    expect(Array.isArray(jobs)).toBe(true)
+    expect(acceptJobsFor([acceptJob], followActivityId)).toEqual([acceptJob.data])
   })
 })

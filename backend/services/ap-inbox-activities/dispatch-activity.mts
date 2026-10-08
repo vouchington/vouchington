@@ -118,15 +118,15 @@ export async function recoverDuplicateFollow(
 // one — including a resend of an already-active relation's Follow id — because the Accept
 // acknowledges the *inbound activity*, not a local state transition. remoteActor.inbox_url/actor_uri
 // (not the raw activity.actor string) are used since get-or-fetch.mts already validated them against
-// the fetched actor document. Fire-and-forget: enqueue failures are reported internally by the
-// glide-mq enqueue wrapper (see reportRejectedEnqueue), and must not fail the inbound request or
-// cause recordAndDispatchInboundActivity to roll back and re-process the Follow.
+// the fetched actor document. The enqueue wrapper reports failures internally (see
+// reportRejectedEnqueue); returning its promise makes completion observable without changing the
+// route or durable-worker response contracts.
 function sendFollowAccept(
   remoteActor: RemoteActorRow,
   activity: InboundActivity,
   targetUserId: string,
-): void {
-  void enqueueDeliverAcceptActivity({
+): ReturnType<typeof enqueueDeliverAcceptActivity> {
+  return enqueueDeliverAcceptActivity({
     sourceUserId: targetUserId,
     inboxUrl: remoteActor.inbox_url,
     followActivityId: activity.id,
@@ -134,8 +134,10 @@ function sendFollowAccept(
   })
 }
 
-export function dispatchInboundPostCommitAction(action: InboundPostCommitAction): void {
-  sendFollowAccept(action.remoteActor, action.activity, action.targetUserId)
+export function dispatchInboundPostCommitAction(
+  action: InboundPostCommitAction,
+): ReturnType<typeof enqueueDeliverAcceptActivity> {
+  return sendFollowAccept(action.remoteActor, action.activity, action.targetUserId)
 }
 
 async function handleUndoFollow(
