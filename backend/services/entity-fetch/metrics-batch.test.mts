@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { it, expect, describe } from 'vitest'
 import { getUserMetricsByAnyBatch } from '@services/users/metrics-batch'
 import {
@@ -34,8 +35,8 @@ describe('metrics-batch', () => {
   })
 
   it('getUserMetricsByAnyBatch fetches by usernames', async () => {
-    const username1 = `metricsuser1-${Date.now()}-${Math.floor(Math.random() * 1000000)}`
-    const username2 = `metricsuser2-${Date.now()}-${Math.floor(Math.random() * 1000000)}`
+    const username1 = `metricsuser1-${randomUUID().slice(0, 12)}`
+    const username2 = `metricsuser2-${randomUUID().slice(0, 12)}`
 
     const user1 = (await createTestUser({ username: username1 })) as PrivateUser
     const user2 = (await createTestUser({ username: username2 })) as PrivateUser
@@ -48,10 +49,7 @@ describe('metrics-batch', () => {
 
   it('getUserMetricsByAnyBatch returns null for non-existent users while preserving order', async () => {
     const user = (await createTestUser({})) as PrivateUser
-    const results = await getUserMetricsByAnyBatch([
-      '00000000-0000-0000-0000-000000000099',
-      user.id,
-    ])
+    const results = await getUserMetricsByAnyBatch([randomUUID(), user.id])
 
     expect(results).toHaveLength(2)
     expect(results[0]).toBeNull()
@@ -60,7 +58,7 @@ describe('metrics-batch', () => {
 
   it('getUserMetricsByAnyBatch returns public counts for mixed identifiers', async () => {
     const fixture = await createUserProfileFixture({
-      suffix: `batch-${Date.now()}`,
+      suffix: `batch-${randomUUID().slice(0, 12)}`,
     })
 
     const results = await getUserMetricsByAnyBatch([fixture.owner.username!, fixture.owner.id])
@@ -87,16 +85,16 @@ describe('metrics-batch', () => {
 
   it(
     'getUserMetricsByAnyBatch excludes non-public authored posts from public counts',
-    { timeout: 60_000 },
+    { timeout: 30_000 },
     async () => {
       const fixture = await createUserProfileFixture({
-        suffix: `private-${Date.now()}`,
+        suffix: `private-${randomUUID().slice(0, 12)}`,
       })
 
       const privateDiscussion = await createTestPost({
         user: fixture.owner,
         post_type: 'discussion',
-        title: `Private discussion ${Date.now()}`,
+        title: `Private discussion ${randomUUID().slice(0, 12)}`,
         markdown: 'Hidden discussion',
         broadcast: 'users',
       })
@@ -113,7 +111,7 @@ describe('metrics-batch', () => {
 
       await createPost(fixture.owner, WEB_PROVENANCE, {
         post_type: 'review',
-        title: `Private review ${Date.now()}`,
+        title: `Private review ${randomUUID().slice(0, 12)}`,
         markdown:
           'This product has been a reliable part of my daily routine for several months now. The quality is consistently high and the value for money is excellent. I would recommend it to anyone looking for a dependable solution.',
         broadcast: 'users',
