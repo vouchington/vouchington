@@ -62,7 +62,7 @@ describe('crawl-url.ssrf', () => {
 
       expect(await getLatestCrawlNetworkError(url!.id)).toBe('ssrf')
       expect(await getLatestCrawlStatusCode(url!.id)).toBe(403)
-    }, 60_000)
+    }, 30_000)
 
     it('re-throws CrawlerSsrfError after recording the crawl', async () => {
       const random = Math.random().toString(36).slice(2, 15)
@@ -84,7 +84,7 @@ describe('crawl-url.ssrf', () => {
       }
 
       expect(thrownError).toBeInstanceOf(CrawlerSsrfError)
-    }, 60_000)
+    }, 30_000)
 
     it('calls resolveSafeCrawlerAddresses before CrawlerHtml', async () => {
       const random = Math.random().toString(36).slice(2, 15)
@@ -103,6 +103,6 @@ describe('crawl-url.ssrf', () => {
       expect(resolveSafeCrawlerAddresses).toHaveBeenCalledWith(`https://${hostname}/page`, {
         timeoutMs: undefined,
       })
-    }, 60_000)
+    }, 30_000)
   })
 })
