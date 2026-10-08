@@ -6,7 +6,7 @@ Generates a concise headline and AI summary markdown for a news story, given the
 
 ## Pattern
 
-Single-call agent — one OpenRouter OpenResponses call, no tool use. Uses `parseLLMJsonResponse` to extract structured JSON from the LLM response. Terminal provider metadata settles the shared usage ledger directly rather than using the direct OpenAI background-response reconciler.
+Single-call agent — one schema-constrained `generateJson` call on the `{ provider, model }` the `story-post` setting holds (Haiku 5.5 by default), no tool use. The provider layer validates the JSON answer against the title and summary schema, and the shared usage ledger is settled by `callAgentModel`; direct OpenAI keeps the background-response reconciler, Anthropic and OpenRouter do not.
 
 ## Inputs
 
@@ -15,8 +15,8 @@ Single-call agent — one OpenRouter OpenResponses call, no tool use. Uses `pars
 
 ## Outputs
 
-- `title` — concise neutral headline, max 100 characters, no publication names. Falls back to `story.title` if the response is unparseable.
-- `ai_summary_markdown` — 2–3 sentence markdown summary. Empty string on fallback.
+- `title` — concise neutral headline, max 100 characters, no publication names. Falls back to `story.title` (or `Story`) when the model returns an empty title.
+- `ai_summary_markdown` — 2–3 sentence markdown summary. A blank summary is rejected, so the job fails rather than saving an empty one.
 
 ## Rules
 

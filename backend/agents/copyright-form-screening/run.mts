@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
-import { callRecordingAgentResponseUsage, DEFAULT_AGENT_MODEL } from '@agents/_shared'
-import { extractTextFromOpenAIResponse } from '@modules/openai-utils'
+import { callAgentModel } from '@agents/_shared'
+import type { ModelSelection } from '@modules/model-providers/types'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
 import {
   claimCopyrightFormScreening,
@@ -11,13 +11,19 @@ import {
   type CopyrightFormIntakeForScreening,
   getCopyrightFormIntakeForScreening,
 } from '@services/copyright-notices/form-screening-intake'
-import { callCopyrightFormScreeningModel } from './model.mts'
-import { parseCopyrightFormScreeningOutput } from './output.mts'
+import {
+  callCopyrightFormScreeningModel,
+  type CopyrightFormScreeningModelCaller,
+} from './model.mts'
 
 const PROMPT_VERSION = 'copyright-form-screening-v3'
 
+export type { CopyrightFormScreeningModelCaller } from './model.mts'
+
 export async function runCopyrightFormScreeningAgent(
   submissionId: string,
+  selection: ModelSelection,
+  callModel: CopyrightFormScreeningModelCaller = callCopyrightFormScreeningModel,
 ): Promise<'not_obviously_invalid' | 'invalid_or_spam' | null> {
   const intake = await getCopyrightFormIntakeForScreening(submissionId)
   if (!intake) return null
@@ -28,13 +34,14 @@ export async function runCopyrightFormScreeningAgent(
       await sanitizePromptInjection(serializeCopyrightFormScreeningInput(intake)),
       { source: 'copyright_form', contentType: 'copyright-complaint' },
     )
-    const response = await callRecordingAgentResponseUsage(
-      () => callCopyrightFormScreeningModel(safeInput),
-      { agentSlug: 'copyright-form-screening' },
-    )
-    const { recommendation, rationale, guidance } = parseCopyrightFormScreeningOutput(
-      extractTextFromOpenAIResponse(response),
-    )
+    const { output, model } = await callAgentModel({
+      agentSlug: 'copyright-form-screening',
+      selection,
+      input: safeInput,
+      safetyIdentifier: createHash('sha256').update(submissionId).digest('hex'),
+      callModel,
+    })
+    const { recommendation, rationale, guidance } = output
     const result = await completeCopyrightFormScreening(attempt, {
       intakeId: intake.intakeId,
       inputSha256: createHash('sha256').update(safeInput).digest(),
@@ -42,7 +49,7 @@ export async function runCopyrightFormScreeningAgent(
       rationale,
       guidance,
       promptVersion: PROMPT_VERSION,
-      model: DEFAULT_AGENT_MODEL,
+      model,
     })
     return result ? recommendation : null
   } catch (err) {

@@ -1,6 +1,7 @@
 import type { Job } from 'glide-mq'
 import type { CopyrightEmailIntakeJobData } from '@queues/ai-agents/types'
 import { isCopyrightIntakeEnabled } from '@services/copyright-notices'
+import { loadServiceModelSelection } from '@services/ai-usage'
 import {
   runCopyrightEmailIntakeAgent,
   type CopyrightEmailIntakeModelCaller,
@@ -11,6 +12,10 @@ export async function processCopyrightEmailIntake(
   callModel?: CopyrightEmailIntakeModelCaller,
 ): Promise<{ success: true }> {
   if (!isCopyrightIntakeEnabled()) return { success: true }
-  await runCopyrightEmailIntakeAgent(job.data.intake_id, callModel)
+  await runCopyrightEmailIntakeAgent(
+    job.data.intake_id,
+    await loadServiceModelSelection('copyright-email-intake'),
+    callModel,
+  )
   return { success: true }
 }

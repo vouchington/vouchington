@@ -26,7 +26,10 @@ export function createAutotaggerAgentRegistration(): ClassifierRunRegistration<
           createClient: (hooks, current) =>
             createAutotaggerAgentClient({
               postId: current.subject.postId,
-              modelProvider: current.resolved.configuration.modelProvider,
+              selection: {
+                provider: current.resolved.configuration.modelProvider,
+                model: current.resolved.configuration.modelName,
+              },
               classifierRunId: hooks.classifierRunId,
               beforeAttempt: hooks.beforeAttempt,
             }),

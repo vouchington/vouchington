@@ -5,7 +5,7 @@ export type OpenAIResponse = Pick<Response, 'id' | 'output'> & {
   status: 'completed'
   output_text: string
   usage?: OpenAIUsage
-  // The model OpenAI actually served — a dated snapshot (e.g. `gpt-5.4-nano-2026-03-17`), not
+  // The model OpenAI actually served — a dated snapshot (e.g. `gpt-6-luna-2026-10-01`), not
   // necessarily the requested alias. Ledger writes must use this, not the request param, so a
   // routing mismatch is recorded rather than silently priced against the wrong model.
   model?: Response['model']

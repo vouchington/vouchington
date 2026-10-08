@@ -29,7 +29,12 @@ export function createStructuredDecisionClient(
     decide: async (request, signal) => {
       validateRequest(request)
       throwIfAborted(signal)
-      const dispatch = createTransportRequest(options.transport, options.apiKey, request)
+      const dispatch = createTransportRequest(
+        options.transport,
+        options.apiKey,
+        request,
+        options.model,
+      )
       const requestStartedAt = new Date()
       // The client makes exactly one attempt, so this is the only chance to recheck a billing
       // precondition (e.g. the daily spend cap) close to the physical request.

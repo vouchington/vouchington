@@ -1,13 +1,15 @@
-import {
-  DEFAULT_AGENT_MODEL,
-  QUEUED_BACKGROUND_RETRY_POLICY,
-  createOpenRouterResponse,
-  toOpenRouterModel,
-} from '@agents/_shared'
+import { QUEUED_BACKGROUND_RETRY_POLICY, type AgentModelCaller } from '@agents/_shared'
+import { generateJson } from '@modules/model-providers/generate'
 import { renderContentPolicyForPrompt } from '@services/moderation/content-policy'
 
-/** The model-calling seam. Injectable so tests can exercise the agent without OpenAI. */
-export type DisputeModelCaller = (input: string, safetyIdentifier: string) => Promise<unknown>
+export type DisputeOutput = {
+  recommended_action: 'no_action' | 'remove' | 'annotate' | 'dismiss'
+  public_response: string
+  internal_response: string
+}
+
+/** The model-calling seam. Injectable so tests can exercise the agent without a provider. */
+export type DisputeModelCaller = AgentModelCaller<DisputeOutput>
 
 const DISPUTE_JSON_SCHEMA = {
   type: 'object',
@@ -49,31 +51,29 @@ Respond with a JSON object containing:
 - Default to "dismiss" when uncertain and the claim does not meet the policy bar.
 - Your response will be reviewed and edited by a human moderator before anything is communicated.`
 
-/* v8 ignore start -- thin OpenRouter integration wrapper; exercised by credentialed *.openrouter.test.mts */
-export function callDisputeModel(
-  input: string,
-  safetyIdentifier: string,
-): Promise<Awaited<ReturnType<typeof createOpenRouterResponse>>> {
-  return createOpenRouterResponse(
+/* v8 ignore start -- thin provider integration wrapper; exercised by credentialed *.anthropic.test.mts */
+export const callDisputeModel: DisputeModelCaller = (
+  input,
+  safetyIdentifier,
+  { selection, openaiTransport },
+) =>
+  generateJson(
+    selection,
     {
-      model: toOpenRouterModel(DEFAULT_AGENT_MODEL),
       instructions: SYSTEM_PROMPT,
       input,
-      safety_identifier: safetyIdentifier,
-      metadata: { type: 'dispute-resolution' },
-      service_tier: 'flex',
-      // SYSTEM_PROMPT embeds the full content policy — a stable, large static prefix across
-      // every dispute. Versioned so a prompt edit can be paired with a key bump to invalidate.
-      prompt_cache_key: 'dispute-resolution-v1',
-      text: {
-        format: {
-          type: 'json_schema',
-          name: 'dispute_resolution',
-          schema: DISPUTE_JSON_SCHEMA,
-        },
-      },
-    } as unknown as Parameters<typeof createOpenRouterResponse>[0],
-    { maxRetries: QUEUED_BACKGROUND_RETRY_POLICY.maxRetries },
+      schemaName: 'dispute_resolution',
+      schema: DISPUTE_JSON_SCHEMA,
+      // The schema (enum included) already validated the answer.
+      parse: value => value as DisputeOutput,
+      maxOutputTokens: 1500,
+      safetyIdentifier,
+      // SYSTEM_PROMPT embeds the full content policy, a stable large static prefix. Versioned so a
+      // prompt edit can be paired with a key bump to invalidate.
+      promptCacheKey: 'dispute-resolution-v1',
+      flex: true,
+      maxRetries: QUEUED_BACKGROUND_RETRY_POLICY.maxRetries,
+    },
+    { openaiTransport },
   )
-}
 /* v8 ignore stop */

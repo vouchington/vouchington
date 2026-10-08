@@ -3,7 +3,7 @@ import { Queue, Worker } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import type { CopyrightFormScreeningJobData } from '@queues/ai-agents/types'
-import * as openaiProvider from '@modules/openai-utils/create-response'
+import * as modelProviders from '@modules/model-providers/generate'
 import { createClearScreenedForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { countCopyrightActiveRestrictionsForNotice } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { processCopyrightFormScreening } from './process-copyright-form-screening.mts'
@@ -11,11 +11,11 @@ import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/service
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
-vi.mock(import('@modules/openai-utils/create-response'), async importOriginal => ({
+vi.mock(import('@modules/model-providers/generate'), async importOriginal => ({
   ...(await importOriginal()),
-  createOpenAIResponse: vi.fn<typeof openaiProvider.createOpenAIResponse>(async () => {
-    throw new Error('Completed screening must not call the provider')
-  }),
+  generateJson: vi.fn<VitestLooseMock>(() =>
+    Promise.reject(new Error('Completed screening must not call the provider')),
+  ),
 }))
 
 describe('copyright screening worker with real GlideMQ and PostgreSQL', () => {
@@ -48,7 +48,7 @@ describe('copyright screening worker with real GlideMQ and PostgreSQL', () => {
       if (!duplicate) throw new Error('Expected duplicate owned wakeup')
       await duplicateCompleted.promise
       expect(await duplicate.getState()).toBe('completed')
-      expect(openaiProvider.createOpenAIResponse).not.toHaveBeenCalled()
+      expect(modelProviders.generateJson).not.toHaveBeenCalled()
       expect(errors).toEqual([])
       await expect(
         countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),

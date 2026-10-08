@@ -72,7 +72,7 @@ describe('reconcileExpiredBackgroundResponse', () => {
     vi.mocked(retrieveOpenAIResponse).mockResolvedValueOnce(
       makeSdkTextResponse('done', {
         id: row.responseId,
-        model: 'gpt-5.4-nano-2026-03-17',
+        model: 'gpt-6-luna-2026-10-01',
         service_tier: 'flex',
         usage: makeUsage(321, 654),
       }),
@@ -88,7 +88,7 @@ describe('reconcileExpiredBackgroundResponse', () => {
       outputTokens: 654,
     })
     expect(record).toMatchObject({
-      model: 'gpt-5.4-nano-2026-03-17',
+      model: 'gpt-6-luna-2026-10-01',
       service_tier_id: 'flex',
     })
   })
@@ -98,7 +98,7 @@ describe('reconcileExpiredBackgroundResponse', () => {
     vi.mocked(retrieveOpenAIResponse).mockResolvedValueOnce(
       makeSdkTextResponse('done', {
         id: row.responseId,
-        model: 'gpt-5.4-nano-2026-03-17',
+        model: 'gpt-6-luna-2026-10-01',
         service_tier: 'flex',
         usage: makeUsage(321, 654),
       }),
@@ -129,7 +129,7 @@ describe('reconcileExpiredBackgroundResponse', () => {
       makeSdkResponse({
         id: row.responseId,
         status: 'cancelled',
-        model: 'gpt-5.4-nano-2026-03-17',
+        model: 'gpt-6-luna-2026-10-01',
         service_tier: 'flex',
         usage: makeUsage(111, 222),
       }),

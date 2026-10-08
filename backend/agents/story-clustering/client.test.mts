@@ -7,6 +7,10 @@ import { reserveSyntheticRunId } from '@voucha/test-helpers/data-stores/psql/cla
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 import { createStoryClusteringClient } from './client.mts'
+import {
+  JEV_OPENROUTER_SELECTION,
+  JEV_TYPESAFE_SELECTION,
+} from '@voucha/test-helpers/agents/classifiers/fixtures'
 
 const CRITERIA = ['story:a', 'rss_feed_item:b', 'none'] as const
 
@@ -53,7 +57,7 @@ describe('createStoryClusteringClient', () => {
     const fetch = provider(calls)
     const beforeAttempt = vi.fn<() => Promise<void>>(async () => void calls.push('reserve'))
     const client = createStoryClusteringClient(
-      { classifierRunId, modelProvider: 'openrouter', beforeAttempt },
+      { classifierRunId, selection: JEV_OPENROUTER_SELECTION, beforeAttempt },
       { fetch, apiKey: 'test-provider-key' },
     )
 
@@ -71,7 +75,7 @@ describe('createStoryClusteringClient', () => {
       throw new Error('attempt cap reached')
     })
     const client = createStoryClusteringClient(
-      { classifierRunId, modelProvider: 'openrouter', beforeAttempt },
+      { classifierRunId, selection: JEV_OPENROUTER_SELECTION, beforeAttempt },
       { fetch, apiKey: 'test-provider-key' },
     )
 
@@ -100,7 +104,7 @@ describe('createStoryClusteringClient', () => {
       })
     })
     const client = createStoryClusteringClient(
-      { classifierRunId, modelProvider: 'openrouter', beforeAttempt: async () => {} },
+      { classifierRunId, selection: JEV_OPENROUTER_SELECTION, beforeAttempt: async () => {} },
       { fetch, apiKey: 'test-provider-key' },
     )
 
@@ -110,7 +114,7 @@ describe('createStoryClusteringClient', () => {
   it('cannot be built for a provider it has no key source for', () => {
     expect(() =>
       createStoryClusteringClient(
-        { classifierRunId, modelProvider: 'typesafe', beforeAttempt: async () => {} },
+        { classifierRunId, selection: JEV_TYPESAFE_SELECTION, beforeAttempt: async () => {} },
         { apiKey: 'test-provider-key' },
       ),
     ).toThrow("no API key source for provider 'typesafe'")
@@ -122,7 +126,7 @@ describe('createStoryClusteringClient', () => {
     expect(() =>
       createStoryClusteringClient({
         classifierRunId,
-        modelProvider: 'openrouter',
+        selection: JEV_OPENROUTER_SELECTION,
         beforeAttempt: async () => {},
       }),
     ).toThrow('API key is required')

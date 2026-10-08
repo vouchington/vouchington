@@ -1,14 +1,9 @@
-import {
-  parseLLMJsonResponse,
-  DEFAULT_AGENT_MODEL,
-  callRecordingAgentResponseUsage,
-} from '@agents/_shared'
-import { extractTextFromOpenAIResponse } from '@modules/openai-utils'
+import { callAgentModel } from '@agents/_shared'
+import type { ModelSelection } from '@modules/model-providers/types'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
 import {
   getModerationAppealByIdFromPrimary,
   createModerationAppealDraft,
-  type ModerationAppealAction,
 } from '@services/moderation-appeals'
 import { getUserWarningById } from '@services/user-warnings'
 import { getCommunityBanById } from '@services/communities/bans/get'
@@ -27,10 +22,12 @@ export interface AppealModelInput {
 /**
  * Runs the AI appeal-resolution agent for a single moderation appeal.
  * Updates the appeal with ai_public_response, ai_internal_response, recommended_action.
- * `callModel` defaults to the real OpenAI call and is injected in tests.
+ * The caller passes the `{ provider, model }` its service setting holds; `callModel` defaults to
+ * the real provider call and is injected in tests.
  */
 export async function runAppealResolutionAgent(
   input: AppealModelInput,
+  selection: ModelSelection,
   callModel: AppealModelCaller = callAppealModel,
 ): Promise<void> {
   const { appealId, rerunById } = input
@@ -92,44 +89,24 @@ export async function runAppealResolutionAgent(
   ].join('\n')
 
   const safetyIdentifier = appeal.appellant_user_id
-  // Record from what was actually spent (both on success and on a failed/incomplete response,
-  // which still billed tokens), independent of whether the response below parses — a malformed
-  // response still billed real tokens, and extractTextFromOpenAIResponse throws on a
-  // completed-but-unextractable response (e.g. a refusal item), which must not skip recording.
-  const response = await callRecordingAgentResponseUsage(
-    () => callModel(userInput, safetyIdentifier),
-    {
-      agentSlug: 'appeal-resolution',
-      communityId: appeal.community_id,
-      postId: appeal.post_id,
-      responseProvider: 'openrouter',
-    },
-  )
-
-  const text = extractTextFromOpenAIResponse(response)
-
-  const parsed = parseLLMJsonResponse<{
-    recommended_action: string
-    public_response: string
-    internal_response: string
-  }>(text)
-
-  const validActions = new Set<string>(['accept', 'deny', 'reduce'])
-  if (
-    !parsed ||
-    !validActions.has(parsed.recommended_action) ||
-    typeof parsed.public_response !== 'string' ||
-    typeof parsed.internal_response !== 'string'
-  ) {
-    throw new TypeError(`runAppealResolutionAgent: invalid response shape: ${text}`)
-  }
+  // Usage is recorded from what was actually spent: on success, and for a billed answer that
+  // failed validation or did not complete, which still billed tokens.
+  const result = await callAgentModel({
+    agentSlug: 'appeal-resolution',
+    selection,
+    input: userInput,
+    safetyIdentifier,
+    callModel,
+    communityId: appeal.community_id,
+    postId: appeal.post_id,
+  })
 
   await createModerationAppealDraft({
     appealId,
-    recommendedAction: parsed.recommended_action as ModerationAppealAction,
-    aiPublicResponse: parsed.public_response,
-    aiInternalResponse: parsed.internal_response,
-    model: DEFAULT_AGENT_MODEL,
+    recommendedAction: result.output.recommended_action,
+    aiPublicResponse: result.output.public_response,
+    aiInternalResponse: result.output.internal_response,
+    model: result.model,
   })
 }
 

@@ -11,7 +11,10 @@ import { closeScopedDynamicConfigContext } from '@voucha/test-helpers/dynamic-co
 import { getLatestJudgementForEntity } from '@services/moderation-reports/judgements'
 import { moderationAiConfig } from '@services/moderation'
 import { runReportJudgementAgent } from './run.mts'
-import { makeReportJudgementModelCaller } from '@voucha/test-helpers/agents/report-judgement/fixtures'
+import {
+  makeAgentModelCaller,
+  TEST_MODEL_SELECTION,
+} from '@voucha/test-helpers/agents/model-call-result'
 
 describe('runReportJudgementAgent', () => {
   beforeEach(() => {
@@ -38,7 +41,7 @@ describe('runReportJudgementAgent', () => {
       reason: 'spam',
     })
 
-    const callModel = makeReportJudgementModelCaller({
+    const callModel = makeAgentModelCaller({
       recommended_action: 'no_action',
       public_response: 'Content looks fine.',
       internal_response: 'No policy violations found.',
@@ -46,6 +49,7 @@ describe('runReportJudgementAgent', () => {
 
     await runReportJudgementAgent(
       { entityType: 'post', entityId: postId, triggeringReportId: reportId, rerunById: null },
+      TEST_MODEL_SELECTION,
       callModel,
     )
 
@@ -83,7 +87,8 @@ describe('runReportJudgementAgent', () => {
         triggeringReportId: reportId,
         rerunById: rerunUser.id,
       },
-      makeReportJudgementModelCaller({
+      TEST_MODEL_SELECTION,
+      makeAgentModelCaller({
         recommended_action: 'warn',
         public_response: 'Warning issued.',
         internal_response: 'Borderline content.',
@@ -121,7 +126,7 @@ describe('runReportJudgementAgent', () => {
         reason: 'spam',
       })
 
-      const callModel = makeReportJudgementModelCaller({
+      const callModel = makeAgentModelCaller({
         recommended_action: 'remove',
         public_response: 'Removed for spam.',
         internal_response: 'Violates community rules.',
@@ -129,6 +134,7 @@ describe('runReportJudgementAgent', () => {
 
       await runReportJudgementAgent(
         { entityType: 'post', entityId: postId, triggeringReportId: reportId, rerunById: null },
+        TEST_MODEL_SELECTION,
         callModel,
       )
 
@@ -164,7 +170,7 @@ describe('runReportJudgementAgent', () => {
       reason: 'spam',
     })
 
-    const callModel = makeReportJudgementModelCaller({
+    const callModel = makeAgentModelCaller({
       recommended_action: 'no_action',
       public_response: 'ok',
       internal_response: 'ok',
@@ -172,6 +178,7 @@ describe('runReportJudgementAgent', () => {
 
     await runReportJudgementAgent(
       { entityType: 'post', entityId: postId, triggeringReportId: reportId, rerunById: null },
+      TEST_MODEL_SELECTION,
       callModel,
     )
 
@@ -180,7 +187,7 @@ describe('runReportJudgementAgent', () => {
   })
 
   it('returns early without calling the model when the entity does not exist', async () => {
-    const callModel = makeReportJudgementModelCaller({
+    const callModel = makeAgentModelCaller({
       recommended_action: 'no_action',
       public_response: 'x',
       internal_response: 'x',
@@ -193,38 +200,11 @@ describe('runReportJudgementAgent', () => {
         triggeringReportId: randomUUID(),
         rerunById: null,
       },
+      TEST_MODEL_SELECTION,
       callModel,
     )
 
     expect(callModel).not.toHaveBeenCalled()
-  })
-
-  it('throws when the model returns an invalid response shape', async () => {
-    const author = await createTestUser()
-    const reporter = await createTestUser()
-    const postId = await insertTestPost({
-      createdById: author.id,
-      slug: `rja-invalid-${randomUUID().slice(0, 8)}`,
-      title: `RJA Invalid ${randomUUID().slice(0, 8)}`,
-      markdown: 'body',
-    })
-    const reportId = await insertTestModerationReport({
-      reporterUserId: reporter.id,
-      entityType: 'post',
-      entityId: postId,
-      reason: 'spam',
-    })
-
-    await expect(
-      runReportJudgementAgent(
-        { entityType: 'post', entityId: postId, triggeringReportId: reportId, rerunById: null },
-        makeReportJudgementModelCaller({
-          recommended_action: 'INVALID',
-          public_response: 'x',
-          internal_response: 'x',
-        }),
-      ),
-    ).rejects.toThrow(TypeError)
   })
 
   it('skips the model call when the latest automatic judgement matches current context', async () => {
@@ -245,7 +225,8 @@ describe('runReportJudgementAgent', () => {
 
     await runReportJudgementAgent(
       { entityType: 'post', entityId: postId, triggeringReportId: reportId, rerunById: null },
-      makeReportJudgementModelCaller({
+      TEST_MODEL_SELECTION,
+      makeAgentModelCaller({
         recommended_action: 'no_action',
         public_response: 'ok',
         internal_response: 'ok',
@@ -254,13 +235,14 @@ describe('runReportJudgementAgent', () => {
     const first = await getLatestJudgementForEntity('post', postId)
     expect(first).not.toBeNull()
 
-    const secondCall = makeReportJudgementModelCaller({
+    const secondCall = makeAgentModelCaller({
       recommended_action: 'warn',
       public_response: 'second',
       internal_response: 'second',
     })
     await runReportJudgementAgent(
       { entityType: 'post', entityId: postId, triggeringReportId: reportId, rerunById: null },
+      TEST_MODEL_SELECTION,
       secondCall,
     )
     expect(secondCall).not.toHaveBeenCalled()

@@ -1,5 +1,6 @@
 import type { Job } from 'glide-mq'
 import { expect, vi } from 'vitest'
+import { makeModelCallResult } from '../../../agents/model-call-result.mts'
 import { ai_agents } from '../../../../queues/ai-agents/queues.mts'
 import type { AppealResolutionJobData } from '../../../../queues/ai-agents/types.mts'
 import { rerunModerationAppealResolutionDraft } from '../../../../services/moderation-appeals/rerun-resolution-draft.mts'
@@ -18,25 +19,16 @@ async function processQueuedAppealResolution(
   appealId: string,
 ): Promise<void> {
   await processAppealResolution(job, () =>
-    Promise.resolve({
-      id: `test-appeal-resolution-${appealId}`,
-      output: [
+    Promise.resolve(
+      makeModelCallResult(
         {
-          type: 'message',
-          status: 'completed',
-          content: [
-            {
-              type: 'output_text',
-              text: JSON.stringify({
-                recommended_action: 'deny',
-                public_response: 'Deterministic queued rerun response.',
-                internal_response: 'Deterministic queued rerun reasoning.',
-              }),
-            },
-          ],
+          recommended_action: 'deny',
+          public_response: 'Deterministic queued rerun response.',
+          internal_response: 'Deterministic queued rerun reasoning.',
         },
-      ],
-    }),
+        { responseId: `test-appeal-resolution-${appealId}` },
+      ),
+    ),
   )
 }
 

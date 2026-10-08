@@ -117,3 +117,10 @@ export function storyCandidate(storyId: string): {
 } {
   return { candidateKind: 'story', storyId, storedCandidateId: null }
 }
+
+/** The `{ provider, model }` a jev classifier entry point takes, from its seeded classifier row. */
+export const JEV_OPENROUTER_SELECTION = {
+  provider: 'openrouter',
+  model: 'typesafe/jev-1.13',
+} as const
+export const JEV_TYPESAFE_SELECTION = { provider: 'typesafe', model: 'jev-latest' } as const

@@ -15,18 +15,25 @@ import {
 } from '@services/openai-background-responses'
 import type { Response } from 'openai/resources/responses/responses'
 import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.sentry-mock'
-import {
-  callRecordingAgentResponseUsage,
-  recordAgentResponseUsage,
-} from '../record-response-usage.mts'
+import { makeDirectOpenAIResult } from '@voucha/test-helpers/agents/model-call-result'
+import { callRecordingModelUsage } from '../call-recording-model-usage.mts'
+import { recordAgentResponseUsage } from '../record-response-usage.mts'
 import { OpenAIResponseNotCompletedError } from '../create-response.mts'
 import { getBackgroundResponseHooks } from '@modules/openai-utils/create-response'
 
-// callRecordingAgentResponseUsage's fn never actually calls createOpenAIResponse here. It awaits
+// callRecordingModelUsage's fn never actually calls createOpenAIResponse here. It awaits
 // getBackgroundResponseHooks()?.onResponseCreated(responseId) itself, exactly like
 // drainBackgroundOpenAIResponse does once a real response.created event arrives. That is enough to
 // drive the openai_background_responses compare-and-set without mocking anything: every call below
 // exercises real inserts/deletes against Postgres.
+function callParams(agentSlug: string) {
+  return {
+    agentSlug,
+    selection: { provider: 'openai', model: 'gpt-6-luna' } as const,
+    openaiTransport: 'direct' as const,
+  }
+}
+
 function randomSuffix(): string {
   return Math.random().toString(36).slice(2, 10)
 }
@@ -50,14 +57,14 @@ async function expireAndClaim(
   return claimed
 }
 
-describe('callRecordingAgentResponseUsage', () => {
+describe('callRecordingModelUsage', () => {
   it('reports degraded idempotency while preserving append behavior without a response id', async () => {
     const agentSlug = `record-response-usage-missing-id-${randomSuffix()}`
     sentryCaptureExceptionMock.mockClear()
 
     await recordAgentResponseUsage({
       response: {
-        model: 'gpt-5.4-nano-2026-03-17',
+        model: 'gpt-6-luna-2026-10-01',
         service_tier: 'flex',
         usage: { input_tokens: 100, output_tokens: 51 },
       },
@@ -80,20 +87,17 @@ describe('callRecordingAgentResponseUsage', () => {
     const usage = { input_tokens: 101, output_tokens: 52 }
     let lease: OwnedBackgroundResponseLease | undefined
 
-    const response = await callRecordingAgentResponseUsage(
-      async () => {
-        lease = await notifyResponseCreated(responseId)
-        await lease.stopAndSettle()
-        return { id: responseId, model: 'gpt-5.4-nano-2026-03-17', service_tier: 'flex', usage }
-      },
-      { agentSlug },
-    )
+    const response = await callRecordingModelUsage(async () => {
+      lease = await notifyResponseCreated(responseId)
+      await lease.stopAndSettle()
+      return makeDirectOpenAIResult(responseId, usage)
+    }, callParams(agentSlug))
 
-    expect(response.id).toBe(responseId)
+    expect(response.responseId).toBe(responseId)
     await expect(
       findAiUsageRecordForAgent(agentSlug, { inputTokens: 101, outputTokens: 52 }),
     ).resolves.toMatchObject({
-      model: 'gpt-5.4-nano-2026-03-17',
+      model: 'gpt-6-luna-2026-10-01',
       service_tier_id: 'flex',
     })
 
@@ -107,7 +111,7 @@ describe('callRecordingAgentResponseUsage', () => {
 
   it('records exactly one row when the completion path races a concurrent sweeper-style claim on the same registration (idempotency)', async () => {
     // A given OpenAI response id is only ever registered once -- it is unique per API call, so two
-    // independent callRecordingAgentResponseUsage invocations never race to *insert* the same row.
+    // independent callRecordingModelUsage invocations never race to *insert* the same row.
     // The real race the compare-and-set guards is one already-registered row being claimed by two
     // independent readers at once: this path's own asynchronous claim
     // (recordAgentResponseUsage -> claimRegisteredResponseUsage) and a sweeper-style claim calling
@@ -121,16 +125,13 @@ describe('callRecordingAgentResponseUsage', () => {
     const leaseReady = Promise.withResolvers<OwnedBackgroundResponseLease>()
     const releaseCompletion = Promise.withResolvers<void>()
 
-    const completionPath = callRecordingAgentResponseUsage(
-      async () => {
-        leaseReady.resolve(await notifyResponseCreated(responseId))
-        // Hold this path open until the sweeper-style claim (below) is armed and ready, so both
-        // claims genuinely race on the same row instead of one trivially finishing first.
-        await releaseCompletion.promise
-        return { id: responseId, model: 'gpt-5.4-nano-2026-03-17', service_tier: 'flex', usage }
-      },
-      { agentSlug },
-    )
+    const completionPath = callRecordingModelUsage(async () => {
+      leaseReady.resolve(await notifyResponseCreated(responseId))
+      // Hold this path open until the sweeper-style claim (below) is armed and ready, so both
+      // claims genuinely race on the same row instead of one trivially finishing first.
+      await releaseCompletion.promise
+      return makeDirectOpenAIResult(responseId, usage)
+    }, callParams(agentSlug))
     void completionPath.catch((err: unknown) => {
       leaseReady.reject(err instanceof Error ? err : new Error('completion path failed'))
     })
@@ -144,7 +145,7 @@ describe('callRecordingAgentResponseUsage', () => {
       responseId,
       leaseToken: sweeperLease.leaseToken,
       agentSlug,
-      model: 'gpt-5.4-nano-2026-03-17',
+      model: 'gpt-6-luna-2026-10-01',
       serviceTier: 'flex',
       usage: openAIUsageToModelUsage(usage),
       createdAt: sweeperLease.createdAt,
@@ -167,27 +168,19 @@ describe('callRecordingAgentResponseUsage', () => {
     const completedResponseId = `resp_insert_failure_${randomSuffix()}`
     const usage = { input_tokens: 104, output_tokens: 55 }
 
-    const response = await callRecordingAgentResponseUsage(
-      async () => {
-        // An empty response id violates openai_background_responses' CHECK constraint
-        // (char_length BETWEEN 1 AND 100), so the awaited registration attempt rejects --
-        // simulating a registration failure without mocking anything. registration.registered
-        // resolves to false, so recording falls straight through to recordAiUsage.
-        await getBackgroundResponseHooks()?.onResponseCreated('')
-        return {
-          id: completedResponseId,
-          model: 'gpt-5.4-nano-2026-03-17',
-          service_tier: 'flex',
-          usage,
-        }
-      },
-      { agentSlug },
-    )
+    const response = await callRecordingModelUsage(async () => {
+      // An empty response id violates openai_background_responses' CHECK constraint
+      // (char_length BETWEEN 1 AND 100), so the awaited registration attempt rejects --
+      // simulating a registration failure without mocking anything. registration.registered
+      // resolves to false, so recording falls straight through to recordAiUsage.
+      await getBackgroundResponseHooks()?.onResponseCreated('')
+      return makeDirectOpenAIResult(completedResponseId, usage)
+    }, callParams(agentSlug))
 
-    expect(response.id).toBe(completedResponseId)
+    expect(response.responseId).toBe(completedResponseId)
     await expect(
       findAiUsageRecordForAgent(agentSlug, { inputTokens: 104, outputTokens: 55 }),
-    ).resolves.toMatchObject({ model: 'gpt-5.4-nano-2026-03-17' })
+    ).resolves.toMatchObject({ model: 'gpt-6-luna-2026-10-01' })
   })
 
   it('records from a thrown OpenAIResponseNotCompletedError and still claims the registration', async () => {
@@ -196,25 +189,22 @@ describe('callRecordingAgentResponseUsage', () => {
     const usage = { input_tokens: 105, output_tokens: 56 }
 
     await expect(
-      callRecordingAgentResponseUsage(
-        async () => {
-          const lease = await notifyResponseCreated(responseId)
-          await lease.stopAndSettle()
-          throw new OpenAIResponseNotCompletedError('OpenAI response cancelled', {
-            id: responseId,
-            status: 'cancelled',
-            model: 'gpt-5.4-nano-2026-03-17',
-            service_tier: 'flex',
-            usage,
-          } as Response)
-        },
-        { agentSlug },
-      ),
+      callRecordingModelUsage(async () => {
+        const lease = await notifyResponseCreated(responseId)
+        await lease.stopAndSettle()
+        throw new OpenAIResponseNotCompletedError('OpenAI response cancelled', {
+          id: responseId,
+          status: 'cancelled',
+          model: 'gpt-6-luna-2026-10-01',
+          service_tier: 'flex',
+          usage,
+        } as Response)
+      }, callParams(agentSlug)),
     ).rejects.toThrow('OpenAI response cancelled')
 
     await expect(
       findAiUsageRecordForAgent(agentSlug, { inputTokens: 105, outputTokens: 56 }),
-    ).resolves.toMatchObject({ model: 'gpt-5.4-nano-2026-03-17' })
+    ).resolves.toMatchObject({ model: 'gpt-6-luna-2026-10-01' })
 
     // Claimed (deleted) by this path, same as the completed-response case above.
     const remaining = (await getExpiredBackgroundResponses({ batchSize: 100 })).find(
@@ -229,14 +219,11 @@ describe('callRecordingAgentResponseUsage', () => {
     let lease: OwnedBackgroundResponseLease | undefined
 
     await expect(
-      callRecordingAgentResponseUsage(
-        async () => {
-          lease = await notifyResponseCreated(responseId)
-          await lease.stopAndSettle()
-          throw new Error('socket closed')
-        },
-        { agentSlug },
-      ),
+      callRecordingModelUsage(async () => {
+        lease = await notifyResponseCreated(responseId)
+        await lease.stopAndSettle()
+        throw new Error('socket closed')
+      }, callParams(agentSlug)),
     ).rejects.toThrow('socket closed')
 
     // recordAgentResponseUsage must never be called on this path -- the registration row is left

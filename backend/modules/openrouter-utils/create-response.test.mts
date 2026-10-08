@@ -26,7 +26,7 @@ describe('OpenRouter Responses transport', () => {
     const response = makeSdkResponse({
       id: 'resp_openrouter_fixture',
       status: 'completed',
-      model: 'openai/gpt-5.4-nano',
+      model: 'openai/gpt-6-luna',
       output,
     })
     const createResponse = vi
@@ -39,7 +39,7 @@ describe('OpenRouter Responses transport', () => {
 
     const result = await createOpenRouterResponse(
       {
-        model: toOpenRouterModel('gpt-5.4-nano'),
+        model: toOpenRouterModel('gpt-6-luna'),
         input: [{ type: 'function_call_output', call_id: 'call_previous', output: '{"ok":true}' }],
         previous_response_id: 'resp_previous',
         tools: [
@@ -66,7 +66,7 @@ describe('OpenRouter Responses transport', () => {
     expect(result.output).toEqual(output)
     expect(createResponse).toHaveBeenCalledWith(
       expect.objectContaining({
-        model: 'openai/gpt-5.4-nano',
+        model: 'openai/gpt-6-luna',
         stream: true,
         background: false,
         previous_response_id: 'resp_previous',
@@ -90,7 +90,7 @@ describe('OpenRouter Responses transport', () => {
     const error = await runWithOpenAIResponseAttemptHooks(
       { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
       () =>
-        createOpenRouterResponse({ model: 'openai/gpt-5.4-nano', input: 'hello' }, undefined, {
+        createOpenRouterResponse({ model: 'openai/gpt-6-luna', input: 'hello' }, undefined, {
           createResponse,
         }),
     ).catch((err: unknown) => err)

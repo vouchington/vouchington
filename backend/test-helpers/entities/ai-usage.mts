@@ -40,7 +40,7 @@ export async function insertTestAiUsageRecord(
     agentSlug = 'test-moderator',
     provider = 'openai',
     transport = 'direct',
-    model = 'gpt-5.4-nano',
+    model = 'gpt-6-luna',
     serviceTier = 'flex',
     inputTokens = 100,
     cachedInputTokens = 0,

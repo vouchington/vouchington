@@ -26,18 +26,8 @@ const hold = {
 
 describe('copyright submission guidance model output', () => {
   it('accepts closed advisory checklists for each filing kind', () => {
-    expect(
-      parseCopyrightSubmissionGuidanceOutput(JSON.stringify(counter), 'counter_notice'),
-    ).toEqual(counter)
-    expect(
-      parseCopyrightSubmissionGuidanceOutput(JSON.stringify(hold), 'court_or_ccb_hold'),
-    ).toEqual(hold)
-  })
-
-  it.each(['{', 'x'.repeat(64 * 1024 + 1)])('rejects malformed or oversized JSON', text => {
-    expect(() => parseCopyrightSubmissionGuidanceOutput(text, 'counter_notice')).toThrow(
-      'Invalid copyright submission guidance JSON',
-    )
+    expect(parseCopyrightSubmissionGuidanceOutput(counter, 'counter_notice')).toEqual(counter)
+    expect(parseCopyrightSubmissionGuidanceOutput(hold, 'court_or_ccb_hold')).toEqual(hold)
   })
 
   it.each([
@@ -46,14 +36,14 @@ describe('copyright submission guidance model output', () => {
     ['repeated element', { ...counter, elements: [counter.elements[0], ...counter.elements] }],
     ['non-object', []],
   ])('rejects %s', (_label, value) => {
-    expect(() =>
-      parseCopyrightSubmissionGuidanceOutput(JSON.stringify(value), 'counter_notice'),
-    ).toThrow('Invalid copyright submission guidance output')
+    expect(() => parseCopyrightSubmissionGuidanceOutput(value, 'counter_notice')).toThrow(
+      'Invalid copyright submission guidance output',
+    )
   })
 
   it('rejects a counter shape as hold guidance', () => {
-    expect(() =>
-      parseCopyrightSubmissionGuidanceOutput(JSON.stringify(counter), 'court_or_ccb_hold'),
-    ).toThrow('Invalid copyright submission guidance output')
+    expect(() => parseCopyrightSubmissionGuidanceOutput(counter, 'court_or_ccb_hold')).toThrow(
+      'Invalid copyright submission guidance output',
+    )
   })
 })

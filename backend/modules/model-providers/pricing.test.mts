@@ -96,14 +96,6 @@ describe('GPT-6 Luna pricing', () => {
     expect(
       calcCostMicrounits(
         'openai',
-        'gpt-5.4-nano',
-        'default',
-        usage({ inputTokens: 10, cacheWrite5mTokens: 10 }),
-      ),
-    ).toBeNull()
-    expect(
-      calcCostMicrounits(
-        'openai',
         'gpt-6-luna',
         'default',
         usage({ inputTokens: 10, cacheWrite1hTokens: 10 }),
@@ -115,31 +107,31 @@ describe('GPT-6 Luna pricing', () => {
 describe('calcCostMicrounits', () => {
   it('normalizes a dated snapshot and a routed name before the lookup', () => {
     const call = usage({ inputTokens: 1000, outputTokens: 500 })
-    const expected = calcCostMicrounits('openai', 'gpt-5.4-nano', 'flex', call)
-    expect(expected).toBe(413)
-    expect(calcCostMicrounits('openai', 'gpt-5.4-nano-2026-03-17', 'flex', call)).toBe(expected)
-    expect(calcCostMicrounits('openai', 'openai/gpt-5.4-nano-20260317', 'flex', call)).toBe(
-      expected,
-    )
+    // 1000 * $0.05 + 500 * $0.25 per million = 175 microunits.
+    const expected = calcCostMicrounits('openai', 'gpt-6-luna', 'flex', call)
+    expect(expected).toBe(175)
+    expect(calcCostMicrounits('openai', 'gpt-6-luna-2026-10-01', 'flex', call)).toBe(expected)
+    expect(calcCostMicrounits('openai', 'openai/gpt-6-luna-20261001', 'flex', call)).toBe(expected)
   })
 
   it('returns null for an unknown model, an unknown tier and a classifier provider', () => {
     const call = usage({ inputTokens: 10, outputTokens: 5 })
     expect(calcCostMicrounits('openai', 'unknown-model', 'default', call)).toBeNull()
-    expect(calcCostMicrounits('openai', 'gpt-5.4-nano', 'priority', call)).toBeNull()
+    expect(calcCostMicrounits('openai', 'gpt-6-luna', 'priority', call)).toBeNull()
     expect(calcCostMicrounits('typesafe', 'typesafe/jev-1.13', 'default', call)).toBeNull()
   })
 
   it('rounds half up exactly once per request', () => {
-    expect(calcCostMicrounits('openai', 'gpt-5.4-nano', 'flex', usage({ outputTokens: 4 }))).toBe(3)
+    // 2 output tokens * $0.25 per million = 0.5 microunits, which rounds up to 1.
+    expect(calcCostMicrounits('openai', 'gpt-6-luna', 'flex', usage({ outputTokens: 2 }))).toBe(1)
   })
 
   it('rejects costs that cannot be represented as JSON-safe integers', () => {
     expect(() =>
       calcCostMicrounits(
-        'openai',
-        'gpt-5.4-nano',
-        'default',
+        'anthropic',
+        'claude-haiku-5-5',
+        'standard',
         usage({
           inputTokens: Number.MAX_SAFE_INTEGER,
           outputTokens: Number.MAX_SAFE_INTEGER,

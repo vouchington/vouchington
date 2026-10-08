@@ -32,9 +32,10 @@ import {
   createConversation,
   createConversationMessage,
 } from '@services/conversations-messages/create'
-import { SpendCapBreachError } from '../../services/ai-usage/index.mts'
+import { modelRoutingConfig, SpendCapBreachError } from '../../services/ai-usage/index.mts'
 import type { PrivateUser } from '@services/users/types'
-import { DEFAULT_AGENT_MODEL } from '@agents/_shared'
+import { TEST_OPENAI_SELECTION } from '@voucha/test-helpers/agents/model-call-result'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   generateChatTitleFromInput,
   getConversationTitleGenerationInput,
@@ -48,13 +49,19 @@ describe('conversation title input and model owners', () => {
   const calls: Promise<string>[] = []
   const fixtures: ReturnType<typeof createTitleResponseStream>[] = []
   const responseIds: string[] = []
+  let restoreRouting: () => void
 
   beforeAll(async () => {
     user = await createTestUser()
   })
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Only the external SDK credential boundary is controlled; the application client stays real.
+    // The direct transport is what keeps background mode and its lease registry in play.
+    await modelRoutingConfig.waitForInitialization()
+    restoreRouting = overrideDynamicConfigFieldsForTest(modelRoutingConfig, {
+      openai_transport: 'direct',
+    })
     vi.stubEnv('OPENAI_API_KEY', 'owned-title-provider-fixture')
     create = vi.spyOn(Responses.prototype, 'create')
     create.mockRejectedValue(new Error('Unexpected OpenAI title provider call'))
@@ -76,12 +83,13 @@ describe('conversation title input and model owners', () => {
       create.mockRestore()
       cancel.mockRestore()
       retrieve.mockRestore()
+      restoreRouting()
       vi.unstubAllEnvs()
     }
   })
 
   function runTitle(input: string): Promise<string> {
-    const call = generateChatTitleFromInput(input, user.id)
+    const call = generateChatTitleFromInput(input, user.id, TEST_OPENAI_SELECTION)
     calls.push(call)
     return call
   }
@@ -97,12 +105,12 @@ describe('conversation title input and model owners', () => {
     return input
   }
 
-  function prepareResponse(text: string) {
+  function prepareResponse(title: string) {
     const responseId = `resp-title-${randomUUID()}`
     responseIds.push(responseId)
-    const response = makeSdkTextResponse(text, {
+    const response = makeSdkTextResponse(JSON.stringify({ title }), {
       id: responseId,
-      model: 'gpt-5.4-nano-2026-03-17',
+      model: 'gpt-6-luna-2026-10-01',
       service_tier: 'flex',
     })
     const fixture = createTitleResponseStream(response)
@@ -165,7 +173,8 @@ describe('conversation title input and model owners', () => {
       expect(create).toHaveBeenCalledExactlyOnceWith(
         expect.objectContaining({
           input,
-          model: DEFAULT_AGENT_MODEL,
+          model: 'gpt-6-luna',
+          max_output_tokens: 100,
           safety_identifier: user.id,
           stream: true,
           background: true,
@@ -175,7 +184,7 @@ describe('conversation title input and model owners', () => {
       await expectSettledResponse(responseId, fixture)
       await expect(findAiUsageRecordForResponseId(responseId)).resolves.toMatchObject({
         agent_slug: 'chat-generate-title',
-        model: 'gpt-5.4-nano-2026-03-17',
+        model: 'gpt-6-luna-2026-10-01',
         service_tier_id: 'flex',
         input_tokens: 1,
         output_tokens: 1,
@@ -225,7 +234,7 @@ describe('conversation title input and model owners', () => {
           makeSdkResponse({
             id: responseId,
             status,
-            model: 'gpt-5.4-nano-2026-03-17',
+            model: 'gpt-6-luna-2026-10-01',
             service_tier: 'flex',
             usage: {
               input_tokens: 84_732,
@@ -253,7 +262,7 @@ describe('conversation title input and model owners', () => {
         const row = await findAiUsageRecordForResponseId(responseId)
         expect(row).toMatchObject({
           agent_slug: 'chat-generate-title',
-          model: 'gpt-5.4-nano-2026-03-17',
+          model: 'gpt-6-luna-2026-10-01',
           service_tier_id: 'flex',
           input_tokens: 84_732,
           output_tokens: 6391,

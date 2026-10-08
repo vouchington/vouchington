@@ -15,7 +15,7 @@
   "dependencies": {
     "@agents/_shared": "workspace:^",
     "@jongleberry/vurst-prompt": "^0.4.3",
-    "@modules/openai-utils": "workspace:^",
+    "@modules/model-providers": "workspace:^",
     "@services/copyright-notices": "workspace:^",
     "@ts-shared/utils": "workspace:^"
   },

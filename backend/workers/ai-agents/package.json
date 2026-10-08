@@ -31,6 +31,7 @@
     "@agents/story-post": "workspace:^",
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@jongleberry/vurst-ai": "^0.4.3",
+    "@modules/model-providers": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/openai-utils": "workspace:^",
     "@modules/queue-config": "workspace:^",

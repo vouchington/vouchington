@@ -49,6 +49,8 @@ export function assertSupportedRequest(
  *
  * @public The agents call it from the next layer of #2370; nothing in this layer does yet.
  */
+/* no-mistakes: integration=anthropic */
+/* no-mistakes: integration=openai */
 export async function generateJson<T>(
   selection: ModelSelection,
   request: GenerateJsonRequest<T>,

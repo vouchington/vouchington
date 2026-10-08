@@ -29,10 +29,10 @@ call with no tools, called synchronously by
 - For a non-null input the route calls `assertDailySpendCapNotBreached('chat-generate-title')`
   before `generateChatTitleFromInput()`. See
   [the daily spend cap](../../queues/workers/ai-agents/README.md#daily-spend-cap).
-- The model call records its ledger row through `callRecordingAgentResponseUsage()` for both
-  successful and failed or incomplete responses, under the agent slug `chat-generate-title`. That
+- The model call records its ledger row through `callAgentModel()` for both
+  successful and failed, incomplete or schema-invalid responses, under the agent slug `chat-generate-title`. That
   slug is persisted spend and usage data, so it is not renamed with the package.
-- `userId` is passed as the OpenAI `safety_identifier`; there is no dedicated system user.
+- `userId` is passed as the provider's safety identifier (`safety_identifier` on OpenAI, `metadata.user_id` on Anthropic); there is no dedicated system user. The route reads the `chat-generate-title` provider and model from `ai-model-routing` and passes them in.
 - Stored message content is sanitized and wrapped before it enters the prompt.
 
 ## Related

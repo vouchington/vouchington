@@ -7,31 +7,21 @@ import { getModerationAppealById } from '@services/moderation-appeals/get'
 import { parseCreateModerationAppealInput } from '@services/moderation-appeals/parse'
 import { runAppealResolutionAgent, type AppealModelCaller } from './run.mts'
 import type { PrivateUser } from '@services/users/types'
+import {
+  makeModelCallResult,
+  TEST_MODEL_SELECTION,
+} from '@voucha/test-helpers/agents/model-call-result'
 
 function makeModelResponse(
   recommendedAction: 'accept' | 'deny' | 'reduce',
   publicResponse: string,
   internalResponse: string,
-): unknown {
-  return {
-    id: `resp-${randomUUID()}`,
-    output: [
-      {
-        type: 'message',
-        status: 'completed',
-        content: [
-          {
-            type: 'output_text',
-            text: JSON.stringify({
-              recommended_action: recommendedAction,
-              public_response: publicResponse,
-              internal_response: internalResponse,
-            }),
-          },
-        ],
-      },
-    ],
-  }
+) {
+  return makeModelCallResult({
+    recommended_action: recommendedAction,
+    public_response: publicResponse,
+    internal_response: internalResponse,
+  })
 }
 
 describe('runAppealResolutionAgent concurrency', () => {
@@ -55,7 +45,7 @@ describe('runAppealResolutionAgent concurrency', () => {
       appeal_reason: `Appeal concurrency reason ${randomUUID()}`,
     })
     const { appeal } = await createModerationAppeal(appellant, WEB_PROVENANCE, input)
-    await runAppealResolutionAgent({ appealId: appeal.id }, () =>
+    await runAppealResolutionAgent({ appealId: appeal.id }, TEST_MODEL_SELECTION, () =>
       Promise.resolve(
         makeModelResponse('deny', 'Human-reviewed response.', 'Initial internal response.'),
       ),
@@ -71,6 +61,7 @@ describe('runAppealResolutionAgent concurrency', () => {
 
     const queuedRun = runAppealResolutionAgent(
       { appealId: appeal.id, rerunById: staff.id },
+      TEST_MODEL_SELECTION,
       delayedModel,
     )
     await modelStarted.promise

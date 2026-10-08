@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { latchAccountingUncertainty as latchAccountingUncertaintyFn } from '@services/ai-usage'
-import {
-  callRecordingAgentResponseUsage,
-  recordAgentResponseUsage,
-} from '../record-response-usage.mts'
+import { makeDirectOpenAIResult } from '@voucha/test-helpers/agents/model-call-result'
+import { callRecordingModelUsage } from '../call-recording-model-usage.mts'
+import { recordAgentResponseUsage } from '../record-response-usage.mts'
+import type { recordModelUsage } from '../record-model-usage.mts'
 
 function responseWithUsage() {
   return {
     id: 'resp-settlement',
-    model: 'gpt-5.4-nano-2026-03-17',
+    model: 'gpt-6-luna-2026-10-01',
     service_tier: 'flex' as const,
     usage: { input_tokens: 100, output_tokens: 50 },
   }
@@ -71,18 +71,22 @@ describe('recordAgentResponseUsage settlement barrier', () => {
   it('does not resolve the direct OpenAI wrapper before recording settles', async () => {
     const recorderStarted = Promise.withResolvers<void>()
     const recorderSettled = Promise.withResolvers<void>()
-    const recorder = vi.fn<typeof recordAgentResponseUsage>().mockImplementation(async () => {
+    const recorder = vi.fn<typeof recordModelUsage>().mockImplementation(async () => {
       recorderStarted.resolve()
       await recorderSettled.promise
     })
-    const response = responseWithUsage()
-    const call = callRecordingAgentResponseUsage(
-      async () => response,
-      { agentSlug: 'settlement-test' },
+    const result = makeDirectOpenAIResult('resp-settlement', {
+      input_tokens: 100,
+      output_tokens: 50,
+    })
+    const call = callRecordingModelUsage(
+      async () => result,
       {
-        assertDailySpendCapNotBreached: async () => null,
-        recordAgentResponseUsage: recorder,
+        agentSlug: 'settlement-test',
+        selection: { provider: 'openai', model: 'gpt-6-luna' },
+        openaiTransport: 'direct',
       },
+      { assertDailySpendCapNotBreached: async () => null, recordModelUsage: recorder },
     )
     let resolved = false
     void call.then(() => {
@@ -93,6 +97,6 @@ describe('recordAgentResponseUsage settlement barrier', () => {
     expect(recorder).toHaveBeenCalledOnce()
     expect(resolved).toBe(false)
     recorderSettled.resolve()
-    await expect(call).resolves.toBe(response)
+    await expect(call).resolves.toBe(result)
   })
 })

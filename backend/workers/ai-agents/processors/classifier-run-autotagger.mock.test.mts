@@ -161,7 +161,10 @@ describe('C6 classifier run through the shared lifecycle (real PG, mocked provid
           createClient: (hooks, current) =>
             createAutotaggerClient({
               postId: current.subject.postId,
-              modelProvider: current.resolved.configuration.modelProvider,
+              selection: {
+                provider: current.resolved.configuration.modelProvider,
+                model: current.resolved.configuration.modelName,
+              },
               classifierRunId: hooks.classifierRunId,
               beforeAttempt: hooks.beforeAttempt,
             }),

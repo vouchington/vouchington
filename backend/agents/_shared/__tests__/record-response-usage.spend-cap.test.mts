@@ -2,8 +2,17 @@ import { describe, expect, it, vi } from 'vitest'
 import { findAiUsageRecordForAgent } from '@voucha/test-helpers'
 import type { OwnedBackgroundResponseLease } from '@services/openai-background-responses'
 import type { SpendCapBreach } from '@services/ai-usage'
-import { callRecordingAgentResponseUsage } from '../record-response-usage.mts'
+import { makeDirectOpenAIResult } from '@voucha/test-helpers/agents/model-call-result'
+import { callRecordingModelUsage } from '../call-recording-model-usage.mts'
 import { getBackgroundResponseHooks } from '@modules/openai-utils/create-response'
+
+function callParams(agentSlug: string) {
+  return {
+    agentSlug,
+    selection: { provider: 'openai', model: 'gpt-6-luna' } as const,
+    openaiTransport: 'direct' as const,
+  }
+}
 
 function randomSuffix(): string {
   return Math.random().toString(36).slice(2, 10)
@@ -15,7 +24,7 @@ async function notifyResponseCreated(responseId: string): Promise<OwnedBackgroun
   return lease as OwnedBackgroundResponseLease
 }
 
-describe('callRecordingAgentResponseUsage spend-cap recheck', () => {
+describe('callRecordingModelUsage spend-cap recheck', () => {
   it('rechecks the daily spend cap with agentSlug before invoking fn', async () => {
     const agentSlug = `record-response-usage-cap-check-${randomSuffix()}`
     const responseId = `resp_${randomSuffix()}`
@@ -23,18 +32,18 @@ describe('callRecordingAgentResponseUsage spend-cap recheck', () => {
     const checkSpendCap = vi.fn<(callerName: string) => Promise<SpendCapBreach | null>>()
     checkSpendCap.mockResolvedValue(null)
 
-    const response = await callRecordingAgentResponseUsage(
+    const response = await callRecordingModelUsage(
       async () => {
         const lease = await notifyResponseCreated(responseId)
         await lease.stopAndSettle()
-        return { id: responseId, model: 'gpt-5.4-nano-2026-03-17', service_tier: 'flex', usage }
+        return makeDirectOpenAIResult(responseId, usage)
       },
-      { agentSlug },
+      callParams(agentSlug),
       { assertDailySpendCapNotBreached: checkSpendCap },
     )
 
     expect(checkSpendCap).toHaveBeenCalledExactlyOnceWith(agentSlug)
-    expect(response.id).toBe(responseId)
+    expect(response.responseId).toBe(responseId)
     await expect(
       findAiUsageRecordForAgent(agentSlug, { inputTokens: 106, outputTokens: 57 }),
     ).resolves.not.toBeNull()
@@ -55,11 +64,9 @@ describe('callRecordingAgentResponseUsage spend-cap recheck', () => {
     })
 
     await expect(
-      callRecordingAgentResponseUsage(
-        fn,
-        { agentSlug },
-        { assertDailySpendCapNotBreached: checkSpendCap },
-      ),
+      callRecordingModelUsage(fn, callParams(agentSlug), {
+        assertDailySpendCapNotBreached: checkSpendCap,
+      }),
     ).rejects.toMatchObject({ name: 'SpendCapBreachError', breach })
     expect(fn).not.toHaveBeenCalled()
   })

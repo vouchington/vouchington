@@ -1,16 +1,48 @@
 import {
   sanitizeAndWrapUserInput,
-  createOpenAIResponse,
-  DEFAULT_AGENT_MODEL,
-  callRecordingAgentResponseUsage,
+  callAgentModel,
   SYNCHRONOUS_REQUEST_RETRY_POLICY,
+  type AgentModelCaller,
 } from '@agents/_shared'
-import { extractTextFromOpenAIResponse } from '@modules/openai-utils'
+import { generateJson } from '@modules/model-providers/generate'
+import type { ModelSelection } from '@modules/model-providers/types'
 import { getConversationMessagesByConversationId } from '@services/conversations-messages/messages'
 import type { ConversationMessageContent } from '@services/conversations-messages/types'
 
 const TITLE_GENERATION_PROMPT =
   'Generate a concise title (5-8 words) for the following conversation. Return only the title text with no quotes or extra punctuation.'
+
+const TITLE_SCHEMA = {
+  type: 'object',
+  properties: { title: { type: 'string' } },
+  required: ['title'],
+  additionalProperties: false,
+} as const
+
+/** The model-calling seam. Injectable so tests can exercise the agent without a provider. */
+export type ConversationTitleModelCaller = AgentModelCaller<{ title: string }>
+
+/* v8 ignore start -- thin provider integration wrapper; exercised by credentialed *.anthropic.test.mts */
+export const callConversationTitleModel: ConversationTitleModelCaller = (
+  input,
+  safetyIdentifier,
+  { selection, openaiTransport },
+) =>
+  generateJson(
+    selection,
+    {
+      instructions: TITLE_GENERATION_PROMPT,
+      input,
+      schemaName: 'conversation_title',
+      schema: TITLE_SCHEMA,
+      parse: value => value as { title: string },
+      maxOutputTokens: 100,
+      safetyIdentifier,
+      maxRetries: SYNCHRONOUS_REQUEST_RETRY_POLICY.maxRetries,
+    },
+    { openaiTransport },
+  )
+/* v8 ignore stop */
 
 /**
  * Sanitized conversation text ready for the title-generation prompt, or null when the
@@ -48,25 +80,24 @@ export async function getConversationTitleGenerationInput(
   return sanitizedParts.join('\n\n')
 }
 
-export async function generateChatTitleFromInput(input: string, userId: string): Promise<string> {
-  // Records the ledger row for both outcomes: a successful response, or a failed/incomplete one
-  // (which still billed tokens) before the error propagates.
-  const response = await callRecordingAgentResponseUsage(
-    () =>
-      createOpenAIResponse(
-        {
-          model: DEFAULT_AGENT_MODEL,
-          instructions: TITLE_GENERATION_PROMPT,
-          input,
-          safety_identifier: userId,
-        },
-        { maxRetries: SYNCHRONOUS_REQUEST_RETRY_POLICY.maxRetries },
-      ),
-    { agentSlug: 'chat-generate-title' },
-  )
+export async function generateChatTitleFromInput(
+  input: string,
+  userId: string,
+  selection: ModelSelection,
+  callModel: ConversationTitleModelCaller = callConversationTitleModel,
+): Promise<string> {
+  // Records the ledger row for both outcomes: a successful answer, or a billed one that failed
+  // validation (which still billed tokens) before the error propagates.
+  const { output } = await callAgentModel({
+    agentSlug: 'chat-generate-title',
+    selection,
+    input,
+    safetyIdentifier: userId,
+    callModel,
+  })
 
   return (
-    extractTextFromOpenAIResponse(response)
+    output.title
       .trim()
       .replace(/^["']|["']$/g, '')
       .trim() || 'New Conversation'

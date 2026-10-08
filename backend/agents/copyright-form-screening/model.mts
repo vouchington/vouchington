@@ -1,9 +1,9 @@
-import {
-  createOpenAIResponse,
-  DEFAULT_AGENT_MODEL,
-  QUEUED_BACKGROUND_RETRY_POLICY,
-} from '@agents/_shared'
+import { QUEUED_BACKGROUND_RETRY_POLICY, type AgentModelCaller } from '@agents/_shared'
+import { generateJson } from '@modules/model-providers/generate'
 import { COPYRIGHT_FORM_GUIDANCE_ELEMENTS } from '@services/copyright-notices/form-screening-guidance'
+import { parseCopyrightFormScreeningOutput, type CopyrightFormScreeningOutput } from './output.mts'
+
+export type CopyrightFormScreeningModelCaller = AgentModelCaller<CopyrightFormScreeningOutput>
 
 const TEXT = { type: 'string' } as const
 
@@ -76,24 +76,25 @@ guidance.risk_notes lists possible fair use, abuse signals, or a claimant who ap
 represent the work; return an empty list when none apply. guidance.suggested_action is a
 non-binding suggestion for the moderator's intake review.`
 
-export function callCopyrightFormScreeningModel(
-  input: string,
-): Promise<Awaited<ReturnType<typeof createOpenAIResponse>>> {
-  return createOpenAIResponse(
+/* v8 ignore start -- thin provider integration wrapper; exercised by credentialed *.anthropic.test.mts */
+export const callCopyrightFormScreeningModel: CopyrightFormScreeningModelCaller = (
+  input,
+  safetyIdentifier,
+  { selection, openaiTransport },
+) =>
+  generateJson(
+    selection,
     {
-      model: DEFAULT_AGENT_MODEL,
       instructions: SYSTEM_PROMPT,
       input,
-      metadata: { type: 'copyright-form-screening' },
-      service_tier: 'flex',
-      text: {
-        format: {
-          type: 'json_schema',
-          name: 'copyright_form_screening',
-          schema: OUTPUT_SCHEMA,
-        },
-      },
-    } as unknown as Parameters<typeof createOpenAIResponse>[0],
-    { maxRetries: QUEUED_BACKGROUND_RETRY_POLICY.maxRetries },
+      schemaName: 'copyright_form_screening',
+      schema: OUTPUT_SCHEMA,
+      parse: parseCopyrightFormScreeningOutput,
+      maxOutputTokens: 2_000,
+      safetyIdentifier,
+      flex: true,
+      maxRetries: QUEUED_BACKGROUND_RETRY_POLICY.maxRetries,
+    },
+    { openaiTransport },
   )
-}
+/* v8 ignore stop */

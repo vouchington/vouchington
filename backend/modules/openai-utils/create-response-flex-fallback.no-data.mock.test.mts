@@ -27,7 +27,7 @@ vi.mock<typeof import('openai')>(import('openai'), async importOriginal => ({
   } as unknown as typeof import('openai').default,
 }))
 
-const flexParams = { model: 'gpt-5.4-nano', input: 'hello', service_tier: 'flex' } as Params
+const flexParams = { model: 'gpt-6-luna', input: 'hello', service_tier: 'flex' } as Params
 
 function createdEvent(id: string) {
   return makeStreamEvent({
@@ -112,7 +112,7 @@ describe('OpenAI flex capacity fallback', () => {
     expect(sentryCaptureMessageMock).toHaveBeenCalledExactlyOnceWith('openai_flex_fallback', {
       level: 'warning',
       tags: { reason: 'openai_flex_fallback', provider: 'openai', trigger: 'stream_failed' },
-      extra: { model: 'gpt-5.4-nano' },
+      extra: { model: 'gpt-6-luna' },
     })
   })
 

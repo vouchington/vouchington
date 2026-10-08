@@ -4,6 +4,7 @@ import {
   type StructuredDecisionAttemptHooks,
   type StructuredDecisionClient,
   type StructuredDecisionFetch,
+  type StructuredDecisionModelSelection,
 } from '@modules/structured-decisions'
 import type { ClassifierModelProvider } from '@voucha/types'
 
@@ -36,14 +37,15 @@ function resolveApiKey(provider: ClassifierModelProvider, options: StoryClusteri
 export function createStoryClusteringClient(
   input: {
     classifierRunId: string
-    modelProvider: ClassifierModelProvider
+    selection: StructuredDecisionModelSelection
     beforeAttempt: NonNullable<StructuredDecisionAttemptHooks['beforeAttempt']>
   },
   options: StoryClusteringClientOptions = {},
 ): StructuredDecisionClient {
   return createStructuredDecisionClient({
-    transport: input.modelProvider,
-    apiKey: resolveApiKey(input.modelProvider, options),
+    transport: input.selection.provider,
+    model: input.selection.model,
+    apiKey: resolveApiKey(input.selection.provider, options),
     fetch: options.fetch,
     hooks: createStructuredDecisionBillingHooks({
       workload: 'story-clustering',

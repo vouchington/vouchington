@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { describe, it, expect, vi, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
 import {
   createTestUser,
   insertTestUserWarning,
@@ -16,22 +16,13 @@ import { createModerationAppeal } from '@services/moderation-appeals/create'
 import { getModerationAppealById } from '@services/moderation-appeals/get'
 import { parseCreateModerationAppealInput } from '@services/moderation-appeals/parse'
 import { runAppealResolutionAgent } from './run.mts'
+import {
+  makeAgentModelCaller,
+  TEST_MODEL_SELECTION,
+} from '@voucha/test-helpers/agents/model-call-result'
 import type { PrivateUser } from '@services/users/types'
 
-function makeModelCaller(json: object) {
-  return vi.fn<(input: string, safetyId: string) => Promise<unknown>>(() =>
-    Promise.resolve({
-      id: `resp-${randomUUID()}`,
-      output: [
-        {
-          type: 'message',
-          status: 'completed',
-          content: [{ type: 'output_text', text: JSON.stringify(json) }],
-        },
-      ],
-    }),
-  )
-}
+const makeModelCaller = makeAgentModelCaller
 
 describe('runAppealResolutionAgent', () => {
   let staff: PrivateUser
@@ -63,7 +54,7 @@ describe('runAppealResolutionAgent', () => {
       public_response: 'x',
       internal_response: 'x',
     })
-    await runAppealResolutionAgent({ appealId: randomUUID() }, callModel)
+    await runAppealResolutionAgent({ appealId: randomUUID() }, TEST_MODEL_SELECTION, callModel)
     expect(callModel).not.toHaveBeenCalled()
   })
 
@@ -75,7 +66,7 @@ describe('runAppealResolutionAgent', () => {
       public_response: 'First run.',
       internal_response: 'Internal.',
     })
-    await runAppealResolutionAgent({ appealId: appeal.id }, firstCaller)
+    await runAppealResolutionAgent({ appealId: appeal.id }, TEST_MODEL_SELECTION, firstCaller)
     expect(firstCaller).toHaveBeenCalledOnce()
 
     const secondCaller = makeModelCaller({
@@ -83,7 +74,7 @@ describe('runAppealResolutionAgent', () => {
       public_response: 'Second run.',
       internal_response: 'Internal.',
     })
-    await runAppealResolutionAgent({ appealId: appeal.id }, secondCaller)
+    await runAppealResolutionAgent({ appealId: appeal.id }, TEST_MODEL_SELECTION, secondCaller)
     expect(secondCaller).not.toHaveBeenCalled()
   })
 
@@ -96,7 +87,7 @@ describe('runAppealResolutionAgent', () => {
       internal_response: 'Moderation action was not justified.',
     })
 
-    await runAppealResolutionAgent({ appealId: appeal.id }, callModel)
+    await runAppealResolutionAgent({ appealId: appeal.id }, TEST_MODEL_SELECTION, callModel)
 
     expect(callModel).toHaveBeenCalledOnce()
     const updated = await getModerationAppealById(appeal.id)
@@ -115,14 +106,18 @@ describe('runAppealResolutionAgent', () => {
       public_response: 'First.',
       internal_response: 'First.',
     })
-    await runAppealResolutionAgent({ appealId: appeal.id }, firstCaller)
+    await runAppealResolutionAgent({ appealId: appeal.id }, TEST_MODEL_SELECTION, firstCaller)
 
     const secondCaller = makeModelCaller({
       recommended_action: 'reduce',
       public_response: 'Rerun response.',
       internal_response: 'Rerun internal.',
     })
-    await runAppealResolutionAgent({ appealId: appeal.id, rerunById: staff.id }, secondCaller)
+    await runAppealResolutionAgent(
+      { appealId: appeal.id, rerunById: staff.id },
+      TEST_MODEL_SELECTION,
+      secondCaller,
+    )
 
     expect(secondCaller).toHaveBeenCalledOnce()
     const updated = await getModerationAppealById(appeal.id)
@@ -133,6 +128,7 @@ describe('runAppealResolutionAgent', () => {
     const appeal = await makeWarningAndAppeal()
     await runAppealResolutionAgent(
       { appealId: appeal.id },
+      TEST_MODEL_SELECTION,
       makeModelCaller({
         recommended_action: 'deny',
         public_response: 'First.',
@@ -142,6 +138,7 @@ describe('runAppealResolutionAgent', () => {
 
     await runAppealResolutionAgent(
       { appealId: appeal.id, rerunById: staff.id },
+      TEST_MODEL_SELECTION,
       makeModelCaller({
         recommended_action: 'reduce',
         public_response: 'Replacement.',
@@ -176,7 +173,7 @@ describe('runAppealResolutionAgent', () => {
       internal_response: 'User violated community rules.',
     })
 
-    await runAppealResolutionAgent({ appealId: appeal.id }, callModel)
+    await runAppealResolutionAgent({ appealId: appeal.id }, TEST_MODEL_SELECTION, callModel)
 
     expect(callModel).toHaveBeenCalledOnce()
     const updated = await getModerationAppealById(appeal.id)
@@ -207,7 +204,7 @@ describe('runAppealResolutionAgent', () => {
       internal_response: 'Removal was unwarranted.',
     })
 
-    await runAppealResolutionAgent({ appealId: appeal.id }, callModel)
+    await runAppealResolutionAgent({ appealId: appeal.id }, TEST_MODEL_SELECTION, callModel)
 
     expect(callModel).toHaveBeenCalledOnce()
     const updated = await getModerationAppealById(appeal.id)
@@ -244,25 +241,10 @@ describe('runAppealResolutionAgent', () => {
       internal_response: 'Community moderation action was appropriate.',
     })
 
-    await runAppealResolutionAgent({ appealId: appeal.id }, callModel)
+    await runAppealResolutionAgent({ appealId: appeal.id }, TEST_MODEL_SELECTION, callModel)
 
     expect(callModel).toHaveBeenCalledOnce()
     expect(callModel.mock.calls[0][0]).toContain('Original action: Community post removal')
-  })
-
-  it('throws TypeError for invalid model response shape', async () => {
-    const appeal = await makeWarningAndAppeal()
-
-    await expect(
-      runAppealResolutionAgent(
-        { appealId: appeal.id },
-        makeModelCaller({
-          recommended_action: 'INVALID_ACTION',
-          public_response: 'x',
-          internal_response: 'x',
-        }),
-      ),
-    ).rejects.toThrow(TypeError)
   })
 
   it('calls the model for a suspension appeal and includes suspension context', async () => {
@@ -280,7 +262,7 @@ describe('runAppealResolutionAgent', () => {
       internal_response: 'User violated platform rules.',
     })
 
-    await runAppealResolutionAgent({ appealId: appeal.id }, callModel)
+    await runAppealResolutionAgent({ appealId: appeal.id }, TEST_MODEL_SELECTION, callModel)
 
     expect(callModel).toHaveBeenCalledOnce()
     const updated = await getModerationAppealById(appeal.id)

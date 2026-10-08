@@ -1,13 +1,12 @@
+import { QUEUED_BACKGROUND_RETRY_POLICY, type AgentModelCaller } from '@agents/_shared'
+import { generateJson } from '@modules/model-providers/generate'
 import {
-  createOpenAIResponse,
-  DEFAULT_AGENT_MODEL,
-  QUEUED_BACKGROUND_RETRY_POLICY,
-} from '@agents/_shared'
+  parseCopyrightAppealRecommendationOutput,
+  type CopyrightAppealRecommendationOutput,
+} from './output.mts'
 
-export type CopyrightAppealRecommendationModelCaller = (
-  input: string,
-  safetyIdentifier: string,
-) => Promise<unknown>
+export type CopyrightAppealRecommendationModelCaller =
+  AgentModelCaller<CopyrightAppealRecommendationOutput>
 
 const OUTPUT_SCHEMA = {
   type: 'object',
@@ -28,29 +27,26 @@ appears overbroad; recommend reverse when it appears unsupported; otherwise reco
 This recommendation never authorizes a takedown, restoration, or other action. A human moderator
 must make every decision. Return concise JSON only.`
 
-/* v8 ignore start -- thin OpenAI integration wrapper; exercised by credentialed *.openai.test.mts */
-export function callCopyrightAppealRecommendationModel(
-  input: string,
-  safetyIdentifier: string,
-): Promise<Awaited<ReturnType<typeof createOpenAIResponse>>> {
-  return createOpenAIResponse(
+/* v8 ignore start -- thin provider integration wrapper; exercised by credentialed *.anthropic.test.mts */
+export const callCopyrightAppealRecommendationModel: CopyrightAppealRecommendationModelCaller = (
+  input,
+  safetyIdentifier,
+  { selection, openaiTransport },
+) =>
+  generateJson(
+    selection,
     {
-      model: DEFAULT_AGENT_MODEL,
       instructions: SYSTEM_PROMPT,
       input,
-      safety_identifier: safetyIdentifier,
-      metadata: { type: 'copyright-appeal-recommendation' },
-      service_tier: 'flex',
-      prompt_cache_key: 'copyright-appeal-v1',
-      text: {
-        format: {
-          type: 'json_schema',
-          name: 'copyright_appeal_recommendation',
-          schema: OUTPUT_SCHEMA,
-        },
-      },
-    } as unknown as Parameters<typeof createOpenAIResponse>[0],
-    { maxRetries: QUEUED_BACKGROUND_RETRY_POLICY.maxRetries },
+      schemaName: 'copyright_appeal_recommendation',
+      schema: OUTPUT_SCHEMA,
+      parse: parseCopyrightAppealRecommendationOutput,
+      maxOutputTokens: 2_000,
+      safetyIdentifier,
+      promptCacheKey: 'copyright-appeal-v1',
+      flex: true,
+      maxRetries: QUEUED_BACKGROUND_RETRY_POLICY.maxRetries,
+    },
+    { openaiTransport },
   )
-}
 /* v8 ignore stop */

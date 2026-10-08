@@ -1,6 +1,5 @@
 // Re-export the integration boundary from the module-level provider package
 export {
-  createOpenAIResponse,
   OpenAIResponseNotCompletedError,
   runWithBackgroundResponseHooks,
   runWithOpenAIResponseAttemptHooks,

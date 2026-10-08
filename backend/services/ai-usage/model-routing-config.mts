@@ -55,3 +55,12 @@ export function getServiceModelSelection(slug: ModelServiceSlug): ModelSelection
 export function getOpenAITransport(): OpenAITransport {
   return modelRoutingConfig.getFields()[OPENAI_TRANSPORT_FIELD] as OpenAITransport
 }
+
+/**
+ * The service's selection once the setting has loaded. A worker or request handler reads it here
+ * and passes it to the agent, so a switch in the setting applies to the next call without a deploy.
+ */
+export async function loadServiceModelSelection(slug: ModelServiceSlug): Promise<ModelSelection> {
+  await modelRoutingConfig.waitForInitialization()
+  return getServiceModelSelection(slug)
+}

@@ -15,6 +15,8 @@ import {
 import { parseCreateReviewDisputeInput } from '@services/review-disputes/parse'
 import type { PrivateUser } from '@services/users/types'
 import { runDisputeResolutionAgent } from './run.mts'
+import { TEST_OPENAI_SELECTION } from '@voucha/test-helpers/agents/model-call-result'
+import type { AgentModelCaller } from '@agents/_shared'
 
 describe('runDisputeResolutionAgent terminal lifecycle', () => {
   let staff: PrivateUser
@@ -60,9 +62,13 @@ describe('runDisputeResolutionAgent terminal lifecycle', () => {
       publicResponse: 'Approved human response.',
     })
     await approveReviewDispute(staff.id, dispute.id)
-    const callModel = vi.fn<(input: string, safetyId: string) => Promise<unknown>>()
+    const callModel = vi.fn<AgentModelCaller<never>>()
 
-    await runDisputeResolutionAgent({ disputeId: dispute.id, rerunById: staff.id }, callModel)
+    await runDisputeResolutionAgent(
+      { disputeId: dispute.id, rerunById: staff.id },
+      TEST_OPENAI_SELECTION,
+      callModel,
+    )
 
     expect(callModel).not.toHaveBeenCalled()
   })

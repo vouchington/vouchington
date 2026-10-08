@@ -9,30 +9,16 @@ import {
 import { spendCapConfig } from '@services/ai-usage'
 import type { PrivateUser } from '@services/users/types'
 
-vi.mock<typeof import('@modules/openai-utils/create-response')>(
-  import('@modules/openai-utils/create-response'),
+vi.mock<typeof import('@modules/model-providers/generate')>(
+  import('@modules/model-providers/generate'),
   async importOriginal => ({
     ...(await importOriginal()),
-    createOpenAIResponse: vi.fn<VitestLooseMock>(),
+    generateJson: vi.fn<VitestLooseMock>(),
   }),
 )
 
-import { createOpenAIResponse } from '@modules/openai-utils/create-response'
-
-function makeTitleResponse(text: string) {
-  return {
-    id: 'resp-1',
-    output: [
-      {
-        id: 'msg-1',
-        type: 'message',
-        role: 'assistant',
-        status: 'completed',
-        content: [{ type: 'output_text', text, annotations: [] }],
-      },
-    ],
-  }
-}
+import { generateJson } from '@modules/model-providers/generate'
+import { makeModelCallResult } from '@voucha/test-helpers/agents/model-call-result'
 
 describe('POST /api/v1/my/conversations/:conversationId/title', () => {
   let user: PrivateUser
@@ -45,9 +31,7 @@ describe('POST /api/v1/my/conversations/:conversationId/title', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(createOpenAIResponse).mockResolvedValue(
-      makeTitleResponse('Great Chat Title') as never,
-    )
+    vi.mocked(generateJson).mockResolvedValue(makeModelCallResult({ title: 'Great Chat Title' }))
   })
 
   it('returns 401 when not authenticated', async () => {
@@ -99,7 +83,7 @@ describe('POST /api/v1/my/conversations/:conversationId/title', () => {
     }
   })
 
-  it('returns 200 with existing title without calling OpenAI when already titled', async () => {
+  it('returns 200 with existing title without calling the model when already titled', async () => {
     const suffix = crypto.randomUUID().slice(0, 8)
     const conv = await createConversation(user.id, `Already named ${suffix}`)
 
@@ -108,10 +92,10 @@ describe('POST /api/v1/my/conversations/:conversationId/title', () => {
     const response = await request.post(`/api/v1/my/conversations/${conv.id}/title`).expect(200)
 
     expect(response.body.conversation.title).toBe(`Already named ${suffix}`)
-    expect(createOpenAIResponse).not.toHaveBeenCalled()
+    expect(generateJson).not.toHaveBeenCalled()
   })
 
-  it('returns 429 and does not call OpenAI when the daily spend cap is breached', async () => {
+  it('returns 429 and does not call the model when the daily spend cap is breached', async () => {
     await spendCapConfig.waitForInitialization()
     // 0 is the true kill-switch value (#8773 review round 4): totalMicrounits is never negative, so
     // this breaches on the very first call regardless of what other tests have written today.
@@ -130,14 +114,14 @@ describe('POST /api/v1/my/conversations/:conversationId/title', () => {
       await request.authenticateAs(user)
       await request.post(`/api/v1/my/conversations/${conv.id}/title`).expect(429)
 
-      expect(createOpenAIResponse).not.toHaveBeenCalled()
+      expect(generateJson).not.toHaveBeenCalled()
     } finally {
       restore()
     }
   })
 
   it('returns 200 with the local "New Conversation" fallback for an empty conversation even when the spend cap is breached', async () => {
-    // Reproduces #8773 Finding 3: the route's no-messages path never calls OpenAI, so the
+    // Reproduces #8773 Finding 3: the route's no-messages path never calls the model, so the
     // spend cap must not gate it -- a breached cap should never turn this free fallback into a 429.
     await spendCapConfig.waitForInitialization()
     const restore = overrideDynamicConfigFieldsForTest(spendCapConfig, {
@@ -151,7 +135,7 @@ describe('POST /api/v1/my/conversations/:conversationId/title', () => {
       const response = await request.post(`/api/v1/my/conversations/${conv.id}/title`).expect(200)
 
       expect(response.body.conversation.title).toBe('New Conversation')
-      expect(createOpenAIResponse).not.toHaveBeenCalled()
+      expect(generateJson).not.toHaveBeenCalled()
     } finally {
       restore()
     }

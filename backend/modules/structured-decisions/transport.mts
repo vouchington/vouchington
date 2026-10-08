@@ -22,6 +22,7 @@ export function createTransportRequest(
   transport: StructuredDecisionTransport,
   apiKey: string,
   request: StructuredDecisionRequest,
+  model?: string,
 ): TransportRequest {
   const questions = Object.fromEntries(
     request.questions.map(question => [question.id, toProviderQuestion(question)]),
@@ -31,14 +32,14 @@ export function createTransportRequest(
       url: TYPESAFE_SYSTEM_ONE_URL,
       provider: 'TypeSafe',
       headers: headers(apiKey),
-      body: { model: 'jev-latest', state: request.state, questions },
+      body: { model: model ?? 'jev-latest', state: request.state, questions },
     }
   return {
     url: OPENROUTER_DECISIONS_URL,
     provider: 'OpenRouter',
     headers: headers(apiKey),
     body: {
-      model: 'typesafe/jev-1.13',
+      model: model ?? 'typesafe/jev-1.13',
       state: request.state,
       questions,
       provider: { only: ['TypeSafe'], allow_fallbacks: false },

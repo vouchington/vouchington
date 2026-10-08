@@ -26,7 +26,10 @@ export function createStoryClusteringRegistration(): ClassifierRunRegistration<
         {
           createClient: hooks =>
             createStoryClusteringClient({
-              modelProvider: lease.resolved.configuration.modelProvider,
+              selection: {
+                provider: lease.resolved.configuration.modelProvider,
+                model: lease.resolved.configuration.modelName,
+              },
               classifierRunId: hooks.classifierRunId,
               beforeAttempt: hooks.beforeAttempt,
             }),

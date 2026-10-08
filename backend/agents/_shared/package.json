@@ -27,7 +27,6 @@
     "@modules/model-providers": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/openai-utils": "workspace:^",
-    "@modules/openrouter-utils": "workspace:^",
     "@modules/structured-decisions": "workspace:^",
     "@services/ai-usage": "workspace:^",
     "@services/openai-background-responses": "workspace:^",

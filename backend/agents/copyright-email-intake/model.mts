@@ -1,13 +1,8 @@
-import {
-  createOpenAIResponse,
-  DEFAULT_AGENT_MODEL,
-  QUEUED_BACKGROUND_RETRY_POLICY,
-} from '@agents/_shared'
+import { QUEUED_BACKGROUND_RETRY_POLICY, type AgentModelCaller } from '@agents/_shared'
+import { generateJson } from '@modules/model-providers/generate'
+import { parseCopyrightEmailIntakeOutput } from './output.mts'
 
-export type CopyrightEmailIntakeModelCaller = (
-  input: string,
-  safetyIdentifier: string,
-) => Promise<unknown>
+export type CopyrightEmailIntakeModelCaller = AgentModelCaller<Record<string, unknown>>
 
 const OUTPUT_SCHEMA = {
   type: 'object',
@@ -116,29 +111,26 @@ the information appears complete enough for a human legal review. A declaration 
 the sender actually made it; otherwise return null. Return short exact source excerpts for every
 extracted value so the moderator can verify the parse. Do not recommend takedown.`
 
-/* v8 ignore start -- thin OpenAI integration wrapper; exercised by credentialed *.openai.test.mts */
-export function callCopyrightEmailIntakeModel(
-  input: string,
-  safetyIdentifier: string,
-): Promise<Awaited<ReturnType<typeof createOpenAIResponse>>> {
-  return createOpenAIResponse(
+/* v8 ignore start -- thin provider integration wrapper; exercised by credentialed *.anthropic.test.mts */
+export const callCopyrightEmailIntakeModel: CopyrightEmailIntakeModelCaller = (
+  input,
+  safetyIdentifier,
+  { selection, openaiTransport },
+) =>
+  generateJson(
+    selection,
     {
-      model: DEFAULT_AGENT_MODEL,
       instructions: SYSTEM_PROMPT,
       input,
-      safety_identifier: safetyIdentifier,
-      metadata: { type: 'copyright-email-intake' },
-      service_tier: 'flex',
-      prompt_cache_key: 'copyright-email-intake-v2',
-      text: {
-        format: {
-          type: 'json_schema',
-          name: 'copyright_email_intake',
-          schema: OUTPUT_SCHEMA,
-        },
-      },
-    } as unknown as Parameters<typeof createOpenAIResponse>[0],
-    { maxRetries: QUEUED_BACKGROUND_RETRY_POLICY.maxRetries },
+      schemaName: 'copyright_email_intake',
+      schema: OUTPUT_SCHEMA,
+      parse: parseCopyrightEmailIntakeOutput,
+      maxOutputTokens: 4_000,
+      safetyIdentifier,
+      promptCacheKey: 'copyright-email-intake-v2',
+      flex: true,
+      maxRetries: QUEUED_BACKGROUND_RETRY_POLICY.maxRetries,
+    },
+    { openaiTransport },
   )
-}
 /* v8 ignore stop */

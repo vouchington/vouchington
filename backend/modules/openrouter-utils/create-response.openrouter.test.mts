@@ -7,7 +7,7 @@ describe('OpenRouter Responses', () => {
       throw new Error('OPENROUTER_API_KEY is required for this credentialed test.')
     }
     const response = await createOpenRouterResponse({
-      model: 'openai/gpt-5.4-nano',
+      model: 'openai/gpt-6-luna',
       input: 'Reply with exactly OK.',
       max_output_tokens: 64,
       safety_identifier: 'openrouter-credentialed-contract',
@@ -28,7 +28,7 @@ describe('OpenRouter Responses', () => {
     })
 
     expect(response.status).toBe('completed')
-    expect(response.model).toContain('openai/gpt-5.4-nano')
+    expect(response.model).toContain('openai/gpt-6-luna')
     expect(JSON.parse(response.output_text)).toMatchObject({ answer: expect.any(String) })
     expect(response.usage).toMatchObject({
       input_tokens: expect.any(Number),

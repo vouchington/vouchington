@@ -1,7 +1,7 @@
 import type { Job } from 'glide-mq'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { CopyrightFormScreeningJobData } from '@queues/ai-agents/types'
-import * as openaiProvider from '@modules/openai-utils/create-response'
+import { makeAgentModelCaller } from '@voucha/test-helpers/agents/model-call-result'
 import { countCopyrightActiveRestrictionsForNotice } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { readTestCopyrightStaffScreening } from '@voucha/test-helpers/data-stores/psql/copyright-screening-executions'
 import {
@@ -18,43 +18,27 @@ import {
 import { processCopyrightFormScreening } from './process-copyright-form-screening.mts'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
-vi.mock(import('@modules/openai-utils/create-response'), async importOriginal => ({
-  ...(await importOriginal()),
-  createOpenAIResponse: vi.fn<typeof openaiProvider.createOpenAIResponse>(),
-}))
-
 const jobFor = (submissionId: string) =>
   ({ data: { submission_id: submissionId } }) as Job<CopyrightFormScreeningJobData>
 
-function mockScreeningProvider(recommendation: string) {
-  return vi.spyOn(openaiProvider, 'createOpenAIResponse').mockResolvedValue({
-    id: `resp-${crypto.randomUUID()}`,
-    output: [
-      {
-        type: 'message',
-        status: 'completed',
-        content: [
-          {
-            type: 'output_text',
-            text: JSON.stringify({
-              recommendation,
-              rationale: 'Advisory screen.',
-              guidance: { ...testCopyrightFormGuidance, suggested_action: 'approve_intake' },
-            }),
-          },
-        ],
-      },
-    ],
-  } as never)
+function mockScreeningModel(recommendation: string) {
+  return makeAgentModelCaller({
+    recommendation,
+    rationale: 'Advisory screen.',
+    guidance: { ...testCopyrightFormGuidance, suggested_action: 'approve_intake' },
+  })
 }
 
 async function screenWithApprovalGuidance(recommendation: string) {
   const notice = await createSignedInCopyrightForm()
-  const provider = mockScreeningProvider(recommendation)
-  await processCopyrightFormScreening(jobFor(notice.intake.copyright_notice_submission_id))
+  const callModel = mockScreeningModel(recommendation)
+  await processCopyrightFormScreening(
+    jobFor(notice.intake.copyright_notice_submission_id),
+    callModel,
+  )
   const noticeId = notice.intake.copyright_notice_id
   return {
-    providerCalls: provider.mock.calls.length,
+    providerCalls: callModel.mock.calls.length,
     suggestedAction: (await readTestCopyrightStaffScreening(noticeId))?.guidance?.suggested_action,
     assessments: (await getCopyrightNoticePrivateAggregate(noticeId))?.assessments,
     activeRestrictions: await countCopyrightActiveRestrictionsForNotice(noticeId),
@@ -107,9 +91,9 @@ describe('copyright form screening while intake is switched off', () => {
   it('does not call the model and leaves the form pending for the reconciler', async () => {
     const notice = await createSignedInCopyrightForm()
     const submissionId = notice.intake.copyright_notice_submission_id
-    const provider = mockScreeningProvider('not_obviously_invalid')
+    const provider = mockScreeningModel('not_obviously_invalid')
 
-    await expect(processCopyrightFormScreening(jobFor(submissionId))).resolves.toEqual({
+    await expect(processCopyrightFormScreening(jobFor(submissionId), provider)).resolves.toEqual({
       success: true,
     })
 
@@ -125,9 +109,9 @@ describe('copyright form screening while intake is switched off', () => {
   it('does not apply a saved clear screen, which the reconciler applies on its own', async () => {
     const { notice } = await createClearScreenedForm()
     const submissionId = notice.intake.copyright_notice_submission_id
-    const provider = mockScreeningProvider('not_obviously_invalid')
+    const provider = mockScreeningModel('not_obviously_invalid')
 
-    await expect(processCopyrightFormScreening(jobFor(submissionId))).resolves.toEqual({
+    await expect(processCopyrightFormScreening(jobFor(submissionId), provider)).resolves.toEqual({
       success: true,
     })
 

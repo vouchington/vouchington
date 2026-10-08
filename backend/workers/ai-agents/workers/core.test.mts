@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import type { Job, Worker } from 'glide-mq'
 import { recordAgentResponseUsage } from '@agents/_shared'
+import { ModelProviderError } from '@modules/model-providers/errors'
+import { UnrecoverableError } from '@modules/queue-errors'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
 import { processAIAgentWorkerJob } from './core.mts'
 
@@ -12,7 +14,7 @@ import { processAIAgentWorkerJob } from './core.mts'
 function usageResponse(inputTokens: number, outputTokens: number) {
   return {
     usage: { input_tokens: inputTokens, output_tokens: outputTokens },
-    model: 'gpt-5.4-nano',
+    model: 'gpt-6-luna',
     service_tier: 'flex' as const,
   }
 }
@@ -188,3 +190,32 @@ describe('processAIAgentWorkerJob', () => {
     expect(jobB.reportTokens).toHaveBeenCalledExactlyOnceWith(7)
   })
 })
+
+describe('processAIAgentWorkerJob model provider failures', () => {
+  it('routes a provider failure to the model provider handler, not the OpenAI rate limiter', async () => {
+    const handleOpenAIRateLimit = vi.fn<(error: unknown, worker: Worker) => Promise<unknown>>()
+    const failure = new ModelProviderError('credit-balance-too-low', 'credit balance too low', {
+      retryClass: 'permanent',
+      status: 400,
+    })
+
+    await expect(
+      processAIAgentWorkerJob(jobFor(), {} as Worker, {
+        ...spendCapDisabled,
+        handleOpenAIRateLimit,
+        processAIAgent: () => Promise.reject(failure),
+      }),
+    ).rejects.toBeInstanceOf(UnrecoverableError)
+
+    expect(handleOpenAIRateLimit).not.toHaveBeenCalled()
+  })
+})
+
+function jobFor(): Job<AIAgentJobData> {
+  return {
+    data: {} as AIAgentJobData,
+    name: 'report-judgement',
+    id: randomUUID(),
+    reportTokens: vi.fn<(count: number) => Promise<void>>(),
+  } as unknown as Job<AIAgentJobData>
+}

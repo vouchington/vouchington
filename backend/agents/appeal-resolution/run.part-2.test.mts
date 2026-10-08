@@ -12,6 +12,8 @@ import { parseCreateModerationAppealInput } from '@services/moderation-appeals/p
 import { runAppealResolutionAgent } from './run.mts'
 import { OpenAIResponseNotCompletedError } from '@modules/openai-utils/create-response'
 import type { Response } from 'openai/resources/responses/responses'
+import { TEST_OPENAI_SELECTION } from '@voucha/test-helpers/agents/model-call-result'
+import type { AgentModelCaller } from '@agents/_shared'
 
 describe('runAppealResolutionAgent', () => {
   it('records a ledger row from an incomplete response before the error propagates', async () => {
@@ -35,11 +37,11 @@ describe('runAppealResolutionAgent', () => {
     // call-site catch block records from the thrown OpenAIResponseNotCompletedError -- not just
     // from a successful response -- so a queued retry after this failure doesn't compound an
     // unrecorded charge with another one.
-    const callModel = vi.fn<(input: string, safetyId: string) => Promise<unknown>>(() =>
+    const callModel = vi.fn<AgentModelCaller<never>>(() =>
       Promise.reject(
         new OpenAIResponseNotCompletedError('OpenAI response incomplete: max_output_tokens', {
           status: 'incomplete',
-          model: 'gpt-5.4-nano-2026-03-17',
+          model: 'gpt-6-luna-2026-10-01',
           service_tier: 'flex',
           usage: { input_tokens: 180, output_tokens: 35 },
           incomplete_details: { reason: 'max_output_tokens' },
@@ -47,12 +49,12 @@ describe('runAppealResolutionAgent', () => {
       ),
     )
 
-    await expect(runAppealResolutionAgent({ appealId: appeal.id }, callModel)).rejects.toThrow(
-      'OpenAI response incomplete: max_output_tokens',
-    )
+    await expect(
+      runAppealResolutionAgent({ appealId: appeal.id }, TEST_OPENAI_SELECTION, callModel),
+    ).rejects.toThrow('OpenAI response incomplete: max_output_tokens')
 
     await expect(findAiUsageRecordForPost(postId, 'appeal-resolution')).resolves.toMatchObject({
-      model: 'gpt-5.4-nano-2026-03-17',
+      model: 'gpt-6-luna-2026-10-01',
       service_tier_id: 'flex',
       input_tokens: 180,
       output_tokens: 35,

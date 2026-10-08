@@ -24,6 +24,7 @@
   "scripts": {},
   "dependencies": {
     "@agents/_shared": "workspace:^",
+    "@modules/model-providers": "workspace:^",
     "@modules/openai-utils": "workspace:^",
     "@services/conversations-messages": "workspace:^"
   },

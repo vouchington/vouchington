@@ -9,6 +9,8 @@ import {
 import { parseCreateModerationAppealInput } from '@services/moderation-appeals/parse'
 import type { PrivateUser } from '@services/users/types'
 import { runAppealResolutionAgent } from './run.mts'
+import { TEST_MODEL_SELECTION } from '@voucha/test-helpers/agents/model-call-result'
+import type { AgentModelCaller } from '@agents/_shared'
 
 describe('runAppealResolutionAgent terminal lifecycle', () => {
   let staff: PrivateUser
@@ -38,9 +40,13 @@ describe('runAppealResolutionAgent terminal lifecycle', () => {
       publicResponse: 'Approved human response.',
     })
     await approveModerationAppeal(staff.id, appeal.id)
-    const callModel = vi.fn<(input: string, safetyId: string) => Promise<unknown>>()
+    const callModel = vi.fn<AgentModelCaller<never>>()
 
-    await runAppealResolutionAgent({ appealId: appeal.id, rerunById: staff.id }, callModel)
+    await runAppealResolutionAgent(
+      { appealId: appeal.id, rerunById: staff.id },
+      TEST_MODEL_SELECTION,
+      callModel,
+    )
 
     expect(callModel).not.toHaveBeenCalled()
   })
