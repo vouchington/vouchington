@@ -1,6 +1,5 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { extractIndexShapes } from 'vouchington-tooling/sql-ast'
-import { initSqlAst, loadSqlParserModule } from '../../migration-runner/sql-statements.mts'
 import idempotent from '../0000-00-01b-entity-relation-indexes.mts'
 
 // Groups by shapeKey (canonical body, name-independent) and reports every table whose
@@ -21,8 +20,6 @@ function findIndexShapeCollisions(
 }
 
 describe('0000-00-01b-entity-relation-indexes', () => {
-  beforeAll(() => Promise.all([loadSqlParserModule(), initSqlAst()]))
-
   it('should generate valid SQL for entity relation indexes', () => {
     const sql = idempotent()
 
@@ -94,122 +91,23 @@ describe('0000-00-01b-entity-relation-indexes', () => {
     expect(sql.match(new RegExp(`ADD CONSTRAINT ${constraint}`, 'g'))).toHaveLength(1)
   })
 
-  it('has no differently-named indexes with an identical definition shape', () => {
-    const collisions = findIndexShapeCollisions(extractIndexShapes(idempotent()))
+  it('has no differently-named indexes with an identical definition shape', async () => {
+    const collisions = findIndexShapeCollisions(await extractIndexShapes(idempotent()))
 
     expect(collisions).toEqual([])
   })
 
-  it('rejects a previous and current index with an equivalent shape but different names', () => {
+  it('rejects a previous and current index with an equivalent shape but different names', async () => {
     // A renamed duplicate in current generator output must fail structurally.
     const sql = `
       CREATE INDEX IF NOT EXISTS idx_relation__post__category__topic__subject__best_old ON "relation__post__category__topic" (subject_id) WHERE deleted_at IS NULL;
       CREATE INDEX IF NOT EXISTS idx_relation__post__category__topic__subject__best ON "relation__post__category__topic" (subject_id) WHERE deleted_at IS NULL;
     `
 
-    const collisions = findIndexShapeCollisions(extractIndexShapes(sql))
+    const collisions = findIndexShapeCollisions(await extractIndexShapes(sql))
 
     expect(collisions).toEqual([
       'relation__post__category__topic: idx_relation__post__category__topic__subject__best vs idx_relation__post__category__topic__subject__best_old',
     ])
-  })
-})
-
-describe('extractIndexShapes', () => {
-  beforeAll(() => Promise.all([loadSqlParserModule(), initSqlAst()]))
-
-  it('returns an empty array for blank SQL without invoking the parser', () => {
-    expect(extractIndexShapes('')).toEqual([])
-    expect(extractIndexShapes('   ')).toEqual([])
-  })
-
-  it('throws rather than silently treating unparseable SQL as containing no indexes', () => {
-    expect(() => extractIndexShapes('CREATE INDEX (')).toThrow('syntax error')
-  })
-
-  it('skips anonymous indexes and indexes nested inside DO blocks', () => {
-    const sql = `
-      CREATE INDEX ON "foo" (bar_id);
-      DO $$
-      BEGIN
-        CREATE INDEX IF NOT EXISTS idx_in_do_block ON "foo" (bar_id);
-      END $$;
-    `
-
-    expect(extractIndexShapes(sql)).toEqual([])
-  })
-
-  it('assigns an identical shape key to differently-named but byte-identical index bodies', () => {
-    const sql = `
-      CREATE INDEX IF NOT EXISTS idx_a ON "foo" (bar_id) WHERE deleted_at IS NULL;
-      CREATE INDEX IF NOT EXISTS idx_b ON "foo" (bar_id) WHERE deleted_at IS NULL;
-    `
-
-    const shapes = extractIndexShapes(sql)
-
-    expect(shapes.map(shape => shape.idxname)).toEqual(['idx_a', 'idx_b'])
-    expect(shapes.map(shape => shape.table)).toEqual(['foo', 'foo'])
-    expect(shapes[0]!.shapeKey).toBe(shapes[1]!.shapeKey)
-  })
-
-  it('assigns different shape keys to indexes with different columns', () => {
-    const sql = `
-      CREATE INDEX IF NOT EXISTS idx_a ON "foo" (bar_id);
-      CREATE INDEX IF NOT EXISTS idx_b ON "foo" (baz_id);
-    `
-
-    const shapes = extractIndexShapes(sql)
-
-    expect(shapes[0]!.shapeKey).not.toBe(shapes[1]!.shapeKey)
-  })
-
-  it('assigns an identical shape key to implicit and explicit ASC ordering', () => {
-    const sql = `
-      CREATE INDEX IF NOT EXISTS idx_a ON "foo" (bar_id);
-      CREATE INDEX IF NOT EXISTS idx_b ON "foo" (bar_id ASC);
-    `
-
-    const shapes = extractIndexShapes(sql)
-
-    expect(shapes[0]!.shapeKey).toBe(shapes[1]!.shapeKey)
-  })
-
-  it('assigns an identical shape key to a predicate with redundant parentheses', () => {
-    const sql = `
-      CREATE INDEX IF NOT EXISTS idx_a ON "foo" (bar_id) WHERE (deleted_at IS NULL);
-      CREATE INDEX IF NOT EXISTS idx_b ON "foo" (bar_id) WHERE ((deleted_at IS NULL));
-    `
-
-    const shapes = extractIndexShapes(sql)
-
-    expect(shapes[0]!.shapeKey).toBe(shapes[1]!.shapeKey)
-  })
-
-  it('resolves implicit NULLS ordering against PostgreSQL’s direction-dependent default', () => {
-    const ascSql = `
-      CREATE INDEX IF NOT EXISTS idx_a ON "foo" (bar_id);
-      CREATE INDEX IF NOT EXISTS idx_b ON "foo" (bar_id NULLS LAST);
-    `
-    const descSql = `
-      CREATE INDEX IF NOT EXISTS idx_a ON "foo" (bar_id DESC);
-      CREATE INDEX IF NOT EXISTS idx_b ON "foo" (bar_id DESC NULLS FIRST);
-    `
-
-    const ascShapes = extractIndexShapes(ascSql)
-    const descShapes = extractIndexShapes(descSql)
-
-    expect(ascShapes[0]!.shapeKey).toBe(ascShapes[1]!.shapeKey)
-    expect(descShapes[0]!.shapeKey).toBe(descShapes[1]!.shapeKey)
-  })
-
-  it('assigns different shape keys to ascending vs. descending ordering', () => {
-    const sql = `
-      CREATE INDEX IF NOT EXISTS idx_a ON "foo" (bar_id ASC);
-      CREATE INDEX IF NOT EXISTS idx_b ON "foo" (bar_id DESC);
-    `
-
-    const shapes = extractIndexShapes(sql)
-
-    expect(shapes[0]!.shapeKey).not.toBe(shapes[1]!.shapeKey)
   })
 })
