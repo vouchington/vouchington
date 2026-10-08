@@ -23,6 +23,7 @@ describe('retained relation cleanup cursors', () => {
         hasRelation: hasTestRetainedRelationIdentity,
         cleanup: cleanupRetainedRelationIdentities,
         cursorNames: getRetainedRelationCleanupCursors,
+        cursorRows: readRetainedRelationCleanupCursors,
       }) => {
         const fixtures: {
           table: string
@@ -129,6 +130,35 @@ describe('retained relation cleanup cursors', () => {
             ),
           ).toBe(true)
         }
+        const beforeWorker = await readRetainedRelationCleanupCursors()
+        const workerPages = await cleanupRetainedRelationIdentities(1)
+        const workerRows = await readRetainedRelationCleanupCursors()
+        expect(workerPages.map(page => page.relationTable)).toEqual(expectedNames)
+        expect(beforeWorker).toHaveLength(expectedNames.length)
+        expect(workerRows).toHaveLength(expectedNames.length)
+        const cursorId = expect.any(String)
+        for (const page of workerPages) {
+          expect(page.scanned).toBeGreaterThanOrEqual(0)
+          expect(page.scanned).toBeLessThanOrEqual(1)
+          expect(page.deleted).toBeGreaterThanOrEqual(0)
+          expect(page.deleted).toBeLessThanOrEqual(page.scanned)
+          expect(workerRows.find(row => row.entity_relation === page.relationTable)).toEqual({
+            entity_relation: page.relationTable,
+            cursor_subject_id: page.hasMore ? cursorId : null,
+            cursor_relation_id: page.hasMore ? cursorId : null,
+          })
+        }
+        expect(
+          workerRows.every(row => {
+            const prior = beforeWorker.find(item => item.entity_relation === row.entity_relation)!
+            return (
+              row.cursor_subject_id === null ||
+              prior.cursor_subject_id === null ||
+              `${row.cursor_subject_id}/${row.cursor_relation_id}` >
+                `${prior.cursor_subject_id}/${prior.cursor_relation_id}`
+            )
+          }),
+        ).toBe(true)
       },
     )
   })
