@@ -245,4 +245,23 @@ CREATE TABLE IF NOT EXISTS second_table (
     expect(errors).toHaveLength(1)
     expect(errors[0]).toContain('widgets.created_at must be')
   })
+  it.each([
+    'CURRENT_DATE',
+    'CURRENT_TIMESTAMP(3)',
+    'COALESCE(now(), now())',
+    'LEAST(now(), now())',
+  ])('preserves non-function diagnostic wording for %s', async expression => {
+    const dir = await makeRepo()
+    await track(
+      dir,
+      MIGRATION_PATH,
+      `CREATE TABLE widgets (
+        id uuid PRIMARY KEY DEFAULT uuidv7(),
+        created_at timestamptz DEFAULT ${expression}
+      );`,
+    )
+    const errors = await runGuard(dir, [MIGRATION_PATH])
+    expect(errors).toHaveLength(1)
+    expect(errors[0]).toContain('found a non-generated default')
+  })
 })

@@ -86,5 +86,16 @@ function ddlFunction(
 ): Extract<PostgresSqlExpressionRoot, { kind: 'functionCall' }> | null {
   if (!root) return null
   if (root.kind === 'cast' || root.kind === 'parenthesized') return ddlFunction(root.expression)
-  return root.kind === 'functionCall' ? root : null
+  if (root.kind !== 'functionCall') return null
+  const name = root.name.parts.at(-1)?.value.toLowerCase()
+  // Preserve the existing diagnostic classification of SQL value/special expressions.
+  if (root.syntax === 'value' && name !== 'current_timestamp') return null
+  if (
+    root.name.parts.length === 1 &&
+    !root.name.parts[0].quoted &&
+    (['coalesce', 'greatest', 'least', 'nullif'].includes(name ?? '') ||
+      (name === 'current_timestamp' && root.arguments.length > 0))
+  )
+    return null
+  return root
 }
